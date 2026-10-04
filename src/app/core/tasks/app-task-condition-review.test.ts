@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, spyOn } from "bun:test";
+import { afterEach, describe, expect, it, setSystemTime, spyOn } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -66,33 +66,12 @@ function claim(config: ReturnType<typeof fixture>) {
   return result;
 }
 
-function makeConditionReviewDue(config: ReturnType<typeof fixture>, conditionId: string): void {
-  const tree = config.resourceStore.readTaskContext({ taskIds: ["human-request"] });
-  const resource = tree.resources?.["human-request"];
-  const condition = tree.conditions?.[conditionId];
-  if (!resource || !condition) throw new Error("expected resource-backed Condition fixture");
-  condition.status.observedAt = new Date(Date.now() - 120_000).toISOString();
-  condition.metadata.resourceVersion += 1;
-  expect(
-    config.resourceStore.commit({
-      fences: [
-        {
-          taskId: resource.metadata.id,
-          resourceVersion: resource.metadata.resourceVersion,
-          generation: resource.metadata.generation,
-        },
-      ],
-      conditions: [condition],
-    }),
-  ).toBe(true);
-  expect(config.resourceStore.setRecoveryState(resource.metadata.id, { nextCheckAt: Date.now() - 1 })).toBe(true);
-}
-
 afterEach(() => {
+  setSystemTime();
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
-describe("App task Condition review checkpoint", () => {
+describe("App task Condition recovery and explicit review", () => {
   it("keeps a legacy observed report quiet after reopen but admits a newer revision once", () => {
     const config = fixture();
     try {
@@ -123,7 +102,7 @@ describe("App task Condition review checkpoint", () => {
     }
   });
 
-  it.each(["redeclared", "retained"])("preserves independent %s waits and future deadlines across input and restart", (route) => {
+  it.each(["redeclared", "retained", "without-legacy-interval"])("preserves independent %s waits and observations across input and restart", (route) => {
     const config = fixture();
     const conditions = [
       {
@@ -144,10 +123,13 @@ describe("App task Condition review checkpoint", () => {
       },
     ];
     const wait = { disposition: "waiting" as const, summary: "Still waiting for both facts", conditions };
-    const unchangedWait = route === "redeclared" ? wait : { disposition: "waiting" as const, summary: wait.summary };
+    const unchangedWait = route === "redeclared"
+      ? wait
+      : route === "without-legacy-interval"
+        ? { ...wait, conditions: conditions.map(({ reviewAfterMs: _legacyInterval, ...condition }) => condition) }
+        : { disposition: "waiting" as const, summary: wait.summary };
     deferAppTask(config, claim(config), wait);
     const before = readTaskSnapshot(config).conditions;
-    const due = config.resourceStore.nextDueAt();
     const update = { type: "sample.unexpected-update", eventId: 401, data: { revision: 2 } };
     expect(recordAppTaskTrigger(config, "human-request", update)).toEqual({ kind: "recorded" });
     // Redelivery while pending is one input, not another obligation.
@@ -167,7 +149,6 @@ describe("App task Condition review checkpoint", () => {
       ).toBe("busy");
       deferAppTask(config, first, unchangedWait);
       expect(readTaskSnapshot(config).conditions).toEqual(before);
-      expect(config.resourceStore.nextDueAt()).toBe(due);
       const second = claim(config);
       expect(second.events.map(({ event }) => event.eventId)).toEqual([402]);
       deferAppTask(config, second, unchangedWait);
@@ -249,7 +230,7 @@ describe("App task Condition review checkpoint", () => {
     }
   });
 
-  it("preserves a future Condition deadline when duplicate claims find the Task waiting", () => {
+  it("rearms mechanical recovery when duplicate claims find the Task waiting", () => {
     const config = fixture();
     const store = config.resourceStore;
     try {
@@ -278,137 +259,119 @@ describe("App task Condition review checkpoint", () => {
             handler: "agent",
           }),
         ).toMatchObject({ kind: "waiting", conditionIds: ["capability-ready"] });
-        expect(store.nextDueAt()).toBe(due);
+        expect(store.nextDueAt()).toBeGreaterThanOrEqual(due!);
       }
       expect(Object.keys(readTaskSnapshot(config).attempts ?? {})).toHaveLength(1);
-      expect(store.listRecoveryCandidates(due! + 1).items.map(({ taskId }) => taskId)).toContain("human-request");
+      expect(store.listRecoveryCandidates(store.nextDueAt()! + 1).items.map(({ taskId }) => taskId)).toContain("human-request");
     } finally {
       store.close();
     }
   });
 
-  it("wakes the same task owner after a declared checkpoint is missed", () => {
-    const config = fixture();
-    const condition = {
-      id: "external-review-finished",
-      type: "review.completed",
-      subject: "task:external-review",
-      expected: "done",
-      owner: "app:external-review",
-      reviewAfterMs: 60_000,
-    };
-
-    deferAppTask(config, claim(config), {
-      disposition: "waiting",
-      summary: "Waiting for external review proof",
-      facts: ["review:queued"],
-      conditions: [condition],
-    });
-
-    expect(listRunnableAppTaskIds(config)).toEqual([]);
-    expect(
-      claimObservedAppTask(config, {
-        taskId: "human-request",
-        appAgent: "app-owner",
-        handler: "agent",
-      }).kind,
-    ).toBe("waiting");
-
-    makeConditionReviewDue(config, condition.id);
-
-    expect(listRunnableAppTaskIds(config)).toEqual(["human-request"]);
-    const review = claim(config);
-    expect(readTaskSnapshot(config).attempts?.[review.attemptId]?.reason).toBe("condition-review-checkpoint-missed");
-    expect(review.trigger).toMatchObject({
-      type: "project.task.condition-review.missed",
-      data: {
-        taskId: "human-request",
-        conditionIds: [condition.id],
-      },
-    });
-
-    deferAppTask(config, review, {
-      disposition: "waiting",
-      summary: "Checkpoint reviewed; the same external result is still pending",
-      facts: ["review:still-running"],
-      conditions: [condition],
-    });
-    expect(listRunnableAppTaskIds(config)).toEqual([]);
-  });
-
-  it.each(["redeclared", "retained", "empty-delta", "additional-delta"])(
-    "paces repeated reviews of an unchanged %s wait",
-    (route) => {
+  it.each([false, true])(
+    "keeps new and legacy waits quiet across recovery checks and restart (legacy: %j)",
+    (legacy) => {
       const config = fixture();
+      const startedAt = Date.now();
       const condition = {
-        id: "external-review-finished",
-        type: "review.completed",
-        subject: "task:external-review",
-        expected: "done",
-        owner: "app:external-review",
-        reviewAfterMs: 60_000,
+        id: "approval",
+        type: "approval.submitted",
+        subject: "approval:draft",
+        expected: { field: "decision", equals: "approved" },
+        owner: "human:reviewer",
+        ...(legacy ? { reviewAfterMs: 60_000 } : {}),
       };
-      const additionalCondition = {
-        id: "independent-review-finished",
-        type: "review.completed",
-        subject: "task:independent-review",
-        expected: "done",
-        owner: "app:independent-review",
-        reviewAfterMs: 60_000,
-      };
-
-      deferAppTask(config, claim(config), {
-        disposition: "waiting",
-        summary: "Waiting for external review proof",
-        facts: ["review:queued"],
-        conditions: [condition],
-      });
-
-      for (let reviewAttempt = 1; reviewAttempt <= 5; reviewAttempt += 1) {
-        makeConditionReviewDue(config, condition.id);
-
-        const review = claim(config);
-        expect(review.trigger).toMatchObject({
-          type: "project.task.condition-review.missed",
-          data: {
-            conditionIds: [condition.id],
-          },
-        });
-        expect(review.trigger?.data).not.toHaveProperty("reviewAttempt");
-        expect(review.trigger?.data).not.toHaveProperty("finalReview");
-        deferAppTask(config, review, {
+      try {
+        deferAppTask(config, claim(config), {
           disposition: "waiting",
-          summary: "The same external result is still pending",
-          facts: [`review:unchanged:${reviewAttempt}`],
-          ...(route === "redeclared"
-            ? { conditions: [condition] }
-            : route === "empty-delta"
-              ? { conditions: [] }
-              : route === "additional-delta"
-                ? { conditions: [additionalCondition] }
-                : {}),
+          summary: "Await approval",
+          conditions: [condition],
         });
-        expect(listRunnableAppTaskIds(config)).toEqual([]);
-        expect(config.resourceStore.nextDueAt()).toBeGreaterThan(Date.now());
-        expect(readTaskSnapshot(config).conditions?.[condition.id]?.status.state).toBe("unknown");
-        if (reviewAttempt === 2) {
-          config.resourceStore.close();
-          config.resourceStore = AppTaskResourceStore.openStandalone(
-            join(config.appDir, "../..", "host.sqlite"),
-            "sample",
+        const before = readTaskSnapshot(config);
+        // Old persisted indexes may still say the Condition review is due.
+        config.resourceStore.setRecoveryState("human-request", { nextCheckAt: startedAt - 1 });
+        for (let cycle = 1; cycle <= 5; cycle++) {
+          setSystemTime(startedAt + cycle * 600_000);
+          expect(config.resourceStore.listRecoveryCandidates().items.map((row) => row.taskId)).toContain(
+            "human-request",
           );
           expect(listRunnableAppTaskIds(config)).toEqual([]);
+          expect(
+            claimObservedAppTask(config, { taskId: "human-request", appAgent: "app-owner", handler: "agent" }).kind,
+          ).toBe("waiting");
           expect(config.resourceStore.nextDueAt()).toBeGreaterThan(Date.now());
+          const after = readTaskSnapshot(config);
+          expect(after.attempts).toEqual(before.attempts);
+          expect(after.conditions).toEqual(before.conditions);
+          expect(after.resources).toEqual(before.resources);
+          if (cycle === 2) {
+            config.resourceStore.close();
+            config.resourceStore = AppTaskResourceStore.openStandalone(
+              join(config.appDir, "../..", "host.sqlite"),
+              "sample",
+            );
+          }
         }
+        expect(
+          trackAppTaskConditionEventForTasks(
+            config,
+            {
+              type: "approval.submitted",
+              eventId: 501,
+              data: { approval: "draft", decision: "approved" },
+            },
+            ["human-request"],
+          ),
+        ).toHaveLength(1);
+        expect(claim(config).events.map(({ event }) => event.eventId)).toEqual([501]);
+      } finally {
+        config.resourceStore.close();
       }
-
-      const state = readTaskSnapshot(config);
-      expect(state.conditions?.[condition.id]?.spec.reviewAfterMs).toBe(60_000);
-      expect(listRunnableAppTaskIds(config)).toEqual([]);
-      expect(config.resourceStore.nextDueAt()).not.toBeNull();
-      config.resourceStore.close();
     },
   );
+
+  it("runs one explicitly chosen review without renewing it or changing independent waits", () => {
+    const config = fixture();
+    const startedAt = Date.now();
+    const reviewAt = startedAt + 600_000;
+    try {
+      deferAppTask(config, claim(config), {
+        disposition: "waiting",
+        summary: "Reconsider the stalled review once",
+        reviewAt,
+        conditions: [
+          {
+            id: "approval",
+            type: "approval.submitted",
+            subject: "approval:draft",
+            expected: true,
+            owner: "human:reviewer",
+            reviewAfterMs: 60_000,
+          },
+        ],
+      });
+      const conditions = readTaskSnapshot(config).conditions;
+      setSystemTime(startedAt + 300_001);
+      expect(
+        claimObservedAppTask(config, { taskId: "human-request", appAgent: "app-owner", handler: "agent" }).kind,
+      ).toBe("waiting");
+      expect(config.resourceStore.nextDueAt()).toBe(reviewAt);
+      setSystemTime(reviewAt + 1);
+      expect(listRunnableAppTaskIds(config)).toEqual(["human-request"]);
+      const review = claim(config);
+      expect(review.trigger?.type).toBe("project.task.review-at.reached");
+      deferAppTask(config, review, { disposition: "waiting", summary: "Wait for the actual decision" });
+      setSystemTime(reviewAt + 3_600_000);
+      expect(listRunnableAppTaskIds(config)).toEqual([]);
+      expect(
+        claimObservedAppTask(config, { taskId: "human-request", appAgent: "app-owner", handler: "agent" }).kind,
+      ).toBe("waiting");
+      expect(readTaskSnapshot(config).conditions).toEqual(conditions);
+      expect(Object.keys(readTaskSnapshot(config).attempts ?? {})).toHaveLength(2);
+    } finally {
+      config.resourceStore.close();
+    }
+  });
 
   it("replaces an obsolete recovery date with the declared review checkpoint", () => {
     const config = fixture();

@@ -1,5 +1,5 @@
 import { isDeepStrictEqual } from "node:util";
-import type { AppInput, AppInputSource } from "@may-agent/sdk";
+import type { AppInput, AppInputSource, ConversationTurnResult } from "@may-agent/sdk";
 import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
@@ -23,6 +23,8 @@ export type MalformedConversationInputRecoveryPlan = {
     taskAdmissionKey: string;
     source: AppInputSource;
     input: AppInput;
+    /** A legacy follow-up reused an accepted Conversation input ID for different work. */
+    acceptedTurn?: { attemptId: string; input: AppInput };
   };
   taskFence: {
     resourceVersion: number;
@@ -78,8 +80,44 @@ function exactInputEvent(entry: AppTaskTriggerEvent, plan: MalformedConversation
 function isExactMalformedItem(
   item: AppInboxItem | null,
   plan: MalformedConversationInputRecoveryPlan,
+  context: AppTaskContext,
 ): item is AppInboxItem {
   const malformed = plan.malformed;
+  if (malformed.acceptedTurn) {
+    const attempt = context.resourceStore.readAttempt(malformed.acceptedTurn.attemptId);
+    const accepted = attempt?.acceptedResult;
+    const followUp = (accepted?.result as { conversation?: ConversationTurnResult } | undefined)?.conversation
+      ?.followUp;
+    const admissionKey = `conversation-input:${malformed.inputId}`;
+    const admission = context.resourceStore.readTaskContext({ taskIds: [], admissionIds: [admissionKey] })
+      .appTaskAdmissions?.[admissionKey];
+    return Boolean(
+      item &&
+      item.id === malformed.inputId &&
+      item.appId === malformed.appId &&
+      item.status === "done" &&
+      !item.lease &&
+      !item.targetTaskId &&
+      item.conversationId === plan.recovery.conversationId &&
+      item.executionTaskId === malformed.taskId &&
+      item.originEventId === malformed.originEventId &&
+      item.idempotencyKey === malformed.idempotencyKey &&
+      item.taskAdmissionKey === admissionKey &&
+      item.source.kind === "system" &&
+      isDeepStrictEqual(item.source, malformed.source) &&
+      isDeepStrictEqual(item.input, malformed.acceptedTurn.input) &&
+      accepted &&
+      isDeepStrictEqual(item.result?.result, accepted.result) &&
+      attempt?.taskId === malformed.taskId &&
+      admission?.taskId === malformed.taskId &&
+      admission.resultAttemptId === malformed.acceptedTurn.attemptId &&
+      accepted.inputKeys?.includes(admissionKey) &&
+      followUp?.appId === malformed.appId &&
+      followUp.task?.appId === malformed.appId &&
+      followUp.task.taskId === malformed.taskId &&
+      isDeepStrictEqual(followUp.input, malformed.input),
+    );
+  }
   return Boolean(
     item &&
     item.id === malformed.inputId &&
@@ -107,10 +145,9 @@ function exactCompletedRepair(
 ): MalformedConversationInputRecoveryResult | null {
   const old = getAppInboxItem(db, plan.malformed.inputId);
   if (
-    !isExactMalformedItem(old, plan) ||
-    old.status !== "done" ||
-    old.handling?.phase !== "failed" ||
-    old.handling.reason !== FAILURE_REASON
+    !isExactMalformedItem(old, plan, context) ||
+    (!plan.malformed.acceptedTurn &&
+      (old.status !== "done" || old.handling?.phase !== "failed" || old.handling.reason !== FAILURE_REASON))
   )
     return null;
   const corrected = listAppInboxItems(db, {
@@ -123,8 +160,7 @@ function exactCompletedRepair(
     corrected.conversationId !== plan.recovery.conversationId ||
     corrected.targetTaskId !== undefined ||
     corrected.originEventId !== plan.malformed.originEventId ||
-    corrected.source.kind !== plan.malformed.source.kind ||
-    corrected.source.id !== plan.malformed.source.id ||
+    !isDeepStrictEqual(corrected.source, plan.malformed.source) ||
     !isDeepStrictEqual(corrected.input, plan.malformed.input) ||
     corrected.executionTaskId !== plan.malformed.taskId ||
     corrected.taskAdmissionKey !== `conversation-input:${corrected.id}`
@@ -172,7 +208,11 @@ export function recoverMalformedConversationInput(
   }))
     required(value, field);
   if (context.resourceStore.appId !== malformed.appId) throw new Error("Recovery context belongs to another App");
-  if (malformed.taskAdmissionKey !== `task:${malformed.inputId}`)
+  const expectedKey = malformed.acceptedTurn
+    ? `conversation-follow-up:${malformed.appId}:${malformed.inputId}`
+    : `task:${malformed.inputId}`;
+  if (malformed.acceptedTurn) required(malformed.acceptedTurn.attemptId, "acceptedTurn.attemptId");
+  if (malformed.taskAdmissionKey !== expectedKey)
     throw new Error("Malformed admission key must be the exact input admission");
   if (recovery.idempotencyKey === malformed.idempotencyKey)
     throw new Error("Recovery requires a distinct idempotency key");
@@ -201,7 +241,7 @@ export function recoverMalformedConversationInput(
         throw new Error("Recovery idempotency key is already used by different input");
 
       const item = getAppInboxItem(context.resourceStore.db, malformed.inputId);
-      if (!isExactMalformedItem(item, plan) || item.status !== "handling")
+      if (!isExactMalformedItem(item, plan, context) || (!malformed.acceptedTurn && item.status !== "handling"))
         throw new Error("Malformed inbox tuple is stale or mismatched");
       const task = context.resourceStore.readTask(malformed.taskId);
       if (
@@ -271,26 +311,30 @@ export function recoverMalformedConversationInput(
       });
       if (!committed) throw new Error("Conversation Task fence changed during recovery");
 
-      const terminal = context.resourceStore.db
-        .prepare(
-          `UPDATE app_inbox_items SET status = 'done', handling = ?, result = NULL,
+      // A follow-up's source Turn was legitimately accepted. Its inbox row and
+      // accepted result remain history; only the incompatible admission is replaced.
+      if (!malformed.acceptedTurn) {
+        const terminal = context.resourceStore.db
+          .prepare(
+            `UPDATE app_inbox_items SET status = 'done', handling = ?, result = NULL,
          available_at = NULL, review_at = NULL, lease_owner = NULL, lease_expires_at = NULL,
          completed_at = ?, changed_at = ?, updated_at = ?
          WHERE id = ? AND app_id = ? AND status = 'handling' AND origin_event_id = ?
            AND target_task_id = ? AND task_admission_key = ? AND result IS NULL`,
-        )
-        .run(
-          JSON.stringify({ phase: "failed", reason: FAILURE_REASON }),
-          now,
-          now,
-          now,
-          malformed.inputId,
-          malformed.appId,
-          malformed.originEventId,
-          malformed.taskId,
-          malformed.taskAdmissionKey,
-        );
-      if (terminal.changes !== 1) throw new Error("Malformed inbox tuple changed during recovery");
+          )
+          .run(
+            JSON.stringify({ phase: "failed", reason: FAILURE_REASON }),
+            now,
+            now,
+            now,
+            malformed.inputId,
+            malformed.appId,
+            malformed.originEventId,
+            malformed.taskId,
+            malformed.taskAdmissionKey,
+          );
+        if (terminal.changes !== 1) throw new Error("Malformed inbox tuple changed during recovery");
+      }
 
       const recovered = admitConversationTaskInput(context, {
         appId: malformed.appId,

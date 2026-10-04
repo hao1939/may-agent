@@ -47,8 +47,7 @@ function normalizeAgentRepoPath(path: string, layout: RepoLayout = "legacy-agent
       normalized.startsWith("agents/") ||
       normalized.startsWith("shared/") ||
       normalized.startsWith("projects/") ||
-      normalized.startsWith(".lab/") ||
-      normalized.startsWith("gym/")
+      normalized.startsWith(".lab/")
     ) {
       return normalized;
     }
@@ -59,7 +58,6 @@ function normalizeAgentRepoPath(path: string, layout: RepoLayout = "legacy-agent
   if (
     normalized.startsWith("shared/") ||
     normalized.startsWith(".lab/") ||
-    normalized.startsWith("gym/") ||
     /^[^/]+\//.test(normalized)
   ) {
     return normalized;
@@ -179,7 +177,7 @@ function runGit(args: string[], cwd: string, timeoutMs: number): Promise<string>
  * Create a beforeToolCall hook that guards finish() for uncommitted agent changes.
  *
  * Checks `git status --porcelain` in the app repo for files under
- * `agents/<agentName>/`, `shared/`, `projects/`, `.lab/`, and `gym/`. The
+ * `agents/<agentName>/`, `shared/`, `projects/`, `.lab/`, and App-local files. The
  * legacy `<projectRoot>/agents` repo layout is still accepted during migration.
  * If uncommitted changes
  * exist, emits a signal with instructions to commit or restore them.
@@ -212,7 +210,6 @@ export function createCommitGuard(
         "shared/",
         ...(repo.layout === "app" ? ["projects/"] : []),
         ".lab/",
-        "gym/",
       ];
 
       const statusOutput = await runGit(

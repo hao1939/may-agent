@@ -1,5 +1,8 @@
+import { readVerifiedApprovalDecision } from "@may-agent/sdk";
+import { isDeepStrictEqual } from "node:util";
 import { commitTaskMutation, type AppTaskContext, type TaskTree } from "./app-task-store.js";
-import type { AppTaskCondition as AppTaskCondition } from "./app-task-state.js";
+import { taskEventPredatesReopening, type AppTaskCondition } from "./app-task-state.js";
+import { isHumanActionOwner } from "./human-condition.js";
 
 export type AppTaskConditionWake = {
   conditionId: string;
@@ -56,6 +59,22 @@ function eventField(event: Record<string, unknown>, ...names: string[]): unknown
     if (data[name] !== undefined) return data[name];
   }
   return undefined;
+}
+
+function approvalTargetsTask(
+  appId: string,
+  taskId: string,
+  taskGeneration: number,
+  condition: AppTaskCondition,
+  event: Record<string, unknown>,
+): boolean {
+  if (condition.spec.type !== "project.approval.submitted" || !isHumanActionOwner(condition.spec.owner)) return true;
+  const proposal = isRecord(event.data) && isRecord(event.data.proposal) ? event.data.proposal : {};
+  return (
+    eventField(event, "appId") === appId &&
+    eventField(event, "taskId") === taskId &&
+    proposal.taskGeneration === taskGeneration
+  );
 }
 
 function normalizedState(value: unknown): string {
@@ -202,6 +221,33 @@ function matchesExpectedRecord(expected: Record<string, unknown>, event: Record<
 
 function matches(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
   if (condition.spec.type !== event.type) return false;
+  if (condition.spec.type === "project.approval.submitted" && isHumanActionOwner(condition.spec.owner)) {
+    const approval = readVerifiedApprovalDecision({
+      type: condition.spec.type,
+      source: typeof event.source === "string" ? event.source : undefined,
+      data: isRecord(event.data) ? event.data : event,
+    });
+    if (!approval) return false;
+    const { proposal, decision } = approval;
+    const expected = condition.spec.expected;
+    if (
+      proposal.conditionId !== condition.metadata.id ||
+      proposal.conditionGeneration !== condition.metadata.generation ||
+      proposal.subject !== condition.spec.subject ||
+      proposal.requestedAction !== condition.spec.requestedAction?.trim() ||
+      !isDeepStrictEqual(proposal.expected, expected) ||
+      !isRecord(expected)
+    )
+      return false;
+    const allowed = [expected.anyOf, expected.allowedDecisions, expected.acceptedDecisions].filter(Array.isArray);
+    // The exact proposal supplies the reviewed scope. The human supplies only
+    // the decision; check all constraints here at both ingress and Task wake.
+    return (
+      allowed.length > 0 &&
+      allowed.every((choices) => choices.some((choice: unknown) => isDeepStrictEqual(choice, decision))) &&
+      matchesExpectedRecord(expected, { data: { ...expected, decision } })
+    );
+  }
   // Level observations are not immutable historical facts. A newly declared
   // wait must not be satisfied by an older state, check, or pulse replayed from
   // the event journal. Only an observation made at or after the Condition was
@@ -288,7 +334,9 @@ function applyConditionEvent(
       (resource) =>
         ["waiting", "running", "pending"].includes(resource.status.phase) &&
         resource.status.conditionIds?.includes(id) &&
-        (!allowedTaskIds || allowedTaskIds.has(resource.metadata.id)),
+        !taskEventPredatesReopening(resource, event) &&
+        (!allowedTaskIds || allowedTaskIds.has(resource.metadata.id)) &&
+        approvalTargetsTask(tree.project ?? "", resource.metadata.id, resource.metadata.generation, condition, event),
     );
     // Conditions are task-local wait state, not a second event journal. Once
     // no live waiting/running task owns one, replaying facts into it has no
@@ -415,12 +463,19 @@ export function matchingAppTaskConditionTaskIds(
 ): string[] {
   const allowed = allowedTaskIds ? new Set(allowedTaskIds) : undefined;
   const eventType = typeof event.type === "string" ? event.type : "";
-  const routes = config.resourceStore.readConditionRoutes(eventType);
+  const routes = config.resourceStore.readConditionRoutes(eventType, allowed);
   const matched = new Set<string>();
   for (const { condition, taskIds } of routes ?? []) {
     if (!matchesAppTaskCondition(condition, event)) continue;
     for (const taskId of taskIds) {
       if (allowed && !allowed.has(taskId)) continue;
+      if (
+        condition.spec.type === "project.approval.submitted" && isHumanActionOwner(condition.spec.owner) &&
+        !approvalTargetsTask(config.resourceStore.appId, taskId,
+          config.resourceStore.readTask(taskId)?.metadata.generation ?? -1, condition, event)
+      ) {
+        continue;
+      }
       matched.add(taskId);
     }
   }

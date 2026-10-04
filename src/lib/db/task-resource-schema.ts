@@ -60,6 +60,9 @@ CREATE TABLE IF NOT EXISTS app_task_attempts (
 );
 CREATE INDEX IF NOT EXISTS idx_app_task_attempts_task
   ON app_task_attempts(app_id, task_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_app_task_attempts_failover
+  ON app_task_attempts(started_at)
+  WHERE json_extract(attempt_json, '$.failoverFromAttemptId') IS NOT NULL;
 DROP INDEX IF EXISTS idx_app_task_attempts_execution_failure;
 CREATE INDEX IF NOT EXISTS idx_app_task_attempts_expired
   ON app_task_attempts(app_id, lease_until, task_id) WHERE state = 'running' AND lease_until IS NOT NULL;
@@ -85,6 +88,8 @@ CREATE TABLE IF NOT EXISTS app_task_condition_routes (
 );
 CREATE INDEX IF NOT EXISTS idx_app_task_condition_routes_task
   ON app_task_condition_routes(app_id, task_id, condition_id);
+CREATE INDEX IF NOT EXISTS idx_app_task_condition_routes_condition
+  ON app_task_condition_routes(condition_id, app_id, task_id);
 CREATE TABLE IF NOT EXISTS app_task_receipts (
   app_id TEXT NOT NULL, receipt_id TEXT NOT NULL, parent_id TEXT NOT NULL,
   completed_at INTEGER NOT NULL, receipt_json TEXT NOT NULL,
@@ -111,7 +116,7 @@ CREATE INDEX IF NOT EXISTS idx_app_task_cancellations_time
 CREATE TABLE IF NOT EXISTS app_task_control_receipts (
   control_key TEXT PRIMARY KEY,
   app_id TEXT NOT NULL, task_id TEXT NOT NULL,
-  action TEXT NOT NULL CHECK (action IN ('retry', 'cancel')),
+  action TEXT NOT NULL CHECK (action IN ('retry', 'cancel', 'reopen')),
   expected_generation INTEGER NOT NULL,
   expected_resource_version INTEGER NOT NULL,
   applied_resource_version INTEGER NOT NULL,
@@ -128,9 +133,12 @@ CREATE TABLE IF NOT EXISTS app_task_admissions (
   app_id TEXT NOT NULL, task_id TEXT NOT NULL, admission_json TEXT NOT NULL,
   PRIMARY KEY(app_id, task_id)
 );
-CREATE INDEX IF NOT EXISTS idx_app_task_admissions_target
-  ON app_task_admissions(app_id, json_extract(admission_json, '$.taskId'),
+CREATE INDEX IF NOT EXISTS idx_app_task_admissions_target_text
+  ON app_task_admissions(app_id, CAST(json_extract(admission_json, '$.taskId') AS TEXT),
     json_extract(admission_json, '$.taskGeneration'));
+DROP INDEX IF EXISTS idx_app_task_admissions_target;
+CREATE INDEX IF NOT EXISTS idx_app_task_admissions_input
+  ON app_task_admissions(task_id, CAST(json_extract(admission_json, '$.inputEvent.data.request.id') AS TEXT));
 `;
 
 /** Rebuild compact delivery identities from retained Task input/attempt evidence. */
@@ -186,6 +194,23 @@ function migrateTaskEventReceipts(db: SqliteDb): void {
 
 /** Create the resource tables and migrate legacy JSON links once. */
 export function ensureTaskResourceSchema(db: SqliteDb): void {
+  const controls = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'app_task_control_receipts'")
+    .get() as { sql?: string } | null;
+  if (controls?.sql && !controls.sql.includes("'reopen'")) {
+    db.exec("SAVEPOINT task_control_reopen");
+    try {
+      db.exec("ALTER TABLE app_task_control_receipts RENAME TO app_task_control_receipts_old");
+      db.exec("DROP INDEX IF EXISTS idx_app_task_control_receipts_task");
+      db.exec(TASK_RESOURCE_SCHEMA);
+      db.exec("INSERT INTO app_task_control_receipts SELECT * FROM app_task_control_receipts_old");
+      db.exec("DROP TABLE app_task_control_receipts_old");
+      db.exec("RELEASE SAVEPOINT task_control_reopen");
+    } catch (error) {
+      db.exec("ROLLBACK TO SAVEPOINT task_control_reopen");
+      db.exec("RELEASE SAVEPOINT task_control_reopen");
+      throw error;
+    }
+  }
   db.exec(APP_INBOX_SCHEMA);
   const inboxColumns = new Set(
     db
@@ -195,6 +220,12 @@ export function ensureTaskResourceSchema(db: SqliteDb): void {
   );
   if (!inboxColumns.has("creator_json")) db.exec("ALTER TABLE app_inbox_items ADD COLUMN creator_json TEXT");
   if (!inboxColumns.has("recovery_json")) db.exec("ALTER TABLE app_inbox_items ADD COLUMN recovery_json TEXT");
+  // Create after the legacy recovery column migration, not in the initial DDL.
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_app_inbox_rejected_feedback ON app_inbox_items(id)
+    WHERE execution_task_id IS NULL AND status = 'done' AND waiting_on_kind IS NULL
+      AND json_extract(handling, '$.phase') = 'failed'
+      AND json_extract(recovery_json, '$."input-admission".fingerprint') IS NOT NULL
+      AND json_extract(recovery_json, '$."input-admission".reportedAt') IS NULL`);
   const needsConditionRouteBackfill = !db
     .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_task_condition_routes'")
     .get();

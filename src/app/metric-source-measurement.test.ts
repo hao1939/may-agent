@@ -6,13 +6,16 @@ import { applyDbSchema } from "../lib/db/schema.js";
 import { closeDb, getDb } from "../lib/requests.js";
 import { createMetricService } from "../lib/metrics.js";
 import { attachEventPersistence } from "./daemon-events.js";
-import { EventBus, EVENT_ROW_ID } from "./core/events/bus.js";
+import { EventBus, EVENT_ROW_ID, EVENT_RECORD_ONLY } from "./core/events/bus.js";
 import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.js";
+import { TASK_FAILOVER_METRIC } from "./adapters/reporting/task-failover-metrics.js";
 import {
   attachMetricSourceMeasurement,
   measureSourceMetrics,
-  type MetricSourceMeasurementRuntime,
+  evaluateMetrics,
+  type MetricPassRuntime,
   INTENTIONAL_OBSERVATION_EVENT_TYPES,
+  STALE_ACTIVE_METRIC_ID,
   STALE_ACTIVE_SOURCE_QUERY,
   SUBSCRIBER_FAILED_COUNT_METRIC_ID,
   SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY,
@@ -23,7 +26,7 @@ import {
 describe("source-query metric measurement", () => {
   let persistDir: string;
   let bus: EventBus;
-  let measurement: MetricSourceMeasurementRuntime;
+  let measurement: MetricPassRuntime;
   const originalAppRoot = process.env.APP_ROOT;
 
   beforeEach(() => {
@@ -62,11 +65,11 @@ describe("source-query metric measurement", () => {
       ],
       { stdin: "pipe", stdout: "pipe", stderr: "pipe", timeout: 5_000 },
     );
-    const run = db.run.bind(db);
+    const exec = db.exec.bind(db);
     let busyErrors = 0;
-    const runSpy = spyOn(db, "run").mockImplementation((sql, params) => {
+    const runSpy = spyOn(db, "exec").mockImplementation((sql) => {
       try {
-        return run(sql, params);
+        return exec(sql);
       } catch (error) {
         if (error instanceof Error && "code" in error && error.code === "SQLITE_BUSY") {
           // Release only after a real registration write encountered the lock.
@@ -179,6 +182,32 @@ describe("source-query metric measurement", () => {
     expect(db.prepare(UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY).get()).toEqual({ value: 2 });
   });
 
+  it("records optional observations as accepted facts while preserving real subscriber acceptance", () => {
+    const db = getDb(persistDir);
+    for (const type of ["runtime.daemon.heartbeat", "handler.workflow_dispatched", "skill.loaded"]) {
+      bus.emit({ type, [EVENT_RECORD_ONLY]: true, source: "fixture", owner: "agent:may", data: {} } as any);
+    }
+    bus.subscribe((event) =>
+      event.type === "skill.loaded" ? { accepted: true, by: "fixture-consumer", route: "direct" } : undefined,
+    );
+    bus.emit({
+      type: "skill.loaded",
+      [EVENT_RECORD_ONLY]: true,
+      source: "fixture",
+      owner: "agent:may",
+      data: {
+        name: "example", agent: "may", sessionId: "example", activation: "explicit",
+        scope: "shared", filePath: "example/SKILL.md", contentHash: "example",
+      },
+    });
+    const rows = db.prepare(`SELECT delivery_status, delivery_route, accepted_by FROM events
+      WHERE event_type IN ('runtime.daemon.heartbeat', 'handler.workflow_dispatched', 'skill.loaded') ORDER BY id`).all();
+    expect(rows).toHaveLength(4);
+    expect(rows.slice(0, 3).every((row) => row.delivery_status === "accepted" && row.delivery_route === "noop")).toBe(true);
+    expect(rows[3]).toMatchObject({ delivery_status: "accepted", accepted_by: "fixture-consumer", delivery_route: "direct" });
+    expect(db.prepare(UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY).get()).toEqual({ value: 0 });
+  });
+
   it("registers source measurement as passive observation, not synchronous acceptance", () => {
     const isolatedBus = new EventBus();
     let synchronousRegistrations = 0;
@@ -199,7 +228,7 @@ describe("source-query metric measurement", () => {
     expect(
       db.prepare("SELECT owner, source_query FROM metrics WHERE id = ?").get(SUBSCRIBER_FAILED_COUNT_METRIC_ID),
     ).toEqual({
-      owner: "may",
+      owner: "system:host",
       source_query: SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY,
     });
 
@@ -251,6 +280,8 @@ describe("source-query metric measurement", () => {
     });
     const triggerEventId = trigger[EVENT_ROW_ID]!;
     await measurement.idle();
+    await evaluateMetrics({ bus, persistDir });
+
 
     expect(db.prepare("SELECT current FROM metrics WHERE id = ?").get(SUBSCRIBER_FAILED_COUNT_METRIC_ID)).toEqual({
       current: 4,
@@ -309,6 +340,8 @@ describe("source-query metric measurement", () => {
     });
     const triggerEventId = trigger[EVENT_ROW_ID]!;
     await measurement.idle();
+    await evaluateMetrics({ bus, persistDir });
+
 
     const metric = db
       .prepare("SELECT current, updated_at FROM metrics WHERE id = ?")
@@ -374,25 +407,196 @@ describe("source-query metric measurement", () => {
     });
   });
 
-  it("skips stored mutation statements instead of executing them", async () => {
+  it("uses producer then caller then completion time without changing late or rate semantics", async () => {
     const db = getDb(persistDir);
-    db.run(
-      `INSERT INTO metrics
-         (id, name, type, owner, threshold, priority, status, source_query, updated_at, alert_op)
-       VALUES ('unsafe.metric', 'Unsafe', 'gauge', 'may', 1, 'P1', 'active',
-               'DELETE FROM metric_alerts', 0, '>')`,
-    );
+    const metrics = createMetricService({ getDb: () => db });
+    metrics.define({ id: "time.producer", sourceQuery: "SELECT 1 AS value, 111 AS measuredAt" });
+    metrics.define({ id: "time.caller", sourceQuery: "SELECT 2 AS value" });
 
-    bus.emit({
-      type: "trigger.metrics-snapshot",
-      source: "control-socket",
-      owner: "agent:may",
-      data: {},
+    await measureSourceMetrics({
+      bus,
+      persistDir,
+      measuredAt: 222,
+      isDue: ({ id }) => id === "time.producer" || id === "time.caller",
     });
-    await measurement.idle();
+    expect(db.prepare("SELECT metric_id, measured_at FROM metric_snapshots WHERE metric_id LIKE 'time.%' ORDER BY metric_id").all())
+      .toEqual([
+        { metric_id: "time.caller", measured_at: 222 },
+        { metric_id: "time.producer", measured_at: 111 },
+      ]);
 
-    expect(db.prepare("SELECT current FROM metrics WHERE id = 'unsafe.metric'").get()).toEqual({
-      current: null,
+    const sampler = join(persistDir, "completion.ts");
+    writeFileSync(sampler, `await Bun.sleep(50); console.log(JSON.stringify({ samples: { "completion.a": 3, "completion.b": 4 } }));`);
+    const command = `'${process.execPath.replaceAll("'", "'\\''")}' completion.ts`;
+    for (const id of ["completion.a", "completion.b"]) metrics.define({ id, sourceCommand: command });
+    const requestedAt = Date.now();
+    await measureSourceMetrics({ bus, persistDir, isDue: ({ id }) => id.startsWith("completion.") });
+    const completions = db.prepare(
+      "SELECT measured_at FROM metric_snapshots WHERE metric_id LIKE 'completion.%' ORDER BY metric_id",
+    ).all() as Array<{ measured_at: number }>;
+    expect(completions).toEqual([{ measured_at: completions[0]!.measured_at }, { measured_at: completions[0]!.measured_at }]);
+    expect(completions[0]!.measured_at).toBeGreaterThan(requestedAt);
+
+    metrics.define({ id: "ordering.late", sourceQuery: "SELECT 1 AS value" });
+    metrics.record("ordering.late", 9, { measuredAt: 2_000 });
+    await measureSourceMetrics({ bus, persistDir, measuredAt: 1_000, isDue: ({ id }) => id === "ordering.late" });
+    expect(metrics.get("ordering.late")!.observation).toMatchObject({ value: 9, measuredAt: 2_000 });
+
+    metrics.define({
+      id: "ordering.rate", type: "counter", threshold: 999_999, alertOp: ">",
+      sourceQuery: "SELECT 2 AS value", config: { alert: { mode: "rate", max_rate: 2_000, per: "hour" } },
+    });
+    metrics.record("ordering.rate", 1, { measuredAt: 1_000 });
+    await measureSourceMetrics({ bus, persistDir, measuredAt: 2_000, isDue: ({ id }) => id === "ordering.rate" });
+    expect(metrics.evaluate("ordering.rate")[0]).toMatchObject({ status: "breached", calculation: { value: 2 } });
+  });
+
+  it("enforces read-only queries while preserving SQLite first-statement behavior and writer continuity", async () => {
+    const db = getDb(persistDir);
+    db.exec("CREATE TABLE proof_marker(value INTEGER NOT NULL); INSERT INTO proof_marker VALUES (1)");
+    const metrics = createMetricService({ getDb: () => db });
+    const definitions = [
+      {
+        id: "boundary.cte-write",
+        sourceQuery: "WITH fixture AS (SELECT 1) UPDATE proof_marker SET value = 2 RETURNING value",
+      },
+      { id: "boundary.quoted-semicolon", sourceQuery: "SELECT 3 AS value, 'first; second' AS note" },
+      { id: "boundary.healthy", sourceQuery: "SELECT value FROM proof_marker" },
+      { id: "boundary.trailing-tail", sourceQuery: "SELECT 5 AS value; UPDATE proof_marker SET value = 99" },
+      {
+        id: "boundary.observes-writer",
+        sourceQuery: "SELECT COUNT(*) AS value FROM metric_snapshots WHERE metric_id = 'boundary.healthy'",
+      },
+    ];
+    for (const definition of definitions) {
+      metrics.define({
+        ...definition,
+        name: definition.id,
+        type: "gauge",
+        owner: "fixture",
+        threshold: 0,
+        alertOp: ">",
+      });
+    }
+
+    const result = await measureSourceMetrics({
+      bus,
+      persistDir,
+      isDue: ({ id }) => id.startsWith("boundary."),
+    });
+
+    expect(result).toEqual({
+      measured: [
+        "boundary.healthy",
+        "boundary.observes-writer",
+        "boundary.quoted-semicolon",
+        "boundary.trailing-tail",
+      ],
+      skipped: ["boundary.cte-write"],
+      failures: [{ id: "boundary.cte-write", reason: expect.stringContaining("readonly") }],
+    });
+    expect(db.prepare("SELECT value FROM proof_marker").get()).toEqual({ value: 1 });
+    expect(metrics.get("boundary.quoted-semicolon")!.observation).toMatchObject({
+      value: 3,
+      note: "first; second",
+    });
+    expect(metrics.get("boundary.observes-writer")!.observation?.value).toBe(1);
+
+    await evaluateMetrics({ bus, persistDir });
+    expect(
+      db.prepare("SELECT metric_id FROM metric_alerts WHERE metric_id LIKE 'boundary.%' ORDER BY metric_id").all(),
+    ).toEqual([
+      { metric_id: "boundary.healthy" },
+      { metric_id: "boundary.observes-writer" },
+      { metric_id: "boundary.quoted-semicolon" },
+      { metric_id: "boundary.trailing-tail" },
+    ]);
+  });
+
+  it("isolates a rejected BEGIN from a later source read after an intervening writer update", async () => {
+    const db = getDb(persistDir);
+    db.exec("CREATE TABLE transaction_marker(value INTEGER NOT NULL); INSERT INTO transaction_marker VALUES (7)");
+    const metrics = createMetricService({ getDb: () => db });
+    for (const definition of [
+      { id: "transaction.begin", sourceQuery: "BEGIN" },
+      { id: "transaction.healthy", sourceQuery: "SELECT value FROM transaction_marker" },
+      {
+        id: "transaction.observes-writer",
+        sourceQuery: "SELECT COUNT(*) AS value FROM metric_snapshots WHERE metric_id = 'transaction.healthy'",
+      },
+    ]) {
+      metrics.define({
+        ...definition,
+        name: definition.id,
+        type: "gauge",
+        owner: "fixture",
+        threshold: 0,
+        alertOp: ">",
+      });
+    }
+
+    const result = await measureSourceMetrics({
+      bus,
+      persistDir,
+      isDue: ({ id }) => id.startsWith("transaction."),
+    });
+
+    expect(result).toEqual({
+      measured: ["transaction.healthy", "transaction.observes-writer"],
+      skipped: ["transaction.begin"],
+      failures: [{ id: "transaction.begin", reason: "Source returned no finite numeric sample" }],
+    });
+    expect(metrics.get("transaction.observes-writer")!.observation?.value).toBe(1);
+    expect(
+      db
+        .prepare(
+          `SELECT json_extract(data, '$.reason') AS reason
+           FROM events
+           WHERE event_type = 'metric.measurement.failed'
+             AND json_extract(data, '$.metricId') = 'transaction.begin'`,
+        )
+        .get(),
+    ).toEqual({ reason: "Source returned no finite numeric sample" });
+  });
+
+  it("keeps the writer usable when a failed source reader closes and a later reader reopens", async () => {
+    const db = getDb(persistDir);
+    db.exec("CREATE TABLE recovery_marker(value INTEGER NOT NULL); INSERT INTO recovery_marker VALUES (1)");
+    const metrics = createMetricService({ getDb: () => db });
+    metrics.define({
+      id: "reader.failure",
+      name: "Failed reader",
+      type: "gauge",
+      owner: "fixture",
+      sourceQuery: "SELECT value FROM missing_reader_fixture",
+      threshold: 0,
+      alertOp: ">",
+    });
+    metrics.define({
+      id: "reader.reopened",
+      name: "Reopened reader",
+      type: "gauge",
+      owner: "fixture",
+      sourceQuery: "SELECT value FROM recovery_marker",
+      threshold: 0,
+      alertOp: ">",
+    });
+
+    const failed = await measureSourceMetrics({ bus, persistDir, isDue: ({ id }) => id === "reader.failure" });
+    expect(failed).toEqual({
+      measured: [],
+      skipped: ["reader.failure"],
+      failures: [{ id: "reader.failure", reason: expect.stringContaining("missing_reader_fixture") }],
+    });
+
+    db.run("UPDATE recovery_marker SET value = 7");
+    const recovered = await measureSourceMetrics({ bus, persistDir, isDue: ({ id }) => id === "reader.reopened" });
+    expect(recovered).toEqual({ measured: ["reader.reopened"], skipped: [], failures: [] });
+    expect(metrics.get("reader.reopened")!.observation?.value).toBe(7);
+
+    await evaluateMetrics({ bus, persistDir });
+    expect(db.prepare("SELECT metric_id FROM metric_alerts WHERE metric_id = 'reader.reopened'").get()).toEqual({
+      metric_id: "reader.reopened",
     });
   });
 
@@ -437,7 +641,7 @@ describe("source-query metric measurement", () => {
       .all() as Array<{ source: string; owner: string; data: string }>;
     expect(failures).toHaveLength(2);
     expect(
-      failures.every((row) => row.source === "runtime:metric-source-measurement" && row.owner === "agent:may"),
+      failures.every((row) => row.source === "runtime:metric-source-measurement" && row.owner === "system:host"),
     ).toBe(true);
     const [command, query] = failures.map((row) => JSON.parse(row.data));
     expect(query).toEqual({
@@ -686,7 +890,7 @@ describe("source-query metric measurement", () => {
     await measurement.idle();
   });
 
-  it("yields control traffic between synchronously persisted metric observations", async () => {
+  it("yields control traffic between independently evaluated metrics", async () => {
     const db = getDb(persistDir);
     for (const id of ["yield.metric.1", "yield.metric.2"]) {
       db.run(
@@ -719,6 +923,8 @@ describe("source-query metric measurement", () => {
       data: { reason: "yield-between-observations" },
     });
     await measurement.idle();
+    expect(breachCount).toBe(0);
+    await evaluateMetrics({ bus, persistDir });
 
     expect(breachCount).toBe(2);
     expect(secondBreachSawControlTurn).toBe(true);
@@ -739,6 +945,7 @@ describe("source-query metric measurement", () => {
     insertSnapshot.run(SUBSCRIBER_FAILED_COUNT_METRIC_ID, now - 60_000);
     insertSnapshot.run(UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID, now - 60_000);
     for (const metric of WORKFLOW_OUTCOME_METRICS) insertSnapshot.run(metric.id, now - 60_000);
+    insertSnapshot.run(TASK_FAILOVER_METRIC.id, now - 60_000);
     insertMetric.run("query.fresh", "query fresh", "active", "SELECT 1 AS value", null, 300_000);
     insertSnapshot.run("query.fresh", now - 60_000);
     insertMetric.run("command.stale", "command stale", "active", null, "echo 1", 300_000);
@@ -752,6 +959,29 @@ describe("source-query metric measurement", () => {
     insertMetric.run("retired.stale", "retired", "retired", null, null, 300_000);
     insertSnapshot.run("retired.stale", now - 24 * 60 * 60_000);
 
-    expect(db.prepare(STALE_ACTIVE_SOURCE_QUERY).get()).toEqual({ value: 2 });
+    expect(db.prepare(STALE_ACTIVE_SOURCE_QUERY).get()).toMatchObject({ value: 2 });
+    const note = JSON.parse(String(db.prepare(STALE_ACTIVE_SOURCE_QUERY).get()!.note));
+    expect(note.examples.map((row: any) => row.metricId).sort()).toEqual(["command.stale", "push.long-stale"]);
+  });
+
+  it("gives new collectors a grace period and alerts when even one established collector goes stale", () => {
+    const db = getDb(persistDir);
+    const metrics = createMetricService({ getDb: () => db });
+    metrics.define({ id: "sample.collector", measureInterval: 300_000 });
+    expect(db.prepare(STALE_ACTIVE_SOURCE_QUERY).get()).toMatchObject({ value: 0 });
+    db.run("UPDATE metrics SET created_at = ? WHERE id = 'sample.collector'", [Date.now() - 16 * 60_000]);
+    // A future-dated observation cannot hide missing current evidence.
+    metrics.record("sample.collector", 0, { measuredAt: Date.now() + 60_000 });
+    const sample = db.prepare(STALE_ACTIVE_SOURCE_QUERY).get()!;
+    expect(sample).toMatchObject({ value: 1 });
+    // Migrated definitions may have no creation time. record() also writes the
+    // future measurement time into updated_at; neither is current evidence.
+    db.run("UPDATE metrics SET created_at = NULL WHERE id = 'sample.collector'");
+    expect(db.prepare(STALE_ACTIVE_SOURCE_QUERY).get()).toMatchObject({ value: 1 });
+    metrics.record(STALE_ACTIVE_METRIC_ID, Number(sample.value));
+    expect(metrics.evaluate(STALE_ACTIVE_METRIC_ID)[0]?.status).toBe("breached");
+    metrics.record("sample.collector", 0, { measuredAt: Date.now() - 1_000 });
+    metrics.record(STALE_ACTIVE_METRIC_ID, Number(db.prepare(STALE_ACTIVE_SOURCE_QUERY).get()!.value));
+    expect(metrics.evaluate(STALE_ACTIVE_METRIC_ID)[0]?.status).toBe("recovered");
   });
 });

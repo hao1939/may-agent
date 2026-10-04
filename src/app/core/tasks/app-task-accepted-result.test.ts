@@ -110,16 +110,18 @@ describe("accepted Task outcome facts", () => {
     expect(completeAppTask(config, current, measured).status).toBe("applied");
     expect(config.resourceStore.readAttempt(current.attemptId)).toHaveProperty("acceptedResult", {
       state: "converged",
+      inputKeys: [],
       ...measured,
     });
   });
 
-  it("does not label output awaiting a correction as accepted completion", () => {
+  it("accepts considered output while preserving a later correction", () => {
     const { config, claim } = fixture();
     const old = claim();
     recordAppTaskTrigger(config, "work", { type: "sample.correction", eventId: 2, data: { sample: "corrected" } });
     expect(completeAppTask(config, old, measured)).toMatchObject({ status: "applied", taskContinues: true });
-    expect(config.resourceStore.readAttempt(old.attemptId)).not.toHaveProperty("acceptedResult");
+    expect(config.resourceStore.readAttempt(old.attemptId)).toMatchObject({ acceptedResult: measured });
+    expect(config.resourceStore.readTrigger("work")?.event.eventId).toBe(2);
     const corrected = claim();
     completeAppTask(config, corrected, {
       summary: "Corrected measurement",
@@ -192,6 +194,7 @@ describe("accepted Task outcome facts", () => {
     expect(config.resourceStore.readAttempt(second.attemptId)).not.toHaveProperty("acceptedResult");
     expect(config.resourceStore.readAttempt(first.attemptId)).toHaveProperty("acceptedResult", {
       state: "converged",
+      inputKeys: [],
       ...measured,
     });
   });
@@ -241,6 +244,7 @@ describe("accepted Task outcome facts", () => {
     expect(restored.resourceStore.readAttempt(current.attemptId)?.acceptedResult).toEqual(accepted);
     expect(restored.resourceStore.readAttempt(current.attemptId)).toHaveProperty("acceptedResult", {
       state: "converged",
+      inputKeys: [],
       ...measured,
     });
   });

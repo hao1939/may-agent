@@ -1,3 +1,4 @@
+import type { TaskChangeReceipt } from "@may-agent/sdk";
 import { storedResultFacts } from "./result-facts.js";
 import { isDeepStrictEqual } from "node:util";
 import { taskViewPhaseSql } from "./task-view-phase.js";
@@ -9,13 +10,14 @@ import {
   ensureTaskResourceSchema,
 } from "../../../lib/db/task-resource-schema.js";
 import { indexTaskReference } from "./task-reference-index.js";
-import { pendingTaskExecutionRetryAt } from "../tasks/app-task-state.js";
+import { CONDITION_RECOVERY_INTERVAL_MS, pendingTaskExecutionRetryAt } from "../tasks/app-task-state.js";
 import type {
   AppTaskAttempt,
   AppTaskCancellation,
   AppTaskCondition,
   AppTaskResource,
   AppTaskTrigger,
+  AppTaskWorkspace,
 } from "../tasks/app-task-state.js";
 import {
   normalizeTaskStateInPlace,
@@ -155,7 +157,7 @@ export type AppTaskControlReceipt = {
   controlKey: string;
   appId: string;
   taskId: string;
-  action: "retry" | "cancel";
+  action: "retry" | "cancel" | "reopen";
   expectedGeneration: number;
   expectedResourceVersion: number;
   appliedResourceVersion: number;
@@ -180,6 +182,8 @@ export type AppTaskResourceMutation = {
   admissions?: Array<{ taskId: string; value: AppTaskAdmission }>;
   deleteAdmissionIds?: string[];
   cancellations?: AppTaskCancellation[];
+  /** Remove the active fence only while archiving it in a fenced reopen receipt. */
+  reopenTaskIds?: string[];
   controlReceipts?: AppTaskControlReceipt[];
 };
 
@@ -201,6 +205,13 @@ export class AppTaskResourceStore {
     db.prepare("INSERT OR IGNORE INTO app_task_store_meta(app_id, key, value) VALUES (?, 'revision', '0')").run(
       normalized,
     );
+    return new AppTaskResourceStore(db, normalized, false);
+  }
+
+  /** Inspect an installed Host database without creating App metadata or activating its seed. */
+  static inspectFromDb(db: SqliteDb, appId: string): AppTaskResourceStore {
+    const normalized = appId.trim().replace(/\.app$/, "");
+    if (!normalized) throw new Error("Task resource store requires an App id");
     return new AppTaskResourceStore(db, normalized, false);
   }
 
@@ -597,6 +608,62 @@ export class AppTaskResourceStore {
     return row?.attempt_json ? parseTaskAttempt(row.attempt_json) : null;
   }
 
+  /** Workspace ownership survives bounded context, non-workspace attempts and clock changes. */
+  readTaskWorkspace(taskId: string, generation: number): AppTaskWorkspace | undefined {
+    const reference = this.readTask(taskId)?.status.workspaceAttemptId;
+    if (reference) {
+      const attempt = this.readAttempt(reference);
+      if (!attempt || attempt.taskId !== taskId || !attempt.workspace)
+        throw new Error(`Task ${taskId} has an invalid workspace attempt reference: ${reference}`);
+      return attempt.taskGeneration === generation ? attempt.workspace : undefined;
+    }
+    // Historical Tasks have no reference. Discover their last recorded workspace
+    // once using the old ordering, without the prompt's bounded history window.
+    // Preparation records the exact reference before another executor can run.
+    const row = this.db.prepare(`
+      SELECT attempt_json FROM app_task_attempts
+      WHERE app_id = ? AND task_id = ? AND task_generation = ?
+        AND json_extract(attempt_json, '$.workspace.kind') = 'task-worktree'
+      ORDER BY started_at DESC, attempt_id DESC LIMIT 1
+    `).get(this.appId, taskId, generation) as { attempt_json: string } | null;
+    return row ? parseTaskAttempt(row.attempt_json).workspace : undefined;
+  }
+
+  /** Exact same changes are reusable after a lost tool response or replacement attempt. */
+  readTaskChangeReceipt(taskId: string, generation: number, key: string): TaskChangeReceipt | null {
+    const row = this.db
+      .prepare(
+        `
+      SELECT json_extract(attempt_json, ?) AS receipt FROM app_task_attempts
+      WHERE app_id = ? AND task_id = ? AND task_generation = ?
+        AND json_type(attempt_json, ?) = 'object'
+      ORDER BY started_at DESC LIMIT 1
+    `,
+      )
+      .get(`$.changeReceipts.${key}`, this.appId, taskId, generation, `$.changeReceipts.${key}`) as {
+      receipt: string;
+    } | null;
+    return row ? parseJson<TaskChangeReceipt>(row.receipt) : null;
+  }
+
+  /** A reused request can retain another local name in an admitted change receipt. */
+  readTaskRequestReceipt(taskId: string, generation: number, localId: string): string | null {
+    const row = this.db
+      .prepare(
+        `
+      SELECT json_extract(request.value, '$.requestId') AS request_id
+      FROM app_task_attempts AS attempt,
+        json_each(attempt.attempt_json, '$.changeReceipts') AS receipt,
+        json_each(receipt.value, '$.requests') AS request
+      WHERE attempt.app_id = ? AND attempt.task_id = ? AND attempt.task_generation = ?
+        AND json_extract(request.value, '$.id') = ?
+      ORDER BY attempt.started_at DESC LIMIT 1
+    `,
+      )
+      .get(this.appId, taskId, generation, localId) as { request_id: string } | null;
+    return row?.request_id ?? null;
+  }
+
   readReceipt(taskId: string): TaskCompletionReceipt | null {
     const row = this.db
       .prepare("SELECT receipt_json FROM app_task_receipts WHERE app_id = ? AND receipt_id = ?")
@@ -660,6 +727,25 @@ export class AppTaskResourceStore {
     return row?.cancellation_json ? parseTaskCancellation(row.cancellation_json) : null;
   }
 
+  readPastCancellation(taskId: string, generation: number, resourceVersion: number): AppTaskCancellation | null {
+    const row = this.db.prepare(`SELECT json_extract(receipt_json, '$.result.closure') AS cancellation_json
+      FROM app_task_control_receipts WHERE app_id = ? AND task_id = ? AND action = 'reopen'
+        AND expected_generation = ? AND expected_resource_version = ? LIMIT 1`)
+      .get(this.appId, taskId, generation, resourceVersion) as { cancellation_json?: string } | null;
+    return row?.cancellation_json ? parseTaskCancellation(row.cancellation_json) : null;
+  }
+
+  /** An old unanswered input retains its closure even when the Task has reopened. */
+  readAdmissionCancellation(taskId: string, admissionKey: string): AppTaskCancellation | null {
+    const admission = this.readTaskContext({ taskIds: [], admissionIds: [admissionKey] }).appTaskAdmissions?.[admissionKey];
+    if (admission?.taskId !== taskId) return null;
+    const row = this.db.prepare(`SELECT json_extract(receipt_json, '$.result.closure') AS cancellation_json
+      FROM app_task_control_receipts WHERE app_id = ? AND task_id = ? AND action = 'reopen'
+        AND expected_generation >= ? ORDER BY expected_generation LIMIT 1`)
+      .get(this.appId, taskId, admission.taskGeneration) as { cancellation_json?: string } | null;
+    return row?.cancellation_json ? parseTaskCancellation(row.cancellation_json) : this.readCancellation(taskId);
+  }
+
   /** Bounded terminal child facts, separate from live children and success receipts. */
   readCancelledChildren(parentId: string, limit: number): AppTaskCancellation[] {
     return (
@@ -672,7 +758,12 @@ export class AppTaskResourceStore {
     ).map((row) => parseTaskCancellation(row.cancellation_json));
   }
 
-  readConditionRoutes(eventType: string): Array<{ condition: AppTaskCondition; taskIds: string[] }> {
+  readConditionRoutes(
+    eventType: string,
+    taskIds?: Iterable<string>,
+  ): Array<{ condition: AppTaskCondition; taskIds: string[] }> {
+    const ids = taskIds ? [...new Set(taskIds)] : undefined;
+    if (ids?.length === 0) return [];
     const rows = this.db
       .prepare(
         `SELECT c.condition_id, c.condition_json, linked.task_id
@@ -682,11 +773,12 @@ export class AppTaskResourceStore {
          JOIN app_tasks task
            ON task.app_id = linked.app_id AND task.task_id = linked.task_id
          WHERE c.app_id = ? AND json_extract(c.condition_json, '$.spec.type') = ?
+           ${ids ? `AND linked.task_id IN (${ids.map(() => "?").join(", ")})` : ""}
            AND c.state <> 'true'
            AND task.phase IN ('waiting', 'running', 'pending')
          ORDER BY c.condition_id, linked.task_id`,
       )
-      .all(this.appId, eventType) as Array<{
+      .all(this.appId, eventType, ...(ids ?? [])) as Array<{
       condition_id?: string;
       condition_json?: string;
       task_id?: string;
@@ -997,23 +1089,26 @@ export class AppTaskResourceStore {
     const referencedAttemptIds = Object.values(resources).flatMap(({ status }) =>
       [status.currentAttemptId, status.observedAttemptId].filter((id): id is string => Boolean(id)),
     );
+    // Rank identities first; load JSON only for the bounded selection.
     const attempts =
       options.includeHistory !== false && taskIds.length
         ? Object.fromEntries(
             (
               this.db
                 .prepare(
-                  `SELECT attempt_id, attempt_json FROM (
-                   SELECT attempt_id, attempt_json,
+                  `SELECT body.attempt_id, body.attempt_json FROM (
+                   SELECT attempt_id,
                      ROW_NUMBER() OVER (PARTITION BY task_id ORDER BY
                        CASE WHEN attempt_id IN (${referencedAttemptIds.map(() => "?").join(", ") || "NULL"})
                          THEN 0 ELSE 1 END,
                        started_at DESC, attempt_id DESC) AS position
                    FROM app_task_attempts
                    WHERE app_id = ? AND task_id IN (${taskIds.map(() => "?").join(", ")})
-                 ) WHERE position <= ?`,
+                 ) selected
+                 JOIN app_task_attempts body ON body.app_id = ? AND body.attempt_id = selected.attempt_id
+                 WHERE selected.position <= ?`,
                 )
-                .all(...referencedAttemptIds, this.appId, ...taskIds, MAX_CONTEXT_ATTEMPTS_PER_TASK) as Array<{
+                .all(...referencedAttemptIds, this.appId, ...taskIds, this.appId, MAX_CONTEXT_ATTEMPTS_PER_TASK) as Array<{
                 attempt_id?: string;
                 attempt_json?: string;
               }>
@@ -1358,6 +1453,19 @@ export class AppTaskResourceStore {
         }
       }
 
+      for (const taskId of new Set(mutation.reopenTaskIds ?? [])) {
+        const closure = this.readCancellation(taskId);
+        const receipt = mutation.controlReceipts?.find((entry) => entry.taskId === taskId && entry.action === "reopen");
+        const result = receipt?.result as { closure?: AppTaskCancellation } | undefined;
+        const next = mutation.tasks?.find((entry) => entry.resource.metadata.id === taskId)?.resource;
+        if (!closure || !receipt || !isDeepStrictEqual(result?.closure, closure) ||
+          receipt.expectedGeneration !== closure.generation || receipt.expectedResourceVersion !== closure.resourceVersion ||
+          next?.metadata.generation !== closure.generation + 1 ||
+          !mutation.fences.some((fence) => fence.taskId === taskId && fence.resourceVersion === closure.resourceVersion)) {
+          throw new Error("Task reopening requires its exact closure, next generation and durable control receipt");
+        }
+        this.db.prepare("DELETE FROM app_task_cancellations WHERE app_id = ? AND task_id = ?").run(this.appId, taskId);
+      }
       for (const taskId of new Set(mutation.deleteTaskIds ?? [])) {
         this.db
           .prepare("DELETE FROM app_task_condition_routes WHERE app_id = ? AND task_id = ?")
@@ -1500,6 +1608,30 @@ export class AppTaskResourceStore {
       this.bumpRevision();
       return true;
     });
+  }
+
+  /** Repair derived legacy indexes at startup; the worker recomputes the actual next check. */
+  repairWaitingConditionRecovery(now = Date.now()): number {
+    return this.db
+      .prepare(
+        `UPDATE app_tasks
+         SET next_check_at = MAX(?, COALESCE(json_extract(resource_json, '$.status.executionRetryAt'), ?))
+         WHERE app_id = ? AND phase = 'waiting'
+           AND (next_check_at IS NULL OR next_check_at > MAX(?,
+             COALESCE(json_extract(resource_json, '$.status.executionRetryAt'), ?)))
+           AND NOT EXISTS (
+             SELECT 1 FROM app_task_cancellations cancelled
+             WHERE cancelled.app_id = app_tasks.app_id AND cancelled.task_id = app_tasks.task_id
+           )
+           AND EXISTS (
+             SELECT 1 FROM app_task_condition_routes routes
+             JOIN app_task_conditions conditions
+               ON conditions.app_id = routes.app_id AND conditions.condition_id = routes.condition_id
+             WHERE routes.app_id = app_tasks.app_id AND routes.task_id = app_tasks.task_id
+               AND conditions.state <> 'true'
+           )`,
+      )
+      .run(now, now, this.appId, now + CONDITION_RECOVERY_INTERVAL_MS, now).changes;
   }
 
   setRecoveryState(

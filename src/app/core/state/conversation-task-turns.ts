@@ -5,6 +5,7 @@ import { isDeepStrictEqual } from "node:util";
 import { Check } from "typebox/value";
 import type { SqliteDb } from "../../../lib/db.js";
 import {
+  MAX_CONVERSATION_REQUESTS_PER_TURN,
   conversationTurnResultSchema,
   type AppDefinition,
   type AppTaskInput,
@@ -17,7 +18,6 @@ import { stateTransaction } from "../../../lib/db/transaction.js";
 import type { AppTaskContext } from "../tasks/app-task-store.js";
 import {
   assertAppTaskClaimCurrent,
-  assertAppTaskEffectFresh,
   appTaskAttemptReport,
   cancelAppTask,
   completeAppTask,
@@ -25,7 +25,7 @@ import {
   type AppTaskClaim,
   type AppTaskCancellationResult,
 } from "../tasks/app-task-reconciler.js";
-import { admitTaskInput } from "./inbox.js";
+import { admitTaskInput, assertTaskInputCompatible } from "./inbox.js";
 import {
   createAppInboxItem,
   getAppInboxItem,
@@ -34,12 +34,17 @@ import {
   type CreateAppInboxItem,
   type AppTurnTarget,
 } from "./app-inbox-store.js";
-import { createConversationTopic, readConversationTopic, listConversationTopicLinksForTask } from "./conversations.js";
+import { createConversationTopic, readConversationTopic, readConversationInputTopicId } from "./conversations.js";
+import { conversationTaskLinksSql, listConversationTaskLinks } from "./conversation-task-links.js";
 function stableTopicId(appId: string, conversationId: string, originMessageId: string): string {
   return `topic_${createHash("sha256").update([appId, conversationId, originMessageId].join("\0")).digest("hex").slice(0, 24)}`;
 }
 import {
   applyConversationRequestUpdates,
+  prepareConversationRequestUpdates,
+  listConversationInputRequests,
+  linkConversationRequestInputs,
+  ConversationRequestConflict,
   readConversationRequest,
   type ConversationRequestChange,
 } from "./conversation-requests.js";
@@ -77,7 +82,7 @@ export function conversationTaskIntent(config: AppTaskContext): Omit<TaskIntent,
   if (!root) throw new Error("Conversation App has no structural root");
   return {
     parentId: root,
-    executor: "conversation",
+    executor: config.conversationInputMode === "task" ? "agent" : "conversation",
     outcome: "Handle this Conversation's admitted input and return useful outcomes to the human",
     acceptance: ["Address the considered input and preserve unresolved accepted Requests"],
   };
@@ -113,6 +118,52 @@ function resolveConversationTaskApp(config: AppTaskContext, appId: string, getTa
   return target;
 }
 
+/** Resolve the same Topic at preflight and settlement, without creating it. */
+function conversationResultTopic(
+  config: AppTaskContext,
+  item: ReturnType<typeof readConversationTaskTurn>["replyInput"],
+  decision: ConversationTurnResult,
+): string | undefined {
+  if (decision.topic?.kind === "none") return undefined;
+  if (!decision.topic) return readConversationInputTopicId(config.resourceStore.db, item);
+  const existing = decision.topic.kind === "existing" ? decision.topic.id : undefined;
+  if (existing) {
+    const topic = readConversationTopic(config.resourceStore.db, item.appId, item.conversationId!, existing);
+    if (!topic) throw new Error("Conversation decision selected an unavailable Topic");
+    return topic.id;
+  }
+  return decision.topic?.kind === "new" ? stableTopicId(item.appId, item.conversationId!, item.source.id) : undefined;
+}
+
+/** Read the follow-up target and its effective Request; never run App mapping here. */
+function readConversationFollowUp(
+  config: AppTaskContext,
+  item: ReturnType<typeof readConversationTaskTurn>["replyInput"],
+  desired: NonNullable<ConversationTurnResult["followUp"]>,
+  getTaskApp?: ConversationTaskAppResolver,
+  proposedRequests: readonly AppConversationRequest[] = [],
+) {
+  const { app: targetApp, config: target } = resolveConversationTaskApp(config, desired.appId, getTaskApp);
+  if (!targetApp.task) throw new Error("Conversation follow-up requires an installed Task App");
+  assertValidAppInput(targetApp, desired.input);
+  if (desired.task && (desired.task.appId !== desired.appId || !target.resourceStore.readTask(desired.task.taskId)))
+    throw new Error("Follow-up requires an exact Task in the selected App");
+  if (desired.task)
+    assertTaskInputCompatible(target, {
+      appId: desired.appId,
+      attachment: { kind: "existing", taskId: desired.task.taskId },
+      idempotencyKey: `conversation-follow-up:${item.appId}:${item.id}`,
+      inputContext: { id: item.id, source: item.source, input: desired.input },
+    });
+  const request = desired.requestId
+    ? proposedRequests.find(({ id }) => id === desired.requestId) ??
+      readConversationRequest(config.resourceStore.db, item.appId, item.conversationId!, desired.requestId)
+    : null;
+  if (desired.requestId && request?.status !== "open")
+    throw new Error("Conversation follow-up must serve an open accepted Request");
+  return { targetApp, target, request };
+}
+
 /** Capture exact targets and versions; settlement rechecks them under the Task fence. */
 export function prepareConversationTaskProposal(
   config: AppTaskContext,
@@ -141,6 +192,28 @@ export function prepareConversationTaskProposal(
     });
   }
   return { decision, taskControls };
+}
+
+/** Read-only finish feedback. Never map work or persist the proposed effects. */
+export function validateConversationTaskProposal(
+  config: AppTaskContext,
+  claim: AppTaskClaim,
+  decision: ConversationTurnResult,
+  getTaskApp?: ConversationTaskAppResolver,
+): ConversationTaskProposal {
+  const proposal = prepareConversationTaskProposal(config, claim, decision, getTaskApp);
+  const { items, replyInput: item } = readConversationTaskTurn(config, claim);
+  assertConversationRequestsAddressed(config, items, decision);
+  const topicId = conversationResultTopic(config, item, decision);
+  const requests = prepareConversationRequestUpdates(config.resourceStore.db, {
+    actor: { appId: item.appId, taskId: claim.taskId },
+    appId: item.appId, conversationId: item.conversationId!, topicId,
+    updates: decision.requestUpdates ?? [], updateKey: `attempt:${claim.attemptId}`, messageId: `result:${item.id}`,
+  });
+  for (const update of decision.requestUpdates ?? []) requestInputIds(config, items, update);
+  if (decision.followUp)
+    readConversationFollowUp(config, item, decision.followUp, getTaskApp, requests.map(({ request }) => request));
+  return proposal;
 }
 
 /** Stop exactly the input considered by this Turn. Newer input remains pending. */
@@ -273,6 +346,13 @@ export function admitConversationTaskInput(
     const created = prior ? { item: prior, created: false } : createAppInboxItem(db, input);
     const item = created.item;
     const admissionKey = `conversation-input:${item.id}`;
+    // Bind the saved input before shared admission checks executor compatibility.
+    // The surrounding transaction rolls back this link if admission fails.
+    db.run(
+      `UPDATE app_inbox_items SET execution_task_id = ?, task_admission_key = ?,
+      available_at = NULL WHERE id = ?`,
+      [taskId, admissionKey, item.id],
+    );
     const observed = admitTaskInput(config, {
       appId: input.appId,
       attachment: config.resourceStore.readTask(taskId)
@@ -295,11 +375,6 @@ export function admitConversationTaskInput(
       idempotencyKey: admissionKey,
       inputContext: { id: item.id, source: item.source, input: item.input },
     });
-    db.run(
-      `UPDATE app_inbox_items SET execution_task_id = ?, task_admission_key = ?,
-      available_at = NULL WHERE id = ?`,
-      [taskId, admissionKey, item.id],
-    );
     return { item: getAppInboxItem(db, item.id)!, taskId: observed.taskId, created: created.created };
   });
 }
@@ -361,6 +436,43 @@ export function readConversationTaskTurn(config: AppTaskContext, claim: AppTaskC
   };
 }
 
+function requestInputIds(
+  config: AppTaskContext,
+  items: readonly ReturnType<typeof readConversationTaskInputs>[number][],
+  update: { id: string; inputIds?: string[] },
+): string[] {
+  const first = items[0]!;
+  const assigned = listConversationInputRequests(
+    config.resourceStore.db, first.appId, first.conversationId!, items.map(({ id }) => id),
+  ).find(({ id }) => id === update.id);
+  const ids = update.inputIds ?? (items.length === 1 ? [first.id] : assigned?.inputIds);
+  if (!ids?.length)
+    throw new ConversationRequestConflict(`Request ${update.id} requires inputIds from this mixed input batch`);
+  if (
+    ids.length > 96 || new Set(ids).size !== ids.length || ids.some((id) => !items.some((item) => item.id === id))
+  )
+    throw new ConversationRequestConflict(`Request ${update.id} inputIds must name distinct inputs in this turn`);
+  return ids;
+}
+
+function assertConversationRequestsAddressed(
+  config: AppTaskContext,
+  items: ReturnType<typeof readConversationTaskInputs>,
+  decision: ConversationTurnResult,
+): void {
+  const first = items[0]!;
+  const requests = listConversationInputRequests(
+    config.resourceStore.db, first.appId, first.conversationId!, items.map(({ id }) => id),
+  );
+  for (const request of requests) {
+    const update = decision.requestUpdates?.find(({ id }) => id === request.id);
+    if (!update)
+      throw new ConversationRequestConflict(
+        `Request ${request.id} was not addressed. Review its latest requirements and return requestUpdates with fulfillment, continuing work, or an explained wait.`,
+      );
+  }
+}
+
 /** Save the owner's accepted requirements under the same live claim as its other effects. */
 export function updateConversationTaskRequest(
   config: AppTaskContext,
@@ -369,8 +481,9 @@ export function updateConversationTaskRequest(
   operationId: string,
 ): AppConversationRequest {
   return stateTransaction(config.resourceStore.db, () => {
-    assertAppTaskEffectFresh(config, claim);
-    const { replyInput: item } = readConversationTaskTurn(config, claim);
+    assertAppTaskClaimCurrent(config, claim);
+    const { items, replyInput: item } = readConversationTaskTurn(config, claim);
+    const inputIds = requestInputIds(config, items, change);
     applyConversationRequestUpdates(config.resourceStore.db, {
       actor: { appId: item.appId, taskId: claim.taskId },
       appId: item.appId,
@@ -380,6 +493,14 @@ export function updateConversationTaskRequest(
       updateKey: `request:${claim.attemptId}:${operationId}`,
       now: Date.now(),
     });
+    linkConversationRequestInputs(config.resourceStore.db, item.appId, item.conversationId!, change.id, inputIds);
+    const assigned = listConversationInputRequests(
+      config.resourceStore.db, item.appId, item.conversationId!, items.map(({ id }) => id),
+    );
+    if (assigned.length > MAX_CONVERSATION_REQUESTS_PER_TURN)
+      throw new ConversationRequestConflict(
+        `A turn can address at most ${MAX_CONVERSATION_REQUESTS_PER_TURN} accepted Requests`,
+      );
     return readConversationRequest(config.resourceStore.db, item.appId, item.conversationId!, change.id)!;
   });
 }
@@ -407,6 +528,7 @@ export function completeConversationTaskTurn(
       throw new Error("Invalid Conversation decision: result must satisfy the claimed input's result schema");
     if ((decision.taskControls?.length ?? 0) !== (options.taskControls?.length ?? 0))
       throw new Error("Conversation Task controls must be prepared");
+    assertConversationRequestsAddressed(config, items, decision);
     const accepted = completeAppTask(config, claim, {
       summary: decision.summary,
       response: decision.response,
@@ -414,17 +536,15 @@ export function completeConversationTaskTurn(
       facts: decision.facts,
       acceptanceBasis: options.acceptanceBasis,
     });
-    // New, unreviewed facts may retain this as progress. Such an attempt
-    // must not publish a final answer or apply its proposed Request closure.
+    // Only an admitted result may publish this batch's reply and Request decisions.
+    // Later messages remain queued for the next turn.
     if (accepted.status !== "applied" || !config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult)
       return accepted;
     const conversationId = item.conversationId!;
-    let topicId = item.topicId;
-    if (!topicId && decision.topic.kind === "existing") topicId = decision.topic.id;
-    if (!topicId && decision.topic.kind === "new") {
-      topicId = stableTopicId(item.appId, conversationId, item.source.id);
+    const topicId = conversationResultTopic(config, item, decision);
+    if (decision.topic?.kind === "new") {
       createConversationTopic(db, {
-        id: topicId,
+        id: topicId!,
         appId: item.appId,
         conversationId,
         title: decision.topic.title,
@@ -432,11 +552,6 @@ export function completeConversationTaskTurn(
         originMessageId: item.source.id,
         now,
       });
-    }
-    if (topicId) {
-      const topic = readConversationTopic(db, item.appId, conversationId, topicId);
-      if (!topic) throw new Error("Conversation decision selected an unavailable Topic");
-      topicId = topic.id;
     }
     const result = {
       summary: decision.summary,
@@ -454,6 +569,9 @@ export function completeConversationTaskTurn(
       messageId: `result:${item.id}`,
       now,
     });
+    for (const update of decision.requestUpdates ?? []) {
+      linkConversationRequestInputs(db, item.appId, conversationId, update.id, requestInputIds(config, items, update));
+    }
     const admittedTasks: Array<{ appId: string; taskId: string }> = [];
     const cancelledTasks: AppTaskCancellationResult[] = [];
     for (const [index, control] of (decision.taskControls ?? []).entries()) {
@@ -475,31 +593,24 @@ export function completeConversationTaskTurn(
       );
     }
     if (decision.followUp) {
-      if (!topicId) throw new Error("Conversation follow-up requires a Topic");
       const desired = decision.followUp;
-      const { app: targetApp, config: target } = resolveConversationTaskApp(config, desired.appId, options.getTaskApp);
-      if (!targetApp.task) throw new Error("Conversation follow-up requires an installed Task App");
-      assertValidAppInput(targetApp, desired.input);
-      if (desired.task && (desired.task.appId !== desired.appId || !target.resourceStore.readTask(desired.task.taskId)))
-        throw new Error("Follow-up requires an exact Task in the selected App");
-      // The decision is the only handoff authority. Map once, under settlement,
-      // using the attempt's installed App declaration rather than a second target.
+      const { targetApp, target, request } = readConversationFollowUp(
+        config,
+        item,
+        desired,
+        options.getTaskApp,
+      );
+      // Mapping is an execution effect. Run it once, only during settlement.
       const attachment = desired.task
         ? { kind: "existing" as const, taskId: desired.task.taskId }
-        : targetApp.task({ id: item.id, source: item.source, input: desired.input });
+        : targetApp.task!({ id: item.id, source: item.source, input: desired.input });
       if (!attachment) throw new Error("App selected no Task for Conversation follow-up");
-      const request = decision.followUp.requestId
-        ? readConversationRequest(db, item.appId, conversationId, decision.followUp.requestId)
-        : null;
-      if (decision.followUp.requestId && request?.status !== "open")
-        throw new Error("Conversation follow-up must serve an open accepted Request");
       const admitted = admitTaskInput(target, {
         appId: decision.followUp.appId,
         creator: { appId: item.appId, taskId: claim.taskId },
         attachment,
         idempotencyKey: `conversation-follow-up:${item.appId}:${item.id}`,
         inputContext: { id: item.id, source: item.source, input: decision.followUp.input },
-        topicId,
         ...(request
           ? { requestLink: { appId: item.appId, conversationId, id: request.id, revision: request.revision } }
           : {}),
@@ -535,37 +646,115 @@ type ConversationTaskChange =
 export type ConversationTaskChangeRef = {
   appId: string;
   conversationId: string;
-  topicId: string;
+  topicId?: string;
+  originInputId?: string;
   taskAppId: string;
   taskId: string;
 } & ConversationTaskChange;
 
-/** Successful admissions remove themselves from discovery; the limit bounds returned work. */
-// Input-backed work exposes its selected report until answered or closed.
-// Seeded work has no input receipt; preserve its per-attempt incomplete observations.
-// Both event admission and recovery use this predicate (aliases: attempt, topic).
-const returnedAttemptSql = `(
+const returnedWithoutSelectionSql = `(
   json_extract(attempt.attempt_json, '$.acceptedResult.state') = 'converged'
   OR (json_extract(attempt.attempt_json, '$.acceptedResult.state') IN ('incomplete', 'stopped')
     AND NOT EXISTS (SELECT 1 FROM app_task_admissions admission
       WHERE admission.app_id = attempt.app_id
-        AND json_extract(admission.admission_json, '$.taskId') = attempt.task_id
+        AND CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT) = attempt.task_id
         AND json_extract(admission.admission_json, '$.taskGeneration') = attempt.task_generation))
+  )`;
+
+function returnedAttemptSql(selectedReportSql: string, returnedSql = returnedWithoutSelectionSql): string {
+  return `(${returnedSql}
   OR (NOT EXISTS (SELECT 1 FROM app_task_cancellations closed
       WHERE closed.app_id = attempt.app_id AND closed.task_id = attempt.task_id)
-    AND EXISTS (SELECT 1 FROM app_task_admissions admission
-      JOIN app_inbox_items origin_input
-        ON origin_input.id = json_extract(admission.admission_json, '$.inputEvent.data.request.id')
-      WHERE admission.app_id = attempt.app_id
-        AND json_extract(admission.admission_json, '$.taskId') = attempt.task_id
-        AND json_extract(admission.admission_json, '$.taskGeneration') = attempt.task_generation
-        AND json_extract(admission.admission_json, '$.resultAttemptId') IS NULL
-        AND json_extract(admission.admission_json, '$.reportAttemptId') = attempt.attempt_id
-        AND origin_input.app_id = topic.app_id
-        AND origin_input.conversation_id = topic.conversation_id
-        AND origin_input.topic_id = topic.id)
+    AND EXISTS (${selectedReportSql})
   )
 )`;
+}
+
+const directSelectedReportSql = `SELECT 1 FROM app_task_admissions admission
+  JOIN app_inbox_items origin_input
+    ON origin_input.id = json_extract(admission.admission_json, '$.inputEvent.data.request.id')
+  WHERE admission.app_id = attempt.app_id
+    AND CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT) = attempt.task_id
+    AND json_extract(admission.admission_json, '$.taskGeneration') = attempt.task_generation
+    AND json_extract(admission.admission_json, '$.resultAttemptId') IS NULL
+    AND json_extract(admission.admission_json, '$.reportAttemptId') = attempt.attempt_id
+    AND origin_input.app_id = link.app_id
+    AND origin_input.conversation_id = link.conversation_id
+    AND origin_input.topic_id = link.topic_id`;
+
+const materializedSelectedReportSql = `SELECT 1 FROM selected_reports report
+  WHERE report.app_id = attempt.app_id
+    AND report.task_id = attempt.task_id
+    AND report.task_generation = attempt.task_generation
+    AND report.attempt_id = attempt.attempt_id
+    AND report.origin_app_id = link.app_id
+    AND report.origin_conversation_id = link.conversation_id
+    AND report.origin_topic_id = link.topic_id`;
+
+// Reopening starts fresh work. Creator corrections can continue outstanding
+// input, but input from a cancelled generation must not resume delivering facts.
+const continuedCallerSql = `NOT EXISTS (SELECT 1 FROM app_task_control_receipts reopened
+  WHERE reopened.app_id = link.task_app_id AND reopened.task_id = link.task_id
+    AND reopened.action = 'reopen' AND reopened.expected_generation >= link.task_generation)`;
+
+/** Return only the selected answer/report. An outstanding input can survive a creator revision. */
+function returnedLinkAttemptSql(selectedReportSql: string, returnedSql = returnedWithoutSelectionSql): string {
+  return `((link.origin_input_id IS NULL AND ${returnedAttemptSql(selectedReportSql, returnedSql)})
+    OR (link.origin_input_id IS NOT NULL AND ${continuedCallerSql}
+      AND link.task_generation <= attempt.task_generation
+      AND (link.result_attempt_id = attempt.attempt_id
+        OR (link.result_attempt_id IS NULL AND link.report_attempt_id = attempt.attempt_id
+          AND NOT EXISTS (SELECT 1 FROM app_task_cancellations closed
+            WHERE closed.app_id = attempt.app_id AND closed.task_id = attempt.task_id)))))`;
+}
+
+// Inbox receipts cover exact caller inputs. Old Topic receipts remain valid for
+// results already returned before this change; grouping never becomes a new ask.
+const groupedChangeReceiptSql = `SELECT grouped.id FROM app_inbox_items grouped
+  WHERE grouped.app_id = changes.appId AND grouped.conversation_id = changes.conversationId
+    AND grouped.source_kind = 'system'
+    AND grouped.input_kind = CASE WHEN changes.attemptId IS NOT NULL THEN 'task-outcome' ELSE 'task-closed' END
+    AND CAST(json_extract(grouped.input_data, '$.appId') AS TEXT) = changes.taskAppId
+    AND CAST(json_extract(grouped.input_data, '$.taskId') AS TEXT) = changes.taskId
+    AND CAST(COALESCE(json_extract(grouped.input_data, '$.attemptId'),
+      json_extract(grouped.input_data, '$.generation')) AS TEXT) =
+      CAST(COALESCE(changes.attemptId, changes.closedGeneration) AS TEXT)
+    AND (
+      (changes.originInputId IS NOT NULL AND EXISTS (
+        SELECT 1 FROM json_each(grouped.input_data, '$.originInputIds') linked
+        WHERE linked.value = changes.originInputId))
+      OR ((changes.originInputId IS NULL OR json_type(grouped.input_data, '$.originInputIds') IS NULL)
+        AND (EXISTS (SELECT 1 FROM json_each(grouped.input_data, '$.topicIds') linked
+          WHERE linked.value = changes.topicId)
+          OR (json_type(grouped.input_data, '$.topicIds') IS NULL AND grouped.topic_id = changes.topicId)))
+    )`;
+const undeliveredChangeSql = `NOT EXISTS (SELECT 1 FROM app_inbox_items handled WHERE handled.id = changes.inputId)
+  AND NOT EXISTS (${groupedChangeReceiptSql})`;
+
+function conversationChangesSql(selectedReportSql: string, materializedAttempts = false): string {
+  return `SELECT link.app_id AS appId, link.conversation_id AS conversationId, link.topic_id AS topicId,
+    link.origin_input_id AS originInputId, link.link_id AS linkId,
+    link.task_app_id AS taskAppId, link.task_id AS taskId, attempt.attempt_id AS attemptId,
+    NULL AS closedGeneration, attempt.started_at AS changedAt,
+    CASE WHEN link.origin_input_id IS NULL THEN
+      'conversation-result:' || link.app_id || ':' || link.conversation_id || ':' || link.topic_id || ':' || link.task_app_id || ':' || attempt.attempt_id
+    ELSE 'conversation-input-result:' || link.origin_input_id || ':' || link.task_app_id || ':' || attempt.attempt_id END AS inputId
+  FROM links link
+  JOIN ${materializedAttempts ? "linked_attempts" : "app_task_attempts"} attempt
+    ON attempt.app_id = link.task_app_id AND attempt.task_id = link.task_id
+  WHERE ${returnedLinkAttemptSql(selectedReportSql, materializedAttempts ? "attempt.returnable" : returnedWithoutSelectionSql)}
+  UNION ALL
+  SELECT link.app_id, link.conversation_id, link.topic_id, link.origin_input_id, link.link_id,
+    link.task_app_id, link.task_id, NULL,
+    json_extract(closed.cancellation_json, '$.generation'), closed.requested_at,
+    CASE WHEN link.origin_input_id IS NULL THEN
+      'conversation-closure:' || link.app_id || ':' || link.conversation_id || ':' || link.topic_id || ':' || link.task_app_id || ':' || link.task_id || ':' || json_extract(closed.cancellation_json, '$.generation')
+    ELSE 'conversation-input-closure:' || link.origin_input_id || ':' || link.task_app_id || ':' || link.task_id || ':' || json_extract(closed.cancellation_json, '$.generation') END
+  FROM links link
+  JOIN app_task_cancellations closed ON closed.app_id = link.task_app_id AND closed.task_id = link.task_id
+  WHERE link.origin_input_id IS NULL OR (link.result_attempt_id IS NULL AND ${continuedCallerSql}
+    AND link.task_generation <= json_extract(closed.cancellation_json, '$.generation'))`;
+}
 
 export function listPendingConversationTaskChanges(
   db: SqliteDb,
@@ -574,52 +763,55 @@ export function listPendingConversationTaskChanges(
 ): ConversationTaskChangeRef[] {
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100)
     throw new Error("Conversation change limit must be an integer from 1 to 100");
+  // Many caller/Topic links can refer to one Task. Interpret each retained
+  // attempt once, then join its small projection instead of reparsing the body
+  // and checking its admissions for every link. Exact admission reads stay direct.
   return db
     .prepare(
       `
-    WITH changes AS (
-      SELECT topic.app_id AS appId, topic.conversation_id AS conversationId, topic.id AS topicId,
-        linked.app_id AS taskAppId, linked.task_id AS taskId, attempt.attempt_id AS attemptId,
-        NULL AS closedGeneration, attempt.started_at AS changedAt,
-        'conversation-result:' || topic.app_id || ':' || topic.conversation_id || ':' ||
-          topic.id || ':' || linked.app_id || ':' || attempt.attempt_id AS inputId
-      FROM conversation_topics topic
-      JOIN conversation_topic_tasks linked ON linked.topic_id = topic.id
+    WITH links AS MATERIALIZED (SELECT * FROM (${conversationTaskLinksSql()}) WHERE app_id = ?),
+    linked_tasks AS MATERIALIZED (
+      SELECT DISTINCT task_app_id AS app_id, task_id FROM links
+    ), linked_attempts AS MATERIALIZED (
+      SELECT attempt.app_id, attempt.task_id, attempt.attempt_id, attempt.task_generation, attempt.started_at,
+        ${returnedWithoutSelectionSql} AS returnable
+      FROM linked_tasks linked
       JOIN app_task_attempts attempt ON attempt.app_id = linked.app_id AND attempt.task_id = linked.task_id
-      WHERE topic.app_id = ? AND ${returnedAttemptSql}
-      UNION ALL
-      SELECT topic.app_id, topic.conversation_id, topic.id, linked.app_id, linked.task_id, NULL,
-        json_extract(closed.cancellation_json, '$.generation'), closed.requested_at,
-        'conversation-closure:' || topic.app_id || ':' || topic.conversation_id || ':' ||
-          topic.id || ':' || linked.app_id || ':' || linked.task_id || ':' ||
-          json_extract(closed.cancellation_json, '$.generation')
-      FROM conversation_topics topic
-      JOIN conversation_topic_tasks linked ON linked.topic_id = topic.id
-      JOIN app_task_cancellations closed ON closed.app_id = linked.app_id AND closed.task_id = linked.task_id
-      WHERE topic.app_id = ?
-    )
-    SELECT appId, conversationId, topicId, taskAppId, taskId, attemptId, closedGeneration
+    ), selected_reports AS MATERIALIZED (
+      SELECT admission.app_id,
+        CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT) AS task_id,
+        json_extract(admission.admission_json, '$.taskGeneration') AS task_generation,
+        json_extract(admission.admission_json, '$.reportAttemptId') AS attempt_id,
+        origin_input.app_id AS origin_app_id,
+        origin_input.conversation_id AS origin_conversation_id,
+        origin_input.topic_id AS origin_topic_id
+      FROM linked_tasks linked
+      CROSS JOIN app_task_admissions admission
+        ON admission.app_id = linked.app_id
+          AND CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT) = linked.task_id
+      JOIN app_inbox_items origin_input
+        ON origin_input.id = json_extract(admission.admission_json, '$.inputEvent.data.request.id')
+      WHERE json_extract(admission.admission_json, '$.resultAttemptId') IS NULL
+        AND json_extract(admission.admission_json, '$.reportAttemptId') IS NOT NULL
+    ), live_conversations AS MATERIALIZED (
+      SELECT DISTINCT input.app_id, input.conversation_id
+      FROM app_inbox_items input
+      JOIN app_tasks owner ON owner.app_id = input.app_id AND owner.task_id = input.execution_task_id
+      WHERE input.app_id = ? AND input.conversation_id IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM app_task_cancellations closed
+          WHERE closed.app_id = owner.app_id AND closed.task_id = owner.task_id)
+    ), changes AS (${conversationChangesSql(materializedSelectedReportSql, true)})
+    SELECT appId, conversationId, topicId, originInputId, taskAppId, taskId, attemptId, closedGeneration
     FROM changes
-    WHERE EXISTS (
-        SELECT 1 FROM app_inbox_items input
-        JOIN app_tasks owner ON owner.app_id = input.app_id AND owner.task_id = input.execution_task_id
-        WHERE input.app_id = changes.appId AND input.conversation_id = changes.conversationId
-          AND NOT EXISTS (SELECT 1 FROM app_task_cancellations closed
-            WHERE closed.app_id = owner.app_id AND closed.task_id = owner.task_id)
-      )
-      AND NOT EXISTS (
-        SELECT 1 FROM app_inbox_items conversation_execution
+    WHERE EXISTS (SELECT 1 FROM live_conversations live
+        WHERE live.app_id = changes.appId AND live.conversation_id = changes.conversationId)
+      AND NOT EXISTS (SELECT 1 FROM app_inbox_items conversation_execution
         WHERE conversation_execution.app_id = changes.appId
           AND conversation_execution.conversation_id = changes.conversationId
           AND changes.taskAppId = conversation_execution.app_id
-          AND changes.taskId = conversation_execution.execution_task_id
-      )
-      AND NOT EXISTS (
-        SELECT 1 FROM app_inbox_items handled
-        WHERE handled.id = changes.inputId
-      )
-    ORDER BY changedAt, taskAppId, taskId, inputId
-    LIMIT ?
+          AND changes.taskId = conversation_execution.execution_task_id)
+      AND ${undeliveredChangeSql}
+    ORDER BY changedAt, taskAppId, taskId, inputId LIMIT ?
   `,
     )
     .all(appId, appId, limit)
@@ -627,7 +819,8 @@ export function listPendingConversationTaskChanges(
       const ref = {
         appId: String(row.appId),
         conversationId: String(row.conversationId),
-        topicId: String(row.topicId),
+        ...(typeof row.topicId === "string" ? { topicId: row.topicId } : {}),
+        ...(typeof row.originInputId === "string" ? { originInputId: row.originInputId } : {}),
         taskAppId: String(row.taskAppId),
         taskId: String(row.taskId),
       };
@@ -640,7 +833,7 @@ export function listPendingConversationTaskChanges(
 export function admitConversationTaskChange(
   target: AppTaskContext,
   source: Pick<AppTaskContext, "resourceStore">,
-  input: { conversationId: string; topicId: string; taskId: string } & ConversationTaskChange,
+  input: { conversationId: string; topicId?: string; originInputId?: string; taskId: string } & ConversationTaskChange,
   conversationInputKinds?: readonly string[],
 ) {
   const db = target.resourceStore.db;
@@ -648,39 +841,28 @@ export function admitConversationTaskChange(
   return stateTransaction(db, () => {
     const appId = target.resourceStore.appId;
     if (
-      !listConversationTopicLinksForTask(db, source.resourceStore.appId, input.taskId).some(
+      !listConversationTaskLinks(db, source.resourceStore.appId, input.taskId).some(
         (link) =>
-          link.appId === appId && link.conversationId === input.conversationId && link.topicId === input.topicId,
+          link.appId === appId &&
+          link.conversationId === input.conversationId &&
+          (input.originInputId
+            ? link.originInputId === input.originInputId
+            : !input.topicId || (!link.originInputId && link.topicId === input.topicId)),
       )
     )
-      throw new Error("Task result has no link to this Conversation Topic");
+      throw new Error("Task result has no link to this Conversation");
     const task = target.resourceStore.readTask(conversationTaskExecutionId(target, appId, input.conversationId));
     if (!task) throw new Error("Conversation has no execution Task");
     if (source.resourceStore.appId === appId && input.taskId === task.metadata.id)
       throw new Error("A Conversation cannot consume its own outcome as new input");
-    const prefix = `${appId}:${input.conversationId}:${input.topicId}:${source.resourceStore.appId}`;
-    let id: string;
     let fact: { kind: string; data: Record<string, unknown> };
     if (input.attemptId !== undefined) {
       const attempt = source.resourceStore.readAttempt(input.attemptId);
       if (attempt?.taskId !== input.taskId || (!attempt.acceptedResult && attempt.state !== "failed"))
         throw new Error("Task result must name an accepted attempt or saved failure of the linked Task");
-      // Match the saved selection used by recovery; retries remain in history.
-      if (
-        !db
-          .prepare(
-            `SELECT 1 FROM app_task_attempts attempt, conversation_topics topic
-          WHERE attempt.app_id = ? AND attempt.attempt_id = ?
-            AND topic.app_id = ? AND topic.conversation_id = ? AND topic.id = ?
-            AND ${returnedAttemptSql}`,
-          )
-          .get(source.resourceStore.appId, input.attemptId, appId, input.conversationId, input.topicId)
-      )
-        return { taskId: task.metadata.id, created: false };
       const outcome =
         attempt.acceptedResult?.state === "converged" ? attempt.acceptedResult : appTaskAttemptReport(attempt);
       if (!outcome) return { taskId: task.metadata.id, created: false };
-      id = `conversation-result:${prefix}:${input.attemptId}`;
       fact = {
         kind: "task-outcome",
         data: {
@@ -695,18 +877,83 @@ export function admitConversationTaskChange(
       const closure = source.resourceStore.readCancellation(input.taskId);
       if (!closure || closure.generation !== input.closedGeneration)
         throw new Error("Task closure must name the closed generation of the linked Task");
-      id = `conversation-closure:${prefix}:${input.taskId}:${closure.generation}`;
       fact = {
         kind: "task-closed",
-        data: { appId: source.resourceStore.appId, taskId: input.taskId, generation: closure.generation, closure },
+        data: {
+          appId: source.resourceStore.appId,
+          taskId: input.taskId,
+          generation: closure.generation,
+          closure,
+        },
       };
     }
+    const linkId = input.originInputId ? `input:${input.originInputId}` : input.topicId ? `topic:${input.topicId}` : null;
+    const changesSql = `WITH links AS MATERIALIZED (
+      SELECT * FROM (${conversationTaskLinksSql("task")})
+      WHERE app_id = ? AND conversation_id = ? AND task_app_id = ? AND task_id = ?
+    ), changes AS (${conversationChangesSql(directSelectedReportSql)})`;
+    const args = [
+      appId,
+      input.conversationId,
+      source.resourceStore.appId,
+      input.taskId,
+      input.attemptId ?? null,
+      input.closedGeneration ?? null,
+    ];
+    const changeFilter = `attemptId IS ? AND closedGeneration IS ?`;
+    // Older per-link notifications retain their exact receipt. Conversation-level
+    // notifications collect any eligible links still missing that saved outcome.
+    if (linkId) {
+      const receipt = db
+        .prepare(
+          `${changesSql}
+      SELECT COALESCE((SELECT id FROM app_inbox_items WHERE id = changes.inputId),
+        (${groupedChangeReceiptSql} LIMIT 1)) AS receiptId
+      FROM changes WHERE ${changeFilter} AND linkId = ?`,
+        )
+        .get(...args, linkId);
+      if (!receipt) return { taskId: task.metadata.id, created: false };
+      if (typeof receipt.receiptId === "string")
+        return { item: getAppInboxItem(db, receipt.receiptId)!, taskId: task.metadata.id, created: false };
+    }
+    // One result wakes a Conversation once for all currently eligible callers.
+    const links = db
+      .prepare(
+        `${changesSql}
+      SELECT linkId, topicId, originInputId FROM changes
+      WHERE ${changeFilter} AND ${undeliveredChangeSql}
+      ORDER BY CASE WHEN linkId = ? THEN 0 ELSE 1 END, linkId LIMIT 100`,
+      )
+      .all(...args, linkId);
+    if (!links.length) return { taskId: task.metadata.id, created: false };
+    const linkIds = links.map((link) => String(link.linkId)).sort();
+    const topicIds = [
+      ...new Set(links.flatMap((link) => (typeof link.topicId === "string" ? [link.topicId] : []))),
+    ].sort();
+    const originInputIds = links
+      .flatMap((link) => (typeof link.originInputId === "string" ? [link.originInputId] : []))
+      .sort();
+    const id = `conversation-change:${createHash("sha256")
+      .update(
+        JSON.stringify([
+          appId,
+          input.conversationId,
+          source.resourceStore.appId,
+          input.taskId,
+          input.attemptId ?? null,
+          input.closedGeneration ?? null,
+          linkIds,
+        ]),
+      )
+      .digest("hex")}`;
+    fact = { ...fact, data: { ...fact.data, topicIds, ...(originInputIds.length ? { originInputIds } : {}) } };
     return admitConversationTaskInput(target, {
       id,
       idempotencyKey: id,
       appId,
       conversationId: input.conversationId,
-      topicId: input.topicId,
+      // Multiple Topics remain context; do not force the whole result into one.
+      ...(topicIds.length === 1 ? { topicId: topicIds[0] } : {}),
       source: { kind: "system", id },
       input: fact,
       intent: task.spec,

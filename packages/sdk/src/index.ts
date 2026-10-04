@@ -1,10 +1,14 @@
 /** Stable authoring contract for App declarations and bounded App-owned work. */
 
 export { Type, defineApp, matchesEventSelector, conversationRequestUpdatesSchema } from "./app.js";
-export { MAX_OBSERVER_SNAPSHOT_BYTES } from "./app.js";
+export { MAX_OBSERVER_SNAPSHOT_BYTES, MAX_CONVERSATION_REQUESTS_PER_TURN } from "./app.js";
+export { defineObserver, observationCondition } from "./observer.js";
+export type { ResourceObserver, ObservationContract, ObservationInterest, ObserverHealth } from "./observer.js";
 export {
   MIN_CONDITION_REVIEW_AFTER_MS,
   admitTaskReconcileResult,
+  admitTaskChanges,
+  taskChangesSchema,
   admitTaskResultForSchema,
   admitTaskVerificationResult,
   conditionSchema,
@@ -17,6 +21,7 @@ export {
 } from "./task.js";
 export type {
   AppAction,
+  AppContract,
   AppDefinition,
   ConversationTurnResult,
   ConversationDelegation,
@@ -52,6 +57,8 @@ export type {
   ExecutionView,
   Logger,
   MetricDefinition,
+  MetricCalculationOptions,
+  MetricCalculation,
   MetricRecordOptions,
   MetricView,
   ObserverContext,
@@ -91,10 +98,17 @@ export type {
   TaskAcceptanceBasis,
   TaskAction,
   TaskAppDependency,
+  TaskAppRequest,
+  TaskCondition,
+  TaskRequestCondition,
   TaskExecutorName,
   TaskIntent,
   TaskPriority,
   TaskReconcileResult,
+  TaskChanges,
+  TaskCommunication,
+  TaskInput,
+  TaskChangeReceipt,
   TaskReconcileState,
   TaskVerificationContext,
   TaskVerificationResult,
@@ -120,3 +134,8 @@ export type {
   WorkflowGuardStepResult,
 } from "./workflow-guard.js";
 export type { AgentContextPreparer } from "./agent-context.js";
+
+export { readVerifiedApprovalDecision } from "./approval.js";
+export type { ApprovalProposal, HostApprovalStamp, VerifiedApprovalDecision } from "./approval.js";
+
+export type { TaskCommunicationQuery } from "./conversation-contract.js";

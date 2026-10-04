@@ -1,5 +1,6 @@
 import type { AppDefinition, AppInput, EventSelector, TSchema } from "@may-agent/sdk";
 import { Check, Errors } from "typebox/value";
+import { metricCalculationOptions } from "../../../lib/metric-calculation.js";
 
 function record(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
@@ -146,7 +147,14 @@ export function validateAppDefinition(definition: unknown): string[] {
         if (!positiveFinite(observer.intervalMs)) {
           errors.push(`App ${appId} observer ${String(observer.id)} intervalMs must be positive`);
         }
-        if (typeof observer.run !== "function") {
+        if ("inspect" in observer) {
+          if (typeof observer.inspect !== "function" || observer.run !== undefined)
+            errors.push(`App ${appId} observer ${String(observer.id)} requires inspect instead of run`);
+          if (!nonEmpty(observer.type) || !String(observer.type).includes(".") || !nonEmpty(observer.description))
+            errors.push(`App ${appId} observer ${String(observer.id)} requires a fact type and description`);
+          if (!positiveInteger(observer.timeoutMs) || Number(observer.timeoutMs) > 300_000)
+            errors.push(`App ${appId} observer ${String(observer.id)} timeoutMs must be an integer from 1 to 300000`);
+        } else if (typeof observer.run !== "function") {
           errors.push(`App ${appId} observer ${String(observer.id)} requires run`);
         }
       }
@@ -174,6 +182,8 @@ export function validateAppDefinition(definition: unknown): string[] {
         if (metric.measureInterval !== undefined && !positiveFinite(metric.measureInterval)) {
           errors.push(`App ${appId} metric ${String(metric.id)} measureInterval must be positive`);
         }
+        try { metricCalculationOptions(metric.config); }
+        catch (error) { errors.push(`App ${appId} metric ${String(metric.id)}: ${error instanceof Error ? error.message : String(error)}`); }
       }
     }
   }
@@ -241,7 +251,8 @@ export function validateAppDefinition(definition: unknown): string[] {
     const conversation = record(app.conversation);
     if (!conversation) errors.push(`App ${appId} conversation must be an object`);
     else {
-      if (conversation.mode !== "agent") errors.push(`App ${appId} conversation mode must be agent`);
+      if (conversation.mode !== "agent" && conversation.mode !== "task")
+        errors.push(`App ${appId} conversation mode must be task or legacy agent`);
       if (
         conversation.inputKinds !== undefined &&
         (!Array.isArray(conversation.inputKinds) ||

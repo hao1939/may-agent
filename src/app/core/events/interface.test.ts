@@ -1,3 +1,4 @@
+import { attachTaskControlEventRoute, taskReopenRequestedEvent } from "../../task-control-events.js";
 import { Type, defineApp } from "@may-agent/sdk";
 import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -34,6 +35,7 @@ function fixture(conversationAppId?: string) {
     bus,
     db,
     conversationAppId,
+    conversationAgent: "helper",
     validateAppInput: (appId, input) => {
       if (appId !== "sample" || input.kind !== "message") throw new Error("invalid App input");
     },
@@ -45,6 +47,33 @@ function fixture(conversationAppId?: string) {
 }
 
 describe("simple event interface", () => {
+  it("validates continuation input before publication and forwards it only through trusted Task control", () => {
+    const { bus, db, events } = fixture();
+    const received: unknown[] = [];
+    attachTaskControlEventRoute(bus, {
+      reopenTask: (input) => {
+        received.push(input);
+      },
+      retryTask: () => {},
+      cancelTask: () => {},
+      closeTask: () => {},
+    });
+    const target = { appId: "sample", taskId: "work", generation: 2, resourceVersion: 8 };
+    const input = { kind: "message", data: { message: "Continue with Linux support" } };
+    const command = taskReopenRequestedEvent(target, "User requested continuation", input);
+    expect(() => events.publish(command, { source: "app-task:sample" })).toThrow("explicit operator control");
+    expect(() =>
+      events.publish(taskReopenRequestedEvent(target, "Continue", { kind: "invalid", data: {} }), {
+        source: "control-socket",
+      }),
+    ).toThrow("invalid App input");
+    expect(db.prepare("SELECT COUNT(*) AS n FROM events").get()?.n).toBe(0);
+    expect(events.publish(command, { source: "control-socket" }).delivery).toBe("accepted");
+    expect(received).toEqual([
+      { ...target, reason: "User requested continuation", input, controlKey: command.idempotencyKey },
+    ]);
+  });
+
   it("preserves independent fact subjects and addresses without adding subject fields", () => {
     const { events } = fixture();
     for (const data of [{ appId: "subject", taskId: "subject-task", sessionId: "subject-session" }, { summary: "Observed" }]) {
@@ -194,7 +223,7 @@ describe("simple event interface", () => {
   it.each(["sample", " sample.app "])("requires durable input for the selected conversational App: %s", (selection) => {
     const { db, events } = fixture(selection);
     for (const appId of ["sample", "sample.app", " sample.app "]) {
-      for (const target of [{ data: { agent: appId } }, { target: { appId }, data: {} }]) {
+      for (const target of [{ data: { agent: "helper" } }, { target: { appId }, data: {} }]) {
         expect(() =>
           events.publish(
             { ...target, type: "chat.start.requested", data: { ...target.data, message: "Discuss this" } },
@@ -220,7 +249,12 @@ describe("simple event interface", () => {
   });
 
   it("allows direct agent input without a conversational capability", () => {
-    const { events } = fixture();
+    const { db, events } = fixture();
+    expect(() => events.publish(
+      { type: "chat.start.requested", data: { agent: "helper", message: "Interface input" } },
+      { source: "fixture" },
+    )).toThrow("No Conversation App is configured");
+    expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 0 });
     const receipt = events.publish(
       { type: "chat.start.requested", data: { agent: "may", message: "Direct agent input" } },
       { source: "fixture" },
@@ -379,6 +413,37 @@ describe("simple event interface", () => {
       state: "pending",
       summary: "Task admission worker exceeded its deadline",
     });
+  });
+
+  it("reads all saved Task destinations independently of route labels and inbox delivery", () => {
+    const { db, events } = fixture();
+    const receipt = events.publish(
+      { type: "sample.document.observed", data: { resource: "draft.md" } },
+      { source: "fixture", allowUnregisteredFact: true },
+    );
+    createAppEventAdmissionPlan(db, {
+      eventId: receipt.eventId,
+      registrySnapshotId: "test",
+      registryGeneration: 1,
+      routes: [
+        { appId: "sample", kind: "task", routeId: "document.changed", intent: null,
+          conditionTaskIds: ["review/one", "review/two"] },
+        { appId: "producer", kind: "task", routeId: "route-label",
+          intent: { id: "new-review", parentId: "root", outcome: "Review", acceptance: ["Evidence"] },
+          conditionTaskIds: ["other-review"] },
+        { appId: "exact", kind: "exact-task", routeId: "input-route", targetedTaskId: "target",
+          conditionTaskIds: ["target", "another-wait"] },
+        { appId: "inbox", kind: "inbox", routeId: "document-input",
+          input: { kind: "message", data: { text: "Review" } }, conditionTaskIds: ["waiting-review"] },
+      ],
+    });
+    const links = events.get(receipt.eventId)!.links;
+    expect(links.filter((link) => link.kind === "task").map((link) => link.id).sort()).toEqual([
+      "exact/another-wait", "exact/target", "inbox/waiting-review", "producer/new-review",
+      "producer/other-review", "sample/review/one", "sample/review/two",
+    ]);
+    expect(links).toContainEqual({ kind: "delivery", id: `app-event:${receipt.eventId}:inbox`,
+      state: "pending", summary: "App inbox admission is pending" });
   });
 
   it("admits only exact fenced Task control Events", () => {

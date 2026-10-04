@@ -43,7 +43,9 @@ export function shouldRequestBoundedWorkflowFinish(
 export function boundedWorkflowFinishPrompt(outputSchema?: TSchema): string {
   return (
     "Bounded completion guardrail: stop expanding the investigation. Use only facts already gathered and call finish() now with the smallest facts-honest payload" +
-    (outputSchema ? ", including every required schema-validated result field." : ".")
+    (outputSchema ? ", including every required schema-validated result field." : ".") +
+    " Report confirmed progress, unfinished work and uncertain effects honestly through that contract. " +
+    "Interrupted helpers or tools do not establish completion. Do not start further work; the remaining allowance is for submitting and correcting your result."
   );
 }
 

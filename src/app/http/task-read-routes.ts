@@ -1,9 +1,20 @@
-/** HTTP read adapters; canonical Task and Conversation projections stay in the daemon. */
+/** HTTP read adapters; canonical App, Task and Conversation projections stay in the daemon. */
 export function createTaskReadHandlers(options: {
   daemonRead: (frame: Record<string, unknown>) => Promise<Record<string, unknown>>;
   json: (data: unknown, status?: number) => Response;
 }) {
   const { daemonRead, json } = options;
+
+  async function handleApps(): Promise<Response> {
+    try {
+      const response = await daemonRead({ type: "apps.list" });
+      if (response.type === "error") return json({ error: response.message ?? "App read failed" }, 503);
+      if (response.type !== "ok" || !Array.isArray(response.apps)) throw new Error("Invalid App response");
+      return json(response.apps);
+    } catch (error) {
+      return json({ error: error instanceof Error ? error.message : String(error) }, 503);
+    }
+  }
 
   async function handleConversationRead(url: URL): Promise<Response> {
     const appId = url.searchParams.get("appId")?.trim();
@@ -111,7 +122,13 @@ export function createTaskReadHandlers(options: {
       return json({ error: error instanceof Error ? error.message : String(error) }, 400);
     }
     try {
-      const response = await daemonRead({ type: "app.task.get", appId, taskId, ...evidenceOptions });
+      const response = await daemonRead({
+        type: "app.task.get",
+        appId,
+        taskId,
+        ...evidenceOptions,
+        ...(url.searchParams.has("inputKey") ? { inputKeys: url.searchParams.getAll("inputKey") } : {}),
+      });
       if (response.type === "error") return json({ error: response.message ?? "Task read failed" }, 400);
       return response.task ? json(response.task) : json({ error: "Task not found" }, 404);
     } catch (error) {
@@ -119,5 +136,5 @@ export function createTaskReadHandlers(options: {
     }
   }
 
-  return { handleConversationRead, handleHumanTaskRead, handleAppTasks, handleAppTask };
+  return { handleApps, handleConversationRead, handleHumanTaskRead, handleAppTasks, handleAppTask };
 }

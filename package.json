@@ -1,7 +1,7 @@
 {
   "name": "may-agent",
   "private": true,
-  "version": "5.2.0",
+  "version": "5.4.0",
   "description": "May Host: bounded agent and workflow execution, durable tasks, and runtime control surfaces",
   "type": "module",
   "workspaces": [
@@ -15,7 +15,7 @@
     "verify": "bun run ci",
     "verify:apps-artifact": "bun run check:canonical-app-boundary && bun scripts/verify-app-artifact-compatibility.ts",
     "test": "bun test --timeout 30000 --parallel=2 src/ packages/ test/integration/ test/e2e/ scripts/",
-    "test:deployment": "bun test --timeout 30000 test/deployment/ test/integration/agent-loader.test.ts",
+    "test:deployment": "bun test --timeout 30000 test/integration/agent-loader.test.ts",
     "test:components": "bun test --timeout 30000 --parallel=2 src/ packages/",
     "test:unit": "bun run test:components",
     "test:changed": "bun test --changed=origin/main --timeout 30000 --parallel=2 src/ packages/ test/integration/ test/e2e/ scripts/",
@@ -25,6 +25,7 @@
     "check:sdk": "tsc --noEmit -p packages/sdk/tsconfig.json",
     "check:canonical-app-boundary": "bun scripts/check-canonical-app-boundary.ts",
     "check:codex-goal-protocol": "bun scripts/check-codex-goal-protocol.ts",
+    "check:codex-goal-execution": "bun scripts/check-codex-goal-protocol.ts --check-execution",
     "sample:runtime-quiet": "bun scripts/sample-runtime-quiet.ts",
     "ui:sync": "bun scripts/build-webui.ts",
     "bundle": "bun run ui:sync && bun scripts/build-runtime-binary.ts",
@@ -53,9 +54,9 @@
     "typebox": "1.3.34"
   },
   "devDependencies": {
-    "@types/node": "^24.13.6",
-    "@typescript-eslint/eslint-plugin": "^8.70.1",
-    "@typescript-eslint/parser": "^8.70.1",
+    "@types/node": "^24.19.0",
+    "@typescript-eslint/eslint-plugin": "^8.71.0",
+    "@typescript-eslint/parser": "^8.71.0",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.9.9",

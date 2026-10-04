@@ -11,6 +11,9 @@ function context(root: string, appId = "example", attemptId = "attempt-1"): Task
     taskBinding: { appId, taskId: "../same/task", generation: 1, attemptId },
     executionPaths: { appDir: root, projectDir: root, workspaceDir: root },
     reconciliation: {
+      task: { id: "../same/task", parentId: "root", generation: 1, status: "running",
+        outcome: "Investigate the failed check", acceptance: ["Cite the source"], input: {}, conditions: [],
+        acceptedEvidence: { available: true, maxPageSize: 8 }, currentObligations: { available: false } },
       appId, taskId: "../same/task", generation: 1, resourceVersion: 3,
       agent: "reviewer", outcome: "Investigate the failed check", acceptance: ["Cite the source"],
       input: { context: { sourceRoot: root, omittedFact: "retained-full-input" } },

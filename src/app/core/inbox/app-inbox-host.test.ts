@@ -1,11 +1,12 @@
 import { createAppInboxItem } from "../state/app-inbox-store.js";
 import { fakeTaskAttacher } from "../../../../test/fixtures/task-attachment.js";
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { Type, defineApp, type AppDefinition, type AppInputContext, type AppTaskAttachment } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
 import { conversationTaskSuccessorId } from "../state/conversation-identity.js";
 import { AppInboxHost } from "./app-inbox-host.js";
+import { AppTaskAdmissionError } from "../state/task-admission-error.js";
 
 const probeInput = Type.Object({
   kind: Type.Literal("probe"),
@@ -236,6 +237,32 @@ describe("App inbox host", () => {
     expect(Object.isFrozen(received?.input.data)).toBe(true);
   });
 
+  it("reports final rejection even when a pending failure with the same message was already delivered", async () => {
+    let now = 1_000;
+    let permanent = false;
+    const updates: string[] = [];
+    const host = new AppInboxHost({
+      db,
+      apps: [app()],
+      now: () => now,
+      attachTask: () => {
+        throw permanent ? new AppTaskAdmissionError("Target unavailable") : new Error("Target unavailable");
+      },
+      onRequestUpdated: (_item, _result, status) => { updates.push(status); return true; },
+    });
+    const pending = admit(host, "changing-failure");
+    expect(updates).toEqual(["blocked"]);
+    now = pending.availableAt!;
+    permanent = true;
+    await host.recoverAdmissions();
+    expect(host.get(pending.id)).toMatchObject({ status: "done", handling: { phase: "failed" } });
+    expect(updates).toEqual(["blocked", "done"]);
+    now += 60_000;
+    await host.recoverAdmissions();
+    expect(updates).toEqual(["blocked", "done"]);
+    host.close();
+  });
+
   it("does not admit a Conversation executor target without Conversation identity", () => {
     const executionTaskId = conversationTaskSuccessorId("evaluation", "primary", 2);
     const original = createAppInboxItem(db, {
@@ -342,6 +369,82 @@ describe("App inbox host", () => {
     await host.recoverAdmissions();
     expect(host.get("broken")?.waitingOn?.id).toBe("probe/broken");
     expect(failedMappings).toBe(2);
+  });
+
+  it.each(["conversation", "started", "lease"])(
+    "does not relabel historical Conversation ownership as an unattached Task request (%s)",
+    async (ownership) => {
+      createAppInboxItem(db, {
+        id: "retained",
+        appId: "evaluation",
+        source: { kind: "app", id: "caller" },
+        creator: { appId: "caller", taskId: "work" },
+        input: { kind: "probe", data: { value: "retained" } },
+        ...(ownership === "conversation" ? { conversationId: "primary" } : {}),
+        now: 1,
+      });
+      if (ownership === "started") db.run("UPDATE app_inbox_items SET started_at = 1 WHERE id = 'retained'");
+      if (ownership === "lease")
+        db.run(
+          "UPDATE app_inbox_items SET lease_owner = 'old-executor', lease_generation = 1, lease_expires_at = 2 WHERE id = 'retained'",
+        );
+      const host = new AppInboxHost({
+        db,
+        now: () => 1_000,
+        apps: [{ ...app(), conversation: { mode: "agent", inputKinds: ["probe"] } }],
+        attachTask: () => {
+          throw new Error("Historical input must not be attached");
+        },
+      });
+      try {
+        await host.recoverAdmissions();
+        expect(host.get("retained")).toMatchObject({
+          status: "pending",
+          recovery: {
+            "input-admission": {
+              error: "Conversation input requires offline cutover to its Task execution owner",
+            },
+          },
+        });
+        expect(host.get("retained")?.result).toBeUndefined();
+      } finally {
+        host.close();
+      }
+    },
+  );
+
+  it("keeps an existing Task attachment when its input kind becomes conversational", async () => {
+    createAppInboxItem(db, {
+      id: "attached",
+      appId: "evaluation",
+      source: { kind: "app", id: "caller" },
+      creator: { appId: "caller", taskId: "work" },
+      input: { kind: "probe", data: { value: "attached" } },
+      now: 1,
+    });
+    db.run(
+      "UPDATE app_inbox_items SET status = 'handling', waiting_on_kind = 'task', waiting_on_id = 'existing', task_admission_key = 'task:attached', lease_owner = 'expired', lease_generation = 1, lease_expires_at = 2 WHERE id = 'attached'",
+    );
+    const host = new AppInboxHost({
+      db,
+      now: () => 1_000,
+      apps: [{ ...app(), conversation: { mode: "agent", inputKinds: ["probe"] } }],
+      attachTask: () => {
+        throw new Error("An attached input must not be remapped");
+      },
+    });
+    try {
+      await host.recoverAdmissions();
+      expect(host.get("attached")).toMatchObject({
+        status: "handling",
+        waitingOn: { kind: "task", id: "existing" },
+        taskAdmissionKey: "task:attached",
+      });
+      expect(host.get("attached")?.lease).toBeUndefined();
+      expect(host.get("attached")?.recovery).toBeUndefined();
+    } finally {
+      host.close();
+    }
   });
 
   it("returns pre-Task admission failure to the exact App caller and replays lost publication", async () => {
@@ -491,6 +594,69 @@ describe("App inbox host", () => {
       recovery: { "input-admission": { failures: 2, recoveredAt: 1_750 } },
     });
     expect(host.get("unrelated-during-admission-retry")?.status).toBe("handling");
+  });
+
+  it("keeps admission retrying beyond the backoff cap after feedback and Host reconstruction", async () => {
+    let now = 1_000;
+    let repaired = false;
+    let attempts = 0;
+    let notifications = 0;
+    const failures: number[] = [];
+    const start = () => new AppInboxHost({
+      db,
+      now: () => now,
+      apps: [app()],
+      attachTask: fakeTaskAttacher(db, () => {
+        attempts++;
+        if (!repaired) throw new Error("mapping service unavailable");
+        return { taskId: "probe/continuing-recovery" };
+      }),
+      onFailure: (failure) => { failures.push(failure.failures!); },
+      onRequestUpdated: () => { notifications++; return true; },
+    });
+    let host = start();
+    try {
+      admit(host, "continuing-recovery");
+      for (let count = 1; count <= 40; count++) {
+        const item = host.get("continuing-recovery")!;
+        expect(item).toMatchObject({
+          status: "pending",
+          recovery: { "input-admission": {
+            failures: count,
+            firstFailedAt: 1_000,
+            lastFailedAt: now,
+            reportedAt: 1_000,
+          } },
+        });
+        expect(item.recovery!["input-admission"]!.recoveredAt).toBeUndefined();
+        expect(item.result).toBeUndefined();
+        expect(attempts).toBe(count);
+        expect(failures.at(-1)).toBe(count);
+        expect(notifications).toBe(1);
+        if (count >= 16) expect(item.availableAt! - now).toBe(3_600_000);
+        if (count === 20) {
+          host.close();
+          host = start();
+        }
+        now = item.availableAt! - 1;
+        await host.recoverAdmissions();
+        expect(attempts).toBe(count);
+        now = item.availableAt!;
+        if (count === 40) repaired = true;
+        await host.recoverAdmissions();
+      }
+      expect(attempts).toBe(41);
+      expect(failures).toHaveLength(40);
+      expect(notifications).toBe(1);
+      expect(host.get("continuing-recovery")).toMatchObject({
+        status: "handling",
+        waitingOn: { kind: "task", id: "probe/continuing-recovery" },
+        taskAdmissionKey: "task:continuing-recovery",
+        recovery: { "input-admission": { failures: 40, recoveredAt: now } },
+      });
+    } finally {
+      host.close();
+    }
   });
 
   it("paces failed exact-result projection without replacing the saved link or unrelated results", async () => {
@@ -811,4 +977,24 @@ it("recovery advances past a page of disabled Apps without claiming input", asyn
   } finally {
     db.close();
   }
+});
+
+it("recovers admission and rejection feedback through indexes on outstanding input", async () => {
+  const db = openDatabase(":memory:");
+  applyDbSchema(db);
+  const host = new AppInboxHost({ db, apps: [app()] });
+  const prepare = db.prepare.bind(db);
+  let query = "";
+  const reads = spyOn(db, "prepare").mockImplementation((sql) => {
+    if (sql.includes("UNION ALL") && sql.includes("idx_app_inbox_unadmitted")) query = sql;
+    return prepare(sql);
+  });
+  try {
+    await host.recoverAdmissions();
+    expect(query).not.toBe("");
+    const plan = prepare(`EXPLAIN QUERY PLAN ${query}`).all(1, 1, 1).map((row) => row.detail).join("\n");
+    expect(plan).toContain("idx_app_inbox_unadmitted");
+    expect(plan).toContain("idx_app_inbox_rejected_feedback");
+    expect(plan).not.toContain("sqlite_autoindex_app_inbox_items");
+  } finally { reads.mockRestore(); host.close(); db.close(); }
 });

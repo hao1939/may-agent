@@ -98,8 +98,8 @@ function renderLearningGuardSignals(rows) {
   return html;
 }
 
-function renderLearningBacklog(rows) {
-  let html = `<div class="learning-panel"><h3>Evaluation Backlog</h3>`;
+function renderSessionsWithoutEvaluation(rows) {
+  let html = `<div class="learning-panel"><h3>Sessions without evaluation</h3>`;
   if (!rows || rows.length === 0) return html + `<div class="learning-muted">No unevaluated terminal sessions in this window.</div></div>`;
   html += `<table class="learning-table"><tr><th>Session</th><th>Agent</th><th>Status</th><th>Project</th></tr>`;
   for (const s of rows.slice(0, 12)) {
@@ -112,21 +112,19 @@ function renderLearningBacklog(rows) {
 function renderLearningDashboard(data, opts = {}) {
   const s = data.summary || {};
   const embedded = !!opts.embedded;
-  const title = embedded ? '' : `<div class="learning-toolbar"><b style="font-size:16px;margin-right:auto">Learning</b><span class="learning-muted">global evaluator coverage, findings, and owner routing</span><select id="learning-days" onchange="loadLearning()"><option value="1">1 day</option><option value="7" selected>7 days</option><option value="14">14 days</option><option value="30">30 days</option></select></div>`;
+  const title = embedded ? '' : `<div class="learning-toolbar"><b style="font-size:16px;margin-right:auto">Learning</b><span class="learning-muted">recorded evaluations, findings, and owner routing</span><select id="learning-days" onchange="loadLearning()"><option value="1">1 day</option><option value="7" selected>7 days</option><option value="14">14 days</option><option value="30">30 days</option></select></div>`;
   let html = title;
   html += `<div class="learning-grid">`;
-  html += learningStat('Coverage', `${s.coveragePct || 0}%`, `${s.evaluatedSessions || 0}/${s.terminalSessions || 0} terminal sessions`, (s.coveragePct || 0) < 80 ? 'warn' : '');
-  html += learningStat('Backlog', s.backlog || 0, 'terminal sessions without eval', s.backlog ? 'warn' : '');
+  html += learningStat('Coverage', `${s.coveragePct || 0}%`, `${s.evaluatedSessions || 0}/${s.terminalSessions || 0} terminal sessions`, '');
+  html += learningStat('Without evaluation', s.withoutEvaluation || 0, 'observed sessions; evaluation policy belongs to Apps');
   html += learningStat('Findings', s.findings || 0, `${s.highFindings || 0} high severity`, s.highFindings ? 'bad' : '');
   html += learningStat('Sent Now', s.immediateFindings || 0, 'owner findings routed');
-  html += learningStat('Stale Loops', s.staleBlockerLoops || 0, 'blocked-loop findings', s.staleBlockerLoops ? 'bad' : '');
   html += learningStat('Guard Signals', s.guardSignals || 0, `${s.guardBlocks || 0} block signals · unreviewed`, s.guardSignals ? 'warn' : '');
-  html += learningStat('Evaluator Errors', `${s.evaluatorFailureRatePct || 0}%`, `${s.evaluatorFailures || 0}/${s.evaluatorReviewCount || 0} review sessions`, s.evaluatorFailures ? 'warn' : '');
   html += `</div>`;
   html += `<div class="learning-layout"><div style="display:grid;gap:14px">`;
   html += renderLearningFindings(data.findings || []);
   html += renderLearningGuardSignals(data.guardSignals || []);
-  html += renderLearningBacklog(data.backlogSessions || []);
+  html += renderSessionsWithoutEvaluation(data.sessionsWithoutEvaluation || []);
   html += `</div><div style="display:grid;gap:14px">`;
   html += renderLearningTimeline(data.timeline || []);
   html += renderLearningBreakdown('By Guard', data.breakdowns?.byGuard || {});

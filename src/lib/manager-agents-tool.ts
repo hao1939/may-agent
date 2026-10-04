@@ -35,12 +35,12 @@ export interface AgentsToolManagerDeps {
   callAgent(
     agentName: string,
     task: string,
-    opts?: { parentSessionId?: string; workflowRunId?: string; projectId?: string; source?: string; trace?: EventTrace; skill?: string; signal?: AbortSignal },
+    opts?: { parentSessionId?: string; workflowRunId?: string; projectId?: string; source?: string; trace?: EventTrace; parseSkillCommand?: boolean; signal?: AbortSignal },
   ): Promise<TaskResult & { messages: AgentMessage[] }>;
   runAgent(
     agentName: string,
     task: string,
-    opts?: { parentSessionId?: string; originSessionId?: string; source?: string; requestId?: string; workflowRunId?: string; projectId?: string; trace?: EventTrace; skill?: string; signal?: AbortSignal },
+    opts?: { parentSessionId?: string; originSessionId?: string; source?: string; requestId?: string; workflowRunId?: string; projectId?: string; trace?: EventTrace; parseSkillCommand?: boolean; signal?: AbortSignal },
   ): string;
   status(): SessionInfo[];
   progress(sessionId: string, limit?: number): AgentMessage[];
@@ -97,7 +97,7 @@ const AgentsToolParams = Type.Object({
   task: Type.Optional(
     Type.String({
       description:
-        "Task description for 'call' or 'fork'. Be specific: include file paths, expected outcomes, and constraints. The agent runs to completion and returns a summary (call) or session id (fork).",
+        "Task description for 'call' or 'fork'. Give the outcome, constraints, and relevant file references; the receiver chooses its method. The agent runs to completion and returns a summary (call) or session id (fork).",
     }),
   ),
   sessionId: Type.Optional(
@@ -118,18 +118,13 @@ const AgentsToolParams = Type.Object({
   context_files: Type.Optional(
     Type.Array(Type.String(), {
       description:
-        "For 'call'/'fork': file paths the receiver MUST read for context. Appended to the delegated session task.",
+        "For 'call'/'fork': file paths the receiver must read for context. Appended as references, not contents. A full SKILL.md path readable in the receiver's environment works even outside its skill catalog.",
     }),
   ),
   success_criteria: Type.Optional(
     Type.Array(Type.String(), {
       description:
         "For 'call'/'fork': bullet points describing how to verify the task is done correctly. Appended to the delegated session task.",
-    }),
-  ),
-  skill: Type.Optional(
-    Type.String({
-      description: "For 'call'/'fork': one explicit skill from the receiving agent's catalog to activate for this task.",
     }),
   ),
   scope: Type.Optional(
@@ -276,7 +271,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               projectId: lineage.projectId,
               source: "agents.call",
               trace: lineage.trace,
-              skill: params.skill,
+              parseSkillCommand: false,
               signal,
             });
 
@@ -332,7 +327,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               projectId: lineage.projectId,
               source: "agents.fork",
               trace: lineage.trace,
-              skill: params.skill,
+              parseSkillCommand: false,
               signal,
             });
 

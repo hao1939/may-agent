@@ -14,6 +14,56 @@ function entry(definition: AppDefinition) {
 }
 
 describe("canonical App observers", () => {
+  it("starts empty and refreshes the cadence when an observer interval changes", async () => {
+    const first = Promise.withResolvers<void>();
+    const repeated = Promise.withResolvers<void>();
+    const timeout = Promise.withResolvers<never>();
+    let oldReads = 0;
+    let newReads = 0;
+    const runtime = createAppObserverRuntime({
+      bus: new EventBus(),
+      context: () => ({ read: {} as never, log: {} as never, workspace: { appRoot: "/app", projectRoot: "/project" } }),
+    });
+    const definition: AppDefinition = {
+      id: "sample",
+      version: 1,
+      agent: "worker",
+      inputSchema: { type: "object" },
+      observers: [{
+        id: "provider",
+        intervalMs: 3_600_000,
+        run() {
+          oldReads++;
+          first.resolve();
+          return [];
+        },
+      }],
+    };
+    const deadline = setTimeout(() => timeout.reject(new Error("Observer cadence did not run")), 2_000);
+    try {
+      runtime.start();
+      runtime.replace([entry(definition)]);
+      await Promise.race([first.promise, timeout.promise]);
+      runtime.replace([entry({
+        ...definition,
+        observers: [{
+          id: "provider",
+          intervalMs: 25,
+          run() {
+            if (++newReads === 2) repeated.resolve();
+            return [];
+          },
+        }],
+      })]);
+      await Promise.race([repeated.promise, timeout.promise]);
+      expect(oldReads).toBe(1);
+      expect(newReads).toBe(2);
+    } finally {
+      clearTimeout(deadline);
+      runtime.close();
+    }
+  });
+
   it("survives failed fact and error publication, then recollects the next observation", async () => {
     let locked = true,
       currentTime = 1,

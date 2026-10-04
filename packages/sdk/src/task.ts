@@ -1,5 +1,11 @@
 import type { AppEvent } from "./event.js";
-import type { AppInput } from "./app.js";
+import type {
+  AppInput,
+  AppConversationRequestUpdate,
+  ConversationTopicDecision,
+  AppTaskInput,
+  AppConversationRequest,
+} from "./app.js";
 
 export type TaskPriority = "P0" | "P1" | "P2" | "P3";
 /** Stable executor adapter name selected by durable Task intent. */
@@ -18,7 +24,8 @@ export type TaskIntent = {
   parentId: string;
   outcome: string;
   acceptance: string[];
-  /** Managed executor. The App is responsible for achievement; creator controls requirements. */
+  /** Agent responsible for the outcome across attempts; creator controls requirements.
+   * Omit to inherit the parent assignment, then the App's default agent. */
   agent?: string;
   /** @deprecated Use `agent`. Retained temporarily for source compatibility. */
   owner?: string;
@@ -42,7 +49,7 @@ export type Condition = {
   requestedAction?: string;
   /** Required on newly admitted waits; optional here so historical Conditions remain readable. */
   owner?: string;
-  /** Required on newly admitted waits; elapsed time never makes the Condition true. */
+  /** @deprecated Retained for compatibility; use Task reviewAt to request agent reconsideration. */
   reviewAfterMs?: number;
 };
 
@@ -53,8 +60,8 @@ export type Condition = {
  */
 export type TaskReconcileState = "converged" | "waiting" | "needs-agent" | "incomplete";
 
-/** One exact App input whose answer is needed; independent of the Task hierarchy. */
-export type TaskAppDependency = {
+/** Work submitted to another App, independent of whether the caller waits. */
+export type TaskAppRequest = {
   /** Stable name within this task generation. */
   id: string;
   appId: string;
@@ -62,6 +69,13 @@ export type TaskAppDependency = {
   taskId?: string;
   input: AppInput;
 };
+
+/** Caller wait on a new or already admitted request in this Task generation. */
+export type TaskRequestCondition = { requestId: string };
+export type TaskCondition = Condition | TaskRequestCondition;
+
+/** @deprecated Return requests and caller Conditions instead. */
+export type TaskAppDependency = TaskAppRequest;
 
 /** Reconsider an existing wait through a fenced attempt. Revise requirements with TaskAttempt.reviseTask. */
 export type TaskAction =
@@ -79,9 +93,37 @@ export type TaskAction =
       reason: string;
     };
 
+/** One durable input, with optional communication context derived from its admission. */
+export type TaskInput = AppTaskInput & {
+  key: string;
+  communication?: {
+    conversationId: string;
+    replyTo: string;
+    topicId?: string;
+    inReplyTo?: string;
+    requestIds: string[];
+  };
+};
+
+/** Scoped communication through an input accepted by this Task. Transport is Host-owned. */
+export type TaskCommunication = {
+  /** Stable operation name within this Task generation, reused after a lost acknowledgment. */
+  id: string;
+  /** Saved input whose recipient and reply context should be used. */
+  inputId: string;
+  message?: string;
+  /** Earlier communication operation containing the explanation for these Request updates. */
+  replyId?: string;
+  requestUpdates?: AppConversationRequestUpdate[];
+  topic?: ConversationTopicDecision;
+};
+
 export type TaskReconcileResult = {
   summary: string;
   facts: string[];
+  /** Exact requests covered by this result. Omit to use the saved assignment, or use [] for none.
+   * Converged answers this set; waiting/incomplete report on it and keep it open. */
+  inputKeys?: string[];
 } & (
   | {
       state: "converged";
@@ -91,6 +133,8 @@ export type TaskReconcileResult = {
       actions?: TaskAction[];
       conditions?: never;
       dependencies?: never;
+      requests?: TaskAppRequest[];
+      communication?: TaskCommunication[];
     }
   | ({
       state: "waiting";
@@ -101,8 +145,11 @@ export type TaskReconcileResult = {
       response?: never;
       result?: Record<string, unknown>;
       actions?: TaskAction[];
-      conditions?: Condition[];
-      /** Typed App inputs whose answers are needed; code retains unchanged waits. */
+      conditions?: TaskCondition[];
+      /** Submit work; add a request Condition only when its answer is needed. */
+      requests?: TaskAppRequest[];
+      communication?: TaskCommunication[];
+      /** @deprecated Use requests and conditions: [{ requestId: id }]. */
       dependencies?: TaskAppDependency[];
     } & (
       | { report?: never }
@@ -123,16 +170,39 @@ export type TaskReconcileResult = {
       actions?: never;
       conditions?: never;
       dependencies?: never;
+      requests?: never;
+      communication?: never;
     }
   | {
       state: "needs-agent";
+      inputKeys?: never;
       response?: never;
       result?: never;
       actions?: never;
       conditions?: never;
       dependencies?: never;
+      requests?: never;
+      communication?: never;
     }
 );
+
+/** Changes admitted while running or as part of the final result; never a Task replacement. */
+export type TaskChanges = {
+  communication?: TaskCommunication[];
+  inputKeys?: string[];
+  facts?: string[];
+  requests?: TaskAppRequest[];
+  conditions?: TaskCondition[];
+  actions?: TaskAction[];
+};
+
+/** Durable admission, not fulfillment of the receiver or caller's work. */
+export type TaskChangeReceipt = {
+  requests: Array<{ id: string; requestId: string }>;
+  conditionIds: string[];
+  actionsApplied: string[];
+  communication?: Array<{ id: string; messageId?: string; requests?: AppConversationRequest[] }>;
+};
 
 export type TaskAcceptanceBasis = {
   method: "deterministic" | "workflow-contract" | "agent-judgment";
@@ -167,6 +237,8 @@ export type TaskVerifier = (
 export {
   MIN_CONDITION_REVIEW_AFTER_MS,
   admitTaskReconcileResult,
+  admitTaskChanges,
+  taskChangesSchema,
   admitTaskResultForSchema,
   admitTaskVerificationResult,
   conditionSchema,

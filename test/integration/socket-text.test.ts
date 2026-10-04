@@ -32,7 +32,7 @@ async function fixture(
   respond: (socket: Socket, frame: Record<string, unknown>, connection: number) => Promise<void>,
 ) {
   const root = mkdtempSync(join(tmpdir(), "may-socket-text-"));
-  const socketPath = daemonSocketPath(root, { instance: "text-test" });
+  const socketPath = daemonSocketPath(root, { instance: "text-test", interfaceAgent: "may" });
   mkdirSync(dirname(socketPath), { recursive: true });
   const sockets = new Set<Socket>();
   const errors: unknown[] = [];
@@ -66,7 +66,7 @@ async function fixture(
   const child =
     mode === "console"
       ? spawn("node", [resolve(import.meta.dir, "../../packages/terminal/bin/may-console.cjs")], {
-          env: { ...process.env, STATE_DIR: root, DAEMON_INSTANCE: "text-test", DAEMON_AGENT: "may" },
+          env: { ...process.env, STATE_DIR: root, DAEMON_INSTANCE: "text-test", AGENT: "may", CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", DAEMON_AGENT: "may" },
           stdio: "pipe",
         })
       : spawn("bun", [resolve(import.meta.dir, "../../src/app/http/server.ts"), "--state-dir", root, "--port", "0"], {
@@ -79,7 +79,7 @@ async function fixture(
             SHARED_ROOT: root,
             PROJECTS_ROOT: root,
             DAEMON_INSTANCE: "text-test",
-            DAEMON_AGENT: "may",
+            AGENT: "may", CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", DAEMON_AGENT: "may",
           },
         });
   const stopped = new Promise<void>((done) => child.once("close", () => done()));

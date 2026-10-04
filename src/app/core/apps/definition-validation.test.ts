@@ -5,6 +5,27 @@ import { assertValidAppInput, validateAppDefinition } from "./definition-validat
 const inputSchema = Type.Object({ kind: Type.String(), data: Type.Unknown() });
 
 describe("App input validation", () => {
+  it("validates resource detectors at the installed App boundary", () => {
+    const detector = {
+      id: "build",
+      type: "build.state",
+      description: "Read builds",
+      intervalMs: 60_000,
+      timeoutMs: 1000,
+      inspect: async () => ({ state: "running" }),
+    };
+    const app = defineApp({ id: "builds", version: 1, agent: "worker", inputSchema, observers: [detector] });
+    expect(validateAppDefinition(app)).toEqual([]);
+    for (const change of [
+      { timeoutMs: Infinity },
+      { timeoutMs: 0 },
+      { type: "" },
+      { description: "" },
+      { run: async () => [] },
+    ]) {
+      expect(validateAppDefinition({ ...app, observers: [{ ...detector, ...change }] }).length).toBeGreaterThan(0);
+    }
+  });
   const definition = defineApp({
     id: "research",
     version: 1,
@@ -160,6 +181,7 @@ describe("canonical App definition validation", () => {
           id: "evaluation.coverage",
           sourceQuery: "SELECT 1 AS value",
           measureInterval: 60_000,
+          config: { calculation: { method: "mean", windowMs: 300_000, minSamples: 3 } },
         },
       ],
       actions: {
@@ -230,7 +252,7 @@ describe("canonical App definition validation", () => {
           },
         ],
         metrics: [
-          { id: "same", sourceQuery: "", measureInterval: 0 },
+          { id: "same", sourceQuery: "", measureInterval: 0, config: { calculation: { method: "mean" } } },
           { id: "same", sourceQuery: "SELECT 1", sourceCommand: "echo 1" },
         ],
         tasks: { subscriptions: ["task.requested"] },
@@ -254,6 +276,7 @@ describe("canonical App definition validation", () => {
         "App broken metric id is duplicated: same",
         "App broken metric same sourceQuery must be non-empty",
         "App broken metric same measureInterval must be positive",
+        "App broken metric same: mean calculation requires windowMs",
         "App broken metric same cannot declare both sourceQuery and sourceCommand",
         "App broken task subscriptions require resolve",
       ]),

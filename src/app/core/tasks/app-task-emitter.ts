@@ -103,6 +103,8 @@ export function createAppTaskEvents(input: {
   appId: string;
   claim: Pick<AppTaskClaim, "taskId" | "generation" | "attemptId" | "agent">;
   parentEvent?: AgentEvent;
+  /** Internal scoped communication writer, never exposed through ordinary publication. */
+  communication?: true;
 }): AppTaskEvents {
   const emitter = createAppTaskEmitter(input);
   const appId = normalizedAppId(input.appId);
@@ -134,6 +136,8 @@ export function createAppTaskEmitter(input: {
   appId: string;
   claim: Pick<AppTaskClaim, "taskId" | "generation" | "attemptId" | "agent">;
   parentEvent?: AgentEvent;
+  /** Internal scoped communication writer, never exposed through ordinary publication. */
+  communication?: true;
 }): AppTaskEmitter {
   const appId = input.appId.trim().replace(/\.app$/, "");
   return {
@@ -141,6 +145,14 @@ export function createAppTaskEmitter(input: {
       const key = localKey.trim();
       if (!key || key.length > 256) throw new Error("Task emit localKey must contain 1-256 characters");
       if (!emitted.type.includes(".")) throw new Error("Task emit requires a canonical dot-separated event type");
+      if (emitted.type === "project.approval.submitted") {
+        throw new Error("Formal human approval must use a Host-verified human ingress");
+      }
+      if (
+        (emitted.type === "conversation.message.created" || emitted.type === "app.task.communication.updated") &&
+        !input.communication
+      )
+        throw new Error("Use Task communication changes to publish through saved reply context");
       if (emitted.type === "app.input.requested") {
         throw new Error("Cross-App result work must use a typed Task dependency, not events.emit");
       }

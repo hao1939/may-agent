@@ -37,12 +37,21 @@ export async function execute(ctx) {
 }`,
     );
     if (route === "nested-workflow") {
-      writeFileSync(join(agentDir, "workflows", "delegate.ts"), readFileSync(join(agentDir, "workflows", "inspect.ts"), "utf8").replace('name = "inspect"', 'name = "delegate"'));
-      writeFileSync(join(agentDir, "workflows", "inspect.ts"), `
+      writeFileSync(
+        join(agentDir, "workflows", "delegate.ts"),
+        readFileSync(join(agentDir, "workflows", "inspect.ts"), "utf8").replace(
+          'name = "inspect"',
+          'name = "delegate"',
+        ),
+      );
+      writeFileSync(
+        join(agentDir, "workflows", "inspect.ts"),
+        `
 export const name = "inspect";
 export const description = "Nested contribution";
 export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.input); }
-`);
+`,
+      );
     }
     const model = fakeModel();
     const entered = new Map<string, ReturnType<typeof Promise.withResolvers<void>>>();
@@ -50,6 +59,7 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
     const listeners = new Map<string, Set<(event: AppEvent<Record<string, unknown>>, accept: () => void) => void>>();
     const seen = new Map<string, string>();
     const helperPrompts = new Map<string, string>();
+    const helperModelContexts = new Map<string, string>();
     const taskFiles = new Map<string, string>();
     const revisions = new Map<string, unknown[]>();
     let accepted = 0;
@@ -70,7 +80,10 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
             step++;
             const all = JSON.stringify(context.messages);
             const marker = all.includes("alpha") ? "alpha" : "beta";
-            if (!owner) helperPrompts.set(marker, config.initialState!.systemPrompt!);
+            if (!owner) {
+              helperPrompts.set(marker, config.initialState!.systemPrompt!);
+              helperModelContexts.set(marker, all);
+            }
             if (!owner && step > 1) seen.set(marker, all);
             const content: AssistantMessage["content"] =
               step === 1
@@ -78,9 +91,12 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
                     {
                       type: "toolCall",
                       id: "operation",
-                      name: owner ? route === "agent" ? "agents" : "workflow" : "hold",
-                      arguments: owner ? route === "agent" ? { action: "call", agent: "worker", task: marker }
-                        : { action: "run", name: "inspect", input: { marker } } : { marker },
+                      name: owner ? (route === "agent" ? "agents" : "workflow") : "hold",
+                      arguments: owner
+                        ? route === "agent"
+                          ? { action: "call", agent: "worker", task: marker }
+                          : { action: "run", name: "inspect", input: { marker } }
+                        : { marker },
                     },
                   ]
                 : step === 2
@@ -171,18 +187,49 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
     const controller = new AbortController();
     const running = ["alpha", "beta"].map((marker) => {
       const task: TaskDetail = {
-        id: marker, parentId: "root", generation: 1, resourceVersion: 1, status: "running",
-        outcome: `Inspect ${marker}`, acceptance: [], input: { omitted: `only-${marker}` },
-        conditions: [], acceptedEvidence: { available: false, maxPageSize: 8 },
+        id: marker,
+        parentId: "root",
+        generation: 1,
+        resourceVersion: 1,
+        status: "running",
+        outcome: `Inspect ${marker}`,
+        acceptance: ["Preserve correction, accepted result, and independent wait"],
+        input: { correction: `assigned-correction-only-${marker}` },
+        summary: `Accepted result only for ${marker}`,
+        result: { revision: `accepted-${marker}` },
+        facts: [`accepted-result-only-${marker}`],
+        conditions: [
+          {
+            id: `independent-wait-only-${marker}`,
+            type: "approval.observed",
+            subject: `candidate:${marker}`,
+            expected: true,
+            owner: "human:reviewer",
+            observation: { state: "unknown" },
+          },
+        ],
+        acceptedEvidence: { available: false, maxPageSize: 8 },
       };
       const context = {
         taskBinding: { appId: "fixture", taskId: marker, generation: 1, attemptId: `attempt-${marker}` },
         recoveryOwner: "app-task",
         executionPaths: { appDir: root, projectDir: root, workspaceDir: root },
-        reconciliation: { task, appId: "fixture", taskId: marker, generation: 1, resourceVersion: 1,
-          agent: "owner", owner: "owner", outcome: task.outcome, acceptance: task.acceptance, input: task.input,
-          children: { live: [], completed: [] }, waits: { open: [], note: "No waits" },
-          taskSnapshot: { live: [], truncated: false }, events: { items: [], truncated: false } },
+        reconciliation: {
+          task,
+          appId: "fixture",
+          taskId: marker,
+          generation: 1,
+          resourceVersion: 1,
+          agent: "owner",
+          owner: "owner",
+          outcome: task.outcome,
+          acceptance: task.acceptance,
+          input: task.input,
+          children: { live: [], completed: [] },
+          waits: { open: [], note: "No waits" },
+          taskSnapshot: { live: [], truncated: false },
+          events: { items: [], truncated: false },
+        },
         taskRead: { get: async () => structuredClone(task) },
         taskEmitter: { read: () => null, publish: () => 1, onEvent: () => () => {} },
         async reviseTask(change) {
@@ -214,8 +261,12 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
     try {
       await Promise.all([...entered.values()].map((p) => p.promise));
       for (const marker of ["alpha", "beta"]) {
-        const owner = [...manager.activeSessions.values()].find((s) => s.agentName === "owner" && s.taskBinding?.taskId === marker)!;
-        const worker = [...manager.activeSessions.values()].find((s) => s.agentName === "worker" && s.taskBinding?.taskId === marker)!;
+        const owner = [...manager.activeSessions.values()].find(
+          (s) => s.agentName === "owner" && s.taskBinding?.taskId === marker,
+        )!;
+        const worker = [...manager.activeSessions.values()].find(
+          (s) => s.agentName === "worker" && s.taskBinding?.taskId === marker,
+        )!;
         expect(worker.taskContext).toBe(owner.taskContext);
         const meta = JSON.parse(readFileSync(join(persistDir, "sessions", worker.sessionId, "meta.json"), "utf8"));
         expect(helperPrompts.get(marker)).toContain(join(persistDir, "sessions", worker.sessionId, "meta.json"));
@@ -224,7 +275,23 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
         expect(meta.task).toContain(taskFiles.get(marker)!);
         expect(meta.task).not.toContain("Delegation Memo");
         const snapshot = JSON.parse(readFileSync(join(dirname(taskFiles.get(marker)!), "context.json"), "utf8"));
-        expect(snapshot.reconciliation.input.omitted).toBe(`only-${marker}`);
+        expect(snapshot.reconciliation.task).toMatchObject({
+          input: { correction: `assigned-correction-only-${marker}` },
+          result: { revision: `accepted-${marker}` },
+          facts: [`accepted-result-only-${marker}`],
+          conditions: [{ id: `independent-wait-only-${marker}` }],
+        });
+        if (route !== "agent") {
+          const modelContext = helperModelContexts.get(marker)!;
+          expect(modelContext).toContain(`assigned-correction-only-${marker}`);
+          expect(modelContext).toContain(`accepted-${marker}`);
+          expect(modelContext).toContain(`accepted-result-only-${marker}`);
+          expect(modelContext).toContain(`independent-wait-only-${marker}`);
+          const other = marker === "alpha" ? "beta" : "alpha";
+          expect(modelContext).not.toContain(`assigned-correction-only-${other}`);
+          expect(modelContext).not.toContain(`accepted-result-only-${other}`);
+          expect(modelContext).not.toContain(`independent-wait-only-${other}`);
+        }
       }
       expect(taskFiles.get("alpha")).not.toBe(taskFiles.get("beta"));
       expect(listeners.get("alpha")!.size).toBe(2);
@@ -246,7 +313,10 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
         for (let i = 0; i < results.length; i++) {
           const result = results[i];
           if (result.status !== "fulfilled") throw result.reason;
-          const reply = result.value.messages.find((message) => message.role === "toolResult" && message.toolName === (route === "agent" ? "agents" : "workflow"));
+          const reply = result.value.messages.find(
+            (message) =>
+              message.role === "toolResult" && message.toolName === (route === "agent" ? "agents" : "workflow"),
+          );
           if (!reply || reply.role !== "toolResult") throw new Error("Missing handoff result");
           const text = reply.content.find((part) => part.type === "text");
           if (text?.type !== "text") throw new Error("Missing handoff result text");

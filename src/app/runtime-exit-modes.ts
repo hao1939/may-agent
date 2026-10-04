@@ -13,8 +13,8 @@ import { runWorkflowMode } from "./modes/run-workflow.js";
  */
 export async function runRequestedControlExitMode(opts: {
   appArgs: AppArgs;
-  agentsRoot: string;
   persistDir: string;
+  socketPath: string;
 }): Promise<number | null> {
   if (opts.appArgs.statusMode) {
     await runStatusMode({ persistDir: opts.persistDir, notify: opts.appArgs.notify });
@@ -22,7 +22,7 @@ export async function runRequestedControlExitMode(opts: {
   }
 
   if (opts.appArgs.messageMode) {
-    return runMessageMode({ argv: process.argv, persistDir: opts.persistDir, agentsRoot: opts.agentsRoot });
+    return runMessageMode({ argv: process.argv, socketPath: opts.socketPath, interface: opts.appArgs.humanInterface });
   }
 
   return null;
@@ -43,7 +43,7 @@ export async function runRequestedExitMode(opts: {
     cronEnabled,
     dryRun,
     initialTask,
-    interfaceAgent,
+    humanInterface,
     oneshotMode,
     oneshotTimeoutMinutes,
     runWorkflow,
@@ -91,7 +91,7 @@ export async function runRequestedExitMode(opts: {
     try {
       const exitCode = await runOneshotMode({
         task: initialTask,
-        agentName: interfaceAgent,
+        agentName: humanInterface.agent,
         manager: opts.manager,
         timeoutMinutes: oneshotTimeoutMinutes,
         formatDurationMs,

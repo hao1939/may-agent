@@ -1,3 +1,4 @@
+import { readVerifiedApprovalDecision } from "@may-agent/control/events";
 import type { AppInput, AppInputSource } from "@may-agent/sdk";
 import type {
   EventInput,
@@ -8,8 +9,17 @@ import type {
   PublicEvent,
 } from "@may-agent/control/events";
 import { findPersistedEventId } from "../../../lib/db-writer.js";
+import {
+  ApprovalValidationError,
+  approvalDecision,
+  stampApproval,
+  stampConversationApproval,
+  validateCurrentApproval,
+  type ApprovalIngressAuthorization,
+} from "./approval.js";
 import { readEventTaskTarget } from "./task-target.js";
 import { readPersistedEventEnvelope } from "./persisted.js";
+import { getAppEventAdmissionPlan } from "../state/app-event-admission-store.js";
 import type { SqliteDb } from "../../../lib/db.js";
 import {
   EVENT_INGRESS_SOURCE,
@@ -33,6 +43,8 @@ export type EventPublisherContext = {
   inputSource?: AppInputSource;
   /** Operator/in-process fact ingress may publish domain types not owned by Host routing. */
   allowUnregisteredFact?: boolean;
+  /** Trusted adapter evidence for the formal approval boundary; payload provenance is ignored. */
+  approvalAuthorization?: ApprovalIngressAuthorization;
 };
 
 export type EventInterface = {
@@ -44,7 +56,7 @@ export type EventInterface = {
 };
 
 type EventDefinition = {
-  taskControl?: "retry" | "close" | "cancel";
+  taskControl?: "retry" | "close" | "cancel" | "reopen";
   /** Payload aliases that this contract defines as the addressed resource. */
   addressFields?: readonly (keyof EventTarget)[];
   delivery: "record" | "required";
@@ -157,6 +169,18 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
     delivery: "required",
     validate: (input, options) => validateTaskControl(input, options, true),
   },
+  "app.task.reopen.requested": {
+    addressFields: ["appId", "taskId"],
+    taskControl: "reopen",
+    delivery: "required",
+    validate: (input, options) => {
+      validateTaskControl(input, options, true);
+      if (input.data.input !== undefined) {
+        const appInput = record(input.data.input, "app.task.reopen.requested data.input") as unknown as AppInput;
+        options.validateAppInput(requiredTarget(input, "appId"), appInput);
+      }
+    },
+  },
   "app.task.close.requested": {
     addressFields: ["appId", "taskId"],
     taskControl: "close",
@@ -172,9 +196,10 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
       if (input.target?.appId) throw new Error("App input must use app.input.requested");
       const agent = optionalText(input.data.agent);
       if (!agent) throw new Error("chat.start.requested requires data.agent");
-      const appId = agent.replace(/\.app$/, "");
-      if (appId === options.conversationAppId?.trim().replace(/\.app$/, ""))
-        throw new Error(`${appId} input must use app.input.requested`);
+      if (agent === options.conversationAgent) {
+        if (!options.conversationAppId) throw new Error("No Conversation App is configured");
+        throw new Error(`${agent} input must use app.input.requested`);
+      }
       if (!options.hasAgent(agent)) throw new Error(`Agent ${agent} is not loaded`);
       requiredText(input.data.message, "chat.start.requested data.message");
     },
@@ -277,9 +302,11 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
     },
   },
   "project.approval.submitted": {
+    addressFields: ["appId", "taskId"],
     delivery: "record",
-    validate: (input) => {
+    validate: (input, options) => {
       requiredText(input.data.decision, "project.approval.submitted data.decision");
+      validateCurrentApproval(input, options.db);
     },
   },
   "project.comment.created": {
@@ -311,6 +338,7 @@ export type CreateEventInterfaceOptions = {
   validateSessionControl?(type: string, sessionId?: string): void;
   /** Composition selects the conversational App; its input must use durable admission. */
   conversationAppId?: string;
+  conversationAgent?: string;
 };
 
 function requiredText(value: unknown, field: string): string {
@@ -410,7 +438,7 @@ function eventOwner(input: EventInput): string {
   if (agent) return `agent:${agent.replace(/^agent:/, "")}`;
   const recipient = optionalText(input.data.to);
   if (recipient && recipient !== "human") return `agent:${recipient.replace(/^agent:/, "")}`;
-  return "agent:may";
+  return "system:host";
 }
 
 function canonicalEvent(input: EventInput, context: EventPublisherContext): AgentEvent {
@@ -444,9 +472,24 @@ function canonicalEvent(input: EventInput, context: EventPublisherContext): Agen
   return event;
 }
 
+/** Canonical caller input, including adapter-owned approval attribution. */
+function publicationInput(rawInput: EventInput, context: EventPublisherContext): EventInput {
+  const input = normalizeInput(rawInput);
+  if (input.type === "conversation.message.created")
+    return stampConversationApproval(input, context.source, context.approvalAuthorization);
+  if (input.type !== "project.approval.submitted") return input;
+  requiredText(input.data.decision, "project.approval.submitted data.decision");
+  if (!context.approvalAuthorization) throw new Error("Formal approval requires trusted ingress authorization");
+  return stampApproval(input, requiredText(context.source, "Event source"), context.approvalAuthorization);
+}
+
 /** Confirm a publication without rerunning App routing or accepting a key-only receipt. */
-export function findEventPublication(db: SqliteDb, input: EventInput, context: EventPublisherContext): number | undefined {
-  return findPersistedEventId(db, canonicalEvent(normalizeInput(input), context));
+export function findEventPublication(
+  db: SqliteDb,
+  input: EventInput,
+  context: EventPublisherContext,
+): number | undefined {
+  return findPersistedEventId(db, canonicalEvent(publicationInput(input, context), context));
 }
 
 function publicEvent(event: AgentEvent & { [EVENT_ROW_ID]?: number }): PublicEvent {
@@ -583,20 +626,22 @@ function linksForEvent(db: SqliteDb, eventId: number, eventType: string, data: R
     });
   }
 
-  const routes = db
-    .prepare(
-      `SELECT app_id, route_kind, route_id, status, last_error
-       FROM app_event_admission_commands
-       WHERE event_id = ?
-       ORDER BY app_id`,
-    )
-    .all(eventId) as Array<Record<string, unknown>>;
-  for (const route of routes) {
-    const routeAppId = optionalText(route.app_id);
-    const routeId = optionalText(route.route_id);
-    const routeKind = optionalText(route.route_kind);
-    if (!routeAppId || !routeId || !routeKind) continue;
-    if (routeKind === "inbox") {
+  for (const route of getAppEventAdmissionPlan(db, eventId)?.commands ?? []) {
+    const { appId: routeAppId, routeId } = route;
+    // A route label is not a Task identity. Saved Condition destinations
+    // coexist with new work, exact targeting and inbox delivery.
+    const taskIds = new Set(route.conditionTaskIds);
+    if (route.kind === "task" && route.intent) taskIds.add(route.intent.id);
+    if (route.kind === "exact-task") taskIds.add(route.targetedTaskId);
+    for (const taskId of taskIds) {
+      addLink({
+        kind: "task",
+        id: `${routeAppId}/${taskId}`,
+        state: route.status,
+        ...(route.lastError ? { summary: route.lastError } : {}),
+      });
+    }
+    if (route.kind === "inbox") {
       const key = `subscription:${routeAppId}:${routeId}:event:${eventId}`;
       const item = db
         .prepare(
@@ -615,20 +660,13 @@ function linksForEvent(db: SqliteDb, eventId: number, eventType: string, data: R
         continue;
       }
     }
-    if (routeKind === "task" || routeKind === "exact-task") {
-      addLink({
-        kind: "task",
-        id: `${routeAppId}/${routeId}`,
-        ...(typeof route.status === "string" ? { state: route.status } : {}),
-        ...(optionalText(route.last_error) ? { summary: optionalText(route.last_error) } : {}),
-      });
-    } else {
+    if (route.kind !== "task" && route.kind !== "exact-task") {
       addLink({
         kind: "delivery",
         id: `app-event:${eventId}:${routeAppId}`,
         state: String(route.status),
-        summary: optionalText(route.last_error) ??
-          (routeKind === "noop" ? "App selected no work" : `App ${routeAppId} admission is pending`),
+        summary: route.lastError ??
+          (route.kind === "noop" ? "App selected no work" : `App ${routeAppId} admission is pending`),
       });
     }
   }
@@ -676,18 +714,83 @@ export function getEventView(db: SqliteDb, eventId: number): EventView | undefin
   };
 }
 
+/** Called by the existing durable Conversation route before acknowledging human input. */
+export function deliverConversationApproval(
+  event: AgentEvent & { [EVENT_ROW_ID]?: number },
+  db: SqliteDb,
+  bus: EventBus,
+): EventReceipt["approval"] {
+  const data = eventData(event);
+  if (!data.approvalReply || !approvalDecision(data.text)) return undefined;
+  const reply = data.approvalReply as Record<string, unknown>;
+  if (!reply.hostApproval)
+    return { reason: "No valid, authorized proposal reply was supplied. Your text remains conversation." };
+  const { target, ...decision } = reply;
+  const input: EventInput = { type: "project.approval.submitted", target: target as EventTarget, data: decision };
+  const source = requiredText((event as { source?: string }).source, "Saved input source");
+  if (!readVerifiedApprovalDecision({ ...input, source }))
+    throw new Error("Saved input has invalid approval attribution");
+  const originalEventId = event[EVENT_ROW_ID];
+  if (!originalEventId) throw new Error("Approval reply must be saved before delivery");
+  const bound: EventInput = {
+    ...input,
+    data: { ...input.data, inputEventId: originalEventId },
+    idempotencyKey: `input-approval:${originalEventId}`,
+  };
+  const canonical = canonicalEvent(bound, { source });
+  // A saved decision remains the receipt even after its Condition has resolved.
+  const prior = findPersistedEventId(db, canonical);
+  if (!prior) {
+    try {
+      validateCurrentApproval(bound, db);
+    } catch (error) {
+      if (!(error instanceof ApprovalValidationError)) throw error;
+      return { reason: `${error.message}. No approval was recorded; your text remains conversation.` };
+    }
+  }
+  Object.defineProperty(canonical, EVENT_RECORD_ONLY, { value: true, configurable: true });
+  const emitted = bus.emit(canonical);
+  const eventId = emitted[EVENT_ROW_ID];
+  if (!eventId) throw new Error("Approval decision was not durably saved");
+  return { decision: String(input.data.decision), eventId };
+}
+
+function conversationApprovalReceipt(
+  db: SqliteDb,
+  eventId: number,
+  source: string,
+  data: Record<string, unknown>,
+): EventReceipt["approval"] {
+  if (!data.approvalReply || !approvalDecision(data.text)) return undefined;
+  if (!(data.approvalReply as Record<string, unknown>).hostApproval)
+    return { reason: "No valid, authorized proposal reply was supplied. Your text remains conversation." };
+  const row = db
+    .prepare(
+      "SELECT id, data FROM events WHERE event_type = 'project.approval.submitted' AND source = ? AND idempotency_key = ? LIMIT 1",
+    )
+    .get(source, `input-approval:${eventId}`) as { id: number; data: string } | undefined;
+  return row
+    ? { eventId: row.id, decision: String(parseData(row.data).decision) }
+    : { reason: "No approval recorded. Read the current proposal or discuss it with May." };
+}
+
 export function createEventInterface(options: CreateEventInterfaceOptions): EventInterface {
   const get = (eventId: number): EventView | undefined => getEventView(options.db, eventId);
 
   return {
     publish(rawInput, context) {
-      const input = normalizeInput(rawInput);
+      const input = publicationInput(rawInput, context);
       const definition = EVENT_DEFINITIONS[input.type];
       if (!definition && !context.allowUnregisteredFact) {
         throw new Error(`Event type '${input.type}' is not admitted by this interface`);
       }
-      definition?.validate(input, options);
+      if (input.type === "app.task.reopen.requested" && context.source !== "control-socket")
+        throw new Error("Task reopening requires explicit operator control");
       const event = canonicalEvent(input, context);
+      // A recorded decision keeps its receipt after the Condition changes.
+      // Still use normal publication so the bus can finish interrupted routing.
+      const savedApproval = input.type === "project.approval.submitted" && findPersistedEventId(options.db, event);
+      if (!savedApproval) definition?.validate(input, options);
       if (definition?.delivery !== "required") {
         Object.defineProperty(event, EVENT_RECORD_ONLY, { value: true, configurable: true });
       }
@@ -703,6 +806,8 @@ export function createEventInterface(options: CreateEventInterfaceOptions): Even
         eventType: input.type,
         delivery: view.delivery.state === "accepted" ? "accepted" : "recorded",
         ...(view.links.length ? { links: view.links } : {}),
+        ...(input.type === "conversation.message.created" && view.delivery.state === "accepted"
+          ? { approval: conversationApprovalReceipt(options.db, eventId, context.source, input.data) } : {}),
       };
     },
     get,

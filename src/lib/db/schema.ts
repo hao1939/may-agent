@@ -14,6 +14,41 @@ CREATE TABLE IF NOT EXISTS notification_messages (
   PRIMARY KEY (chat_id, telegram_msg_id)
 );`;
 
+const METRIC_DISPOSITION_SCHEMA = `
+-- A read projection, not another decision store. Apps retain metric decisions
+-- in ordinary accepted Task facts (including Conversation Tasks). Unaccepted
+-- execution output and Evaluation publication are never owner dispositions.
+-- Task resource writers use canonical JSON.stringify serialization. Index the
+-- declared fact prefix before expanding/validating facts; unrelated or rejected
+-- results containing the prefix remain candidates, never accepted decisions.
+CREATE INDEX IF NOT EXISTS idx_metric_disposition_attempts
+  ON app_task_attempts(
+    CAST(unixepoch(json_extract(attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER), attempt_id)
+  WHERE instr(attempt_json, 'metric-disposition:') > 0;
+`;
+
+const METRIC_DISPOSITION_VIEW = `CREATE VIEW metric_dispositions AS
+WITH facts AS (
+  SELECT a.app_id, a.task_id, a.attempt_id,
+    CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER) AS timestamp,
+    CASE WHEN f.type = 'text' AND substr(f.value, 1, 19) = 'metric-disposition:'
+      AND length(f.value) <= 4000 AND json_valid(substr(f.value, 20))
+      THEN substr(f.value, 20) ELSE '{}' END AS data
+  FROM app_task_attempts a, json_each(a.attempt_json, '$.acceptedResult.facts') f
+  WHERE instr(a.attempt_json, 'metric-disposition:') > 0
+)
+SELECT app_id, task_id, attempt_id, timestamp, data,
+  json_extract(data, '$.metricId') AS metric_id,
+  json_extract(data, '$.alertId') AS alert_id
+FROM facts
+WHERE json_extract(data, '$.version') = 1
+  AND json_type(data, '$.metricId') = 'text'
+  AND length(json_extract(data, '$.metricId')) > 0
+  AND json_extract(data, '$.disposition') IN ('investigate', 'observe', 'no-change', 'recovered')
+  AND (json_type(data, '$.alertId') = 'null'
+    OR (json_type(data, '$.alertId') = 'integer' AND json_extract(data, '$.alertId') > 0))
+  AND timestamp IS NOT NULL`;
+
 /** Canonical runtime schema. Historical schemas are not supported. */
 export const SCHEMA = `
 CREATE TABLE IF NOT EXISTS execution_usage (
@@ -35,6 +70,7 @@ CREATE TABLE IF NOT EXISTS execution_usage (
   data TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_execution_usage_started ON execution_usage(started_at);
+CREATE INDEX IF NOT EXISTS idx_execution_usage_updated ON execution_usage(updated_at);
 CREATE INDEX IF NOT EXISTS idx_execution_usage_session ON execution_usage(session_id);
 
 CREATE TABLE IF NOT EXISTS sessions (
@@ -248,6 +284,18 @@ CREATE TABLE IF NOT EXISTS conversation_requests (
 CREATE INDEX IF NOT EXISTS idx_conversation_requests_open
   ON conversation_requests(app_id, conversation_id, status, updated_at);
 
+CREATE TABLE IF NOT EXISTS conversation_request_inputs (
+  app_id TEXT NOT NULL,
+  conversation_id TEXT NOT NULL,
+  input_id TEXT NOT NULL,
+  request_id TEXT NOT NULL,
+  PRIMARY KEY(app_id, conversation_id, input_id, request_id),
+  FOREIGN KEY(app_id, conversation_id, request_id)
+    REFERENCES conversation_requests(app_id, conversation_id, id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_conversation_request_inputs_request
+  ON conversation_request_inputs(app_id, conversation_id, request_id, input_id);
+
 CREATE TABLE IF NOT EXISTS conversation_topics (
   id                TEXT PRIMARY KEY,
   app_id            TEXT NOT NULL,
@@ -414,6 +462,7 @@ CREATE TABLE IF NOT EXISTS metric_alerts (
 CREATE INDEX IF NOT EXISTS idx_ma_open_created ON metric_alerts(created_at DESC, id DESC) WHERE resolved_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_ma_open_metric_created ON metric_alerts(metric_id, created_at DESC, id DESC) WHERE resolved_at IS NULL;
 
+
 ${NOTIFICATION_SCHEMA}
 
 CREATE TABLE IF NOT EXISTS projects (
@@ -491,6 +540,7 @@ export function applyDbSchema(db: SqliteDb): void {
     // reference added to the canonical schema.
     db.exec("DROP TRIGGER IF EXISTS trg_events_referential_retention");
     db.exec(SCHEMA);
+    ensureSingleOpenMetricAlert(db);
     if (needsEventTraceBackfill) {
       db.exec(`
         INSERT OR IGNORE INTO event_traces (event_id, trace_id, parent_event_id, visibility)
@@ -498,6 +548,13 @@ export function applyDbSchema(db: SqliteDb): void {
       `);
     }
     ensureTaskResourceSchema(db);
+    db.exec(METRIC_DISPOSITION_SCHEMA);
+    const metricView = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'view' AND name = 'metric_dispositions'")
+      .get() as { sql: string } | null;
+    if (metricView?.sql !== METRIC_DISPOSITION_VIEW) {
+      db.exec("DROP VIEW IF EXISTS metric_dispositions");
+      db.exec(METRIC_DISPOSITION_VIEW);
+    }
     ensureExistingAppInboxDeliveryShape(db);
     ensureExistingEventsTableColumns(db);
     ensureExistingAppInboxTableColumns(db);
@@ -519,6 +576,28 @@ export function applyDbSchema(db: SqliteDb): void {
     }
     throw error;
   }
+}
+
+/** Repair the old race once, then let SQLite enforce the episode invariant. */
+function ensureSingleOpenMetricAlert(db: SqliteDb): void {
+  if (db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = 'idx_ma_one_open_metric'").get()) return;
+  // Keep the earliest inserted open ID: historical Events may already refer to
+  // it. Administrative closure of duplicates is not a measured recovery.
+  db.prepare(`
+    WITH episodes AS (
+      SELECT metric_id, MIN(id) AS episode_id FROM metric_alerts
+      WHERE resolved_at IS NULL GROUP BY metric_id HAVING COUNT(*) > 1
+    )
+    UPDATE metric_alerts AS a SET resolved_at = ?,
+      message = COALESCE(message, '') || char(10) ||
+        '[Duplicate open alert closed during upgrade; episode continues as alert ' ||
+        (SELECT episode_id FROM episodes WHERE metric_id = a.metric_id) || '.]'
+    WHERE resolved_at IS NULL AND id > (
+      SELECT episode_id FROM episodes WHERE metric_id = a.metric_id
+    )
+  `).run(Date.now());
+  db.exec(`CREATE UNIQUE INDEX idx_ma_one_open_metric
+    ON metric_alerts(metric_id) WHERE resolved_at IS NULL`);
 }
 
 /** Progress and final replies are separate durable operations for one request. */

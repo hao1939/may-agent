@@ -91,7 +91,7 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
   process.env.TELEGRAM_CHAT_ID = "123,456";
   const bot = attachTelegramBot({
     bus,
-    interfaceAgent: "may",
+    interfaceAgent: "may", conversationAppId: "may",
     persistDir: root,
     humanTasks: {
       getTask: ({ taskId, ref }) => {
@@ -509,20 +509,30 @@ describe("Telegram refresh lifecycle", () => {
       await Bun.sleep(40);
       expect(restarted.sent.some((send) => send.text.includes("Run the verified operator step."))).toBe(false);
 
+      // The exact completed receipt is cached after the first restart read, so
+      // a later wake does not need that durable row to suppress the same action.
+      getDb(root).run("DELETE FROM notification_messages");
+      restarted.wake("first");
+      await Bun.sleep(40);
+      expect(restarted.sent.some((send) => send.text.includes("Run the verified operator step."))).toBe(false);
+
       restarted.tasks.get("first")!.diagnostics!.conditions.push({ id: "missing-condition", condition: null });
       restarted.wake("first");
       await waitFor(() => restarted.sent.some((send) => send.text.includes("Run the verified operator step.")));
       const missingConditionBaseline = restarted.sent.length;
       restarted.wake("first");
-      await waitFor(() => restarted.sent.length > missingConditionBaseline);
+      await Bun.sleep(40);
+      expect(restarted.sent).toHaveLength(missingConditionBaseline);
 
       restarted.tasks.get("first")!.diagnostics!.conditions.pop();
       restarted.tasks.get("first")!.diagnostics!.conditionsTruncated = true;
+      restarted.tasks.get("first")!.diagnostics!.conditions[0]!.condition!.metadata.generation = 2;
       restarted.wake("first");
-      await waitFor(() => restarted.sent.some((send) => send.text.includes("Run the verified operator step.")));
+      await waitFor(() => restarted.sent.length > missingConditionBaseline);
       const incompleteBaseline = restarted.sent.length;
       restarted.wake("first");
-      await waitFor(() => restarted.sent.length > incompleteBaseline);
+      await Bun.sleep(40);
+      expect(restarted.sent).toHaveLength(incompleteBaseline);
 
       await restarted.command("/todo");
       await waitFor(() => restarted.sent.some((send) => send.text.includes("Needs you for may")));
@@ -535,40 +545,216 @@ describe("Telegram refresh lifecycle", () => {
     }
   });
 
-  it("does not repeat an unchanged exact action after an explicit todo view", async () => {
+  it("retains exact receipt suppression when another action send fails", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-telegram-mixed-action-failure-"));
+    const exactAction = {
+      humanAction: { requestedAction: "Keep the completed receipt suppressed." },
+      diagnostics: {
+        conditions: [
+          {
+            id: "completed-step",
+            condition: {
+              metadata: { id: "completed-step", generation: 1, resourceVersion: 1 },
+              spec: {
+                type: "human.answer.received",
+                subject: "id:completed-step",
+                owner: "human",
+                requestedAction: "Keep the completed receipt suppressed.",
+                expected: { answer: true },
+              },
+              status: { state: "false" },
+            },
+          },
+        ],
+        conditionsTruncated: false,
+      },
+    };
+    const first = fixture({ root, removeOnClose: false });
+    try {
+      Object.assign(first.tasks.get("first")!, exactAction);
+      first.wake("first");
+      await waitFor(() =>
+        ["123", "456"].every((chat) =>
+          first.sent.some((send) => send.chat_id === chat && send.text.includes("Keep the completed receipt suppressed.")),
+        ),
+      );
+    } finally {
+      await first.close();
+    }
+
+    const restarted = fixture({ root });
+    try {
+      Object.assign(restarted.tasks.get("first")!, exactAction);
+      restarted.tasks.get("second")!.humanAction = { requestedAction: "Retry the unrelated failed action." };
+      restarted.sendFailures.add("2 Tasks need your action");
+      restarted.wake("second");
+      await waitFor(() => restarted.errors.filter((text) => text.includes("Send failed")).length >= 2);
+
+      getDb(root).run("DELETE FROM notification_messages");
+      delete restarted.tasks.get("second")!.humanAction;
+      const failedBaseline = restarted.sent.length;
+      restarted.wake("first");
+      await Bun.sleep(40);
+      expect(restarted.sent).toHaveLength(failedBaseline);
+
+      restarted.sendFailures.clear();
+      restarted.tasks.get("second")!.humanAction = { requestedAction: "Retry the unrelated failed action." };
+      restarted.wake("second");
+      await waitFor(() => restarted.sent.length >= failedBaseline + 2);
+      expect(restarted.sent.slice(failedBaseline).every((send) => send.text.includes("2 Tasks need your action"))).toBe(
+        true,
+      );
+    } finally {
+      await restarted.close();
+    }
+  });
+
+  it("deduplicates an unchanged fallback presentation only after a successful send", async () => {
     const f = fixture();
     const task = f.tasks.get("first")!;
     try {
       await f.command("/apps may");
-      Object.assign(task, {
-        humanAction: { requestedAction: "Run the exact current step." },
-        diagnostics: {
-          conditions: [
-            {
-              id: "exact-step",
-              condition: {
-                metadata: { id: "exact-step", generation: 1, resourceVersion: 1 },
-                spec: {
-                  type: "human.answer.received",
-                  subject: "id:exact-step",
-                  owner: "human",
-                  requestedAction: "Run the exact current step.",
-                  expected: { answer: true },
-                },
-                status: { state: "false" },
-              },
-            },
-          ],
-          conditionsTruncated: false,
-        },
-      });
-      await f.command("/todo");
-      await waitFor(() => f.sent.some((send) => send.chat_id === "123" && send.text.includes("Needs you for may")));
-      await Bun.sleep(20);
-      const baseline = f.sent.filter((send) => send.chat_id === "123").length;
+      Object.assign(task, { humanAction: { requestedAction: "Run the fallback operator step." } });
+      f.wake("first");
+      await waitFor(() =>
+        ["123", "456"].every((chat) =>
+          f.sent.some((send) => send.chat_id === chat && send.text.includes("Run the fallback operator step.")),
+        ),
+      );
+      const successfulBaseline = f.sent.filter((send) => send.text.includes("Run the fallback operator step.")).length;
       f.wake("first");
       await Bun.sleep(40);
-      expect(f.sent.filter((send) => send.chat_id === "123")).toHaveLength(baseline);
+      expect(f.sent.filter((send) => send.text.includes("Run the fallback operator step."))).toHaveLength(
+        successfulBaseline,
+      );
+
+      task.generation = 2;
+      f.wake("first");
+      await waitFor(
+        () => f.sent.filter((send) => send.text.includes("Run the fallback operator step.")).length > successfulBaseline,
+      );
+
+      task.humanAction = { requestedAction: "Retry the changed fallback step." };
+      f.sendFailures.add("Retry the changed fallback step.");
+      f.wake("first");
+      await waitFor(
+        () => f.errors.filter((text) => text.includes("Send failed: fixture send unavailable")).length >= 2,
+      );
+      const failedBaseline = f.sent.filter((send) => send.text.includes("Retry the changed fallback step.")).length;
+      f.sendFailures.clear();
+      f.wake("first");
+      await waitFor(
+        () => f.sent.filter((send) => send.text.includes("Retry the changed fallback step.")).length >= failedBaseline + 2,
+      );
+    } finally {
+      await f.close();
+    }
+  });
+
+  it("keeps a manual fallback read separate from automatic delivery deduplication", async () => {
+    const f = fixture();
+    const action = "Use the unchanged fallback action.";
+    try {
+      await f.command("/apps may");
+      f.tasks.get("first")!.humanAction = { requestedAction: action };
+
+      await f.command("/todo");
+      expect(f.sent.filter((send) => send.chat_id === "123" && send.text.includes(action))).toHaveLength(1);
+
+      f.wake("first");
+      await waitFor(() => f.sent.filter((send) => send.chat_id === "123" && send.text.includes(action)).length === 2);
+      expect(f.reads).toContain("first");
+
+      f.wake("first");
+      await Bun.sleep(40);
+      expect(f.sent.filter((send) => send.chat_id === "123" && send.text.includes(action))).toHaveLength(2);
+    } finally {
+      await f.close();
+    }
+  });
+
+  it("delivers an explicit todo directly from its list snapshot without detail reads", async () => {
+    const f = fixture();
+    try {
+      await f.command("/apps may");
+      f.tasks.get("first")!.humanAction = { requestedAction: "Use the readable compact action." };
+      f.readFailures.add("first");
+      await f.command("/todo");
+      expect(f.sent.some((send) => send.chat_id === "123" && send.text.includes("Use the readable compact action."))).toBe(
+        true,
+      );
+      expect(f.reads).not.toContain("first");
+    } finally {
+      await f.close();
+    }
+  });
+
+  it("keeps a failed watched action eligible after unwatch", async () => {
+    const f = fixture();
+    const action = "Watch failure must not mark this action presented.";
+    try {
+      await f.command("/watch first");
+      f.sendFailures.add(action);
+      f.tasks.get("first")!.humanAction = { requestedAction: action };
+      f.wake("first");
+      await waitFor(() => f.errors.some((text) => text.includes("Send failed: fixture send unavailable")));
+      await f.command("/unwatch");
+      const failedAttempts = f.sent.filter((send) => send.chat_id === "123" && send.text.includes(action)).length;
+      f.sendFailures.clear();
+      f.wake("first");
+      await waitFor(
+        () => f.sent.filter((send) => send.chat_id === "123" && send.text.includes(action)).length > failedAttempts,
+      );
+    } finally {
+      await f.close();
+    }
+  });
+
+  it.each([false, true])("keeps a successfully watched %s action quiet after unwatch", async (exact) => {
+    const f = fixture();
+    const action = exact ? "Keep the exact watched action quiet." : "Keep the fallback watched action quiet.";
+    try {
+      await f.command("/watch first");
+      Object.assign(f.tasks.get("first")!, {
+        humanAction: { requestedAction: action },
+        ...(exact
+          ? {
+              diagnostics: {
+                conditions: [
+                  {
+                    id: "watched-action",
+                    condition: {
+                      metadata: { id: "watched-action", generation: 1, resourceVersion: 1 },
+                      spec: {
+                        type: "human.answer.received",
+                        subject: "id:watched-action",
+                        owner: "human",
+                        requestedAction: action,
+                        expected: { answer: true },
+                      },
+                      status: { state: "false" },
+                    },
+                  },
+                ],
+                conditionsTruncated: false,
+              },
+            }
+          : {}),
+      });
+      f.wake("first");
+      const shown = () => f.sent.filter((send) => send.chat_id === "123" && send.text.includes(action)).length;
+      await waitFor(() => shown() === 1);
+      const completedReceipts = (
+        getDb(f.root).prepare("SELECT data FROM notification_messages WHERE chat_id = '123'").all() as Array<{
+          data: string;
+        }>
+      ).filter((row) => JSON.parse(row.data).completedHumanAction);
+      expect(completedReceipts).toHaveLength(exact ? 1 : 0);
+
+      await f.command("/unwatch");
+      f.wake("first");
+      await Bun.sleep(40);
+      expect(shown()).toBe(1);
     } finally {
       await f.close();
     }

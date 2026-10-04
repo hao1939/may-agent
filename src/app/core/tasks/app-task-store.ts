@@ -165,6 +165,8 @@ export type TaskTree = {
 };
 
 export type AppTaskContext = {
+  /** Loaded App selects the common reader; absent retains the legacy admission guard. */
+  conversationInputMode?: "task";
   appDir: string;
   projectDir: string;
   agent: string;

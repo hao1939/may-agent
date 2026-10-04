@@ -8,6 +8,13 @@ window.onerror = function(msg, url, line, col, err) {
   console.error('Global error:', msg, url, line, col, err);
 };
 
+// Selected by installation configuration, never by a built-in App name.
+let humanInterface = {};
+const humanInterfaceReady = fetch('/api/interface').then(async response => {
+  if (!response.ok) throw new Error('Interface configuration unavailable');
+  humanInterface = await response.json();
+});
+
 // ── State ─────────────────────────────────────────────────────────────
 let currentTab = 'live';
 let currentRouteParams = {};
@@ -394,7 +401,10 @@ async function verbCancelSession(sessionId, ev) {
 document.getElementById('legacy-dashboard')?.addEventListener('toggle', event => {
   if (event.currentTarget.open) initializeLegacyDashboard();
 });
-render();
+humanInterfaceReady.then(() => render()).catch(error => {
+  console.error(error);
+  render(); // Read-only inspection remains available without a conversation binding.
+});
 
 function timeAgo(ts) {
   if (!ts) return '—';
@@ -410,12 +420,13 @@ function renderAlertJudgment(alert) {
   if (!judgment) {
     return '<div style="margin-top:5px;color:var(--yellow);font-size:11px">unjudged: owner still needs to react</div>';
   }
-  const operation = judgment.operation || judgment.verdict || 'judged';
-  const facts = String(judgment.facts ?? judgment.evidence ?? judgment.summary ?? '').trim();
+  const operation = judgment.disposition || judgment.operation || judgment.verdict || 'judged';
+  const facts = String(judgment.reason ?? judgment.facts ?? judgment.evidence ?? judgment.summary ?? '').trim();
   const clipped = facts.length > 180 ? facts.slice(0, 177) + '...' : facts;
   const when = judgment.timestamp ? timeAgo(Number(judgment.timestamp)) : 'recently';
   return '<div style="margin-top:5px;color:var(--fg2);font-size:11px;line-height:1.35">'
     + '<b>latest judgment:</b> ' + esc(operation) + ' · ' + esc(when)
     + (clipped ? '<br><span>' + esc(clipped) + '</span>' : '')
+    + (judgment.linkedTask ? '<br>investigation: ' + esc(judgment.linkedTask.appId + '/' + judgment.linkedTask.taskId) : '')
     + '</div>';
 }

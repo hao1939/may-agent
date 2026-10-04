@@ -33,16 +33,19 @@ Install Chrome/Chromium for browser tests (or set `CHROME_PATH`). CI requires
 the browser test to execute. Locally, `E2E_NO_UI=1` explicitly skips it; a
 missing prerequisite is reported as a skip, not a pass.
 
-Tests inspecting the separately maintained Apps, installed agent catalog, and
-shared instructions run separately:
+Install the Docker CLI with its Compose plugin for the configuration regressions.
+They render isolated fixture files with `docker compose config`; they do not
+require a Docker daemon or start containers.
+
+The optional installed-agent loader check runs separately:
 
 ```sh
 MAY_AGENT_APP_ROOT=/absolute/path/to/app bun run test:deployment
 ```
 
 That command requires an explicit, existing installation and does not certify
-all deployed behavior. Legacy cron checks are explicitly skipped when the
-installation no longer uses the optional May cron file. Ordinary CI must work
+all deployed behavior. Domain policy, shared instruction assertions and App acceptance tests belong
+in the Apps repository alongside their source. Ordinary CI must work
 from this repository alone.
 Model-backed experiments require separate credentials and explicit authority;
 neither those experiments nor a production restart belongs in PR CI.
@@ -176,10 +179,21 @@ changes together, run `npm audit --prefix container --omit=dev`, and validate
 versions, flags/configuration, runtime-user PATH behavior, and the image smoke
 test. For Codex, run `bun run check:codex-goal-protocol` against the old and new
 CLI and review upstream changes. The image smoke test runs the same production
-client check against the shipped CLI without a model call; it covers thread and
-paused-goal persistence, not model turns or tool execution. Node/npm move together
-through the Node base image. Upgrading the standalone Pi CLI does not upgrade
-the Pi libraries linked into May. A new CLI version still needs model-backed
+client protocol check against the shipped CLI and a local scripted provider,
+without external model calls. It covers active-goal restart and fresh context
+in outgoing requests; it does not prove command execution or model quality.
+After installation, CLI upgrades or container-runtime changes, run
+`bun run check:codex-goal-execution` as the actual runtime user. That explicit
+acceptance check reads a synthetic file through `command/exec` in the invocation
+working directory, omits a sandbox override so the installed CLI configuration
+owns execution policy, and must fail on any denial. The check uses a separate
+short-lived client with the actual environment; the credential-free protocol
+fixture remains isolated from installation state. Ordinary Task attempts do not
+repeat it. Apps still define review or implementation intent and acceptance;
+available executor permissions do not grant Task authority. Explicit caller
+sandbox overrides remain supported when a caller deliberately supplies one.
+Node/npm move together through the Node base image. Upgrading the standalone
+Pi CLI does not upgrade the Pi libraries linked into May. A new CLI version still needs model-backed
 checks before claiming live provider compatibility.
 
 Publish reviewed image changes as a new release and deploy separately. Do not

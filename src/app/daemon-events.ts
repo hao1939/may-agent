@@ -7,7 +7,7 @@ import {
 } from "../lib/session-subscribers.js";
 import { runAgentCleanup, setAgentSessionId } from "./agent-loader.js";
 import { getDb } from "../lib/db/connection.js";
-import { attachMetricSourceMeasurement } from "./metric-source-measurement.js";
+import { attachMetricSourceMeasurement, attachMetricEvaluation } from "./metric-source-measurement.js";
 
 export function attachEventPersistence(opts: { bus: EventBus; persistDir: string }): void {
   const dbWriter = new DbWriter(opts.persistDir);
@@ -42,7 +42,7 @@ export function closeRestartedHandlerPairs(opts: { bus: EventBus; persistDir: st
   for (const row of rows) {
     const openEventId = Number(row.open_event_id);
     if (!Number.isInteger(openEventId) || openEventId <= 0) continue;
-    const owner = typeof row.owner === "string" && row.owner.trim() ? row.owner : "agent:may";
+    const owner = typeof row.owner === "string" && row.owner.trim() ? row.owner : "system:host";
     const correlationKey =
       typeof row.correlation_key === "string" && row.correlation_key.trim()
         ? row.correlation_key
@@ -50,7 +50,7 @@ export function closeRestartedHandlerPairs(opts: { bus: EventBus; persistDir: st
           ? row.handler
           : `event:${openEventId}`;
     const handler = typeof row.handler === "string" && row.handler.trim() ? row.handler : correlationKey;
-    const ownerAgent = owner.replace(/^agent:/, "") || "may";
+    const ownerAgent = owner.startsWith("agent:") ? owner.slice("agent:".length) : undefined;
     const openedAt = Number(row.opened_at);
     opts.bus.emit({
       type: "handler.failed",
@@ -96,7 +96,7 @@ export function closeRestartedWorkflowPairs(opts: { bus: EventBus; persistDir: s
   for (const row of rows) {
     const openEventId = Number(row.open_event_id);
     if (!Number.isInteger(openEventId) || openEventId <= 0) continue;
-    const owner = typeof row.owner === "string" && row.owner.trim() ? row.owner : "agent:may";
+    const owner = typeof row.owner === "string" && row.owner.trim() ? row.owner : "system:host";
     const correlationKey =
       typeof row.correlation_key === "string" && row.correlation_key.trim()
         ? row.correlation_key
@@ -126,6 +126,7 @@ export function attachDaemonEventSubscribers(opts: {
 }): void {
   const { bus, persistDir, projectRoot } = opts;
   attachMetricSourceMeasurement({ bus, persistDir });
+  attachMetricEvaluation({ bus, persistDir });
   const restartedHandlerPairs = closeRestartedHandlerPairs({ bus, persistDir });
   if (restartedHandlerPairs > 0) {
     bus.emit({

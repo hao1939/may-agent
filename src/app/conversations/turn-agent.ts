@@ -1,6 +1,7 @@
 import type { TaskExecutionContext } from "../../lib/task-execution-context.js";
 import {
   Type,
+  conversationRequestUpdatesSchema,
   type ConversationTurnResult,
   type AppDefinition,
   type AppInputContext,
@@ -25,13 +26,10 @@ function conversationRequestTool(execution: Parameters<AppInputResolver>[0]["exe
     name: "conversation_request",
     label: "Update Request",
     description:
-      "Save an accepted ask or authorized correction before work. Use the same id and observed revision, or revision 0 for a new ask. Returns the saved open Request and new revision; use that revision in final requestUpdates and omit unchanged scope. Reopens a closed ask. Skip when saved requirements already fit or a simple ask can be answered directly. Saved corrections survive failure or Stop. Scoped to this Conversation; does not start, cancel or close work.",
-    parameters: Type.Object(
-      {
-        id: Type.String({ minLength: 1, maxLength: 200 }),
-        expectedRevision: Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER - 1 }),
-        scope: Type.String({ minLength: 1, maxLength: 2000 }),
-      },
+      "Save an accepted conversational promise to the human, or associate an input advancing that same promise. Routine automated review is recorded in turn/Task evidence; use a Request when an outcome is owed to the human. Use the existing id and observed revision; omit unchanged scope. A new Request needs revision 0 and its complete scope. Include inputIds in a mixed batch. Returns the saved open Request and new revision for final requestUpdates. Reopens a closed Request. Requirements and associations survive failure or Stop; closing a Request requires an explanatory response. Scoped to this Conversation; does not start, cancel or close work.",
+    parameters: Type.Pick(
+      conversationRequestUpdatesSchema.items,
+      ["id", "expectedRevision", "scope", "inputIds"],
       { additionalProperties: false },
     ),
     execute: async (operationId, raw) => {
@@ -86,15 +84,35 @@ function conversationInputPrompt(
   inputContext: Readonly<AppInputContext>,
   registry: Pick<AppRegistry, "snapshot">,
 ): string {
-  const apps = appDependencyCatalog(registry.snapshot().entries, app.id);
+  const apps = appDependencyCatalog(registry.snapshot().entries);
   const { id, source, input, inputs, ...context } = inputContext;
+  const selectableConversationIdentities = {
+    topicIds: (inputContext.conversation?.topics ?? []).map((topic) => topic.id),
+    assignedOpenRequestIds: (inputContext.assignedRequests ?? [])
+      .filter((request) => request.status === "open")
+      .map((request) => request.id),
+  };
   return [
     `Consider the admitted inputs for App ${app.id} together, in order, using its Conversation result contract.`,
     "The inputs are the whole current batch. replyTo identifies the response destination; every input still needs consideration.",
-    "Preserve independent asks while applying corrections to the same ask. Save accepted unfinished asks with conversation_request before work; use requestUpdates for their final disposition. Context-only updates can be considered without creating a Request.",
+    "Topics only organize this Conversation's discussion and Requests. Omit topic to keep the input's existing grouping, or leave it ungrouped when none exists. Choose a Topic only when changing the grouping is useful. A followUp needs no Topic: infra retains the caller input and returns the selected result; the worker manages no Topic bookkeeping.",
+    "A Request is an accepted conversational promise to the human. The App recognizes these promises and judges scope and fulfillment. Routine automated handling belongs in turn/Task evidence; an automated result can also advance an existing human promise. Several inputs can belong to one Request; several Requests can share this turn.",
+    "Use conversation_request before working on an accepted Request to preserve its requirements and current input associations, even when scope is unchanged. assignedRequests contains full current requirements for this turn. Every assigned Request and every Request saved during the turn needs a final requestUpdates entry with its own reason. An open disposition must explain what remains; a reply about another Request does not supply that explanation.",
+    "Selection identities are explicit in selectableConversationIdentities. topic.kind=existing must use one of its topicIds or an exact Topic successfully returned by conversation_context in this turn; Topic IDs elsewhere in messages or previousAttempt are context only and may be stale. followUp.requestId must exactly match one of its assignedOpenRequestIds or an open Request successfully saved by conversation_request in this turn; otherwise omit requestId. Never select an unavailable Topic or a closed or unassigned Request from Conversation history or previousAttempt.",
+    "previousAttempt.unacceptedResult is a proposal that was not applied. Reconsider it against current requirements and evidence; do not assume its closure or handoff happened and do not blindly replay effects.",
+    "Context is layered: current inputs and assigned Requests first; focusedTask provides a compact current summary. referencedTasks and Topic/message taskRefs are navigation links, not expanded evidence. Use tasks get with the exact appId/taskId for relevant requirements, waits and evidence before judging fulfillment or changing work; conversation_context reads older discussion and Requests.",
     "## Input and context",
     "```json",
-    JSON.stringify({ inputs: inputs ?? [{ id, source, input }], replyTo: { id, source }, ...context }, null, 2),
+    JSON.stringify(
+      {
+        inputs: inputs ?? [{ id, source, input }],
+        replyTo: { id, source },
+        ...context,
+        selectableConversationIdentities,
+      },
+      null,
+      2,
+    ),
     "```",
     "",
     "## Installed Apps",
@@ -130,6 +148,7 @@ export function createConversationAgentResolver(options: {
         taskContext: options.taskContext,
         requireFinish: true,
         outputSchema: binding.outputSchema,
+        validateOutput: binding.validateOutput,
         // Reuse bounded App execution, without detached lifecycle tools.
         toolPolicy: "app-agent-full",
         timeout: APP_REQUEST_AGENT_TIMEOUT_MS,

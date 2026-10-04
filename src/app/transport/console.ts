@@ -66,7 +66,7 @@ export function attachConsoleUI(
             bus.emit({
               type: "channel.delivery.completed",
               source: "console",
-              owner: "agent:may",
+              owner: "system:host",
               target: { human: true },
               data: {
                 channel: "console",

@@ -15,5 +15,6 @@ export function readMetricView(metrics: Pick<MetricService, "get">, id: string):
     sampleSize: metric.observation?.sampleSize ?? null,
     note: metric.observation?.note ?? null,
     measureInterval: metric.measure_interval ?? null,
+    calculation: metric.calculation,
   };
 }

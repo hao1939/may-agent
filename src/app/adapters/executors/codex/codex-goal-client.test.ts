@@ -64,11 +64,47 @@ describe("CodexGoalAppServerClient", () => {
     await initialized;
     expect((await waitForWrite(process, "initialized")).id).toBeUndefined();
 
+    const executed = client.execCommand({
+      command: ["/usr/bin/true"],
+      cwd: "/tmp/work",
+      timeoutMs: 5_000,
+      outputBytesCap: 4_096,
+    });
+    const command = await waitForWrite(process, "command/exec");
+    expect(command.params).toEqual({
+      command: ["/usr/bin/true"],
+      cwd: "/tmp/work",
+      timeoutMs: 5_000,
+      outputBytesCap: 4_096,
+    });
+    process.reply(command.id, { exitCode: 0, stdout: "", stderr: "" });
+    expect(await executed).toEqual({ exitCode: 0, stdout: "", stderr: "" });
+
     const started = client.startThread({ cwd: "/tmp/work", sandbox: "read-only" });
     const start = await waitForWrite(process, "thread/start");
-    expect(start.params).toMatchObject({ cwd: "/tmp/work", approvalPolicy: "never", ephemeral: false });
+    expect(start.params).toEqual({
+      cwd: "/tmp/work",
+      approvalPolicy: "never",
+      sandbox: "read-only",
+      ephemeral: false,
+    });
     process.reply(start.id, { thread: { id: "thread-1" }, cwd: "/tmp/work" });
     expect(await started).toEqual({ threadId: "thread-1", cwd: "/tmp/work" });
+
+    const injected = client.injectDeveloperContext({ threadId: "thread-1", text: "CURRENT_TASK_PACKET" });
+    const inject = await waitForWrite(process, "thread/inject_items");
+    expect(inject.params).toEqual({
+      threadId: "thread-1",
+      items: [
+        {
+          type: "message",
+          role: "developer",
+          content: [{ type: "input_text", text: "CURRENT_TASK_PACKET" }],
+        },
+      ],
+    });
+    process.reply(inject.id, {});
+    await injected;
 
     const goalSet = client.setGoal({ threadId: "thread-1", objective: "Fulfill the May Task" });
     const goal = await waitForWrite(process, "thread/goal/set");
@@ -96,7 +132,7 @@ describe("CodexGoalAppServerClient", () => {
       processId: null,
       notifications: 1,
       serverRequests: 0,
-      responses: 5,
+      responses: 7,
     });
     expect(client.diagnostics().protocolBytes).toBeGreaterThan(0);
     expect(client.diagnostics().maxProtocolLineChars).toBeGreaterThan(0);
@@ -108,6 +144,12 @@ describe("CodexGoalAppServerClient", () => {
 
     const resumed = client.resumeThread({ threadId: "thread-1", cwd: "/tmp/work" });
     const resume = await waitForWrite(process, "thread/resume");
+    expect(resume.params).toEqual({
+      threadId: "thread-1",
+      cwd: "/tmp/work",
+      approvalPolicy: "never",
+      excludeTurns: true,
+    });
     process.reply(resume.id, { thread: { id: "thread-1" }, cwd: "/tmp/work" });
     expect(await resumed).toEqual({ threadId: "thread-1", cwd: "/tmp/work" });
 
@@ -116,6 +158,58 @@ describe("CodexGoalAppServerClient", () => {
     expect(interrupt.params).toEqual({ threadId: "thread-1", turnId: "turn-2" });
     process.reply(interrupt.id, {});
     await interrupted;
+  });
+
+  it("omits an inherited start sandbox and preserves an explicit resume sandbox", async () => {
+    const process = new FakeAppServerProcess();
+    const client = new CodexGoalAppServerClient(process, { requestTimeoutMs: 1_000 });
+
+    const started = client.startThread({ cwd: "/tmp/work" });
+    const start = await waitForWrite(process, "thread/start");
+    expect(start.params).toEqual({ cwd: "/tmp/work", approvalPolicy: "never", ephemeral: false });
+    process.reply(start.id, { thread: { id: "thread-1" }, cwd: "/tmp/work" });
+    await started;
+
+    const resumed = client.resumeThread({ threadId: "thread-1", cwd: "/tmp/work", sandbox: "read-only" });
+    const resume = await waitForWrite(process, "thread/resume");
+    expect(resume.params).toEqual({
+      threadId: "thread-1",
+      cwd: "/tmp/work",
+      approvalPolicy: "never",
+      sandbox: "read-only",
+      excludeTurns: true,
+    });
+    process.reply(resume.id, { thread: { id: "thread-1" }, cwd: "/tmp/work" });
+    await resumed;
+  });
+
+  it("requests bounded newest-first items for one exact turn", async () => {
+    const process = new FakeAppServerProcess();
+    const client = new CodexGoalAppServerClient(process, { requestTimeoutMs: 1_000 });
+
+    const listed = client.listThreadItems({
+      threadId: "thread-1",
+      turnId: "turn-complete",
+      cursor: "next-page",
+      limit: 1,
+      sortDirection: "desc",
+    });
+    const request = await waitForWrite(process, "thread/items/list");
+    expect(request.params).toEqual({
+      threadId: "thread-1",
+      turnId: "turn-complete",
+      cursor: "next-page",
+      limit: 1,
+      sortDirection: "desc",
+    });
+    process.reply(request.id, {
+      data: [{ turnId: "turn-complete", item: { type: "agentMessage", text: "complete answer" } }],
+      nextCursor: null,
+    });
+    await expect(listed).resolves.toEqual({
+      data: [{ turnId: "turn-complete", item: { type: "agentMessage", text: "complete answer" } }],
+      nextCursor: null,
+    });
   });
 
   it("observes the authoritative turn and terminal status created by an active goal", async () => {
@@ -170,11 +264,33 @@ describe("CodexGoalAppServerClient", () => {
     await expect(client.getGoal("thread-1")).rejects.toThrow("invalid JSON");
   });
 
-  it("bounds an unterminated protocol line", async () => {
+  it("stops consuming stdout after a terminal protocol failure", async () => {
     const process = new FakeAppServerProcess();
-    const client = new CodexGoalAppServerClient(process, { requestTimeoutMs: 1_000 });
+    const client = new CodexGoalAppServerClient(process, {
+      requestTimeoutMs: 1_000,
+      terminateAfterMs: 0,
+      killAfterMs: 10,
+    });
+    let notifications = 0;
+    client.onNotification(() => notifications++);
+    const pending = client.getGoal("thread-1");
+    await waitForWrite(process, "thread/goal/get");
+
     process.stdout.write("x".repeat(4 * 1024 * 1024 + 1));
-    await expect(client.getGoal("thread-1")).rejects.toThrow("protocol line exceeded");
+    await expect(pending).rejects.toThrow("protocol line exceeded");
+    const diagnostics = client.diagnostics();
+
+    expect(() => {
+      process.stdout.write(`${JSON.stringify({ method: "turn/started", params: {} })}\n`);
+      process.stdout.write(`${JSON.stringify({ id: 77, method: "unsupported", params: {} })}\n`);
+    }).not.toThrow();
+    expect(client.diagnostics()).toEqual(diagnostics);
+    expect(notifications).toBe(0);
+    expect(process.writes.some((entry) => entry.id === 77)).toBeFalse();
+    expect(process.stdout.listenerCount("data")).toBe(0);
+
+    await client.stop();
+    expect(process.signals).toEqual(["SIGTERM"]);
   });
 
   it("stops through normal stdin shutdown without signaling", async () => {
@@ -217,8 +333,9 @@ describe("CodexGoalAppServerClient", () => {
     await expect(timedOut).rejects.toThrow("request thread/goal/get timed out");
     process.reply(first.id, { goal: { status: "active" } });
 
-    const next = client.readThread("thread-1", false);
+    const next = client.readThread("thread-1");
     const second = await waitForWrite(process, "thread/read");
+    expect(second.params).toEqual({ threadId: "thread-1", includeTurns: false });
     process.reply(second.id, { thread: { id: "thread-1" } });
     await expect(next).resolves.toEqual({ thread: { id: "thread-1" } });
     await client.stop();

@@ -41,3 +41,11 @@ accepts(mixed);
 accepts({ ...report, state: "needs-agent", result: {} });
 // @ts-expect-error Waiting puts progress in summary, not a caller answer.
 accepts({ ...report, state: "waiting", response: "Finished" });
+
+const request = { id: "review", appId: "evaluation", input: { kind: "message", data: { text: "Review" } } };
+accepts({ ...report, state: "converged", requests: [request] });
+accepts({ ...report, state: "waiting", requests: [request], conditions: [{ requestId: "review" }] });
+// @ts-expect-error A caller cannot declare convergence and add a wait.
+accepts({ ...report, state: "converged", requests: [request], conditions: [{ requestId: "review" }] });
+// @ts-expect-error Incomplete preserves existing work; new submissions need a waiting or converged decision.
+accepts({ ...incomplete, requests: [request] });

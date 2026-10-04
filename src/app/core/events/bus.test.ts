@@ -338,7 +338,7 @@ describe("EventBus subscriber priority", () => {
     expect(events[1]).toMatchObject({
       type: "subscriber.failed",
       source: "event-bus",
-      owner: "agent:may",
+      owner: "system:host",
       trace: { traceId: "event:70", parentEventId: 70 },
       data: {
         originalEventType: "info",

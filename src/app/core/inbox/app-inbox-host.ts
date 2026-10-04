@@ -1,10 +1,12 @@
+import { AppTaskAdmissionError } from "../state/task-admission-error.js";
+import { appInputRoute, assertAppTaskInputRoute } from "../apps/input-routing.js";
+import { stateTransaction } from "../../../lib/db/transaction.js";
 import { createHash } from "node:crypto";
 import { readInputContext, observeTaskDependency, type AppDependencyReader, type TaskInputObservation } from "./input-context.js";
 import {
   completeTaskInput,
-  isAppTaskRevisionAdmissionError,
   recoverTaskInputAdmissionKey,
-  rejectTaskInputRevision,
+  rejectTaskInput,
 } from "../state/inbox.js";
 import {
   matchesEventSelector,
@@ -29,6 +31,7 @@ import {
 import {
   createAppInboxItem,
   getAppInboxItem,
+  listAppInboxItems,
   hasConversationExecutionTask,
   listAppInboxItemsWaitingOnTask,
   listAppInboxTaskDependencyKeys,
@@ -144,6 +147,19 @@ const REVIEWABLE_TASK_DEPENDENCY_STATUSES = new Set<AppDependencyObservation["st
 function requiredText(value: unknown, field: string): string {
   if (typeof value !== "string" || !value.trim()) throw new Error(`${field} must be a non-empty string`);
   return value.trim();
+}
+
+/** App work with no retained Conversation or historical executor ownership. */
+function isUnattachedTaskRequest(item: AppInboxItem): boolean {
+  return Boolean(
+    item.source.kind === "app" &&
+    !item.conversationId &&
+    !item.executionTaskId &&
+    !item.waitingOn &&
+    !item.taskAdmissionKey &&
+    item.startedAt === undefined &&
+    !item.lease,
+  );
 }
 
 function validateAppDefinition(app: AppDefinition): RegisteredApp {
@@ -302,10 +318,7 @@ export class AppInboxHost {
     assertValidAppInput(app, input);
     // A schema describes valid data; accepting work also requires a handler.
     // A declared handler may fail temporarily: its durable input remains retryable.
-    const hasHandler = Boolean(
-      (app.conversation && (!app.conversation.inputKinds || app.conversation.inputKinds.includes(input.kind))) ||
-      (app.tasks && app.task),
-    );
+    const hasHandler = appInputRoute(app, input.kind) !== null;
     if (!hasHandler) throw new Error(`App ${app.id} has no handler for input kind ${input.kind}`);
   }
 
@@ -353,14 +366,30 @@ export class AppInboxHost {
     assertValidAppInput(app, input.input);
     const targetTaskId =
       input.targetTaskId === undefined ? undefined : requiredText(input.targetTaskId, "targetTaskId");
-    if (targetTaskId && hasConversationExecutionTask(this.#db, app.id, targetTaskId)) {
+    if (
+      app.conversation?.mode !== "task" &&
+      targetTaskId &&
+      hasConversationExecutionTask(this.#db, app.id, targetTaskId)
+    ) {
       throw new Error("Conversation Task input must use conversationId without targetTaskId");
     }
-    const conversationInput = Boolean(
-      !targetTaskId &&
-      app.conversation &&
-      (!app.conversation.inputKinds || app.conversation.inputKinds.includes(input.input.kind)),
-    );
+    const conversationInput =
+      appInputRoute(app, input.input.kind, targetTaskId, input.source.kind === "app" && !input.conversationId) ===
+      "conversation";
+    if (conversationInput) {
+      const retained = input.idempotencyKey
+        ? listAppInboxItems(this.#db, { appId: app.id, idempotencyKey: input.idempotencyKey, limit: 1 })[0]
+        : input.id
+          ? this.get(input.id)
+          : null;
+      if (retained && isUnattachedTaskRequest(retained)) {
+        // A replay cannot turn saved delegated work into a Conversation. Check
+        // the exact input before using the same Task attachment path as recovery.
+        const admitted = createAppInboxItem(this.#db, { ...input, targetTaskId, now: this.#now() });
+        this.#admitTask(admitted.item);
+        return { ...admitted, item: this.get(admitted.item.id)! };
+      }
+    }
     const defaultConversationId = app.conversation?.conversationId?.trim();
     const useDefaultConversation =
       conversationInput &&
@@ -449,7 +478,6 @@ export class AppInboxHost {
       evidence &&
       stage === "input-admission" &&
       evidence.reportedAt === undefined &&
-      item.source.kind === "app" &&
       this.#onRequestUpdated
     ) {
       const result: AppResult = {
@@ -489,15 +517,13 @@ export class AppInboxHost {
       // Recheck retained inputs at the attachment boundary. A target that did
       // not exist during initial admission may become a Conversation executor
       // before recovery; it must never acquire ordinary Task authority.
-      if (item.targetTaskId && hasConversationExecutionTask(this.#db, app.id, item.targetTaskId)) {
-        throw new Error("Conversation Task input must use conversationId without targetTaskId");
-      }
       if (
-        !item.targetTaskId &&
-        app.conversation &&
-        (!app.conversation.inputKinds || app.conversation.inputKinds.includes(item.input.kind))
-      )
-        throw new Error("Conversation input requires offline cutover to its Task execution owner");
+        app.conversation?.mode !== "task" &&
+        item.targetTaskId &&
+        hasConversationExecutionTask(this.#db, app.id, item.targetTaskId)
+      ) {
+        throw new AppTaskAdmissionError("Conversation Task input must use conversationId without targetTaskId");
+      }
       if (item.waitingOn?.kind === "task") {
         // An old Host may have stopped while projecting an already attached
         // input. Fence only that expired, ordinary input claim; never remap it.
@@ -510,6 +536,9 @@ export class AppInboxHost {
             .run(item.id, item.lease.owner, item.lease.generation, this.#now());
         return;
       }
+      if (isUnattachedTaskRequest(item)) assertAppTaskInputRoute(app, item.input.kind, item.targetTaskId);
+      if (appInputRoute(app, item.input.kind, item.targetTaskId, isUnattachedTaskRequest(item)) === "conversation")
+        throw new Error("Conversation input requires offline cutover to its Task execution owner");
       if (!app.tasks || !app.task) throw new Error(`App ${app.id} does not resolve input to Task work`);
       if (!this.#attachTask) throw new Error("App task admission is not configured");
       assertValidAppInput(app, item.input);
@@ -540,19 +569,33 @@ export class AppInboxHost {
         // failure cannot relabel the successfully attached input.
       }
     } catch (error) {
-      if (isAppTaskRevisionAdmissionError(error)) {
-        const result = rejectTaskInputRevision(this.#db, item, error, this.#now());
-        if (result) {
-          try {
-            this.#onRequestUpdated?.(item, result, "done");
-            if (item.conversationId) this.#onConversationChanged?.(item.appId, item.conversationId);
-          } catch {
-            // The terminal correction remains readable if notification fails.
-          }
-        }
+      if (error instanceof AppTaskAdmissionError) {
+        const result = stateTransaction(this.#db, () => {
+          recordAppInboxRecoveryFailure(this.#db, item.id, "input-admission", error.message, this.#now());
+          return rejectTaskInput(this.#db, item, error, this.#now());
+        });
+        if (result) this.#reportRejection(this.get(item.id)!);
         return;
       }
       this.#failure(item, "input-admission", error);
+    }
+  }
+
+  #reportRejection(item: AppInboxItem): void {
+    const evidence = item.recovery?.["input-admission"];
+    if (!item.result || !evidence || evidence.reportedAt !== undefined) return;
+    try {
+      const result = { ...item.result, facts: [
+        ...(item.result.facts ?? []), `recovery-fingerprint:${evidence.fingerprint}`,
+      ] };
+      if (this.#onRequestUpdated?.(item, result, "done") !== true)
+        throw new Error("No responsible route accepted the rejected input feedback");
+      markAppInboxRecoveryReported(this.#db, item.id, "input-admission", evidence.fingerprint, this.#now());
+      resolveAppInboxRecovery(this.#db, item.id, "input-feedback", this.#now());
+      if (item.conversationId) this.#onConversationChanged?.(item.appId, item.conversationId);
+    } catch (error) {
+      // Retry only the notification, never the permanently rejected attachment.
+      recordAppInboxRecoveryFailure(this.#db, item.id, "input-feedback", errorMessage(error), this.#now());
     }
   }
 
@@ -562,15 +605,24 @@ export class AppInboxHost {
     const readPage = () =>
       this.#db
         .prepare(
-          `SELECT id FROM app_inbox_items
-      WHERE status != 'done' AND execution_task_id IS NULL
+          `SELECT id FROM (
+        SELECT id FROM app_inbox_items INDEXED BY idx_app_inbox_unadmitted
+        WHERE status != 'done' AND execution_task_id IS NULL
         AND (waiting_on_kind IS NULL OR waiting_on_kind != 'task' OR lease_owner IS NOT NULL)
         AND (lease_expires_at IS NULL OR lease_expires_at <= ?)
         AND (available_at IS NULL OR available_at <= ?)
+        UNION ALL
+        SELECT id FROM app_inbox_items INDEXED BY idx_app_inbox_rejected_feedback
+        WHERE execution_task_id IS NULL AND status = 'done' AND waiting_on_kind IS NULL
+          AND json_extract(handling, '$.phase') = 'failed'
+          AND json_extract(recovery_json, '$."input-admission".fingerprint') IS NOT NULL
+          AND json_extract(recovery_json, '$."input-admission".reportedAt') IS NULL
+          AND (review_at IS NULL OR review_at <= ?))
+        WHERE 1 = 1
         ${this.#admissionCursor ? "AND id > ?" : ""}
       ORDER BY id LIMIT 64`,
         )
-        .all(this.#now(), this.#now(), ...(this.#admissionCursor ? [this.#admissionCursor] : []));
+        .all(this.#now(), this.#now(), this.#now(), ...(this.#admissionCursor ? [this.#admissionCursor] : []));
     let rows = readPage();
     if (!rows.length && this.#admissionCursor) {
       this.#admissionCursor = undefined;
@@ -580,7 +632,10 @@ export class AppInboxHost {
     for (const row of rows) {
       if (this.#closed) return;
       const item = this.get(String(row.id));
-      if (item && this.#apps.has(item.appId)) this.#admitTask(item);
+      if (item && this.#apps.has(item.appId)) {
+        if (item.status === "done") this.#reportRejection(item);
+        else this.#admitTask(item);
+      }
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
     }
   }

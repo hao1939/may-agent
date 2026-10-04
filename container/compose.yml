@@ -18,6 +18,9 @@ services:
       start_period: 10s
     logging:
       driver: json-file
+    # Interface bindings (AGENT, legacy DAEMON_AGENT, CONVERSATION_APP/ID)
+    # come from this file or an explicit Compose override. Environment defaults
+    # here would mask env_file values before the runtime can apply its fallback.
     env_file: ../.env
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -32,7 +35,6 @@ services:
       - MODEL_API_KEY=${MODEL_API_KEY:-not-needed}
       - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-}
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
-      # Leave one Host lane for interactive May while allowing App work to
+      # Leave capacity for interactive work while allowing Apps to
       # make progress across several independent task controllers.
       - MAY_HOST_MAX_CONCURRENT=${MAY_HOST_MAX_CONCURRENT:-8}
-      - CONTEXT_LEARN_AGENTS=coder,may,bob,coach,optimizer,tech-lead

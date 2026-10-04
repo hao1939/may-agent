@@ -1,15 +1,53 @@
 import { describe, expect, it } from "bun:test";
 import { Type } from "typebox";
 import { Check } from "typebox/value";
+import { conversationTurnResultSchema } from "./app.js";
 import {
   admitTaskReconcileResult,
   admitTaskResultForSchema,
   admitTaskVerificationResult,
   taskAgentResultSchema,
   taskReconcileResultSchema,
+  taskChangesSchema,
 } from "./task-contract.js";
 
 const workflowOptions = { allowNeedsAgent: true };
+
+it("allows open Requests without a reason in live and final Task changes while retaining the legacy contract", () => {
+  const requestUpdates = [{ id: "ask", expectedRevision: 0, scope: "Test the change", disposition: "open" }];
+  const changes = { communication: [{ id: "accept", inputId: "input", requestUpdates }] };
+  expect(Check(taskChangesSchema, changes)).toBe(true);
+  for (const schema of [taskAgentResultSchema, taskReconcileResultSchema]) {
+    expect(
+      admitTaskResultForSchema(schema, { state: "waiting", summary: "Accepted", facts: [], ...changes })?.ok,
+    ).toBe(true);
+  }
+  const legacy = { summary: "Accepted", requestUpdates };
+  expect(Check(conversationTurnResultSchema, legacy)).toBe(false);
+  expect(
+    Check(conversationTurnResultSchema, {
+      ...legacy,
+      requestUpdates: [{ ...requestUpdates[0], reason: "Testing continues" }],
+    }),
+  ).toBe(true);
+});
+
+it("admits exact result scope consistently for agent and workflow results", () => {
+  for (const state of ["converged", "waiting", "incomplete"] as const) {
+    expect(admitTaskReconcileResult({ state, summary: "Progress only", facts: ["inspected"], inputKeys: [] }, workflowOptions))
+      .toMatchObject({ ok: true, result: { inputKeys: [] } });
+    const output = { state, summary: "Reviewed the earlier request", facts: ["request:read"], inputKeys: ["earlier"] };
+    for (const schema of [taskAgentResultSchema, taskReconcileResultSchema]) {
+      const admitted = admitTaskResultForSchema(schema, output);
+      expect(admitted).toMatchObject({ ok: true, result: output });
+      if (admitted?.ok) expect(admitTaskResultForSchema(schema, admitted.result)).toEqual(admitted);
+    }
+  }
+  for (const inputKeys of [null, "earlier", [""], [" "], ["earlier", "earlier"], Array.from({ length: 65 }, (_, i) => `${i}`)]) {
+    expect(admitTaskReconcileResult({ state: "converged", summary: "Done", facts: [], inputKeys }, workflowOptions).ok).toBe(false);
+  }
+  expect(admitTaskReconcileResult({ state: "needs-agent", summary: "Delegate", facts: [], inputKeys: ["earlier"] }, workflowOptions).ok).toBe(false);
+});
 
 it("routes persisted Task result schemas through the same semantic admission", () => {
   const convergedReview = {
@@ -168,7 +206,7 @@ describe("project task handler contract", () => {
       const admitted = admitTaskReconcileResult(output, workflowOptions);
       expect({ owner, valid: admitted.ok }).toEqual({ owner, valid });
       if (admitted.ok) {
-        expect(admitted.result.conditions?.[0]?.owner).toBe(owner.trim());
+        expect((admitted.result.conditions?.[0] as { owner?: string })?.owner).toBe(owner.trim());
         expect(Check(taskAgentResultSchema, admitted.result)).toBe(true);
       }
     }
@@ -185,7 +223,7 @@ describe("project task handler contract", () => {
     expect(admitTaskReconcileResult(result, workflowOptions)).toMatchObject({
       ok: false,
       error:
-        "actions[0].kind must be unblock-task or retire-condition; revise requirements through tasks update and delegate new work through dependencies",
+        "actions[0].kind must be unblock-task or retire-condition; revise requirements through tasks update and delegate new work through requests",
     });
   });
 
@@ -289,6 +327,47 @@ describe("project task handler contract", () => {
     });
   });
 
+  it("separates submitted work from the caller's decision to wait", () => {
+    const request = { id: "review", appId: "evaluation", input: { kind: "message", data: { text: "Review" } } };
+    const submitted = {
+      state: "converged",
+      summary: "Submitted for independent handling",
+      facts: [],
+      requests: [request],
+    };
+    expect(Check(taskAgentResultSchema, submitted)).toBe(true);
+    expect(admitTaskReconcileResult(submitted, workflowOptions)).toMatchObject({
+      ok: true,
+      result: { requests: [request] },
+    });
+    const waiting = {
+      ...submitted,
+      state: "waiting",
+      conditions: [{ requestId: "review" }],
+      continue: true,
+      facts: ["Other useful work remains"],
+    };
+    expect(Check(taskAgentResultSchema, waiting)).toBe(true);
+    expect(admitTaskReconcileResult(waiting, workflowOptions)).toMatchObject({
+      ok: true,
+      result: { requests: [request], conditions: [{ requestId: "review" }], continue: true },
+    });
+    // Runtime admission resolves references to requests saved earlier in this Task generation.
+    expect(admitTaskReconcileResult({ ...waiting, conditions: [{ requestId: "saved" }] }, workflowOptions).ok).toBe(
+      true,
+    );
+    expect(admitTaskReconcileResult({ ...waiting, state: "converged" }, workflowOptions)).toEqual({
+      ok: false,
+      error: "Conditions are valid only for waiting",
+    });
+    expect(Check(taskAgentResultSchema, { ...submitted, requests: [{ ...request, waitForResult: true }] })).toBe(false);
+    expect(admitTaskReconcileResult({ ...waiting, dependencies: [request] }, workflowOptions)).toEqual({
+      ok: false,
+      error: "use requests or legacy dependencies, not both",
+    });
+    expect(Check(taskAgentResultSchema, { ...waiting, requests: undefined, dependencies: [request] })).toBe(false);
+  });
+
   it("admits typed App dependencies only while waiting", () => {
     const dependency = {
       id: "review",
@@ -313,7 +392,8 @@ describe("project task handler contract", () => {
         summary: "Waiting for independent review",
         facts: ["dependency:evaluation/review"],
         actions: [],
-        dependencies: [dependency],
+        requests: [dependency],
+        conditions: [{ requestId: "review" }],
       },
     });
     expect(
@@ -349,7 +429,7 @@ describe("project task handler contract", () => {
         },
         workflowOptions,
       ),
-    ).toEqual({ ok: false, error: "dependencies[0].taskId must be a non-empty string when present" });
+    ).toEqual({ ok: false, error: "requests[0].taskId must be a non-empty string when present" });
   });
 
   it("rejects raw child specifications in both schema and admission", () => {
@@ -363,7 +443,7 @@ describe("project task handler contract", () => {
     expect(admitTaskReconcileResult(output, workflowOptions)).toEqual({
       ok: false,
       error:
-        "actions[0].kind must be unblock-task or retire-condition; revise requirements through tasks update and delegate new work through dependencies",
+        "actions[0].kind must be unblock-task or retire-condition; revise requirements through tasks update and delegate new work through requests",
     });
   });
 
@@ -595,9 +675,12 @@ describe("project task handler contract", () => {
         },
         workflowOptions,
       ),
-    ).toEqual({
-      ok: false,
-      error: "conditions[0].reviewAfterMs must be an integer of at least 60000",
+    ).toMatchObject({
+      ok: true,
+      result: {
+        state: "waiting",
+        conditions: [{ id: "credential-ready:xhs", owner: "app:credential-provider" }],
+      },
     });
   });
 

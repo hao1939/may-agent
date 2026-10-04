@@ -18,7 +18,12 @@ import {
 } from "../core/events/bus.js";
 import { AppRegistry, type AppDefinitionSource } from "../core/apps/registry.js";
 import { discoverAppDefinitions } from "../adapters/discovery/app-definitions.js";
-import { conversationTaskId } from "../core/state/conversation-task-turns.js";
+import {
+  conversationTaskId, admitConversationTaskInput, completeConversationTaskTurn,
+  admitConversationTaskChange, listPendingConversationTaskChanges,
+} from "../core/state/conversation-task-turns.js";
+import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";
+import { appTaskContext, claimObservedAppTask, completeAppTask, observeAppTaskIntent } from "../core/tasks/app-task-reconciler.js";
 import { conversationTaskSuccessorId } from "../core/state/conversation-identity.js";
 import { createAppInboxItem } from "../core/state/app-inbox-store.js";
 import { claimNextAppInboxItem, waitAppInboxClaim } from "../../../test/fixtures/legacy-inbox.js";
@@ -650,7 +655,7 @@ describe("App inbox runtime", () => {
     }
   });
 
-  it("routes exact linked Task changes without turning notification text into a reply", async () => {
+  it("admits one Task change per Conversation without publishing per-link events or replies", async () => {
     const bus = persistentBus();
     const task = capabilities(bus);
     const messages: unknown[] = [];
@@ -669,6 +674,19 @@ describe("App inbox runtime", () => {
       originMessageId: "original",
     });
     linkConversationTopicTask(db, "topic", "evaluation", "probe/current");
+    for (let i = 1; i < 56; i++) {
+      const id = `topic-${i}`;
+      createConversationTopic(db, {
+        id, appId: "evaluation", conversationId: "chat", title: id,
+        openedBy: "human", originMessageId: id,
+      });
+      linkConversationTopicTask(db, id, "evaluation", "probe/current");
+    }
+    createConversationTopic(db, {
+      id: "other-topic", appId: "evaluation", conversationId: "other-chat", title: "Another discussion",
+      openedBy: "human", originMessageId: "other",
+    });
+    linkConversationTopicTask(db, "other-topic", "evaluation", "probe/current");
     const executionTaskId = conversationTaskId("evaluation", "chat");
     linkConversationTopicTask(db, "topic", "evaluation", executionTaskId);
     runtime = await startAppInboxRuntime({
@@ -699,42 +717,123 @@ describe("App inbox runtime", () => {
     publish("probe/current");
     expect(admitted).toEqual([]);
     publish("probe/current", "accepted-attempt");
-    expect(admitted).toEqual([
+    // Distinct Conversations have no delivery-order contract. Links can share
+    // a timestamp, so their generated identities may decide traversal order.
+    expect(new Set(admitted)).toEqual(new Set([
       {
         appId: "evaluation",
         conversationId: "chat",
-        topicId: "topic",
         taskAppId: "evaluation",
         taskId: "probe/current",
         attemptId: "accepted-attempt",
       },
-    ]);
-    expect(changes).toEqual([
       {
         appId: "evaluation",
-        conversationId: "chat",
-        topicId: "topic",
-        taskRef: { appId: "evaluation", taskId: "probe/current" },
+        conversationId: "other-chat",
+        taskAppId: "evaluation",
+        taskId: "probe/current",
         attemptId: "accepted-attempt",
       },
-    ]);
+    ]));
+    expect(changes).toEqual([]);
     publish(executionTaskId, "own-attempt");
-    expect(admitted).toHaveLength(1);
+    expect(admitted).toHaveLength(2);
     bus.emit({
       type: "app.task.cancelled",
       source: "fixture",
       data: { appId: "evaluation", taskId: "probe/current", generation: 1 },
     });
-    expect(admitted.at(-1)).toEqual({
-      appId: "evaluation",
-      conversationId: "chat",
-      topicId: "topic",
-      taskAppId: "evaluation",
-      taskId: "probe/current",
-      closedGeneration: 1,
-    });
+    expect(admitted).toHaveLength(4);
+    expect(new Set(admitted.slice(2))).toEqual(new Set(["chat", "other-chat"].map((conversationId) => ({
+      appId: "evaluation", conversationId, taskAppId: "evaluation",
+      taskId: "probe/current", closedGeneration: 1,
+    }))));
+    expect(changes).toEqual([]);
     // Presentation and judgment happen only when the real Task accepts a reply.
     expect(messages).toEqual([]);
+  });
+
+  it("recovers grouped outcomes after admission failure and runtime restart, retaining overflow and late links", async () => {
+    const store = AppTaskResourceStore.fromDb(db, "evaluation");
+    store.bootstrapSnapshot({ project: "evaluation", root_task_id: "root",
+      project_lifecycle: "active", groups: { root: { id: "root", parent_id: null } } }, "fixture");
+    const context = appTaskContext({ appDir: root, projectDir: root, agent: "evaluator", resourceStore: store });
+    const claim = (taskId: string) => {
+      const result = claimObservedAppTask(context, { taskId, appAgent: "evaluator", handler: "executor:fixture" });
+      if (result.kind !== "claimed") throw new Error(`Expected claim, got ${result.kind}`);
+      return result;
+    };
+    for (const conversationId of ["chat", "other-chat"]) {
+      const input = admitConversationTaskInput(context, {
+        id: conversationId, appId: "evaluation", conversationId,
+        source: { kind: "human", id: conversationId }, input: { kind: "message", data: { text: "Get evidence" } },
+        intent: { parentId: "root", outcome: "Discuss", acceptance: ["Answer"], executor: "conversation" },
+      });
+      completeConversationTaskTurn(context, claim(input.taskId), { summary: "Understood", response: "I'll review the evidence." });
+    }
+    observeAppTaskIntent(context, { appAgent: "evaluator", intent: {
+      id: "worker", parentId: "root", outcome: "Collect evidence", acceptance: ["Measured"],
+    } });
+    const worker = claim("worker");
+    completeAppTask(context, worker, { summary: "Measured", result: { value: 17 } });
+    const link = (id: string, conversationId = "chat") => {
+      createConversationTopic(db, { id, appId: "evaluation", conversationId, title: id,
+        openedBy: "human", originMessageId: id });
+      linkConversationTopicTask(db, id, "evaluation", "worker");
+    };
+    const topics = Array.from({ length: 105 }, (_, i) => `topic-${String(i).padStart(3, "0")}`);
+    topics.forEach((id) => link(id));
+    link("other-topic", "other-chat");
+    let broken = true;
+    let calls = 0;
+    const returned: Array<{ conversationId: string; topicIds: string[] }> = [];
+    const failures: unknown[] = [];
+    const changes: unknown[] = [];
+    const connect = async () => {
+      const bus = persistentBus();
+      bus.subscribe((event) => {
+        if (event.type === "handler.failed") failures.push(event.data);
+        if (event.type === "conversation.task.changed") changes.push(event.data);
+      });
+      runtime = await startAppInboxRuntime({
+        registry: await loadedRegistry(root), db, bus, deferStart: true,
+        admitConversationChange(input) {
+          calls++;
+          if (broken && input.conversationId === "chat") throw new Error("injected admission failure");
+          const result = admitConversationTaskChange(context, context, input);
+          if (result.created) returned.push({ conversationId: input.conversationId,
+            topicIds: result.item.input.data.topicIds as string[] });
+          return result;
+        },
+      });
+      return bus;
+    };
+    let bus = await connect();
+    bus.emit({ type: "project.task.reconciled", source: "fixture",
+      data: { project: "evaluation", taskId: "worker", attemptId: worker.attemptId } });
+    expect(calls).toBe(2);
+    expect(returned).toEqual([{ conversationId: "other-chat", topicIds: ["other-topic"] }]);
+    expect(failures).toEqual([expect.objectContaining({
+      appId: "evaluation", conversationId: "chat", stage: "conversation-change", disposition: "recovery-pending",
+    })]);
+    runtime!.close();
+    broken = false;
+    bus = await connect();
+    const recover = () => bus.emit({ type: "conversation.supervision.review", source: "timer", data: { project: "evaluation" } });
+    recover();
+    expect(calls).toBe(3);
+    expect(returned[1]!.topicIds).toHaveLength(100);
+    recover();
+    expect(calls).toBe(4);
+    expect(returned[2]!.topicIds).toHaveLength(5);
+    expect([...returned[1]!.topicIds, ...returned[2]!.topicIds].sort()).toEqual(topics);
+    link("late-topic");
+    recover();
+    expect(returned[3]).toEqual({ conversationId: "chat", topicIds: ["late-topic"] });
+    recover();
+    expect(calls).toBe(5);
+    expect(listPendingConversationTaskChanges(db, "evaluation")).toEqual([]);
+    expect(changes).toEqual([]);
   });
 
   it("recovers an exact Task wait after restart", async () => {

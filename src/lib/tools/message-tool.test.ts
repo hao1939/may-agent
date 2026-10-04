@@ -96,7 +96,7 @@ describe("message tool", () => {
     expect(p0Event).toBeDefined();
   });
 
-  it("respects allowedTargets allowlist and reports invalid targets to may", async () => {
+  it("respects allowedTargets allowlist and returns invalid-target failure to the caller", async () => {
     const { tool, events } = setup({ allowedTargets: ["dev", "scout"] });
 
     const allowed = await call(tool, { to: "dev", content: "hi" });
@@ -111,7 +111,7 @@ describe("message tool", () => {
       expect.objectContaining({
         type: "message.delivery_failed",
         source: "agent:arc",
-        owner: "agent:may",
+        owner: "agent:arc",
         data: expect.objectContaining({
           from: "arc",
           to: "qa",

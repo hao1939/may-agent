@@ -6,6 +6,7 @@ import { openDatabase } from "../../../lib/db.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { AppTaskRecoveryScheduler } from "../tasks/app-task-recovery.js";
 import { admitConversationTaskInput } from "./conversation-task-turns.js";
+import { admitTaskInput } from "./inbox.js";
 import { trackAppTaskConditionEventForTasks } from "../tasks/app-task-condition-tracker.js";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "../reads/app-read.js";
 import type { AppTaskResource } from "../tasks/app-task-state.js";
@@ -25,7 +26,9 @@ import {
   deferAppTask,
   observeAppTaskIntent,
   recordAppTaskTrigger,
+  recordAppTaskAttemptWorkspace,
   reportAppTaskFailure,
+  readAppTaskAdmissionOutcome,
 } from "../tasks/app-task-reconciler.js";
 
 const roots: string[] = [];
@@ -105,6 +108,49 @@ function open() {
 }
 
 describe("AppTaskResourceStore", () => {
+  it.each([false, true])("recovers exact workspace beyond recent execution history and restart (legacy=%s)", (legacy) => {
+    const root = mkdtempSync(join(tmpdir(), "may-workspace-reference-"));
+    roots.push(root);
+    const path = join(root, "host.sqlite");
+    let store = AppTaskResourceStore.openStandalone(path, "example");
+    const config = appTaskContext({ appDir: root, projectDir: root, agent: "may", maxConcurrent: 2, resourceStore: store });
+    try {
+      store.bootstrapSnapshot(fixture(), "fixture");
+      const claim = claimObservedAppTask(config, { taskId: "normal", appAgent: "may", handler: "agent" });
+      if (claim.kind !== "claimed") throw new Error("expected claim");
+      const workspace = {
+        kind: "task-worktree" as const, path: join(root, "retained"), branch: "task/retained",
+        baseRef: "main", baseCommit: "base", headCommit: "head", disposition: "active" as const,
+      };
+      expect(recordAppTaskAttemptWorkspace(config, claim, workspace)).toBe(true);
+      completeAppTask(config, claim, { summary: "Contribution accepted; branch retained" });
+      for (let index = 0; index < 20; index++) {
+        recordAppTaskTrigger(config, "normal", { type: "native.check", eventId: 100 + index });
+        const native = claimObservedAppTask(config, { taskId: "normal", appAgent: "may", handler: "native" });
+        if (native.kind !== "claimed") throw new Error("expected native claim");
+        completeAppTask(config, native, { summary: "Native check complete" });
+      }
+      expect(store.readTaskContext({ taskIds: ["normal"] }).attempts?.[claim.attemptId]).toBeUndefined();
+      expect(recordAppTaskAttemptWorkspace(config, claim, { ...workspace, path: "stale" })).toBe(false);
+      if (legacy) {
+        const task = store.readTask("normal")!;
+        delete task.status.workspaceAttemptId;
+        expect(store.replaceTask({ expectedResourceVersion: task.metadata.resourceVersion, resource: task, ready: false })).toBe(true);
+      }
+      store.close();
+      store = AppTaskResourceStore.openStandalone(path, "example");
+      expect(store.readTaskWorkspace("normal", 1)).toEqual(workspace);
+      expect(store.readTaskWorkspace("normal", 2)).toBeUndefined();
+      expect(store.readTaskWorkspace("human", 1)).toBeUndefined();
+      const task = store.readTask("normal")!;
+      task.status.workspaceAttemptId = "missing";
+      expect(store.replaceTask({ expectedResourceVersion: task.metadata.resourceVersion, resource: task, ready: false })).toBe(true);
+      expect(() => store.readTaskWorkspace("normal", 1)).toThrow("invalid workspace attempt reference");
+    } finally {
+      store.close();
+    }
+  });
+
   it("upgrades retained input identities once without retaining duplicate event bodies", () => {
     const store = open();
     try {
@@ -715,13 +761,23 @@ describe("AppTaskResourceStore", () => {
       tree.attempts![attempt.metadata.id] = attempt;
     }
     store.bootstrapSnapshot(tree, "revision-1");
+    // Attempt IDs are unique within an App, not across Apps.
+    const otherTree = structuredClone(tree);
+    otherTree.project = "other";
+    for (const attempt of Object.values(otherTree.attempts!)) attempt.summary = "Other App";
+    AppTaskResourceStore.fromDb(store.db, "other").bootstrapSnapshot(otherTree, "revision-1");
 
     const context = store.readTaskContext({ taskIds: ["normal"] });
     expect(Object.keys(context.resources ?? {})).toEqual(["normal"]);
     expect(context.resources?.human).toBeUndefined();
     expect(context.resources?.active).toBeUndefined();
     expect(Object.keys(context.groups ?? {})).toEqual(["project"]);
-    expect(Object.keys(context.attempts ?? {})).toHaveLength(16);
+    expect(Object.keys(context.attempts ?? {}).sort()).toEqual(
+      Array.from({ length: 16 }, (_, index) => `normal-history-${index + 24}`),
+    );
+    const combined = store.readTaskContext({ taskIds: ["normal", "active"] });
+    expect(combined.attempts).toEqual({ ...context.attempts, "attempt-1": tree.attempts!["attempt-1"] });
+    for (const [id, attempt] of Object.entries(combined.attempts!)) expect(attempt).toEqual(tree.attempts![id]);
     const currentOnly = store.readTaskContext({ taskIds: ["active"] }, { includeHistory: false });
     expect(Object.keys(currentOnly.attempts ?? {})).toEqual([]);
     expect(currentOnly.resources?.active?.status.currentAttemptId).toBe("attempt-1");
@@ -745,7 +801,7 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
-  it("indexes a resource-backed Condition checkpoint and wakes it when due", () => {
+  it("indexes mechanical Condition recovery independently of a legacy review interval", () => {
     const root = mkdtempSync(join(tmpdir(), "may-task-resource-due-"));
     roots.push(root);
     const appDir = join(root, "resource-due.app");
@@ -791,8 +847,8 @@ describe("AppTaskResourceStore", () => {
       }).status,
     ).toBe("applied");
     const dueAt = store.nextDueAt();
-    expect(dueAt).toBeGreaterThanOrEqual(before + 60_000);
-    expect(dueAt).toBeLessThanOrEqual(Date.now() + 60_000);
+    expect(dueAt).toBeGreaterThanOrEqual(before + 300_000);
+    expect(dueAt).toBeLessThanOrEqual(Date.now() + 300_000);
     expect(store.readConditionRoutes("example.completed")).toEqual([expect.objectContaining({ taskIds: ["normal"] })]);
     expect(store.readConditionRoutesForAllApps("example.completed")).toEqual([
       expect.objectContaining({ appId: "example", taskIds: ["normal"] }),
@@ -826,6 +882,77 @@ describe("AppTaskResourceStore", () => {
     expect(queued).toEqual(["normal"]);
     scheduler.close();
     store.close();
+  });
+
+  it("repairs obsolete Condition indexes without moving earlier checks or bypassing backoff", () => {
+    const store = open();
+    const now = Date.now();
+    const retryAt = now + 3_600_000;
+    const earlyAt = now + 60_000;
+    const indexes: Record<string, number | null> = {
+      missing: null,
+      late: now + 86_400_000,
+      early: earlyAt,
+      overdue: now - 1,
+      retry: retryAt,
+      "retry-missing": null,
+      closed: null,
+      satisfied: null,
+      "no-condition": null,
+      cancelled: null,
+    };
+    const tree: TaskTree = { project: "example", resources: {}, conditions: {} };
+    for (const id of Object.keys(indexes)) {
+      const task = resource(id, id === "closed" ? "converged" : "waiting");
+      task.status.observedGeneration = 1;
+      if (id.startsWith("retry")) task.status.executionRetryAt = retryAt;
+      if (id === "early") task.status.reviewAt = earlyAt;
+      if (id !== "no-condition") {
+        task.status.conditionIds = [id];
+        tree.conditions![id] = {
+          metadata: { id, generation: 1, resourceVersion: 1 },
+          spec: { type: "example.completed", subject: `example:${id}`, expected: true },
+          status: { observedGeneration: 1, state: id === "satisfied" ? "true" : "unknown" },
+        };
+      }
+      tree.resources![id] = task;
+    }
+    tree.cancellations = {
+      cancelled: {
+        appId: "example",
+        taskId: "cancelled",
+        generation: 1,
+        resourceVersion: 1,
+        outcome: "finish cancelled",
+        reason: "Owner stopped work",
+        summary: "Stopped",
+        cancelledAt: new Date(now).toISOString(),
+      },
+    };
+    try {
+      store.bootstrapSnapshot(tree, "legacy-indexes");
+      for (const [id, index] of Object.entries(indexes)) {
+        // Recreate legacy derived rows, including a missing retry index.
+        store.db
+          .prepare("UPDATE app_tasks SET next_check_at = ? WHERE app_id = ? AND task_id = ?")
+          .run(index, "example", id);
+      }
+      const before = store.readTaskContext({ taskIds: Object.keys(indexes) });
+      expect(store.repairWaitingConditionRecovery(now)).toBe(3);
+      expect(store.readTaskContext({ taskIds: Object.keys(indexes) })).toEqual(before);
+      const actual = store.db
+        .prepare("SELECT task_id, next_check_at FROM app_tasks WHERE app_id = ?")
+        .all("example") as Array<{ task_id: string; next_check_at: number | null }>;
+      expect(Object.fromEntries(actual.map((row) => [row.task_id, row.next_check_at]))).toEqual({
+        ...indexes,
+        missing: now,
+        late: now,
+        "retry-missing": retryAt,
+      });
+      expect(store.repairWaitingConditionRecovery(now)).toBe(0);
+    } finally {
+      store.close();
+    }
   });
 
   it("routes only open Conditions owned by live waiting or running tasks", () => {
@@ -1030,6 +1157,69 @@ describe("AppTaskResourceStore", () => {
       expect(store.readTrigger("normal")).not.toBeNull();
     } finally {
       store.close();
+    }
+  });
+
+  it.each(["claim", "completion"])("preserves same-spec input admitted during a stale %s write", (transition) => {
+    const root = mkdtempSync(join(tmpdir(), "may-task-admission-race-"));
+    roots.push(root);
+    const path = join(root, "host.sqlite");
+    const store = AppTaskResourceStore.openStandalone(path, "example");
+    store.bootstrapSnapshot(fixture(), "initial");
+    const other = AppTaskResourceStore.openStandalone(path, "example");
+    const config: AppTaskContext = {
+      appDir: root, projectDir: root, agent: "may", maxConcurrent: 2, resourceStore: store,
+    };
+    const admit = (resourceStore: AppTaskResourceStore, id: string) => admitTaskInput({ ...config, resourceStore }, {
+      appId: "example",
+      attachment: { kind: "existing", taskId: "normal" },
+      idempotencyKey: `task:${id}`,
+      inputContext: { id, source: { kind: "app", id: "example" }, input: { kind: "review", data: {} } },
+    });
+    const claim = () => {
+      const result = claimObservedAppTask(config, { taskId: "normal", appAgent: "may", handler: "agent" });
+      if (result.kind !== "claimed") throw new Error(`expected claim, got ${result.kind}`);
+      return result;
+    };
+    try {
+      admit(store, "first");
+      const first = transition === "completion" ? claim() : undefined;
+      const before = store.readTask("normal")!;
+      const commit = store.commit.bind(store);
+      let injected = false;
+      store.commit = (mutation) => {
+        if (!injected) { injected = true; admit(other, "second"); }
+        return commit(mutation);
+      };
+      try {
+        expect(() => first ? completeAppTask(config, first, { summary: "First reviewed" }) : claim()).toThrow("stale fence");
+      } finally {
+        store.commit = commit;
+      }
+      const current = store.readTask("normal")!;
+      expect(current.metadata.generation).toBe(before.metadata.generation);
+      expect(current.status.currentAttemptId).toBe(before.status.currentAttemptId);
+      expect(current.metadata.resourceVersion).toBeGreaterThan(before.metadata.resourceVersion);
+      expect(store.readTrigger("normal")?.events?.map(({ event }) => event.data?.idempotencyKey)).toContain("task:second");
+
+      // Retrying the state transition reads current input; it need not rerun a worker.
+      if (first) expect(completeAppTask(config, first, { summary: "First reviewed" }).status).toBe("applied");
+      const next = claim();
+      expect(next.events.map(({ event }) => event.data?.idempotencyKey)).toEqual(
+        first ? ["task:second"] : ["task:first", "task:second"],
+      );
+      expect(completeAppTask(config, next, { summary: "Assigned input reviewed" }).status).toBe("applied");
+    } finally {
+      store.close();
+      other.close();
+    }
+    const reopened = AppTaskResourceStore.openStandalone(path, "example");
+    try {
+      expect(readAppTaskAdmissionOutcome({ resourceStore: reopened }, "normal", "task:first")?.state).toBe("converged");
+      expect(readAppTaskAdmissionOutcome({ resourceStore: reopened }, "normal", "task:second")?.state).toBe("converged");
+      expect(reopened.readTrigger("normal")).toBeNull();
+    } finally {
+      reopened.close();
     }
   });
 

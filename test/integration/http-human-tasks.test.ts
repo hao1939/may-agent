@@ -8,6 +8,7 @@ import { attachControlSocket, type ControlSocket, type ControlEvent } from "../.
 import { daemonSocketPath } from "../../packages/control/src/client.js";
 import { HumanTaskService, type HumanTaskStatus } from "../../src/app/human-task-service.js";
 import { openStateDb, type SqliteDb } from "../../src/app/http/read-model/state-db.js";
+import { AppRegistry } from "../../src/app/core/apps/registry.js";
 
 const chrome = [
   process.env.CHROME_PATH,
@@ -27,10 +28,12 @@ describe("HTTP human Task reads and board", () => {
   let stopped: Promise<void>;
   let base: string;
   let service: HumanTaskService;
+  let registry: AppRegistry;
   let conversation: { messages: any[]; activeTurn?: { id: string; revision: number } };
   let published: any[];
   let rejectPublish: boolean;
   let rejectConversationRead: boolean;
+  let rejectAppRead: boolean;
   let listeners: Set<(event: ControlEvent) => void>;
 
   beforeEach(async () => {
@@ -38,6 +41,7 @@ describe("HTTP human Task reads and board", () => {
     published = [];
     rejectPublish = false;
     rejectConversationRead = false;
+    rejectAppRead = false;
     listeners = new Set();
     root = mkdtempSync(join(tmpdir(), "may-http-tasks-"));
     db = openStateDb(join(root, "may.db"));
@@ -50,15 +54,16 @@ describe("HTTP human Task reads and board", () => {
     cpSync(resolve(import.meta.dir, "../../packages/webui/static"), join(projects, "platform", "ui"), {
       recursive: true,
     });
-    service = new HumanTaskService(db, { snapshot: () => ({ entries: [] }) } as never);
+    registry = new AppRegistry(async () => []);
+    service = new HumanTaskService(db, registry);
     control = await attachControlSocket({
-      socketPath: daemonSocketPath(root, { instance: "task-test", interfaceAgent: "may" }),
+      socketPath: daemonSocketPath(root, { instance: "task-test", interfaceAgent: "helper" }),
       getSessionId: () => "fixture",
       getStatus: () => [],
       emitEvent: () => {},
       subscribeEvents: (listener) => { listeners.add(listener); return () => listeners.delete(listener); },
       getAppConversation: (appId, conversationId, options) => {
-        if (appId !== "may" || conversationId !== "may:primary" || options?.limit !== 30) throw new Error("Invalid conversation read");
+        if (appId !== "support" || conversationId !== "retained-room" || options?.limit !== 30) throw new Error("Invalid conversation read");
         if (rejectConversationRead) throw new Error("fixture Conversation storage unavailable");
         return conversation;
       },
@@ -72,15 +77,26 @@ describe("HTTP human Task reads and board", () => {
         }
         return { eventId: published.length, eventType: event.type, delivery: "accepted" };
       },
-      agentName: "may",
+      agentName: "helper",
       instance: "task-test",
+      listApps: (appId) => {
+        if (rejectAppRead) throw new Error("fixture App reads unavailable");
+        return service.listApps(appId);
+      },
       listTasks: (options) =>
         service.listTasks({ ...options, status: options?.status as HumanTaskStatus[] | undefined }),
       getTask: (input) => service.getTask(input),
       // SDK routes remain separate and keep their existing response shape.
       listAppTasks: () => ({ items: [{ id: "sdk-task", status: "done" }] }),
-      getAppTask: () => ({ id: "sdk-task", status: "done" }),
+      getAppTask: (_appId, _taskId, options) => ({
+        id: "sdk-task", status: "done",
+        ...(options?.inputKeys ? { inputEvents: options.inputKeys.map((key) => ({ key })) } : {}),
+      }),
     });
+    await startWeb();
+  });
+
+  async function startWeb(conversationApp = "support", conversationId = "retained-room") {
     child = spawn(
       "bun",
       [resolve(import.meta.dir, "../../src/app/http/server.ts"), "--state-dir", root, "--port", "0"],
@@ -92,9 +108,9 @@ describe("HTTP human Task reads and board", () => {
           PROJECT_ROOT: root,
           AGENTS_ROOT: root,
           SHARED_ROOT: root,
-          PROJECTS_ROOT: projects,
+          PROJECTS_ROOT: join(root, "projects"),
           DAEMON_INSTANCE: "task-test",
-          DAEMON_AGENT: "may",
+          AGENT: "helper", CONVERSATION_APP: conversationApp, CONVERSATION_ID: conversationId, DAEMON_AGENT: "unused-legacy",
         },
       },
     );
@@ -118,7 +134,7 @@ describe("HTTP human Task reads and board", () => {
     } finally {
       clearTimeout(timer!);
     }
-  });
+  }
 
   afterEach(async () => {
     child?.kill("SIGKILL");
@@ -151,6 +167,158 @@ describe("HTTP human Task reads and board", () => {
     return res.json();
   }
 
+  function seedChat(agent = "helper") {
+    const sessionId = `${agent}-old-session`;
+    db.prepare("INSERT INTO sessions (sessionId, agent, task, status, kind, source, startedAt) VALUES (?, ?, ?, ?, ?, ?, ?)")
+      .run(sessionId, agent, "Earlier conversation", "idle", "chat", "web-ui", Date.now());
+    return sessionId;
+  }
+
+  test.each([false, true])("interface-agent HTTP input retains its Conversation with existing session=%s", async (existing) => {
+    if (existing) {
+      const sessionId = seedChat();
+      expect(await read("/api/agents/helper/default-session")).toMatchObject({ sessionId });
+    }
+    const response = await fetch(base + "/api/agents/helper/message", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: "Review the migration" }),
+    });
+    expect(response.status).toBe(200);
+    expect(published).toHaveLength(1);
+    expect(published[0]).toMatchObject({
+      type: "app.input.requested", target: { appId: "support" },
+      data: { conversationId: "retained-room", input: { kind: "message", data: { message: "Review the migration" } } },
+    });
+  });
+
+  test("explicit session input and other agents retain direct chat", async () => {
+    const sessionId = seedChat();
+    seedChat("worker");
+    for (const path of [`/api/sessions/${sessionId}/message`, "/api/agents/worker/message", "/api/agents/new-worker/message"]) {
+      const response = await fetch(base + path, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: "Follow up here" }) });
+      expect(response.status).toBe(200);
+    }
+    expect(published).toMatchObject([
+      { type: "session.steer.requested", target: { sessionId } },
+      { type: "session.steer.requested", target: { sessionId: "worker-old-session" } },
+      { type: "chat.start.requested", data: { agent: "new-worker" } },
+    ]);
+  });
+
+  test.skipIf(skipBrowser)("unbound interface chat rejects HTTP and browser input without steering an old session", async () => {
+    seedChat();
+    child.kill("SIGKILL");
+    await stopped;
+    await startWeb("", "");
+    for (const suffix of ["", "?new=true"]) {
+      const response = await fetch(base + "/api/agents/helper/message" + suffix, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: "Keep this request" }),
+      });
+      expect(response.status).toBe(503);
+      expect(await response.json()).toEqual({ error: "No Conversation App is configured" });
+    }
+    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    try {
+      const page = await browser.newPage();
+      page.setDefaultTimeout(5000);
+      await page.goto(`${base}/agents/helper`, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction("currentAgentChat === 'helper' && ws?.readyState === WebSocket.OPEN");
+      await page.type("#chat-input", "Keep this request");
+      await page.click("#chat-send");
+      await page.waitForFunction(() => document.body.textContent!.includes("No Conversation App is configured"));
+      expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("Keep this request");
+      expect(published).toEqual([]);
+    } finally { await browser.close(); }
+  });
+
+  async function installApps(...ids: string[]) {
+    await registry.reload(undefined, async () => ids.map((id) => ({
+      appDir: join(root, "projects", `${id}.app`),
+      definition: {
+        id, version: 1, agent: "worker", inputSchema: { type: "object" },
+        description: `Reviews <${id}> evidence`,
+      },
+    })));
+  }
+
+  test("App catalog reuses installed registry and Task counts independently of saved project files", async () => {
+    writeFileSync(join(root, "projects", "sample.app", ".disabled"), "");
+    const outside = join(root, "projects", "outside");
+    mkdirSync(outside);
+    writeFileSync(join(outside, "project.json"), JSON.stringify({ id: "outside", status: "active" }));
+    await installApps("bare", "idle");
+    task("running", 10, "running", "bare");
+    task("waiting", 11, "waiting", "bare");
+    task("review", 12, "attention", "bare");
+    expect(await read("/api/apps")).toEqual(service.listApps());
+    expect(await read("/api/apps")).toEqual([
+      expect.objectContaining({ id: "bare", runningTasks: 1, waitingTasks: 1, attentionTasks: 1 }),
+      expect.objectContaining({ id: "idle", runningTasks: 0, waitingTasks: 0, attentionTasks: 0 }),
+    ]);
+    expect((await read("/api/projects")).map((project: { name: string }) => project.name).sort())
+      .toEqual(["alpha.app", "outside"]);
+    // Removing an App from the registry takes effect even while its Task rows remain.
+    await installApps("idle");
+    expect((await read("/api/apps")).map((app: { id: string }) => app.id)).toEqual(["idle"]);
+    await installApps();
+    expect(await read("/api/apps")).toEqual([]);
+    rejectAppRead = true;
+    expect(await read("/api/apps", 503)).toEqual({ error: "fixture App reads unavailable" });
+    rejectAppRead = false;
+    await installApps("restored");
+    expect(await read("/api/apps")).toEqual(service.listApps());
+    expect((await fetch(base + "/api/apps", { method: "POST" })).status).toBe(405);
+    expect(published).toEqual([]);
+    control.close();
+    expect(await read("/api/apps", 503)).toHaveProperty("error");
+  });
+
+  test.skipIf(skipBrowser)("browser separates loaded Apps from saved projects and distinguishes empty from unavailable", async () => {
+    await installApps("bare", "idle");
+    task("running", 10, "running", "bare");
+    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    try {
+      const page = await browser.newPage();
+      page.setDefaultTimeout(5000);
+      await page.goto(`${base}/projects`, { waitUntil: "domcontentloaded" });
+      await page.waitForSelector('#installed-apps [data-app-id="bare"]');
+      expect(await page.$$eval("#installed-apps tbody tr", (rows) => rows.map((row) => row.textContent)))
+        .toEqual(["bareReviews <bare> evidenceworker100", "idleReviews <idle> evidenceworker000"]);
+      expect(await page.$eval("#saved-projects", (el) => el.textContent)).toContain("Saved project status");
+      expect(await page.$eval("#saved-projects", (el) => el.textContent)).toContain("alpha.app");
+      expect(await page.$eval("#installed-apps", (el) => el.textContent)).not.toContain("alpha.app");
+      expect(await page.$$("#installed-apps bare")).toHaveLength(0); // Descriptions are escaped text.
+      await installApps("idle");
+      await page.evaluate("loadProjects()");
+      expect(await page.$$eval("#installed-apps [data-app-id]", (rows) => rows.map((row) => row.getAttribute("data-app-id"))))
+        .toEqual(["idle"]);
+      rejectAppRead = true;
+      await page.evaluate("loadProjects()");
+      expect(await page.$eval("#installed-apps", (el) => el.textContent)).toContain("Loaded Apps unavailable");
+      expect(await page.$eval("#installed-apps", (el) => el.textContent)).not.toContain("No Apps loaded");
+      expect(await page.$eval("#saved-projects", (el) => el.textContent)).toContain("alpha.app");
+      rejectAppRead = false;
+      await installApps();
+      await page.evaluate("loadProjects()");
+      expect(await page.$eval("#installed-apps", (el) => el.textContent)).toContain("No Apps loaded");
+      // A metadata endpoint failure cannot hide the installed catalog.
+      await installApps("bare");
+      await page.setRequestInterception(true);
+      page.on("request", (request) => {
+        if (new URL(request.url()).pathname === "/api/projects") {
+          void request.respond({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "metadata unavailable" }) });
+        } else void request.continue();
+      });
+      await page.evaluate("loadProjects()");
+      expect(await page.$('#installed-apps [data-app-id="bare"]')).not.toBeNull();
+      expect(await page.$eval("#projects-content", (el) => el.textContent)).toContain("Saved projects unavailable: metadata unavailable");
+    } finally {
+      await browser.close();
+    }
+  });
+
   test("HTTP forwards bounded human reads to the real control socket, without changing SDK reads", async () => {
     task("work/a ?&", 10, "converged");
     task("work/b", 9);
@@ -174,6 +342,9 @@ describe("HTTP human Task reads and board", () => {
       .toEqual(service.listTasks({ status: ["running", "waiting"], limit: 8 }));
     expect(await read("/api/apps/alpha/tasks")).toEqual({ items: [{ id: "sdk-task", status: "done" }] });
     expect(await read("/api/apps/alpha/tasks/sdk-task")).toEqual({ id: "sdk-task", status: "done" });
+    expect(await read("/api/apps/alpha/tasks/sdk-task?inputKey=request%3Aearlier&inputKey=request%3Asecond")).toEqual({
+      id: "sdk-task", status: "done", inputEvents: [{ key: "request:earlier" }, { key: "request:second" }],
+    });
   });
 
   test("reports invalid, missing, and unavailable reads without fabricating empty or completed Tasks", async () => {
@@ -197,24 +368,25 @@ describe("HTTP human Task reads and board", () => {
   });
 
   test("HTTP Conversation reads forward exact identity and bounded options", async () => {
-    expect(await read("/api/conversation?appId=may&conversationId=may%3Aprimary")).toEqual(conversation);
-    await read("/api/conversation?appId=may", 400);
-    await read("/api/conversation?conversationId=may%3Aprimary", 400);
+    expect(await read("/api/conversation?appId=support&conversationId=retained-room")).toEqual(conversation);
+    await read("/api/conversation?appId=support", 400);
+    await read("/api/conversation?conversationId=retained-room", 400);
     rejectConversationRead = true;
-    expect(await read("/api/conversation?appId=may&conversationId=may%3Aprimary", 503)).toMatchObject({ error: "fixture Conversation storage unavailable" });
+    expect(await read("/api/conversation?appId=support&conversationId=retained-room", 503)).toMatchObject({ error: "fixture Conversation storage unavailable" });
     rejectConversationRead = false;
-    expect(await read("/api/conversation?appId=may&conversationId=may%3Aprimary")).toEqual(conversation);
+    expect(await read("/api/conversation?appId=support&conversationId=retained-room")).toEqual(conversation);
     expect(published).toHaveLength(0);
     control.close();
-    await read("/api/conversation?appId=may&conversationId=may%3Aprimary", 503);
+    await read("/api/conversation?appId=support&conversationId=retained-room", 503);
   });
 
   test.skipIf(skipBrowser)("May browser Stop retains its observed target and draft, then admits a correction to Conversation", async () => {
+    seedChat();
     const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
     try {
       const page = await browser.newPage();
       page.setDefaultTimeout(5000);
-      await page.goto(`${base}/agents/may`, { waitUntil: "domcontentloaded" });
+      await page.goto(`${base}/agents/helper`, { waitUntil: "domcontentloaded" });
       await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
       // HTTP readiness does not prove the notification subscription is active.
       // A status response on the same ordered socket follows the page's subscribe.
@@ -246,13 +418,13 @@ describe("HTTP human Task reads and board", () => {
       await page.type("#chat-input", "Discuss costs before implementing");
       await page.click("#chat-stop");
       await page.waitForFunction(() => document.body.textContent!.includes("Stop request accepted"));
-      expect(published[0]).toMatchObject({ type: "conversation.turn.stop.requested", target: { appId: "may" },
-        data: { conversationId: "may:primary", turnId: "turn-one", expectedRevision: 7 } });
+      expect(published[0]).toMatchObject({ type: "conversation.turn.stop.requested", target: { appId: "support" },
+        data: { conversationId: "retained-room", turnId: "turn-one", expectedRevision: 7 } });
       expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("Discuss costs before implementing");
       await page.click("#chat-send");
       await page.waitForFunction(() => document.querySelector<HTMLInputElement>("#chat-input")!.value === "");
-      expect(published.at(-1)).toMatchObject({ type: "conversation.message.created", target: { appId: "may" },
-        data: { conversationId: "may:primary", text: "Discuss costs before implementing", author: { kind: "human" } } });
+      expect(published.at(-1)).toMatchObject({ type: "conversation.message.created", target: { appId: "support" },
+        data: { conversationId: "retained-room", text: "Discuss costs before implementing", author: { kind: "human" } } });
       rejectPublish = true;
       await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
       await page.click("#chat-stop");
@@ -268,7 +440,7 @@ describe("HTTP human Task reads and board", () => {
       await page.waitForFunction(() => document.querySelector<HTMLInputElement>("#chat-input")!.value === "");
       expect(published.at(-1)).toEqual(unconfirmed);
       rejectConversationRead = true;
-      for (const listener of listeners) listener({ type: "conversation.updated", data: { appId: "may", conversationId: "may:primary" } });
+      for (const listener of listeners) listener({ type: "conversation.updated", data: { appId: "support", conversationId: "retained-room" } });
       await page.waitForFunction(() => document.querySelector("#chat-status")!.textContent!.includes("storage unavailable"));
       // Drop the actual notification connection while the HTTP control route
       // remains usable. Its normal reconnect must later recover a lost wake.
@@ -282,7 +454,7 @@ describe("HTTP human Task reads and board", () => {
         data: { turnId: "turn-two", expectedRevision: 8 } });
       rejectConversationRead = false;
       conversation.activeTurn = undefined;
-      for (const listener of listeners) listener({ type: "conversation.updated", data: { appId: "may", conversationId: "may:primary" } });
+      for (const listener of listeners) listener({ type: "conversation.updated", data: { appId: "support", conversationId: "retained-room" } });
       await page.waitForFunction(() => document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
       expect(published.some(event => event.type === "session.cancel.requested" || event.type === "session.steer.requested")).toBe(false);
     } finally { await browser.close(); }

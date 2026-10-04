@@ -77,6 +77,11 @@ async function executeTaskAgent(
   const trace = childEventTrace(event);
   const dependencyCatalog = input.dependencies;
   const prompt = [
+    ...(attempt.events.communication?.length
+      ? [
+          "This Task handles communication through saved input context. Use communication changes (in tasks.apply or finish) to publish a message, accept/refine an ask, or record its disposition. Select inputId from events.inputs; infra retains the recipient and delivery route. Keep the original human promise when requesting a contribution from another Task. A message does not imply fulfillment or convergence: use ordinary waiting/continue/requests/Conditions while work remains. Request records alone do not schedule execution. Keep background work quiet unless a useful message is owed.",
+        ]
+      : []),
     "## Reconciliation Task",
     "```json",
     JSON.stringify(
@@ -104,7 +109,7 @@ async function executeTaskAgent(
       ? [
           "",
           "## Installed Apps",
-          "Choose the accountable App by responsibility. These are the currently installed typed dependency targets:",
+          "Choose the accountable App by responsibility. These are the currently installed App request targets:",
           "```json",
           JSON.stringify(dependencyCatalog, null, 2),
           "```",
@@ -116,6 +121,11 @@ async function executeTaskAgent(
   ].join("\n");
 
   const taskContext = taskExecutionContext(input, definitions);
+  const admissionOptions = {
+    allowNeedsAgent: false,
+    validateAction: input.descriptor.app.tasks?.validateAction,
+    validateCondition: input.descriptor.app.tasks?.validateCondition,
+  };
   const agentOptions = {
     taskContext,
     contextPrompt: "Pursue the assignment in the current Task decision brief and return the result required by finish().",
@@ -128,6 +138,12 @@ async function executeTaskAgent(
     trace,
     requireFinish: true,
     outputSchema: appTaskAgentResultSchema,
+    validateOutput: (output: unknown) => {
+      const admitted = normalizeTaskHandlerResult(output, { type: "done", summary: "", runId: null }, admissionOptions);
+      return admitted.resultRejected
+        ? admitted.summary
+        : (input.validateResult?.(admitted as import("@may-agent/sdk").TaskReconcileResult) ?? null);
+    },
     toolPolicy: "full" as const,
     timeout: input.executionTimeoutMs,
     executionRoot: input.executionPaths.workspaceDir,
@@ -156,11 +172,7 @@ async function executeTaskAgent(
           `Agent session ${result.sessionId || "unknown"} returned no result`,
         runId: result.sessionId || null,
       },
-      {
-        allowNeedsAgent: false,
-        validateAction: input.descriptor.app.tasks?.validateAction,
-        validateCondition: input.descriptor.app.tasks?.validateCondition,
-      },
+      admissionOptions,
     ),
     restoredAgentResidue,
   );

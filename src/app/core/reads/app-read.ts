@@ -1,4 +1,3 @@
-import { conditionReviewAt } from "../tasks/app-task-state.js";
 import type {
   AppRead,
   ExecutionView,
@@ -15,6 +14,9 @@ import { projectAppTaskReconciliationEvents } from "../tasks/app-task-context.js
 import { getExecutionResultFromDb } from "../../../lib/execution-result.js";
 import type { SqliteDb } from "../../../lib/db.js";
 import { getAppInboxItem } from "../state/app-inbox-store.js";
+import { canonicalAppEvent } from "../../canonical-app-event.js";
+import { readAppTaskAgent } from "../tasks/app-task-reconciler.js";
+import type { AgentEvent } from "../events/bus.js";
 import {
   hasTaskAcceptedEvidence,
   readTaskAcceptedEvidence,
@@ -22,6 +24,7 @@ import {
 } from "./app-task-evidence.js";
 
 export type RuntimeAppReadOptions = {
+  readContract?: AppRead["contract"];
   getDb(): SqliteDb;
   /** Optional reporting; absence is explicit, not an empty or zero-valued report. */
   readMetric?: AppRead["metric"];
@@ -78,6 +81,7 @@ function currentTaskObligations(
         const admission = admissions[key];
         return {
           key,
+          ...(wait.pending ? { pending: true as const } : {}),
           ...(wait.reviewAt !== undefined ? { reviewAt: wait.reviewAt } : {}),
           conditionCount: wait.conditions.length,
           correlation: {
@@ -111,6 +115,33 @@ export function readRuntimeTaskView(
   store.db.exec("SAVEPOINT task_detail_read");
   try {
     const result = readTaskDetail(store, taskId, options);
+    // Use the same assignment resolution as execution, within this read snapshot.
+    // Receipts without a current Task retain their historical agent.
+    if (result && !result.agent) {
+      const agent = readAppTaskAgent(opts.taskStateConfig!, taskId);
+      if (agent) {
+        result.agent = agent;
+        result.owner = agent;
+      }
+    }
+    if (options?.inputKeys !== undefined) {
+      const keys = options.inputKeys;
+      if (!Array.isArray(keys) || keys.length > 8 || keys.some((key) => typeof key !== "string" || !key.trim()))
+        throw new Error("inputKeys must contain at most 8 non-empty exact keys");
+      if (result) {
+        const admissions = store.readTaskContext({ taskIds: [], admissionIds: keys }).appTaskAdmissions;
+        result.inputEvents = [...new Set(keys)].map((key) => {
+          const admission = admissions?.[key];
+          if (admission?.taskId !== taskId || admission.taskGeneration > result.generation || !admission.inputEvent)
+            throw new Error(`Original input unavailable on this Task: ${key}`);
+          return {
+            key,
+            observedAt: admission.admittedAt,
+            event: canonicalAppEvent(admission.inputEvent as AgentEvent),
+          };
+        });
+      }
+    }
     store.db.exec("RELEASE task_detail_read");
     return result;
   } catch (error) {
@@ -148,7 +179,6 @@ function readTaskDetail(
           generation: condition.metadata.generation,
           resourceVersion: condition.metadata.resourceVersion,
           ...structuredClone(condition.status),
-          reviewAt: conditionReviewAt(condition),
         },
       })),
       current.resource.status.observedAttemptId ? store.readAttempt(current.resource.status.observedAttemptId) : null,
@@ -335,6 +365,10 @@ export function createRuntimeTaskRead(opts: Pick<RuntimeAppReadOptions, "taskSta
 export function createRuntimeAppRead(opts: RuntimeAppReadOptions): AppRead {
   const tasks = createRuntimeTaskRead(opts);
   return {
+    async contract(appId) {
+      if (!opts.readContract) throw new Error("Installed App contract read unavailable");
+      return opts.readContract(appId);
+    },
     async appResult(itemId) {
       return getAppInboxItem(opts.getDb(), itemId)?.result ?? null;
     },

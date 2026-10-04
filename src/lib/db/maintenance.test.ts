@@ -1,11 +1,167 @@
-import { describe, expect, it } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { describe, expect, it, spyOn } from "bun:test";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb, getDb } from "./connection.js";
 import { runDbMaintenancePass } from "./maintenance.js";
+import { openDatabase } from "../db.js";
+import { createAppInboxItem } from "../../app/core/state/app-inbox-store.js";
 
 describe("bounded DB maintenance", () => {
+  it.each([
+    { table: "event_traces", key: "event_id", counter: "event_traces" },
+    { table: "event_trace_links", key: "id", counter: "event_trace_links_orphaned" },
+  ])("finds $table orphans without blocking a writer and rechecks before deletion", ({ table, key, counter }) => {
+    const root = mkdtempSync(join(tmpdir(), "may-maintenance-orphan-race-"));
+    const db = getDb(root);
+    const writer = openDatabase(join(root, "may.db"));
+    writer.exec("PRAGMA busy_timeout = 0");
+    const now = Date.now();
+    const insertEvent = "INSERT INTO events(id, event_type, timestamp) VALUES (?, 'fixture', ?)";
+    db.prepare(insertEvent).run(1, now);
+    if (table === "event_traces") {
+      for (const id of [10, 20, 30])
+        db.prepare("INSERT INTO event_traces(event_id, trace_id) VALUES (?, 'fixture')").run(id);
+    } else {
+      // Exercise both sides of the missing-endpoint predicate. Row 30 is
+      // outside this batch even though its second endpoint is missing.
+      for (const [id, from, to] of [[10, 10, 1], [20, 1, 20], [30, 1, 30]])
+        db.prepare("INSERT INTO event_trace_links(id, from_event_id, to_event_id, type, created_at) VALUES (?, ?, ?, 'fixture', ?)")
+          .run(id, from, to, now);
+    }
+    const prepare = db.prepare.bind(db);
+    let candidateReads = 0;
+    const spy = spyOn(db, "prepare").mockImplementation((sql) => {
+      const statement = prepare(sql);
+      if (!sql.trimStart().startsWith(`SELECT ${key} AS id FROM ${table}`)) return statement;
+      return {
+        ...statement,
+        all: (...params) => {
+          candidateReads++;
+          // The real scan must succeed with another connection holding the
+          // writer slot. Publish a previously missing event after selection.
+          writer.exec("BEGIN IMMEDIATE");
+          try {
+            writer.prepare(insertEvent).run(100 + candidateReads, now);
+            const rows = statement.all(...params);
+            if (candidateReads === 1) writer.prepare(insertEvent).run(10, now);
+            writer.exec("COMMIT");
+            return rows;
+          } catch (error) {
+            writer.exec("ROLLBACK");
+            throw error;
+          }
+        },
+      };
+    });
+    try {
+      const first = runDbMaintenancePass(root, { now, batchSize: 2 });
+      expect(candidateReads).toBe(1);
+      expect(first.deleted[counter]).toBe(1);
+      expect(prepare(`SELECT ${key} FROM ${table} WHERE ${key} IN (10, 20, 30) ORDER BY ${key}`).all())
+        .toEqual([{ [key]: 10 }, { [key]: 30 }]);
+      expect(writer.prepare("SELECT id FROM events WHERE id = 101").get()).toEqual({ id: 101 });
+
+      const second = runDbMaintenancePass(root, { now, batchSize: 2 });
+      expect(second.deleted[counter]).toBe(1);
+      const third = runDbMaintenancePass(root, { now, batchSize: 2 });
+      expect(third.deleted[counter]).toBe(0);
+      expect(candidateReads).toBe(3);
+      expect(prepare(`SELECT ${key} FROM ${table} WHERE ${key} IN (10, 20, 30)`).all()).toEqual([{ [key]: 10 }]);
+    } finally {
+      spy.mockRestore();
+      writer.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("discovers expired rows alongside another writer and rechecks changes before deleting", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-maintenance-expiry-race-"));
+    const db = getDb(root);
+    const writer = openDatabase(join(root, "may.db"));
+    writer.exec("PRAGMA busy_timeout = 0");
+    const now = 10 * 86_400_000;
+    for (const id of [1, 2, 3, 4]) {
+      db.prepare("INSERT INTO events(id, event_type, timestamp) VALUES (?, 'fixture', 1)").run(id);
+      db.prepare(`INSERT INTO event_pair_runs(id, pair_name, correlation_key, open_event_id, status, opened_at, expected_close_at)
+        VALUES (?, 'fixture', ?, ?, 'closed', 1, ?)`)
+        .run(id, String(id), id, now + 60_000);
+    }
+    const prepare = db.prepare.bind(db);
+    const reads: string[] = [];
+    const spy = spyOn(db, "prepare").mockImplementation((sql) => {
+      const statement = prepare(sql);
+      const table = sql.startsWith("SELECT rowid AS id FROM event_pair_runs") ? "event_pair_runs"
+        : sql.startsWith("SELECT id AS id FROM events") ? "events" : null;
+      if (!table) return statement;
+      return { ...statement, all(...params) {
+        writer.exec("BEGIN IMMEDIATE");
+        try {
+          const rows = statement.all(...params);
+          reads.push(table);
+          if (table === "event_pair_runs") {
+            writer.run("UPDATE event_pair_runs SET status = 'open' WHERE id = 1");
+            writer.run("UPDATE event_pair_runs SET opened_at = ? WHERE id = 2", [now]);
+          } else {
+            // This row was eligible at selection; the new reference must win.
+            writer.run(`INSERT INTO event_trace_links(from_event_id, to_event_id, type, created_at)
+              VALUES (2, 1, 'fixture', ?)`, [now]);
+            writer.run("UPDATE events SET timestamp = ? WHERE id = 3", [now]);
+          }
+          writer.exec("COMMIT");
+          return rows;
+        } catch (error) {
+          writer.exec("ROLLBACK");
+          throw error;
+        }
+      } };
+    });
+    try {
+      const result = runDbMaintenancePass(root, { now, batchSize: 3 });
+      expect(reads).toEqual(["event_pair_runs", "events"]);
+      expect(result.deleted.event_pair_runs).toBe(2);
+      expect(result.deleted.events).toBe(1);
+      expect(prepare("SELECT id FROM event_pair_runs ORDER BY id").all()).toEqual([{ id: 1 }, { id: 2 }]);
+      expect(prepare("SELECT id FROM events ORDER BY id").all()).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
+    } finally {
+      spy.mockRestore();
+      writer.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("skips protected admissions and inputs so a small batch reaches later eligible Events", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-maintenance-protected-batch-"));
+    const db = getDb(root);
+    const now = 10 * 86_400_000;
+    try {
+      for (const id of [1, 2, 3, 4]) {
+        db.prepare("INSERT INTO events(id, event_type, timestamp) VALUES (?, 'fixture', ?)").run(id, id);
+      }
+      for (const [id, status] of [[1, "pending"], [3, "completed"]] as const) {
+        db.prepare(`INSERT INTO app_event_admission_plans(event_id, registry_snapshot_id, registry_generation, status, created_at, updated_at)
+          VALUES (?, 'fixture', 1, ?, 1, 1)`).run(id, status);
+      }
+      for (const id of [2, 4]) {
+        createAppInboxItem(db, { id: `input-${id}`, appId: "sample", originEventId: id,
+          source: { kind: "system", id: "fixture" }, input: { kind: "message", data: {} }, now: 1 });
+      }
+      db.run("UPDATE app_inbox_items SET status = 'done' WHERE id = 'input-4'");
+      // Inspect retained identities: driver changes may also count the completed
+      // admission plan removed by the foreign-key cascade.
+      runDbMaintenancePass(root, { now, batchSize: 1 });
+      expect(db.prepare("SELECT id FROM events ORDER BY id").all()).toEqual([{ id: 1 }, { id: 2 }, { id: 4 }]);
+      runDbMaintenancePass(root, { now, batchSize: 1 });
+      expect(runDbMaintenancePass(root, { now, batchSize: 1 }).deleted.events).toBe(0);
+      expect(db.prepare("SELECT id FROM events ORDER BY id").all()).toEqual([{ id: 1 }, { id: 2 }]);
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("indexes the retained-event cutoff instead of sorting event history under the writer lock", () => {
     const persistDir = mkdtempSync(join(tmpdir(), "may-maintenance-event-index-"));
     try {

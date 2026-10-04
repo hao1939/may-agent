@@ -1,4 +1,6 @@
+import type { FileWritePolicy } from "../../lib/tools/file-write-policy.js";
 import { createRuntimeAppRead } from "../core/reads/app-read.js";
+import { getLoadedAppInputContract } from "../core/tasks/app-task-runtime.js";
 import { readMetricView } from "../adapters/reporting/metric-read.js";
 import type { WorkflowEvent } from "../../lib/workflow.js";
 import { resolve } from "node:path";
@@ -27,6 +29,7 @@ import { loadAgentLocalTools } from "./agent-local-tools.js";
 import { createAppTaskReadTool } from "../app-task-read-tool.js";
 
 export interface ToolsetLoaderOptions {
+  fileWritePolicy?: FileWritePolicy;
   agentsRoot: string;
   sharedRoot: string;
   projectsRoot: string;
@@ -64,7 +67,7 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         break;
 
       case "coding":
-        tools.push(...createCodingTools(projectRoot, { agentName: config.name }));
+        tools.push(...createCodingTools(projectRoot, { agentName: config.name, fileWritePolicy: opts.fileWritePolicy }));
         break;
 
       case "read-only": {
@@ -86,7 +89,7 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
 
       case "message": {
         // Use globalAgentsRoot (top-level agents/) when available so
-        // project-scoped agents can message system agents like "may".
+        // App-scoped agents can message other installed agents.
         const messageAgentsRoot = opts.globalAgentsRoot ?? opts.agentsRoot;
         // Lazy evaluation: agents loaded after this tool is created are still
         // visible. Prevents stale allowedTargets when App-local agents are
@@ -168,6 +171,7 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
               ...context,
               taskContext: context,
               read: createRuntimeAppRead({
+                readContract: async (appId) => getLoadedAppInputContract({ bus, appId }),
                 getDb: workflowOptions.runtimeCtx.getDb,
                 taskRead: context?.taskRead,
                 readMetric: async (id) => readMetricView(workflowOptions.runtimeCtx.metrics, id),
@@ -292,6 +296,17 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
           return undefined;
         }
         return { appId: session.projectId };
+      },
+      communicationReader: () => {
+        const sessionId = opts.getAgentSessionId(config.name);
+        return sessionId ? manager.activeSessions.get(sessionId)?.taskContext?.readCommunication : undefined;
+      },
+      applier: () => {
+        const sessionId = opts.getAgentSessionId(config.name);
+        const session = sessionId ? manager.activeSessions.get(sessionId) : undefined;
+        if (session?.taskBinding && !session.taskContext)
+          throw new Error("Current Task execution context is unavailable");
+        return session?.taskContext?.applyTaskChanges;
       },
     }),
   );

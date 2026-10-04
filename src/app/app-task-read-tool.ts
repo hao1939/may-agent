@@ -3,6 +3,9 @@ import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type {
   AppInput,
   TaskListOptions,
+  TaskChanges,
+  TaskAttempt,
+  TaskCommunicationQuery,
   TaskOutcomePage,
   TaskOutcomeProjection,
   TaskPage,
@@ -10,6 +13,7 @@ import type {
   TaskView,
 } from "@may-agent/sdk";
 import type { EventBus } from "./core/events/bus.js";
+import { taskChangesSchema, observationCondition, type ObservationInterest } from "@may-agent/sdk";
 
 const parameters = Type.Object(
   {
@@ -20,6 +24,8 @@ const parameters = Type.Object(
       Type.Literal("contract"),
       Type.Literal("publish"),
       Type.Literal("update"),
+      Type.Literal("apply"),
+      Type.Literal("communication"),
     ]),
     taskId: Type.Optional(
       Type.String({ minLength: 1, description: "Exact Task id; required for get, outcomes and update" }),
@@ -50,6 +56,33 @@ const parameters = Type.Object(
     limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
     cursor: Type.Optional(Type.String({ minLength: 1 })),
     includeDone: Type.Optional(Type.Boolean()),
+    inputKeys: Type.Optional(
+      Type.Array(Type.String({ minLength: 1 }), {
+        maxItems: 8,
+        description:
+          "For get: original input events by exact keys from currentObligations.inputWaits. Reading does not settle input.",
+      }),
+    ),
+    observation: Type.Optional(
+      Type.Object(
+        {
+          observerId: Type.String({ minLength: 1 }),
+          id: Type.String({ minLength: 1 }),
+          resource: Type.String({ minLength: 1 }),
+          expected: Type.Record(Type.String(), Type.Unknown()),
+          reviewAfterMs: Type.Optional(
+            Type.Integer({
+              minimum: 60_000,
+              description: "Legacy field; use Task reviewAt for deliberate agent reconsideration.",
+            }),
+          ),
+        },
+        {
+          additionalProperties: false,
+          description: "With contract: build a Condition to return in your Task result. Does not start a wait.",
+        },
+      ),
+    ),
     acceptedEvidence: Type.Optional(
       Type.Object(
         {
@@ -59,6 +92,20 @@ const parameters = Type.Object(
         { additionalProperties: false },
       ),
     ),
+    inputId: Type.Optional(Type.String({ minLength: 1 })),
+    communicationQuery: Type.Optional(
+      Type.Union([
+        Type.Object({ action: Type.Literal("request"), id: Type.String({ minLength: 1 }) }),
+        Type.Object({ action: Type.Literal("requests"), afterId: Type.Optional(Type.String()) }),
+        Type.Object({
+          action: Type.Literal("find"),
+          query: Type.String(),
+          limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 20 })),
+        }),
+        Type.Object({ action: Type.Literal("read"), topicId: Type.String({ minLength: 1 }) }),
+      ]),
+    ),
+    changes: Type.Optional(Type.Unsafe<TaskChanges>(taskChangesSchema)),
     expectedGeneration: Type.Optional(Type.Integer({ minimum: 1 })),
     input: Type.Optional(
       Type.Object({ kind: Type.String({ minLength: 1 }), data: Type.Unknown() }, { additionalProperties: false }),
@@ -68,7 +115,11 @@ const parameters = Type.Object(
 );
 
 type Params = {
-  action: "list" | "outcomes" | "get" | "contract" | "publish" | "update";
+  observation?: ObservationInterest;
+  action: "list" | "outcomes" | "get" | "contract" | "publish" | "update" | "apply" | "communication";
+  inputId?: string;
+  communicationQuery?: TaskCommunicationQuery;
+  changes?: TaskChanges;
   expectedGeneration?: number;
   input?: AppInput;
   taskId?: string;
@@ -81,6 +132,7 @@ type Params = {
   cursor?: string;
   includeDone?: boolean;
   acceptedEvidence?: TaskReadOptions["acceptedEvidence"];
+  inputKeys?: string[];
 };
 
 function result(value: unknown): AgentToolResult<undefined> {
@@ -118,12 +170,15 @@ export function createAppTaskReadTool(options: {
       };
     }): number | Promise<number>;
   };
+  /** Resolve the live attempt capability at invocation time; shared tools must not retain one session's scope. */
+  communicationReader?: () => TaskAttempt["read"]["communication"];
+  applier?: () => ((changes: TaskChanges) => Promise<unknown>) | undefined;
 }): AgentTool {
   return {
     name: "tasks",
     label: "Tasks",
     description:
-      "List or get Tasks, read an App input contract, publish facts, or update an assignment you created. contract returns the full installed input schema for target.appId (default: current App), including constraints omitted by the compact Installed Apps catalog; no taskId is needed. Before reusing or revising work, read the exact Task and compare outcome, acceptance, input and execution method; a matching topic alone is insufficient. For update, supply the observed expectedGeneration and complete revised input, preserving required references. Code checks creator authority, saves requirements and wakes the worker. Return proposed changes to your own assignment to its creator. target.appId selects another responsible App; the operation is the same.",
+      "List or get Tasks, read an App input contract, publish facts, update an assignment you created, or apply typed changes. apply takes changes {requests?, conditions?, actions?, communication?, inputKeys?, facts?}, uses the same admission as final results, returns saved receipts, and keeps this attempt running. Use it to request review and continue testing. communication changes publish or update accepted asks through inputId from the saved inputs, without transport details. Use action communication with inputId for current discussion context; optional communicationQuery reads an exact Request, pages Requests or reads/finds Topics. A Condition {requestId} can refer to a request in this call or one already admitted in this caller generation. contract returns the App owner agent, full installed input schema and observation capabilities for target.appId (default: current App). Supply observation {observerId,id,resource,expected} to build a Condition; return it in your Task result to retain the interest. Infra recovers missed facts without invoking the agent. Use Task reviewAt only when deliberate reconsideration is useful. No registration or taskId is needed. Exact apps.list reads expose live observer health; last changed fact is not a heartbeat. Before reusing or revising work, read the exact Task and compare outcome, acceptance, input and execution method; a matching topic alone is insufficient. For update, supply the observed expectedGeneration and complete revised input, preserving required references. Code checks creator authority, saves requirements and wakes the worker. Return proposed changes to your own assignment to its creator. target.appId selects another responsible App; the operation is the same.",
     parameters,
     execute: async (_toolCallId: string, raw: unknown): Promise<AgentToolResult<undefined>> => {
       const params = raw as Params;
@@ -132,12 +187,30 @@ export function createAppTaskReadTool(options: {
       if (!appId) return result({ error: "No current App Task scope" });
       try {
         if (params.action === "contract") {
-          return result(
-            (await import("./core/tasks/app-task-runtime.js")).getLoadedAppInputContract({
-              bus: options.bus,
-              appId: params.target?.appId?.trim() || appId,
-            }),
-          );
+          const contract = (await import("./core/tasks/app-task-runtime.js")).getLoadedAppInputContract({
+            bus: options.bus,
+            appId: params.target?.appId?.trim() || appId,
+          });
+          if (!params.observation) return result(contract);
+          const capability = contract.observations.find((item) => item.id === params.observation!.observerId);
+          if (!capability)
+            throw new Error(`App ${contract.appId} has no installed observer ${params.observation.observerId}`);
+          return result({ ...contract, condition: observationCondition(capability, params.observation) });
+        }
+        if (params.action === "communication") {
+          if (!scope?.taskId || !scope.generation || !scope.attemptId || !params.inputId)
+            throw new Error("communication requires a current Task attempt and inputId");
+          const read = options.communicationReader?.();
+          if (!read) throw new Error("Current Task communication reader is unavailable");
+          return result(await read(params.inputId, params.communicationQuery));
+        }
+        if (params.action === "apply") {
+          if (!scope?.taskId || !scope.generation || !scope.attemptId)
+            return result({ error: "No current fenced Task attempt" });
+          if (!params.changes) return result({ error: "apply requires changes" });
+          const apply = options.applier?.();
+          if (!apply) return result({ error: "Current Task apply capability is unavailable" });
+          return result(await apply(params.changes));
         }
         if (params.action === "update") {
           if (!scope?.taskId || !scope.generation || !scope.attemptId)
@@ -210,6 +283,10 @@ export function createAppTaskReadTool(options: {
           const taskId = params.taskId?.trim();
           if (!taskId) return result({ error: "taskId is required for get" });
           const readAppId = params.target?.appId?.trim() || appId;
+          const readOptions = {
+            ...(params.acceptedEvidence ? { acceptedEvidence: params.acceptedEvidence } : {}),
+            ...(params.inputKeys ? { inputKeys: params.inputKeys } : {}),
+          };
           const reader = options.reader ?? (await import("./core/tasks/app-task-runtime.js"));
           const value =
             "get" in reader
@@ -217,13 +294,13 @@ export function createAppTaskReadTool(options: {
                   bus: options.bus,
                   appId: readAppId,
                   taskId,
-                  ...(params.acceptedEvidence ? { options: { acceptedEvidence: params.acceptedEvidence } } : {}),
+                  ...(Object.keys(readOptions).length ? { options: readOptions } : {}),
                 })
               : await reader.getLoadedAppTaskView({
                   bus: options.bus,
                   appId: readAppId,
                   taskId,
-                  ...(params.acceptedEvidence ? { options: { acceptedEvidence: params.acceptedEvidence } } : {}),
+                  ...(Object.keys(readOptions).length ? { options: readOptions } : {}),
                 });
           return result(value);
         }

@@ -101,6 +101,7 @@ function createCore(overrides: Partial<Parameters<typeof createControlSocketCore
   const emitted: ControlEvent[] = [];
   let broadcast: ((event: ControlEvent) => void) | undefined;
   const core = createControlSocketCore({
+    conversationAppId: "may",
     getSessionId: () => "chat-session",
     getStatus: () => [],
     emitEvent: (event) => emitted.push(event),
@@ -184,6 +185,24 @@ describe("control socket protocol", () => {
       delivery: { state: "accepted", acceptedBy: "app-inbox:sample" },
       links: [{ kind: "request", id: "app_73", state: "pending" }],
     });
+  });
+
+  it("passes an explicit Console reply and operator attribution to shared input handling", async () => {
+    const published: unknown[] = [];
+    const core = createCore({ publishEvent: (input, authorization) => {
+      published.push({ input, authorization });
+      return { eventId: 75, eventType: input.type, delivery: "accepted", approval: { decision: "approve", eventId: 76 } };
+    } });
+    const event = { type: "conversation.message.created", target: { appId: "may" }, data: {
+      conversationId: "may:primary", author: { kind: "human", id: "console:1" }, text: "approve",
+      replyTo: "displayed:1", approvalReply: { target: { appId: "sample", taskId: "release" }, proposal: { fixture: true } },
+    }, idempotencyKey: "console:1" };
+    const receipt = await sendSocketCommand(core.endpoint, { type: "publish", event,
+      operatorId: "fixture-operator", authorizationReference: "console:1", authorizationEvidence: { replyTo: "displayed:1" } });
+    expect(receipt).toMatchObject({ eventId: 75, approval: { decision: "approve", eventId: 76 } });
+    expect(published).toEqual([{ input: event, authorization: {
+      actor: { kind: "operator", id: "fixture-operator" }, reference: "console:1", evidence: { replyTo: "displayed:1" },
+    } }]);
   });
 
   it("returns the persisted semantic event receipt", async () => {
@@ -514,7 +533,7 @@ describe("control socket protocol", () => {
       getAppTask: (appId, taskId, options) => {
         expect({ appId, taskId }).toEqual({ appId: "evaluation", taskId: "review/docs" });
         if (options?.acceptedEvidence) {
-          expect(options).toEqual({ acceptedEvidence: { limit: 3, cursor: "older-evidence" } });
+          expect(options).toEqual({ acceptedEvidence: { limit: 3, cursor: "older-evidence" }, inputKeys: ["request:earlier"] });
         }
         return task;
       },
@@ -544,6 +563,7 @@ describe("control socket protocol", () => {
         acceptedEvidence: true,
         evidenceLimit: 3,
         evidenceCursor: "older-evidence",
+        inputKeys: ["request:earlier"],
       }),
     ).resolves.toMatchObject({ type: "ok", command: "app.task.get", task });
     await expect(
@@ -648,6 +668,47 @@ describe("control socket protocol", () => {
         reason: "missing result identity",
       }),
     ).rejects.toThrow("afterResult must be a non-empty accepted attempt ID");
+  });
+
+  it("requires the caller's current version and continuation reason for explicit reopening", async () => {
+    const published: unknown[] = [];
+    const core = createCore({
+      publishEvent: (input) => {
+        published.push(input);
+        return { eventId: 77, eventType: input.type, delivery: "accepted" };
+      },
+    });
+    const command = {
+      type: "task.reopen",
+      appId: "sample",
+      taskId: "work",
+      expectedGeneration: 2,
+      expectedResourceVersion: 8,
+      reason: "User requested continuation",
+      input: { kind: "continue", data: { platform: "Linux" } },
+    };
+    await expect(sendSocketCommand(core.endpoint, command)).resolves.toMatchObject({
+      type: "ok",
+      command: "task.reopen",
+    });
+    expect(published).toEqual([
+      {
+        type: "app.task.reopen.requested",
+        target: { appId: "sample", taskId: "work" },
+        data: {
+          expectedGeneration: 2,
+          expectedResourceVersion: 8,
+          reason: "User requested continuation",
+          input: command.input,
+        },
+        idempotencyKey: "app-task-reopen:sample:work:2:8",
+      },
+    ]);
+    await expect(sendSocketCommand(core.endpoint, { ...command, expectedResourceVersion: undefined })).rejects.toThrow(
+      "current generation and resourceVersion",
+    );
+    await expect(sendSocketCommand(core.endpoint, { ...command, reason: "" })).rejects.toThrow("continuation request");
+    expect(published).toHaveLength(1);
   });
 
   it("does not report a recorded but unaccepted Task control as success", async () => {
@@ -872,7 +933,12 @@ describe("control socket protocol", () => {
   });
 
   it("returns process memory only when diagnostics are requested", async () => {
-    const core = createCore();
+    let reads = 0;
+    const core = createCore({ getDiagnostics: () => { reads++; return { sql: { calls: 7 } }; } });
+
+    const ordinary = await sendSocketCommand(core.endpoint, { type: "status" });
+    expect(ordinary).not.toHaveProperty("diagnostics");
+    expect(reads).toBe(0);
 
     const status = await sendSocketCommand(core.endpoint, { type: "status", diagnostics: true });
 
@@ -880,6 +946,7 @@ describe("control socket protocol", () => {
       type: "status",
       command: "status",
       diagnostics: {
+        sql: { calls: 7 },
         pid: process.pid,
         uptimeSeconds: expect.any(Number),
         cpu: {
@@ -936,7 +1003,7 @@ describe("control socket protocol", () => {
       command: "status",
       activeAgents: [
         { agent: "scout", sessionId: "s_1", status: "running", kind: "call", task: "investigate" },
-        { agent: "may", sessionId: "s_chat_done", status: "ready", kind: "chat", task: "May chat" },
+        { agent: "may", sessionId: "s_chat_done", status: "ready", kind: "chat", task: "Interface chat" },
       ],
     });
   });
@@ -1256,6 +1323,7 @@ describe("control socket protocol", () => {
         socketPath,
         getSessionId: () => "",
         getStatus: () => [],
+        getDiagnostics: () => ({ sql: { calls: 7 } }),
         emitEvent: () => {},
         subscribeEvents: () => () => {},
         agentName: "may",
@@ -1264,6 +1332,8 @@ describe("control socket protocol", () => {
       sockets.push(socket);
       expect(socket.clientCount()).toBe(0);
       expect(statSync(socketPath).mode & 0o777).toBe(0o600);
+      expect(await sendSocketCommand(socketPath, { type: "status", diagnostics: true }))
+        .toMatchObject({ diagnostics: { sql: { calls: 7 } } });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

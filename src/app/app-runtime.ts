@@ -146,11 +146,12 @@ export async function runAppRuntime(opts: {
     webEnabled: WEB_ENABLED,
     quietConsole: QUIET_CONSOLE,
     initialTask: INITIAL_TASK,
-    interfaceAgent,
+    humanInterface,
     envSessionId: ENV_SESSION_ID,
     envParentSessionId: ENV_PARENT_SESSION_ID,
     envParentAgent: ENV_PARENT_AGENT,
   } = opts.appArgs;
+  const interfaceAgent = humanInterface.agent;
   const interactiveConsole = CONSOLE_ENABLED && process.stdin.isTTY;
   const backgroundEnabled = runsBackgroundWork(opts.appArgs, Boolean(interactiveConsole));
 
@@ -177,7 +178,7 @@ export async function runAppRuntime(opts: {
   } else if (process.env.MAY_DAEMON_QUIET !== "1") attachDaemonInfoLog(bus);
 
   if (WEB_ENABLED) {
-    const { port } = await startWebMode({ stateDir: opts.persistDir, port: parseWebPort(process.env.WEB_PORT) });
+    const { port } = await startWebMode({ interface: humanInterface, stateDir: opts.persistDir, port: parseWebPort(process.env.WEB_PORT) });
     bus.emit({ type: "info", message: `[web] Dashboard running on http://localhost:${port}` });
   }
 
@@ -211,7 +212,11 @@ export async function runAppRuntime(opts: {
     type: "info",
     message: `[apps] Active source ${activeAppSource.sourceCommit ?? activeAppSource.id}`,
   });
-  const humanTasks = new HumanTaskService(getDb(opts.persistDir), appRegistry);
+  const humanTasks = new HumanTaskService(
+    getDb(opts.persistDir),
+    appRegistry,
+    (appId) => appInboxRuntime?.observerHealth(appId) ?? [],
+  );
 
   attachDaemonEventSubscribers({
     bus,
@@ -267,6 +272,9 @@ export async function runAppRuntime(opts: {
         expectedResourceVersion: resourceVersion,
         controlKey,
       }),
+    reopenTask: ({ generation, resourceVersion, ...input }) => appTasks.reopen({
+      ...input, expectedGeneration: generation, expectedResourceVersion: resourceVersion,
+    }),
     closeTask: ({ appId, taskId, generation, resourceVersion, afterResult, reason, controlKey }) =>
       appTasks.closeAfterResult({
         appId,
@@ -278,8 +286,9 @@ export async function runAppRuntime(opts: {
         controlKey,
       }),
   });
-  const conversationAppId = "may";
+  const conversationAppId = humanInterface.appId;
   const events = createEventInterface({
+    conversationAgent: interfaceAgent,
     bus,
     db: getDb(opts.persistDir),
     conversationAppId,
@@ -339,6 +348,7 @@ export async function runAppRuntime(opts: {
         bus.emit({ type: "info", message: `[app:${appId}:observer:${level}] ${message}` });
       return {
         read: createRuntimeAppRead({
+          readContract: async (targetAppId) => appTasks.contract(targetAppId),
           getDb: () => getDb(opts.persistDir),
           readMetric: opts.reporting?.readMetric,
           taskRead: {
@@ -473,6 +483,9 @@ export async function runAppRuntime(opts: {
   installProcessHandlers();
 
   const commandRouter = attachCommandRouter({
+    interfaceAgent,
+    conversationAppId,
+    conversationId: humanInterface.conversationId,
     bus,
     manager,
     projectRoot: opts.projectRoot,
@@ -482,7 +495,7 @@ export async function runAppRuntime(opts: {
   });
   const handleInput = commandRouter.handleInput;
 
-  if (!manager.hasAgent(interfaceAgent)) {
+  if ((interactiveConsole || INITIAL_TASK) && !manager.hasAgent(interfaceAgent)) {
     console.error(`Agent "${interfaceAgent}" is not registered. Available: ${manager.agentNames().join(", ")}`);
     process.exit(1);
   }
@@ -495,15 +508,18 @@ export async function runAppRuntime(opts: {
         bus,
         persistDir: opts.persistDir,
         interfaceAgent,
+        conversationAppId,
+        conversationId: humanInterface.conversationId,
         humanTasks: {
           getTask: (input) => humanTasks.getTask(input),
           listApps: (appId) => humanTasks.listApps(appId),
           listTasks: (options) => humanTasks.listTasks(options),
         },
-        publishEvent: (input) =>
+        publishEvent: (input, approvalAuthorization) =>
           events.publish(input, {
             source: "telegram",
             inputSource: { kind: "human", id: "telegram" },
+            ...(approvalAuthorization ? { approvalAuthorization } : {}),
           }),
       })
     : { close: () => {} };
@@ -513,6 +529,7 @@ export async function runAppRuntime(opts: {
     admit: admitAppInput,
   });
   const { socketPath: SOCKET_PATH, socketUI } = await startInterfaceRuntime({
+    conversationAppId,
     socketEnabled: SOCKET_ENABLED,
     persistDir: opts.persistDir,
     instanceLabel: opts.instanceLabel,

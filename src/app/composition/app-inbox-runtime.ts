@@ -1,8 +1,8 @@
 import { validateIntent } from "../core/tasks/app-task-reconciler.js";
-import { taskControlAction } from "../core/events/interface.js";
+import { deliverConversationApproval, taskControlAction } from "../core/events/interface.js";
 import { readTaskEventTarget, readEventTaskTarget } from "../core/events/task-target.js";
-import { appInputFeedbackEvent } from "../core/inbox/input-result.js";
-import { conversationTaskId, listPendingConversationTaskChanges } from "../core/state/conversation-task-turns.js";
+import { appInputFeedbackEvent, appInputAdmissionFailureEvent } from "../core/inbox/input-result.js";
+import { conversationTaskId, listPendingConversationTaskChanges, type ConversationTaskChangeRef } from "../core/state/conversation-task-turns.js";
 import type { AppTaskCapability } from "../core/tasks/app-task-capability.js";
 import { createAppScheduleProducer } from "../adapters/producers/app-schedules.js";
 import { OwnedTimer } from "../core/scheduling/timer.js";
@@ -34,7 +34,7 @@ import {
   type AppInboxHostOptions,
 } from "../core/inbox/app-inbox-host.js";
 import { hasConversationExecutionTask } from "../core/state/app-inbox-store.js";
-import { listConversationTopicLinksForTask } from "../core/state/conversations.js";
+import { listConversationTaskLinks } from "../core/state/conversation-task-links.js";
 import type {
   AppDefinitionSource,
   AppRegistry,
@@ -54,6 +54,8 @@ import {
   type AppEventAdmissionRoute,
 } from "../core/state/app-event-admission-store.js";
 import { createAppObserverRuntime } from "../adapters/producers/app-observer-runtime.js";
+import { observationDemandReader, readTaskObservationInterests } from "../core/state/observation-demand.js";
+import { appObservationSelectors } from "../core/reads/app-contract.js";
 import { canonicalAppEvent } from "../canonical-app-event.js";
 
 export type AppRegistryReloadPreparation = (input: {
@@ -63,6 +65,7 @@ export type AppRegistryReloadPreparation = (input: {
 }) => Promise<void>;
 
 export type AppInboxRuntime = {
+  observerHealth: ReturnType<typeof createAppObserverRuntime>["health"];
   host: AppInboxHost;
   /** Begin recovery, schedules, and input coordination after interfaces are ready. */
   start(): Promise<void>;
@@ -249,11 +252,11 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   let appDirById = new Map(loaded.map((entry) => [entry.definition.id, entry.appDir]));
   let loadedById = new Map(loaded.map((entry) => [entry.definition.id, entry]));
   let taskSubscriptionsByEventType = indexAppEventSelectors(loaded, (definition) => definition.tasks?.subscriptions);
-  let observationsByEventType = indexAppEventSelectors(loaded, (definition) => definition.observations);
+  let observationsByEventType = indexAppEventSelectors(loaded, appObservationSelectors);
   const replaceRouteIndexes = (entries: LoadedAppDefinition[]): void => {
     loadedById = new Map(entries.map((entry) => [entry.definition.id, entry]));
     taskSubscriptionsByEventType = indexAppEventSelectors(entries, (definition) => definition.tasks?.subscriptions);
-    observationsByEventType = indexAppEventSelectors(entries, (definition) => definition.observations);
+    observationsByEventType = indexAppEventSelectors(entries, appObservationSelectors);
   };
   const attachTask: AppTaskAttacher | undefined = options.attachTask
     ? (input) => {
@@ -300,34 +303,32 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     armConversationUpdate();
   };
 
-  const emitConversationTaskChanged = (
-    link: { appId: string; conversationId: string; topicId: string },
-    taskRef: { appId: string; taskId: string },
-    change: {
-      idempotencyKey: string;
-      attemptId?: string;
-      closedGeneration?: number;
-    },
-  ): void => {
-    // The source identity is enough. Admission reads the stored outcome;
-    // the executing Task collects current Conversation context.
-    if (taskRef.appId === link.appId && taskRef.taskId === conversationTaskId(link.appId, link.conversationId)) return;
-    if (!change.attemptId && change.closedGeneration === undefined) return;
-    options.bus.emit({
-      type: "conversation.task.changed",
-      source: "app-task",
-      owner: `app:${link.appId}`,
-      target: { appId: link.appId, project: link.appId },
-      data: {
-        appId: link.appId,
-        conversationId: link.conversationId,
-        topicId: link.topicId,
-        taskRef,
-        ...(change.attemptId ? { attemptId: change.attemptId } : {}),
-        ...(change.closedGeneration !== undefined ? { closedGeneration: change.closedGeneration } : {}),
-      },
-      idempotencyKey: change.idempotencyKey,
-    } as unknown as AgentEvent);
+  const admitConversationTaskChanges = (changes: readonly ConversationTaskChangeRef[]): void => {
+    // Admit each Conversation once. Admission reads all eligible saved links;
+    // choosing one representative Topic could hide another caller's report.
+    const seen = new Set<string>();
+    for (const change of changes) {
+      const { appId, conversationId, taskAppId, taskId, attemptId, closedGeneration } = change;
+      if (taskAppId === appId && taskId === conversationTaskId(appId, conversationId)) continue;
+      if (!attemptId && closedGeneration === undefined) continue;
+      const identity = JSON.stringify([appId, conversationId, taskAppId, taskId, attemptId ?? null, closedGeneration ?? null]);
+      if (seen.has(identity)) continue;
+      seen.add(identity);
+      try {
+        const admitted = options.admitConversationChange?.({
+          appId, conversationId, taskAppId, taskId,
+          ...(attemptId !== undefined ? { attemptId } : { closedGeneration: closedGeneration! }),
+        });
+        if (!admitted) throw new Error("Conversation Task change has no available execution owner");
+      } catch (error) {
+        // Saved links/outcomes remain due for the existing recovery scan.
+        // One unavailable Conversation must not prevent another from receiving work.
+        reportFailure({
+          appId, conversationId, stage: "conversation-change", disposition: "recovery-pending",
+          error: `Task ${taskAppId}/${taskId}, outcome ${attemptId ?? `closed:${closedGeneration}`}: ${String(error)}`,
+        });
+      }
+    }
   };
   const host = new AppInboxHost({
     db: options.db,
@@ -347,9 +348,14 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     onConversationChanged: notifyConversationUpdated,
     onRequestUpdated(item, result, status) {
       const event = appInputFeedbackEvent(item, result, status);
-      if (!event) return false;
-      const delivered = options.bus.emit(event)[EVENT_DELIVERY_RESULT];
-      return delivered?.accepted === true && delivered.route !== "noop";
+      if (event) {
+        const delivered = options.bus.emit(event)[EVENT_DELIVERY_RESULT];
+        if (delivered?.accepted === true && delivered.route !== "noop") return true;
+      }
+      const review = appInputAdmissionFailureEvent(item, result, status);
+      if (!review) return false;
+      const delivered = options.bus.emit(review)[EVENT_DELIVERY_RESULT];
+      return delivered?.accepted === true && delivered.route === "direct" && delivered.by.startsWith("app-runtime:events:");
     },
   });
   let closed = false;
@@ -358,6 +364,16 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const now = options.now ?? Date.now;
   const observerRuntime = createAppObserverRuntime({
     bus: options.bus,
+    readDemand: observationDemandReader(options.db),
+    needsFact: (fact) => {
+      if (options.previewTaskEventRoutes)
+        return options.previewTaskEventRoutes({ event: fact as AgentEvent }).some((route) => route.taskIds.length > 0);
+      if (!options.previewTaskEvent) throw new Error("Observation Condition matching unavailable");
+      return loaded.some(
+        ({ definition, appDir }) =>
+          options.previewTaskEvent!({ appId: definition.id, appDir, event: fact as AgentEvent }).length > 0,
+      );
+    },
     now,
     context: (appId, appDir) => {
       if (!options.observerContext) throw new Error(`App ${appId} observer context is unavailable`);
@@ -401,12 +417,26 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   let inputRecovery: Promise<void> | null = null;
   const inputRecoveryIntervalMs = Math.max(60_000, options.scanIntervalMs ?? 5_000);
   let nextInputRecoveryAt = 0;
+  let inputRecoveryCursor = 0;
   const recoverInputs = (): Promise<void> => {
     if (inputRecovery) return inputRecovery;
     nextInputRecoveryAt = now() + inputRecoveryIntervalMs;
     const current = new Promise<void>((resolve) => setTimeout(resolve, 0))
       .then(async () => {
         if (closed) return;
+        // Resume saved human inputs through the same durable route. This also
+        // closes a crash between Conversation persistence and decision publication.
+        const inputs = options.db.prepare(`SELECT id FROM events
+          WHERE event_type = 'conversation.message.created' AND id > ?
+            AND delivery_status IN ('pending', 'unhandled')
+            AND (json_type(data, '$.approvalReply.hostApproval') = 'object' OR body_ref IS NOT NULL)
+          ORDER BY id LIMIT 16`).all(inputRecoveryCursor);
+        if (!inputs.length) inputRecoveryCursor = 0;
+        for (const row of inputs) {
+          inputRecoveryCursor = Number(row.id);
+          const event = loadPersistedEvent(options.db, Number(row.id), options.persistDir);
+          if (event) options.bus.redeliverPersisted(event, Number(row.id));
+        }
         await host.recoverAdmissions();
         if (!closed) await host.recoverTaskResults();
       })
@@ -729,7 +759,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       const data = eventData(event);
       // These facts signal state already committed by the Task runtime. They
       // must not become new input through generic exact-target admission.
-      if (event.type === "app.task.ready" || event.type === "app.task.attempt.stopped")
+      if (event.type === "app.task.ready" || event.type === "app.task.attempt.stopped" || event.type === "app.task.reopened")
         return { accepted: true, by: "task-runtime-notification", route: "direct" };
       if (String(event.type) === "project.task.reconcile.started" || String(event.type) === "project.task.reconciled") {
         const rows = options.db.prepare(`SELECT DISTINCT conversation_id FROM app_inbox_items
@@ -794,6 +824,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             data.metadata && typeof data.metadata === "object" && !Array.isArray(data.metadata)
               ? (data.metadata as Record<string, unknown>)
               : {};
+          const approval = deliverConversationApproval(event, options.db, options.bus);
           const persistedEventId = eventRowId(event);
           const fallbackSequence =
             typeof metadata.channelMessageId === "number" && Number.isSafeInteger(metadata.channelMessageId)
@@ -802,6 +833,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           // Preserve the surface's Topic as input context, not a committed turn decision.
           const context: Record<string, unknown> = {
             ...record(data.context),
+            ...(approval ? { approval } : {}),
             ...(typeof metadata.topicId === "string" && metadata.topicId.trim()
               ? { conversationTopicId: metadata.topicId.trim() }
               : {}),
@@ -859,16 +891,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         if (!appId) throw new Error("Conversation supervision review requires its App");
         if (options.admitConversationChange) {
           const changes = listPendingConversationTaskChanges(options.db, appId, limit);
-          for (const change of changes) {
-            emitConversationTaskChanged(
-              change,
-              { appId: change.taskAppId, taskId: change.taskId },
-              {
-                ...change,
-                idempotencyKey: `conversation-change-review:${eventRowId(event)}:${change.topicId}:${change.taskAppId}:${change.taskId}:${change.attemptId ?? `closed:${change.closedGeneration}`}`,
-              },
-            );
-          }
+          admitConversationTaskChanges(changes);
           return {
             accepted: true,
             by: `conversation-changes:${appId}`,
@@ -879,17 +902,19 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         throw new Error("Conversation Task change admission is not configured");
       }
       if (String(event.type) === "conversation.task.changed") {
+        // Read notifications saved by older Hosts through the same admission path.
         if (!options.admitConversationChange) throw new Error("Conversation Task change admission is not configured");
         const ref = record(data.taskRef);
         if (
-          [data.appId, data.conversationId, data.topicId, ref.appId, ref.taskId].every(
+          [data.appId, data.conversationId, data.originInputId ?? data.topicId, ref.appId, ref.taskId].every(
             (value) => typeof value === "string" && value.trim(),
           )
         ) {
           const admitted = options.admitConversationChange({
             appId: String(data.appId),
             conversationId: String(data.conversationId),
-            topicId: String(data.topicId),
+            ...(typeof data.topicId === "string" ? { topicId: data.topicId } : {}),
+            ...(typeof data.originInputId === "string" ? { originInputId: data.originInputId } : {}),
             taskAppId: String(ref.appId),
             taskId: String(ref.taskId),
             ...(typeof data.closedGeneration === "number" &&
@@ -952,25 +977,19 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         const appId = typeof sourceAppId === "string" ? sourceAppId.trim() : "";
         const taskId = typeof data.taskId === "string" ? data.taskId.trim() : "";
         if (appId && taskId) {
+          if (!closed) observerRuntime.requestCheck(readTaskObservationInterests(options.db, appId, taskId));
           // One committed Task fact refreshes both exact caller answers and
           // linked Conversation observations. A wait or retry is not an answer.
           void host
             .refreshTaskResults(appId, taskId)
             .catch((error) => reportRuntimeFailure("input-result", error, appId));
-          for (const link of listConversationTopicLinksForTask(options.db, appId, taskId)) {
-            emitConversationTaskChanged(
-              link,
-              { appId, taskId },
-              {
-                ...(closed
-                  ? { closedGeneration: Number(data.generation) }
-                  : typeof data.attemptId === "string"
-                    ? { attemptId: data.attemptId }
-                    : {}),
-                idempotencyKey: `conversation-task-changed:${link.topicId}:${appId}:${taskId}:${eventRowId(event) ?? data.generation ?? "unknown"}`,
-              },
+          if (closed || typeof data.attemptId === "string")
+            admitConversationTaskChanges(
+              listConversationTaskLinks(options.db, appId, taskId).map((link) => ({
+                ...link, taskAppId: appId, taskId,
+                ...(closed ? { closedGeneration: Number(data.generation) } : { attemptId: String(data.attemptId) }),
+              })),
             );
-          }
         }
         // Closure is already committed; its notification cannot become fresh Task input.
         if (closed) return { accepted: true, by: "task-runtime-notification", route: "direct" };
@@ -1093,7 +1112,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
 
         const observationApps = (observationsByEventType.get(canonical.type) ?? [])
           .filter(({ definition }) =>
-            definition.observations?.some((selector) => matchesEventSelector(selector, canonical)),
+            appObservationSelectors(definition).some((selector) => matchesEventSelector(selector, canonical)),
           )
           .map(({ definition }) => definition.id);
         if (observationApps.length > 0) {
@@ -1132,6 +1151,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     }
   };
   const runtime: AppInboxRuntime = {
+    observerHealth: (appId) => observerRuntime.health(appId),
     host,
     start() {
       if (closed) return Promise.resolve();
@@ -1144,7 +1164,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       timer.every(scanIntervalMs, scanFromTimer);
       initialRecovery.after(0, scanFromTimer);
       scheduleProducer.start(scanIntervalMs);
-      observerRuntime.start(scanIntervalMs);
+      observerRuntime.start();
       startPromise = Promise.resolve();
       return startPromise;
     },

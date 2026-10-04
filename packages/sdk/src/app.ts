@@ -1,5 +1,15 @@
+import {
+  conversationRequestUpdatesSchema,
+  type AppConversationRequest,
+  type AppConversationRequestUpdate,
+} from "./conversation-contract.js";
+export { conversationRequestUpdatesSchema, MAX_CONVERSATION_REQUESTS_PER_TURN } from "./conversation-contract.js";
+export type { AppConversationRequest, AppConversationRequestUpdate } from "./conversation-contract.js";
 import { Type, type Static, type TSchema } from "typebox";
 import { appInputSchema } from "./app-input.js";
+import type { ResourceObserver, ObservationContract } from "./observer.js";
+export { defineObserver, observationCondition } from "./observer.js";
+export type { ResourceObserver, ObservationContract, ObservationInterest, ObserverHealth } from "./observer.js";
 import type { AppEvent, EventSelector } from "./event.js";
 import type { Condition, TaskAction, TaskIntent } from "./task.js";
 import type { MetricDefinition, ObserverContext, ObserverSnapshot, TaskAttempt, TaskDetail } from "./workflow.js";
@@ -15,6 +25,8 @@ export type {
   ExecutionView,
   Logger,
   MetricDefinition,
+  MetricCalculation,
+  MetricCalculationOptions,
   MetricRecordOptions,
   MetricView,
   ObserverContext,
@@ -115,6 +127,8 @@ export type AppConversationMessage = {
     channelThreadId?: string;
     channelMessageId?: number;
     requestId?: string;
+    /** Accepted Task communication operation; may be cited as replyId in its owning Task generation. */
+    communicationId?: string;
     command?: string;
     /** Human-facing context that links this turn to exact App work. */
     topicId?: string;
@@ -158,76 +172,6 @@ export type AppConversationResource = {
   messages: AppConversationMessage[];
 };
 
-export type AppConversationRequest = {
-  id: string;
-  revision: number;
-  scope: string;
-  status: "open" | "closed";
-  topicId?: string;
-  taskRefs: Array<{ appId: string; taskId: string }>;
-  closure?: { disposition: "fulfilled" | "withdrawn" | "unfulfilled"; reason: string; messageId: string };
-};
-
-/** App judgment; expectedRevision=0 accepts a new ask. Closing cannot silently change scope. */
-export type AppConversationRequestUpdate = {
-  id: string;
-  expectedRevision: number;
-  /** Required for a new ask. Omit to retain an existing Request's exact scope. */
-  scope?: string;
-  disposition: "open" | "fulfilled" | "withdrawn" | "unfulfilled";
-  reason?: string;
-  /** Add exact links; omitted/empty lists retain admitted work. At most 32 distinct links in total. */
-  taskRefs?: Array<{ appId: string; taskId: string }>;
-};
-
-export const conversationRequestUpdatesSchema = Type.Array(
-  Type.Object(
-    {
-      id: Type.String({ minLength: 1, maxLength: 200 }),
-      expectedRevision: Type.Integer({
-        minimum: 0,
-        maximum: Number.MAX_SAFE_INTEGER - 1,
-        description:
-          "Observed Request revision, or 0 for a new ask. Use the revision returned by conversation_request; reread after a conflict.",
-      }),
-      scope: Type.Optional(
-        Type.String({
-          minLength: 1,
-          maxLength: 2000,
-          description:
-            "Complete accepted ask for creation or authorized revision. Omit to retain existing scope. Closing cannot change the scope.",
-        }),
-      ),
-      disposition: Type.Union([
-        Type.Literal("open"),
-        Type.Literal("fulfilled"),
-        Type.Literal("withdrawn"),
-        Type.Literal("unfulfilled"),
-      ]),
-      reason: Type.Optional(Type.String({ minLength: 1, maxLength: 2000 })),
-      taskRefs: Type.Optional(
-        Type.Array(
-          Type.Object(
-            { appId: Type.String({ minLength: 1 }), taskId: Type.String({ minLength: 1 }) },
-            { additionalProperties: false },
-          ),
-          {
-            maxItems: 32,
-            description:
-              "Add exact Task links. Empty or omitted lists retain existing links; at most 32 distinct links in total.",
-          },
-        ),
-      ),
-    },
-    { additionalProperties: false },
-  ),
-  {
-    maxItems: 8,
-    description:
-      "Accept, revise, link or close asks. A simple ask may be accepted and fulfilled in one answer. After saving a correction with conversation_request, retain its revision and omit unchanged scope. Read omitted/truncated Requests before changing them. Close only with an explained fulfillment, withdrawal or unfulfilled disposition; admitting or completing a Task alone is not Request closure.",
-  },
-);
-
 /** Context for one admitted input, distinct from an accepted conversational Request. */
 export type AppInputContext<TData = unknown> = {
   /** Inbox input identity; not an accepted Request ID. Host lifecycle and leases stay private. */
@@ -239,16 +183,20 @@ export type AppInputContext<TData = unknown> = {
   input: AppInput<TData>;
   /** Ordered inputs considered together in this Turn; Request updates decide which asks are resolved. */
   inputs?: ReadonlyArray<AppTaskInput>;
+  /** Accepted intentions assigned through the current inputs; each needs an explicit final requestUpdate. */
+  assignedRequests?: Array<
+    Pick<AppConversationRequest, "id" | "revision" | "scope" | "status"> & { inputIds: string[] }
+  >;
   /** Facts from this Conversation Task's earlier attempt, including an interrupted or failed Turn. */
   previousAttempt?: TaskAttempt["previousAttempt"];
   dependency?: AppDependencyObservation;
-  /** Exact bounded observation for the human's focused Task, when supplied. */
+  /** Current identity, phase, outcome and summary for explicit focus. Read exact Task detail before acting. */
   focusedTask?: {
     appId: string;
     task: AppDependencyObservation;
   };
-  /** Current canonical snapshots for exact Tasks represented by recent command/tool views. */
-  referencedTasks?: TaskObservation[];
+  /** Navigation from recent views. Detail and current state are read explicitly, not expanded from history. */
+  referencedTasks?: Array<{ appId: string; taskId: string; ref?: string }>;
   /** Bounded exact conversation facts; it never owns or schedules work. */
   conversation?: AppConversationResource;
 };
@@ -289,7 +237,7 @@ export type ConversationDelegation = {
   appId: string;
   /** Complete handoff under the App's contract, including its fixed semantics and any governing references. */
   input: AppInput;
-  /** Reuse this exact open Task when its assignment fits; new input does not revise its specification. */
+  /** Reuse an exact ordinary work Task when its assignment fits; Conversation Tasks use Conversation input. */
   task?: { appId: string; taskId: string };
 };
 
@@ -302,8 +250,9 @@ export type ConversationTurnResult = {
    */
   response?: string;
   facts?: string[];
-  topic: ConversationTopicDecision;
-  /** Admit one responsible Task directly and link it to the chosen Topic; handling of this input then completes. The accepted ask may remain open. */
+  /** Optional Conversation organization. Omit to retain the input's association; work and result delivery need no Topic. */
+  topic?: ConversationTopicDecision;
+  /** Admit one responsible Task with its caller input retained for result delivery. The accepted ask may remain open. */
   followUp?: ConversationDelegation;
   taskControls?: ConversationTaskControl[];
   requestUpdates?: AppConversationRequestUpdate[];
@@ -315,26 +264,42 @@ const nonEmptyStringSchema = Type.String({ minLength: 1 });
 export const conversationTurnResultSchema = Type.Object(
   {
     summary: nonEmptyStringSchema,
-    requestUpdates: Type.Optional(conversationRequestUpdatesSchema),
+    requestUpdates: Type.Optional({
+      ...conversationRequestUpdatesSchema,
+      items: {
+        ...conversationRequestUpdatesSchema.items,
+        required: [...conversationRequestUpdatesSchema.items.required!, "reason"],
+        properties: {
+          ...conversationRequestUpdatesSchema.items.properties,
+          reason: {
+            ...conversationRequestUpdatesSchema.items.properties.reason,
+            description:
+              "Required for every legacy Conversation final update, including open Requests. Explain the outcome or the continuing work or remaining gap and wait.",
+          },
+        },
+      },
+    }),
     response: Type.Optional(
       Type.String({
         minLength: 1,
         description:
-          "Human-facing answer or useful update. Required for human input, Request closure, delegation and Task controls. Automated observations and open Request bookkeeping may stay quiet.",
+          "Human-facing answer or useful update. Required for human input, Request closure and Task controls. Background observations, delegation and open Request bookkeeping may stay quiet; retain internal findings in summary and facts.",
         pattern: "\\S",
       }),
     ),
     facts: Type.Optional(Type.Array(nonEmptyStringSchema, { maxItems: 32 })),
-    topic: Type.Union(
-      [
-        Type.Object({ kind: Type.Literal("none") }, { additionalProperties: false }),
-        Type.Object({ kind: Type.Literal("new"), title: nonEmptyStringSchema }, { additionalProperties: false }),
-        Type.Object({ kind: Type.Literal("existing"), id: nonEmptyStringSchema }, { additionalProperties: false }),
-      ],
-      {
-        description:
-          "Related conversation context and exact Task links: use an existing Topic, create a new durable interest, or none for a self-contained answer.",
-      },
+    topic: Type.Optional(
+      Type.Union(
+        [
+          Type.Object({ kind: Type.Literal("none") }, { additionalProperties: false }),
+          Type.Object({ kind: Type.Literal("new"), title: nonEmptyStringSchema }, { additionalProperties: false }),
+          Type.Object({ kind: Type.Literal("existing"), id: nonEmptyStringSchema }, { additionalProperties: false }),
+        ],
+        {
+          description:
+            "Optional grouping for this Conversation's discussion and Requests. Omit to retain the input's Topic, if any. Choose new, existing or none only to change that grouping. Delegation and result delivery do not require a Topic.",
+        },
+      ),
     ),
     followUp: Type.Optional(
       Type.Object(
@@ -351,7 +316,7 @@ export const conversationTurnResultSchema = Type.Object(
         {
           additionalProperties: false,
           description:
-            "Admit one responsible Task, possibly in this App, and link it to the Topic. Reuse an exact Task only when outcome, acceptance, input and execution method fit. Supply an immediate response explaining the intended outcome. This Turn ends after admission; the Request remains open until resolved and explained.",
+            "Submit this input as durable Task work to the selected App. The Host retains the originating Conversation input and returns the selected result automatically. Reuse an exact ordinary work Task only when its outcome, acceptance, input and execution method fit. Conversation Tasks receive input through Conversation admission; a completed review can return summary and facts without a follow-up. The Host admits the handoff when this Turn's result is accepted. Task admission alone does not fulfill a Request.",
         },
       ),
     ),
@@ -376,14 +341,13 @@ export const conversationTurnResultSchema = Type.Object(
   },
   {
     additionalProperties: false,
-    // A quiet turn can retain observations and open asks, but cannot silently
-    // close an accepted ask, delegate work or cancel a Task. Tool validation and
+    // A quiet turn can retain observations, open asks and delegate work, but
+    // cannot silently close an accepted ask or cancel a Task. Tool validation and
     // transactional settlement use this same rule.
     anyOf: [
       { required: ["response"] },
       {
         properties: {
-          followUp: { not: {} },
           taskControls: { maxItems: 0 },
           requestUpdates: { items: { properties: { disposition: { const: "open" } } } },
         },
@@ -448,6 +412,14 @@ export type AppObserver = {
   run(context: ObserverContext): Promise<AppEvent[] | AppObserverResult>;
 };
 
+export type AppContract = {
+  appId: string;
+  /** App owner agent; receives work without a more specific assignment and coordinates its scope. */
+  agent: string;
+  inputSchema: TSchema;
+  observations: ObservationContract[];
+};
+
 export type AppAction<TInputSchema extends TSchema = TSchema> = {
   description: string;
   inputSchema: TInputSchema;
@@ -473,7 +445,8 @@ export type AppTaskPolicy = {
 
 /** Conversation input executes through one stable Task per Conversation. */
 export type AppConversationPolicy = {
-  mode: "agent";
+  /** Task is the common execution contract. Agent retains the legacy Conversation adapter during migration. */
+  mode: "task" | "agent";
   /** Input kinds handled as bounded conversation. Omit for legacy all-input behavior. */
   inputKinds?: string[];
   /** Conversation used for event/API requests that do not arrive through a conversation adapter. */
@@ -496,7 +469,7 @@ type AppDefinitionBase<TInputSchema extends TSchema> = {
    */
   observations?: EventSelector[];
   schedules?: AppSchedule[];
-  observers?: AppObserver[];
+  observers?: Array<AppObserver | ResourceObserver>;
   /**
    * App-owned metric definitions. Runtime measures declared sources on the
    * shared Host cadence.
@@ -507,7 +480,7 @@ type AppDefinitionBase<TInputSchema extends TSchema> = {
   tasks?: AppTaskPolicy;
 };
 
-/** The App owns work; `agent` only selects its default bounded executor. */
+/** An App extends its owner agent with scoped policy and capabilities; `agent` is its default Task owner. */
 export type AppDefinition<TInputSchema extends TSchema = TSchema> = AppDefinitionBase<TInputSchema> &
   (
     | {

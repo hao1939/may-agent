@@ -13,7 +13,7 @@ const MAX_FACT_BYTES = 512;
 const MAX_RESULT_BYTES = 16 * 1_024;
 
 type EvidenceCursor = { startedAt: number; attemptId: string };
-type TruncatedField = "summary" | "response" | "result" | "facts" | "acceptanceBasis" | "acceptedLiveEventIds";
+type TruncatedField = "summary" | "response" | "result" | "facts" | "acceptanceBasis" | "acceptedLiveEventIds" | "inputKeys";
 
 function encodeCursor(cursor: EvidenceCursor): string {
   return Buffer.from(JSON.stringify(cursor), "utf8").toString("base64url");
@@ -67,6 +67,7 @@ function boundedAcceptedResult(result: NonNullable<AppTaskAttempt["acceptedResul
   if (resultBytes > MAX_RESULT_BYTES) fields.add("result");
   if (result.acceptanceBasis) fields.add("acceptanceBasis");
   if (result.acceptedLiveEventIds) fields.add("acceptedLiveEventIds");
+  if (result.inputKeys) fields.add("inputKeys");
   const value = {
     state: result.state,
     ...(result.reviewAt === undefined ? {} : { reviewAt: result.reviewAt }),

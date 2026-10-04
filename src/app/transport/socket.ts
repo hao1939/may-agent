@@ -6,6 +6,7 @@
  */
 
 import type { EventInterface } from "../core/events/interface.js";
+import { readSqlPerformance } from "../../lib/db/query-performance.js";
 import type { EventInput, EventReceipt } from "@may-agent/control/events";
 import {
   attachControlSocket,
@@ -15,9 +16,10 @@ import {
 export type { SocketFrame } from "@may-agent/control/protocol";
 
 export interface SocketUIOptions {
+  conversationAppId?: string;
   socketPath: string;
   events: Pick<EventInterface, "get" | "subscribe">;
-  publishEvent: (input: EventInput) => EventReceipt;
+  publishEvent: AttachControlSocketOptions["publishEvent"];
   /** Bounded operator fact ingress used by direct event frames and --emit. */
   publishOperatorEvent: (input: EventInput) => EventReceipt;
   getStatus: AttachControlSocketOptions["getStatus"];
@@ -82,6 +84,7 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     // legacy control-socket field empty; clients subscribe explicitly.
     getSessionId: () => "",
     getStatus: opts.getStatus,
+    getDiagnostics: () => ({ sql: readSqlPerformance() }),
     emitEvent: (event) => opts.publishOperatorEvent(operatorEventInput(event)),
     publishEvent: opts.publishEvent,
     getEvent: events.get,
@@ -97,6 +100,7 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     invokeProjectAction: opts.invokeProjectAction,
     subscribeEvents: (handler) => events.subscribe({}, handler),
     onInfo: opts.reportInfo,
+    conversationAppId: opts.conversationAppId,
     agentName,
     instance,
   });

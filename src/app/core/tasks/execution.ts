@@ -27,6 +27,8 @@ export type AppInputResolver = (input: {
   inputContext: Readonly<AppInputContext>;
   execution: {
     outputSchema: TSchema;
+    /** Read-only admission feedback; settlement still rechecks current state. */
+    validateOutput?: (result: unknown) => string | null;
     readContext: (query: ConversationContextQuery) => unknown;
     signal: AbortSignal;
     sessionStarted: (sessionId: string) => void;
@@ -67,6 +69,7 @@ type TaskExecutionInput = {
 };
 
 export type TaskAgentInput = TaskExecutionInput & {
+  validateResult?: (result: import("@may-agent/sdk").TaskReconcileResult) => string | null;
   taskEvents: AppTaskEvents;
   taskSnapshot: AppTaskLiveSnapshot;
   dependencies: ReturnType<typeof appDependencyCatalog>;

@@ -2,7 +2,7 @@ import type { SqliteDb } from "../../../lib/db.js";
 import type { AppInputContext, AppTaskAttachment, AppResult, ResourceCreator } from "@may-agent/sdk";
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction } from "../../../lib/db/transaction.js";
-import { getAppInboxItem, type AppInboxItem } from "./app-inbox-store.js";
+import { getAppInboxItem, hasConversationExecutionTask, type AppInboxItem } from "./app-inbox-store.js";
 import {
   observeAppTaskIntent,
   readAppTaskIntent,
@@ -12,8 +12,9 @@ import type { AppTaskContext } from "../tasks/app-task-store.js";
 import { linkConversationTopicTask } from "./conversations.js";
 import { linkConversationRequestTask } from "./conversation-requests.js";
 import { assertResourceCreator } from "./resource-creator.js";
+import { AppTaskAdmissionError } from "./task-admission-error.js";
 
-export class AppTaskRevisionAdmissionError extends Error {
+export class AppTaskRevisionAdmissionError extends AppTaskAdmissionError {
   readonly name = "AppTaskRevisionAdmissionError";
 }
 
@@ -37,10 +38,35 @@ export type TaskInputAdmission = {
   requestLink?: Omit<Parameters<typeof linkConversationRequestTask>[1], "taskRef">;
 };
 
+/** Conversation execution consumes saved Conversation input, never an ordinary Task handoff. */
+export function assertTaskInputCompatible(config: AppTaskContext, input: TaskInputAdmission): void {
+  if (config.conversationInputMode === "task") return;
+  const taskId = (input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id).trim();
+  // Match execution dispatch: retained bindings own Conversation membership.
+  // An ordinary App executor may also be named "conversation".
+  if (!hasConversationExecutionTask(config.resourceStore.db, config.resourceStore.appId, taskId)) return;
+  const item = getAppInboxItem(config.resourceStore.db, input.inputContext.id);
+  if (
+    !item?.conversationId ||
+    item.appId !== input.appId ||
+    item.status === "done" ||
+    item.lease ||
+    item.executionTaskId !== taskId ||
+    item.taskAdmissionKey !== input.idempotencyKey ||
+    input.idempotencyKey !== `conversation-input:${item.id}` ||
+    !isDeepStrictEqual(item.source, input.inputContext.source) ||
+    !isDeepStrictEqual(item.input, input.inputContext.input)
+  )
+    throw new AppTaskAdmissionError(
+      "Conversation Tasks require Conversation input admission; return the current Conversation decision or select an ordinary work Task for follow-up",
+    );
+}
+
 /** Persist resolved Task input and Conversation links. No App mapping, execution or notification calls. */
 export function admitTaskInput(config: AppTaskContext, input: TaskInputAdmission): AppTaskObservationResult {
   return stateTransaction(config.resourceStore.db, () => {
     input.authorize?.();
+    assertTaskInputCompatible(config, input);
     const db = config.resourceStore.db;
     const item = input.inboxInputId ? getAppInboxItem(db, input.inboxInputId) : null;
     if (input.inboxInputId) {
@@ -80,6 +106,11 @@ export function admitTaskInput(config: AppTaskContext, input: TaskInputAdmission
       const keys = [input.idempotencyKey, `task:${item.id}:desired:${taskId}`, `task:${item.id}:existing:${taskId}`];
       const admissions = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: keys }).appTaskAdmissions;
       input = { ...input, idempotencyKey: keys.find((key) => admissions?.[key]) ?? input.idempotencyKey };
+      const target = config.resourceStore.readTask(taskId);
+      if (!admissions?.[input.idempotencyKey] && item.originEventId &&
+        item.originEventId <= (target?.metadata.reopenedAfterEventId ?? 0)) {
+        throw new AppTaskAdmissionError("This input predates Task reopening; submit fresh input for the new generation");
+      }
     }
     const observation = admitAuthorizedTaskInput(config, input);
     if (item) linkTaskInput(db, item.id, observation.taskId, input.idempotencyKey, input.now);
@@ -112,7 +143,7 @@ function admitAuthorizedTaskInput(config: AppTaskContext, input: TaskInputAdmiss
       return { kind: "observed", taskId, generation: admission.taskGeneration, changed: false };
     }
     intent = readAppTaskIntent(config, taskId);
-    if (!intent) throw new Error(`Task ${taskId} does not exist in App ${input.appId}`);
+    if (!intent) throw new AppTaskAdmissionError(`Task ${taskId} does not exist in App ${input.appId}`);
   } else {
     intent = input.attachment.intent;
     const expectedGeneration = input.attachment.expectedGeneration;
@@ -225,21 +256,30 @@ export function linkTaskInput(
   if (updated.changes !== 1) throw new Error("Task input is unavailable");
 }
 
-/** Finish a deterministic revision rejection so recovery does not retry stale authority forever. */
-export function rejectTaskInputRevision(
+/** Finish a deterministic rejection without claiming that the requested work was fulfilled. */
+export function rejectTaskInput(
   db: SqliteDb,
   item: AppInboxItem,
   error: Error,
   now: number,
 ): AppResult | null {
-  const summary = `Task revision was not applied: ${error.message}`;
+  const revision = isAppTaskRevisionAdmissionError(error);
+  const summary = `${revision ? "Task revision was not applied" : "Task input was not admitted"}: ${error.message}`;
   const result: AppResult = {
     summary,
-    response: `${summary}. Read the current Task and submit a new revision with its current expectedGeneration.`,
+    response: revision
+      ? `${summary}. Read the current Task and submit a new revision with its current expectedGeneration.`
+      : item.targetTaskId
+        ? `${summary}. Read the current Task and correct the target. If the user explicitly requested reopening, use task.reopen with the current generation, resource version and new App input.`
+        : `${summary}. Read the App input contract and submit a corrected request. The original requirement remains unresolved.`,
+    result: { disposition: "admission-rejected", appId: item.appId, requestId: item.id },
   };
+  // A final rejection is new feedback even if a retryable failure with the same
+  // text was reported earlier. Clear its marker in the terminal transition.
   const changed = db
     .prepare(
       `UPDATE app_inbox_items SET status = 'done', handling = ?, result = ?, completed_at = ?,
+      recovery_json = json_remove(recovery_json, '$."input-admission".reportedAt'),
       available_at = NULL, review_at = NULL, lease_owner = NULL, lease_expires_at = NULL,
       changed_at = ?, updated_at = ?
     WHERE id = ? AND status = 'pending' AND execution_task_id IS NULL AND waiting_on_kind IS NULL`,

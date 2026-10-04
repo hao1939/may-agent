@@ -6,7 +6,8 @@ import type {
   AppInput,
 } from "@may-agent/sdk";
 import type { SqliteDb } from "../../../lib/db.js";
-import { listAppInboxConversationItems, readActiveAppTurn } from "./app-inbox-store.js";
+import { listAppInboxConversationItems, readActiveAppTurn, type AppInboxItem } from "./app-inbox-store.js";
+import { conversationTaskLinksSql } from "./conversation-task-links.js";
 import { displayTaskReferences } from "./task-reference-index.js";
 import {
   listConversationRequests,
@@ -113,6 +114,9 @@ function conversationEventMessage(row: ConversationEventRow): AppConversationMes
             ...(typeof metadata.requestId === "string" && metadata.requestId.trim()
               ? { requestId: metadata.requestId.trim() }
               : {}),
+            ...(typeof metadata.communicationId === "string" && metadata.communicationId.trim()
+              ? { communicationId: metadata.communicationId.trim() }
+              : {}),
             ...(typeof metadata.command === "string" && metadata.command.trim()
               ? { command: metadata.command.trim() }
               : {}),
@@ -173,6 +177,19 @@ export function listAppConversationMessages(
   }
   const conversationRows = listAppInboxConversationItems(db, appId, conversationId, limit, exactTopicId);
   const targetedTaskIds = new Set(conversationRows.flatMap((item) => (item.targetTaskId ? [item.targetTaskId] : [])));
+  const explicitlyCommunicatedInputs = new Set(
+    conversationRows.length
+      ? db
+          .prepare(
+            `SELECT DISTINCT json_extract(data, '$.communication.inputId') AS input_id FROM events
+     WHERE event_type = 'conversation.message.created' AND json_extract(data, '$.appId') = ?
+       AND json_extract(data, '$.conversationId') = ?
+       AND json_extract(data, '$.communication.inputId') IN (${conversationRows.map(() => "?").join(",")})`,
+          )
+          .all(appId, conversationId, ...conversationRows.map(({ id }) => id))
+          .map((row) => row.input_id as string)
+      : [],
+  );
   const projectedTaskResults = new Set<string>();
   for (const item of conversationRows) {
     const text = conversationText(item.input);
@@ -195,9 +212,12 @@ export function listAppConversationMessages(
         createdAt: item.createdAt,
       });
     }
-    const resultText = item.continuesRequestId || item.executionTaskId
-      ? item.result?.response?.trim()
-      : item.result?.response?.trim() || item.result?.summary?.trim();
+    // Explicit Task communication owns publication independently of input settlement.
+    if (explicitlyCommunicatedInputs.has(item.id)) continue;
+    const resultText =
+      item.continuesRequestId || item.executionTaskId
+        ? item.result?.response?.trim()
+        : item.result?.response?.trim() || item.result?.summary?.trim();
     if (!resultText) continue;
     const inferredCreatedTaskId = [...targetedTaskIds].find(
       (taskId) => taskId === item.id || taskId.endsWith(`/${item.id}`),
@@ -382,10 +402,11 @@ function hydrateConversationTopics(db: SqliteDb, rows: ConversationTopicRow[]): 
   const taskRows = rows.length
     ? (db
         .prepare(
-          `SELECT topic_id, app_id, task_id
-           FROM conversation_topic_tasks
+          `SELECT topic_id, task_app_id AS app_id, task_id
+           FROM (${conversationTaskLinksSql()})
            WHERE topic_id IN (${rows.map(() => "?").join(",")})
-           ORDER BY linked_at, app_id, task_id`,
+           GROUP BY topic_id, task_app_id, task_id
+           ORDER BY MIN(linked_at), task_app_id, task_id`,
         )
         .all(...rows.map((row) => requiredText(row.id, "topic id"))) as Array<Record<string, unknown>>)
     : [];
@@ -549,8 +570,14 @@ export function readConversationMessageTopicId(
     .get(appId, conversationId, id, id, id) as { topic_id?: unknown } | undefined;
   if (typeof inbox?.topic_id === "string" && inbox.topic_id.trim()) return inbox.topic_id.trim();
   const eventId = id.startsWith("event:") ? Number(id.slice("event:".length)) : NaN;
-  if (!Number.isSafeInteger(eventId)) return null;
-  const event = db.prepare("SELECT data FROM events WHERE id = ?").get(eventId) as { data?: unknown } | undefined;
+  const event = db
+    .prepare(
+      `SELECT data FROM events WHERE event_type = 'conversation.message.created'
+       AND json_extract(data, '$.appId') = ? AND json_extract(data, '$.conversationId') = ?
+       AND (json_extract(data, '$.messageId') = ? OR id = ?)
+     ORDER BY id DESC LIMIT 1`,
+    )
+    .get(appId, conversationId, id, Number.isSafeInteger(eventId) ? eventId : -1) as { data?: unknown } | undefined;
   if (typeof event?.data !== "string") return null;
   try {
     const data = JSON.parse(event.data) as {
@@ -564,6 +591,27 @@ export function readConversationMessageTopicId(
   } catch {
     return null;
   }
+}
+
+/** Retain explicit Conversation context without asking the agent to repeat its identity. */
+export function readConversationInputTopicId(db: SqliteDb, item: AppInboxItem): string | undefined {
+  if (!item.conversationId) return undefined;
+  const data = item.input.data;
+  const raw =
+    data && typeof data === "object" && !Array.isArray(data) ? (data as Record<string, unknown>).context : undefined;
+  const hint =
+    raw && typeof raw === "object" && !Array.isArray(raw)
+      ? (raw as Record<string, unknown>).conversationTopicId
+      : undefined;
+  const replied = item.replyToSourceId
+    ? readConversationMessageTopicId(db, item.appId, item.conversationId, item.replyToSourceId)
+    : undefined;
+  for (const candidate of [item.topicId, replied, hint]) {
+    if (typeof candidate !== "string" || !candidate.trim()) continue;
+    const topic = readConversationTopic(db, item.appId, item.conversationId, candidate);
+    if (topic) return topic.id;
+  }
+  return undefined;
 }
 
 export function createConversationTopic(db: SqliteDb, input: CreateConversationTopic): AppConversationTopic {
@@ -639,11 +687,7 @@ export function listConversationTopicLinksForTask(
 }
 
 /** Queries are bound to an admitted Conversation by the Host, not by prompt fields. */
-export type ConversationContextQuery =
-  | { action: "find"; query: string; limit?: number }
-  | { action: "read"; topicId: string }
-  | { action: "request"; id: string }
-  | { action: "requests"; afterId?: string };
+export type ConversationContextQuery = import("@may-agent/sdk").TaskCommunicationQuery;
 
 export function readConversationContext(db: SqliteDb, appId: string, conversationId: string, query: ConversationContextQuery) {
   if (query.action === "request") return readConversationRequest(db, appId, conversationId, query.id);

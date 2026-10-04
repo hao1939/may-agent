@@ -6,7 +6,6 @@ import { assertResourceCreator } from "../state/resource-creator.js";
 import { admitTaskInput } from "../state/inbox.js";
 import type { AppTaskContext } from "./app-task-store.js";
 import {
-  hasPendingAppTaskFacts,
   readAppTaskIntent,
   validateIntent,
 } from "./app-task-reconciler.js";
@@ -49,8 +48,6 @@ export function reviseAppTask(input: {
       attempt.taskGeneration !== actor.generation
     )
       throw new Error("Task revision caller is no longer current");
-    if (hasPendingAppTaskFacts(source, actor))
-      throw new Error("New caller input must be reviewed before revising work");
     const current = target.resourceStore.readTask(change.taskId);
     assertResourceCreator(current?.metadata.creator, { appId: actor.appId, taskId: actor.taskId });
     if (!current || current.metadata.generation !== change.expectedGeneration)

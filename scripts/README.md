@@ -1,9 +1,9 @@
 # Script guide
 
 Start with `bun run ci` for portable source verification. Build, diagnosis,
-deployment and model evaluation are different operations. Design and operating
-procedures live in the sibling `may-agent.app/docs` tree; routine CI does not
-need that tree, an installed App, credentials or a running May.
+deployment and model evaluation are different operations. This guide describes
+the commands shipped with the Host; App operating procedures belong to the App.
+Routine CI requires no installed App, credentials or running Host.
 
 ## Maintained commands
 
@@ -18,7 +18,7 @@ Run commands below from the Host checkout unless stated otherwise.
 | UI development | `bun run --cwd packages/webui dev` | Serves editable `packages/webui/static` directly through the existing HTTP adapter; no build/copy or daemon startup. Uses `MAY_AGENT_UI_DIR` for assets only, without changing project discovery or state roots. Set `PROJECT_ROOT`/`STATE_DIR` to the intended development installation; `WEB_PORT` defaults to 8080. |
 | Image build | `bun run build`; `build-image.sh` | Requires Docker and writes a local image using the container build definition. No publication or deployment. |
 | Image selection / smoke | `ci-container-needed.sh`; `ci-container-smoke.sh IMAGE` | CI passes NUL-delimited changed paths to the selector. Smoke checks the disposable candidate image's readiness, UI and CLI protocol; no installation mounts, model calls or deployment. |
-| CLI protocol verification | `bun run check:codex-goal-protocol` | Runs the production client against the installed Codex CLI: initialization, paused goal notification, process restart, resume and saved reads. Disposable state, no inherited credentials or model call. Also runs in image smoke. See executor README and CONTRIBUTING for limits and upgrades. |
+| CLI protocol verification | `bun run check:codex-goal-protocol` | Runs the production client against the installed Codex CLI and a loopback Responses fixture: paused-goal notification and persistence, actual request capture, process restart/resume, fresh canonical packet and prior rejection delivery, plus old-turn fencing. Disposable state, no inherited credentials or external model call. This client-boundary fixture does not prove full executor orchestration, compaction, or live recovery; see the executor README. Also runs in image smoke. |
 | Deployment | `MAY_AGENT_DEPLOY_CORRELATION=STABLE_ID bun run deploy`; optional `MAY_AGENT_DEPLOY_OWNER_APP=APP_ID MAY_AGENT_DEPLOY_TASK_ID=TASK_ID` | Standalone deployment needs no App, Task, or Task database. The optional pair requests only a best-effort settled notification and must be supplied together; destination state or delivery cannot change deployment success. Builds/stages a release and restarts through the supported restarter, so use the operations manual rather than this as a test command. Record the printed receipt path before restart. Reusing a correlation reads its existing receipt before build/staging instead of redeploying. |
 | Deployment facts | `bun scripts/deploy-receipt.ts read RECEIPT_PATH`; compatibility: `read-task RECEIPT_DIR APP_ID TASK_ID` | Reads one exact requested/terminal receipt after caller interruption without deploying. `read-task` remains available for older targeted receipts. Unreadable/corrupt facts fail rather than implying absence or authorizing a retry. |
 | Event integrity | `bun run check:event-graph -- --state-dir /path/to/state` | Inspects an **existing** `may.db` read-only, prints a JSON report and fails on missing/incompatible state or integrity defects. `--limit` bounds a backfill batch, not the integrity scan. Only explicit `--backfill` writes repairs. SQLite may create reader sidecars; inspection does not initialize schema. |
@@ -26,7 +26,6 @@ Run commands below from the Host checkout unless stated otherwise.
 | Task interface benchmark | `bun scripts/benchmark-human-task-interface.ts` | Creates 20,000 synthetic rows in memory; prints p95 latency and fails its explicit budgets. No installed state or model. Machine-sensitive benchmark, not a default CI gate. |
 | Offline transcripts | Open `scripts/log-viewer.html` in a browser and select a JSONL file | Reads local message records, not daemon event logs. No upload or live service. Format and limits below. |
 | Prior-lifecycle verification | `scripts/migrations/task-state-cutover.ts`, `task-runtime-cutover.ts` | Explicit clean old source plus temporary state; see the [test guide](../test/README.md). These verify an upgrade, never migrate your installation. |
-| Gym compatibility | `gym-run.sh`, `gym-baseline.sh`, `gym-batch.sh`, `gym-record.ts` | Model-backed scenario execution and existing result recording. `gym-run.sh --list` and `gym-batch.sh --help` are discovery; evaluation/recording are not read-only. See compatibility boundary below. |
 
 When optional notification metadata is present, the restarter attempts to emit
 `deployment.settled` with `target: { appId, taskId }` and the settled receipt in
@@ -47,20 +46,14 @@ other portable UI checks. `E2E_NO_UI=1` explicitly skips it locally, not in CI.
 remains `<PROJECTS_ROOT>/platform/ui`. This is separate from the build output
 setting; building never switches the running server or deploys assets.
 
-## Gym compatibility boundary
+## External execution consumers
 
-The sibling Gym CLI imports `src/app/direct-agent.ts`, its May alignment
-benchmark calls `gym-baseline.sh`, and the coach workflow calls `gym-batch.sh`.
-The runner/recorder are their dependencies. Keep these entry points until the
-consumers and authoritative result store migrate together. The recorder derives
-the Host `.state/may.db` path from its location: moving it alone strands history.
-Baseline now preserves explicit failure and returns nonzero for FAIL/ERROR;
-do not infer a stronger batch-runner/storage contract from that fix.
-
-General scenario execution belongs with Gym and App recording with its owner.
-This cleanup does not move either database or consumer. A Host-only reference
-scan does not establish that domain tooling is unused. The shared prepared
-executor remains the execution mechanism, not a separate work lifecycle.
+`src/app/direct-agent.ts` exposes prepared direct execution to external callers.
+Its source tests own the generic contract. Domain scenario runners, benchmark
+selection and result recording belong to their consumer repositories. Check
+those consumers before changing the adapter, but do not require a sibling App
+checkout for Host CI. Relocating a recorder must leave its existing data intact
+and provide an explicit path when adopting a retained result database.
 
 ## Offline transcript format
 
@@ -93,12 +86,10 @@ with its dependencies and any exact App revision identified by the evidence;
 they are not commands for current main. Model trials require explicit authority,
 provider configuration and budget, and are not reproducible output guarantees.
 
-The existing App documentation records the questions, positive/negative results,
-limitations and decisions. Start at
-`may-agent.app/docs/proposals/poc-retirement-and-knowledge-20260912.md` for the
-inventory and links to controller, recovery, teaching, improvement and executor
-evidence. Open proposals remain open; retiring code is not accepting their design.
-Active experimental branches are retained and must not reintroduce the folder.
+Keep questions, positive and negative results, limitations and adoption decisions
+with the owner of an experiment. Supply exact evidence references in the work
+item when revisiting it; Host contributor guidance must not depend on an App's
+archive location. Retiring a harness does not accept its proposed behavior.
 
 Useful checks have maintained homes:
 

@@ -301,7 +301,7 @@ test("omitted declarations preserve deadlines without attaching unrelated Condit
   }
 });
 
-test("converged review renews only overdue retained Condition checkpoints", () => {
+test("converged review preserves retained observations and their independent waits", () => {
   const root = mkdtempSync(join(tmpdir(), "task-converged-condition-review-"));
   const databasePath = join(root, "state.db");
   let config = appTaskTestContext({
@@ -377,19 +377,11 @@ test("converged review renews only overdue retained Condition checkpoints", () =
       phase: "waiting",
       conditionIds: [overdue.id, future.id],
     });
-    expect(after.conditions?.[overdue.id]).toMatchObject({
-      metadata: {
-        id: overdue.id,
-        generation: overdueBefore?.metadata.generation,
-        resourceVersion: (overdueBefore?.metadata.resourceVersion ?? 0) + 1,
-      },
-      spec: overdueBefore?.spec,
-      status: { state: "unknown", observedAt: new Date(Date.now()).toISOString() },
-    });
+    expect(after.conditions?.[overdue.id]).toEqual(overdueBefore);
     expect(after.conditions?.[future.id]).toEqual(futureBefore);
     expect(after.conditions?.[satisfied.id]).toBeUndefined();
-    const renewedDue = Date.now() + overdue.reviewAfterMs;
-    expect(config.resourceStore.nextDueAt()).toBe(renewedDue);
+    const recoveryDue = Date.now() + 300_000;
+    expect(config.resourceStore.nextDueAt()).toBe(recoveryDue);
     expect(claim().kind).toBe("waiting");
 
     config.resourceStore.close();
@@ -400,7 +392,7 @@ test("converged review renews only overdue retained Condition checkpoints", () =
       maxConcurrent: 1,
       resourceStore: AppTaskResourceStore.openStandalone(databasePath, "sample"),
     });
-    expect(config.resourceStore.nextDueAt()).toBe(renewedDue);
+    expect(config.resourceStore.nextDueAt()).toBe(recoveryDue);
     expect(claim().kind).toBe("waiting");
   } finally {
     config.resourceStore.close();
@@ -446,7 +438,15 @@ test.each(["changed-spec", "replaced-id"])("reconsiders inputs with %s waits aft
     config.resourceStore.close();
     config = appTaskContext({ appDir: root, projectDir: root, agent: "owner", maxConcurrent: 1,
       resourceStore: AppTaskResourceStore.openStandalone(databasePath, "sample") });
-    expect(claimObservedAppTask(config, { taskId: "work", appAgent: "owner", handler: "agent" }).kind).toBe("waiting");
+    const reconsideration = claimObservedAppTask(config, { taskId: "work", appAgent: "owner", handler: "agent" });
+    if (change === "changed-spec") {
+      // A changed wait is current work now, not only after another external event.
+      expect(reconsideration.kind).toBe("claimed");
+      if (reconsideration.kind !== "claimed") throw new Error(reconsideration.kind);
+      expect(reconsideration.continuedInputKeys).toEqual(["original"]);
+      deferAppTask(config, reconsideration, { disposition: "waiting", summary: "Reviewed the revised requirement", conditions: [replacement] });
+      expect(readAppTaskAdmissionOutcome(config, "work", "original")).toBeNull();
+    } else expect(reconsideration.kind).toBe("waiting");
     trackAppTaskConditionEventForTasks(config, { type: "review.completed", data: { id: replacement.id, state: "accepted" } }, ["work"]);
     const final = claim();
     const expectedContinued = change === "changed-spec" ? ["correction", "original"] : ["correction"];
@@ -456,17 +456,19 @@ test.each(["changed-spec", "replaced-id"])("reconsiders inputs with %s waits aft
     // A later independent ask was not in this execution's context.
     admit("late-question");
     expect(completeAppTask(config, final, { summary: "Reviews accepted", response: "Corrected review complete" }).taskContinues).toBe(true);
-    expect(readAppTaskAdmissionOutcome(config, "work", "original")).toBeNull();
+    expect(readAppTaskAdmissionOutcome(config, "work", "correction")?.attemptId).toBe(final.attemptId);
+    if (change === "changed-spec") {
+      expect(readAppTaskAdmissionOutcome(config, "work", "original")?.attemptId).toBe(final.attemptId);
+    } else expect(readAppTaskAdmissionOutcome(config, "work", "original")).toBeNull();
+    expect(readAppTaskAdmissionOutcome(config, "work", "late-question")).toBeNull();
     const next = claim();
-    if (change === "changed-spec") expect(next.continuedInputKeys).toContain("original");
-    else expect(next.continuedInputKeys ?? []).not.toContain("original");
+    expect(next.continuedInputKeys ?? []).not.toContain("original");
     completeAppTask(config, next, { summary: "Reviewed new question too", response: "Corrected review complete; independent review pending" });
-    for (const key of ["correction", "late-question"]) {
-      expect(readAppTaskAdmissionOutcome(config, "work", key)?.attemptId).toBe(next.attemptId);
-    }
+    expect(readAppTaskAdmissionOutcome(config, "work", "correction")?.attemptId).toBe(final.attemptId);
+    expect(readAppTaskAdmissionOutcome(config, "work", "late-question")?.attemptId).toBe(next.attemptId);
     expect(readAppTaskAdmissionOutcome(config, "work", "independent-request")).toBeNull();
     if (change === "changed-spec") {
-      expect(readAppTaskAdmissionOutcome(config, "work", "original")?.attemptId).toBe(next.attemptId);
+      expect(readAppTaskAdmissionOutcome(config, "work", "original")?.attemptId).toBe(final.attemptId);
       expect(config.resourceStore.readTask("work")?.status.conditionIds).toEqual(["independent"]);
     } else {
       expect(readAppTaskAdmissionOutcome(config, "work", "original")).toBeNull();

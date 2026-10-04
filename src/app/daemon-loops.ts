@@ -1,6 +1,7 @@
 import { createInterface } from "node:readline";
-import type { EventBus } from "./core/events/bus.js";
+import { EVENT_RECORD_ONLY, type EventBus } from "./core/events/bus.js";
 import type { SubagentManager } from "../lib/index.js";
+import { readSqlPerformance } from "../lib/db/query-performance.js";
 
 export async function runInteractiveLoop(opts: {
   bus: EventBus;
@@ -47,7 +48,15 @@ export async function runInteractiveLoop(opts: {
       rl.close();
       return;
     }
-    opts.handleInput(joined, "console");
+    try {
+      opts.handleInput(joined, "console");
+    } catch (error) {
+      // Input rejection must not escape the readline timer and stop background
+      // work. Report directly: persistence may be the failing boundary, and
+      // quiet-console mode hides ordinary info events.
+      console.error(`[console] Input failed: ${error instanceof Error ? error.message : String(error)}`);
+      opts.emitPrompt();
+    }
   };
 
   rl.on("line", (line: string) => {
@@ -76,16 +85,27 @@ export async function runDaemonKeepalive(opts: {
   socketEnabled: boolean;
 }): Promise<never> {
   const emitHeartbeat = () => {
-    opts.bus.emit({
-      type: "runtime.daemon.heartbeat",
-      source: "daemon",
-      owner: "agent:may",
-      data: {
-        pid: process.pid,
-        interfaceAgent: opts.interfaceAgent,
-        socketEnabled: opts.socketEnabled,
-      },
-    });
+    try {
+      const { since, calls, errors, totalMs, untracked } = readSqlPerformance();
+      opts.bus.emit({
+        [EVENT_RECORD_ONLY]: true,
+        type: "runtime.daemon.heartbeat",
+        source: "daemon",
+        owner: "system:host",
+        data: {
+          pid: process.pid,
+          interfaceAgent: opts.interfaceAgent,
+          socketEnabled: opts.socketEnabled,
+          // Cumulative counters make interval cost reconstructable across retained
+          // heartbeats. Query details remain an on-demand diagnostic read.
+          sql: { since, calls, errors, totalMs, untrackedCalls: untracked.calls },
+        },
+      });
+    } catch (error) {
+      // A missing observation must not stop work. Keep the diagnostic outside
+      // the event/database path and try again at the next ordinary interval.
+      console.error(JSON.stringify({ type: "runtime.daemon.heartbeat.failed", error: String(error) }));
+    }
   };
 
   opts.bus.emit({

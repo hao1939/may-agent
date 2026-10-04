@@ -28,7 +28,7 @@ export type AppTurnTarget = { appId: string; conversationId: string; turnId: str
 
 export type AppInboxTaskDependencyKey = { appId: string; taskId: string; inputId: string; admissionKey?: string };
 
-export type AppInboxRecoveryStage = "input-admission" | "input-result";
+export type AppInboxRecoveryStage = "input-admission" | "input-result" | "input-feedback";
 export type AppInboxRecoveryFailure = {
   failures: number;
   fingerprint: string;
@@ -292,9 +292,9 @@ export function recordAppInboxRecoveryFailure(
     const changed = db
       .prepare(
         `UPDATE app_inbox_items SET recovery_json = ?, ${dueColumn} = ?, changed_at = ?, updated_at = ?
-         WHERE id = ? AND status != 'done'`,
+         WHERE id = ? AND (status != 'done' OR ? = 'input-feedback')`,
       )
-      .run(JSON.stringify(recovery), retryAt, now, now, inputId).changes;
+      .run(JSON.stringify(recovery), retryAt, now, now, inputId, stage).changes;
     if (changed !== 1) throw new Error(`App inbox item ${inputId} is no longer recoverable`);
     return failure;
   });
@@ -320,7 +320,7 @@ export function markAppInboxRecoveryReported(
     return db
       .prepare(
         `UPDATE app_inbox_items SET recovery_json = ?, changed_at = ?, updated_at = ?
-         WHERE id = ? AND status != 'done'`,
+         WHERE id = ?`,
       )
       .run(JSON.stringify(recovery), now, now, inputId).changes === 1;
   });
@@ -405,6 +405,13 @@ export function readActiveAppTurn(
   return undefined;
 }
 
+/** Exact lineage lookup includes completed admissions for stable request reuse. */
+export function listAppInboxItemsByIdempotencyPrefix(db: SqliteDb, sourceAppId: string, prefix: string): AppInboxItem[] {
+  return db.prepare(`SELECT * FROM app_inbox_items
+    WHERE source_kind = 'app' AND source_id = ? AND idempotency_key >= ? AND idempotency_key < ?
+    ORDER BY idempotency_key, id LIMIT 256`).all(sourceAppId, prefix, `${prefix}\uffff`).map(rowToItem);
+}
+
 /** Unfinished requests created by one exact parent Task generation. */
 export function listOpenAppInboxItemsByIdempotencyPrefix(
   db: SqliteDb,
@@ -424,6 +431,7 @@ export function listOpenAppInboxItemsByIdempotencyPrefix(
          AND status != 'done'
          AND source_kind = 'app'
          AND source_id = ?
+         AND idempotency_key != ''
          AND idempotency_key >= ?
          AND idempotency_key < ?
        ORDER BY idempotency_key, id
@@ -448,7 +456,7 @@ export function listAppInboxItems(db: SqliteDb, query: AppInboxQuery = {}): AppI
     params.push(query.status);
   }
   if (query.idempotencyKey !== undefined) {
-    conditions.push("idempotency_key = ?");
+    conditions.push("idempotency_key = ? AND idempotency_key != ''");
     params.push(requiredText(query.idempotencyKey, "idempotencyKey"));
   }
   const limit = query.limit ?? 100;
@@ -664,7 +672,7 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
 
   const existing = input.idempotencyKey
     ? db
-        .prepare("SELECT * FROM app_inbox_items WHERE app_id = ? AND idempotency_key = ?")
+        .prepare("SELECT * FROM app_inbox_items WHERE app_id = ? AND idempotency_key = ? AND idempotency_key != ''")
         .get(input.appId, input.idempotencyKey)
     : db.prepare("SELECT * FROM app_inbox_items WHERE id = ?").get(id);
   if (!existing) throw new Error(`App inbox item ${id} conflicted with an unknown row`);

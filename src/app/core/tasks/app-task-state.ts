@@ -1,5 +1,7 @@
-import { MIN_CONDITION_REVIEW_AFTER_MS } from "@may-agent/sdk";
+import type { TaskChangeReceipt } from "@may-agent/sdk";
 import type { Condition, ResourceCreator, TaskAcceptanceBasis, TaskAttempt, TaskIntent } from "@may-agent/sdk";
+
+export const CONDITION_RECOVERY_INTERVAL_MS = 300_000;
 
 export type AppTaskTriggerEvent = {
   event: Record<string, unknown>;
@@ -9,7 +11,9 @@ export type AppTaskTriggerEvent = {
 /** Return correlation for admitted input; eligibility stays with existing waits and Events. */
 export type AppTaskInputWait = {
   taskGeneration: number;
-  /** Empty means continue with already pending Task input, without replaying an old event batch. */
+  /** Useful work remains on this input, independently of its waits and deadlines. */
+  pending?: true;
+  /** Exact associated waits, independent of useful work and review timing. */
   conditions: Array<{ id: string; generation: number }>;
   /** Exact input reconsideration deadline; elapsed time does not answer the input. */
   reviewAt?: number;
@@ -35,17 +39,6 @@ export type AppTaskCondition = {
   };
 };
 
-/** The current observation starts the checkpoint; age alone does not make a wait due. */
-export function conditionReviewAt(condition: AppTaskCondition): number | undefined {
-  if (condition.status.state === "true") return undefined;
-  const delay = condition.spec.reviewAfterMs;
-  const observedAt = Date.parse(condition.status.observedAt ?? "");
-  if (!Number.isInteger(delay) || Number(delay) < MIN_CONDITION_REVIEW_AFTER_MS || !Number.isFinite(observedAt))
-    return undefined;
-  const dueAt = observedAt + Number(delay);
-  return Number.isSafeInteger(dueAt) ? dueAt : undefined;
-}
-
 /** Observed Git workspace lineage for one task attempt; never desired spec. */
 export type AppTaskWorkspace = {
   kind: "task-worktree";
@@ -54,7 +47,17 @@ export type AppTaskWorkspace = {
   baseCommit: string;
   branch: string;
   headCommit: string;
+  /** Released workspaces are no longer reusable, even if physical cleanup is pending. */
+  released?: true;
+  /** Checkout/branch observation; even `removed` may still need private-ref cleanup. */
   disposition: "active" | "retained-for-recovery" | "branch-retained" | "removed";
+  /** Bounded Git status observation. It identifies dirtiness, not the exact file contents. */
+  dirtyObservation?: {
+    observedAt: string;
+    status: string;
+    truncated: boolean;
+  };
+  cleanupError?: string;
 };
 
 export type AppTaskResource = {
@@ -64,6 +67,8 @@ export type AppTaskResource = {
     creator?: ResourceCreator;
     generation: number;
     resourceVersion: number;
+    /** Durable pre-reopen events cannot become fresh work in the new generation. */
+    reopenedAfterEventId?: number;
   };
   spec: Omit<TaskIntent, "id">;
   status: {
@@ -74,6 +79,8 @@ export type AppTaskResource = {
     currentAttemptId?: string;
     /** Exact attempt that produced the accepted summary/result observation. */
     observedAttemptId?: string;
+    /** Exact workspace record; execution history and wall-clock order are not ownership. */
+    workspaceAttemptId?: string;
     /** Consecutive unsuccessful attempts in this generation, cleared by progress or owner retry. */
     executionFailures?: number;
     /** Earliest next attempt after execution failure; ordinary wakes do not waive it. */
@@ -123,14 +130,18 @@ export type AppTaskAttempt = {
   specHash: string;
   owner: string;
   handler: string;
+  /** First agent claim after a procedure failure; evidence, not handler-selection state. */
+  failoverFromAttemptId?: string;
   runtimeId: string;
   state: "running" | "completed" | "failed" | "interrupted";
   reason: string;
+  /** Applied change receipts survive failed attempts; keyed by canonical change identity. */
+  changeReceipts?: Record<string, TaskChangeReceipt>;
   /** Ordered event batch presented to this attempt. */
   events?: AppTaskTriggerEvent[];
   /** More linked events remained pending when this attempt was claimed. */
   eventsTruncated?: boolean;
-  /** Earlier admitted inputs brought back by this attempt's exact Condition facts. */
+  /** Earlier outstanding input selected for this assignment from current work, wait and timer facts. */
   continuedInputKeys?: string[];
   /** Accepted facts from this exact attempt; later cycles do not replace it. */
   acceptedResult?: {
@@ -147,6 +158,7 @@ export type AppTaskAttempt = {
     acceptanceBasis?: TaskAcceptanceBasis;
     /** Additional durable input actually incorporated after the initial batch. */
     acceptedLiveEventIds?: number[];
+    inputKeys?: string[];
   };
   /** Legacy/synthetic trigger retained only when no durable event batch exists. */
   trigger?: Record<string, unknown>;
@@ -198,3 +210,12 @@ export type AppTaskTrigger = {
 };
 
 export type AppTaskAcceptanceBasis = TaskAcceptanceBasis;
+
+/** The reopen transaction fences durable facts already present before the new generation. */
+export function taskEventPredatesReopening(
+  resource: AppTaskResource | undefined,
+  event: Record<string, unknown> | undefined,
+): boolean {
+  const fence = resource?.metadata.reopenedAfterEventId;
+  return fence !== undefined && typeof event?.eventId === "number" && event.eventId <= fence;
+}

@@ -332,6 +332,7 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
       return {
         content: [{ type: "text" as const, text: parts.join("\n") }],
         details: undefined,
+        terminate: true,
       };
     },
   };

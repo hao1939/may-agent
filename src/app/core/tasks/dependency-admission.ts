@@ -1,7 +1,8 @@
-import { type Condition as AppTaskConditionSpec, type TaskAppDependency } from "@may-agent/sdk";
+import { type Condition as AppTaskConditionSpec, type TaskAppRequest } from "@may-agent/sdk";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { assertValidAppInput } from "../apps/definition-validation.js";
+import { assertAppTaskInputRoute } from "../apps/input-routing.js";
 import { getDb } from "../../../lib/db/connection.js";
 import { EVENT_DELIVERY_RESULT, EVENT_ROW_ID } from "../events/bus.js";
 import { appInputFeedbackEvent } from "../inbox/input-result.js";
@@ -9,6 +10,7 @@ import {
   createAppInboxItem,
   getAppInboxItem,
   listOpenAppInboxItemsByIdempotencyPrefix,
+  listAppInboxItemsByIdempotencyPrefix,
 } from "../state/app-inbox-store.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
@@ -17,23 +19,77 @@ import {
   matchingAppTaskConditionTaskIds,
   trackAppTaskConditionEventForTasks,
 } from "./app-task-condition-tracker.js";
-import { assertAppTaskEffectFresh, readAppTaskAdmissionOutcome, type AppTaskClaim } from "./app-task-reconciler.js";
+import { assertAppTaskClaimCurrent, readAppTaskAdmissionOutcome, type AppTaskClaim } from "./app-task-reconciler.js";
 import { type AppTaskContext } from "./app-task-store.js";
 import { appTaskConfig, configuredRegistryEntries, type AppTaskRuntimeDescriptor } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
 
-const APP_DEPENDENCY_REVIEW_AFTER_MS = 300_000;
+function taskRequestIdentity(appId: string, claim: Pick<AppTaskClaim, "taskId" | "generation">, id: string) {
+  return createHash("sha256")
+    .update(JSON.stringify([appId, claim.taskId, claim.generation, id]))
+    .digest("hex")
+    .slice(0, 24);
+}
 
-export function admitTaskAppDependencies(input: {
+function readNamedTaskRequest(config: AppTaskContext, claim: AppTaskClaim, id: string) {
+  const appId = config.resourceStore.appId;
+  const prefix = `task-dependency:${appId}:${claim.taskId}:${claim.generation}:`;
+  const stable = getAppInboxItem(config.resourceStore.db, `appdep_${taskRequestIdentity(appId, claim, id)}`);
+  const savedId = config.resourceStore.readTaskRequestReceipt(claim.taskId, claim.generation, id);
+  const saved = savedId ? getAppInboxItem(config.resourceStore.db, savedId) : null;
+  const exact = stable ?? saved ?? getAppInboxItem(config.resourceStore.db, id.replace(/^app-request:/, ""));
+  if (
+    exact &&
+    exact.source.kind === "app" &&
+    exact.source.id === appId &&
+    (saved || exact.idempotencyKey?.startsWith(prefix)) &&
+    (!exact.creator || isDeepStrictEqual(exact.creator, { appId, taskId: claim.taskId }))
+  )
+    return exact;
+  const namedPrefix = `${prefix}${id}:`;
+  const legacy = listAppInboxItemsByIdempotencyPrefix(config.resourceStore.db, appId, namedPrefix).filter(
+    (item) =>
+      /^[a-f0-9]{24}$/.test(item.idempotencyKey!.slice(namedPrefix.length)) &&
+      (!item.creator || isDeepStrictEqual(item.creator, { appId, taskId: claim.taskId })),
+  );
+  if (legacy.length > 1)
+    throw new Error(`Request ${id} has ambiguous historical identity; use its exact durable request id`);
+  return legacy[0] ?? null;
+}
+
+function requestCompletionCondition(item: NonNullable<ReturnType<typeof getAppInboxItem>>): AppTaskConditionSpec {
+  return {
+    id: `app-request:${item.id}`,
+    type: "app.dependency.updated",
+    subject: `id:${item.id}`,
+    expected: { field: "status", equals: "done" },
+    owner: `app:${item.appId}`,
+  };
+}
+
+/** Short references may name an exact earlier admission in the current caller generation. */
+export function resolveTaskRequestCondition(
+  config: AppTaskContext,
+  claim: AppTaskClaim,
+  id: string,
+): AppTaskConditionSpec {
+  const item = readNamedTaskRequest(config, claim, id);
+  if (!item) throw new Error(`Condition refers to undeclared request ${id}`);
+  return requestCompletionCondition(item);
+}
+
+/** Submit once and return exact completion specifications; only the caller's Conditions install waits. */
+export function admitTaskAppRequests(input: {
   opts: AppTaskRuntimeOptions;
   descriptor: AppTaskRuntimeDescriptor;
   claim: AppTaskClaim;
-  dependencies: TaskAppDependency[];
+  requests: TaskAppRequest[];
   existingConditions?: AppTaskConditionSpec[];
   acceptedLiveEventIds?: number[];
-}): AppTaskConditionSpec[] {
+  deferPublication?: (publish: () => void) => void;
+}): Map<string, AppTaskConditionSpec> {
   const dependencyIds = new Set<string>();
-  for (const dependency of input.dependencies) {
+  for (const dependency of input.requests) {
     if (dependencyIds.has(dependency.id)) {
       throw new Error(`Task result declares App dependency ${dependency.id} more than once`);
     }
@@ -79,11 +135,28 @@ export function admitTaskAppDependencies(input: {
       subject: `id:${item.id}`,
       expected: { field: "status", equals: "done" },
       owner: `app:${item.appId}`,
-      reviewAfterMs: APP_DEPENDENCY_REVIEW_AFTER_MS,
     } satisfies AppTaskConditionSpec,
   });
 
-  for (const dependency of input.dependencies) {
+  for (const dependency of input.requests) {
+    const named = readNamedTaskRequest(appTaskConfig(input.descriptor), input.claim, dependency.id);
+    if (named) {
+      if (
+        named.appId !== dependency.appId ||
+        (named.targetTaskId !== dependency.taskId &&
+          !(
+            named.targetTaskId === undefined &&
+            named.waitingOn?.kind === "task" &&
+            named.waitingOn.id === dependency.taskId
+          )) ||
+        (![named.id, `app-request:${named.id}`].includes(dependency.id) &&
+          !isDeepStrictEqual(named.input, dependency.input))
+      )
+        throw new Error(`Request ${dependency.id} was already admitted with different input or target`);
+      matches.set(dependency.id, { item: named, requestId: named.id, condition: requestCompletionCondition(named) });
+      matchedExisting.add(named.id);
+      continue;
+    }
     const direct = existing.filter(
       ({ condition, requestId }) =>
         dependency.id === requestId || dependency.id === condition.id || dependency.id === `app-request:${requestId}`,
@@ -105,8 +178,8 @@ export function admitTaskAppDependencies(input: {
       detachedItem.status !== "done" &&
       detachedItem.source.kind === "app" &&
       detachedItem.source.id === input.descriptor.id &&
-      detachedItem.idempotencyKey?.startsWith(requestLineagePrefix)
-      && belongsToCaller(detachedItem)
+      detachedItem.idempotencyKey?.startsWith(requestLineagePrefix) &&
+      belongsToCaller(detachedItem)
         ? [detachedMatch(detachedItem)]
         : [];
     const detachedByMeaning =
@@ -157,7 +230,7 @@ export function admitTaskAppDependencies(input: {
     matches.set(dependency.id, match);
   }
 
-  const newDependencies = input.dependencies.filter((dependency) => !matches.has(dependency.id));
+  const newDependencies = input.requests.filter((dependency) => !matches.has(dependency.id));
   for (const dependency of newDependencies) {
     const unresolvedExisting = existing.find(({ item, requestId }) => !item && !matchedExisting.has(requestId));
     if (unresolvedExisting) {
@@ -186,32 +259,19 @@ export function admitTaskAppDependencies(input: {
     }
   }
   if (newDependencies.length > 0) {
-    assertAppTaskEffectFresh(appTaskConfig(input.descriptor), input.claim, input.acceptedLiveEventIds);
+    assertAppTaskClaimCurrent(appTaskConfig(input.descriptor), input.claim);
   }
 
   const admitted = new Map<string, AppTaskConditionSpec>();
   for (const dependency of newDependencies) {
-    const identity = createHash("sha256")
-      .update(
-        JSON.stringify({
-          appId: input.descriptor.id,
-          taskId: input.claim.taskId,
-          generation: input.claim.generation,
-          dependencyId: dependency.id,
-          targetAppId: dependency.appId,
-          targetTaskId: dependency.taskId,
-          targetInput: dependency.input,
-        }),
-      )
-      .digest("hex")
-      .slice(0, 24);
+    const identity = taskRequestIdentity(input.descriptor.id, input.claim, dependency.id);
     const requestId = `appdep_${identity}`;
     const idempotencyKey = `task-dependency:${input.descriptor.id}:${input.claim.taskId}:${input.claim.generation}:${dependency.id}:${identity}`;
     // The row is admission authority; the event only wakes ordinary admission.
     // Persist provenance from the live claim, never reconstruct it from event text.
     const config = appTaskConfig(input.descriptor);
     stateTransaction(config.resourceStore.db, () => {
-      assertAppTaskEffectFresh(config, input.claim, input.acceptedLiveEventIds);
+      assertAppTaskClaimCurrent(config, input.claim);
       createAppInboxItem(config.resourceStore.db, {
         id: requestId,
         appId: dependency.appId,
@@ -222,59 +282,71 @@ export function admitTaskAppDependencies(input: {
         idempotencyKey,
       });
     });
-    const requested = input.opts.bus.emit({
-      type: "app.input.requested",
-      source: `app-task:${input.descriptor.id}`,
-      owner: `app:${dependency.appId}`,
-      data: {
-        requestId,
-        appId: dependency.appId,
-        ...(dependency.taskId ? { targetTaskId: dependency.taskId } : {}),
-        input: dependency.input,
-        source: { kind: "app", id: input.descriptor.id },
-        idempotencyKey,
-      },
-    });
-    const delivery = requested[EVENT_DELIVERY_RESULT];
-    // A worker persists the input before the parent admits its relayed event.
-    // Save the exact pending wait once publication is durable; a local receipt
-    // is only available when admission runs in this process. Event recovery
-    // can redeliver that same input if the worker/parent stops between them.
-    if (!delivery && !requested[EVENT_ROW_ID]) {
-      throw new Error(
-        `App dependency ${dependency.id} was neither admitted nor durably published for App ${dependency.appId}; the Task remains runnable`,
-      );
-    }
+    const publish = () => {
+      const requested = input.opts.bus.emit({
+        type: "app.input.requested",
+        source: `app-task:${input.descriptor.id}`,
+        owner: `app:${dependency.appId}`,
+        data: {
+          requestId,
+          appId: dependency.appId,
+          ...(dependency.taskId ? { targetTaskId: dependency.taskId } : {}),
+          input: dependency.input,
+          source: { kind: "app", id: input.descriptor.id },
+          idempotencyKey,
+        },
+      });
+      const delivery = requested[EVENT_DELIVERY_RESULT];
+      // Shared admission committed the request and caller wait before dispatch.
+      // Inbox recovery can deliver it even if this hint is lost. The legacy
+      // direct helper still requires an observable delivery receipt.
+      if (!input.deferPublication && !delivery && !requested[EVENT_ROW_ID]) {
+        throw new Error(
+          `App dependency ${dependency.id} was neither admitted nor durably published for App ${dependency.appId}; the Task remains runnable`,
+        );
+      }
+    };
+    if (input.deferPublication) input.deferPublication(publish);
+    else publish();
     admitted.set(dependency.id, {
       id: `app-request:${requestId}`,
       type: "app.dependency.updated",
       subject: `id:${requestId}`,
       expected: { field: "status", equals: "done" },
       owner: `app:${dependency.appId}`,
-      reviewAfterMs: APP_DEPENDENCY_REVIEW_AFTER_MS,
     });
   }
 
-  return input.dependencies.map((dependency) => {
-    const condition = matches.get(dependency.id)?.condition ?? admitted.get(dependency.id)!;
-    return {
-      ...condition,
-      owner: condition.owner ?? `app:${dependency.appId}`,
-      reviewAfterMs: condition.reviewAfterMs ?? APP_DEPENDENCY_REVIEW_AFTER_MS,
-    };
-  });
+  return new Map(
+    input.requests.map((dependency) => {
+      const condition = matches.get(dependency.id)?.condition ?? admitted.get(dependency.id)!;
+      return [
+        dependency.id,
+        {
+          ...condition,
+          owner: condition.owner ?? `app:${dependency.appId}`,
+        },
+      ];
+    }),
+  );
 }
 
-export function openTaskAppDependencyConditions(config: AppTaskContext, taskId: string): AppTaskConditionSpec[] {
+export function linkedTaskAppDependencyConditions(
+  config: AppTaskContext,
+  taskId: string,
+): { all: AppTaskConditionSpec[]; unfinished: AppTaskConditionSpec[] } {
   const tree = config.resourceStore.readTaskContext({ taskIds: [taskId] });
   const resource = tree.resources?.[taskId];
-  return (resource?.status.conditionIds ?? []).flatMap((conditionId) => {
+  const all: AppTaskConditionSpec[] = [];
+  const unfinished: AppTaskConditionSpec[] = [];
+  for (const conditionId of resource?.status.conditionIds ?? []) {
     const condition = tree.conditions?.[conditionId];
-    if (!condition || condition.status.state === "true" || condition.spec.type !== "app.dependency.updated") {
-      return [];
-    }
-    return [{ id: condition.metadata.id, ...structuredClone(condition.spec) }];
-  });
+    if (!condition || condition.spec.type !== "app.dependency.updated") continue;
+    const spec = { id: condition.metadata.id, ...structuredClone(condition.spec) };
+    all.push(spec);
+    if (condition.status.state !== "true") unfinished.push(spec);
+  }
+  return { all, unfinished };
 }
 
 export function mergeTaskConditions(
@@ -304,7 +376,7 @@ export function mergeTaskConditions(
   return [...merged.values()];
 }
 
-function assertInstalledAppDependency(opts: AppTaskRuntimeOptions, dependency: TaskAppDependency): void {
+function assertInstalledAppDependency(opts: AppTaskRuntimeOptions, dependency: TaskAppRequest): void {
   const registryConfigured = Boolean(opts.appRegistrySnapshot || opts.appRegistry);
   if (!registryConfigured) return;
   const entries = configuredRegistryEntries(opts);
@@ -313,16 +385,21 @@ function assertInstalledAppDependency(opts: AppTaskRuntimeOptions, dependency: T
     throw new Error(`App dependency ${dependency.id} targets unavailable App ${dependency.appId}`);
   }
   assertValidAppInput(target, dependency.input);
+  assertAppTaskInputRoute(target, dependency.input.kind, dependency.taskId);
 }
 
 export function recoverTaskConditions(
   opts: AppTaskRuntimeOptions,
   descriptor: AppTaskRuntimeDescriptor,
   config: AppTaskContext,
-  input: { conditionIds?: string[] } = {},
+  input: { conditionIds?: string[]; taskId?: string } = {},
 ): string[] {
   if (!opts.persistDir) return [];
-  const resourceScope = config.resourceStore.readOpenConditionReplayScope(input.conditionIds);
+  const conditionIds = input.taskId
+    ? config.resourceStore.readTaskConditions(input.taskId).map((condition) => condition.metadata.id)
+    : input.conditionIds;
+  if (conditionIds?.length === 0) return [];
+  const resourceScope = config.resourceStore.readOpenConditionReplayScope(conditionIds);
   const eventTypes = resourceScope.eventTypes;
   if (eventTypes.length === 0) return [];
 
@@ -380,8 +457,8 @@ export function recoverTaskConditions(
   const allowed = new Set(resourceScope.taskIds);
   const recoveredTaskIds = new Set<string>();
   if (eventTypes.includes("app.dependency.updated")) {
-    for (const { condition, taskIds } of config.resourceStore.readConditionRoutes("app.dependency.updated")) {
-      if (input.conditionIds && !input.conditionIds.includes(condition.metadata.id)) continue;
+    for (const { condition, taskIds } of config.resourceStore.readConditionRoutes("app.dependency.updated", allowed)) {
+      if (conditionIds && !conditionIds.includes(condition.metadata.id)) continue;
       if (!condition.spec.subject.startsWith("id:")) continue;
       const item = getAppInboxItem(db, condition.spec.subject.slice(3));
       if (!item || item.source.kind !== "app" || item.source.id !== descriptor.id) continue;
@@ -407,7 +484,7 @@ export function recoverTaskConditions(
     }
   }
   const wakes = events.flatMap((event) => {
-    const taskIds = matchingAppTaskConditionTaskIds(config, event).filter((taskId) => allowed.has(taskId));
+    const taskIds = matchingAppTaskConditionTaskIds(config, event, allowed);
     return trackAppTaskConditionEventForTasks(config, event, taskIds);
   });
   return [...new Set([...recoveredTaskIds, ...wakes.map((wake) => wake.taskId)])];

@@ -5,6 +5,7 @@ import type { Duplex } from "node:stream";
 import { normalizeSocketFrame } from "./protocol.js";
 import {
   taskCloseRequestedEvent,
+  taskReopenRequestedEvent,
   taskCancelRequestedEvent,
   type EventInput,
   type EventReceipt,
@@ -14,6 +15,11 @@ import { isTaskDerivedViewWake, taskUpdateIdentity } from "./task-wake.js";
 
 export type ControlEvent = Record<string, unknown> & { type: string };
 export type ControlEmitResult = { eventId?: number };
+export type ApprovalIngressAuthorization = {
+  actor: { kind: "operator"; id: string };
+  reference: string;
+  evidence: Record<string, unknown>;
+};
 
 export interface ControlStatusItem {
   agent: string;
@@ -27,11 +33,13 @@ export type ControlStatusSnapshot = { sessions: ControlStatusItem[]; activeWork:
 export type ControlStatus = ControlStatusItem[] | ControlStatusSnapshot;
 
 export interface AttachControlSocketOptions {
+  conversationAppId?: string;
   socketPath: string;
   getSessionId: () => string;
   getStatus: () => ControlStatus;
+  getDiagnostics?: () => Record<string, unknown>;
   emitEvent: (event: ControlEvent) => ControlEmitResult | void;
-  publishEvent?: (event: EventInput) => EventReceipt;
+  publishEvent?: (event: EventInput, approvalAuthorization?: ApprovalIngressAuthorization) => EventReceipt;
   getEvent?: (eventId: number) => EventView | undefined;
   describeProjectActions?: (projectId: string) => unknown[];
   admitAppInput?: (input: {
@@ -60,7 +68,7 @@ export interface AttachControlSocketOptions {
   getAppTask?: (
     appId: string,
     taskId: string,
-    options?: { acceptedEvidence?: { limit?: number; cursor?: string } },
+    options?: { acceptedEvidence?: { limit?: number; cursor?: string }; inputKeys?: string[] },
   ) => unknown;
   resolveAppTask?: (appId: string, event: Record<string, unknown>) => unknown;
   listApps?: (appId?: string) => unknown;
@@ -156,8 +164,8 @@ function exactRuntimeControl(text: unknown): "runtime.reload.requested" | "runti
   }
 }
 
-function exactMayInputControl(appId: string, input: unknown): ReturnType<typeof exactRuntimeControl> {
-  if (appId !== "may" || !input || typeof input !== "object" || Array.isArray(input)) return null;
+function exactAppInputControl(appId: string, input: unknown, conversationAppId: string | undefined): ReturnType<typeof exactRuntimeControl> {
+  if (!conversationAppId || appId !== conversationAppId || !input || typeof input !== "object" || Array.isArray(input)) return null;
   const record = input as Record<string, unknown>;
   if (record.kind !== "message" || !record.data || typeof record.data !== "object" || Array.isArray(record.data)) {
     return null;
@@ -173,7 +181,7 @@ function socketStatus(status: ControlStatusItem[], currentSessionId: string, age
       sessionId: currentSessionId,
       status: "ready",
       kind: "chat",
-      task: "May chat",
+      task: "Interface chat",
     });
   }
   return active;
@@ -249,8 +257,10 @@ function eventPayload(event: ControlEvent): Record<string, unknown> {
 }
 
 export interface ControlSocketCoreOptions {
+  conversationAppId?: string;
   getSessionId: () => string;
   getStatus: () => ControlStatus;
+  getDiagnostics?: AttachControlSocketOptions["getDiagnostics"];
   emitEvent: (event: ControlEvent) => ControlEmitResult | void;
   publishEvent?: AttachControlSocketOptions["publishEvent"];
   getEvent?: AttachControlSocketOptions["getEvent"];
@@ -561,7 +571,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               type: "status",
               command: "status",
               ...statusFields(getStatus(), getSessionId(), agentName),
-              ...(frame.diagnostics === true ? { diagnostics: runtimeDiagnostics() } : {}),
+              ...(frame.diagnostics === true ? { diagnostics: { ...runtimeDiagnostics(), ...opts.getDiagnostics?.() } } : {}),
             });
           } catch {
             writeFrame(socket, { type: "error", command: "status", message: "Execution status unavailable" });
@@ -599,21 +609,42 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
             const author = eventData.author;
             const runtimeControl =
               eventType === "conversation.message.created" &&
-              eventTarget?.appId === "may" &&
+              Boolean(opts.conversationAppId) && eventTarget?.appId === opts.conversationAppId &&
               author &&
               typeof author === "object" &&
               !Array.isArray(author) &&
               (author as Record<string, unknown>).kind === "human"
                 ? exactRuntimeControl(eventData.text)
                 : null;
-            const receipt = publishEvent({
-              type: runtimeControl ?? eventType,
-              ...(runtimeControl ? {} : eventTarget ? { target: eventTarget } : {}),
-              data: runtimeControl ? { reason: "human control command" } : eventData,
-              ...(typeof event.idempotencyKey === "string" && event.idempotencyKey.trim()
-                ? { idempotencyKey: event.idempotencyKey.trim() }
-                : {}),
-            });
+            const approvalAuthorization =
+              (eventType === "project.approval.submitted" ||
+                (eventType === "conversation.message.created" && frame.operatorId && eventData.approvalReply))
+                ? {
+                    actor: {
+                      kind: "operator" as const,
+                      id: typeof frame.operatorId === "string" ? frame.operatorId.trim() : "",
+                    },
+                    reference:
+                      typeof frame.authorizationReference === "string" ? frame.authorizationReference.trim() : "",
+                    evidence:
+                      frame.authorizationEvidence &&
+                      typeof frame.authorizationEvidence === "object" &&
+                      !Array.isArray(frame.authorizationEvidence)
+                        ? (frame.authorizationEvidence as Record<string, unknown>)
+                        : {},
+                  }
+                : undefined;
+            const receipt = publishEvent(
+              {
+                type: runtimeControl ?? eventType,
+                ...(runtimeControl ? {} : eventTarget ? { target: eventTarget } : {}),
+                data: runtimeControl ? { reason: "human control command" } : eventData,
+                ...(typeof event.idempotencyKey === "string" && event.idempotencyKey.trim()
+                  ? { idempotencyKey: event.idempotencyKey.trim() }
+                  : {}),
+              },
+              approvalAuthorization,
+            );
             writeFrame(socket, { type: "ok", command: normalized.command, ...receipt });
           } catch (error) {
             writeFrame(socket, {
@@ -684,7 +715,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
             continue;
           }
           try {
-            const runtimeControl = exactMayInputControl(appId, input);
+            const runtimeControl = exactAppInputControl(appId, input, opts.conversationAppId);
             if (runtimeControl) {
               if (!publishEvent) throw new Error("Event publication is unavailable");
               const receipt = publishEvent({
@@ -830,7 +861,10 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               command: normalized.command,
               appId,
               taskId,
-              task: getAppTask(appId, taskId, acceptedEvidenceOptions(frame)),
+              task: getAppTask(appId, taskId, {
+                ...acceptedEvidenceOptions(frame),
+                ...(frame.inputKeys === undefined ? {} : { inputKeys: frame.inputKeys as string[] }),
+              }),
             });
           } catch (error) {
             writeFrame(socket, {
@@ -1024,7 +1058,10 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           continue;
         }
 
-        if (normalized.kind === "control" && normalized.command === "task.close") {
+        if (
+          normalized.kind === "control" &&
+          (normalized.command === "task.close" || normalized.command === "task.reopen")
+        ) {
           const appId = typeof frame.appId === "string" ? frame.appId.trim().replace(/\.app$/, "") : "";
           const taskId = typeof frame.taskId === "string" ? frame.taskId.trim() : "";
           const expectedGeneration = frame.expectedGeneration;
@@ -1032,14 +1069,32 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           const afterResult = typeof frame.afterResult === "string" ? frame.afterResult.trim() : "";
           const reason = typeof frame.reason === "string" ? frame.reason.trim() : "";
           try {
-            if (!publishEvent) throw new Error("guarded Task completion is unavailable");
-            const receipt = publishEvent(taskCloseRequestedEvent(
-              { appId, taskId, generation: expectedGeneration as number, resourceVersion: expectedResourceVersion as number },
-              afterResult,
-              reason,
-            ));
+            if (!publishEvent) throw new Error("guarded Task control is unavailable");
+            const receipt = publishEvent(
+              normalized.command === "task.reopen"
+                ? taskReopenRequestedEvent(
+                    {
+                      appId,
+                      taskId,
+                      generation: expectedGeneration as number,
+                      resourceVersion: expectedResourceVersion as number,
+                    },
+                    reason,
+                    frame.input as { kind: string; data: unknown } | undefined,
+                  )
+                : taskCloseRequestedEvent(
+                    {
+                      appId,
+                      taskId,
+                      generation: expectedGeneration as number,
+                      resourceVersion: expectedResourceVersion as number,
+                    },
+                    afterResult,
+                    reason,
+                  ),
+            );
             if (receipt.delivery !== "accepted") {
-              throw new Error(`Task ${appId}/${taskId} completion was recorded but not accepted; read the Task and retry`);
+              throw new Error(`Task ${appId}/${taskId} control was recorded but not accepted; read the Task and retry`);
             }
             writeFrame(socket, {
               type: "ok",
@@ -1227,6 +1282,7 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
   const core = createControlSocketCore({
     getSessionId,
     getStatus,
+    getDiagnostics: opts.getDiagnostics,
     emitEvent,
     publishEvent,
     getEvent,
@@ -1241,6 +1297,7 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
     describeProjectActions: opts.describeProjectActions,
     invokeProjectAction: opts.invokeProjectAction,
     subscribeEvents,
+    conversationAppId: opts.conversationAppId,
     agentName,
     instance,
   });

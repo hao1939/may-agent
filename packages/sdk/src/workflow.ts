@@ -1,9 +1,11 @@
-import type { AppResult } from "./app.js";
+import type { AppResult, AppContract } from "./app.js";
 import type { AppEvent } from "./event.js";
 import type {
   Condition,
   ResourceCreator,
   TaskAcceptanceBasis,
+  TaskChanges,
+  TaskChangeReceipt,
   TaskExecutorName,
   TaskPriority,
   TaskReconcileResult,
@@ -36,7 +38,7 @@ export type TaskAcceptedEvidence = {
   finishedAt?: string;
   /** Explicit when legacy content was reduced to keep the public page bounded. */
   truncated?: {
-    fields: Array<"summary" | "response" | "result" | "facts" | "acceptanceBasis" | "acceptedLiveEventIds">;
+    fields: Array<"summary" | "response" | "result" | "facts" | "acceptanceBasis" | "acceptedLiveEventIds" | "inputKeys">;
   };
   acceptedResult: {
     state: "converged" | "waiting" | "incomplete";
@@ -49,6 +51,7 @@ export type TaskAcceptedEvidence = {
     facts: string[];
     acceptanceBasis?: TaskAcceptanceBasis;
     acceptedLiveEventIds?: number[];
+    inputKeys?: string[];
   };
 };
 
@@ -65,6 +68,8 @@ export type TaskAcceptedEvidenceNavigation = {
 };
 
 export type TaskReadOptions = {
+  /** Load original admitted input events by exact key (at most 8). Reading does not settle them. */
+  inputKeys?: string[];
   /** Opt in to one bounded page of immutable accepted-attempt history. */
   acceptedEvidence?: TaskAcceptedEvidenceOptions;
 };
@@ -72,6 +77,8 @@ export type TaskReadOptions = {
 export type TaskInputObligation = {
   /** Exact retained admission key; no input or attempt state is inferred from it. */
   key: string;
+  /** Useful work remains, independently of retained waits. */
+  pending?: true;
   reviewAt?: number;
   conditionCount: number;
   correlation: {
@@ -117,6 +124,8 @@ export type TaskView = {
 
 /** Task snapshot supplied at attempt start or returned by an explicitly scoped get. */
 export type TaskDetail = TaskView & {
+  /** Original input bodies loaded only by an explicit inputKeys read. */
+  inputEvents?: Array<{ key: string; observedAt: string; event: AppEvent }>;
   /** Current resource revision; absent for legacy receipts without a current resource. */
   resourceVersion?: number;
   /** Input still awaiting a claim. Reading it does not account for it. */
@@ -138,7 +147,8 @@ export type TaskDetail = TaskView & {
 
   acceptance: string[];
   input: Record<string, unknown>;
-  /** Agent selected for the next bounded attempt. */
+  /** Responsible agent, including inherited/default assignment on current runtime reads.
+   * Workflow/native execution and bounded helpers do not transfer this responsibility. */
   agent?: string;
   /** @deprecated Use `agent`. */
   owner?: string;
@@ -157,7 +167,7 @@ export type TaskDetail = TaskView & {
       state: "unknown" | "false" | "true";
       observed?: unknown;
       observedAt?: string;
-      /** Host-derived next checkpoint in epoch milliseconds; elapsed time does not satisfy the Condition. */
+      /** @deprecated Older Hosts exposed a Condition checkpoint here. Use the Task reviewAt decision. */
       reviewAt?: number;
       facts?: string[];
     };
@@ -213,6 +223,27 @@ export type ExecutionView = {
   summary?: string;
 };
 
+/** Optional calculation over retained samples; omission uses the latest sample. */
+export type MetricCalculationOptions = {
+  method: "latest" | "mean";
+  /** Required for mean. Samples in (now - windowMs, now] have equal weight. */
+  windowMs?: number;
+  /** Mean requires at least this many samples; defaults to 2. */
+  minSamples?: number;
+  /** Defaults to twice measureInterval when declared, otherwise the mean window. */
+  maxAgeMs?: number;
+};
+
+export type MetricCalculation = {
+  method: "latest" | "mean";
+  value: number | null;
+  calculatedAt: number;
+  measuredAt: number | null;
+  sampleCount: number;
+  windowMs?: number;
+  reason?: string;
+};
+
 export type MetricView = {
   id: string;
   value: number | null;
@@ -225,6 +256,8 @@ export type MetricView = {
   sampleSize?: number | null;
   note?: string | null;
   measureInterval?: number | null;
+  /** Read-only calculation from retained samples; does not change alert state. */
+  calculation?: MetricCalculation;
 };
 
 export type MetricDefinition = {
@@ -245,7 +278,7 @@ export type MetricDefinition = {
   alertOp?: "<" | ">" | "above" | "below";
   speed?: string;
   description?: string;
-  config?: Record<string, unknown>;
+  config?: Record<string, unknown> & { calculation?: MetricCalculationOptions };
 };
 
 export type MetricRecordOptions = {
@@ -277,6 +310,8 @@ export type AgentCallOptions = {
 
 /** Shared read contract. Task lists and evidence are paginated; storage stays private. */
 export type AppRead = {
+  /** Installed input and observation capabilities. Does not register a wait. */
+  contract(appId: string): Promise<AppContract>;
   appResult(itemId: string): Promise<AppResult | null>;
   /** Missing Task access rejects; empty results mean a scoped read found no matching work. */
   tasks: {
@@ -403,8 +438,12 @@ export type TaskReconciliationEvent = {
 
 /** Ordered, bounded work input that this reconciliation result will observe. */
 export type TaskReconciliationEvents = {
+  /** Input identities and scoped reply context. Original payloads remain in items/continuedInputs. */
+  inputs?: Array<Omit<import("./task.js").TaskInput, "input">>;
+  /** Bounded discussion context, grouped once per referenced Conversation. */
+  communication?: import("./app.js").AppConversationResource[];
   items: TaskReconciliationEvent[];
-  /** Earlier asks whose awaited facts are being considered now; not new input or new authority. */
+  /** Earlier outstanding requests included in this saved assignment; not new input or new authority. */
   continuedInputs?: TaskReconciliationEvent[];
   /** Highest durable event identity in items, when every item has one. */
   throughEventId?: number;
@@ -427,7 +466,7 @@ export type TaskAttempt = {
   signal: AbortSignal;
   /** Task resource version observed when this attempt was claimed. */
   resourceVersion: number;
-  /** Runtime-resolved role shared unchanged by every executor adapter. */
+  /** Responsible Task agent and its instructions, shared unchanged by every executor adapter. */
   role: {
     agent: string;
     instructions: string;
@@ -438,7 +477,12 @@ export type TaskAttempt = {
    * The same scoped Task reads available to workflows and agent tools.
    * Reads neither consume pending input nor change this attempt's binding.
    */
-  read: Pick<AppRead, "tasks">;
+  read: Pick<AppRead, "tasks" | "contract"> & {
+    communication?: (
+      inputId: string,
+      query?: import("./conversation-contract.js").TaskCommunicationQuery,
+    ) => Promise<unknown>;
+  };
   /** Latest earlier attempt of this Task. Facts to inspect, not authority to repeat its effects. */
   previousAttempt?: {
     attemptId: string;
@@ -462,6 +506,9 @@ export type TaskAttempt = {
     acceptedResult?: {
       state: "converged" | "waiting" | "incomplete";
       reviewAt?: number;
+      /** Exact admitted coverage; absent means unavailable, while [] explicitly covers none. */
+      inputKeys?: string[];
+      continue?: true;
       summary: string;
       response?: string;
       result?: Record<string, unknown>;
@@ -513,6 +560,8 @@ export type TaskAttempt = {
   events: TaskReconciliationEvents;
   /** Runtime-selected schema for the one admitted executor result. */
   resultSchema: Record<string, unknown>;
+  /** Admit requests, Conditions and actions now; this does not end the attempt. */
+  apply(changes: TaskChanges): Promise<TaskChangeReceipt>;
   /** Publish a durable Task-scoped progress, finding, request, or other fact with a retry-stable local key. */
   publish(localKey: string, event: AppEvent<Record<string, unknown>>): Promise<TaskEventReceipt>;
   /** Save revised requirements through the same creator capability used by agent tools. */
@@ -535,7 +584,7 @@ export type TaskReconciliationContext<TInput = unknown> = {
   taskId: string;
   generation: number;
   resourceVersion: number;
-  /** Agent selected for this bounded attempt. The App owns the Task. */
+  /** Responsible Task agent resolved for this attempt; independent of the selected executor. */
   agent: string;
   /** @deprecated Use `agent`. */
   owner: string;
@@ -570,6 +619,9 @@ export type WorkflowContext<TInput = unknown> = {
   reconciliation?: TaskReconciliationContext<TInput>;
   /** Task-owned workflows only. Save complete requirements using the recorded creator's authority. */
   reviseTask?: TaskAttempt["reviseTask"];
+  /** Apply the same changes accepted in a final result, while continuing this execution. */
+  applyTaskChanges?: TaskAttempt["apply"];
+  readCommunication?: TaskAttempt["read"]["communication"];
   read: AppRead;
   agents: {
     call<S extends TSchema>(

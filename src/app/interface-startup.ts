@@ -5,6 +5,7 @@ import { attachSocketUI, type SocketUI } from "./transport/socket.js";
 import type { AttachControlSocketOptions } from "@may-agent/control/server";
 
 export interface InterfaceStartupOptions {
+  conversationAppId?: string;
   socketEnabled: boolean;
   persistDir: string;
   instanceLabel: string;
@@ -50,10 +51,11 @@ export async function startInterfaceRuntime(options: InterfaceStartupOptions): P
     ? await attachSocketUI({
         socketPath,
         events: options.events,
-        publishEvent: (input) =>
+        publishEvent: (input, approvalAuthorization) =>
           options.events.publish(input, {
             source: "control-socket",
             inputSource: { kind: "human", id: "control-socket" },
+            ...(approvalAuthorization ? { approvalAuthorization } : {}),
           }),
         publishOperatorEvent: (input) =>
           options.events.publish(input, {
@@ -73,6 +75,7 @@ export async function startInterfaceRuntime(options: InterfaceStartupOptions): P
         getTask: options.getTask,
         describeProjectActions: options.describeProjectActions,
         invokeProjectAction: options.invokeProjectAction,
+        conversationAppId: options.conversationAppId,
         agentName: options.interfaceAgent,
         instance: options.instanceLabel,
       })

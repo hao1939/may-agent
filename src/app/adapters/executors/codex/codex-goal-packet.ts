@@ -62,11 +62,11 @@ export function renderCodexGoalTaskAttempt(
     goalObjective,
     developerInstructions: [
       "You are the replaceable executor pursuing one fenced May Task goal.",
-      "Use the supplied Task context alongside your role. The May Task and its App remain the completion authority.",
+      "Use the supplied Task context alongside your role. The assigned agent owns the Task's outcome; the creator controls requirements. The Host admits your result under the supplied policy.",
       "Keep the goal active across automatic continuation turns. Do not mark it complete or return merely because one useful step or turn ended.",
       "Return only after acceptance is supported or an exact external wait is identified.",
       "Return only a result accepted by the supplied resultSchema.",
-      "The workspace is read-only; cite exact facts and do not mutate files or external systems.",
+      "Follow the Task's authorized scope and the installation's execution permissions; available tools do not grant additional authority.",
       "Progress commentary may become a durable Task event, so omit secret values, raw command output, tool payloads, and diffs.",
       "",
       CODEX_ATTEMPT_PACKET_MARKER + JSON.stringify(context),

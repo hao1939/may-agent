@@ -1,3 +1,12 @@
+import { listConversationInputRequests } from "../state/conversation-requests.js";
+import { boundedAppRequestConversation } from "../reads/conversation-context.js";
+import {
+  readTaskCommunicationInput,
+  taskResultCommunication,
+  validateTaskCommunication,
+} from "./task-communication.js";
+import { readAppConversationResource, readConversationContext } from "../state/conversations.js";
+import { readTaskInputs } from "./app-task-inputs.js";
 import { readTaskEventTarget } from "../events/task-target.js";
 import {
   taskAgentResultSchema as appTaskAgentResultSchema,
@@ -10,6 +19,7 @@ import { appDependencyCatalog } from "../../app-dependency-catalog.js";
 import type { EventEnvelope } from "../events/bus.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent } from "../events/bus.js";
 import { createRuntimeAppRead, readRuntimeTaskView } from "../reads/app-read.js";
+import { readInstalledAppContract } from "../reads/app-contract.js";
 import {
   readAppTaskLiveEvent,
   readAppTaskReconciliationEvents,
@@ -35,6 +45,8 @@ import type { WorkflowCapability } from "./execution.js";
 import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "./result.js";
 import { appTaskConfig, configuredRegistryEntries, type AppTaskRuntimeDescriptor } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
+
+import { applyTaskChanges } from "./task-changes.js";
 
 const APP_TASK_AGENT_TIMEOUT_MS = 15 * 60_000;
 
@@ -140,8 +152,14 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
   const selfPublishedEventIds = new Set<number>();
   const controller = new AbortController();
   let closed = false;
+  const trustedEventIds = () =>
+    [...new Set([...acceptedLiveEventIds, ...selfPublishedEventIds])].sort((left, right) => left - right);
   // Finish fallible context reads before acquiring subscriptions. If preparation
   // fails, no abandoned observer remains outside the attempt cleanup boundary.
+  const inputs = readTaskInputs(appTaskConfig(descriptor), claim);
+  const conversationIds = [
+    ...new Set(inputs.flatMap((input) => (input.communication ? [input.communication.conversationId] : []))),
+  ];
   const attempt: TaskAttempt = {
     appId: descriptor.id,
     attemptId: claim.attemptId,
@@ -153,6 +171,15 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
     },
     task: structuredClone(task),
     read: {
+      async communication(inputId, query) {
+        if (closed) throw new Error("Task attempt is closed");
+        const config = appTaskConfig(descriptor);
+        const item = readTaskCommunicationInput(config, claim, inputId);
+        return query
+          ? readConversationContext(config.resourceStore.db, item.appId, item.conversationId!, query)
+          : readAppConversationResource(config.resourceStore.db, item.appId, item.conversationId!, { limit: 40 });
+      },
+      contract: async (appId) => readInstalledAppContract(configuredRegistryEntries(opts), appId),
       tasks: createRuntimeAppRead({
         getDb: () => descriptor.resourceStore.db,
         taskStateConfig: appTaskConfig(descriptor),
@@ -180,8 +207,65 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
         claim.taskId,
       ),
     ),
-    events: readAppTaskReconciliationEvents(descriptor.resourceStore, claim),
+    events: {
+      ...readAppTaskReconciliationEvents(descriptor.resourceStore, claim),
+      inputs: inputs.map(({ input: _payload, ...context }) => context),
+      ...(conversationIds.length
+        ? {
+            communication: conversationIds.map((id) => {
+              const selected = inputs.filter((input) => input.communication?.conversationId === id);
+              const current = selected.filter(({ source }) => source.kind === "human").at(-1) ?? selected.at(-1)!;
+              const resource = readAppConversationResource(descriptor.resourceStore.db, descriptor.id, id, {
+                limit: 40,
+              });
+              return boundedAppRequestConversation(
+                {
+                  ...resource,
+                  activeTurn: undefined,
+                  requests: [
+                    ...listConversationInputRequests(
+                      descriptor.resourceStore.db,
+                      descriptor.id,
+                      id,
+                      selected.map(({ id }) => id),
+                    ),
+                    ...(resource.requests ?? []).filter(
+                      (request) => !selected.some((input) => input.communication?.requestIds.includes(request.id)),
+                    ),
+                  ],
+                  messages: resource.messages
+                    .filter((message) => !selected.some((input) => input.source.id === message.id))
+                    .map(({ metadata, ...message }) => ({
+                      ...message,
+                      ...(metadata
+                        ? {
+                            metadata: {
+                              requestId: metadata.requestId,
+                              communicationId: metadata.communicationId,
+                              topicId: metadata.topicId,
+                              taskRefs: metadata.taskRefs,
+                              followTask: metadata.followTask,
+                              command: metadata.command,
+                            },
+                          }
+                        : {}),
+                    })),
+                  current: {
+                    messageId: current.source.id,
+                    replyTo: current.communication?.inReplyTo,
+                    topicId: current.communication?.topicId,
+                  },
+                },
+              );
+            }),
+          }
+        : {}),
+    },
     resultSchema: structuredClone(appTaskAgentResultSchema) as unknown as Record<string, unknown>,
+    async apply(changes) {
+      if (closed) throw new Error("Task attempt is closed");
+      return applyTaskChanges({ opts, descriptor, claim, changes, acceptedLiveEventIds: trustedEventIds() });
+    },
     async publish(localKey, event) {
       if (closed) throw new Error(`Task ${descriptor.id}/${claim.taskId} attempt is closed`);
       const { localKey: _embeddedLocalKey, source: _source, ...emitted } = event;
@@ -268,8 +352,7 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
   return {
     events,
     attempt,
-    acceptedLiveEventIds: () =>
-      [...new Set([...acceptedLiveEventIds, ...selfPublishedEventIds])].sort((left, right) => left - right),
+    acceptedLiveEventIds: trustedEventIds,
     close() {
       if (closed) return;
       closed = true;
@@ -285,9 +368,11 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
  * Core owns lease renewal, live-event observation and cleanup on every exit;
  * the handler returns a proposal for the caller to settle after this closes.
  */
-export async function runTaskExecutorAttempt(input: TaskAttemptInput & {
-  execute: (attempt: TaskAttempt, events: AppTaskEvents) => Promise<TaskCapabilityRun>;
-}): Promise<TaskCapabilityRun> {
+export async function runTaskExecutorAttempt(
+  input: TaskAttemptInput & {
+    execute: (attempt: TaskAttempt, events: AppTaskEvents) => Promise<TaskCapabilityRun>;
+  },
+): Promise<TaskCapabilityRun> {
   const taskAttempt = runtimeTaskAttempt(input);
   const leaseTimer = setInterval(
     () => {
@@ -332,17 +417,29 @@ export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabil
       projectDir: descriptor.projectDir,
       app: descriptor.app,
     },
-    dependencies: appDependencyCatalog(configuredRegistryEntries(opts), descriptor.id),
+    dependencies: appDependencyCatalog(configuredRegistryEntries(opts)),
+    validateResult(result) {
+      if (result.state !== "converged" && result.state !== "waiting") return null;
+      try {
+        const config = appTaskConfig(descriptor);
+        const changes = taskResultCommunication(config, claim, result);
+        return changes?.length ? validateTaskCommunication(config, claim, changes, execution.taskEvents) : null;
+      } catch (error) {
+        return error instanceof Error ? error.message : String(error);
+      }
+    },
     sessionStarted: (id) => {
       recordAppTaskAttemptSession(appTaskConfig(descriptor), claim, id);
     },
   });
 }
 
-export async function runRegisteredTaskExecutor(input: TaskHandlerInput & {
-  name: TaskExecutorName;
-  execute: TaskExecutor;
-}): Promise<TaskCapabilityRun> {
+export async function runRegisteredTaskExecutor(
+  input: TaskHandlerInput & {
+    name: TaskExecutorName;
+    execute: TaskExecutor;
+  },
+): Promise<TaskCapabilityRun> {
   const runId = `executor:${input.name}:${input.claim.attemptId}`;
   try {
     const result = await input.execute(input.attempt);

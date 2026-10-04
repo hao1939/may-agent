@@ -12,7 +12,7 @@ import {
 } from "@earendil-works/pi-ai";
 import { streamSimple } from "@earendil-works/pi-ai/compat";
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { createCompactionTransform, type CompactionInfo } from "./compaction.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 import { createTaskDecisionContext } from "./task-decision-context.js";
@@ -210,8 +210,12 @@ export type AgentPreparationOptions = {
   taskContext?: TaskExecutionContext;
   persistentChat?: boolean;
   skill?: string;
+  /** Interpret a leading $skill command; false keeps delegated task text literal. */
+  parseSkillCommand?: boolean;
   requireFinish?: boolean;
   outputSchema?: TSchema;
+  /** Pure caller admission check; rejection keeps this invocation open for correction. */
+  validateOutput?: (result: unknown) => string | null;
   toolPolicy?: ToolPolicy;
   /** Override the registered agent's filesystem tools for this execution only. */
   executionRoot?: string;
@@ -235,6 +239,19 @@ function definitionForExecution(options: AgentPreparationOptions): SubagentDefin
   if (!root && !options.bashProcessGroupOwner) return options.definition;
   const executionRoot = root ?? options.definition.projectRoot ?? options.projectRoot;
   const agentName = options.definition.name;
+  let fileWritePolicy = options.definition.fileWritePolicy;
+  if (fileWritePolicy && root) {
+    const paths = options.taskContext?.executionPaths;
+    // A cwd alone says nothing about checkout layout. Task workspaces mirror
+    // their project; ordinary App-local execution needs no path translation.
+    let execution = fileWritePolicy.execution;
+    if (paths && resolve(paths.workspaceDir) === resolve(root)) {
+      execution = resolve(paths.appDir) === resolve(root) ? undefined : { root, sourceRoot: paths.projectDir };
+    } else if (execution && resolve(execution.root) !== resolve(root)) {
+      execution = undefined;
+    }
+    fileWritePolicy = { ...fileWritePolicy, execution };
+  }
   const tools = options.definition.tools.map((tool) => {
     switch (tool.name) {
       case "read":
@@ -242,14 +259,14 @@ function definitionForExecution(options: AgentPreparationOptions): SubagentDefin
       case "bash":
         return createBashTool(executionRoot, { processGroupOwner: options.bashProcessGroupOwner });
       case "edit":
-        return root ? createEditTool(executionRoot, { agentName, projectRoot: executionRoot }) : tool;
+        return root ? createEditTool(executionRoot, { agentName, projectRoot: executionRoot, fileWritePolicy }) : tool;
       case "write":
-        return root ? createWriteTool(executionRoot, { agentName, projectRoot: executionRoot }) : tool;
+        return root ? createWriteTool(executionRoot, { agentName, projectRoot: executionRoot, fileWritePolicy }) : tool;
       default:
         return tool;
     }
   });
-  return { ...options.definition, ...(root ? { projectRoot: executionRoot } : {}), tools };
+  return { ...options.definition, ...(root ? { projectRoot: executionRoot, fileWritePolicy } : {}), tools };
 }
 
 export type DirectAgentExecutionResult = {
@@ -372,7 +389,7 @@ function resolveTools(options: AgentPreparationOptions, requireFinish: boolean):
   if (!baseFinish) {
     throw new Error(`Agent ${definition.name} requires finish() but no finish capability was supplied`);
   }
-  const finish = createWorkflowFinishTool(baseFinish, options.outputSchema);
+  const finish = createWorkflowFinishTool(baseFinish, options.outputSchema, options.validateOutput);
   const index = tools.findIndex((tool) => tool.name === "finish");
   return applyToolExecutionPolicy(
     index < 0 ? [...tools, finish] : tools.map((tool, offset) => (offset === index ? finish : tool)),
@@ -392,6 +409,20 @@ function bindToolsToSession(tools: AgentTool[], agentName: string, sessionId: st
         runWithAgentSessionContext(agentName, sessionId, () => execute(...args)),
     } as AgentTool;
   });
+}
+
+/** Stop cooperative work without cancelling the model's opportunity to finish. */
+export function bindToolsToExecutionScope(tools: AgentTool[], getScope: () => ExecutionScope | undefined): AgentTool[] {
+  return tools.map((tool) => ({
+    ...tool,
+    execute: (id, params, signal, onUpdate) => {
+      const scope = getScope();
+      const limit = tool.name === "finish" ? scope?.signal : scope?.workSignal;
+      const combined = limit && signal ? AbortSignal.any([signal, limit]) : limit ?? signal;
+      combined?.throwIfAborted();
+      return tool.execute(id, params, combined, onUpdate);
+    },
+  }));
 }
 
 function buildGuards(definition: SubagentDefinition, projectRoot: string): BeforeToolCallHook[] {
@@ -494,7 +525,7 @@ export function prepareAgentExecution(options: AgentPreparationOptions): Prepare
 function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentExecution, "preparation"> {
   const definition = definitionForExecution(options);
   options = { ...options, definition, projectRoot: options.executionRoot ?? options.projectRoot };
-  const parsedSkill = parseExplicitSkill(options.task);
+  const parsedSkill = options.parseSkillCommand === false ? { task: options.task } : parseExplicitSkill(options.task);
   const skillName = options.skill ?? parsedSkill.skill;
   const task = parsedSkill.skill ? parsedSkill.task : options.task;
   if (skillName && !task) throw new Error(`Skill "${skillName}" requires a task`);
@@ -514,7 +545,7 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
     ? invokeCatalogSkill(options.definition.skillCatalog, skillName, contextTask)
     : undefined;
   const outputSchema = normalizeExecutionSchema(options.outputSchema);
-  const requireFinish = options.requireFinish === true || outputSchema !== undefined;
+  const requireFinish = options.requireFinish === true || outputSchema !== undefined || options.validateOutput !== undefined;
   const normalizedOptions = { ...options, outputSchema };
   const tools = bindToolsToSession(
     resolveTools(normalizedOptions, requireFinish),
@@ -523,20 +554,23 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
   );
   const guards = buildGuards(options.definition, options.definition.projectRoot ?? options.projectRoot);
   const composed = guards.length ? composeGuards(...guards) : undefined;
-  const beforeToolCall = composed
-    ? async (context: PiBeforeToolCallContext, signal?: AbortSignal) => {
-        const result = await composed(toGuardContext(context), signal);
-        if (result) {
-          options.onGuard?.({
-            context,
-            guard: result.guardName ?? "unknown",
-            block: result.block,
-            reason: result.reason,
-          });
-        }
-        return result;
-      }
-    : undefined;
+  // finish is sequential. Once accepted, later calls in that same batch have
+  // no authority to add effects. A later invocation has a different message.
+  let finishedTurn: PiBeforeToolCallContext["assistantMessage"] | undefined;
+  const beforeToolCall = async (context: PiBeforeToolCallContext, signal?: AbortSignal) => {
+    if (finishedTurn && context.assistantMessage === finishedTurn)
+      return { block: true, reason: "This invocation already finished; remaining tool calls were not executed." };
+    const result = await composed?.(toGuardContext(context), signal);
+    if (result) {
+      options.onGuard?.({
+        context,
+        guard: result.guardName ?? "unknown",
+        block: result.block,
+        reason: result.reason,
+      });
+    }
+    return result;
+  };
 
   let compactInfo: CompactionInfo | undefined;
   const compact =
@@ -594,6 +628,13 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
         tools,
       },
       beforeToolCall,
+      afterToolCall: async ({ toolCall, assistantMessage, result, isError }) => {
+        if (toolCall.name === "finish" && !isError && result.terminate === true) finishedTurn = assistantMessage;
+        return undefined;
+      },
+      // Pi's batch hint alone can continue mixed batches or consume queued input.
+      // Stop before another model request; queued input belongs to later work.
+      shouldStopAfterTurn: ({ message }) => finishedTurn !== undefined && message === finishedTurn,
       transformContext,
       getApiKey: options.definition.apiKey ? () => options.definition.apiKey! : undefined,
     },
@@ -606,12 +647,25 @@ export async function executePreparedAgent(
   options: DirectAgentExecutionOptions = {},
 ): Promise<DirectAgentExecutionResult> {
   const startedAt = Date.now();
-  const agent = createAgentRun(prepared.runner);
+  let scope: ExecutionScope | undefined;
+  const tools = bindToolsToExecutionScope(prepared.tools, () => scope);
+  const agent = createAgentRun({
+    ...prepared.runner,
+    initialState: { ...prepared.runner.initialState, tools },
+  });
   const usage = createExecutionUsage(prepared.preparation);
   const unsubscribeUsage = agent.subscribe(usage.observe);
   if (options.initialMessages) agent.state.messages = [...options.initialMessages] as any;
   const unsubscribe = options.onObservation ? agent.subscribe(options.onObservation) : undefined;
   let boundedFinishRequested = false;
+  const requestFinish = () => {
+    if (boundedFinishRequested || extractFinishParams(agent.state.messages as any[])) return;
+    boundedFinishRequested = true;
+    agent.steer({
+      role: "user",
+      content: [{ type: "text", text: boundedWorkflowFinishPrompt(prepared.outputSchema) }],
+    } as any);
+  };
   let toolCalls = 0;
   const unsubscribeBoundedFinish = prepared.requireFinish
     ? agent.subscribe((event) => {
@@ -624,21 +678,23 @@ export async function executePreparedAgent(
           })
         )
           return;
-        boundedFinishRequested = true;
-        agent.steer({
-          role: "user",
-          content: [{ type: "text", text: boundedWorkflowFinishPrompt(prepared.outputSchema) }],
-        } as any);
+        requestFinish();
       })
     : undefined;
   let timedOut = false;
   let interrupted = false;
   let error: string | undefined;
-  const scope = new ExecutionScope(options.timeoutMs ?? prepared.definition.timeoutMs, options.signal, options.deadlineAt, () => {
-    timedOut = scope.timedOut;
-    interrupted = true;
-    agent.cancel();
-  });
+  scope = new ExecutionScope(
+    options.timeoutMs ?? prepared.definition.timeoutMs,
+    options.signal,
+    options.deadlineAt,
+    () => {
+      timedOut = scope!.timedOut;
+      interrupted = true;
+      agent.cancel();
+    },
+    prepared.requireFinish ? requestFinish : undefined,
+  );
 
   try {
     let recoveredThrownFailure = false;
@@ -653,7 +709,7 @@ export async function executePreparedAgent(
         ? await recoverCapturedWorkflowFinish({
             sessionId: prepared.sessionId,
             messages,
-            tools: prepared.tools,
+            tools,
             reason: initialError,
           })
         : { disposition: "ineligible" as const };

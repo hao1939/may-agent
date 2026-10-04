@@ -161,6 +161,7 @@ describe("Codex goal Task context", () => {
     const packet = JSON.parse(small.developerInstructions.split("## Canonical May Task Attempt\n")[1]!);
     expect(packet.coverage.detail).toBeUndefined();
     expect(packet.assignment.outcome).toBe(attempt().task.outcome);
+    expect(packet.assignment.agent).toBe("evaluator");
   });
 });
 
@@ -177,21 +178,30 @@ class FakeClient implements CodexGoalClient {
   async initialize() {
     this.calls.push("initialize");
   }
-  async startThread(input: { cwd: string; developerInstructions?: string }) {
+  async startThread(input: { cwd: string; developerInstructions?: string; sandbox?: "read-only" | "workspace-write" | "danger-full-access" }) {
+    expect(input).not.toHaveProperty("sandbox");
     this.calls.push(`start:${input.cwd}`);
     this.instructions.push(input.developerInstructions!);
     expect(input.developerInstructions).toContain("## Canonical May Task Attempt");
+    expect(input.developerInstructions).toContain("Follow the Task's authorized scope");
+    expect(input.developerInstructions).not.toContain("The workspace is read-only");
     expect(input.developerInstructions).toContain("Progress commentary may become a durable Task event");
     return { threadId: this.threadId, cwd: input.cwd };
   }
-  async resumeThread(input: { threadId: string; cwd: string; developerInstructions?: string }) {
+  async resumeThread(input: { threadId: string; cwd: string; developerInstructions?: string; sandbox?: "read-only" | "workspace-write" | "danger-full-access" }) {
+    expect(input).not.toHaveProperty("sandbox");
     this.calls.push(`resume:${input.threadId}`);
     this.instructions.push(input.developerInstructions!);
     expect(input.developerInstructions).toContain('"resourceVersion":');
     return { threadId: input.threadId, cwd: input.cwd };
   }
-  async setGoal(input: { threadId: string; objective: string }) {
-    this.calls.push(`goal:${input.threadId}`);
+  async injectDeveloperContext(input: { threadId: string; text: string }) {
+    this.calls.push(`inject:${input.threadId}`);
+    this.instructions.push(input.text);
+    expect(input.text).toContain("## Canonical May Task Attempt");
+  }
+  async setGoal(input: { threadId: string; objective: string; status?: "active" | "paused" }) {
+    this.calls.push(`${input.status === "paused" ? "pause" : "goal"}:${input.threadId}`);
     expect(input.objective).toContain("Task mental model");
   }
   async waitForActiveTurn() {
@@ -210,28 +220,31 @@ class FakeClient implements CodexGoalClient {
     this.calls.push("terminal-turn");
     return { threadId: this.threadId, turn: { id: "turn-1", status: "completed" } };
   }
-  async readThread() {
-    this.calls.push("read");
+  async listThreadItems(input: {
+    threadId: string;
+    turnId: string;
+    cursor?: string;
+    limit?: number;
+    sortDirection?: "asc" | "desc";
+  }) {
+    this.calls.push(`items:${input.turnId}`);
     return {
-      thread: {
-        turns: [
-          {
-            id: "turn-1",
-            items: [
-              {
-                type: "agentMessage",
-                phase: "final_answer",
-                text: JSON.stringify({
-                  state: "converged",
-                  summary: "The model matches the cited runtime boundary.",
-                  response: "The review found no material mismatch.",
-                  facts: ["projects/may-agent/src/app/core/tasks/app-task-runtime.ts:2025"],
-                }),
-              },
-            ],
+      data: [
+        {
+          turnId: input.turnId,
+          item: {
+            type: "agentMessage",
+            phase: "final_answer",
+            text: JSON.stringify({
+              state: "converged",
+              summary: "The model matches the cited runtime boundary.",
+              response: "The review found no material mismatch.",
+              facts: ["projects/may-agent/src/app/core/tasks/app-task-runtime.ts:2025"],
+            }),
           },
-        ],
-      },
+        },
+      ],
+      nextCursor: null,
     };
   }
   async steer(_input: { threadId: string; turnId: string; message: string }) {
@@ -355,6 +368,17 @@ describe("codex-goal Task executor", () => {
         task: { ...contextAttempt(root, "v4").task, generation: 2, resourceVersion: 7 } },
     );
     expect(clients).toHaveLength(0);
+    expect(firstClient.calls.slice(0, 2)).toEqual(["initialize", `start:${root}`]);
+    expect(resumedClient.calls.slice(0, 3)).toEqual([
+      "initialize",
+      "pause:thread-1",
+      "resume:thread-1",
+    ]);
+    expect(firstClient.calls).not.toContain("inject:thread-1");
+    expect(firstClient.calls.indexOf("goal:thread-1")).toBeGreaterThan(firstClient.calls.indexOf(`start:${root}`));
+    expect(resumedClient.calls.indexOf("resume:thread-1")).toBeGreaterThan(resumedClient.calls.indexOf("pause:thread-1"));
+    expect(resumedClient.calls.indexOf("inject:thread-1")).toBeGreaterThan(resumedClient.calls.indexOf("resume:thread-1"));
+    expect(resumedClient.calls.indexOf("goal:thread-1")).toBeGreaterThan(resumedClient.calls.indexOf("inject:thread-1"));
     for (const [client, version] of [[firstClient, "v3"], [resumedClient, "v4"]] as const) {
       const input = client.instructions[0]!;
       const context = JSON.parse(input.split("## Canonical May Task Attempt\n")[1]!);
@@ -384,6 +408,77 @@ describe("codex-goal Task executor", () => {
     });
   });
 
+  it("pages one exact completed turn and preserves the final answer", async () => {
+    const root = fixtureRoot();
+    const client = new FakeClient("thread-bounded-items");
+    const answerResponse = "exact-answer-終";
+    const requests: Array<{
+      threadId: string;
+      turnId: string;
+      cursor?: string;
+      limit?: number;
+      sortDirection?: "asc" | "desc";
+    }> = [];
+    client.listThreadItems = async (input) => {
+      requests.push(input);
+      if (!input.cursor) {
+        return {
+          data: [
+            {
+              turnId: input.turnId,
+              item: { type: "commandExecution", aggregatedOutput: "synthetic command output" },
+            },
+          ],
+          nextCursor: "older-item",
+        };
+      }
+      return {
+        data: [
+          {
+            turnId: input.turnId,
+            item: {
+              type: "agentMessage",
+              phase: "final_answer",
+              text: JSON.stringify({
+                state: "converged",
+                summary: "Recovered the exact completed-turn answer.",
+                response: answerResponse,
+                facts: ["bounded-item-pagination"],
+              }),
+            },
+          },
+        ],
+        nextCursor: null,
+      };
+    };
+    const executor = createCodexGoalExecutor({
+      stateFile: join(root, "bindings.json"),
+      createClient: () => client,
+    });
+
+    await expect(executor(attempt())).resolves.toMatchObject({
+      state: "converged",
+      response: answerResponse,
+      facts: ["bounded-item-pagination", "codex-thread:thread-bounded-items"],
+    });
+    expect(requests).toEqual([
+      {
+        threadId: "thread-bounded-items",
+        turnId: "turn-1",
+        cursor: undefined,
+        limit: 1,
+        sortDirection: "desc",
+      },
+      {
+        threadId: "thread-bounded-items",
+        turnId: "turn-1",
+        cursor: "older-item",
+        limit: 1,
+        sortDirection: "desc",
+      },
+    ]);
+  });
+
   it("never admits a final answer from an older turn", async () => {
     const root = fixtureRoot();
     const client = new FakeClient("thread-stale-answer");
@@ -398,43 +493,50 @@ describe("codex-goal Task executor", () => {
       threadId: client.threadId,
       turn: { id: `turn-${turn}`, status: "completed" },
     });
-    client.readThread = async () => ({
-      thread: {
-        turns: [
-          {
-            id: "turn-old",
-            items: [
-              {
+    const observedTurnIds: string[] = [];
+    client.listThreadItems = async (input) => {
+      if (!input.cursor) {
+        observedTurnIds.push("turn-old");
+        return {
+          data: [
+            {
+              turnId: "turn-old",
+              item: {
                 type: "agentMessage",
                 phase: "final_answer",
                 text: JSON.stringify({
                   state: "converged",
-                  summary: "Stale answer",
-                  facts: ["stale"],
+                  summary: "Stale answer must never be admitted.",
+                  facts: ["stale-turn"],
                 }),
               },
-            ],
-          },
-          {
-            id: `turn-${turn}`,
-            items:
-              turn === 1
-                ? []
-                : [
-                    {
-                      type: "agentMessage",
-                      phase: "final_answer",
-                      text: JSON.stringify({
-                        state: "converged",
-                        summary: "Current-turn facts were admitted.",
-                        facts: ["current-turn"],
-                      }),
-                    },
-                  ],
-          },
-        ],
-      },
-    });
+            },
+          ],
+          nextCursor: "current-item",
+        };
+      }
+      observedTurnIds.push(input.turnId);
+      return {
+        data:
+          turn === 1
+            ? []
+            : [
+                {
+                  turnId: input.turnId,
+                  item: {
+                    type: "agentMessage",
+                    phase: "final_answer",
+                    text: JSON.stringify({
+                      state: "converged",
+                      summary: "Current-turn facts were admitted.",
+                      facts: ["current-turn"],
+                    }),
+                  },
+                },
+              ],
+        nextCursor: null,
+      };
+    };
     const executor = createCodexGoalExecutor({
       stateFile: join(root, "bindings.json"),
       createClient: () => client,
@@ -445,6 +547,34 @@ describe("codex-goal Task executor", () => {
       facts: ["current-turn", "codex-thread:thread-stale-answer"],
     });
     expect(client.calls.filter((call) => call === "goal:thread-stale-answer")).toHaveLength(2);
+    expect(observedTurnIds).toEqual(["turn-old", "turn-1", "turn-old", "turn-2"]);
+  });
+
+  it("fails closed when item pagination repeats a cursor", async () => {
+    const root = fixtureRoot();
+    const client = new FakeClient("thread-cursor-cycle");
+    const cursors: Array<string | undefined> = [];
+    client.listThreadItems = async (input) => {
+      cursors.push(input.cursor);
+      return {
+        data: [
+          {
+            turnId: input.turnId,
+            item: { type: "commandExecution", aggregatedOutput: "no final answer" },
+          },
+        ],
+        nextCursor: "cycle",
+      };
+    };
+    const executor = createCodexGoalExecutor({
+      stateFile: join(root, "bindings.json"),
+      createClient: () => client,
+    });
+
+    await expect(executor(attempt())).rejects.toThrow(
+      "Codex app-server repeated item cursor for turn turn-1",
+    );
+    expect(cursors).toEqual([undefined, "cycle"]);
   });
 
   it("corrects invalid output in the same Task attempt and Codex thread", async () => {
@@ -466,28 +596,25 @@ describe("codex-goal Task executor", () => {
       corrections.push(input.message);
       return input.turnId;
     };
-    client.readThread = async () => ({
-      thread: {
-        turns: [
-          {
-            id: `turn-${turn}`,
-            items: [
-              {
-                type: "agentMessage",
-                phase: "final_answer",
-                text:
-                  turn === 1
-                    ? "not json"
-                    : JSON.stringify({
-                        state: "converged",
-                        summary: "Corrected output satisfies the Task contract.",
-                        facts: ["same-thread-correction"],
-                      }),
-              },
-            ],
+    client.listThreadItems = async (input) => ({
+      data: [
+        {
+          turnId: input.turnId,
+          item: {
+            type: "agentMessage",
+            phase: "final_answer",
+            text:
+              turn === 1
+                ? "not json"
+                : JSON.stringify({
+                    state: "converged",
+                    summary: "Corrected output satisfies the Task contract.",
+                    facts: ["same-thread-correction"],
+                  }),
           },
-        ],
-      },
+        },
+      ],
+      nextCursor: null,
     });
     const executor = createCodexGoalExecutor({
       stateFile: join(root, "bindings.json"),
@@ -703,25 +830,22 @@ describe("codex-goal Task executor", () => {
       threadId: client.threadId,
       turn: { id: "turn-2", status: "completed" },
     });
-    client.readThread = async () => ({
-      thread: {
-        turns: [
-          {
-            id: "turn-2",
-            items: [
-              {
-                type: "agentMessage",
-                phase: "final_answer",
-                text: JSON.stringify({
-                  state: "converged",
-                  summary: "Prepared the original draft.",
-                  facts: ["draft:original"],
-                }),
-              },
-            ],
+    client.listThreadItems = async (input) => ({
+      data: [
+        {
+          turnId: input.turnId,
+          item: {
+            type: "agentMessage",
+            phase: "final_answer",
+            text: JSON.stringify({
+              state: "converged",
+              summary: "Prepared the original draft.",
+              facts: ["draft:original"],
+            }),
           },
-        ],
-      },
+        },
+      ],
+      nextCursor: null,
     });
     const executor = createCodexGoalExecutor({
       stateFile: join(root, "bindings.json"),

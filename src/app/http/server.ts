@@ -1,5 +1,8 @@
 #!/usr/bin/env bun
+import { listConfiguredAgentNames, listRuntimeAgentDirectories } from "../loader/agent-discovery.js";
+import { interfaceBinding, type InterfaceBinding } from "@may-agent/control";
 import { taskAttemptsQuery, readTaskAttempts } from "../adapters/reporting/task-attempts.js";
+import { metricEvidenceQuery, readMetricEvidence } from "../adapters/reporting/metric-evidence.js";
 /**
  * may-agent HTTP adapter — API, static WebUI, and dashboard websocket.
  *
@@ -75,6 +78,7 @@ const HEARTBEAT_SESSION_PREDICATE = `(
 )`;
 
 export interface WebUIOptions {
+  interface?: InterfaceBinding;
   stateDir: string;
   port: number;
 }
@@ -125,7 +129,7 @@ export function buildEventIngressFrame(body: Record<string, unknown>): Record<st
   const envelope = buildCanonicalEventEnvelope(String(body.type ?? "").trim(), {
     ...body,
     source: "web-ui",
-    owner: "agent:may",
+    owner: "system:host",
   });
   const data = envelope.data as Record<string, unknown>;
   const rawTarget =
@@ -504,75 +508,15 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   // Development can serve source assets without changing App discovery or deployment.
   const PLATFORM_UI_DIR = resolve(process.env.MAY_AGENT_UI_DIR?.trim() || join(PROJECTS_ROOT, "platform", "ui"));
   const DAEMON_INSTANCE = process.env.DAEMON_INSTANCE || process.env.INSTANCE || "default";
-  const DAEMON_AGENT = process.env.DAEMON_AGENT || process.env.AGENT || "may";
+  const humanInterface = opts.interface ?? interfaceBinding();
+  const DAEMON_AGENT = humanInterface.agent;
 
   function _db(): SqliteDb {
     return openStateDb(join(STATE_DIR, "may.db"));
   }
 
   function listConfiguredAgents(): string[] {
-    try {
-      return readdirSync(AGENTS_ROOT, { withFileTypes: true })
-        .filter(
-          (entry) =>
-            entry.isDirectory() &&
-            !entry.name.startsWith(".") &&
-            !entry.name.startsWith("_") &&
-            entry.name !== "shared" &&
-            entry.name !== "gym",
-        )
-        .map((entry) => {
-          const configPath = join(AGENTS_ROOT, entry.name, "agent.json");
-          if (!existsSync(configPath)) return null;
-          try {
-            const config = JSON.parse(readFileSync(configPath, "utf-8")) as {
-              name?: string;
-              disabled?: boolean;
-              heartbeat?: boolean;
-            };
-            if (config.disabled || config.heartbeat === false) return null;
-            return config.name ?? entry.name;
-          } catch {
-            return entry.name;
-          }
-        })
-        .filter((name): name is string => Boolean(name))
-        .sort();
-    } catch {
-      return [];
-    }
-  }
-
-  function listScheduledHeartbeatAgents(configuredAgents: string[]): string[] {
-    const configured = new Set(configuredAgents);
-    const agents = new Set<string>();
-    const cronPath = join(AGENTS_ROOT, "may", "cron.json");
-    try {
-      const cron = JSON.parse(readFileSync(cronPath, "utf-8")) as Array<{
-        name?: string;
-        enabled?: boolean;
-        agent?: string;
-        handler?: string | { workflow?: string; agent?: string };
-        handlerConfig?: { agent?: string; workflow?: string };
-      }>;
-      for (const entry of cron) {
-        if (entry.enabled === false) continue;
-        const workflowHandler = entry.handler && typeof entry.handler === "object" ? entry.handler : undefined;
-        const isHeartbeat =
-          entry.name === "heartbeat" ||
-          entry.name?.startsWith("heartbeat-") ||
-          entry.handler === "heartbeat" ||
-          entry.handlerConfig?.workflow?.includes("heartbeat") ||
-          workflowHandler?.workflow?.includes("heartbeat");
-        if (!isHeartbeat) continue;
-        const agent = (workflowHandler?.agent || entry.handlerConfig?.agent || entry.agent || "").trim();
-        if (agent && configured.has(agent)) agents.add(agent);
-      }
-    } catch {
-      // If cron metadata is unavailable, fall back to all configured agents.
-      for (const agent of configuredAgents) agents.add(agent);
-    }
-    return [...agents].sort();
+    return listConfiguredAgentNames(AGENTS_ROOT, PROJECTS_ROOT);
   }
 
   function parseEventData(data: unknown): Record<string, unknown> {
@@ -589,6 +533,25 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     db: SqliteDb,
     alert: { alertId?: number; metricId?: string; createdAt?: number },
   ): Record<string, unknown> | null {
+    const accepted = db
+      .prepare(
+        `SELECT app_id, task_id, attempt_id, timestamp, data
+      FROM metric_dispositions WHERE metric_id = ? AND alert_id = ?
+      ORDER BY timestamp DESC, attempt_id DESC LIMIT 1`,
+      )
+      .get(alert.metricId ?? null, alert.alertId ?? null);
+    if (accepted)
+      return {
+        ...parseEventData(String(accepted.data)),
+        owner: accepted.app_id,
+        timestamp: accepted.timestamp,
+        source: {
+          kind: "accepted-task-result",
+          appId: accepted.app_id,
+          taskId: accepted.task_id,
+          attemptId: accepted.attempt_id,
+        },
+      };
     const row = db
       .prepare(
         `SELECT id, owner, timestamp, data
@@ -749,7 +712,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const since = now - hours * 60 * 60 * 1000;
     const oneHour = now - 60 * 60 * 1000;
     const agents = listConfiguredAgents();
-    const scheduledHeartbeatAgents = new Set(listScheduledHeartbeatAgents(agents));
     const heartbeatCandidates = db
       .prepare(
         `SELECT sessionId, agent, status, kind, source, startedAt, endedAt
@@ -857,7 +819,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       db
         .prepare(
           `SELECT ma.id as alertId, ma.metric_id as metricId, ma.message, ma.created_at as createdAt,
-              COALESCE(NULLIF(trim(m.owner), ''), NULLIF(trim(p.owner), ''), 'may') as owner,
+              COALESCE(NULLIF(trim(m.owner), ''), NULLIF(trim(p.owner), ''), 'system:host') as owner,
               m.project, m.priority, m.current, m.threshold, m.target
        FROM metric_alerts ma
        LEFT JOIN metrics m ON m.id = ma.metric_id
@@ -879,7 +841,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       .map((m) => {
         return {
           ...m,
-          owner: m.owner || "may",
+          owner: m.owner || "system:host",
           updatedAt: m.observation?.measuredAt ?? null,
           breached: m.alertsDisabled ? false : m.thresholdBreached,
           alertOpen: openAlertMetricIds.has(m.id) ? true : openAlertsTruncated ? null : false,
@@ -930,20 +892,15 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       text: (row.outcome || row.task || "").replace(/^\[heartbeat\]\s*/i, "").slice(0, 220),
     }));
 
-    const scheduledAgentRows = agentRows.filter((agent) => scheduledHeartbeatAgents.has(agent.name));
-    const scheduledHeartbeatRows = scheduledAgentRows.filter((agent) => agent.lastHeartbeat);
-    const staleAgents = scheduledAgentRows.filter((agent) => !agent.lastHeartbeat).map((agent) => agent.name);
-
     return json({
       summary: {
-        agentsConfigured: scheduledHeartbeatAgents.size || agents.length,
+        agentsConfigured: agents.length,
         agentsTotal: agents.length,
-        expectedHeartbeatAgents: scheduledHeartbeatAgents.size || agents.length,
         // NOTE: keep `*4h` field names even though the window is now
         // operator-selectable — they're consumed elsewhere as the
         // "heartbeat coverage in window" signal, and the window default
         // is still 4h. Use `windowHours` for accurate labeling.
-        heartbeatAgents4h: scheduledHeartbeatRows.length,
+        heartbeatAgents4h: agentRows.filter((agent) => agent.lastHeartbeat).length,
         heartbeats4h: heartbeatTotal,
         windowHours: hours,
         windowSince: since,
@@ -954,7 +911,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         activeSessions,
         openAlerts: openAlerts.length,
         openAlertsTruncated,
-        staleAgents: staleAgents.length,
       },
       agents: agentRows,
       heartbeats: heartbeatRows,
@@ -1065,7 +1021,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
     const sessionWhere = [
       "status IN ('done','error','interrupted')",
-      "agent NOT IN ('evaluator','judge')",
       "COALESCE(endedAt, startedAt) >= ?",
     ];
     const sessionParams: unknown[] = [since];
@@ -1186,7 +1141,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       /* guard events are best-effort */
     }
 
-    const backlogSessions: Array<Record<string, any>> = [];
+    const sessionsWithoutEvaluation: Array<Record<string, any>> = [];
     for (const session of sessions) {
       const sid = String(session.sessionId || "");
       const day = new Date(Number(session.endedAt || session.startedAt || now)).toISOString().slice(0, 10);
@@ -1197,7 +1152,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const evaluated = evaluatedIds.has(sid);
       if (evaluated && buckets[day]) buckets[day].evaluated += 1;
       if (!evaluated) {
-        backlogSessions.push(session);
+        sessionsWithoutEvaluation.push(session);
         continue;
       }
 
@@ -1271,31 +1226,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     findings.sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
     recentEvaluations.sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
 
-    let evaluatorFailures: Array<Record<string, any>> = [];
-    let evaluatorReviewCount = 0;
-    try {
-      const evalRows = db
-        .prepare(
-          `SELECT sessionId, agent, status, source, startedAt, endedAt, error, substr(task, 1, 180) AS task
-         FROM sessions
-         WHERE agent = 'evaluator'
-           AND COALESCE(endedAt, startedAt) >= ?
-           AND (source LIKE 'workflow:evaluator-aftermath%' OR source = 'cli' OR task LIKE 'Review session aftermath%')
-         ORDER BY COALESCE(endedAt, startedAt) DESC
-         LIMIT 500`,
-        )
-        .all(since) as Array<Record<string, any>>;
-      evaluatorReviewCount = evalRows.length;
-      evaluatorFailures = evalRows.filter((row) => row.status === "error").slice(0, 50);
-    } catch {
-      /* ignore */
-    }
-
     const terminalSessions = sessions.length;
     const evaluatedSessions = sessions.filter((s) => evaluatedIds.has(String(s.sessionId || ""))).length;
     const highFindings = findings.filter((f) => f.severity === "high").length;
     const immediateFindings = findings.filter((f) => f.notified).length || immediateEventCount;
-    const staleBlockerLoops = findings.filter((f) => f.id === "stale-blocker-loop").length;
     const repeatCounts: Record<string, number> = {};
     for (const finding of findings) incrementCount(repeatCounts, finding.repeatKey);
     const recurring = Object.entries(repeatCounts)
@@ -1310,16 +1244,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         terminalSessions,
         evaluatedSessions,
         coveragePct: terminalSessions ? Math.round((evaluatedSessions / terminalSessions) * 100) : 0,
-        backlog: Math.max(0, terminalSessions - evaluatedSessions),
+        withoutEvaluation: Math.max(0, terminalSessions - evaluatedSessions),
         findings: findings.length,
         highFindings,
         immediateFindings,
-        staleBlockerLoops,
-        evaluatorReviewCount,
-        evaluatorFailures: evaluatorFailures.length,
-        evaluatorFailureRatePct: evaluatorReviewCount
-          ? Math.round((evaluatorFailures.length / evaluatorReviewCount) * 100)
-          : 0,
         guardSignals: guardSignals.length,
         guardBlocks: guardBlockCount,
         guardSignalsReviewed: 0,
@@ -1329,8 +1257,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       timeline: Object.entries(buckets).map(([date, value]) => ({ date, ...value })),
       findings: findings.slice(0, limit),
       recentEvaluations: recentEvaluations.slice(0, 50),
-      backlogSessions: backlogSessions.slice(0, 50),
-      evaluatorFailures,
+      sessionsWithoutEvaluation: sessionsWithoutEvaluation.slice(0, 50),
       guardSignals: guardSignals.slice(0, 50),
       recurring,
     });
@@ -1702,7 +1629,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       SELECT ma.id as alertId, ma.metric_id as metricId, ma.alert_type as alertType,
              ma.message, ma.created_at as createdAt,
              m.name, m.type,
-             COALESCE(NULLIF(trim(m.owner), ''), NULLIF(trim(p.owner), ''), 'may') as owner,
+             COALESCE(NULLIF(trim(m.owner), ''), NULLIF(trim(p.owner), ''), 'system:host') as owner,
              m.owner as explicitOwner, m.project, m.current, m.target, m.threshold,
              m.unit, m.priority, m.status, m.speed, m.alert_op,
              m.source, m.updated_at
@@ -2990,7 +2917,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
   }
 
-  const { handleConversationRead, handleHumanTaskRead, handleAppTasks, handleAppTask } =
+  const { handleApps, handleConversationRead, handleHumanTaskRead, handleAppTasks, handleAppTask } =
     createTaskReadHandlers({ daemonRead, json });
 
   async function handleSessionCancel(sessionId: string): Promise<Response> {
@@ -3055,42 +2982,16 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const agents: Array<Record<string, unknown>> = [];
       const seenAgentNames = new Set<string>();
 
-      const scanAgentsDir = (root: string) => {
-        if (!existsSync(root)) return;
-        for (const dir of readdirSync(root, { withFileTypes: true })) {
-          if (!dir.isDirectory() || dir.name.startsWith(".") || dir.name === "shared") continue;
-          const agentJsonPath = join(root, dir.name, "agent.json");
-          if (!existsSync(agentJsonPath)) continue;
-          let cfg: Record<string, any> = {};
-          try {
-            cfg = JSON.parse(readFileSync(agentJsonPath, "utf-8"));
-          } catch {
-            /* skip */
-          }
-          if (cfg.disabled) continue;
-          const name = cfg.name || dir.name;
-          if (seenAgentNames.has(name)) continue;
-          seenAgentNames.add(name);
-          agents.push({
-            name,
-            description: cfg.description || "",
-            domain: cfg.domain || "",
-            model: cfg.model || "",
-            toolCount: Array.isArray(cfg.tools) ? cfg.tools.length : 0,
-          });
-        }
-      };
-
-      // Scan global agents/
-      scanAgentsDir(AGENTS_ROOT);
-
-      // Scan project-local agents from projects/*.app/agents/
-      if (existsSync(PROJECTS_ROOT)) {
-        for (const entry of readdirSync(PROJECTS_ROOT, { withFileTypes: true })) {
-          if (!entry.isDirectory() || !entry.name.endsWith(".app")) continue;
-          const appAgentsDir = join(PROJECTS_ROOT, entry.name, "agents");
-          scanAgentsDir(appAgentsDir);
-        }
+      for (const entry of listRuntimeAgentDirectories(AGENTS_ROOT, PROJECTS_ROOT)) {
+        let cfg: Record<string, any>;
+        try { cfg = JSON.parse(readFileSync(join(entry.dir, "agent.json"), "utf8")); }
+        catch { continue; }
+        if (cfg.disabled) continue;
+        const name = cfg.name || entry.name;
+        if (seenAgentNames.has(name)) continue;
+        seenAgentNames.add(name);
+        agents.push({ name, description: cfg.description || "", domain: cfg.domain || "",
+          model: cfg.model || "", toolCount: Array.isArray(cfg.tools) ? cfg.tools.length : 0 });
       }
 
       // 2. Per-agent session/metric rollups (single query each, indexed on agent).
@@ -3318,7 +3219,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   }
 
   /**
-   * Send a message to an agent. Telegram-style:
+   * Interface-agent input always uses the installation's Conversation binding.
+   * Other agents keep direct session chat:
    *   1. resolve default session (most-recent non-throwaway)
    *   2. if a session exists, forward to /api/sessions/:id/message which
    *      uses the 'steer' command (handles running/idle/cold uniformly).
@@ -3338,6 +3240,21 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const content = (body.content ?? "").trim();
     if (!content) return json({ error: "content required" }, 400);
     const forceNew = url?.searchParams.get("new") === "true";
+
+    if (agentName === humanInterface.agent) {
+      if (!humanInterface.appId) return json({ error: "No Conversation App is configured" }, 503);
+      const result = await sendDaemonFrame(buildPublishFrame(
+        "app.input.requested",
+        {
+          input: { kind: "message", data: { message: content, context: { forceNew } } },
+          channel: "web-ui",
+          conversationId: humanInterface.conversationId,
+        },
+        { target: { appId: humanInterface.appId } },
+      ));
+      if (!result.ok) return json({ error: result.error }, 503);
+      return json({ ok: true, agent: agentName, sessionId: null, deliveredAt: Date.now(), spawned: true });
+    }
 
     // Resolve default session (skip if forcing new chat).
     if (!forceNew) {
@@ -3364,21 +3281,12 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
     // No prior session — request a create-or-bind chat start from the daemon.
     const result = await sendDaemonFrame(
-      agentName === "may"
-        ? buildPublishFrame(
-            "app.input.requested",
-            {
-              input: { kind: "message", data: { message: content, context: { forceNew } } },
-              channel: "web-ui",
-            },
-            { target: { appId: "may" } },
-          )
-        : buildPublishFrame("chat.start.requested", {
-            agent: agentName,
-            message: content,
-            channel: "web-ui",
-            forceNew,
-          }),
+      buildPublishFrame("chat.start.requested", {
+        agent: agentName,
+        message: content,
+        channel: "web-ui",
+        forceNew,
+      }),
     );
     if (!result.ok) return json({ error: result.error }, 503);
     return json({ ok: true, agent: agentName, sessionId: null, deliveredAt: Date.now(), spawned: true });
@@ -3403,7 +3311,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         metricId,
         from: existing.threshold,
         to: body.threshold,
-        metricOwner: existing.owner ?? "may",
+        metricOwner: existing.owner ?? "system:host",
       }),
     );
     if (!result.ok) return json({ error: result.error }, 503);
@@ -3434,7 +3342,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         metricId: existing.metric_id,
         alertId: id,
         reason: body.reason ?? null,
-        metricOwner: existing.owner ?? "may",
+        metricOwner: existing.owner ?? "system:host",
       }),
     );
     if (!result.ok) return json({ error: result.error }, 503);
@@ -3504,6 +3412,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         return new Response("WebSocket upgrade failed", { status: 400 });
       }
       if (url.pathname === "/api/liveness") return handleLiveness(url);
+      if (url.pathname === "/api/interface") return json(humanInterface);
       if (url.pathname === "/api/readiness") return handleReadiness();
       if (url.pathname === "/api/stats") return handleStats();
       if (url.pathname === "/api/agents") return handleAgents();
@@ -3538,6 +3447,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         return json(readWorkflowHealth(_db(), query));
       }
       if (url.pathname === "/api/projects") return handleProjects();
+      if (url.pathname === "/api/apps")
+        return req.method === "GET" ? handleApps() : json({ error: "GET required" }, 405);
       const appTaskMatch = url.pathname.match(/^\/api\/apps\/([^/]+)\/tasks\/(.+)$/);
       if (appTaskMatch && req.method === "GET") {
         return handleAppTask(url, decodeURIComponent(appTaskMatch[1]), decodeURIComponent(appTaskMatch[2]));
@@ -3582,6 +3493,17 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/events") return handleEvents(url);
       if (url.pathname === "/api/learning") return handleLearning(url);
       if (url.pathname === "/api/loop-trace") return handleLoopTrace(url);
+      const metricEvidenceMatch = url.pathname.match(/^\/api\/metrics\/([^/]+)\/evidence$/);
+      if (metricEvidenceMatch) {
+        if (req.method !== "GET") return json({ error: "GET required" }, 405);
+        let query: ReturnType<typeof metricEvidenceQuery>;
+        try {
+          query = metricEvidenceQuery(url.searchParams);
+        } catch (error) {
+          return json({ error: error instanceof Error ? error.message : "Invalid metric evidence window" }, 400);
+        }
+        return json(readMetricEvidence(_db(), decodeURIComponent(metricEvidenceMatch[1]), query));
+      }
       const metricHistoryMatch = url.pathname.match(/^\/api\/metrics\/([^/]+)\/history$/);
       if (metricHistoryMatch) {
         const metricId = decodeURIComponent(metricHistoryMatch[1]);

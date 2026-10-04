@@ -5,6 +5,9 @@ export type EventTarget = {
   sessionId?: string;
 };
 
+export { readVerifiedApprovalDecision } from "@may-agent/sdk";
+export type { ApprovalProposal, HostApprovalStamp, VerifiedApprovalDecision } from "@may-agent/sdk";
+
 /** Caller input. The Host supplies event identity, time, and trusted provenance. */
 export type EventInput = {
   type: string;
@@ -26,6 +29,8 @@ export type EventReceipt = {
   eventType: string;
   delivery: "recorded" | "accepted";
   links?: EventLink[];
+  /** A decision receipt is distinct from Conversation admission and Task completion. */
+  approval?: { decision: string; eventId: number } | { reason: string };
 };
 
 /** Transport shape, not a stability guarantee for every diagnostic payload.
@@ -109,5 +114,33 @@ export function taskCancelRequestedEvent(task: ExactTask, reason: string): Event
       reason: normalizedReason,
     },
     idempotencyKey: `app-task-cancel:${task.appId}:${task.taskId}:${task.generation}:${task.resourceVersion}`,
+  };
+}
+
+/** Operator control for an explicit user request to continue this same Task. */
+export function taskReopenRequestedEvent(
+  task: ExactTask,
+  reason: string,
+  input?: { kind: string; data: unknown },
+): EventInput {
+  if (!task.appId.trim() || !task.taskId.trim()) throw new Error("Task reopening requires an exact target");
+  if (
+    !Number.isSafeInteger(task.generation) ||
+    task.generation < 1 ||
+    !Number.isSafeInteger(task.resourceVersion) ||
+    task.resourceVersion < 1
+  )
+    throw new Error("Task reopening requires current generation and resourceVersion");
+  if (!reason.trim()) throw new Error("Task reopening requires the user's continuation request as reason");
+  return {
+    type: "app.task.reopen.requested",
+    target: { appId: task.appId, taskId: task.taskId },
+    data: {
+      expectedGeneration: task.generation,
+      expectedResourceVersion: task.resourceVersion,
+      reason: reason.trim(),
+      ...(input !== undefined ? { input } : {}),
+    },
+    idempotencyKey: `app-task-reopen:${task.appId}:${task.taskId}:${task.generation}:${task.resourceVersion}`,
   };
 }

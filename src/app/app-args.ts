@@ -1,3 +1,4 @@
+import { interfaceBinding, type InterfaceBinding } from "@may-agent/control";
 import { existsSync, readFileSync } from "node:fs";
 import { parseEmitMode } from "./modes/emit.js";
 import { parseOneshotTimeoutMinutes } from "./modes/oneshot.js";
@@ -17,7 +18,7 @@ export interface AppArgs {
   runWorkflow: ReturnType<typeof parseRunWorkflowMode>;
   dryRun: boolean;
   initialTask: string | null;
-  interfaceAgent: string;
+  humanInterface: InterfaceBinding;
   webOnlyMode: boolean;
   oneshotTimeoutMinutes: number;
   notify: boolean;
@@ -48,7 +49,7 @@ export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessE
   const runWorkflow = parseRunWorkflowMode(argv);
   const dryRun = argv.includes("--dry-run");
   const initialTask = parseInitialTask(argv);
-  const interfaceAgent = parseInterfaceAgent(argv, env);
+  const humanInterface = interfaceBinding(env, parseInterfaceAgent(argv));
   const taskWorkerIndex = argv.indexOf("--task-worker-once");
   const taskWorkerRequest = taskWorkerIndex >= 0 ? argv[taskWorkerIndex + 1] : undefined;
   const taskRecoveryWorker = argv.includes("--task-recovery-once");
@@ -76,7 +77,7 @@ export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessE
     runWorkflow,
     dryRun,
     initialTask,
-    interfaceAgent,
+    humanInterface,
     webOnlyMode:
       webEnabled &&
       !consoleEnabled &&
@@ -114,12 +115,11 @@ function parseInitialTask(argv: string[]): string | null {
   return null;
 }
 
-function parseInterfaceAgent(argv: string[], env: NodeJS.ProcessEnv): string {
+function parseInterfaceAgent(argv: string[]): string | undefined {
   const eqArg = argv.find((a) => a.startsWith("--agent="));
-  if (eqArg) return eqArg.split("=")[1]!;
-
   const idx = argv.indexOf("--agent");
-  if (idx !== -1 && argv[idx + 1]) return argv[idx + 1];
-
-  return env.AGENT || env.DAEMON_AGENT || "may";
+  if (!eqArg && idx === -1) return undefined;
+  const agent = (eqArg ? eqArg.slice("--agent=".length) : argv[idx + 1])?.trim();
+  if (!agent || agent.startsWith("--")) throw new Error("--agent requires an agent name");
+  return agent;
 }
