@@ -1,0 +1,160 @@
+{
+  "kind": "alex-legacy-lineage-reconciliation",
+  "lineage": "workspace-writer-containment",
+  "decidedAt": "2026-10-04T12:58:00Z",
+  "pinnedInputs": {
+    "frontier": "/app/projects/alex.app/legacy-frontier-disposition-2026-10-04.json",
+    "snapshot": "/app/.state/alex-migration-20261004/legacy-frontier-snapshot.json",
+    "hostRevision": "fc3b9cab31d3b3af40ee04453b689a93e0477832",
+    "appsRevision": "06f9c03922f523524d89341a88f783c2f373cfdf"
+  },
+  "decision": {
+    "disposition": "superseded-no-current-continuation",
+    "activeIncidentRiskEvidenced": false,
+    "fulfilledOutcome": false,
+    "reason": "No current evidence shows this exact incident remains active: the historical producer and incident paths are absent, no matching process/event/session recurrence exists after the old task updates, the incident-specific App input was deliberately retired by Apps commit 09a146fdf1 after live evidence found no active work reference, and current Host process-group settlement/recovery fails closed with passing focused tests. This makes the old execution path obsolete. It does not satisfy the old terminal May/AKS result, mutation-free 180-second artifact, dependency-wake, or metric acceptance, so none of the old Tasks is declared fulfilled.",
+    "replacementTask": null,
+    "productionAction": "none"
+  },
+  "oldTaskMapping": [
+    {
+      "appId": "may-agent",
+      "taskId": "repair-aks-workspace-writer-containment-input-20260819",
+      "generation": 1,
+      "phaseAtSnapshot": "waiting",
+      "creator": { "appId": "may" },
+      "caller": {
+        "relationKind": "parent",
+        "appId": "may-agent",
+        "taskId": "runtime/platform-owner-review"
+      },
+      "dependsOn": [],
+      "conditions": [],
+      "childRelationships": [
+        {
+          "relationKind": "parent",
+          "appId": "may-agent",
+          "taskId": "activate-and-prove-aks-writer-containment-20260819",
+          "generation": 2
+        }
+      ],
+      "historicalDependency": {
+        "requestId": "appdep_7d94713590078a6994af0d6d",
+        "conditionIdentityReferencedBySourceTask": "app-request:appdep_7d94713590078a6994af0d6d",
+        "originEventId": 5791149,
+        "source": { "kind": "human", "id": "control-socket" },
+        "statusAtSnapshot": "pending",
+        "note": "Forbidden/occupied historical dependency retained as evidence only; it is not a live Condition on this May task and must not be reused."
+      },
+      "disposition": "superseded-no-current-continuation-not-fulfilled"
+    },
+    {
+      "appId": "may-agent",
+      "taskId": "activate-and-prove-aks-writer-containment-20260819",
+      "generation": 2,
+      "phaseAtSnapshot": "attention",
+      "creator": { "appId": "may" },
+      "caller": {
+        "relationKind": "parent",
+        "appId": "may-agent",
+        "taskId": "repair-aks-workspace-writer-containment-input-20260819"
+      },
+      "dependsOn": [],
+      "conditions": [],
+      "historicalRequests": [
+        {
+          "requestId": "appdep_2305f24d8a3066f5b668d584",
+          "eventId": 5796409,
+          "destinationApp": "aks-rp-e2e",
+          "inputKind": "owner-review",
+          "purpose": "dedicated-writer-containment-source-task-repair",
+          "note": "Accepted request evidence only; it is not represented as a Condition on this old task in the pinned snapshot."
+        },
+        {
+          "requestId": "appdep_3739160f912a3bbea0425bfc",
+          "eventId": 5795891,
+          "resultClass": "scenario-normalization-not-writer-containment",
+          "note": "Misrouted evidence; not satisfaction."
+        }
+      ],
+      "disposition": "superseded-no-current-continuation-not-fulfilled"
+    },
+    {
+      "appId": "may-agent",
+      "taskId": "app-request/appdep_acc6f5a5a4cb4fe00ca2f025",
+      "generation": 1,
+      "phaseAtSnapshot": "attention",
+      "creator": { "appId": "may" },
+      "caller": {
+        "relationKind": "parent",
+        "appId": "may-agent",
+        "taskId": "platform-system-review-feedback-loop"
+      },
+      "dependsOn": [],
+      "conditions": [],
+      "dependencyReceipt": {
+        "requestId": "appdep_acc6f5a5a4cb4fe00ca2f025",
+        "requestIngressEventId": 6072347,
+        "taskId": "app-request/appdep_acc6f5a5a4cb4fe00ca2f025"
+      },
+      "historicalResult": {
+        "decision": "continue-exact-domain-source-task",
+        "hostContainmentOperation": "none",
+        "reason": "PIDs 424986 and 806179 were absent; no PID-unsafe cancellation was attempted.",
+        "replaySessions": [
+          "s_1787163576487_5",
+          "s_1787163995866_4",
+          "s_1787164220895_4",
+          "s_1787164968600_5"
+        ],
+        "workflowRuns": [
+          "wr_1787163576350_q7ch",
+          "wr_1787163993758_zbix",
+          "wr_1787164220532_3mp5",
+          "wr_1787164968475_8t18"
+        ],
+        "note": "Point-in-time PID absence and old metrics did not fulfill containment acceptance."
+      },
+      "disposition": "superseded-no-current-continuation-not-fulfilled"
+    }
+  ],
+  "currentEvidence": [
+    {
+      "kind": "filesystem",
+      "fact": "Both /app/worktrees/aks-master-validation-speed and /app/.git/worktrees/aks-master-validation-speed are absent."
+    },
+    {
+      "kind": "process",
+      "fact": "No process command line matched the incident path, source event 5648100, external root PID 424986, or writer PID 806179."
+    },
+    {
+      "kind": "runtime-history",
+      "fact": "No event or session after the old task update timestamp matched the incident path or removed default-fleet runner names."
+    },
+    {
+      "kind": "source",
+      "fact": "Apps commit 09a146fdf1 removed contain-external-and-replayed-workspace-writer from projects/may-agent.app/app.ts after live inspection found no active work reference; current Apps revision has no public schema or routing case for it."
+    },
+    {
+      "kind": "source",
+      "fact": "Current Host revision persists exact-session bash process-group identities, performs bounded SIGTERM/SIGKILL drain before settlement or replacement recovery, and fails closed while retaining durable ownership when drain cannot be confirmed."
+    },
+    {
+      "kind": "tests",
+      "fact": "bun test ./src/lib/tools/bash-process-group-lifecycle.test.ts: 7 pass, 0 fail."
+    },
+    {
+      "kind": "tests",
+      "fact": "bun test ./src/app/core/tasks/app-task-runtime.test.ts --test-name-pattern 'process group|drain|expired': 4 pass, 0 fail, 201 filtered."
+    },
+    {
+      "kind": "metrics",
+      "fact": "Current infra.bus.subscriber-failed-count-1h is 0; current event.unhandled-signal-count-1h is 21, above threshold 5. The latter remains a general signal and is not evidence of this retired lineage recurring."
+    }
+  ],
+  "boundedNextAction": {
+    "owner": "alex",
+    "action": "Have the Alex migration parent record this Task as the exact supersession receipt for only these three old task identities, changing no disabled-App task state and admitting no replacement. Reopen as a new current incident only on fresh evidence that identifies a writer/process/event against a current path.",
+    "requiresMayOrHumanAuthority": false
+  }
+}

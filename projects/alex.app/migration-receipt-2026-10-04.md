@@ -1,6 +1,6 @@
 # Alex improvement migration receipt — 2026-10-04
 
-Status: **source candidate ready for independent integration review; not activated**. Exact candidate: `88ad627dc2ee313c9e05777110650195a1c44805`. Source baseline: Apps commit `64b901d1e4c95a385c4f1d633bbbbe9a99d6f367`. Host deployment receipt: `/app/projects/may-agent/.state/deploy-receipts/main-fc3b9cab3-alex-20261004.json`.
+Status: **team source activated; legacy continuation remains open**. Final reviewed candidate `677c785f89c5a2854eda2d2533f35fa5ee4dcc31` is an ancestor of Apps main `06f9c03922f523524d89341a88f783c2f373cfdf`. Source-fenced reload `alex-team-06f9c03922-20261004` completed successfully in event `6643042`; receipts: `/app/.state/alex-migration-20261004/team-activation-result.json` and `team-activation-admission.json`. Source baseline: Apps commit `64b901d1e4c95a385c4f1d633bbbbe9a99d6f367`. Host deployment receipt: `/app/projects/may-agent/.state/deploy-receipts/main-fc3b9cab3-alex-20261004.json`.
 
 ## Bounded inventory and disposition
 
@@ -27,17 +27,26 @@ Use bounded per-App reads of `resource_json.spec.outcome` and inbox identity on 
 The exact 117-resource frontier now has a bounded semantic triage artifact at
 `projects/alex.app/legacy-frontier-disposition-2026-10-04.json`. It is pinned to
 SHA-256 `46d61e762a8abac6170b4333c7aac30af2661afabe7fe635294a17318ea1cde9`
-of the operator index. The artifact preserves every old Task identity, phase,
-ownership, outcome and exact Condition IDs, and records a proposed boundary and
-next decision without inventing replacement IDs. It identifies 39 entries in
-known overlapping lineages for consolidation after a current-state check, 37
-opaque addressed Host Operations shells that require their retained source input
-before replacement, 35 other improvement obligations needing current-evidence
-review, and 6 obligations that retain May's human-authority/human-commitment
-boundary. `replacement: null` is deliberate: no Task is marked fulfilled,
-superseded, rebound or replaced until its current evidence and relationships
-have been checked and an exact continuation or evidenced no-longer-useful
-disposition is admitted.
+of the operator index and SHA-256
+`bd3f6a1cc65e125c61f5a8380cba746d55e3d8143edc6f8d6825af286d5d7f97`
+of the full retained snapshot. The artifact preserves every old Task identity,
+phase, ownership, outcome and exact Condition IDs, and records a proposed
+boundary and next decision without inventing replacement IDs. It identifies 39
+entries in known overlapping lineages for consolidation after a current-state
+check, 35 other improvement obligations needing current-evidence review, and 6
+obligations that retain May's human-authority/human-commitment boundary. The 37
+formerly opaque Host Operations shells are now tied to their exact retained
+source inputs: 17 periodic digests, 10 ops-health transitions, 6 project-health
+findings and 4 session findings. These controller wakes are evidence for current
+canonical lineages, not 37 one-for-one replacement improvements. Four explicit
+human-decision findings distinguish Alex's reconciliation ownership from May's
+decision authority. Bob independently checked all 37 source mappings in live
+post-activation session `s_1791117886758_34005740-6d3f-4236-90c4-21abdd9139fe`;
+its two precision findings (noisy metric identities and decision-authority
+wording) are corrected in the artifact. `replacement: null` remains deliberate:
+no Task is marked fulfilled, superseded, rebound or replaced until its current
+evidence and relationships have been checked and an exact continuation or
+evidenced no-longer-useful disposition is admitted.
 
 ## Candidate source mapping
 
@@ -63,4 +72,28 @@ The selector no longer excludes the entire Alex App. Ordinary Alex-authored work
 
 The committed successor history through `88ad627dc2ee313c9e05777110650195a1c44805` contains the stable weekly identity and moved develop-change execution coverage, the 117-resource semantic triage, the migrated Evaluation-to-Alex routing fixture, and isolation of that fixture's report assertions from unrelated automatic selection. The operator's 27-file run reports **314 passed / 0 failed** and `check:may-design` passes with one pre-existing reports-layout warning. A fresh focused run of `bun test ./projects/alex.app/evaluation-routing.test.ts` at the exact candidate passes **1/1** (26 expectations). Registry inspection with automatic review enabled reports exactly the three intended Apps, nine unique plain agent identities and all eight inspected workflow paths.
 
-Remaining before cutover completion: run independent review of the exact diff, integrate the candidate, activate it, verify only May/Alex/Scout are registered with no old controllers, exercise live Alex admission/contribution/return, exercise a focused blocked-Alex-to-May escalation fixture, and complete bounded semantic disposition/replacement for the retained may-agent frontier. This receipt intentionally makes no activation or completion claim.
+## Activation and live continuation evidence
+
+Runtime reload event `6643042` records `ok=true`, source commit `06f9c03922f523524d89341a88f783c2f373cfdf`, six new plain specialists (`judge`, `bob`, `gym`, `evaluator-deepseek`, `tech-lead`, `evaluator`), three updated agents (`scout`, `alex`, `may`), exactly three Task-enabled Apps and three durable App addresses. The current definitions symlink resolves to that commit's `definitions-v4` snapshot. Local disable markers exist for `evaluation.app`, `gym.app`, `may-agent.app` and `sample.app`; May, Alex and Scout remain enabled. Runtime agent discovery returns only Alex plus the six plain Alex specialists, with no legacy `may-bob`, `may-tech-lead` or prefixed duplicate.
+
+Live continuation is demonstrated in two ways. Automatic selection created and completed Alex Task `runtime/metric-review/evaluator-deepseek/d6940234d6861a102fc1e65a`, returning a source-backed metric disposition to its ordinary Alex parent work. For this migration itself, activated plain `bob` completed bounded independent review session `s_1791117886758_34005740-6d3f-4236-90c4-21abdd9139fe`; Alex incorporated both concrete precision findings into the frontier artifact. These are contributions and returned evidence, not fulfillment of unrelated legacy outcomes.
+
+One newly observed limitation is not a duplicate loaded worker: HTTP `GET /api/agents` has a separate unfiltered filesystem scan and can show stale metadata from disabled App directories. Activated source and Bob's `/about` resolve the correct Alex profile. Follow-up belongs in Host `src/app/http/server.ts`, which should reuse enabled runtime discovery; this migration does not rewrite Host source in the Apps worktree.
+
+## First semantic continuations after activation
+
+Activated plain Bob independently reviewed all 117 entries in session `s_1791118120085_b4762675-5ca7-43d8-8247-ff22139104e4`. That review found two concrete grouping errors now corrected in the frontier: the two missing-230-file archive obligations require a May/provider decision rather than writer containment, while `app-request/appdep_acc6f5a5a4cb4fe00ca2f025` is exact writer attribution/containment rather than aggregate unhandled-signal review.
+
+Four old Gym public-projection/recompute paths are now mapped as **execution-path superseded, outcome not fulfilled** to current May Task `goal/appdep_c1890444e02436f8d2131ffd` and human Condition `gym-valid-run-rate-retirement-reconcile-7cf298dd9dd55942`. Current evidence shows the metric is retired with stale `current=0.76`, zero snapshots and all 34 alerts resolved. That makes the old projection/recompute repair inappropriate; it does not prove recovery or discard retained Gym/Evaluation evidence. The other Gym comparison, request-correlation and cancelled-run obligations remain separate and unresolved.
+
+The first exact replacement continuation was admitted to Alex as request `appdep_b2210accc9bfd6faf68121e1`, with Condition `app-request:appdep_b2210accc9bfd6faf68121e1`. It reconciles exactly three old writer-containment identities and must distinguish obsolete path from fulfilled outcome while preserving old callers and waits. Independent frontier review was separately admitted as Alex evaluator request `appdep_fd5798c6edc4d09905205c70`. Two earlier requests (`appdep_8bb3d085316ebee15b7b4e9f`, `appdep_d2d4d520386f92b2eecdf0c9`) were mechanically rejected because they incorrectly targeted nonexistent exact Tasks; their corrected ordinary admissions are recorded rather than hidden or replayed.
+
+Hao separately authorized retirement of old App source while preserving useful knowledge. The operator owns that isolated source cleanup; this worktree intentionally did not perform a competing move, merge or reload. Source removal does not fulfill or delete any retained obligation.
+
+Remaining before migration completion: incorporate returned writer-containment and independent-review evidence, continue exact current-state decisions/admissions for the remaining frontier, preserve May/provider/human authority boundaries, and integrate the operator's separately reviewed source-relocation receipt. This receipt intentionally does not claim the semantic migration is complete.
+
+## Returned writer-containment reconciliation
+
+Alex continuation `input/appdep_b2210accc9bfd6faf68121e1` returned a terminal reconciliation for exactly the three mapped workspace-writer identities. Its durable decision artifact is `projects/alex.app/workspace-writer-containment-reconciliation-2026-10-04.json` (SHA-256 `44ae7ea043ec50172e887101d9f4aa30521c5e98e8943dc55d61952a46ec5125`). Current evidence found no active incident recurrence and the incident-specific execution path is obsolete. The receipt therefore marks the three paths **superseded with no current continuation, but not fulfilled**: terminal May/AKS results, the required 180-second artifact, dependency wake and lineage-specific metric proof were never established. Exact callers, historical requests and old Conditions remain recorded; no disabled Task state was mutated and no replacement is admitted unless fresh current writer/process/event evidence appears.
+
+Independent evaluator review `input/appdep_fd5798c6edc4d09905205c70` verified all 117 pinned identities and found no proved legacy fulfillment. Its correction is incorporated: the four Gym mappings now supersede only retired `gym.valid-run-rate` recomputation, while each distinct public projection/workflow remainder stays open. Old Condition `hao-approval-gym-public-health-candidate-v10` is separately preserved and is not replaced by the current retired-metric decision Condition.

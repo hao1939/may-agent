@@ -1,10 +1,10 @@
 {
   "kind": "alex-legacy-frontier-disposition",
   "capturedAt": "2026-10-04T12:13:00Z",
-  "generatedAt": "2026-10-04T12:39:00Z",
+  "generatedAt": "2026-10-04T12:52:05.128Z",
   "source": "/app/.state/alex-migration-20261004/legacy-frontier-index.json",
   "sourceSha256": "46d61e762a8abac6170b4333c7aac30af2661afabe7fe635294a17318ea1cde9",
-  "status": "bounded semantic triage; replacements not yet admitted",
+  "status": "bounded semantic migration in progress: writer-containment lineage reconciled as superseded but unfulfilled; four obsolete Gym projection paths mapped to current May decision; no old outcome falsely fulfilled",
   "rules": [
     "No old Task is marked fulfilled by this receipt.",
     "replacement=null means no replacement Task has been admitted yet.",
@@ -15,23 +15,27 @@
     "total": 117,
     "byDisposition": {
       "inspect-current-evidence-for-alex-continuation": 35,
-      "consolidate-lineage-after-current-state-check": 39,
+      "consolidate-lineage-after-current-state-check": 30,
+      "superseded-no-current-continuation-not-fulfilled": 3,
       "retain-may-boundary": 6,
-      "inspect-before-replacement": 37
+      "source-identified-current-lineage-check": 37,
+      "partial-execution-path-supersession-nonmetric-open": 4,
+      "retain-may-boundary-after-alex-technical-reconciliation": 2
     },
     "byProposedOwner": {
-      "alex": 111,
-      "may": 6
+      "alex": 105,
+      "may": 12
     },
     "withConditions": 33,
     "lineages": {
       "app-dependency-completion": 2,
-      "workspace-writer-containment": 4,
+      "workspace-writer-containment": 3,
       "dependency-authority": 2,
       "aks-taxonomy-and-correlation": 7,
       "gym-public-health": 8,
-      "unhandled-signal-owner-review": 11,
+      "provider-archive-recovery": 2,
       "gym-request-correlation": 3,
+      "unhandled-signal-owner-review": 10,
       "owner-review-contract": 2
     }
   },
@@ -119,11 +123,18 @@
         "conditionIds": []
       },
       "outcome": "Activate the verified finite May App containment input through the supported release/supervisor control plane, then require the accountable AKS App/task dependency path to issue the semantically exact containment request under a fresh supported identity without reusing the occupied control-socket correlation; carry that fresh request through lineage-scoped Host/Runtime containment, dependency wake, terminal May and AKS App results, mutation-free 180-second quiescence, and fresh metric proof.",
-      "disposition": "consolidate-lineage-after-current-state-check",
+      "disposition": "superseded-no-current-continuation-not-fulfilled",
       "proposedOwner": "alex",
       "lineage": "workspace-writer-containment",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "alex",
+        "taskId": "input/appdep_b2210accc9bfd6faf68121e1",
+        "role": "exact supersession reconciliation receipt",
+        "status": "done",
+        "artifact": "projects/alex.app/workspace-writer-containment-reconciliation-2026-10-04.json",
+        "artifactSha256": "44ae7ea043ec50172e887101d9f4aa30521c5e98e8943dc55d61952a46ec5125"
+      },
+      "basis": "Returned current-state reconciliation found no active incident recurrence and proves the incident-specific execution path obsolete. The old outcome is explicitly not fulfilled: required terminal May/AKS results, 180-second artifact, dependency wake, and lineage-specific metric proof were never established. Preserve audit history and reopen only for fresh current writer/process/event evidence.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -315,18 +326,46 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_03ce35b5-12ed-4df9-ad54-0dec9bb41ffd",
+          "inputKind": "owner-review",
+          "sourceId": "event:6301563",
+          "originEventId": 6301563,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_03ce35b5-12ed-4df9-ad54-0dec9bb41ffd"
+        },
+        "reason": "daily-ops-digest",
+        "project": "may-agent",
+        "evidenceClass": "periodic-aggregate-controller-wake",
+        "reportPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/daily-ops-digests/2026-08-29-alert-review.md",
+        "alertIds": [
+          4925,
+          4924,
+          4915,
+          4878
+        ],
+        "decisionBoundary": "Do not recreate this digest as standalone work; reconcile its exact alert/metric identities with current canonical lineages.",
+        "openAlertMetricIds": [
+          "eval.llm-coverage-lag-h",
+          "eval.llm-evals-24h",
+          "evaluator.aftermath-coverage-rate-3h",
+          "event.unhandled-signal-count-1h"
+        ],
+        "noisyMetricIds": []
+      }
     },
     {
       "old": {
@@ -338,18 +377,44 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_041a064a-8510-4749-9c74-c201d9cc4375",
+          "inputKind": "owner-review",
+          "sourceId": "event:6296060",
+          "originEventId": 6296060,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_041a064a-8510-4749-9c74-c201d9cc4375"
+        },
+        "reason": "ops-health-signal-changed",
+        "project": "may-agent",
+        "evidenceClass": "ops-health-transition-controller-wake",
+        "packetPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/ops-health-packets.jsonl",
+        "activeFamilies": [
+          "metric-p1-stale"
+        ],
+        "previousFamilies": [
+          "event-delivery-unaccepted",
+          "metric-p1-stale"
+        ],
+        "alertIds": [
+          4918,
+          4925
+        ],
+        "decisionBoundary": "Treat as transition evidence for current lineages, not a fresh independent repair."
+      }
     },
     {
       "old": {
@@ -384,18 +449,46 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_263b80b2-d2d4-46b3-b7f1-b7bef045942e",
+          "inputKind": "owner-review",
+          "sourceId": "event:6291603",
+          "originEventId": 6291603,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_263b80b2-d2d4-46b3-b7f1-b7bef045942e"
+        },
+        "reason": "daily-ops-digest",
+        "project": "may-agent",
+        "evidenceClass": "periodic-aggregate-controller-wake",
+        "reportPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/daily-ops-digests/2026-08-28-alert-review.md",
+        "alertIds": [
+          4923,
+          4918,
+          4915,
+          4878
+        ],
+        "decisionBoundary": "Do not recreate this digest as standalone work; reconcile its exact alert/metric identities with current canonical lineages.",
+        "openAlertMetricIds": [
+          "eval.llm-coverage-lag-h",
+          "evaluator.aftermath-coverage-rate-3h",
+          "handler.success-rate",
+          "infra.bus.subscriber-failed-count-1h"
+        ],
+        "noisyMetricIds": []
+      }
     },
     {
       "old": {
@@ -407,18 +500,46 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_298605ee-5e21-485c-8970-34dfe8d7e722",
+          "inputKind": "owner-review",
+          "sourceId": "event:6294559",
+          "originEventId": 6294559,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_298605ee-5e21-485c-8970-34dfe8d7e722"
+        },
+        "reason": "daily-ops-digest",
+        "project": "may-agent",
+        "evidenceClass": "periodic-aggregate-controller-wake",
+        "reportPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/daily-ops-digests/2026-08-28-alert-review.md",
+        "alertIds": [
+          4923,
+          4918,
+          4915,
+          4878
+        ],
+        "decisionBoundary": "Do not recreate this digest as standalone work; reconcile its exact alert/metric identities with current canonical lineages.",
+        "openAlertMetricIds": [
+          "eval.llm-coverage-lag-h",
+          "evaluator.aftermath-coverage-rate-3h",
+          "handler.success-rate",
+          "infra.bus.subscriber-failed-count-1h"
+        ],
+        "noisyMetricIds": []
+      }
     },
     {
       "old": {
@@ -432,18 +553,43 @@
         ]
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_2c8e44a1-2012-4ac4-bc88-250830f58230",
+          "inputKind": "owner-review",
+          "sourceId": "event:6072888",
+          "originEventId": 6072888,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_2c8e44a1-2012-4ac4-bc88-250830f58230"
+        },
+        "reason": "evaluation-session-finding",
+        "project": "may-agent",
+        "evidenceClass": "evaluation-finding-controller-wake",
+        "sourceTask": null,
+        "sourceSessionId": "s_1787634955801_9",
+        "verdict": "good",
+        "severity": "blocked-on-human",
+        "summary": "Original dependency identity cannot be reconciled without a waiver decision",
+        "dedupeKey": "repair-unadmitted-existing-dependency-request-waiver",
+        "requestedHumanAction": "decide",
+        "reportPath": null,
+        "decisionBoundary": "Retain May as decision owner; map the exact human reply Condition before continuation."
+      },
+      "reconciliationOwner": "alex",
+      "decisionAuthority": "may",
+      "humanDecisionMapping": "Exact source Condition/approval scope must be recovered before routing; proposedOwner means migration reconciliation only."
     },
     {
       "old": {
@@ -455,18 +601,38 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_2ea0b27f-59bf-4f40-8d59-7730c1fafe43",
+          "inputKind": "owner-review",
+          "sourceId": "event:6276429",
+          "originEventId": 6276429,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_2ea0b27f-59bf-4f40-8d59-7730c1fafe43"
+        },
+        "reason": "ops-health-recovered",
+        "project": "may-agent",
+        "evidenceClass": "ops-health-transition-controller-wake",
+        "packetPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/ops-health-packets.jsonl",
+        "activeFamilies": [],
+        "previousFamilies": [
+          "event-delivery-unaccepted"
+        ],
+        "alertIds": [],
+        "decisionBoundary": "Treat as transition evidence for current lineages, not a fresh independent repair."
+      }
     },
     {
       "old": {
@@ -478,18 +644,47 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_352d84bb-db8c-48ca-b9d1-44d85b678a18",
+          "inputKind": "owner-review",
+          "sourceId": "event:6309977",
+          "originEventId": 6309977,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_352d84bb-db8c-48ca-b9d1-44d85b678a18"
+        },
+        "reason": "ops-health-signal-changed",
+        "project": "may-agent",
+        "evidenceClass": "ops-health-transition-controller-wake",
+        "packetPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/ops-health-packets.jsonl",
+        "activeFamilies": [
+          "event-delivery-unaccepted",
+          "metric-p1-stale"
+        ],
+        "previousFamilies": [
+          "event-delivery-unaccepted",
+          "metric-p1-stale",
+          "repeated-runtime-symptom"
+        ],
+        "alertIds": [
+          4925,
+          4927,
+          4930
+        ],
+        "decisionBoundary": "Treat as transition evidence for current lineages, not a fresh independent repair."
+      }
     },
     {
       "old": {
@@ -501,18 +696,46 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_384003b3-5ac9-49ff-8065-54b06d650dac",
+          "inputKind": "owner-review",
+          "sourceId": "event:6294785",
+          "originEventId": 6294785,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_384003b3-5ac9-49ff-8065-54b06d650dac"
+        },
+        "reason": "daily-ops-digest",
+        "project": "may-agent",
+        "evidenceClass": "periodic-aggregate-controller-wake",
+        "reportPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/daily-ops-digests/2026-08-28-alert-review.md",
+        "alertIds": [
+          4923,
+          4918,
+          4915,
+          4878
+        ],
+        "decisionBoundary": "Do not recreate this digest as standalone work; reconcile its exact alert/metric identities with current canonical lineages.",
+        "openAlertMetricIds": [
+          "eval.llm-coverage-lag-h",
+          "evaluator.aftermath-coverage-rate-3h",
+          "handler.success-rate",
+          "infra.bus.subscriber-failed-count-1h"
+        ],
+        "noisyMetricIds": []
+      }
     },
     {
       "old": {
@@ -524,18 +747,52 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_38be1a2c-7735-415d-b448-834e8550abc0",
+          "inputKind": "owner-review",
+          "sourceId": "event:6295252",
+          "originEventId": 6295252,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_38be1a2c-7735-415d-b448-834e8550abc0"
+        },
+        "reason": "daily-ops-digest",
+        "project": "may-agent",
+        "evidenceClass": "periodic-aggregate-controller-wake",
+        "reportPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/daily-ops-digests/2026-08-28-alert-review.md",
+        "alertIds": [
+          4926,
+          4925,
+          4924,
+          4923,
+          4918,
+          4915,
+          4878
+        ],
+        "decisionBoundary": "Do not recreate this digest as standalone work; reconcile its exact alert/metric identities with current canonical lineages.",
+        "openAlertMetricIds": [
+          "eval.llm-coverage-lag-h",
+          "eval.llm-evals-24h",
+          "evaluator.aftermath-coverage-rate-3h",
+          "event.unhandled-signal-count-1h",
+          "handler.success-rate",
+          "infra.bus.subscriber-failed-count-1h",
+          "session.failed-triage-rate-3h"
+        ],
+        "noisyMetricIds": []
+      }
     },
     {
       "old": {
@@ -547,18 +804,46 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_39332bfc-d05b-4d13-b23b-8e525a80f82a",
+          "inputKind": "owner-review",
+          "sourceId": "event:6292156",
+          "originEventId": 6292156,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_39332bfc-d05b-4d13-b23b-8e525a80f82a"
+        },
+        "reason": "daily-ops-digest",
+        "project": "may-agent",
+        "evidenceClass": "periodic-aggregate-controller-wake",
+        "reportPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/daily-ops-digests/2026-08-28-alert-review.md",
+        "alertIds": [
+          4923,
+          4918,
+          4915,
+          4878
+        ],
+        "decisionBoundary": "Do not recreate this digest as standalone work; reconcile its exact alert/metric identities with current canonical lineages.",
+        "openAlertMetricIds": [
+          "eval.llm-coverage-lag-h",
+          "evaluator.aftermath-coverage-rate-3h",
+          "handler.success-rate",
+          "infra.bus.subscriber-failed-count-1h"
+        ],
+        "noisyMetricIds": []
+      }
     },
     {
       "old": {
@@ -570,18 +855,46 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_3fe8369d-b0e1-436a-8ffd-cba67e33a415",
+          "inputKind": "owner-review",
+          "sourceId": "event:6309634",
+          "originEventId": 6309634,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_3fe8369d-b0e1-436a-8ffd-cba67e33a415"
+        },
+        "reason": "ops-health-signal-changed",
+        "project": "may-agent",
+        "evidenceClass": "ops-health-transition-controller-wake",
+        "packetPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/ops-health-packets.jsonl",
+        "activeFamilies": [
+          "event-delivery-unaccepted",
+          "metric-p1-stale",
+          "repeated-runtime-symptom"
+        ],
+        "previousFamilies": [
+          "metric-p1-stale",
+          "repeated-runtime-symptom"
+        ],
+        "alertIds": [
+          4925,
+          4927
+        ],
+        "decisionBoundary": "Treat as transition evidence for current lineages, not a fresh independent repair."
+      }
     },
     {
       "old": {
@@ -595,18 +908,45 @@
         ]
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_44ad8507-976c-42ac-8400-5ec36ee99a29",
+          "inputKind": "owner-review",
+          "sourceId": "event:6243011",
+          "originEventId": 6243011,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_44ad8507-976c-42ac-8400-5ec36ee99a29"
+        },
+        "reason": "evaluation-project-health-feedback",
+        "project": "may-agent",
+        "evidenceClass": "evaluation-finding-controller-wake",
+        "sourceTask": {
+          "appId": "evaluation",
+          "taskId": "runtime/project-audit/may-agent.app",
+          "generation": 4,
+          "resourceVersion": 1013
+        },
+        "sourceSessionId": null,
+        "verdict": "concern",
+        "severity": null,
+        "summary": "Post-commit event 6240757 still raises a P1 event-delivery-unaccepted signal from reconciliation lifecycle telemetry because the active release 9850fca0b5b8fed32c24c977f50e66a9145f652c does not contain commit 7272457a8b's narrow suppression.",
+        "dedupeKey": "may-agent.app:ops-health-task-telemetry-runtime-proof",
+        "requestedHumanAction": "none",
+        "reportPath": "reports/project-health/may-agent.app/20260827T020840505Z.md",
+        "decisionBoundary": "Reconcile with the cited current Task/metric lineage; do not create duplicate repair work."
+      }
     },
     {
       "old": {
@@ -618,18 +958,46 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_44e421ae-6c16-4c28-8941-5029660f607a",
+          "inputKind": "owner-review",
+          "sourceId": "event:6292362",
+          "originEventId": 6292362,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_44e421ae-6c16-4c28-8941-5029660f607a"
+        },
+        "reason": "daily-ops-digest",
+        "project": "may-agent",
+        "evidenceClass": "periodic-aggregate-controller-wake",
+        "reportPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/daily-ops-digests/2026-08-28-alert-review.md",
+        "alertIds": [
+          4923,
+          4918,
+          4915,
+          4878
+        ],
+        "decisionBoundary": "Do not recreate this digest as standalone work; reconcile its exact alert/metric identities with current canonical lineages.",
+        "openAlertMetricIds": [
+          "eval.llm-coverage-lag-h",
+          "evaluator.aftermath-coverage-rate-3h",
+          "handler.success-rate",
+          "infra.bus.subscriber-failed-count-1h"
+        ],
+        "noisyMetricIds": []
+      }
     },
     {
       "old": {
@@ -641,18 +1009,45 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_491fa6a2-cb92-4ca9-84f5-6e160487d7b0",
+          "inputKind": "owner-review",
+          "sourceId": "event:6315652",
+          "originEventId": 6315652,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_491fa6a2-cb92-4ca9-84f5-6e160487d7b0"
+        },
+        "reason": "evaluation-project-health-feedback",
+        "project": "may-agent",
+        "evidenceClass": "evaluation-finding-controller-wake",
+        "sourceTask": {
+          "appId": "evaluation",
+          "taskId": "runtime/project-audit/may-agent.app",
+          "generation": 4,
+          "resourceVersion": 1047
+        },
+        "sourceSessionId": null,
+        "verdict": "concern",
+        "severity": null,
+        "summary": "P1 metric event.unhandled-signal-count-1h remains stale and breached at 11 versus threshold 5 while event 6315257 reports 20 recent unhandled events and the public task projection has not refreshed since 2026-08-21.",
+        "dedupeKey": "may-agent.app:unhandled-signal-sustained-breach",
+        "requestedHumanAction": "none",
+        "reportPath": "reports/project-health/may-agent.app/20260831T061025903Z.md",
+        "decisionBoundary": "Reconcile with the cited current Task/metric lineage; do not create duplicate repair work."
+      }
     },
     {
       "old": {
@@ -664,18 +1059,44 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_4a5f7883-3589-4a4d-9f0c-76126cd65475",
+          "inputKind": "owner-review",
+          "sourceId": "event:6308882",
+          "originEventId": 6308882,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_4a5f7883-3589-4a4d-9f0c-76126cd65475"
+        },
+        "reason": "ops-health-signal-changed",
+        "project": "may-agent",
+        "evidenceClass": "ops-health-transition-controller-wake",
+        "packetPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/ops-health-packets.jsonl",
+        "activeFamilies": [
+          "metric-p1-stale",
+          "repeated-runtime-symptom"
+        ],
+        "previousFamilies": [
+          "event-delivery-unaccepted",
+          "metric-p1-stale"
+        ],
+        "alertIds": [
+          4925
+        ],
+        "decisionBoundary": "Treat as transition evidence for current lineages, not a fresh independent repair."
+      }
     },
     {
       "old": {
@@ -687,18 +1108,43 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_5170e1a7-e0a2-483b-b08e-0ce61202dc4a",
+          "inputKind": "owner-review",
+          "sourceId": "event:6296959",
+          "originEventId": 6296959,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_5170e1a7-e0a2-483b-b08e-0ce61202dc4a"
+        },
+        "reason": "ops-health-signal-changed",
+        "project": "may-agent",
+        "evidenceClass": "ops-health-transition-controller-wake",
+        "packetPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/ops-health-packets.jsonl",
+        "activeFamilies": [
+          "event-delivery-unaccepted",
+          "metric-p1-stale"
+        ],
+        "previousFamilies": [
+          "metric-p1-stale"
+        ],
+        "alertIds": [
+          4925
+        ],
+        "decisionBoundary": "Treat as transition evidence for current lineages, not a fresh independent repair."
+      }
     },
     {
       "old": {
@@ -710,18 +1156,48 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_563a0b9e-bb64-44b3-83c5-6279f0f45553",
+          "inputKind": "owner-review",
+          "sourceId": "event:6296954",
+          "originEventId": 6296954,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_563a0b9e-bb64-44b3-83c5-6279f0f45553"
+        },
+        "reason": "daily-ops-digest",
+        "project": "may-agent",
+        "evidenceClass": "periodic-aggregate-controller-wake",
+        "reportPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/daily-ops-digests/2026-08-28-alert-review.md",
+        "alertIds": [
+          4926,
+          4925,
+          4924,
+          4915,
+          4878
+        ],
+        "decisionBoundary": "Do not recreate this digest as standalone work; reconcile its exact alert/metric identities with current canonical lineages.",
+        "openAlertMetricIds": [
+          "eval.llm-coverage-lag-h",
+          "eval.llm-evals-24h",
+          "evaluator.aftermath-coverage-rate-3h",
+          "event.unhandled-signal-count-1h",
+          "session.failed-triage-rate-3h"
+        ],
+        "noisyMetricIds": []
+      }
     },
     {
       "old": {
@@ -733,18 +1209,45 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_597fa5b3-40a1-42a7-a284-59671e0f7b25",
+          "inputKind": "owner-review",
+          "sourceId": "retained-task-spec",
+          "originEventId": null,
+          "statusAtCapture": "attention",
+          "waitingOnTask": "app-request/app_597fa5b3-40a1-42a7-a284-59671e0f7b25"
+        },
+        "reason": "evaluation-project-health-feedback",
+        "project": "may-agent",
+        "evidenceClass": "evaluation-finding-controller-wake",
+        "sourceTask": {
+          "appId": "evaluation",
+          "generation": 4,
+          "resourceVersion": 887,
+          "taskId": "runtime/project-audit/may-agent.app"
+        },
+        "sourceSessionId": null,
+        "verdict": "concern",
+        "severity": null,
+        "summary": "metric:event.unhandled-signal-count-1h is freshly breached at 748 versus threshold 5, while task:reconcile-unhandled-signal-recurrence-20260816 remains dependency-open at public event 6092591.",
+        "dedupeKey": "may-agent.app:unhandled-signal-recurrence",
+        "requestedHumanAction": "none",
+        "reportPath": "reports/project-health/may-agent.app/20260825T120417087Z.md",
+        "decisionBoundary": "Reconcile with the cited current Task/metric lineage; do not create duplicate repair work."
+      }
     },
     {
       "old": {
@@ -756,18 +1259,46 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_5b3835f3-13df-42c5-9ade-18febacdb6e0",
+          "inputKind": "owner-review",
+          "sourceId": "event:6293514",
+          "originEventId": 6293514,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_5b3835f3-13df-42c5-9ade-18febacdb6e0"
+        },
+        "reason": "daily-ops-digest",
+        "project": "may-agent",
+        "evidenceClass": "periodic-aggregate-controller-wake",
+        "reportPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/daily-ops-digests/2026-08-28-alert-review.md",
+        "alertIds": [
+          4923,
+          4918,
+          4915,
+          4878
+        ],
+        "decisionBoundary": "Do not recreate this digest as standalone work; reconcile its exact alert/metric identities with current canonical lineages.",
+        "openAlertMetricIds": [
+          "eval.llm-coverage-lag-h",
+          "evaluator.aftermath-coverage-rate-3h",
+          "handler.success-rate",
+          "infra.bus.subscriber-failed-count-1h"
+        ],
+        "noisyMetricIds": []
+      }
     },
     {
       "old": {
@@ -781,18 +1312,43 @@
         ]
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_5b9e2397-7ee4-4af5-b309-944022c8b468",
+          "inputKind": "owner-review",
+          "sourceId": "event:6073099",
+          "originEventId": 6073099,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_5b9e2397-7ee4-4af5-b309-944022c8b468"
+        },
+        "reason": "evaluation-session-finding",
+        "project": "may-agent",
+        "evidenceClass": "evaluation-finding-controller-wake",
+        "sourceTask": null,
+        "sourceSessionId": "s_1787632170830_68",
+        "verdict": "good",
+        "severity": "blocked-on-human",
+        "summary": "Gym App-definition activation awaits Hao's bounded reload decision",
+        "dedupeKey": "gym-app-definition-reload-decision-5a06bbac",
+        "requestedHumanAction": "decide",
+        "reportPath": null,
+        "decisionBoundary": "Retain May as decision owner; map the exact human reply Condition before continuation."
+      },
+      "reconciliationOwner": "alex",
+      "decisionAuthority": "may",
+      "humanDecisionMapping": "Exact source Condition/approval scope must be recovered before routing; proposedOwner means migration reconciliation only."
     },
     {
       "old": {
@@ -804,18 +1360,43 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_6061d77a-4b1f-4c12-b066-62cbb1dc676e",
+          "inputKind": "owner-review",
+          "sourceId": "event:6297522",
+          "originEventId": 6297522,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_6061d77a-4b1f-4c12-b066-62cbb1dc676e"
+        },
+        "reason": "ops-health-signal-changed",
+        "project": "may-agent",
+        "evidenceClass": "ops-health-transition-controller-wake",
+        "packetPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/ops-health-packets.jsonl",
+        "activeFamilies": [
+          "metric-p1-stale"
+        ],
+        "previousFamilies": [
+          "event-delivery-unaccepted",
+          "metric-p1-stale"
+        ],
+        "alertIds": [
+          4925
+        ],
+        "decisionBoundary": "Treat as transition evidence for current lineages, not a fresh independent repair."
+      }
     },
     {
       "old": {
@@ -827,18 +1408,48 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_6a2557c6-2623-4ecf-9649-df87304f6e91",
+          "inputKind": "owner-review",
+          "sourceId": "event:6281216",
+          "originEventId": 6281216,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_6a2557c6-2623-4ecf-9649-df87304f6e91"
+        },
+        "reason": "evaluation-project-health-feedback",
+        "project": "may-agent",
+        "evidenceClass": "evaluation-finding-controller-wake",
+        "sourceTask": {
+          "appId": "evaluation",
+          "taskId": "runtime/project-audit/may-agent.app",
+          "generation": 4,
+          "resourceVersion": 1033
+        },
+        "sourceSessionId": null,
+        "verdict": "blocked-on-human",
+        "severity": null,
+        "summary": "Task repair-grouped-goal-task-creation-and-regeneration-20260827 cannot finish its verification and immutable revision until Hao explicitly decides whether to continue, while seven may-agent.app files remain modified only in the working tree.",
+        "dedupeKey": "may-agent.app:grouped-goal-repair-human-stop",
+        "requestedHumanAction": "decide",
+        "reportPath": "reports/project-health/may-agent.app/20260827T200756509Z.md",
+        "decisionBoundary": "Retain May as decision owner; map the exact human reply Condition before continuation."
+      },
+      "reconciliationOwner": "alex",
+      "decisionAuthority": "may",
+      "humanDecisionMapping": "Exact source Condition/approval scope must be recovered before routing; proposedOwner means migration reconciliation only."
     },
     {
       "old": {
@@ -850,18 +1461,54 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_71d6dbe5-0520-4472-ad06-5dd7b49a55f5",
+          "inputKind": "owner-review",
+          "sourceId": "retained-task-spec",
+          "originEventId": null,
+          "statusAtCapture": "attention",
+          "waitingOnTask": "app-request/app_71d6dbe5-0520-4472-ad06-5dd7b49a55f5"
+        },
+        "reason": "daily-ops-digest",
+        "project": "may-agent",
+        "evidenceClass": "periodic-aggregate-controller-wake",
+        "reportPath": "/app/.state/releases/app-definitions/9850fca0b5b8fed32c24c977f50e66a9145f652c-definitions-v3/projects/may-agent.app/.state/daily-ops-digests/2026-08-26-alert-review.md",
+        "alertIds": [
+          4902,
+          4901,
+          4900,
+          4898,
+          4878,
+          4874,
+          4872
+        ],
+        "decisionBoundary": "Do not recreate this digest as standalone work; reconcile its exact alert/metric identities with current canonical lineages.",
+        "openAlertMetricIds": [
+          "evaluator.aftermath-coverage-rate-3h",
+          "event.unhandled-signal-count-1h",
+          "gym.valid-run-rate",
+          "handler.failed-count",
+          "handler.success-rate",
+          "session.error-rate-6h",
+          "session.failed-triage-rate-3h"
+        ],
+        "noisyMetricIds": [
+          "aks-rp-e2e.process.assignment.not-consumed-count"
+        ]
+      }
     },
     {
       "old": {
@@ -873,18 +1520,45 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_800b0d35-f150-44bf-9e0a-671979a41e5c",
+          "inputKind": "owner-review",
+          "sourceId": "event:6294839",
+          "originEventId": 6294839,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_800b0d35-f150-44bf-9e0a-671979a41e5c"
+        },
+        "reason": "evaluation-project-health-feedback",
+        "project": "may-agent",
+        "evidenceClass": "evaluation-finding-controller-wake",
+        "sourceTask": {
+          "appId": "evaluation",
+          "taskId": "runtime/project-audit/may-agent.app",
+          "generation": 4,
+          "resourceVersion": 1041
+        },
+        "sourceSessionId": null,
+        "verdict": "concern",
+        "severity": null,
+        "summary": "The platform-owned handler.success-rate remains in an unresolved sustained P1 breach at 0.6551 versus the 0.8 threshold, while repeated owner reviews continue the same repair lineage without recovery proof.",
+        "dedupeKey": "may-agent.app:handler-success-rate-sustained-breach",
+        "requestedHumanAction": "none",
+        "reportPath": "reports/project-health/may-agent.app/20260828T060231989Z.md",
+        "decisionBoundary": "Reconcile with the cited current Task/metric lineage; do not create duplicate repair work."
+      }
     },
     {
       "old": {
@@ -896,18 +1570,52 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_8308f1ec-7ee7-41ab-821a-1dcd68a3db1f",
+          "inputKind": "owner-review",
+          "sourceId": "event:6295691",
+          "originEventId": 6295691,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_8308f1ec-7ee7-41ab-821a-1dcd68a3db1f"
+        },
+        "reason": "daily-ops-digest",
+        "project": "may-agent",
+        "evidenceClass": "periodic-aggregate-controller-wake",
+        "reportPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/daily-ops-digests/2026-08-28-alert-review.md",
+        "alertIds": [
+          4926,
+          4925,
+          4924,
+          4923,
+          4918,
+          4915,
+          4878
+        ],
+        "decisionBoundary": "Do not recreate this digest as standalone work; reconcile its exact alert/metric identities with current canonical lineages.",
+        "openAlertMetricIds": [
+          "eval.llm-coverage-lag-h",
+          "eval.llm-evals-24h",
+          "evaluator.aftermath-coverage-rate-3h",
+          "event.unhandled-signal-count-1h",
+          "handler.success-rate",
+          "infra.bus.subscriber-failed-count-1h",
+          "session.failed-triage-rate-3h"
+        ],
+        "noisyMetricIds": []
+      }
     },
     {
       "old": {
@@ -919,18 +1627,40 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_9c9c3322-3e93-48ec-9940-5d7283ec1177",
+          "inputKind": "owner-review",
+          "sourceId": "event:6293959",
+          "originEventId": 6293959,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_9c9c3322-3e93-48ec-9940-5d7283ec1177"
+        },
+        "reason": "evaluation-session-finding",
+        "project": "may-agent",
+        "evidenceClass": "evaluation-finding-controller-wake",
+        "sourceTask": null,
+        "sourceSessionId": "s_1787753231778_513",
+        "verdict": "good",
+        "severity": "watch",
+        "summary": "Host owner-review result omitted zero owner-signal disclosure",
+        "dedupeKey": "host-owner-review-owner-signal-disclosure",
+        "requestedHumanAction": "none",
+        "reportPath": null,
+        "decisionBoundary": "Reconcile with the cited current Task/metric lineage; do not create duplicate repair work."
+      }
     },
     {
       "old": {
@@ -965,18 +1695,43 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_a9a6d102-7cfb-4c45-ae90-b7d10734972b",
+          "inputKind": "owner-review",
+          "sourceId": "event:6097263",
+          "originEventId": 6097263,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_a9a6d102-7cfb-4c45-ae90-b7d10734972b"
+        },
+        "reason": "evaluation-session-finding",
+        "project": "may-agent",
+        "evidenceClass": "evaluation-finding-controller-wake",
+        "sourceTask": null,
+        "sourceSessionId": "s_1787640878282_57",
+        "verdict": "good",
+        "severity": "blocked-on-human",
+        "summary": "Gym App definition activation awaits Hao's exact decision.",
+        "dedupeKey": "gym-app-definition-activation-decision-5a06bbacfcde7848b664c30b5a02d4171e116184",
+        "requestedHumanAction": "decide",
+        "reportPath": null,
+        "decisionBoundary": "Retain May as decision owner; map the exact human reply Condition before continuation."
+      },
+      "reconciliationOwner": "alex",
+      "decisionAuthority": "may",
+      "humanDecisionMapping": "Exact source Condition/approval scope must be recovered before routing; proposedOwner means migration reconciliation only."
     },
     {
       "old": {
@@ -988,18 +1743,45 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_ae4d9eaf-c2df-4449-b0f4-f9222caa0145",
+          "inputKind": "owner-review",
+          "sourceId": "event:6297033",
+          "originEventId": 6297033,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_ae4d9eaf-c2df-4449-b0f4-f9222caa0145"
+        },
+        "reason": "evaluation-project-health-feedback",
+        "project": "may-agent",
+        "evidenceClass": "evaluation-finding-controller-wake",
+        "sourceTask": {
+          "appId": "evaluation",
+          "taskId": "runtime/project-audit/may-agent.app",
+          "generation": 4,
+          "resourceVersion": 1043
+        },
+        "sourceSessionId": null,
+        "verdict": "concern",
+        "severity": null,
+        "summary": "Unresolved P1 alert 4925 still reports event.unhandled-signal-count-1h at 23 versus threshold 5 despite active owner review and recovery of the prior handler and subscriber breaches.",
+        "dedupeKey": "may-agent.app:unhandled-signal-sustained-breach",
+        "requestedHumanAction": "none",
+        "reportPath": "reports/project-health/may-agent.app/20260828T150205654Z.md",
+        "decisionBoundary": "Reconcile with the cited current Task/metric lineage; do not create duplicate repair work."
+      }
     },
     {
       "old": {
@@ -1011,18 +1793,48 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_c05ec8a5-51c2-4ac8-b499-71ba714d97a7",
+          "inputKind": "owner-review",
+          "sourceId": "event:6309130",
+          "originEventId": 6309130,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_c05ec8a5-51c2-4ac8-b499-71ba714d97a7"
+        },
+        "reason": "daily-ops-digest",
+        "project": "may-agent",
+        "evidenceClass": "periodic-aggregate-controller-wake",
+        "reportPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/daily-ops-digests/2026-08-30-alert-review.md",
+        "alertIds": [
+          4927,
+          4925,
+          4924,
+          4915,
+          4878
+        ],
+        "decisionBoundary": "Do not recreate this digest as standalone work; reconcile its exact alert/metric identities with current canonical lineages.",
+        "openAlertMetricIds": [
+          "eval.llm-coverage-lag-h",
+          "eval.llm-evals-24h",
+          "evaluator.aftermath-coverage-rate-3h",
+          "event.unhandled-signal-count-1h",
+          "session.error-rate-6h"
+        ],
+        "noisyMetricIds": []
+      }
     },
     {
       "old": {
@@ -1034,18 +1846,43 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_c5972eb8-bc50-47b4-b330-97994e8a8144",
+          "inputKind": "owner-review",
+          "sourceId": "event:6290797",
+          "originEventId": 6290797,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_c5972eb8-bc50-47b4-b330-97994e8a8144"
+        },
+        "reason": "ops-health-signal-changed",
+        "project": "may-agent",
+        "evidenceClass": "ops-health-transition-controller-wake",
+        "packetPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/ops-health-packets.jsonl",
+        "activeFamilies": [
+          "event-delivery-unaccepted",
+          "metric-p1-stale"
+        ],
+        "previousFamilies": [
+          "metric-p1-stale"
+        ],
+        "alertIds": [
+          4918
+        ],
+        "decisionBoundary": "Treat as transition evidence for current lineages, not a fresh independent repair."
+      }
     },
     {
       "old": {
@@ -1080,18 +1917,56 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_d7db39a0-421d-4949-bb58-a17318aa9587",
+          "inputKind": "owner-review",
+          "sourceId": "retained-task-spec",
+          "originEventId": null,
+          "statusAtCapture": "attention",
+          "waitingOnTask": "app-request/app_d7db39a0-421d-4949-bb58-a17318aa9587"
+        },
+        "reason": "daily-ops-digest",
+        "project": "may-agent",
+        "evidenceClass": "periodic-aggregate-controller-wake",
+        "reportPath": "/app/.state/releases/app-definitions/40bccc94abd248789e64cd7496fe5df149079b00-definitions-v3/projects/may-agent.app/.state/daily-ops-digests/2026-08-26-alert-review.md",
+        "alertIds": [
+          4903,
+          4902,
+          4901,
+          4900,
+          4898,
+          4878,
+          4874,
+          4872
+        ],
+        "decisionBoundary": "Do not recreate this digest as standalone work; reconcile its exact alert/metric identities with current canonical lineages.",
+        "openAlertMetricIds": [
+          "eval.llm-coverage-lag-h",
+          "evaluator.aftermath-coverage-rate-3h",
+          "event.unhandled-signal-count-1h",
+          "gym.valid-run-rate",
+          "handler.failed-count",
+          "handler.success-rate",
+          "session.error-rate-6h",
+          "session.failed-triage-rate-3h"
+        ],
+        "noisyMetricIds": [
+          "aks-rp-e2e.process.assignment.not-consumed-count"
+        ]
+      }
     },
     {
       "old": {
@@ -1103,18 +1978,46 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_de0457db-4a96-4614-9b40-eba46cfffe32",
+          "inputKind": "owner-review",
+          "sourceId": "event:6295902",
+          "originEventId": 6295902,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_de0457db-4a96-4614-9b40-eba46cfffe32"
+        },
+        "reason": "ops-health-signal-changed",
+        "project": "may-agent",
+        "evidenceClass": "ops-health-transition-controller-wake",
+        "packetPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/ops-health-packets.jsonl",
+        "activeFamilies": [
+          "event-delivery-unaccepted",
+          "metric-p1-stale"
+        ],
+        "previousFamilies": [
+          "event-delivery-unaccepted",
+          "metric-p1-stale",
+          "repeated-runtime-symptom"
+        ],
+        "alertIds": [
+          4918,
+          4925
+        ],
+        "decisionBoundary": "Treat as transition evidence for current lineages, not a fresh independent repair."
+      }
     },
     {
       "old": {
@@ -1126,18 +2029,43 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_e5a390f8-bfee-4824-9f45-7989283df9bc",
+          "inputKind": "owner-review",
+          "sourceId": "event:6299439",
+          "originEventId": 6299439,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_e5a390f8-bfee-4824-9f45-7989283df9bc"
+        },
+        "reason": "ops-health-signal-changed",
+        "project": "may-agent",
+        "evidenceClass": "ops-health-transition-controller-wake",
+        "packetPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/ops-health-packets.jsonl",
+        "activeFamilies": [
+          "event-delivery-unaccepted",
+          "metric-p1-stale"
+        ],
+        "previousFamilies": [
+          "metric-p1-stale"
+        ],
+        "alertIds": [
+          4925
+        ],
+        "decisionBoundary": "Treat as transition evidence for current lineages, not a fresh independent repair."
+      }
     },
     {
       "old": {
@@ -1149,18 +2077,46 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_ea18092c-380c-412d-99af-6f559e955d1c",
+          "inputKind": "owner-review",
+          "sourceId": "event:6316078",
+          "originEventId": 6316078,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_ea18092c-380c-412d-99af-6f559e955d1c"
+        },
+        "reason": "daily-ops-digest",
+        "project": "may-agent",
+        "evidenceClass": "periodic-aggregate-controller-wake",
+        "reportPath": "/app/.state/releases/app-definitions/local-without-aks-rp-e2e-20260831-definitions-v3/projects/may-agent.app/.state/daily-ops-digests/2026-08-31-alert-review.md",
+        "alertIds": [
+          4925,
+          4924,
+          4915,
+          4878
+        ],
+        "decisionBoundary": "Do not recreate this digest as standalone work; reconcile its exact alert/metric identities with current canonical lineages.",
+        "openAlertMetricIds": [
+          "eval.llm-coverage-lag-h",
+          "eval.llm-evals-24h",
+          "evaluator.aftermath-coverage-rate-3h",
+          "event.unhandled-signal-count-1h"
+        ],
+        "noisyMetricIds": []
+      }
     },
     {
       "old": {
@@ -1172,18 +2128,46 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_f1f41b52-2d7b-4fc7-bf35-93107e9aa50e",
+          "inputKind": "owner-review",
+          "sourceId": "event:6292016",
+          "originEventId": 6292016,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_f1f41b52-2d7b-4fc7-bf35-93107e9aa50e"
+        },
+        "reason": "daily-ops-digest",
+        "project": "may-agent",
+        "evidenceClass": "periodic-aggregate-controller-wake",
+        "reportPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/daily-ops-digests/2026-08-28-alert-review.md",
+        "alertIds": [
+          4923,
+          4918,
+          4915,
+          4878
+        ],
+        "decisionBoundary": "Do not recreate this digest as standalone work; reconcile its exact alert/metric identities with current canonical lineages.",
+        "openAlertMetricIds": [
+          "eval.llm-coverage-lag-h",
+          "evaluator.aftermath-coverage-rate-3h",
+          "handler.success-rate",
+          "infra.bus.subscriber-failed-count-1h"
+        ],
+        "noisyMetricIds": []
+      }
     },
     {
       "old": {
@@ -1195,18 +2179,47 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_f679fe4c-9ff3-4f78-9474-1b43387c3eb9",
+          "inputKind": "owner-review",
+          "sourceId": "retained-task-spec",
+          "originEventId": null,
+          "statusAtCapture": "attention",
+          "waitingOnTask": "app-request/app_f679fe4c-9ff3-4f78-9474-1b43387c3eb9"
+        },
+        "reason": "daily-ops-digest",
+        "project": "may-agent",
+        "evidenceClass": "periodic-aggregate-controller-wake",
+        "reportPath": "/app/.state/releases/app-definitions/9850fca0b5b8fed32c24c977f50e66a9145f652c-definitions-v3/projects/may-agent.app/.state/daily-ops-digests/2026-08-26-alert-review.md",
+        "alertIds": [
+          4915,
+          4901,
+          4878
+        ],
+        "decisionBoundary": "Do not recreate this digest as standalone work; reconcile its exact alert/metric identities with current canonical lineages.",
+        "openAlertMetricIds": [
+          "eval.llm-coverage-lag-h",
+          "evaluator.aftermath-coverage-rate-3h",
+          "gym.valid-run-rate"
+        ],
+        "noisyMetricIds": [
+          "aks-rp-e2e.process.assignment.not-consumed-count",
+          "eval.llm-coverage-lag-h"
+        ]
+      }
     },
     {
       "old": {
@@ -1218,18 +2231,46 @@
         "conditionIds": []
       },
       "outcome": "Review and resolve the addressed Host Operations request.",
-      "disposition": "inspect-before-replacement",
+      "disposition": "source-identified-current-lineage-check",
       "proposedOwner": "alex",
       "lineage": null,
       "replacement": null,
-      "basis": "Opaque addressed Host Operations shell lacks the underlying request in the compact index. Read its exact retained input/caller before admitting one Alex replacement; do not bulk-copy or claim fulfilled.",
+      "basis": "Exact retained source input is now identified. Reconcile its cited alert, metric, Task, dependency or human-decision lineage against current state before admitting a continuation; the controller wake itself is not a standalone improvement and is not fulfilled by this receipt.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
         "remaining work",
         "caller/human reply relationship",
         "exact live Conditions"
-      ]
+      ],
+      "sourceEvidence": {
+        "origin": {
+          "inputId": "app_f6b7e155-4ee8-4690-adf9-769dde3c0184",
+          "inputKind": "owner-review",
+          "sourceId": "event:6293774",
+          "originEventId": 6293774,
+          "statusAtCapture": "handling",
+          "waitingOnTask": "app-request/app_f6b7e155-4ee8-4690-adf9-769dde3c0184"
+        },
+        "reason": "daily-ops-digest",
+        "project": "may-agent",
+        "evidenceClass": "periodic-aggregate-controller-wake",
+        "reportPath": "/app/.state/releases/app-definitions/ca30f2ab2018af757c069aee954b3c6eef701976-definitions-v3/projects/may-agent.app/.state/daily-ops-digests/2026-08-28-alert-review.md",
+        "alertIds": [
+          4923,
+          4918,
+          4915,
+          4878
+        ],
+        "decisionBoundary": "Do not recreate this digest as standalone work; reconcile its exact alert/metric identities with current canonical lineages.",
+        "openAlertMetricIds": [
+          "eval.llm-coverage-lag-h",
+          "evaluator.aftermath-coverage-rate-3h",
+          "handler.success-rate",
+          "infra.bus.subscriber-failed-count-1h"
+        ],
+        "noisyMetricIds": []
+      }
     },
     {
       "old": {
@@ -1339,11 +2380,19 @@
         "conditionIds": []
       },
       "outcome": "Regenerate Gym’s public task projection from current canonical public task/control-plane state and recompute `gym.valid-run-rate` from a current bounded receipt window, then return evidence sufficient for Gym to resolve evaluator finding `gym.app:stale-public-health-projections`.",
-      "disposition": "consolidate-lineage-after-current-state-check",
-      "proposedOwner": "alex",
+      "disposition": "partial-execution-path-supersession-nonmetric-open",
+      "proposedOwner": "may",
       "lineage": "gym-public-health",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "may",
+        "taskId": "goal/appdep_c1890444e02436f8d2131ffd",
+        "conditionId": "gym-valid-run-rate-retirement-reconcile-7cf298dd9dd55942",
+        "role": "current authoritative retired-metric decision",
+        "status": "waiting-human",
+        "scope": "retired metric definition/recompute only",
+        "nonMetricRemainder": "open for exact projection/workflow adjudication"
+      },
+      "basis": "Current May Task decides only the retired gym.valid-run-rate definition and supersedes obsolete metric recomputation. It does not fulfill or replace the distinct public projection/workflow obligation. That non-metric remainder stays open; any old approval/caller relationship remains separately preserved.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -1477,11 +2526,19 @@
         "conditionIds": []
       },
       "outcome": "Refresh and reconcile Gym's public task projection and recompute `gym.valid-run-rate` from a current bounded receipt window, returning durable post-refresh evidence so Gym can close evaluator finding `gym.app:stale-public-health-projections`.",
-      "disposition": "consolidate-lineage-after-current-state-check",
-      "proposedOwner": "alex",
+      "disposition": "partial-execution-path-supersession-nonmetric-open",
+      "proposedOwner": "may",
       "lineage": "gym-public-health",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "may",
+        "taskId": "goal/appdep_c1890444e02436f8d2131ffd",
+        "conditionId": "gym-valid-run-rate-retirement-reconcile-7cf298dd9dd55942",
+        "role": "current authoritative retired-metric decision",
+        "status": "waiting-human",
+        "scope": "retired metric definition/recompute only",
+        "nonMetricRemainder": "open for exact projection/workflow adjudication"
+      },
+      "basis": "Current May Task decides only the retired gym.valid-run-rate definition and supersedes obsolete metric recomputation. It does not fulfill or replace the distinct public projection/workflow obligation. That non-metric remainder stays open; any old approval/caller relationship remains separately preserved.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -1548,11 +2605,11 @@
         "conditionIds": []
       },
       "outcome": "Coordinate the exact infrastructure/provider-bound recovery attempt for the missing original 230-file compact preservation set, or return an explicit terminal adjudication proving that no safe retained source remains.",
-      "disposition": "consolidate-lineage-after-current-state-check",
-      "proposedOwner": "alex",
-      "lineage": "workspace-writer-containment",
+      "disposition": "retain-may-boundary-after-alex-technical-reconciliation",
+      "proposedOwner": "may",
+      "lineage": "provider-archive-recovery",
       "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "basis": "Exact 230-file archive recovery requires a May/provider decision and is not workspace-writer containment. Alex may reconcile technical evidence, but source retirement and migration do not fulfill or authorize this obligation.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -1594,11 +2651,18 @@
         "conditionIds": []
       },
       "outcome": "Using supported May Host/Runtime supervision only, attribute the responsible writer to exact command/session/workflow/PID-start identity; stop only the responsible external descendant and duplicate or replayed execution; repair the actual producer/reissue path fail-closed; prove at least 180 uninterrupted seconds without a lineage write and without any mutation of the incident path or stale Git metadata; return terminal App evidence and fresh correlated event.unhandled-signal-count-1h, infra.bus.subscriber-failed-count-1h, alert 4602, and every subscriber-failure row for this fresh request. Do not reuse appdep_7d94713590078a6994af0d6d or events 5789642/5791149, weaken admission, stop unrelated execution, or treat point-in-time absence as proof.",
-      "disposition": "consolidate-lineage-after-current-state-check",
+      "disposition": "superseded-no-current-continuation-not-fulfilled",
       "proposedOwner": "alex",
-      "lineage": "unhandled-signal-owner-review",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "lineage": "workspace-writer-containment",
+      "replacement": {
+        "appId": "alex",
+        "taskId": "input/appdep_b2210accc9bfd6faf68121e1",
+        "role": "exact supersession reconciliation receipt",
+        "status": "done",
+        "artifact": "projects/alex.app/workspace-writer-containment-reconciliation-2026-10-04.json",
+        "artifactSha256": "44ae7ea043ec50172e887101d9f4aa30521c5e98e8943dc55d61952a46ec5125"
+      },
+      "basis": "Returned current-state reconciliation found no active incident recurrence and proves the incident-specific execution path obsolete. The old outcome is explicitly not fulfilled: required terminal May/AKS results, 180-second artifact, dependency wake, and lineage-specific metric proof were never established. Preserve audit history and reopen only for fresh current writer/process/event evidence.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -1688,11 +2752,19 @@
         "conditionIds": []
       },
       "outcome": "Regenerate /app/projects/gym.app/tasks/outcome-projection.json through the canonical Gym/Host projection path so it reflects the verified terminal lifecycle of improve/may generation 5.",
-      "disposition": "consolidate-lineage-after-current-state-check",
-      "proposedOwner": "alex",
+      "disposition": "partial-execution-path-supersession-nonmetric-open",
+      "proposedOwner": "may",
       "lineage": "gym-public-health",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "may",
+        "taskId": "goal/appdep_c1890444e02436f8d2131ffd",
+        "conditionId": "gym-valid-run-rate-retirement-reconcile-7cf298dd9dd55942",
+        "role": "current authoritative retired-metric decision",
+        "status": "waiting-human",
+        "scope": "retired metric definition/recompute only",
+        "nonMetricRemainder": "open for exact projection/workflow adjudication"
+      },
+      "basis": "Current May Task decides only the retired gym.valid-run-rate definition and supersedes obsolete metric recomputation. It does not fulfill or replace the distinct public projection/workflow obligation. That non-metric remainder stays open; any old approval/caller relationship remains separately preserved.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -1734,11 +2806,11 @@
         "conditionIds": []
       },
       "outcome": "Obtain and durably record an infrastructure/provider decision for the missing original 230-file preservation archive: either coordinate safe offline recovery from a read-only clone of `/dev/sdd`, or provide terminal provider evidence that recovery is impossible.",
-      "disposition": "consolidate-lineage-after-current-state-check",
-      "proposedOwner": "alex",
-      "lineage": "workspace-writer-containment",
+      "disposition": "retain-may-boundary-after-alex-technical-reconciliation",
+      "proposedOwner": "may",
+      "lineage": "provider-archive-recovery",
       "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "basis": "Exact 230-file archive recovery requires a May/provider decision and is not workspace-writer containment. Alex may reconcile technical evidence, but source retirement and migration do not fulfill or authorize this obligation.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -2254,11 +3326,18 @@
         "conditionIds": []
       },
       "outcome": "Restore a supported, schema-valid finite May App path for rejected AKS request appdep_7d94713590078a6994af0d6d, carry the exact external/replayed workspace-writer containment obligation through its terminal App result and host/domain proof, and preserve explicit rejection of unknown, malformed, impermissible, or overbroad host-mutation requests.",
-      "disposition": "consolidate-lineage-after-current-state-check",
+      "disposition": "superseded-no-current-continuation-not-fulfilled",
       "proposedOwner": "alex",
       "lineage": "workspace-writer-containment",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "alex",
+        "taskId": "input/appdep_b2210accc9bfd6faf68121e1",
+        "role": "exact supersession reconciliation receipt",
+        "status": "done",
+        "artifact": "projects/alex.app/workspace-writer-containment-reconciliation-2026-10-04.json",
+        "artifactSha256": "44ae7ea043ec50172e887101d9f4aa30521c5e98e8943dc55d61952a46ec5125"
+      },
+      "basis": "Returned current-state reconciliation found no active incident recurrence and proves the incident-specific execution path obsolete. The old outcome is explicitly not fulfilled: required terminal May/AKS results, 180-second artifact, dependency wake, and lineage-specific metric proof were never established. Preserve audit history and reopen only for fresh current writer/process/event evidence.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -2638,11 +3717,20 @@
         ]
       },
       "outcome": "Recover Gym’s public-health projection and valid-run-rate refresh capability by reconstructing a materially changed immutable Host candidate from the authoritative clean baseline, proving it without reusing the rejected candidate, obtaining explicit approval before activation, and then returning terminal live projection, metric, and workflow evidence for the parent outcome.",
-      "disposition": "consolidate-lineage-after-current-state-check",
-      "proposedOwner": "alex",
+      "disposition": "partial-execution-path-supersession-nonmetric-open",
+      "proposedOwner": "may",
       "lineage": "gym-public-health",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "may",
+        "taskId": "goal/appdep_c1890444e02436f8d2131ffd",
+        "conditionId": "gym-valid-run-rate-retirement-reconcile-7cf298dd9dd55942",
+        "role": "current authoritative retired-metric decision",
+        "status": "waiting-human",
+        "scope": "retired metric definition/recompute only",
+        "nonMetricRemainder": "open for exact projection/workflow adjudication",
+        "preservedOldCondition": "hao-approval-gym-public-health-candidate-v10"
+      },
+      "basis": "Current May Task decides only the retired gym.valid-run-rate definition and supersedes obsolete metric recomputation. It does not fulfill or replace the distinct public projection/workflow obligation. That non-metric remainder stays open; any old approval/caller relationship remains separately preserved.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -2795,5 +3883,79 @@
         "exact live Conditions"
       ]
     }
-  ]
+  ],
+  "sourceSnapshot": {
+    "path": "/app/.state/alex-migration-20261004/legacy-frontier-snapshot.json",
+    "sha256": "bd3f6a1cc65e125c61f5a8380cba746d55e3d8143edc6f8d6825af286d5d7f97",
+    "capturedAt": "2026-10-04T12:13:38.821491+00:00"
+  },
+  "sourceInputEnrichment": {
+    "items": 37,
+    "byReason": {
+      "daily-ops-digest": 17,
+      "evaluation-project-health-feedback": 6,
+      "evaluation-session-finding": 4,
+      "ops-health-recovered": 1,
+      "ops-health-signal-changed": 9
+    },
+    "rule": "Periodic controller wakes and repeated evidence are not recreated one-for-one. Current canonical lineages and exact human reply boundaries must be checked before an admitted replacement or supersession decision.",
+    "review": {
+      "reviewer": "bob",
+      "sessionId": "s_1791117886758_34005740-6d3f-4236-90c4-21abdd9139fe",
+      "result": "all 37 source identities matched; corrected omitted noisy-metric identities and clarified Alex reconciliation versus May decision authority"
+    }
+  },
+  "migrationProgress": {
+    "admittedContinuations": [
+      {
+        "appId": "alex",
+        "requestId": "appdep_b2210accc9bfd6faf68121e1",
+        "oldTaskIds": [
+          "activate-and-prove-aks-writer-containment-20260819",
+          "repair-aks-workspace-writer-containment-input-20260819",
+          "app-request/appdep_acc6f5a5a4cb4fe00ca2f025"
+        ],
+        "conditionId": "app-request:appdep_b2210accc9bfd6faf68121e1"
+      }
+    ],
+    "independentReviews": [
+      {
+        "appId": "alex",
+        "requestId": "appdep_fd5798c6edc4d09905205c70",
+        "conditionId": "app-request:appdep_fd5798c6edc4d09905205c70",
+        "status": "done",
+        "finding": "No legacy outcome is proved fulfilled; Gym mappings narrowed to metric-only supersession with non-metric remainder open."
+      }
+    ],
+    "rejectedAdmissions": [
+      {
+        "requestId": "appdep_8bb3d085316ebee15b7b4e9f",
+        "reason": "targeted nonexistent exact Task; corrected by ordinary new Task admission"
+      },
+      {
+        "requestId": "appdep_d2d4d520386f92b2eecdf0c9",
+        "reason": "targeted nonexistent exact Task; corrected by ordinary new Task admission"
+      }
+    ],
+    "currentMayMappings": [
+      {
+        "taskId": "goal/appdep_c1890444e02436f8d2131ffd",
+        "conditionId": "gym-valid-run-rate-retirement-reconcile-7cf298dd9dd55942",
+        "oldTaskCount": 4
+      }
+    ],
+    "reviewEvidence": {
+      "bobSession": "s_1791118120085_b4762675-5ca7-43d8-8247-ff22139104e4"
+    },
+    "completedReconciliations": [
+      {
+        "appId": "alex",
+        "taskId": "input/appdep_b2210accc9bfd6faf68121e1",
+        "oldTaskCount": 3,
+        "disposition": "superseded-no-current-continuation-not-fulfilled",
+        "artifact": "projects/alex.app/workspace-writer-containment-reconciliation-2026-10-04.json",
+        "artifactSha256": "44ae7ea043ec50172e887101d9f4aa30521c5e98e8943dc55d61952a46ec5125"
+      }
+    ]
+  }
 }
