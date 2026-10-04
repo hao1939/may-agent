@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt validity from verifier isolation and claim scope; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; static egress policy from irreversible post-sensitive-access session restriction; stable tool digests from equivalent semantics and complete lifecycle coverage; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; human approval records from end-to-end effect binding; effect-owning execution routes from provider-reported hook correlation and ambient process coverage; signed workflow conformance from evidence-grade propagation and independently proved declaration pre-existence; and workflow stage labels from prerequisite and ship-gate enforcement."
-triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "HELM AI Kernel", "offline verifier", "verifier isolation", "claim-typed verification", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "session-aware egress", "sensitive-source transition", "sticky egress restriction", "tool identity", "tool pin", "schema canonicalization", "MCP Hangar", "cold-start pinning", "tool annotations", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash", "Aegis", "exact action policy", "provider hook correlation", "direct child execution", "route coverage", "Treeship", "workflow conformance", "evidence grade", "declaration pre-existence", "CE-AI", "workflow stage evidence", "ship gate", "prerequisite enforcement"]
-last_updated: "2026-09-30"
-source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-09-30: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, HELM AI Kernel fe122d4 and 44d4622, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, MCP Hangar f02651c, Soup Wall be8db48, HOL Guard 56faea4 and f5d568f, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, antropos17/Aegis 6cae92e, zerkerlabs/treeship 7fd3993, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, 49844056, and 49855568 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
+summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt validity from verifier isolation and claim scope; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; static egress policy from irreversible post-sensitive-access session restriction; stable tool digests from equivalent semantics and complete lifecycle coverage; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; human approval records from end-to-end effect binding; authority migrations from behavioral-equivalence and retired-path absence proof; effect-owning execution routes from provider-reported hook correlation and ambient process coverage; signed workflow conformance from evidence-grade propagation and independently proved declaration pre-existence; and workflow stage labels from prerequisite and ship-gate enforcement."
+triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "HELM AI Kernel", "offline verifier", "verifier isolation", "claim-typed verification", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "session-aware egress", "sensitive-source transition", "sticky egress restriction", "tool identity", "tool pin", "schema canonicalization", "MCP Hangar", "cold-start pinning", "tool annotations", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "authority migration", "oracle retirement", "absence proof", "action lattice", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash", "Aegis", "exact action policy", "provider hook correlation", "direct child execution", "route coverage", "Treeship", "workflow conformance", "evidence grade", "declaration pre-existence", "CE-AI", "workflow stage evidence", "ship gate", "prerequisite enforcement"]
+last_updated: "2026-10-04"
+source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-10-04: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, HELM AI Kernel fe122d4 and 44d4622, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, MCP Hangar f02651c, Soup Wall be8db48, HOL Guard 56faea4, f5d568f, and 31e223d, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, antropos17/Aegis 6cae92e, zerkerlabs/treeship 7fd3993, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, 49844056, and 49855568 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
 </ai_context>
 
 # Agent Security: Enforcement Evidence and Runtime Coverage
@@ -1057,6 +1057,76 @@ documentation, schemas, and repository-authored tests but did not install HOL
 Guard, run its tests, or exercise Cline. The report and tests establish an
 inspectable evidence-admission design, not that any current deployment is
 healthy or that all harness events traverse the declared boundary.
+
+### Follow-up: moving an enforcement oracle needs both equivalence and absence proof
+
+**Pinned observation:** repository commit
+[`31e223dfc23db7f7a4e50fae78c050f117137c7a`](https://github.com/hashgraph-online/hol-guard/commit/31e223dfc23db7f7a4e50fae78c050f117137c7a)
+
+HOL Guard has since moved supported production hook decisions into its Rust
+runtime and retired a large Python semantic evaluator. The useful signal is not
+that one language replaced another. Its migration contract treats authority
+movement as two independent proof obligations: preserve each relevant behavior
+at the new boundary, and prove that the old boundary can no longer execute.
+
+For positive coverage, the repository maps retired test nodes to native tests or
+reviewed obsolete-behavior rationales in a versioned retirement ledger. The
+contract explicitly retains cases for secret-bearing and structured outputs,
+source references, exact digests and lengths, path escapes and symlinks, changed
+files, policy and cache transitions, authority outages, deadlines, observe mode,
+host response directives, and approval identity. It also rejects a tempting
+shortcut: a replacement Python evaluator or test-only algorithmic oracle does
+not count as evidence that the compiled production decision path preserved the
+behavior.
+
+For negative coverage, the contract names 17 exact evaluator paths to delete and
+requires source, dynamic-import, recognizable-copy, artifact, environment-route,
+and old-test-node absence checks. Python remains responsible for daemon
+lifecycle, configuration, policy publication, typed client projections, and
+non-authoritative receipts. That explicit retained-responsibility list prevents
+“Python removed” from becoming either an overclaim or a reason to duplicate the
+semantic authority under a new filename.
+
+The current Rust boundary makes the migrated authority inspectable. Its typed
+action lattice orders `allow`, `warn`, `review`, `require-reapproval`,
+`sandbox-required`, and `block`; validation rejects unknown values, a policy
+weaker than the minimum action, a terminal policy action not reflected at the
+minimum, or a decision inconsistent with that minimum. Repository-authored
+post-tool tests preserve additional asymmetries: an intrinsic block cannot be
+lowered by permissive policy; unknown or unreadable output remains reviewable;
+observe mode records a policy-only block without enforcing it but still
+preserves an intrinsic block; and truncated or excerpt-only output receives no
+fabricated full-output proof digest.
+
+This yields a reusable authority-migration checklist:
+
+1. inventory the old executable authority, including lazy loaders, flags,
+   generated launchers, packaged copies, and test-only routes;
+2. map safety-relevant behavior to tests that invoke the new production path,
+   while allowing an explicit review to retire incorrect legacy behavior;
+3. prove the old implementation and recognizable semantic copies are absent;
+4. list the orchestration responsibilities intentionally left behind; and
+5. validate cross-field decision invariants at the new boundary rather than
+   trusting compatible-looking strings.
+
+Passing the new suite proves only half the migration if an old route is still
+reachable; deleting the old route proves only half if adversarial behavior was
+silently dropped. Authority transfer needs both positive equivalence evidence
+and negative reachability evidence.
+
+**Evidence inspected at the pinned commit:**
+[`native-hook-oracle-retirement.md`](https://github.com/hashgraph-online/hol-guard/blob/31e223dfc23db7f7a4e50fae78c050f117137c7a/docs/guard/native-hook-oracle-retirement.md),
+[`policy_enforcement_matrix.rs`](https://github.com/hashgraph-online/hol-guard/blob/31e223dfc23db7f7a4e50fae78c050f117137c7a/rust/crates/guard-runtime/src/policy_enforcement_matrix.rs),
+[`policy_enforcement_post_tool_tests.rs`](https://github.com/hashgraph-online/hol-guard/blob/31e223dfc23db7f7a4e50fae78c050f117137c7a/rust/crates/guard-runtime/src/policy_enforcement_post_tool_tests.rs), and
+[`commands_hook_native_floor.py`](https://github.com/hashgraph-online/hol-guard/blob/31e223dfc23db7f7a4e50fae78c050f117137c7a/src/codex_plugin_scanner/guard/cli/commands_hook_native_floor.py).
+
+**Evidence boundary:** Scout statically inspected the pinned migration contract,
+Rust validator and repository-authored tests, plus retained Python orchestration.
+It did not run the suite, inspect every one of the 301 intervening commits,
+audit the complete absence-gate implementation, install a built artifact, or
+exercise a live host. The source supports the migration proof structure and
+named invariants, not independent proof that every legacy route is absent from
+every distributed package or that the new evaluator is bypass-free.
 
 ## An Authorization Receipt Is Not an Effect Gate (GitHub, September 2026)
 
