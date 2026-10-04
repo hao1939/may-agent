@@ -1,3 +1,5 @@
+import { applyTaskCommunication } from "./task-communication.js";
+import { createAppTaskEvents } from "./app-task-emitter.js";
 import { createHash } from "node:crypto";
 import { admitTaskChanges, type TaskChanges, type TaskChangeReceipt, type Condition } from "@may-agent/sdk";
 import { stateTransaction } from "../../../lib/db/transaction.js";
@@ -47,7 +49,12 @@ export function applyTaskChanges(input: {
   });
   function admit(): TaskChangeReceipt {
     assertAppTaskClaimCurrent(config, input.claim);
-    if (!changes.requests?.length && !changes.conditions?.length && !changes.actions?.length)
+    if (
+      !changes.requests?.length &&
+      !changes.conditions?.length &&
+      !changes.actions?.length &&
+      !changes.communication?.length
+    )
       return { requests: [], conditionIds: [], actionsApplied: [] };
     const inputKeys = readTaskChangeInputKeys(config, input.claim, changes.inputKeys, input.acceptedLiveEventIds);
     const key = changeKey({
@@ -55,6 +62,7 @@ export function applyTaskChanges(input: {
       conditions: changes.conditions ?? [],
       actions: changes.actions ?? [],
       inputKeys,
+      ...(changes.communication?.length ? { communication: changes.communication } : {}),
     });
     const previous = config.resourceStore.readTaskChangeReceipt(input.claim.taskId, input.claim.generation, key);
     if (previous) return previous;
@@ -91,9 +99,7 @@ export function applyTaskChanges(input: {
       new Set([...references, ...linked.all].map(({ id }) => id)),
     ).filter(({ id }) => declaredIds.has(id));
     const retired = new Set(
-      (changes.actions ?? []).flatMap((action) =>
-        action.kind === "retire-condition" ? [action.conditionId] : [],
-      ),
+      (changes.actions ?? []).flatMap((action) => (action.kind === "retire-condition" ? [action.conditionId] : [])),
     );
     if (resolved.some(({ id }) => retired.has(id)))
       throw new Error("Task changes cannot retire and redeclare the same Condition");
@@ -109,7 +115,23 @@ export function applyTaskChanges(input: {
         actionReceiptKeys.push(actionKey);
       }
     }
+    const communication = changes.communication?.length
+      ? applyTaskCommunication(
+          config,
+          input.claim,
+          changes.communication,
+          createAppTaskEvents({
+            bus: input.opts.bus,
+            db: config.resourceStore.db,
+            persistDir: input.opts.persistDir,
+            appId: input.descriptor.id,
+            claim: input.claim,
+            communication: true,
+          }),
+        )
+      : undefined;
     return applyRunningTaskChanges(config, input.claim, {
+      communication,
       operationKey: key,
       actionReceiptKeys,
       replayedActions,

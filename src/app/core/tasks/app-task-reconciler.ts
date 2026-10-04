@@ -3613,6 +3613,7 @@ export function applyRunningTaskChanges(
     actionReceiptKeys: string[];
     replayedActions: string[];
     requests: TaskChangeReceipt["requests"];
+    communication?: TaskChangeReceipt["communication"];
     conditions?: AppTaskConditionSpec[];
     actions?: AppTaskAction[];
     facts?: string[];
@@ -3650,6 +3651,7 @@ export function applyRunningTaskChanges(
   }
   const receipt = {
     requests: input.requests,
+    ...(input.communication ? { communication: input.communication } : {}),
     conditionIds: conditions.map(({ id }) => id),
     actionsApplied: [...input.replayedActions, ...actionsApplied],
   };

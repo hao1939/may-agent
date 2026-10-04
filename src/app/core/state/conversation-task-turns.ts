@@ -82,7 +82,7 @@ export function conversationTaskIntent(config: AppTaskContext): Omit<TaskIntent,
   if (!root) throw new Error("Conversation App has no structural root");
   return {
     parentId: root,
-    executor: "conversation",
+    executor: config.conversationInputMode === "task" ? "agent" : "conversation",
     outcome: "Handle this Conversation's admitted input and return useful outcomes to the human",
     acceptance: ["Address the considered input and preserve unresolved accepted Requests"],
   };

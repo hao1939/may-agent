@@ -69,6 +69,7 @@ type TaskExecutionInput = {
 };
 
 export type TaskAgentInput = TaskExecutionInput & {
+  validateResult?: (result: import("@may-agent/sdk").TaskReconcileResult) => string | null;
   taskEvents: AppTaskEvents;
   taskSnapshot: AppTaskLiveSnapshot;
   dependencies: ReturnType<typeof appDependencyCatalog>;

@@ -1,5 +1,11 @@
 import type { AppEvent } from "./event.js";
-import type { AppInput } from "./app.js";
+import type {
+  AppInput,
+  AppConversationRequestUpdate,
+  ConversationTopicDecision,
+  AppTaskInput,
+  AppConversationRequest,
+} from "./app.js";
 
 export type TaskPriority = "P0" | "P1" | "P2" | "P3";
 /** Stable executor adapter name selected by durable Task intent. */
@@ -87,6 +93,31 @@ export type TaskAction =
       reason: string;
     };
 
+/** One durable input, with optional communication context derived from its admission. */
+export type TaskInput = AppTaskInput & {
+  key: string;
+  communication?: {
+    conversationId: string;
+    replyTo: string;
+    topicId?: string;
+    inReplyTo?: string;
+    requestIds: string[];
+  };
+};
+
+/** Scoped communication through an input accepted by this Task. Transport is Host-owned. */
+export type TaskCommunication = {
+  /** Stable operation name within this Task generation, reused after a lost acknowledgment. */
+  id: string;
+  /** Saved input whose recipient and reply context should be used. */
+  inputId: string;
+  message?: string;
+  /** Earlier communication operation containing the explanation for these Request updates. */
+  replyId?: string;
+  requestUpdates?: AppConversationRequestUpdate[];
+  topic?: ConversationTopicDecision;
+};
+
 export type TaskReconcileResult = {
   summary: string;
   facts: string[];
@@ -103,6 +134,7 @@ export type TaskReconcileResult = {
       conditions?: never;
       dependencies?: never;
       requests?: TaskAppRequest[];
+      communication?: TaskCommunication[];
     }
   | ({
       state: "waiting";
@@ -116,6 +148,7 @@ export type TaskReconcileResult = {
       conditions?: TaskCondition[];
       /** Submit work; add a request Condition only when its answer is needed. */
       requests?: TaskAppRequest[];
+      communication?: TaskCommunication[];
       /** @deprecated Use requests and conditions: [{ requestId: id }]. */
       dependencies?: TaskAppDependency[];
     } & (
@@ -138,6 +171,7 @@ export type TaskReconcileResult = {
       conditions?: never;
       dependencies?: never;
       requests?: never;
+      communication?: never;
     }
   | {
       state: "needs-agent";
@@ -148,11 +182,13 @@ export type TaskReconcileResult = {
       conditions?: never;
       dependencies?: never;
       requests?: never;
+      communication?: never;
     }
 );
 
 /** Changes admitted while running or as part of the final result; never a Task replacement. */
 export type TaskChanges = {
+  communication?: TaskCommunication[];
   inputKeys?: string[];
   facts?: string[];
   requests?: TaskAppRequest[];
@@ -165,6 +201,7 @@ export type TaskChangeReceipt = {
   requests: Array<{ id: string; requestId: string }>;
   conditionIds: string[];
   actionsApplied: string[];
+  communication?: Array<{ id: string; messageId?: string; requests?: AppConversationRequest[] }>;
 };
 
 export type TaskAcceptanceBasis = {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { TaskOutcomeProjection } from "@may-agent/sdk";
+import type { TaskAttempt, TaskOutcomeProjection } from "@may-agent/sdk";
 import { createAppTaskReadTool } from "./app-task-read-tool.js";
 import { EventBus } from "./core/events/bus.js";
 
@@ -179,6 +179,73 @@ describe("App Task read tool", () => {
         localKey: "finding-1",
         event: { type: "review.finding", data: { summary: "One mismatch" } },
       }),
+    ]);
+  });
+
+  it("requires the current Task fence and input before resolving communication", async () => {
+    const binding = { appId: "sample", taskId: "work", generation: 2, attemptId: "attempt-1" };
+    const cases = [
+      { scope: { appId: "sample" }, inputId: "ask" },
+      { scope: { ...binding, taskId: undefined }, inputId: "ask" },
+      { scope: { ...binding, generation: undefined }, inputId: "ask" },
+      { scope: { ...binding, attemptId: undefined }, inputId: "ask" },
+      { scope: binding, inputId: undefined },
+    ];
+    let resolved = 0;
+    for (const { scope, inputId } of cases) {
+      const tool = createAppTaskReadTool({
+        bus: new EventBus(),
+        scope: () => scope,
+        communicationReader: () => {
+          resolved++;
+          return undefined;
+        },
+      });
+      expect(text(await tool.execute("read", { action: "communication", inputId }))).toEqual({
+        error: "communication requires a current Task attempt and inputId",
+      });
+    }
+    expect(resolved).toBe(0);
+  });
+
+  it("resolves communication on each call, forwards queries and never falls back to an earlier reader", async () => {
+    const calls: unknown[] = [];
+    let attemptId = "attempt-1";
+    let read: TaskAttempt["read"]["communication"] = async (inputId, query) => {
+      calls.push({ attemptId: "attempt-1", inputId, query });
+      return { id: "first-request" };
+    };
+    const tool = createAppTaskReadTool({
+      bus: new EventBus(),
+      scope: () => ({ appId: "sample", taskId: "work", generation: 2, attemptId }),
+      communicationReader: () => read,
+    });
+    const query = { action: "request", id: "first-request" };
+    expect(
+      text(await tool.execute("first", { action: "communication", inputId: "first-input", communicationQuery: query })),
+    ).toEqual({ id: "first-request" });
+
+    attemptId = "attempt-2";
+    read = undefined;
+    expect(text(await tool.execute("unavailable", { action: "communication", inputId: "second-input" }))).toEqual({
+      error: "Current Task communication reader is unavailable",
+    });
+    read = async () => {
+      throw new Error("Task attempt is closed");
+    };
+    expect(text(await tool.execute("closed", { action: "communication", inputId: "first-input" }))).toEqual({
+      error: "Task attempt is closed",
+    });
+    read = async (inputId, query) => {
+      calls.push({ attemptId: "attempt-2", inputId, query });
+      return { id: "second-discussion" };
+    };
+    expect(text(await tool.execute("second", { action: "communication", inputId: "second-input" }))).toEqual({
+      id: "second-discussion",
+    });
+    expect(calls).toEqual([
+      { attemptId: "attempt-1", inputId: "first-input", query },
+      { attemptId: "attempt-2", inputId: "second-input", query: undefined },
     ]);
   });
 

@@ -106,6 +106,8 @@ export type {
   TaskPriority,
   TaskReconcileResult,
   TaskChanges,
+  TaskCommunication,
+  TaskInput,
   TaskChangeReceipt,
   TaskReconcileState,
   TaskVerificationContext,
@@ -135,3 +137,5 @@ export type { AgentContextPreparer } from "./agent-context.js";
 
 export { readVerifiedApprovalDecision } from "./approval.js";
 export type { ApprovalProposal, HostApprovalStamp, VerifiedApprovalDecision } from "./approval.js";
+
+export type { TaskCommunicationQuery } from "./conversation-contract.js";

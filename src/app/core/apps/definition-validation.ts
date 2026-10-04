@@ -251,7 +251,8 @@ export function validateAppDefinition(definition: unknown): string[] {
     const conversation = record(app.conversation);
     if (!conversation) errors.push(`App ${appId} conversation must be an object`);
     else {
-      if (conversation.mode !== "agent") errors.push(`App ${appId} conversation mode must be agent`);
+      if (conversation.mode !== "agent" && conversation.mode !== "task")
+        errors.push(`App ${appId} conversation mode must be task or legacy agent`);
       if (
         conversation.inputKinds !== undefined &&
         (!Array.isArray(conversation.inputKinds) ||

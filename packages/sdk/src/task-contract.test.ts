@@ -1,15 +1,36 @@
 import { describe, expect, it } from "bun:test";
 import { Type } from "typebox";
 import { Check } from "typebox/value";
+import { conversationTurnResultSchema } from "./app.js";
 import {
   admitTaskReconcileResult,
   admitTaskResultForSchema,
   admitTaskVerificationResult,
   taskAgentResultSchema,
   taskReconcileResultSchema,
+  taskChangesSchema,
 } from "./task-contract.js";
 
 const workflowOptions = { allowNeedsAgent: true };
+
+it("allows open Requests without a reason in live and final Task changes while retaining the legacy contract", () => {
+  const requestUpdates = [{ id: "ask", expectedRevision: 0, scope: "Test the change", disposition: "open" }];
+  const changes = { communication: [{ id: "accept", inputId: "input", requestUpdates }] };
+  expect(Check(taskChangesSchema, changes)).toBe(true);
+  for (const schema of [taskAgentResultSchema, taskReconcileResultSchema]) {
+    expect(
+      admitTaskResultForSchema(schema, { state: "waiting", summary: "Accepted", facts: [], ...changes })?.ok,
+    ).toBe(true);
+  }
+  const legacy = { summary: "Accepted", requestUpdates };
+  expect(Check(conversationTurnResultSchema, legacy)).toBe(false);
+  expect(
+    Check(conversationTurnResultSchema, {
+      ...legacy,
+      requestUpdates: [{ ...requestUpdates[0], reason: "Testing continues" }],
+    }),
+  ).toBe(true);
+});
 
 it("admits exact result scope consistently for agent and workflow results", () => {
   for (const state of ["converged", "waiting", "incomplete"] as const) {
