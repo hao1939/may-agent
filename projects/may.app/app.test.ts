@@ -56,14 +56,11 @@ describe("canonical May conversation App", () => {
     ]);
     expect(app.description).toContain("may.github.pull-request.state");
     expect(app.subscriptions?.map(({ id }) => id)).toEqual([
-      "evaluation-metric-report",
       "evaluation-review-lag",
       "evaluation-operation-oversight",
       "input-admission-failure-review",
       "observer-failure-review",
-      "scout-research-qualified",
       "evaluation-human-decision",
-      "evaluation-task-report",
     ]);
     expect(app).not.toHaveProperty("events");
     expect(app).not.toHaveProperty("onEvent");
@@ -228,139 +225,17 @@ describe("canonical May conversation App", () => {
     }
   });
 
-  test("selects installed team roles without changing default May routing", () => {
-    const bobProfile = JSON.parse(
-      readFileSync(new URL("./agents/bob/agent.json", import.meta.url), "utf8"),
-    );
-    expect(bobProfile.tools).toEqual(["coding", "agents", "finish"]);
-    expect(bobProfile.description).toContain("research investigations");
-    expect(bobProfile.domain).toContain("owned research-adoption");
-    const bobGuidance = readFileSync(
-      new URL("./agents/bob/AGENTS.md", import.meta.url),
-      "utf8",
-    );
-    expect(bobGuidance).toContain("agents.call");
-    expect(bobGuidance).toContain("may-tech-lead");
-    expect(bobGuidance).toContain("Targeted research goals keep");
-    expect(bobGuidance).toContain('same-App dependency (`appId: "may"');
-    expect(bobGuidance).toContain("Host supplies the caller return");
-    expect(bobGuidance).toContain("Bounded design and review contributions");
-
-    const bob = taskForMayInput({
-      id: "architecture-review",
-      source: { kind: "human", id: "operator" },
-      input: {
-        kind: "goal",
-        data: {
-          outcome: "Review an independent architecture question",
-          acceptance: ["Return a bounded recommendation"],
-          assignment: { agent: "may-bob" },
-        },
-      },
+  test("keeps May human work local and leaves improvement specialists to Alex", () => {
+    const ordinary = taskForMayInput({
+      id: "human-priority", source: { kind: "human", id: "operator" },
+      input: { kind: "goal", data: { outcome: "Set the human priority", acceptance: ["Return a decision"] } },
     });
-    expect(bob).toMatchObject({
-      kind: "desired",
-      intent: {
-        id: "goal/architecture-review",
-        agent: "may-bob",
-        outcome: "Review an independent architecture question",
-      },
-    });
-    expect(() =>
-      taskForMayInput({
-        id: "unsafe",
-        source: { kind: "system", id: "fixture" },
-        input: {
-          kind: "goal",
-          data: {
-            outcome: "Route elsewhere",
-            acceptance: ["No arbitrary role"],
-            assignment: { agent: "unknown-agent" },
-          },
-        },
-      }),
-    ).toThrow("installed May team role");
-  });
-
-  test("keeps standing discovery stable, rejects contradictions, and leaves targeted research finite", () => {
-    const schedule = app.schedules.find(
-      ({ id }) => id === "research-adoption-archive-review",
-    );
-    if (!schedule || !("input" in schedule)) {
-      throw new Error("missing standing research schedule");
-    }
-    const standing = (id: string) =>
-      taskForMayInput({
-        id,
-        source: { kind: "app", id: "scout-knowledge-lib" },
-        input: schedule.input,
-      });
-    expect(standing("lead-a")).toMatchObject({
-      kind: "desired",
-      intent: { id: "research-adoption", agent: "may-bob" },
-    });
-    expect(standing("lead-b")).toEqual(standing("lead-a"));
-
-    expect(() =>
-      taskForMayInput({
-        id: "mistagged-specific-question",
-        source: { kind: "human", id: "operator" },
-        input: {
-          kind: "goal",
-          data: {
-            outcome: "Answer this specific research question",
-            acceptance: ["Return the requested comparison"],
-            assignment: { agent: "may-bob" },
-            research: { adoption: "research-adoption", mode: "standing" },
-          },
-        },
-      }),
-    ).toThrow("requires the exact fixed contract");
-    expect(() =>
-      taskForMayInput({
-        id: "mistagged-constrained-question",
-        source: { kind: "human", id: "operator" },
-        input: {
-          ...(
-            app.schedules.find(
-              ({ id }) => id === "research-adoption-archive-review",
-            ) as any
-          ).input,
-          data: {
-            ...((
-              app.schedules.find(
-                ({ id }) => id === "research-adoption-archive-review",
-              ) as any
-            ).input.data as Record<string, unknown>),
-            constraints: ["Read-only: do not delegate an experiment"],
-          },
-        },
-      }),
-    ).toThrow("exact fixed contract without caller-specific requirements");
-
-    const targeted = taskForMayInput({
-      id: "dependency-input-7",
-      source: { kind: "app", id: "component-owner" },
-      input: {
-        kind: "goal",
-        data: {
-          outcome: "Answer the caller's exact cache question",
-          acceptance: ["Return evidence to the exact dependency"],
-          assignment: { agent: "may-bob" },
-          research: { adoption: "research-adoption", mode: "targeted" },
-        },
-      },
-    });
-    expect(targeted).toMatchObject({
-      kind: "desired",
-      intent: {
-        id: "goal/dependency-input-7",
-        agent: "may-bob",
-        outcome: "Answer the caller's exact cache question",
-        acceptance: ["Return evidence to the exact dependency"],
-      },
-    });
-    expect((targeted as any).intent.input.data).not.toHaveProperty("caller");
+    expect(ordinary).toMatchObject({ kind: "desired", intent: { agent: "may" } });
+    expect(() => taskForMayInput({
+      id: "old-bob-route", source: { kind: "human", id: "operator" },
+      input: { kind: "goal", data: { outcome: "Review design", acceptance: ["Return advice"], assignment: { agent: "may-bob" } } },
+    })).toThrow("specialists are owned by App alex");
+    expect(app.schedules.find(({ id }) => id === "research-adoption-archive-review")).toBeUndefined();
   });
 
   test("leaves the hygiene cadence to its Task reviewAt without a duplicate App timer", () => {
@@ -369,36 +244,8 @@ describe("canonical May conversation App", () => {
     ).toBeUndefined();
   });
 
-  test("uses a latest-slot weekly input schedule for bounded archive rotation", () => {
-    const schedule = app.schedules.find(
-      ({ id }) => id === "research-adoption-archive-review",
-    );
-    expect(schedule).toMatchObject({
-      intervalMs: 604_800_000,
-      catchUp: "latest",
-      input: {
-        kind: "goal",
-        data: {
-          assignment: { agent: "may-bob" },
-          research: {
-            adoption: "research-adoption",
-            mode: "standing",
-            recordLimit: 3,
-            candidateLimit: 1,
-          },
-        },
-      },
-    });
-    expect(
-      taskForMayInput({
-        id: "latest-slot-99",
-        source: { kind: "system", id: "schedule:may" },
-        input: (schedule as any).input,
-      }),
-    ).toMatchObject({
-      kind: "desired",
-      intent: { id: "research-adoption", agent: "may-bob" },
-    });
+  test("does not keep the migrated weekly research schedule", () => {
+    expect(app.schedules.find(({ id }) => id === "research-adoption-archive-review")).toBeUndefined();
   });
 
   test("normalizes only qualified Scout handoffs without Evaluation identity", () => {
@@ -714,8 +561,7 @@ describe("canonical May conversation App", () => {
     const subscription = app.subscriptions?.find(
       ({ id }) => id === "evaluation-task-report",
     );
-    expect(subscription).toBeDefined();
-    expect(matchesEventSelector(subscription!.event, event)).toBeTrue();
+    expect(subscription).toBeUndefined();
     const input = evaluationTaskReportInput(event)!;
     expect(input.kind).toBe("goal");
     expect((input.data as any).context.publication).toEqual(event.data);

@@ -37,13 +37,7 @@ const githubPullRequestObserver = createGitHubPullRequestObserver({
 
 const detailsSchema = Type.Record(Type.String(), Type.Unknown());
 const teamAssignmentSchema = Type.Object(
-  {
-    agent: Type.Union([
-      Type.Literal("may"),
-      Type.Literal("may-bob"),
-      Type.Literal("may-tech-lead"),
-    ]),
-  },
+  { agent: Type.Literal("may") },
   { additionalProperties: false },
 );
 
@@ -132,16 +126,12 @@ function requireStandingResearchContract(
 function selectedAgent(data: Record<string, unknown>): string {
   const assignment = record(data.assignment);
   if (Object.keys(assignment).length === 0) return "may";
-  if (
-    assignment.agent !== "may" &&
-    assignment.agent !== "may-bob" &&
-    assignment.agent !== "may-tech-lead"
-  ) {
+  if (assignment.agent !== "may") {
     throw new Error(
-      "May goal assignment must select an installed May team role",
+      "May goal assignment must select May; system-improvement specialists are owned by App alex",
     );
   }
-  return assignment.agent;
+  return "may";
 }
 
 function researchMode(
@@ -540,29 +530,6 @@ export default defineApp({
       },
     },
     {
-      id: "research-adoption-archive-review",
-      enabled: true,
-      intervalMs: 7 * 24 * 60 * 60 * 1000,
-      catchUp: "latest",
-      input: {
-        kind: "goal",
-        data: {
-          outcome: standingResearchOutcome,
-          acceptance: standingResearchAcceptance,
-          assignment: { agent: "may-bob" },
-          research: {
-            adoption: "research-adoption",
-            mode: "standing",
-            opportunity: "weekly-archive-review",
-            recordLimit: 3,
-            candidateLimit: 1,
-            navigation:
-              "Continue after the last accepted archive cursor and wrap after the final record; retain the next cursor in the current-first result.",
-          },
-        },
-      },
-    },
-    {
       id: "conversation-supervision-recovery",
       intervalMs: 900_000,
       event: {
@@ -581,11 +548,6 @@ export default defineApp({
   },
   observers: [githubPullRequestObserver, createMetricEvidenceObserver()],
   subscriptions: [
-    {
-      id: "evaluation-metric-report",
-      event: { type: "evaluation.metric_report_published" },
-      toInput: evaluationTaskReportInput,
-    },
     {
       id: "evaluation-review-lag",
       event: { type: "metric.breach" },
@@ -618,25 +580,12 @@ export default defineApp({
       toInput: observerFailureInput,
     },
     {
-      id: "scout-research-qualified",
-      event: { type: "scout.research.qualified", project: "may" },
-      toInput: scoutResearchHandoffInput,
-    },
-    {
       id: "evaluation-human-decision",
       event: {
         type: "evaluation.human_decision.requested",
         project: "may",
       },
       toInput: evaluationHumanDecisionInput,
-    },
-    {
-      id: "evaluation-task-report",
-      // Publications target Evaluation; consumer admission must not add a May
-      // target/project filter. Host routing of this cross-target subscription
-      // is independently exercised during isolated installation review.
-      event: { type: "evaluation.task_report_published" },
-      toInput: evaluationTaskReportInput,
     },
   ],
 });

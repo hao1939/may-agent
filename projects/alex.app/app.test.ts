@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import app, { taskForInput, taskInputForEvent } from "./app.ts";
+import app, { evaluationReportInput, taskForInput, taskInputForEvent } from "./app.ts";
 import { assertValidAppDefinition } from "/app/projects/may-agent/src/app/core/apps/definition-validation.ts";
 
 test("Alex bootstrap uses ordinary durable Task admission", () => {
@@ -123,6 +123,42 @@ test("declared metric and review-failure subscriptions dispatch executable input
     data: { appId: "may", taskId: "goal/one", reason: "acquisition-failed" },
   } as never)!;
   expect(taskForInput({ id: "failed-1", input: failed } as never).intent.agent).toBe("alex");
+});
+
+test("ordinary Evaluation reports are consumed only by Alex with immutable identity", () => {
+  const hash = (char: string) => char.repeat(64);
+  const taskEvent = {
+    type: "evaluation.task_report_published",
+    source: "workflow:task-outcome-review",
+    owner: "app:alex",
+    localKey: "task-report-1",
+    target: { appId: "alex", project: "alex" },
+    data: {
+      appId: "may", taskId: "goal/subject", evidenceHash: hash("a"),
+      executionId: "s_eval_1", report: "report.md", facts: "facts.json",
+      jsonHash: hash("b"), markdownHash: hash("c"), reviewer: "evaluator-deepseek",
+    },
+  } as never;
+  const metricEvent = {
+    ...taskEvent,
+    type: "evaluation.metric_report_published",
+    localKey: "metric-report-1",
+    data: { ...taskEvent.data, appId: "alex", metricId: "tasks.failed", alertId: 42 },
+  } as never;
+  for (const event of [taskEvent, metricEvent]) {
+    const input = evaluationReportInput(event)!;
+    expect(input.kind).toBe("message");
+    expect((input.data as any).context.publication.evidenceHash).toBe(hash("a"));
+    expect(taskForInput({ id: String(event.localKey), input } as never).intent).toMatchObject({ agent: "alex", input });
+  }
+  expect(app.subscriptions?.filter(({ id }) => id === "evaluation-task-report" || id === "evaluation-metric-report")).toHaveLength(2);
+  expect(() => evaluationReportInput({ ...taskEvent, data: { ...taskEvent.data, jsonHash: "bad" } } as never)).toThrow("SHA-256 jsonHash");
+});
+
+test("weekly research adoption is owned by Alex Bob", () => {
+  const schedule = app.schedules?.find(({ id }) => id === "research-adoption-archive-review");
+  expect(schedule).toMatchObject({ intervalMs: 604800000, catchUp: "latest", input: { kind: "goal", data: { assignment: { agent: "bob" } } } });
+  expect(taskForInput({ id: "weekly-research", input: (schedule as any).input } as never).intent).toMatchObject({ agent: "bob", parentId: "root" });
 });
 
 test("comparison inputs attach to the migrated Gym specialist", () => {

@@ -93,6 +93,52 @@ function safe(value: string): string {
   const stem = value.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 72) || "work";
   return `${stem}-${createHash("sha256").update(value).digest("hex").slice(0, 12)}`;
 }
+function requiredText(data: Record<string, unknown>, field: string, eventType: string): string {
+  const value = typeof data[field] === "string" ? data[field].trim() : "";
+  if (!value) throw new Error(`${eventType} requires non-empty ${field}`);
+  return value;
+}
+function reportHash(data: Record<string, unknown>, field: string, eventType: string): string {
+  const value = requiredText(data, field, eventType);
+  if (!/^[a-f0-9]{64}$/.test(value)) throw new Error(`${eventType} requires SHA-256 ${field}`);
+  return value;
+}
+
+/** Preserve an immutable Evaluation publication as ordinary Alex improvement work. */
+export function evaluationReportInput(event: AppEvent<Record<string, unknown>>): AppInput | null {
+  const data = record(event.data);
+  const metric = event.type === "evaluation.metric_report_published";
+  const appId = metric ? String(data.appId ?? "").trim() : requiredText(data, "appId", event.type);
+  if (appId === "evaluation" || appId === "evaluation.app") return null;
+  const metricId = metric ? requiredText(data, "metricId", event.type) : undefined;
+  const taskId = metric ? undefined : requiredText(data, "taskId", event.type);
+  const publication = {
+    ...(appId ? { appId } : {}),
+    ...(metricId ? { metricId } : { taskId }),
+    ...(metric && data.alertId !== undefined ? { alertId: data.alertId } : {}),
+    evidenceHash: reportHash(data, "evidenceHash", event.type),
+    executionId: requiredText(data, "executionId", event.type),
+    report: requiredText(data, "report", event.type),
+    facts: requiredText(data, "facts", event.type),
+    jsonHash: reportHash(data, "jsonHash", event.type),
+    markdownHash: reportHash(data, "markdownHash", event.type),
+    ...(typeof data.reviewer === "string" && data.reviewer.trim() ? { reviewer: data.reviewer.trim() } : {}),
+    ...(typeof data.assessmentPurpose === "string" && data.assessmentPurpose.trim() ? { assessmentPurpose: data.assessmentPurpose.trim() } : {}),
+    ...(typeof data.rubricVersion === "string" && data.rubricVersion.trim() ? { rubricVersion: data.rubricVersion.trim() } : {}),
+    ...(typeof data.validityIdentity === "string" && data.validityIdentity.trim() ? { validityIdentity: data.validityIdentity.trim() } : {}),
+  };
+  return {
+    kind: "message",
+    data: {
+      message: `Review the immutable Evaluation ${metric ? "metric" : "Task"} report for ${metricId ?? `${appId}/${taskId}`}. Verify its exact identity and current evidence, then record a supported disposition, reuse fitting work, or commission the smallest justified improvement. Do not treat acknowledgment, a patch, or current recovery as verified resolution.`,
+      context: {
+        publication,
+        caller: { source: event.source, owner: event.owner, target: structuredClone(event.target), localKey: event.localKey },
+        event: structuredClone(event),
+      },
+    },
+  } as AppInput;
+}
 
 /** Route selected reviews and qualified Scout findings into executable Alex work. */
 export function taskInputForEvent(event: AppEvent<Record<string, unknown>>): AppInput | null {
@@ -271,6 +317,16 @@ export default defineApp({
   task: taskForInput,
   subscriptions: [
     {
+      id: "evaluation-task-report",
+      event: { type: "evaluation.task_report_published" },
+      toInput: evaluationReportInput,
+    },
+    {
+      id: "evaluation-metric-report",
+      event: { type: "evaluation.metric_report_published" },
+      toInput: evaluationReportInput,
+    },
+    {
       id: "selected-task-review",
       event: { type: "evaluation.task.review.requested", project: "alex" },
       toInput: taskInputForEvent,
@@ -296,11 +352,27 @@ export default defineApp({
       toInput: taskInputForEvent,
     },
   ],
-  schedules: automaticReviewConfig().enabled ? [{
-    id: "task-outcome-selector",
-    intervalMs: automaticReviewConfig().intervalMs,
-    input: { kind: "automatic-review", data: { reason: "scheduled" } },
-    catchUp: "latest" as const,
-  }] : [],
+  schedules: [
+    ...(automaticReviewConfig().enabled ? [{
+      id: "task-outcome-selector",
+      intervalMs: automaticReviewConfig().intervalMs,
+      input: { kind: "automatic-review" as const, data: { reason: "scheduled" } },
+      catchUp: "latest" as const,
+    }] : []),
+    {
+      id: "research-adoption-archive-review",
+      intervalMs: 7 * 24 * 60 * 60 * 1000,
+      catchUp: "latest" as const,
+      input: {
+        kind: "goal" as const,
+        data: {
+          outcome: "Assess qualified Scout findings and older archived research for a small evidence-backed improvement, or return a supported no-change or deferral decision.",
+          acceptance: ["Retain source limits and exact evidence; adopt, defer, or reject without inventing authority, and return the next archive cursor."],
+          assignment: { agent: "bob" as const },
+          context: { research: { opportunity: "weekly-archive-review", recordLimit: 3, candidateLimit: 1 } },
+        },
+      },
+    },
+  ],
   tasks: { maxConcurrent: 3 },
 });
