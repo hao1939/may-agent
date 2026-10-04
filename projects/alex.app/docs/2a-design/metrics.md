@@ -205,6 +205,42 @@ where possible. These properties do not require a new telemetry queue or error
 framework. Code records observations and evaluates declared rules; Apps and LLMs
 interpret uncertain causes and decide whether improvement is worth its cost.
 
+### Procedure-to-agent failovers
+
+The merged source in [PR #325](https://github.com/hao1939/may-agent/pull/325) records
+each failure-driven procedure-to-agent switch on its first agent attempt as
+`failoverFromAttemptId`. The claim and marker commit together; a crash before
+agent startup cannot lose the marker. Later settlement leaves it intact.
+This adds optional attempt metadata and a partial index, not another event
+queue, counter store or recovery lifecycle. Handler selection still uses the
+ordinary attempt history. Intentional handoff is not an unexpected failure;
+agent retries and continuations are not new switches.
+
+The existing optional sampler installs `task.failover-count-24h`, measured at
+five-minute intervals. It counts retained marked claims whose start time lies in
+`[now-24h, now)`, regardless of their eventual outcome. `sampleSize` is the number
+of marked claims, not all attempts or a denominator for a success rate. The
+partial index selects these records without reading every Task. Older unmarked
+history is unknown; zero proves only that this retained, instrumented cohort
+contains no switches. The metric does not count tool retries within an invocation
+or every other recovery mechanism in the Host.
+
+Each sample carries up to five exact App/Task/attempt references and their failed
+source-attempt references. Follow them through `/api/task-attempts` to inspect
+the source failure and subsequent execution. That report also exposes failover
+counts and the marker. A rolling count declining as records age out is not proof
+that a defect was repaired or an original request recovered.
+
+There is no default alert threshold or per-failover request. Existing metric
+reads and periodic review can consume it; an App may configure a breach rule
+and route the existing `metric.breach`/`metric.recovered` transitions. Startup
+preserves that App calibration and retirement. Repeated measurement stays quiet,
+and a continuing breach does not create repeated review requests. This implements
+durable observation. The [October 4 rollout](../archive/reviews/task-agent-failover-20261004.md#live-rollout)
+verified two naturally scheduled samples retaining count one across agent
+continuations. Evidence that an evaluator independently follows up remains a
+separate acceptance check.
+
 ## Public App capability
 
 The supplied metric capability is the supported interface:

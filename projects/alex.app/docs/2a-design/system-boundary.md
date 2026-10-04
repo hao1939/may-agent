@@ -256,13 +256,22 @@ Recovery cannot depend entirely on the failed authored workflow returning a
 special instruction. Its outer execution boundary and exact caller report
 must still expose failure. An available owner can investigate with existing
 tools and correct isolated source or revise the method through authorized controls.
-A source-only repair may be exercised by ordinary retry of the same workflow and
-Task generation; changing the specification is not itself a recovery requirement.
+An agent may exercise a repaired workflow through its ordinary tools within the
+same Task generation; changing the specification is not itself a recovery requirement.
 Prepared alternatives, backoff and idempotency guards are mechanical prerequisites,
 not proof that an agent diagnosed unfamiliar broken code. Such proof needs the
 agent's own investigation and authorized correction, followed by verification of
-the original outcome through normal settlement. Explicit workflow selection is
-not silently bypassed. A dead Host requires the installation's
+the original outcome through normal settlement. The selected procedure is the
+initial execution path. On failure, the Host can give the same Task to its
+responsible agent through ordinary execution,
+retaining the failed attempt and original obligations. This changes execution,
+not scope or authority; configured verification still governs completion.
+The Host marks each failure-driven switch on the agent's first attempt and
+exposes it through existing metrics and attempt reads. Successful recovery does
+not erase that evidence. Apps judge whether its frequency or cost warrants repair;
+recording a switch alone does not create another request or notification.
+[Attempt selection](task-attempts.md#selecting-the-attempt-mechanism) owns the
+exact handoff and restart behavior. A dead Host requires the installation's
 process supervisor/operator; an unavailable owner uses only the fallback
 actually installed. Automatic supervisor routing remains deferred as stated
 above. A safe visible unresolved outcome is not successful restoration.

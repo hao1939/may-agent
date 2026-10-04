@@ -103,6 +103,31 @@ The public Task reader remains authoritative; these files retain the scope and
 coverage of the original read. See the
 [integration record](../archive/reviews/task-decision-context-integration-20260926.md).
 
+### Current view and supporting detail
+
+The default context is a working view, not a transcript: assignment and acceptance,
+current conclusions, open obligations, changed facts and exact references to their
+supporting evidence. Failures, useful progress and waits can coexist. Show enough
+identity and scope for the agent to choose what to read next; shrinking a body
+must not hide the existence of the other inputs or make an omission look complete.
+The Host exposes recorded facts and access paths; the agent judges relevance.
+
+Repeated mechanically identical observations can be presented once with their
+count, first/last occurrence and evidence references. A different error, changed
+requirement or independently unresolved input remains distinguishable. A general
+failure count alone does not establish that every failure had the same cause.
+Full attempt records remain diagnostic evidence; summarizing the current view
+does not acknowledge input, erase history or establish recovery.
+
+**Implementation follow-up:** The managed agent already receives a short entry
+and a refreshed decision brief, rather than the complete saved assignment. The
+October 4 rollout nevertheless exposed an input preview that hides most input
+identities, large detail reads and repeated discovery across attempts. Improve
+navigation through the existing input/evidence readers before adding a new
+summary store or retention mechanism. This is a presentation follow-up, not a
+claim that repeated-failure grouping is implemented. See
+[the live context findings](../archive/reviews/task-agent-failover-20261004.md#context-findings).
+
 The optional outcome projection groups exact Task identities for a simpler read
 view while preserving every member and link. It is not a new work resource,
 write API, or completion authority; list/get remain the exact Task interface.
