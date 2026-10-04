@@ -33,6 +33,10 @@ Install Chrome/Chromium for browser tests (or set `CHROME_PATH`). CI requires
 the browser test to execute. Locally, `E2E_NO_UI=1` explicitly skips it; a
 missing prerequisite is reported as a skip, not a pass.
 
+Install the Docker CLI with its Compose plugin for the configuration regressions.
+They render isolated fixture files with `docker compose config`; they do not
+require a Docker daemon or start containers.
+
 The optional installed-agent loader check runs separately:
 
 ```sh

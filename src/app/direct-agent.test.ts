@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Type } from "@earendil-works/pi-ai";
@@ -7,6 +7,59 @@ import { prepareAgentExecution } from "../lib/agent-execution.js";
 import { prepareDirectAgentExecution, resolveDirectToolPolicy, runDirectAgent } from "./direct-agent.js";
 
 describe("direct agent tool policy", () => {
+  test("preserves protections and grants in a distinct execution root", async () => {
+    const root = await mkdtemp(join(tmpdir(), "may-direct-policy-"));
+    const projectRoot = join(root, "installation");
+    const workRoot = join(root, "checkout");
+    const sharedRoot = join(projectRoot, "shared");
+    const agentDir = join(projectRoot, "agents", "example");
+    let direct: Awaited<ReturnType<typeof prepareDirectAgentExecution>> | undefined;
+    try {
+      await mkdir(agentDir, { recursive: true });
+      await mkdir(sharedRoot, { recursive: true });
+      await writeFile(join(agentDir, "agent.json"), JSON.stringify({
+        name: "example", description: "example", domain: "test", model: "test", tools: ["coding"],
+      }));
+      await writeFile(join(sharedRoot, "file-write-policy.json"), JSON.stringify({
+        protectedPaths: ["criteria/**"],
+        grants: [{ paths: ["agents/reviewer/agent.json"], writers: ["example"] }],
+      }));
+      for (const targetRoot of [projectRoot, workRoot]) {
+        await mkdir(join(targetRoot, "criteria"), { recursive: true });
+        await mkdir(join(targetRoot, "agents", "reviewer"), { recursive: true });
+        await writeFile(join(targetRoot, "criteria", "rules.md"), "original");
+        await writeFile(join(targetRoot, "agents", "reviewer", "agent.json"), '{"version":1}');
+      }
+      direct = await prepareDirectAgentExecution({
+        agentName: "example", task: "Inspect the fixture", projectRoot, workRoot,
+        agentsRoot: join(projectRoot, "agents"), sharedRoot, outputRoot: join(root, "output"),
+        models: { test: { id: "test-model" } as any },
+      });
+      const write = direct.prepared.tools.find(tool => tool.name === "write")!;
+      const edit = direct.prepared.tools.find(tool => tool.name === "edit")!;
+      // Relative paths exercise the checkout; absolute paths retain installation protection.
+      for (const prefix of ["", projectRoot]) {
+        const protectedPath = join(prefix, "criteria", "rules.md");
+        for (const { tool, params } of [
+          { tool: write, params: { path: protectedPath, content: "rewritten" } },
+          { tool: edit, params: { path: protectedPath, oldText: "original", newText: "rewritten" } },
+        ]) {
+          const denied = await tool.execute("blocked-write", params);
+          expect(denied.content).toMatchObject([{ type: "text", text: expect.stringContaining("WRITE BLOCKED") }]);
+        }
+        const grantedPath = join(prefix, "agents", "reviewer", "agent.json");
+        await write.execute("granted-write", { path: grantedPath, content: '{"version":2}' });
+        await edit.execute("granted-edit", { path: grantedPath, oldText: "2", newText: "3" });
+        const targetRoot = prefix || workRoot;
+        expect(await readFile(join(targetRoot, "criteria", "rules.md"), "utf8")).toBe("original");
+        expect(await readFile(join(targetRoot, "agents", "reviewer", "agent.json"), "utf8")).toBe('{"version":3}');
+      }
+    } finally {
+      direct?.cleanup();
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   test("enforces a caller-owned structured result through finish", async () => {
     const root = await mkdtemp(join(tmpdir(), "may-direct-schema-"));
     const agentDir = join(root, "agents", "example");

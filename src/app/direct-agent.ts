@@ -190,7 +190,10 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
   const model = options.models[config.model];
   if (!model) throw new Error(`Agent ${config.name} uses unknown model ${config.model}`);
   let executionManifest = resolveDirectToolPolicy(config.name, config.tools, options.toolDenials);
-  const fileWritePolicy = readFileWritePolicy(options.sharedRoot, options.projectRoot);
+  const fileWritePolicy: FileWritePolicy = {
+    ...readFileWritePolicy(options.sharedRoot, options.projectRoot),
+    executionRoot: resolve(options.workRoot),
+  };
   const { tools, cleanup } = await buildDirectTools(config, source, options, executionManifest.effectiveTools, fileWritePolicy);
   const definitionSource = options.visibleAgentDir ? { ...source, dir: resolve(options.visibleAgentDir) } : source;
   const definition = await buildAgentDefinition({

@@ -147,6 +147,12 @@ an App binding the Host can run background Tasks, but Console, Telegram and
 human notifications report that their destination is unavailable. Browser
 clients read the same binding from `/api/interface`.
 
+For Compose, put these bindings in the installation `.env` consumed by
+`container/compose.yml`, or set them in an explicit Compose override file.
+The base Compose file does not forward shell binding variables or inject
+identity defaults: `AGENT` takes precedence over legacy `DAEMON_AGENT`, and
+the runtime defaults to `host` only when both are empty or absent.
+
 The installation may commit `shared/file-write-policy.json`:
 
 ```json

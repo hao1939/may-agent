@@ -18,6 +18,9 @@ services:
       start_period: 10s
     logging:
       driver: json-file
+    # Interface bindings (AGENT, legacy DAEMON_AGENT, CONVERSATION_APP/ID)
+    # come from this file or an explicit Compose override. Environment defaults
+    # here would mask env_file values before the runtime can apply its fallback.
     env_file: ../.env
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -35,6 +38,3 @@ services:
       # Leave capacity for interactive work while allowing Apps to
       # make progress across several independent task controllers.
       - MAY_HOST_MAX_CONCURRENT=${MAY_HOST_MAX_CONCURRENT:-8}
-      - AGENT=${AGENT:-host}
-      - CONVERSATION_APP=${CONVERSATION_APP:-}
-      - CONVERSATION_ID=${CONVERSATION_ID:-}
