@@ -2887,6 +2887,11 @@ export function claimObservedAppTask(
     specHash,
     owner: agent,
     handler,
+    // Record the switch atomically with its claim, even if execution never starts.
+    // Continuing agent attempts and intentional handoffs are not new failovers.
+    ...(agentHandoff && latestAttempt?.state === "failed" &&
+      !latestAttempt.handler.startsWith("agent:") && !isAgentHandoffReason(latestAttempt.failureReason)
+      ? { failoverFromAttemptId: latestAttempt.metadata.id } : {}),
     runtimeId: reconcilerRuntimeId,
     state: "running",
     reason: input.reason ?? "event",

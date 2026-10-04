@@ -130,6 +130,8 @@ export type AppTaskAttempt = {
   specHash: string;
   owner: string;
   handler: string;
+  /** First agent claim after a procedure failure; evidence, not handler-selection state. */
+  failoverFromAttemptId?: string;
   runtimeId: string;
   state: "running" | "completed" | "failed" | "interrupted";
   reason: string;

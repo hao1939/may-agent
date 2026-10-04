@@ -8,6 +8,7 @@ import { getDb } from "../lib/db/connection.js";
 import { withSqliteBusyRetry } from "../lib/db/busy-retry.js";
 import { resolveRuntimeRoots } from "./path-roots.js";
 import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.js";
+import { TASK_FAILOVER_METRIC } from "./adapters/reporting/task-failover-metrics.js";
 import { redactTranscriptSecrets } from "../lib/persistence.js";
 
 export const METRIC_SOURCE_MEASUREMENT_EVENT = "trigger.metrics-snapshot";
@@ -278,6 +279,10 @@ export function attachMetricSourceMeasurement(options: {
   // writer lock; keep measurement and subscription effects outside this retry.
   withSqliteBusyRetry("register source metric definitions", () => {
     metricService.defineMany(WORKFLOW_OUTCOME_METRICS);
+    // Install observation defaults once; retain any App-owned calibration or retirement.
+    if (!db.prepare("SELECT id FROM metrics WHERE id = ?").get(TASK_FAILOVER_METRIC.id)) {
+      metricService.define(TASK_FAILOVER_METRIC);
+    }
     const subscriberFailureSource = {
       source: "rolling one-hour subscriber.failed event count",
       sourceQuery: SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY,

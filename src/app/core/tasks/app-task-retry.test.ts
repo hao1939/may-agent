@@ -303,6 +303,7 @@ it("keeps an internal workflow handoff quiet, then returns the agent failure thr
   if (agent.kind !== "claimed") throw new Error(`Expected handoff, got ${agent.kind}`);
   expect(agent.handler).toBe("agent:owner");
   expect(agent.handoff?.reason).toBe("needs-agent");
+  expect(f.config.resourceStore.readAttempt(agent.attemptId)?.failoverFromAttemptId).toBeUndefined();
   expect(agent.events).toEqual(workflow.events);
   failAppTaskAttempt(f.config, agent, "Agent result failed verification", {
     reason: "HandlerResultInvalid",
@@ -340,14 +341,18 @@ it.each(["workflow", "executor"] as const)("keeps %s failover on the same Task a
   expect(agent.handler).toBe("agent:owner");
   expect(agent.handoff).toMatchObject({ reason: "needs-agent", facts: ["receipt:original-effect"] });
   expect(agent.previousAttempt?.attemptId).toBe(original.attemptId);
+  f.reopen(); // The switch is durable before the agent reports anything.
+  expect(f.config.resourceStore.readAttempt(agent.attemptId)?.failoverFromAttemptId).toBe(original.attemptId);
   reportAppTaskFailure(f.config, agent, { state: "incomplete", summary: "Diagnosis retained; original work remains", facts: ["diagnosis:partial"] });
   setSystemTime(f.config.resourceStore.readTask("work")!.status.executionRetryAt! + 1);
   f.reopen();
   const continuation = f.claim("auto");
   expect(continuation.handler).toBe("agent:owner");
+  expect(f.config.resourceStore.readAttempt(continuation.attemptId)?.failoverFromAttemptId).toBeUndefined();
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toBeNull();
   completeAppTask(f.config, continuation, { summary: "Recovered and verified", facts: ["defect:retained-for-evaluation"] });
   expect(f.config.resourceStore.readAttempt(original.attemptId)).toEqual(failed);
+  expect(f.config.resourceStore.readAttempt(agent.attemptId)?.failoverFromAttemptId).toBe(original.attemptId);
   observeAppTaskIntent(f.config, { appAgent: "owner", intent: { ...intent, outcome: "Read the revised measurement" } });
   expect(f.claim("auto").handler).toBe(`${kind}:measure`);
 });
@@ -362,16 +367,44 @@ it("keeps procedure retry without an agent and retains agent selection if it lat
   });
   if (retry.kind !== "claimed") throw new Error(`Expected retry, got ${retry.kind}`);
   expect(retry.handler).toBe("executor:measure");
+  expect(f.config.resourceStore.readAttempt(retry.attemptId)?.failoverFromAttemptId).toBeUndefined();
   failAppTaskAttempt(f.config, retry, "Still failed");
   setSystemTime(f.config.resourceStore.readTask("work")!.status.executionRetryAt!);
   const agent = f.claim("auto");
   expect(agent.handler).toBe("agent:owner");
+  expect(f.config.resourceStore.readAttempt(agent.attemptId)?.failoverFromAttemptId).toBe(retry.attemptId);
   failAppTaskAttempt(f.config, agent, "Agent temporarily unavailable");
   setSystemTime(f.config.resourceStore.readTask("work")!.status.executionRetryAt!);
   f.reopen();
-  expect(claimObservedAppTask(f.config, {
+  const continuation = claimObservedAppTask(f.config, {
     taskId: "work", appAgent: "owner", handler: "auto", canUseAgentFallback: () => false,
-  })).toMatchObject({ kind: "claimed", handler: "agent:owner" });
+  });
+  expect(continuation).toMatchObject({ kind: "claimed", handler: "agent:owner" });
+  if (continuation.kind !== "claimed") throw new Error("Expected agent continuation");
+  expect(f.config.resourceStore.readAttempt(continuation.attemptId)?.failoverFromAttemptId).toBeUndefined();
+});
+
+it("marks a CLI-to-agent switch only when its claim commits", () => {
+  const f = fixture();
+  const original = f.claim("cli:measure");
+  failAppTaskAttempt(f.config, original, "CLI failed before returning a result");
+  setSystemTime(f.config.resourceStore.readTask("work")!.status.executionRetryAt!);
+  const commit = spyOn(f.config.resourceStore, "commit").mockImplementationOnce(() => {
+    throw new Error("Claim storage unavailable");
+  });
+  try {
+    expect(() => f.claim("auto")).toThrow("Claim storage unavailable");
+  } finally {
+    commit.mockRestore();
+  }
+  f.reopen();
+  const count = () => f.config.resourceStore.db.prepare(`SELECT COUNT(*) AS n FROM app_task_attempts
+    WHERE json_extract(attempt_json, '$.failoverFromAttemptId') IS NOT NULL`).get();
+  expect(count()).toEqual({ n: 0 });
+  const agent = f.claim("auto");
+  f.reopen();
+  expect(f.config.resourceStore.readAttempt(agent.attemptId)?.failoverFromAttemptId).toBe(original.attemptId);
+  expect(count()).toEqual({ n: 1 });
 });
 
 it("does not turn fallback selection into permission to resume owner-stopped work", () => {
