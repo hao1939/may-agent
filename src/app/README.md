@@ -35,6 +35,10 @@ See [Conversation handling](conversations/README.md) for the interactive path.
 The console loop reports input failures locally and remains available for the
 next input; a rejected admission must not terminate unrelated background work.
 Reporting does not retry the input or claim it was accepted.
+CLI argument parsing captures one human-interface binding before choosing a
+mode. Runtime, web, send and maintenance wiring carry that selection forward;
+the [control guide](../../packages/control/README.md#selecting-a-human-interface)
+defines precedence and the distinction between interface identity and recipient.
 
 ## Ownership and extension starting points
 

@@ -249,7 +249,12 @@ describe("simple event interface", () => {
   });
 
   it("allows direct agent input without a conversational capability", () => {
-    const { events } = fixture();
+    const { db, events } = fixture();
+    expect(() => events.publish(
+      { type: "chat.start.requested", data: { agent: "helper", message: "Interface input" } },
+      { source: "fixture" },
+    )).toThrow("No Conversation App is configured");
+    expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 0 });
     const receipt = events.publish(
       { type: "chat.start.requested", data: { agent: "may", message: "Direct agent input" } },
       { source: "fixture" },

@@ -483,6 +483,18 @@ describe("emitDaemonEvent", () => {
     });
   });
 
+  it("rejects headless interface input before connecting while allowing other agents", async () => {
+    const writes: string[] = [];
+    const endpoint = captureEndpoint(writes);
+    expect(() => sendAgentMessage(endpoint, "helper", "hello", "cli", { interface: { agent: "helper" } }))
+      .toThrow("No Conversation App is configured");
+    expect(writes).toEqual([]);
+    await sendAgentMessage(endpoint, "worker", "review", "cli", { interface: { agent: "helper" } });
+    expect(JSON.parse(writes[0]!)).toMatchObject({
+      event: { type: "chat.start.requested", data: { agent: "worker", message: "review" } },
+    });
+  });
+
   it("preserves an independent App and retained Conversation and keeps direct agent chat direct", async () => {
     const writes: string[] = [];
 

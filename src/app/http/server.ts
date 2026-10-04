@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { listConfiguredAgentNames, listRuntimeAgentDirectories } from "../loader/agent-discovery.js";
-import { interfaceBinding } from "@may-agent/control";
+import { interfaceBinding, type InterfaceBinding } from "@may-agent/control";
 import { taskAttemptsQuery, readTaskAttempts } from "../adapters/reporting/task-attempts.js";
 import { metricEvidenceQuery, readMetricEvidence } from "../adapters/reporting/metric-evidence.js";
 /**
@@ -78,7 +78,7 @@ const HEARTBEAT_SESSION_PREDICATE = `(
 )`;
 
 export interface WebUIOptions {
-  interfaceAgent?: string;
+  interface?: InterfaceBinding;
   stateDir: string;
   port: number;
 }
@@ -508,7 +508,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   // Development can serve source assets without changing App discovery or deployment.
   const PLATFORM_UI_DIR = resolve(process.env.MAY_AGENT_UI_DIR?.trim() || join(PROJECTS_ROOT, "platform", "ui"));
   const DAEMON_INSTANCE = process.env.DAEMON_INSTANCE || process.env.INSTANCE || "default";
-  const humanInterface = { ...interfaceBinding(), ...(opts.interfaceAgent ? { agent: opts.interfaceAgent } : {}) };
+  const humanInterface = opts.interface ?? interfaceBinding();
   const DAEMON_AGENT = humanInterface.agent;
 
   function _db(): SqliteDb {

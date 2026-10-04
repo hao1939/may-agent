@@ -127,7 +127,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     if (!message) return;
     const agent = nonEmptyString(data.agent) ?? options.interfaceAgent ?? "host";
     const source = eventSource(event, nonEmptyString(data.channel) ?? "human");
-    if (agent === options.interfaceAgent && options.conversationAppId) {
+    if (agent === options.interfaceAgent) {
       admitInterfaceInput(message, source, {
         requestId: nonEmptyString(data.requestId) ?? undefined,
         conversationId: nonEmptyString(data.conversationId) ?? undefined,

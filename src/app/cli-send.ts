@@ -7,9 +7,9 @@
  *   bun src/app/may.ts --send worker --message "review this" --artifact /path/to/proposal.md
  *
  * Delivery:
- *   1. Uses the convention daemon socket path:
+ *   1. Receives the CLI-selected binding and convention daemon socket path:
  *      <persistDir>/instances/<DAEMON_INSTANCE>/<interface-agent>.sock
- *   2. Uses configured App admission for the interface agent, otherwise direct chat
+ *   2. Requires App admission for the interface agent; other agents use direct chat
  *   3. Fails clearly if the daemon socket cannot accept the message
  *
  * Exits 0 on success, 1 on error.
@@ -17,20 +17,23 @@
 
 import { resolve } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
-import { daemonSocketPath, interfaceBinding, sendAgentMessage } from "@may-agent/control/client";
+import { sendAgentMessage, type InterfaceBinding } from "@may-agent/control/client";
 
 
-export interface SendOptions {
+interface SendMessage {
   agent: string;
   message: string;
   artifact?: string;
-  persistDir: string;
-  agentsRoot: string;
   source?: string;
 }
 
+export interface SendOptions extends SendMessage {
+  socketPath: string;
+  interface: InterfaceBinding;
+}
+
 export async function cliSend(opts: SendOptions): Promise<boolean> {
-  const { agent, message, artifact, persistDir, agentsRoot: _agentsRoot, source } = opts;
+  const { agent, message, artifact, socketPath, source } = opts;
 
   // Validate artifact exists if provided
   if (artifact) {
@@ -48,13 +51,11 @@ export async function cliSend(opts: SendOptions): Promise<boolean> {
     fullMessage = `${message}\n\nArtifact: ${artifact}`;
   }
 
-  const socketPath = daemonSocketPath(persistDir, {
-    instance: process.env.DAEMON_INSTANCE || process.env.INSTANCE || "default",
-    interfaceAgent: interfaceBinding().agent,
-  });
-
   try {
-    const result = await sendAgentMessage(socketPath, agent, fullMessage, source ?? "cli", { timeoutMs: 5000 });
+    const result = await sendAgentMessage(socketPath, agent, fullMessage, source ?? "cli", {
+      timeoutMs: 5000,
+      interface: opts.interface,
+    });
     if (result.type === "ok") {
       console.log(`Sent to ${agent} via daemon socket (${socketPath})`);
       return true;
@@ -65,7 +66,7 @@ export async function cliSend(opts: SendOptions): Promise<boolean> {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(
       `Daemon socket delivery failed at ${socketPath}: ${msg}. ` +
-      "Task was not delivered. Start the daemon or set DAEMON_INSTANCE/AGENT to the running daemon convention path.",
+      "Input was not delivered. Check the destination binding and the running daemon's instance and agent selection.",
     );
     return false;
   }
@@ -75,7 +76,7 @@ export async function cliSend(opts: SendOptions): Promise<boolean> {
  * Parse --send CLI args from process.argv.
  * Returns null if --send is not present.
  */
-export function parseSendArgs(argv: string[]): SendOptions | null {
+export function parseSendArgs(argv: string[]): SendMessage | null {
   const sendIdx = argv.indexOf("--send");
   if (sendIdx === -1) return null;
 
@@ -112,12 +113,9 @@ export function parseSendArgs(argv: string[]): SendOptions | null {
     artifact = argv[artIdx + 1];
   }
 
-  // These are resolved by the caller (may.ts) before passing in
   return {
     agent,
     message,
     artifact,
-    persistDir: "", // filled by caller
-    agentsRoot: "", // filled by caller
   };
 }

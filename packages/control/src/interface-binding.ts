@@ -5,8 +5,11 @@ export interface InterfaceBinding {
   conversationId?: string;
 }
 
-export function interfaceBinding(env: Record<string, string | undefined> = process.env): InterfaceBinding {
-  const agent = env.AGENT?.trim() || env.DAEMON_AGENT?.trim() || "host";
+export function interfaceBinding(
+  env: Record<string, string | undefined> = process.env,
+  agentOverride?: string,
+): InterfaceBinding {
+  const agent = agentOverride?.trim() || env.AGENT?.trim() || env.DAEMON_AGENT?.trim() || "host";
   const appId = env.CONVERSATION_APP?.trim();
   const conversationId = env.CONVERSATION_ID?.trim();
   if (conversationId && !appId) throw new Error("CONVERSATION_ID requires CONVERSATION_APP");

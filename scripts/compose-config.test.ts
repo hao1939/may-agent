@@ -41,7 +41,7 @@ test.each([
     expect(stderr).toBe("");
     expect(code).toBe(0);
     const env = JSON.parse(stdout).services.may.environment;
-    expect(parseAppArgs([], env).interfaceAgent).toBe(expected);
+    expect(parseAppArgs([], env).humanInterface).toEqual({ agent: expected, appId: "support", conversationId: "retained-room" });
     expect(interfaceBinding(env)).toEqual({ agent: expected, appId: "support", conversationId: "retained-room" });
   } finally {
     await rm(root, { recursive: true, force: true });

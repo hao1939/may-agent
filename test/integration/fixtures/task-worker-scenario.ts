@@ -812,7 +812,7 @@ export async function execute(ctx) {
     await Promise.race([readyEvent, prematureExit]);
     // This real workflow worker owns a lease but has no agent session.
     assert.deepEqual(readExecutionStatus(f.persistDir), { sessions: [], activeWork: true });
-    assert.deepEqual(await observeDaemonLiveness(f.persistDir), { responsive: false, activeWork: true });
+    assert.deepEqual(await observeDaemonLiveness(f.persistDir, join(f.persistDir, "absent.sock")), { responsive: false, activeWork: true });
     const target = { appId: "sample", taskId: "work/one" };
     f.bus.emit({
       type: "worker.feedback",

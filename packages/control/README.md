@@ -154,12 +154,34 @@ or new scheduler. Thresholds, review and remediation remain App policy.
 
 ## Selecting a human interface
 
-The installation supplies `AGENT` (falling back to `DAEMON_AGENT`, then `host`),
-`CONVERSATION_APP` and optional `CONVERSATION_ID`; agent and App identities are independent.
-Control clients and liveness/restart probes use the same agent precedence as runtime startup. Missing App wiring
-is a headless installation, not an implicit destination. `daemonSocketPath()`
-uses `host.sock` when no identity is supplied. Supply the configured identity
-when connecting to an existing installation.
+The CLI resolves one interface binding before selecting runtime, send, emit,
+web-only or maintenance mode. Agent precedence is `--agent` (including
+`--agent=name`), then `AGENT`, then `DAEMON_AGENT`, then `host`. The App and
+Conversation come from `CONVERSATION_APP` and optional `CONVERSATION_ID`;
+an agent override preserves both. Modes receive the resolved binding or socket
+path rather than selecting the agent again from the environment.
+
+| Setting | Selects |
+| --- | --- |
+| `--agent` / `AGENT` | Interface identity and daemon socket name |
+| `--send <recipient>` | Agent receiving this message |
+| `CONVERSATION_APP` | App admitting human-interface input |
+| `CONVERSATION_ID` | Retained communication context; defaults to `<app>:primary` |
+
+Missing App wiring permits headless Task execution, but input addressed to the
+selected human interface fails explicitly. Client and Host admission enforce
+this boundary; missing configuration cannot turn it into direct agent chat.
+Other agents and explicit session controls keep their existing paths and scope.
+Console rejection remains local and leaves unrelated background Tasks running.
+
+Client and maintenance commands must select the same instance and interface
+identity as their target daemon. For example, a daemon started with
+`--agent helper` can be probed using `--maintenance --agent helper` or shared
+`AGENT=helper` configuration. A CLI flag affects that invocation only; it does
+not rewrite a separately started maintenance process or supervisor. The supplied
+container shares its environment with both processes; its shell restarter uses
+that environment or an explicit `MAY_AGENT_HEALTH_SOCKET` override.
+`daemonSocketPath()` uses `host.sock` when no identity is supplied.
 
 `sendDaemonInput` requires an explicit `appId` and accepts a retained `conversationId`.
 `sendAgentMessage` sends to an agent; for the configured human interface it uses App

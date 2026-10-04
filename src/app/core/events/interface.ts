@@ -196,8 +196,10 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
       if (input.target?.appId) throw new Error("App input must use app.input.requested");
       const agent = optionalText(input.data.agent);
       if (!agent) throw new Error("chat.start.requested requires data.agent");
-      if (options.conversationAppId && agent === options.conversationAgent)
+      if (agent === options.conversationAgent) {
+        if (!options.conversationAppId) throw new Error("No Conversation App is configured");
         throw new Error(`${agent} input must use app.input.requested`);
+      }
       if (!options.hasAgent(agent)) throw new Error(`Agent ${agent} is not loaded`);
       requiredText(input.data.message, "chat.start.requested data.message");
     },

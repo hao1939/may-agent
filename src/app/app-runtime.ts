@@ -1,4 +1,3 @@
-import { interfaceBinding } from "@may-agent/control";
 import { randomUUID } from "node:crypto";
 import { assertLegacyCliTasksSettled } from "../lib/cli-agent.js";
 import { basename, dirname, resolve } from "node:path";
@@ -147,11 +146,12 @@ export async function runAppRuntime(opts: {
     webEnabled: WEB_ENABLED,
     quietConsole: QUIET_CONSOLE,
     initialTask: INITIAL_TASK,
-    interfaceAgent,
+    humanInterface,
     envSessionId: ENV_SESSION_ID,
     envParentSessionId: ENV_PARENT_SESSION_ID,
     envParentAgent: ENV_PARENT_AGENT,
   } = opts.appArgs;
+  const interfaceAgent = humanInterface.agent;
   const interactiveConsole = CONSOLE_ENABLED && process.stdin.isTTY;
   const backgroundEnabled = runsBackgroundWork(opts.appArgs, Boolean(interactiveConsole));
 
@@ -178,7 +178,7 @@ export async function runAppRuntime(opts: {
   } else if (process.env.MAY_DAEMON_QUIET !== "1") attachDaemonInfoLog(bus);
 
   if (WEB_ENABLED) {
-    const { port } = await startWebMode({ interfaceAgent, stateDir: opts.persistDir, port: parseWebPort(process.env.WEB_PORT) });
+    const { port } = await startWebMode({ interface: humanInterface, stateDir: opts.persistDir, port: parseWebPort(process.env.WEB_PORT) });
     bus.emit({ type: "info", message: `[web] Dashboard running on http://localhost:${port}` });
   }
 
@@ -286,7 +286,6 @@ export async function runAppRuntime(opts: {
         controlKey,
       }),
   });
-  const humanInterface = interfaceBinding();
   const conversationAppId = humanInterface.appId;
   const events = createEventInterface({
     conversationAgent: interfaceAgent,

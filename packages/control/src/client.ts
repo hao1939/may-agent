@@ -379,7 +379,8 @@ export function sendAgentMessage(
   opts?: { timeoutMs?: number; interface?: InterfaceBinding },
 ): Promise<SocketResponse> {
   const binding = opts?.interface ?? interfaceBinding();
-  if (agent === binding.agent && binding.appId) {
+  if (agent === binding.agent) {
+    if (!binding.appId) throw new Error("No Conversation App is configured");
     return sendDaemonInput(endpoint, message, source, { appId: binding.appId, conversationId: binding.conversationId, timeoutMs: opts?.timeoutMs });
   }
   return sendSocketCommand(

@@ -64,6 +64,26 @@ function cleanup(root: string, router: { close(): void }): void {
 }
 
 describe("command router", () => {
+  it("cannot start direct chat for a headless interface through internal event routing", () => {
+    const f = fixture();
+    f.router.close();
+    const router = attachCommandRouter({
+      interfaceAgent: "helper", bus: f.bus, manager: f.manager as any, projectRoot: f.root,
+      reload: () => ({ ok: true, summary: "fixture" }), restart: () => {}, shutdown: () => {},
+    });
+    try {
+      const event = f.bus.emit({ type: "chat.start.requested", source: "fixture", owner: "agent:helper",
+        data: { agent: "helper", message: "hello" } } as any);
+      expect(f.runs).toEqual([]);
+      expect(getDb(f.root).prepare("SELECT delivery_status FROM events WHERE id = ?").get(Number(event[EVENT_ROW_ID])))
+        .toEqual({ delivery_status: "pending" });
+      f.bus.emit({ type: "chat.start.requested", source: "fixture", owner: "agent:worker",
+        data: { agent: "worker", message: "review" } } as any);
+      expect(f.runs).toHaveLength(1);
+      expect(f.runs[0]?.agent).toBe("worker");
+    } finally { cleanup(f.root, router); }
+  });
+
   it("a status question cannot reactivate a paused legacy project or start work", async () => {
     const f = fixture();
     try {

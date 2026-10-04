@@ -93,10 +93,10 @@ test("idle standalone sessions are visible but do not protect active work; cance
 
 test("maintenance falls back to shared work when the socket is absent and exposes storage failure", async () => {
   const { root, db } = fixture();
-  expect(await observeDaemonLiveness(root)).toEqual({ responsive: false, activeWork: true });
+  expect(await observeDaemonLiveness(root, join(root, "absent.sock"))).toEqual({ responsive: false, activeWork: true });
   db.prepare("UPDATE app_task_attempts SET lease_until = 0").run();
-  expect(await observeDaemonLiveness(root)).toEqual({ responsive: false, activeWork: false });
+  expect(await observeDaemonLiveness(root, join(root, "absent.sock"))).toEqual({ responsive: false, activeWork: false });
   db.prepare("DROP TABLE sessions").run();
   expect(() => readExecutionStatus(root)).toThrow();
-  await expect(observeDaemonLiveness(root)).rejects.toThrow();
+  await expect(observeDaemonLiveness(root, join(root, "absent.sock"))).rejects.toThrow();
 });

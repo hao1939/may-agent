@@ -6,6 +6,7 @@
 // production binary.
 import "./sdk-resolver-plugin.js";
 
+import { daemonSocketPath } from "@may-agent/control";
 import { execSync } from "node:child_process";
 import packageIdentity from "../../package.json" with { type: "json" };
 import { createIdentityWriter } from "./daemon.js";
@@ -95,11 +96,6 @@ const PROJECT_ROOT = ROOTS.projectRoot;
 const AGENTS_ROOT = ROOTS.agentsRoot;
 const PERSIST_DIR = ROOTS.persistDir;
 
-if (process.argv.includes("--maintenance") || process.argv.includes("--maintenance-once")) {
-  await runMaintenanceMode({ persistDir: PERSIST_DIR });
-  process.exit(0);
-}
-
 // ── Instance identity ───────────────────────────────────────────────────
 
 const INSTANCE = process.env.INSTANCE || "";
@@ -117,12 +113,21 @@ try {
   process.exit(1);
 }
 
-const { emitMode: EMIT_MODE, interfaceAgent, webOnlyMode: WEB_ONLY_MODE } = appArgs;
+const { emitMode: EMIT_MODE, humanInterface, webOnlyMode: WEB_ONLY_MODE } = appArgs;
+const controlSocketPath = daemonSocketPath(PERSIST_DIR, {
+  instance: process.env.DAEMON_INSTANCE || INSTANCE_LABEL,
+  interfaceAgent: humanInterface.agent,
+});
+
+if (process.argv.includes("--maintenance") || process.argv.includes("--maintenance-once")) {
+  await runMaintenanceMode({ persistDir: PERSIST_DIR, socketPath: controlSocketPath });
+  process.exit(0);
+}
 
 const controlExitCode = await runRequestedControlExitMode({
   appArgs,
-  agentsRoot: AGENTS_ROOT,
   persistDir: PERSIST_DIR,
+  socketPath: controlSocketPath,
 });
 if (controlExitCode !== null) process.exit(controlExitCode);
 
@@ -135,7 +140,7 @@ if (EMIT_MODE) {
       mode: EMIT_MODE,
       persistDir: PERSIST_DIR,
       instanceLabel: INSTANCE_LABEL,
-      interfaceAgent,
+      interfaceAgent: humanInterface.agent,
       daemonInstance: process.env.DAEMON_INSTANCE,
     });
     process.exit(0);
@@ -147,7 +152,7 @@ if (EMIT_MODE) {
 
 if (WEB_ONLY_MODE) {
   await runWebOnlyMode({
-    interfaceAgent,
+    interface: humanInterface,
     stateDir: PERSIST_DIR,
     port: parseWebPort(process.env.WEB_PORT),
   });
