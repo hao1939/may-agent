@@ -147,7 +147,8 @@ export type TaskDetail = TaskView & {
 
   acceptance: string[];
   input: Record<string, unknown>;
-  /** Agent selected for the next bounded attempt. */
+  /** Responsible agent, including inherited/default assignment on current runtime reads.
+   * Workflow/native execution and bounded helpers do not transfer this responsibility. */
   agent?: string;
   /** @deprecated Use `agent`. */
   owner?: string;
@@ -461,7 +462,7 @@ export type TaskAttempt = {
   signal: AbortSignal;
   /** Task resource version observed when this attempt was claimed. */
   resourceVersion: number;
-  /** Runtime-resolved role shared unchanged by every executor adapter. */
+  /** Responsible Task agent and its instructions, shared unchanged by every executor adapter. */
   role: {
     agent: string;
     instructions: string;
@@ -574,7 +575,7 @@ export type TaskReconciliationContext<TInput = unknown> = {
   taskId: string;
   generation: number;
   resourceVersion: number;
-  /** Agent selected for this bounded attempt. The App owns the Task. */
+  /** Responsible Task agent resolved for this attempt; independent of the selected executor. */
   agent: string;
   /** @deprecated Use `agent`. */
   owner: string;

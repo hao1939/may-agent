@@ -15,6 +15,7 @@ import { getExecutionResultFromDb } from "../../../lib/execution-result.js";
 import type { SqliteDb } from "../../../lib/db.js";
 import { getAppInboxItem } from "../state/app-inbox-store.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
+import { readAppTaskAgent } from "../tasks/app-task-reconciler.js";
 import type { AgentEvent } from "../events/bus.js";
 import {
   hasTaskAcceptedEvidence,
@@ -114,6 +115,15 @@ export function readRuntimeTaskView(
   store.db.exec("SAVEPOINT task_detail_read");
   try {
     const result = readTaskDetail(store, taskId, options);
+    // Use the same assignment resolution as execution, within this read snapshot.
+    // Receipts without a current Task retain their historical agent.
+    if (result && !result.agent) {
+      const agent = readAppTaskAgent(opts.taskStateConfig!, taskId);
+      if (agent) {
+        result.agent = agent;
+        result.owner = agent;
+      }
+    }
     if (options?.inputKeys !== undefined) {
       const keys = options.inputKeys;
       if (!Array.isArray(keys) || keys.length > 8 || keys.some((key) => typeof key !== "string" || !key.trim()))

@@ -49,6 +49,7 @@ describe("App dependency catalog", () => {
     expect(catalog).toEqual([
       {
         appId: "evaluation",
+        agent: "evaluator",
         description: "Owns facts-based evaluation outcomes.",
         inputs: [
           { kind: "deep-eval", requiredData: [], dataTypes: {}, fixedData: {} },
@@ -67,6 +68,7 @@ describe("App dependency catalog", () => {
       },
       {
         appId: "may",
+        agent: "evaluator",
         description: "Owns facts-based evaluation outcomes.",
         inputs: [
           { kind: "goal", requiredData: [], dataTypes: {}, fixedData: {} },

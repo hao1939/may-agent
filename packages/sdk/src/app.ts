@@ -491,6 +491,8 @@ export type AppObserver = {
 
 export type AppContract = {
   appId: string;
+  /** App owner agent; receives work without a more specific assignment and coordinates its scope. */
+  agent: string;
   inputSchema: TSchema;
   observations: ObservationContract[];
 };
@@ -554,7 +556,7 @@ type AppDefinitionBase<TInputSchema extends TSchema> = {
   tasks?: AppTaskPolicy;
 };
 
-/** The App owns work; `agent` only selects its default bounded executor. */
+/** An App extends its owner agent with scoped policy and capabilities; `agent` is its default Task owner. */
 export type AppDefinition<TInputSchema extends TSchema = TSchema> = AppDefinitionBase<TInputSchema> &
   (
     | {
