@@ -926,11 +926,12 @@ test("settlement resolves the exact App again and rolls back a mismatched or mis
 });
 
 test.each([
-  ["existing", "human"], ["mapped", "human"],
-  ["existing", "system"], ["mapped", "system"],
+  ["existing", "human", true], ["mapped", "human", true],
+  ["existing", "system", false], ["mapped", "system", false],
+  ["existing", "system", true], ["mapped", "system", true],
 ] as const)(
-  "%s handoff from %s maps once; background delegation can stay quiet",
-  async (kind, source) => {
+  "%s handoff from %s maps once; assignment visibility follows published reply (%s)",
+  async (kind, source, published) => {
     const f = fixture();
     const admitted = admitConversationTaskInput(f.context(), {
       ...f.input(), source: { kind: source, id: "first" },
@@ -951,7 +952,7 @@ test.each([
     const getTaskApp = () => ({ app: targetApp, config: f.context() });
     const answer: ConversationTurnResult = {
       summary: "Continue the work",
-      ...(source === "human" ? { response: "I will continue the requested work." } : {}),
+      ...(published ? { response: "I will continue the requested work." } : {}),
       topic: { kind: "new", title: "Measurement" },
       followUp: {
         appId: app.id,
@@ -981,11 +982,17 @@ test.each([
     expect(f.store.readTask("before-settlement")).toBeNull();
     expect(f.store.readTask("unrelated")).toBeNull();
     expect(getAppInboxItem(f.db, "first")?.status).toBe("done");
-    if (source === "system") {
+    if (!published) {
       expect(readAppConversationResource(f.db, app.id, "chat").messages).toEqual([]);
       f.reopen();
       expect(readAppConversationResource(f.db, app.id, "chat").messages).toEqual([]);
       expect(f.store.readTask(kind === "existing" ? "chosen" : "at-settlement")).not.toBeNull();
+    } else {
+      const assignments = readAppConversationResource(f.db, app.id, "chat").messages
+        .flatMap(({ metadata }) => metadata?.followTask ?? []);
+      expect(assignments).toEqual([
+        expect.objectContaining({ appId: app.id, taskId: kind === "existing" ? "chosen" : "at-settlement" }),
+      ]);
     }
   },
 );
@@ -1173,6 +1180,7 @@ test("the common controller returns a delegated answer without a Topic after int
         .messages.filter(({ author }) => author.kind === "agent")
         .map(({ text }) => text),
     ).toEqual([
+      "Assigned to sample: Measure the sample\nTask: sample/A",
       "I'll get the measurement and return it here.",
       "A threshold is the minimum acceptable value.",
       "The measured value is 17.",

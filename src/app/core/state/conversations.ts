@@ -240,9 +240,11 @@ export function listAppConversationMessages(
         createdAt: item.createdAt,
       });
     }
-    // The admitted Task is canonical bookkeeping, independent of whether the
-    // App also chose explicit communication or produced a fallback response.
-    for (const assignment of assignmentByInput.get(item.id) ?? []) {
+    // Show bookkeeping for human requests and published replies. A quiet
+    // background handoff remains quiet even though its admission is retained.
+    const visible =
+      item.source.kind === "human" || item.result?.response?.trim() || explicitlyCommunicatedInputs.has(item.id);
+    for (const assignment of visible ? assignmentByInput.get(item.id) ?? [] : []) {
       messages.push({
         id: `assignment:${item.id}:${assignment.appId}:${assignment.taskId}`,
         sequence,
