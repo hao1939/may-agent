@@ -136,6 +136,8 @@ test("published diagnoses execute in Alex while May Conversation remains broken"
     const mayStore = AppTaskResourceStore.activeFromDb(db, "may")!;
     const alexStore = AppTaskResourceStore.activeFromDb(db, "alex")!;
     expect(mayStore.readTask(human.taskId)?.status.executionFailures).toBe(1);
+    const reportInputs = () => listAppInboxItems(db, { appId: "alex" })
+      .filter((item) => typeof (item.input.data as any).context?.publication?.executionId === "string");
     const handled: string[] = [];
     for (const [index, type] of [
       "evaluation.task_report_published",
@@ -159,13 +161,13 @@ test("published diagnoses execute in Alex while May Conversation remains broken"
         },
       });
       await until(() => {
-        const inputs = listAppInboxItems(db, { appId: "alex" });
+        const inputs = reportInputs();
         const taskId = inputs.find((item) =>
           (item.input.data as any).context?.publication?.executionId === "review-" + ordinal,
         )?.waitingOn?.id;
         return inputs.length === ordinal && !!taskId && !!alexStore.readTrigger(taskId);
       });
-      const input = listAppInboxItems(db, { appId: "alex" })
+      const input = reportInputs()
         .find((item) => (item.input.data as any).context?.publication?.executionId === "review-" + ordinal)!;
       const taskId = input.waitingOn!.id;
       expect(alexStore.readTask(taskId)?.metadata.generation).toBe(1);
@@ -176,7 +178,7 @@ test("published diagnoses execute in Alex while May Conversation remains broken"
       bus.redeliverPersisted(emitted, emitted[EVENT_ROW_ID]!);
       inbox.scanNow();
       await Bun.sleep(10);
-      expect(listAppInboxItems(db, { appId: "alex" })).toHaveLength(ordinal);
+      expect(reportInputs()).toHaveLength(ordinal);
       expect(alexStore.readTrigger(taskId)).toBeNull();
     }
     expect(new Set(handled).size).toBe(2);
