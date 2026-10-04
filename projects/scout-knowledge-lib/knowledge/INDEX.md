@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
-last_updated: "2026-10-03"
-source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-09-27, the §37–§40 Agent Evaluation Research: Diagnostic Layers companion, and the Agent Runtime Enforcement Observability companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
+last_updated: "2026-10-04"
+source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-10-03, the §37–§40 Agent Evaluation Research: Diagnostic Layers companion, and the Agent Runtime Enforcement Observability companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
 
@@ -69,6 +69,21 @@ Migration and project-operation artifacts live outside `knowledge/`:
 - [Hermes Agent and OpenClaw comparative investigation (2026-09-02)](../reports/research/hermes-agent-openclaw-comparative-investigation-2026-09-02.md) — UTC-dated pinned-source architecture, memory, skill-learning, authority, recovery, issue, and cost comparison; reconciles all 28 existing matching leads and records bounded reproduction limits.
 
 ## Recent Source-Grounded Findings
+
+### 2026-10-03
+
+- [Secret cleanup must separate copies, credentials, and coverage](./findings/2026-10-03-agent-history-secret-redaction-boundary.md) — pinned Agent Scrub inspection distinguishes local transcript and history copies from credential revocation, provider copies, backups, and still-active writers; the macOS application was not run.
+- [Tool selection and argument construction need separate evaluation](./findings/2026-10-03-kalibench-command-structure-evaluation.md) — complete KaliBench paper review finds candidate narrowing mostly improves tool choice while documentation improves argument construction; its deterministic reward does not prove live command safety or success.
+- [Context isolation is only as strict as capability inheritance](./findings/2026-10-03-late-cli-context-isolated-orchestration.md) — pinned late-cli inspection shows fresh worker sessions and a write-limited lead, while workers inherit nearly all parent MCP and plugin tools; tests were inspected but not run.
+- [Audit agent skills against a no-skill counterfactual](./findings/2026-10-03-skillaudit-agent-skill-maintenance.md) — a complete XHS post describes paired trajectories, constraint anchors, and rollback, but provides no primary paper, code, task set, or run-level evidence for its reported gains.
+- [Keep raw visual evidence outside the model context](./findings/2026-10-03-visual-harness-retrievable-frame-memory.md) — complete VISTA paper review supports retrievable frame storage outside compact model context, bounded by author-run public-task results, high budgets, and possible training exposure.
+
+### 2026-10-02
+
+- [Durable execution still has separate step, effect, and consumer checkpoints](./findings/2026-10-02-agent-sdk-go-durability-boundaries.md) — pinned agent-sdk-go inspection separates completed-step journaling, in-flight retry, local reconnect, and application processing outside the documented offset boundary; the project was not built or run.
+- [A browser bridge trades client approval for browser-session authority](./findings/2026-10-02-figma-browser-bridge-authority.md) — pinned figma-server inspection finds managed leases and a loopback bearer boundary alongside arbitrary JavaScript and CDP authority beyond the managed file contract; no live Figma edit was attempted.
+- [Local completion evidence needs content and configuration identities](./findings/2026-10-02-opendots-content-bound-completion-evidence.md) — pinned OpenDots inspection binds checks to workspace and configuration identities, revalidates after retention, and excludes failed-task notes from shared memory; code and tests were not executed.
+- [Derived memory needs a source-versioned validity boundary](./findings/2026-10-02-sibyl-source-versioned-memory-validity.md) — pinned Sibyl inspection shows promotion tied to source revisions and snapshots, retirement on source change, and explicit incomplete propagation instead of false global freshness; tests were inspected but not run.
 
 ### 2026-09-27
 
