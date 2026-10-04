@@ -19,6 +19,8 @@ import {
   recordAppTaskTrigger,
   retryFailedAppTask,
   reportAppTaskFailure,
+  stopAppTaskAttempt,
+  listRunnableAppTaskIds,
 } from "./app-task-reconciler.js";
 
 const cleanup: Array<() => void> = [];
@@ -295,7 +297,11 @@ it("keeps an internal workflow handoff quiet, then returns the agent failure thr
   f.reopen();
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "report")).toBeNull();
   expect(f.config.resourceStore.readTask("work")?.status.executionRetryAt).toBeUndefined();
-  const agent = f.claim();
+  const agent = claimObservedAppTask(f.config, {
+    taskId: "work", appAgent: "owner", handler: "auto", canUseAgentFallback: () => false,
+  });
+  if (agent.kind !== "claimed") throw new Error(`Expected handoff, got ${agent.kind}`);
+  expect(agent.handler).toBe("agent:owner");
   expect(agent.handoff?.reason).toBe("needs-agent");
   expect(agent.events).toEqual(workflow.events);
   failAppTaskAttempt(f.config, agent, "Agent result failed verification", {
@@ -314,6 +320,76 @@ it("keeps an internal workflow handoff quiet, then returns the agent failure thr
   f.reopen();
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure"))
     .toMatchObject({ attemptId: retry.attemptId, result: { value: 17 } });
+});
+
+it.each(["workflow", "executor"] as const)("keeps %s failover on the same Task across partial progress and resets selection only for revised work", (kind) => {
+  setSystemTime(new Date("2026-10-04T00:00:00Z"));
+  const f = fixture();
+  const intent = { ...f.intent, [kind]: "measure" };
+  observeAppTaskIntent(f.config, { appAgent: "owner", intent });
+  const original = f.claim("auto");
+  expect(original.handler).toBe(`${kind}:measure`);
+  failAppTaskAttempt(f.config, original, "Unexpected procedure failure", { facts: ["receipt:original-effect"] });
+  const failed = f.config.resourceStore.readAttempt(original.attemptId);
+  const due = f.config.resourceStore.readTask("work")!.status.executionRetryAt!;
+  f.reopen();
+  expect(claimObservedAppTask(f.config, { taskId: "work", appAgent: "owner", handler: "auto" }))
+    .toMatchObject({ kind: "waiting", retryAt: due });
+  setSystemTime(due + 1);
+  const agent = f.claim("auto");
+  expect(agent.handler).toBe("agent:owner");
+  expect(agent.handoff).toMatchObject({ reason: "needs-agent", facts: ["receipt:original-effect"] });
+  expect(agent.previousAttempt?.attemptId).toBe(original.attemptId);
+  reportAppTaskFailure(f.config, agent, { state: "incomplete", summary: "Diagnosis retained; original work remains", facts: ["diagnosis:partial"] });
+  setSystemTime(f.config.resourceStore.readTask("work")!.status.executionRetryAt! + 1);
+  f.reopen();
+  const continuation = f.claim("auto");
+  expect(continuation.handler).toBe("agent:owner");
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toBeNull();
+  completeAppTask(f.config, continuation, { summary: "Recovered and verified", facts: ["defect:retained-for-evaluation"] });
+  expect(f.config.resourceStore.readAttempt(original.attemptId)).toEqual(failed);
+  observeAppTaskIntent(f.config, { appAgent: "owner", intent: { ...intent, outcome: "Read the revised measurement" } });
+  expect(f.claim("auto").handler).toBe(`${kind}:measure`);
+});
+
+it("keeps procedure retry without an agent and retains agent selection if it later becomes unavailable", () => {
+  const f = fixture();
+  observeAppTaskIntent(f.config, { appAgent: "owner", intent: { ...f.intent, executor: "measure" } });
+  failAppTaskAttempt(f.config, f.claim("auto"), "Procedure failed");
+  setSystemTime(f.config.resourceStore.readTask("work")!.status.executionRetryAt!);
+  const retry = claimObservedAppTask(f.config, {
+    taskId: "work", appAgent: "owner", handler: "auto", canUseAgentFallback: () => false,
+  });
+  if (retry.kind !== "claimed") throw new Error(`Expected retry, got ${retry.kind}`);
+  expect(retry.handler).toBe("executor:measure");
+  failAppTaskAttempt(f.config, retry, "Still failed");
+  setSystemTime(f.config.resourceStore.readTask("work")!.status.executionRetryAt!);
+  const agent = f.claim("auto");
+  expect(agent.handler).toBe("agent:owner");
+  failAppTaskAttempt(f.config, agent, "Agent temporarily unavailable");
+  setSystemTime(f.config.resourceStore.readTask("work")!.status.executionRetryAt!);
+  f.reopen();
+  expect(claimObservedAppTask(f.config, {
+    taskId: "work", appAgent: "owner", handler: "auto", canUseAgentFallback: () => false,
+  })).toMatchObject({ kind: "claimed", handler: "agent:owner" });
+});
+
+it("does not turn fallback selection into permission to resume owner-stopped work", () => {
+  const f = fixture();
+  observeAppTaskIntent(f.config, { appAgent: "owner", intent: { ...f.intent, executor: "measure" } });
+  failAppTaskAttempt(f.config, f.claim("auto"), "Procedure failed");
+  setSystemTime(f.config.resourceStore.readTask("work")!.status.executionRetryAt!);
+  const agent = f.claim("auto");
+  expect(agent.handler).toBe("agent:owner");
+  stopAppTaskAttempt(f.config, {
+    taskId: "work", attemptId: agent.attemptId, expectedGeneration: agent.generation, reason: "Stop this work",
+  });
+  f.reopen();
+  expect(listRunnableAppTaskIds(f.config)).not.toContain("work");
+  expect(claimObservedAppTask(f.config, { taskId: "work", appAgent: "owner", handler: "auto" }))
+    .toMatchObject({ kind: "attention" });
+  admitHuman(f);
+  expect(f.claim("auto").handler).toBe("agent:owner");
 });
 
 it("failed capability admission consumes the human opportunity without an unpaced retry loop", () => {

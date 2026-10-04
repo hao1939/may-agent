@@ -547,6 +547,19 @@ function needsAgentHandoff(tree: TaskTree, resource: AppTaskResource): boolean {
   return Boolean(attempt?.handler.startsWith("workflow:") && isAgentHandoffReason(attempt.failureReason));
 }
 
+function continueWithAgent(resource: AppTaskResource, attempt: AppTaskAttempt | undefined): boolean {
+  if (!attempt) return false;
+  // The failed attempt is the durable handoff. Continue ordinary agent work
+  // across retries and waits; a new specification generation selects afresh.
+  if (attempt.handler.startsWith("agent:"))
+    return Boolean(resource.spec.workflow || (resource.spec.executor && resource.spec.executor !== "agent"));
+  return attempt.state === "failed" && (
+    attempt.handler.startsWith("workflow:") ||
+    attempt.handler.startsWith("executor:") ||
+    attempt.handler.startsWith("cli:")
+  );
+}
+
 function touchResource(resource: AppTaskResource, status: Partial<AppTaskResource["status"]>): void {
   resource.metadata.resourceVersion += 1;
   resource.status = {
@@ -2609,6 +2622,7 @@ export function claimObservedAppTask(
     handler: string;
     reason?: string;
     isAgentRunnable?: (agent: string) => boolean;
+    canUseAgentFallback?: (agent: string) => boolean;
     recoverSessionHandoff?: (attempt: AppTaskAttempt | undefined) => AppTaskClaim["handoff"];
   },
 ): AppTaskClaimResult {
@@ -2687,9 +2701,15 @@ export function claimObservedAppTask(
       summary,
     };
   }
+  const latestAttempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
+  const useAgentFallback = continueWithAgent(resource, latestAttempt) && (
+    needsAgentHandoff(tree, resource) ||
+    latestAttempt?.handler.startsWith("agent:") ||
+    input.canUseAgentFallback?.(agent) !== false
+  );
   const handler =
     input.handler === "auto"
-      ? needsAgentHandoff(tree, resource)
+      ? useAgentFallback
         ? managedAgentHandler(agent)
         : intent.workflow?.trim()
           ? `workflow:${intent.workflow.trim()}`
@@ -2699,8 +2719,7 @@ export function claimObservedAppTask(
       : input.handler === "agent" || input.handler === "owner"
         ? managedAgentHandler(agent)
         : input.handler;
-  const agentHandoff = needsAgentHandoff(tree, resource) && isManagedAgentHandler(handler, agent);
-  const latestAttempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
+  const agentHandoff = useAgentFallback && isManagedAgentHandler(handler, agent);
   const priorFacts = latestAttempt ?? latestTaskAttempt(tree, resource.metadata.id);
   const handoffAttempt = agentHandoff ? latestAttempt : undefined;
   const recoveredSessionHandoff = !agentHandoff ? input.recoverSessionHandoff?.(latestAttempt) : undefined;
@@ -2789,7 +2808,7 @@ export function claimObservedAppTask(
     resource.status.phase === "attention" &&
     resource.status.observedGeneration >= resource.metadata.generation &&
     !pendingTrigger &&
-    !agentHandoff &&
+    !(agentHandoff && needsAgentHandoff(tree, resource)) &&
     input.reason !== "workflow-fallback"
   ) {
     return {
@@ -2943,17 +2962,17 @@ export function claimObservedAppTask(
     ...(trigger ? { trigger: structuredClone(trigger) } : {}),
     declaredOutputPaths,
     ...(supersededSessionIds.size > 0 ? { supersededSessionIds: [...supersededSessionIds] } : {}),
-    ...((handoffAttempt && isAgentHandoffReason(handoffAttempt.failureReason)) || recoveredSessionHandoff
+    ...(handoffAttempt || recoveredSessionHandoff
       ? {
           handoff:
-            handoffAttempt && isAgentHandoffReason(handoffAttempt.failureReason)
+            handoffAttempt
               ? {
                   reason: "needs-agent",
                   summary:
                     resource.status.summary ??
                     handoffAttempt.summary ??
                     handoffAttempt.failureReason ??
-                    "Workflow requested an agent handoff",
+                    "Continue the Task through ordinary agent execution",
                   facts: [...(resource.status.facts ?? [])],
                 }
               : recoveredSessionHandoff,

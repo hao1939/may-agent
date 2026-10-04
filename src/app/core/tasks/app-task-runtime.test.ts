@@ -201,7 +201,9 @@ function options(f: ReturnType<typeof fixture>, bus: EventBus) {
     projectsRoot: f.projectsRoot,
     projectRoot: f.root,
     persistDir: join(f.root, "state"),
-    manager: { hasAgent: () => true } as never,
+    // Code-only fixtures do not install a runnable model agent. Tests exercising
+    // agent execution supply their own runner or manager explicitly.
+    manager: { hasAgent: () => false } as never,
     bus,
     hostCapacity: new HostCapacity(2),
   };
@@ -1816,7 +1818,7 @@ it("releases failed context preparation before later Task events and recovers af
   expect(readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult?.summary).toBe("Recovered after role repair");
 });
 
-it("does not release an agent handoff until its required workflow verifier is available", async () => {
+it("lets the handoff agent diagnose while the workflow is unavailable, then verifies completion", async () => {
   const f = fixture();
   const bus = eventBus();
   let agentCalls = 0;
@@ -1894,7 +1896,7 @@ it("does not release an agent handoff until its required workflow verifier is av
   await run();
   await installCoreTaskRuntimes(base);
   await run();
-  expect(agentCalls).toBe(0);
+  expect(agentCalls).toBe(1);
   expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("pending");
   await installCoreTaskRuntimes(base);
   expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("pending");
@@ -1908,15 +1910,13 @@ it("does not release an agent handoff until its required workflow verifier is av
   };
   await installCoreTaskRuntimes({ ...base, workflows: withoutVerifier });
   expect(config.resourceStore.readTaskContext({ taskIds: [taskId] })).toEqual(before);
-  expect(agentCalls).toBe(0);
+  expect(agentCalls).toBe(1);
   expect(verified).toBe(0);
   await installCoreTaskRuntimes({ ...base, workflows });
   advanceRuntimeTaskRetry(config, taskId);
   await run();
-  // A fresh workflow pass may re-establish its handoff after recovery.
-  if (!readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult) await run();
   expect(verified).toBe(1);
-  expect(agentCalls).toBe(1);
+  expect(agentCalls).toBe(2);
   expect(readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult?.acceptanceBasis.method).toBe("deterministic");
   expect(config.resourceStore.isCancelled(taskId)).toBe(false);
 });
@@ -11072,19 +11072,21 @@ describe("canonical App task runtime", () => {
           expect(f.config.resourceStore.readReceipt(claim.taskId)).toBeNull();
           expect(f.config.resourceStore.readTask(claim.taskId)?.status.phase).toBe("pending");
           expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
-          // Exercise the replacement workflow and its sequential agent handoff.
+          // Resume the agent directly; do not replay the workflow's effects.
           await f.run(claim.taskId);
           await f.run(claim.taskId);
-          expect(workflowCalls).toBe(2);
+          expect(workflowCalls).toBe(1);
           expect(externalCreates).toBe(1);
           expect(f.agentCalls()).toBe(1);
           expect(verificationCalls).toBe(verification === "missing" ? 0 : 1);
-          if (verification === "accept") {
+          if (verification !== "reject") {
             expect(readAcceptedRuntimeAttempt(f.config, claim.taskId)).toMatchObject({
               taskGeneration: claim.generation,
               acceptedResult: {
                 result: f.payload,
-                acceptanceBasis: { method: "deterministic", verifier: "required-proof" },
+                acceptanceBasis: verification === "accept"
+                  ? { method: "deterministic", verifier: "required-proof" }
+                  : { method: "agent-judgment" },
               },
             });
           } else {
@@ -11092,16 +11094,13 @@ describe("canonical App task runtime", () => {
             expect(f.config.resourceStore.readTask(claim.taskId)?.metadata.generation).toBe(claim.generation);
             expect(f.config.resourceStore.readTask(claim.taskId)?.status).toMatchObject({
               phase: "pending",
-              summary:
-                verification === "missing"
-                  ? "Agent convergence was rejected because workflow must-verify handed off without a verifier"
-                  : "Fixture postcondition",
+              summary: "Fixture postcondition",
             });
             expect(f.config.resourceStore.readTask(claim.taskId)?.status.executionRetryAt).toBeGreaterThan(Date.now());
           }
           expect(f.config.resourceStore.isCancelled(claim.taskId)).toBe(false);
           await f.run(claim.taskId);
-          expect(workflowCalls).toBe(2);
+          expect(workflowCalls).toBe(1);
           expect(f.agentCalls()).toBe(1);
         },
       );
@@ -11193,7 +11192,7 @@ describe("dependency Condition specification updates", () => {
       idempotencyKey: `task-dependency:sample:${taskId}:1:review:existing`,
       now: Date.now(),
     });
-    const initial = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "agent" });
+    const initial = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "auto" });
     if (initial.kind !== "claimed") throw new Error("initial claim failed");
     expect(
       deferAppTask(config, initial, {
@@ -11326,7 +11325,7 @@ describe("dependency Condition specification updates", () => {
           executor: "worker",
         },
       });
-      const initial = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "agent" });
+      const initial = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "auto" });
       if (initial.kind !== "claimed") throw new Error("initial claim failed");
       deferAppTask(config, initial, { disposition: "waiting", summary: "Initial wait", conditions: [original] });
       recordAppTaskTrigger(config, taskId, { type: "sample.owner-review", eventId: 1100 });
@@ -11399,7 +11398,7 @@ describe("dependency Condition specification updates", () => {
         executor: "worker",
       },
     });
-    const initial = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "agent" });
+    const initial = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "auto" });
     if (initial.kind !== "claimed") throw new Error("initial claim failed");
     deferAppTask(config, initial, { disposition: "waiting", summary: "Initial wait", conditions: [original] });
     recordAppTaskTrigger(config, taskId, { type: "sample.owner-review", eventId: 1200 });
