@@ -1,5 +1,6 @@
 import { existsSync, rmSync } from "node:fs";
 import { basename, join } from "node:path";
+import type { SqliteDb } from "../db.js";
 import { getDb } from "./connection.js";
 
 export interface DbMaintenanceResult {
@@ -16,6 +17,21 @@ const PAIR_DELETION_BATCH_SIZE = 25_000;
 
 function changes(result: unknown): number {
   return Number((result as { changes?: number } | null)?.changes ?? 0);
+}
+
+/** Search without a write transaction; recheck only selected rows while deleting. */
+function removeOrphans(
+  db: SqliteDb,
+  table: "event_traces" | "event_trace_links",
+  key: "event_id" | "id",
+  missingEvent: string,
+  batchSize: number,
+): number {
+  const ids = db.prepare(`SELECT ${key} AS id FROM ${table}
+    WHERE ${missingEvent} ORDER BY ${key} LIMIT ?`).all(batchSize).map((row) => row.id);
+  if (ids.length === 0) return 0;
+  return db.prepare(`DELETE FROM ${table}
+    WHERE ${key} IN (${ids.map(() => "?").join(", ")}) AND (${missingEvent})`).run(...ids).changes;
 }
 
 function sessionDirectoryIsActive(persistDir: string, sessionId: string): boolean {
@@ -72,9 +88,9 @@ function removeRetiredSessions(
 /**
  * Perform one bounded maintenance pass.
  *
- * Every statement has a fixed row/page limit. The pass never VACUUMs and never
- * loops until caught up, so it is safe to run in a dedicated runtime process
- * alongside the daemon.
+ * Mutation batches are capped; this does not bound rows examined during discovery.
+ * Orphan scans run outside writes, followed by exact, eligibility-checked deletes.
+ * The pass never VACUUMs or loops until caught up.
  */
 export function runDbMaintenancePass(
   persistDir: string,
@@ -187,24 +203,19 @@ export function runDbMaintenancePass(
     [now - 5 * DAY_MS, batchSize],
   );
 
-  remove(
+  deleted.event_traces = removeOrphans(
+    db,
     "event_traces",
-    `DELETE FROM event_traces WHERE event_id IN (
-       SELECT event_id FROM event_traces
-       WHERE event_id NOT IN (SELECT id FROM events)
-       LIMIT ?
-     )`,
-    [batchSize],
+    "event_id",
+    "event_id NOT IN (SELECT id FROM events)",
+    batchSize,
   );
-  remove(
-    "event_trace_links_orphaned",
-    `DELETE FROM event_trace_links WHERE id IN (
-       SELECT id FROM event_trace_links
-       WHERE from_event_id NOT IN (SELECT id FROM events)
-          OR to_event_id NOT IN (SELECT id FROM events)
-       LIMIT ?
-     )`,
-    [batchSize],
+  deleted.event_trace_links_orphaned = removeOrphans(
+    db,
+    "event_trace_links",
+    "id",
+    "from_event_id NOT IN (SELECT id FROM events) OR to_event_id NOT IN (SELECT id FROM events)",
+    batchSize,
   );
 
   const retiredSessions = removeRetiredSessions(persistDir, now, batchSize);
