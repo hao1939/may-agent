@@ -199,7 +199,13 @@ export function taskInputForEvent(event: AppEvent<Record<string, unknown>>): App
     const automatic = automaticReviewConfig();
     const appId = String(data.project ?? data.appId ?? "").trim();
     const taskId = String(data.taskId ?? "").trim();
-    if (!automatic.enabled || !appId || !taskId || (data.disposition !== "incomplete" && data.disposition !== "retrying")) return null;
+    // App-generated outcome reviews have the canonical review Task prefix and
+    // workflow handler. Their incomplete reconciliation is retry evidence for
+    // that same review, not a new subject for another automatic review.
+    const evaluationExecution =
+      (taskId.startsWith("review/") || taskId.startsWith("runtime/task-outcome/")) &&
+      data.handler === "workflow:task-outcome-review";
+    if (!automatic.enabled || !appId || !taskId || evaluationExecution || (data.disposition !== "incomplete" && data.disposition !== "retrying")) return null;
     return { kind: "review-task-outcome", data: { appId, taskId, assessmentPurpose: "ongoing", automatic: true, ...(automatic.reviewer === "evaluator-deepseek" ? { reviewer: automatic.reviewer } : {}) } } as AppInput;
   }
   if (event.type !== "evaluation.task.review.requested") return null;
