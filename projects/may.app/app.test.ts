@@ -607,16 +607,16 @@ describe("canonical May conversation App", () => {
     expect(matchesEventSelector(subscription.event, event)).toBeTrue();
     const input = evaluationOperationAlertInput(event)!;
     expect(input).toMatchObject({
-      kind: "message",
+      kind: "goal",
       data: { context: { event } },
     });
-    expect(String(input.data.message)).toContain("metric-response");
-    expect(String(input.data.message)).toContain("accepted results");
-    expect(String(input.data.message)).toContain("pre-attempt inputs");
-    expect(String(input.data.message)).toContain("input-admission recovery");
-    expect(String(input.data.message)).toContain("valuable partial work");
-    expect(String(input.data.message)).toContain("Operational recovery");
-    expect(String(input.data.message)).toContain("Preserve retries");
+    expect(String(input.data.instructions)).toContain("metric-response");
+    expect(String(input.data.instructions)).toContain("accepted results");
+    expect(String(input.data.instructions)).toContain("pre-attempt inputs");
+    expect(String(input.data.instructions)).toContain("input-admission recovery");
+    expect(String(input.data.instructions)).toContain("valuable partial work");
+    expect(String(input.data.instructions)).toContain("Operational recovery");
+    expect(String(input.data.instructions)).toContain("Preserve retries");
     expect(Check(app.inputSchema, input)).toBeTrue();
     for (const type of [
       "metric.updated",
@@ -717,7 +717,7 @@ describe("canonical May conversation App", () => {
     expect(subscription).toBeDefined();
     expect(matchesEventSelector(subscription!.event, event)).toBeTrue();
     const input = evaluationTaskReportInput(event)!;
-    expect(input.kind).toBe("message");
+    expect(input.kind).toBe("goal");
     expect((input.data as any).context.publication).toEqual(event.data);
     expect((input.data as any).context.caller).toEqual({
       source: event.source,
@@ -725,16 +725,16 @@ describe("canonical May conversation App", () => {
       target: event.target,
       localKey: event.localKey,
     });
-    expect((input.data as any).message).toContain(
+    expect((input.data as any).instructions).toContain(
       "Run evaluation-report-intake with this exact context.publication before any duplicate or reuse conclusion",
     );
-    expect((input.data as any).message).toContain(
+    expect((input.data as any).instructions).toContain(
       "the intake checks exact publication identity before reusing a prior intake",
     );
-    expect((input.data as any).message).toContain(
+    expect((input.data as any).instructions).toContain(
       "an unrelated prior disposition is not this report",
     );
-    expect((input.data as any).message).toContain(
+    expect((input.data as any).instructions).toContain(
       "verify material concerns against current evidence",
     );
     event.data.taskId = "mutated";

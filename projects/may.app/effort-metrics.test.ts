@@ -255,7 +255,7 @@ test("effort review publishes evidence and reaches an accepted May decision with
     });
     await reviewMetric(ctx, evidence, root);
     expect(published).toHaveLength(1);
-    expect(evaluationTaskReportInput(published[0])?.kind).toBe("message");
+    expect(evaluationTaskReportInput(published[0])?.kind).toBe("goal");
     const intake = await intakeEvaluationReport(
       createTestAppWorkflowContext({ input: published[0].data }),
       root,
@@ -306,7 +306,7 @@ test("effort review publishes evidence and reaches an accepted May decision with
       owner: "app:evaluation",
     };
     expect(taskInputForEvent(independent)).toBeNull();
-    expect(evaluationOperationAlertInput(independent)?.kind).toBe("message");
+    expect(evaluationOperationAlertInput(independent)?.kind).toBe("goal");
     expect(
       evaluationOperationAlertInput({
         ...independent,
