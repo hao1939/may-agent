@@ -319,33 +319,30 @@ Explicit direct-agent input may instead start or steer a named execution
 session. The selected skill is bounded owner/execution context; it is never
 another request or ownership record.
 
-### Explicit runtime and delegation invocation
+### Direct activation and delegation by reference
 
-Delegate the outcome, constraints, and supporting references by default. The
-receiver chooses its method. Catalog discovery belongs to the worker using the
-guidance; ordinary delegation needs no receiver-catalog inspection. A caller's
-own catalog does not establish availability in another agent's catalog.
+Delegate the outcome, constraints, and supporting references. The receiver
+chooses its method. The model-facing `agents` tool has no `skill` selector;
+ordinary delegation needs no receiver-catalog inspection. Catalog discovery
+belongs to the worker using the guidance.
 
-For deliberate activation of a known receiving-catalog skill, the existing
-session boundaries accept an optional name:
+Direct runtime invocation retains deliberate activation of a known skill:
 
 ```ts
 manager.run(agent, task, { skill: "verify-change", trace });
 manager.send(sessionId, task, { skill: "verify-change", trace });
-
-agents({ action: "call", agent, task, skill: "verify-change" });
-agents({ action: "fork", agent, task, skill: "verify-change" });
 ```
 
-The manager validates the name against the receiving agent's catalog and uses
-`formatSkillInvocation()` to combine the full skill body with the task. A
-turn has at most one explicit primary skill in v1. Other cataloged skills can
-still be read on demand.
+The typed workflow SDK also retains explicit skill activation for authored
+procedures that intentionally select a method. These execution options use the
+receiving agent's catalog; a caller's catalog does not establish availability.
+The manager validates the name and uses `formatSkillInvocation()` to combine
+the full skill body with the task. A turn has at most one explicit primary
+skill in v1. Other cataloged skills can still be read on demand.
 
-An unavailable explicit name is rejected before model execution. The error
-explains how to delegate without explicit activation and, when that guide is
-needed, provide its readable file reference instead.
-The Host does not silently substitute another method.
+An unavailable explicit name is rejected before model execution. The Host does
+not silently substitute another method. This validation belongs to deliberate
+activation; ordinary delegation passes references without resolving a skill name.
 
 The `agents` tool's `context_files` argument appends file references to the
 recipient's assignment; it does not inject their contents. A full `SKILL.md`
@@ -358,9 +355,9 @@ agents({ action: "call", agent: "bob", task: "Review this patch against the desi
 
 The file must be readable in the receiver's execution environment. Catalog
 membership governs discovery and named activation, not ordinary file access;
-there is no need to copy or register a guide just to read it. File references
-can also accompany a cataloged skill. Reading an uncataloged guide uses existing
-file tools and evidence, without claiming a cataloged `skill.loaded` activation.
+there is no need to copy or register a guide just to read it. Reading an
+uncataloged guide uses existing file tools and evidence, without claiming a
+cataloged `skill.loaded` activation.
 The catalog describes the loaded snapshot; an ordinary file read returns the
 file's contents at read time and follows existing permissions.
 

@@ -63,8 +63,6 @@ the teammate chooses their method.
 
 If the teammate needs this guide, pass its full readable `SKILL.md` path through
 `context_files`. Ordinary file reading works without catalog registration.
-Explicit named activation uses the receiving agent's catalog; seeing a name in
-your own catalog does not establish that it is available to the receiver.
 For skill installation and external CLI discovery, consult the
 [skill contract](/app/projects/may-agent.app/docs/2a-design/skills.md#codex-interoperability).
 
@@ -405,9 +403,10 @@ Distinguish local blockers from ownership-boundary escalations.
   cancellation requires the explicit `session.cancel_all.requested` intent.
 - Treat skills as per-turn advisory context. Do not use them as task state,
   completion evidence, workflow enforcement, or a parallel request lifecycle.
-- Use one explicit primary skill when a human or delegation names it. Preserve
-  the enclosing event/session trace and verify `skill.loaded` evidence instead
-  of inventing `skill.completed`.
+- Explicit direct invocation may activate one primary skill. Delegation shares
+  guide references for the receiver to read. Preserve the enclosing event/session
+  trace; named activation records `skill.loaded`, while ordinary reads retain
+  their tool evidence. Neither is proof of task completion.
 - Treat workflow TypeScript as executable orchestration. Share discovery and
   provenance conventions with skills, but keep workflow run state and terminal
   closure in the existing workflow/event trace.
