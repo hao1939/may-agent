@@ -2777,10 +2777,11 @@ test("closed Task reuse retains the caller input for a corrected attempt after r
 });
 
 
-test("invalid handoff is repairable after reopen and only complete referenced input creates the worker assignment", async () => {
+test("a repaired handoff retains full input and a cross-App assignment with the caller Task ID", async () => {
   let calls = 0;
   let mapped = 0;
   let documentPath = "";
+  let delegatedTaskId = "";
   const assignment = {
     outcome: "Review the required design",
     acceptance: ["Explain the failure mode and retain the required constraints"],
@@ -2806,7 +2807,7 @@ test("invalid handoff is repairable after reopen and only complete referenced in
       return {
         kind: "desired",
         intent: {
-          id: "review",
+          id: delegatedTaskId,
           parentId: "root",
           agent: "reviewer",
           outcome: data.outcome,
@@ -2854,9 +2855,11 @@ test("invalid handoff is repairable after reopen and only complete referenced in
     },
   );
   const admitted = f.admit("review-request", "Review the design using the required context");
+  delegatedTaskId = admitted.taskId;
+  expect(worker.id).not.toBe(app.id);
   await f.run(admitted.taskId);
   expect(mapped).toBe(0);
-  expect(AppTaskResourceStore.activeFromDb(f.db, worker.id)!.readTask("review")).toBeNull();
+  expect(AppTaskResourceStore.activeFromDb(f.db, worker.id)!.readTask(delegatedTaskId)).toBeNull();
   expect(getAppInboxItem(f.db, "review-request")?.status).not.toBe("done");
   const due = f.store.readTask(admitted.taskId)!.status.executionRetryAt!;
   await f.reopen();
@@ -2866,7 +2869,7 @@ test("invalid handoff is repairable after reopen and only complete referenced in
   expect(mapped).toBe(1);
   expect(getAppInboxItem(f.db, "review-request")?.status).toBe("done");
   await f.reopen();
-  const saved = AppTaskResourceStore.activeFromDb(f.db, worker.id)!.readTask("review")!;
+  const saved = AppTaskResourceStore.activeFromDb(f.db, worker.id)!.readTask(delegatedTaskId)!;
   expect(saved.spec).toMatchObject({
     outcome: assignment.outcome,
     acceptance: assignment.acceptance,
@@ -2882,7 +2885,7 @@ test("invalid handoff is repairable after reopen and only complete referenced in
        JOIN app_tasks task ON task.app_id = admission.app_id
         AND task.task_id = CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT)
        WHERE origin.app_id = ? AND origin.conversation_id = ?
-        AND CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT) <> origin.execution_task_id
+        AND NOT (task.app_id = origin.app_id AND task.task_id IS origin.execution_task_id)
         AND origin.id IN (?)`,
     )
     .all(app.id, "primary", "review-request")
@@ -2895,12 +2898,12 @@ test("invalid handoff is repairable after reopen and only complete referenced in
   expect(assignmentPlan.every((detail) => !detail.startsWith("SCAN "))).toBe(true);
   const findAssignment = () =>
     readAppConversationResource(f.db, app.id, "primary").messages.find(
-      ({ metadata }) => metadata?.followTask?.appId === worker.id && metadata.followTask.taskId === "review",
+      ({ metadata }) => metadata?.followTask?.appId === worker.id && metadata.followTask.taskId === delegatedTaskId,
     );
   const fallbackAssignment = findAssignment();
   expect(fallbackAssignment).toMatchObject({
-    text: `Assigned to ${worker.id}: ${assignment.outcome}\nTask: ${worker.id}/review`,
-    metadata: { followTask: { appId: worker.id, taskId: "review" } },
+    text: `Assigned to ${worker.id}: ${assignment.outcome}\nTask: ${worker.id}/${delegatedTaskId}`,
+    metadata: { followTask: { appId: worker.id, taskId: delegatedTaskId } },
   });
   f.db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)", [
     "conversation.message.created",

@@ -190,7 +190,7 @@ export function listAppConversationMessages(
          JOIN app_tasks task ON task.app_id = admission.app_id
           AND task.task_id = CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT)
          WHERE origin.app_id = ? AND origin.conversation_id = ?
-          AND CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT) <> origin.execution_task_id
+          AND NOT (task.app_id = origin.app_id AND task.task_id IS origin.execution_task_id)
           AND origin.id IN (${conversationRows.map(() => "?").join(",")})`,
       )
       .all(appId, conversationId, ...conversationRows.map(({ id }) => id));
