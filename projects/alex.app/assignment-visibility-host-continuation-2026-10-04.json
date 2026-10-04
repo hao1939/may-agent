@@ -1,0 +1,48 @@
+{
+  "kind": "alex-assignment-visibility-continuation-completion",
+  "recordedAt": "2026-10-04T15:13:39Z",
+  "historicalTask": "may-agent/app-request/app_d1380ef9-c44a-49fe-811e-be57a1e7d54c",
+  "historicalOutcomeFulfilled": false,
+  "verificationTask": {
+    "appId": "alex",
+    "taskId": "input/appdep_588d052a7356e987b94eef83",
+    "status": "done",
+    "resourceVersion": 4,
+    "acceptedAttempt": "r_1_e9e9933f-a6a8-40bd-805b-845e8c4e353f"
+  },
+  "finding": {
+    "structuredScopePreserved": true,
+    "assignmentMessageCurrentBaselineCorrect": false,
+    "defect": "Current Host did not automatically expose a concrete canonical assignment message and exact followable Task identity."
+  },
+  "candidate": {
+    "repository": "/app/projects/may-agent",
+    "baseline": "6b507d42916ae5e0f64483311984302b20079d92",
+    "branch": "task/alex-assignment-visibility-20261004",
+    "commit": "73ed38518001091789da60a260926c79143f4853",
+    "integrated": false,
+    "activated": false,
+    "fixture": [
+      "Assigned to <app>: <outcome>",
+      "Task: <app>/<taskId>",
+      "matching followTask metadata"
+    ],
+    "tests": {
+      "passed": 57,
+      "expectations": 770,
+      "typescript": "passed"
+    }
+  },
+  "integrationRequest": {
+    "appId": "may",
+    "requestId": "appdep_3be7de6fa2742a26d35f575b",
+    "conditionId": "app-request:appdep_3be7de6fa2742a26d35f575b",
+    "status": "running",
+    "required": "independent review, protected Host integration, exact deployment authority, activation and post-activation proof"
+  },
+  "limits": [
+    "Local candidate is not target-branch integration or activation.",
+    "Old historical Task remains unfulfilled.",
+    "No production communication was deliberately broken and no historical lifecycle was mutated."
+  ]
+}

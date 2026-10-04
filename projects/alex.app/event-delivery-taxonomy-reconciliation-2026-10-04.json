@@ -1,0 +1,1755 @@
+{
+  "kind": "bounded-legacy-frontier-reconciliation",
+  "date": "2026-10-04",
+  "lineage": "event-delivery-and-taxonomy",
+  "author": "bob",
+  "sessionId": "s_1791123406868_788bb14b-7733-4bea-8c4d-a8f4f26e19b9",
+  "caller": {
+    "appId": "alex",
+    "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452"
+  },
+  "scope": [
+    "activate-addressed-route-and-remeasure-alert-4566-20260816",
+    "align-ops-health-delivery-taxonomy-20260816",
+    "prove-alert-4577-after-existing-activation-20260818",
+    "reconcile-app-dependency-completed-delivery-taxonomy-20260819"
+  ],
+  "status": "all-four-obsolete-execution-promises-withdrawn-unfulfilled",
+  "sources": {
+    "appsBase": "d8ad85562a3f8eb4642e59b98a753a45481248dc",
+    "snapshot": {
+      "path": "/app/.state/alex-migration-20261004/legacy-frontier-snapshot.json",
+      "sha256": "bd3f6a1cc65e125c61f5a8380cba746d55e3d8143edc6f8d6825af286d5d7f97",
+      "capturedAt": "2026-10-04T12:13:38.821491+00:00"
+    },
+    "frontierBaseline": {
+      "path": "projects/alex.app/legacy-frontier-disposition-2026-10-04.json",
+      "sha256": "24eead0175bb07e1a2333cbfa6676a09637967a6af07f416c25797a927fada6e"
+    },
+    "receiptBaseline": {
+      "path": "projects/alex.app/migration-receipt-2026-10-04.md",
+      "sha256": "f9dff70c197a5c7e1e7aecaadc9131cf3a56c382bbc0351b0d2737bbd65801fc"
+    },
+    "relatedArtifacts": [
+      {
+        "path": "projects/alex.app/aks-taxonomy-correlation-reconciliation-2026-10-04.json",
+        "sha256": "7cbe2a0e97c70b1e7e33e29997149b135bd90cb02fa2e909c454320718630eb4"
+      },
+      {
+        "path": "projects/alex.app/app-dependency-completion-reconciliation-2026-10-04.json",
+        "sha256": "16faabcd0bf1afb4a049ae515a9156a95954c006692188893ca84fb5e6b3b1ed"
+      },
+      {
+        "path": "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
+        "sha256": "136ea43198c73efc4ceacd64abbcd753224506a0553b275ccc2622df8f3a5767"
+      },
+      {
+        "path": "projects/alex.app/gym-request-correlation-reconciliation-2026-10-04.json",
+        "sha256": "d95196cf2cd3e8d7655d77dd28fa9d6d6ad152021edb96ff76d537cbdf1946bd"
+      }
+    ]
+  },
+  "currentSource": {
+    "hostHead": "d8c87757782ae5750984bedc239b00eab4c76715",
+    "loadedDefinitions": "/app/.state/releases/app-definitions/faa65d8b77883f7af4d39af9e7c085af17e332e7-definitions-v4",
+    "enabledApps": [
+      "alex",
+      "may",
+      "scout-knowledge-lib"
+    ],
+    "enabledEvidence": "Task attempt context installedAppsAtAttemptStart; current definition symlink and byte equality for Alex/May entrypoints and reliability metrics. Not a new live registry scan.",
+    "files": [
+      {
+        "path": "projects/alex.app/app.ts",
+        "sha256": "6209a127c0d68f8079e755a9df6e100e05b4325afd459fb6510a7f2e494a43bf"
+      },
+      {
+        "path": "projects/may.app/app.ts",
+        "sha256": "ad33572ab5a9c5ca768ef3e4779443d6bfe2349f0bcbd61cd3820c30ff1acd8d"
+      },
+      {
+        "path": "projects/may.app/reliability-metrics.ts",
+        "sha256": "54b21199629cb8af6ba6a1209bbdf3aeed3a5b2a78ff485fc2ea764c8fd85e73"
+      },
+      {
+        "path": "/app/projects/may-agent/src/app/composition/app-inbox-runtime.ts",
+        "sha256": "ecff4868b43766fc166769c45211e7488a7a32e5de4f5670b19983a6e789a1b5"
+      },
+      {
+        "path": "/app/projects/may-agent/src/app/core/inbox/app-inbox-host.ts",
+        "sha256": "a28550595573ac716bb5ebe37dbc9bfc1a6fa42a8c37a77bf39c5e6b535c64bd"
+      },
+      {
+        "path": "/app/projects/may-agent/src/app/core/inbox/input-result.ts",
+        "sha256": "5311529b43517d212874d70a7d60bd45b04fb0fdb8d95b560127fa35f85641f1"
+      },
+      {
+        "path": "/app/projects/may-agent/src/app/core/tasks/dependency-admission.ts",
+        "sha256": "76ee3cabcd739a2543d268a17c45584f54b846bb7500a0ad9b157e41a10cbb59"
+      },
+      {
+        "path": "/app/projects/may-agent/src/app/metric-source-measurement.ts",
+        "sha256": "04bc140b678b4e8651f372137593a9371aabc1eeb5b017c446815fe7a2dff16e"
+      }
+    ],
+    "loadedAppBytesEqual": true
+  },
+  "technicalAssessment": [
+    "Host composition/app-inbox-runtime.ts:192-237,780-806 uses data.to as App-owner address, rejects response envelopes, chat/fork and non-agent participants, and requires one canonical matching App. core/inbox/app-inbox-host.ts:325-334 matches owner and schema, not local specialists. The historical May-to-tech-lead raw-message canary would still name no App: this is now an obsolete contract, not proved fixed. Current Alex goal assignment selects tech-lead through App input; no direct specialist App is to be invented.",
+    "Alex app.ts:322-339 maps operational inputs to input/<admitted.id> and explicit assignment.agent; loaded Alex/May tests exercise ordinary executable admission and specialist separation. These tests do not prove a fresh paid-agent live canary.",
+    "Old ops-health handler is retired/archive-only, absent from enabled Alex/May entrypoints. Current May reliability metrics inspect unresolved admission/result/feedback, attempt outcomes and review age; Alex subscribes to meaningful metric transitions and immutable reports, not the old ops-health seven-pair wake policy. Copying the old allowlist adds no current demonstrated value.",
+    "Host input-result.ts emits exact app.dependency.updated request/caller/task/report identities; dependency-admission.ts:455-481 recovers saved results for exact caller Conditions after lost publication. Structural parents do not automatically wake; exact request/Condition returns replace the old implicit parent wake.",
+    "Host app-inbox-runtime.ts:1127-1130 intentionally accepts app.dependency.updated kind=app as app-input-result noop when no route needs it. This is not app-inbox:wake, an actual wake count, proof of old strict canonical validation, or a terminal Task result. Tests support persisted return/recovery mechanics, not arbitrary event authenticity.",
+    "Host metric-source-measurement.ts:22-43 counts unhandled events outside an explicit event-name allowlist; it is not the old source/owner/payload seven-pair classifier. Genuine message.created/subscriber.failed and unknown names remain counted in fixtures. The name-level allowlist has known scope limits and omits five intentional names covered by existing May work; do not claim every unknown-source lookalike remains counted."
+  ],
+  "existingCurrentWork": [
+    {
+      "appId": "may",
+      "taskId": "goal/appdep_0f3f67e14e6115f52af6c3ca",
+      "read": "tasks.get during this session",
+      "generation": 1,
+      "resourceVersion": 22,
+      "status": "waiting",
+      "candidate": "49eca41972f6b2ba2bfc187b39cfd5c55926f582",
+      "baseline": "24da4722dc6212cae684975184f4a862837b3985",
+      "conditionId": "approval-28128dc3aadcdbb33b97e429-r2",
+      "conditionState": "unknown",
+      "owner": "human:Hao",
+      "scope": "Five-name unhandled metric allowlist proposal; source-only approval, no deployment/live recovery. Do not duplicate or interpret as historic alert proof."
+    },
+    {
+      "appId": "may",
+      "taskId": "goal/appdep_b9d63909a838fa7ad225d6b6",
+      "read": "tasks.get during this session",
+      "generation": 1,
+      "resourceVersion": 4,
+      "status": "done",
+      "decision": "seven named AKS outcomes withdrawn-unfulfilled; no present human decision for f9824eb7/3bf56cf5",
+      "limit": "Exact original seven scopes read. Related child/candidate disposition only; none of these four is among those seven."
+    },
+    {
+      "path": "projects/alex.app/app-dependency-completion-reconciliation-2026-10-04.json",
+      "scope": "Modern correlated-result verification already owned by current migration; reuse, do not repeat as a new repair."
+    },
+    {
+      "appId": "alex",
+      "taskId": "input/appdep_db79add2ae9333ab16f704e9",
+      "evidence": "migration receipt; not freshly read here",
+      "scope": "Existing metric completion-causality implementation; not a new finding or substitute historical measurement."
+    }
+  ],
+  "items": [
+    {
+      "taskId": "activate-addressed-route-and-remeasure-alert-4566-20260816",
+      "retainedTaskRow": {
+        "app_id": "may-agent",
+        "task_id": "activate-addressed-route-and-remeasure-alert-4566-20260816",
+        "generation": 11,
+        "resource_version": 80,
+        "phase": "waiting",
+        "updated_at": 1787868896408,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 11,
+            "id": "activate-addressed-route-and-remeasure-alert-4566-20260816",
+            "resourceVersion": 80
+          },
+          "spec": {
+            "acceptance": [
+              "Bind the AKS repair to correction artifact SHA-256 fec89b4b8b8bc8a5191ca29b47f72cf3b85c77aaeb193ecc6ea3238943a14f and current published declaration SHA-256 75db4cbb673663309564f9fa6ec027f055c801aa562aee0e0dbd93a6831744e4; historical receipts and unavailable Git objects are not current-source proof.",
+              "Preserve exact Gym dependency appdep_879ba020fd9626e17ac01f06 and its immutable addressed-route candidate 96ebe7cb78022737a2675e798d65679c7ba2a3e7; do not replace or replay its comparison.",
+              "Through the AKS App boundary, produce one immutable candidate adding only the project.task.reconciled terminal-owner-result-recovery family for waiting/converged done results and the project.task.recovery.requeued task-controller family for terminal-owner-session-expired-lease done recovery, with focused positive and negative selector tests.",
+              "Before production mutation, verify exact source and artifact identities, frozen baseline-versus-candidate proof, staged scope, risks, monitoring, and Git-revert rollback, then return the rollout proposal for Hao's explicit approval. Reject or hold means no production mutation.",
+              "If approved, publish and load the exact reviewed artifact through one new supported release correlation; never repeat deploy-20260825T070522Z-2086015. Prove loaded artifact equality, runtime health, and duplicateDeploy=false.",
+              "Run a fresh May-to-tech-lead canary and prove accepted terminal delivery with no correlated subscriber.failed event. Regression proof must keep genuine message, subscriber, broken schedule, malformed, and unknown-source failures visible.",
+              "Run a fresh supported event.unhandled-signal-count-1h measurement. Converge only if current is at or below 5 and alert 4874 is resolved; otherwise return every exact remaining event ID, its accountable owner, and the real blocker without false closure."
+            ],
+            "category": "runtime-reliability",
+            "dependsOn": [],
+            "input": {
+              "authoritativeCorrection": {
+                "artifactPath": "/app/projects/may-agent/.state/owner-review-artifacts/reconcile-aks-lifecycle-publication-source-proof-20260825/disposition.json",
+                "artifactSha256": "fec89b4b8b8bc8a5191ca29b47f72cf3b85c77aaeb193ecc6ea3238943a14f",
+                "currentDeclarationSha256": "75db4cbb673663309564f9fa6ec027f055c801aa562aee0e0dbd93a6831744e4",
+                "currentReleaseId": "overlay-repair-stable-localkey-e507fbf9-81ae4b02-ccba55c2-definitions-v3",
+                "disposition": "no-go-current-publication",
+                "repairOwnerApp": "aks-rp-e2e"
+              },
+              "constraints": [
+                "Do not create a sibling repair or duplicate the existing Gym comparison.",
+                "Do not repeat deployment correlation deploy-20260825T070522Z-2086015.",
+                "Do not write runtime database state directly.",
+                "Do not suppress genuine message.created, subscriber.failed, broken control schedule, malformed, or unknown-source failures.",
+                "Reject broad rollout until Hao approval.",
+                "Rollback is Git revert."
+              ],
+              "currentFailure": {
+                "alertId": 4874,
+                "alertResolved": false,
+                "canaryMessageEventId": 6077055,
+                "canarySubscriberFailedEventId": 6077056,
+                "current": 635,
+                "metricId": "event.unhandled-signal-count-1h",
+                "threshold": 5
+              },
+              "lineage": {
+                "activationTaskId": "activate-addressed-route-and-remeasure-alert-4566-20260816",
+                "alertId": 4566,
+                "currentAlertId": 4874,
+                "parentTaskId": "reconcile-unhandled-signal-recurrence-20260816"
+              },
+              "preservedGymProof": {
+                "candidate": "96ebe7cb78022737a2675e798d65679c7ba2a3e7",
+                "dependencyId": "appdep_879ba020fd9626e17ac01f06",
+                "soleParent": "353e4ebc501034f1a3f6c127b2dfceb287ca7f9d",
+                "status": "still-required-not-replaced"
+              },
+              "requiredSelectorFamilies": [
+                {
+                  "disposition": [
+                    "waiting",
+                    "converged"
+                  ],
+                  "project": "aks-rp-e2e",
+                  "route": "terminal-owner-result-recovery",
+                  "source": "app-task:aks-rp-e2e:task-reconciler",
+                  "terminalStatus": "done",
+                  "type": "project.task.reconciled"
+                },
+                {
+                  "project": "aks-rp-e2e",
+                  "reason": "terminal-owner-session-expired-lease",
+                  "route": "task-controller",
+                  "source": "app-task:aks-rp-e2e:task-reconciler",
+                  "terminalStatus": "done",
+                  "type": "project.task.recovery.requeued"
+                }
+              ]
+            },
+            "mode": "achieve",
+            "outcome": "Complete the exact existing alert-4566 activation and alert-4874 recurrence lineage without sibling work or duplicate deployment. Reconcile against the task's accepted live Condition `app-request:appdep_0436d418a2092b49a11dda35`: event 6118218 proves AKS App request `appdep_0436d418a2092b49a11dda35` was accepted, and current evidence contains no matching `app.dependency.completed` event. This Condition supersedes the stale prose reference to `appdep_83491e57be8c277441f96f8f`; preserve, do not replay, replace, or bypass the accepted request. When it completes, review the immutable narrow declaration candidate against correction SHA-256 fec89b4b8b8bc8a5191ca29b47f72cf3b85c77aaeb193ecc6ea3238943a14f and current declaration SHA-256 75db4cbb673663309564f9fa6ec027f055c801aa562aee0e0dbd93a6831744e4. Replan with the same AKS owner if source, selector, negative-control, scope, monitoring, rollback, or terminal artifact proof is missing; otherwise return the exact proposal for Hao approval before production mutation. Preserve Gym proof appdep_879ba020fd9626e17ac01f06, do not repeat prior deployments, keep genuine message, subscriber, schedule, malformed, and unknown-source failures visible, and converge only after a clean addressed-message canary, a fresh supported metric measurement at or below 5, resolved alert 4874, and a bounded post-change session sample without restart-driven interruption volume comparable to the current 24-hour baseline.",
+            "outputs": [
+              "/app/projects/may-agent/.state/owner-evidence/reconcile-unhandled-signal-recurrence-20260816.json"
+            ],
+            "owner": "may",
+            "parentId": "reconcile-unhandled-signal-recurrence-20260816",
+            "priority": "P0"
+          },
+          "status": {
+            "conditionIds": [
+              "app-request:appdep_26d2607cd95ed2addf393ce6"
+            ],
+            "evidence": [
+              "Event 6142395 proves `appdep_26d2607cd95ed2addf393ce6` is the accepted AKS owner-review request carrying the exact source hashes, selector families, preserved Gym proof, approval gate, and terminal acceptance requirements.",
+              "Events 6284665 and 6284677 are `app.dependency.updated` records only; neither is `app.dependency.completed`.",
+              "The resolved standing Task remains running and its current process-health no-op is not material proof for this lifecycle publication request.",
+              "No evidence yet satisfies the candidate, Hao approval, supported release, loaded-artifact equality, canary, metric, alert-resolution, or post-change session gates."
+            ],
+            "observedAttemptId": "r_11_e7e753e0-4843-41e2-9ba2-67eca133553e",
+            "observedGeneration": 11,
+            "phase": "waiting",
+            "result": {
+              "correctionSha256": "fec89b4b8b8bc8a5191ca29b47f72cf3b85c77aaeb193ecc6ea3238943a14f",
+              "currentDeclarationSha256": "75db4cbb673663309564f9fa6ec027f055c801aa562aee0e0dbd93a6831744e4",
+              "decision": "preserve-existing-aks-condition",
+              "dependencyId": "appdep_26d2607cd95ed2addf393ce6",
+              "dependencyStatus": "handling",
+              "latestUpdateEventIds": [
+                6284665,
+                6284677
+              ],
+              "preservedGymCandidate": "96ebe7cb78022737a2675e798d65679c7ba2a3e7",
+              "preservedGymDependency": "appdep_879ba020fd9626e17ac01f06",
+              "productionMutationAuthorized": false,
+              "resolvedTaskGeneration": 154,
+              "resolvedTaskId": "runtime/owner-review",
+              "resolvedTaskResultMaterialToRequest": false
+            },
+            "summary": "Preserve exact Condition `app-request:appdep_26d2607cd95ed2addf393ce6`. Events 6284665 and 6284677 are updates only; they provide none of the requested immutable candidate, approval-ready proof, clean canary, supported metric at or below 5, alert 4874 resolution, or post-change session sample. The same AKS owner must return the correlated result; incomplete proof goes back to that owner, while complete proof becomes an exact proposal for Hao approval before mutation.",
+            "updatedAt": "2026-08-27T22:14:56.408Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "frontierBefore": {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "activate-addressed-route-and-remeasure-alert-4566-20260816",
+          "generation": 11,
+          "phase": "waiting",
+          "owner": "may",
+          "conditionIds": [
+            "app-request:appdep_26d2607cd95ed2addf393ce6"
+          ]
+        },
+        "outcome": "Complete the exact existing alert-4566 activation and alert-4874 recurrence lineage without sibling work or duplicate deployment. Reconcile against the task's accepted live Condition `app-request:appdep_0436d418a2092b49a11dda35`: event 6118218 proves AKS App request `appdep_0436d418a2092b49a11dda35` was accepted, and current evidence contains no matching `app.dependency.completed` event. This Condition supersedes the stale prose reference to `appdep_83491e57be8c277441f96f8f`; preserve, do not replay, replace, or bypass the accepted request. When it completes, review the immutable narrow declaration candidate against correction SHA-256 fec89b4b8b8bc8a5191ca29b47f72cf3b85c77aaeb193ecc6ea3238943a14f and current declaration SHA-256 75db4cbb673663309564f9fa6ec027f055c801aa562aee0e0dbd93a6831744e4. Replan with the same AKS owner if source, selector, negative-control, scope, monitoring, rollback, or terminal artifact proof is missing; otherwise return the exact proposal for Hao approval before production mutation. Preserve Gym proof appdep_879ba020fd9626e17ac01f06, do not repeat prior deployments, keep genuine message, subscriber, schedule, malformed, and unknown-source failures visible, and converge only after a clean addressed-message canary, a fresh supported metric measurement at or below 5, resolved alert 4874, and a bounded post-change session sample without restart-driven interruption volume comparable to the current 24-hour baseline.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      "fulfilled": false,
+      "executionPath": "obsolete",
+      "currentRemainder": "covered-by-current-protocol-or-existing-work; no new demonstrated defect",
+      "authority": "Accepted May creator/caller withdrawal-unfulfilled; no current May/Hao/caller obligation and no production approval.",
+      "decision": "Obsolete AKS declaration and May-to-tech-lead owner-address activation path; current App-boundary routing covers useful specialist delegation, not the historical canary.",
+      "missingProof": [
+        "Exact current-generation AKS candidate/result for appdep_26d2607cd95ed2addf393ce6",
+        "Preserved Gym comparison appdep_879ba020fd9626e17ac01f06 / candidate 96ebe7cb78022737a2675e798d65679c7ba2a3e7",
+        "Hao approval, one supported release, clean terminal canary, <=5 measurement, alert 4874 resolution and bounded post-change interruption sample"
+      ],
+      "assessment": "The latest accepted status/Condition wins over older prose: g11 names appdep_26d2607cd95ed2addf393ce6 (event 6142395). Outcome mentions earlier appdep_0436d418a2092b49a11dda35 (6118218); recovered older owner artifact mentions appdep_83491e57be8c277441f96f8f. Preserve all, do not replay any. Events 6284665/6284677 are updates only. The correction content is recovered, but its actual 64-character SHA differs from the 62-character requirement spelling (identity gap preserved); the recovered owner artifact records failed canary 6077055/6077056, not success.",
+      "directRelations": [
+        {
+          "app_id": "may-agent",
+          "source_task_id": "prove-alert-4577-after-existing-activation-20260818",
+          "relation_kind": "dependency",
+          "target_task_id": "activate-addressed-route-and-remeasure-alert-4566-20260816"
+        },
+        {
+          "app_id": "may-agent",
+          "source_task_id": "reconcile-unhandled-signal-recurrence-20260816",
+          "relation_kind": "dependency",
+          "target_task_id": "activate-addressed-route-and-remeasure-alert-4566-20260816"
+        },
+        {
+          "app_id": "may-agent",
+          "source_task_id": "repair-gym-owner-review-input-correlation-20260820",
+          "relation_kind": "parent",
+          "target_task_id": "activate-addressed-route-and-remeasure-alert-4566-20260816"
+        },
+        {
+          "app_id": "may-agent",
+          "source_task_id": "activate-addressed-route-and-remeasure-alert-4566-20260816",
+          "relation_kind": "parent",
+          "target_task_id": "reconcile-unhandled-signal-recurrence-20260816"
+        }
+      ],
+      "mayDisposition": {
+        "disposition": "obsolete-execution-promise-withdrawn-unfulfilled",
+        "fulfilled": false,
+        "executableContinuation": null,
+        "currentMayHaoCallerObligationSurvives": false,
+        "authorityDisposition": {
+          "may": "withdraws only the obsolete execution promise as unfulfilled",
+          "hao": "no exact current approval/rejection/hold decision is requested or inferred",
+          "caller": "Alex retains technical migration history; no replay or replacement continuation is admitted by this artifact"
+        },
+        "reason": "The promised AKS declaration, May-to-tech-lead raw-message canary, retired metric/alert closure, and deployment sequence belong to retired Apps/contracts. Modern App-addressed assignment and exact app.dependency.updated return mechanics cover useful current behavior but do not fulfill this promise. No current exact caller or human decision survives. The final AKS Condition and nested Gym dependency remain unknown, independent historical facts only."
+      }
+    },
+    {
+      "taskId": "align-ops-health-delivery-taxonomy-20260816",
+      "retainedTaskRow": {
+        "app_id": "may-agent",
+        "task_id": "align-ops-health-delivery-taxonomy-20260816",
+        "generation": 2,
+        "resource_version": 11,
+        "phase": "waiting",
+        "updated_at": 1787141295804,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 2,
+            "id": "align-ops-health-delivery-taxonomy-20260816",
+            "resourceVersion": 11
+          },
+          "spec": {
+            "acceptance": [
+              "The classifier suppresses only owner app:aks-rp-e2e with the exact source/event pairs: aks-pipeline-watcher with pipeline-artifact.available, pipeline-run.state, pipeline.completed, or pipeline.spec.observed; aks-pull-request-watcher with pull-request.state; and aks-repo-ref-watcher with aks.repo-ref.changed or aks.repo-ref.observed.",
+              "Focused tests prove all seven exact pairs do not produce event-delivery-unaccepted, while at least an unknown-source lookalike and an unrelated genuinely unaccepted semantic event still produce the signal.",
+              "The corrected App artifact is activated through the supported deployment control plane, and a fresh project.ops_health.observed packet demonstrates that expected AKS watcher traffic no longer contributes to event-delivery-unaccepted without suppressing overdue pending events or genuinely unaccepted deliveries."
+            ],
+            "category": "runtime-reliability",
+            "input": {
+              "alertId": 4553,
+              "constraints": [
+                "Do not add a catch-all handler or mark expected observation events accepted merely to improve the signal.",
+                "Match owner, source, and event type exactly; preserve unknown-source and unrelated unaccepted-event detection.",
+                "Use the supported App release/deployment and event control planes; never write the runtime database directly.",
+                "Do not duplicate alert 4553 recovery work already owned by the existing child."
+              ],
+              "existingMetricRecoveryTask": "deploy-human-message-routing-fix-and-remeasure-20260816",
+              "sourceEvent": "event:5720643"
+            },
+            "mode": "achieve",
+            "outcome": "Align the may-agent.app ops-health event-delivery-unaccepted classifier with the already-verified condition-gated AKS watcher observation taxonomy so those exact expected app-owned observations do not wake the platform owner, while genuinely unaccepted events remain visible; deploy the verified App release and prove a fresh ops-health observation clears this signal family.",
+            "outputs": [
+              "agents/tech-lead/handlers/ops-health-review.ts",
+              "agents/tech-lead/handlers/ops-health-review.test.ts",
+              ".state/ops-health-packets.jsonl"
+            ],
+            "owner": "may",
+            "parentId": "runtime/platform-owner-review",
+            "priority": "P1"
+          },
+          "status": {
+            "conditionIds": [],
+            "evidence": [
+              "task:deploy-and-prove-ops-health-aks-taxonomy-20260816 is a live direct child in pending state; infrastructure will wake this parent on its meaningful transition.",
+              "task:activate-existing-aks-taxonomy-app-release-host-20260816 is a live waiting child of the deployment task and is already correlated to the existing P0 platform restoration work; duplicating alert 4553 recovery or redeploying now would violate the task bounds.",
+              "release-request:/app/.state/releases/deploy/may-ops-health-aks-taxonomy-3bf56cf5f4-20260816/request.json remains phase=requested for revision 3bf56cf5f416d2bd4989f676190202971edd7a68 with expected ops-health SHA-256 d61e4a7fb4fe5b28c8e64d359676f8c897f413c80f2c07d8958c7f241af1cf7e.",
+              "ssh-exec:devbox timed out again during this bounded review; no supported activation occurred and no duplicate deploy was attempted.",
+              "source:/app/worktrees/align-ops-health-delivery-taxonomy-20260816/projects/may-agent.app/agents/tech-lead/handlers/ops-health-review.ts lines 199-210 enumerate exactly the required seven source/event pairs; the focused test file lines 657-663 and 691 onward covers those pairs and the unknown-source/unrelated-event controls.",
+              "artifact:/app/projects/may-agent.app/.state/ops-health-packets.jsonl latest inspected packet still reports AKS watcher traffic under event-delivery-unaccepted, so terminal post-activation proof is absent.",
+              "checkpoint:/app/projects/may-agent.app/.state/checkpoints preserves the exact correlation, artifacts, blocker evidence, and safe resume path."
+            ],
+            "observedGeneration": 2,
+            "phase": "waiting",
+            "summary": "Wait on live direct child deploy-and-prove-ops-health-aks-taxonomy-20260816. Its activation child must resume only after the existing platform restoration restores the supported host boundary, then prove the exact release mount/hash, healthy runtime, and duplicateDeploy=false before the direct child generates a fresh ops-health packet; May will review that packet for suppression of only the seven expected AKS watcher pairs while preserving overdue-pending and genuinely unaccepted signals, and will replan with the responsible owner or escalate only a remaining authority blocker if any proof is missing.",
+            "updatedAt": "2026-08-19T12:08:15.804Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "frontierBefore": {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "align-ops-health-delivery-taxonomy-20260816",
+          "generation": 2,
+          "phase": "waiting",
+          "owner": "may",
+          "conditionIds": []
+        },
+        "outcome": "Align the may-agent.app ops-health event-delivery-unaccepted classifier with the already-verified condition-gated AKS watcher observation taxonomy so those exact expected app-owned observations do not wake the platform owner, while genuinely unaccepted events remain visible; deploy the verified App release and prove a fresh ops-health observation clears this signal family.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      "fulfilled": false,
+      "executionPath": "obsolete",
+      "currentRemainder": "covered-by-current-protocol-or-existing-work; no new demonstrated defect",
+      "authority": "Accepted May creator/caller withdrawal-unfulfilled; no current May/Hao/caller obligation and no production approval.",
+      "decision": "Obsolete retired may-agent ops-health classifier and staged full-App release; no current seven-pair classifier needs porting.",
+      "missingProof": [
+        "Loaded exact 3bf56cf5 release/mount/hash and nonduplicate activation",
+        "Fresh project.ops_health.observed proving seven exact watcher pairs absent while overdue pending and genuine unaccepted traffic remain visible"
+      ],
+      "assessment": "Seven pairs remain exact in retained acceptance: four pipeline, one pull-request and two repo-ref observations. The staged request remains requested. May already withdrew the deployment child and its staged release in goal/appdep_b9d63909a838fa7ad225d6b6; that disposition explicitly covered seven other identities, not this parent. Do not commission or seek approval for the same obsolete deployment again.",
+      "directRelations": [
+        {
+          "app_id": "may-agent",
+          "source_task_id": "deploy-and-prove-ops-health-aks-taxonomy-20260816",
+          "relation_kind": "parent",
+          "target_task_id": "align-ops-health-delivery-taxonomy-20260816"
+        },
+        {
+          "app_id": "may-agent",
+          "source_task_id": "align-ops-health-delivery-taxonomy-20260816",
+          "relation_kind": "parent",
+          "target_task_id": "runtime/platform-owner-review"
+        }
+      ],
+      "mayDisposition": {
+        "disposition": "obsolete-execution-promise-withdrawn-unfulfilled",
+        "fulfilled": false,
+        "executableContinuation": null,
+        "currentMayHaoCallerObligationSurvives": false,
+        "authorityDisposition": {
+          "may": "withdraws only the obsolete execution promise as unfulfilled",
+          "hao": "no exact current approval/rejection/hold decision is requested or inferred",
+          "caller": "Alex retains technical migration history; no replay or replacement continuation is admitted by this artifact"
+        },
+        "reason": "The seven-pair classifier and staged full may-agent App release target a retired ops-health controller. Its deployment child was withdrawn separately, but that does not fulfill this parent. No enabled controller requires this classifier and no exact current caller or Hao decision survives."
+      }
+    },
+    {
+      "taskId": "prove-alert-4577-after-existing-activation-20260818",
+      "retainedTaskRow": {
+        "app_id": "may-agent",
+        "task_id": "prove-alert-4577-after-existing-activation-20260818",
+        "generation": 1,
+        "resource_version": 2,
+        "phase": "pending",
+        "updated_at": 1787043710043,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 1,
+            "id": "prove-alert-4577-after-existing-activation-20260818",
+            "resourceVersion": 2
+          },
+          "spec": {
+            "acceptance": [
+              "Correlate alert 4577's exact opening rows 5726042, 5726197, 5726541, 5726542, 5726560, 5726855, and 5726856 with a fresh post-dependency source-query frontier; distinguish expected observations from genuine message, subscriber, control-plane, schedule, or unknown-source failures using event-level evidence.",
+              "Reuse the terminal evidence from activate-addressed-route-and-remeasure-alert-4566-20260816 and its existing activation dependency; do not create another deployment, host-restoration path, metric installation correlation, or direct runtime database write.",
+              "Take a fresh supported metric measurement after the dependency settles and prove either that alert 4577 is resolved or that its exact remaining contributing event IDs, responsible owner, and observable blocker are recorded without false closure.",
+              "Return the activation correlation, exact classifications, fresh metric/alert result, and terminal artifact for May review. If any consumer, route, taxonomy, activation, or terminal proof remains missing, change the responsible-owner approach on this same task tree or identify only the exact external authority boundary that prevents further progress."
+            ],
+            "category": "runtime-reliability",
+            "dependsOn": [
+              "activate-addressed-route-and-remeasure-alert-4566-20260816"
+            ],
+            "input": {
+              "alertId": 4577,
+              "evidenceArtifact": "/app/projects/may-agent/.state/owner-evidence/reconcile-alert-4577-current-lineage-20260818.json",
+              "metricId": "event.unhandled-signal-count-1h",
+              "openingContributingEventIds": [
+                5726042,
+                5726197,
+                5726541,
+                5726542,
+                5726560,
+                5726855,
+                5726856
+              ],
+              "openingEventId": 5726931,
+              "priorUpdateEventId": 5728036,
+              "reuseExistingTask": "activate-addressed-route-and-remeasure-alert-4566-20260816"
+            },
+            "mode": "achieve",
+            "outcome": "After the existing generation-2 remediation and its activation dependency reach a terminal result, determine their actual effect on alert 4577 without treating alert 4573 as substitute evidence: classify alert 4577's exact opening rows and fresh current frontier by source, route, and failure lineage, reuse the existing activation and taxonomy proof without duplicate deployment, and produce a supported fresh measurement that either resolves alert 4577 or assigns every exact remaining gap to its responsible owner on this same lineage.",
+            "outputs": [
+              "/app/projects/may-agent/.state/owner-evidence/reconcile-alert-4577-current-lineage-20260818.json"
+            ],
+            "owner": "may",
+            "parentId": "reconcile-alert-4577-current-lineage-20260818",
+            "priority": "P1"
+          },
+          "status": {
+            "observedGeneration": 0,
+            "phase": "pending",
+            "updatedAt": "2026-08-18T09:01:50.043Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "frontierBefore": {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "prove-alert-4577-after-existing-activation-20260818",
+          "generation": 1,
+          "phase": "pending",
+          "owner": "may",
+          "conditionIds": []
+        },
+        "outcome": "After the existing generation-2 remediation and its activation dependency reach a terminal result, determine their actual effect on alert 4577 without treating alert 4573 as substitute evidence: classify alert 4577's exact opening rows and fresh current frontier by source, route, and failure lineage, reuse the existing activation and taxonomy proof without duplicate deployment, and produce a supported fresh measurement that either resolves alert 4577 or assigns every exact remaining gap to its responsible owner on this same lineage.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      "fulfilled": false,
+      "executionPath": "obsolete",
+      "currentRemainder": "covered-by-current-protocol-or-existing-work; no new demonstrated defect",
+      "authority": "Accepted May creator/caller withdrawal-unfulfilled; no current May/Hao/caller obligation and no production approval.",
+      "decision": "Obsolete post-dependency alert-4577 proof path; old requested alert-specific closure is not reconstructed by current metrics or sibling alert recovery.",
+      "missingProof": [
+        "Terminal activation prerequisite",
+        "Event-level classification of opening IDs 5726042, 5726197, 5726541, 5726542, 5726560, 5726855, 5726856 plus fresh post-dependency frontier",
+        "Fresh supported measurement and exact alert-4577 resolution or every residual ID/owner/blocker; terminal artifact and May review"
+      ],
+      "assessment": "Retained Task has no observed execution/result (observedGeneration=0), exact evidenceArtifact is absent. Alert 4573 and original alert 4566 resolved timestamps in recovered evidence are not alert 4577 proof. Parent reconcile-alert-4577-current-lineage-20260818 was separately withdrawn with the ten unhandled-signal outcomes; its disposition does not automatically close this child.",
+      "directRelations": [
+        {
+          "app_id": "may-agent",
+          "source_task_id": "prove-alert-4577-after-existing-activation-20260818",
+          "relation_kind": "dependency",
+          "target_task_id": "activate-addressed-route-and-remeasure-alert-4566-20260816"
+        },
+        {
+          "app_id": "may-agent",
+          "source_task_id": "prove-alert-4577-after-existing-activation-20260818",
+          "relation_kind": "parent",
+          "target_task_id": "reconcile-alert-4577-current-lineage-20260818"
+        }
+      ],
+      "mayDisposition": {
+        "disposition": "obsolete-execution-promise-withdrawn-unfulfilled",
+        "fulfilled": false,
+        "executableContinuation": null,
+        "currentMayHaoCallerObligationSurvives": false,
+        "authorityDisposition": {
+          "may": "withdraws only the obsolete execution promise as unfulfilled",
+          "hao": "no exact current approval/rejection/hold decision is requested or inferred",
+          "caller": "Alex retains technical migration history; no replay or replacement continuation is admitted by this artifact"
+        },
+        "reason": "The prerequisite activation never reached its required terminal proof and the alert-specific artifact is absent. Current metrics and sibling alert outcomes cannot reconstruct alert 4577 proof. The retired alert proof execution promise is withdrawn unfulfilled; no precise current caller or Hao obligation survives."
+      }
+    },
+    {
+      "taskId": "reconcile-app-dependency-completed-delivery-taxonomy-20260819",
+      "retainedTaskRow": {
+        "app_id": "may-agent",
+        "task_id": "reconcile-app-dependency-completed-delivery-taxonomy-20260819",
+        "generation": 1,
+        "resource_version": 4,
+        "phase": "waiting",
+        "updated_at": 1787166447820,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 1,
+            "id": "reconcile-app-dependency-completed-delivery-taxonomy-20260819",
+            "resourceVersion": 4
+          },
+          "spec": {
+            "acceptance": [
+              "Primary evidence proves the producer, canonical terminal task, intended dependency or parent wake, and downstream result for events 5786777 and 5786779; a completion label alone is insufficient.",
+              "An immutable exact source/owner/type/payload/correlation-scoped candidate and regression controls prove only valid terminal dependency-completion facts receive the intended disposition, while malformed, unknown, unmatched, nonterminal, failed-wake, and unrelated cases remain visible.",
+              "Any production activation uses the supported immutable release and supervisor boundary, occurs only after required proof and approval boundaries, and returns loaded artifact identity, healthy runtime, and duplicateDeploy=false evidence.",
+              "Fresh representative events prove the intended completion facts are accepted or intentionally observed, the required parent/App wake reaches its terminal result, negative controls remain visible, and a supported fresh event.unhandled-signal-count-1h measurement records the effect.",
+              "May reviews the terminal evidence and replans with the responsible runtime or App owner if any consumer, wake, terminal result, regression control, activation proof, or metric link is missing; escalate only a demonstrated authority blocker."
+            ],
+            "category": "runtime-reliability",
+            "input": {
+              "alertId": 4602,
+              "constraints": [
+                "Do not add a catch-all handler or suppress malformed, unknown, unmatched, nonterminal, failed-wake, or unrelated events.",
+                "Do not duplicate the existing project.task.reconciled/project.task.recovery.requeued taxonomy work.",
+                "Use supported App, task, event, metric, release, and supervisor control planes; never edit runtime database or task-tree storage directly."
+              ],
+              "eventIds": [
+                5786777,
+                5786779
+              ],
+              "eventType": "app.dependency.completed",
+              "metricId": "event.unhandled-signal-count-1h",
+              "sources": [
+                "app-task:aks-rp-e2e:task-reconciler",
+                "app-task:may-agent:task-reconciler"
+              ]
+            },
+            "mode": "achieve",
+            "outcome": "Classify the exact task-reconciler `app.dependency.completed` observations represented by events 5786777 and 5786779, and establish a narrow explicit consumer or intentional-observation disposition only for schema-valid completion facts that are canonically correlated to a real terminal task and required wake; preserve visibility for malformed payloads, unknown sources or owners, missing or nonterminal tasks, unmatched dependencies, failed wake propagation, and unrelated signals, then return terminal live trace and fresh metric proof.",
+            "outputs": [],
+            "owner": "may",
+            "parentId": "runtime/platform-owner-review",
+            "priority": "P1"
+          },
+          "status": {
+            "conditionIds": [],
+            "evidence": [
+              "event:5786777 — AKS task `ops/complete-realpath-write-dispatch-guard-proof-20260809` had terminal reconciliation event 5786776 but no matching App inbox dependency, so it remained visible; the downstream verification task completed at 5786848 and its correlated completion 5786849 was accepted by `app-inbox:wake`.",
+              "event:5786779 — May child `finish-current-pgid-lineage-collapse-20260819` had terminal reconciliation event 5786778 but no matching App inbox dependency; its task parent `close-emptied-pgid-retry-predecessors-20260811` reached terminal result at 5786874 and correlated completion 5786875 was accepted by `app-inbox:wake`.",
+              "event:5789531 — fresh exact AKS completion for `ops/complete-realpath-write-dispatch-guard-20260809` followed terminal event 5789530 and was accepted by `app-inbox:wake`, proving the positive path can reach the intended consumer.",
+              "event:5788237 — a fresh unmatched AKS task completion remained unhandled before the current deployment, proving unmatched visibility is operationally meaningful and must be preserved.",
+              "deployed source `fbfd7a3a:src/app/app-inbox-runtime.ts:733-742` — current logic records `app-inbox:wake` for any valid kind/id even when `host.wake(...)` advances zero requests and without canonical source/owner/terminal-task validation.",
+              "receipt `/app/projects/may-agent/.state/deploy-receipts/maintenance-owned-checkpoint-fbfd7a3a-20260820T1230CST.json` — loaded artifact SHA equals requested SHA `56f66153fa2cb2e8236ddb5928aae37d312304ff291cd8fb71b516031bc3201b`, health healthy, targetedWake true, duplicateDeploy false.",
+              "metric snapshot 1945421 — `event.unhandled-signal-count-1h=24`, measured by `runtime:metric-source-query`, note `trigger-event:5789923`; the metric remains breached and includes unrelated owned families, so this child must report scoped effect rather than claim global zero.",
+              "checkpoint #1 preserves the exact event classification, deployed source gap, receipt path, metric snapshot, and next review branch."
+            ],
+            "observedGeneration": 1,
+            "phase": "waiting",
+            "summary": "Keep this task open on one direct repair-and-live-proof child. Events 5786777 and 5786779 were not missing deliveries: each named a real terminal task, but neither matched an App inbox dependency at emission, so visibility was correct; the AKS chain subsequently completed through events 5786848/5786849 and the May chain through 5786874/5786875. The remaining defect is structural: deployed source fbfd7a3a can label any syntactically valid dependency payload as app-inbox:wake without proving the exact source/owner, terminal receipt, matching dependency, or successful propagation. After the child transitions, May will review the immutable candidate, regression controls, supported activation receipt, terminal live trace, and fresh metric; any missing link will be replanned with the runtime or App owner, with escalation only for a demonstrated authority blocker.",
+            "updatedAt": "2026-08-19T19:07:27.820Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "frontierBefore": {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "reconcile-app-dependency-completed-delivery-taxonomy-20260819",
+          "generation": 1,
+          "phase": "waiting",
+          "owner": "may",
+          "conditionIds": []
+        },
+        "outcome": "Classify the exact task-reconciler `app.dependency.completed` observations represented by events 5786777 and 5786779, and establish a narrow explicit consumer or intentional-observation disposition only for schema-valid completion facts that are canonically correlated to a real terminal task and required wake; preserve visibility for malformed payloads, unknown sources or owners, missing or nonterminal tasks, unmatched dependencies, failed wake propagation, and unrelated signals, then return terminal live trace and fresh metric proof.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      "fulfilled": false,
+      "executionPath": "obsolete",
+      "currentRemainder": "covered-by-current-protocol-or-existing-work; no new demonstrated defect",
+      "authority": "Accepted May creator/caller withdrawal-unfulfilled; no current May/Hao/caller obligation and no production approval.",
+      "decision": "Obsolete app.dependency.completed/app-inbox:wake classification and repair; modern saved input answer/report with app.dependency.updated supports the useful correlated-return remainder.",
+      "missingProof": [
+        "Fresh live terminal trace and negative controls for the exact historical schema/source/owner/task/wake matrix",
+        "Scoped fresh metric effect and May terminal evidence review"
+      ],
+      "assessment": "Retained evidence classifies 5786777/5786779 as real terminal Tasks without matching App inbox dependencies, correctly visible at emission; follow-on terminal/wake pairs 5786848/5786849 and 5786874/5786875 are partial progress. Recovered fbfd7a3a deployment receipt proves that loaded artifact, not the narrow repair: old code could claim app-inbox:wake when zero requests advanced. Existing repaired-lineage reconciliation already verifies modern protocol; do not duplicate it. Modern app-input-result noop acceptance is NOT proof of a required wake or validation of the old schema. No legacy malformed/source matrix is claimed passed by new tests.",
+      "directRelations": [
+        {
+          "app_id": "may-agent",
+          "source_task_id": "repair-and-live-prove-app-dependency-completion-correlation-20260819",
+          "relation_kind": "parent",
+          "target_task_id": "reconcile-app-dependency-completed-delivery-taxonomy-20260819"
+        },
+        {
+          "app_id": "may-agent",
+          "source_task_id": "reconcile-app-dependency-completed-delivery-taxonomy-20260819",
+          "relation_kind": "parent",
+          "target_task_id": "runtime/platform-owner-review"
+        }
+      ],
+      "mayDisposition": {
+        "disposition": "obsolete-execution-promise-withdrawn-unfulfilled",
+        "fulfilled": false,
+        "executableContinuation": null,
+        "currentMayHaoCallerObligationSurvives": false,
+        "authorityDisposition": {
+          "may": "withdraws only the obsolete execution promise as unfulfilled",
+          "hao": "no exact current approval/rejection/hold decision is requested or inferred",
+          "caller": "Alex retains technical migration history; no replay or replacement continuation is admitted by this artifact"
+        },
+        "reason": "The old app.dependency.completed/app-inbox:wake protocol is retired. Modern exact saved result/report return and app.dependency.updated recovery cover the useful present protocol but do not prove the legacy source/owner/task/wake matrix or fresh metric effect. No precise current caller or Hao obligation survives."
+      }
+    }
+  ],
+  "preservedConditions": [
+    {
+      "app_id": "may-agent",
+      "condition_id": "app-request:appdep_879ba020fd9626e17ac01f06",
+      "state": "unknown",
+      "condition_json": "{\"metadata\":{\"generation\":1,\"id\":\"app-request:appdep_879ba020fd9626e17ac01f06\",\"resourceVersion\":1},\"spec\":{\"expected\":{\"equals\":\"done\",\"field\":\"status\"},\"subject\":\"id:appdep_879ba020fd9626e17ac01f06\",\"type\":\"app.dependency.completed\"},\"status\":{\"createdAt\":\"2026-08-24T16:58:50.853Z\",\"observedAt\":\"2026-08-24T16:58:50.853Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}"
+    },
+    {
+      "app_id": "may-agent",
+      "condition_id": "app-request:appdep_26d2607cd95ed2addf393ce6",
+      "state": "unknown",
+      "condition_json": "{\"metadata\":{\"generation\":1,\"id\":\"app-request:appdep_26d2607cd95ed2addf393ce6\",\"resourceVersion\":8},\"spec\":{\"expected\":{\"equals\":\"done\",\"field\":\"status\"},\"subject\":\"id:appdep_26d2607cd95ed2addf393ce6\",\"type\":\"app.dependency.completed\"},\"status\":{\"createdAt\":\"2026-08-26T07:40:14.759Z\",\"observedAt\":\"2026-08-27T22:14:56.408Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}"
+    }
+  ],
+  "preservedRelations": [
+    {
+      "app_id": "may-agent",
+      "source_task_id": "prove-alert-4577-after-existing-activation-20260818",
+      "relation_kind": "dependency",
+      "target_task_id": "activate-addressed-route-and-remeasure-alert-4566-20260816"
+    },
+    {
+      "app_id": "may-agent",
+      "source_task_id": "reconcile-unhandled-signal-recurrence-20260816",
+      "relation_kind": "dependency",
+      "target_task_id": "activate-addressed-route-and-remeasure-alert-4566-20260816"
+    },
+    {
+      "app_id": "may-agent",
+      "source_task_id": "repair-gym-owner-review-input-correlation-20260820",
+      "relation_kind": "parent",
+      "target_task_id": "activate-addressed-route-and-remeasure-alert-4566-20260816"
+    },
+    {
+      "app_id": "may-agent",
+      "source_task_id": "deploy-and-prove-ops-health-aks-taxonomy-20260816",
+      "relation_kind": "parent",
+      "target_task_id": "align-ops-health-delivery-taxonomy-20260816"
+    },
+    {
+      "app_id": "may-agent",
+      "source_task_id": "prove-alert-4577-after-existing-activation-20260818",
+      "relation_kind": "parent",
+      "target_task_id": "reconcile-alert-4577-current-lineage-20260818"
+    },
+    {
+      "app_id": "may-agent",
+      "source_task_id": "repair-and-live-prove-app-dependency-completion-correlation-20260819",
+      "relation_kind": "parent",
+      "target_task_id": "reconcile-app-dependency-completed-delivery-taxonomy-20260819"
+    },
+    {
+      "app_id": "may-agent",
+      "source_task_id": "activate-addressed-route-and-remeasure-alert-4566-20260816",
+      "relation_kind": "parent",
+      "target_task_id": "reconcile-unhandled-signal-recurrence-20260816"
+    },
+    {
+      "app_id": "may-agent",
+      "source_task_id": "align-ops-health-delivery-taxonomy-20260816",
+      "relation_kind": "parent",
+      "target_task_id": "runtime/platform-owner-review"
+    },
+    {
+      "app_id": "may-agent",
+      "source_task_id": "reconcile-app-dependency-completed-delivery-taxonomy-20260819",
+      "relation_kind": "parent",
+      "target_task_id": "runtime/platform-owner-review"
+    }
+  ],
+  "conditionChronology": "Only app-request:appdep_26d2607cd95ed2addf393ce6 is bound to an in-scope final Task. Gym appdep_879ba020fd9626e17ac01f06 is a separate nested dependency preserved by the acceptance; no new binding inferred. Earlier 0436d418 and 83491e57 Condition mentions are unrecovered in snapshot Conditions, not satisfied or erased.",
+  "recoveredHistoricalArtifacts": [
+    {
+      "path": "/app/projects/may-agent/.state/owner-review-artifacts/reconcile-aks-lifecycle-publication-source-proof-20260825/disposition.json",
+      "available": true,
+      "sha256": "fec89b4b8b8b8bc8a5191ca29b47f72cf3b85c77aaeb193ecc6ea3238943a14f",
+      "content": {
+        "schemaVersion": 1,
+        "kind": "completed-task-owner-correction",
+        "completedTaskId": "activate-task-result-delivery-taxonomy-and-prove-live-20260819",
+        "findingDedupeKey": "aks-lifecycle-publication-source-proof-mismatch",
+        "disposition": "no-go-current-publication",
+        "completedReceiptMutation": "none",
+        "authoritativePublication": {
+          "releaseId": "f2edce64738f29fe60fde3fd83fc3c9d486dcb35-definitions-v3",
+          "sourceCommit": "f2edce64738f29fe60fde3fd83fc3c9d486dcb35",
+          "releasePath": "/app/.state/releases/app-definitions/f2edce64738f29fe60fde3fd83fc3c9d486dcb35-definitions-v3",
+          "currentLinkTarget": "f2edce64738f29fe60fde3fd83fc3c9d486dcb35-definitions-v3",
+          "releaseManifestPath": "/app/.state/releases/app-definitions/f2edce64738f29fe60fde3fd83fc3c9d486dcb35-definitions-v3/release.json",
+          "releaseManifestSha256": "90ca897e9808f91b47901628a9c057f42b4b4fa5b28f7b8d4b585846563d9f4d",
+          "aksDeclarationPath": "/app/.state/releases/app-definitions/f2edce64738f29fe60fde3fd83fc3c9d486dcb35-definitions-v3/projects/aks-rp-e2e.app/app.ts",
+          "aksDeclarationSha256": "75db4cbb673663309564f9fa6ec027f055c801aa562aee0e0dbd93a6831744e4",
+          "aksDeclarationSize": 45212
+        },
+        "selectorAudit": {
+          "requiredFamilies": [
+            {
+              "type": "project.task.reconciled",
+              "source": "app-task:aks-rp-e2e:task-reconciler",
+              "project": "aks-rp-e2e",
+              "route": "terminal-owner-result-recovery",
+              "disposition": [
+                "waiting",
+                "converged"
+              ],
+              "terminalStatus": "done"
+            },
+            {
+              "type": "project.task.recovery.requeued",
+              "source": "app-task:aks-rp-e2e:task-reconciler",
+              "project": "aks-rp-e2e",
+              "route": "task-controller",
+              "reason": "terminal-owner-session-expired-lease",
+              "terminalStatus": "done"
+            }
+          ],
+          "currentDeclarationContainsRequiredEventTypes": false,
+          "currentDeclarationContainsRequiredRoutes": false,
+          "currentDeclarationContainsRequiredDispositionOrReasonSelectors": false,
+          "gap": "The authoritative published canonicalAksObservations contains only AKS pipeline and repository watcher selectors; neither lifecycle family is declared. Therefore the prior negative-control matrix cannot prove the current publication: all lifecycle positives are also unmatched, while failures remain visible only because the intended selectors are absent."
+        },
+        "mismatchExplanation": {
+          "priorReceiptClaim": "Commit 7fdc54dedc02f8e547f178f86769aebd75aa6400 and app.ts SHA-256 c69d827b317088827248a86fa64d6a233807663623bd0fd6ef3ae78bda936e9d were cited for the 2026-08-19 publication.",
+          "currentWorkspace": "The mutable workspace app.ts is SHA-256 68cafcf60066880c1e15fd6f79ba7c4811aec8dd12696e73466aafd399bedf02 and differs from the current release by one unrelated productVerdict instruction line.",
+          "currentPublication": "The published release app.ts is SHA-256 75db4cbb673663309564f9fa6ec027f055c801aa562aee0e0dbd93a6831744e4 and exactly matches source commit f2edce64738f29fe60fde3fd83fc3c9d486dcb35.",
+          "gitObjectStatus": "The current repository cannot resolve 7fdc54dedc02f8e547f178f86769aebd75aa6400 or df5e72065c4c1afb5b77169c3a5edb549ee86efa. The df5e7206 merge-base command exited 128, which is failure evidence, not ancestry proof.",
+          "conclusion": "The earlier proof described an older publication/runtime state and is not source proof for the currently published AKS App release."
+        },
+        "preservedHistoricalEvidence": {
+          "publicationReceiptPath": "/app/projects/may-agent/.state/deploy-receipts/real-producer-lifecycle-55e4c37d-20260819T2320Z.json",
+          "publicationReceiptSha256": "e45e0735dd0d00c3a917594b30193f369885a98f12b6bb15d76496a14d7506ee",
+          "matrixPath": "/app/projects/may-agent/.state/owner-review-artifacts/finish-real-producer-lifecycle-publication-proof-20260819/authentic-matrix.json",
+          "matrixSha256": "408e7faa983ea2566bae0fc6451f34b2e766bcdcdde24c542d026fdcb2c4d630",
+          "scope": "Valid historical Host selector and negative-control proof for that run; not proof of current AKS declaration bytes."
+        },
+        "repairBoundary": {
+          "owner": "aks-rp-e2e App owner",
+          "requiredCandidate": "A new immutable AKS app source revision that adds only the two exact selector families above to canonicalAksObservations and includes focused positive and negative selector tests.",
+          "runtimeOwnerBoundary": "May Runtime owner must review the candidate identity, tests, publication artifact hash, loaded hash equality, and fresh positive/negative traces before approving publication.",
+          "risk": "Publishing an overbroad selector can hide genuine failures; publishing without the selectors leaves successful lifecycle facts unhandled.",
+          "proofGap": "No immutable current candidate containing the required declarations exists in the gathered evidence; the cited 7fdc54d object is unavailable and the current release omits the declarations.",
+          "approval": "No deploy, reload, restart, or production mutation is approved by this correction."
+        },
+        "commandsAndResults": [
+          "readlink -f /app/.state/releases/app-definitions/current -> /app/.state/releases/app-definitions/f2edce64738f29fe60fde3fd83fc3c9d486dcb35-definitions-v3",
+          "sha256sum release.json app.ts -> 90ca897e9808f91b47901628a9c057f42b4b4fa5b28f7b8d4b585846563d9f4d and 75db4cbb673663309564f9fa6ec027f055c801aa562aee0e0dbd93a6831744e4",
+          "git show f2edce64738f29fe60fde3fd83fc3c9d486dcb35:projects/aks-rp-e2e.app/app.ts | sha256sum -> 75db4cbb673663309564f9fa6ec027f055c801aa562aee0e0dbd93a6831744e4",
+          "grep for project.task.reconciled, project.task.recovery.requeued, terminal-owner-result-recovery, terminal-owner-session-expired-lease in authoritative app.ts -> no matches (exit 1)",
+          "git cat-file -t df5e72065c4c1afb5b77169c3a5edb549ee86efa -> fatal: could not get object info; git merge-base --is-ancestor ... HEAD -> exit 128",
+          "git cat-file -t 7fdc54dedc02f8e547f178f86769aebd75aa6400 -> fatal: could not get object info"
+        ]
+      },
+      "retainedRequirementHash": "fec89b4b8b8bc8a5191ca29b47f72cf3b85c77aaeb193ecc6ea3238943a14f",
+      "identityGap": "Retained requirement spelling has 62 hex characters, versus recovered file SHA-256 with 64. Content matches the described no-go correction, but exact requested hash equality is NOT proved. Preserve the typo/mismatch rather than silently repairing historical requirements."
+    },
+    {
+      "path": "/app/projects/may-agent/.state/owner-evidence/reconcile-unhandled-signal-recurrence-20260816.json",
+      "available": true,
+      "sha256": "e6effe81d90ada70157f7c9151daa15ea5512e2e792596ab7f8f11ecc3d1dbd2",
+      "content": {
+        "taskId": "reconcile-unhandled-signal-recurrence-20260816",
+        "alertId": 4566,
+        "metricId": "event.unhandled-signal-count-1h",
+        "observedAt": "2026-08-16T21:27:00Z",
+        "classification": {
+          "exactRequestedRows": [
+            {
+              "eventId": 5723176,
+              "classification": "genuine-failure",
+              "evidence": "message.created from agent:may to agent:tech-lead remained unhandled"
+            },
+            {
+              "eventId": 5723177,
+              "classification": "genuine-failure",
+              "evidence": "immediate subscriber.failed for 5723176: Addressed agent message names no canonical App owned by tech-lead"
+            }
+          ],
+          "provenExpectedObservations": {
+            "project.ops_health.observed": [
+              5722800,
+              5723137,
+              5723536
+            ],
+            "project.ops_digest.created": [
+              5723170,
+              5723582
+            ],
+            "human.attention.reviewed": [
+              5723180,
+              5723618,
+              5723656
+            ],
+            "project.task.reconcile.started": [
+              5723092,
+              5723094,
+              5723498,
+              5723500,
+              5723501,
+              5723502
+            ],
+            "reviewedHumanMessageCandidates": [
+              5723171,
+              5723583,
+              5723609
+            ]
+          },
+          "genuineRowsVisibleUnderCandidateTaxonomy": [
+            5722795,
+            5722944,
+            5723097,
+            5723110,
+            5723176,
+            5723177,
+            5723313,
+            5723314,
+            5723584,
+            5723596,
+            5723597,
+            5723610,
+            5723645,
+            5723646,
+            5723778
+          ]
+        },
+        "metricDefinition": {
+          "baselineCurrent": 28,
+          "candidateCountAtValidation": 15,
+          "regressionMatrix": "12/12 synthetic cases matched: genuine addressed message, subscriber failure, control schedule, unknown source, and unknown-source watcher lookalike remain visible; only exact owner/source/type lifecycle observations, exact AKS watcher observations, and reviewed human candidates are excluded",
+          "controlEventId": 5723855,
+          "installed": false,
+          "reason": "metric.definition_changed remained pending and the fresh snapshot continued to use the previous source_query; no runtime DB write was attempted"
+        },
+        "loadedArtifact": {
+          "runningPid": 108,
+          "startedAt": "2026-08-16T21:08:56Z",
+          "binaryPath": "/usr/local/bin/may-agent",
+          "binarySha256": "137c22720ba7e89b9b079b65d8d2a6b4b5993dff783e1b0b5e72c4b5a1fde644",
+          "loadedRouteString": "names no canonical App owned by ${message.targetOwner}",
+          "intendedSourceRouteString": "names no compatible canonical App owned by or local to runnable agent",
+          "focusedSourceTests": "30 pass, 0 fail, 116 assertions",
+          "priorReceipt": "/app/projects/may-agent/.state/deploy-receipts/complete-same-app-addressed-message-admission-20260816-45526720.json",
+          "priorReceiptDisposition": "succeeded historically, but disproved for the current post-restart process by loaded binary inspection and canary"
+        },
+        "postRestartCanary": {
+          "messageEventId": 5723856,
+          "subscriberFailedEventId": 5723857,
+          "result": "failed",
+          "error": "Addressed agent message event:5723856 names no canonical App owned by tech-lead"
+        },
+        "freshMeasurement": {
+          "triggerEventId": 5723858,
+          "triggerAcceptedBy": "cron:metrics-snapshot",
+          "handlerRun": "5723859 through 5723865",
+          "measuredCurrent": 33,
+          "metricUpdatedAt": 1786915424125,
+          "alertResolvedAt": null,
+          "alertStatus": "open",
+          "note": "The snapshot used the old source query because the current loaded runtime did not project control event 5723855. Genuine failures were not hidden."
+        },
+        "blocker": {
+          "owner": "existing supported host/supervisor boundary",
+          "existingWork": [
+            "activate-aks-workspace-integrity-release-via-supervisor-20260816",
+            "align-ops-health-delivery-taxonomy-20260816",
+            "implement-restart-aware-deploy-receipts-20260811"
+          ],
+          "reason": "The current carrier has no Docker CLI/socket and the configured devbox host boundary is unavailable. No duplicate deployment or host-restoration path was attempted."
+        },
+        "currentReconciliation20260819": {
+          "priorLineage": {
+            "alert4566ResolvedAt": 1786920770062,
+            "alert4573ResolvedAt": 1786922666951,
+            "currentOpenAlertId": 4602
+          },
+          "activationPreflight": {
+            "hostDependencyTask": "activate-aks-workspace-integrity-release-via-supervisor-20260816",
+            "hostDependencyDisposition": "done; later healthy supervisor deployment superseded the prepared activation",
+            "deploymentReceipt": "/app/projects/may-agent/.state/deploy-receipts/control-client-identity-20260819-1150.json",
+            "loadedBinarySha256": "ee1b3d04f4defd79b04894d718bd4bf413ff15f96ab3341c05d859fc3e766296",
+            "loadedPid": 112380,
+            "duplicateActivationAttempted": false
+          },
+          "currentSourceRowsBeforeCanary": {
+            "classifiedAt": "2026-08-19T13:31Z",
+            "genuineAppInputFailure": [
+              5778976
+            ],
+            "genuineSubscriberFailure": [
+              5778977
+            ],
+            "genuineUnknownSourceCredentialObservations": [
+              5779266,
+              5779362,
+              5779525,
+              5779689,
+              5779910,
+              5779973,
+              5780031,
+              5780084,
+              5780233,
+              5780380,
+              5780561
+            ],
+            "provenExpectedLifecycleExcluded": [],
+            "note": "The narrow query preserves all 13 rows; none is covered by the already-validated exact lifecycle/observation exclusions."
+          },
+          "postActivationCanary": {
+            "messageEventId": 5780797,
+            "subscriberFailedEventId": 5780798,
+            "result": "failed",
+            "error": "Addressed agent message event:5780797 names no canonical App owned by tech-lead"
+          },
+          "metricControlPlane": {
+            "definitionEventId": 5780821,
+            "definitionDelivery": "accepted by event-interface:record only",
+            "installed": false,
+            "reason": "The supported metric.definition_changed fact had no projection consumer; metric source_query remained the prior AKS-only query."
+          },
+          "freshMeasurement": {
+            "triggerEventId": 5780829,
+            "triggerAcceptedBy": "runtime:metric-source-measurement",
+            "snapshotId": 1940718,
+            "measuredCurrent": 12,
+            "activeAlertId": 4602,
+            "activeAlertResolvedAt": null,
+            "note": "Fresh supported snapshot completed after the failed canary; genuine failures remain visible."
+          },
+          "remainingOwnerGap": "Repair the current canonical addressed-agent admission route and restore a real metric-definition projection consumer, then deploy once through the supervisor path and repeat the canary/snapshot proof."
+        },
+        "currentReconciliation20260825": {
+          "alert4874": {
+            "status": "open",
+            "latestBreachEventId": 6075082,
+            "latestMeasuredCurrent": 684,
+            "measuredAt": 1787637979600,
+            "measuredBy": "runtime:metric-source-measurement",
+            "snapshotNote": "fresh supported source measurement accepted by the existing may-agent platform-owner task"
+          },
+          "sourceClassification": {
+            "dominantExpectedObservationFamilies": [
+              "project.task.reconcile.started from exact app-task:<app>:task-reconciler sources",
+              "project.task.reconcile.profiled from exact app-task:<app>:observer sources",
+              "successful or skipped project.task.reconciled/project.task.reconcile.skipped lifecycle observations",
+              "conversation.updated from app-inbox"
+            ],
+            "freshOneHourEvidence": "The live source query grouped into 31 source/owner/type families; its largest families were exact task-reconciler and observer lifecycle emissions (92 started, 91 evaluation profiled, 88 evaluation reconciled, 63 May profiled, 56 AKS profiled, 51 AKS started, 48 AKS reconciled, 42 May started, 38 May reconciled). These are observation candidates requiring exact source/owner/type/status selectors, not broad type-only suppression.",
+            "genuineFailureVisibilityRequired": [
+              "message.created",
+              "subscriber.failed",
+              "broken control schedules",
+              "unknown-source signals"
+            ]
+          },
+          "freshAddressedCanary": {
+            "token": "may-techlead-canary-20260825T0531Z",
+            "messageEventId": 6073627,
+            "subscriberFailedEventId": 6073628,
+            "result": "failed",
+            "error": "Addressed agent message event:6073627 names no canonical App owned by tech-lead"
+          },
+          "deploymentDisposition": {
+            "duplicateDeployAttempted": false,
+            "reviewedReceiptCorrelation": "fix-control-read-latency-5393dcb1-20260825",
+            "receiptHealth": "healthy",
+            "note": "The healthy loaded control-read-latency artifact does not satisfy addressed-route proof; the fresh canary still failed. Continue the existing addressed-route and metric-consumer activation lineage rather than creating a sibling rollout."
+          },
+          "remainingOwnerGap": "The existing direct child activate-addressed-route-and-remeasure-alert-4566-20260816 must reconcile the failed canary and current lifecycle-observation recurrence, install only exact proven taxonomy through supported controls, and return terminal canary plus fresh metric evidence."
+        },
+        "postDeployReconciliation20260825T0644Z": {
+          "loadedArtifactProof": {
+            "receipt": "/app/projects/may-agent/.state/deploy-receipts/deploy-20260825T063551Z-2003437.json",
+            "correlation": "deploy-20260825T063551Z-2003437",
+            "sourceCommit": "f712485e571fa597b2923a0fd7e8ff1418d18a01",
+            "artifactSha": "f5267789f58314524d495729fc43c3b5ba51167a345d56c198cf59fc97e81e61",
+            "loadedArtifactSha": "f5267789f58314524d495729fc43c3b5ba51167a345d56c198cf59fc97e81e61",
+            "health": "healthy",
+            "duplicateDeploy": false,
+            "independentLiveCheckAt": "2026-08-25T06:39:01Z"
+          },
+          "postActivationCanary": {
+            "token": "may-techlead-canary-20260825T0644Z",
+            "messageEventId": 6077055,
+            "subscriberFailedEventId": 6077056,
+            "result": "failed",
+            "error": "Addressed agent message event:6077055 names no canonical App owned by tech-lead",
+            "interpretation": "The newly loaded artifact is real and healthy, but it does not provide the intended May-to-tech-lead addressed route. The failure remains visible and forbids closure or another duplicate deployment."
+          },
+          "freshSupportedMeasurement": {
+            "triggerEventId": 6077084,
+            "handlerStartedEventId": 6077085,
+            "handlerCompletedEventId": 6077090,
+            "metricUpdatedAt": 1787640322632,
+            "measuredCurrent": 643,
+            "threshold": 5,
+            "alertId": 4874,
+            "alertResolvedAt": null,
+            "sourceQueryChanged": false,
+            "subsequentObservedCurrent": 644,
+            "subsequentObservedUpdatedAt": 1787640369037
+          },
+          "currentTaxonomy": {
+            "provenExpectedExactFamilies": [
+              "project.task.reconcile.started/reconciled/reconcile.skipped from exact app-task:<installed-app>:task-reconciler sources with matching installed-App owners",
+              "project.task.reconcile.profiled from exact app-task:<installed-app>:observer sources with matching installed-App owners",
+              "conversation.updated from app-inbox to app:may",
+              "project.ops_health.observed and project.ops_digest.created from agent:tech-lead to agent:tech-lead",
+              "reviewed tech-lead to human:operator notification messages paired with those ops observations"
+            ],
+            "exactRowsStillRequiringVisibilityOrOwnerReview": [
+              6074246,
+              6074436,
+              6074437,
+              6074483,
+              6074644,
+              6074872,
+              6074937,
+              6075059,
+              6075062,
+              6075063,
+              6075073,
+              6075074,
+              6075075,
+              6075077,
+              6075078,
+              6075083,
+              6075271,
+              6075292,
+              6075293,
+              6075401,
+              6075537,
+              6075538,
+              6075940,
+              6076017,
+              6076130,
+              6076131,
+              6076241,
+              6076243,
+              6076361,
+              6076362,
+              6076612,
+              6076615,
+              6076679,
+              6076681,
+              6076746,
+              6076747,
+              6076908,
+              6077055,
+              6077056
+            ],
+            "genuineFailureRows": [
+              6076131,
+              6077055,
+              6077056
+            ],
+            "note": "The exact remaining list is the one-hour residual after removing only already-proven expected source/owner/event families. Metric breaches to evaluator, runtime reload observations, Gym review lifecycles, evaluation executor progress, cancellation/subscriber rows, and scout health remain visible pending their accountable taxonomy owners; they were not broadly suppressed."
+          },
+          "blocker": {
+            "ownerTask": "activate-addressed-route-and-remeasure-alert-4566-20260816",
+            "nestedOwnerTask": "repair-gym-owner-review-input-correlation-20260820",
+            "dependencyId": "appdep_879ba020fd9626e17ac01f06",
+            "reason": "The exact Gym consumer/comparison dependency remains unfinished, and the representative canary proves the loaded artifact still lacks a canonical tech-lead App route. Continue the existing activation/taxonomy lineage; do not deploy again."
+          }
+        },
+        "freshReconciliation20260825T0709Z": {
+          "originalAlert4566Rows": {
+            "5723176": "genuine failure: unhandled message.created from agent:may to agent:tech-lead",
+            "5723177": "genuine failure: correlated subscriber.failed reporting that tech-lead has no canonical App route",
+            "retentionNote": "The source rows have aged out of the operational events table; their event-level fields and classification remain preserved in this owner evidence artifact."
+          },
+          "loadedArtifactProof": {
+            "correlation": "deploy-20260825T063551Z-2003437",
+            "sourceCommit": "f712485e571fa597b2923a0fd7e8ff1418d18a01",
+            "artifactSha": "f5267789f58314524d495729fc43c3b5ba51167a345d56c198cf59fc97e81e61",
+            "loadedArtifactSha": "f5267789f58314524d495729fc43c3b5ba51167a345d56c198cf59fc97e81e61",
+            "health": "healthy",
+            "duplicateDeploy": false
+          },
+          "representativeCanary": {
+            "messageEventId": 6077055,
+            "subscriberFailedEventId": 6077056,
+            "result": "failed",
+            "error": "Addressed agent message event:6077055 names no canonical App owned by tech-lead",
+            "disposition": "kept visible; no false success and no second deployment"
+          },
+          "narrowCandidateProjection": {
+            "installed": false,
+            "reason": "No supported metric-definition capability is exposed in this attempt, and the loaded source_query is unchanged. Direct runtime database writes are forbidden.",
+            "expectedOnlySelectors": [
+              "exact installed-App task-reconciler started and skipped observations with matching source and owner",
+              "exact installed-App observer profiles only when outcome=completed",
+              "exact installed-App reconciled rows only for waiting, progress, or converged dispositions",
+              "conversation.updated only from app-inbox to app:may",
+              "ops health and digest observations only from agent:tech-lead to agent:tech-lead, plus a nearby exact Daily ops digest human notification",
+              "evaluation executor progress only for complete, active, inProgress, or completed statuses",
+              "successful runtime.reload.finished only when data.ok=true",
+              "exact Gym review/approval observations, exact Scout library-health observation, and exact human-task cancellation observation"
+            ],
+            "preservedNegativeControls": [
+              "message.created",
+              "subscriber.failed",
+              "failed runtime reload",
+              "failed or retrying task reconciliation",
+              "unknown source or owner",
+              "broken control schedules"
+            ],
+            "residualCountAtValidation": 140,
+            "residualIds": [
+              6075039,
+              6075041,
+              6075064,
+              6075066,
+              6075083,
+              6075098,
+              6075100,
+              6075145,
+              6075147,
+              6075218,
+              6075220,
+              6075267,
+              6075269,
+              6075271,
+              6075292,
+              6075293,
+              6075336,
+              6075356,
+              6075358,
+              6075385,
+              6075387,
+              6075433,
+              6075435,
+              6075485,
+              6075487,
+              6075491,
+              6075493,
+              6075517,
+              6075519,
+              6075537,
+              6075538,
+              6075792,
+              6075795,
+              6075797,
+              6075801,
+              6075806,
+              6075808,
+              6075813,
+              6075815,
+              6075830,
+              6075832,
+              6075900,
+              6075902,
+              6075940,
+              6075944,
+              6075946,
+              6076017,
+              6076020,
+              6076022,
+              6076062,
+              6076064,
+              6076091,
+              6076094,
+              6076131,
+              6076153,
+              6076155,
+              6076170,
+              6076172,
+              6076204,
+              6076206,
+              6076225,
+              6076227,
+              6076264,
+              6076266,
+              6076332,
+              6076334,
+              6076361,
+              6076362,
+              6076383,
+              6076385,
+              6076423,
+              6076425,
+              6076485,
+              6076487,
+              6076605,
+              6076608,
+              6076622,
+              6076625,
+              6076650,
+              6076659,
+              6076663,
+              6076688,
+              6076690,
+              6076746,
+              6076747,
+              6076775,
+              6076777,
+              6076835,
+              6076839,
+              6076892,
+              6076894,
+              6076908,
+              6076958,
+              6076960,
+              6076999,
+              6077004,
+              6077042,
+              6077044,
+              6077055,
+              6077056,
+              6077071,
+              6077073,
+              6077088,
+              6077089,
+              6077148,
+              6077150,
+              6077151,
+              6077167,
+              6077172,
+              6077212,
+              6077214,
+              6077245,
+              6077247,
+              6077290,
+              6077297,
+              6077303,
+              6077318,
+              6077320,
+              6077348,
+              6077350,
+              6077372,
+              6077374,
+              6077421,
+              6077432,
+              6077434,
+              6077479,
+              6077480,
+              6077500,
+              6077502,
+              6077535,
+              6077537,
+              6077563,
+              6077565,
+              6077570,
+              6077605,
+              6077607,
+              6077626,
+              6077628,
+              6077653,
+              6077656
+            ],
+            "residualFamilies": {
+              "evaluationFailedProfiles": 55,
+              "evaluationRetryingReconciliations": 55,
+              "unhandledEvaluatorMetricBreaches": 18,
+              "failedRuntimeReloads": 2,
+              "staleMayReconciliations": 2,
+              "otherAppFailureOrHandoffRows": 5,
+              "subscriberFailures": 2,
+              "failedAddressedCanaryMessages": 1
+            }
+          },
+          "freshSupportedMeasurement": {
+            "triggerEventId": 6077843,
+            "triggerAcceptedBy": "cron:metrics-snapshot",
+            "handlerStartedEventId": 6077844,
+            "handlerCompletedEventId": 6077852,
+            "snapshotId": 2070340,
+            "measuredCurrent": 674,
+            "measuredAt": 1787641349683,
+            "measuredBy": "runtime:metric-source-query",
+            "metricBreachEventId": 6077851,
+            "alertId": 4874,
+            "alertResolvedAt": null,
+            "sourceQueryChanged": false
+          },
+          "blocker": {
+            "ownerTask": "activate-addressed-route-and-remeasure-alert-4566-20260816",
+            "nestedOwnerTask": "repair-gym-owner-review-input-correlation-20260820",
+            "dependencyId": "appdep_879ba020fd9626e17ac01f06",
+            "reason": "The loaded healthy artifact still fails the May-to-tech-lead route, the supported metric definition remains unchanged, and a truthful narrow projection still exposes 140 genuine failure or owner-review rows. Continue the existing activation and Gym proof lineage without another deployment."
+          }
+        },
+        "currentPublicationCorrection20260825T0805Z": {
+          "decision": "no-go-current-publication; wait for the AKS App owner on this exact recurrence lineage",
+          "authoritativeCorrection": {
+            "path": "/app/projects/may-agent/.state/owner-review-artifacts/reconcile-aks-lifecycle-publication-source-proof-20260825/disposition.json",
+            "sha256": "fec89b4b8b8bc8a5191ca29b47f72cf3b85c77aaeb193ecc6ea3238943a14f"
+          },
+          "currentPublication": {
+            "releaseId": "c997fe69e96beac6f92380cf9697e013abb15d09-definitions-v3",
+            "sourceCommit": "c997fe69e96beac6f92380cf9697e013abb15d09",
+            "aksDeclarationPath": "/app/.state/releases/app-definitions/c997fe69e96beac6f92380cf9697e013abb15d09-definitions-v3/projects/aks-rp-e2e.app/app.ts",
+            "aksDeclarationSha256": "75db4cbb673663309564f9fa6ec027f055c801aa562aee0e0dbd93a6831744e4",
+            "audit": "The current declaration bytes exactly match the bytes audited by the correction artifact. All four required event-type and route marker strings remain absent, so historical receipts and unavailable Git objects are not current-source proof."
+          },
+          "requiredSelectorFamilies": [
+            {
+              "type": "project.task.reconciled",
+              "source": "app-task:aks-rp-e2e:task-reconciler",
+              "project": "aks-rp-e2e",
+              "route": "terminal-owner-result-recovery",
+              "disposition": [
+                "waiting",
+                "converged"
+              ],
+              "terminalStatus": "done"
+            },
+            {
+              "type": "project.task.recovery.requeued",
+              "source": "app-task:aks-rp-e2e:task-reconciler",
+              "project": "aks-rp-e2e",
+              "route": "task-controller",
+              "reason": "terminal-owner-session-expired-lease",
+              "terminalStatus": "done"
+            }
+          ],
+          "freshSupportedRead": {
+            "metricId": "event.unhandled-signal-count-1h",
+            "current": 576,
+            "threshold": 5,
+            "metricUpdatedAt": 1787648146521,
+            "latestMeasurementEventId": 6082504,
+            "measuredAt": 1787647869983,
+            "alertId": 4874,
+            "alertResolvedAt": null,
+            "note": "The current remains above threshold. The existing source query is unchanged, and genuine failed addressed delivery remains visible at events 6073627 and 6073628."
+          },
+          "lineage": {
+            "existingActivationTaskId": "activate-addressed-route-and-remeasure-alert-4566-20260816",
+            "forbiddenDeploymentCorrelation": "deploy-20260825T070522Z-2086015",
+            "duplicateOrSiblingRepairAllowed": false
+          },
+          "nextOwner": {
+            "appId": "aks-rp-e2e",
+            "inputKind": "problem-investigation",
+            "dependencyId": "aks-current-lifecycle-selector-repair-alert-4874",
+            "requiredOutcome": "Produce and prove one immutable narrow AKS declaration correction through the supported release path, then return proof for May to complete this exact activation and recurrence lineage."
+          }
+        },
+        "recoveryRefresh20260825T0857Z": {
+          "authoritativeCorrectionSha256": "fec89b4b8b8bc8a5191ca29b47f72cf3b85c77aaeb193ecc6ea3238943a14f",
+          "currentReleasePath": "/app/.state/releases/app-definitions/overlay-repair-stable-localkey-e507fbf9-81ae4b02-ccba55c2-definitions-v3",
+          "currentAksDeclarationSha256": "75db4cbb673663309564f9fa6ec027f055c801aa562aee0e0dbd93a6831744e4",
+          "selectorAudit": {
+            "project.task.reconciled": "absent",
+            "project.task.recovery.requeued": "absent",
+            "terminal-owner-result-recovery": "absent",
+            "terminal-owner-session-expired-lease": "absent"
+          },
+          "decision": "authoritative no-go; preserve production and request the AKS App owner on the exact existing recurrence lineage",
+          "freshMetricRead": {
+            "metricId": "event.unhandled-signal-count-1h",
+            "current": 571,
+            "threshold": 5,
+            "updatedAt": 1787648232388,
+            "latestBreachEventId": 6082742,
+            "alertId": 4874,
+            "resolved": false
+          },
+          "productionMutationPerformed": false,
+          "forbiddenDeploymentRepeated": false,
+          "dependency": {
+            "id": "aks-current-lifecycle-selector-repair-alert-4874",
+            "appId": "aks-rp-e2e",
+            "kind": "problem-investigation"
+          }
+        },
+        "ownerRoutingRefresh20260825T0906Z": {
+          "authoritativeCorrectionSha256": "fec89b4b8b8bc8a5191ca29b47f72cf3b85c77aaeb193ecc6ea3238943a14f",
+          "currentReleasePath": "/app/.state/releases/app-definitions/overlay-repair-stable-localkey-e507fbf9-81ae4b02-ccba55c2-definitions-v3",
+          "currentAksDeclarationSha256": "75db4cbb673663309564f9fa6ec027f055c801aa562aee0e0dbd93a6831744e4",
+          "selectorAudit": {
+            "project.task.reconciled": "absent",
+            "project.task.recovery.requeued": "absent",
+            "terminal-owner-result-recovery": "absent",
+            "terminal-owner-session-expired-lease": "absent"
+          },
+          "freshMetricRead": {
+            "metricId": "event.unhandled-signal-count-1h",
+            "current": 629,
+            "threshold": 5,
+            "updatedAt": 1787648750644,
+            "latestBreachEventId": 6083341,
+            "measuredAt": 1787648766071,
+            "alertId": 4874,
+            "resolved": false
+          },
+          "decision": "The current publication remains a no-go. Preserve the existing activation task and route the narrow AKS declaration correction to the AKS App under the same stable dependency identity; no deployment, direct database write, or sibling rollout was performed.",
+          "existingActivationTaskId": "activate-addressed-route-and-remeasure-alert-4566-20260816",
+          "forbiddenDeploymentCorrelation": "deploy-20260825T070522Z-2086015",
+          "dependency": {
+            "id": "aks-current-lifecycle-selector-repair-alert-4874",
+            "appId": "aks-rp-e2e",
+            "kind": "problem-investigation"
+          }
+        },
+        "exactActivationChildRefresh20260825T0910Z": {
+          "decision": "advance-only-existing-activation-child",
+          "existingActivationTaskId": "activate-addressed-route-and-remeasure-alert-4566-20260816",
+          "existingActivationGeneration": 8,
+          "authoritativeCorrectionSha256": "fec89b4b8b8bc8a5191ca29b47f72cf3b85c77aaeb193ecc6ea3238943a14f",
+          "currentReleasePath": "/app/.state/releases/app-definitions/overlay-repair-stable-localkey-e507fbf9-81ae4b02-ccba55c2-definitions-v3",
+          "currentAksDeclarationSha256": "75db4cbb673663309564f9fa6ec027f055c801aa562aee0e0dbd93a6831744e4",
+          "selectorAudit": {
+            "project.task.reconciled": "absent",
+            "project.task.recovery.requeued": "absent",
+            "terminal-owner-result-recovery": "absent",
+            "terminal-owner-session-expired-lease": "absent"
+          },
+          "preservedGymDependencyId": "appdep_879ba020fd9626e17ac01f06",
+          "freshMetricRead": {
+            "metricId": "event.unhandled-signal-count-1h",
+            "current": 635,
+            "threshold": 5,
+            "updatedAt": 1787649960789,
+            "alertId": 4874,
+            "resolved": false
+          },
+          "failedCanary": {
+            "messageEventId": 6077055,
+            "subscriberFailedEventId": 6077056,
+            "error": "Addressed agent message names no canonical App owned by tech-lead"
+          },
+          "bounds": {
+            "forbiddenDeploymentCorrelation": "deploy-20260825T070522Z-2086015",
+            "productionMutationApproved": false,
+            "newSiblingRepairAllowed": false,
+            "directRuntimeDatabaseWriteAllowed": false
+          },
+          "nextStep": "Update and wake only the existing activation child. It must preserve the exact Gym proof dependency, obtain the AKS App-owned immutable narrow declaration candidate and controls, return the candidate and comparison for Hao approval, and only after approval use one new supported release correlation for loaded identity, healthy nonduplicate activation, canary, failure-visibility, fresh metric, and alert-resolution proof."
+        },
+        "currentOwnerWait20260825T0934Z": {
+          "decision": "wait-on-exact-existing-activation-child",
+          "activationTaskId": "activate-addressed-route-and-remeasure-alert-4566-20260816",
+          "activationGeneration": 9,
+          "activationStatus": "waiting",
+          "aksDependencyId": "appdep_83491e57be8c277441f96f8f",
+          "aksOwnerApp": "aks-rp-e2e",
+          "aksInputKind": "owner-review",
+          "authoritativeCorrectionSha256": "fec89b4b8b8bc8a5191ca29b47f72cf3b85c77aaeb193ecc6ea3238943a14f",
+          "currentAksDeclarationSha256": "75db4cbb673663309564f9fa6ec027f055c801aa562aee0e0dbd93a6831744e4",
+          "currentDisposition": "no-go-current-publication",
+          "productionMutationApproved": false,
+          "forbiddenDeploymentRepeated": false,
+          "reason": "The exact existing activation child has admitted the accountable AKS App owner review and is waiting on its immutable result. That result must supply the narrow candidate and proof for May review before any Hao approval request or supported release; replacing the dependency or deploying now would duplicate the lineage and violate the no-go."
+        }
+      }
+    },
+    {
+      "path": "/app/projects/may-agent/.state/owner-evidence/reconcile-alert-4577-current-lineage-20260818.json",
+      "available": false
+    },
+    {
+      "path": "/app/.state/releases/deploy/may-ops-health-aks-taxonomy-3bf56cf5f4-20260816/request.json",
+      "available": true,
+      "sha256": "0d1380c0949dbe47a05282239f0f6d5988010242f54be14e7a73984ec4921ece",
+      "content": {
+        "version": 1,
+        "correlation": "may-ops-health-aks-taxonomy-3bf56cf5f4-20260816",
+        "project": "may-agent",
+        "taskId": "deploy-and-prove-ops-health-aks-taxonomy-20260816",
+        "sourceRevision": "3bf56cf5f416d2bd4989f676190202971edd7a68",
+        "appRelease": "/app/.state/releases/apps/3bf56cf5f416d2bd4989f676190202971edd7a68",
+        "composeArtifact": "/app/.state/releases/deploy/may-ops-health-aks-taxonomy-3bf56cf5f4-20260816/compose.yml",
+        "previousLoadedRelease": "/app/.state/releases/apps/8aaf03b514009b98b6a593509328c1b42ca12c9f",
+        "phase": "requested",
+        "requestedAt": "2026-08-16T18:48:38Z",
+        "requiredOperation": "host-side docker compose recreate of service may exactly once",
+        "expectedOpsHealthSourceSha256": "d61e4a7fb4fe5b28c8e64d359676f8c897f413c80f2c07d8958c7f241af1cf7e",
+        "expectedMayAppBundleSha256": "036128d7f72b08d37cce02c5d8d5ec339374e8ba970da11e7ae2cefa21d163be",
+        "requiredVerification": [
+          "loaded may-agent.app mount source equals appRelease",
+          "loaded ops-health source sha256 equals expectedOpsHealthSourceSha256",
+          "service may is healthy",
+          "targeted wake reaches this task",
+          "duplicateDeploy is false"
+        ]
+      }
+    },
+    {
+      "path": "/app/projects/may-agent/.state/deploy-receipts/maintenance-owned-checkpoint-fbfd7a3a-20260820T1230CST.json",
+      "available": true,
+      "sha256": "5e048239095b4a16875bc9a2f8ba917ab12ac0145c8b3f9802fd957eb688c945",
+      "content": {
+        "version": 1,
+        "correlation": "maintenance-owned-checkpoint-fbfd7a3a-20260820T1230CST",
+        "project": "may-agent",
+        "taskId": "integrate-and-live-prove-bounded-task-state-persistence-20260819",
+        "artifactSha": "56f66153fa2cb2e8236ddb5928aae37d312304ff291cd8fb71b516031bc3201b",
+        "sourceCommit": "fbfd7a3a00bf0e1e8bae442f587c61239c18291b",
+        "phase": "succeeded",
+        "requestedAt": "2026-08-19T18:48:48.353Z",
+        "verification": "After the supervisor settles service and HTTP health, verify loadedArtifactSha equals artifactSha, health is healthy, targetedWake is true, duplicateDeploy is false, then complete the owner task without redeploying.",
+        "completedAt": "2026-08-19T18:50:41.776Z",
+        "loadedArtifactSha": "56f66153fa2cb2e8236ddb5928aae37d312304ff291cd8fb71b516031bc3201b",
+        "health": "healthy",
+        "targetedWake": true,
+        "duplicateDeploy": false
+      }
+    },
+    {
+      "path": "/app/projects/may-agent/.state/deploy-receipts/failover-d8c877577-20261004.json",
+      "available": true,
+      "sha256": "d01ec2363e06cb781a95489c254f0448485bc3f98451ceede2d1448d860d03a5",
+      "content": {
+        "version": 1,
+        "correlation": "failover-d8c877577-20261004",
+        "artifactSha": "af72410f0ebe7f289a062111781fa5dd15491ce1d809bb01d27bfca0b09fdd56",
+        "sourceCommit": "d8c87757782ae5750984bedc239b00eab4c76715",
+        "phase": "succeeded",
+        "requestedAt": "2026-10-04T13:07:06.716Z",
+        "verification": "After the restarter settles service and HTTP health, read this exact receipt without redeploying; verify loadedArtifactSha equals artifactSha, health is healthy, and duplicateDeploy is false. Any notification target is best-effort only.",
+        "completedAt": "2026-10-04T13:07:17.698Z",
+        "loadedArtifactSha": "af72410f0ebe7f289a062111781fa5dd15491ce1d809bb01d27bfca0b09fdd56",
+        "health": "healthy",
+        "duplicateDeploy": false
+      }
+    }
+  ],
+  "verification": [
+    {
+      "command": "cd /app/projects/may-agent && bun test src/app/composition/app-inbox-runtime.test.ts src/app/core/inbox/input-result.test.ts src/app/event-delivery.test.ts src/app/metric-source-measurement.test.ts src/app/core/tasks/app-task-parent-semantics.test.ts",
+      "exitCode": 0,
+      "sha256": "8a45e60002b82589459350ff61b46edd00b357e702790a2f73a76d17d8f422af",
+      "rawOutput": "bun test v1.3.14 (0d9b296a)\n\nsrc/app/event-delivery.test.ts:\n[db] persist event 'handler.started' hit SQLite write contention (database is locked); retrying in 5ms (1/8)\n(pass) delivery acceptance recording > retries transient SQLite contention at the durable event boundary [99.24ms]\n[db] record delivery acceptance for event 1 hit SQLite write contention (database is locked); retrying in 5ms (1/8)\n(pass) delivery acceptance recording > retries transient SQLite contention instead of leaving an accepted event unhandled [90.08ms]\n(pass) retry-safe event ingress > returns the original receipt and delivers an idempotent intent once [65.95ms]\n(pass) retry-safe event ingress > rejects reuse of an idempotency key for different input [87.10ms]\n(pass) retry-safe event ingress > keeps a retried persisted event pending when no explicit route accepts it [72.00ms]\n(pass) retry-safe event ingress > scopes retries by trusted ingress identity instead of caller source [88.09ms]\n(pass) event delivery metadata > creates event trace side tables for graphable history [54.00ms]\n(pass) event delivery metadata > records direct subscriber acceptance on the original event row [106.02ms]\n(pass) event delivery metadata > persists default trace metadata for every new event row [67.89ms]\n(pass) event delivery metadata > creates a default trace for direct event inserts [75.49ms]\n(pass) event delivery metadata > returns compact data previews for the complete event graph [94.83ms]\n(pass) event delivery metadata > includes detailed session events in the complete graph [85.21ms]\n(pass) event delivery metadata > projects transcript turns and tools into the canonical graph [77.28ms]\n(pass) event delivery metadata > includes same-workflow sessions in the complete graph [102.11ms]\n(pass) event delivery metadata > infers session.completed as the result of session.end for legacy session events [93.61ms]\n(pass) event delivery metadata > includes the complete trace with sibling branches [195.06ms]\n(pass) event delivery metadata > reports event trace integrity gaps [87.64ms]\n(pass) event delivery metadata > audits May Conversation admission and result correlation without adapter delivery [160.46ms]\n(pass) event delivery metadata > persists explicit trace parent and closure links [117.70ms]\n(pass) event delivery metadata > infers trace parent and closure link from openEventId [97.52ms]\n(pass) event delivery metadata > infers escalation closure traces from legacy escalationId [89.88ms]\n(pass) event delivery metadata > ignores explicit trace links to missing events [82.14ms]\n(pass) event delivery metadata > persists live event-pair lifecycle closures without backfill [170.98ms]\n(pass) event delivery metadata > protects retained trace and open-work facts from age deletion [121.12ms]\n(pass) event delivery metadata > backfills payload relation traces from openEventId and escalationId [173.14ms]\n(pass) event delivery metadata > ignores dangling event-pair rows when backfilling traces [147.68ms]\n(pass) event delivery metadata > leaves an unhandled message pending without inventing owner work [65.38ms]\n(pass) event delivery metadata > does not route lifecycle facts through an owner inbox [71.33ms]\n(pass) event delivery metadata > keeps skill and guard facts unclassified until the App registry reviews them [68.47ms]\n(pass) event delivery metadata > does not classify application observations inside the core event bus [96.99ms]\n(pass) event delivery metadata > leaves unknown owner-addressed requests pending for an explicit consumer [68.25ms]\n(pass) event delivery metadata > closes convention-tracked lifecycle pairs by correlation key [122.22ms]\n(pass) event delivery metadata > closes only the matching concurrent handler run [163.21ms]\n(pass) event delivery metadata > does not infer lifecycle pairs from unknown event-name suffixes [89.78ms]\n(pass) event delivery metadata > closes workflow event pairs when a workflow is interrupted [99.40ms]\n(pass) event delivery metadata > marks new unaccepted events unhandled after their ttl [108.91ms]\n(pass) event delivery metadata > keeps rate-limited delivery housekeeping outside event persistence [656.24ms]\n(pass) event delivery metadata > terminalizes an unaccepted exact-target plan when its event becomes unhandled [125.53ms]\n(pass) event delivery metadata > accepts reconciled terminal session.end lifecycle facts as terminal no-ops [129.95ms]\n(pass) event delivery metadata > does not create a semantic lifecycle pair for an unaccepted message [93.65ms]\n(pass) event delivery metadata > closes handler lifecycle pairs when completion was recorded first [86.27ms]\n(pass) event delivery metadata > finds an exact completion-first session through its indexed identity [103.12ms]\n(pass) event delivery metadata > persists reconciliation observations without inventing a task lifecycle pair [75.07ms]\n(pass) event delivery metadata > retains orphan lifecycle facts across later event sweeps [98.64ms]\n\nsrc/app/metric-source-measurement.test.ts:\n[db] register source metric definitions hit SQLite write contention (database is locked); retrying in 5ms (1/8)\n(pass) source-query metric measurement > registers metrics after a short competing startup writer without losing samples or calibration [276.15ms]\n(pass) source-query metric measurement > preserves live alert calibration while restoring the subscriber failure source [182.70ms]\n(pass) source-query metric measurement > restores the canonical unexpected-unhandled source while preserving alert calibration [196.05ms]\n(pass) source-query metric measurement > excludes declared Host lifecycle observations but counts unconsumed actionable signals [277.17ms]\n(pass) source-query metric measurement > records optional observations as accepted facts while preserving real subscriber acceptance [221.20ms]\n(pass) source-query metric measurement > registers source measurement as passive observation, not synchronous acceptance [208.29ms]\n(pass) source-query metric measurement > persists, measures, and alerts on the rolling subscriber failure source without hiding malformed targets [388.11ms]\n(pass) source-query metric measurement > turns a measurement trigger into a correlated stored sample and alert recovery [282.19ms]\n(pass) source-query metric measurement > preserves facts columns returned by a source query [233.82ms]\n[metrics:boundary.cte-write] attempt to write a readonly database\n(pass) source-query metric measurement > enforces read-only queries while preserving SQLite first-statement behavior and writer continuity [293.35ms]\n[metrics:transaction.begin] Source returned no finite numeric sample\n(pass) source-query metric measurement > isolates a rejected BEGIN from a later source read after an intervening writer update [227.51ms]\n[metrics:reader.failure] no such table: missing_reader_fixture\n(pass) source-query metric measurement > keeps the writer usable when a failed source reader closes and a later reader reopens [309.66ms]\n[metrics:broken.command] Command failed: /bin/sh -lc echo 'token=[REDACTED] xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n[metrics:broken.query] no such table: missing_fixture_table\n(pass) source-query metric measurement > retains scheduled source failures after reopening storage without changing the last observation [398.80ms]\n[metrics:broken.query] Could not retain failure diagnostic: Synthetic diagnostic storage failure\n[metrics:broken.query] no such table: missing_fixture_table\n(pass) source-query metric measurement > continues measuring when persisting the failure diagnostic fails [256.12ms]\n(pass) source-query metric measurement > records real source-command output without blocking the daemon event loop [441.82ms]\n[metrics:batch.invalid] Source returned no finite numeric sample\n[metrics:batch.missing] Source returned no finite numeric sample\n[metrics:batch.first] Command failed: /bin/sh -lc '/usr/local/bin/bun' observations.ts --report exact\n2 | \n3 |       import { appendFileSync } from \"node:fs\";\n4 |       appendFileSync(\"invocations\", \"called\\n\");\n                   ^\nerror: synthetic producer failure\n      at /tmp/may-metric-source-test-MaHMSx/observations.ts:4:16\n\nBun v1.3.14 (Linux x64)\n\n[metrics:batch.invalid] Command failed: /bin/sh -lc '/usr/local/bin/bun' observations.ts --report exact\n2 | \n3 |       import { appendFileSync } from \"node:fs\";\n4 |       appendFileSync(\"invocations\", \"called\\n\");\n                   ^\nerror: synthetic producer failure\n      at /tmp/may-metric-source-test-MaHMSx/observations.ts:4:16\n\nBun v1.3.14 (Linux x64)\n\n[metrics:batch.missing] Command failed: /bin/sh -lc '/usr/local/bin/bun' observations.ts --report exact\n2 | \n3 |       import { appendFileSync } from \"node:fs\";\n4 |       appendFileSync(\"invocations\", \"called\\n\");\n                   ^\nerror: synthetic producer failure\n      at /tmp/may-metric-source-test-MaHMSx/observations.ts:4:16\n\nBun v1.3.14 (Linux x64)\n\n[metrics:batch.second] Command failed: /bin/sh -lc '/usr/local/bin/bun' observations.ts --report exact\n2 | \n3 |       import { appendFileSync } from \"node:fs\";\n4 |       appendFileSync(\"invocations\", \"called\\n\");\n                   ^\nerror: synthetic producer failure\n      at /tmp/may-metric-source-test-MaHMSx/observations.ts:4:16\n\nBun v1.3.14 (Linux x64)\n\n(pass) source-query metric measurement > shares an arbitrary declared producer, preserves exact samples, and retries only on the next pass [598.53ms]\n(pass) source-query metric measurement > does not execute commands for query-backed or not-due metrics [189.44ms]\n(pass) source-query metric measurement > preserves legacy sample values even when an extra field is named samples [203.43ms]\n(pass) source-query metric measurement > uses measureInterval as a lightweight minimum cadence and allows an explicit forced sample [452.94ms]\n(pass) source-query metric measurement > does not begin source discovery on the event publication stack [229.59ms]\n(pass) source-query metric measurement > yields control traffic between independently evaluated metrics [300.16ms]\n(pass) source-query metric measurement > counts only cadence-bound metrics after their freshness allowance [332.91ms]\n(pass) source-query metric measurement > gives new collectors a grace period and alerts when even one established collector goes stale [187.55ms]\n\nsrc/app/composition/app-inbox-runtime.test.ts:\n(pass) App inbox runtime > maps one durable App input to one Task and projects its result [51.22ms]\n(pass) App inbox runtime > routes typed follow-up input to one exact existing Task [17.36ms]\n(pass) App inbox runtime > cannot publish a legacy worker result as a Conversation reply [19.24ms]\n(pass) App inbox runtime > continues an exact focused Task when a human replies to it [18.52ms]\n(pass) App inbox runtime > routes a human reply focused on a retained Conversation executor through its stable Conversation [25.16ms]\n(pass) App inbox runtime > admits exact owner work without reviving retired wrapper announcements [18.71ms]\n(pass) App inbox runtime > returns from durable publication with the exact Task already admitted [16.76ms]\n(pass) App inbox runtime > admits live input directly while deferring recovery until explicitly started [56.23ms]\n(pass) App inbox runtime > admits a burst of inputs synchronously to their exact Tasks [25.34ms]\n(pass) App inbox runtime > admits one Task change per Conversation without publishing per-link events or replies [26.69ms]\n(pass) App inbox runtime > recovers grouped outcomes after admission failure and runtime restart, retaining overflow and late links [155.45ms]\n(pass) App inbox runtime > recovers an exact Task wait after restart [39.23ms]\n(pass) App inbox runtime > projects outcome only for the exact App and Task [68.76ms]\n(pass) App inbox runtime > projects closure only for the exact App and Task [55.38ms]\n(pass) App inbox runtime > translates a subscribed Event into the same Task path [25.05ms]\n(pass) App inbox runtime > keeps unrelated event storms independent of the number of loaded Task Apps [150.86ms]\n(pass) App inbox runtime > runs only the Task resolver indexed for an event type [33.38ms]\n(pass) App inbox runtime > publishes replacement Task route indexes with the registry generation [48.79ms]\n(pass) App inbox runtime > restores a changed schedule across a due slot [25.94ms]\n(pass) App inbox runtime > restores a removed schedule across a due slot [22.53ms]\n(pass) App inbox runtime > records broad App routing before running Task admission asynchronously [21.93ms]\n(pass) App inbox runtime > admits an exact Task wake directly even when an admission worker is configured [18.46ms]\n(pass) App inbox runtime > admits an exact wake while unrelated broad admission is unanswered [31.07ms]\n(pass) App inbox runtime > keeps failed asynchronous admission durable and retries it through bounded recovery [59.92ms]\n(pass) App inbox runtime > stops scheduled asynchronous admission when the runtime closes [45.20ms]\n(pass) App inbox runtime > keeps a legacy unresolved translation visible when the original target was lost [24.01ms]\n(pass) App inbox runtime > resumes a legacy frozen plan without inventing an event target or admitting it twice [48.22ms]\n[event-bus] first-priority subscriber threw on event 'trigger.metrics-snapshot': Exact task target missing-app-target for event event:1 has no canonical App identity in registry generation 1\n(pass) App inbox runtime > keeps an explicit malformed exact-task target visible as subscriber failure [19.70ms]\n[event-bus] first-priority subscriber threw on event 'project.task.tick': Canonical App evaluation did not durably admit frozen missing-task\n(pass) App inbox runtime > keeps an event unaccepted when its exact Task link is unavailable [52.84ms]\n(pass) App inbox runtime > emits one Conversation update when human work changes [54.30ms]\n(pass) App inbox runtime > disables only schedule publication, retaining event admission and observers across reload [39.85ms]\n(pass) App inbox runtime > keeps schedule and observer cadence alive when request recovery reads fail [51.35ms]\n(pass) App inbox runtime > publishes event schedules as record-only facts [20.45ms]\n[app-schedule:evaluation/contended] publication failed: database is locked\n(pass) App inbox runtime > contains schedule persistence failure and publishes only the latest slot after recovery [23.51ms]\n\nsrc/app/core/tasks/app-task-parent-semantics.test.ts:\n(pass) Task hierarchy is context, not a return protocol > does not wake a quiet structural parent on child answer [284.38ms]\n(pass) Task hierarchy is context, not a return protocol > does not wake a quiet structural parent on child failure [247.47ms]\n(pass) Task hierarchy is context, not a return protocol > does not wake a quiet structural parent on child closure [248.26ms]\n(pass) Task hierarchy is context, not a return protocol > rejects waiting without a Condition even when a child is pending [228.60ms]\n\nsrc/app/core/inbox/input-result.test.ts:\n(pass) repeated result recovery reuses a report across restart, then publishes its revision and answer [181.54ms]\n(pass) separate requests and final answers retain their own publication identity [111.73ms]\n(pass) retries failed persistence and pending delivery without another report record [86.29ms]\n(pass) retries failed persistence and noop delivery without another report record [103.95ms]\n\n 109 pass\n 0 fail\n 390 expect() calls\nRan 109 tests across 5 files. [15.25s]\n"
+    },
+    {
+      "command": "cd /app/projects/may-agent && bun test ./src/app/core/tasks/app-task-runtime.test.ts",
+      "exitCode": 0,
+      "sha256": "6d8ab50cd3539b39e848f864de71072aceb4c74beca28aa9d72d4e83fc8f9826",
+      "rawOutput": "bun test v1.3.14 (0d9b296a)\n\nsrc/app/core/tasks/app-task-runtime.test.ts:\n(pass) publishes one reopening fact despite a lost publication and operator replay across restart [223.64ms]\n(pass) reopens with mapped requirements and one durable input, rolling back failed admission and replaying after restart [291.70ms]\n(pass) retains closed-Task observations as history without treating desired work as an observation [245.47ms]\n(pass) shares Task detail, evidence and exact outcome reads between tools and executor capabilities [192.42ms]\n(pass) carries explicit earlier input through executor reads and converged settlement [173.92ms]\n(pass) carries explicit earlier input through executor reads and waiting settlement [149.50ms]\n(pass) carries explicit earlier input through executor reads and incomplete settlement [206.60ms]\n(pass) caller feedback PoC > reads the full installed input contract through tasks without starting target work [143.58ms]\n(pass) caller feedback PoC > reads an exact accepted admission from a caller-only registry without starting target execution [184.06ms]\n(pass) caller feedback PoC > recovers delegated creator after lost admission and revises across Apps from a caller-only runtime [277.05ms]\n(pass) caller feedback PoC > composes three assignments through the same executor and return contract across restart [396.83ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"quiet\",\"workerCalls\":2,\"callerCalls\":2,\"reportRecovered\":false,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":false}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (quiet) [546.49ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"incomplete-then-wait\",\"workerCalls\":3,\"callerCalls\":3,\"reportRecovered\":true,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":false}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (incomplete-then-wait) [556.61ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"report-wait\",\"workerCalls\":2,\"callerCalls\":3,\"reportRecovered\":true,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":false}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (report-wait) [607.22ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"report-continue\",\"workerCalls\":3,\"callerCalls\":3,\"reportRecovered\":true,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":false}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (report-continue) [704.13ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"throw\",\"workerCalls\":2,\"callerCalls\":3,\"reportRecovered\":true,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":false}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (throw) [509.18ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"invalid\",\"workerCalls\":2,\"callerCalls\":3,\"reportRecovered\":true,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":false}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (invalid) [496.64ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"throw-then-wait\",\"workerCalls\":3,\"callerCalls\":4,\"reportRecovered\":true,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":true}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (throw-then-wait) [663.70ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"throw-then-report-retry\",\"workerCalls\":4,\"callerCalls\":4,\"reportRecovered\":true,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":true}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (throw-then-report-retry) [627.37ms]\n(pass) recovers legacy attention as the same Tasks without inventing App review input [364.75ms]\n(pass) keeps omitted workflows visible, continues unrelated work, and recovers with a supplied runner [222.78ms]\n(pass) settles report and useful continuation equivalently for agent and workflow attempts [225.41ms]\n(pass) retains an App and exact agent work when its agent capability is removed, then restores it [186.36ms]\n(pass) releases failed context preparation before later Task events and recovers after repair [161.82ms]\n(pass) lets the handoff agent diagnose while the workflow is unavailable, then verifies completion [245.26ms]\n(pass) canonical direct-agent residue cleanup > restores agent file and index edits that remain unchanged since planning [66.89ms]\n(pass) canonical direct-agent residue cleanup > preserves concurrent file and index edits while applying other planned cleanup [68.12ms]\n(pass) canonical direct-agent residue cleanup > rejects only converged direct-agent results whose edits were restored [0.85ms]\n(pass) App Task persisted prompt context > shows the executor the exact accepted wait before it judges feedback [145.52ms]\n[event-bus] first subscriber 'app-inbox-route' took 41.2ms on event 'project.task.tick'\n[event-bus] first subscriber 'app-inbox-route' took 42.0ms on event 'project.task.tick'\n(pass) canonical App task runtime > routes recurring exact-target schedule facts through the persistent Task mutation boundary [326.34ms]\n(pass) canonical App task runtime > explains rejected dependencies, preserves existing waits, and admits a corrected input [157.46ms]\n(pass) canonical App task runtime > routes a retained text request through ordinary work and answers the original ask (live) [252.42ms]\n(pass) canonical App task runtime > routes a retained text request through ordinary work and answers the original ask (restart) [283.37ms]\n(pass) canonical App task runtime > routes a retained text request through ordinary work and answers the original ask (lost-feedback) [261.72ms]\n(pass) canonical App task runtime > rejects a dependency when the configured registry has no target Apps [105.76ms]\n(pass) canonical App task runtime > does not publish a dependency requested from a stale task result [155.36ms]\n(pass) canonical App task runtime > accepts a recovered frozen Condition route after its task has already left the wait [143.49ms]\n(pass) canonical App task runtime > preserves event time through Runtime preview so stale level observations stay blocked [137.73ms]\n[event-bus] first subscriber 'app-inbox-route' took 26.8ms on event 'app.dependency.updated'\n(pass) canonical App task runtime > returns the exact cross-App answer after a later Task cycle through event [583.26ms]\n[event-bus] first subscriber 'app-inbox-route' took 26.9ms on event 'app.input.requested'\n[event-bus] first subscriber 'app-inbox-route' took 27.6ms on event 'app.dependency.updated'\n(pass) canonical App task runtime > returns the exact cross-App answer after a later Task cycle through recovery [559.20ms]\n(pass) canonical App task runtime > handles the same App text request with a caller Condition: %s [369.55ms]\n(pass) canonical App task runtime > handles the same App text request with a caller Condition: %s [393.75ms]\n(pass) canonical App task runtime > delivers work during an active attempt through attempt and retains its exact result [334.10ms]\n(pass) canonical App task runtime > delivers work during an active attempt through tool and retains its exact result [284.19ms]\n(pass) canonical App task runtime > delivers work during an active attempt through fast-result and retains its exact result [302.47ms]\n(pass) canonical App task runtime > delivers work during an active attempt through interrupted and retains its exact result [300.63ms]\n(pass) canonical App task runtime > reuses a live action receipt when final settlement repeats an already retired Condition [166.20ms]\n(pass) canonical App task runtime > rejects a replayed retirement combined with redeclaring the same Condition [184.81ms]\n(pass) canonical App task runtime > preserves a customized saved request Condition when applying a reference only (satisfied: %s) [166.11ms]\n(pass) canonical App task runtime > preserves a customized saved request Condition when applying a reference only (satisfied: %s) [217.67ms]\n(pass) canonical App task runtime > adds distinct work across restart (completed first: false) [276.00ms]\n(pass) canonical App task runtime > adds distinct work across restart (completed first: true) [278.55ms]\n[event-bus] first subscriber 'app-inbox-route' took 57.8ms on event 'app.input.requested'\n(pass) canonical App task runtime > returns a pre-Task admission blocker through the installed caller route for actual consideration [306.83ms]\n(pass) canonical App task runtime > follows A -> B -> C -> B -> A through explicit inputs, with discussion and a blocker (live) [815.83ms]\n(pass) canonical App task runtime > follows A -> B -> C -> B -> A through explicit inputs, with discussion and a blocker (lost-notification) [768.66ms]\n(pass) canonical App task runtime > follows A -> B -> C -> B -> A through explicit inputs, with discussion and a blocker (restart) [768.70ms]\n(pass) canonical App task runtime > follows A -> B -> C -> B -> A through explicit inputs, with discussion and a blocker (owner-cancel) [633.28ms]\n(pass) canonical App task runtime > returns the exact saved App answer after its notification is lost (live) [375.51ms]\n(pass) canonical App task runtime > returns the exact saved App answer after its notification is lost (restart) [388.75ms]\n(pass) canonical App task runtime > returns the exact saved App answer after its notification is lost (missing-index) [416.02ms]\n(pass) canonical App task runtime > returns the exact saved App answer after its notification is lost (late-index) [434.64ms]\n[event-bus] first subscriber 'app-inbox-route' took 27.4ms on event 'app.input.requested'\nautomatic-recovery-evidence {\"automaticRecovery\":true,\"taskIds\":{\"owner\":\"work/owner\",\"producer\":\"work/reviewer\",\"unrelated\":\"work/unrelated\"},\"requestIds\":{\"original\":\"appdep_ca22666b299387d84b18ab66\",\"later\":\"app_dae99bcc-6ae7-40e6-afb5-024ae0bb9727\"},\"admissionTimes\":{\"unrelated\":1791123566481,\"owner\":1791123566614,\"later\":1791123567622},\"notificationLostAt\":1791123567612,\"recoveryScans\":[{\"at\":1791123567935,\"taskIds\":[\"work/unrelated\",\"work/owner\"]},{\"at\":1791123568265,\"taskIds\":[\"work/unrelated\"]},{\"at\":1791123568489,\"taskIds\":[\"work/unrelated\"]},{\"at\":1791123568707,\"taskIds\":[\"work/unrelated\"]},{\"at\":1791123568935,\"taskIds\":[\"work/unrelated\"]},{\"at\":1791123569157,\"taskIds\":[\"work/unrelated\"]},{\"at\":1791123569379,\"taskIds\":[\"work/unrelated\"]}],\"ownerDispatches\":[{\"at\":1791123566720,\"eventTypes\":[\"app.task.requested\"]},{\"at\":1791123568030,\"eventTypes\":[\"app.dependency.updated\"]}],\"route\":\"installed indexed scheduler -> code recovery of exact saved answer -> one owner attempt\",\"scope\":\"in-process installed Task runtime with deterministic executors and a real timer; fixture accelerates the indexed recovery clock, not default timing, native agent judgment, restart, or OS/daemon proof\",\"executorReturnedAt\":1791123568030,\"acceptedAttempt\":{\"id\":\"r_1_f935bd7c-7a00-40dd-8e57-3022039a950e\",\"finishedAt\":\"2026-10-04T14:19:28.033Z\"},\"laterAnswerSavedAt\":1791123567730}\nautomatic-recovery-control {\"automaticRecovery\":false,\"originalRequestId\":\"appdep_ca22666b299387d84b18ab66\",\"notificationLostAt\":1791123569937,\"suppressedCandidates\":[{\"at\":1791123570239,\"taskIds\":[\"work/unrelated\",\"work/owner\"]}],\"ownerDispatches\":[{\"at\":1791123569806,\"eventTypes\":[\"app.task.requested\"]}]}\n(pass) canonical App task runtime > recovers missed answers in code without repeatedly invoking a waiting owner [5325.40ms]\n(pass) canonical App task runtime > returns one blocker and the later exact answer through the same caller wait (live) [613.25ms]\n(pass) canonical App task runtime > returns one blocker and the later exact answer through the same caller wait (lost) [612.10ms]\n(pass) canonical App task runtime > returns one blocker and the later exact answer through the same caller wait (restart) [642.70ms]\n(pass) canonical App task runtime > preserves one accepted App request across a rejected attempt and its retry [158.24ms]\n(pass) canonical App task runtime > reuses a create-work request when the agent reports its resolved Task [169.31ms]\n(pass) canonical App task runtime > reattaches an exact live request after recovery (requirements revised: %s) [199.82ms]\n(pass) canonical App task runtime > reattaches an exact live request after recovery (requirements revised: %s) [184.06ms]\n(pass) canonical App task runtime > turns a typed App dependency into deterministic input and an exact completion Condition [131.92ms]\n(pass) canonical App task runtime > keeps the source Task runnable when its dependency is neither admitted nor durably published [144.32ms]\n(pass) canonical App task runtime > projects the exact ordered claimed event batch into workflow context [132.94ms]\n(pass) canonical App task runtime > does not rewrite App task state for high-volume session progress [167.26ms]\n(pass) canonical App task runtime > limits successful-session recovery reads to the session's bound App [161.62ms]\n(pass) canonical App task runtime > does not discover or import App definitions independently [119.49ms]\n(pass) canonical App task runtime > installs an activated resource-backed App without recreating state.json [126.40ms]\n(pass) canonical App task runtime > bootstraps a brand-new App directly into resource authority [101.24ms]\n(pass) canonical App task runtime > refuses historical JSON state without canonical resource authority [86.32ms]\n(pass) canonical App task runtime > yields readiness inside one large reconciliation after claim persistence [589.35ms]\n(pass) canonical App task runtime > preserves workspace admission: executor uses App branch [404.32ms]\n(pass) canonical App task runtime > preserves workspace admission: executor defaults to dev [373.31ms]\n(pass) canonical App task runtime > preserves workspace admission: local executor needs no worktree [152.47ms]\n(pass) canonical App task runtime > preserves workspace admission: local executor needs no workspace backend [159.02ms]\n(pass) canonical App task runtime > preserves workspace admission: agent does not run until its workspace backend is restored [404.89ms]\n(pass) canonical App task runtime > preserves workspace admission: Git executor rejects a missing workspace backend [386.41ms]\n(pass) canonical App task runtime > preserves workspace admission: workflow uses App branch [374.00ms]\n(pass) canonical App task runtime > preserves workspace admission: workflow defaults to dev [343.92ms]\n(pass) canonical App task runtime > preserves workspace admission: workflow overrides App branch [350.90ms]\n(pass) canonical App task runtime > preserves workspace admission: shared workflow needs no worktree [220.28ms]\n(pass) canonical App task runtime > preserves workspace admission: shared workflow needs no workspace backend [330.57ms]\n(pass) canonical App task runtime > preserves workspace admission: task workflow rejects a missing workspace backend [414.31ms]\n(pass) canonical App task runtime > preserves workspace admission: task workflow rejects a local App [153.77ms]\n(pass) canonical App task runtime > preserves workspace admission: failed Git preparation can recover on the same Task [429.40ms]\n(pass) canonical App task runtime > retains waiting output when new facts arrive during a worktree attempt [374.01ms]\n(pass) canonical App task runtime > retains converged output when new facts arrive during a worktree attempt [454.83ms]\n(pass) canonical App task runtime > rechecks persistence after a concurrent fact without repeating execution [187.58ms]\n(pass) canonical App task runtime > rechecks persistence after a concurrent intent without repeating execution [197.93ms]\n(pass) canonical App task runtime > rechecks persistence after a concurrent action without repeating execution [304.49ms]\n(pass) canonical App task runtime > rechecks persistence after a concurrent persistent without repeating execution [217.00ms]\n(pass) canonical App task runtime > does not create task worktrees while startup installs and recovers work [168.59ms]\n(pass) canonical App task runtime > releases a fresh previous-runtime attempt and requeues it through bounded task capacity [171.16ms]\n(pass) canonical App task runtime > drains an orphaned setsid owner's exact process group before replacement recovery [1282.57ms]\n(pass) canonical App task runtime > fails startup recovery closed when a durable owner process group cannot be confirmed drained [180.28ms]\n(pass) canonical App task runtime > admits desired attachments and resolved events through the one loaded generation [151.22ms]\n(pass) canonical App task runtime > discards a post-claim superseded attempt without a handler failure or retry loop [238.64ms]\n(pass) canonical App task runtime > runs three explicitly scheduled reviews without self-published clock echoes through executor [462.08ms]\n(pass) canonical App task runtime > runs three explicitly scheduled reviews without self-published clock echoes through tasks tool [456.19ms]\n[event-bus] listener 'task-attempt-events' took 41.2ms on event 'review.feedback'\n(pass) canonical App task runtime > live apply preserves input until incorporated (%s) [256.87ms]\n[event-bus] listener 'task-attempt-events' took 51.8ms on event 'review.feedback'\n(pass) canonical App task runtime > live apply preserves input until incorporated (%s) [336.18ms]\n(pass) canonical App task runtime > admits a request after self-publication through the executor surface [261.67ms]\n(pass) canonical App task runtime > admits a request after self-publication through the tasks tool surface [204.53ms]\n(pass) canonical App task runtime > admits the first broadcast Condition fact and retains its identity through settlement [304.03ms]\n(pass) canonical App task runtime > keeps late repeated worker publications consumed after child settlement [683.95ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback during execution through exact admission and preserves new input [454.11ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback during execution through intent admission and preserves new input [317.34ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback after acceptance through exact admission and preserves new input [342.82ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback after acceptance through intent admission and preserves new input [338.07ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback after restart through exact admission and preserves new input [468.58ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback after restart through intent admission and preserves new input [348.93ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback after upgrade through exact admission and preserves new input [383.23ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback after upgrade through intent admission and preserves new input [339.43ms]\n(pass) canonical App task runtime > preserves other consumers and recovery after self-publication with execution failure [325.95ms]\n(pass) canonical App task runtime > preserves other consumers and recovery after self-publication with invalid result [315.58ms]\n(pass) canonical App task runtime > preserves other consumers and recovery after self-publication with external input [332.03ms]\n(pass) canonical App task runtime > preserves other consumers and recovery after self-publication with superseded [294.26ms]\n(pass) canonical App task runtime > atomically consumes live input incorporated by a registered executor [171.55ms]\n(pass) canonical App task runtime > retries a restored executor through durable eligibility while independent Tasks keep working [459.79ms]\n(pass) canonical App task runtime > keeps inherited helper context separate from the attempt owner session and lease [195.92ms]\n(pass) canonical App task runtime > uses current session adapters after reload without adding another listener [90.44ms]\n(pass) canonical App task runtime > uses current session adapters after close and reinstall without adding another listener [81.94ms]\n(pass) canonical App task runtime > uses current session adapters after rejected reload without adding another listener [109.62ms]\n(pass) canonical App task runtime > leaves rejected initial publication inactive and allows a later installation [105.81ms]\n(pass) canonical App task runtime > starts new work from a reloaded definition while an old attempt is still running [236.76ms]\n(pass) canonical App task runtime > keeps the registered executor role without a CLI lifecycle (controllers=%s) [135.71ms]\n(pass) canonical App task runtime > keeps the registered executor role without a CLI lifecycle (controllers=%s) [141.03ms]\n(pass) canonical App task runtime > delegates a controller attempt across the configured execution boundary [138.22ms]\n(pass) canonical App task runtime > delegates startup Task recovery across the configured execution boundary [117.67ms]\n(pass) canonical App task runtime > supplies accepted waits to workflow judgment without inferring them from children [257.00ms]\n(pass) canonical App task runtime > replays full published facts through the installed workflow after result rejection and reopen [493.36ms]\n(pass) canonical App task runtime > replays full published facts through the installed workflow after execution failure and reopen [495.95ms]\n(pass) canonical App task runtime > admits a direct workflow failure report, retries, and rejects an invalid direct result [285.25ms]\n(pass) canonical App task runtime > retains an explicit workflow blocker across recovery and rechecks the same Task after corrected input [367.45ms]\n(pass) canonical App task runtime > result-scope rejection preserves useful evidence before cleanup (Git: %s) [161.60ms]\n(pass) canonical App task runtime > result-scope rejection preserves useful evidence before cleanup (Git: %s) [268.66ms]\n(pass) canonical App task runtime > partial acceptance retains its workspace until remaining input is settled [365.89ms]\n(pass) canonical App task runtime > partial acceptance retains its workspace until remaining condition is settled [442.52ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: last-wait [340.65ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: independent-wait [280.67ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: live-replay [363.09ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: stale [253.60ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: policy-rejected [306.64ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: unauthorized [319.46ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: stop-during-validation [320.53ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: revision-during-validation [314.78ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: new-work-during-cleanup [2075.98ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: cleanup-fails [334.40ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: cleanup-fails-after-history [2079.62ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: branch-only [345.87ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: private-refs-only [314.77ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: already-removed [354.42ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: clock-reversed [711.43ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: dirty-after-release [352.52ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: cleanup-recording-fails [339.88ms]\n(pass) canonical App task runtime > preserves workspace and respects the accepted outcome (converged, committed=false) [226.19ms]\n(pass) canonical App task runtime > preserves workspace and respects the accepted outcome (converged, committed=true) [247.23ms]\n(pass) canonical App task runtime > preserves workspace and respects the accepted outcome (waiting, committed=false) [330.88ms]\n(pass) canonical App task runtime > preserves workspace and respects the accepted outcome (waiting, committed=false) [341.43ms]\n(pass) canonical App task runtime > preserves workspace and respects the accepted outcome (incomplete, committed=false) [371.24ms]\n(pass) canonical App task runtime > preserves workspace and respects the accepted outcome (incomplete, committed=true) [363.09ms]\n(pass) canonical App task runtime > paces invalid-state and accepts a corrected result on the same Task [426.36ms]\n(pass) canonical App task runtime > paces self-unblock and accepts a corrected result on the same Task [431.27ms]\n(pass) canonical App task runtime > paces controller retries beyond the old limit while unrelated work progresses [3996.05ms]\n(pass) canonical App task runtime > retains a worker failure report and resumes the same input after reopen (normal) [253.14ms]\n(pass) canonical App task runtime > retains a worker failure report and resumes the same input after reopen (direct-agent) [255.28ms]\n(pass) canonical App task runtime > counts failed executions once when another connection admits input during failure persistence [276.50ms]\n(pass) canonical App task runtime > persists retry backoff across independent wakes and a fresh process [541.23ms]\n(pass) canonical App task runtime > retries the same Task after an executor process failure [440.34ms]\n(pass) canonical App task runtime > schedules unexpected exact-task input without replacing outstanding waits [226.85ms]\n(pass) canonical App task runtime > coalesces an exact-task event storm into bounded fresh reconciliations [888.48ms]\n(pass) canonical App task runtime > keeps task admission durable while paused without starting reconciliation [169.59ms]\n(pass) canonical App task runtime > terminal completion recovery > retries uncommitted session output through startup before accepting effects [217.28ms]\n(pass) canonical App task runtime > terminal completion recovery > retries uncommitted session output through busy before accepting effects [241.02ms]\n(pass) canonical App task runtime > terminal completion recovery > requires confirmed session drain before startup redo [183.00ms]\n(pass) canonical App task runtime > terminal completion recovery > requires confirmed session drain before busy redo [150.25ms]\n(pass) canonical App task runtime > terminal completion recovery > handles progress without closing the Task [153.01ms]\n(pass) canonical App task runtime > terminal completion recovery > handles self-revision without closing the Task [177.74ms]\n(pass) canonical App task runtime > terminal completion recovery > handles waiting without closing the Task [156.68ms]\n(pass) canonical App task runtime > terminal completion recovery > handles incomplete without closing the Task [151.04ms]\n(pass) canonical App task runtime > terminal completion recovery > replays an early external fact for a wait recovered through startup [275.78ms]\n(pass) canonical App task runtime > terminal completion recovery > replays an early external fact for a wait recovered through busy [231.95ms]\n(pass) canonical App task runtime > terminal completion recovery > reads a consumed journal fact for a newly declared Condition after restart [275.53ms]\n(pass) canonical App task runtime > terminal completion recovery > accepts a replacement direct-agent result through startup [215.81ms]\n(pass) canonical App task runtime > terminal completion recovery > accepts a replacement direct-agent result through busy [172.63ms]\n(pass) canonical App task runtime > terminal completion recovery > retries a terminal workflow handoff through startup with a accept verifier [203.53ms]\n(pass) canonical App task runtime > terminal completion recovery > retries a terminal workflow handoff through startup with a reject verifier [178.96ms]\n(pass) canonical App task runtime > terminal completion recovery > retries a terminal workflow handoff through startup with a missing verifier [188.01ms]\n(pass) canonical App task runtime > terminal completion recovery > retries a terminal workflow handoff through busy with a accept verifier [203.56ms]\n(pass) canonical App task runtime > terminal completion recovery > retries a terminal workflow handoff through busy with a reject verifier [209.45ms]\n(pass) canonical App task runtime > terminal completion recovery > retries a terminal workflow handoff through busy with a missing verifier [196.19ms]\n(pass) dependency Condition specification updates > keeps compatible legacy fields through generated echoes and new input without timer-driven attempts [283.00ms]\n(pass) dependency Condition specification updates > rejects a same-ID dependency type conflict at the attempt boundary [190.91ms]\n(pass) dependency Condition specification updates > rejects a same-ID dependency subject conflict at the attempt boundary [179.92ms]\n(pass) dependency Condition specification updates > rejects a same-ID dependency expected conflict at the attempt boundary [175.37ms]\n(pass) dependency Condition specification updates > rejects a same-ID dependency duplicate-cadence conflict at the attempt boundary [239.39ms]\n(pass) dependency Condition specification updates > does not apply a compatible Condition update from a stale generation [186.30ms]\n\n 205 pass\n 0 fail\n 2417 expect() calls\nRan 205 tests across 1 file. [79.85s]\n"
+    },
+    {
+      "command": "bun test ./projects/alex.app/app.test.ts ./projects/may.app/app.test.ts ./projects/may.app/reliability-metrics.test.ts",
+      "exitCode": 0,
+      "sha256": "3a922c5e6943d8dc32656acd39be0b66220a95dc0cbfc8c496eca4cf47a822ce",
+      "rawOutput": "bun test v1.3.14 (0d9b296a)\n\nprojects/alex.app/app.test.ts:\n(pass) Alex bootstrap uses ordinary durable Task admission [12.00ms]\n(pass) An operational message reaches executable Alex work [0.06ms]\n(pass) specialist goals remain Alex-owned executable work [0.04ms]\n(pass) independent review may assess Alex work without App-wide exclusion [0.28ms]\n(pass) selected review events return to executable Alex review work [0.25ms]\n(pass) qualified Scout research reaches executable Alex adoption work [0.05ms]\n(pass) automatic review failures stay executable under Alex [0.04ms]\n(pass) declared metric and review-failure subscriptions dispatch executable inputs [0.33ms]\n(pass) ordinary Evaluation reports are consumed only by Alex with immutable identity [0.57ms]\n(pass) weekly research preserves one standing Alex Bob Task across deliveries [0.20ms]\n(pass) comparison inputs attach to the migrated Gym specialist [0.08ms]\n\nprojects/may.app/app.test.ts:\n(pass) canonical May conversation App > the Host accepts all declared metric definitions [0.63ms]\n(pass) canonical May conversation App > owns one manifest for human input and addressed decision events [0.32ms]\n(pass) canonical May conversation App > maps App text requests to ordinary work with the original requirements [0.36ms]\n(pass) canonical May conversation App > maps durable May goals to ordinary visible goal Tasks [0.12ms]\n(pass) canonical May conversation App > keeps ordinary workflow references out of structured metric review parsing [0.52ms]\n(pass) canonical May conversation App > deliberately maps a generation-fenced revision to one exact existing goal [5.27ms]\n(pass) canonical May conversation App > keeps May human work local and leaves improvement specialists to Alex [0.33ms]\n(pass) canonical May conversation App > leaves the hygiene cadence to its Task reviewAt without a duplicate App timer [0.07ms]\n(pass) canonical May conversation App > does not keep the migrated weekly research schedule [0.05ms]\n(pass) canonical May conversation App > method selection does not add a development input or bound workflow [0.38ms]\n(pass) canonical May conversation App > keeps common authority shared and separates domain Task guidance [0.79ms]\n(pass) canonical May conversation App > accepts ordinary human messages through the same App schema [0.41ms]\n(pass) canonical May conversation App > routes Host observer failures to ordinary May judgment without automatic escalation [0.98ms]\n(pass) canonical May conversation App > routes one Evaluation operation metric alert episode to independent May judgment [1.25ms]\n(pass) canonical May conversation App > normalizes Evaluation escalations into messages with original correlation context [0.96ms]\n(pass) canonical May conversation App > normalizes exact task report identity across the Evaluation target boundary [0.73ms]\n(pass) canonical May conversation App > rejects malformed publication and excludes Evaluation self-review [0.13ms]\n(pass) canonical May conversation App > does not claim a decision addressed to another project [0.10ms]\n(pass) canonical May conversation App > rejects malformed decision obligations instead of hiding them as null [0.07ms]\n(pass) admission failures reach May with exact identity and bounded human escalation guidance [0.36ms]\n\nprojects/may.app/reliability-metrics.test.ts:\n(pass) SQL cost uses recent counter deltas, separates restarts and keeps absent or stale coverage unknown [24.45ms]\n(pass) recent SQL call latency retains a slow call under low aggregate load with bounded masked evidence [12.86ms]\n(pass) recent SQL call latency rejects missing or expired rankings and bounds ranked evidence [11.44ms]\n(pass) SQL latency evidence preserves the worst-call witness across windows and note trimming [13.15ms]\n(pass) SQL latency rejects coercible and non-finite identity or timing fields [10.88ms]\n(pass) SQL latency rejects malformed present window bounds instead of hiding a slow window [12.76ms]\n(pass) SQL latency shape truncation flag distinguishes the 300-character boundary [12.04ms]\n(pass) SQL latency source command is pinned to the loaded App release rather than collector cwd [14.59ms]\n(pass) SQL latency producer command resolves the configured default daemon socket [70.98ms]\n(pass) Host source collection retains diagnostic evidence and opens one metric breach episode [991.21ms]\n(pass) May schedules recurring metric collection and evaluation independently without a Task input [11.00ms]\n[metrics:may.daemon-sql-recent-worst-call-ms] Command failed: /bin/sh -lc bun \"/app/worktrees/alex/input-app_7a279469-7ac8-4bec-894a-9314635bd452-a882250576/projects/may.app/scripts/daemon-sql-latency.ts\"\n204 | export function readDiagnosticStatus(\n205 |   socketPath = defaultControlSocket(),\n206 |   timeoutMs = 5_000,\n207 | ): Promise<StatusResponse> {\n208 |   return new Promise((resolveResponse, reject) => {\n209 |     const socket = connect(socketPath);\n      ^\nerror: connect ENOENT /tmp/may-reliability-collection-BhKH3o/missing.sock\n   errno: -2,\n syscall: \"connect\",\n    port: undefined,\n address: \"/tmp/may-reliability-collection-BhKH3o/missing.sock\",\n    code: \"ENOENT\"\n\n      at afterConnect (node:net:1157:39)\n      at connectError (node:net:352:48)\n      at doConnect (unknown:1:1)\n      at kConnectPipe (node:net:367:19)\n      at internalConnect (node:net:1065:93)\n      at connect (node:net:634:58)\n      at /app/worktrees/alex/input-app_7a279469-7ac8-4bec-894a-9314635bd452-a882250576/projects/may.app/scripts/daemon-sql-latency.ts:209:20\n      at new Promise (native:1:11)\n      at readDiagnosticStatus (/app/worktrees/alex/input-app_7a279469-7ac8-4bec-894a-9314635bd452-a882250576/projects/may.app/scripts/daemon-sql-latency.ts:208:14)\n\nBun v1.3.14 (Linux x64)\n\n[metrics:may.daemon-sql-recent-worst-call-ms] Command failed: /bin/sh -lc bun \"/app/worktrees/alex/input-app_7a279469-7ac8-4bec-894a-9314635bd452-a882250576/projects/may.app/scripts/daemon-sql-latency.ts\"\n204 | export function readDiagnosticStatus(\n205 |   socketPath = defaultControlSocket(),\n206 |   timeoutMs = 5_000,\n207 | ): Promise<StatusResponse> {\n208 |   return new Promise((resolveResponse, reject) => {\n209 |     const socket = connect(socketPath);\n      ^\nerror: connect ENOENT /tmp/may-reliability-collection-BhKH3o/missing.sock\n   errno: -2,\n syscall: \"connect\",\n    port: undefined,\n address: \"/tmp/may-reliability-collection-BhKH3o/missing.sock\",\n    code: \"ENOENT\"\n\n      at afterConnect (node:net:1157:39)\n      at connectError (node:net:352:48)\n      at doConnect (unknown:1:1)\n      at kConnectPipe (node:net:367:19)\n      at internalConnect (node:net:1065:93)\n      at connect (node:net:634:58)\n      at /app/worktrees/alex/input-app_7a279469-7ac8-4bec-894a-9314635bd452-a882250576/projects/may.app/scripts/daemon-sql-latency.ts:209:20\n      at new Promise (native:1:11)\n      at readDiagnosticStatus (/app/worktrees/alex/input-app_7a279469-7ac8-4bec-894a-9314635bd452-a882250576/projects/may.app/scripts/daemon-sql-latency.ts:208:14)\n\nBun v1.3.14 (Linux x64)\n\n(pass) declared reliability metrics collect through the Host and retain a real breach and recovery [1194.57ms]\n(pass) retained Evaluation admission recovery opens one quiet May oversight episode after restart [1735.34ms]\n(pass) real Host collection maps one May review input per Evaluation breach episode [1063.78ms]\n(pass) input metrics include old unadmitted work after feedback and exclude recovered operations [17.57ms]\n(pass) retains failed attempts after later success and calculates the rate from the same terminal cohort [18.56ms]\n(pass) Evaluation operation metric names the expanded attempt and admission signal unit [15.47ms]\n(pass) Evaluation oversight groups all supported unsuccessful kinds by Task generation [17.17ms]\n(pass) overdue reviews route to May once per alert, while an empty population remains explicitly limited [15.15ms]\n\n 50 pass\n 0 fail\n 279 expect() calls\nRan 50 tests across 3 files. [5.66s]\n"
+    },
+    {
+      "command": "bun test projects/alex.app/app.test.ts projects/may.app/app.test.ts projects/may.app/reliability-metrics.test.ts",
+      "exitCode": 1,
+      "sha256": "05187aa135cdfb3c2aa79645b6f4b2440c24d68609539ed2f1cc9649df894e1b",
+      "rawOutput": "bun test v1.3.14 (0d9b296a)\nThe following filters did not match any test files:\n projects/alex.app/app.test.ts projects/may.app/app.test.ts projects/may.app/reliability-metrics.test.ts\n6268 files were searched [79.00ms]\n\nnote: Tests need \".test\", \"_test_\", \".spec\" or \"_spec_\" in the filename (ex: \"MyApp.test.ts\")\nnote: To treat the \"projects/alex.app/app.test.ts\" filter as a path, run \"bun test ./projects/alex.app/app.test.ts\"\n\nLearn more about bun test: https://bun.com/docs/cli/test\n"
+    },
+    {
+      "command": "cd /app/projects/may-agent && bun test src/app/app-task-runtime.test.ts",
+      "exitCode": 1,
+      "sha256": "3b1aafa9c7336dc5ddc23b2c83e18db9459be2fe8a896a6597bfbbd98259f813",
+      "rawOutput": "bun test v1.3.14 (0d9b296a)\nThe following filters did not match any test files:\n src/app/app-task-runtime.test.ts\n3734 files were searched [83.00ms]\n\nnote: Tests need \".test\", \"_test_\", \".spec\" or \"_spec_\" in the filename (ex: \"MyApp.test.ts\")\nnote: To treat the \"src/app/app-task-runtime.test.ts\" filter as a path, run \"bun test ./src/app/app-task-runtime.test.ts\"\n\nLearn more about bun test: https://bun.com/docs/cli/test\n"
+    }
+  ],
+  "coverageLimits": [
+    "No query_db capability supplied; no production DB opened from shell. No fresh live metric, alert state, opening event rows or session sample collected. Retained snapshots and owner reports remain attributed historical evidence.",
+    "Historical event classifications in retained status are not independent re-reads of event rows. Recovered correction content (with retained hash mismatch) and deployment bytes are stronger artifact evidence but do not complete the missing outcome gates.",
+    "No new live canary, release, replay, runtime mutation, old Condition update or durable request performed. Failed test path/filter attempts are retained and corrected, not counted as passing checks.",
+    "Cross-App tasks.list returned scoped-only error. Exact related May reads succeeded; no claim that all current May work was exhaustively searched. Caller must discover/reuse a fitting current obligation before any follow-up admission."
+  ],
+  "recommendedFollowUp": {
+    "recipient": "May via existing Alex caller",
+    "submitByHelper": false,
+    "outcome": "One bounded creator/caller disposition for exactly these four historical promises, reusing a current matching request if found; decide withdrawal-unfulfilled or identify the precise surviving current obligation.",
+    "acceptance": [
+      "Read this exact artifact and four full retained rows; preserve nine direct relationships, unknown final AKS Condition and separate Gym dependency, older dependency chronology, recovered partial receipts and all missing proof.",
+      "Respect completed child/parent dispositions without broadening them to these four automatically. Do not reapprove or activate 3bf56cf5, revive AKS, replay comparison/requests, mutate old Tasks/Conditions, or re-run specialist-address canary.",
+      "No new technical repair is justified by this cohort. Existing metric five-name approval remains independent; no new Hao ask unless May identifies an exact surviving human decision.",
+      "Return explanation to original migration caller; if a current enabled-App trace falsifies the no-change judgment, name exact input/result/source/owner and reuse its responsible current work."
+    ],
+    "status": "completed-by-accepted-May-disposition; retained-below-as-original-recommendation-not-an-open-ask"
+  },
+  "preservationVerification": {
+    "totalIdentities": 117,
+    "changedIdentities": [
+      "activate-addressed-route-and-remeasure-alert-4566-20260816",
+      "align-ops-health-delivery-taxonomy-20260816",
+      "prove-alert-4577-after-existing-activation-20260818",
+      "reconcile-app-dependency-completed-delivery-taxonomy-20260819"
+    ],
+    "untouchedIdentities": 113,
+    "rule": "Deep equality of all untouched entries and all top-level fields; in-scope old identity/outcome/preservation and full snapshot rows exact. Receipt links artifact and resulting frontier hashes; artifact pins pre-change frontier/receipt to avoid cyclic hashes.",
+    "acceptedDispositionCheck": {
+      "baseCommit": "68e55f4cfae386479ddefb838e376b1feb30915b",
+      "verifier": "projects/alex.app/event-delivery-taxonomy-reconciliation-2026-10-04.verify.py",
+      "changedEntries": 4,
+      "untouchedDeepEqual": 113,
+      "hostOperationsEntriesUnchanged": 37,
+      "note": "Frontier top-level fields are inherited and unchanged; historical missing proof, rows, Conditions and all nine relationships remain exact."
+    }
+  },
+  "acceptedMayDisposition": {
+    "appId": "may",
+    "taskId": "goal/appdep_148b26c73641204345e57308",
+    "generation": 1,
+    "resourceVersion": 4,
+    "status": "done",
+    "acceptedAttempt": {
+      "id": "r_1_349ae894-9d10-49c9-a113-07f9f65ded19",
+      "generation": 1,
+      "finishedAt": "2026-10-04T14:30:05.682Z"
+    },
+    "artifact": {
+      "path": "artifacts/event-delivery-taxonomy-may-disposition-2026-10-04.json",
+      "sha256": "da5c14d4344f50b8693b7196e7ffedc77bc5c5a7e3e8f47496f853799d517e14",
+      "commit": "90695016d8e39f48a757d8a97a4afd26d76a1b40"
+    },
+    "decision": {
+      "status": "all-four-obsolete-execution-promises-withdrawn-unfulfilled",
+      "legacyFulfillmentClaimed": false,
+      "executableContinuation": null,
+      "continuationOwner": null,
+      "humanDecisionNeeded": false,
+      "basis": "All four target retired Apps, controllers, alerts, event schemas, or deployment paths. Current protocols/tests are evidence of present behavior only, not fulfillment of legacy acceptance. No exact current defect or caller/human obligation in these four scopes was demonstrated."
+    },
+    "currentMayHaoCallerObligationSurvives": false,
+    "verification": "Exact tasks.get read returned accepted done result; git show of the cited commit artifact matches the accepted SHA-256. May matchingLegacyFrontierEntry fields preserve the earlier triage, not starting HEAD; complete old specs/status, missing proof, Conditions and relationships match this technical artifact.",
+    "incorporationBaseline": {
+      "commit": "68e55f4cfae386479ddefb838e376b1feb30915b",
+      "artifactSha256": "2f239c1bfd6feb3ca7caf7656d1e14fa337bf6b5a005caeebf257bbef0998aaa",
+      "frontierSha256": "d10de66fe023c84389c1bc87ffbcb7cbc78a943a21c1e117137de59e219d8238",
+      "receiptSha256": "359eb4b07497501483bd95fde6d986fc40e9a4d7e3d84fef020c12d5268cf266"
+    },
+    "limits": "Withdrawal is not fulfillment, approval, rejection, Condition settlement or deployment. Independent Gym and five-name metric work is unchanged."
+  }
+}

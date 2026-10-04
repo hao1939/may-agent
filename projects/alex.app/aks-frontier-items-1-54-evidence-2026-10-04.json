@@ -1,0 +1,550 @@
+{
+  "scope": "Exactly zero-based frontier items 1 and 54; linked resources preserved as evidence, not additional dispositions. Read-only helper; no parent worktree changes.",
+  "session": "s_1791126498625_3e0d76f5-eea0-49e6-8ed4-66efc15880be",
+  "caller": "alex/input/app_7a279469-7ac8-4bec-894a-9314635bd452",
+  "sources": [
+    {
+      "path": "/app/.state/alex-migration-20261004/legacy-frontier-snapshot.json",
+      "sha256": "bd3f6a1cc65e125c61f5a8380cba746d55e3d8143edc6f8d6825af286d5d7f97"
+    },
+    {
+      "path": "/app/worktrees/alex/input-app_7a279469-7ac8-4bec-894a-9314635bd452-a882250576/projects/alex.app/legacy-frontier-disposition-2026-10-04.json",
+      "sha256": "f668fdd8685a4cd7da5e0926e74fbb46d8ed7e0bbbc09970bef4eee8bfe73df8"
+    },
+    {
+      "path": "/app/worktrees/alex/input-app_7a279469-7ac8-4bec-894a-9314635bd452-a882250576/projects/alex.app/migration-receipt-2026-10-04.md",
+      "sha256": "181e1e27504739908a98d2f777326ae28276dd04ce300ebb6141884d92e3519a"
+    },
+    {
+      "path": "/app/projects/may-agent.app/docs/proposals/alex-improvement-app.md",
+      "sha256": "0bff163bad32fb56cccbaf87c9747737e632d5b8a5c50dd75de8fe0e9fc5ad83"
+    },
+    {
+      "path": "/app/worktrees/alex/input-app_7a279469-7ac8-4bec-894a-9314635bd452-a882250576/projects/alex.app/aks-taxonomy-correlation-reconciliation-2026-10-04.json",
+      "sha256": "7cbe2a0e97c70b1e7e33e29997149b135bd90cb02fa2e909c454320718630eb4"
+    },
+    {
+      "path": "/app/projects/may-agent/.state/deploy-receipts/aks-taxonomy-c6636d34.json",
+      "sha256": "b4063960f1d8cc8812e5925c0f52cf3d4f9b750faed3c00b2a01fdb7a2e52e57"
+    },
+    {
+      "path": "/app/projects/aks-e2e-spec-runner/ci/test-maturity/generated/latest-evaluation.json",
+      "sha256": "ce118daf4f709d5555496439d82fd95096e93ce4ddc15e44b40c0c0a2f884fc6"
+    },
+    {
+      "path": "/app/projects/aks-rp-e2e-app/design/spec-live-reconciliation.md",
+      "sha256": "7aa0915d2cedd5782e8ab7d7ee5cc3dfcd7444d3ade90d73ffbf81c70247da9b"
+    },
+    {
+      "path": "/app/projects/aks-rp-e2e-app/agents/owner/workflows/spec-live-reconciliation.ts",
+      "sha256": "432b40eadd6c7c24ba954d19fc05ee5481d3091577887159d2680722438e4f81"
+    },
+    {
+      "path": "/app/projects/may-agent/packages/sdk/src/event.ts",
+      "sha256": "8caf260e462b131b3185fc3978a988fb12e3d3159cd3c564c1b49894c602e0cf"
+    },
+    {
+      "path": "/app/projects/may-agent/packages/sdk/src/event.test.ts",
+      "sha256": "334af02704d76f2fa30db34af71839ce70b0c3cca984be8a2a0a57006cc3498f"
+    },
+    {
+      "path": "/app/projects/may-agent/src/app/core/inbox/input-result.ts",
+      "sha256": "5311529b43517d212874d70a7d60bd45b04fb0fdb8d95b560127fa35f85641f1"
+    },
+    {
+      "path": "/app/worktrees/alex/input-app_7a279469-7ac8-4bec-894a-9314635bd452-a882250576/projects/alex.app/app.ts",
+      "sha256": "6209a127c0d68f8079e755a9df6e100e05b4325afd459fb6510a7f2e494a43bf"
+    }
+  ],
+  "frontierItems": [
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "activate-and-live-prove-aks-correlation-taxonomy-c6636d34",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Activate the c6636d34 source-fenced selector and current AKS App correlation/taxonomy repair through the supported supervisor path, then obtain a fresh correlated aks-rp-e2e App result and terminal six-pair watcher proof.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_44c346a1f20c9eb3a15d8313",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "app-request:appdep_ac3e6a44e0e39148e0545749"
+        ]
+      },
+      "outcome": "Restore and resume the existing aks-rp-e2e Task spec/verify-spec-egress-lockdown-windows-baseline-3a6483ae5f-76603a97c9 through the source/provider-capable spec-live-reconciliation workflow, preserving its exact task worktree and prepared commit.",
+      "disposition": "inspect-current-evidence-for-alex-continuation",
+      "proposedOwner": "alex",
+      "lineage": null,
+      "replacement": null,
+      "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    }
+  ],
+  "retainedRows": [
+    {
+      "app_id": "may-agent",
+      "task_id": "activate-and-live-prove-aks-correlation-taxonomy-c6636d34",
+      "generation": 1,
+      "resource_version": 4,
+      "phase": "waiting",
+      "updated_at": 1787060985245,
+      "resource_json": {
+        "metadata": {
+          "creator": {
+            "appId": "may"
+          },
+          "generation": 1,
+          "id": "activate-and-live-prove-aks-correlation-taxonomy-c6636d34",
+          "resourceVersion": 4
+        },
+        "spec": {
+          "acceptance": [
+            "Preserve all existing AKS tasks, pipeline runs, App request lifecycles, watcher sources, unrelated dirty work, and immutable receipts; do not edit generated task state or duplicate the failed requests.",
+            "Verify the correlated deployment receipt, cleared deploy markers, running may-agent and may-agent-web services, loaded SDK source commit c6636d34, and loaded current /app/projects/aks-rp-e2e.app definition.",
+            "Run the SDK source-selector tests and the AKS canonical routing/typecheck tests against the activated SDK; all must pass, including the unexpected-source negative control.",
+            "Invoke one fresh aks-rp-e2e owner action with an explicit outcome and prove its correlated App request attaches an actually applied request-specific achieve task rather than runtime/owner-review or a completed receipt; return its terminal App result.",
+            "Invoke or otherwise live-prove distinct problem-investigation correlation so it cannot reuse runtime/problem-solver/project or return problem_20260720164634 for the new request.",
+            "Return fresh event IDs for aks-pipeline-watcher pipeline-run.state, pipeline.spec.observed, pipeline-artifact.available, pipeline.completed and aks-repo-ref-watcher aks.repo-ref.observed, aks.repo-ref.changed; prove exact task/Condition consumers win when actionable and source-fenced observation closes intentional facts only after actionable routing.",
+            "Retain a negative live or golden trace showing an unexpected producer for a covered type remains unexpected-unhandled, and return terminal artifact/result evidence for every actionable representative.",
+            "Wake the parent with exact changes, tests, activation receipt, correlated App result, fresh six-pair event IDs, consumer/disposition evidence, and terminal artifacts; if any link remains missing, change approach on this child or expose the exact external/authority blocker."
+          ],
+          "category": "ops",
+          "input": {
+            "changedFiles": [
+              "/app/projects/may-agent/packages/sdk/src/event.ts",
+              "/app/projects/may-agent/packages/sdk/src/event.test.ts",
+              "/app/projects/aks-rp-e2e.app/app.ts",
+              "/app/projects/aks-rp-e2e.app/canonical-routing.test.ts"
+            ],
+            "deployCorrelation": "aks-taxonomy-c6636d34",
+            "eventTypes": [
+              "pipeline-run.state",
+              "pipeline.spec.observed",
+              "pipeline-artifact.available",
+              "pipeline.completed",
+              "aks.repo-ref.observed",
+              "aks.repo-ref.changed"
+            ],
+            "failedRequests": [
+              "app_8080b1d7-5b5a-4ab1-8280-a41adbe3ea60",
+              "app_fdf777fa-68f1-4fea-85f5-15af8fbc6df4",
+              "app_856cfa84-1322-4b2e-a022-c5b60564e73d"
+            ],
+            "sourceCommit": "c6636d34",
+            "targetAppId": "aks-rp-e2e"
+          },
+          "mode": "achieve",
+          "outcome": "Activate the c6636d34 source-fenced selector and current AKS App correlation/taxonomy repair through the supported supervisor path, then obtain a fresh correlated aks-rp-e2e App result and terminal six-pair watcher proof.",
+          "outputs": [],
+          "owner": "may",
+          "parentId": "repair-aks-action-correlation-and-delivery-taxonomy-20260818",
+          "priority": "P0"
+        },
+        "status": {
+          "conditionIds": [],
+          "evidence": [
+            "deploy receipt aks-taxonomy-c6636d34 succeeded and loaded c6636d34",
+            "focused SDK and AKS tests/typechecks passed",
+            "events 5770476/5770477 produced distinct applied AKS tasks",
+            "fresh source-fenced events currently cover pipeline-run.state and aks.repo-ref.observed"
+          ],
+          "observedGeneration": 1,
+          "phase": "waiting",
+          "summary": "Activation and correlation proof are complete; terminal App results and four missing fresh watcher-type proofs remain assigned to one direct child.",
+          "updatedAt": "2026-08-18T13:49:45.245Z"
+        }
+      },
+      "trigger_json": null
+    },
+    {
+      "app_id": "may-agent",
+      "task_id": "app-request/appdep_44c346a1f20c9eb3a15d8313",
+      "generation": 1,
+      "resource_version": 24,
+      "phase": "waiting",
+      "updated_at": 1787875121491,
+      "resource_json": {
+        "metadata": {
+          "creator": {
+            "appId": "may"
+          },
+          "generation": 1,
+          "id": "app-request/appdep_44c346a1f20c9eb3a15d8313",
+          "resourceVersion": 24
+        },
+        "spec": {
+          "acceptance": [
+            "The same Task is resumed with workflow spec-live-reconciliation and its existing worktree /app/worktrees/aks-rp-e2e/spec-verify-spec-egress-lockdown-windows-baseline-3a6483ae5f-76603a97c9-4b79e06fa4.",
+            "The workflow pushes prepared commit 6b266784d9ee2cae8d9a61006abdea0482a638bb before ADO dispatch and verifies the remote branch/commit selected by ADO.",
+            "The workflow queues spec.egress-lockdown.windows-baseline on ADO, returns an exact typed run Condition while nonterminal, then ingests same-spec result and cleanup artifacts when terminal.",
+            "The workflow records pass, classified failure, or reviewed terminal disposition in /app/projects/aks-rp-e2e.app/.state/spec-loop/state.json using current artifacts."
+          ],
+          "input": {
+            "data": {
+              "acceptance": [
+                "The same Task is resumed with workflow spec-live-reconciliation and its existing worktree /app/worktrees/aks-rp-e2e/spec-verify-spec-egress-lockdown-windows-baseline-3a6483ae5f-76603a97c9-4b79e06fa4.",
+                "The workflow pushes prepared commit 6b266784d9ee2cae8d9a61006abdea0482a638bb before ADO dispatch and verifies the remote branch/commit selected by ADO.",
+                "The workflow queues spec.egress-lockdown.windows-baseline on ADO, returns an exact typed run Condition while nonterminal, then ingests same-spec result and cleanup artifacts when terminal.",
+                "The workflow records pass, classified failure, or reviewed terminal disposition in /app/projects/aks-rp-e2e.app/.state/spec-loop/state.json using current artifacts."
+              ],
+              "constraints": [
+                "Do not create an equivalent successor Task or a new worktree.",
+                "Do not dispatch ADO or push from an unbound owner turn; preserve workflow ownership of provider actions.",
+                "Do not treat the prior check-only pass as live proof.",
+                "Keep source edit, exact live verification, fix-forward, direct-dev integration, and loop reconciliation in the same finite Task."
+              ],
+              "evidence": [
+                "Local exact task worktree is clean at 6b266784d9ee2cae8d9a61006abdea0482a638bb.",
+                "Remote task branch currently points to c51e7c4622162c93f9298c25a75c0bd0ffa9d5b7, so ADO cannot yet prove the prepared source.",
+                "Prior same-spec artifact test_20260818071837547_z8ujg8_037332 is check-only (executeRequested=false) and cannot satisfy live acceptance."
+              ],
+              "outcome": "Restore and resume the existing aks-rp-e2e Task spec/verify-spec-egress-lockdown-windows-baseline-3a6483ae5f-76603a97c9 through the source/provider-capable spec-live-reconciliation workflow, preserving its exact task worktree and prepared commit."
+            },
+            "kind": "runtime-capability-request"
+          },
+          "mode": "achieve",
+          "outcome": "Restore and resume the existing aks-rp-e2e Task spec/verify-spec-egress-lockdown-windows-baseline-3a6483ae5f-76603a97c9 through the source/provider-capable spec-live-reconciliation workflow, preserving its exact task worktree and prepared commit.",
+          "owner": "may",
+          "parentId": "platform-system-review-feedback-loop",
+          "priority": "P1"
+        },
+        "status": {
+          "conditionIds": [
+            "app-request:appdep_ac3e6a44e0e39148e0545749"
+          ],
+          "evidence": [
+            "tasks.get aks-rp-e2e/spec/verify-spec-egress-lockdown-windows-baseline-3a6483ae5f-76603a97c9: status done, workflow spec-live-reconciliation, run 178062470 succeeded at source 316fab8921f8463b567e55c0986ea15074861867, integrated as 293778119b570ad8e3415855f63a1bb8ad9cf4bb",
+            "/app/projects/aks-rp-e2e/workspace/tasks/spec-verify-spec-egress-lockdown-windows-baseline-3a6483ae5f-76603a97c9-1-4b79e06fa4/proof.json: same-spec pass, exact source branch/commit, live assertions, and verified cleanup",
+            "/app/projects/aks-rp-e2e.app/.state/spec-loop/state.json lines 27353-27412: spec status pending, lastRunId null, and review still points to run 174782527 while representing the exact completion receipt",
+            "Task open wait: appdep_ac3e6a44e0e39148e0545749 targeting app aks-rp-e2e remains handling"
+          ],
+          "observedAttemptId": "r_1_c1821a04-8360-459b-9968-3c5fd54d15d9",
+          "observedGeneration": 1,
+          "phase": "waiting",
+          "result": {
+            "decision": "preserve-existing-owner-dependency",
+            "dependencyId": "appdep_ac3e6a44e0e39148e0545749",
+            "directOwnerSignals": [],
+            "directOwnerSignalsCreated": 0,
+            "remainingGaps": [
+              "Prove prepared commit 6b266784d9ee2cae8d9a61006abdea0482a638bb was pushed before dispatch and is contained in the ADO-selected source lineage.",
+              "Record the current run 178062470 pass and cleanup disposition in /app/projects/aks-rp-e2e.app/.state/spec-loop/state.json; it currently remains pending with older accepted run 174782527."
+            ],
+            "taskId": "spec/verify-spec-egress-lockdown-windows-baseline-3a6483ae5f-76603a97c9",
+            "verifiedIntegratedCommit": "293778119b570ad8e3415855f63a1bb8ad9cf4bb",
+            "verifiedLiveRunId": "178062470",
+            "verifiedSourceCommit": "316fab8921f8463b567e55c0986ea15074861867"
+          },
+          "summary": "Live verification and integration are complete on the exact AKS Task, but the existing AKS owner dependency must reconcile missing prepared-commit lineage proof and the stale canonical ledger before this recovery Task can converge.",
+          "updatedAt": "2026-08-27T23:58:41.491Z"
+        }
+      },
+      "trigger_json": null
+    }
+  ],
+  "directRelations": [
+    {
+      "app_id": "may-agent",
+      "source_task_id": "collect-terminal-aks-taxonomy-live-proof-c6636d34",
+      "relation_kind": "parent",
+      "target_task_id": "activate-and-live-prove-aks-correlation-taxonomy-c6636d34"
+    },
+    {
+      "app_id": "may-agent",
+      "source_task_id": "app-request/appdep_44c346a1f20c9eb3a15d8313",
+      "relation_kind": "parent",
+      "target_task_id": "platform-system-review-feedback-loop"
+    },
+    {
+      "app_id": "may-agent",
+      "source_task_id": "activate-and-live-prove-aks-correlation-taxonomy-c6636d34",
+      "relation_kind": "parent",
+      "target_task_id": "repair-aks-action-correlation-and-delivery-taxonomy-20260818"
+    }
+  ],
+  "conditions": [
+    {
+      "app_id": "may-agent",
+      "condition_id": "app-request:appdep_ac3e6a44e0e39148e0545749",
+      "state": "unknown",
+      "condition_json": "{\"metadata\":{\"generation\":1,\"id\":\"app-request:appdep_ac3e6a44e0e39148e0545749\",\"resourceVersion\":4},\"spec\":{\"expected\":{\"equals\":\"done\",\"field\":\"status\"},\"subject\":\"id:appdep_ac3e6a44e0e39148e0545749\",\"type\":\"app.dependency.completed\"},\"status\":{\"createdAt\":\"2026-08-25T13:32:17.648Z\",\"observedAt\":\"2026-08-27T23:58:41.491Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}"
+    },
+    {
+      "app_id": "may-agent",
+      "condition_id": "aks-taxonomy-problem-app-result-c6636d34",
+      "state": "unknown",
+      "condition_json": "{\"metadata\":{\"generation\":2,\"id\":\"aks-taxonomy-problem-app-result-c6636d34\",\"resourceVersion\":4},\"spec\":{\"expected\":{\"equals\":\"done\",\"field\":\"status\",\"id\":\"app_34525ee7-476d-4772-8296-d12c7220266b\"},\"owner\":\"app-ops\",\"subject\":\"project:aks-rp-e2e\",\"type\":\"app_inbox_items.status\"},\"status\":{\"observedAt\":\"2026-08-19T08:54:44.391Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}"
+    },
+    {
+      "app_id": "may-agent",
+      "condition_id": "aks-taxonomy-problem-task-terminal-route-c6636d34",
+      "state": "unknown",
+      "condition_json": "{\"metadata\":{\"generation\":2,\"id\":\"aks-taxonomy-problem-task-terminal-route-c6636d34\",\"resourceVersion\":4},\"spec\":{\"expected\":{\"equals\":\"converged\",\"field\":\"disposition\"},\"owner\":\"app-ops\",\"subject\":\"task:runtime/problem-solver/live-proof-aks-taxonomy-c6636d34-20260818-1346\",\"type\":\"project.task.reconciled\"},\"status\":{\"observedAt\":\"2026-08-19T08:54:44.391Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}"
+    }
+  ],
+  "pendingInputs": [
+    {
+      "id": "appdep_44c346a1f20c9eb3a15d8313",
+      "app_id": "may-agent",
+      "parent_id": null,
+      "conversation_id": null,
+      "conversation_seq": null,
+      "channel": null,
+      "channel_thread_id": null,
+      "channel_message_id": null,
+      "reply_to_source_id": null,
+      "source_kind": "app",
+      "source_id": "aks-rp-e2e",
+      "input_kind": "runtime-capability-request",
+      "input_data": "{\"outcome\":\"Restore and resume the existing aks-rp-e2e Task spec/verify-spec-egress-lockdown-windows-baseline-3a6483ae5f-76603a97c9 through the source/provider-capable spec-live-reconciliation workflow, preserving its exact task worktree and prepared commit.\",\"acceptance\":[\"The same Task is resumed with workflow spec-live-reconciliation and its existing worktree /app/worktrees/aks-rp-e2e/spec-verify-spec-egress-lockdown-windows-baseline-3a6483ae5f-76603a97c9-4b79e06fa4.\",\"The workflow pushes prepared commit 6b266784d9ee2cae8d9a61006abdea0482a638bb before ADO dispatch and verifies the remote branch/commit selected by ADO.\",\"The workflow queues spec.egress-lockdown.windows-baseline on ADO, returns an exact typed run Condition while nonterminal, then ingests same-spec result and cleanup artifacts when terminal.\",\"The workflow records pass, classified failure, or reviewed terminal disposition in /app/projects/aks-rp-e2e.app/.state/spec-loop/state.json using current artifacts.\"],\"evidence\":[\"Local exact task worktree is clean at 6b266784d9ee2cae8d9a61006abdea0482a638bb.\",\"Remote task branch currently points to c51e7c4622162c93f9298c25a75c0bd0ffa9d5b7, so ADO cannot yet prove the prepared source.\",\"Prior same-spec artifact test_20260818071837547_z8ujg8_037332 is check-only (executeRequested=false) and cannot satisfy live acceptance.\"],\"constraints\":[\"Do not create an equivalent successor Task or a new worktree.\",\"Do not dispatch ADO or push from an unbound owner turn; preserve workflow ownership of provider actions.\",\"Do not treat the prior check-only pass as live proof.\",\"Keep source edit, exact live verification, fix-forward, direct-dev integration, and loop reconciliation in the same finite Task.\"]}",
+      "status": "handling",
+      "session_id": null,
+      "waiting_on_kind": "task",
+      "waiting_on_id": "app-request/appdep_44c346a1f20c9eb3a15d8313",
+      "result": null,
+      "available_at": 1789026733027,
+      "review_at": null,
+      "lease_generation": 5,
+      "lease_owner": null,
+      "lease_expires_at": null,
+      "origin_event_id": 6057864,
+      "idempotency_key": "task-dependency:aks-rp-e2e:spec/verify-spec-egress-lockdown-windows-baseline-3a6483ae5f-76603a97c9:1:aks-egress-windows-baseline-spec-live-reconciliation-capability:44c346a1f20c9eb3a15d8313",
+      "created_at": 1787613650029,
+      "updated_at": 1789026733027,
+      "completed_at": null,
+      "channel_target_id": null,
+      "continues_request_id": null,
+      "started_at": 1787613650398,
+      "changed_at": 1787891431006,
+      "target_task_id": null,
+      "topic_id": null,
+      "handling": null,
+      "task_admission_key": null,
+      "execution_task_id": null,
+      "creator_json": null,
+      "recovery_json": null
+    }
+  ],
+  "historicalActivation": {
+    "version": 1,
+    "correlation": "aks-taxonomy-c6636d34",
+    "project": "may-agent",
+    "taskId": "repair-aks-action-correlation-and-delivery-taxonomy-20260818",
+    "artifactSha": "5ee6ad72bf47f51638aee7326a14d9cf40d6da2318d3901da15fa8ea03d72e94",
+    "sourceCommit": "c6636d34576e26b81b7230f3c79e2d4e387eb280",
+    "phase": "succeeded",
+    "requestedAt": "2026-08-18T13:33:24.339Z",
+    "verification": "After the supervisor settles service and HTTP health, verify loadedArtifactSha equals artifactSha, health is healthy, targetedWake is true, duplicateDeploy is false, then complete the owner task without redeploying.",
+    "completedAt": "2026-08-18T13:44:15.443Z",
+    "loadedArtifactSha": "5ee6ad72bf47f51638aee7326a14d9cf40d6da2318d3901da15fa8ea03d72e94",
+    "health": "healthy",
+    "targetedWake": true,
+    "duplicateDeploy": false
+  },
+  "newlyRecoveredExecutionEvidence": {
+    "path": "/app/projects/aks-e2e-spec-runner/ci/test-maturity/generated/latest-evaluation.json",
+    "evaluationTime": "2026-09-05T11:12:08.791Z",
+    "evidenceSource": "kusto+ado-artifact",
+    "queriedAt": "2026-09-05T11:12:25.063Z",
+    "records": [
+      {
+        "recordId": "ado:178044977:01:test_20260825020642851_h0u6bu_801817:spec.egress-lockdown.windows-baseline:1",
+        "specId": "spec.egress-lockdown.windows-baseline",
+        "publishedAt": "2026-08-25T02:50:20.000Z",
+        "firstPublishedAt": "2026-08-25T02:50:20.000Z",
+        "observedAt": "2026-08-25T02:08:05.000Z",
+        "utcDay": "2026-08-25",
+        "buildId": "178044977",
+        "buildUrl": "https://msazure.visualstudio.com/CloudNativeCompute/_build/results?buildId=178044977",
+        "buildNumber": "AKS RP E2E 178044977",
+        "jobAttempt": 1,
+        "pullRequestId": "",
+        "runId": "test_20260825020642851_h0u6bu_801817",
+        "attempt": 1,
+        "sourceBranch": "refs/heads/task/spec-verify-spec-egress-lockdown-windows-baseline-3a6483ae5f-76603a97c9-4b79e06fa4",
+        "sourceVersion": "6b266784d9ee2cae8d9a61006abdea0482a638bb",
+        "featureSet": "",
+        "target": "staging",
+        "environment": "staging",
+        "mode": "live",
+        "status": "pass",
+        "startedAt": "2026-08-25T02:08:05.000Z",
+        "endedAt": "2026-08-25T02:50:12.000Z",
+        "durationMs": 2526727,
+        "classification": "pass",
+        "verificationStatus": "missing",
+        "missingVerificationFields": [
+          "ClaimAssertionCount",
+          "PassingClaimAssertionCount",
+          "FailingClaimAssertionCount",
+          "UnknownClaimAssertionCount"
+        ],
+        "cleanupStatus": "passed",
+        "resourceEvidence": [
+          {
+            "recordId": "ado:178044977:01:test_20260825020642851_h0u6bu_801817:carrier:shared-cluster-01",
+            "carrierId": "shared-cluster-01",
+            "source": "kusto",
+            "sourceUrl": "https://msazure.visualstudio.com/CloudNativeCompute/_build/results?buildId=178044977",
+            "sourceSha256": null,
+            "artifactName": null,
+            "artifactProviderContentId": null,
+            "artifactPath": null,
+            "createdAt": "2026-08-25T02:08:03.000Z",
+            "cleanupCompletedAt": "2026-08-25T02:50:13.000Z",
+            "cleanupStatus": "deleted",
+            "cleanupVerifiedAbsent": true,
+            "cleanupHttpStatus": 404
+          }
+        ],
+        "missingEvidence": [],
+        "artifactUrls": [
+          "evidence/archive/test_20260825020642851_h0u6bu_801817-001-egress-lockdown-windows--01v70lcb-egress-lockdown-windows-baseline.json",
+          "runs/test-results/test_20260825020642851_h0u6bu_801817/artifacts/egress-lockdown-windows-baseline/stdout.log",
+          "runs/test-results/test_20260825020642851_h0u6bu_801817/artifacts/egress-lockdown-windows-baseline/stderr.log",
+          "runs/test-results/test_20260825020642851_h0u6bu_801817/tests/egress-lockdown-windows-baseline.json"
+        ]
+      },
+      {
+        "recordId": "ado:178062470:01:test_20260825044607650_0j25n2_729465:spec.egress-lockdown.windows-baseline:1",
+        "specId": "spec.egress-lockdown.windows-baseline",
+        "publishedAt": "2026-08-25T05:30:35.000Z",
+        "firstPublishedAt": "2026-08-25T05:30:35.000Z",
+        "observedAt": "2026-08-25T04:47:35.000Z",
+        "utcDay": "2026-08-25",
+        "buildId": "178062470",
+        "buildUrl": "https://msazure.visualstudio.com/CloudNativeCompute/_build/results?buildId=178062470",
+        "buildNumber": "AKS RP E2E 178062470",
+        "jobAttempt": 1,
+        "pullRequestId": "",
+        "runId": "test_20260825044607650_0j25n2_729465",
+        "attempt": 1,
+        "sourceBranch": "refs/heads/task/spec-verify-spec-egress-lockdown-windows-baseline-3a6483ae5f-76603a97c9-4b79e06fa4",
+        "sourceVersion": "316fab8921f8463b567e55c0986ea15074861867",
+        "featureSet": "",
+        "target": "staging",
+        "environment": "staging",
+        "mode": "live",
+        "status": "pass",
+        "startedAt": "2026-08-25T04:47:35.000Z",
+        "endedAt": "2026-08-25T05:17:20.000Z",
+        "durationMs": 1785377,
+        "classification": "pass",
+        "verificationStatus": "missing",
+        "missingVerificationFields": [
+          "ClaimAssertionCount",
+          "PassingClaimAssertionCount",
+          "FailingClaimAssertionCount",
+          "UnknownClaimAssertionCount"
+        ],
+        "cleanupStatus": "passed",
+        "resourceEvidence": [
+          {
+            "recordId": "ado:178062470:01:test_20260825044607650_0j25n2_729465:carrier:shared-cluster-01",
+            "carrierId": "shared-cluster-01",
+            "source": "kusto",
+            "sourceUrl": "https://msazure.visualstudio.com/CloudNativeCompute/_build/results?buildId=178062470",
+            "sourceSha256": null,
+            "artifactName": null,
+            "artifactProviderContentId": null,
+            "artifactPath": null,
+            "createdAt": "2026-08-25T04:47:33.000Z",
+            "cleanupCompletedAt": "2026-08-25T05:30:28.000Z",
+            "cleanupStatus": "deleted",
+            "cleanupVerifiedAbsent": true,
+            "cleanupHttpStatus": 404
+          }
+        ],
+        "missingEvidence": [],
+        "artifactUrls": [
+          "evidence/archive/test_20260825044607650_0j25n2_729465-001-egress-lockdown-windows--00baskip-egress-lockdown-windows-baseline.json",
+          "runs/test-results/test_20260825044607650_0j25n2_729465/artifacts/egress-lockdown-windows-baseline/stdout.log",
+          "runs/test-results/test_20260825044607650_0j25n2_729465/artifacts/egress-lockdown-windows-baseline/stderr.log",
+          "runs/test-results/test_20260825044607650_0j25n2_729465/tests/egress-lockdown-windows-baseline.json"
+        ]
+      }
+    ],
+    "limit": "Retained generated Kusto/ADO projection, not fresh provider read or original assertion artifacts; verificationStatus missing; claim-count fields absent."
+  },
+  "revisions": {
+    "/app/worktrees/alex/input-app_7a279469-7ac8-4bec-894a-9314635bd452-a882250576": "a40722286eb28993b5bb8e69464e8ce9c763418c",
+    "/app/projects/may-agent": "6b507d42916ae5e0f64483311984302b20079d92",
+    "/app/projects/aks-rp-e2e-app": "9399bd9b3dea61029dfe5c5d339682f58f17ecc8",
+    "/app/projects/aks-e2e-spec-runner": "fc74704a982e37e05525eea0f27d57019bf43a22"
+  },
+  "ancestryChecks": [
+    {
+      "ancestor": "6b266784d9ee2cae8d9a61006abdea0482a638bb",
+      "descendant": "316fab8921f8463b567e55c0986ea15074861867",
+      "exitCode": 0
+    },
+    {
+      "ancestor": "316fab8921f8463b567e55c0986ea15074861867",
+      "descendant": "293778119b570ad8e3415855f63a1bb8ad9cf4bb",
+      "exitCode": 0
+    },
+    {
+      "ancestor": "293778119b570ad8e3415855f63a1bb8ad9cf4bb",
+      "descendant": "HEAD",
+      "exitCode": 1
+    }
+  ],
+  "currentTaskReads": {
+    "may-agent selected tasks": "both unavailable: App may-agent has no loaded Task runtime",
+    "aks-rp-e2e exact spec task and app-request/appdep_ac3e6a44e0e39148e0545749": "both unavailable: App aks-rp-e2e has no loaded Task runtime",
+    "may/goal/appdep_b9d63909a838fa7ad225d6b6": {
+      "status": "done",
+      "generation": 1,
+      "resourceVersion": 4,
+      "acceptedAttempt": "r_1_8b90333a-f42d-4407-9f9a-10fa0e82bde9",
+      "scopeLimit": "Explicitly excludes item 1 as out-of-scope bridge, not an eighth disposition; no scope for item 54."
+    },
+    "may list": "rejected: list/outcomes scoped to current App; no claim no matching current work exists"
+  },
+  "tests": {
+    "command": "cd /app/projects/may-agent && bun test ./packages/sdk/src/event.test.ts",
+    "exitCode": 0,
+    "passed": 11,
+    "failed": 0,
+    "expectations": 34,
+    "limit": "Pure current selector matching, not old six-pair live proof; no provider or production DB operation."
+  },
+  "decisions": [
+    {
+      "index": 1,
+      "historicalFulfilled": false,
+      "recommendation": "Obsolete execution path, unfulfilled; no current technical continuation. Exact creator/caller disposition remains needed because prior seven-task May decision expressly excluded this bridge. Never replay successful c6636d34 deployment or the two AKS requests."
+    },
+    {
+      "index": 54,
+      "historicalFulfilled": false,
+      "recommendation": "Obsolete installed execution path with substantial live progress; do not claim complete or blindly withdraw original domain/caller requirement. One bounded enabled-May creator/caller reconciliation (reused if already admitted) is warranted to withdraw old resume/ledger promise unfulfilled or identify a precise surviving obligation and authorized evidence owner. No new Alex technical implementation or AKS replay justified. New local ancestry and retained run records narrow the source gap, but push timing, original artifacts, canonical ledger and terminal dependency return remain unproved."
+    }
+  ]
+}

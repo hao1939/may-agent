@@ -1,0 +1,549 @@
+{
+  "kind": "bounded-subscriber-failure-metric-reconciliation-recommendation",
+  "generatedAt": "2026-10-04T14:51:24.141642+00:00",
+  "author": "bob",
+  "sessionId": "s_1791125295803_b2c54341-f118-45ee-9ee5-03fe0dd53b2b",
+  "scope": [
+    "may-agent/reconcile-subscriber-failure-metric-scope-20260820",
+    "may-agent/repair-subscriber-failure-metric-contract-20260820"
+  ],
+  "authority": "Recommendation only to Alex. No Task, Condition, frontier, receipt, runtime or production DB mutation; no external contact. Only this report was written. Isolated existing source tests used temporary test databases.",
+  "decisionSummary": "Neither old outcome is proved fulfilled or safely obsolete. Carry one coherent metric-contract technical continuation into Alex, preserving the two old identities as lineage rather than making two duplicate implementations; retain May/Hao exact decision authority separately. This is a proposed mapping, not an admitted replacement or changed old state.",
+  "sourcePins": [
+    {
+      "path": "/app/.state/alex-migration-20261004/legacy-frontier-snapshot.json",
+      "sha256": "bd3f6a1cc65e125c61f5a8380cba746d55e3d8143edc6f8d6825af286d5d7f97"
+    },
+    {
+      "path": "/app/.state/alex-migration-20261004/legacy-frontier-index.json",
+      "sha256": "46d61e762a8abac6170b4333c7aac30af2661afabe7fe635294a17318ea1cde9"
+    },
+    {
+      "path": "/app/worktrees/alex/input-app_7a279469-7ac8-4bec-894a-9314635bd452-a882250576/projects/alex.app/legacy-frontier-disposition-2026-10-04.json",
+      "sha256": "fcfda62c4bf6b19e154c08f6e2cdcfb77ad3252961c609d6ed3e92c6615757c9"
+    }
+  ],
+  "snapshotCapturedAt": "2026-10-04T12:13:38.821491+00:00",
+  "appWorktree": "/app/worktrees/alex/input-app_7a279469-7ac8-4bec-894a-9314635bd452-a882250576",
+  "appCommitAtInspection": "cc59702cc8c10ce99134c14a9bbb895f2af62845",
+  "hostRepository": "/app/projects/may-agent",
+  "hostCommit": "6b507d42916ae5e0f64483311984302b20079d92",
+  "sourceFilePins": [
+    {
+      "path": "projects/may-agent/src/app/metric-source-measurement.ts",
+      "sha256": "13477d44733da0cd40a86f5d28cbdea6e84241ea2bbb8235f1e74aa9298a6946"
+    },
+    {
+      "path": "projects/may-agent/src/app/metric-source-measurement.test.ts",
+      "sha256": "d94e5c36a1e9fb59f8b5ea2e7ada596e34d6cf5b9a5f927e00ffc2ef398be44a"
+    },
+    {
+      "path": "projects/may-agent/src/lib/metrics.ts",
+      "sha256": "8712607c10e7fa4e8a61b2373cc4db3426c11096732e00ef0b8209b7cb9ab3bf"
+    },
+    {
+      "path": "projects/may.app/app.ts",
+      "sha256": "ad33572ab5a9c5ca768ef3e4779443d6bfe2349f0bcbd61cd3820c30ff1acd8d"
+    },
+    {
+      "path": "projects/alex.app/app.ts",
+      "sha256": "6209a127c0d68f8079e755a9df6e100e05b4325afd459fb6510a7f2e494a43bf"
+    },
+    {
+      "path": "projects/alex.app/agents/evaluator/workflows/task-outcome-selector.ts",
+      "sha256": "6aab03d7f341475b5e3152e67bcc58bbaa667d2b2d5704aefb09b23154d82c87"
+    },
+    {
+      "path": "projects/alex.app/docs/2a-design/metrics.md",
+      "sha256": "e56d5ca6cbdd37ae97e61db27fa9455b650ebf7af11048576a1467737cbc00b6"
+    }
+  ],
+  "items": [
+    {
+      "identity": "may-agent/reconcile-subscriber-failure-metric-scope-20260820",
+      "retainedSourceRow": {
+        "app_id": "may-agent",
+        "task_id": "reconcile-subscriber-failure-metric-scope-20260820",
+        "generation": 7,
+        "resource_version": 13,
+        "phase": "attention",
+        "updated_at": 1788095818848,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 7,
+            "id": "reconcile-subscriber-failure-metric-scope-20260820",
+            "resourceVersion": 13
+          },
+          "spec": {
+            "acceptance": [
+              "Primary-source evidence establishes the intended system-wide metric scope and aligns its canonical query, project attribution, owner, and breach routing without rewriting event history or suppressing genuine subscriber failures.",
+              "Representative proof covers the frozen seven-event baseline plus the exact four-failure population reported by alert 4888, with negative controls showing unrelated projects or failure families cannot be falsely attributed or hidden; existing root-cause repair tasks are referenced rather than duplicated.",
+              "Any required production change is isolated and reviewed through the supported approval and supervisor-owned activation boundary, with immutable artifact identity, regression coverage, loaded-runtime identity, health, and rollback readiness proved before claiming adoption.",
+              "A fresh authentic measurement and breach/recovery route proves the corrected contract reaches May without stale v2-spec-coverage-buildout or tech-lead attribution and preserves actionable failures; incomplete scope, routing, regression, activation, or live proof is explicitly replanned with the responsible owner."
+            ],
+            "category": "platform-reliability",
+            "input": {
+              "alertId": 4888,
+              "canonicalMetricOwner": "tech-lead",
+              "canonicalMetricProject": "v2-spec-coverage-buildout",
+              "existingTaskIds": [
+                "repair-may-specialist-implementation-owner-routing-20260820",
+                "repair-gym-review-lifecycle-pair-correlation-20260820",
+                "reconcile-task-result-delivery-taxonomy-20260819"
+              ],
+              "latestObservation": {
+                "alertId": 4923,
+                "alertType": "consecutive_failures",
+                "current": 52,
+                "direction": "above",
+                "disposition": "Attach to the existing metric-contract lineage. Preserve direct child repair-subscriber-failure-metric-contract-20260820 and its exact Hao decision condition; do not duplicate repair or activate without approval.",
+                "eventId": 6291999,
+                "measuredAt": 1787888313821,
+                "metricId": "infra.bus.subscriber-failed-count-1h",
+                "metricOwner": "tech-lead",
+                "metricProject": "v2-spec-coverage-buildout",
+                "reason": "open-alert-updated",
+                "target": 0,
+                "threshold": 3,
+                "trend": [
+                  {
+                    "measuredAt": 1787888305727,
+                    "value": 52
+                  },
+                  {
+                    "measuredAt": 1787887695869,
+                    "value": 48
+                  },
+                  {
+                    "measuredAt": 1787887319365,
+                    "value": 42
+                  },
+                  {
+                    "measuredAt": 1787886953779,
+                    "value": 42
+                  },
+                  {
+                    "measuredAt": 1787886492179,
+                    "value": 42
+                  }
+                ]
+              },
+              "metricId": "infra.bus.subscriber-failed-count-1h",
+              "observedCurrent": 4,
+              "observedEventId": 6087963,
+              "previousAlert": {
+                "alertId": 4669,
+                "observedCurrent": 7,
+                "observedEventId": 5850065
+              },
+              "representativeEventIds": [
+                5847148,
+                5848135,
+                5848156,
+                5848160,
+                5848435,
+                5849259,
+                5849430
+              ],
+              "safetyBounds": {
+                "duplicateExistingRepairs": false,
+                "preserveGenuineFailures": true,
+                "productionMutationRequiresSupportedBoundary": true,
+                "rewriteEventHistory": false
+              }
+            },
+            "mode": "achieve",
+            "outcome": "Reconcile the canonical scope, project attribution, and accountable ownership of infra.bus.subscriber-failed-count-1h so its query and emitted breach routing describe the population actually measured, while preserving visibility and accountable repair of every genuine subscriber failure and avoiding duplicate work already owned by the May CLI-lifecycle, App-input, and alert-4602 taxonomy lineages. Treat event 6293501 (alert 4923, current 58 at measuredAt 1787892759221, with a rising recent trend from 43 to 58) as the latest observation. Treat successful correlation interface-io-a2cb95df-20260828T1325CST (source a2cb95df3a97ce56cbb4536baf761e2d23bdb791, requested and loaded artifact a6d98d055901c42020b5affe81115a6712062bd216b87cacdc5b6d5c2bca3800, healthy, duplicateDeploy=false) as the newest verified recovery boundary requiring fresh authentic measurement; do not redeploy it, duplicate the existing repair, or bypass the existing owner-decision boundary for the separate metric-contract candidate.",
+            "outputs": [],
+            "owner": "may",
+            "parentId": "runtime/platform-owner-review",
+            "priority": "P2"
+          },
+          "status": {
+            "conditionIds": [],
+            "evidence": [
+              "Exact direct child: `repair-subscriber-failure-metric-contract-20260820`, generation 2, status `waiting`.",
+              "Exact condition: `hao-subscriber-metric-02a9bb15-decision`, type `project.owner-decision.recorded`, allowed decisions `approve`, `reject`, or `hold`, reviewAfterMs 86400000.",
+              "Reviewed candidate: commit `02a9bb155cfaec9509a712dfdf35f809537fcdbf`; 20/20 focused tests and typecheck passed across the representative seven-event population and negative controls.",
+              "Production remains unchanged with stale owner `tech-lead` and project `v2-spec-coverage-buildout`, so parent acceptance requiring fresh authentic measurement and corrected route is not yet satisfied."
+            ],
+            "observedGeneration": 7,
+            "phase": "attention",
+            "summary": "Resolved agent may is not a runnable agent",
+            "updatedAt": "2026-08-30T13:16:58.848Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "retainedIndexEntry": {
+        "appId": "may-agent",
+        "taskId": "reconcile-subscriber-failure-metric-scope-20260820",
+        "generation": 7,
+        "phase": "attention",
+        "owner": "may",
+        "outcome": "Reconcile the canonical scope, project attribution, and accountable ownership of infra.bus.subscriber-failed-count-1h so its query and emitted breach routing describe the population actually measured, while preserving visibility and accountable repair of every genuine subscriber failure and avoiding duplicate work already owned by the May CLI-lifecycle, App-input, and alert-4602 taxonomy lineages. Treat event 6293501 (alert 4923, current 58 at measuredAt 1787892759221, with a rising recent trend from 43 to 58) as the latest observation. Treat successful correlation interface-io-a2cb95df-20260828T1325CST (source a2cb95df3a97ce56cbb4536baf761e2d23bdb791, requested and loaded artifact a6d98d055901c42020b5affe81115a6712062bd216b87cacdc5b6d5c2bca3800, healthy, duplicateDeploy=false) as the newest verified recovery boundary requiring fresh authentic measurement; do not redeploy it, duplicate the existing repair, or bypass the existing owner-decision boundary for the separate metric-contract candidate.",
+        "acceptance": [
+          "Primary-source evidence establishes the intended system-wide metric scope and aligns its canonical query, project attribution, owner, and breach routing without rewriting event history or suppressing genuine subscriber failures.",
+          "Representative proof covers the frozen seven-event baseline plus the exact four-failure population reported by alert 4888, with negative controls showing unrelated projects or failure families cannot be falsely attributed or hidden; existing root-cause repair tasks are referenced rather than duplicated.",
+          "Any required production change is isolated and reviewed through the supported approval and supervisor-owned activation boundary, with immutable artifact identity, regression coverage, loaded-runtime identity, health, and rollback readiness proved before claiming adoption.",
+          "A fresh authentic measurement and breach/recovery route proves the corrected contract reaches May without stale v2-spec-coverage-buildout or tech-lead attribution and preserves actionable failures; incomplete scope, routing, regression, activation, or live proof is explicitly replanned with the responsible owner."
+        ],
+        "summary": "Resolved agent may is not a runnable agent",
+        "conditionIds": []
+      },
+      "retainedFrontierEntry": {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "reconcile-subscriber-failure-metric-scope-20260820",
+          "generation": 7,
+          "phase": "attention",
+          "owner": "may",
+          "conditionIds": []
+        },
+        "outcome": "Reconcile the canonical scope, project attribution, and accountable ownership of infra.bus.subscriber-failed-count-1h so its query and emitted breach routing describe the population actually measured, while preserving visibility and accountable repair of every genuine subscriber failure and avoiding duplicate work already owned by the May CLI-lifecycle, App-input, and alert-4602 taxonomy lineages. Treat event 6293501 (alert 4923, current 58 at measuredAt 1787892759221, with a rising recent trend from 43 to 58) as the latest observation. Treat successful correlation interface-io-a2cb95df-20260828T1325CST (source a2cb95df3a97ce56cbb4536baf761e2d23bdb791, requested and loaded artifact a6d98d055901c42020b5affe81115a6712062bd216b87cacdc5b6d5c2bca3800, healthy, duplicateDeploy=false) as the newest verified recovery boundary requiring fresh authentic measurement; do not redeploy it, duplicate the existing repair, or bypass the existing owner-decision boundary for the separate metric-contract candidate.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      "outcomeFulfilled": false,
+      "recommendedDisposition": "needs-current-alex-technical-continuation-with-retained-may-human-boundary",
+      "replacement": null,
+      "requirementsChanged": false,
+      "acceptedEvidenceInterpretation": "resource_json.status.evidence is preserved verbatim as historical accepted evidence, not newly verified live fact. Current source does not implement the old existing-row owner/project restoration.",
+      "caller": {
+        "creator": {
+          "appId": "may"
+        },
+        "owner": "may",
+        "parentId": "runtime/platform-owner-review",
+        "returnRequirement": "Retain child-to-parent terminal evidence and parent-to-May platform-owner accountability; migration must not drop human reply or exact decision wait."
+      },
+      "conditions": [],
+      "remainingWork": [
+        "Keep direct child metric-contract repair as implementation lineage; do not duplicate existing root-cause tasks.",
+        "Obtain exact alert 4888 four-failure population proof in addition to the seven-event baseline; current four-event fixture is not that population.",
+        "Reconcile current metadata and breach/recovery consumer with current Alex/May boundary. Current source-only behavior and zero or declining counts cannot satisfy historical live proof.",
+        "Retain the newest specified historical event 6293501 and interface-io-a2cb95df-20260828T1325CST recovery boundary as context, not authority to redeploy."
+      ]
+    },
+    {
+      "identity": "may-agent/repair-subscriber-failure-metric-contract-20260820",
+      "retainedSourceRow": {
+        "app_id": "may-agent",
+        "task_id": "repair-subscriber-failure-metric-contract-20260820",
+        "generation": 2,
+        "resource_version": 17,
+        "phase": "waiting",
+        "updated_at": 1787276679584,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 2,
+            "id": "repair-subscriber-failure-metric-contract-20260820",
+            "resourceVersion": 17
+          },
+          "spec": {
+            "acceptance": [
+              "Use an isolated clean artifact boundary and change only the metric definition/restoration behavior and focused regression coverage needed for this contract; exclude unrelated dirty workspace changes and preserve event history unchanged.",
+              "Prove the canonical query still counts all seven representative events 5847148, 5848135, 5848156, 5848160, 5848435, 5849259, and 5849430. Add negative controls proving non-`subscriber.failed` families are excluded, genuine subscriber failures from unrelated projects remain counted but cannot create project attribution, malformed/unroutable failures remain visible, and restored rows end with owner `may` and project NULL while unrelated alert calibration is preserved.",
+              "Reference, do not duplicate or absorb, root-cause work in repair-may-specialist-implementation-owner-routing-20260820, repair-gym-review-lifecycle-pair-correlation-20260820, and reconcile-task-result-delivery-taxonomy-20260819.",
+              "Produce an immutable candidate identity, focused passing tests, owner review, exact rollback plan, and proof that production is unchanged; obtain Hao\u2019s exact approve, reject, or hold decision before any deploy, restart, reload, metric-row mutation, or other production activation.",
+              "Only if approved, activate exactly the reviewed artifact through the supported supervisor-owned path and prove requested artifact identity equals loaded identity, runtime health, no duplicate activation, rollback readiness, and no unrelated changes.",
+              "After activation, trigger a supported fresh authentic source measurement and prove the metric row has the global query, owner `may`, project NULL, and an accurate value derived from the then-current real `subscriber.failed` population. Follow the resulting real breach or recovery fact to its accountable May App/task consumer while preserving visibility of every genuine failure; do not fabricate a production subscriber failure merely to force a breach.",
+              "Return terminal evidence to the parent. If scope, metadata, regression, approval, activation, loaded identity, fresh measurement, routing, or negative-control proof is incomplete, remain on this same child and replan with the responsible metric or Runtime layer; escalate only the exact remaining authority blocker."
+            ],
+            "category": "runtime-metrics",
+            "input": {
+              "alertId": 4669,
+              "baseline": "7 pass, 0 fail, 17 expectations",
+              "canonicalSourcePath": "/app/projects/may-agent/src/app/metric-source-measurement.ts",
+              "canonicalTestPath": "/app/projects/may-agent/src/app/metric-source-measurement.test.ts",
+              "existingRepairTaskIds": [
+                "repair-may-specialist-implementation-owner-routing-20260820",
+                "repair-gym-review-lifecycle-pair-correlation-20260820",
+                "reconcile-task-result-delivery-taxonomy-20260819"
+              ],
+              "intendedContract": {
+                "owner": "may",
+                "project": null,
+                "scope": "all durable subscriber.failed events in the rolling hour"
+              },
+              "metricId": "infra.bus.subscriber-failed-count-1h",
+              "representativeEventIds": [
+                5847148,
+                5848135,
+                5848156,
+                5848160,
+                5848435,
+                5849259,
+                5849430
+              ],
+              "safetyBounds": {
+                "duplicateExistingRepairs": false,
+                "productionMutationRequiresExplicitApproval": true,
+                "rewriteEventHistory": false,
+                "suppressGenuineFailures": false
+              }
+            },
+            "mode": "achieve",
+            "outcome": "Isolate, review, and carry to terminal proof the canonical `infra.bus.subscriber-failed-count-1h` contract: retain the system-wide rolling-hour population of every durable `subscriber.failed` event, restore explicit accountable owner `may` and null project attribution for existing as well as new metric rows, and ensure emitted breach/recovery facts route to the May platform owner without suppressing or falsely attributing any failure family.",
+            "outputs": [
+              "Immutable reviewed Runtime candidate and content identity",
+              "Focused regression and representative scope/negative-control proof",
+              "Approval-gated activation proposal and rollback evidence",
+              "Post-approval loaded-runtime, fresh measurement, and breach/recovery routing proof"
+            ],
+            "owner": "may",
+            "parentId": "reconcile-subscriber-failure-metric-scope-20260820",
+            "priority": "P1"
+          },
+          "status": {
+            "conditionIds": [
+              "hao-subscriber-metric-02a9bb15-decision"
+            ],
+            "evidence": [
+              "Frozen baseline: commit `5a601758cf8c86bc37401f6e19106d580dec17a6`, tree `b5e7caf3360b75ce101dc8081d533f2713fe91e6`.",
+              "Exact candidate: commit `02a9bb155cfaec9509a712dfdf35f809537fcdbf`, tree `07a3d899d3f9f8ebad3fb68f958e7cb888d3123b`, patch SHA-256 `de1dc4a1ed4d2a0be75b256633e828029df709f070b15bc61b50f0143af1e1f3`; candidate worktree is clean.",
+              "The bounded candidate comparison passed 20/20 focused tests and typecheck. Its canonical query counts representative subscriber.failed events 5847148, 5848135, 5848156, 5848160, 5848435, 5849259, and 5849430; focused negative controls cover unrelated families/projects, malformed failures, NULL project attribution, owner may restoration, and retained alert calibration.",
+              "Exactly one Gym owner-review handoff completed and supplied independent proof; separate root-cause tasks `repair-may-specialist-implementation-owner-routing-20260820`, `repair-gym-review-lifecycle-pair-correlation-20260820`, and `reconcile-task-result-delivery-taxonomy-20260819` remain referenced rather than absorbed.",
+              "Frozen manifest `.state/owner-review-artifacts/freeze-subscriber-metric-activation-rollback-manifest-20260821/ACTIVATION_ROLLBACK_MANIFEST.md` has SHA-256 `ce17b1c93bdbf22b9225f30897813eeddd36bcb4076fc71e082397afeca50ec5`.",
+              "Exact tested rollback is Git revert commit `68dc607e451a3083b9f136906260e4a67856164f`; its tree equals the frozen baseline tree.",
+              "Fresh checks found no activation or rollback receipt. The live metric remains owner `tech-lead`, project `v2-spec-coverage-buildout`, current `1`, threshold `3`, priority `P2`, consecutive-failure count `2`, and interval `300000`, proving production is unchanged."
+            ],
+            "observedGeneration": 2,
+            "phase": "waiting",
+            "summary": "Understood intent: restore the global rolling-hour subscriber.failed metric contract and May-owned routing without losing or falsely attributing any failure family. Mode remains evaluate and priority remains proof: the frozen baseline 5a601758cf8c86bc37401f6e19106d580dec17a6 was compared with exact candidate 02a9bb155cfaec9509a712dfdf35f809537fcdbf on the representative seven-event and negative-control suite; the one Gym owner-review handoff and focused 20/20 tests found the intended gain with no material regression. The proof-backed rollout proposal is ready, but reject broad rollout until Hao approval; rollback is Git revert.",
+            "updatedAt": "2026-08-21T01:44:39.584Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "retainedIndexEntry": {
+        "appId": "may-agent",
+        "taskId": "repair-subscriber-failure-metric-contract-20260820",
+        "generation": 2,
+        "phase": "waiting",
+        "owner": "may",
+        "outcome": "Isolate, review, and carry to terminal proof the canonical `infra.bus.subscriber-failed-count-1h` contract: retain the system-wide rolling-hour population of every durable `subscriber.failed` event, restore explicit accountable owner `may` and null project attribution for existing as well as new metric rows, and ensure emitted breach/recovery facts route to the May platform owner without suppressing or falsely attributing any failure family.",
+        "acceptance": [
+          "Use an isolated clean artifact boundary and change only the metric definition/restoration behavior and focused regression coverage needed for this contract; exclude unrelated dirty workspace changes and preserve event history unchanged.",
+          "Prove the canonical query still counts all seven representative events 5847148, 5848135, 5848156, 5848160, 5848435, 5849259, and 5849430. Add negative controls proving non-`subscriber.failed` families are excluded, genuine subscriber failures from unrelated projects remain counted but cannot create project attribution, malformed/unroutable failures remain visible, and restored rows end with owner `may` and project NULL while unrelated alert calibration is preserved.",
+          "Reference, do not duplicate or absorb, root-cause work in repair-may-specialist-implementation-owner-routing-20260820, repair-gym-review-lifecycle-pair-correlation-20260820, and reconcile-task-result-delivery-taxonomy-20260819.",
+          "Produce an immutable candidate identity, focused passing tests, owner review, exact rollback plan, and proof that production is unchanged; obtain Hao\u2019s exact approve, reject, or hold decision before any deploy, restart, reload, metric-row mutation, or other production activation.",
+          "Only if approved, activate exactly the reviewed artifact through the supported supervisor-owned path and prove requested artifact identity equals loaded identity, runtime health, no duplicate activation, rollback readiness, and no unrelated changes.",
+          "After activation, trigger a supported fresh authentic source measurement and prove the metric row has the global query, owner `may`, project NULL, and an accurate value derived from the then-current real `subscriber.failed` population. Follow the resulting real breach or recovery fact to its accountable May App/task consumer while preserving visibility of every genuine failure; do not fabricate a production subscriber failure merely to force a breach.",
+          "Return terminal evidence to the parent. If scope, metadata, regression, approval, activation, loaded identity, fresh measurement, routing, or negative-control proof is incomplete, remain on this same child and replan with the responsible metric or Runtime layer; escalate only the exact remaining authority blocker."
+        ],
+        "summary": "Understood intent: restore the global rolling-hour subscriber.failed metric contract and May-owned routing without losing or falsely attributing any failure family. Mode remains evaluate and priority remains proof: the frozen baseline 5a601758cf8c86bc37401f6e19106d580dec17a6 was compared with exact candidate 02a9bb155cfaec9509a712dfdf35f809537fcdbf on the representative seven-event and negative-control suite; the one Gym owner-review handoff and focused 20/20 tests found the intended gain with no material regression. The proof-backed rollout proposal is ready, but reject broad rollout until Hao approval; rollback is Git revert.",
+        "conditionIds": [
+          "hao-subscriber-metric-02a9bb15-decision"
+        ]
+      },
+      "retainedFrontierEntry": {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "repair-subscriber-failure-metric-contract-20260820",
+          "generation": 2,
+          "phase": "waiting",
+          "owner": "may",
+          "conditionIds": [
+            "hao-subscriber-metric-02a9bb15-decision"
+          ]
+        },
+        "outcome": "Isolate, review, and carry to terminal proof the canonical `infra.bus.subscriber-failed-count-1h` contract: retain the system-wide rolling-hour population of every durable `subscriber.failed` event, restore explicit accountable owner `may` and null project attribution for existing as well as new metric rows, and ensure emitted breach/recovery facts route to the May platform owner without suppressing or falsely attributing any failure family.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      "outcomeFulfilled": false,
+      "recommendedDisposition": "needs-current-alex-technical-continuation-with-retained-may-human-boundary",
+      "replacement": null,
+      "requirementsChanged": false,
+      "acceptedEvidenceInterpretation": "resource_json.status.evidence is preserved verbatim as historical accepted evidence, not newly verified live fact. Current source does not implement the old existing-row owner/project restoration.",
+      "caller": {
+        "creator": {
+          "appId": "may"
+        },
+        "owner": "may",
+        "parentId": "reconcile-subscriber-failure-metric-scope-20260820",
+        "returnRequirement": "Retain child-to-parent terminal evidence and parent-to-May platform-owner accountability; migration must not drop human reply or exact decision wait."
+      },
+      "conditions": [
+        {
+          "retainedRow": {
+            "app_id": "may-agent",
+            "condition_id": "hao-subscriber-metric-02a9bb15-decision",
+            "state": "unknown",
+            "condition_json": "{\"metadata\":{\"generation\":1,\"id\":\"hao-subscriber-metric-02a9bb15-decision\",\"resourceVersion\":1},\"spec\":{\"expected\":{\"allowedDecisions\":[\"approve\",\"reject\",\"hold\"],\"candidateCommit\":\"02a9bb155cfaec9509a712dfdf35f809537fcdbf\",\"taskId\":\"repair-subscriber-failure-metric-contract-20260820\"},\"owner\":\"may\",\"reviewAfterMs\":86400000,\"subject\":\"task:repair-subscriber-failure-metric-contract-20260820\",\"type\":\"project.owner-decision.recorded\"},\"status\":{\"observedAt\":\"2026-08-21T01:44:39.583Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}"
+          },
+          "parsedCondition": {
+            "metadata": {
+              "generation": 1,
+              "id": "hao-subscriber-metric-02a9bb15-decision",
+              "resourceVersion": 1
+            },
+            "spec": {
+              "expected": {
+                "allowedDecisions": [
+                  "approve",
+                  "reject",
+                  "hold"
+                ],
+                "candidateCommit": "02a9bb155cfaec9509a712dfdf35f809537fcdbf",
+                "taskId": "repair-subscriber-failure-metric-contract-20260820"
+              },
+              "owner": "may",
+              "reviewAfterMs": 86400000,
+              "subject": "task:repair-subscriber-failure-metric-contract-20260820",
+              "type": "project.owner-decision.recorded"
+            },
+            "status": {
+              "observedAt": "2026-08-21T01:44:39.583Z",
+              "observedGeneration": 0,
+              "state": "unknown"
+            }
+          },
+          "currentState": "Not re-read live; unknown in retained snapshot. Neither satisfied nor withdrawn by this report."
+        }
+      ],
+      "remainingWork": [
+        "Reconcile current App-owned policy with the explicit historical owner may/project NULL contract; do not silently change acceptance to Alex ownership.",
+        "Prepare and review only the smallest current source/definition restoration and regression work if required after authoritative metric-row read. Preserve unrelated calibration and every genuine subscriber.failed event.",
+        "Recover exact approval/hold/reject and manifest evidence through May; never treat the August candidate as approved, activated, or reusable without current compatibility review.",
+        "If authorized, prove supported activation, requested=loaded identity, health/rollback, fresh authentic measurement and actual accountable consumer. Return evidence to the exact parent."
+      ]
+    }
+  ],
+  "relationships": {
+    "retainedRelations": [
+      {
+        "snapshotApp": "may-agent",
+        "app_id": "may-agent",
+        "source_task_id": "repair-subscriber-failure-metric-contract-20260820",
+        "relation_kind": "parent",
+        "target_task_id": "reconcile-subscriber-failure-metric-scope-20260820"
+      },
+      {
+        "snapshotApp": "may-agent",
+        "app_id": "may-agent",
+        "source_task_id": "reconcile-subscriber-failure-metric-scope-20260820",
+        "relation_kind": "parent",
+        "target_task_id": "runtime/platform-owner-review"
+      }
+    ],
+    "matchingPendingInputs": [],
+    "matchingAdmissions": [],
+    "matchingActiveAppConditions": [],
+    "coverage": "All snapshot apps searched in pendingInputs, admissions, relations, conditions plus activeAppConditions. Only the two parent relations and exact child Condition match. Empty arrays mean no match in this snapshot, not no historical caller or human request.",
+    "rootCauseReferencesOnly": [
+      "repair-may-specialist-implementation-owner-routing-20260820",
+      "repair-gym-review-lifecycle-pair-correlation-20260820",
+      "reconcile-task-result-delivery-taxonomy-20260819"
+    ],
+    "noDispositionOfRelatedRows": true
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "finding": "Current global query retains every durable subscriber.failed in the rolling hour, without project or payload filtering.",
+      "evidence": "projects/may-agent/src/app/metric-source-measurement.ts:16-20",
+      "consequence": "Scope implementation is already present; do not replace it with filtered query or hide malformed/unrelated-project failures."
+    },
+    {
+      "id": "F2",
+      "finding": "Existing-row restoration updates only source/query/interval/description; it does not set owner may or project NULL. Fresh definition does set owner may. The current regression explicitly expects stale owner tech-lead to survive.",
+      "evidence": "projects/may-agent/src/app/metric-source-measurement.ts:289-330; metric-source-measurement.test.ts:119-143",
+      "consequence": "Concrete source divergence from old child acceptance, not proof the live row is wrong. Current policy says preserve App calibration; first decide the owning declaration/restoration boundary rather than blindly replaying old patch."
+    },
+    {
+      "id": "F3",
+      "finding": "Metric events use resolved owner and row.project. Attribution is not delivery acceptance. May subscriptions cover specific Evaluation metrics, not a generic subscriber-failure inbox. Alex has conditional automatic metric review and report intake; this is not proof of a delivered May consumer.",
+      "evidence": "projects/may-agent/src/lib/metrics.ts:249-257,369-374,495-533; projects/may.app/app.ts:302-319,444-485; projects/alex.app/app.ts:115-153,184-197,355-381; projects/alex.app/agents/evaluator/workflows/task-outcome-selector.ts:447-451; projects/alex.app/docs/2a-design/metrics.md:505-529",
+      "consequence": "Alex continuation must trace actual route through current protocols; correcting owner alone cannot fulfill end-to-end May routing. Do not add per-sample tasks or generic owner fallback."
+    },
+    {
+      "id": "F4",
+      "finding": "Old exact candidate is present in Git but is not an ancestor of inspected Host HEAD. Its two-file diff adds owner may/project NULL restoration and synthetic population controls.",
+      "evidence": "git show 02a9bb155cfaec9509a712dfdf35f809537fcdbf; merge-base --is-ancestor returned 1; exact candidate test lines 59-135 insert synthetic payloads under representative event IDs.",
+      "consequence": "Reuse as historical design/regression evidence, not proof of integration, activation, authentic frozen event replay or alert 4888 coverage."
+    },
+    {
+      "id": "F5",
+      "finding": "No fresh runtime metric row, authentic measurement, live route, approval decision or activation receipt was read in this bounded pass. Snapshot Condition is unknown. Exact manifest path is unavailable.",
+      "evidence": "Retained source rows; ls /app/.state/owner-review-artifacts/freeze-subscriber-metric-activation-rollback-manifest-20260821 failed with No such file or directory.",
+      "consequence": "No fulfillment, approval, unchanged-production-now or obsolescence claim is justified. May/Hao boundary remains."
+    }
+  ],
+  "candidateEvidence": {
+    "baseCommit": "5a601758cf8c86bc37401f6e19106d580dec17a6",
+    "baseTree": "b5e7caf3360b75ce101dc8081d533f2713fe91e6",
+    "candidateCommit": "02a9bb155cfaec9509a712dfdf35f809537fcdbf",
+    "candidateTree": "07a3d899d3f9f8ebad3fb68f958e7cb888d3123b",
+    "rollbackCommit": "68dc607e451a3083b9f136906260e4a67856164f",
+    "rollbackTree": "b5e7caf3360b75ce101dc8081d533f2713fe91e6",
+    "computedBaseToCandidateDiffSha256": "938cf504d3924655bb2543bdbf144145894dd72fc8c9b5dfef98f63f5bd50090",
+    "historicallyReportedPatchSha256": "de1dc4a1ed4d2a0be75b256633e828029df709f070b15bc61b50f0143af1e1f3",
+    "patchHashCaveat": "Recomputed git diff bytes hash differs from retained patch hash; original patch bytes/serialization unavailable. Do not equate these hashes or declare tampering. Commit/tree identities match retained evidence.",
+    "historicalManifest": {
+      "path": ".state/owner-review-artifacts/freeze-subscriber-metric-activation-rollback-manifest-20260821/ACTIVATION_ROLLBACK_MANIFEST.md",
+      "reportedSha256": "ce17b1c93bdbf22b9225f30897813eeddd36bcb4076fc71e082397afeca50ec5",
+      "verifiedNow": false
+    },
+    "historicalTestClaim": "20/20 focused tests and typecheck are retained accepted claims, not rerun or independently revalidated here.",
+    "currentCandidate": null,
+    "implementationDiff": "No implementation edits made."
+  },
+  "checks": [
+    {
+      "command": "cd /app/projects/may-agent && bun test src/app/metric-source-measurement.test.ts -t 'subscriber failure source|rolling subscriber failure'",
+      "exitCode": 0,
+      "output": "bun test v1.3.14 (0d9b296a)\n(pass) preserves live alert calibration while restoring the subscriber failure source\n(pass) persists, measures, and alerts on the rolling subscriber failure source without hiding malformed targets\n2 pass; 22 filtered out; 0 fail; 5 expect() calls; 1 file; 690ms",
+      "coverage": "Temporary DB synthetic fixtures only. Confirms current restoration preserves stale owner; not old contract acceptance. No full CI/typecheck/live tests run."
+    },
+    {
+      "command": "sha256sum working and supplied installed-definition projects/may.app/app.ts and projects/alex.app/app.ts",
+      "result": "Both pairs byte-identical; May ad33572ab5a9c5ca768ef3e4779443d6bfe2349f0bcbd61cd3820c30ff1acd8d, Alex 6209a127c0d68f8079e755a9df6e100e05b4325afd459fb6510a7f2e494a43bf",
+      "coverage": "Definition files in supplied faa65d8b77883f7af4d39af9e7c085af17e332e7-definitions-v4 root; not loaded Host identity or environment flag proof."
+    }
+  ],
+  "recommendationForAlex": {
+    "technical": "Retain one bounded current reconciliation/repair continuation for both identities. First inspect current metric definition, samples, alert episode and actual route with authorized read capabilities; compare against preserved requirements. Repair only demonstrated contract gaps after locating App/Host definition authority. Existing source already preserves population; do not recommission root causes.",
+    "approval": "Keep hao-subscriber-metric-02a9bb15-decision under May/Hao authority for exact historical candidate. Ask May through the existing caller path to reconcile its actual decision/evidence before any activation. A new candidate needs its own exact approval; old approval cannot be rebound silently.",
+    "historicalDisposition": "No withdrawal proposed on current evidence. If May determines old activation proposal is obsolete, withdraw that proposal unfulfilled with explanation while retaining the useful technical obligation and parent relationship. Neither source retirement nor successful local tests fulfill the old outcomes.",
+    "stopCondition": "Converge only when scoped source/metadata/population controls and authorized live measurement/consumer evidence meet requirements, or creator explicitly changes/withdraws requirements with exact preserved reason.",
+    "smallestAlternative": "If authoritative current reads establish correct metadata and an accepted current route, no patch: retain verified evidence and ask creator to judge residual historical proof/approval disposition.",
+    "costAndRisk": "Bounded read-first reconciliation plus focused metadata/population/routing fixtures; no new metric or queue. Blind startup overwrite risks overriding current App-owned policy; metadata-only repair risks leaving consumer routing unproved; historical candidate replay risks obsolete artifact activation."
+  },
+  "limitations": [
+    "No query_db capability supplied; no production DB was opened from bash and no direct DB state was read. Runtime metric value/owner/project and loaded Host identity remain unverified.",
+    "Snapshot is a retained frontier, not a complete history or live Task read. No current Task/Condition state was queried or changed.",
+    "The seven candidate IDs are used in synthetic test data; raw baseline events and exact alert 4888 population were not recovered. Passing synthetic four-event fixture does not establish that exact four-event cohort.",
+    "Manifest unavailable at exact path; broad filename discovery also encountered unrelated permission-denied directories and is not proof of global absence.",
+    "Historical 20-test/typecheck, owner review and production-unchanged evidence remain accepted historical claims only. No approval or activation absence inferred from lack of a retrieved receipt.",
+    "No independent current continuation inventory was performed; Alex must check exact matching live work before admitting or updating a continuation.",
+    "Source code is current checked-out Host revision, not a loaded-runtime receipt. App definition file hashes match supplied release but runtime automatic-review flag and actual accepted delivery remain unknown."
+  ]
+}

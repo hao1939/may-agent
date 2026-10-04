@@ -1,0 +1,65 @@
+{
+  "kind": "alex-final-six-may-creator-dispositions",
+  "version": 1,
+  "recordedAt": "2026-10-04T16:02:03.022Z",
+  "caller": {
+    "appId": "alex",
+    "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452"
+  },
+  "source": {
+    "artifact": "projects/alex.app/remaining-seven-reconciliation-2026-10-04.json",
+    "sha256": "724176cc12c28246ea07f680aead0fd0a94fc5918f2b5fae11d22e02210851d3",
+    "mayTaskId": "goal/appdep_f8259919c2fd5d38a366e230",
+    "mayRequestId": "appdep_f8259919c2fd5d38a366e230",
+    "eventId": 6646998
+  },
+  "summary": "May returned six separate creator/caller dispositions. All six legacy outcomes remain unfulfilled; five obsolete promises are withdrawn, while provider fallback retains only the already-existing current authority path.",
+  "effects": {
+    "historicalOutcomesFulfilled": 0,
+    "withdrawnUnfulfilled": 6,
+    "newTasksOrRequests": 0,
+    "conditionMutations": 0,
+    "technicalReplay": false,
+    "productionMutation": false,
+    "providerCanary": false,
+    "credentialInspectionOrMutation": false
+  },
+  "dispositions": [
+    {
+      "identity": "may-agent/app-request/appdep_168e5c676b765172deaf1dcc@g1",
+      "decision": "withdrawn-unfulfilled-obsolete-execution-promise",
+      "condition": "approval-may-agent-handler-race-repair-deploy-50e4cc0d remains unknown historical evidence",
+      "callerAction": "No current caller action; do not resurrect aks-explorer g996, activate 50e4cc0d, or redeploy."
+    },
+    {
+      "identity": "may-agent/app-request/appdep_5c5f2e0a694278198136a42d@g1",
+      "decision": "withdrawn-unfulfilled-obsolete-evaluator-release-promise",
+      "condition": "evaluation-envelope-repair-f493c9e5325b-host-recreate remains related-only unknown historical evidence",
+      "callerAction": "No current caller action; do not republish, recreate, replay s_1786869386645_0, or use a later failed correlation as success."
+    },
+    {
+      "identity": "may-agent/app-request/appreq_526ff3c62357a47caecdd980@g2",
+      "decision": "withdrawn-unfulfilled-obsolete-global-cleanup-promise",
+      "condition": "resume-grouped-goal-repair-after-stop remains related-only unknown historical evidence",
+      "callerAction": "Do not create another global cleanup controller; existing scoped Alex, May and Gym identities remain authoritative."
+    },
+    {
+      "identity": "may-agent/evaluate-telegram-admission-bounded-lookup-20260820@g2",
+      "decision": "withdrawn-unfulfilled-obsolete-frozen-experiment",
+      "condition": "No direct or related Condition",
+      "callerAction": "No new experiment, comparison or rollout is commissioned."
+    },
+    {
+      "identity": "may-agent/provider-auth-fallback-hardening-20260810@g2",
+      "decision": "legacy-promise-withdrawn-unfulfilled-current-authority-path-preserved",
+      "condition": "wait:may-agent:supervisor-model-credential-restore:20260810:g1 remains unknown; current May authority Task is preserved",
+      "callerAction": "Use only existing May goal/appdep_5f8a7c0e566e08fc95051414 for any surviving provider prerequisite; no canary or credential inspection absent returned authority."
+    },
+    {
+      "identity": "may-agent/repair-platform-review-terminal-contract-after-unrunnable-owner-20260818@g2",
+      "decision": "withdrawn-unfulfilled-obsolete-supervision-contract",
+      "condition": "existing-unhandled-signal-recovery-terminal remains unknown historical evidence",
+      "callerAction": "No current Hao decision or technical revival; preserve the historical caller chain only."
+    }
+  ]
+}

@@ -1,0 +1,551 @@
+{
+  "kind": "provider-archive-recovery-reconciliation",
+  "date": "2026-10-04",
+  "reviewer": "bob",
+  "sessionId": "s_1791123035391_4c620adf-4c58-4d15-83ba-9464324fb931",
+  "scope": {
+    "appId": "may-agent",
+    "taskIds": [
+      "app-request/appdep_a5c132567ef83b8cd4caacf6",
+      "app-request/appreq_a0b947fae8716ee0928e6c2d"
+    ],
+    "migrationOwner": {
+      "appId": "alex",
+      "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452"
+    },
+    "baseCommit": "e698e9d996730a56b3fee6f64a8e86be0e53cd6e",
+    "authority": "Bounded read-only reconciliation, artifact/frontier/receipt edits and owned commit only. No provider contact, disk inspection/recovery, DB access, legacy-state mutation, request admission or final migration disposition."
+  },
+  "source": {
+    "path": "/app/.state/alex-migration-20261004/legacy-frontier-snapshot.json",
+    "sha256": "bd3f6a1cc65e125c61f5a8380cba746d55e3d8143edc6f8d6825af286d5d7f97",
+    "capturedAt": "2026-10-04T12:13:38.821491+00:00",
+    "coverage": "Exact two Task rows, one semantically related Condition, two direct parent relations. No matching pendingInputs or admissions in retained snapshot. The snapshot contains no May Task inventory or original provider receipts."
+  },
+  "retainedTasks": [
+    {
+      "app_id": "may-agent",
+      "task_id": "app-request/appdep_a5c132567ef83b8cd4caacf6",
+      "generation": 1,
+      "resource_version": 15,
+      "phase": "attention",
+      "updated_at": 1787929274708,
+      "resource_json": {
+        "metadata": {
+          "creator": {
+            "appId": "may"
+          },
+          "generation": 1,
+          "id": "app-request/appdep_a5c132567ef83b8cd4caacf6",
+          "resourceVersion": 15
+        },
+        "spec": {
+          "acceptance": [
+            "Quiesce writes only with proper Host/provider authority; never replace, rebuild, or mutate the production database or production volume.",
+            "Take or use a provider snapshot/clone of the underlying `/dev/sdd` volume, attach only the clone read-only to an isolated recovery host, and inspect provider-managed backup/object-store retention unavailable to the App runtime.",
+            "Return `original-230.tar` only if it is exactly 18,769,920 bytes with SHA-256 `1016eded02ab156095040f4054e34d957d7e567a71743f4c4160a8e48644d9ca`, together with matching `manifest.before.tsv` and `paths.txt` containing exactly 230 allowed compact staging paths.",
+            "If exact recovery is impossible, return a durable explicit terminal adjudication naming the provider layers checked and confirming that reconstruction from Git is not acceptable."
+          ],
+          "input": {
+            "data": {
+              "acceptance": [
+                "Quiesce writes only with proper Host/provider authority; never replace, rebuild, or mutate the production database or production volume.",
+                "Take or use a provider snapshot/clone of the underlying `/dev/sdd` volume, attach only the clone read-only to an isolated recovery host, and inspect provider-managed backup/object-store retention unavailable to the App runtime.",
+                "Return `original-230.tar` only if it is exactly 18,769,920 bytes with SHA-256 `1016eded02ab156095040f4054e34d957d7e567a71743f4c4160a8e48644d9ca`, together with matching `manifest.before.tsv` and `paths.txt` containing exactly 230 allowed compact staging paths.",
+                "If exact recovery is impossible, return a durable explicit terminal adjudication naming the provider layers checked and confirming that reconstruction from Git is not acceptable."
+              ],
+              "constraints": [
+                "Do not run recovery against the live read-write volume.",
+                "Do not replace or rebuild production storage.",
+                "Do not fabricate or regenerate the preservation set from Git or current compact files."
+              ],
+              "evidence": [
+                "/app/projects/aks-rp-e2e.app/artifacts/recovery/compact-preservation-set-20260825/host-retention-exhaustion-receipt.json",
+                "/app/projects/aks-rp-e2e.app/artifacts/recovery/compact-preservation-set-20260825/recovery-escalation.json",
+                "Expected archive SHA-256: 1016eded02ab156095040f4054e34d957d7e567a71743f4c4160a8e48644d9ca"
+              ],
+              "outcome": "Coordinate the exact infrastructure/provider-bound recovery attempt for the missing original 230-file compact preservation set, or return an explicit terminal adjudication proving that no safe retained source remains."
+            },
+            "kind": "runtime-capability-request"
+          },
+          "mode": "achieve",
+          "outcome": "Coordinate the exact infrastructure/provider-bound recovery attempt for the missing original 230-file compact preservation set, or return an explicit terminal adjudication proving that no safe retained source remains.",
+          "owner": "may",
+          "parentId": "platform-system-review-feedback-loop",
+          "priority": "P1"
+        },
+        "status": {
+          "conditionIds": [],
+          "evidence": [
+            "`host-retention-exhaustion-receipt.json` records zero valid candidates across current/pruned sessions, event bodies, workflow and worker retention, the Host DB backup, local artifact/object-store candidates, filesystem backup roots, snapshots/alternate mounts, and prior local investigation.",
+            "`recovery-escalation.json` assigns the remaining work to an infrastructure/provider operator with volume snapshot access and defines the exact recovered and non-recoverable outcomes.",
+            "A bounded directory inventory on 2026-08-27 found only the two 2026-08-25 receipts; no provider recovery or terminal adjudication receipt has been added.",
+            "Checkpoint #1 preserves the exact task, condition, evidence paths, and next step."
+          ],
+          "observedAttemptId": "r_1_fb423f05-c2c7-4840-ab1f-774b3e36a643",
+          "observedGeneration": 1,
+          "phase": "attention",
+          "result": {
+            "decision": "external-provider-recovery-required",
+            "expectedArchive": {
+              "allowedPaths": "features/*/compact/staging.{plan.json,diagnostics.json,summary.md}",
+              "bytes": 18769920,
+              "name": "original-230.tar",
+              "requiredCompanions": [
+                "manifest.before.tsv",
+                "paths.txt"
+              ],
+              "requiredPathCount": 230,
+              "sha256": "1016eded02ab156095040f4054e34d957d7e567a71743f4c4160a8e48644d9ca"
+            },
+            "recovered": false,
+            "safetyBoundary": "Do not recover against the live read-write volume, replace or rebuild production storage, mutate the production database or volume, or reconstruct the preservation set from Git or current compact files."
+          },
+          "summary": "Resolved agent may is not a runnable agent",
+          "updatedAt": "2026-08-28T15:01:14.708Z"
+        }
+      },
+      "trigger_json": null
+    },
+    {
+      "app_id": "may-agent",
+      "task_id": "app-request/appreq_a0b947fae8716ee0928e6c2d",
+      "generation": 1,
+      "resource_version": 2,
+      "phase": "pending",
+      "updated_at": 1788156702433,
+      "resource_json": {
+        "metadata": {
+          "creator": {
+            "appId": "may"
+          },
+          "generation": 1,
+          "id": "app-request/appreq_a0b947fae8716ee0928e6c2d",
+          "resourceVersion": 2
+        },
+        "spec": {
+          "acceptance": [
+            "Return one terminal provider adjudication: successful verified recovery, or durable evidence that provider recovery is impossible.",
+            "For successful recovery, produce `original-230.tar` with exact size 18,769,920 bytes and SHA-256 `1016eded02ab156095040f4054e34d957d7e567a71743f4c4160a8e48644d9ca`.",
+            "Verify recovered content matches `manifest.before.tsv` and `paths.txt` with exactly 230 scoped paths.",
+            "Verify tar members are limited to `features/*/compact/staging.{plan.json,diagnostics.json,summary.md}`.",
+            "Prove no recovery operation touched the live read-write volume and production storage was not replaced.",
+            "If recovery is impossible, preserve durable provider evidence explaining the limiting fact and why no approved read-only clone recovery path remains."
+          ],
+          "input": {
+            "data": {
+              "acceptance": [
+                "Return one terminal provider adjudication: successful verified recovery, or durable evidence that provider recovery is impossible.",
+                "For successful recovery, produce `original-230.tar` with exact size 18,769,920 bytes and SHA-256 `1016eded02ab156095040f4054e34d957d7e567a71743f4c4160a8e48644d9ca`.",
+                "Verify recovered content matches `manifest.before.tsv` and `paths.txt` with exactly 230 scoped paths.",
+                "Verify tar members are limited to `features/*/compact/staging.{plan.json,diagnostics.json,summary.md}`.",
+                "Prove no recovery operation touched the live read-write volume and production storage was not replaced.",
+                "If recovery is impossible, preserve durable provider evidence explaining the limiting fact and why no approved read-only clone recovery path remains."
+              ],
+              "constraints": [
+                "Do not operate on the live read-write volume.",
+                "Do not replace or rebuild production storage.",
+                "Quiesce writes before snapshot or clone creation; attach only the clone read-only to an isolated recovery host; run ext4 deleted-file recovery only on that clone.",
+                "Do not reconstruct files from Git or current compact artifacts.",
+                "Respect provider credential, infrastructure authority, and irreversible-action approval boundaries."
+              ],
+              "evidence": [
+                "Host dependency `appdep_a5c132567ef83b8cd4caacf6` completed with `external-provider-recovery-required` and `recovered:false`.",
+                "Retention-exhaustion receipt: `/app/projects/may-agent.app/artifacts/recovery/compact-preservation-set-20260825/host-retention-exhaustion-receipt.json`.",
+                "Canonical cleanup is complete, the checkout is clean, and unpublished-change-count is 0.",
+                "The required archive identity is `original-230.tar`, 18,769,920 bytes, SHA-256 `1016eded02ab156095040f4054e34d957d7e567a71743f4c4160a8e48644d9ca` with exactly 230 scoped paths."
+              ],
+              "outcome": "Obtain and durably record an infrastructure/provider decision for the missing original 230-file preservation archive: either coordinate safe offline recovery from a read-only clone of `/dev/sdd`, or provide terminal provider evidence that recovery is impossible."
+            },
+            "kind": "runtime-capability-request"
+          },
+          "mode": "achieve",
+          "outcome": "Obtain and durably record an infrastructure/provider decision for the missing original 230-file preservation archive: either coordinate safe offline recovery from a read-only clone of `/dev/sdd`, or provide terminal provider evidence that recovery is impossible.",
+          "owner": "tech-lead",
+          "parentId": "platform-system-review-feedback-loop",
+          "priority": "P1"
+        },
+        "status": {
+          "observedGeneration": 0,
+          "phase": "pending",
+          "updatedAt": "2026-08-31T06:11:42.433Z"
+        }
+      },
+      "trigger_json": {
+        "event": {
+          "data": {
+            "appId": "may-agent",
+            "idempotencyKey": "conversation-follow-up:may:appdep_665d1b91d118069c0c20f65c",
+            "project": "may-agent",
+            "request": {
+              "id": "appreq_a0b947fae8716ee0928e6c2d",
+              "input": {
+                "data": {
+                  "acceptance": [
+                    "Return one terminal provider adjudication: successful verified recovery, or durable evidence that provider recovery is impossible.",
+                    "For successful recovery, produce `original-230.tar` with exact size 18,769,920 bytes and SHA-256 `1016eded02ab156095040f4054e34d957d7e567a71743f4c4160a8e48644d9ca`.",
+                    "Verify recovered content matches `manifest.before.tsv` and `paths.txt` with exactly 230 scoped paths.",
+                    "Verify tar members are limited to `features/*/compact/staging.{plan.json,diagnostics.json,summary.md}`.",
+                    "Prove no recovery operation touched the live read-write volume and production storage was not replaced.",
+                    "If recovery is impossible, preserve durable provider evidence explaining the limiting fact and why no approved read-only clone recovery path remains."
+                  ],
+                  "constraints": [
+                    "Do not operate on the live read-write volume.",
+                    "Do not replace or rebuild production storage.",
+                    "Quiesce writes before snapshot or clone creation; attach only the clone read-only to an isolated recovery host; run ext4 deleted-file recovery only on that clone.",
+                    "Do not reconstruct files from Git or current compact artifacts.",
+                    "Respect provider credential, infrastructure authority, and irreversible-action approval boundaries."
+                  ],
+                  "evidence": [
+                    "Host dependency `appdep_a5c132567ef83b8cd4caacf6` completed with `external-provider-recovery-required` and `recovered:false`.",
+                    "Retention-exhaustion receipt: `/app/projects/may-agent.app/artifacts/recovery/compact-preservation-set-20260825/host-retention-exhaustion-receipt.json`.",
+                    "Canonical cleanup is complete, the checkout is clean, and unpublished-change-count is 0.",
+                    "The required archive identity is `original-230.tar`, 18,769,920 bytes, SHA-256 `1016eded02ab156095040f4054e34d957d7e567a71743f4c4160a8e48644d9ca` with exactly 230 scoped paths."
+                  ],
+                  "outcome": "Obtain and durably record an infrastructure/provider decision for the missing original 230-file preservation archive: either coordinate safe offline recovery from a read-only clone of `/dev/sdd`, or provide terminal provider evidence that recovery is impossible."
+                },
+                "kind": "runtime-capability-request"
+              },
+              "source": {
+                "id": "may",
+                "kind": "app"
+              }
+            },
+            "taskId": "app-request/appreq_a0b947fae8716ee0928e6c2d"
+          },
+          "idempotencyKey": "conversation-follow-up:may:appdep_665d1b91d118069c0c20f65c",
+          "owner": "agent:tech-lead",
+          "source": "app-inbox:may-agent",
+          "target": {
+            "project": "may-agent",
+            "taskId": "app-request/appreq_a0b947fae8716ee0928e6c2d"
+          },
+          "type": "app.task.requested"
+        },
+        "events": [
+          {
+            "event": {
+              "data": {
+                "appId": "may-agent",
+                "idempotencyKey": "conversation-follow-up:may:appdep_665d1b91d118069c0c20f65c",
+                "project": "may-agent",
+                "request": {
+                  "id": "appreq_a0b947fae8716ee0928e6c2d",
+                  "input": {
+                    "data": {
+                      "acceptance": [
+                        "Return one terminal provider adjudication: successful verified recovery, or durable evidence that provider recovery is impossible.",
+                        "For successful recovery, produce `original-230.tar` with exact size 18,769,920 bytes and SHA-256 `1016eded02ab156095040f4054e34d957d7e567a71743f4c4160a8e48644d9ca`.",
+                        "Verify recovered content matches `manifest.before.tsv` and `paths.txt` with exactly 230 scoped paths.",
+                        "Verify tar members are limited to `features/*/compact/staging.{plan.json,diagnostics.json,summary.md}`.",
+                        "Prove no recovery operation touched the live read-write volume and production storage was not replaced.",
+                        "If recovery is impossible, preserve durable provider evidence explaining the limiting fact and why no approved read-only clone recovery path remains."
+                      ],
+                      "constraints": [
+                        "Do not operate on the live read-write volume.",
+                        "Do not replace or rebuild production storage.",
+                        "Quiesce writes before snapshot or clone creation; attach only the clone read-only to an isolated recovery host; run ext4 deleted-file recovery only on that clone.",
+                        "Do not reconstruct files from Git or current compact artifacts.",
+                        "Respect provider credential, infrastructure authority, and irreversible-action approval boundaries."
+                      ],
+                      "evidence": [
+                        "Host dependency `appdep_a5c132567ef83b8cd4caacf6` completed with `external-provider-recovery-required` and `recovered:false`.",
+                        "Retention-exhaustion receipt: `/app/projects/may-agent.app/artifacts/recovery/compact-preservation-set-20260825/host-retention-exhaustion-receipt.json`.",
+                        "Canonical cleanup is complete, the checkout is clean, and unpublished-change-count is 0.",
+                        "The required archive identity is `original-230.tar`, 18,769,920 bytes, SHA-256 `1016eded02ab156095040f4054e34d957d7e567a71743f4c4160a8e48644d9ca` with exactly 230 scoped paths."
+                      ],
+                      "outcome": "Obtain and durably record an infrastructure/provider decision for the missing original 230-file preservation archive: either coordinate safe offline recovery from a read-only clone of `/dev/sdd`, or provide terminal provider evidence that recovery is impossible."
+                    },
+                    "kind": "runtime-capability-request"
+                  },
+                  "source": {
+                    "id": "may",
+                    "kind": "app"
+                  }
+                },
+                "taskId": "app-request/appreq_a0b947fae8716ee0928e6c2d"
+              },
+              "idempotencyKey": "conversation-follow-up:may:appdep_665d1b91d118069c0c20f65c",
+              "owner": "agent:tech-lead",
+              "source": "app-inbox:may-agent",
+              "target": {
+                "project": "may-agent",
+                "taskId": "app-request/appreq_a0b947fae8716ee0928e6c2d"
+              },
+              "type": "app.task.requested"
+            },
+            "observedAt": "2026-08-31T06:11:42.433Z"
+          }
+        ],
+        "observedAt": "2026-08-31T06:11:42.433Z",
+        "resourceVersion": 1,
+        "taskGeneration": 1,
+        "taskId": "app-request/appreq_a0b947fae8716ee0928e6c2d"
+      }
+    }
+  ],
+  "retainedConditions": [
+    {
+      "app_id": "may-agent",
+      "condition_id": "provider-recovery-original-230-20260825",
+      "state": "unknown",
+      "condition_json": "{\"metadata\":{\"generation\":2,\"id\":\"provider-recovery-original-230-20260825\",\"resourceVersion\":4},\"spec\":{\"expected\":{\"authorizedOperatorAndTimestamp\":true,\"cloneAttachedReadOnlyToIsolatedRecoveryHost\":true,\"deletedFileRecoveryRunOnlyAgainstClone\":true,\"productionVolumeIdentifiedAsUnderlyingDevSdd\":true,\"productionVolumeReplacedOrMutated\":false,\"providerLayersChecked\":[\"volume snapshot and clone retention\",\"provider-managed backup retention\",\"provider-managed object, blob, or artifact-store retention\"],\"receiptRequired\":true,\"snapshotOrCloneCreated\":true,\"terminalOutcomeOneOf\":[{\"archive\":{\"bytes\":18769920,\"name\":\"original-230.tar\",\"sha256\":\"1016eded02ab156095040f4054e34d957d7e567a71743f4c4160a8e48644d9ca\"},\"companions\":[\"manifest.before.tsv\",\"paths.txt\"],\"membersLimitedTo\":\"features/*/compact/staging.{plan.json,diagnostics.json,summary.md}\",\"pathsRows\":230,\"status\":\"recovered\"},{\"allProviderLayersNamedWithResults\":true,\"gitOrCurrentFileReconstructionRejected\":true,\"noSafeRetainedSourceConfirmed\":true,\"status\":\"not-recoverable\"}],\"writesQuiescedOnlyUnderHostOrProviderAuthority\":true},\"owner\":\"authorized infrastructure/provider operator\",\"requestedAction\":\"Using proper Host/provider authority, quiesce writes only as required to snapshot or clone the volume underlying `/dev/sdd`; do not replace or mutate production. Attach only the clone read-only to an isolated recovery host, run ext4 deleted-file recovery only against that clone, and inspect provider-managed snapshot, backup, and object/blob/artifact-store retention. Return a dated receipt with the exact terminal outcome and verification evidence.\",\"reviewAfterMs\":86400000,\"subject\":\"provider-recovery:original-230-compact-preservation-set\",\"type\":\"human-action\"},\"status\":{\"createdAt\":\"2026-08-26T08:32:20.960Z\",\"observedAt\":\"2026-08-27T10:58:37.962Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}"
+    }
+  ],
+  "retainedRelations": [
+    {
+      "app_id": "may-agent",
+      "source_task_id": "app-request/appdep_a5c132567ef83b8cd4caacf6",
+      "relation_kind": "parent",
+      "target_task_id": "platform-system-review-feedback-loop"
+    },
+    {
+      "app_id": "may-agent",
+      "source_task_id": "app-request/appreq_a0b947fae8716ee0928e6c2d",
+      "relation_kind": "parent",
+      "target_task_id": "platform-system-review-feedback-loop"
+    }
+  ],
+  "originalFrontierEntries": [
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_a5c132567ef83b8cd4caacf6",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "outcome": "Coordinate the exact infrastructure/provider-bound recovery attempt for the missing original 230-file compact preservation set, or return an explicit terminal adjudication proving that no safe retained source remains.",
+      "disposition": "retain-may-boundary-after-alex-technical-reconciliation",
+      "proposedOwner": "may",
+      "lineage": "provider-archive-recovery",
+      "replacement": null,
+      "basis": "Exact 230-file archive recovery requires a May/provider decision and is not workspace-writer containment. Alex may reconcile technical evidence, but source retirement and migration do not fulfill or authorize this obligation.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appreq_a0b947fae8716ee0928e6c2d",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "outcome": "Obtain and durably record an infrastructure/provider decision for the missing original 230-file preservation archive: either coordinate safe offline recovery from a read-only clone of `/dev/sdd`, or provide terminal provider evidence that recovery is impossible.",
+      "disposition": "retain-may-boundary-after-alex-technical-reconciliation",
+      "proposedOwner": "may",
+      "lineage": "provider-archive-recovery",
+      "replacement": null,
+      "basis": "Exact 230-file archive recovery requires a May/provider decision and is not workspace-writer containment. Alex may reconcile technical evidence, but source retirement and migration do not fulfill or authorize this obligation.",
+      "preservation": [
+        "latest corrections and acceptance",
+        "accepted evidence/artifacts",
+        "remaining work",
+        "caller/human reply relationship",
+        "exact live Conditions"
+      ]
+    }
+  ],
+  "relationships": {
+    "creator": {
+      "appId": "may"
+    },
+    "parent": {
+      "appId": "may-agent",
+      "taskId": "platform-system-review-feedback-loop",
+      "coverage": "Both exact parent edges are retained; parent resource is absent from the 117 nonconverged snapshot, so its current phase/outcome is not inferred."
+    },
+    "firstTask": {
+      "owner": "may",
+      "conditionIds": [],
+      "trigger": null,
+      "observedAttemptId": "r_1_fb423f05-c2c7-4840-ab1f-774b3e36a643",
+      "historicalResult": "external-provider-recovery-required; recovered:false",
+      "limitation": "A returned result is not recovery or terminal provider impossibility; phase attention and non-runnable owner error are execution evidence, not fulfillment."
+    },
+    "secondTask": {
+      "owner": "tech-lead",
+      "observedGeneration": 0,
+      "phase": "pending",
+      "requestId": "appreq_a0b947fae8716ee0928e6c2d",
+      "source": {
+        "kind": "app",
+        "id": "may"
+      },
+      "idempotencyKey": "conversation-follow-up:may:appdep_665d1b91d118069c0c20f65c",
+      "dependencyMention": "appdep_a5c132567ef83b8cd4caacf6",
+      "limitation": "Conversation follow-up identity is exact retained evidence; no current Request, Topic, human sender or caller Task is reconstructed from the key. The prose dependency mention is not an invented live dependency edge."
+    },
+    "providerCondition": {
+      "appId": "may-agent",
+      "id": "provider-recovery-original-230-20260825",
+      "generation": 2,
+      "resourceVersion": 4,
+      "state": "unknown",
+      "owner": "authorized infrastructure/provider operator",
+      "type": "human-action",
+      "subject": "provider-recovery:original-230-compact-preservation-set",
+      "association": "Exact archive identity and request semantics match; neither selected Task has this ID in status.conditionIds and no explicit Task-to-Condition edge is provided. Preserve the independent record without fabricating a binding or transferring approval."
+    }
+  },
+  "expectedRecoveredSet": {
+    "allowedPaths": "features/*/compact/staging.{plan.json,diagnostics.json,summary.md}",
+    "bytes": 18769920,
+    "name": "original-230.tar",
+    "requiredCompanions": [
+      "manifest.before.tsv",
+      "paths.txt"
+    ],
+    "requiredPathCount": 230,
+    "sha256": "1016eded02ab156095040f4054e34d957d7e567a71743f4c4160a8e48644d9ca"
+  },
+  "currentEvidence": {
+    "historicalClaimsNotReverified": [
+      "The retained first Task says the Host retention receipt found zero valid candidates in sessions, events, workflows/workers, DB backup, local artifacts/object stores, backup roots and snapshots/alternate mounts. The receipt bytes are currently unavailable, so these remain attributed historical claims, not a freshly repeated exhaustive search.",
+      "The second input says canonical cleanup was complete and unpublished-change-count zero; cleanup is not archive recovery."
+    ],
+    "pathChecks": [
+      {
+        "path": "/app/projects/aks-rp-e2e.app/artifacts/recovery/compact-preservation-set-20260825",
+        "result": "missing directory"
+      },
+      {
+        "path": "/app/projects/may-agent.app",
+        "result": "symlink to alex.app/archive/retired-apps/may-agent/local"
+      },
+      {
+        "path": "/app/projects/may-agent.app/artifacts/recovery/compact-preservation-set-20260825",
+        "result": "directory exists, empty"
+      },
+      {
+        "path": "/app/projects/alex.app/archive/retired-apps/may-agent/local/artifacts/recovery/compact-preservation-set-20260825",
+        "result": "same empty directory via retained alias; no host-retention-exhaustion-receipt.json or recovery-escalation.json"
+      }
+    ],
+    "boundedNameSearch": {
+      "method": "Python os.walk, followlinks=False, excludes node_modules and .git; matches exact basenames only; ordinary file metadata, no devices or archive extraction",
+      "basenames": [
+        "original-230.tar",
+        "host-retention-exhaustion-receipt.json",
+        "recovery-escalation.json",
+        "manifest.before.tsv",
+        "paths.txt"
+      ],
+      "roots": [
+        {
+          "path": "/app/projects/alex.app/archive/retired-apps",
+          "filesExaminedByName": 5317,
+          "matches": []
+        },
+        {
+          "path": "/app/projects/aks-rp-e2e-app",
+          "filesExaminedByName": 499,
+          "matches": []
+        },
+        {
+          "path": "/app/projects/aks-e2e-spec-runner",
+          "filesExaminedByName": 13615,
+          "matches": []
+        }
+      ],
+      "limits": "Does not prove absence in provider retention, differently named files, excluded directories, other mounts, or historical/deleted bytes. No candidate bytes existed in searched names to hash."
+    },
+    "retirementManifest": {
+      "path": "/app/.state/alex-migration-20261004/retirement-local-preservation.json",
+      "sha256": "0130e5bd01c1568ba3b6e6d48105160536cc7eeb08e03447d089759676f122eb",
+      "result": "No original-230, compact-preservation, retention-exhaustion or recovery-escalation filename entries among 17,920 may-agent, 996 evaluation and 3,348 gym entries. This does not prove where/when the missing receipt bytes were lost and is not recovery of the original set."
+    },
+    "gitHistoryCheck": {
+      "command": "git log --all --oneline -- projects/may-agent.app/artifacts/recovery/compact-preservation-set-20260825 projects/aks-rp-e2e.app/artifacts/recovery/compact-preservation-set-20260825",
+      "result": "No output in this Apps repository. Git reconstruction is expressly forbidden regardless."
+    },
+    "publicTaskReads": [
+      {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_a5c132567ef83b8cd4caacf6",
+        "result": "App may-agent has no loaded Task runtime"
+      },
+      {
+        "appId": "may-agent",
+        "taskId": "app-request/appreq_a0b947fae8716ee0928e6c2d",
+        "result": "App may-agent has no loaded Task runtime"
+      },
+      {
+        "appId": "may",
+        "taskId": "goal/appdep_665d1b91d118069c0c20f65c",
+        "result": null,
+        "limit": "A guessed modern goal path for the retained follow-up key returned null; this does not resolve the historical caller or prove no current related work."
+      }
+    ],
+    "relatedWorkDiscoveryLimit": "Cross-App tasks.list rejected: list and outcomes are scoped to the current App. No query_db capability is supplied. Current May related-work inventory and human Request state are not proved; May must discover/reuse the exact existing obligation before admitting another recovery Task.",
+    "sourceBoundary": [
+      "projects/alex.app/archive/retired-apps/README.md explicitly preserves history and separates source retirement from fulfillment.",
+      "projects/may.app/agents/may/AGENTS.md requires preservation of constraints/creator authority, exact Task reuse and no inference of withdrawal from empty Conditions.",
+      "/app/projects/alex.app/docs/proposals/alex-improvement-app.md assigns Alex technical reconciliation and May human priority/authority; migration adds no operational permissions."
+    ]
+  },
+  "decision": {
+    "technicalStatus": "local-execution-unavailable-provider-recovery-unresolved",
+    "historicalOutcomesFulfilled": false,
+    "providerRecoveryImpossibleProved": false,
+    "safeRetainedSourceExhaustedProved": false,
+    "exactArchiveRecovered": false,
+    "executionPath": "Retired may-agent dispatch is unavailable and should not be revived for this work. Unlike obsolete live-metric repair, the missing original-byte preservation and provider adjudication requirement does not become obsolete because the Apps were retired.",
+    "safeRecoveryPath": "No currently verified accessible source or executable recovery path was found. A conditional provider path remains unresolved: an authorized operator may check existing snapshot/clone, managed backup and object/blob/artifact retention, and only under separately established Host/provider authority quiesce writes as needed and use an isolated read-only clone. No evidence here establishes clone availability, operator access, retention expiry or impossibility. Do not act on /dev/sdd in this migration.",
+    "missingOutcome": [
+      "An exact original-230.tar of 18,769,920 bytes with SHA-256 1016eded02ab156095040f4054e34d957d7e567a71743f4c4160a8e48644d9ca, matching manifest.before.tsv and paths.txt with exactly 230 allowed compact staging paths.",
+      "Alternatively, dated authorized provider evidence naming snapshot/clone, backup and object/blob/artifact retention results, explaining the limiting fact and proving no approved safe retained-source recovery path remains; reconstruction from Git/current files is not acceptable.",
+      "For recovery, authorized operator/time, isolated read-only clone and no live-volume or production-storage mutation proof."
+    ],
+    "authorityDisposition": "May Task goal/appdep_29ade05116723df51757b027 is done with accepted disposition surviving-operator-access-authority-need. Both historical outcomes remain unfulfilled; creatorWithdrawalAuthorized is false. Completion of the disposition is not recovery, provider impossibility, operational approval or Condition satisfaction.",
+    "mayRequestJustified": true,
+    "boundedMayAsk": "Execute the operator/human escalation identified by accepted May Task goal/appdep_29ade05116723df51757b027, rather than disposition the same evidence again. Read this complete artifact and both exact retained specs. Reuse the current May obligation/return route after checking for an already-admitted escalation; preserve the historical follow-up identity. Identify the provider account/project and volume underlying /dev/sdd, designate a responsible operator with retention and snapshot/clone access, and obtain any required write-quiescence authority. Use existing authorized operator channels only; if access, identity or authority cannot be supplied by May, ask Hao through the supported human Condition/Conversation path for these exact prerequisites and retain the ask/reply evidence. The operator must first inspect existing snapshot/clone, managed-backup and object/blob/artifact retention. Any deleted-file recovery requires separately established authority and an isolated read-only clone, never the live volume. Return escalation delivery and exact owner/authority or unresolved human-ask evidence to the originating Alex migration Task; when available return a dated terminal operator receipt meeting the full retained contract. No recovery, impossibility or withdrawal may be inferred from escalation alone. Do not create a duplicate recovery Task, bind the independent historical Condition, revive retired Apps, mutate production storage/database, or reconstruct from Git/current files.",
+    "humanBoundary": "The precise surviving need is provider account/project and volume identity, a designated operator with retention and snapshot/clone access, and any required write-quiescence authority. May must execute the supported escalation to the responsible operator or, if unable to resolve it, Hao. The accepted disposition itself authorizes no provider contact, device access, write quiescence, snapshot/clone creation, recovery, mutation or withdrawal. Preserve the independent historical Condition as unknown and unbound; escalation is not operational permission.",
+    "nextTechnicalWork": "No Alex code patch or repeat local recovery search justified absent a newly identified exact source or provider evidence. If a verified archive or terminal provider receipt is supplied, recheck against the retained full acceptance before any fulfillment claim."
+  },
+  "acceptedMayDisposition": {
+    "appId": "may",
+    "taskId": "goal/appdep_29ade05116723df51757b027",
+    "status": "done",
+    "generation": 1,
+    "resourceVersion": 4,
+    "acceptedAttemptId": "r_1_575ccf90-91d0-490c-a073-63d5d3a54469",
+    "acceptedAttemptFinishedAt": "2026-10-04T14:17:43.923Z",
+    "evidence": "Exact public tasks.get read in Bob session s_1791123849026_71bb67fb-9f70-403c-ac25-97c390585220; accepted result and facts, not inferred from a dependency notification.",
+    "reviewedArtifactSha256": "edd35a5bd437db192504c44e9be49b1d8345400d37c6a498d5221b21fb9b0cc1",
+    "updateBaseCommit": "e96cf1cfa9ccdd4f820ca8292999398d349933c0",
+    "disposition": "surviving-operator-access-authority-need",
+    "historicalOutcomesFulfilled": false,
+    "exactArchiveRecovered": false,
+    "providerRecoveryImpossibleProved": false,
+    "creatorWithdrawalAuthorized": false,
+    "replacementCreated": false,
+    "currentBlocker": "Identify the provider account/project and volume underlying /dev/sdd; designate an operator with provider retention and snapshot/clone access; authorize any required write-quiescence window; return the retained contract's dated terminal receipt.",
+    "discovery": "May found this exact dependency to be the only current May obligation referencing the historical follow-up identity; no current conversational Request, Topic or separate caller resource was found for that key. This is May's accepted scoped finding, not a new global inventory by this helper.",
+    "returnRoute": "The existing Alex-created May dependency returns to alex/input/app_7a279469-7ac8-4bec-894a-9314635bd452. No replacement Task or Request was created by the disposition.",
+    "callerExplanation": "The two provider-archive obligations remain unfulfilled. No exact archive or terminal provider-impossibility receipt exists in current evidence. An authorized infrastructure/provider operator with provider retention and snapshot/clone access is required; retired dispatch and missing local files do not prove provider exhaustion.",
+    "receiptRequired": "Dated terminal operator receipt naming the authorized operator, checked snapshot/clone, managed-backup and object/blob/artifact retention layers and results, whether a snapshot/clone existed or was created, isolated read-only attachment and clone-only deleted-file recovery where performed, and no production-volume replacement or mutation. It must prove either the exact recovered set defined in expectedRecoveredSet or the retained not-recoverable contract; a blocked-access receipt alone is not terminal impossibility.",
+    "conditionBoundary": "provider-recovery-original-230-20260825 remains independent, generation 2/resourceVersion 4/state unknown, boundToSelectedTask false. Both retained parent edges and all original rows remain unchanged.",
+    "authorityBoundary": "No provider contact, live /dev/sdd access or recovery, production storage/database mutation, write quiescence, snapshot/clone creation, Git/current-file reconstruction or withdrawal is authorized by this disposition.",
+    "escalationExecutionProved": false
+  },
+  "verification": {
+    "method": "Read-only retained-source, current-path, manifest and public-Task checks; JSON equality/invariant and hash readback after writing. No software behavior changed; no runtime tests required to establish provider recovery.",
+    "requiredInvariants": [
+      "117 unique frontier identities, same order and old fields",
+      "Only the two selected frontier items change; all other 115 deeply equal to baseline",
+      "Full retained Task rows, exact Condition string and two relations equal snapshot",
+      "Artifact hash linked in both frontier entries and receipt",
+      "No fulfillment, provider-impossibility or Condition-satisfaction claim"
+    ],
+    "safety": "No production DB opened, no device accessed, no recovery command, provider operation, legacy Task/Condition change, archive edit or unrelated source edit."
+  }
+}

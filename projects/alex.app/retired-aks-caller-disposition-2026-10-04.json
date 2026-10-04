@@ -1,0 +1,97 @@
+{
+  "kind": "alex-retired-aks-frontier-reconciliation",
+  "recordedAt": "2026-10-04T15:12:44Z",
+  "scope": [
+    "may-agent/activate-and-live-prove-aks-correlation-taxonomy-c6636d34",
+    "may-agent/app-request/appdep_44c346a1f20c9eb3a15d8313"
+  ],
+  "contribution": {
+    "sessionId": "s_1791126498625_3e0d76f5-eea0-49e6-8ed4-66efc15880be",
+    "worker": "bob",
+    "status": "success",
+    "report": {
+      "path": "projects/alex.app/aks-frontier-items-1-54-review-2026-10-04.md",
+      "sha256": "8a9f367ccb558fef1736cdf0e3865f6ce9141196192160088f8c2e020b1b25eb"
+    },
+    "evidence": {
+      "path": "projects/alex.app/aks-frontier-items-1-54-evidence-2026-10-04.json",
+      "sha256": "4f73838d177ddfd101fb09200f0aea7eea8b6601df9a99bd1747ee59d85a5563"
+    },
+    "focusedTest": {
+      "checkout": "Host@6b507d42916ae5e0f64483311984302b20079d92",
+      "command": "bun test ./packages/sdk/src/event.test.ts",
+      "passed": 11,
+      "failed": 0,
+      "expectations": 34
+    }
+  },
+  "decisions": [
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "activate-and-live-prove-aks-correlation-taxonomy-c6636d34"
+      },
+      "historicalOutcomeFulfilled": false,
+      "currentTechnicalContinuation": null,
+      "decision": "obsolete-execution-promise-withdrawn-unfulfilled",
+      "basis": "Successful activation and all six watcher types are preserved, but terminal problem Task/App evidence is absent. Prior May withdrawal explicitly excluded this bridge; no replay or redeployment is justified."
+    },
+    {
+      "old": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_44c346a1f20c9eb3a15d8313"
+      },
+      "historicalOutcomeFulfilled": false,
+      "currentTechnicalContinuation": null,
+      "decision": "obsolete-execution-promise-withdrawn-unfulfilled",
+      "basis": "Recovered Git ancestry and retained runs preserve substantial authentic progress, but push ordering, original assertions, canonical ledger and dependency return remain unproved. No new AKS run or old-worktree recreation is justified."
+    }
+  ],
+  "preserved": {
+    "completeRetainedRows": "embedded verbatim in evidence artifact",
+    "directParentEdges": 3,
+    "historicalConditions": 3,
+    "item54OriginalPendingInput": "embedded verbatim in evidence artifact",
+    "conditionsSettledOrRebound": false
+  },
+  "currentRequest": {
+    "appId": "may",
+    "requestId": "appdep_26f57b927580036fd0d590f8",
+    "conditionId": "app-request:appdep_26f57b927580036fd0d590f8",
+    "purpose": "two separate creator/caller dispositions only; no AKS execution",
+    "status": "done",
+    "taskId": "goal/appdep_26f57b927580036fd0d590f8"
+  },
+  "limitations": [
+    "Cross-App discovery is exact-identity only from Alex; absence of a broad May list is not evidence that no matching work exists.",
+    "Historical outcomes remain unfulfilled pending May decisions.",
+    "Loaded release identity is distinct from this worktree commit; no source activation is claimed here."
+  ],
+  "mayDisposition": {
+    "status": "accepted-converged",
+    "taskId": "goal/appdep_26f57b927580036fd0d590f8",
+    "resourceVersion": 4,
+    "summary": "May withdrew both retired AKS promises unfulfilled; no enabled owner/current technical contract survives and no replacement work or human escalation is warranted.",
+    "decisions": [
+      {
+        "taskId": "activate-and-live-prove-aks-correlation-taxonomy-c6636d34",
+        "disposition": "withdrawn-unfulfilled",
+        "currentContract": null
+      },
+      {
+        "taskId": "app-request/appdep_44c346a1f20c9eb3a15d8313",
+        "disposition": "withdrawn-unfulfilled",
+        "currentContract": null
+      }
+    ],
+    "preserved": [
+      "both complete rows",
+      "three parent edges",
+      "three unknown historical Conditions",
+      "item-54 original pending input/idempotency/caller relationship",
+      "successful c6636d34 activation and six watcher types",
+      "6b266784\u2192316fab892\u2192293778119 ancestry and runs 178044977/178062470"
+    ],
+    "prohibitedEffectsObserved": false
+  }
+}

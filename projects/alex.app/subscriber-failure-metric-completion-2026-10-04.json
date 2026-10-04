@@ -1,0 +1,65 @@
+{
+  "kind": "accepted-alex-continuation-completion",
+  "generatedAt": "2026-10-04T15:05:00Z",
+  "scope": [
+    "may-agent/reconcile-subscriber-failure-metric-scope-20260820",
+    "may-agent/repair-subscriber-failure-metric-contract-20260820"
+  ],
+  "replacement": {
+    "appId": "alex",
+    "taskId": "input/appdep_03869866e7d33ba3dad701aa",
+    "generation": 1,
+    "resourceVersion": 16,
+    "acceptedAttemptId": "r_1_e8fcfc2f-d3d8-4894-8230-521eddca2644",
+    "status": "done",
+    "disposition": "converged"
+  },
+  "decision": {
+    "mapping": "superseded-by-fulfilled-activated-alex-continuation",
+    "oldLiteralOutcomesReplayed": false,
+    "replacementOutcomeFulfilled": true,
+    "historicalConditionSettled": false,
+    "sourceTargetBranchIntegrated": false
+  },
+  "proof": {
+    "hostBaseCommit": "6b507d42916ae5e0f64483311984302b20079d92",
+    "candidateCommit": "6bd5f1b824880ba0f3d7053ecfc69c46c15573e0",
+    "candidateTree": "541bdb2423715eeddd0f3647b00f0695a1cf2ac9",
+    "activationCorrelation": "subscriber-metric-contract-6bd5f1b82-20261004",
+    "requestedAndLoadedArtifactSha": "b3abb77c893a48043cd10788e25b93d2e366ac95840e6fadb0f9f0090ec2667a",
+    "health": "healthy",
+    "duplicateDeploy": false,
+    "freshMeasurement": {
+      "triggerEventId": 6645642,
+      "snapshotId": 2216620,
+      "measuredAt": 1791126005542,
+      "value": 2,
+      "owner": "may",
+      "project": null,
+      "population": "global rolling-hour subscriber.failed"
+    },
+    "routing": {
+      "accountableConsumer": "alex automatic metric review",
+      "breachEventId": 6644622,
+      "recoveryEventId": 6645418,
+      "genericMayFallback": false
+    }
+  },
+  "preservation": {
+    "sourceArtifact": "projects/alex.app/subscriber-failure-metric-reconciliation-2026-10-04.json",
+    "continuationArtifact": "projects/alex.app/subscriber-failure-metric-continuation-2026-10-04.json",
+    "lineage": "repair-subscriber-failure-metric-contract-20260820 -> reconcile-subscriber-failure-metric-scope-20260820 -> runtime/platform-owner-review",
+    "historicalCondition": {
+      "id": "hao-subscriber-metric-02a9bb15-decision",
+      "candidate": "02a9bb155cfaec9509a712dfdf35f809537fcdbf",
+      "status": "unresolved historical authority",
+      "rebound": false
+    },
+    "meaning": "The replacement fulfilled the current technical outcome after exact May approval and supported activation. This does not fabricate fulfillment of the retired Tasks' historical execution paths, settle their old Condition, rewrite event history, or claim Host target-branch integration."
+  },
+  "limitations": [
+    "Host repository main remains at base 6b507d42916ae5e0f64483311984302b20079d92; candidate 6bd5f1b824880ba0f3d7053ecfc69c46c15573e0 is activated but not claimed merged to the target branch.",
+    "No fabricated post-activation failure was emitted merely to force a new breach; accountable routing is established from authentic alert 4950 breach and recovery evidence.",
+    "The independent provider-authority Condition remains outside this cohort."
+  ]
+}

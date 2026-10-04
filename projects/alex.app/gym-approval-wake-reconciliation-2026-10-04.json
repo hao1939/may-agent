@@ -1,0 +1,815 @@
+{
+  "kind": "alex-gym-approval-wake-reconciliation",
+  "date": "2026-10-04",
+  "sessionId": "s_1791124776614_0c989c1b-e14d-4d62-ba93-3c329af6c9f4",
+  "status": "obsolete-gym-controller-promises-withdrawn-unfulfilled",
+  "baseCommit": "eb727e81e8f951c633cfcbd8538eda2fd010e475",
+  "sourceFrontier": {
+    "path": "projects/alex.app/legacy-frontier-disposition-2026-10-04.json",
+    "sha256": "07742bab2e378b354ba5cce2f9771ec2c3de2ece1256377359a3e2d5716daad5"
+  },
+  "sourceReceipt": {
+    "path": "projects/alex.app/migration-receipt-2026-10-04.md",
+    "sha256": "8ca2a61f26d448b068b18556b9e23d9d6f84b4e95490b0f83669cd919e91654e"
+  },
+  "snapshot": {
+    "path": "/app/.state/alex-migration-20261004/legacy-frontier-snapshot.json",
+    "sha256": "bd3f6a1cc65e125c61f5a8380cba746d55e3d8143edc6f8d6825af286d5d7f97"
+  },
+  "index": {
+    "path": "/app/.state/alex-migration-20261004/legacy-frontier-index.json",
+    "sha256": "46d61e762a8abac6170b4333c7aac30af2661afabe7fe635294a17318ea1cde9"
+  },
+  "scope": [
+    "app-request/appdep_3ccc74a3a17acd12d85f5499",
+    "app-request/appdep_cd6f1ace87bd5db6068c1398"
+  ],
+  "cohortBasis": "Two exact runtime-capability requests about unchanged ground-truth approval repeatedly waking gym/improve/may, the same 14dfdc7e repair and the same still-required later-event proof. Not the request-correlation, public-health or 26-attention-task cohorts.",
+  "decision": {
+    "legacyOutcomeFulfilled": false,
+    "technicalContinuation": null,
+    "creatorWithdrawalAuthorized": true,
+    "assessment": "The incident-specific retired Gym controller path is obsolete; the useful Host behavior has current deterministic support. No fresh enabled-App defect warrants reviving the old campaign or applying 14dfdc7e. Neither old outcome is fulfilled: two activation receipts and generic modern tests do not establish the later matching approval/daily-refill wake and bounded Gym result.",
+    "reopenTechnicalOnlyFor": "A fresh enabled-App trace showing repeated agent execution for an unchanged Condition, loss/duplication of an exact relevant event, or improper renewal of a one-shot review. Mechanical fact-recovery checks alone are not agent execution.",
+    "remainingBoundary": "Completed by accepted May creator/caller disposition: both obsolete execution promises are withdrawn unfulfilled, with no surviving current caller contract or executable continuation. Preserve the independent unknown Gym campaign Condition; only a fresh enabled-App falsifier can justify new technical work.",
+    "requestsSubmitted": 1,
+    "runtimeOrLegacyMutation": false
+  },
+  "items": [
+    {
+      "taskId": "app-request/appdep_3ccc74a3a17acd12d85f5499",
+      "baselineFrontierEntry": {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "app-request/appdep_3ccc74a3a17acd12d85f5499",
+          "generation": 2,
+          "phase": "attention",
+          "owner": "may",
+          "conditionIds": []
+        },
+        "outcome": "Ensure `gym/improve/may` does not repeatedly wake and reconcile to a skip while `improve-may-ground-truth-approval` is unchanged; only the declared daily refill or a semantically relevant approval event should wake it. Preserve terminal proof that stale recovery-index wake behavior is retired, and before convergence prove that one later matching approval submission or declared daily refill wakes `gym/improve/may` exactly once and yields one bounded reconciliation outcome.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      "retainedIndexRow": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_3ccc74a3a17acd12d85f5499",
+        "generation": 2,
+        "phase": "attention",
+        "owner": "may",
+        "outcome": "Ensure `gym/improve/may` does not repeatedly wake and reconcile to a skip while `improve-may-ground-truth-approval` is unchanged; only the declared daily refill or a semantically relevant approval event should wake it. Preserve terminal proof that stale recovery-index wake behavior is retired, and before convergence prove that one later matching approval submission or declared daily refill wakes `gym/improve/may` exactly once and yields one bounded reconciliation outcome.",
+        "acceptance": [
+          "After the deployed stale-condition repair, unchanged approval state and unrelated events produce no repeated `gym/improve/may` reconcile-skip wakes.",
+          "A later semantically matching approval submission or the declared daily refill wakes `gym/improve/may` exactly once and yields one bounded reconciliation outcome.",
+          "Terminal evidence distinguishes the later-event wake proof from routine codex-learning intake; codex-learning success alone does not satisfy the later-wake acceptance check."
+        ],
+        "summary": "Resolved agent may is not a runnable agent",
+        "conditionIds": []
+      },
+      "retainedTaskRow": {
+        "app_id": "may-agent",
+        "task_id": "app-request/appdep_3ccc74a3a17acd12d85f5499",
+        "generation": 2,
+        "resource_version": 13,
+        "phase": "attention",
+        "updated_at": 1787891454910,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 2,
+            "id": "app-request/appdep_3ccc74a3a17acd12d85f5499",
+            "resourceVersion": 13
+          },
+          "spec": {
+            "acceptance": [
+              "After the deployed stale-condition repair, unchanged approval state and unrelated events produce no repeated `gym/improve/may` reconcile-skip wakes.",
+              "A later semantically matching approval submission or the declared daily refill wakes `gym/improve/may` exactly once and yields one bounded reconciliation outcome.",
+              "Terminal evidence distinguishes the later-event wake proof from routine codex-learning intake; codex-learning success alone does not satisfy the later-wake acceptance check."
+            ],
+            "category": "runtime-reliability",
+            "input": {
+              "data": {
+                "acceptance": [
+                  "While improve-may-ground-truth-approval remains unchanged, no further project.task.reconcile.skipped event for gym/improve/may appears between declared daily or semantically relevant wakes.",
+                  "A later approval submission or daily refill wakes gym/improve/may once and produces exactly one bounded reconciliation outcome.",
+                  "Routine Gym evaluation-intake and codex-learning-intake workflows continue to converge after the correction.",
+                  "Return event/session/runtime evidence sufficient for Gym to verify all checks without changing benchmark truth."
+                ],
+                "constraints": [
+                  "Do not modify Gym benchmark truth, approved cases, or historical run/adjudication evidence.",
+                  "Do not create, update, close, or unblock gym/improve/may; preserve its single event-driven ground-truth approval wait.",
+                  "Do not disturb routine evaluation-intake or codex-learning-intake convergence.",
+                  "Investigate and change only the runtime-owned wake/reconciliation behavior necessary to satisfy the outcome."
+                ],
+                "evidence": [
+                  "Admitted finding: task:gym/improve/may@g1 and event:5944459#project.task.reconcile.skipped show an unchanged improve-may-ground-truth-approval condition still causing roughly five-minute reconcile/skip wakes.",
+                  "Source report: reports/project-health/gym.app/20260822T160209801Z.md; evaluation execution: s_1787414427848_8."
+                ],
+                "outcome": "Ensure gym/improve/may does not repeatedly wake and reconcile to a skip while improve-may-ground-truth-approval is unchanged; only the declared daily refill or a semantically relevant event should wake it."
+              },
+              "kind": "runtime-capability-request"
+            },
+            "mode": "achieve",
+            "outcome": "Ensure `gym/improve/may` does not repeatedly wake and reconcile to a skip while `improve-may-ground-truth-approval` is unchanged; only the declared daily refill or a semantically relevant approval event should wake it. Preserve terminal proof that stale recovery-index wake behavior is retired, and before convergence prove that one later matching approval submission or declared daily refill wakes `gym/improve/may` exactly once and yields one bounded reconciliation outcome.",
+            "owner": "may",
+            "parentId": "platform-system-review-feedback-loop",
+            "priority": "P1"
+          },
+          "status": {
+            "conditionIds": [],
+            "evidence": [
+              "commit:14dfdc7e4037ff4672208d94a3917c72f8d66d82",
+              "receipt:/app/projects/may-agent/.state/deploy-receipts/gym-improve-may-stale-condition-due-wake-20260824.json",
+              "event:6001333#post-restart-stale-index-boundary",
+              "dependency:appdep_e5423cb1c52a1428f341e55f#routine-codex-learning-only",
+              "query:no-qualifying-later-approval-or-curriculum-refill-after-event-6001333",
+              "checkpoint:1#remaining-later-wake-proof"
+            ],
+            "observedGeneration": 2,
+            "phase": "attention",
+            "summary": "Resolved agent may is not a runnable agent",
+            "updatedAt": "2026-08-28T04:30:54.910Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "creator": {
+        "appId": "may"
+      },
+      "parentId": "platform-system-review-feedback-loop",
+      "directRelations": [
+        {
+          "app_id": "may-agent",
+          "source_task_id": "app-request/appdep_3ccc74a3a17acd12d85f5499",
+          "relation_kind": "parent",
+          "target_task_id": "platform-system-review-feedback-loop"
+        }
+      ],
+      "directConditionIds": [],
+      "retainedInputRows": [],
+      "legacyOutcomeFulfilled": false,
+      "assessment": "Preserve complete requirements and corrected later-wake acceptance, all accepted historical evidence and parent/caller identity. Obsolete controller execution path; current Host mechanics tested, historical live outcome still unfulfilled. Exact creator/caller disposition remains open.",
+      "mayDisposition": {
+        "taskId": "goal/appdep_b791d717a4429f17904fd8a7",
+        "issuedAt": "2026-10-04T14:45:18Z",
+        "disposition": "obsolete-execution-promise-withdrawn-unfulfilled",
+        "legacyOutcomeFulfilled": false,
+        "executableContinuation": null,
+        "survivingCurrentCallerContract": null,
+        "creatorWithdrawalAuthorized": true
+      }
+    },
+    {
+      "taskId": "app-request/appdep_cd6f1ace87bd5db6068c1398",
+      "baselineFrontierEntry": {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "app-request/appdep_cd6f1ace87bd5db6068c1398",
+          "generation": 1,
+          "phase": "attention",
+          "owner": "may",
+          "conditionIds": []
+        },
+        "outcome": "Correct or otherwise resolve the Host runtime wake path that repeatedly wakes gym/improve/may while its ground-truth approval Condition is unchanged, so only the declared daily review or a semantically relevant approval event causes a bounded reconciliation.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      "retainedIndexRow": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_cd6f1ace87bd5db6068c1398",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "outcome": "Correct or otherwise resolve the Host runtime wake path that repeatedly wakes gym/improve/may while its ground-truth approval Condition is unchanged, so only the declared daily review or a semantically relevant approval event causes a bounded reconciliation.",
+        "acceptance": [
+          "While improve-may-ground-truth-approval remains unchanged, no further project.task.reconcile.skipped event for gym/improve/may appears between declared daily or semantically relevant wakes.",
+          "A later approval submission or declared daily review wakes gym/improve/may once and produces one bounded reconciliation outcome.",
+          "Routine evaluation-intake and codex-learning-intake workflows continue to reconcile after the wake correction.",
+          "Return source/runtime change evidence and post-change event evidence, or a supported runtime disposition if no correction is required."
+        ],
+        "summary": "Resolved agent may is not a runnable agent",
+        "conditionIds": []
+      },
+      "retainedTaskRow": {
+        "app_id": "may-agent",
+        "task_id": "app-request/appdep_cd6f1ace87bd5db6068c1398",
+        "generation": 1,
+        "resource_version": 8,
+        "phase": "attention",
+        "updated_at": 1787891452986,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 1,
+            "id": "app-request/appdep_cd6f1ace87bd5db6068c1398",
+            "resourceVersion": 8
+          },
+          "spec": {
+            "acceptance": [
+              "While improve-may-ground-truth-approval remains unchanged, no further project.task.reconcile.skipped event for gym/improve/may appears between declared daily or semantically relevant wakes.",
+              "A later approval submission or declared daily review wakes gym/improve/may once and produces one bounded reconciliation outcome.",
+              "Routine evaluation-intake and codex-learning-intake workflows continue to reconcile after the wake correction.",
+              "Return source/runtime change evidence and post-change event evidence, or a supported runtime disposition if no correction is required."
+            ],
+            "input": {
+              "data": {
+                "acceptance": [
+                  "While improve-may-ground-truth-approval remains unchanged, no further project.task.reconcile.skipped event for gym/improve/may appears between declared daily or semantically relevant wakes.",
+                  "A later approval submission or declared daily review wakes gym/improve/may once and produces one bounded reconciliation outcome.",
+                  "Routine evaluation-intake and codex-learning-intake workflows continue to reconcile after the wake correction.",
+                  "Return source/runtime change evidence and post-change event evidence, or a supported runtime disposition if no correction is required."
+                ],
+                "constraints": [
+                  "Preserve the existing single improve-may-ground-truth-approval wait.",
+                  "Do not change benchmark truth, historical evidence, adjudications, or Gym campaign task state.",
+                  "Do not create a child or sibling repair task for gym/improve/may.",
+                  "Keep routine evaluation-intake and codex-learning-intake reconciliation functional."
+                ],
+                "evidence": [
+                  "task:gym/improve/may@g1",
+                  "event:5947900#project.task.reconcile.skipped",
+                  "reports/project-health/gym.app/20260822T180154951Z.md",
+                  "execution:s_1787421671768_64"
+                ],
+                "outcome": "Correct or otherwise resolve the Host runtime wake path that repeatedly wakes gym/improve/may while its ground-truth approval Condition is unchanged, so only the declared daily review or a semantically relevant approval event causes a bounded reconciliation."
+              },
+              "kind": "runtime-capability-request"
+            },
+            "mode": "achieve",
+            "outcome": "Correct or otherwise resolve the Host runtime wake path that repeatedly wakes gym/improve/may while its ground-truth approval Condition is unchanged, so only the declared daily review or a semantically relevant approval event causes a bounded reconciliation.",
+            "owner": "may",
+            "parentId": "platform-system-review-feedback-loop",
+            "priority": "P1"
+          },
+          "status": {
+            "conditionIds": [],
+            "evidence": [
+              "commit:14dfdc7e4037ff4672208d94a3917c72f8d66d82",
+              "test:app-task-condition-review+app-task-recovery=6-pass",
+              "receipt:/app/projects/may-agent/.state/deploy-receipts/may-agent:appdep_cd6f1ace87bd5db6068c1398:stale-condition-due-wake-v1.json",
+              "runtime-artifact:0c771cb3ef582bb9d0146ac6c8f2b946d967f676dadc225a514eb664ee5b1067",
+              "event:6001333#first-post-restart-stale-index-consumption",
+              "query:zero-improve-may-skips-after-event-6001333",
+              "event:6001329#codex-learning-intake-converged",
+              "event:6001343#evaluation-intake-converged",
+              "event:6001375#evaluation-intake-converged"
+            ],
+            "observedGeneration": 1,
+            "phase": "attention",
+            "summary": "Resolved agent may is not a runnable agent",
+            "updatedAt": "2026-08-28T04:30:52.986Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "creator": {
+        "appId": "may"
+      },
+      "parentId": "platform-system-review-feedback-loop",
+      "directRelations": [
+        {
+          "app_id": "may-agent",
+          "source_task_id": "app-request/appdep_cd6f1ace87bd5db6068c1398",
+          "relation_kind": "parent",
+          "target_task_id": "platform-system-review-feedback-loop"
+        }
+      ],
+      "directConditionIds": [],
+      "retainedInputRows": [],
+      "legacyOutcomeFulfilled": false,
+      "assessment": "Preserve complete requirements and corrected later-wake acceptance, all accepted historical evidence and parent/caller identity. Obsolete controller execution path; current Host mechanics tested, historical live outcome still unfulfilled. Exact creator/caller disposition remains open.",
+      "mayDisposition": {
+        "taskId": "goal/appdep_b791d717a4429f17904fd8a7",
+        "issuedAt": "2026-10-04T14:45:18Z",
+        "disposition": "obsolete-execution-promise-withdrawn-unfulfilled",
+        "legacyOutcomeFulfilled": false,
+        "executableContinuation": null,
+        "survivingCurrentCallerContract": null,
+        "creatorWithdrawalAuthorized": true
+      }
+    }
+  ],
+  "preservedRelations": [
+    {
+      "app_id": "may-agent",
+      "source_task_id": "app-request/appdep_3ccc74a3a17acd12d85f5499",
+      "relation_kind": "parent",
+      "target_task_id": "platform-system-review-feedback-loop"
+    },
+    {
+      "app_id": "may-agent",
+      "source_task_id": "app-request/appdep_cd6f1ace87bd5db6068c1398",
+      "relation_kind": "parent",
+      "target_task_id": "platform-system-review-feedback-loop"
+    }
+  ],
+  "directConditionRows": [],
+  "conditionEvidence": {
+    "mentionedIdentity": "improve-may-ground-truth-approval",
+    "mentionedIdentityFoundInFrozenConditionRows": false,
+    "historicalGymState": {
+      "path": "/app/projects/gym.app/.state/tasks/state.json",
+      "sha256": "6dfe27f255e134e493c516836402fe50df3bb41b8a98f926c88cf34ef06b7a32",
+      "updatedAt": "2026-08-21T02:55:20.524Z",
+      "projectLifecycle": "paused",
+      "task": {
+        "metadata": {
+          "id": "improve/may",
+          "generation": 1,
+          "resourceVersion": 18
+        },
+        "spec": {
+          "parentId": "regression-assurance",
+          "outcome": "Keep May on the best behavior supported by approved Gym evidence and bring one verified improvement proposal to Hao when a better candidate is ready.",
+          "acceptance": [
+            "The selected benchmark truth is human-approved before agent failures are acted on.",
+            "Every non-pass is assigned to May, benchmark truth, scoring, runtime, or non-actionable noise.",
+            "An exact candidate passes targeted and full approved verification without regression before promotion is requested.",
+            "Production May changes only after approval of the exact fingerprinted artifact."
+          ],
+          "mode": "maintain",
+          "workflow": "improve-agent",
+          "input": {
+            "agent": "may",
+            "curriculumDrain": true
+          },
+          "outputs": [
+            ".state/assessments",
+            ".state/candidates",
+            ".state/learning/training-drain.json",
+            ".state/metrics",
+            "../gym/.state/benchmarks"
+          ],
+          "priority": "P1"
+        },
+        "status": {
+          "observedGeneration": 1,
+          "phase": "waiting",
+          "updatedAt": "2026-08-20T12:28:27.888Z",
+          "summary": "Waiting for Hao to approve or reject the exact preference-sensitive ground truth for the eight selected may-app scenarios. Until then, Gym must not classify their non-passes as May failures, build a candidate from them, or request promotion.",
+          "evidence": [
+            "/app/projects/gym.app/.state/candidates/improve-may/1/result.json: workflow terminal evidence lists the eight unapproved scenarios and no candidate approval.",
+            "/app/projects/gym/benchmarks/may-alignment/labels.json: approved labels carry reviewer/timestamp metadata while draft labels have approved_by and approved_at set to null.",
+            "/app/projects/gym/docs/test-improve-verify-loop.md: selected truth must be approved before verification; historical evidence must remain immutable."
+          ],
+          "conditionIds": [
+            "improve-may-ground-truth-approved-g1"
+          ]
+        }
+      },
+      "condition": {
+        "metadata": {
+          "id": "improve-may-ground-truth-approved-g1",
+          "generation": 1,
+          "resourceVersion": 1
+        },
+        "spec": {
+          "type": "project.event",
+          "subject": "project:gym",
+          "expected": {
+            "kind": "benchmark.labels.reviewed",
+            "benchmark": "may-app",
+            "reviewer": "hao",
+            "scenarioIds": [
+              "may-app-answer-status-directly",
+              "may-app-clarify-ambiguous-target",
+              "may-app-delegate-one-shot-outcome",
+              "may-app-delegate-recurring-outcome",
+              "may-app-route-ownership-gap",
+              "may-app-review-terminal-result",
+              "may-app-replan-missing-proof",
+              "may-app-stop-standing-outcome"
+            ],
+            "terminalStatuses": [
+              "approved",
+              "rejected"
+            ]
+          },
+          "owner": "hao",
+          "reviewAfterMs": 86400000
+        },
+        "status": {
+          "observedGeneration": 0,
+          "state": "unknown",
+          "observedAt": "2026-08-20T12:28:27.886Z"
+        }
+      }
+    },
+    "historicalRoutes": {
+      "path": "/app/projects/gym.app/.state/tasks/condition-routes.json",
+      "sha256": "c762b3258602b94f9f16bcecb52a7a7729ad7301fb52c2a989259d4da4268d9a",
+      "content": {
+        "schemaVersion": 1,
+        "state": {
+          "dev": 2096,
+          "ino": 3942528,
+          "size": 9817389,
+          "mtimeMs": 1787280920646.269,
+          "ctimeMs": 1787280920646.269
+        },
+        "eventTypes": {
+          "project.event": [
+            {
+              "condition": {
+                "metadata": {
+                  "id": "improve-may-ground-truth-approved-g1",
+                  "generation": 1,
+                  "resourceVersion": 1
+                },
+                "spec": {
+                  "type": "project.event",
+                  "subject": "project:gym",
+                  "expected": {
+                    "kind": "benchmark.labels.reviewed",
+                    "benchmark": "may-app",
+                    "reviewer": "hao",
+                    "scenarioIds": [
+                      "may-app-answer-status-directly",
+                      "may-app-clarify-ambiguous-target",
+                      "may-app-delegate-one-shot-outcome",
+                      "may-app-delegate-recurring-outcome",
+                      "may-app-route-ownership-gap",
+                      "may-app-review-terminal-result",
+                      "may-app-replan-missing-proof",
+                      "may-app-stop-standing-outcome"
+                    ],
+                    "terminalStatuses": [
+                      "approved",
+                      "rejected"
+                    ]
+                  },
+                  "owner": "hao",
+                  "reviewAfterMs": 86400000
+                },
+                "status": {
+                  "observedGeneration": 0,
+                  "state": "unknown",
+                  "observedAt": "2026-08-20T12:28:27.886Z"
+                }
+              },
+              "taskIds": [
+                "improve/may"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "assessment": "Both selected Host rows have empty direct Condition arrays. The Oct 4 snapshot has no Gym Condition rows and no exact improve-may-ground-truth-approval row in any retained App section. Older Aug 21 Gym JSON instead binds improve/may to improve-may-ground-truth-approved-g1, unknown, with eight named preference-sensitive scenarios. Preserve both spellings; the older file is not current canonical state and does not establish an alias, approval, rejection, replacement or new binding. No Condition is settled by this reconciliation."
+  },
+  "recoveredDeployReceipts": [
+    {
+      "path": "/app/projects/may-agent/.state/deploy-receipts/gym-improve-may-stale-condition-due-wake-20260824.json",
+      "sha256": "bacb065591f58fa0c870693f90e33c2af0de109fac85862adde9f4672bcf72ce",
+      "content": {
+        "version": 1,
+        "correlation": "gym-improve-may-stale-condition-due-wake-20260824",
+        "project": "may-agent",
+        "taskId": "app-request/appdep_3ccc74a3a17acd12d85f5499",
+        "artifactSha": "0c771cb3ef582bb9d0146ac6c8f2b946d967f676dadc225a514eb664ee5b1067",
+        "sourceCommit": "14dfdc7e4037ff4672208d94a3917c72f8d66d82",
+        "phase": "succeeded",
+        "requestedAt": "2026-08-24T08:25:46.587Z",
+        "verification": "After the supervisor settles service and HTTP health, verify loadedArtifactSha equals artifactSha, health is healthy, and duplicateDeploy is false, then complete the owner task without redeploying.",
+        "completedAt": "2026-08-24T08:26:00.781Z",
+        "loadedArtifactSha": "0c771cb3ef582bb9d0146ac6c8f2b946d967f676dadc225a514eb664ee5b1067",
+        "health": "healthy",
+        "duplicateDeploy": false
+      }
+    },
+    {
+      "path": "/app/projects/may-agent/.state/deploy-receipts/may-agent:appdep_cd6f1ace87bd5db6068c1398:stale-condition-due-wake-v1.json",
+      "sha256": "815c8efc03d663450c2ed529c3989e18392f06843c58d9a1e6972cd3b93b2dfa",
+      "content": {
+        "version": 1,
+        "correlation": "may-agent:appdep_cd6f1ace87bd5db6068c1398:stale-condition-due-wake-v1",
+        "project": "may-agent",
+        "taskId": "app-request/appdep_cd6f1ace87bd5db6068c1398",
+        "artifactSha": "0c771cb3ef582bb9d0146ac6c8f2b946d967f676dadc225a514eb664ee5b1067",
+        "sourceCommit": "14dfdc7e4037ff4672208d94a3917c72f8d66d82",
+        "phase": "succeeded",
+        "requestedAt": "2026-08-24T08:30:25.973Z",
+        "verification": "After the supervisor settles service and HTTP health, verify loadedArtifactSha equals artifactSha, health is healthy, and duplicateDeploy is false, then complete the owner task without redeploying.",
+        "completedAt": "2026-08-24T08:30:50.603Z",
+        "loadedArtifactSha": "0c771cb3ef582bb9d0146ac6c8f2b946d967f676dadc225a514eb664ee5b1067",
+        "health": "healthy",
+        "duplicateDeploy": false
+      }
+    }
+  ],
+  "historicalCandidate": {
+    "repository": "/app/projects/may-agent",
+    "commit": "14dfdc7e4037ff4672208d94a3917c72f8d66d82",
+    "diff": "commit 14dfdc7e4037ff4672208d94a3917c72f8d66d82\nAuthor:     May (Agent) <may@may-agent.local>\nAuthorDate: Mon Aug 24 08:25:37 2026 +0000\nCommit:     May (Agent) <may@may-agent.local>\nCommitDate: Mon Aug 24 08:25:37 2026 +0000\n\n    fix(runtime): retire stale condition due wakes\n\ndiff --git a/src/app/app-task-condition-review.test.ts b/src/app/app-task-condition-review.test.ts\nindex 0e142563f..afcfbc046 100644\n--- a/src/app/app-task-condition-review.test.ts\n+++ b/src/app/app-task-condition-review.test.ts\n@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from \"bun:test\";\n import { mkdirSync, rmSync, writeFileSync } from \"node:fs\";\n import { tmpdir } from \"node:os\";\n import { join } from \"node:path\";\n+import { AppTaskResourceStore } from \"./app-task-resource-store.js\";\n import { readTaskState, saveTaskState } from \"./app-task-store.js\";\n import {\n   claimObservedAppTask,\n@@ -161,4 +162,51 @@ describe(\"App task Condition review checkpoint\", () => {\n     expect(state.conditions?.[condition.id]?.spec.reviewAfterMs).toBeUndefined();\n     expect(listRunnableAppTaskIds(config)).toEqual([]);\n   });\n+\n+  it(\"clears a consumed stale due index when the Condition remains event-driven\", () => {\n+    const legacyConfig = fixture();\n+    const store = AppTaskResourceStore.openStandalone(\n+      join(legacyConfig.appDir, \".state\", \"resource-store.sqlite\"),\n+      \"sample\",\n+    );\n+    store.bootstrapSnapshot(readTaskState(legacyConfig), \"seed:test\");\n+    const config = taskReconciliationConfig({\n+      appDir: legacyConfig.appDir,\n+      projectDir: legacyConfig.projectDir,\n+      owner: legacyConfig.worker,\n+      maxConcurrent: legacyConfig.maxConcurrent,\n+      resourceStore: store,\n+    });\n+\n+    deferAppTask(config, claim(config), {\n+      disposition: \"waiting\",\n+      summary: \"Waiting for an approval event\",\n+      evidence: [\"approval:unchanged\"],\n+      conditions: [\n+        {\n+          id: \"approval-submitted\",\n+          type: \"approval.submitted\",\n+          subject: \"approval:may-ground-truth\",\n+          expected: { field: \"status\", equals: \"submitted\" },\n+        },\n+      ],\n+    });\n+    store.setRecoveryState(\"human-request\", {\n+      ready: false,\n+      changed: false,\n+      nextCheckAt: Date.now() - 1,\n+    });\n+    expect(store.listRecoveryCandidates().items.map(({ taskId }) => taskId)).toContain(\"human-request\");\n+\n+    expect(\n+      claimObservedAppTask(config, {\n+        taskId: \"human-request\",\n+        appAgent: \"app-owner\",\n+        handler: \"agent\",\n+      }),\n+    ).toMatchObject({ kind: \"waiting\", conditionIds: [\"approval-submitted\"] });\n+    expect(store.listRecoveryCandidates().items.map(({ taskId }) => taskId)).not.toContain(\"human-request\");\n+    expect(store.nextDueAt()).toBeNull();\n+    store.close();\n+  });\n });\ndiff --git a/src/app/app-task-reconciler.ts b/src/app/app-task-reconciler.ts\nindex d227460f3..4f238d722 100644\n--- a/src/app/app-task-reconciler.ts\n+++ b/src/app/app-task-reconciler.ts\n@@ -2249,8 +2249,12 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): b\n function acknowledgeIndexedRecoveryWait(config: TaskStateConfig, taskId: string): void {\n   // The indexed wake has been consumed and the Task is durably blocked. Its\n   // dependency, child, or Condition transition will record the next exact\n-  // wake; leaving this row changed would make safety recovery retry a no-op.\n-  config.resourceStore?.setRecoveryState(taskId, { ready: false, changed: false });\n+  // wake; leaving any recovery signal set would make safety recovery retry a no-op.\n+  config.resourceStore?.setRecoveryState(taskId, {\n+    ready: false,\n+    changed: false,\n+    nextCheckAt: null,\n+  });\n }\n \n function triggerHasDirectProjectComment(event: Record<string, unknown> | undefined): boolean {\n",
+    "isAncestorOfInspectedHost": false,
+    "limit": "Two distinct successful receipt correlations name the same artifact; both report duplicateDeploy=false. This proves each recorded receipt, not a deduplicated physical single deployment across them and not later Gym wake success. Do not repeat either deployment."
+  },
+  "currentSource": {
+    "hostRepository": "/app/projects/may-agent",
+    "hostCommit": "d8c87757782ae5750984bedc239b00eab4c76715",
+    "hostStatusPorcelain": "",
+    "appsCommit": "eb727e81e8f951c633cfcbd8538eda2fd010e475",
+    "loadedRelease": "/app/.state/releases/app-definitions/faa65d8b77883f7af4d39af9e7c085af17e332e7-definitions-v4",
+    "files": [
+      {
+        "path": "/app/projects/may-agent/src/app/core/tasks/app-task-reconciler.ts",
+        "sha256": "c65e6c7c184d6e6d4476fcacf4ffec7b29d58f20a547d75e9952b28dd410e682",
+        "repositoryPath": "src/app/core/tasks/app-task-reconciler.ts",
+        "excerpts": [
+          {
+            "start": 1822,
+            "end": 1840,
+            "text": "\nfunction acceptedTaskReviewAt(_tree: TaskTree, resource: AppTaskResource): number | null {\n  if (resource.status.phase !== \"waiting\") return null;\n  const deadlines = [\n    resource.status.reviewAt,\n    ...Object.values(resource.status.inputWaits ?? {}).map((wait) => wait.reviewAt),\n  ].filter((value): value is number => Number.isSafeInteger(value) && Number(value) > 0);\n  return deadlines.length ? Math.min(...deadlines) : null;\n}\n\nfunction nextTaskCheckAt(tree: TaskTree, resource: AppTaskResource): number | null {\n  const deadlines = [\n    // Recovery rereads saved facts in code; only reviewAt authorizes an agent review.\n    resource.status.phase === \"waiting\" && openTaskConditionIds(tree, resource.metadata.id).length\n      ? Date.now() + CONDITION_RECOVERY_INTERVAL_MS\n      : null,\n    acceptedTaskReviewAt(tree, resource),\n  ].filter((value): value is number => value !== null);\n  return deadlines.length ? Math.min(...deadlines) : null;"
+          },
+          {
+            "start": 1943,
+            "end": 1960,
+            "text": "function acknowledgeIndexedRecoveryWait(\n  config: AppTaskContext,\n  taskId: string,\n  expectedRevision: number,\n  nextCheckAt: number | null = null,\n): void {\n  // The indexed wake has been consumed and the Task is durably blocked. Its\n  // dependency or Condition transition will record the next exact\n  // wake. The next check recovers facts without invoking the agent.\n  // Another writer may have changed a trigger, dependency, or Condition since\n  // our read. Reuse the store revision so its newer wake remains recoverable.\n  config.resourceStore.setRecoveryState(taskId, {\n    ready: false,\n    changed: false,\n    nextCheckAt,\n    expectedRevision,\n  });\n}"
+          },
+          {
+            "start": 2820,
+            "end": 2848,
+            "text": "  }\n  const dependencyIds = [...(intent.dependsOn ?? [])].filter((id) => {\n    const dependency = tree.resources?.[id];\n    return !(\n      dependency?.status.phase === \"converged\" &&\n      dependency.status.observedGeneration === dependency.metadata.generation\n    );\n  });\n  if (dependencyIds.length > 0) {\n    acknowledgeIndexedRecoveryWait(config, input.taskId, snapshotRevision);\n    return { kind: \"waiting\", taskId: input.taskId, conditionIds: [], dependencyIds };\n  }\n\n  const openConditionIds = openTaskConditionIds(tree, input.taskId);\n  const hasSatisfiedCondition = hasSatisfiedTaskCondition(tree, input.taskId);\n  const reviewAt = acceptedTaskReviewAt(tree, resource);\n  const reviewDue = reviewAt !== null && reviewAt <= Date.now();\n  if (\n    resource.status.phase === \"waiting\" &&\n    resource.status.observedGeneration >= resource.metadata.generation &&\n    (openConditionIds.length > 0 || reviewAt !== null) &&\n    !pendingTrigger &&\n    !hasSatisfiedCondition &&\n    !reviewDue\n  ) {\n    acknowledgeIndexedRecoveryWait(config, input.taskId, snapshotRevision, nextTaskCheckAt(tree, resource));\n    return { kind: \"waiting\", taskId: input.taskId, conditionIds: openConditionIds };\n  }\n"
+          }
+        ]
+      },
+      {
+        "path": "/app/projects/may-agent/src/app/core/tasks/app-task-recovery.ts",
+        "sha256": "89c5fd31ca0d55c8d4bfad826c984823c22c61de49002419b30083dbce80571d",
+        "repositoryPath": "src/app/core/tasks/app-task-recovery.ts",
+        "excerpts": [
+          {
+            "start": 1,
+            "end": 105,
+            "text": "import type { AppTaskLane } from \"./queue.js\";\nimport type { IndexedTaskCandidatePage, IndexedTaskRecoveryCursor } from \"../state/app-task-resource-store.js\";\nimport { OwnedTimer } from \"../scheduling/timer.js\";\n\nexport type IndexedTaskRecoverySource = {\n  listRecoveryCandidates(now?: number, limit?: number, after?: IndexedTaskRecoveryCursor): IndexedTaskCandidatePage;\n  nextDueAt(): number | null;\n};\n\nexport type AppTaskRecoverySchedulerOptions = {\n  source: IndexedTaskRecoverySource;\n  enqueue(taskId: string, options: { lane: AppTaskLane }): void;\n  safetyIntervalMs?: number;\n  pageSize?: number;\n  now?: () => number;\n};\n\n/**\n * Indexed recovery insurance. Events remain the normal trigger; this owns one\n * nearest-due timer and one bounded safety query, never an App-wide scan.\n */\nexport class AppTaskRecoveryScheduler {\n  private readonly safetyIntervalMs: number;\n  private readonly pageSize: number;\n  private readonly now: () => number;\n  private readonly safetyTimer = new OwnedTimer(\"task-recovery:safety\");\n  private readonly dueTimer = new OwnedTimer(\"task-recovery:due\");\n  private dueAt?: number;\n  private recoveryCursor?: IndexedTaskRecoveryCursor;\n  private closed = false;\n\n  constructor(private readonly options: AppTaskRecoverySchedulerOptions) {\n    this.safetyIntervalMs = Math.max(1_000, options.safetyIntervalMs ?? 45_000);\n    this.pageSize = Math.max(1, Math.min(10_000, Math.floor(options.pageSize ?? 256)));\n    this.now = options.now ?? Date.now;\n  }\n\n  start(): void {\n    if (this.closed || this.safetyTimer.armed) return;\n    this.recover();\n    this.armNearestDue();\n    this.safetyTimer.every(this.safetyIntervalMs, () => {\n      this.recover();\n      this.armNearestDue();\n    });\n  }\n\n  /** Call after a task records a new next-check time or clears the current one. */\n  stateChanged(): void {\n    if (this.closed) return;\n    this.armNearestDue(true);\n  }\n\n  close(): void {\n    this.closed = true;\n    this.safetyTimer.close();\n    this.dueTimer.close();\n    this.dueAt = undefined;\n  }\n\n  recover(): number {\n    if (this.closed) return 0;\n    const page = this.options.source.listRecoveryCandidates(this.now(), this.pageSize, this.recoveryCursor);\n    this.recoveryCursor = page.nextCursor ?? undefined;\n    for (const candidate of page.items) {\n      this.options.enqueue(candidate.taskId, {\n        lane: candidate.lane,\n      });\n    }\n    return page.items.length;\n  }\n\n  private armNearestDue(force = false): void {\n    const next = this.options.source.nextDueAt();\n    if (next === null) {\n      this.dueTimer.cancel();\n      this.dueAt = undefined;\n      return;\n    }\n    // A synchronous transition may finish after another Task's deadline.\n    // Query that overdue work once; do not defer it to the long safety scan.\n    // The callback does not re-arm itself against unchanged due rows.\n    if (next <= this.now() && !force) return;\n    if (!force && this.dueTimer.armed && this.dueAt === next) return;\n    this.dueAt = next;\n    this.dueTimer.after(Math.max(1, next - this.now()), () => {\n      this.dueAt = undefined;\n      this.recover();\n      // Re-arming waits for the task transition or the safety query. A still-\n      // due row must not create a zero-delay timer loop.\n    });\n  }\n}"
+          }
+        ]
+      },
+      {
+        "path": "/app/projects/may-agent/src/app/core/tasks/app-task-condition-review.test.ts",
+        "sha256": "2d48d56a43f774bcf345b930a83b568ac8f28673a242335c6abf3eb8c796c4be",
+        "repositoryPath": "src/app/core/tasks/app-task-condition-review.test.ts",
+        "excerpts": []
+      },
+      {
+        "path": "/app/projects/may-agent/src/app/core/tasks/app-task-recovery.test.ts",
+        "sha256": "28700eb78a9842ec9b7650010cb5ccb033be2b9dafb3975e50212ba779d3b55f",
+        "repositoryPath": "src/app/core/tasks/app-task-recovery.test.ts",
+        "excerpts": []
+      },
+      {
+        "path": "projects/alex.app/app.ts",
+        "sha256": "6209a127c0d68f8079e755a9df6e100e05b4325afd459fb6510a7f2e494a43bf",
+        "loadedSha256": "6209a127c0d68f8079e755a9df6e100e05b4325afd459fb6510a7f2e494a43bf",
+        "loadedEqualsWorktree": true
+      },
+      {
+        "path": "projects/alex.app/app.test.ts",
+        "sha256": "a45b14e3def7748b6cd8e325315206ee3b920fde792d180fc1df3c917ebf853d",
+        "loadedSha256": "a45b14e3def7748b6cd8e325315206ee3b920fde792d180fc1df3c917ebf853d",
+        "loadedEqualsWorktree": true
+      },
+      {
+        "path": "projects/alex.app/agents/gym/AGENTS.md",
+        "sha256": "9083c20ad7661fc26d4cf31fa0558e95b894f81c03e58edc0e94e2dddc490268",
+        "loadedSha256": "9083c20ad7661fc26d4cf31fa0558e95b894f81c03e58edc0e94e2dddc490268",
+        "loadedEqualsWorktree": true
+      },
+      {
+        "path": "projects/alex.app/agents/gym/workflows/compare-candidate.test.ts",
+        "sha256": "d5fbca270fe41620dcf609652159a45e7cea20cbb1658d205e861f49fc9e2b82",
+        "loadedSha256": "d5fbca270fe41620dcf609652159a45e7cea20cbb1658d205e861f49fc9e2b82",
+        "loadedEqualsWorktree": true
+      }
+    ],
+    "enabledAppsReceipt": {
+      "path": "/app/.state/alex-migration-20261004/retirement-live-apps.json",
+      "sha256": "c478bebd5d24923cf6c488fc3f0eaef1dd5084992a59b8456f013c0f60e531f9",
+      "content": [
+        {
+          "id": "alex",
+          "owner": "alex",
+          "description": "Own system improvement from diagnosis through verified outcome, with design, implementation, independent review and comparison specialists; escalate unresolved blockers to May.",
+          "activeTasks": 13,
+          "attentionTasks": 0,
+          "runningTasks": 2,
+          "waitingTasks": 1
+        },
+        {
+          "id": "may",
+          "observations": [
+            {
+              "appId": "may",
+              "id": "metric-evidence",
+              "type": "may.metric.state",
+              "description": "Read retained value, measuredAt, sampleId and freshness for an exact metric. resource is the bare metric ID, without a metric: prefix. This capability supports explicitly requested measurement work. Automated metric investigations start on a breach episode and must not use sample Conditions to wake for repeated review. Read current samples as evidence during useful work; use the repair result or human decision as its return route. Condition comparators are gt/gte/lt/lte. A measurement alone does not accept recovery.",
+              "intervalMs": 60000,
+              "timeoutMs": 15000
+            }
+          ],
+          "owner": "may",
+          "description": "Hao's deputy: handles conversation and authorized direct work, owns ongoing Tasks, and involves other Apps when useful or required. Use goal for ongoing work. May chooses available tools, specialists and workflows to meet the outcome; procedure parameters belong in context, not new input kinds. The scoped github-pull-request observer discovers exact May Task ownership from PR metadata and supplies targeted may.github.pull-request.state facts without watch registration.",
+          "activeTasks": 81,
+          "attentionTasks": 0,
+          "runningTasks": 0,
+          "waitingTasks": 13
+        },
+        {
+          "id": "scout-knowledge-lib",
+          "owner": "scout",
+          "description": "Scout research and knowledge app: discovers AI trends from arXiv, HN, XHS, GitHub, Reddit; synthesizes findings into a source-grounded knowledge library; delivers daily digests. Use assess-source (sourceUrl, outcome, acceptance, archive boolean, optional constraints/context references) for a bounded assessment of an exact source page or paper: code fetches it, records supplied coverage, and saves the assessment when archive=true. Use goal for broader research questions or library work. Use explore (source: arxiv|hn|xhs|github|reddit) only for a standing feed scan.",
+          "activeTasks": 41,
+          "attentionTasks": 0,
+          "runningTasks": 0,
+          "waitingTasks": 0
+        }
+      ]
+    },
+    "assessment": "Current Host separates mechanical Condition fact recovery from agent review: nextTaskCheckAt retains a recovery deadline, acceptedTaskReviewAt alone permits a timed agent review, and claimObservedAppTask acknowledges/rearms waiting recovery using a store revision fence. This differs from the old nextCheckAt=null patch; do not blindly reapply it. Alex routes compare-candidate to the Gym specialist; its schedules have review selection and research adoption, not improve/may curriculum refill. Modern comparison tests do not exercise the retired evaluation-intake/codex-learning controllers.",
+    "coverageLimit": "Current source and local tests only; no fresh production event/session/metric query or current cross-App caller discovery was available/performed. The retained enabled-App receipt and loaded-source byte comparison are scoped evidence, not a new registry health check."
+  },
+  "missingProof": [
+    "No recovered exact later approval submission or daily curriculum refill after event 6001333 that wakes gym/improve/may exactly once and yields one bounded reconciliation outcome.",
+    "Old status cites zero skips and events 6001329/6001343/6001375 plus dependency appdep_e5423cb1c52a1428f341e55f as routine intake proof. These are retained attributed evidence, not newly queried event bytes; routine codex-learning success is explicitly insufficient under generation-2 acceptance.",
+    "No new terminal caller return or May withdrawal of these exact two promises is established by this contribution.",
+    "The old source-report paths under evaluation.app for 20260822T160209801Z and 20260822T180154951Z were unavailable at their referenced locations. Neither that gap nor disabled Apps proves historical fulfillment."
+  ],
+  "tests": [
+    {
+      "cwd": "/app/projects/may-agent",
+      "command": "bun test ./src/app/core/tasks/app-task-condition-review.test.ts ./src/app/core/tasks/app-task-recovery.test.ts",
+      "exitCode": 0,
+      "passed": 13,
+      "failed": 0,
+      "expectations": 182,
+      "output": "bun test v1.3.14 (0d9b296a)\n\nsrc/app/core/tasks/app-task-condition-review.test.ts:\n(pass) App task Condition recovery and explicit review > keeps a legacy observed report quiet after reopen but admits a newer revision once [173.39ms]\n(pass) App task Condition recovery and explicit review > preserves independent redeclared waits and observations across input and restart [202.93ms]\n(pass) App task Condition recovery and explicit review > preserves independent retained waits and observations across input and restart [212.86ms]\n(pass) App task Condition recovery and explicit review > preserves independent without-legacy-interval waits and observations across input and restart [192.94ms]\n(pass) App task Condition recovery and explicit review > does not acknowledge a newer wake admitted after the waiting snapshot was read [129.99ms]\n(pass) App task Condition recovery and explicit review > rearms mechanical recovery when duplicate claims find the Task waiting [137.13ms]\n(pass) App task Condition recovery and explicit review > keeps new and legacy waits quiet across recovery checks and restart (legacy: false) [190.85ms]\n(pass) App task Condition recovery and explicit review > keeps new and legacy waits quiet across recovery checks and restart (legacy: true) [171.75ms]\n(pass) App task Condition recovery and explicit review > runs one explicitly chosen review without renewing it or changing independent waits [146.57ms]\n(pass) App task Condition recovery and explicit review > replaces an obsolete recovery date with the declared review checkpoint [133.81ms]\n\nsrc/app/core/tasks/app-task-recovery.test.ts:\n(pass) AppTaskRecoveryScheduler > performs one bounded startup query and preserves the trusted lane [0.57ms]\n(pass) AppTaskRecoveryScheduler > uses one nearest-due timer without polling before it is due [59.71ms]\n(pass) AppTaskRecoveryScheduler > advances through bounded recovery pages instead of repeating the first page [0.27ms]\n\n 13 pass\n 0 fail\n 182 expect() calls\nRan 13 tests across 2 files. [1.92s]\n",
+      "outputSha256": "913a282d699bf10a3995708e6907d7844535fed572c984127f273ef7e45d74c4"
+    },
+    {
+      "cwd": "/app/worktrees/alex/input-app_7a279469-7ac8-4bec-894a-9314635bd452-a882250576",
+      "command": "bun test ./projects/alex.app/app.test.ts ./projects/alex.app/agents/gym/workflows/compare-candidate.test.ts",
+      "exitCode": 0,
+      "passed": 23,
+      "failed": 0,
+      "expectations": 115,
+      "output": "bun test v1.3.14 (0d9b296a)\n\nprojects/alex.app/app.test.ts:\n(pass) Alex bootstrap uses ordinary durable Task admission [9.26ms]\n(pass) An operational message reaches executable Alex work [0.07ms]\n(pass) specialist goals remain Alex-owned executable work [0.05ms]\n(pass) independent review may assess Alex work without App-wide exclusion [0.39ms]\n(pass) selected review events return to executable Alex review work [0.36ms]\n(pass) qualified Scout research reaches executable Alex adoption work [0.11ms]\n(pass) automatic review failures stay executable under Alex [0.06ms]\n(pass) declared metric and review-failure subscriptions dispatch executable inputs [0.31ms]\n(pass) ordinary Evaluation reports are consumed only by Alex with immutable identity [0.60ms]\n(pass) weekly research preserves one standing Alex Bob Task across deliveries [0.23ms]\n(pass) comparison inputs attach to the migrated Gym specialist [0.10ms]\n\nprojects/alex.app/agents/gym/workflows/compare-candidate.test.ts:\n(pass) standalone Gym comparison adapter > refuses partial or invalid baseline trials before spending a candidate run [10.79ms]\n(pass) standalone Gym comparison adapter > does not trust a passing comparison when the actual trial scope differs [84.43ms]\n(pass) standalone Gym comparison adapter > rejects an identity mismatch before spawning the standalone runner [2.53ms]\n(pass) standalone Gym comparison adapter > checks the requested objective both before execution and on return [37.79ms]\n(pass) standalone Gym comparison adapter > retains a bounded hold receipt for a failing subprocess [37.19ms]\n(pass) standalone Gym comparison adapter > verifies the trusted run and exact identities after a valid subprocess [35.81ms]\n(pass) standalone Gym comparison adapter > holds a verified no-change control without pretending improvement [33.11ms]\n(pass) standalone Gym comparison adapter > kills an aborted subprocess and retains no fabricated successful run [1241.50ms]\n(pass) frozen objective through the real Gym runner > faster [288.39ms]\n(pass) frozen objective through the real Gym runner > unchanged [296.40ms]\n(pass) frozen objective through the real Gym runner > regression [295.00ms]\n(pass) frozen objective through the real Gym runner > missing-timing [284.11ms]\n\n 23 pass\n 0 fail\n 115 expect() calls\nRan 23 tests across 2 files. [2.89s]\n",
+      "outputSha256": "7555e748b39924ee857b02c067776c576d374b4169e5f8e1d03f75ac9b5c11dc"
+    }
+  ],
+  "preservationVerification": {
+    "totalIdentities": 117,
+    "selected": 2,
+    "untouchedDeepEqual": 115,
+    "directRelationships": 2,
+    "directConditions": 0,
+    "independentHistoricalGymConditions": 1,
+    "receiptAppendOnly": true,
+    "topLevelFieldsUnchanged": true,
+    "inheritedAggregateFields": "Top-level counts/status already stale; deliberately unchanged under exact-entry scope. Recomputed disposition counts are recorded separately below."
+  },
+  "currentDispositionCounts": {
+    "obsolete-execution-promise-withdrawn-unfulfilled": 4,
+    "inspect-current-evidence-for-alex-continuation": 26,
+    "obsolete-approval-request-withdrawn-unfulfilled": 3,
+    "superseded-no-current-continuation-not-fulfilled": 3,
+    "obsolete-lineage-withdrawn-unfulfilled": 7,
+    "retain-may-boundary": 6,
+    "historical-controller-intake-reconciled-not-fulfilled": 37,
+    "consolidate-lineage-after-current-state-check": 7,
+    "obsolete-gym-wake-path-unfulfilled-may-disposition-needed": 2,
+    "partial-execution-path-supersession-nonmetric-open": 4,
+    "retain-may-boundary-after-alex-technical-reconciliation": 2,
+    "obsolete-path-reconciled-outcome-unfulfilled-current-followup-needed": 10,
+    "obsolete-finish-result-lifecycle-withdrawn-unfulfilled": 3,
+    "current-protocol-verified-old-outcome-unfulfilled": 1,
+    "current-protocol-no-change-and-historical-stop-withdrawn-unfulfilled": 1,
+    "obsolete-activation-ask-withdrawn-unfulfilled": 1
+  },
+  "acceptedMayDisposition": {
+    "appId": "may",
+    "requestId": "appdep_b791d717a4429f17904fd8a7",
+    "taskId": "goal/appdep_b791d717a4429f17904fd8a7",
+    "status": "done",
+    "observedEventId": 6645373,
+    "observedAt": "2026-10-04T14:45:36.729Z",
+    "summary": "May’s dated creator/caller disposition withdraws both exact retired Gym approval-wake execution promises unfulfilled. No surviving current caller contract or executable continuation exists for the incident-specific retired controller path; any future technical work requires a fresh enabled-App falsifier and is not continuation of either historical promise.",
+    "receipt": {
+      "kind": "may-gym-approval-wake-creator-disposition",
+      "issuedAt": "2026-10-04T14:45:18Z",
+      "originatingTask": {
+        "appId": "alex",
+        "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452"
+      },
+      "source": {
+        "commit": "141489c2b0dd670d4068c8169650fa21040e394b",
+        "path": "projects/alex.app/gym-approval-wake-reconciliation-2026-10-04.json",
+        "sha256": "3f73b57163a3763015432737d1c330b7509de0b335ffeee3b33fe649e4c6a054"
+      },
+      "dispositions": [
+        {
+          "appId": "may-agent",
+          "taskId": "app-request/appdep_3ccc74a3a17acd12d85f5499",
+          "generation": 2,
+          "creator": {
+            "appId": "may"
+          },
+          "parent": {
+            "relationKind": "parent",
+            "taskId": "platform-system-review-feedback-loop"
+          },
+          "disposition": "obsolete-execution-promise-withdrawn-unfulfilled",
+          "legacyOutcomeFulfilled": false,
+          "executableContinuation": null,
+          "survivingCurrentCallerContract": null,
+          "preserveFromSource": [
+            "complete outcome and acceptance",
+            "all accepted evidence and artifacts",
+            "historical missing-proof statement",
+            "creator and parent/caller relation"
+          ]
+        },
+        {
+          "appId": "may-agent",
+          "taskId": "app-request/appdep_cd6f1ace87bd5db6068c1398",
+          "generation": 1,
+          "creator": {
+            "appId": "may"
+          },
+          "parent": {
+            "relationKind": "parent",
+            "taskId": "platform-system-review-feedback-loop"
+          },
+          "disposition": "obsolete-execution-promise-withdrawn-unfulfilled",
+          "legacyOutcomeFulfilled": false,
+          "executableContinuation": null,
+          "survivingCurrentCallerContract": null,
+          "preserveFromSource": [
+            "complete outcome and acceptance",
+            "all accepted evidence and artifacts",
+            "historical missing-proof statement",
+            "creator and parent/caller relation"
+          ]
+        }
+      ],
+      "independentHistoricalCondition": {
+        "id": "improve-may-ground-truth-approved-g1",
+        "generation": 1,
+        "state": "unknown",
+        "settled": false,
+        "disposition": "preserve-independent-unknown",
+        "aliases": []
+      },
+      "missingProofPreserved": "No recovered exact later approval submission or daily curriculum refill/review after event 6001333 wakes `gym/improve/may` exactly once and yields one bounded reconciliation outcome; routine intake success, zero-skip observations, current deterministic tests, and the two deployment receipts do not supply that proof.",
+      "effects": {
+        "legacyStateMutation": false,
+        "runtimeMutation": false,
+        "retiredAppActivation": false,
+        "deploymentReplay": false,
+        "humanApprovalRequested": false,
+        "replacementTasksCreated": 0
+      }
+    },
+    "incorporationBaseline": {
+      "commit": "141489c2b0dd670d4068c8169650fa21040e394b",
+      "artifactSha256": "3f73b57163a3763015432737d1c330b7509de0b335ffeee3b33fe649e4c6a054",
+      "frontierSha256": "07b12fe1d0200b0fa281ecef6e2f05248372b8d414cccf54618515336b86e257",
+      "receiptSha256": "18666cb95e08647b2ccc89de54bf89213e5e8979f269831b6d3b04a8222049e4"
+    },
+    "limits": "Withdrawal is not fulfillment, approval, rejection, historical Condition settlement, deployment, runtime proof or benchmark change. A future enabled-App falsifier is fresh work, not continuation of either withdrawn promise."
+  },
+  "recommendedFollowUp": {
+    "status": "completed-by-accepted-May-disposition; original recommendation retained as historical evidence only",
+    "technicalReopenOnlyFor": "A fresh enabled-App trace showing repeated agent execution for an unchanged Condition, loss/duplication of an exact relevant event, or improper renewal of a one-shot review. Mechanical fact-recovery checks alone are not agent execution.",
+    "currentContinuation": null,
+    "preserve": [
+      "Both complete old requirements and accepted evidence",
+      "both exact parent relationships",
+      "independent unknown historical Condition improve-may-ground-truth-approved-g1",
+      "missing later-event proof without treating current tests or deployment receipts as fulfillment"
+    ]
+  }
+}

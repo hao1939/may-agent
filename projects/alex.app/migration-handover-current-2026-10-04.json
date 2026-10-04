@@ -1,0 +1,194 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "alex-migration-current-handover-receipt",
+  "generatedAt": "2026-10-04T16:54:41Z",
+  "candidateBase": "19544b4da5c628d19ceeb83b06e1464e856f2b3f",
+  "organization": {
+    "enabledApps": [
+      "alex",
+      "may",
+      "scout-knowledge-lib"
+    ],
+    "loadedRelease": "aa3ff90054615a144936cf556a53d99057731e7c-definitions-v5",
+    "sourceActivated": true,
+    "hostCommit": "11c563f6ff293e755c855ada013d61d49cd411dd",
+    "readiness": true,
+    "interfaceBinding": {
+      "agent": "may",
+      "appId": "may",
+      "conversationId": "may:primary"
+    }
+  },
+  "verdict": {
+    "migrationHandoverComplete": true,
+    "historicalOutcomesNewlyFulfilled": 0,
+    "retiredUnfulfilledIsFulfilled": false,
+    "explanation": "Retired/withdrawn-unfulfilled records an obsolete promise without claiming its requested outcome happened. Independent current work may remain open under its accountable owner."
+  },
+  "taskAccounting": {
+    "sourceCount": 117,
+    "receiptCount": 117,
+    "uniqueCount": 117,
+    "missingIds": [],
+    "extraIds": [],
+    "changedOriginalConditionSets": [],
+    "byDisposition": {
+      "current-protocol-no-change-and-historical-stop-withdrawn-unfulfilled": 1,
+      "current-protocol-verified-old-outcome-unfulfilled": 1,
+      "historical-controller-intake-reconciled-not-fulfilled": 37,
+      "incident-path-terminal-but-outcome-unfulfilled-linked-current-retirement-decision": 1,
+      "obsolete-activation-ask-withdrawn-unfulfilled": 1,
+      "obsolete-approval-request-withdrawn-unfulfilled": 3,
+      "obsolete-execution-path-unfulfilled-no-current-continuation": 3,
+      "obsolete-execution-promise-withdrawn-unfulfilled": 8,
+      "obsolete-finish-result-lifecycle-withdrawn-unfulfilled": 3,
+      "obsolete-lineage-withdrawn-unfulfilled": 7,
+      "obsolete-path-reconciled-outcome-unfulfilled-current-followup-needed": 10,
+      "obsolete-promise-withdrawn-unfulfilled": 5,
+      "obsolete-unfulfilled-with-creator-disposition": 9,
+      "retain-may-boundary": 6,
+      "retain-may-boundary-after-alex-technical-reconciliation": 2,
+      "superseded-by-current-host-integration-outcome-unfulfilled": 1,
+      "superseded-by-fulfilled-activated-alex-continuation": 2,
+      "superseded-no-current-continuation-not-fulfilled": 3,
+      "withdrawn-obsolete-unfulfilled": 14
+    },
+    "provisionalDispositionCount": 0,
+    "withOriginalConditions": 33,
+    "ledger": {
+      "path": "projects/alex.app/legacy-frontier-disposition-2026-10-04.json",
+      "sha256": "98f698e4fb24cb36b3890e9bd50f46e303c7c2e3e823c44cc4812dfd244410e3"
+    },
+    "replacementTaskCount": 10,
+    "unresolvedReplacementReferences": []
+  },
+  "gymPublicHealth": {
+    "count": 8,
+    "taskIds": [
+      "app-request/appdep_263928bfc590a5684bf54762",
+      "app-request/appdep_47b0a419d6ad5ecf12052dcb",
+      "app-request/appdep_4c2fee4e43fa14b8b10946ac",
+      "app-request/appdep_5c14f77dde156f71dd54ee36",
+      "app-request/appdep_7cd2fc39029addee92d61e1a",
+      "app-request/appdep_a3c30a72d193bf75d2badbdc",
+      "app-request/appdep_f713ba59d944c3a0379cb351",
+      "repair/gym-public-health-refresh-replan-20260824"
+    ],
+    "disposition": "withdrawn-obsolete-unfulfilled",
+    "fulfilled": false,
+    "currentContinuation": null,
+    "relatedCurrentWork": {
+      "appId": "may",
+      "taskId": "goal/appdep_c1890444e02436f8d2131ffd",
+      "relationship": "related-not-replacement",
+      "conditionId": "gym-valid-run-rate-retirement-reconcile-7cf298dd9dd55942"
+    },
+    "preservedConditionIds": [
+      "hao-remedial-corrected-gym-admission-decision",
+      "gym-public-health-refresh-for-contained-runtime-task",
+      "hao-approval-gym-public-health-candidate-v10"
+    ]
+  },
+  "pendingInputAccounting": {
+    "sourceCount": 1,
+    "receiptCount": 1,
+    "unaccountedIds": [],
+    "items": [
+      {
+        "appId": "may-agent",
+        "inputId": "app_bd6ea1a5-1409-49e6-808e-3437d862dee0",
+        "kind": "owner-review",
+        "reason": "ops-health-signal-changed",
+        "statusAtCutover": "pending",
+        "createdAt": 1789022089516,
+        "idempotencyKey": "subscription:may-agent:project-owner-request:event:6317862",
+        "executionTaskId": null,
+        "targetTaskId": null,
+        "wait": null,
+        "disposition": "historical-controller-wake-withdrawn-unfulfilled",
+        "fulfilled": false,
+        "basis": "The packet is a 2026-09-10 controller wake aggregating stale event.unhandled-signal-count-1h, EPIPE subscriber failures and retired Gym/Evaluation projection events. Its exact identity had no execution, target or return relationship. Later lineage reconciliations and the converged timestamp rollout preserve useful evidence; replaying this old packet would duplicate obsolete controller work.",
+        "currentEvidenceLinks": [
+          "projects/alex.app/unhandled-signal-owner-review-reconciliation-2026-10-04.json",
+          "projects/alex.app/host-operations-controller-wakes-reconciliation-2026-10-04.json",
+          "alex/input/appdep_db79add2ae9333ab16f704e9"
+        ],
+        "callerOrAuthorityRelationship": null
+      }
+    ],
+    "scope": "Previously unaccounted pending-input gap closed by this receipt; not the complete retired inbox census.",
+    "separatelyInventoriedEarlierCoverage": {
+      "evaluationAutomaticReviewHandling": 106,
+      "maintenancePendingOrHandling": 53,
+      "treatment": "preserved in linked historical reconciliation artifacts; not recounted as this one-gap sourceCount"
+    }
+  },
+  "staleLabelCorrections": [
+    {
+      "task": "may/goal/appdep_9d9948835bb8f4e30ffb6214",
+      "actualStatus": "done",
+      "ledgerRowsCorrected": 3,
+      "decision": "three promises withdrawn obsolete/unfulfilled"
+    },
+    {
+      "task": "may/goal/appdep_8630d39afbc036c94782ceda",
+      "actualStatus": "done",
+      "ledgerRowsCorrected": 3,
+      "decision": "three Gym request-correlation outcomes withdrawn/unfulfilled"
+    },
+    {
+      "task": "alex/input/appdep_db79add2ae9333ab16f704e9",
+      "actualStatus": "done",
+      "decision": "metric completion-causal candidate converged; rollout verification recorded separately"
+    }
+  ],
+  "independentCurrentWork": [
+    {
+      "appId": "may",
+      "taskId": "goal/appdep_3be7de6fa2742a26d35f575b",
+      "returnCondition": "app-request:appdep_3be7de6fa2742a26d35f575b",
+      "scope": "Host assignment-visibility protected integration/activation",
+      "migrationCompletionGate": false
+    },
+    {
+      "appId": "may",
+      "taskId": "goal/appdep_5f8a7c0e566e08fc95051414",
+      "returnCondition": "app-request:appdep_5f8a7c0e566e08fc95051414",
+      "scope": "provider archive recovery identity/access/authority",
+      "migrationCompletionGate": false
+    },
+    {
+      "appId": "may",
+      "taskId": "goal/appdep_c1890444e02436f8d2131ffd",
+      "returnCondition": "gym-valid-run-rate-retirement-reconcile-7cf298dd9dd55942",
+      "scope": "retired Gym metric decision only",
+      "migrationCompletionGate": false
+    }
+  ],
+  "evidence": [
+    {
+      "path": "/app/.state/alex-handover-review-20261005/identity-check.json",
+      "sha256": "bbe2c1ea3628863dafd0ab985af3e5f374d39e03b4de38798855014160251428"
+    },
+    {
+      "path": "/app/.state/alex-handover-review-20261005/report.md",
+      "sha256": "9f7e7c9d14294a8899e1018d481710eaacc4195c7fff8ecbb9a4695096d60942"
+    },
+    {
+      "path": "projects/alex.app/gym-request-correlation-reconciliation-2026-10-04.json",
+      "sha256": "d95196cf2cd3e8d7655d77dd28fa9d6d6ad152021edb96ff76d537cbdf1946bd"
+    },
+    {
+      "path": "projects/alex.app/runtime-release-evaluation-three-entry-reconciliation-2026-10-04.json",
+      "sha256": "4ee50130fdd46a0090dec4ff2f7666eb39a1247dca9222737e4d279c85298eed"
+    },
+    {
+      "path": "/app/.state/pr326-rollout-20261005/verification.json",
+      "sha256": "e72ed0465bd9df778ab79dca3fba902798be76ecb169c55a9e5f55ddc5b42e03"
+    },
+    {
+      "path": "/app/projects/may-agent/.state/deploy-receipts/pr326-policy-boundary-20261005.json",
+      "sha256": "b1c87aa82991409e4993bdb049e91113cafb76af238bb29923593c530d6082be"
+    }
+  ]
+}

@@ -1,0 +1,1314 @@
+{
+  "kind": "bounded-legacy-frontier-reconciliation",
+  "date": "2026-10-04",
+  "sessionId": "s_1791126954996_ead3274d-fde6-4e77-bde5-df55a1206098",
+  "scope": {
+    "zeroBasedIndices": [
+      107,
+      109
+    ],
+    "appId": "may-agent",
+    "taskIds": [
+      "repair-unadmitted-existing-dependency-request-20260825",
+      "repair-waiting-reparent-action-admission-20260820"
+    ],
+    "linkedRecordsAreEvidenceOnly": true
+  },
+  "baseline": {
+    "appsCommit": "8b7057cc16805c44a4ac8a4ef6d60cf3ae6882a4",
+    "hostInspectedCommit": "6b507d42916ae5e0f64483311984302b20079d92",
+    "hostCheckoutCleanBeforeAndAfterTests": true,
+    "note": "Host main source inspection, not a claim it equals the currently loaded artifact. Recent separate activated candidates are not tested here.",
+    "files": [
+      {
+        "path": "projects/alex.app/legacy-frontier-disposition-2026-10-04.json",
+        "sha256": "d9fbed56a5126d1ede9baf9562f13c298a3b9063414b0c164e98b1575802345d"
+      },
+      {
+        "path": "/app/.state/alex-migration-20261004/legacy-frontier-snapshot.json",
+        "sha256": "bd3f6a1cc65e125c61f5a8380cba746d55e3d8143edc6f8d6825af286d5d7f97"
+      },
+      {
+        "path": "projects/alex.app/migration-receipt-2026-10-04.md",
+        "sha256": "90b516f63eed69ebe61193668de8ebdf65828018e074a20cdd163871dc4fb3d3"
+      },
+      {
+        "path": "projects/alex.app/docs/proposals/alex-improvement-app.md",
+        "sha256": "0bff163bad32fb56cccbaf87c9747737e632d5b8a5c50dd75de8fe0e9fc5ad83"
+      },
+      {
+        "path": "projects/alex.app/host-operations-controller-wakes-reconciliation-2026-10-04.json",
+        "sha256": "d6fc9788d566962b76ac498a65713c247fd57bcb74e486b780b386c8d411dccb"
+      }
+    ]
+  },
+  "findings": [
+    {
+      "index": 107,
+      "taskId": "repair-unadmitted-existing-dependency-request-20260825",
+      "classification": "needs-exact-May-caller-and-waiver-disposition",
+      "historicalOutcomeFulfilled": false,
+      "currentTechnicalContinuation": null,
+      "decision": "Do not repair by replay, substitute another request, or deploy again. Current durable request admission/recovery supplies the useful modern mechanism, but cannot retroactively make event 5953599 an original-identity admission. The remaining issue is exact acceptance/caller authority, not a demonstrated current Host defect.",
+      "acceptedProgress": [
+        "Complete retained result records originalIdentityAdmissionProven=false, correction 5740aa8935be8e993f443a60bb166d4e7ba65c86 and 180 historical targeted passes.",
+        "Recovered exact successful deploy receipt confirms matching artifact/loadedArtifact 14a6ac74c9b1e46e0934b39caa9324725570966b2929eb3f97b82a154fe06f0f, healthy service and duplicateDeploy=false. This repair deployment must not be repeated.",
+        "Current exact May Conversation read is closed/done, g1 RV3, with immutable receipt receipt:5982bc738b79d8c38180bd84b450e89421ea465bd106f213cf46137a2df55df3."
+      ],
+      "materialCorrection": "The preserved Conversation is NOT waiting for deployment: its actual human input explicitly said route one may-agent request, do not deploy, and report verified full taskId. Its accepted response names replacement appdep_c5a80e1dd437d142c7a7a3b1, commit 8a8d56de59d19d4c52f7ca11d17a17963faec29e, rejected-before-deploy, liveValidationRuns=0. This is a different candidate/outcome from the successful 5740aa89 runtime repair. Therefore the linked owner-review recommendation to continue replacement through deployment after approval must not be carried forward without exact new authority. The human correction is evidence for May to judge waiver scope, not this helper granting a waiver.",
+      "missingFulfillmentProof": [
+        "Original event 5953599 admitted/correlated as request appdep_7dfc107c800edfadbe471612; retained evidence instead says unhandled with null accepter/route.",
+        "An authoritative terminal result for that original request and exact original Condition app-request:appdep_7dfc107c800edfadbe471612.",
+        "An exact Hao waiver/creator disposition covering the original-identity/no-replacement acceptance; accepted replacement and closed Conversation do not supply it."
+      ],
+      "relationships": [
+        "May creator; parent runtime/platform-owner-review -> platform-system-review-feedback-loop.",
+        "Unknown Condition human-waiver:repair-unadmitted-existing-dependency-request-20260825 is shared with linked intake app-request/app_2c8e44a1-2012-4ac4-bc88-250830f58230; snapshot generation 3 / RV4. Do not choose one as obsolete from duplicate cards alone.",
+        "Pending input app_2c8e44a1-2012-4ac4-bc88-250830f58230, event 6072888, handling, waits on linked intake; full row retained below.",
+        "May hygiene goal/app_224ef63e-ddd6-4f4b-b159-26de9dd60107 emitted exact duplicate-ownership observations 6440723 and 6448833. Current RV730 hygiene result does not disposition this exact waiver.",
+        "Original app-request Condition is a historical spec mention, absent as an exact Condition row in pinned snapshot; no invented binding."
+      ],
+      "nextAction": "Alex should reuse any already-admitted May disposition for the 37 Host Operations wakes if its exact scope includes this waiver, or request one bounded May creator/caller decision. May must compare the actual closed Conversation and human do-not-deploy input with the repair acceptance, decide authorized obsolete withdrawal-unfulfilled versus a surviving exact acceptance waiver, and reconcile duplicate ownership semantically without changing legacy state. Only if a real surviving human choice remains should May ask Hao approve/reject/stop for that precise acceptance exception. Do not reopen the closed Conversation, redeploy, replay original request or create replacement/sibling work.",
+      "recommendedFrontierEdits": {
+        "disposition": "historical-repair-unfulfilled-awaiting-exact-may-waiver-caller-disposition",
+        "proposedOwner": "may",
+        "replacement": null,
+        "preserveOriginalOldAndOutcome": true
+      }
+    },
+    {
+      "index": 109,
+      "taskId": "repair-waiting-reparent-action-admission-20260820",
+      "classification": "obsolete-execution-path-unfulfilled-needs-exact-May-candidate-disposition",
+      "historicalOutcomeFulfilled": false,
+      "currentTechnicalContinuation": null,
+      "decision": "The accepted old waiting/reparent contract has been deliberately retired, not fulfilled by current reparent behavior. Current results reject update-task/create-task, creator revisions preserve the existing parent, and structural children alone do not justify sleep. Reintroducing the old exception or synthetic lifecycle Conditions would conflict with current design; no current falsifier warrants a replacement.",
+      "acceptedProgress": [
+        "Recovered Git candidate 41d87837a796a3a5fdb04aa2b64894140a3418b2 modifies exactly app-task-reconciler.ts and its test. Its change validates the post-action tree before deciding child wait.",
+        "Snapshot retains 129 historical passes/604 expectations, typecheck, old-code failing control and no production mutation. Historical raw check transcript is not recovered; these are attributed accepted evidence, not checks rerun here.",
+        "Retained status explicitly records repair-aks-to-may-app-input-contract-20260819@g2 already done with terminal App/domain result; do not reopen or replace its immutable receipt. Direct current read unavailable because may-agent has no loaded Task runtime."
+      ],
+      "missingFulfillmentProof": [
+        "Exact approve/reject/hold decision for candidate 41d87837 and Condition hao-decision:waiting-reparent-action-admission:41d87837.",
+        "Supported activation receipt for that candidate, loaded/source identity, health and nonduplicate activation.",
+        "Authentic post-activation admission and the complete original-task/child/App/domain terminal chain required by this outcome; retained already-done statement alone does not reconstruct it."
+      ],
+      "relationships": [
+        "May creator and explicit owner may; parent runtime/platform-owner-review -> platform-system-review-feedback-loop.",
+        "Unknown Condition hao-decision:waiting-reparent-action-admission:41d87837 generation 1 / RV1, exact approvalId may-agent:waiting-reparent-action-admission:41d87837:g1 and fingerprint git-commit:41d87837a796a3a5fdb04aa2b64894140a3418b2.",
+        "Retained human request-delivery event 5836005 is evidence of an ask, not approval.",
+        "Source failure session s_1787147216019_209 / event 5781231; preserve original repair-aks-to-may-app-input-contract-20260819 and sole alert-4602 taxonomy lineage reconcile-task-result-delivery-taxonomy-20260819 as linked evidence only."
+      ],
+      "nextAction": "Alex should obtain/reuse one exact May creator disposition of the obsolete 41d87837 activation promise: recommend withdrawal unfulfilled with no current technical continuation, or identify a precise surviving caller obligation. May must not treat migration as Hao approval/rejection, activate the obsolete patch, re-drive the completed original, or commission another alert-4602 lineage. A fresh current enabled-App failing public-protocol trace is the threshold for new technical work.",
+      "recommendedFrontierEdits": {
+        "disposition": "obsolete-candidate-unfulfilled-awaiting-may-authority-disposition",
+        "proposedOwner": "may",
+        "replacement": null,
+        "preserveOriginalOldAndOutcome": true
+      }
+    }
+  ],
+  "preserved": {
+    "frontierEntries": [
+      {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "repair-unadmitted-existing-dependency-request-20260825",
+          "generation": 1,
+          "phase": "waiting",
+          "owner": null,
+          "conditionIds": [
+            "human-waiver:repair-unadmitted-existing-dependency-request-20260825"
+          ]
+        },
+        "outcome": "Repair the May Runtime admission/reconciliation path for the exact existing dependency request `appdep_7dfc107c800edfadbe471612` represented by event `5953599`, then reconcile its preserved Conversation Task and Condition `app-request:appdep_7dfc107c800edfadbe471612` to an evidence-backed terminal dependency result without issuing a replacement request, creating a sibling Conversation Task, mutating Host task storage, or repeating the already-successful deployment.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "repair-waiting-reparent-action-admission-20260820",
+          "generation": 1,
+          "phase": "waiting",
+          "owner": "may",
+          "conditionIds": [
+            "hao-decision:waiting-reparent-action-admission:41d87837"
+          ]
+        },
+        "outcome": "Align waiting-result admission with the accepted atomic task-action contract so schema-valid generation-fenced update-task actions that establish live direct children can be applied without synthetic Conditions, then activate the reviewed runtime safely and re-drive the preserved original attention task to its correct child-waiting or terminal result.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      }
+    ],
+    "completeRetainedTaskRows": [
+      {
+        "app_id": "may-agent",
+        "task_id": "repair-unadmitted-existing-dependency-request-20260825",
+        "generation": 1,
+        "resource_version": 18,
+        "phase": "waiting",
+        "updated_at": 1790424161588,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 1,
+            "id": "repair-unadmitted-existing-dependency-request-20260825",
+            "resourceVersion": 18
+          },
+          "spec": {
+            "acceptance": [
+              "Establish the exact admission failure for event `5953599` from supported runtime evidence and implement the narrow platform correction with a regression that proves the request is admitted and correlated by its original request identity.",
+              "Reconcile the original dependency on the preserved Conversation Task and exact Condition `app-request:appdep_7dfc107c800edfadbe471612` to its authoritative terminal result, or return a precise external authority blocker if terminal reconciliation is impossible.",
+              "Prove that no replacement App request, sibling Conversation Task, duplicate completion, immutable-receipt mutation, or duplicate deployment occurred; if activation is required, use the supported supervisor-owned path and verify loaded artifact identity plus healthy service state."
+            ],
+            "category": "runtime-reliability",
+            "input": {
+              "conditionId": "app-request:appdep_7dfc107c800edfadbe471612",
+              "duplicateDeployForbidden": true,
+              "duplicateDispatchForbidden": true,
+              "preserveExistingIdentity": true,
+              "requestId": "appdep_7dfc107c800edfadbe471612",
+              "sourceEventId": 5953599
+            },
+            "mode": "achieve",
+            "outcome": "Repair the May Runtime admission/reconciliation path for the exact existing dependency request `appdep_7dfc107c800edfadbe471612` represented by event `5953599`, then reconcile its preserved Conversation Task and Condition `app-request:appdep_7dfc107c800edfadbe471612` to an evidence-backed terminal dependency result without issuing a replacement request, creating a sibling Conversation Task, mutating Host task storage, or repeating the already-successful deployment.",
+            "outputs": [],
+            "parentId": "runtime/platform-owner-review",
+            "priority": "P0"
+          },
+          "status": {
+            "conditionIds": [
+              "human-waiver:repair-unadmitted-existing-dependency-request-20260825"
+            ],
+            "evidence": [
+              "Event 5953599: delivery_status=unhandled, accepted_by=null, delivery_route=null.",
+              "Event 6071466: delivery_status=accepted, accepted_by=app-inbox:may-agent.",
+              "The preserved Conversation Task has one immutable terminal receipt derived from the replacement dependency result.",
+              "Condition human-waiver:repair-unadmitted-existing-dependency-request-20260825 remains unknown.",
+              "Loaded artifact identity matches the successful deploy receipt; service health is healthy and duplicateDeploy=false."
+            ],
+            "observedGeneration": 1,
+            "phase": "waiting",
+            "result": {
+              "attemptEffects": {
+                "deployments": 0,
+                "duplicateCompletions": 0,
+                "newAppRequests": 0,
+                "newSiblingConversationTasks": 0,
+                "taskStorageMutations": 0
+              },
+              "correction": {
+                "behaviorProven": "requeue preserved Task after unlinking missing-request Condition",
+                "originalIdentityAdmissionProven": false,
+                "sourceCommit": "5740aa8935be8e993f443a60bb166d4e7ba65c86",
+                "targetedTestsPassed": 180
+              },
+              "decision": "human-acceptance-waiver-required",
+              "deployment": {
+                "artifactSha": "14a6ac74c9b1e46e0934b39caa9324725570966b2929eb3f97b82a154fe06f0f",
+                "duplicateDeploy": false,
+                "health": "healthy",
+                "loadedArtifactSha": "14a6ac74c9b1e46e0934b39caa9324725570966b2929eb3f97b82a154fe06f0f"
+              },
+              "originalRequest": {
+                "admitted": false,
+                "conditionId": "app-request:appdep_7dfc107c800edfadbe471612",
+                "eventId": 5953599,
+                "requestId": "appdep_7dfc107c800edfadbe471612"
+              },
+              "preservedConversationTaskId": "conversation/app_c820f4ad-6ba2-4c06-af7f-5a46e650d85c",
+              "replacementRequest": {
+                "acceptedBy": "app-inbox:may-agent",
+                "eventId": 6071466,
+                "requestId": "appdep_c5a80e1dd437d142c7a7a3b1",
+                "terminalConversationReceipt": true
+              }
+            },
+            "summary": "The narrow correction is deployed and healthy, but original request `appdep_7dfc107c800edfadbe471612` remains unadmitted and immutable history already contains accepted replacement `appdep_c5a80e1dd437d142c7a7a3b1`. A human decision is required to waive the original-identity/no-replacement criterion, reject the outcome, or stop; no further technical action is authorized.",
+            "updatedAt": "2026-08-25T05:29:44.828Z"
+          }
+        },
+        "trigger_json": {
+          "taskId": "repair-unadmitted-existing-dependency-request-20260825",
+          "taskGeneration": 1,
+          "resourceVersion": 2,
+          "events": [
+            {
+              "event": {
+                "type": "may.hygiene.todo-duplicate-observed",
+                "source": "app-task:may",
+                "owner": "agent:may",
+                "target": {
+                  "appId": "may-agent",
+                  "taskId": "repair-unadmitted-existing-dependency-request-20260825"
+                },
+                "data": {
+                  "observedAt": "2026-09-25T16:00:00Z",
+                  "sourceTask": {
+                    "appId": "may",
+                    "taskId": "goal/app_224ef63e-ddd6-4f4b-b159-26de9dd60107"
+                  },
+                  "conditionId": "human-waiver:repair-unadmitted-existing-dependency-request-20260825",
+                  "subject": "dependency-waiver:appdep_7dfc107c800edfadbe471612",
+                  "owner": "Hao",
+                  "duplicateOwnerTasks": [
+                    {
+                      "appId": "may-agent",
+                      "taskId": "repair-unadmitted-existing-dependency-request-20260825",
+                      "ref": "4e370bd2",
+                      "resourceVersion": 16
+                    },
+                    {
+                      "appId": "may-agent",
+                      "taskId": "app-request/app_2c8e44a1-2012-4ac4-bc88-250830f58230",
+                      "ref": "973b95ef",
+                      "resourceVersion": 14
+                    }
+                  ],
+                  "observation": "The current canonical system-wide humanActionOnly projection contains two cards for the same condition identity, subject, owner, and requested action. May preserved both because no current evidence proves which owner Task is authoritative or obsolete.",
+                  "requestedAction": "Reconcile the duplicate human-action ownership on these exact Tasks through may-agent's normal owner path; preserve the decision until current evidence proves one Condition is obsolete or satisfied.",
+                  "idempotencyKey": "task-emission:[\"may\",\"goal/app_224ef63e-ddd6-4f4b-b159-26de9dd60107\",2,\"hygiene:todo-duplicate:dependency-waiver-appdep_7dfc107c800edfadbe471612:124330\"]",
+                  "emission": {
+                    "appId": "may",
+                    "taskId": "goal/app_224ef63e-ddd6-4f4b-b159-26de9dd60107",
+                    "generation": 2,
+                    "localKey": "hygiene:todo-duplicate:dependency-waiver-appdep_7dfc107c800edfadbe471612:124330"
+                  }
+                },
+                "eventId": 6440723
+              },
+              "observedAt": "2026-09-25T16:04:26.503Z"
+            },
+            {
+              "event": {
+                "type": "may.hygiene.todo-duplicate-observed",
+                "source": "app-task:may",
+                "owner": "agent:may",
+                "target": {
+                  "appId": "may-agent",
+                  "taskId": "repair-unadmitted-existing-dependency-request-20260825"
+                },
+                "data": {
+                  "observedAt": "2026-09-26T12:01:47.711Z",
+                  "sourceTask": {
+                    "appId": "may",
+                    "taskId": "goal/app_224ef63e-ddd6-4f4b-b159-26de9dd60107"
+                  },
+                  "priorUnhandledEventId": 6440723,
+                  "conditionId": "human-waiver:repair-unadmitted-existing-dependency-request-20260825",
+                  "subject": "dependency-waiver:appdep_7dfc107c800edfadbe471612",
+                  "duplicateOwnerTasks": [
+                    {
+                      "appId": "may-agent",
+                      "taskId": "repair-unadmitted-existing-dependency-request-20260825",
+                      "ref": "4e370bd2",
+                      "resourceVersion": 17
+                    },
+                    {
+                      "appId": "may-agent",
+                      "taskId": "app-request/app_2c8e44a1-2012-4ac4-bc88-250830f58230",
+                      "ref": "973b95ef",
+                      "resourceVersion": 14
+                    }
+                  ],
+                  "observation": "The current system-wide humanActionOnly projection still contains two cards with the same Condition id, subject, requested action, and unknown observation. May preserved both because it lacks authority and current evidence to choose which owner Task is obsolete.",
+                  "requestedAction": "Reconcile duplicate Condition ownership through this existing may-agent owner Task; retain the human decision until one duplicate is proved obsolete or the decision is satisfied.",
+                  "idempotencyKey": "task-emission:[\"may\",\"goal/app_224ef63e-ddd6-4f4b-b159-26de9dd60107\",2,\"hygiene:todo-duplicate-owner-delivery:dependency-waiver-appdep_7dfc107c800edfadbe471612:v1\"]",
+                  "emission": {
+                    "appId": "may",
+                    "taskId": "goal/app_224ef63e-ddd6-4f4b-b159-26de9dd60107",
+                    "generation": 2,
+                    "localKey": "hygiene:todo-duplicate-owner-delivery:dependency-waiver-appdep_7dfc107c800edfadbe471612:v1"
+                  }
+                },
+                "eventId": 6448833
+              },
+              "observedAt": "2026-09-26T12:02:41.588Z"
+            }
+          ],
+          "event": {
+            "type": "may.hygiene.todo-duplicate-observed",
+            "source": "app-task:may",
+            "owner": "agent:may",
+            "target": {
+              "appId": "may-agent",
+              "taskId": "repair-unadmitted-existing-dependency-request-20260825"
+            },
+            "data": {
+              "observedAt": "2026-09-26T12:01:47.711Z",
+              "sourceTask": {
+                "appId": "may",
+                "taskId": "goal/app_224ef63e-ddd6-4f4b-b159-26de9dd60107"
+              },
+              "priorUnhandledEventId": 6440723,
+              "conditionId": "human-waiver:repair-unadmitted-existing-dependency-request-20260825",
+              "subject": "dependency-waiver:appdep_7dfc107c800edfadbe471612",
+              "duplicateOwnerTasks": [
+                {
+                  "appId": "may-agent",
+                  "taskId": "repair-unadmitted-existing-dependency-request-20260825",
+                  "ref": "4e370bd2",
+                  "resourceVersion": 17
+                },
+                {
+                  "appId": "may-agent",
+                  "taskId": "app-request/app_2c8e44a1-2012-4ac4-bc88-250830f58230",
+                  "ref": "973b95ef",
+                  "resourceVersion": 14
+                }
+              ],
+              "observation": "The current system-wide humanActionOnly projection still contains two cards with the same Condition id, subject, requested action, and unknown observation. May preserved both because it lacks authority and current evidence to choose which owner Task is obsolete.",
+              "requestedAction": "Reconcile duplicate Condition ownership through this existing may-agent owner Task; retain the human decision until one duplicate is proved obsolete or the decision is satisfied.",
+              "idempotencyKey": "task-emission:[\"may\",\"goal/app_224ef63e-ddd6-4f4b-b159-26de9dd60107\",2,\"hygiene:todo-duplicate-owner-delivery:dependency-waiver-appdep_7dfc107c800edfadbe471612:v1\"]",
+              "emission": {
+                "appId": "may",
+                "taskId": "goal/app_224ef63e-ddd6-4f4b-b159-26de9dd60107",
+                "generation": 2,
+                "localKey": "hygiene:todo-duplicate-owner-delivery:dependency-waiver-appdep_7dfc107c800edfadbe471612:v1"
+              }
+            },
+            "eventId": 6448833
+          },
+          "observedAt": "2026-09-26T12:02:41.588Z"
+        }
+      },
+      {
+        "app_id": "may-agent",
+        "task_id": "repair-waiting-reparent-action-admission-20260820",
+        "generation": 1,
+        "resource_version": 20,
+        "phase": "waiting",
+        "updated_at": 1787236527494,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 1,
+            "id": "repair-waiting-reparent-action-admission-20260820",
+            "resourceVersion": 20
+          },
+          "spec": {
+            "acceptance": [
+              "Capture an old-code regression reproducing session s_1787147216019_209: a waiting result with no Conditions and valid update-task actions that reparent live tasks is rejected before action application.",
+              "Repair the generic reconciler so waiting validity is judged from the atomically resulting task tree for create and update actions, while preserving rejection of waiting results that have neither an open exact Condition nor a live direct child after actions; do not weaken generation fencing, action-shape validation, cycle/parent validation, completed-receipt immutability, or all-or-nothing application.",
+              "Add focused positive and negative regressions proving update-task reparent decomposition succeeds without task-lifecycle Conditions, invalid or stale reparent batches apply nothing, and a post-action tree with no live direct child is still rejected.",
+              "Keep unrelated dirty workspace changes isolated; produce an immutable reviewed candidate with focused reconciler tests and repository typecheck, and present its exact identity and proof before any production mutation.",
+              "Only after the required production decision, use the supported supervisor-owned activation path at most once and prove exact loaded artifact/source identity, healthy runtime, and no duplicate activation; on rejection or proof mismatch, preserve production and return a terminal no-change or replanning disposition.",
+              "After successful activation, re-drive the existing task `repair-aks-to-may-app-input-contract-20260819` rather than replacing it; prove its generation-fenced child actions apply atomically, it reaches the correct live-child wait or supported terminal disposition, and its correlated App/domain results continue to terminal evidence.",
+              "Preserve `reconcile-task-result-delivery-taxonomy-20260819` as the sole alert-4602 taxonomy and remeasurement lineage. May reviews the candidate, activation receipt, authentic post-activation trace, original-task result, and child/App terminal evidence; any missing link is replanned with the responsible runtime layer, escalating only a real approval or supervisor-authority blocker."
+            ],
+            "category": "runtime-supervision",
+            "input": {
+              "constraints": [
+                "Do not edit task storage or generated projections directly.",
+                "Do not add synthetic task-lifecycle Conditions.",
+                "Do not duplicate the existing alert-4602 taxonomy or remeasurement tasks.",
+                "Do not combine unrelated dirty app-task-runtime changes with the reconciler candidate."
+              ],
+              "findingDedupeKey": "waiting-child-actions-condition-validation-mismatch",
+              "preservedTaskId": "repair-aks-to-may-app-input-contract-20260819",
+              "rejectionEventId": 5781231,
+              "sourceSessionId": "s_1787147216019_209"
+            },
+            "mode": "achieve",
+            "outcome": "Align waiting-result admission with the accepted atomic task-action contract so schema-valid generation-fenced update-task actions that establish live direct children can be applied without synthetic Conditions, then activate the reviewed runtime safely and re-drive the preserved original attention task to its correct child-waiting or terminal result.",
+            "outputs": [],
+            "owner": "may",
+            "parentId": "runtime/platform-owner-review",
+            "priority": "P1"
+          },
+          "status": {
+            "conditionIds": [
+              "hao-decision:waiting-reparent-action-admission:41d87837"
+            ],
+            "evidence": [
+              "candidate:git-commit:41d87837a796a3a5fdb04aa2b64894140a3418b2 parent:60bf60f9d825ac991f115bc6857e89ecc7ec0abd tree:edac2b2556482ad79ca3faf648447b3b6250a14f",
+              "focused-proof:129-pass-0-fail-604-expectations",
+              "repository-typecheck:pass",
+              "old-code-control:session s_1787147216019_209-linked update reparent regression fails before action application with the exact missing-Condition rejection",
+              "isolation:only src/app/app-task-reconciler.ts and src/app/app-task-reconciler.test.ts changed in the clean candidate worktree",
+              "production:no-mutation-runtime-healthy",
+              "task:repair-aks-to-may-app-input-contract-20260819@g2 status=done with terminal App/domain result; completed receipt is immutable",
+              "event:5836005 delivered the proof-backed approve/reject/hold decision request"
+            ],
+            "observedGeneration": 1,
+            "phase": "waiting",
+            "summary": "Stop before production mutation and wait for Hao's exact decision on Runtime candidate 41d87837a796a3a5fdb04aa2b64894140a3418b2. Approval authorizes one supported supervisor-owned activation followed by loaded-identity, health, no-duplicate, authentic post-activation admission, and terminal-lineage proof; reject or hold preserves production unchanged. Because repair-aks-to-may-app-input-contract-20260819@g2 is already done, its immutable receipt will be preserved rather than reopened, and any incompatible proof requirement will be replanned with the responsible runtime layer.",
+            "updatedAt": "2026-08-20T14:35:27.494Z"
+          }
+        },
+        "trigger_json": null
+      }
+    ],
+    "exactConditions": [
+      {
+        "app_id": "may-agent",
+        "condition_id": "human-waiver:repair-unadmitted-existing-dependency-request-20260825",
+        "state": "unknown",
+        "condition_json": "{\"metadata\":{\"generation\":3,\"id\":\"human-waiver:repair-unadmitted-existing-dependency-request-20260825\",\"resourceVersion\":4},\"spec\":{\"expected\":{\"decision\":[\"approve\",\"reject\",\"stop\"]},\"owner\":\"Hao\",\"requestedAction\":\"Approve accepted replacement `appdep_c5a80e1dd437d142c7a7a3b1` as the waiver for original unadmitted request `appdep_7dfc107c800edfadbe471612` (recommended), or explicitly reject or stop the outcome.\",\"reviewAfterMs\":60000,\"subject\":\"dependency-waiver:appdep_7dfc107c800edfadbe471612\",\"type\":\"human-decision\"},\"status\":{\"createdAt\":\"2026-08-26T16:19:27.955Z\",\"observedAt\":\"2026-08-26T16:24:11.796Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}"
+      },
+      {
+        "app_id": "may-agent",
+        "condition_id": "hao-decision:waiting-reparent-action-admission:41d87837",
+        "state": "unknown",
+        "condition_json": "{\"metadata\":{\"generation\":1,\"id\":\"hao-decision:waiting-reparent-action-admission:41d87837\",\"resourceVersion\":1},\"spec\":{\"expected\":{\"anyOf\":[\"approve\",\"reject\",\"hold\"],\"approvalId\":\"may-agent:waiting-reparent-action-admission:41d87837:g1\",\"approvalKind\":\"immutable-candidate-activation\",\"artifactFingerprint\":\"git-commit:41d87837a796a3a5fdb04aa2b64894140a3418b2\",\"field\":\"decision\",\"taskGeneration\":1,\"taskId\":\"repair-waiting-reparent-action-admission-20260820\"},\"owner\":\"human:hao\",\"reviewAfterMs\":86400000,\"subject\":\"project:may-agent\",\"type\":\"project.approval.submitted\"},\"status\":{\"observedAt\":\"2026-08-20T14:35:27.493Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}"
+      }
+    ],
+    "relationships": [
+      {
+        "app_id": "may-agent",
+        "source_task_id": "app-request/app_2c8e44a1-2012-4ac4-bc88-250830f58230",
+        "relation_kind": "parent",
+        "target_task_id": "platform-system-review-feedback-loop"
+      },
+      {
+        "app_id": "may-agent",
+        "source_task_id": "runtime/platform-owner-review",
+        "relation_kind": "parent",
+        "target_task_id": "platform-system-review-feedback-loop"
+      },
+      {
+        "app_id": "may-agent",
+        "source_task_id": "repair-unadmitted-existing-dependency-request-20260825",
+        "relation_kind": "parent",
+        "target_task_id": "runtime/platform-owner-review"
+      },
+      {
+        "app_id": "may-agent",
+        "source_task_id": "repair-waiting-reparent-action-admission-20260820",
+        "relation_kind": "parent",
+        "target_task_id": "runtime/platform-owner-review"
+      }
+    ],
+    "linkedEvidenceOnlyTaskRows": [
+      {
+        "app_id": "may-agent",
+        "task_id": "app-request/app_2c8e44a1-2012-4ac4-bc88-250830f58230",
+        "generation": 1,
+        "resource_version": 14,
+        "phase": "waiting",
+        "updated_at": 1787761451796,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 1,
+            "id": "app-request/app_2c8e44a1-2012-4ac4-bc88-250830f58230",
+            "resourceVersion": 14
+          },
+          "spec": {
+            "acceptance": [
+              "Return a terminal, evidence-backed platform disposition through the supported control plane."
+            ],
+            "input": {
+              "data": {
+                "emission": {
+                  "appId": "evaluation",
+                  "generation": 1,
+                  "localKey": "owner-finding-a368f224ce7efaeb",
+                  "taskId": "runtime/session-aftermath/s_1787634955801_9"
+                },
+                "evaluationVerdict": "good",
+                "finding": {
+                  "dedupeKey": "repair-unadmitted-existing-dependency-request-waiver",
+                  "evidence": [
+                    "session:s_1787634955801_9 result Condition `human-waiver:repair-unadmitted-existing-dependency-request-20260825`",
+                    "event:5953599 remained unhandled with no accepter or route",
+                    "event:6071466 was accepted by `app-inbox:may-agent`"
+                  ],
+                  "message": "Decide whether to approve accepted replacement `appdep_c5a80e1dd437d142c7a7a3b1` as a waiver for original unadmitted request `appdep_7dfc107c800edfadbe471612`, reject the outcome, or stop. The evaluated session correctly found that another request or deployment would violate the task constraints.",
+                  "requestedHumanAction": "decide",
+                  "severity": "blocked-on-human",
+                  "summary": "Original dependency identity cannot be reconciled without a waiver decision",
+                  "targetAppId": "may-agent"
+                },
+                "idempotencyKey": "task:evaluation:runtime/session-aftermath/s_1787634955801_9:1:emit:owner-finding-a368f224ce7efaeb",
+                "message": "Decide whether to approve accepted replacement `appdep_c5a80e1dd437d142c7a7a3b1` as a waiver for original unadmitted request `appdep_7dfc107c800edfadbe471612`, reject the outcome, or stop. The evaluated session correctly found that another request or deployment would violate the task constraints.",
+                "project": "may-agent",
+                "reason": "evaluation-session-finding",
+                "sourceSessionId": "s_1787634955801_9"
+              },
+              "kind": "owner-review"
+            },
+            "mode": "achieve",
+            "outcome": "Review and resolve the addressed Host Operations request.",
+            "owner": "may",
+            "parentId": "platform-system-review-feedback-loop",
+            "priority": "P1"
+          },
+          "status": {
+            "conditionIds": [
+              "human-waiver:repair-unadmitted-existing-dependency-request-20260825"
+            ],
+            "evidence": [
+              "Event 5953599: original request `appdep_7dfc107c800edfadbe471612` remained unhandled with no accepter or route.",
+              "Event 6071466: replacement request `appdep_c5a80e1dd437d142c7a7a3b1` was accepted by `app-inbox:may-agent`.",
+              "The authoritative dependency observation says only a human waiver can authorize substitution and recommends approval."
+            ],
+            "observedAttemptId": "r_1_b2e6e02a-bb80-411e-98e3-3c180688ee46",
+            "observedGeneration": 1,
+            "phase": "waiting",
+            "result": {
+              "afterApproval": "Continue the same accepted replacement to terminal deployment and live-validation proof; review that proof and replan or escalate only if it is missing.",
+              "originalRequestId": "appdep_7dfc107c800edfadbe471612",
+              "reason": "The original request remained unhandled, while the replacement was accepted and preserves the required work; another request or deployment without waiver would breach the constraints.",
+              "recommendedDecision": "approve",
+              "replacementRequestId": "appdep_c5a80e1dd437d142c7a7a3b1"
+            },
+            "summary": "The platform disposition is prepared: approve the accepted replacement as the waiver is recommended, but only Hao can make that substitution decision. The existing accepted replacement remains the sole continuation path and must reach terminal deployment and live-validation proof after approval.",
+            "updatedAt": "2026-08-26T16:24:11.796Z"
+          }
+        },
+        "trigger_json": null
+      }
+    ],
+    "linkedPendingInputs": [
+      {
+        "id": "app_2c8e44a1-2012-4ac4-bc88-250830f58230",
+        "app_id": "may-agent",
+        "parent_id": null,
+        "conversation_id": null,
+        "conversation_seq": null,
+        "channel": null,
+        "channel_thread_id": null,
+        "channel_message_id": null,
+        "reply_to_source_id": null,
+        "source_kind": "system",
+        "source_id": "event:6072888",
+        "input_kind": "owner-review",
+        "input_data": "{\"reason\":\"evaluation-session-finding\",\"project\":\"may-agent\",\"sourceSessionId\":\"s_1787634955801_9\",\"evaluationVerdict\":\"good\",\"finding\":{\"targetAppId\":\"may-agent\",\"severity\":\"blocked-on-human\",\"summary\":\"Original dependency identity cannot be reconciled without a waiver decision\",\"message\":\"Decide whether to approve accepted replacement `appdep_c5a80e1dd437d142c7a7a3b1` as a waiver for original unadmitted request `appdep_7dfc107c800edfadbe471612`, reject the outcome, or stop. The evaluated session correctly found that another request or deployment would violate the task constraints.\",\"evidence\":[\"session:s_1787634955801_9 result Condition `human-waiver:repair-unadmitted-existing-dependency-request-20260825`\",\"event:5953599 remained unhandled with no accepter or route\",\"event:6071466 was accepted by `app-inbox:may-agent`\"],\"dedupeKey\":\"repair-unadmitted-existing-dependency-request-waiver\",\"requestedHumanAction\":\"decide\"},\"message\":\"Decide whether to approve accepted replacement `appdep_c5a80e1dd437d142c7a7a3b1` as a waiver for original unadmitted request `appdep_7dfc107c800edfadbe471612`, reject the outcome, or stop. The evaluated session correctly found that another request or deployment would violate the task constraints.\",\"idempotencyKey\":\"task:evaluation:runtime/session-aftermath/s_1787634955801_9:1:emit:owner-finding-a368f224ce7efaeb\",\"emission\":{\"appId\":\"evaluation\",\"taskId\":\"runtime/session-aftermath/s_1787634955801_9\",\"generation\":1,\"localKey\":\"owner-finding-a368f224ce7efaeb\"}}",
+        "status": "handling",
+        "session_id": null,
+        "waiting_on_kind": "task",
+        "waiting_on_id": "app-request/app_2c8e44a1-2012-4ac4-bc88-250830f58230",
+        "result": null,
+        "available_at": 1789026732807,
+        "review_at": null,
+        "lease_generation": 5,
+        "lease_owner": null,
+        "lease_expires_at": null,
+        "origin_event_id": 6072888,
+        "idempotency_key": "subscription:may-agent:project-owner-request:event:6072888",
+        "created_at": 1787635110862,
+        "updated_at": 1789026732807,
+        "completed_at": null,
+        "channel_target_id": null,
+        "continues_request_id": null,
+        "started_at": 1787635113263,
+        "changed_at": 1787891432376,
+        "target_task_id": null,
+        "topic_id": null,
+        "handling": null,
+        "task_admission_key": null,
+        "execution_task_id": null,
+        "creator_json": null,
+        "recovery_json": null
+      }
+    ],
+    "currentTaskReadReceipts": [
+      {
+        "id": "goal/app_224ef63e-ddd6-4f4b-b159-26de9dd60107",
+        "status": "waiting",
+        "generation": 2,
+        "outcome": "Maintain May hygiene with a review every four hours that checks both open May Tasks and Hao’s current `/todo` items, keeping only work and human actions that canonical evidence shows are still valid and necessary.",
+        "summary": "The 11:48 UTC hygiene cycle reviewed fresh canonical state. May still has 79 uncancelled resources: 66 converged-but-unclosed receipts, 11 waiting, 1 running, and 1 pending. The prior PR #312 cleanup owner has now converged with no remaining obligations, but this attempt has no guarded close-after-result control, so it was preserved rather than unsafely cancelled. Canonical `/todo` remains six actions—1 May, 2 inactive may-agent, and 3 inactive aks-rp-e2e. The May Reddit cadence approval remains current; the five inactive-App actions remain valid or uncertain because no current evidence proves satisfaction or obsolescence. No Task was closed and no Condition retired. Review again at 16:00 UTC on 2026-10-04.",
+        "facts": [
+          "Canonical uncancelled May inventory: 66 converged, 11 waiting, 1 running, and 1 pending, totaling 79. Converged is not owner closure.",
+          "Canonical `/todo` contains exactly six unresolved Conditions whose spec.owner is exactly human: 1 May, 2 inactive may-agent, and 3 inactive aks-rp-e2e.",
+          "The May Reddit cadence action remains necessary: exact candidate b5c2dc832d808513e4eb6533c87fb1c244ae1ef5 is unapplied, activation is unperformed, and loaded cadence remains 14,400,000 ms.",
+          "The five inactive-App actions remain valid or uncertain. Their Apps have no loaded Task runtime, while canonical Conditions still request clean source/activation, quota recovery, or destructive cleanup authority; none was inferred satisfied.",
+          "The superseded PR #312 publication-repair Task is now converged, condition-free, event-free, and without input waits; remaining PR metadata/protected-decision work stays on its current creator Task. No guarded close-after-result control was available in this attempt.",
+          "No Task, Condition, PR, branch, merge, rollout, source, deployment, credential, destructive cleanup, standing Task, Conversation infrastructure, or replacement work was mutated. Full disposition: artifacts/hygiene-cycle-2026-10-04T1148Z.md, SHA-256 2e547e535e41d0bcd6c79233d705f5f5a512fbc5cb50324adb6030812241b29a."
+        ],
+        "resourceVersion": 730,
+        "pendingEvents": {
+          "items": [],
+          "truncated": false
+        },
+        "currentObligations": {
+          "available": true,
+          "reviewAt": 1791129600000,
+          "inputWaits": {
+            "maxItems": 100,
+            "truncated": false,
+            "items": [
+              {
+                "key": "conversation-follow-up:may:app_31bda28e-588e-464e-afff-ab933ff360cd",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": false
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 31
+                  }
+                }
+              },
+              {
+                "key": "conversation-follow-up:may:app_334f5f87-fa11-46f7-b7b9-84f89ec3e6fa",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": false
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 47
+                  }
+                }
+              },
+              {
+                "key": "conversation-follow-up:may:app_73cb63c0-4b05-487a-9ae4-c3236f718db4",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": false
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 36
+                  }
+                }
+              },
+              {
+                "key": "conversation-follow-up:may:app_74003754-b886-4917-aca4-18ffedcb1d89",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": false
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 34
+                  }
+                }
+              },
+              {
+                "key": "task:app_01e15f24-996f-4fb5-961a-908668f1438b",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": true,
+                    "id": "app_01e15f24-996f-4fb5-961a-908668f1438b",
+                    "kind": "message",
+                    "status": "handling"
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 13
+                  }
+                }
+              },
+              {
+                "key": "task:app_02cb6a5c-85af-4fda-b6e9-4c727d3e6ff0",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": true,
+                    "id": "app_02cb6a5c-85af-4fda-b6e9-4c727d3e6ff0",
+                    "kind": "message",
+                    "status": "handling"
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 43
+                  }
+                }
+              },
+              {
+                "key": "task:app_03a46deb-4f38-445e-9701-7b37ed3de82c",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": true,
+                    "id": "app_03a46deb-4f38-445e-9701-7b37ed3de82c",
+                    "kind": "message",
+                    "status": "handling"
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 44
+                  }
+                }
+              },
+              {
+                "key": "task:app_3b6de82e-84ab-479a-8e74-20fb7827cb18",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": true,
+                    "id": "app_3b6de82e-84ab-479a-8e74-20fb7827cb18",
+                    "kind": "message",
+                    "status": "handling"
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 19
+                  }
+                }
+              },
+              {
+                "key": "task:app_65b3e5a9-85c0-4961-b845-b7cbf068b60d",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": true,
+                    "id": "app_65b3e5a9-85c0-4961-b845-b7cbf068b60d",
+                    "kind": "message",
+                    "status": "handling"
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 18
+                  }
+                }
+              },
+              {
+                "key": "task:app_66908021-9af7-4454-ad7f-4066c4de264b",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": true,
+                    "id": "app_66908021-9af7-4454-ad7f-4066c4de264b",
+                    "kind": "message",
+                    "status": "handling"
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 44
+                  }
+                }
+              },
+              {
+                "key": "task:app_70f62def-74aa-4a84-a39e-bbc2b342d302",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": true,
+                    "id": "app_70f62def-74aa-4a84-a39e-bbc2b342d302",
+                    "kind": "message",
+                    "status": "handling"
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 37
+                  }
+                }
+              },
+              {
+                "key": "task:app_9b4a95e7-3dfa-4f0b-b3ad-d68fecf1fcdb",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": true,
+                    "id": "app_9b4a95e7-3dfa-4f0b-b3ad-d68fecf1fcdb",
+                    "kind": "message",
+                    "status": "handling"
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 43
+                  }
+                }
+              },
+              {
+                "key": "task:app_9ffa863a-ecab-4040-913a-481131b5f78e",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": true,
+                    "id": "app_9ffa863a-ecab-4040-913a-481131b5f78e",
+                    "kind": "message",
+                    "status": "handling"
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 14
+                  }
+                }
+              },
+              {
+                "key": "task:app_a40e87f9-9cc6-4af8-b3aa-a5147b640c3a",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": true,
+                    "id": "app_a40e87f9-9cc6-4af8-b3aa-a5147b640c3a",
+                    "kind": "message",
+                    "status": "handling"
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 14
+                  }
+                }
+              },
+              {
+                "key": "task:app_ae7d4af0-c3e1-411e-a228-0862ff39d663",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": true,
+                    "id": "app_ae7d4af0-c3e1-411e-a228-0862ff39d663",
+                    "kind": "message",
+                    "status": "handling"
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 4
+                  }
+                }
+              },
+              {
+                "key": "task:app_c018a81c-ac8f-419e-a5f7-a12b0ac20671",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": true,
+                    "id": "app_c018a81c-ac8f-419e-a5f7-a12b0ac20671",
+                    "kind": "message",
+                    "status": "handling"
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 43
+                  }
+                }
+              },
+              {
+                "key": "task:app_c53a8a20-6601-45a4-a60f-6a655fe076fa",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": true,
+                    "id": "app_c53a8a20-6601-45a4-a60f-6a655fe076fa",
+                    "kind": "message",
+                    "status": "handling"
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 38
+                  }
+                }
+              },
+              {
+                "key": "task:app_c87f03ad-111a-4549-955d-3e5709a3a27d",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": true,
+                    "id": "app_c87f03ad-111a-4549-955d-3e5709a3a27d",
+                    "kind": "message",
+                    "status": "handling"
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 43
+                  }
+                }
+              },
+              {
+                "key": "task:app_de49f143-2edc-4a8e-a4c1-1c1fcd6383a3",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": true,
+                    "id": "app_de49f143-2edc-4a8e-a4c1-1c1fcd6383a3",
+                    "kind": "goal",
+                    "status": "handling"
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 44
+                  }
+                }
+              },
+              {
+                "key": "task:app_e531b045-80f0-4f1d-b166-9a17138fa883",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": true,
+                    "id": "app_e531b045-80f0-4f1d-b166-9a17138fa883",
+                    "kind": "message",
+                    "status": "handling"
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 44
+                  }
+                }
+              },
+              {
+                "key": "task:app_ec29ee6e-3923-47db-b326-9b191ec57ffa",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": true,
+                    "id": "app_ec29ee6e-3923-47db-b326-9b191ec57ffa",
+                    "kind": "message",
+                    "status": "handling"
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 44
+                  }
+                }
+              },
+              {
+                "key": "task:app_f658e62f-0e59-420d-a9ed-b49357474cb0",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": true,
+                    "id": "app_f658e62f-0e59-420d-a9ed-b49357474cb0",
+                    "kind": "message",
+                    "status": "handling"
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 43
+                  }
+                }
+              },
+              {
+                "key": "task:appdep_680efdcc2c742e46dc481475",
+                "reviewAt": 1791129600000,
+                "conditionCount": 0,
+                "correlation": {
+                  "input": {
+                    "available": true,
+                    "id": "appdep_680efdcc2c742e46dc481475",
+                    "kind": "goal",
+                    "status": "handling"
+                  },
+                  "admission": {
+                    "available": true,
+                    "reportAttemptId": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+                    "reportRevision": 45
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "acceptedEvidence": {
+          "available": true,
+          "maxPageSize": 8
+        },
+        "creator": {
+          "appId": "may"
+        },
+        "acceptedAttempt": {
+          "id": "r_2_d0452500-29a4-4ffb-aed0-22c24bff1283",
+          "generation": 2,
+          "startedAt": "2026-10-04T11:46:42.401Z",
+          "finishedAt": "2026-10-04T11:49:05.421Z"
+        },
+        "parentId": "may",
+        "acceptance": [
+          "A May-owned recurring review executes at an approximately four-hour cadence.",
+          "Each cycle evaluates the current canonical May task inventory and the current canonical set of unresolved Hao-owned `/todo` actions rather than a fixed historical list.",
+          "For every `/todo` item, trace the underlying Task and human-owned Condition and determine from current evidence whether Hao’s action remains valid and necessary; active or uncertain items remain visible.",
+          "Only Tasks proved complete or obsolete are closed, and only `/todo` items proved satisfied, obsolete, duplicated, or no longer necessary are retired within May’s authority; running, standing, still-needed, and uncertain work remains open.",
+          "Each material closure or retirement is supported by current evidence. Items outside May’s authority are preserved and reported to their accountable owner rather than mutated.",
+          "Material cleanup results and any still-valid decision requiring Hao’s attention are reported clearly; no-change cycles remain quiet unless useful."
+        ],
+        "input": {
+          "data": {
+            "acceptance": [
+              "A May-owned recurring review executes at an approximately four-hour cadence.",
+              "Each cycle evaluates the current canonical May task inventory and the current canonical set of unresolved Hao-owned `/todo` actions rather than a fixed historical list.",
+              "For every `/todo` item, trace the underlying Task and human-owned Condition and determine from current evidence whether Hao’s action remains valid and necessary; active or uncertain items remain visible.",
+              "Only Tasks proved complete or obsolete are closed, and only `/todo` items proved satisfied, obsolete, duplicated, or no longer necessary are retired within May’s authority; running, standing, still-needed, and uncertain work remains open.",
+              "Each material closure or retirement is supported by current evidence. Items outside May’s authority are preserved and reported to their accountable owner rather than mutated.",
+              "Material cleanup results and any still-valid decision requiring Hao’s attention are reported clearly; no-change cycles remain quiet unless useful."
+            ],
+            "constraints": [
+              "Continue the existing recurring hygiene Task; do not create replacement or duplicate work.",
+              "Reinspect canonical Task and Condition state during every review before taking action.",
+              "Treat `/todo` as the canonical view of explicit unresolved Hao-owned Conditions; do not infer personal ownership or necessity from titles or prose.",
+              "Do not remove a human-owned Condition merely because its Task is old or stale. Require current evidence that the requested decision or action is satisfied, obsolete, duplicated, or no longer needed.",
+              "Preserve running Tasks, standing Tasks, Conversation infrastructure and successors, valid waits, and any Task or `/todo` item whose safe closure or retirement is uncertain.",
+              "Limit Task closure actions to May-owned Tasks. For `/todo` items owned elsewhere, preserve them and return the evidence to the accountable owner unless May has explicit authority to change them.",
+              "Do not close, retire, or hide work merely to improve counts or metrics, and do not manufacture human decisions for testing.",
+              "Avoid noisy updates when nothing needs action."
+            ],
+            "outcome": "Maintain May hygiene with a review every four hours that checks both open May Tasks and Hao’s current `/todo` items, keeping only work and human actions that canonical evidence shows are still valid and necessary.",
+            "revision": {
+              "expectedGeneration": 1,
+              "taskId": "goal/app_224ef63e-ddd6-4f4b-b159-26de9dd60107"
+            }
+          },
+          "kind": "goal"
+        },
+        "agent": "may",
+        "owner": "may",
+        "priority": "P1",
+        "conditions": []
+      },
+      {
+        "id": "conversation/app_c820f4ad-6ba2-4c06-af7f-5a46e650d85c",
+        "closed": true,
+        "status": "done",
+        "generation": 1,
+        "outcome": "Understand and fulfill the human request, then answer naturally.",
+        "summary": "The requested `may-agent` Task exists and its ownership is verified in the `app_tasks` read model; nothing was deployed.",
+        "response": "Verified in `app_tasks`: (`may-agent`, `app-request/appdep_c5a80e1dd437d142c7a7a3b1`).\n\nFull taskId: `app-request/appdep_c5a80e1dd437d142c7a7a3b1`\n\nIt was bound to commit `8a8d56de59d19d4c52f7ca11d17a17963faec29e`. The guard rejected it before deployment, so no deploy or live validation ran.",
+        "result": {
+          "appId": "may-agent",
+          "deploymentStatus": "rejected-before-deploy",
+          "liveValidationRuns": 0,
+          "ownershipVerified": true,
+          "requiredCommit": "8a8d56de59d19d4c52f7ca11d17a17963faec29e",
+          "taskId": "app-request/appdep_c5a80e1dd437d142c7a7a3b1"
+        },
+        "facts": [
+          "Authoritative dependency evidence: app_tasks(app_id, task_id) = (`may-agent`, `app-request/appdep_c5a80e1dd437d142c7a7a3b1`)",
+          "Authoritative dependency result: ownershipVerified=true",
+          "Authoritative dependency result: requiredCommit=8a8d56de59d19d4c52f7ca11d17a17963faec29e",
+          "Authoritative dependency result: deploymentStatus=rejected-before-deploy and liveValidationRuns=0"
+        ],
+        "resourceVersion": 3,
+        "pendingEvents": {
+          "items": [],
+          "truncated": false
+        },
+        "currentObligations": {
+          "available": true,
+          "inputWaits": {
+            "maxItems": 100,
+            "truncated": false,
+            "items": []
+          }
+        },
+        "acceptedEvidence": {
+          "available": true,
+          "maxPageSize": 8
+        },
+        "creator": {
+          "appId": "may"
+        },
+        "acceptedAttempt": {
+          "id": "receipt:5982bc738b79d8c38180bd84b450e89421ea465bd106f213cf46137a2df55df3",
+          "generation": 1,
+          "startedAt": "2026-08-25T05:16:53.225Z",
+          "finishedAt": "2026-08-25T05:16:53.225Z"
+        },
+        "parentId": "may",
+        "acceptance": [
+          "The request is handled as far as current capabilities allow.",
+          "The accepted result contains a direct caller-facing response or an exact evidenced wait."
+        ],
+        "input": {
+          "data": {
+            "message": "Correction: the Task you created is owned by app `may`, so the guarded deploy rejects it. Route one request to the `may-agent` App so that the resulting durable Task has appId `may-agent` and is bound to exact commit 8a8d56de59d19d4c52f7ca11d17a17963faec29e with the same deploy-and-live-validate-once outcome. Do not deploy. Reply with the actual full taskId after verifying the `app_tasks` read model contains (`may-agent`, taskId)."
+          },
+          "kind": "message",
+          "source": {
+            "id": "may-console:35b31a24-e5e9-4f83-93c5-9b0d92d02547:1787438912630",
+            "kind": "human"
+          }
+        },
+        "agent": "may",
+        "owner": "may",
+        "priority": "P0",
+        "conditions": []
+      },
+      {
+        "error": "App may-agent has no loaded Task runtime"
+      },
+      {
+        "error": "App may-agent has no loaded Task runtime"
+      },
+      {
+        "error": "App may-agent has no loaded Task runtime"
+      },
+      {
+        "error": "App may-agent has no loaded Task runtime"
+      }
+    ]
+  },
+  "currentContract": {
+    "design": {
+      "path": "projects/alex.app/docs/2a-design/task-attempts.md",
+      "sha256": "c68dfd71b87b4037b3fab6ea340bfcf3669e94c1bc792f6d61d9a8fe5fea33b7",
+      "lines": "340-364",
+      "meaning": "Structural children alone do not establish a wait; exact Conditions and useful continuation/review are distinct. Omitted Conditions persist; stale/invalid effects reject atomically."
+    },
+    "sourceFiles": [
+      {
+        "path": "/app/projects/may-agent/src/app/core/tasks/dependency-admission.ts",
+        "sha256": "76ee3cabcd739a2543d268a17c45584f54b846bb7500a0ad9b157e41a10cbb59",
+        "finding": "Lines 27-83 resolve only exact caller-owned admitted identities; lines 270-320 persist request/provenance before wake and produce app.dependency.updated Conditions. New IDs are current caller/generation/local-name hashes, not arbitrary retroactive admission of an old event."
+      },
+      {
+        "path": "/app/projects/may-agent/src/app/core/tasks/app-task-reconciler.ts",
+        "sha256": "c65e6c7c184d6e6d4476fcacf4ffec7b29d58f20a547d75e9952b28dd410e682",
+        "finding": "Lines 1191-1247 requeue an unadmitted wait by removing only missing-request links, not inventing success. Lines 3353-3356 reject retired update-task/create-task actions. Lines 3835-3935 preserve exact waits and only commit after validation; structural children are not waiting authority."
+      },
+      {
+        "path": "/app/projects/may-agent/src/app/core/tasks/task-revision.ts",
+        "sha256": "f41e1384182bc3fe8dd50e5ada3cb8ff32745247d0eae845c88c396501c25b0d",
+        "finding": "Creator- and generation-fenced revision runs outside result settlement, rejects closed/self revision and preserves parentId (lines 17-88). It is not the old atomically reparenting result contract."
+      },
+      {
+        "path": "/app/projects/may-agent/packages/sdk/src/task-contract.ts",
+        "sha256": "a8945ea1d96fddfd30be74808e54a9fbda8e0d527d2ae1a3b55dd822019f4585",
+        "finding": "Public result validator rejects update-task as retired, directing callers to tasks update / TaskAttempt.reviseTask."
+      },
+      {
+        "path": "/app/projects/may-agent/src/app/core/tasks/app-task-reconciler.test.ts",
+        "sha256": "6bec3fcb5c9aca7448687705959c38fc7e5cbfa03ff1f1686ae31bd260423884",
+        "finding": "Orphaned wait recovery at 4025, retired action rejection at 1438/1454/5396, exact wait rule at 5597, atomic action and stale-result regressions."
+      },
+      {
+        "path": "/app/projects/may-agent/src/app/core/tasks/app-task-runtime.test.ts",
+        "sha256": "f6486120d24027a55bd4eab9f583366a02c2601f8d2a12c4303c995e9d7d6af1",
+        "finding": "Preserves accepted request across rejected attempt/retry (5088), reuses resolved create-work request (5217), keeps caller runnable on unpublished dependency (5448), recovery/restart/correlation fixtures."
+      },
+      {
+        "path": "/app/projects/may-agent/src/app/core/tasks/task-revision.test.ts",
+        "sha256": "8acd64844304593774f948af71d1bcf94cdd77b6fd9d9abfbd62cc751e10da3c",
+        "finding": "Creator authority, stale revisions, preserved accepted answers and failure-after-revision fixtures."
+      },
+      {
+        "path": "/app/projects/may-agent/packages/sdk/src/task-contract.test.ts",
+        "sha256": "42fb4945291552774a2ccabf0d7f5c76fbbee06666c3b97ff1587e776347fa72",
+        "finding": "Rejects retired create/update result actions at public schema boundary."
+      }
+    ]
+  },
+  "historicalCandidateEvidence": {
+    "candidates": [
+      {
+        "commit": "41d87837a796a3a5fdb04aa2b64894140a3418b2",
+        "ancestorOfInspectedHost": false,
+        "gitShow": "commit 41d87837a796a3a5fdb04aa2b64894140a3418b2\nAuthor:     May (Agent) <may@may-agent.local>\nAuthorDate: Thu Aug 20 11:11:52 2026 +0000\nCommit:     May (Agent) <may@may-agent.local>\nCommitDate: Thu Aug 20 11:11:52 2026 +0000\n\n    fix(tasks): admit waiting reparent decompositions\n\n src/app/app-task-reconciler.test.ts | 225 ++++++++++++++++++++++++++++++++++++\n src/app/app-task-reconciler.ts      |   9 +-\n 2 files changed, 230 insertions(+), 4 deletions(-)\n"
+      },
+      {
+        "commit": "5740aa8935be8e993f443a60bb166d4e7ba65c86",
+        "ancestorOfInspectedHost": false,
+        "gitShow": "commit 5740aa8935be8e993f443a60bb166d4e7ba65c86\nAuthor:     May (Agent) <may@may-agent.local>\nAuthorDate: Tue Aug 25 12:50:24 2026 +0800\nCommit:     May (Agent) <may@may-agent.local>\nCommitDate: Tue Aug 25 12:50:24 2026 +0800\n\n    fix(runtime): require admitted app dependency waits\n\n src/app/app-task-reconciler.test.ts | 45 ++++++++++++++++++++++++\n src/app/app-task-reconciler.ts      | 58 +++++++++++++++++++++++++++++++\n src/app/app-task-runtime.test.ts    | 69 ++++++++++++++++++++++++++++++++++++-\n src/app/app-task-runtime.ts         | 32 +++++++++++++++--\n src/app/human-task-service.test.ts  | 13 +++++++\n src/app/human-task-service.ts       | 11 ++++++\n 6 files changed, 225 insertions(+), 3 deletions(-)\n"
+      }
+    ],
+    "recoveredDeployment": {
+      "path": "/app/projects/may-agent/.state/deploy-receipts/repair-unadmitted-dependency-5740aa89-20260825.json",
+      "sha256": "727592203ef7a0bdceda3180fe71c01a398d88b11cc9650a136a6bc3a907a019",
+      "receipt": {
+        "version": 1,
+        "correlation": "repair-unadmitted-dependency-5740aa89-20260825",
+        "project": "may-agent",
+        "taskId": "repair-unadmitted-existing-dependency-request-20260825",
+        "artifactSha": "14a6ac74c9b1e46e0934b39caa9324725570966b2929eb3f97b82a154fe06f0f",
+        "sourceCommit": "5740aa8935be8e993f443a60bb166d4e7ba65c86",
+        "phase": "succeeded",
+        "requestedAt": "2026-08-25T04:51:16.099Z",
+        "verification": "After the supervisor settles service and HTTP health, verify loadedArtifactSha equals artifactSha, health is healthy, and duplicateDeploy is false, then complete the owner task without redeploying.",
+        "completedAt": "2026-08-25T04:51:36.758Z",
+        "loadedArtifactSha": "14a6ac74c9b1e46e0934b39caa9324725570966b2929eb3f97b82a154fe06f0f",
+        "health": "healthy",
+        "duplicateDeploy": false
+      }
+    }
+  },
+  "verification": {
+    "command": "cd /app/projects/may-agent && bun test src/app/core/tasks/app-task-reconciler.test.ts src/app/core/tasks/app-task-runtime.test.ts src/app/core/tasks/task-revision.test.ts packages/sdk/src/task-contract.test.ts",
+    "exitCode": 0,
+    "passed": 427,
+    "failed": 0,
+    "expectations": 3820,
+    "seconds": 70.32,
+    "outputSha256": "f204ef2939f6ddbfa62d44b130d4d1fb4cacfc82f2de2b285e7f774f2366c062",
+    "rawOutput": "bun test v1.3.14 (0d9b296a)\n\npackages/sdk/src/task-contract.test.ts:\n(pass) allows open Requests without a reason in live and final Task changes while retaining the legacy contract [8.74ms]\n(pass) admits exact result scope consistently for agent and workflow results [27.26ms]\n(pass) routes persisted Task result schemas through the same semantic admission [2.04ms]\n(pass) admits independent reporting and useful continuation without inventing a wait [1.63ms]\n(pass) App stop contract > admits a non-success decision and keeps normalization replayable [1.16ms]\n(pass) App stop contract > rejects incomplete or mixed stop decisions: {\"facts\":[]} [0.27ms]\n(pass) App stop contract > rejects incomplete or mixed stop decisions: {\"actions\":[]} [0.19ms]\n(pass) App stop contract > rejects incomplete or mixed stop decisions: {\"conditions\":[]} [0.13ms]\n(pass) App stop contract > rejects incomplete or mixed stop decisions: {\"dependencies\":[]} [0.12ms]\n(pass) project task handler contract > requires publishable namespaced Condition types: external-review [0.45ms]\n(pass) project task handler contract > requires publishable namespaced Condition types: review.completed [0.75ms]\n(pass) project task handler contract > requires publishable namespaced Condition types: custom.fact [0.49ms]\n(pass) project task handler contract > agrees with the finish schema on quiet waits and explicit facts-backed reports [9.61ms]\n(pass) project task handler contract > exposes the admitted Condition owner syntax to the agent before finish [4.93ms]\n(pass) project task handler contract > rejects legacy close actions instead of manufacturing a successful outcome [0.38ms]\n(pass) project task handler contract > normalizes exact Condition retirement and an absolute waiting review [0.41ms]\n(pass) project task handler contract > preserves a caller response separately from task summary [0.23ms]\n(pass) project task handler contract > carries a bounded App-defined structured result across task states [0.84ms]\n(pass) project task handler contract > separates submitted work from the caller's decision to wait [1.44ms]\n(pass) project task handler contract > admits typed App dependencies only while waiting [0.55ms]\n(pass) project task handler contract > rejects raw child specifications in both schema and admission [0.28ms]\n(pass) project task handler contract > accepts the established human identity for an accountable timed wait [0.38ms]\n(pass) project task handler contract > rejects raw assignment updates at both result boundaries: {\"outcome\":\"Corrected work\",\"input\":{\"source\":\"beta\"}} [0.24ms]\n(pass) project task handler contract > rejects raw assignment updates at both result boundaries: {\"agent\":\"other\"} [0.13ms]\n(pass) project task handler contract > rejects raw assignment updates at both result boundaries: {\"owner\":\"other\",\"workflow\":null} [0.15ms]\n(pass) project task handler contract > rejects raw assignment updates at both result boundaries: {\"executor\":\"worker\"} [0.24ms]\n(pass) project task handler contract > rejects raw assignment updates at both result boundaries: {\"priority\":\"P1\"} [0.18ms]\n(pass) project task handler contract > rejects the removed expectedRevision action field [0.11ms]\n(pass) project task handler contract > keeps failure outside the public handler states [0.17ms]\n(pass) project task handler contract > allows needs-agent only at the workflow boundary [0.66ms]\n(pass) project task handler contract > normalizes the legacy needs-owner result at admission [0.38ms]\n(pass) project task handler contract > uses the model schema as the exact runtime admission boundary [3.03ms]\n(pass) project task handler contract > admits waiting for runtime validation against newly declared or saved waits [1.15ms]\n(pass) project task handler contract > rejects Conditions that turn task state into a second scheduler [0.16ms]\n(pass) project task handler contract > admits only explicit verifier verdicts [0.08ms]\n\nsrc/app/core/tasks/app-task-reconciler.test.ts:\n(pass) durable execution backoff > counts execution failure once, preserves its cost through stale fencing, and keeps retrying [112.15ms]\n(pass) durable execution backoff > preserves newer input and accepts execution facts across revisions, but fences cancellation [23.16ms]\n(pass) durable execution backoff > retains all input through repeated failure and becomes eligible when backoff expires [45.83ms]\n(pass) durable execution backoff > accepted progress resets failure pacing [185.23ms]\n(pass) durable execution backoff > resets failure pacing for accepted progress, preserving it across spec saves [31.91ms]\n(pass) durable execution backoff > retries independently without notifying the structural parent [22.59ms]\n(pass) worker failure facts and owner closure > retains attributed failure facts without implicitly notifying the parent [22.00ms]\n(pass) worker failure facts and owner closure > rejects retry after a failed Task is cancelled without relabelling its terminal state [24.20ms]\n(pass) worker failure facts and owner closure > rejects an invalid or stale failure report: summary [10.32ms]\n(pass) worker failure facts and owner closure > rejects an invalid or stale failure report: facts [8.70ms]\n(pass) worker failure facts and owner closure > rejects an invalid or stale failure report: revision [8.35ms]\n(pass) worker failure facts and owner closure > retains an honest incomplete report while preserving genuinely newer input [10.38ms]\n(pass) worker failure facts and owner closure > accepts failure facts with open children [12.95ms]\n(pass) worker failure facts and owner closure > rolls back the report atomically if storage fails [14.46ms]\n(pass) worker failure facts and owner closure > rolls back the closure atomically if storage fails [10.78ms]\n(pass) worker failure facts and owner closure > orders create against owner closure across connections: child-first [167.14ms]\n(pass) worker failure facts and owner closure > orders create against owner closure across connections: close-first [158.26ms]\n(pass) worker failure facts and owner closure > orders reparent against owner closure across connections: child-first [159.80ms]\n(pass) worker failure facts and owner closure > orders reparent against owner closure across connections: close-first [181.27ms]\n(pass) worker failure facts and owner closure > does not cascade human parent cancellation into existing child revisions [11.14ms]\n(pass) worker failure facts and owner closure > lets the parent report converged after receiving child failure facts [11.21ms]\n(pass) worker failure facts and owner closure > lets the parent report incomplete after receiving child failure facts [13.17ms]\n(pass) App task reconciler state > fences a fresh canonical attempt before its first Agent session [9.62ms]\n(pass) App task reconciler state > writes only attempts changed by a reconciliation [12.21ms]\n(pass) App task reconciler state > fences an unchanged parent without rewriting it [13.40ms]\n(pass) App task reconciler state > renews only the current bounded workflow attempt lease [9.31ms]\n(pass) App task reconciler state > retains worker facts when the assigning owner revises the next execution [8.00ms]\n(pass) App task reconciler state > keeps a maintain task pending when a durable wake arrives during its attempt [7.34ms]\n(pass) App task reconciler state > keeps an achieve task live until events that arrived during the attempt are reconciled [9.15ms]\n(pass) App task reconciler state > consumes only live events incorporated into the accepted result [8.25ms]\n(pass) App task reconciler state > accepts waiting result and actions together while later input stays queued [11.74ms]\n(pass) App task reconciler state > accepts converged result and actions together while later input stays queued [15.48ms]\n(pass) App task reconciler state > preserves open waits and converged findings for reevaluation [13.45ms]\n(pass) App task reconciler state > preserves open waits and attention findings for reevaluation [16.32ms]\n(pass) App task reconciler state > admits waiting parent actions across a newer clock wake [16.41ms]\n(pass) App task reconciler state > admits converged parent actions across a newer clock wake [11.04ms]\n(pass) App task reconciler state > releases a current parent while preserving new human input [11.83ms]\n(pass) App task reconciler state > still fences a newer mutation arriving during stale-attempt release [9.82ms]\n(pass) App task reconciler state > coalesces pending ticks without losing feedback or updates arriving during a pass [61.50ms]\n(pass) App task reconciler state > claims an ordered bounded event prefix without losing the remaining wakes [36.57ms]\n(pass) App task reconciler state > advances later admitted input past a bounded backlog without answering the original ask or weakening action fences [114.62ms]\n(pass) App task reconciler state > rejects self-updates even when alone or mixed with other actions [8.49ms]\n(pass) App task reconciler state > carries observed workspace lineage from the attempt into its accepted attempt [8.91ms]\n(pass) App task reconciler state > rejects a missing or completed parent instead of creating an orphan [5.72ms]\n(pass) App task reconciler state > selects a registered executor without creating a second Task lifecycle [6.41ms]\n(pass) App task reconciler state > accepts canonical Task agent selection and retains it in Host state [6.19ms]\n(pass) App task reconciler state > rejects conflicting or empty Task agent selection before persistence [4.02ms]\n(pass) App task reconciler state > rejects ambiguous workflow and executor intent [4.97ms]\n(pass) App task reconciler state > prioritizes retained handoff input while unavailable workflows wait for backoff [21.85ms]\n(pass) App task reconciler state > separates desired-state observation from attempt claiming [6.61ms]\n(pass) App task reconciler state > reads exact live intent and completion state without confusing an older outcome [14.98ms]\n(pass) App task reconciler state > orders runnable tasks by priority, then task ID when ready times tie [11.41ms]\n(pass) App task reconciler state > prefers older ready work over newer peers within the same priority [6.93ms]\n(pass) App task reconciler state > ages ready work toward P1 without erasing the explicit P0 boundary [10.04ms]\n(pass) App task reconciler state > uses persisted age when enqueuing selected task IDs [5.66ms]\n(pass) App task reconciler state > ages triggered work from when it became ready instead of its old waiting status [7.51ms]\n(pass) App task reconciler state > schedules an unresolved direct project comment before autonomous priority backlog [8.24ms]\n(pass) App task reconciler state > keeps an unresolved human task control ahead of a later automated wake [10.37ms]\n(pass) App task reconciler state > retains trusted human scheduling origin on the admitted task resource [7.63ms]\n(pass) App task reconciler state > schedules untriggered P0 before triggered P2 (priority over trigger presence) [8.22ms]\n(pass) App task reconciler state > uses trigger as tiebreak within same priority [6.03ms]\n(pass) App task reconciler state > P0 untriggered beats stream of triggered P1s (priority inversion regression) [10.88ms]\n(pass) App task reconciler state > keeps triggered work behind unresolved dependencies during passive resync [7.09ms]\n(pass) App task reconciler state > persists the exact Condition observation as the next attempt trigger [10.29ms]\n(pass) App task reconciler state > preflights Condition routes without mutation and admits only selected exact tasks [11.48ms]\n(pass) App task reconciler state > claims the current canonical spec after a stale reader observed an older version [7.54ms]\n(pass) App task reconciler state > preserves an explicit retry over lower-priority task wakes [6.51ms]\n(pass) App task reconciler state > returns trigger snapshots that cannot mutate a long-lived cached task tree [5.51ms]\n(pass) App task reconciler state > keeps passive checks asleep but reconsiders a waiting task for fresh routed input [12.30ms]\n(pass) App task reconciler state > wakes a waiting task for explicit human task control [13.44ms]\n(pass) App task reconciler state > reconsiders a waiting task for fresh app.input.requested input without deleting its condition [9.39ms]\n(pass) App task reconciler state > reconsiders a waiting task for fresh app.task.requested input without deleting its condition [8.88ms]\n(pass) App task reconciler state > preserves execution but rejects its old result when requirements change [6.98ms]\n(pass) App task reconciler state > preserves prior-generation Conditions and triggers when requirements change [14.75ms]\n(pass) App task reconciler state > claims generation drift before honoring a stale waiting Condition [12.57ms]\n(pass) App task reconciler state > keeps an active generation when only containment, category, or priority changes [9.27ms]\n(pass) App task reconciler state > advances generation when a parent move changes the effective agent [7.23ms]\n(pass) App task reconciler state > inherits agent selection, claims one attempt, and deduplicates concurrent wakes [9.86ms]\n(pass) App task reconciler state > paces an unavailable agent without losing its input or creating an attempt [10.19ms]\n(pass) App task reconciler state > retains an accepted outcome on its open Task and deduplicates passive redelivery [10.43ms]\n(pass) App task reconciler state > owner-closed work stays closed under repeated admission [16.54ms]\n(pass) App task reconciler state > offline receipt conversion retains the closed Task instead of pruning its resource during admission [8.56ms]\n(pass) App task reconciler state > offline receipt conversion preserves the parent and its still-open children [7.44ms]\n(pass) App task reconciler state > allows cancellation of revised work while retaining the earlier accepted outcome [9.43ms]\n(pass) App task reconciler state > creates a new achieve generation when a completed task specification changes [8.91ms]\n(pass) App task reconciler state > preserves historical receipts while recording new outcomes only on attempts [77.12ms]\n(pass) App task reconciler state > keeps reconciliation child history small and decision-ready [8.21ms]\n(pass) App task reconciler state > keeps child readiness aware of running tasks outside the parent graph [9.05ms]\n(pass) App task reconciler state > supplies a bounded App-wide live snapshot without the reviewing task [104.83ms]\n(pass) App task reconciler state > keeps bounded live snapshot readiness aware of older running tasks [77.31ms]\n(pass) App task reconciler state > commits an outcome and identifies dependents while keeping its Task open [14.78ms]\n(pass) App task reconciler state > keeps active parent rollups out of the executable projection [10.08ms]\n(pass) App task reconciler state > offline receipt conversion fences every obsolete claim before recovery reads the retained Task [13.87ms]\n(pass) App task reconciler state > an archived success cannot satisfy a dependency on newer unfinished work [17.81ms]\n(pass) App task reconciler state > recovers a receipted checkpoint from an interrupted session transcript when checkpoint JSONL is absent [13.77ms]\n(pass) App task reconciler state > prefers a file-backed checkpoint over a successful transcript checkpoint [14.07ms]\n(pass) App task reconciler state > reports checkpoint absence without a file or matching successful transcript receipt [22.71ms]\n(pass) App task reconciler state > releases only the exact expired agent attempt after its session is terminal [10.29ms]\n(pass) App task reconciler state > never releases a healthy live agent session or a stale fenced observation [10.29ms]\n(pass) App task reconciler state > requeues the same task when a late workflow result reaches its still-running attempt [11.38ms]\n(pass) App task reconciler state > recovers an interrupted attempt only from a previous runtime trigger [17.98ms]\n(pass) App task reconciler state > claims a previous-runtime attempt with a persisted trigger during ordinary resync [9.25ms]\n(pass) App task reconciler state > returns superseded agent-session ids when reclaiming a previous-runtime attempt [8.20ms]\n(pass) App task reconciler state > associates workflow sessions with the current attempt and rejects stale generations [13.93ms]\n(pass) App task reconciler state > returns orphaned agent-session ids when requeueing a previous-runtime attempt without a trigger [9.78ms]\n(pass) App task reconciler state > requeues running tasks whose current attempt record is missing [10.11ms]\n(pass) App task reconciler state > requeues an orphaned App dependency wait and leaves admitted waits alone [15.18ms]\n(pass) App task reconciler state > claims running tasks whose current attempt record is missing [12.40ms]\n(pass) App task reconciler state > persists a synthetic controller trigger so task-controller attempts survive restart [15.23ms]\n(pass) App task reconciler state > preserves accepted waits when restart replaces an attempt of the same generation [28.14ms]\n(pass) App task reconciler state > preserves accepted waits when claim-recovery replaces an attempt of the same generation [23.93ms]\n(pass) App task reconciler state > preserves accepted waits when missing-attempt replaces an attempt of the same generation [21.51ms]\n(pass) App task reconciler state > preserves accepted waits when missing-attempt-scan replaces an attempt of the same generation [19.59ms]\n(pass) App task reconciler state > preserves accepted waits when late-terminal replaces an attempt of the same generation [28.23ms]\n(pass) App task reconciler state > preserves accepted waits when expired-session replaces an attempt of the same generation [26.11ms]\n(pass) App task reconciler state > preserves accepted waits when legacy-attention replaces an attempt of the same generation [25.47ms]\n(pass) App task reconciler state > atomically fences an interrupted orphan claim and accepts exactly one later wake (events 5446564 and 5446878) [23.96ms]\n(pass) App task reconciler state > repairs existing previous-runtime attention records on startup [11.94ms]\n(pass) App task reconciler state > keeps converged maintain tasks live for the next event [14.73ms]\n(pass) App task reconciler state > wakes a maintain task once per canonical App admission [17.74ms]\n(pass) App task reconciler state > replays a queued maintain trigger after the older attempt completes [16.33ms]\n(pass) App task reconciler state > preserves a queued project comment through child completion and interrupted-attempt recovery [21.10ms]\n(pass) App task reconciler state > records a parent assessment while its independent child remains open [8.70ms]\n(pass) App task reconciler state > rejects worker closure actions while explicit owner closure preserves independent children [10.40ms]\n(pass) App task reconciler state > records a reparenting outcome before the owner closes the former parent [17.87ms]\n(pass) App task reconciler state > rejects stale results after a fallback attempt takes ownership [9.56ms]\n(pass) App task reconciler state > does not retry a failed judgment before its persisted deadline [13.51ms]\n(pass) App task reconciler state > retains a new fact during backoff and considers it with the failed input [12.63ms]\n(pass) App task reconciler state > accepts the current attempt after a status-only resource version change [7.24ms]\n(pass) App task reconciler state > can release a stale current attempt so the task is judged again from current facts [7.88ms]\n(pass) App task reconciler state > keeps accepted waits and semantic progress when feedback fences an attempt [12.28ms]\n(pass) App task reconciler state > applies handler actions atomically with reconciliation completion [10.19ms]\n(pass) App task reconciler state > requeues only the exact failed attention generation and retains immutable attempt facts [13.58ms]\n(pass) App task reconciler state > rejects explicit retry while executing or without a failed attempt [17.31ms]\n(pass) App task reconciler state > retries transient failure at its deadline without a supervisory Task or new generation [12.10ms]\n(pass) App task reconciler state > treats an unblock action whose target already advanced as stale [8.97ms]\n(pass) App task reconciler state > rejects project as a fake workflow in observed intent [4.85ms]\n(pass) App task reconciler state > lets the responsible App repair execution bindings without granting that authority to the creator [8.90ms]\n(pass) App task reconciler state > rejects an invalid action batch without partially applying earlier actions [10.02ms]\n(pass) App task reconciler state > replays an exact owner close without rewriting the accepted result or Task history [7.71ms]\n(pass) App task reconciler state > rejects updates to an owner-closed Task [8.29ms]\n(pass) App task reconciler state > rejects mutation of an owner-closed Task [8.12ms]\n(pass) App task reconciler state > rejects malformed action payloads and blank facts before mutation [7.16ms]\n(pass) App task reconciler state > ends waiting attempts only with an exact Condition [16.19ms]\n(pass) App task reconciler state > retains facts but coalesces a clock wake while installing a wait (project.task.tick) [8.01ms]\n(pass) App task reconciler state > retains facts but coalesces a clock wake while installing a wait (sample.unexpected-update) [8.79ms]\n(pass) App task reconciler state > preserves a queued trigger that satisfies the wait installed by the attempt [10.98ms]\n(pass) App task reconciler state > keeps later Condition events pending while an earlier Condition event is reconciling [14.81ms]\n(pass) App task reconciler state > filters task Conditions by subject and expected state [9.13ms]\n(pass) App task reconciler state > wakes an exact pipeline-run Condition from a watcher observation [12.95ms]\n(pass) App task reconciler state > wakes every task linked to the same typed Condition [27.58ms]\n(pass) App task reconciler state > rejects changing a shared Condition specification [13.47ms]\n(pass) App task reconciler state > does not silently reopen an unchanged satisfied Condition [13.18ms]\n(pass) App task reconciler state > does not reopen an unchanged satisfied level wait or replay its old observation [33.55ms]\n(pass) App task reconciler state > does not replay an old scheduled check into a newly established pulse wait [8.47ms]\n(pass) App task reconciler state > does not replay an old capacity pulse into a future-slot wait [8.04ms]\n(pass) App task reconciler state > advances Condition generation when its desired observation changes [12.36ms]\n(pass) App task reconciler state > matches exact app-specific event fields without an app-specific controller [8.85ms]\n(pass) App task reconciler state > keeps approval-packet waits blocked when only the decision matches but the lineage does not [8.20ms]\n(pass) App task reconciler state > wakes approval-packet waits only when the returned event matches the exact lineage [10.08ms]\n(pass) App task reconciler state > matches owner decision conditions using allowedDecisions against event decision [12.17ms]\n(pass) App task reconciler state > matches owner decision conditions using acceptedDecisions against event decision [8.14ms]\n(pass) App task reconciler state > keeps waiting until the Condition observer reports state [9.42ms]\n(pass) App task reconciler state > links a watcher event Condition without monitoring the pipeline itself [9.82ms]\n(pass) App task reconciler state > matches pull-request typed subjects through the generic Condition tracker [8.32ms]\n(pass) App task reconciler state > wakes when a level-observed PR source differs from the tested commit [8.08ms]\n(pass) App task reconciler state > does not wake a new repo-ref wait from an older journal observation [9.46ms]\n(pass) App task reconciler state > supports future-only comparisons for level-based pipeline artifact facts [8.04ms]\n\nsrc/app/core/tasks/task-revision.test.ts:\n(pass) one revision changes actual input and App-selected execution, survives caller failure and rejects old results [176.58ms]\n(pass) a Task workflow saves a creator revision while the worker runs, even if the workflow then fails [227.66ms]\n(pass) unfinished input follows the revised answer across reopen while an accepted answer stays exact [204.91ms]\n(pass) requirements can change with another caller pending; exact input remains answerable [194.45ms]\n(pass) raw updates cannot bypass admission during answer; the common revision returns the corrected answer [158.85ms]\n(pass) raw updates cannot bypass admission during wait; the common revision returns the corrected answer [144.42ms]\n(pass) spec save preserves running execution (session: %s), leases and effect fences [172.93ms]\n(pass) spec save preserves running execution (session: %s), leases and effect fences [209.64ms]\n(pass) status changes during mapping do not conflict with requirement writes [150.66ms]\n(pass) execution failure after a revision preserves both inputs [152.83ms]\n(pass) restart recovers an old execution into the latest spec without a revision notification [267.57ms]\n(pass) explicit Stop still controls the exact running attempt after a spec update [165.91ms]\n(pass) creator and App input validation protect revisions while later caller input stays queued [161.76ms]\n(pass) a revision reports its invalid field without changing the assignment, then accepts a correction [128.99ms]\n(pass) a concurrent spec change during mapping cannot be overwritten [137.20ms]\n(pass) the responsible App can change execution without changing creator requirements [151.37ms]\n(pass) policy repair preserves a queued caller obligation through the common revision [217.09ms]\n(pass) policy repair preserves a waiting caller obligation through the common revision [228.87ms]\n(pass) unchanged input does not interrupt the current worker or advance its generation [152.54ms]\n\nsrc/app/core/tasks/app-task-runtime.test.ts:\n(pass) publishes one reopening fact despite a lost publication and operator replay across restart [162.21ms]\n(pass) reopens with mapped requirements and one durable input, rolling back failed admission and replaying after restart [218.98ms]\n(pass) retains closed-Task observations as history without treating desired work as an observation [223.64ms]\n(pass) shares Task detail, evidence and exact outcome reads between tools and executor capabilities [185.98ms]\n(pass) carries explicit earlier input through executor reads and converged settlement [181.30ms]\n(pass) carries explicit earlier input through executor reads and waiting settlement [191.75ms]\n(pass) carries explicit earlier input through executor reads and incomplete settlement [189.13ms]\n(pass) caller feedback PoC > reads the full installed input contract through tasks without starting target work [112.53ms]\n(pass) caller feedback PoC > reads an exact accepted admission from a caller-only registry without starting target execution [174.63ms]\n(pass) caller feedback PoC > recovers delegated creator after lost admission and revises across Apps from a caller-only runtime [259.22ms]\n(pass) caller feedback PoC > composes three assignments through the same executor and return contract across restart [467.30ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"quiet\",\"workerCalls\":2,\"callerCalls\":2,\"reportRecovered\":false,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":false}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (quiet) [504.37ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"incomplete-then-wait\",\"workerCalls\":3,\"callerCalls\":3,\"reportRecovered\":true,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":false}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (incomplete-then-wait) [545.24ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"report-wait\",\"workerCalls\":2,\"callerCalls\":3,\"reportRecovered\":true,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":false}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (report-wait) [544.49ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"report-continue\",\"workerCalls\":3,\"callerCalls\":3,\"reportRecovered\":true,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":false}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (report-continue) [582.84ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"throw\",\"workerCalls\":2,\"callerCalls\":3,\"reportRecovered\":true,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":false}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (throw) [525.30ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"invalid\",\"workerCalls\":2,\"callerCalls\":3,\"reportRecovered\":true,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":false}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (invalid) [521.56ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"throw-then-wait\",\"workerCalls\":3,\"callerCalls\":4,\"reportRecovered\":true,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":true}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (throw-then-wait) [612.50ms]\n{\"poc\":\"caller-feedback\",\"scenario\":\"throw-then-report-retry\",\"workerCalls\":4,\"callerCalls\":4,\"reportRecovered\":true,\"originalAnswer\":{\"score\":0.92},\"changedReportDelivered\":true}\n(pass) caller feedback PoC > returns exact feedback and recovers the original answer (throw-then-report-retry) [578.30ms]\n(pass) recovers legacy attention as the same Tasks without inventing App review input [349.29ms]\n(pass) keeps omitted workflows visible, continues unrelated work, and recovers with a supplied runner [211.03ms]\n(pass) settles report and useful continuation equivalently for agent and workflow attempts [184.00ms]\n(pass) retains an App and exact agent work when its agent capability is removed, then restores it [178.54ms]\n(pass) releases failed context preparation before later Task events and recovers after repair [147.48ms]\n(pass) lets the handoff agent diagnose while the workflow is unavailable, then verifies completion [191.02ms]\n(pass) canonical direct-agent residue cleanup > restores agent file and index edits that remain unchanged since planning [75.75ms]\n(pass) canonical direct-agent residue cleanup > preserves concurrent file and index edits while applying other planned cleanup [54.68ms]\n(pass) canonical direct-agent residue cleanup > rejects only converged direct-agent results whose edits were restored [0.92ms]\n(pass) App Task persisted prompt context > shows the executor the exact accepted wait before it judges feedback [126.31ms]\n[event-bus] first subscriber 'app-inbox-route' took 28.4ms on event 'project.task.tick'\n(pass) canonical App task runtime > routes recurring exact-target schedule facts through the persistent Task mutation boundary [225.21ms]\n(pass) canonical App task runtime > explains rejected dependencies, preserves existing waits, and admits a corrected input [142.22ms]\n(pass) canonical App task runtime > routes a retained text request through ordinary work and answers the original ask (live) [213.72ms]\n(pass) canonical App task runtime > routes a retained text request through ordinary work and answers the original ask (restart) [237.84ms]\n(pass) canonical App task runtime > routes a retained text request through ordinary work and answers the original ask (lost-feedback) [196.52ms]\n(pass) canonical App task runtime > rejects a dependency when the configured registry has no target Apps [99.58ms]\n(pass) canonical App task runtime > does not publish a dependency requested from a stale task result [124.65ms]\n(pass) canonical App task runtime > accepts a recovered frozen Condition route after its task has already left the wait [101.40ms]\n(pass) canonical App task runtime > preserves event time through Runtime preview so stale level observations stay blocked [124.43ms]\n(pass) canonical App task runtime > returns the exact cross-App answer after a later Task cycle through event [409.74ms]\n[event-bus] first subscriber 'app-inbox-route' took 26.8ms on event 'app.dependency.updated'\n(pass) canonical App task runtime > returns the exact cross-App answer after a later Task cycle through recovery [442.96ms]\n(pass) canonical App task runtime > handles the same App text request with a caller Condition: %s [310.45ms]\n(pass) canonical App task runtime > handles the same App text request with a caller Condition: %s [291.22ms]\n(pass) canonical App task runtime > delivers work during an active attempt through attempt and retains its exact result [243.56ms]\n(pass) canonical App task runtime > delivers work during an active attempt through tool and retains its exact result [241.63ms]\n(pass) canonical App task runtime > delivers work during an active attempt through fast-result and retains its exact result [241.30ms]\n(pass) canonical App task runtime > delivers work during an active attempt through interrupted and retains its exact result [272.28ms]\n(pass) canonical App task runtime > reuses a live action receipt when final settlement repeats an already retired Condition [142.15ms]\n(pass) canonical App task runtime > rejects a replayed retirement combined with redeclaring the same Condition [145.48ms]\n(pass) canonical App task runtime > preserves a customized saved request Condition when applying a reference only (satisfied: %s) [111.68ms]\n(pass) canonical App task runtime > preserves a customized saved request Condition when applying a reference only (satisfied: %s) [171.00ms]\n(pass) canonical App task runtime > adds distinct work across restart (completed first: false) [217.31ms]\n(pass) canonical App task runtime > adds distinct work across restart (completed first: true) [256.20ms]\n[event-bus] first subscriber 'app-inbox-route' took 47.3ms on event 'app.input.requested'\n(pass) canonical App task runtime > returns a pre-Task admission blocker through the installed caller route for actual consideration [280.35ms]\n(pass) canonical App task runtime > follows A -> B -> C -> B -> A through explicit inputs, with discussion and a blocker (live) [588.07ms]\n(pass) canonical App task runtime > follows A -> B -> C -> B -> A through explicit inputs, with discussion and a blocker (lost-notification) [600.52ms]\n(pass) canonical App task runtime > follows A -> B -> C -> B -> A through explicit inputs, with discussion and a blocker (restart) [645.75ms]\n(pass) canonical App task runtime > follows A -> B -> C -> B -> A through explicit inputs, with discussion and a blocker (owner-cancel) [524.23ms]\n(pass) canonical App task runtime > returns the exact saved App answer after its notification is lost (live) [311.60ms]\n(pass) canonical App task runtime > returns the exact saved App answer after its notification is lost (restart) [332.36ms]\n(pass) canonical App task runtime > returns the exact saved App answer after its notification is lost (missing-index) [338.83ms]\n(pass) canonical App task runtime > returns the exact saved App answer after its notification is lost (late-index) [358.12ms]\nautomatic-recovery-evidence {\"automaticRecovery\":true,\"taskIds\":{\"owner\":\"work/owner\",\"producer\":\"work/reviewer\",\"unrelated\":\"work/unrelated\"},\"requestIds\":{\"original\":\"appdep_ca22666b299387d84b18ab66\",\"later\":\"app_35fcc8e1-051d-4bdb-974d-48ff24c94226\"},\"admissionTimes\":{\"unrelated\":1791127054426,\"owner\":1791127054515,\"later\":1791127055361},\"notificationLostAt\":1791127055361,\"recoveryScans\":[{\"at\":1791127055651,\"taskIds\":[\"work/unrelated\",\"work/owner\"]},{\"at\":1791127055932,\"taskIds\":[\"work/unrelated\"]},{\"at\":1791127056150,\"taskIds\":[\"work/unrelated\"]},{\"at\":1791127056364,\"taskIds\":[\"work/unrelated\"]},{\"at\":1791127056586,\"taskIds\":[\"work/unrelated\"]},{\"at\":1791127056804,\"taskIds\":[\"work/unrelated\"]},{\"at\":1791127057020,\"taskIds\":[\"work/unrelated\"]}],\"ownerDispatches\":[{\"at\":1791127054577,\"eventTypes\":[\"app.task.requested\"]},{\"at\":1791127055707,\"eventTypes\":[\"app.dependency.updated\"]}],\"route\":\"installed indexed scheduler -> code recovery of exact saved answer -> one owner attempt\",\"scope\":\"in-process installed Task runtime with deterministic executors and a real timer; fixture accelerates the indexed recovery clock, not default timing, native agent judgment, restart, or OS/daemon proof\",\"executorReturnedAt\":1791127055707,\"acceptedAttempt\":{\"id\":\"r_1_b5861a24-7dfa-4a02-8b3b-930a29a408a0\",\"finishedAt\":\"2026-10-04T15:17:35.709Z\"},\"laterAnswerSavedAt\":1791127055451}\nautomatic-recovery-control {\"automaticRecovery\":false,\"originalRequestId\":\"appdep_ca22666b299387d84b18ab66\",\"notificationLostAt\":1791127057481,\"suppressedCandidates\":[{\"at\":1791127057749,\"taskIds\":[\"work/unrelated\",\"work/owner\"]}],\"ownerDispatches\":[{\"at\":1791127057370,\"eventTypes\":[\"app.task.requested\"]}]}\n(pass) canonical App task runtime > recovers missed answers in code without repeatedly invoking a waiting owner [4828.18ms]\n(pass) canonical App task runtime > returns one blocker and the later exact answer through the same caller wait (live) [454.08ms]\n(pass) canonical App task runtime > returns one blocker and the later exact answer through the same caller wait (lost) [489.79ms]\n(pass) canonical App task runtime > returns one blocker and the later exact answer through the same caller wait (restart) [480.90ms]\n(pass) canonical App task runtime > preserves one accepted App request across a rejected attempt and its retry [148.93ms]\n(pass) canonical App task runtime > reuses a create-work request when the agent reports its resolved Task [140.35ms]\n(pass) canonical App task runtime > reattaches an exact live request after recovery (requirements revised: %s) [108.00ms]\n(pass) canonical App task runtime > reattaches an exact live request after recovery (requirements revised: %s) [129.62ms]\n(pass) canonical App task runtime > turns a typed App dependency into deterministic input and an exact completion Condition [67.29ms]\n(pass) canonical App task runtime > keeps the source Task runnable when its dependency is neither admitted nor durably published [65.78ms]\n(pass) canonical App task runtime > projects the exact ordered claimed event batch into workflow context [76.70ms]\n(pass) canonical App task runtime > does not rewrite App task state for high-volume session progress [94.86ms]\n(pass) canonical App task runtime > limits successful-session recovery reads to the session's bound App [85.80ms]\n(pass) canonical App task runtime > does not discover or import App definitions independently [62.30ms]\n(pass) canonical App task runtime > installs an activated resource-backed App without recreating state.json [72.22ms]\n(pass) canonical App task runtime > bootstraps a brand-new App directly into resource authority [91.60ms]\n(pass) canonical App task runtime > refuses historical JSON state without canonical resource authority [65.43ms]\n(pass) canonical App task runtime > yields readiness inside one large reconciliation after claim persistence [356.33ms]\n(pass) canonical App task runtime > preserves workspace admission: executor uses App branch [273.87ms]\n(pass) canonical App task runtime > preserves workspace admission: executor defaults to dev [281.80ms]\n(pass) canonical App task runtime > preserves workspace admission: local executor needs no worktree [116.35ms]\n(pass) canonical App task runtime > preserves workspace admission: local executor needs no workspace backend [119.40ms]\n(pass) canonical App task runtime > preserves workspace admission: agent does not run until its workspace backend is restored [256.03ms]\n(pass) canonical App task runtime > preserves workspace admission: Git executor rejects a missing workspace backend [211.29ms]\n(pass) canonical App task runtime > preserves workspace admission: workflow uses App branch [213.13ms]\n(pass) canonical App task runtime > preserves workspace admission: workflow defaults to dev [211.75ms]\n(pass) canonical App task runtime > preserves workspace admission: workflow overrides App branch [216.51ms]\n(pass) canonical App task runtime > preserves workspace admission: shared workflow needs no worktree [148.91ms]\n(pass) canonical App task runtime > preserves workspace admission: shared workflow needs no workspace backend [153.26ms]\n(pass) canonical App task runtime > preserves workspace admission: task workflow rejects a missing workspace backend [259.25ms]\n(pass) canonical App task runtime > preserves workspace admission: task workflow rejects a local App [94.44ms]\n(pass) canonical App task runtime > preserves workspace admission: failed Git preparation can recover on the same Task [300.44ms]\n(pass) canonical App task runtime > retains waiting output when new facts arrive during a worktree attempt [284.72ms]\n(pass) canonical App task runtime > retains converged output when new facts arrive during a worktree attempt [268.66ms]\n(pass) canonical App task runtime > rechecks persistence after a concurrent fact without repeating execution [119.39ms]\n(pass) canonical App task runtime > rechecks persistence after a concurrent intent without repeating execution [114.28ms]\n(pass) canonical App task runtime > rechecks persistence after a concurrent action without repeating execution [111.81ms]\n(pass) canonical App task runtime > rechecks persistence after a concurrent persistent without repeating execution [121.90ms]\n(pass) canonical App task runtime > does not create task worktrees while startup installs and recovers work [133.98ms]\n(pass) canonical App task runtime > releases a fresh previous-runtime attempt and requeues it through bounded task capacity [105.88ms]\n(pass) canonical App task runtime > drains an orphaned setsid owner's exact process group before replacement recovery [1119.52ms]\n(pass) canonical App task runtime > fails startup recovery closed when a durable owner process group cannot be confirmed drained [111.26ms]\n(pass) canonical App task runtime > admits desired attachments and resolved events through the one loaded generation [90.68ms]\n(pass) canonical App task runtime > discards a post-claim superseded attempt without a handler failure or retry loop [135.98ms]\n(pass) canonical App task runtime > runs three explicitly scheduled reviews without self-published clock echoes through executor [306.05ms]\n(pass) canonical App task runtime > runs three explicitly scheduled reviews without self-published clock echoes through tasks tool [309.95ms]\n(pass) canonical App task runtime > live apply preserves input until incorporated (%s) [165.57ms]\n(pass) canonical App task runtime > live apply preserves input until incorporated (%s) [139.38ms]\n(pass) canonical App task runtime > admits a request after self-publication through the executor surface [129.07ms]\n(pass) canonical App task runtime > admits a request after self-publication through the tasks tool surface [125.77ms]\n(pass) canonical App task runtime > admits the first broadcast Condition fact and retains its identity through settlement [224.16ms]\n(pass) canonical App task runtime > keeps late repeated worker publications consumed after child settlement [359.43ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback during execution through exact admission and preserves new input [232.72ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback during execution through intent admission and preserves new input [218.92ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback after acceptance through exact admission and preserves new input [245.67ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback after acceptance through intent admission and preserves new input [250.80ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback after restart through exact admission and preserves new input [261.08ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback after restart through intent admission and preserves new input [265.07ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback after upgrade through exact admission and preserves new input [261.04ms]\n(pass) canonical App task runtime > ignores duplicate Task feedback after upgrade through intent admission and preserves new input [253.24ms]\n(pass) canonical App task runtime > preserves other consumers and recovery after self-publication with execution failure [204.66ms]\n(pass) canonical App task runtime > preserves other consumers and recovery after self-publication with invalid result [192.93ms]\n(pass) canonical App task runtime > preserves other consumers and recovery after self-publication with external input [242.82ms]\n(pass) canonical App task runtime > preserves other consumers and recovery after self-publication with superseded [217.45ms]\n(pass) canonical App task runtime > atomically consumes live input incorporated by a registered executor [128.00ms]\n(pass) canonical App task runtime > retries a restored executor through durable eligibility while independent Tasks keep working [422.38ms]\n(pass) canonical App task runtime > keeps inherited helper context separate from the attempt owner session and lease [157.45ms]\n(pass) canonical App task runtime > uses current session adapters after reload without adding another listener [93.31ms]\n(pass) canonical App task runtime > uses current session adapters after close and reinstall without adding another listener [66.41ms]\n(pass) canonical App task runtime > uses current session adapters after rejected reload without adding another listener [71.57ms]\n(pass) canonical App task runtime > leaves rejected initial publication inactive and allows a later installation [77.73ms]\n(pass) canonical App task runtime > starts new work from a reloaded definition while an old attempt is still running [157.76ms]\n(pass) canonical App task runtime > keeps the registered executor role without a CLI lifecycle (controllers=%s) [106.90ms]\n(pass) canonical App task runtime > keeps the registered executor role without a CLI lifecycle (controllers=%s) [101.06ms]\n(pass) canonical App task runtime > delegates a controller attempt across the configured execution boundary [86.50ms]\n(pass) canonical App task runtime > delegates startup Task recovery across the configured execution boundary [64.17ms]\n(pass) canonical App task runtime > supplies accepted waits to workflow judgment without inferring them from children [189.78ms]\n(pass) canonical App task runtime > replays full published facts through the installed workflow after result rejection and reopen [343.25ms]\n(pass) canonical App task runtime > replays full published facts through the installed workflow after execution failure and reopen [335.03ms]\n(pass) canonical App task runtime > admits a direct workflow failure report, retries, and rejects an invalid direct result [211.58ms]\n(pass) canonical App task runtime > retains an explicit workflow blocker across recovery and rechecks the same Task after corrected input [231.13ms]\n(pass) canonical App task runtime > result-scope rejection preserves useful evidence before cleanup (Git: %s) [117.32ms]\n(pass) canonical App task runtime > result-scope rejection preserves useful evidence before cleanup (Git: %s) [195.62ms]\n(pass) canonical App task runtime > partial acceptance retains its workspace until remaining input is settled [254.93ms]\n(pass) canonical App task runtime > partial acceptance retains its workspace until remaining condition is settled [369.72ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: last-wait [244.74ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: independent-wait [211.64ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: live-replay [241.01ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: stale [197.41ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: policy-rejected [209.30ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: unauthorized [296.81ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: stop-during-validation [271.13ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: revision-during-validation [257.03ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: new-work-during-cleanup [1765.80ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: cleanup-fails [251.92ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: cleanup-fails-after-history [1447.57ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: branch-only [259.38ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: private-refs-only [244.80ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: already-removed [255.74ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: clock-reversed [401.82ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: dirty-after-release [200.77ms]\n(pass) canonical App task runtime > final-result retirement plans Git cleanup after admission: cleanup-recording-fails [207.01ms]\n(pass) canonical App task runtime > preserves workspace and respects the accepted outcome (converged, committed=false) [151.81ms]\n(pass) canonical App task runtime > preserves workspace and respects the accepted outcome (converged, committed=true) [200.89ms]\n(pass) canonical App task runtime > preserves workspace and respects the accepted outcome (waiting, committed=false) [236.94ms]\n(pass) canonical App task runtime > preserves workspace and respects the accepted outcome (waiting, committed=false) [224.51ms]\n(pass) canonical App task runtime > preserves workspace and respects the accepted outcome (incomplete, committed=false) [263.99ms]\n(pass) canonical App task runtime > preserves workspace and respects the accepted outcome (incomplete, committed=true) [279.16ms]\n(pass) canonical App task runtime > paces invalid-state and accepts a corrected result on the same Task [357.29ms]\n(pass) canonical App task runtime > paces self-unblock and accepts a corrected result on the same Task [376.08ms]\n(pass) canonical App task runtime > paces controller retries beyond the old limit while unrelated work progresses [3965.75ms]\n(pass) canonical App task runtime > retains a worker failure report and resumes the same input after reopen (normal) [216.41ms]\n(pass) canonical App task runtime > retains a worker failure report and resumes the same input after reopen (direct-agent) [200.69ms]\n(pass) canonical App task runtime > counts failed executions once when another connection admits input during failure persistence [265.88ms]\n(pass) canonical App task runtime > persists retry backoff across independent wakes and a fresh process [386.70ms]\n(pass) canonical App task runtime > retries the same Task after an executor process failure [368.55ms]\n(pass) canonical App task runtime > schedules unexpected exact-task input without replacing outstanding waits [267.79ms]\n(pass) canonical App task runtime > coalesces an exact-task event storm into bounded fresh reconciliations [966.99ms]\n(pass) canonical App task runtime > keeps task admission durable while paused without starting reconciliation [121.16ms]\n(pass) canonical App task runtime > terminal completion recovery > retries uncommitted session output through startup before accepting effects [165.51ms]\n(pass) canonical App task runtime > terminal completion recovery > retries uncommitted session output through busy before accepting effects [165.17ms]\n(pass) canonical App task runtime > terminal completion recovery > requires confirmed session drain before startup redo [126.56ms]\n(pass) canonical App task runtime > terminal completion recovery > requires confirmed session drain before busy redo [133.94ms]\n(pass) canonical App task runtime > terminal completion recovery > handles progress without closing the Task [108.45ms]\n(pass) canonical App task runtime > terminal completion recovery > handles self-revision without closing the Task [122.54ms]\n(pass) canonical App task runtime > terminal completion recovery > handles waiting without closing the Task [125.44ms]\n(pass) canonical App task runtime > terminal completion recovery > handles incomplete without closing the Task [97.15ms]\n(pass) canonical App task runtime > terminal completion recovery > replays an early external fact for a wait recovered through startup [198.87ms]\n(pass) canonical App task runtime > terminal completion recovery > replays an early external fact for a wait recovered through busy [169.07ms]\n(pass) canonical App task runtime > terminal completion recovery > reads a consumed journal fact for a newly declared Condition after restart [175.16ms]\n(pass) canonical App task runtime > terminal completion recovery > accepts a replacement direct-agent result through startup [137.45ms]\n(pass) canonical App task runtime > terminal completion recovery > accepts a replacement direct-agent result through busy [156.75ms]\n(pass) canonical App task runtime > terminal completion recovery > retries a terminal workflow handoff through startup with a accept verifier [162.49ms]\n(pass) canonical App task runtime > terminal completion recovery > retries a terminal workflow handoff through startup with a reject verifier [185.56ms]\n(pass) canonical App task runtime > terminal completion recovery > retries a terminal workflow handoff through startup with a missing verifier [159.04ms]\n(pass) canonical App task runtime > terminal completion recovery > retries a terminal workflow handoff through busy with a accept verifier [181.01ms]\n(pass) canonical App task runtime > terminal completion recovery > retries a terminal workflow handoff through busy with a reject verifier [180.62ms]\n(pass) canonical App task runtime > terminal completion recovery > retries a terminal workflow handoff through busy with a missing verifier [174.07ms]\n(pass) dependency Condition specification updates > keeps compatible legacy fields through generated echoes and new input without timer-driven attempts [242.10ms]\n(pass) dependency Condition specification updates > rejects a same-ID dependency type conflict at the attempt boundary [125.17ms]\n(pass) dependency Condition specification updates > rejects a same-ID dependency subject conflict at the attempt boundary [134.41ms]\n(pass) dependency Condition specification updates > rejects a same-ID dependency expected conflict at the attempt boundary [132.55ms]\n(pass) dependency Condition specification updates > rejects a same-ID dependency duplicate-cadence conflict at the attempt boundary [118.23ms]\n(pass) dependency Condition specification updates > does not apply a compatible Condition update from a stale generation [136.96ms]\n\n 427 pass\n 0 fail\n 3820 expect() calls\nRan 427 tests across 4 files. [70.32s]\n",
+    "scope": "Local synthetic fixture checks; no provider calls or production mutations. Not historical activation/live fulfillment or full CI."
+  },
+  "coverageLimits": [
+    "No query_db capability supplied; no production DB opened. Pinned snapshot supplies old rows/Conditions, not fresh direct runtime reads.",
+    "Four exact may-agent Task reads returned App may-agent has no loaded Task runtime. Missing access is not terminal or absent state.",
+    "Bounded receipt search found no readable 41d87837 activation receipt, but four unrelated receipt files denied permission: rg: /app/projects/may-agent/.state/deploy-receipts/app-owned-runtime-migration-20260813-2118.json: Permission denied (os error 13)\nrg: /app/projects/may-agent/.state/deploy-receipts/async-events-cancel-fence-f3e616f2-20260823-r1.json: Permission denied (os error 13)\nrg: /app/projects/may-agent/.state/deploy-receipts/daemon-persistence-receipt-boundary-20260813.json: Permission denied (os error 13)\nrg: /app/projects/may-agent/.state/deploy-receipts/daemon-persistence-receipt-boundary-20260813-final-120048.json: Permission denied (os error 13)\n",
+    "Historical session /app/.state/sessions/s_1787634955801_9 was absent. Original event rows and old raw test logs are attributed retained evidence, not directly reread.",
+    "No current May cross-App inventory discovery or Request closure adjudication was performed. Caller must check/reuse exact existing disposition scope before admission.",
+    "Two harmless discovery commands failed: python is unavailable (corrected to python3); a here-document terminator typo caused NameError after printing snapshot counts. Legacy flat Host paths were absent; corrected to src/app/core/tasks. No tests were claimed from those commands."
+  ],
+  "authorityAndEffects": {
+    "frontierEdited": false,
+    "migrationReceiptEdited": false,
+    "tasksConditionsRuntimeProductionDbMutated": false,
+    "externalRequestsSubmitted": 0,
+    "deployments": 0,
+    "candidateSourceEdits": 0,
+    "noFulfillmentOrHumanDecisionInferred": true,
+    "artifactOnly": "Alex owns incorporation and May owns exact creator/human/caller disposition."
+  }
+}

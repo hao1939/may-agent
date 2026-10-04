@@ -1,0 +1,335 @@
+{
+  "kind": "alex-conversation-frontier-reconciliation",
+  "recordedAt": "2026-10-04T15:06:38Z",
+  "sourceSnapshot": {
+    "path": "/app/.state/alex-migration-20261004/legacy-frontier-snapshot.json",
+    "sha256": "bd3f6a1cc65e125c61f5a8380cba746d55e3d8143edc6f8d6825af286d5d7f97"
+  },
+  "contribution": {
+    "sessionId": "s_1791126092751_8a224088-9b50-4c5d-b86d-98a471cb2487",
+    "worker": "bob",
+    "status": "success",
+    "scope": "read-only semantic analysis of exactly two retained may-agent frontier identities",
+    "tests": [
+      {
+        "checkout": "Apps",
+        "command": "bun test ./projects/alex.app/app.test.ts ./projects/may.app/app.test.ts",
+        "passed": 31,
+        "expectations": 163
+      },
+      {
+        "checkout": "Host@6b507d42916ae5e0f64483311984302b20079d92",
+        "command": "bun test src/app/core/inbox/input-result.test.ts src/app/core/tasks/conversation-runtime.test.ts",
+        "passed": 57,
+        "expectations": 769
+      }
+    ],
+    "loadedRelease": "faa65d8b77883f7af4d39af9e7c085af17e332e7-definitions-v4",
+    "loadedEntrypointHashes": {
+      "alex": "6209a127c0d68f8079e755a9df6e100e05b4325afd459fb6510a7f2e494a43bf",
+      "may": "ad33572ab5a9c5ca768ef3e4779443d6bfe2349f0bcbd61cd3820c30ff1acd8d"
+    }
+  },
+  "retained": {
+    "tasks": [
+      {
+        "app_id": "may-agent",
+        "task_id": "activate-app-definition-and-reconcile-conversation-c5916945-20260825",
+        "generation": 2,
+        "resource_version": 15,
+        "phase": "waiting",
+        "updated_at": 1787678412234,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 2,
+            "id": "activate-app-definition-and-reconcile-conversation-c5916945-20260825",
+            "resourceVersion": 15
+          },
+          "spec": {
+            "acceptance": [
+              "Prove the currently loaded May App definition contains the owner-review isolation semantics from commit 0d747fefde76e69b7846d189732eecd8378b6698, with the exact loaded release identity and service health recorded.",
+              "Do not redeploy Runtime: preserve deploy correlation deploy-20260825T090641Z-2497004 and its matching artifact hashes, healthy state, and duplicateDeploy=false proof because requested Runtime commit 4fd177aeeed730611179935d7100309731eeeee2 is already an ancestor of deployed source fb8c20cfb3c9cdfc32c5fad8587a1e043f1fd455.",
+              "Use the supported App-definition reload or activation path at most once; if an explicit authority decision is required, stop on one exact typed Condition rather than mutating production or issuing a duplicate activation.",
+              "Prove dependency appdep_d1af53ec71e50e18c09e511e reaches a terminal result, Conversation task conversation/app_c5916945-12d2-42b5-a4ac-1d3846e64fa7 is terminal, and that exact task is absent from the active-task projection.",
+              "Record one canonical deployment.completed or app.dependency.completed event and the resulting automatic wake and reconciliation of the same existing Task; a human-sourced app.task.requested owner-review wake does not satisfy this criterion.",
+              "Return exact event, receipt or release, same-Task wake, task-result, dependency-result, and active-projection evidence; replan on the same task if any link is missing."
+            ],
+            "category": "runtime-reliability",
+            "input": {
+              "appDefinition": {
+                "loadedCorrectionPresent": false,
+                "loadedPath": "/app/.state/releases/app-definitions/overlay-repair-stable-localkey-e507fbf9-81ae4b02-ccba55c2-definitions-v3/projects/may-agent.app/app.ts",
+                "requestedCommit": "0d747fefde76e69b7846d189732eecd8378b6698"
+              },
+              "conversationTaskId": "conversation/app_c5916945-12d2-42b5-a4ac-1d3846e64fa7",
+              "dependencyId": "appdep_d1af53ec71e50e18c09e511e",
+              "runtimeDeploy": {
+                "artifactSha": "b289dbb3c391d1e164fbdad8018dad477a8894b38f55088a61df5f25d1a40240",
+                "correlation": "deploy-20260825T090641Z-2497004",
+                "duplicateDeploy": false,
+                "health": "healthy",
+                "requestedCommit": "4fd177aeeed730611179935d7100309731eeeee2",
+                "requestedCommitIncluded": true,
+                "sourceCommit": "fb8c20cfb3c9cdfc32c5fad8587a1e043f1fd455"
+              },
+              "sourceFinding": {
+                "evaluationVerdict": "acceptable",
+                "eventId": 6100085,
+                "sessionId": "s_1787642212819_19"
+              }
+            },
+            "mode": "achieve",
+            "outcome": "Activate the May App-definition owner-review isolation introduced by commit 0d747fefde76e69b7846d189732eecd8378b6698 through the supported App-definition control path without redeploying Runtime, reconcile exact dependency appdep_d1af53ec71e50e18c09e511e and Conversation task conversation/app_c5916945-12d2-42b5-a4ac-1d3846e64fa7 to terminal proof, and prove that a canonical completion event automatically revisits the same existing Task rather than relying on a human-sourced owner-review wake.",
+            "outputs": [],
+            "owner": "may",
+            "parentId": "runtime/platform-owner-review",
+            "priority": "P1"
+          },
+          "status": {
+            "conditionIds": [
+              "clean-committed-app-definition-source-for-c5916945-activation"
+            ],
+            "evidence": [
+              "checkpoint:1",
+              "release:overlay-repair-stable-localkey-e507fbf9-81ae4b02-ccba55c2-definitions-v3",
+              "release:df2d11943737bbcf95c6b1e2333fcfdd1a83f1c4-definitions-v3",
+              "event:6093629",
+              "receipt:may-agent/app-request/appdep_d1af53ec71e50e18c09e511e",
+              "event:6081063",
+              "active-projection-count:0",
+              "event:6108466",
+              "same-task-start-event:6108468",
+              "deploy-receipt:deploy-20260825T090641Z-2497004"
+            ],
+            "observedGeneration": 2,
+            "phase": "waiting",
+            "result": {
+              "activationAttemptedThisAttempt": false,
+              "activeDefinition": {
+                "mayAppSha256": "38f87be63b92d23935c753e4a8401d9632a6eeaf32ca1dc3a17275dae045dcd8",
+                "ownerReviewIsolationLoaded": false,
+                "releaseId": "overlay-repair-stable-localkey-e507fbf9-81ae4b02-ccba55c2-definitions-v3"
+              },
+              "automaticWake": {
+                "acceptanceStatus": "pre-activation control only; post-activation proof still required",
+                "canonicalCompletionEventId": 6108466,
+                "canonicalCompletionEventType": "app.dependency.completed",
+                "humanWakeUsed": false,
+                "sameGeneration": 2,
+                "sameTaskId": "activate-app-definition-and-reconcile-conversation-c5916945-20260825",
+                "sameTaskStartEventId": 6108468
+              },
+              "conversationTask": {
+                "activeProjectionCount": 0,
+                "cancellationEventId": 6081063,
+                "taskId": "conversation/app_c5916945-12d2-42b5-a4ac-1d3846e64fa7",
+                "terminalDisposition": "cancelled"
+              },
+              "dependency": {
+                "completionEventId": 6093629,
+                "id": "appdep_d1af53ec71e50e18c09e511e",
+                "receiptId": "app-request/appdep_d1af53ec71e50e18c09e511e",
+                "status": "done"
+              },
+              "eligibleCorrectedDefinition": {
+                "containsRequiredCommit": true,
+                "mayAppSha256": "ecb0b873cfef440af1350add1db85e7b6bd42366f768a11d371dc386c1776b80",
+                "releaseId": "df2d11943737bbcf95c6b1e2333fcfdd1a83f1c4-definitions-v3",
+                "sourceCommit": "df2d11943737bbcf95c6b1e2333fcfdd1a83f1c4"
+              },
+              "runtimeDeploy": {
+                "artifactSha": "b289dbb3c391d1e164fbdad8018dad477a8894b38f55088a61df5f25d1a40240",
+                "correlation": "deploy-20260825T090641Z-2497004",
+                "duplicateDeploy": false,
+                "loadedArtifactSha": "b289dbb3c391d1e164fbdad8018dad477a8894b38f55088a61df5f25d1a40240",
+                "preservedWithoutRepeat": true,
+                "receiptHealth": "healthy",
+                "sourceCommit": "fb8c20cfb3c9cdfc32c5fad8587a1e043f1fd455"
+              },
+              "runtimeRedeployedThisAttempt": false,
+              "source": {
+                "head": "01bc931aa42b61b156004bd11f9e45857704cff9",
+                "requiredCommit": "0d747fefde76e69b7846d189732eecd8378b6698",
+                "requiredCommitIncluded": true,
+                "trackedDefinitionChanges": 52,
+                "untrackedExecutableDefinitionPaths": [
+                  "projects/gym.app/agents/gym/workflows/lib/terminal-artifact-evidence.test.ts",
+                  "projects/gym.app/agents/gym/workflows/lib/terminal-artifact-evidence.ts"
+                ]
+              }
+            },
+            "summary": "Waiting on the existing `source.ready` Condition. The required commit is present, but 52 tracked definition changes and two untracked executable definition files still prevent supported activation; no reload or Runtime redeploy was attempted, and the already preserved terminal dependency, Conversation, active-projection, deployment, and pre-activation same-Task wake evidence remains authoritative.",
+            "updatedAt": "2026-08-25T17:20:12.234Z"
+          }
+        },
+        "trigger_json": null
+      },
+      {
+        "app_id": "may-agent",
+        "task_id": "app-request/app_d1380ef9-c44a-49fe-811e-be57a1e7d54c",
+        "generation": 1,
+        "resource_version": 10,
+        "phase": "attention",
+        "updated_at": 1787891504407,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 1,
+            "id": "app-request/app_d1380ef9-c44a-49fe-811e-be57a1e7d54c",
+            "resourceVersion": 10
+          },
+          "spec": {
+            "acceptance": [
+              "The deployed May runtime includes commit f936904d and reports healthy.",
+              "The loaded Gym App definition preserves structured owner-review outcome and acceptance as the Task goal.",
+              "A focused live check proves assignment messages state the concrete delegated outcome and exact Task reference."
+            ],
+            "input": {
+              "data": {
+                "acceptance": [
+                  "The deployed May runtime includes commit f936904d and reports healthy.",
+                  "The loaded Gym App definition preserves structured owner-review outcome and acceptance as the Task goal.",
+                  "A focused live check proves assignment messages state the concrete delegated outcome and exact Task reference."
+                ],
+                "evidence": [
+                  "45 focused tests passed",
+                  "TypeScript checks passed",
+                  "Gym App 25 tests passed",
+                  "Full unit suite 1790/1791 with the sole timing-sensitive failure passing in isolation"
+                ],
+                "outcome": "Deploy and verify the tested May conversation fix so approved proposal scope remains visible in the assigned Task and assignment message."
+              },
+              "kind": "owner-review"
+            },
+            "mode": "achieve",
+            "outcome": "Deploy and verify the tested May conversation fix so approved proposal scope remains visible in the assigned Task and assignment message.",
+            "owner": "may",
+            "parentId": "platform-system-review-feedback-loop",
+            "priority": "P1"
+          },
+          "status": {
+            "conditionIds": [],
+            "evidence": [
+              "Deploy receipt approved-handoff-visibility-f936904d-20260825 succeeded with matching artifact hashes, healthy status, and duplicateDeploy false.",
+              "Git ancestry proves f936904d is an ancestor of loaded runtime commit 75bb64e7; readiness succeeds and all three long-lived services are RUNNING.",
+              "The supplied completed Gym dependency proves the exact live Task reference, outcome, and acceptance match the assignment message.",
+              "The active definition release lacks requestedOutcome/requestedAcceptance, while committed Gym source f67183fa contains both.",
+              "runtime.reload.finished event 6107556 reports ok:false because tracked definition-source files are uncommitted."
+            ],
+            "lane": "human",
+            "observedGeneration": 1,
+            "phase": "attention",
+            "result": {
+              "decision": "wait-for-clean-definition-source",
+              "gymDefinition": {
+                "activeRelease": "overlay-repair-stable-localkey-e507fbf9-81ae4b02-ccba55c2-definitions-v3",
+                "committedFix": "f67183fa5c13467c9220063f1299acaad94705bb",
+                "loadedStructuredOwnerReview": false,
+                "reloadFinishedEventId": 6107556,
+                "reloadRequestedEventId": 6107555
+              },
+              "liveAssignment": {
+                "assignmentMatchesCanonicalTask": true,
+                "taskReference": "owner-review/appdep_798b672033f5db44a9121f42-13edc4aef86f4867",
+                "verified": true
+              },
+              "runtime": {
+                "healthy": true,
+                "includesRequiredCommit": "f936904dca56234e2699cafea485302b58ccdcbc",
+                "loadedSourceCommit": "75bb64e7b7e56a26f2ec0f57b0a3635f6298154c",
+                "servicesRunning": [
+                  "may-agent",
+                  "may-agent-web",
+                  "may-agent-maintenance"
+                ]
+              }
+            },
+            "summary": "Resolved agent may is not a runnable agent",
+            "updatedAt": "2026-08-28T04:31:44.407Z"
+          }
+        },
+        "trigger_json": null
+      }
+    ],
+    "relations": [
+      {
+        "app_id": "may-agent",
+        "source_task_id": "app-request/app_d1380ef9-c44a-49fe-811e-be57a1e7d54c",
+        "relation_kind": "parent",
+        "target_task_id": "platform-system-review-feedback-loop"
+      },
+      {
+        "app_id": "may-agent",
+        "source_task_id": "activate-app-definition-and-reconcile-conversation-c5916945-20260825",
+        "relation_kind": "parent",
+        "target_task_id": "runtime/platform-owner-review"
+      }
+    ],
+    "conditions": [
+      {
+        "app_id": "may-agent",
+        "condition_id": "clean-committed-app-definition-source-for-c5916945-activation",
+        "state": "unknown",
+        "condition_json": "{\"metadata\":{\"generation\":3,\"id\":\"clean-committed-app-definition-source-for-c5916945-activation\",\"resourceVersion\":4},\"spec\":{\"expected\":{\"containsCommit\":\"0d747fefde76e69b7846d189732eecd8378b6698\",\"supportedReloadAvailable\":true,\"trackedDefinitionChanges\":0},\"owner\":\"human\",\"requestedAction\":\"Reconcile and preserve the unrelated tracked App-definition changes and the two untracked Gym workflow files so the canonical definition source is clean at a committed source containing 0d747fefde76e69b7846d189732eecd8378b6698; do not activate or redeploy on this task's behalf.\",\"subject\":\"source:app-definitions-c5916945-owner-review-isolation\",\"type\":\"source.ready\"},\"status\":{\"createdAt\":\"2026-08-25T17:20:12.234Z\",\"observedAt\":\"2026-08-25T17:20:12.234Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}"
+      }
+    ]
+  },
+  "historicalReceipts": [
+    {
+      "id": "deploy-20260825T090641Z-2497004",
+      "result": "succeeded",
+      "healthy": true,
+      "duplicateDeploy": false,
+      "limitation": "Runtime receipt does not prove the missing post-activation owner-review isolation outcome."
+    },
+    {
+      "id": "approved-handoff-visibility-f936904d-20260825",
+      "result": "succeeded",
+      "healthy": true,
+      "duplicateDeploy": false,
+      "limitation": "Receipt names app-request/app_862a194d-e4c3-46d4-ac4e-aac091f279d8, not retained frontier Task app-request/app_d1380ef9-c44a-49fe-811e-be57a1e7d54c."
+    }
+  ],
+  "decisions": [
+    {
+      "oldTaskId": "activate-app-definition-and-reconcile-conversation-c5916945-20260825",
+      "classification": "obsolete-execution-path-unfulfilled-no-current-continuation",
+      "historicalOutcomeFulfilled": false,
+      "basis": [
+        "The retained dependency is done, the Conversation task is cancelled and absent from active projection, and a same-Task pre-activation wake was already recorded.",
+        "The literal post-activation proof was never completed: the retained row says ownerReviewIsolationLoaded=false and keeps an unknown source.ready Condition.",
+        "Current organization has retired the may-agent App/controller, current canonical Task/Conversation machinery supersedes that activation path, and focused current tests pass. Recreating the old App-wide activation path would contradict the migration."
+      ],
+      "conditionDisposition": "Preserved as independent unknown historical evidence; not settled, rebound, or promoted to a current wait.",
+      "replacement": null
+    },
+    {
+      "oldTaskId": "app-request/app_d1380ef9-c44a-49fe-811e-be57a1e7d54c",
+      "classification": "superseded-by-current-alex-verification-outcome-unfulfilled",
+      "historicalOutcomeFulfilled": false,
+      "basis": [
+        "The historical runtime deployment and one different Task receipt succeeded, but the retained row remained attention and its loaded Gym structured-owner-review proof was false.",
+        "Current Host source preserves full structured Task input and Conversation request scope, but prior focused tests do not prove the retained acceptance requirement that an assignment message states the concrete delegated outcome and exact Task reference.",
+        "One bounded Alex technical verification is therefore justified; live failure injection is neither required nor authorized."
+      ],
+      "replacement": {
+        "appId": "alex",
+        "requestId": "appdep_588d052a7356e987b94eef83",
+        "conditionId": "app-request:appdep_588d052a7356e987b94eef83",
+        "ownerAgent": "tech-lead"
+      },
+      "oldPathReplayed": false
+    }
+  ],
+  "limits": [
+    "Neither retired outcome is marked fulfilled.",
+    "Both old Tasks are unavailable through a loaded may-agent runtime; snapshot state is historical, not fresh canonical status.",
+    "No production database, runtime, disabled App, historical Condition, Conversation, or deployment was mutated.",
+    "Provider recovery authority remains independently pending and unchanged."
+  ]
+}

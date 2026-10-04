@@ -1,0 +1,1353 @@
+{
+  "kind": "bounded-legacy-frontier-reconciliation-contribution",
+  "date": "2026-10-04",
+  "author": "bob",
+  "sessionId": "s_1791125762265_1fdc3ecb-11c9-4047-8ba4-f07cebe092a3",
+  "scope": {
+    "appId": "may-agent",
+    "taskIds": [
+      "app-request/appdep_6e45556ac686de79c4947581",
+      "app-request/appdep_9f0518ac9e9d530a4f6334e5"
+    ],
+    "count": 2,
+    "authority": "Contribution only. Alex owns final frontier/receipt disposition. No runtime/Task/Condition mutation, request admission, source repair, refresh or deployment authorized/performed."
+  },
+  "baseline": {
+    "appsCommit": "db4bce358bf824fc042fa8e794f0edf73daac460",
+    "hostSourceCommit": "6b507d42916ae5e0f64483311984302b20079d92",
+    "hostVersionCommand": "/usr/local/bin/may-agent --version",
+    "hostVersionOutput": "may-agent v5.4.0 (6b507d42)",
+    "definitionRelease": "faa65d8b77883f7af4d39af9e7c085af17e332e7-definitions-v4",
+    "pinnedInputs": [
+      {
+        "path": "/app/.state/alex-migration-20261004/legacy-frontier-snapshot.json",
+        "sha256": "bd3f6a1cc65e125c61f5a8380cba746d55e3d8143edc6f8d6825af286d5d7f97"
+      },
+      {
+        "path": "/app/.state/alex-migration-20261004/legacy-frontier-index.json",
+        "sha256": "46d61e762a8abac6170b4333c7aac30af2661afabe7fe635294a17318ea1cde9"
+      },
+      {
+        "path": "projects/alex.app/legacy-frontier-disposition-2026-10-04.json",
+        "sha256": "d921659b43ce000668a87934d6b3d0ff61d0b7ee91e153ca9212aecb60d1ad68"
+      },
+      {
+        "path": "projects/alex.app/migration-receipt-2026-10-04.md",
+        "sha256": "0c0b6d5ad89f949ed7a1f0ecb893258137015cd00a8a9706fb3d2b403a5f98d3"
+      }
+    ]
+  },
+  "decision": {
+    "classification": "obsolete-unfulfilled",
+    "fulfilledCount": 0,
+    "newTechnicalContinuationsRecommended": 0,
+    "replacement": null,
+    "rationale": [
+      "The caller Scout Task refresh-host-generated-task-projection is already closed/done with accepted obsolete-acceptance, terminal=true, publisherAvailable=false and mutationPerformed=false. Its original acceptance is not fulfilled; its terminal disposition must not be repeated as a fresh proxy assignment.",
+      "Current Host source reads canonical resources and labels state.json historical only. No refreshAppTaskTreeProjection or tree.json publisher matches remain under src/app. The pure buildAppTaskTreeProjection function still exists, but it is not the old file publisher or authority to resurrect one.",
+      "Fresh reads of enabled Scout show HN generation 2/RV2154/done and XHS generation 2/RV487/done with access:ready and no linked Conditions. Requiring historical generation 1/XHS RV12 waiting now would contradict current resources. Do not reset Scout to satisfy an obsolete projection.",
+      "The two historical JSON hashes exactly equal the stale August hashes, with tree timestamp 2026-08-21T02:20:56.107Z and paused lifecycle. Therefore literal regeneration was not achieved; unchanged files are expected historical evidence under the current contract, not a current runtime defect."
+    ]
+  },
+  "items": [
+    {
+      "appId": "may-agent",
+      "taskId": "app-request/appdep_6e45556ac686de79c4947581",
+      "classification": "obsolete-unfulfilled",
+      "replacement": null,
+      "currentContinuation": null,
+      "missingFulfillmentEvidence": [
+        "No supported publisher invocation receipt",
+        "No later active tree generation / tree hash change",
+        "No before/after successful refresh proof meeting old canonical HN/XHS constraints"
+      ],
+      "retainedRowPointer": "/retainedEvidence/completeSelectedTaskRows/0"
+    },
+    {
+      "appId": "may-agent",
+      "taskId": "app-request/appdep_9f0518ac9e9d530a4f6334e5",
+      "classification": "obsolete-unfulfilled",
+      "replacement": null,
+      "currentContinuation": null,
+      "missingFulfillmentEvidence": [
+        "No supported publisher invocation receipt",
+        "No later active tree generation / tree hash change",
+        "No before/after successful refresh proof meeting old canonical HN/XHS constraints"
+      ],
+      "retainedRowPointer": "/retainedEvidence/completeSelectedTaskRows/1"
+    }
+  ],
+  "retainedEvidence": {
+    "completeSelectedTaskRows": [
+      {
+        "app_id": "may-agent",
+        "task_id": "app-request/appdep_6e45556ac686de79c4947581",
+        "generation": 1,
+        "resource_version": 6,
+        "phase": "attention",
+        "updated_at": 1787891749152,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 1,
+            "id": "app-request/appdep_6e45556ac686de79c4947581",
+            "resourceVersion": 6
+          },
+          "spec": {
+            "acceptance": [
+              "The regenerated tree has `updated_at` later than `2026-08-22T14:01:07Z` and reports `project_lifecycle=active`, not paused.",
+              "The regenerated tree reports `explore-hn` at resource version 72 or later and in the terminal state consistent with canonical Task evidence after workflow `wr_1787407267793_9ncy`.",
+              "The regenerated tree preserves `explore-xhs` generation 1/resource version 12 in waiting state on `credential-ready:xhs` while that credential remains unavailable.",
+              "Evidence identifies the supported Host publisher used and proves `/app/projects/scout-knowledge-lib.app/.state/tasks/state.json` was not directly edited; no direct edit of tree.json is permitted."
+            ],
+            "input": {
+              "data": {
+                "acceptance": [
+                  "The regenerated tree has `updated_at` later than `2026-08-22T14:01:07Z` and reports `project_lifecycle=active`, not paused.",
+                  "The regenerated tree reports `explore-hn` at resource version 72 or later and in the terminal state consistent with canonical Task evidence after workflow `wr_1787407267793_9ncy`.",
+                  "The regenerated tree preserves `explore-xhs` generation 1/resource version 12 in waiting state on `credential-ready:xhs` while that credential remains unavailable.",
+                  "Evidence identifies the supported Host publisher used and proves `/app/projects/scout-knowledge-lib.app/.state/tasks/state.json` was not directly edited; no direct edit of tree.json is permitted."
+                ],
+                "constraints": [
+                  "Invoke the publisher with the Host's loaded `scout-knowledge-lib` App descriptor and canonical resource store; do not reconstruct configuration from stale legacy state.",
+                  "Do not edit `.state/tasks/state.json` or `.state/tasks/tree.json` directly.",
+                  "Do not mutate canonical Task resources or alter the `credential-ready:xhs` Condition.",
+                  "Return exact post-publish path, timestamp, lifecycle, HN generation/resource version/phase, XHS generation/resource version/phase/condition, publisher identity, and before/after state.json hash."
+                ],
+                "evidence": [
+                  "Stale projection: `/app/projects/scout-knowledge-lib.app/.state/tasks/tree.json` updated_at `2026-08-21T02:20:56.107Z`, lifecycle `paused`, explore-hn resource version 39.",
+                  "Canonical Task view currently reports `explore-hn` done and `explore-xhs` waiting on `credential-ready:xhs`.",
+                  "Source report: `/app/projects/evaluation.app/reports/project-health/scout-knowledge-lib.app/20260822T140215435Z.md`.",
+                  "Pre-operation state.json SHA-256: `672faa8ed0af8b91f81f8d05d6d2025ae2b7704efe3cb47f249c3ed4d299168b`.",
+                  "Pre-operation tree.json SHA-256: `85c36e00aac129795ec6d58b6dab395916a37a1f804b5ae325b9da2c9a89dc7b`."
+                ],
+                "outcome": "Use the supported Host loaded-App projection publisher to regenerate `/app/projects/scout-knowledge-lib.app/.state/tasks/tree.json` from current canonical task resources for App `scout-knowledge-lib`, then return verification evidence."
+              },
+              "kind": "runtime-capability-request"
+            },
+            "mode": "achieve",
+            "outcome": "Use the supported Host loaded-App projection publisher to regenerate `/app/projects/scout-knowledge-lib.app/.state/tasks/tree.json` from current canonical task resources for App `scout-knowledge-lib`, then return verification evidence.",
+            "owner": "may",
+            "parentId": "platform-system-review-feedback-loop",
+            "priority": "P1"
+          },
+          "status": {
+            "conditionIds": [],
+            "evidence": [
+              "Running Host identity: `/usr/local/bin/may-agent --version` returned `may-agent v0.1.0 (5393dcb1)`.",
+              "The live socket `apps.list` reported `scout-knowledge-lib` as loaded, while the deployed protocol/control catalog contains no projection-refresh command.",
+              "Read-only canonical `app_tasks` evidence reports `explore-hn` generation 1/resource version 125/phase converged and `explore-xhs` generation 1/resource version 12/phase waiting with condition `credential-ready:xhs`.",
+              "Live `app.task.get` confirms HN is terminal (`done`) and XHS is waiting on typed condition `credential.state` subject `credential:xhs`.",
+              "Fresh SHA-256 verification shows `state.json` remains `672faa8ed0af8b91f81f8d05d6d2025ae2b7704efe3cb47f249c3ed4d299168b` and stale `tree.json` remains `85c36e00aac129795ec6d58b6dab395916a37a1f804b5ae325b9da2c9a89dc7b`.",
+              "Source inspection identifies `refreshAppTaskTreeProjection(config)` as the supported atomic publisher and confirms it rebuilds from `readTaskState(config)` without mutating canonical state."
+            ],
+            "observedGeneration": 1,
+            "phase": "attention",
+            "result": {
+              "canonical": {
+                "explore-hn": {
+                  "generation": 1,
+                  "phase": "converged",
+                  "resourceVersion": 125
+                },
+                "explore-xhs": {
+                  "condition": "credential-ready:xhs",
+                  "generation": 1,
+                  "phase": "waiting",
+                  "resourceVersion": 12
+                }
+              },
+              "currentStateJsonSha256": "672faa8ed0af8b91f81f8d05d6d2025ae2b7704efe3cb47f249c3ed4d299168b",
+              "currentTreeJsonSha256": "85c36e00aac129795ec6d58b6dab395916a37a1f804b5ae325b9da2c9a89dc7b",
+              "decision": "wait-for-supported-host-publisher",
+              "mutationPerformed": false,
+              "preStateJsonSha256": "672faa8ed0af8b91f81f8d05d6d2025ae2b7704efe3cb47f249c3ed4d299168b",
+              "publisherIdentity": "refreshAppTaskTreeProjection via the Host loaded-App descriptor and canonical resource store",
+              "targetPath": "/app/projects/scout-knowledge-lib.app/.state/tasks/tree.json"
+            },
+            "summary": "Resolved agent may is not a runnable agent",
+            "updatedAt": "2026-08-28T04:35:49.152Z"
+          }
+        },
+        "trigger_json": null
+      },
+      {
+        "app_id": "may-agent",
+        "task_id": "app-request/appdep_9f0518ac9e9d530a4f6334e5",
+        "generation": 1,
+        "resource_version": 4,
+        "phase": "pending",
+        "updated_at": 1788095813234,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 1,
+            "id": "app-request/appdep_9f0518ac9e9d530a4f6334e5",
+            "resourceVersion": 4
+          },
+          "spec": {
+            "acceptance": [
+              "`/app/projects/scout-knowledge-lib.app/.state/tasks/tree.json` is regenerated by `refreshAppTaskTreeProjection` with `updated_at` later than 2026-08-22T14:01:07Z and `project_lifecycle=active`.",
+              "The regenerated projection reports `explore-hn` generation 1, resource version at least 72 (canonical observation is 125), and terminal/converged state.",
+              "The regenerated projection preserves `explore-xhs` generation 1, resource version 12, waiting on `credential-ready:xhs` while the credential is unavailable.",
+              "Return before/after SHA-256 evidence proving `.state/tasks/state.json` stayed unchanged and tree.json changed, plus the supported publisher/control route used."
+            ],
+            "input": {
+              "data": {
+                "acceptance": [
+                  "`/app/projects/scout-knowledge-lib.app/.state/tasks/tree.json` is regenerated by `refreshAppTaskTreeProjection` with `updated_at` later than 2026-08-22T14:01:07Z and `project_lifecycle=active`.",
+                  "The regenerated projection reports `explore-hn` generation 1, resource version at least 72 (canonical observation is 125), and terminal/converged state.",
+                  "The regenerated projection preserves `explore-xhs` generation 1, resource version 12, waiting on `credential-ready:xhs` while the credential is unavailable.",
+                  "Return before/after SHA-256 evidence proving `.state/tasks/state.json` stayed unchanged and tree.json changed, plus the supported publisher/control route used."
+                ],
+                "constraints": [
+                  "Do not edit `.state/tasks/state.json` or `.state/tasks/tree.json` directly.",
+                  "Do not mutate canonical Scout Task resources merely to alter the projection.",
+                  "Use the Host loaded-App descriptor and canonical resource store through the supported `refreshAppTaskTreeProjection` publisher.",
+                  "The prior request `appdep_6e45556ac686de79c4947581` was completed without mutation because no deployed projection-refresh command existed; this request specifically owns supplying or invoking that missing runtime capability."
+                ],
+                "evidence": [
+                  "Current stale tree SHA-256: 85c36e00aac129795ec6d58b6dab395916a37a1f804b5ae325b9da2c9a89dc7b.",
+                  "Current canonical state SHA-256: 672faa8ed0af8b91f81f8d05d6d2025ae2b7704efe3cb47f249c3ed4d299168b.",
+                  "Authoritative completed dependency reports canonical HN rv125/converged and XHS rv12/waiting on credential-ready:xhs.",
+                  "Source inspection in the prior Host result identified `refreshAppTaskTreeProjection(config)` as the supported atomic publisher that rebuilds from `readTaskState(config)` without mutating canonical state."
+                ],
+                "outcome": "Provide and execute a supported Host control-plane capability that invokes `refreshAppTaskTreeProjection` for the loaded `scout-knowledge-lib` App, regenerating its disposable task projection from canonical resources without directly editing either task JSON file."
+              },
+              "kind": "runtime-capability-request"
+            },
+            "mode": "achieve",
+            "outcome": "Provide and execute a supported Host control-plane capability that invokes `refreshAppTaskTreeProjection` for the loaded `scout-knowledge-lib` App, regenerating its disposable task projection from canonical resources without directly editing either task JSON file.",
+            "owner": "tech-lead",
+            "parentId": "platform-system-review-feedback-loop",
+            "priority": "P1"
+          },
+          "status": {
+            "observedGeneration": 0,
+            "phase": "pending",
+            "updatedAt": "2026-08-30T13:16:53.234Z"
+          }
+        },
+        "trigger_json": {
+          "event": {
+            "data": {
+              "appId": "may-agent",
+              "idempotencyKey": "task:appdep_9f0518ac9e9d530a4f6334e5:desired:app-request/appdep_9f0518ac9e9d530a4f6334e5",
+              "project": "may-agent",
+              "request": {
+                "id": "appdep_9f0518ac9e9d530a4f6334e5",
+                "input": {
+                  "data": {
+                    "acceptance": [
+                      "`/app/projects/scout-knowledge-lib.app/.state/tasks/tree.json` is regenerated by `refreshAppTaskTreeProjection` with `updated_at` later than 2026-08-22T14:01:07Z and `project_lifecycle=active`.",
+                      "The regenerated projection reports `explore-hn` generation 1, resource version at least 72 (canonical observation is 125), and terminal/converged state.",
+                      "The regenerated projection preserves `explore-xhs` generation 1, resource version 12, waiting on `credential-ready:xhs` while the credential is unavailable.",
+                      "Return before/after SHA-256 evidence proving `.state/tasks/state.json` stayed unchanged and tree.json changed, plus the supported publisher/control route used."
+                    ],
+                    "constraints": [
+                      "Do not edit `.state/tasks/state.json` or `.state/tasks/tree.json` directly.",
+                      "Do not mutate canonical Scout Task resources merely to alter the projection.",
+                      "Use the Host loaded-App descriptor and canonical resource store through the supported `refreshAppTaskTreeProjection` publisher.",
+                      "The prior request `appdep_6e45556ac686de79c4947581` was completed without mutation because no deployed projection-refresh command existed; this request specifically owns supplying or invoking that missing runtime capability."
+                    ],
+                    "evidence": [
+                      "Current stale tree SHA-256: 85c36e00aac129795ec6d58b6dab395916a37a1f804b5ae325b9da2c9a89dc7b.",
+                      "Current canonical state SHA-256: 672faa8ed0af8b91f81f8d05d6d2025ae2b7704efe3cb47f249c3ed4d299168b.",
+                      "Authoritative completed dependency reports canonical HN rv125/converged and XHS rv12/waiting on credential-ready:xhs.",
+                      "Source inspection in the prior Host result identified `refreshAppTaskTreeProjection(config)` as the supported atomic publisher that rebuilds from `readTaskState(config)` without mutating canonical state."
+                    ],
+                    "outcome": "Provide and execute a supported Host control-plane capability that invokes `refreshAppTaskTreeProjection` for the loaded `scout-knowledge-lib` App, regenerating its disposable task projection from canonical resources without directly editing either task JSON file."
+                  },
+                  "kind": "runtime-capability-request"
+                },
+                "source": {
+                  "id": "scout-knowledge-lib",
+                  "kind": "app"
+                }
+              },
+              "taskId": "app-request/appdep_9f0518ac9e9d530a4f6334e5"
+            },
+            "idempotencyKey": "task:appdep_9f0518ac9e9d530a4f6334e5:desired:app-request/appdep_9f0518ac9e9d530a4f6334e5",
+            "owner": "agent:tech-lead",
+            "source": "app-inbox:may-agent",
+            "target": {
+              "project": "may-agent",
+              "taskId": "app-request/appdep_9f0518ac9e9d530a4f6334e5"
+            },
+            "type": "app.task.requested"
+          },
+          "events": [
+            {
+              "event": {
+                "data": {
+                  "appId": "may-agent",
+                  "idempotencyKey": "task:appdep_9f0518ac9e9d530a4f6334e5:desired:app-request/appdep_9f0518ac9e9d530a4f6334e5",
+                  "project": "may-agent",
+                  "request": {
+                    "id": "appdep_9f0518ac9e9d530a4f6334e5",
+                    "input": {
+                      "data": {
+                        "acceptance": [
+                          "`/app/projects/scout-knowledge-lib.app/.state/tasks/tree.json` is regenerated by `refreshAppTaskTreeProjection` with `updated_at` later than 2026-08-22T14:01:07Z and `project_lifecycle=active`.",
+                          "The regenerated projection reports `explore-hn` generation 1, resource version at least 72 (canonical observation is 125), and terminal/converged state.",
+                          "The regenerated projection preserves `explore-xhs` generation 1, resource version 12, waiting on `credential-ready:xhs` while the credential is unavailable.",
+                          "Return before/after SHA-256 evidence proving `.state/tasks/state.json` stayed unchanged and tree.json changed, plus the supported publisher/control route used."
+                        ],
+                        "constraints": [
+                          "Do not edit `.state/tasks/state.json` or `.state/tasks/tree.json` directly.",
+                          "Do not mutate canonical Scout Task resources merely to alter the projection.",
+                          "Use the Host loaded-App descriptor and canonical resource store through the supported `refreshAppTaskTreeProjection` publisher.",
+                          "The prior request `appdep_6e45556ac686de79c4947581` was completed without mutation because no deployed projection-refresh command existed; this request specifically owns supplying or invoking that missing runtime capability."
+                        ],
+                        "evidence": [
+                          "Current stale tree SHA-256: 85c36e00aac129795ec6d58b6dab395916a37a1f804b5ae325b9da2c9a89dc7b.",
+                          "Current canonical state SHA-256: 672faa8ed0af8b91f81f8d05d6d2025ae2b7704efe3cb47f249c3ed4d299168b.",
+                          "Authoritative completed dependency reports canonical HN rv125/converged and XHS rv12/waiting on credential-ready:xhs.",
+                          "Source inspection in the prior Host result identified `refreshAppTaskTreeProjection(config)` as the supported atomic publisher that rebuilds from `readTaskState(config)` without mutating canonical state."
+                        ],
+                        "outcome": "Provide and execute a supported Host control-plane capability that invokes `refreshAppTaskTreeProjection` for the loaded `scout-knowledge-lib` App, regenerating its disposable task projection from canonical resources without directly editing either task JSON file."
+                      },
+                      "kind": "runtime-capability-request"
+                    },
+                    "source": {
+                      "id": "scout-knowledge-lib",
+                      "kind": "app"
+                    }
+                  },
+                  "taskId": "app-request/appdep_9f0518ac9e9d530a4f6334e5"
+                },
+                "idempotencyKey": "task:appdep_9f0518ac9e9d530a4f6334e5:desired:app-request/appdep_9f0518ac9e9d530a4f6334e5",
+                "owner": "agent:tech-lead",
+                "source": "app-inbox:may-agent",
+                "target": {
+                  "project": "may-agent",
+                  "taskId": "app-request/appdep_9f0518ac9e9d530a4f6334e5"
+                },
+                "type": "app.task.requested"
+              },
+              "observedAt": "2026-08-28T04:54:42.125Z"
+            }
+          ],
+          "observedAt": "2026-08-30T13:16:53.234Z",
+          "resourceVersion": 1,
+          "taskGeneration": 1,
+          "taskId": "app-request/appdep_9f0518ac9e9d530a4f6334e5"
+        }
+      }
+    ],
+    "completeSelectedIndexRows": [
+      {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_6e45556ac686de79c4947581",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "outcome": "Use the supported Host loaded-App projection publisher to regenerate `/app/projects/scout-knowledge-lib.app/.state/tasks/tree.json` from current canonical task resources for App `scout-knowledge-lib`, then return verification evidence.",
+        "acceptance": [
+          "The regenerated tree has `updated_at` later than `2026-08-22T14:01:07Z` and reports `project_lifecycle=active`, not paused.",
+          "The regenerated tree reports `explore-hn` at resource version 72 or later and in the terminal state consistent with canonical Task evidence after workflow `wr_1787407267793_9ncy`.",
+          "The regenerated tree preserves `explore-xhs` generation 1/resource version 12 in waiting state on `credential-ready:xhs` while that credential remains unavailable.",
+          "Evidence identifies the supported Host publisher used and proves `/app/projects/scout-knowledge-lib.app/.state/tasks/state.json` was not directly edited; no direct edit of tree.json is permitted."
+        ],
+        "summary": "Resolved agent may is not a runnable agent",
+        "conditionIds": []
+      },
+      {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_9f0518ac9e9d530a4f6334e5",
+        "generation": 1,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "outcome": "Provide and execute a supported Host control-plane capability that invokes `refreshAppTaskTreeProjection` for the loaded `scout-knowledge-lib` App, regenerating its disposable task projection from canonical resources without directly editing either task JSON file.",
+        "acceptance": [
+          "`/app/projects/scout-knowledge-lib.app/.state/tasks/tree.json` is regenerated by `refreshAppTaskTreeProjection` with `updated_at` later than 2026-08-22T14:01:07Z and `project_lifecycle=active`.",
+          "The regenerated projection reports `explore-hn` generation 1, resource version at least 72 (canonical observation is 125), and terminal/converged state.",
+          "The regenerated projection preserves `explore-xhs` generation 1, resource version 12, waiting on `credential-ready:xhs` while the credential is unavailable.",
+          "Return before/after SHA-256 evidence proving `.state/tasks/state.json` stayed unchanged and tree.json changed, plus the supported publisher/control route used."
+        ],
+        "summary": null,
+        "conditionIds": []
+      }
+    ],
+    "startingFrontierEntries": [
+      {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "app-request/appdep_6e45556ac686de79c4947581",
+          "generation": 1,
+          "phase": "attention",
+          "owner": "may",
+          "conditionIds": []
+        },
+        "outcome": "Use the supported Host loaded-App projection publisher to regenerate `/app/projects/scout-knowledge-lib.app/.state/tasks/tree.json` from current canonical task resources for App `scout-knowledge-lib`, then return verification evidence.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "app-request/appdep_9f0518ac9e9d530a4f6334e5",
+          "generation": 1,
+          "phase": "pending",
+          "owner": "tech-lead",
+          "conditionIds": []
+        },
+        "outcome": "Provide and execute a supported Host control-plane capability that invokes `refreshAppTaskTreeProjection` for the loaded `scout-knowledge-lib` App, regenerating its disposable task projection from canonical resources without directly editing either task JSON file.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      }
+    ],
+    "directRelationships": [
+      {
+        "app_id": "may-agent",
+        "source_task_id": "app-request/appdep_6e45556ac686de79c4947581",
+        "relation_kind": "parent",
+        "target_task_id": "platform-system-review-feedback-loop"
+      },
+      {
+        "app_id": "may-agent",
+        "source_task_id": "app-request/appdep_9f0518ac9e9d530a4f6334e5",
+        "relation_kind": "parent",
+        "target_task_id": "platform-system-review-feedback-loop"
+      }
+    ],
+    "pendingCallerInputs": [
+      {
+        "id": "appdep_9f0518ac9e9d530a4f6334e5",
+        "app_id": "may-agent",
+        "parent_id": null,
+        "conversation_id": null,
+        "conversation_seq": null,
+        "channel": null,
+        "channel_thread_id": null,
+        "channel_message_id": null,
+        "reply_to_source_id": null,
+        "source_kind": "app",
+        "source_id": "scout-knowledge-lib",
+        "input_kind": "runtime-capability-request",
+        "input_data": "{\"outcome\":\"Provide and execute a supported Host control-plane capability that invokes `refreshAppTaskTreeProjection` for the loaded `scout-knowledge-lib` App, regenerating its disposable task projection from canonical resources without directly editing either task JSON file.\",\"acceptance\":[\"`/app/projects/scout-knowledge-lib.app/.state/tasks/tree.json` is regenerated by `refreshAppTaskTreeProjection` with `updated_at` later than 2026-08-22T14:01:07Z and `project_lifecycle=active`.\",\"The regenerated projection reports `explore-hn` generation 1, resource version at least 72 (canonical observation is 125), and terminal/converged state.\",\"The regenerated projection preserves `explore-xhs` generation 1, resource version 12, waiting on `credential-ready:xhs` while the credential is unavailable.\",\"Return before/after SHA-256 evidence proving `.state/tasks/state.json` stayed unchanged and tree.json changed, plus the supported publisher/control route used.\"],\"constraints\":[\"Do not edit `.state/tasks/state.json` or `.state/tasks/tree.json` directly.\",\"Do not mutate canonical Scout Task resources merely to alter the projection.\",\"Use the Host loaded-App descriptor and canonical resource store through the supported `refreshAppTaskTreeProjection` publisher.\",\"The prior request `appdep_6e45556ac686de79c4947581` was completed without mutation because no deployed projection-refresh command existed; this request specifically owns supplying or invoking that missing runtime capability.\"],\"evidence\":[\"Current stale tree SHA-256: 85c36e00aac129795ec6d58b6dab395916a37a1f804b5ae325b9da2c9a89dc7b.\",\"Current canonical state SHA-256: 672faa8ed0af8b91f81f8d05d6d2025ae2b7704efe3cb47f249c3ed4d299168b.\",\"Authoritative completed dependency reports canonical HN rv125/converged and XHS rv12/waiting on credential-ready:xhs.\",\"Source inspection in the prior Host result identified `refreshAppTaskTreeProjection(config)` as the supported atomic publisher that rebuilds from `readTaskState(config)` without mutating canonical state.\"]}",
+        "status": "handling",
+        "session_id": null,
+        "waiting_on_kind": "task",
+        "waiting_on_id": "app-request/appdep_9f0518ac9e9d530a4f6334e5",
+        "result": null,
+        "available_at": 1789026733047,
+        "review_at": null,
+        "lease_generation": 1,
+        "lease_owner": null,
+        "lease_expires_at": null,
+        "origin_event_id": 6293571,
+        "idempotency_key": "task-dependency:scout-knowledge-lib:refresh-host-generated-task-projection:1:refresh-scout-task-projection-supported-publisher-v2:9f0518ac9e9d530a4f6334e5",
+        "created_at": 1787892882057,
+        "updated_at": 1789026733047,
+        "completed_at": null,
+        "channel_target_id": null,
+        "continues_request_id": null,
+        "started_at": 1787892882093,
+        "changed_at": 1787892882130,
+        "target_task_id": null,
+        "topic_id": null,
+        "handling": null,
+        "task_admission_key": null,
+        "execution_task_id": null,
+        "creator_json": null,
+        "recovery_json": null
+      }
+    ],
+    "matchingConditionsInSnapshot": [],
+    "conditionSearchScope": "All apps.*.conditions plus activeAppConditions searched for both request IDs, refresh-host-generated-task-projection and credential-ready:xhs; none match. Both selected Task conditionIds arrays are empty (or absent in second pending status). Index has no relationship objects; direct relationships are retained from snapshot.",
+    "historicalScoutFiles": [
+      {
+        "path": "/app/projects/scout-knowledge-lib.app/.state/tasks/state.json",
+        "sha256": "672faa8ed0af8b91f81f8d05d6d2025ae2b7704efe3cb47f249c3ed4d299168b",
+        "bytes": 397706,
+        "mtimeNs": 1787278856104969815,
+        "updated_at": "2026-08-21T02:20:56.107Z",
+        "project_lifecycle": "paused",
+        "selectedTaskEvidence": {
+          "explore-hn": {
+            "metadata": {
+              "id": "explore-hn",
+              "generation": 1,
+              "resourceVersion": 39
+            },
+            "spec": {
+              "parentId": "ongoing-research",
+              "outcome": "Continuously explore hn for source-grounded AI-agent signals and integrate useful findings into the Scout knowledge library.",
+              "acceptance": [
+                "The current source is checked without simulated data; useful findings update an existing note or a source-grounded finding, otherwise the workflow records an evidence-backed no-op."
+              ],
+              "mode": "maintain",
+              "workflow": "scout-explore",
+              "input": {
+                "source": "hn"
+              },
+              "outputs": [
+                "/app/projects/scout-knowledge-lib/knowledge",
+                "/app/projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md"
+              ],
+              "priority": "P1"
+            },
+            "status": {
+              "observedGeneration": 1,
+              "phase": "converged",
+              "updatedAt": "2026-08-21T02:02:45.243Z",
+              "summary": "HN surfaced Shopify’s production use of learned gist tokens: a roughly 6,000-token agent system prompt was compressed to 1,500 tokens, with reported latency, throughput, and GPU gains. The existing prompt-mass synthesis now records the technique, its distinction from prefix caching, and the auditability/model-portability risks of compiling readable policy into opaque embeddings.",
+              "evidence": [
+                "source-result:{\"name\":\"hn\",\"queryOrFeed\":\"HN Algolia search_by_date, tags=story, queries: agent | Claude | AI coding, prior 36 hours, 100 hits per query\",\"checkedAt\":\"2026-08-21T02:02:44.913Z\",\"fingerprint\":\"sha256:d6c696c5aebb3e05732d8455a5b8a9a3cce33fb7ae92e96e8ced1e78fb014d73\",\"itemIdsOrUrls\":[\"https://news.ycombinator.com/item?id=49382646\",\"https://shopify.engineering/gisting\"]}",
+                "source-provenance:agent-result+workflow-time",
+                "output:/app/projects/scout-knowledge-lib/knowledge/the-prompt-mass-problem.md",
+                "output:/app/projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md",
+                "execution:s_1787277637066_111"
+              ],
+              "conditionIds": []
+            }
+          },
+          "explore-xhs": {
+            "metadata": {
+              "id": "explore-xhs",
+              "generation": 1,
+              "resourceVersion": 12
+            },
+            "spec": {
+              "parentId": "ongoing-research",
+              "outcome": "Continuously explore xhs for source-grounded AI-agent signals and integrate useful findings into the Scout knowledge library.",
+              "acceptance": [
+                "The current source is checked without simulated data; useful findings update an existing note or a source-grounded finding, otherwise the workflow records an evidence-backed no-op."
+              ],
+              "mode": "maintain",
+              "workflow": "scout-explore",
+              "input": {
+                "source": "xhs"
+              },
+              "outputs": [
+                "/app/projects/scout-knowledge-lib/knowledge",
+                "/app/projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md"
+              ],
+              "priority": "P2"
+            },
+            "status": {
+              "observedGeneration": 1,
+              "phase": "waiting",
+              "updatedAt": "2026-08-20T08:17:28.460Z",
+              "summary": "XHS exploration is waiting for the browser credential to become ready; no source agent was started.",
+              "evidence": [
+                "No XHS tab found. Chrome must be running with xiaohongshu.com open.",
+                "exit:1",
+                "The source lane remains gated before agent dispatch."
+              ],
+              "conditionIds": [
+                "credential-ready:xhs"
+              ]
+            }
+          }
+        },
+        "conditions": {
+          "credential-ready:xhs": {
+            "metadata": {
+              "id": "credential-ready:xhs",
+              "generation": 1,
+              "resourceVersion": 1
+            },
+            "spec": {
+              "type": "credential.state",
+              "subject": "credential:xhs",
+              "expected": {
+                "field": "state",
+                "equals": "ready"
+              }
+            },
+            "status": {
+              "observedGeneration": 0,
+              "state": "unknown",
+              "observedAt": "2026-08-20T08:17:28.459Z"
+            }
+          }
+        },
+        "authority": "historical file, not current canonical Task authority"
+      },
+      {
+        "path": "/app/projects/scout-knowledge-lib.app/.state/tasks/tree.json",
+        "sha256": "85c36e00aac129795ec6d58b6dab395916a37a1f804b5ae325b9da2c9a89dc7b",
+        "bytes": 12340,
+        "mtimeNs": 1787278856108871112,
+        "updated_at": "2026-08-21T02:20:56.107Z",
+        "project_lifecycle": "paused",
+        "selectedTaskEvidence": {
+          "explore-hn": {
+            "item_type": "task",
+            "id": "explore-hn",
+            "parent_id": "ongoing-research",
+            "children": [],
+            "outcome": "Continuously explore hn for source-grounded AI-agent signals and integrate useful findings into the Scout knowledge library.",
+            "priority": "P1",
+            "owner": "scout",
+            "workflow": "scout-explore",
+            "mode": "maintain",
+            "generation": 1,
+            "resource_version": 39,
+            "phase": "converged",
+            "observed_generation": 1,
+            "synchronized": true,
+            "readiness": {
+              "state": "not-applicable",
+              "reason": "Task phase is converged",
+              "related_ids": []
+            },
+            "depends_on": [],
+            "outputs": [
+              "/app/projects/scout-knowledge-lib/knowledge",
+              "/app/projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md"
+            ],
+            "acceptance": [
+              "The current source is checked without simulated data; useful findings update an existing note or a source-grounded finding, otherwise the workflow records an evidence-backed no-op."
+            ],
+            "input": {
+              "source": "hn"
+            },
+            "summary": "HN surfaced Shopify’s production use of learned gist tokens: a roughly 6,000-token agent system prompt was compressed to 1,500 tokens, with reported latency, throughput, and GPU gains. The existing prompt-mass synthesis now records the technique, its distinction from prefix caching, and the auditability/model-portability risks of compiling readable policy into opaque embeddings.",
+            "evidence": [
+              "source-result:{\"name\":\"hn\",\"queryOrFeed\":\"HN Algolia search_by_date, tags=story, queries: agent | Claude | AI coding, prior 36 hours, 100 hits per query\",\"checkedAt\":\"2026-08-21T02:02:44.913Z\",\"fingerprint\":\"sha256:d6c696c5aebb3e05732d8455a5b8a9a3cce33fb7ae92e96e8ced1e78fb014d73\",\"itemIdsOrUrls\":[\"https://news.ycombinator.com/item?id=49382646\",\"https://shopify.engineering/gisting\"]}",
+              "source-provenance:agent-result+workflow-time",
+              "output:/app/projects/scout-knowledge-lib/knowledge/the-prompt-mass-problem.md",
+              "output:/app/projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md",
+              "execution:s_1787277637066_111"
+            ],
+            "condition_ids": [],
+            "status_updated_at": "2026-08-21T02:02:45.243Z",
+            "attempt_count": 19
+          },
+          "explore-xhs": {
+            "item_type": "task",
+            "id": "explore-xhs",
+            "parent_id": "ongoing-research",
+            "children": [],
+            "outcome": "Continuously explore xhs for source-grounded AI-agent signals and integrate useful findings into the Scout knowledge library.",
+            "priority": "P2",
+            "owner": "scout",
+            "workflow": "scout-explore",
+            "mode": "maintain",
+            "generation": 1,
+            "resource_version": 12,
+            "phase": "waiting",
+            "observed_generation": 1,
+            "synchronized": true,
+            "readiness": {
+              "state": "condition-blocked",
+              "reason": "Waiting for credential-ready:xhs",
+              "related_ids": [
+                "credential-ready:xhs"
+              ]
+            },
+            "depends_on": [],
+            "outputs": [
+              "/app/projects/scout-knowledge-lib/knowledge",
+              "/app/projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md"
+            ],
+            "acceptance": [
+              "The current source is checked without simulated data; useful findings update an existing note or a source-grounded finding, otherwise the workflow records an evidence-backed no-op."
+            ],
+            "input": {
+              "source": "xhs"
+            },
+            "summary": "XHS exploration is waiting for the browser credential to become ready; no source agent was started.",
+            "evidence": [
+              "No XHS tab found. Chrome must be running with xiaohongshu.com open.",
+              "exit:1",
+              "The source lane remains gated before agent dispatch."
+            ],
+            "condition_ids": [
+              "credential-ready:xhs"
+            ],
+            "status_updated_at": "2026-08-20T08:17:28.460Z",
+            "attempt_count": 5
+          }
+        },
+        "conditions": {
+          "credential-ready:xhs": {
+            "metadata": {
+              "id": "credential-ready:xhs",
+              "generation": 1,
+              "resourceVersion": 1
+            },
+            "spec": {
+              "type": "credential.state",
+              "subject": "credential:xhs",
+              "expected": {
+                "field": "state",
+                "equals": "ready"
+              }
+            },
+            "status": {
+              "observedGeneration": 0,
+              "state": "unknown",
+              "observedAt": "2026-08-20T08:17:28.459Z"
+            }
+          }
+        },
+        "authority": "historical file, not current canonical Task authority"
+      }
+    ]
+  },
+  "runtimeChecks": [
+    {
+      "toolCallId": "call_0lF9o3SlD2mjppSxddbkD5UW",
+      "tool": "tasks",
+      "result": {
+        "id": "refresh-host-generated-task-projection",
+        "closed": true,
+        "status": "done",
+        "generation": 1,
+        "outcome": "Have the supported Host projection publisher regenerate Scout’s generated task projection from current canonical task resources and verify it reflects the active App without altering Host-owned task state directly.",
+        "summary": "The original projection-regeneration acceptance is obsolete under the current Host contract. Supported Task reads are authoritative; the August `state.json`/`tree.json` files are historical evidence only, and running Host b1b85823/v0.2.0 has no supported live task-tree projection publisher to invoke.",
+        "response": "The original acceptance is obsolete and should not be fulfilled literally. On the current Host, `.state/tasks/state.json` and `.state/tasks/tree.json` are retired historical evidence, not the live Task projection. Current supported reads show `explore-hn` terminal/done and `explore-xhs` generation 1 still waiting on `credential-ready:xhs`; the earlier canonical receipt records HN RV125 and XHS RV12. I did not regenerate or edit either JSON file, touch Host SQL, restore the retired publisher, deploy an old branch, or create another proxy request. This task is truthfully disposed as obsolete rather than falsely claiming a refreshed artifact.",
+        "result": {
+          "authoritativeSurface": "tasks.get/tasks.list backed by current canonical Task resources",
+          "canonicalStatus": {
+            "explore-hn": {
+              "generation": 1,
+              "priorCanonicalResourceVersion": 125,
+              "status": "done"
+            },
+            "explore-xhs": {
+              "conditionId": "credential-ready:xhs",
+              "generation": 1,
+              "priorCanonicalResourceVersion": 12,
+              "status": "waiting"
+            }
+          },
+          "dependencyCreated": false,
+          "disposition": "obsolete-acceptance",
+          "mutationPerformed": false,
+          "originalOutcomeAchievableUnderCurrentHostContract": false,
+          "publisherAvailable": false,
+          "retiredArtifacts": [
+            "/app/projects/scout-knowledge-lib.app/.state/tasks/state.json",
+            "/app/projects/scout-knowledge-lib.app/.state/tasks/tree.json"
+          ],
+          "runningHost": {
+            "revision": "b1b85823b4d94f23b6dfb412b55d84b92792ed9b",
+            "version": "0.2.0"
+          },
+          "terminal": true
+        },
+        "facts": [
+          "Current `tasks.get(explore-hn)` reports status `done` with fresh canonical execution evidence from 2026-09-10.",
+          "Current `tasks.get(explore-xhs)` reports generation 1/status `waiting` with exact Condition `credential-ready:xhs`.",
+          "The current task receipt records canonical HN RV125/converged and XHS generation 1/RV12/waiting, while identifying the August projection as stale historical data.",
+          "Running revision b1b85823 source explicitly labels `taskStatePath` a historical JSON evidence marker and never a live Task authority.",
+          "A revision-scoped source search found no `refreshAppTaskTreeProjection` or `tree.json` publisher in `src/app`.",
+          "Artifact hashes and mtimes remained unchanged; no direct Host state mutation occurred."
+        ],
+        "resourceVersion": 3,
+        "pendingEvents": {
+          "items": [],
+          "truncated": false
+        },
+        "currentObligations": {
+          "available": true,
+          "inputWaits": {
+            "maxItems": 100,
+            "truncated": false,
+            "items": []
+          }
+        },
+        "acceptedEvidence": {
+          "available": true,
+          "maxPageSize": 8,
+          "page": {
+            "items": [
+              {
+                "appId": "scout-knowledge-lib",
+                "taskId": "refresh-host-generated-task-projection",
+                "taskGeneration": 1,
+                "attemptId": "receipt:02ce867d5b35fa04ffe072a049ccfcf07cb65d870f32ed486ab3b33ab5985db0",
+                "provenance": "app_task_attempts.acceptedResult",
+                "startedAt": "2026-09-10T08:07:25.701Z",
+                "finishedAt": "2026-09-10T08:07:25.701Z",
+                "acceptedResult": {
+                  "acceptanceBasis": {
+                    "evidence": [
+                      "Current `tasks.get(explore-hn)` reports status `done` with fresh canonical execution evidence from 2026-09-10.",
+                      "Current `tasks.get(explore-xhs)` reports generation 1/status `waiting` with exact Condition `credential-ready:xhs`.",
+                      "The current task receipt records canonical HN RV125/converged and XHS generation 1/RV12/waiting, while identifying the August projection as stale historical data.",
+                      "Running revision b1b85823 source explicitly labels `taskStatePath` a historical JSON evidence marker and never a live Task authority.",
+                      "A revision-scoped source search found no `refreshAppTaskTreeProjection` or `tree.json` publisher in `src/app`.",
+                      "Artifact hashes and mtimes remained unchanged; no direct Host state mutation occurred."
+                    ],
+                    "method": "agent-judgment"
+                  },
+                  "evidence": [
+                    "Current `tasks.get(explore-hn)` reports status `done` with fresh canonical execution evidence from 2026-09-10.",
+                    "Current `tasks.get(explore-xhs)` reports generation 1/status `waiting` with exact Condition `credential-ready:xhs`.",
+                    "The current task receipt records canonical HN RV125/converged and XHS generation 1/RV12/waiting, while identifying the August projection as stale historical data.",
+                    "Running revision b1b85823 source explicitly labels `taskStatePath` a historical JSON evidence marker and never a live Task authority.",
+                    "A revision-scoped source search found no `refreshAppTaskTreeProjection` or `tree.json` publisher in `src/app`.",
+                    "Artifact hashes and mtimes remained unchanged; no direct Host state mutation occurred."
+                  ],
+                  "response": "The original acceptance is obsolete and should not be fulfilled literally. On the current Host, `.state/tasks/state.json` and `.state/tasks/tree.json` are retired historical evidence, not the live Task projection. Current supported reads show `explore-hn` terminal/done and `explore-xhs` generation 1 still waiting on `credential-ready:xhs`; the earlier canonical receipt records HN RV125 and XHS RV12. I did not regenerate or edit either JSON file, touch Host SQL, restore the retired publisher, deploy an old branch, or create another proxy request. This task is truthfully disposed as obsolete rather than falsely claiming a refreshed artifact.",
+                  "result": {
+                    "authoritativeSurface": "tasks.get/tasks.list backed by current canonical Task resources",
+                    "canonicalStatus": {
+                      "explore-hn": {
+                        "generation": 1,
+                        "priorCanonicalResourceVersion": 125,
+                        "status": "done"
+                      },
+                      "explore-xhs": {
+                        "conditionId": "credential-ready:xhs",
+                        "generation": 1,
+                        "priorCanonicalResourceVersion": 12,
+                        "status": "waiting"
+                      }
+                    },
+                    "dependencyCreated": false,
+                    "disposition": "obsolete-acceptance",
+                    "mutationPerformed": false,
+                    "originalOutcomeAchievableUnderCurrentHostContract": false,
+                    "publisherAvailable": false,
+                    "retiredArtifacts": [
+                      "/app/projects/scout-knowledge-lib.app/.state/tasks/state.json",
+                      "/app/projects/scout-knowledge-lib.app/.state/tasks/tree.json"
+                    ],
+                    "runningHost": {
+                      "revision": "b1b85823b4d94f23b6dfb412b55d84b92792ed9b",
+                      "version": "0.2.0"
+                    },
+                    "terminal": true
+                  },
+                  "state": "converged",
+                  "summary": "The original projection-regeneration acceptance is obsolete under the current Host contract. Supported Task reads are authoritative; the August `state.json`/`tree.json` files are historical evidence only, and running Host b1b85823/v0.2.0 has no supported live task-tree projection publisher to invoke."
+                }
+              }
+            ]
+          }
+        },
+        "creator": {
+          "appId": "may"
+        },
+        "acceptedAttempt": {
+          "id": "receipt:02ce867d5b35fa04ffe072a049ccfcf07cb65d870f32ed486ab3b33ab5985db0",
+          "generation": 1,
+          "startedAt": "2026-09-10T08:07:25.701Z",
+          "finishedAt": "2026-09-10T08:07:25.701Z"
+        },
+        "parentId": "library-maintenance",
+        "acceptance": [
+          "`.state/tasks/tree.json` has a generation timestamp later than 2026-08-22T14:01:07Z and reports the Scout App as active rather than paused.",
+          "The refreshed projection reports `explore-hn` at resource version 72 or later and agrees with its terminal state after workflow `wr_1787407267793_9ncy`.",
+          "The refreshed projection preserves `explore-xhs` generation 1/resource version 12 waiting on `credential-ready:xhs` while that credential remains unavailable.",
+          "Regeneration uses the supported Host publisher; neither `.state/tasks/state.json` nor `.state/tasks/tree.json` is edited directly."
+        ],
+        "input": {
+          "currentExploreHnResourceVersion": 72,
+          "dedupeKey": "scout-knowledge-lib.app:stale-task-projection",
+          "observedExploreHnProjectionResourceVersion": 39,
+          "observedProjectionUpdatedAt": "2026-08-21T02:20:56.107Z",
+          "sourceReport": "/app/projects/evaluation.app/reports/project-health/scout-knowledge-lib.app/20260822T140215435Z.md"
+        },
+        "agent": "scout",
+        "owner": "scout",
+        "priority": "P1",
+        "conditions": []
+      }
+    },
+    {
+      "toolCallId": "call_0YMKpwvIsmSlSQtyrZSUQH4L",
+      "tool": "tasks",
+      "result": {
+        "id": "explore-hn",
+        "status": "done",
+        "generation": 2,
+        "outcome": "Continuously explore hn for source-grounded AI-agent signals and integrate useful findings into the Scout knowledge library.",
+        "summary": "The scheduled HN scan used current, non-simulated source data and integrated a useful new finding. HN item 49953789 led to a pinned static assessment of Untyped, showing how one bounded TLA+ protocol model can classify both harness configurations and recorded event streams as accepted, invariant-violating, or outside the protocol; the finding was committed and the daily digest updated.",
+        "response": "Completed the scheduled HN scan. Current live source data yielded a useful new finding on Untyped’s reuse of a bounded TLA+ protocol model for both harness-design checks and recorded-run classification. I published the source-grounded assessment at `/app/projects/scout-knowledge-lib/knowledge/findings/2026-10-04-untyped-agent-run-spec-checking.md` (commit `2b4809897cb056057ff3d8c785d26a83dd5f6abf`) and verified the daily-digest link. The optional research handoff was not admitted because of a missing `sourceRevision`, but the finding and source-task outcome are complete.",
+        "result": {
+          "checkedAt": "2026-10-04T14:02:05.568Z",
+          "commit": "2b4809897cb056057ff3d8c785d26a83dd5f6abf",
+          "decision": "published-new-finding",
+          "findingPath": "/app/projects/scout-knowledge-lib/knowledge/findings/2026-10-04-untyped-agent-run-spec-checking.md",
+          "itemId": "49953789",
+          "optionalResearchHandoff": "invalid-missing-sourceRevision",
+          "publication": "committed",
+          "source": "hn",
+          "sourceFingerprint": "sha256:ba08bc1c1d36975e625bf743ea2785fd8665317aa759a78ab83b4a6ddd7eb08b",
+          "workflowRunId": "wr_1791122421235_4egy"
+        },
+        "facts": [
+          "Live HN source data was checked at `2026-10-04T14:02:05.568Z` from `https://hn.algolia.com/api/v1/search_by_date?query=agent&tags=story&hitsPerPage=20`, fingerprint `sha256:ba08bc1c1d36975e625bf743ea2785fd8665317aa759a78ab83b4a6ddd7eb08b`.",
+          "HN item `49953789` and `untyped-ai/untyped` were assessed from current source evidence at pinned revision `4da0814e85a9c796be2536373a6f4f57d20b7dee`.",
+          "The source-grounded finding was published at `/app/projects/scout-knowledge-lib/knowledge/findings/2026-10-04-untyped-agent-run-spec-checking.md` in commit `2b4809897cb056057ff3d8c785d26a83dd5f6abf`.",
+          "Read-back confirmed the finding distinguishes accepted, invariant-violating, and protocol-rejected traces while preserving limits: narrow bounded safety scope, hand-written bundled traces, required log fidelity, and no local Java/make reproduction.",
+          "The working digest at `/app/projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md` contains a verified link and qualified highlight.",
+          "The workflow's optional research handoff was reported invalid because it lacked `sourceRevision`; publication and source-task acceptance remain independently verified."
+        ],
+        "resourceVersion": 2154,
+        "pendingEvents": {
+          "items": [],
+          "truncated": false
+        },
+        "currentObligations": {
+          "available": true,
+          "inputWaits": {
+            "maxItems": 100,
+            "truncated": false,
+            "items": []
+          }
+        },
+        "acceptedEvidence": {
+          "available": true,
+          "maxPageSize": 8
+        },
+        "creator": {
+          "appId": "scout-knowledge-lib"
+        },
+        "acceptedAttempt": {
+          "id": "r_2_c081de3f-aec9-4a75-a8ec-16a9681ff89a",
+          "generation": 2,
+          "startedAt": "2026-10-04T14:00:13.351Z",
+          "finishedAt": "2026-10-04T14:02:25.358Z"
+        },
+        "parentId": "ongoing-research",
+        "acceptance": [
+          "Reconcile the current source responsibility from all Task facts: review-only outcomes are valid when no scan is useful; any claimed scan uses current non-simulated source proof and integrates useful findings or records an evidence-backed no-op without discarding independent pending obligations."
+        ],
+        "input": {
+          "source": "hn"
+        },
+        "priority": "P1",
+        "outputs": [
+          "/app/projects/scout-knowledge-lib/knowledge",
+          "/app/projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md"
+        ],
+        "conditions": [],
+        "agent": "scout",
+        "owner": "scout"
+      }
+    },
+    {
+      "toolCallId": "call_LDWDViP9CLjqgm2IWgMnhLeq",
+      "tool": "tasks",
+      "result": {
+        "id": "explore-xhs",
+        "status": "done",
+        "generation": 2,
+        "outcome": "Continuously explore xhs for source-grounded AI-agent signals and integrate useful findings into the Scout knowledge library.",
+        "summary": "The scheduled XHS scan completed with current source proof. A live search returned 26 items and a body-level review of XHS post `6ab4c3dd000000000a02067f`; the existing finding already covers its Weco self-improving research-agent claims and limitations, so this run is an evidence-backed no-op with no knowledge or digest change.",
+        "response": "Completed the scheduled XHS exploration. Current live-source evidence was reviewed; the selected Weco AI post is already materially covered by the existing finding, so no duplicate library or digest update was made.",
+        "facts": [
+          "source:xhs",
+          "query:AI agent 智能体",
+          "checked-at:2026-10-04T12:06:43.874Z",
+          "access:ready",
+          "login-wall:false",
+          "items:26",
+          "source-id-reviewed:6ab4c3dd000000000a02067f",
+          "coverage:current-search-plus-body-level-read",
+          "result:evidence-backed-no-op",
+          "reason:already-covered-same-source-no-material-change",
+          "existing-finding:/app/projects/scout-knowledge-lib/knowledge/findings/2026-09-24-weco-self-improving-research-agent.md",
+          "publication:no-change",
+          "publication-head:79141aa08396749a19314230699218a1631a7260",
+          "workflow-run:wr_1791115603865_lw3a"
+        ],
+        "resourceVersion": 487,
+        "pendingEvents": {
+          "items": [],
+          "truncated": false
+        },
+        "currentObligations": {
+          "available": true,
+          "inputWaits": {
+            "maxItems": 100,
+            "truncated": false,
+            "items": []
+          }
+        },
+        "acceptedEvidence": {
+          "available": true,
+          "maxPageSize": 8
+        },
+        "creator": {
+          "appId": "scout-knowledge-lib"
+        },
+        "acceptedAttempt": {
+          "id": "r_2_d5972f9a-e049-43d9-9dfe-3c25d728f6be",
+          "generation": 2,
+          "startedAt": "2026-10-04T12:05:56.587Z",
+          "finishedAt": "2026-10-04T12:07:47.344Z"
+        },
+        "parentId": "ongoing-research",
+        "acceptance": [
+          "Reconcile the current source responsibility from all Task facts: review-only outcomes are valid when no scan is useful; any claimed scan uses current non-simulated source proof and integrates useful findings or records an evidence-backed no-op without discarding independent pending obligations."
+        ],
+        "input": {
+          "source": "xhs"
+        },
+        "priority": "P2",
+        "outputs": [
+          "/app/projects/scout-knowledge-lib/knowledge",
+          "/app/projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md"
+        ],
+        "conditions": [],
+        "agent": "scout",
+        "owner": "scout"
+      }
+    },
+    {
+      "toolCallId": "call_vLRNXupOjv1IGYBjMamesp4T",
+      "tool": "tasks",
+      "result": {
+        "error": "App may-agent has no loaded Task runtime"
+      }
+    },
+    {
+      "toolCallId": "call_xm3hNSjOqO5U6VyKFKbQ8Q63",
+      "tool": "tasks",
+      "result": {
+        "error": "App may-agent has no loaded Task runtime"
+      }
+    },
+    {
+      "toolCallId": "call_mBE0snwQP1qttDRlZYIcPvvJ",
+      "tool": "tasks",
+      "result": {
+        "appId": "scout-knowledge-lib",
+        "agent": "scout",
+        "inputSchema": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "data"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "assess-source"
+                },
+                "data": {
+                  "type": "object",
+                  "required": [
+                    "sourceUrl",
+                    "outcome",
+                    "acceptance",
+                    "archive"
+                  ],
+                  "properties": {
+                    "sourceUrl": {
+                      "type": "string",
+                      "minLength": 1,
+                      "pattern": "^https?://"
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "minLength": 1,
+                      "pattern": "\\S"
+                    },
+                    "acceptance": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "pattern": "\\S"
+                      },
+                      "minItems": 1
+                    },
+                    "constraints": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "archive": {
+                      "type": "boolean"
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "data"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "goal"
+                },
+                "data": {
+                  "type": "object",
+                  "required": [
+                    "outcome",
+                    "acceptance"
+                  ],
+                  "properties": {
+                    "outcome": {
+                      "type": "string",
+                      "minLength": 1,
+                      "pattern": "\\S"
+                    },
+                    "acceptance": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "pattern": "\\S"
+                      },
+                      "minItems": 1
+                    },
+                    "constraints": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "pattern": "\\S"
+                      }
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "data"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "explore"
+                },
+                "data": {
+                  "type": "object",
+                  "required": [
+                    "source"
+                  ],
+                  "properties": {
+                    "source": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "const": "arxiv"
+                        },
+                        {
+                          "type": "string",
+                          "const": "hn"
+                        },
+                        {
+                          "type": "string",
+                          "const": "xhs"
+                        },
+                        {
+                          "type": "string",
+                          "const": "github"
+                        },
+                        {
+                          "type": "string",
+                          "const": "reddit"
+                        }
+                      ]
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "data"
+              ],
+              "properties": {
+                "kind": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "const": "owner-review"
+                    },
+                    {
+                      "type": "string",
+                      "const": "library-health"
+                    },
+                    {
+                      "type": "string",
+                      "const": "digest"
+                    }
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^.*$": {}
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "observations": []
+      }
+    }
+  ],
+  "sourceChecks": {
+    "excerpts": [
+      {
+        "path": "/app/projects/may-agent/src/app/core/tasks/app-task-runtime-state.ts",
+        "sha256": "3a97222e4f3ce93a412155267b5e1909a39837454040d478095e6ec1150bea6b",
+        "excerpts": [
+          {
+            "startLine": 4,
+            "endLine": 10,
+            "text": "export type ProjectRuntimePaths = {\n  appDir: string;\n  stateDir: string;\n  /** Historical JSON facts marker. Never a live Task authority. */\n  taskStatePath: string;\n  projectStatePath: string;\n};"
+          }
+        ]
+      },
+      {
+        "path": "/app/projects/may-agent/src/app/core/tasks/runtime-definition.ts",
+        "sha256": "259455473c891fcfc15eeed6874e3ed303fffa0211efc4df881d5d21b0848e97",
+        "excerpts": [
+          {
+            "startLine": 110,
+            "endLine": 126,
+            "text": "\nfunction discoverAppTaskResourceStore(\n  persistDir: string | undefined,\n  app: AppDefinition,\n  appDir: string,\n): AppTaskResourceStore {\n  const appId = app.id;\n  if (!persistDir) throw new Error(`App ${appId} task runtime requires the Host persistence directory`);\n  const db = getDb(persistDir);\n  const active = AppTaskResourceStore.activeFromDb(db, appId);\n  if (active) return active;\n  if (existsSync(projectRuntimePaths(appDir).taskStatePath)) {\n    throw new Error(\n      `App ${appId} has unsupported historical JSON task state but no active resource authority; inspect those facts outside the Host or restore the canonical resource database`,\n    );\n  }\n"
+          }
+        ]
+      },
+      {
+        "path": "/app/projects/may-agent/src/app/core/tasks/app-task-store.ts",
+        "sha256": "49aaac9f70dfe72ea663b4261aa60d780c133760d158cf1a7f3ce65904c5de40",
+        "excerpts": [
+          {
+            "startLine": 190,
+            "endLine": 208,
+            "text": "export function readTaskSnapshot(\n  context: AppTaskContext,\n  scope?: { taskIds: Iterable<string>; admissionIds?: Iterable<string>; conditionIds?: Iterable<string> },\n): TaskTree {\n  if (scope) {\n    const tree = context.resourceStore.readTaskContext(scope);\n    scopedTaskSnapshots.add(tree);\n    return tree;\n  }\n  const cache = taskSnapshotCaches.get(context);\n  const revision = context.resourceStore.revision();\n  if (cache?.tree && cache.resourceRevision === revision) return cache.tree;\n  const tree = context.resourceStore.readSnapshot();\n  if (cache) {\n    cache.tree = tree;\n    cache.resourceRevision = revision;\n  }\n  return tree;\n}"
+          }
+        ]
+      },
+      {
+        "path": "/app/projects/may-agent/src/app/core/tasks/app-task-runtime.test.ts",
+        "sha256": "f6486120d24027a55bd4eab9f583366a02c2601f8d2a12c4303c995e9d7d6af1",
+        "excerpts": [
+          {
+            "startLine": 5734,
+            "endLine": 5843,
+            "text": "  it(\"installs an activated resource-backed App without recreating state.json\", async () => {\n    const f = fixture();\n    const bus = eventBus();\n    const persistDir = join(f.root, \"state\");\n    const sourceConfig = appTaskTestContext({\n      appDir: f.appDir,\n      agent: \"sample-owner\",\n      maxConcurrent: 1,\n      lifecycle: \"paused\",\n    });\n    const tree = readTaskSnapshot(sourceConfig);\n\n    const store = AppTaskResourceStore.fromDb(getDb(persistDir), \"sample\");\n    store.bootstrapSnapshot(tree, \"test-source-revision\");\n    store.setProjectLifecycle(\"active\");\n    const config = appTaskContext({\n      appDir: f.appDir,\n      projectDir: f.appDir,\n      agent: \"sample-owner\",\n      maxConcurrent: 1,\n      resourceStore: store,\n    });\n    observeAppTaskIntent(config, {\n      intent: {\n        id: \"work/resource-dependency\",\n        parentId: \"operations\",\n        outcome: \"Read one resource-backed dependency\",\n        acceptance: [\"Dependency reads do not parse legacy state\"],\n        agent: \"sample-owner\",\n      },\n      appAgent: \"sample-owner\",\n      admissionKey: \"attach:resource-dependency\",\n    });\n\n    const result = await installAppTaskRuntimes({\n      ...options(f, bus),\n      persistDir,\n      appRegistrySnapshot: {\n        id: \"boot:resource-store\",\n        generation: 1,\n        entries: [{ appDir: f.appDir, definition: definition() }],\n      },\n    });\n\n    expect(result.installed).toHaveLength(1);\n    expect(result.installed[0]?.resourceStore?.isActive()).toBeTrue();\n    expect(result.installed[0]?.reconciliationPaused).toBeFalse();\n    expect(existsSync(projectRuntimePaths(f.appDir).taskStatePath)).toBeFalse();\n\n    expect(\n      await createAppTaskCapability({ bus }).readDependency({\n        appDir: f.appDir,\n        dependency: { kind: \"task\", id: \"work/resource-dependency\" },\n      }),\n    ).toMatchObject({\n      id: \"work/resource-dependency\",\n      status: \"pending\",\n      outcome: \"Read one resource-backed dependency\",\n      acceptance: [\"Dependency reads do not parse legacy state\"],\n      conditions: [],\n    });\n    expect(existsSync(projectRuntimePaths(f.appDir).taskStatePath)).toBeFalse();\n  });\n\n  it(\"bootstraps a brand-new App directly into resource authority\", async () => {\n    const f = fixture();\n    const bus = eventBus();\n    const persistDir = join(f.root, \"state\");\n    const statePath = projectRuntimePaths(f.appDir).taskStatePath;\n\n    const result = await installAppTaskRuntimes({\n      ...options(f, bus),\n      persistDir,\n      appRegistrySnapshot: {\n        id: \"boot:new-resource-store\",\n        generation: 1,\n        entries: [{ appDir: f.appDir, definition: definition() }],\n      },\n    });\n\n    const store = result.installed[0]?.resourceStore;\n    expect(store?.isActive()).toBeTrue();\n    expect(store?.projectLifecycle()).toBe(\"active\");\n    expect(store?.sourceRevision()).toMatch(/^seed:[0-9a-f]{64}$/);\n    expect(store?.readSnapshot().root_task_id).toBe(\"root\");\n    expect(existsSync(statePath)).toBeFalse();\n  });\n\n  it(\"refuses historical JSON state without canonical resource authority\", async () => {\n    const f = fixture();\n    const bus = eventBus();\n    const persistDir = join(f.root, \"state\");\n    const historicalStatePath = projectRuntimePaths(f.appDir).taskStatePath;\n    mkdirSync(join(f.appDir, \".state\", \"tasks\"), { recursive: true });\n    writeFileSync(historicalStatePath, `${JSON.stringify({ project_lifecycle: \"active\" })}\\n`);\n\n    await expect(\n      installAppTaskRuntimes({\n        ...options(f, bus),\n        persistDir,\n        appRegistrySnapshot: {\n          id: \"boot:retained-legacy-store\",\n          generation: 1,\n          entries: [{ appDir: f.appDir, definition: definition() }],\n        },\n      }),\n    ).rejects.toThrow(\"unsupported historical JSON task state\");\n    expect(existsSync(historicalStatePath)).toBeTrue();\n    expect(AppTaskResourceStore.activeFromDb(getDb(persistDir), \"sample\")).toBeNull();\n  });"
+          }
+        ]
+      },
+      {
+        "path": "projects/scout-knowledge-lib.app/agents/scout/workflows/knowledge-planner.ts",
+        "sha256": "8443fdf67fa25f868be27963add5962b0dafe43e19beb658c8166e2466c818e5",
+        "excerpts": [
+          {
+            "startLine": 348,
+            "endLine": 365,
+            "text": "- Do not create ceremonial project/control tasks.\n- The Host is the sole task-state mutation authority. Never edit task JSON,\n  call private task mutation commands, or write task state through a database.\n  Return changes to existing child Tasks through typed actions in \\`finish\\`.\n  For independent work, return at most one bounded Scout goal in \\`requests\\`:\n  {id: \"stable-purpose\", appId: \"scout-knowledge-lib\", input: {kind: \"goal\",\n  data: {outcome: \"bounded result\", acceptance: [\"proof required\"], context: \"relevant facts and constraints\"}}}.\n  Add {requestId: \"stable-purpose\"} to \\`conditions\\` when this Task must wait\n  for its result. Submitting work alone does not require waiting.\n  Keep the current assignment and use only supported existing-task actions.\n- Current task evidence comes from the reconciliation packet and supported\n  task reads. Retained tasks/state.json and tasks/tree.json files are historical,\n  not current health signals. Do not request a publisher to refresh them or\n  let obsolete projection-repair work block independent library maintenance.\n  Explain obsolete acceptance and request a stop or scope correction; never\n  claim a retired artifact was regenerated.\n- Existing-task actions require the exact generation in the supplied context. Never\n  mutate task ids beginning with \\`runtime/\\`."
+          }
+        ]
+      }
+    ],
+    "negativeSearch": {
+      "command": "rg -n 'refreshAppTaskTreeProjection|tree.json' /app/projects/may-agent/src/app --glob '*.ts'",
+      "result": "No matches; no current file publisher located."
+    },
+    "loadedScoutGuidance": {
+      "path": "projects/scout-knowledge-lib.app/agents/scout/workflows/knowledge-planner.ts",
+      "equalToLoadedDefinition": true,
+      "sha256": "8443fdf67fa25f868be27963add5962b0dafe43e19beb658c8166e2466c818e5"
+    }
+  },
+  "verification": {
+    "testReceipts": [
+      {
+        "toolCallId": "call_dr4RrnqNHVrD8X3TWRoL1wfs",
+        "output": "bun test v1.3.14 (0d9b296a)\n\nsrc/app/core/tasks/app-task-store-projection.test.ts:\n(pass) canonical project task projection > classifies readiness and diagnoses a conditionless wait even with live children [2.34ms]\n(pass) canonical project task projection > reports capacity and structural integrity without scheduling work [0.52ms]\n(pass) canonical project task projection > preserves bounded desired input and the current wake trigger [0.27ms]\n(pass) canonical project task projection > derives relationships and inherited ownership from resources instead of the compatibility tree [0.26ms]\n\n 4 pass\n 0 fail\n 15 expect() calls\nRan 4 tests across 1 file. [90.00ms]\nbun test v1.3.14 (0d9b296a)\n\nsrc/app/core/tasks/app-task-runtime.test.ts:\n(pass) canonical App task runtime > bootstraps a brand-new App directly into resource authority [143.05ms]\n(pass) canonical App task runtime > refuses historical JSON state without canonical resource authority [79.30ms]\n\n 2 pass\n 203 filtered out\n 0 fail\n 8 expect() calls\nRan 2 tests across 1 file. [1135.00ms]\n",
+        "sha256": "51e13375031c4cb9c867a001caef6b673d19413de9a8784e14bc57a75a461fa2"
+      },
+      {
+        "toolCallId": "call_W4exw0onp9If8WONYtaKySwC",
+        "output": "bun test v1.3.14 (0d9b296a)\n\nsrc/app/core/tasks/app-task-runtime.test.ts:\n(pass) canonical App task runtime > installs an activated resource-backed App without recreating state.json [162.94ms]\n\n 1 pass\n 204 filtered out\n 0 fail\n 6 expect() calls\nRan 1 test across 1 file. [1026.00ms]\n",
+        "sha256": "e672c669f17d931e4ea0478be356c8358a40a9656f5de7f71219e05da665cf90"
+      },
+      {
+        "toolCallId": "call_R2dxyu7u8RlkEQq5Hmm56Lc8",
+        "output": "bun test v1.3.14 (0d9b296a)\n\nprojects/scout-knowledge-lib.app/agents/scout/workflows/library-health.test.ts:\n(pass) Scout library-health observer > ignores future dates in runtime task history [8.62ms]\n\n 1 pass\n 21 filtered out\n 0 fail\n 1 expect() calls\nRan 1 test across 1 file. [51.00ms]\nloaded knowledge-planner equal True sha256 8443fdf67fa25f868be27963add5962b0dafe43e19beb658c8166e2466c818e5\n",
+        "sha256": "8ff7ea3a471b5981362e58e1c084acc189461c181b8a2f6e4f23811868c474f6"
+      }
+    ],
+    "passedTests": 8,
+    "expectations": 30,
+    "meaning": "4 pure projection tests + 3 resource-authority runtime tests + 1 Scout historical-file health test. Local isolated fixtures only, not historical fulfillment or fresh production activation proof. Initial runtime name filter selected two tests, not the intended third; exact activated-resource test then ran separately and passed.",
+    "commands": [
+      "cd /app/projects/may-agent && bun test src/app/core/tasks/app-task-store-projection.test.ts",
+      "cd /app/projects/may-agent && bun test src/app/core/tasks/app-task-runtime.test.ts --test-name-pattern 'bootstraps a brand-new App|refuses historical JSON|resource-backed dependency'",
+      "cd /app/projects/may-agent && bun test src/app/core/tasks/app-task-runtime.test.ts --test-name-pattern 'installs an activated resource-backed App without recreating state.json'",
+      "bun test ./projects/scout-knowledge-lib.app/agents/scout/workflows/library-health.test.ts --test-name-pattern 'ignores future dates in runtime task history'"
+    ]
+  },
+  "preservation": {
+    "creator": "Both selected Tasks retain metadata.creator.appId=may. Scout caller is not replaced by Alex technical ownership.",
+    "parents": "Both selected Tasks retain parent platform-system-review-feedback-loop; Scout refresh-host-generated-task-projection retains parent library-maintenance and creator May. No reparenting.",
+    "caller": "Retain source_kind=app/source_id=scout-knowledge-lib and idempotency key task-dependency:scout-knowledge-lib:refresh-host-generated-task-projection:1:refresh-scout-task-projection-supported-publisher-v2:9f0518ac9e9d530a4f6334e5 from the handling input. Caller terminal acceptance already explicitly disposes obsolete regeneration; do not recreate the caller or replay that input.",
+    "conditions": "Retain exact credential-ready:xhs identity and historical unknown generation1/RV1 evidence from both JSON files. It is referenced by acceptance, not a direct Condition of either selected old Task. Current XHS has no linked Conditions and reports access ready, but no current direct Condition resource read was available: do not infer its resource state, retirement, satisfaction or authority to alter it.",
+    "historicalCompletion": "First retained result wait-for-supported-host-publisher/mutationPerformed=false is not fulfillment. Second has no accepted terminal result in snapshot. Source-input wording completed without mutation is an execution result, not successful refresh."
+  },
+  "recommendedBoundedMapping": {
+    "forBoth": "obsolete-execution-path-unfulfilled-no-current-continuation",
+    "canonicalRelatedCaller": {
+      "appId": "scout-knowledge-lib",
+      "taskId": "refresh-host-generated-task-projection",
+      "generation": 1,
+      "resourceVersion": 3,
+      "acceptedAttemptId": "receipt:02ce867d5b35fa04ffe072a049ccfcf07cb65d870f32ed486ab3b33ab5985db0",
+      "acceptedAt": "2026-09-10T08:07:25.701Z",
+      "disposition": "obsolete-acceptance",
+      "role": "Existing caller disposition evidence only; not a replacement Task or fulfillment of old requirements."
+    },
+    "nextAction": "Alex may incorporate this two-entry semantic mapping with full source evidence. Do not commission a new publisher or fresh technical continuation. No new human decision is identified. If Alex requires formal creator disposition of the disabled May-created rows beyond the already-accepted Scout caller disposition, first discover/reuse exact May work and ask only for archival withdrawal-unfulfilled; this contribution is not such authorization.",
+    "reopenOnly": "A fresh enabled-App canonical read/projection defect, an exact surviving caller promise beyond the accepted obsolete disposition, or recovered exact publisher execution receipt. Stale historical JSON alone is not a falsifier."
+  },
+  "limits": [
+    "No current canonical Task read for disabled may-agent: both exact tasks.get calls returned App may-agent has no loaded Task runtime. Full retained snapshot rows are preserved instead.",
+    "No production DB access or direct Condition read; no claim of administrative settlement of old handling inbox input or disabled resources.",
+    "Current Scout Task reads supersede September HN/XHS snapshots for present state; accepted September caller receipt is historical accepted disposition, not current XHS status.",
+    "No original August evaluation source-report read or historical publisher success receipt recovered; neither is required to infer fulfillment, because fulfillment is explicitly not claimed.",
+    "Source/binary version concordance is not independent deployed-artifact byte attestation. Current canonical reads plus activated Scout guidance provide runtime corroboration."
+  ]
+}

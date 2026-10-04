@@ -13,23 +13,26 @@ Give improvement one accountable agent and reuse existing work and evidence
 contracts. Specialist cooperation should reduce repeated explanation and help
 decisions; grouping agents alone does not establish either benefit.
 
-**Design status:** Hao selected App `alex`, owner agent `alex`, responsible for
-improvement, and permits breaking App interfaces and Task identities during
-migration. Ongoing work must carry forward to the new App. The responsibility,
-cooperation and cutover details below are proposed for review, including a
-May–Alex–Scout installation with other Apps disabled after migration.
-**Implementation status:** Partially implemented. The three-App installation and
-Alex's plain-named specialist team are active. May requests ordinary Alex work;
-Alex owns its development, review and comparison capabilities. The former
-maintenance, Evaluation and Gym executable definitions are removed in the source
-cleanup. Useful manuals, skills, knowledge and dated evidence now live under
-Alex; see the [retirement guide](../../archive/retired-apps/README.md).
+**Design status:** Implemented. Hao selected App `alex`, owner agent `alex`, as
+the home for system improvement and authorized the breaking migration. The
+three-App May–Alex–Scout organization described below is active; the detailed
+organization remains the governing design.
 
-The [migration receipt](../../migration-receipt-2026-10-04.md) records exact
-activation and live evidence. Unfinished legacy Tasks and their return
-relationships still need semantic disposition. This proposal remains the
-migration target until that work is complete; removing source does not fulfill
-those obligations.
+**Implementation status:** Migration handover complete. The three-App
+installation and Alex's plain-named specialist team are active. May requests
+ordinary Alex work; Alex owns development, review and comparison capabilities.
+The former maintenance, Evaluation and Gym executable definitions are removed
+in the source cleanup. Useful manuals, skills, knowledge and dated evidence now
+live under Alex; see the [retirement guide](../../archive/retired-apps/README.md).
+
+The [historical migration receipt](../../migration-receipt-2026-10-04.md)
+records activation and detailed lineage history. The concise
+[current handover receipt](../../migration-handover-current-2026-10-04.json)
+records complete Task and pending-input accounting. Retired or withdrawn
+**unfulfilled** work is not fulfilled: its requirements, accepted evidence,
+callers and original Conditions remain historical evidence. Independently owned
+May work named in the current receipt continues through its exact owners and
+return links without gating completion of the organizational migration.
 
 ## Purpose and sufficient outcome
 
@@ -54,7 +57,7 @@ New names and App membership confer no additional operational permission.
 
 ## Three active Apps
 
-The proposed operating target is **May, Alex and Scout**. Each has a useful
+The operating organization is **May, Alex and Scout**. Each has a useful
 domain and an owner agent; specialist capabilities live within that organization.
 
 | Enabled App | Owner agent | Main responsibility |
@@ -156,12 +159,11 @@ text remains acceptable through normal intent understanding; structured context
 can name an existing Task, report or candidate when available. The caller need
 not select the internal worker, workflow, topic or message transport.
 
-The first App should reuse ordinary declared `goal` and `message` input forms
-and the shared Task admission contract. This is proposed Alex behavior, not a
-new currently callable API. Implementation must check the installed schema and
-capabilities rather than copy an obsolete envelope from an earlier proposal.
+Alex uses ordinary declared `goal` and `message` inputs and the shared Task
+admission contract. Callers discover the installed schema and capabilities;
+the original proposal is not authority for an obsolete envelope.
 
-| Input | Proposed handling |
+| Input | Handling |
 | --- | --- |
 | A requested improvement | Admit one ordinary Task with Alex as default owner; preserve caller, scope and return context |
 | Correction or result for known work | Retain it on the addressed Task through its saved admission or return relationship |
@@ -370,7 +372,8 @@ no new enablement configuration or Host feature is needed. Keep the marker out
 of Git. Restart applies the selection; a successful reload can also apply it,
 but may reject removal when unfinished work remains. Saved Tasks and history
 stay available for migration. Verify that only the intended three Apps load.
-This proposal changes documentation only; it creates no markers or runtime changes.
+The original proposal was documentation only. The linked migration receipts
+now record the implemented source retirement and active installation selection.
 
 Alex may restart or replace his own migration Task. Save the candidate, migration
 receipt and next step outside disposable execution state before the cutover;
@@ -425,7 +428,8 @@ Report useful outcomes, human corrections, repeated work, elapsed time, model
 usage and handoffs with comparable scope. Fewer messages alone can conceal lost
 review or missing verification. Start with deterministic routing/restart trials;
 use a bounded real-agent trial to assess judgment and collaboration when
-authorized. No such Alex trial or live token saving is claimed here.
+authorized. The linked receipts record activation and actual continuation
+evidence. A comparative live token saving has not been established.
 
 After adoption, put enduring Alex responsibilities and operating guidance in the
 Alex App's documentation, update the shared improvement contract and affected

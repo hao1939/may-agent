@@ -1,0 +1,1039 @@
+{
+  "kind": "alex-retired-metric-three-entry-reconciliation",
+  "date": "2026-10-04",
+  "sessionId": "s_1791128837263_ca86bcc8-4aa4-479f-a00a-aa24fa3d0887",
+  "baseCommit": "beceb37f8b3ce3f94bcc8a40ed85a0de15f72ff1",
+  "authority": "Bounded recommendation only. Alex owns incorporation. No frontier, migration receipt, Task, Condition, runtime, production DB or deployment mutation.",
+  "sources": [
+    {
+      "path": "projects/alex.app/legacy-frontier-disposition-2026-10-04.json",
+      "sha256": "2974694cd2cf00d1f245fac5d3b951e95fd885a77213c3fccb392b1599f95c2f"
+    },
+    {
+      "path": "projects/alex.app/migration-receipt-2026-10-04.md",
+      "sha256": "8f4ad107b269aa009b9414a1ffa398804aa226dc63e31527bcc0e7749934a913"
+    },
+    {
+      "path": "/app/.state/alex-migration-20261004/legacy-frontier-snapshot.json",
+      "sha256": "bd3f6a1cc65e125c61f5a8380cba746d55e3d8143edc6f8d6825af286d5d7f97"
+    },
+    {
+      "path": "/app/.state/alex-migration-20261004/legacy-frontier-index.json",
+      "sha256": "46d61e762a8abac6170b4333c7aac30af2661afabe7fe635294a17318ea1cde9"
+    }
+  ],
+  "scope": {
+    "observedInspectCount": 10,
+    "selectedCount": 3,
+    "selectionReason": "Coherent smallest retired-metric cohort; each requires separating authentic repair/deployment progress from missing fresh metric/alert proof.",
+    "consideredIdentities": [
+      {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_168e5c676b765172deaf1dcc",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "approval-may-agent-handler-race-repair-deploy-50e4cc0d"
+        ]
+      },
+      {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_5c5f2e0a694278198136a42d",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_61c7a806bdc31e3dfcf1ce2a",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_a5e1a4e921f4678cc70fd320",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      {
+        "appId": "may-agent",
+        "taskId": "app-request/appreq_526ff3c62357a47caecdd980",
+        "generation": 2,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      {
+        "appId": "may-agent",
+        "taskId": "evaluate-telegram-admission-bounded-lookup-20260820",
+        "generation": 2,
+        "phase": "pending",
+        "owner": "may",
+        "conditionIds": []
+      },
+      {
+        "appId": "may-agent",
+        "taskId": "provider-auth-fallback-hardening-20260810",
+        "generation": 2,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": []
+      },
+      {
+        "appId": "may-agent",
+        "taskId": "reconcile-handler-success-rate-alert-4918-20260827",
+        "generation": 79,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      {
+        "appId": "may-agent",
+        "taskId": "reconcile-structurally-pinned-metric-alert-4797-20260825",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": null,
+        "conditionIds": [
+          "activate-calibrated-definition-and-resolve-alert-4797"
+        ]
+      },
+      {
+        "appId": "may-agent",
+        "taskId": "repair-platform-review-terminal-contract-after-unrunnable-owner-20260818",
+        "generation": 2,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "existing-unhandled-signal-recovery-terminal"
+        ]
+      }
+    ],
+    "deferredIdentities": [
+      {
+        "identity": {
+          "appId": "may-agent",
+          "taskId": "app-request/appdep_168e5c676b765172deaf1dcc",
+          "generation": 1,
+          "phase": "waiting",
+          "owner": "may",
+          "conditionIds": [
+            "approval-may-agent-handler-race-repair-deploy-50e4cc0d"
+          ]
+        },
+        "decision": "Not reconciled by this contribution; preserve current disposition unchanged."
+      },
+      {
+        "identity": {
+          "appId": "may-agent",
+          "taskId": "app-request/appdep_5c5f2e0a694278198136a42d",
+          "generation": 1,
+          "phase": "attention",
+          "owner": "may",
+          "conditionIds": []
+        },
+        "decision": "Not reconciled by this contribution; preserve current disposition unchanged."
+      },
+      {
+        "identity": {
+          "appId": "may-agent",
+          "taskId": "app-request/appdep_a5e1a4e921f4678cc70fd320",
+          "generation": 1,
+          "phase": "attention",
+          "owner": "may",
+          "conditionIds": []
+        },
+        "decision": "Not reconciled by this contribution; preserve current disposition unchanged."
+      },
+      {
+        "identity": {
+          "appId": "may-agent",
+          "taskId": "app-request/appreq_526ff3c62357a47caecdd980",
+          "generation": 2,
+          "phase": "attention",
+          "owner": "may",
+          "conditionIds": []
+        },
+        "decision": "Not reconciled by this contribution; preserve current disposition unchanged."
+      },
+      {
+        "identity": {
+          "appId": "may-agent",
+          "taskId": "evaluate-telegram-admission-bounded-lookup-20260820",
+          "generation": 2,
+          "phase": "pending",
+          "owner": "may",
+          "conditionIds": []
+        },
+        "decision": "Not reconciled by this contribution; preserve current disposition unchanged."
+      },
+      {
+        "identity": {
+          "appId": "may-agent",
+          "taskId": "provider-auth-fallback-hardening-20260810",
+          "generation": 2,
+          "phase": "waiting",
+          "owner": "may",
+          "conditionIds": []
+        },
+        "decision": "Not reconciled by this contribution; preserve current disposition unchanged."
+      },
+      {
+        "identity": {
+          "appId": "may-agent",
+          "taskId": "repair-platform-review-terminal-contract-after-unrunnable-owner-20260818",
+          "generation": 2,
+          "phase": "waiting",
+          "owner": "may",
+          "conditionIds": [
+            "existing-unhandled-signal-recovery-terminal"
+          ]
+        },
+        "decision": "Not reconciled by this contribution; preserve current disposition unchanged."
+      }
+    ]
+  },
+  "decision": {
+    "disposition": "obsolete-metric-execution-path-unfulfilled-creator-disposition-needed",
+    "historicalOutcomesFulfilled": false,
+    "technicalReplayRecommended": false,
+    "replacement": null,
+    "creatorContinuationRequired": true,
+    "nextAction": "Alex should discover/reuse current May obligation, then obtain one exact creator/caller disposition for these THREE identities: withdraw obsolete promises unfulfilled or identify a precise surviving current caller requirement. Do not infer withdrawal from parent/controller retirement or commission old remeasurement. Cross-App list discovery was rejected in this session, so absence of matching May work is NOT established.",
+    "humanBoundary": "No new Hao approval is inferred or requested. May decides whether any precise surviving human/caller obligation remains. Preserve both unknown activation Conditions without satisfaction, retirement or rebinding."
+  },
+  "items": [
+    {
+      "identity": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_61c7a806bdc31e3dfcf1ce2a",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "frontierRow": {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "app-request/appdep_61c7a806bdc31e3dfcf1ce2a",
+          "generation": 1,
+          "phase": "attention",
+          "owner": "may",
+          "conditionIds": []
+        },
+        "outcome": "Repair the deployed session.failed-triage-rate-3h measurement so current Task-reconciler handoffs, runtime orphan-agent recovery interruptions, and terminal-success Cancelled residue are handled by explicit tested eligibility rules; publish through the normal may-agent path and produce a fresh measurement at or above 0.8.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      "retainedIndex": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_61c7a806bdc31e3dfcf1ce2a",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "outcome": "Repair the deployed session.failed-triage-rate-3h measurement so current Task-reconciler handoffs, runtime orphan-agent recovery interruptions, and terminal-success Cancelled residue are handled by explicit tested eligibility rules; publish through the normal may-agent path and produce a fresh measurement at or above 0.8.",
+        "acceptance": [
+          "Update the failed-triage denominator/numerator predicates to match current runtime recovery contracts rather than obsolete message literals, and apply parity to the sibling aftermath eligibility query where applicable.",
+          "Add regression tests covering `Task-bound execution is recovered through its Task, not by resuming the old session`, `Recovered task <id> interrupted an orphaned agent session from a previous runtime`, and `status=done,outcome=done,error=Cancelled`.",
+          "Deploy through the normal App path, trigger a fresh metrics snapshot, and provide metric row plus snapshot evidence with numerator, denominator, sample_size, measured_at, and alert resolution state.",
+          "Fresh session.failed-triage-rate-3h is at least 0.8 without fabricating evaluation rows or mutating production DB directly."
+        ],
+        "summary": "Resolved agent may is not a runnable agent",
+        "conditionIds": []
+      },
+      "retainedTaskRow": {
+        "app_id": "may-agent",
+        "task_id": "app-request/appdep_61c7a806bdc31e3dfcf1ce2a",
+        "generation": 1,
+        "resource_version": 42,
+        "phase": "attention",
+        "updated_at": 1787891758196,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 1,
+            "id": "app-request/appdep_61c7a806bdc31e3dfcf1ce2a",
+            "resourceVersion": 42
+          },
+          "spec": {
+            "acceptance": [
+              "Update the failed-triage denominator/numerator predicates to match current runtime recovery contracts rather than obsolete message literals, and apply parity to the sibling aftermath eligibility query where applicable.",
+              "Add regression tests covering `Task-bound execution is recovered through its Task, not by resuming the old session`, `Recovered task <id> interrupted an orphaned agent session from a previous runtime`, and `status=done,outcome=done,error=Cancelled`.",
+              "Deploy through the normal App path, trigger a fresh metrics snapshot, and provide metric row plus snapshot evidence with numerator, denominator, sample_size, measured_at, and alert resolution state.",
+              "Fresh session.failed-triage-rate-3h is at least 0.8 without fabricating evaluation rows or mutating production DB directly."
+            ],
+            "input": {
+              "data": {
+                "acceptance": [
+                  "Update the failed-triage denominator/numerator predicates to match current runtime recovery contracts rather than obsolete message literals, and apply parity to the sibling aftermath eligibility query where applicable.",
+                  "Add regression tests covering `Task-bound execution is recovered through its Task, not by resuming the old session`, `Recovered task <id> interrupted an orphaned agent session from a previous runtime`, and `status=done,outcome=done,error=Cancelled`.",
+                  "Deploy through the normal App path, trigger a fresh metrics snapshot, and provide metric row plus snapshot evidence with numerator, denominator, sample_size, measured_at, and alert resolution state.",
+                  "Fresh session.failed-triage-rate-3h is at least 0.8 without fabricating evaluation rows or mutating production DB directly."
+                ],
+                "constraints": [
+                  "Do not directly mutate or rebuild the production database.",
+                  "Do not create synthetic evaluations merely to raise the metric.",
+                  "Preserve the seven-minute grace period and small-sample neutral behavior unless tests and source evidence justify a separate change.",
+                  "Verify backward compatibility for historical and current recovery strings."
+                ],
+                "evidence": [
+                  "Snapshot 2068154 measured 6/28=0.2143 at 1787637643564.",
+                  "Exact reconstruction classified 16 task-reconciler handoffs, 10 runtime orphan-agent recoveries (6 already evaluated), and 2 done/cancelled residues.",
+                  "metrics-snapshot.ts uses obsolete exclusion literals; cron-startup.ts and app-task-runtime.ts emit the current literals."
+                ],
+                "outcome": "Repair the deployed session.failed-triage-rate-3h measurement so current Task-reconciler handoffs, runtime orphan-agent recovery interruptions, and terminal-success Cancelled residue are handled by explicit tested eligibility rules; publish through the normal may-agent path and produce a fresh measurement at or above 0.8."
+              },
+              "kind": "runtime-capability-request"
+            },
+            "mode": "achieve",
+            "outcome": "Repair the deployed session.failed-triage-rate-3h measurement so current Task-reconciler handoffs, runtime orphan-agent recovery interruptions, and terminal-success Cancelled residue are handled by explicit tested eligibility rules; publish through the normal may-agent path and produce a fresh measurement at or above 0.8.",
+            "owner": "may",
+            "parentId": "platform-system-review-feedback-loop",
+            "priority": "P1"
+          },
+          "status": {
+            "conditionIds": [],
+            "evidence": [
+              "Commit 01bc931aa4 contains the explicit compatibility predicates and three-case regression fixture.",
+              "Focused session-health test suite passed 7/7.",
+              "Deploy artifact loaded with matching SHA, healthy service, and duplicateDeploy=false.",
+              "Fresh snapshot 2092963 remained 0/5, and all five session rows match predicates present in repaired source but absent from the running handler."
+            ],
+            "observedGeneration": 1,
+            "phase": "attention",
+            "result": {
+              "decision": "preserve-existing-activation-wait",
+              "deploy": {
+                "artifactSha": "bc482ef54ef2fe9787a0a088b23441454ef8ccc27039a1515dd697bc38f168bb",
+                "duplicateDeploy": false,
+                "health": "healthy",
+                "loadedArtifactSha": "bc482ef54ef2fe9787a0a088b23441454ef8ccc27039a1515dd697bc38f168bb"
+              },
+              "latestSnapshot": {
+                "denominator": 5,
+                "id": 2092963,
+                "measured_at": 1787681717466,
+                "numerator": 0,
+                "openAlertId": 4872,
+                "sample_size": 5,
+                "value": 0
+              },
+              "remainingAcceptance": "Activate the repaired app definition, then produce and verify a fresh measurement at or above 0.8 with resolved alert evidence.",
+              "sourceCommit": "01bc931aa42b61b156004bd11f9e45857704cff9",
+              "test": {
+                "failed": 0,
+                "passed": 7
+              }
+            },
+            "summary": "Resolved agent may is not a runnable agent",
+            "updatedAt": "2026-08-28T04:35:58.196Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "directRelationships": [
+        {
+          "app_id": "may-agent",
+          "source_task_id": "app-request/appdep_61c7a806bdc31e3dfcf1ce2a",
+          "relation_kind": "parent",
+          "target_task_id": "platform-system-review-feedback-loop"
+        }
+      ],
+      "acceptedProgress": [
+        "Recovered Apps Git commit 01bc931aa42b61b156004bd11f9e45857704cff9 adds both old/current recovery strings, orphan-agent and terminal-success Cancelled exclusion in failed-triage and sibling aftermath queries, with three regression rows. Historical 7/7 result is retained Task evidence, not rerun here.",
+        "Recovered correlated supervisor receipt is succeeded, healthy, matching artifact SHA and duplicateDeploy=false, but its sourceCommit is Host 75bb64e7b7e56a26f2ec0f57b0a3635f6298154c, NOT the Apps eligibility commit. It proves binary deployment only.",
+        "Latest retained post-deploy snapshot 2092963 was 0/5 at 1787681717466 with alert 4872 open. Repaired definition activation remained missing."
+      ],
+      "missingProof": [
+        "Exact loaded App-definition activation of 01bc931aa4 and fresh >=0.8 measurement with numerator/denominator/sample_size/measured_at plus alert resolution are not recovered.",
+        "Historical seven-minute grace/small-sample behavior and old-string compatibility are requirements retained verbatim, not authority to reintroduce retired collection."
+      ],
+      "recommendation": "obsolete-metric-execution-path-unfulfilled-creator-disposition-needed",
+      "technicalContinuation": null,
+      "creator": "may",
+      "callerBoundary": "Creator appId=may; parent platform-system-review-feedback-loop. Original appdep identity survives in exact Task ID; no caller Task/followUp is invented from it. Matching pending-input row absent in supplied snapshot; this does not prove caller closure.",
+      "conditionBoundary": "Task conditionIds=[] despite result decision preserve-existing-activation-wait. Independent exact-source Condition activate-failed-triage-repair-source-01bc931aa4 exists g3/rv4 unknown; preserve as referenced scope without fabricating Task binding."
+    },
+    {
+      "identity": {
+        "appId": "may-agent",
+        "taskId": "reconcile-handler-success-rate-alert-4918-20260827",
+        "generation": 79,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "conditionIds": []
+      },
+      "frontierRow": {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "reconcile-handler-success-rate-alert-4918-20260827",
+          "generation": 79,
+          "phase": "pending",
+          "owner": "tech-lead",
+          "conditionIds": []
+        },
+        "outcome": "Reconcile sustained handler.success-rate alert 4918 from its exact current six-hour population: reconstruct the numerator and denominator at the latest supplied measurement, attribute every failed handler to its handler family, error signature, session or workflow lineage, and accountable existing owner; distinguish regressions introduced or exposed across all verified release boundaries from pre-existing or already-owned failures; carry only the smallest justified repair or owner continuation to terminal evidence without reopening completed alert 4879 work, hiding failures, changing thresholds, or redeploying any verified artifact; then obtain a fresh supported measurement and alert-state proof. Treat event observed at 2026-08-28T06:54:49.826Z as the newest observation: current 0.6833 at measuredAt 1787900089381, below threshold 0.8 and target 0.95, with recent trend 0.6606, 0.6646, 0.6674, 0.6781, 0.6833. Treat successful correlation event-task-admission-fb9c8278-20260828 as the newest verified release boundary: source fb9c8278e9e8459908eb1c7291304e846325f7da, requested and loaded artifact e940c93bf0632ed851d4d0eb766f06a0fcf32201e920003877956d4e98010c59, health healthy, duplicateDeploy=false. Do not deploy that correlation again; use it only for causal attribution and fresh measurement.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      "retainedIndex": {
+        "appId": "may-agent",
+        "taskId": "reconcile-handler-success-rate-alert-4918-20260827",
+        "generation": 79,
+        "phase": "pending",
+        "owner": "tech-lead",
+        "outcome": "Reconcile sustained handler.success-rate alert 4918 from its exact current six-hour population: reconstruct the numerator and denominator at the latest supplied measurement, attribute every failed handler to its handler family, error signature, session or workflow lineage, and accountable existing owner; distinguish regressions introduced or exposed across all verified release boundaries from pre-existing or already-owned failures; carry only the smallest justified repair or owner continuation to terminal evidence without reopening completed alert 4879 work, hiding failures, changing thresholds, or redeploying any verified artifact; then obtain a fresh supported measurement and alert-state proof. Treat event observed at 2026-08-28T06:54:49.826Z as the newest observation: current 0.6833 at measuredAt 1787900089381, below threshold 0.8 and target 0.95, with recent trend 0.6606, 0.6646, 0.6674, 0.6781, 0.6833. Treat successful correlation event-task-admission-fb9c8278-20260828 as the newest verified release boundary: source fb9c8278e9e8459908eb1c7291304e846325f7da, requested and loaded artifact e940c93bf0632ed851d4d0eb766f06a0fcf32201e920003877956d4e98010c59, health healthy, duplicateDeploy=false. Do not deploy that correlation again; use it only for causal attribution and fresh measurement.",
+        "acceptance": [
+          "The exact latest six-hour numerator and denominator are recreated from the canonical metric contract, and every failed row is grouped by handler family and concrete failure signature with accountable lineage evidence.",
+          "Failures already owned by live Tasks are linked rather than duplicated; any newly actionable root cause receives only the smallest supported repair, with genuine failures left visible and no threshold or taxonomy manipulation.",
+          "Neither verified deployment correlation event-handler-serialization-da8c3dbd nor message-handler-ordering-b7f0cac5 is repeated; any source-versus-live causal claim is supported by exact commit or artifact evidence.",
+          "A fresh supported measurement shows handler.success-rate at or above 0.8 and alert 4918 resolved, or every exact remaining failure population is assigned to a live accountable repair with an evidence-backed reason the aggregate alert must remain open."
+        ],
+        "summary": null,
+        "conditionIds": []
+      },
+      "retainedTaskRow": {
+        "app_id": "may-agent",
+        "task_id": "reconcile-handler-success-rate-alert-4918-20260827",
+        "generation": 79,
+        "resource_version": 80,
+        "phase": "pending",
+        "updated_at": 1787900614907,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 79,
+            "id": "reconcile-handler-success-rate-alert-4918-20260827",
+            "resourceVersion": 80
+          },
+          "spec": {
+            "acceptance": [
+              "The exact latest six-hour numerator and denominator are recreated from the canonical metric contract, and every failed row is grouped by handler family and concrete failure signature with accountable lineage evidence.",
+              "Failures already owned by live Tasks are linked rather than duplicated; any newly actionable root cause receives only the smallest supported repair, with genuine failures left visible and no threshold or taxonomy manipulation.",
+              "Neither verified deployment correlation event-handler-serialization-da8c3dbd nor message-handler-ordering-b7f0cac5 is repeated; any source-versus-live causal claim is supported by exact commit or artifact evidence.",
+              "A fresh supported measurement shows handler.success-rate at or above 0.8 and alert 4918 resolved, or every exact remaining failure population is assigned to a live accountable repair with an evidence-backed reason the aggregate alert must remain open."
+            ],
+            "category": "runtime-reliability",
+            "input": {
+              "trigger": {
+                "alertId": 4918,
+                "alertType": "sustained",
+                "current": 0.6624,
+                "eventId": 6292962,
+                "measuredAt": 1787891461856,
+                "metricId": "handler.success-rate",
+                "reason": "open-alert-updated",
+                "target": 0.95,
+                "threshold": 0.8,
+                "trend": [
+                  {
+                    "measuredAt": 1787891453596,
+                    "value": 0.6624
+                  },
+                  {
+                    "measuredAt": 1787890709608,
+                    "value": 0.6515
+                  },
+                  {
+                    "measuredAt": 1787890264991,
+                    "value": 0.6462
+                  },
+                  {
+                    "measuredAt": 1787889950833,
+                    "value": 0.6471
+                  },
+                  {
+                    "measuredAt": 1787889633671,
+                    "value": 0.6444
+                  }
+                ]
+              },
+              "verifiedDeployments": [
+                {
+                  "artifactSha": "a70c92dc41bf20d8223e148d352a09fcf410b89e3abe44f32848f28db3b1a5df",
+                  "constraint": "Do not deploy again; retain as the earlier release boundary for causal attribution.",
+                  "correlation": "event-handler-serialization-da8c3dbd",
+                  "duplicateDeploy": false,
+                  "health": "healthy",
+                  "loadedArtifactSha": "a70c92dc41bf20d8223e148d352a09fcf410b89e3abe44f32848f28db3b1a5df",
+                  "sourceCommit": "da8c3dbdbb9f3011fa383477eb26144ebb5fb935"
+                },
+                {
+                  "artifactSha": "79884687587bc4965cb5d4d8e890f0023eae434109357d0793a6ac69670fd9e8",
+                  "constraint": "Do not deploy again; use this successful restart-aware receipt as the newer release boundary for causal attribution.",
+                  "correlation": "message-handler-ordering-b7f0cac5",
+                  "duplicateDeploy": false,
+                  "health": "healthy",
+                  "loadedArtifactSha": "79884687587bc4965cb5d4d8e890f0023eae434109357d0793a6ac69670fd9e8",
+                  "sourceCommit": "b7f0cac538c23ee8a1f127ec052623248f4e15ff"
+                },
+                {
+                  "artifactSha": "18858848b0a0888455da5fedb2b13e1a937b78d3cab224f832d5a4043dc7534b",
+                  "constraint": "Do not deploy again; the restart-aware receipt already succeeded and is the verified recovery-isolation release boundary.",
+                  "correlation": "task-recovery-isolation-a8783342-20260828T1555Z",
+                  "duplicateDeploy": false,
+                  "health": "healthy",
+                  "loadedArtifactSha": "18858848b0a0888455da5fedb2b13e1a937b78d3cab224f832d5a4043dc7534b",
+                  "sourceCommit": "a87833423d89da3b4c8dd03a871e01bedf9b2c60"
+                },
+                {
+                  "artifactSha": "2feb804ccb6b506f17f643d312a6052566ec7ce65d0d5470e0a2d5a7d4995455",
+                  "constraint": "Do not deploy again; use this successful restart-aware receipt as the verified interface/DB-bound release boundary.",
+                  "correlation": "interface-db-bound-127f16a8-20260828T1735Z",
+                  "duplicateDeploy": false,
+                  "health": "healthy",
+                  "loadedArtifactSha": "2feb804ccb6b506f17f643d312a6052566ec7ce65d0d5470e0a2d5a7d4995455",
+                  "sourceCommit": "127f16a8fcbc30e02e8a45ab79dd8c2505929815"
+                },
+                {
+                  "artifactSha": "fa3a50c6e9bae05e12ef5f2622319374fb670928e0572b0427f7a14b55190722",
+                  "constraint": "Do not deploy again; use this successful restart-aware receipt as the latest verified App-input recovery release boundary for causal attribution.",
+                  "correlation": "app-input-recovery-c9e4149f-20260828T1750Z",
+                  "duplicateDeploy": false,
+                  "health": "healthy",
+                  "loadedArtifactSha": "fa3a50c6e9bae05e12ef5f2622319374fb670928e0572b0427f7a14b55190722",
+                  "sourceCommit": "c9e4149f28757b876801ad5ea558859bc0084c5c"
+                },
+                {
+                  "artifactSha": "0d95febae1a845fbcaec947905166cf1cef3495b2529ee9e23f9972659094ac4",
+                  "constraint": "Do not deploy again; use this successful restart-aware receipt as the verified dependency-yield release boundary for causal attribution and fresh measurement.",
+                  "correlation": "dependency-yield-f1abbd7b-20260828T1830Z",
+                  "duplicateDeploy": false,
+                  "health": "healthy",
+                  "loadedArtifactSha": "0d95febae1a845fbcaec947905166cf1cef3495b2529ee9e23f9972659094ac4",
+                  "sourceCommit": "f1abbd7ba3eb23729556d11a7bd69917bf30cc9e"
+                },
+                {
+                  "artifactSha": "c3c687826badf918852b08647e0c0cb997e6e702c24a22431d31366279cea02e",
+                  "constraint": "Do not deploy again; use this successful restart-aware receipt as the verified dependency-poll-yield release boundary for causal attribution and fresh measurement.",
+                  "correlation": "dependency-poll-yield-7a667168-20260828T1940Z",
+                  "duplicateDeploy": false,
+                  "health": "healthy",
+                  "loadedArtifactSha": "c3c687826badf918852b08647e0c0cb997e6e702c24a22431d31366279cea02e",
+                  "sourceCommit": "7a667168f0bca37f34b2ddf9ad38411b6906753f"
+                },
+                {
+                  "artifactSha": "8ff843cc935c75d0a0e5405ef1e42ed8106554443a2d6f0b916c2370bbfd8751",
+                  "constraint": "Do not deploy again; use this successful restart-aware receipt as the verified single-event-relay release boundary for causal attribution and fresh measurement.",
+                  "correlation": "single-event-relay-325901a7-20260828T2000Z",
+                  "duplicateDeploy": false,
+                  "health": "healthy",
+                  "loadedArtifactSha": "8ff843cc935c75d0a0e5405ef1e42ed8106554443a2d6f0b916c2370bbfd8751",
+                  "sourceCommit": "325901a7aa23212c57174b2bd200c13e1a2b6def"
+                },
+                {
+                  "artifactSha": "2a938ea8ca6605f687ceac175581eb998cc1e84af8517f8115eba367e61b8ea3",
+                  "constraint": "Do not deploy again; use this successful restart-aware receipt as the exact-task-wake release boundary for causal attribution and fresh measurement.",
+                  "correlation": "exact-task-wake-8a6781c4-20260828T1220CST",
+                  "duplicateDeploy": false,
+                  "health": "healthy",
+                  "loadedArtifactSha": "2a938ea8ca6605f687ceac175581eb998cc1e84af8517f8115eba367e61b8ea3",
+                  "sourceCommit": "8a6781c44ee41912c2626533c4352b6a7208145f"
+                },
+                {
+                  "artifactSha": "b7db0b4906e67f5818225b08258df4f6bef6aa0d1fe24a0efd70116012350f1c",
+                  "constraint": "Do not deploy again; use this successful correlated receipt as the latest verified listener-yield release boundary for causal attribution and fresh measurement.",
+                  "correlation": "listener-yield-ec086c7b-20260828T1240CST",
+                  "duplicateDeploy": false,
+                  "health": "healthy",
+                  "loadedArtifactSha": "b7db0b4906e67f5818225b08258df4f6bef6aa0d1fe24a0efd70116012350f1c",
+                  "sourceCommit": "ec086c7bde7d8d0bbbb22ea753b72b651273e3d3"
+                }
+              ]
+            },
+            "mode": "achieve",
+            "outcome": "Reconcile sustained handler.success-rate alert 4918 from its exact current six-hour population: reconstruct the numerator and denominator at the latest supplied measurement, attribute every failed handler to its handler family, error signature, session or workflow lineage, and accountable existing owner; distinguish regressions introduced or exposed across all verified release boundaries from pre-existing or already-owned failures; carry only the smallest justified repair or owner continuation to terminal evidence without reopening completed alert 4879 work, hiding failures, changing thresholds, or redeploying any verified artifact; then obtain a fresh supported measurement and alert-state proof. Treat event observed at 2026-08-28T06:54:49.826Z as the newest observation: current 0.6833 at measuredAt 1787900089381, below threshold 0.8 and target 0.95, with recent trend 0.6606, 0.6646, 0.6674, 0.6781, 0.6833. Treat successful correlation event-task-admission-fb9c8278-20260828 as the newest verified release boundary: source fb9c8278e9e8459908eb1c7291304e846325f7da, requested and loaded artifact e940c93bf0632ed851d4d0eb766f06a0fcf32201e920003877956d4e98010c59, health healthy, duplicateDeploy=false. Do not deploy that correlation again; use it only for causal attribution and fresh measurement.",
+            "outputs": [
+              "Exact six-hour handler success/failure population and grouped attribution",
+              "Identity-specific reuse of existing owner lineages or one smallest verified repair",
+              "Fresh handler.success-rate measurement and alert 4918 state evidence"
+            ],
+            "owner": "tech-lead",
+            "parentId": "runtime/platform-owner-review",
+            "priority": "P1"
+          },
+          "status": {
+            "observedGeneration": 0,
+            "phase": "pending",
+            "updatedAt": "2026-08-28T07:03:34.907Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "directRelationships": [
+        {
+          "app_id": "may-agent",
+          "source_task_id": "reconcile-handler-success-rate-alert-4918-20260827",
+          "relation_kind": "parent",
+          "target_task_id": "runtime/platform-owner-review"
+        }
+      ],
+      "acceptedProgress": [
+        "Retained g79 requirement preserves ten verified release boundaries plus newest event-task-admission-fb9c8278-20260828 in outcome. Recovered newest correlated receipt independently confirms succeeded/healthy/matching hashes/duplicateDeploy=false.",
+        "Newest retained requirement observation is 0.6833 at 1787900089381; embedded trigger remains older 0.6624. Preserve this correction, not just embedded trigger. Status observedGeneration=0 and pending contain no accepted causal analysis or terminal result.",
+        "Current accepted May result for runtime/platform-owner-review withdraws that parent as retired/unfulfilled but explicitly retains separate descendant obligations. It does not dispose this child."
+      ],
+      "missingProof": [
+        "Exact six-hour population, every failed handler family/signature/session/workflow and accountable lineage, cross-release causal attribution, and fresh >=0.8 plus alert 4918 resolution (or exact assigned remaining failure population) are not recovered.",
+        "Successful deployments are causal boundaries, not proof of regression elimination; alert 4879 is explicitly not to be reopened."
+      ],
+      "recommendation": "obsolete-metric-execution-path-unfulfilled-creator-disposition-needed",
+      "technicalContinuation": null,
+      "creator": "may",
+      "callerBoundary": "Creator appId=may; exact parent runtime/platform-owner-review. Related evaluation input app_800b0d35-f150-44bf-9e0a-671979a41e5c is provenance/consumer evidence, not this Task admission or a replacement. Parent withdrawal does not close this child.",
+      "conditionBoundary": "No direct Condition in retained status; absence is not success."
+    },
+    {
+      "identity": {
+        "appId": "may-agent",
+        "taskId": "reconcile-structurally-pinned-metric-alert-4797-20260825",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": null,
+        "conditionIds": [
+          "activate-calibrated-definition-and-resolve-alert-4797"
+        ]
+      },
+      "frontierRow": {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "reconcile-structurally-pinned-metric-alert-4797-20260825",
+          "generation": 1,
+          "phase": "waiting",
+          "owner": null,
+          "conditionIds": [
+            "activate-calibrated-definition-and-resolve-alert-4797"
+          ]
+        },
+        "outcome": "Resolve metric.structurally-pinned-count alert 4797 by identifying the exact pinned metric and structural cause, choosing one supported final metric-alert operation, applying or routing the smallest justified correction without hiding real drift, and returning fresh metric plus alert-state evidence.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      "retainedIndex": {
+        "appId": "may-agent",
+        "taskId": "reconcile-structurally-pinned-metric-alert-4797-20260825",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": null,
+        "outcome": "Resolve metric.structurally-pinned-count alert 4797 by identifying the exact pinned metric and structural cause, choosing one supported final metric-alert operation, applying or routing the smallest justified correction without hiding real drift, and returning fresh metric plus alert-state evidence.",
+        "acceptance": [
+          "Identify the exact metric counted as structurally pinned and show the current and recent measurement evidence that establishes the cause.",
+          "Choose and complete exactly one supported final operation: fix root cause, calibrate, downgrade, escalate, resolve stale state, or document an exception; investigation alone is insufficient.",
+          "Return fresh metric.structurally-pinned-count measurement evidence and alert 4797 state evidence without direct database mutation or metric gaming."
+        ],
+        "summary": "Calibration is committed and the binary deploy receipt is fully healthy, but the loaded App-definition release still omits the calibration. Fresh normal measurement remains 1 and alert 4797 remains open; wait for supported App-definition activation and normal recovery evaluation.",
+        "conditionIds": [
+          "activate-calibrated-definition-and-resolve-alert-4797"
+        ]
+      },
+      "retainedTaskRow": {
+        "app_id": "may-agent",
+        "task_id": "reconcile-structurally-pinned-metric-alert-4797-20260825",
+        "generation": 1,
+        "resource_version": 16,
+        "phase": "waiting",
+        "updated_at": 1787678993346,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 1,
+            "id": "reconcile-structurally-pinned-metric-alert-4797-20260825",
+            "resourceVersion": 16
+          },
+          "spec": {
+            "acceptance": [
+              "Identify the exact metric counted as structurally pinned and show the current and recent measurement evidence that establishes the cause.",
+              "Choose and complete exactly one supported final operation: fix root cause, calibrate, downgrade, escalate, resolve stale state, or document an exception; investigation alone is insufficient.",
+              "Return fresh metric.structurally-pinned-count measurement evidence and alert 4797 state evidence without direct database mutation or metric gaming."
+            ],
+            "category": "host-operations",
+            "mode": "achieve",
+            "outcome": "Resolve metric.structurally-pinned-count alert 4797 by identifying the exact pinned metric and structural cause, choosing one supported final metric-alert operation, applying or routing the smallest justified correction without hiding real drift, and returning fresh metric plus alert-state evidence.",
+            "outputs": [],
+            "parentId": "project",
+            "priority": "P1"
+          },
+          "status": {
+            "conditionIds": [
+              "activate-calibrated-definition-and-resolve-alert-4797"
+            ],
+            "evidence": [
+              "Fresh normal snapshot: structurally pinned count 1 at 1787678736817.",
+              "DB-size metric: 757 unchanged samples at 1944.07 MB.",
+              "Alert 4797 remains unresolved.",
+              "Loaded App definition lacks the committed calibration.",
+              "Deploy SHA, health, and duplicate checks all pass."
+            ],
+            "observedGeneration": 1,
+            "phase": "waiting",
+            "result": {
+              "activationGap": {
+                "activeDefinition": "/app/.state/releases/app-definitions/current/projects/may-agent.app/agents/tech-lead/handlers/metrics-snapshot.ts",
+                "activeDefinitionHasCalibration": false,
+                "calibratedSource": "/app/projects/may-agent.app/agents/tech-lead/handlers/metrics-snapshot.ts"
+              },
+              "deploy": {
+                "artifactSha": "bc482ef54ef2fe9787a0a088b23441454ef8ccc27039a1515dd697bc38f168bb",
+                "correlation": "deploy-metric-4797-calibration-20260825",
+                "duplicateDeploy": false,
+                "health": "healthy",
+                "loadedArtifactSha": "bc482ef54ef2fe9787a0a088b23441454ef8ccc27039a1515dd697bc38f168bb"
+              },
+              "freshState": {
+                "alertId": 4797,
+                "alertResolvedAt": null,
+                "measuredAt": 1787678736817,
+                "metricId": "metric.structurally-pinned-count",
+                "metricValue": 1
+              },
+              "metric": "infra.persist.db-size-mb",
+              "operation": "calibrate",
+              "recentEvidence": {
+                "firstMeasuredAt": 1787490034756,
+                "latestMeasuredAt": 1787678736817,
+                "maxMb": 1944.07,
+                "minMb": 1944.07,
+                "sampleCount": 757
+              },
+              "structuralCause": "The measurement is SQLite allocated-page capacity, so it legitimately stays unchanged until the database file grows or shrinks."
+            },
+            "summary": "Calibration is committed and the binary deploy receipt is fully healthy, but the loaded App-definition release still omits the calibration. Fresh normal measurement remains 1 and alert 4797 remains open; wait for supported App-definition activation and normal recovery evaluation.",
+            "updatedAt": "2026-08-25T17:29:53.346Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "directRelationships": [
+        {
+          "app_id": "may-agent",
+          "source_task_id": "reconcile-structurally-pinned-metric-alert-4797-20260825",
+          "relation_kind": "parent",
+          "target_task_id": "project"
+        }
+      ],
+      "acceptedProgress": [
+        "Retained result identifies infra.persist.db-size-mb allocated-page capacity: 757 samples fixed at 1944.07 MB; selects calibrate, with loaded definition still lacking calibration. This causal/calibration report is accepted historical Task evidence, not a fresh database inspection.",
+        "Recovered deploy-metric-4797-calibration-20260825 receipt independently proves binary activation succeeded with matching artifact and healthy service, not App calibration activation.",
+        "Last retained fresh snapshot has metric.structurally-pinned-count=1 at 1787678736817 and alert 4797 unresolved."
+      ],
+      "missingProof": [
+        "Completed calibration activation and normal fresh zero pinned count/alert 4797 resolution are not recovered. A selected operation and healthy binary are not completion.",
+        "No current production metric/alert query capability was supplied; live alert status is unknown. Retirement is not literal execution of the old calibration contract."
+      ],
+      "recommendation": "obsolete-metric-execution-path-unfulfilled-creator-disposition-needed",
+      "technicalContinuation": null,
+      "creator": "may",
+      "callerBoundary": "Creator appId=may; parent project. No owner in retained spec; do not invent one. Historical metric-alert Condition remains exact and unknown.",
+      "conditionBoundary": "Task explicitly binds activate-calibrated-definition-and-resolve-alert-4797; g3/rv4 unknown. Current retirement does not observe its expected current=0/resolved=true."
+    }
+  ],
+  "relationships": {
+    "direct": [
+      {
+        "app_id": "may-agent",
+        "source_task_id": "app-request/appdep_61c7a806bdc31e3dfcf1ce2a",
+        "relation_kind": "parent",
+        "target_task_id": "platform-system-review-feedback-loop"
+      },
+      {
+        "app_id": "may-agent",
+        "source_task_id": "reconcile-structurally-pinned-metric-alert-4797-20260825",
+        "relation_kind": "parent",
+        "target_task_id": "project"
+      },
+      {
+        "app_id": "may-agent",
+        "source_task_id": "reconcile-handler-success-rate-alert-4918-20260827",
+        "relation_kind": "parent",
+        "target_task_id": "runtime/platform-owner-review"
+      }
+    ],
+    "conditions": [
+      {
+        "app_id": "may-agent",
+        "condition_id": "activate-failed-triage-repair-source-01bc931aa4",
+        "state": "unknown",
+        "condition_json": "{\"metadata\":{\"generation\":3,\"id\":\"activate-failed-triage-repair-source-01bc931aa4\",\"resourceVersion\":4},\"spec\":{\"expected\":{\"sourceCommit\":\"01bc931aa42b61b156004bd11f9e45857704cff9\",\"state\":\"activated\"},\"owner\":\"may-agent\",\"requestedAction\":\"Activate the app-definition release containing commit 01bc931aa4; do not repeat the already successful runtime deploy.\",\"subject\":\"app-definition-release:failed-triage-eligibility-01bc931aa4-correct-source\",\"type\":\"app-definition-release-activated\"},\"status\":{\"createdAt\":\"2026-08-25T18:18:21.628Z\",\"observedAt\":\"2026-08-25T18:18:21.628Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}"
+      },
+      {
+        "app_id": "may-agent",
+        "condition_id": "activate-calibrated-definition-and-resolve-alert-4797",
+        "state": "unknown",
+        "condition_json": "{\"metadata\":{\"generation\":3,\"id\":\"activate-calibrated-definition-and-resolve-alert-4797\",\"resourceVersion\":4},\"spec\":{\"expected\":{\"current\":0,\"metricId\":\"metric.structurally-pinned-count\",\"resolved\":true},\"owner\":\"may-agent\",\"requestedAction\":\"Activate a supported App-definition release containing the existing `infra.persist.db-size-mb` calibration, then allow normal metrics-snapshot and alert evaluation to run. Do not redeploy the binary or mutate the database directly.\",\"subject\":\"metric-alert:4797\",\"type\":\"metric-alert-resolution\"},\"status\":{\"createdAt\":\"2026-08-25T17:29:53.346Z\",\"observedAt\":\"2026-08-25T17:29:53.346Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}"
+      }
+    ],
+    "relatedInputRows": [
+      {
+        "id": "app_800b0d35-f150-44bf-9e0a-671979a41e5c",
+        "app_id": "may-agent",
+        "parent_id": null,
+        "conversation_id": null,
+        "conversation_seq": null,
+        "channel": null,
+        "channel_thread_id": null,
+        "channel_message_id": null,
+        "reply_to_source_id": null,
+        "source_kind": "system",
+        "source_id": "event:6294839",
+        "input_kind": "owner-review",
+        "input_data": "{\"reason\":\"evaluation-project-health-feedback\",\"project\":\"may-agent\",\"sourceTask\":{\"appId\":\"evaluation\",\"taskId\":\"runtime/project-audit/may-agent.app\",\"generation\":4,\"resourceVersion\":1041},\"finding\":{\"targetProject\":\"may-agent.app\",\"verdict\":\"concern\",\"reportPath\":\"reports/project-health/may-agent.app/20260828T060231989Z.md\",\"summary\":\"The platform-owned handler.success-rate remains in an unresolved sustained P1 breach at 0.6551 versus the 0.8 threshold, while repeated owner reviews continue the same repair lineage without recovery proof.\",\"affectedArtifacts\":[\"metric:handler.success-rate\",\"event:6294578#metric.breach#alertId=4918\",\"task:reconcile-handler-success-rate-alert-4918-20260827\",\"projects/may-agent.app/.state/tasks/tree.json\"],\"recommendedChange\":\"Tech-lead should complete the existing alert-4918 causal repair and fresh six-hour remeasurement, then regenerate the public task projection so it reflects the active App and current task generations rather than the stale paused snapshot.\",\"verification\":[\"A fresh supported six-hour measurement reports handler.success-rate at or above 0.8 and metric_alerts alert 4918 has a non-null resolved_at or a recovery event exists.\",\"The existing task reconcile-handler-success-rate-alert-4918-20260827 records causal attribution, the applied correction, and post-change measurement evidence.\",\"projects/may-agent.app/.state/tasks/tree.json is regenerated with project_lifecycle=active, an updated_at newer than 2026-08-28, and runtime/platform-owner-review at generation 158 or later.\"],\"requestedHumanAction\":\"none\",\"notify\":false,\"dedupeKey\":\"may-agent.app:handler-success-rate-sustained-breach\",\"executionId\":\"s_1787896896322_0\",\"reviewReason\":\"meaningful-delta\",\"feedbackEmitted\":true},\"message\":\"may-agent.app is operating, but handler success remains materially unhealthy at 0.6551 versus the 0.8 threshold; finish the existing alert-4918 repair with recovery proof and refresh the stale public task projection.\",\"idempotencyKey\":\"task:evaluation:runtime/project-audit/may-agent.app:4:emit:event-6294768:owner-feedback-requested\",\"emission\":{\"appId\":\"evaluation\",\"taskId\":\"runtime/project-audit/may-agent.app\",\"generation\":4,\"localKey\":\"event-6294768:owner-feedback-requested\"}}",
+        "status": "handling",
+        "session_id": null,
+        "waiting_on_kind": "task",
+        "waiting_on_id": "app-request/app_800b0d35-f150-44bf-9e0a-671979a41e5c",
+        "result": null,
+        "available_at": 1789026732929,
+        "review_at": null,
+        "lease_generation": 1,
+        "lease_owner": null,
+        "lease_expires_at": null,
+        "origin_event_id": 6294839,
+        "idempotency_key": "subscription:may-agent:project-owner-request:event:6294839",
+        "created_at": 1787897112278,
+        "updated_at": 1789026732929,
+        "completed_at": null,
+        "channel_target_id": null,
+        "continues_request_id": null,
+        "started_at": 1787897307797,
+        "changed_at": 1787897307863,
+        "target_task_id": null,
+        "topic_id": null,
+        "handling": null,
+        "task_admission_key": null,
+        "execution_task_id": null,
+        "creator_json": null,
+        "recovery_json": null
+      }
+    ],
+    "note": "Related input/parent identities are preserved context only, not additional disposition scope. The snapshot has no rows for platform-system-review-feedback-loop or project; absence is not terminal proof."
+  },
+  "currentEvidence": {
+    "observedAt": "2026-10-04T15:49:50.193Z",
+    "loadedRelease": "/app/.state/releases/app-definitions/587fe60510db351d0752072b370217655521be13-definitions-v4",
+    "sourceFiles": [
+      {
+        "path": "projects/may.app/app.ts",
+        "loadedPath": "/app/.state/releases/app-definitions/587fe60510db351d0752072b370217655521be13-definitions-v4/projects/may.app/app.ts",
+        "sha256": "ad33572ab5a9c5ca768ef3e4779443d6bfe2349f0bcbd61cd3820c30ff1acd8d",
+        "loadedSha256": "ad33572ab5a9c5ca768ef3e4779443d6bfe2349f0bcbd61cd3820c30ff1acd8d",
+        "loadedBytesEqual": true
+      },
+      {
+        "path": "projects/may.app/retired-legacy-metrics.ts",
+        "loadedPath": "/app/.state/releases/app-definitions/587fe60510db351d0752072b370217655521be13-definitions-v4/projects/may.app/retired-legacy-metrics.ts",
+        "sha256": "059f90dbfc0277434b7cfe327d800f95580b792dac876eb0444588e31c9a0a37",
+        "loadedSha256": "059f90dbfc0277434b7cfe327d800f95580b792dac876eb0444588e31c9a0a37",
+        "loadedBytesEqual": true
+      },
+      {
+        "path": "projects/alex.app/app.ts",
+        "loadedPath": "/app/.state/releases/app-definitions/587fe60510db351d0752072b370217655521be13-definitions-v4/projects/alex.app/app.ts",
+        "sha256": "3ab201eaeeeb2ca7e11c00a0eef39f2d8c97ab42636cd7e6933939a1b5914731",
+        "loadedSha256": "3ab201eaeeeb2ca7e11c00a0eef39f2d8c97ab42636cd7e6933939a1b5914731",
+        "loadedBytesEqual": true
+      },
+      {
+        "path": "projects/alex.app/retired-evaluation-metrics.ts",
+        "loadedPath": "/app/.state/releases/app-definitions/587fe60510db351d0752072b370217655521be13-definitions-v4/projects/alex.app/retired-evaluation-metrics.ts",
+        "sha256": "f7884dc80bec581c6808dbec9d63bf4646dc7fdae28df27c60744b7f2a26cb07",
+        "loadedSha256": "f7884dc80bec581c6808dbec9d63bf4646dc7fdae28df27c60744b7f2a26cb07",
+        "loadedBytesEqual": true
+      }
+    ],
+    "metricDeclarations": {
+      "session.failed-triage-rate-3h": "Alex retiredEvaluationMetrics: retired session-era evaluation metric; current Task/metric reviews use App-owned evidence.",
+      "handler.success-rate": "May retiredLegacyMetrics: legacy handler not active collector; current Task outcomes/input recovery/delivery own review.",
+      "metric.structurally-pinned-count": "May retiredLegacyMetrics explicitly retired. infra.persist.db-size-mb also retired."
+    },
+    "modernBehaviorLimit": "These declarations and focused tests justify no restoration of obsolete collectors, not historical metric recovery or current production alert closure.",
+    "taskReads": {
+      "legacy": [
+        {
+          "appId": "may-agent",
+          "taskId": "app-request/appdep_61c7a806bdc31e3dfcf1ce2a",
+          "result": {
+            "error": "App may-agent has no loaded Task runtime"
+          }
+        },
+        {
+          "appId": "may-agent",
+          "taskId": "reconcile-handler-success-rate-alert-4918-20260827",
+          "result": {
+            "error": "App may-agent has no loaded Task runtime"
+          }
+        },
+        {
+          "appId": "may-agent",
+          "taskId": "reconcile-structurally-pinned-metric-alert-4797-20260825",
+          "result": {
+            "error": "App may-agent has no loaded Task runtime"
+          }
+        }
+      ],
+      "relatedParentDisposition": {
+        "appId": "may",
+        "taskId": "goal/appdep_7bfd3ac4b0fa68969a9e3b23",
+        "generation": 1,
+        "resourceVersion": 4,
+        "status": "done",
+        "acceptedAttempt": "r_1_53d625a3-7d0b-493a-8a36-2419896297d1",
+        "finishedAt": "2026-10-04T13:39:34.297Z",
+        "exactRelevantDisposition": {
+          "taskId": "runtime/platform-owner-review",
+          "decision": "withdrawn-unfulfilled-retired-controller",
+          "survivingCurrentObligation": "Alex ordinary intake replaces controller mechanics only; descendant obligations remain individually dispositioned."
+        },
+        "coverageLimit": "Accepted result covers ten other exact identities, NOT these three. Do not extend withdrawal."
+      },
+      "discoveryLimit": "tasks.list target may returned: list and outcomes are scoped to the current App; use get with target.appId for an exact cross-App Task. No global no-existing-work claim."
+    },
+    "operatorUpdate": "New operator activation input identifies 587fe60510db351d0752072b370217655521be13. Independently resolved current symlink and byte equality of the four relevant inspected files; unrelated rollout/recovery claims remain the caller scope."
+  },
+  "historicalEvidence": {
+    "deploymentReceipts": [
+      {
+        "path": "/app/projects/may-agent/.state/deploy-receipts/failed-triage-eligibility-appdep-61c7a806-01bc931aa4.json",
+        "sha256": "9e39ba9e2c1f0f305360e3f3b161355c390a7f4cfa374afc0f8b13d01b5f36dc",
+        "content": {
+          "version": 1,
+          "correlation": "failed-triage-eligibility-appdep-61c7a806-01bc931aa4",
+          "project": "may-agent",
+          "taskId": "app-request/appdep_61c7a806bdc31e3dfcf1ce2a",
+          "artifactSha": "bc482ef54ef2fe9787a0a088b23441454ef8ccc27039a1515dd697bc38f168bb",
+          "sourceCommit": "75bb64e7b7e56a26f2ec0f57b0a3635f6298154c",
+          "phase": "succeeded",
+          "requestedAt": "2026-08-25T16:32:20.657Z",
+          "verification": "After the supervisor settles service and HTTP health, verify loadedArtifactSha equals artifactSha, health is healthy, and duplicateDeploy is false, then complete the owner task without redeploying.",
+          "completedAt": "2026-08-25T16:32:37.076Z",
+          "loadedArtifactSha": "bc482ef54ef2fe9787a0a088b23441454ef8ccc27039a1515dd697bc38f168bb",
+          "health": "healthy",
+          "duplicateDeploy": false
+        }
+      },
+      {
+        "path": "/app/projects/may-agent/.state/deploy-receipts/event-task-admission-fb9c8278-20260828.json",
+        "sha256": "155b4f690f5080e950b57b80f5f9ea7b15cef90f30a31010e4d506b8b25f58c1",
+        "content": {
+          "version": 1,
+          "correlation": "event-task-admission-fb9c8278-20260828",
+          "project": "may-agent",
+          "taskId": "runtime/platform-owner-review",
+          "artifactSha": "e940c93bf0632ed851d4d0eb766f06a0fcf32201e920003877956d4e98010c59",
+          "sourceCommit": "fb9c8278e9e8459908eb1c7291304e846325f7da",
+          "phase": "succeeded",
+          "requestedAt": "2026-08-28T06:27:24.618Z",
+          "verification": "After the supervisor settles service and HTTP health, verify loadedArtifactSha equals artifactSha, health is healthy, and duplicateDeploy is false, then complete the owner task without redeploying.",
+          "completedAt": "2026-08-28T06:30:18.345Z",
+          "loadedArtifactSha": "e940c93bf0632ed851d4d0eb766f06a0fcf32201e920003877956d4e98010c59",
+          "health": "healthy",
+          "duplicateDeploy": false
+        }
+      },
+      {
+        "path": "/app/projects/may-agent/.state/deploy-receipts/deploy-metric-4797-calibration-20260825.json",
+        "sha256": "c1f66debe0c4eacb7748c54331f53d2ddb037f51bf924890846ae06c3acad26b",
+        "content": {
+          "version": 1,
+          "correlation": "deploy-metric-4797-calibration-20260825",
+          "project": "may-agent",
+          "taskId": "reconcile-structurally-pinned-metric-alert-4797-20260825",
+          "artifactSha": "bc482ef54ef2fe9787a0a088b23441454ef8ccc27039a1515dd697bc38f168bb",
+          "sourceCommit": "75bb64e7b7e56a26f2ec0f57b0a3635f6298154c",
+          "phase": "succeeded",
+          "requestedAt": "2026-08-25T14:32:44.728Z",
+          "verification": "After the supervisor settles service and HTTP health, verify loadedArtifactSha equals artifactSha, health is healthy, and duplicateDeploy is false, then complete the owner task without redeploying.",
+          "completedAt": "2026-08-25T14:32:57.763Z",
+          "loadedArtifactSha": "bc482ef54ef2fe9787a0a088b23441454ef8ccc27039a1515dd697bc38f168bb",
+          "health": "healthy",
+          "duplicateDeploy": false
+        }
+      }
+    ],
+    "eligibilityCommit": {
+      "repository": "Apps assigned worktree",
+      "commit": "01bc931aa42b61b156004bd11f9e45857704cff9",
+      "diff": "commit 01bc931aa42b61b156004bd11f9e45857704cff9\nAuthor: may-agent <may@agents.local>\nDate:   Tue Aug 25 16:32:05 2026 +0000\n\n    fix(metrics): align failed triage recovery eligibility\n\ndiff --git a/projects/may-agent.app/agents/tech-lead/handlers/metrics-snapshot-session-health.test.ts b/projects/may-agent.app/agents/tech-lead/handlers/metrics-snapshot-session-health.test.ts\nindex 49a1f1ccb0..3ecfeca4b0 100644\n--- a/projects/may-agent.app/agents/tech-lead/handlers/metrics-snapshot-session-health.test.ts\n+++ b/projects/may-agent.app/agents/tech-lead/handlers/metrics-snapshot-session-health.test.ts\n@@ -117,6 +117,43 @@ describe(\"metrics-snapshot session health metrics\", () => {\n         \"Recovered task runtime/owner-review interrupted an orphaned owner session from a previous runtime\",\n       ],\n     );\n+    db.run(\n+      \"INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, error) VALUES (?, ?, ?, ?, ?, ?, ?)\",\n+      [\n+        \"s_current_task_reconciler_handoff\",\n+        \"app-ops\",\n+        \"task\",\n+        \"interrupted\",\n+        ended - 43_000,\n+        ended,\n+        \"Task-bound execution is recovered through its Task, not by resuming the old session\",\n+      ],\n+    );\n+    db.run(\n+      \"INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, error) VALUES (?, ?, ?, ?, ?, ?, ?)\",\n+      [\n+        \"s_current_orphan_runtime_recovery_handoff\",\n+        \"app-ops\",\n+        \"task\",\n+        \"interrupted\",\n+        ended - 42_000,\n+        ended,\n+        \"Recovered task runtime/owner-review interrupted an orphaned agent session from a previous runtime\",\n+      ],\n+    );\n+    db.run(\n+      \"INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, outcome, error) VALUES (?, ?, ?, ?, ?, ?, ?, ?)\",\n+      [\n+        \"s_done_cancelled_residue\",\n+        \"app-ops\",\n+        \"task\",\n+        \"done\",\n+        ended - 41_000,\n+        ended,\n+        \"done\",\n+        \"Cancelled\",\n+      ],\n+    );\n     db.run(\n       \"INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, error) VALUES (?, ?, ?, ?, ?, ?, ?)\",\n       [\ndiff --git a/projects/may-agent.app/agents/tech-lead/handlers/metrics-snapshot.ts b/projects/may-agent.app/agents/tech-lead/handlers/metrics-snapshot.ts\nindex 835205ec0f..ff7d028e40 100644\n--- a/projects/may-agent.app/agents/tech-lead/handlers/metrics-snapshot.ts\n+++ b/projects/may-agent.app/agents/tech-lead/handlers/metrics-snapshot.ts\n@@ -1590,16 +1590,26 @@ export const create: HandlerModule[\"create\"] = (\n            AND COALESCE(s.endedAt, s.startedAt) > ?\n            AND COALESCE(s.endedAt, s.startedAt) <= ?\n            AND COALESCE(s.error, '') != 'Clean start (fresh)'\n-           -- Task-bound project session recovery interruptions are already\n-           -- owned by the app task reconciler and evaluator-aftermath records\n-           -- them as structured skips when appropriate. Counting those rows as\n-           -- missing evaluator triage turns a recovery handoff into false\n-           -- failed-triage debt.\n-           AND COALESCE(s.error, '') != 'Task-bound project session recovery is owned by the app task reconciler'\n+           -- Task-bound recovery handoffs are owned by the Task reconciler,\n+           -- not evaluator aftermath. Preserve the historical literal while\n+           -- matching the current runtime contract emitted by cron-startup.\n+           AND COALESCE(s.error, '') NOT IN (\n+             'Task-bound project session recovery is owned by the app task reconciler',\n+             'Task-bound execution is recovered through its Task, not by resuming the old session'\n+           )\n            -- Runtime recovery may interrupt orphaned task sessions from a\n-           -- previous process after safely handing ownership back to the task\n-           -- app. Those rows should not create evaluator failed-triage debt.\n+           -- previous process after safely handing ownership back to the Task.\n+           -- Preserve the historical owner-session spelling for old rows.\n            AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned owner session from a previous runtime'\n+           AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned agent session from a previous runtime'\n+           -- A terminal successful result can retain Cancelled as cleanup\n+           -- residue after the outcome has already been committed. COALESCE\n+           -- keeps unrelated terminal rows with nullable outcome/error eligible.\n+           AND NOT (\n+             s.status = 'done'\n+             AND COALESCE(s.outcome, '') = 'done'\n+             AND COALESCE(s.error, '') = 'Cancelled'\n+           )\n            AND (s.status IN ('error', 'interrupted') OR s.error IS NOT NULL)\n            AND NOT (s.status = 'interrupted' AND s.error IS NULL)\n          GROUP BY s.sessionId`,\n@@ -1646,8 +1656,17 @@ export const create: HandlerModule[\"create\"] = (\n          FROM sessions s\n          WHERE s.status IN ('done', 'error', 'interrupted')\n            AND s.agent NOT IN ('evaluator', 'judge')\n-           AND COALESCE(s.error, '') != 'Task-bound project session recovery is owned by the app task reconciler'\n+           AND COALESCE(s.error, '') NOT IN (\n+             'Task-bound project session recovery is owned by the app task reconciler',\n+             'Task-bound execution is recovered through its Task, not by resuming the old session'\n+           )\n            AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned owner session from a previous runtime'\n+           AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned agent session from a previous runtime'\n+           AND NOT (\n+             s.status = 'done'\n+             AND COALESCE(s.outcome, '') = 'done'\n+             AND COALESCE(s.error, '') = 'Cancelled'\n+           )\n            AND COALESCE(s.endedAt, s.startedAt) > ?\n            AND COALESCE(s.endedAt, s.startedAt) <= ?`,\n         threeH,\n@@ -1659,8 +1678,17 @@ export const create: HandlerModule[\"create\"] = (\n          JOIN evaluations e ON e.sessionId = s.sessionId\n          WHERE s.status IN ('done', 'error', 'interrupted')\n            AND s.agent NOT IN ('evaluator', 'judge')\n-           AND COALESCE(s.error, '') != 'Task-bound project session recovery is owned by the app task reconciler'\n+           AND COALESCE(s.error, '') NOT IN (\n+             'Task-bound project session recovery is owned by the app task reconciler',\n+             'Task-bound execution is recovered through its Task, not by resuming the old session'\n+           )\n            AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned owner session from a previous runtime'\n+           AND COALESCE(s.error, '') NOT LIKE 'Recovered task % interrupted an orphaned agent session from a previous runtime'\n+           AND NOT (\n+             s.status = 'done'\n+             AND COALESCE(s.outcome, '') = 'done'\n+             AND COALESCE(s.error, '') = 'Cancelled'\n+           )\n            AND COALESCE(s.endedAt, s.startedAt) > ?\n            AND COALESCE(s.endedAt, s.startedAt) <= ?`,\n         threeH,\n",
+      "coverage": "Source recovery only; historical tests not rerun and no activation inferred."
+    },
+    "priorArtifacts": [
+      {
+        "path": "projects/alex.app/host-operations-controller-wakes-reconciliation-2026-10-04.json",
+        "sha256": "d6fc9788d566962b76ac498a65713c247fd57bcb74e486b780b386c8d411dccb",
+        "sections": [
+          "lineages.retired-evaluation-metrics",
+          "lineages.retired-handler-session-metrics"
+        ],
+        "finding": "Explicitly excluded handler-success Task from prior intake-shell disposition; current source reconfirms retirement."
+      }
+    ]
+  },
+  "checks": [
+    {
+      "command": "bun test ./projects/alex.app/app.test.ts ./projects/may.app/app.test.ts",
+      "exitCode": 0,
+      "passed": 32,
+      "failed": 0,
+      "expectations": 165,
+      "output": "bun test v1.3.14 (0d9b296a)\n\nprojects/alex.app/app.test.ts:\n(pass) Alex bootstrap uses ordinary durable Task admission [13.25ms]\n(pass) An operational message reaches executable Alex work [0.07ms]\n(pass) specialist goals remain Alex-owned executable work [0.04ms]\n(pass) independent review may assess Alex work without App-wide exclusion [0.29ms]\n(pass) automatic reconciliation review skips exact evaluator executions but retains Alex implementation work [0.40ms]\n(pass) selected review events return to executable Alex review work [0.24ms]\n(pass) qualified Scout research reaches executable Alex adoption work [0.08ms]\n(pass) automatic review failures stay executable under Alex [0.13ms]\n(pass) declared metric and review-failure subscriptions dispatch executable inputs [0.29ms]\n(pass) ordinary Evaluation reports are consumed only by Alex with immutable identity [0.55ms]\n(pass) weekly research preserves one standing Alex Bob Task across deliveries [0.23ms]\n(pass) comparison inputs attach to the migrated Gym specialist [0.09ms]\n\nprojects/may.app/app.test.ts:\n(pass) canonical May conversation App > the Host accepts all declared metric definitions [1.06ms]\n(pass) canonical May conversation App > owns one manifest for human input and addressed decision events [0.48ms]\n(pass) canonical May conversation App > maps App text requests to ordinary work with the original requirements [0.58ms]\n(pass) canonical May conversation App > maps durable May goals to ordinary visible goal Tasks [0.15ms]\n(pass) canonical May conversation App > keeps ordinary workflow references out of structured metric review parsing [0.99ms]\n(pass) canonical May conversation App > deliberately maps a generation-fenced revision to one exact existing goal [6.65ms]\n(pass) canonical May conversation App > keeps May human work local and leaves improvement specialists to Alex [0.27ms]\n(pass) canonical May conversation App > leaves the hygiene cadence to its Task reviewAt without a duplicate App timer [0.04ms]\n(pass) canonical May conversation App > does not keep the migrated weekly research schedule [0.04ms]\n(pass) canonical May conversation App > method selection does not add a development input or bound workflow [0.41ms]\n(pass) canonical May conversation App > keeps common authority shared and separates domain Task guidance [0.71ms]\n(pass) canonical May conversation App > accepts ordinary human messages through the same App schema [0.41ms]\n(pass) canonical May conversation App > routes Host observer failures to ordinary May judgment without automatic escalation [1.18ms]\n(pass) canonical May conversation App > routes one Evaluation operation metric alert episode to independent May judgment [0.70ms]\n(pass) canonical May conversation App > normalizes Evaluation escalations into messages with original correlation context [0.61ms]\n(pass) canonical May conversation App > normalizes exact task report identity across the Evaluation target boundary [0.56ms]\n(pass) canonical May conversation App > rejects malformed publication and excludes Evaluation self-review [0.39ms]\n(pass) canonical May conversation App > does not claim a decision addressed to another project [0.12ms]\n(pass) canonical May conversation App > rejects malformed decision obligations instead of hiding them as null [0.14ms]\n(pass) admission failures reach May with exact identity and bounded human escalation guidance [0.42ms]\n\n 32 pass\n 0 fail\n 165 expect() calls\nRan 32 tests across 2 files. [416.00ms]\n",
+      "outputSha256": "033481b2233905a9a52bd12be76d814868e373b27fd554dfe1e7e62068881a14",
+      "coverage": "Current ordinary App behavior, not historical live metric or calibration proof."
+    }
+  ],
+  "failedOrLimitedChecks": [
+    "python executable absent; switched to Node JSON inspection.",
+    "Initial helper shape probe assumed admissions[0] despite empty array; corrected with array-safe inspection, no records lost.",
+    "Looked for Apps commit in Host Git first; bad object. Recovered exact commit from owning Apps Git instead.",
+    "No fresh production DB access/query or metric snapshot was performed.",
+    "Historical runtime Tasks unreadable through disabled may-agent App; pinned snapshot is retained historical evidence, not a current Task read."
+  ],
+  "effects": {
+    "runtimeMutations": 0,
+    "taskMutations": 0,
+    "conditionMutations": 0,
+    "requestsSubmitted": 0,
+    "frontierEdits": 0,
+    "migrationReceiptEdits": 0,
+    "deployments": 0
+  }
+}

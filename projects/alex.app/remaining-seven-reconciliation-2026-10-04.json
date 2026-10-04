@@ -1,0 +1,2194 @@
+{
+  "kind": "alex-final-seven-independent-reconciliation",
+  "version": 1,
+  "recordedAt": "2026-10-04T15:57:46.658168+00:00",
+  "sessionId": "s_1791129154632_c0f26114-9430-423c-a1d9-7c5870c20703",
+  "caller": {
+    "appId": "alex",
+    "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452"
+  },
+  "scope": {
+    "selectedDisposition": "inspect-current-evidence-for-alex-continuation",
+    "count": 7,
+    "grouping": "Seven distinct judgments. Shared May transport may carry separate decisions; no semantic merger of releases, cleanup, research, credentials or supervision.",
+    "recommendationCounts": {
+      "May/human creator disposition": 6,
+      "already covered by an exact existing current Task": 1,
+      "current Alex technical continuation": 0,
+      "superseded-unfulfilled": 0
+    },
+    "legacyFulfilledCount": 0
+  },
+  "source": {
+    "appsWorktree": "/app/worktrees/alex/input-app_7a279469-7ac8-4bec-894a-9314635bd452-a882250576",
+    "appsHead": "821b70d09db29be07dcc40235110391711a9a206",
+    "hostHead": "87fbffc82371a80d3c7729586bae06106a265a80",
+    "installedDefinitionAtSessionStart": "587fe60510db351d0752072b370217655521be13-definitions-v4",
+    "snapshotCapturedAt": "2026-10-04T12:13:38.821491+00:00",
+    "currentCandidate": null,
+    "implementationDiff": null
+  },
+  "authority": {
+    "recommendationsOnly": true,
+    "frontierEdited": false,
+    "receiptEdited": false,
+    "runtimeMutated": false,
+    "candidateActivated": false,
+    "replayPerformed": false,
+    "liveProviderCanaryRun": false,
+    "taskOrConditionMutation": false
+  },
+  "entries": [
+    {
+      "identity": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_168e5c676b765172deaf1dcc",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "approval-may-agent-handler-race-repair-deploy-50e4cc0d"
+        ]
+      },
+      "fullOutcome": "Safely reconcile the overlapping Host checkout edits, integrate both verified feedback-projection race repairs, obtain required activation authority, deploy through the supported Host operation, and prove the latest aks-explorer projection converges truthfully.",
+      "retainedRow": {
+        "app_id": "may-agent",
+        "task_id": "app-request/appdep_168e5c676b765172deaf1dcc",
+        "generation": 1,
+        "resource_version": 11,
+        "phase": "waiting",
+        "updated_at": 1787766410470,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 1,
+            "id": "app-request/appdep_168e5c676b765172deaf1dcc",
+            "resourceVersion": 11
+          },
+          "spec": {
+            "acceptance": [
+              "The activated source contains the reviewed behavior from f5069492c0f11173a0f533c86a223e864b5ebfe9 and 07ae642ec608cad62019f43b5d050f9c0ca48068, or reviewed rebased equivalents, without overwriting concurrent work.",
+              "Focused race coverage and the full responsible-project check pass on the integrated source.",
+              "A correlated deploy receipt succeeds with matching sourceCommit, loadedArtifactSha equal to artifactSha, healthy status, and duplicateDeploy=false; all long-lived services and readiness are healthy.",
+              "True post-claim supersession produces a stale disposition without handler.failed or controller retry while newer-generation fencing remains intact.",
+              "The newest aks-explorer generation dispatches evaluation-feedback-projection and reaches a current terminal projection.",
+              "For the latest non-actionable evaluation, owner/last-eval.md is absent and verified projection state matches that evaluation.",
+              "No duplicate owner or human delivery occurs."
+            ],
+            "input": {
+              "data": {
+                "acceptance": [
+                  "The activated source contains the reviewed behavior from f5069492c0f11173a0f533c86a223e864b5ebfe9 and 07ae642ec608cad62019f43b5d050f9c0ca48068, or reviewed rebased equivalents, without overwriting concurrent work.",
+                  "Focused race coverage and the full responsible-project check pass on the integrated source.",
+                  "A correlated deploy receipt succeeds with matching sourceCommit, loadedArtifactSha equal to artifactSha, healthy status, and duplicateDeploy=false; all long-lived services and readiness are healthy.",
+                  "True post-claim supersession produces a stale disposition without handler.failed or controller retry while newer-generation fencing remains intact.",
+                  "The newest aks-explorer generation dispatches evaluation-feedback-projection and reaches a current terminal projection.",
+                  "For the latest non-actionable evaluation, owner/last-eval.md is absent and verified projection state matches that evaluation.",
+                  "No duplicate owner or human delivery occurs."
+                ],
+                "constraints": [
+                  "Preserve concurrent checkout work; do not overwrite, stash, reset, or rewrite it.",
+                  "Do not rewrite immutable receipts or mutate runtime databases.",
+                  "Do not suppress genuine handler failures.",
+                  "Use the supported authorized deployment path and one correlated activation lineage."
+                ],
+                "evidence": [
+                  "dependency:appdep_e8ecef376014257067f96b9e",
+                  "report:/app/projects/may-agent/evidence/runtime-repair-handler-session-failure-storm-20260826.md",
+                  "commit:f5069492c0f11173a0f533c86a223e864b5ebfe9",
+                  "commit:07ae642ec608cad62019f43b5d050f9c0ca48068",
+                  "rebased-commit:7343147a",
+                  "rebased-commit:b861419e",
+                  "task:evaluation/runtime/evaluation-feedback/aks-explorer@g996",
+                  "latest-evaluation:s_1787735600977_552"
+                ],
+                "outcome": "Safely reconcile the overlapping Host checkout edits, integrate both verified feedback-projection race repairs, obtain required activation authority, deploy through the supported Host operation, and prove the latest aks-explorer projection converges truthfully."
+              },
+              "kind": "runtime-capability-request"
+            },
+            "mode": "achieve",
+            "outcome": "Safely reconcile the overlapping Host checkout edits, integrate both verified feedback-projection race repairs, obtain required activation authority, deploy through the supported Host operation, and prove the latest aks-explorer projection converges truthfully.",
+            "owner": "may",
+            "parentId": "platform-system-review-feedback-loop",
+            "priority": "P1"
+          },
+          "status": {
+            "conditionIds": [
+              "approval-may-agent-handler-race-repair-deploy-50e4cc0d"
+            ],
+            "evidence": [
+              "task:app-request/appdep_168e5c676b765172deaf1dcc@g1",
+              "condition:approval-may-agent-handler-race-repair-deploy-50e4cc0d",
+              "dependency:appdep_e38082da36fc3df68bf18a1f",
+              "commit:50e4cc0de89715610c7d60dfdb1d4da4bc98d180",
+              "tests:188-pass-0-fail",
+              "check:tsc-noEmit-pass",
+              "report:/app/projects/may-agent/evidence/runtime-repair-handler-session-failure-storm-20260826.md",
+              "checkpoint:1"
+            ],
+            "observedAttemptId": "r_1_e1132e40-13e8-4423-a451-5bcab4507165",
+            "observedGeneration": 1,
+            "phase": "waiting",
+            "result": {
+              "decision": "pending-human-approval",
+              "decisionRequestId": "appdep_e38082da36fc3df68bf18a1f",
+              "productionChanged": false,
+              "sourceCommit": "50e4cc0de89715610c7d60dfdb1d4da4bc98d180",
+              "verifiedChecks": [
+                "188 focused tests passed with 0 failures",
+                "TypeScript no-emit check passed"
+              ]
+            },
+            "summary": "Verified integrated source commit 50e4cc0de89715610c7d60dfdb1d4da4bc98d180 is ready, with 188 focused tests and the TypeScript no-emit check passing. Production is unchanged, and the same Task now waits on Hao’s exact activation decision before deployment and terminal aks-explorer projection proof can proceed.",
+            "updatedAt": "2026-08-26T17:46:50.470Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "indexRow": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_168e5c676b765172deaf1dcc",
+        "generation": 1,
+        "phase": "waiting",
+        "owner": "may",
+        "outcome": "Safely reconcile the overlapping Host checkout edits, integrate both verified feedback-projection race repairs, obtain required activation authority, deploy through the supported Host operation, and prove the latest aks-explorer projection converges truthfully.",
+        "acceptance": [
+          "The activated source contains the reviewed behavior from f5069492c0f11173a0f533c86a223e864b5ebfe9 and 07ae642ec608cad62019f43b5d050f9c0ca48068, or reviewed rebased equivalents, without overwriting concurrent work.",
+          "Focused race coverage and the full responsible-project check pass on the integrated source.",
+          "A correlated deploy receipt succeeds with matching sourceCommit, loadedArtifactSha equal to artifactSha, healthy status, and duplicateDeploy=false; all long-lived services and readiness are healthy.",
+          "True post-claim supersession produces a stale disposition without handler.failed or controller retry while newer-generation fencing remains intact.",
+          "The newest aks-explorer generation dispatches evaluation-feedback-projection and reaches a current terminal projection.",
+          "For the latest non-actionable evaluation, owner/last-eval.md is absent and verified projection state matches that evaluation.",
+          "No duplicate owner or human delivery occurs."
+        ],
+        "summary": "Verified integrated source commit 50e4cc0de89715610c7d60dfdb1d4da4bc98d180 is ready, with 188 focused tests and the TypeScript no-emit check passing. Production is unchanged, and the same Task now waits on Hao’s exact activation decision before deployment and terminal aks-explorer projection proof can proceed.",
+        "conditionIds": [
+          "approval-may-agent-handler-race-repair-deploy-50e4cc0d"
+        ]
+      },
+      "frontierAtInspection": {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "app-request/appdep_168e5c676b765172deaf1dcc",
+          "generation": 1,
+          "phase": "waiting",
+          "owner": "may",
+          "conditionIds": [
+            "approval-may-agent-handler-race-repair-deploy-50e4cc0d"
+          ]
+        },
+        "outcome": "Safely reconcile the overlapping Host checkout edits, integrate both verified feedback-projection race repairs, obtain required activation authority, deploy through the supported Host operation, and prove the latest aks-explorer projection converges truthfully.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      "directRelationships": [
+        {
+          "app_id": "may-agent",
+          "source_task_id": "app-request/appdep_168e5c676b765172deaf1dcc",
+          "relation_kind": "parent",
+          "target_task_id": "platform-system-review-feedback-loop"
+        }
+      ],
+      "directConditions": [
+        {
+          "app_id": "may-agent",
+          "condition_id": "approval-may-agent-handler-race-repair-deploy-50e4cc0d",
+          "state": "unknown",
+          "condition_json": "{\"metadata\":{\"generation\":1,\"id\":\"approval-may-agent-handler-race-repair-deploy-50e4cc0d\",\"resourceVersion\":2},\"spec\":{\"expected\":{\"decision\":\"approve-or-reject\",\"sourceCommit\":\"50e4cc0de89715610c7d60dfdb1d4da4bc98d180\"},\"owner\":\"Hao\",\"requestedAction\":\"Reply approve to authorize the correlated production deploy and supervised service restart, or reject to keep production unchanged.\",\"reviewAfterMs\":60000,\"subject\":\"approval:may-agent-handler-race-repair-deploy-50e4cc0d-20260826\",\"type\":\"human.approval\"},\"status\":{\"createdAt\":\"2026-08-26T17:38:50.779Z\",\"observedAt\":\"2026-08-26T17:46:50.470Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}"
+        }
+      ],
+      "relatedConditions": [],
+      "retainedInputs": [
+        {
+          "id": "appdep_168e5c676b765172deaf1dcc",
+          "app_id": "may-agent",
+          "parent_id": null,
+          "conversation_id": null,
+          "conversation_seq": null,
+          "channel": null,
+          "channel_thread_id": null,
+          "channel_message_id": null,
+          "reply_to_source_id": null,
+          "source_kind": "app",
+          "source_id": "evaluation",
+          "input_kind": "runtime-capability-request",
+          "input_data": "{\"outcome\":\"Safely reconcile the overlapping Host checkout edits, integrate both verified feedback-projection race repairs, obtain required activation authority, deploy through the supported Host operation, and prove the latest aks-explorer projection converges truthfully.\",\"acceptance\":[\"The activated source contains the reviewed behavior from f5069492c0f11173a0f533c86a223e864b5ebfe9 and 07ae642ec608cad62019f43b5d050f9c0ca48068, or reviewed rebased equivalents, without overwriting concurrent work.\",\"Focused race coverage and the full responsible-project check pass on the integrated source.\",\"A correlated deploy receipt succeeds with matching sourceCommit, loadedArtifactSha equal to artifactSha, healthy status, and duplicateDeploy=false; all long-lived services and readiness are healthy.\",\"True post-claim supersession produces a stale disposition without handler.failed or controller retry while newer-generation fencing remains intact.\",\"The newest aks-explorer generation dispatches evaluation-feedback-projection and reaches a current terminal projection.\",\"For the latest non-actionable evaluation, owner/last-eval.md is absent and verified projection state matches that evaluation.\",\"No duplicate owner or human delivery occurs.\"],\"constraints\":[\"Preserve concurrent checkout work; do not overwrite, stash, reset, or rewrite it.\",\"Do not rewrite immutable receipts or mutate runtime databases.\",\"Do not suppress genuine handler failures.\",\"Use the supported authorized deployment path and one correlated activation lineage.\"],\"evidence\":[\"dependency:appdep_e8ecef376014257067f96b9e\",\"report:/app/projects/may-agent/evidence/runtime-repair-handler-session-failure-storm-20260826.md\",\"commit:f5069492c0f11173a0f533c86a223e864b5ebfe9\",\"commit:07ae642ec608cad62019f43b5d050f9c0ca48068\",\"rebased-commit:7343147a\",\"rebased-commit:b861419e\",\"task:evaluation/runtime/evaluation-feedback/aks-explorer@g996\",\"latest-evaluation:s_1787735600977_552\"]}",
+          "status": "handling",
+          "session_id": null,
+          "waiting_on_kind": "task",
+          "waiting_on_id": "app-request/appdep_168e5c676b765172deaf1dcc",
+          "result": null,
+          "available_at": 1789026733013,
+          "review_at": null,
+          "lease_generation": 5,
+          "lease_owner": null,
+          "lease_expires_at": null,
+          "origin_event_id": 6185435,
+          "idempotency_key": "task-dependency:evaluation:evaluation/repair-stale-feedback-projection-retries:2:activate-evaluation-feedback-projection-repair-20260826:168e5c676b765172deaf1dcc",
+          "created_at": 1787763246514,
+          "updated_at": 1789026733013,
+          "completed_at": null,
+          "channel_target_id": null,
+          "continues_request_id": null,
+          "started_at": 1787763295421,
+          "changed_at": 1787892035803,
+          "target_task_id": null,
+          "topic_id": null,
+          "handling": null,
+          "task_admission_key": null,
+          "execution_task_id": null,
+          "creator_json": null,
+          "recovery_json": null
+        }
+      ],
+      "legacyOutcomeFulfilled": false,
+      "executionPath": "obsolete historical path; no replay/activation authority",
+      "recommendation": "May/human creator disposition",
+      "group": "feedback-projection-race",
+      "acceptedProgress": [
+        "Retained accepted result pins integrated candidate 50e4cc0de89715610c7d60dfdb1d4da4bc98d180, 188 focused passes and TypeScript pass; those old checks are attributed, not rerun.",
+        "Recovered handler-failure-storm-50e4cc0d-20260826 receipt proves succeeded/healthy, requested=loaded artifact 4e9633e39ca80f329733f4d9fd4134382cd8906a698a52034e9ba6f3a040727c and duplicateDeploy=false. Its task is ops/repair-handler-failure-storm-2026-08-26, not this exact requester, and its 17:13 completion precedes the 17:38 approval Condition. This falsifies a blanket never-deployed claim but does not establish authorization or requester completion."
+      ],
+      "missingProof": [
+        "Exact approval decision and authoritative correlation to this requester remain unproved; do not infer approval from a deploy receipt.",
+        "No recovered exact generation-996/latest-evaluation s_1787735600977_552 terminal projection, last-eval removal proof, all-service readiness or no-duplicate owner/human delivery.",
+        "Original report path unavailable; 50e4cc0d is not an ancestor of current inspected Host HEAD."
+      ],
+      "currentUsefulness": "Modern fencing and migrated feedback semantics remain useful and focused tests pass. Alex has the projection workflow source, but its App entrypoint uses immutable report intake and does not declare the old Evaluation feedback controller. No present failing enabled-App trace justifies resurrecting aks-explorer g996 or activating 50e4cc0d.",
+      "nextAction": "May should reconcile this exact unknown approval and Evaluation caller return against the recovered receipt; preferably withdraw the obsolete exact execution promise unfulfilled if no current caller contract survives. Never redeploy to repair the historical narrative.",
+      "evidence": [
+        "race-deploy",
+        "host-race-tests",
+        "app-tests",
+        "host-parent-source",
+        "alex-app-source"
+      ]
+    },
+    {
+      "identity": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_5c5f2e0a694278198136a42d",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "fullOutcome": "Adjudicate and settle the existing evaluator immutable-release deployment request for correlation evaluation-envelope-repair-f493c9e5325b-20260816T0923Z. If it has not run, publish the exact committed revision as a fresh immutable App release and perform the required host-side recreate exactly once; if it has run, recover and return the authoritative correlated terminal evidence. Do not create a duplicate deployment request.",
+      "retainedRow": {
+        "app_id": "may-agent",
+        "task_id": "app-request/appdep_5c5f2e0a694278198136a42d",
+        "generation": 1,
+        "resource_version": 14,
+        "phase": "attention",
+        "updated_at": 1787891751047,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 1,
+            "id": "app-request/appdep_5c5f2e0a694278198136a42d",
+            "resourceVersion": 14
+          },
+          "spec": {
+            "acceptance": [
+              "Preserve and settle the existing correlation and request identity; do not issue or execute a duplicate deployment.",
+              "Create /app/.state/releases/apps/f493c9e5325b61289fbbd1460b438f633ca5361b from the exact committed source without mutating old release 0d311f9f27718ac431b51caabf53d77e1caabb16.",
+              "Perform the host-side container recreate exactly once through may-agent platform authority; do not substitute a supervisor restart.",
+              "Write a terminal receipt at /app/projects/may-agent/.state/deploy-receipts/evaluation-envelope-repair-f493c9e5325b-20260816T0923Z.json proving success, healthy state, matching source/artifact identity, targetedWake=true, and duplicateDeploy=false.",
+              "Prove the loaded /app/projects/evaluation.app mount names the f493c9e5325b61289fbbd1460b438f633ca5361b immutable release and is read-only.",
+              "Return exact artifact and receipt paths plus the loaded mount evidence to evaluation."
+            ],
+            "input": {
+              "data": {
+                "acceptance": [
+                  "Preserve and settle the existing correlation and request identity; do not issue or execute a duplicate deployment.",
+                  "Create /app/.state/releases/apps/f493c9e5325b61289fbbd1460b438f633ca5361b from the exact committed source without mutating old release 0d311f9f27718ac431b51caabf53d77e1caabb16.",
+                  "Perform the host-side container recreate exactly once through may-agent platform authority; do not substitute a supervisor restart.",
+                  "Write a terminal receipt at /app/projects/may-agent/.state/deploy-receipts/evaluation-envelope-repair-f493c9e5325b-20260816T0923Z.json proving success, healthy state, matching source/artifact identity, targetedWake=true, and duplicateDeploy=false.",
+                  "Prove the loaded /app/projects/evaluation.app mount names the f493c9e5325b61289fbbd1460b438f633ca5361b immutable release and is read-only.",
+                  "Return exact artifact and receipt paths plus the loaded mount evidence to evaluation."
+                ],
+                "constraints": [
+                  "Do not edit /app/projects/evaluation.app, the old immutable release, or the clean repair worktree.",
+                  "Treat publish-evaluator-envelope-repair-immutable-release-20260816 and deploy-evaluator-envelope-repair-writable-20260816 as historical only; do not update, unblock, or reuse them.",
+                  "Do not replay session s_1786869386645_0; evaluation already holds successful exact replay evidence and must not duplicate the replay.",
+                  "Do not route this through the may conversation App or direct-message agent may."
+                ],
+                "currentEvidence": {
+                  "baselineRevision": "0d311f9f27718ac431b51caabf53d77e1caabb16",
+                  "composeArtifact": "/app/.state/releases/deploy/evaluation-envelope-repair-f493c9e5325b-20260816T0923Z/compose.evaluation-envelope-repair.yml",
+                  "correlation": "evaluation-envelope-repair-f493c9e5325b-20260816T0923Z",
+                  "currentMount": {
+                    "options": "rw,relatime,discard,errors=remount-ro,data=ordered",
+                    "source": "/dev/sdd[/app]",
+                    "target": "/app"
+                  },
+                  "existingInboxItemId": "app_73a7b7b6-911b-4212-ba4e-932bc886bfd0",
+                  "existingRequestEventId": 5706343,
+                  "expectedReceipt": "/app/projects/may-agent/.state/deploy-receipts/evaluation-envelope-repair-f493c9e5325b-20260816T0923Z.json",
+                  "expectedRelease": "/app/.state/releases/apps/f493c9e5325b61289fbbd1460b438f633ca5361b",
+                  "priorRecoveryObservation": "Task restore-platform-owner-review-and-settle-evaluator-deploy-20260816 is unknown; its input was not applied.",
+                  "receiptCurrentlyPresent": false,
+                  "releaseCurrentlyPresent": false,
+                  "requestArtifact": "/app/.state/releases/deploy/evaluation-envelope-repair-f493c9e5325b-20260816T0923Z/request.json",
+                  "requestingApp": "evaluation",
+                  "requestingTaskId": "renew-evaluator-envelope-repair-immutable-release-20260816",
+                  "sourceRevision": "f493c9e5325b61289fbbd1460b438f633ca5361b"
+                },
+                "outcome": "Adjudicate and settle the existing evaluator immutable-release deployment request for correlation evaluation-envelope-repair-f493c9e5325b-20260816T0923Z. If it has not run, publish the exact committed revision as a fresh immutable App release and perform the required host-side recreate exactly once; if it has run, recover and return the authoritative correlated terminal evidence. Do not create a duplicate deployment request."
+              },
+              "kind": "runtime-deployment.adjudicate-current-host-state"
+            },
+            "mode": "achieve",
+            "outcome": "Adjudicate and settle the existing evaluator immutable-release deployment request for correlation evaluation-envelope-repair-f493c9e5325b-20260816T0923Z. If it has not run, publish the exact committed revision as a fresh immutable App release and perform the required host-side recreate exactly once; if it has run, recover and return the authoritative correlated terminal evidence. Do not create a duplicate deployment request.",
+            "owner": "may",
+            "parentId": "platform-system-review-feedback-loop",
+            "priority": "P1"
+          },
+          "status": {
+            "conditionIds": [],
+            "evidence": [
+              "Exact immutable release directory is present.",
+              "Exact correlated terminal receipt is absent.",
+              "Current loaded mount evidence is writable and does not yet name the immutable release.",
+              "Existing condition identity is evaluation-envelope-repair-f493c9e5325b-host-recreate."
+            ],
+            "observedGeneration": 1,
+            "phase": "attention",
+            "result": {
+              "composeArtifact": "/app/.state/releases/deploy/evaluation-envelope-repair-f493c9e5325b-20260816T0923Z/compose.evaluation-envelope-repair.yml",
+              "correlation": "evaluation-envelope-repair-f493c9e5325b-20260816T0923Z",
+              "currentLoadedMount": {
+                "options": "rw,relatime,discard,errors=remount-ro,data=ordered",
+                "source": "/dev/sdd[/app]",
+                "target": "/app"
+              },
+              "decision": "wait-for-existing-host-recreate",
+              "duplicateDeploymentIssued": false,
+              "receiptPath": "/app/projects/may-agent/.state/deploy-receipts/evaluation-envelope-repair-f493c9e5325b-20260816T0923Z.json",
+              "receiptPresent": false,
+              "releasePath": "/app/.state/releases/apps/f493c9e5325b61289fbbd1460b438f633ca5361b",
+              "releasePresent": true,
+              "sourceRevision": "f493c9e5325b61289fbbd1460b438f633ca5361b"
+            },
+            "summary": "Resolved agent may is not a runnable agent",
+            "updatedAt": "2026-08-28T04:35:51.047Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "indexRow": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_5c5f2e0a694278198136a42d",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "outcome": "Adjudicate and settle the existing evaluator immutable-release deployment request for correlation evaluation-envelope-repair-f493c9e5325b-20260816T0923Z. If it has not run, publish the exact committed revision as a fresh immutable App release and perform the required host-side recreate exactly once; if it has run, recover and return the authoritative correlated terminal evidence. Do not create a duplicate deployment request.",
+        "acceptance": [
+          "Preserve and settle the existing correlation and request identity; do not issue or execute a duplicate deployment.",
+          "Create /app/.state/releases/apps/f493c9e5325b61289fbbd1460b438f633ca5361b from the exact committed source without mutating old release 0d311f9f27718ac431b51caabf53d77e1caabb16.",
+          "Perform the host-side container recreate exactly once through may-agent platform authority; do not substitute a supervisor restart.",
+          "Write a terminal receipt at /app/projects/may-agent/.state/deploy-receipts/evaluation-envelope-repair-f493c9e5325b-20260816T0923Z.json proving success, healthy state, matching source/artifact identity, targetedWake=true, and duplicateDeploy=false.",
+          "Prove the loaded /app/projects/evaluation.app mount names the f493c9e5325b61289fbbd1460b438f633ca5361b immutable release and is read-only.",
+          "Return exact artifact and receipt paths plus the loaded mount evidence to evaluation."
+        ],
+        "summary": "Resolved agent may is not a runnable agent",
+        "conditionIds": []
+      },
+      "frontierAtInspection": {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "app-request/appdep_5c5f2e0a694278198136a42d",
+          "generation": 1,
+          "phase": "attention",
+          "owner": "may",
+          "conditionIds": []
+        },
+        "outcome": "Adjudicate and settle the existing evaluator immutable-release deployment request for correlation evaluation-envelope-repair-f493c9e5325b-20260816T0923Z. If it has not run, publish the exact committed revision as a fresh immutable App release and perform the required host-side recreate exactly once; if it has run, recover and return the authoritative correlated terminal evidence. Do not create a duplicate deployment request.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      "directRelationships": [
+        {
+          "app_id": "may-agent",
+          "source_task_id": "app-request/appdep_5c5f2e0a694278198136a42d",
+          "relation_kind": "parent",
+          "target_task_id": "platform-system-review-feedback-loop"
+        }
+      ],
+      "directConditions": [],
+      "relatedConditions": [
+        {
+          "binding": "related or referenced only; do not fabricate direct Task binding",
+          "row": {
+            "app_id": "may-agent",
+            "condition_id": "evaluation-envelope-repair-f493c9e5325b-host-recreate",
+            "state": "unknown",
+            "condition_json": "{\"metadata\":{\"generation\":2,\"id\":\"evaluation-envelope-repair-f493c9e5325b-host-recreate\",\"resourceVersion\":3},\"spec\":{\"expected\":{\"correlation\":\"evaluation-envelope-repair-f493c9e5325b-20260816T0923Z\",\"duplicateDeploy\":false,\"health\":\"healthy\",\"loadedEvaluationAppRelease\":\"f493c9e5325b61289fbbd1460b438f633ca5361b\",\"phase\":\"succeeded\",\"readOnly\":true,\"sourceRevision\":\"f493c9e5325b61289fbbd1460b438f633ca5361b\",\"targetedWake\":true},\"owner\":\"may-agent platform authority\",\"requestedAction\":\"Use may-agent platform authority to perform the already-requested host-side container recreate exactly once with the supplied compose artifact, write the exact correlated terminal receipt, and publish the condition observation. Do not republish the existing release, create a duplicate deployment request, or substitute a supervisor restart.\",\"subject\":\"deployment:evaluation-envelope-repair-f493c9e5325b-20260816T0923Z\",\"type\":\"platform-operation\"},\"status\":{\"createdAt\":\"2026-08-25T08:17:20.381Z\",\"observedAt\":\"2026-08-25T08:17:20.381Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}"
+          }
+        }
+      ],
+      "retainedInputs": [],
+      "legacyOutcomeFulfilled": false,
+      "executionPath": "obsolete historical path; no replay/activation authority",
+      "recommendation": "May/human creator disposition",
+      "group": "evaluator-immutable-release",
+      "acceptedProgress": [
+        "Exact immutable f493c9e5325b61289fbbd1460b438f633ca5361b release directory and original request.json exist.",
+        "A different correlation, evaluation-envelope-repair-f493c9e5325b-20260819T1103Z, has a terminal FAILED receipt: compatibility-preflight-failed, activationAttempted=false, requestedReleaseActive=false, writable mount. It records targetedWake=true and healthy existing runtime, not successful activation."
+      ],
+      "missingProof": [
+        "Original evaluation-envelope-repair-f493c9e5325b-20260816T0923Z terminal receipt remains absent at its exact required path.",
+        "Exactly-once recreate, read-only loaded requested release, matching loaded identity and exact terminal return to renew-evaluator-envelope-repair-immutable-release-20260816 remain unproved."
+      ],
+      "currentUsefulness": "Evaluation is retired and useful review implementation is under Alex. The old SDK incompatibility and f493 mount procedure are obsolete execution paths; current review tests cannot retroactively fulfill them. Failed later correlation cannot settle the original request.",
+      "nextAction": "May should return explicit obsolete/unfulfilled disposition for the original correlation and creator/caller commitment, preserving the independent unbound host-recreate Condition. Do not republish, recreate, replay the already-proved s_1786869386645_0, or use the failed later receipt as success.",
+      "evidence": [
+        "evaluator-request",
+        "evaluator-failed-other-correlation",
+        "app-tests",
+        "alex-app-source"
+      ]
+    },
+    {
+      "identity": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_a5e1a4e921f4678cc70fd320",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "fullOutcome": "Fingerprint and activate the Gym-owned candidate at /app/projects/gym/.state/candidates/repair-stable-localkey-review-proposal-emission, then freshly wake or replay exact preserved task runtime/review-proposal/incident-s_1787442962045_6-d98694f90add3f99 through the same review-and-propose path to terminal done; persist public proof artifacts and refresh Gym validity metrics.",
+      "retainedRow": {
+        "app_id": "may-agent",
+        "task_id": "app-request/appdep_a5e1a4e921f4678cc70fd320",
+        "generation": 1,
+        "resource_version": 21,
+        "phase": "attention",
+        "updated_at": 1787891752543,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 1,
+            "id": "app-request/appdep_a5e1a4e921f4678cc70fd320",
+            "resourceVersion": 21
+          },
+          "spec": {
+            "acceptance": [
+              "Record a deterministic fingerprint for the candidate and activate that exact artifact without modifying May source, benchmark truth, labels, historical runs, or adjudications.",
+              "Replay or freshly wake exact task runtime/review-proposal/incident-s_1787442962045_6-d98694f90add3f99 through review-and-propose and return the exact new workflow identity with terminal status done and no `Task-owned workflow events require a stable localKey` error or reason.",
+              "Persist terminal public reconciliation evidence under /app/projects/gym/.state/proofs/stable-localkey-review-proposal-emission naming the review proposal Markdown and decision JSON artifact paths.",
+              "After terminal proof, refresh Gym metrics and persist a timestamped sample demonstrating gym.valid-run-rate >= 0.95; report unrelated regressions separately without weakening the localKey proof."
+            ],
+            "input": {
+              "data": {
+                "acceptance": [
+                  "Record a deterministic fingerprint for the candidate and activate that exact artifact without modifying May source, benchmark truth, labels, historical runs, or adjudications.",
+                  "Replay or freshly wake exact task runtime/review-proposal/incident-s_1787442962045_6-d98694f90add3f99 through review-and-propose and return the exact new workflow identity with terminal status done and no `Task-owned workflow events require a stable localKey` error or reason.",
+                  "Persist terminal public reconciliation evidence under /app/projects/gym/.state/proofs/stable-localkey-review-proposal-emission naming the review proposal Markdown and decision JSON artifact paths.",
+                  "After terminal proof, refresh Gym metrics and persist a timestamped sample demonstrating gym.valid-run-rate >= 0.95; report unrelated regressions separately without weakening the localKey proof."
+                ],
+                "constraints": [
+                  "Do not create, update, close, or unblock any runtime/* task directly; use the authoritative runtime replay/wake path.",
+                  "Do not modify May.",
+                  "Do not modify approved benchmark cases, benchmark truth, labels, historical run evidence, or historical adjudications.",
+                  "Do not rewrite historical runs wr_1787443117728_94i0, wr_1787439446986_m4lt, or wr_1787438959746_you7.",
+                  "Preserve the exact new workflow identity and durable terminal evidence rather than relying on compile/test results alone."
+                ],
+                "evidence": [
+                  "Candidate source-level receipt on repair/stable-localkey-review-proposal-emission@g1 records 8 focused tests passed, TypeScript success, and four bundled modules.",
+                  "Exact preserved incident currently remains attention with the prior stable-localKey error.",
+                  "Required proof directory is currently absent."
+                ],
+                "outcome": "Fingerprint and activate the Gym-owned candidate at /app/projects/gym/.state/candidates/repair-stable-localkey-review-proposal-emission, then freshly wake or replay exact preserved task runtime/review-proposal/incident-s_1787442962045_6-d98694f90add3f99 through the same review-and-propose path to terminal done; persist public proof artifacts and refresh Gym validity metrics."
+              },
+              "kind": "runtime-capability-request"
+            },
+            "mode": "achieve",
+            "outcome": "Fingerprint and activate the Gym-owned candidate at /app/projects/gym/.state/candidates/repair-stable-localkey-review-proposal-emission, then freshly wake or replay exact preserved task runtime/review-proposal/incident-s_1787442962045_6-d98694f90add3f99 through the same review-and-propose path to terminal done; persist public proof artifacts and refresh Gym validity metrics.",
+            "owner": "may",
+            "parentId": "platform-system-review-feedback-loop",
+            "priority": "P1"
+          },
+          "status": {
+            "conditionIds": [],
+            "evidence": [
+              "activation.json records fingerprint sha256:765d5999dd5d90e5cc5f53a00a6b930e6809bf19715c5f47aa8069a6f3e19013 and protected-source constraints.",
+              "Fresh sha256 verification matched all four activated module hashes in the activation manifest.",
+              "Workflow run /app/.state/workflow-runs/wr_1787639781567_kqyx/run.json reports status done and exact task binding runtime/review-proposal/incident-s_1787442962045_6-d98694f90add3f99.",
+              "terminal-reconciliation.json records postStartStableLocalKeyErrorCount 0 and names the review Markdown and decision JSON paths.",
+              "The runtime metrics query returned gym.valid-run-rate current 0.7575757575757576, threshold 0.95, updated_at 1787603397719."
+            ],
+            "observedGeneration": 1,
+            "phase": "attention",
+            "result": {
+              "candidateFingerprint": "sha256:765d5999dd5d90e5cc5f53a00a6b930e6809bf19715c5f47aa8069a6f3e19013",
+              "decision": "wait-for-fresh-passing-gym-valid-run-rate-sample",
+              "decisionPath": "/app/projects/gym.app/.state/reviews/incident-s_1787442962045_6.decision.json",
+              "exactTaskId": "runtime/review-proposal/incident-s_1787442962045_6-d98694f90add3f99",
+              "metricCurrent": 0.7575757575757576,
+              "metricProofPath": "/app/projects/gym/.state/proofs/stable-localkey-review-proposal-emission/metric-refresh.json",
+              "metricThreshold": 0.95,
+              "reviewProposalPath": "/app/projects/gym.app/.state/reviews/incident-s_1787442962045_6.md",
+              "stableLocalKeyErrorCount": 0,
+              "terminalProofPath": "/app/projects/gym/.state/proofs/stable-localkey-review-proposal-emission/terminal-reconciliation.json",
+              "workflowRunId": "wr_1787639781567_kqyx",
+              "workflowStatus": "done"
+            },
+            "summary": "Resolved agent may is not a runnable agent",
+            "updatedAt": "2026-08-28T04:35:52.543Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "indexRow": {
+        "appId": "may-agent",
+        "taskId": "app-request/appdep_a5e1a4e921f4678cc70fd320",
+        "generation": 1,
+        "phase": "attention",
+        "owner": "may",
+        "outcome": "Fingerprint and activate the Gym-owned candidate at /app/projects/gym/.state/candidates/repair-stable-localkey-review-proposal-emission, then freshly wake or replay exact preserved task runtime/review-proposal/incident-s_1787442962045_6-d98694f90add3f99 through the same review-and-propose path to terminal done; persist public proof artifacts and refresh Gym validity metrics.",
+        "acceptance": [
+          "Record a deterministic fingerprint for the candidate and activate that exact artifact without modifying May source, benchmark truth, labels, historical runs, or adjudications.",
+          "Replay or freshly wake exact task runtime/review-proposal/incident-s_1787442962045_6-d98694f90add3f99 through review-and-propose and return the exact new workflow identity with terminal status done and no `Task-owned workflow events require a stable localKey` error or reason.",
+          "Persist terminal public reconciliation evidence under /app/projects/gym/.state/proofs/stable-localkey-review-proposal-emission naming the review proposal Markdown and decision JSON artifact paths.",
+          "After terminal proof, refresh Gym metrics and persist a timestamped sample demonstrating gym.valid-run-rate >= 0.95; report unrelated regressions separately without weakening the localKey proof."
+        ],
+        "summary": "Resolved agent may is not a runnable agent",
+        "conditionIds": []
+      },
+      "frontierAtInspection": {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "app-request/appdep_a5e1a4e921f4678cc70fd320",
+          "generation": 1,
+          "phase": "attention",
+          "owner": "may",
+          "conditionIds": []
+        },
+        "outcome": "Fingerprint and activate the Gym-owned candidate at /app/projects/gym/.state/candidates/repair-stable-localkey-review-proposal-emission, then freshly wake or replay exact preserved task runtime/review-proposal/incident-s_1787442962045_6-d98694f90add3f99 through the same review-and-propose path to terminal done; persist public proof artifacts and refresh Gym validity metrics.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      "directRelationships": [
+        {
+          "app_id": "may-agent",
+          "source_task_id": "app-request/appdep_a5e1a4e921f4678cc70fd320",
+          "relation_kind": "parent",
+          "target_task_id": "platform-system-review-feedback-loop"
+        }
+      ],
+      "directConditions": [],
+      "relatedConditions": [],
+      "retainedInputs": [],
+      "legacyOutcomeFulfilled": false,
+      "executionPath": "obsolete historical path; no replay/activation authority",
+      "recommendation": "already covered by an exact existing current Task",
+      "group": "gym-localkey-terminal-plus-retired-metric",
+      "acceptedProgress": [
+        "Recovered activation manifest pins candidate fingerprint sha256:765d5999dd5d90e5cc5f53a00a6b930e6809bf19715c5f47aa8069a6f3e19013 and protected-source constraints.",
+        "Exact wr_1787639781567_kqyx/run.json is done, bound to runtime/review-proposal/incident-s_1787442962045_6-d98694f90add3f99 generation 1 attempt r_1_69979979-d586-468c-b4fb-812029b8266b. Its entryContentHash matches the activation manifest.",
+        "Terminal reconciliation records zero post-start stable-localKey errors. Workflow, review Markdown and decision JSON bytes all match its three recorded SHA-256 values. This is recovered historical terminal evidence, not proof inferred from current tests.",
+        "Later 2026-08-28 supported metric refresh/readback still reported 0.76 below 0.95 and passes=false; preserve that negative evidence."
+      ],
+      "missingProof": [
+        "No passing fresh gym.valid-run-rate >=0.95 sample or full old supervisor terminal return is recovered. The old complete outcome is not fulfilled."
+      ],
+      "currentUsefulness": "The incident-specific localKey execution has real terminal proof and must not be replayed. Only the aggregate validity acceptance remains; the aggregate is now explicitly retired and current comparison workflows do not produce it. Existing May metric retirement reconciliation owns that exact current decision, not the completed incident replay.",
+      "existingCurrentTask": {
+        "appId": "may",
+        "taskId": "goal/appdep_c1890444e02436f8d2131ffd",
+        "generation": 1,
+        "resourceVersion": 21,
+        "status": "waiting",
+        "conditionId": "gym-valid-run-rate-retirement-reconcile-7cf298dd9dd55942",
+        "coverage": "Retired gym.valid-run-rate definition/disposition only. Not historical fulfillment, historical parent return, or incident replay.",
+        "observedOutcome": "Prepare the exact evidence-backed human approval proposal to retire only gym.valid-run-rate without mutating or sampling the metric."
+      },
+      "nextAction": "Link only the obsolete aggregate remainder to the exact existing May retirement Task; no new metric repair or sample. May can include this supervisor promise in a bounded creator disposition without duplicating the existing human ask. Preserve terminal localKey proof and mark the whole legacy outcome unfulfilled.",
+      "evidence": [
+        "gym-activation",
+        "gym-terminal",
+        "gym-run",
+        "gym-review",
+        "gym-decision",
+        "gym-metric-negative",
+        "retired-metric-source",
+        "current-metric-task"
+      ]
+    },
+    {
+      "identity": {
+        "appId": "may-agent",
+        "taskId": "app-request/appreq_526ff3c62357a47caecdd980",
+        "generation": 2,
+        "phase": "attention",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "fullOutcome": "Systemically review all current canonical tasks across installed Apps and clean up tasks that are proven legacy, obsolete, superseded, duplicated, or based on no-longer-valid data, while preserving valid active work and the existing Gym backlog cleanup.",
+      "retainedRow": {
+        "app_id": "may-agent",
+        "task_id": "app-request/appreq_526ff3c62357a47caecdd980",
+        "generation": 2,
+        "resource_version": 289,
+        "phase": "attention",
+        "updated_at": 1787900616861,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 2,
+            "id": "app-request/appreq_526ff3c62357a47caecdd980",
+            "resourceVersion": 289
+          },
+          "spec": {
+            "acceptance": [
+              "Review every current canonical unfinished task across installed Apps and classify it with an evidence-backed disposition: continue, wait, abandon, or requires Hao's decision.",
+              "Abandon tasks only when canonical evidence proves they are obsolete, superseded, duplicated, legacy with no remaining purpose, or founded on data that is no longer valid.",
+              "Preserve running work, valid dependency-bound work, historical evidence, benchmark truth, and tasks with unresolved but legitimate blockers.",
+              "Do not duplicate or interfere with Gym task owner-review/appreq_ee4c30f34f998b5cba46f97e-a679128f203e48cd; incorporate its known scope and leave it running.",
+              "Return final counts by App and disposition, exact identities and reasons for every abandoned task, and any smallest remaining decisions that require Hao."
+            ],
+            "input": {
+              "data": {
+                "acceptance": [
+                  "Review every current canonical unfinished task across installed Apps and classify it with an evidence-backed disposition: continue, wait, abandon, or requires Hao's decision.",
+                  "Abandon tasks only when canonical evidence proves they are obsolete, superseded, duplicated, legacy with no remaining purpose, or founded on data that is no longer valid.",
+                  "Preserve running work, valid dependency-bound work, historical evidence, benchmark truth, and tasks with unresolved but legitimate blockers.",
+                  "Do not duplicate or interfere with Gym task owner-review/appreq_ee4c30f34f998b5cba46f97e-a679128f203e48cd; incorporate its known scope and leave it running.",
+                  "Return final counts by App and disposition, exact identities and reasons for every abandoned task, and any smallest remaining decisions that require Hao."
+                ],
+                "baselineCorrection": {
+                  "aggregationRule": "Treat the historical correction as an audit fix only; use a fresh canonical identity set and phase snapshot for final counts so every current identity is represented and all running work is preserved.",
+                  "currentObservation": {
+                    "observedAt": "2026-08-25T16:32:24.617Z",
+                    "running": 8,
+                    "totalUnfinished": 2334
+                  },
+                  "findingKey": "canonical-cleanup-running-baseline-count-mismatch",
+                  "historicalSnapshot": {
+                    "provisionalDispositionCounts": {
+                      "abandon": 0,
+                      "continue": 8,
+                      "requiresHaoDecision": 0,
+                      "wait": 2262
+                    },
+                    "running": 8,
+                    "totalUnfinished": 2270
+                  },
+                  "sourceSessionId": "s_1787653392518_88",
+                  "supersededIncorrectCounts": {
+                    "continue": 6,
+                    "wait": 2264
+                  }
+                },
+                "constraints": [
+                  "Do not abandon tasks merely because they are old, pending, waiting, or in attention.",
+                  "Use the responsible App boundary for any task mutation or disposition that Host Operations does not own.",
+                  "Prefer continuing exact task identities over creating replacement cleanup tasks.",
+                  "Treat 'out of data' as 'out of date or based on invalidated data' unless evidence shows a different meaning.",
+                  "Before aggregating child and dependency reviews, recompute the full baseline from current canonical task state and preserve every running identity."
+                ],
+                "outcome": "Systemically review all current canonical tasks across installed Apps and clean up tasks that are proven legacy, obsolete, superseded, duplicated, or based on no-longer-valid data, while preserving valid active work and the existing Gym backlog cleanup."
+              },
+              "kind": "owner-review"
+            },
+            "mode": "achieve",
+            "outcome": "Systemically review all current canonical tasks across installed Apps and clean up tasks that are proven legacy, obsolete, superseded, duplicated, or based on no-longer-valid data, while preserving valid active work and the existing Gym backlog cleanup.",
+            "owner": "may",
+            "parentId": "platform-system-review-feedback-loop",
+            "priority": "P1"
+          },
+          "status": {
+            "conditionIds": [],
+            "evidence": [
+              "The supplied Task lists both App dependencies as open with status `handling`; the new event only reports that the Evaluation dependency was updated and supplies no completed dependency observation.",
+              "The supplied child summary identifies `repair-grouped-goal-task-creation-and-regeneration-20260827` as live and waiting on unresolved human decision `resume-grouped-goal-repair-after-stop`.",
+              "The supplied Task acceptance requires a fresh full canonical snapshot before final aggregation, so historical counts cannot serve as terminal proof."
+            ],
+            "lane": "human",
+            "observedAttemptId": "r_2_47a6e064-450f-46fa-875b-15e9883f1983",
+            "observedGeneration": 2,
+            "phase": "attention",
+            "summary": "Resolved agent may is not a runnable agent",
+            "updatedAt": "2026-08-28T07:03:36.861Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "indexRow": {
+        "appId": "may-agent",
+        "taskId": "app-request/appreq_526ff3c62357a47caecdd980",
+        "generation": 2,
+        "phase": "attention",
+        "owner": "may",
+        "outcome": "Systemically review all current canonical tasks across installed Apps and clean up tasks that are proven legacy, obsolete, superseded, duplicated, or based on no-longer-valid data, while preserving valid active work and the existing Gym backlog cleanup.",
+        "acceptance": [
+          "Review every current canonical unfinished task across installed Apps and classify it with an evidence-backed disposition: continue, wait, abandon, or requires Hao's decision.",
+          "Abandon tasks only when canonical evidence proves they are obsolete, superseded, duplicated, legacy with no remaining purpose, or founded on data that is no longer valid.",
+          "Preserve running work, valid dependency-bound work, historical evidence, benchmark truth, and tasks with unresolved but legitimate blockers.",
+          "Do not duplicate or interfere with Gym task owner-review/appreq_ee4c30f34f998b5cba46f97e-a679128f203e48cd; incorporate its known scope and leave it running.",
+          "Return final counts by App and disposition, exact identities and reasons for every abandoned task, and any smallest remaining decisions that require Hao."
+        ],
+        "summary": "Resolved agent may is not a runnable agent",
+        "conditionIds": []
+      },
+      "frontierAtInspection": {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "app-request/appreq_526ff3c62357a47caecdd980",
+          "generation": 2,
+          "phase": "attention",
+          "owner": "may",
+          "conditionIds": []
+        },
+        "outcome": "Systemically review all current canonical tasks across installed Apps and clean up tasks that are proven legacy, obsolete, superseded, duplicated, or based on no-longer-valid data, while preserving valid active work and the existing Gym backlog cleanup.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      "directRelationships": [
+        {
+          "app_id": "may-agent",
+          "source_task_id": "repair-grouped-goal-task-creation-and-regeneration-20260827",
+          "relation_kind": "parent",
+          "target_task_id": "app-request/appreq_526ff3c62357a47caecdd980"
+        },
+        {
+          "app_id": "may-agent",
+          "source_task_id": "app-request/appreq_526ff3c62357a47caecdd980",
+          "relation_kind": "parent",
+          "target_task_id": "platform-system-review-feedback-loop"
+        }
+      ],
+      "directConditions": [],
+      "relatedConditions": [
+        {
+          "binding": "related or referenced only; do not fabricate direct Task binding",
+          "row": {
+            "app_id": "may-agent",
+            "condition_id": "resume-grouped-goal-repair-after-stop",
+            "state": "unknown",
+            "condition_json": "{\"metadata\":{\"generation\":3,\"id\":\"resume-grouped-goal-repair-after-stop\",\"resourceVersion\":42},\"spec\":{\"expected\":\"Hao explicitly approves resuming the grouped-goal task-creation repair.\",\"owner\":\"Hao\",\"requestedAction\":\"Approve or reject resuming the existing grouped-goal repair Task after the prior stop.\",\"reviewAfterMs\":86400000,\"subject\":\"human-decision:grouped-goal-repair-completion\",\"type\":\"human-decision\"},\"status\":{\"createdAt\":\"2026-08-28T00:39:08.393Z\",\"observedAt\":\"2026-08-28T00:39:08.393Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}"
+          }
+        }
+      ],
+      "retainedInputs": [],
+      "legacyOutcomeFulfilled": false,
+      "executionPath": "obsolete historical path; no replay/activation authority",
+      "recommendation": "May/human creator disposition",
+      "group": "cross-app-cleanup",
+      "acceptedProgress": [
+        "Retained generation-2 correction fixes the historical baseline to 8 running / 2270 unfinished (not 6 running); later 2334 observation is separately retained. Final aggregation explicitly requires a new canonical identity set.",
+        "Existing migration Task already owns the bounded retained 117-resource / pending-input reconciliation, and current May hygiene owns May Tasks plus Hao /todo. Grouped-goal stop was withdrawn unfulfilled in the receipt under goal/appdep_bc9a845ad126f8632071584a."
+      ],
+      "missingProof": [
+        "No full fresh all-installed-App inventory, completed Evaluation/Gym dependency returns, final counts and exact abandonments meeting this broad historical acceptance.",
+        "May hygiene scope is May-only and the migration inventory has its own cutover scope: neither is an exact full replacement for review-every-current-task across installed Apps."
+      ],
+      "currentUsefulness": "Avoid another global cleanup controller. Useful legacy reconciliation is already being performed by the assigning migration Task; ongoing May hygiene is independently owned. The original broad promise needs creator narrowing or withdrawal, not fabricated completion or historical counts presented as current.",
+      "nextAction": "May should disposition the residual broad promise using this migration evidence and existing May hygiene, explicitly preserving Gym owner-review/appreq_ee4c30f34f998b5cba46f97e-a679128f203e48cd and unresolved dependency history. Ask for a narrower current inventory only if creator still requires coverage beyond those exact Tasks.",
+      "evidence": [
+        "migration-task-context",
+        "current-hygiene-task",
+        "migration-receipt"
+      ]
+    },
+    {
+      "identity": {
+        "appId": "may-agent",
+        "taskId": "evaluate-telegram-admission-bounded-lookup-20260820",
+        "generation": 2,
+        "phase": "pending",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "fullOutcome": "Evaluate frozen Telegram admission baseline 9c3547dbb22fdb234426399ead46831211f7a747055d6b45c586558bdc66b86b against exact bounded candidate 113db95dc280e4010a668096f4d6c92738708eeae4bae5201da159087fbdb409 on the smallest representative sample, explicitly including authentic sessions s_1786869598554_8 (excess discovery after anchors) and s_1786869754817_11 (guessed task-state paths mislabeled canonical). Obtain exactly one accountable Gym baseline-vs-candidate comparison proving immediate decision or safe-route after bounded exact lookups, while preserving missing-authority honesty and catching regressions in exact lineage, closure, task correlation, and safe routing. Return a proof-backed staged rollout proposal before adoption; reject broad rollout until Hao approval; rollback is Git revert.",
+      "retainedRow": {
+        "app_id": "may-agent",
+        "task_id": "evaluate-telegram-admission-bounded-lookup-20260820",
+        "generation": 2,
+        "resource_version": 3,
+        "phase": "pending",
+        "updated_at": 1787266438916,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 2,
+            "id": "evaluate-telegram-admission-bounded-lookup-20260820",
+            "resourceVersion": 3
+          },
+          "spec": {
+            "acceptance": [
+              "Verify the frozen baseline and exact candidate artifact hashes before comparison.",
+              "After the existing Gym input-correlation repair converges, issue exactly one async Gym handoff covering sourceEventId 5704312 plus the five named regression controls, with success and material-regression evidence returned at `.state/proof-rollout/telegram-admission-bounded-lookup-20260820/gym-comparison.json`.",
+              "Prove the candidate preserves the baseline safe-route disposition while stopping after exact anchors or a null canonical resources[taskId] lookup, with no broad repository search, broad event window, unrelated schema/project enumeration, taskIndex probe, or Host-private task-tree refinement.",
+              "Preserve closure, terminal/waiting resource, malformed/conflicting identity, unknown-source, missing-authority, and genuinely actionable visibility controls.",
+              "Return Hao a proof-backed proposal naming evidence, staged scope, risks, monitoring, and rollback; do not adopt broadly or mutate production before explicit Hao approval.",
+              "Literally preserve the constraints `reject broad rollout until Hao approval` and `rollback is Git revert`."
+            ],
+            "category": "runtime-reliability",
+            "dependsOn": [
+              "repair-gym-owner-review-input-correlation-20260820"
+            ],
+            "input": {
+              "baseline": {
+                "path": ".state/proof-rollout/telegram-admission-bounded-lookup-20260820/baseline.json",
+                "sha256": "9c3547dbb22fdb234426399ead46831211f7a747055d6b45c586558bdc66b86b"
+              },
+              "candidate": {
+                "path": ".state/proof-rollout/telegram-admission-bounded-lookup-20260820/candidate.json",
+                "sha256": "113db95dc280e4010a668096f4d6c92738708eeae4bae5201da159087fbdb409"
+              },
+              "constraints": [
+                "reject broad rollout until Hao approval",
+                "rollback is Git revert"
+              ],
+              "delegations": [
+                {
+                  "kind": "bounded-baseline-vs-candidate-comparison",
+                  "owner": "gym.app",
+                  "regressionEvidence": "closure, visibility, authority, and genuinely actionable signal controls remain intact",
+                  "returnPath": ".state/proof-rollout/telegram-admission-bounded-lookup-20260820/gym-comparison.json",
+                  "sample": "sourceEventId 5704312 replay plus closure-present, resource-terminal, resource-waiting, malformed/conflicting identity, and unknown-source/missing-authority controls",
+                  "successEvidence": "same safe-route result with bounded stop and no prohibited discovery"
+                }
+              ],
+              "mode": "evaluate",
+              "next_action": "Compare frozen baseline 9c3547dbb22fdb234426399ead46831211f7a747055d6b45c586558bdc66b86b with exact candidate 113db95dc280e4010a668096f4d6c92738708eeae4bae5201da159087fbdb409 on the bounded sourceEventId 5704312 replay and five regression controls, then return a proof-backed rollout proposal before adoption.",
+              "priority": "proof",
+              "response_to_hao": "May will gather the bounded comparison evidence, bring back a proof-backed staged rollout proposal, wait for Hao approval before rollout, and use Git revert as rollback if adopted changes need to be undone.",
+              "understood_intent": "Preserve correct Telegram admission safe-routing while stopping discovery once exact candidate, lineage, and closure anchors are available or the canonical resources[taskId] lookup returns null."
+            },
+            "mode": "achieve",
+            "outcome": "Evaluate frozen Telegram admission baseline 9c3547dbb22fdb234426399ead46831211f7a747055d6b45c586558bdc66b86b against exact bounded candidate 113db95dc280e4010a668096f4d6c92738708eeae4bae5201da159087fbdb409 on the smallest representative sample, explicitly including authentic sessions s_1786869598554_8 (excess discovery after anchors) and s_1786869754817_11 (guessed task-state paths mislabeled canonical). Obtain exactly one accountable Gym baseline-vs-candidate comparison proving immediate decision or safe-route after bounded exact lookups, while preserving missing-authority honesty and catching regressions in exact lineage, closure, task correlation, and safe routing. Return a proof-backed staged rollout proposal before adoption; reject broad rollout until Hao approval; rollback is Git revert.",
+            "outputs": [
+              ".state/proof-rollout/telegram-admission-bounded-lookup-20260820/gym-comparison.json",
+              ".state/proof-rollout/telegram-admission-bounded-lookup-20260820/rollout-proposal.md"
+            ],
+            "owner": "may",
+            "parentId": "project",
+            "priority": "P1"
+          },
+          "status": {
+            "observedGeneration": 0,
+            "phase": "pending",
+            "updatedAt": "2026-08-20T22:53:58.916Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "indexRow": {
+        "appId": "may-agent",
+        "taskId": "evaluate-telegram-admission-bounded-lookup-20260820",
+        "generation": 2,
+        "phase": "pending",
+        "owner": "may",
+        "outcome": "Evaluate frozen Telegram admission baseline 9c3547dbb22fdb234426399ead46831211f7a747055d6b45c586558bdc66b86b against exact bounded candidate 113db95dc280e4010a668096f4d6c92738708eeae4bae5201da159087fbdb409 on the smallest representative sample, explicitly including authentic sessions s_1786869598554_8 (excess discovery after anchors) and s_1786869754817_11 (guessed task-state paths mislabeled canonical). Obtain exactly one accountable Gym baseline-vs-candidate comparison proving immediate decision or safe-route after bounded exact lookups, while preserving missing-authority honesty and catching regressions in exact lineage, closure, task correlation, and safe routing. Return a proof-backed staged rollout proposal before adoption; reject broad rollout until Hao approval; rollback is Git revert.",
+        "acceptance": [
+          "Verify the frozen baseline and exact candidate artifact hashes before comparison.",
+          "After the existing Gym input-correlation repair converges, issue exactly one async Gym handoff covering sourceEventId 5704312 plus the five named regression controls, with success and material-regression evidence returned at `.state/proof-rollout/telegram-admission-bounded-lookup-20260820/gym-comparison.json`.",
+          "Prove the candidate preserves the baseline safe-route disposition while stopping after exact anchors or a null canonical resources[taskId] lookup, with no broad repository search, broad event window, unrelated schema/project enumeration, taskIndex probe, or Host-private task-tree refinement.",
+          "Preserve closure, terminal/waiting resource, malformed/conflicting identity, unknown-source, missing-authority, and genuinely actionable visibility controls.",
+          "Return Hao a proof-backed proposal naming evidence, staged scope, risks, monitoring, and rollback; do not adopt broadly or mutate production before explicit Hao approval.",
+          "Literally preserve the constraints `reject broad rollout until Hao approval` and `rollback is Git revert`."
+        ],
+        "summary": null,
+        "conditionIds": []
+      },
+      "frontierAtInspection": {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "evaluate-telegram-admission-bounded-lookup-20260820",
+          "generation": 2,
+          "phase": "pending",
+          "owner": "may",
+          "conditionIds": []
+        },
+        "outcome": "Evaluate frozen Telegram admission baseline 9c3547dbb22fdb234426399ead46831211f7a747055d6b45c586558bdc66b86b against exact bounded candidate 113db95dc280e4010a668096f4d6c92738708eeae4bae5201da159087fbdb409 on the smallest representative sample, explicitly including authentic sessions s_1786869598554_8 (excess discovery after anchors) and s_1786869754817_11 (guessed task-state paths mislabeled canonical). Obtain exactly one accountable Gym baseline-vs-candidate comparison proving immediate decision or safe-route after bounded exact lookups, while preserving missing-authority honesty and catching regressions in exact lineage, closure, task correlation, and safe routing. Return a proof-backed staged rollout proposal before adoption; reject broad rollout until Hao approval; rollback is Git revert.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      "directRelationships": [
+        {
+          "app_id": "may-agent",
+          "source_task_id": "evaluate-telegram-admission-bounded-lookup-20260820",
+          "relation_kind": "parent",
+          "target_task_id": "project"
+        },
+        {
+          "app_id": "may-agent",
+          "source_task_id": "evaluate-telegram-admission-bounded-lookup-20260820",
+          "relation_kind": "dependency",
+          "target_task_id": "repair-gym-owner-review-input-correlation-20260820"
+        }
+      ],
+      "directConditions": [],
+      "relatedConditions": [],
+      "retainedInputs": [],
+      "legacyOutcomeFulfilled": false,
+      "executionPath": "obsolete historical path; no replay/activation authority",
+      "recommendation": "May/human creator disposition",
+      "group": "telegram-frozen-comparison",
+      "acceptedProgress": [
+        "Retained generation-2 row supplies exact frozen baseline/candidate hashes, authentic sessions, sourceEventId 5704312 and mandatory negative controls; observedGeneration=0 supplies no accepted comparison or progress result.",
+        "Related Gym correlation repair retained a completed request and hold/no-rely comparison for a DIFFERENT candidate 96ebe7cb...; it is not the Telegram comparison."
+      ],
+      "missingProof": [
+        "Exact baseline 9c3547dbb22fdb234426399ead46831211f7a747055d6b45c586558bdc66b86b and candidate 113db95dc280e4010a668096f4d6c92738708eeae4bae5201da159087fbdb409 bytes were not recovered at the examined proof-rollout roots.",
+        "Authentic session directories s_1786869598554_8 and s_1786869754817_11 were absent at their exact runtime paths.",
+        "Exactly-one accountable comparison, full controls, content-hashed result and staged proposal/Hao decision are unproved. Bounded archive/retirement-manifest search found no matching named paths; this is not proof no copy exists anywhere."
+      ],
+      "currentUsefulness": "Bounded exact discovery and honest missing-authority handling remain useful; current Gym accepts exact frozen comparison identities and passes current fixtures. That is capability, not evidence the retired Telegram experiment succeeded or that its old prompt applies to current Conversation/Task protocols. Current Telegram todo-alert work is a different outcome and must not absorb this comparison.",
+      "nextAction": "May should decide whether this frozen research promise is withdrawn unfulfilled or whether the human still wants a newly specified current admission experiment. Do not commission speculative comparison before that choice and recovery of required evidence. Preserve literal constraints: reject broad rollout until Hao approval; rollback is Git revert.",
+      "evidence": [
+        "app-tests",
+        "alex-app-source",
+        "migration-receipt"
+      ]
+    },
+    {
+      "identity": {
+        "appId": "may-agent",
+        "taskId": "provider-auth-fallback-hardening-20260810",
+        "generation": 2,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": []
+      },
+      "fullOutcome": "Ensure gpt-5.6-sol sessions survive an expired or unavailable GitHub Copilot credential through an explicitly owned fallback path, then prove both normal and failover model turns with bounded canaries.",
+      "retainedRow": {
+        "app_id": "may-agent",
+        "task_id": "provider-auth-fallback-hardening-20260810",
+        "generation": 2,
+        "resource_version": 7,
+        "phase": "waiting",
+        "updated_at": 1787142494775,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 2,
+            "id": "provider-auth-fallback-hardening-20260810",
+            "resourceVersion": 7
+          },
+          "spec": {
+            "acceptance": [
+              "Identify the authoritative provider/model-group configuration and credential-refresh ownership without exposing credential material.",
+              "Configure or otherwise establish an explicit usable fallback for gpt-5.6-sol, or produce exact evidence that the external provider boundary prevents platform-local configuration and name the accountable boundary.",
+              "Run a bounded normal-path model-turn canary on gpt-5.6-sol and record provider/model/session evidence.",
+              "Run a bounded negative-path or equivalent controlled failover validation proving an unavailable primary does not terminate the session with `Available Model Group Fallbacks=None`.",
+              "Record focused verification evidence and notify the blocked AKS owner path when recovery is safe."
+            ],
+            "category": "platform-reliability",
+            "mode": "achieve",
+            "outcome": "Ensure gpt-5.6-sol sessions survive an expired or unavailable GitHub Copilot credential through an explicitly owned fallback path, then prove both normal and failover model turns with bounded canaries.",
+            "outputs": [
+              "provider fallback configuration or exact external-boundary disposition",
+              "normal-path and failover canary receipts"
+            ],
+            "owner": "may",
+            "parentId": "runtime/platform-owner-review",
+            "priority": "P0"
+          },
+          "status": {
+            "conditionIds": [],
+            "evidence": [
+              "task:ops/authorize-supervisor-model-credential-restore-20260810@g1 — current canonical projection is waiting on approvalId `may-agent:supervisor-model-credential-restore:20260810:g1`; its final unchanged review forbids another timer or duplicate prompt.",
+              "task:ops/restore-supervisor-shared-model-handoff-20260810@g3 — current canonical projection is pending and explicitly depends on the authorization task.",
+              "runtime-db: exact JSON query for `project.approval.submitted` with approvalId `may-agent:supervisor-model-credential-restore:20260810:g1` returned 0 rows.",
+              "filesystem: `/app/projects/may-agent/provider-fallback-negative-20260810/secret-safe-supervisor-restore-evidence.json` is absent.",
+              "filesystem: `/app/projects/may-agent/outputs/ops-receipts/provider-fallback-negative-20260810.json.runtime-candidate` and `/app/projects/may-agent/outputs/ops-receipts/provider-fallback-negative-20260810.json` are absent.",
+              "checkpoint:#1 records the current task states, exact missing proof paths, and resumption boundary without exposing credential material."
+            ],
+            "observedGeneration": 2,
+            "phase": "waiting",
+            "summary": "Keep the existing parent task waiting without duplicate work or a new timer. Hao’s exact approve/decline decision remains the authority boundary; after approval, the authorized child must return secret-safe supervisor readiness proof and the dependent child must prove normal and failover canaries, promote only a passing receipt, and notify the blocked AKS path only after May reviews terminal evidence. On decline, stop the mutation and replan; if approval arrives but operator capability or terminal proof is still missing, replan with the accountable supervisor boundary or escalate only that exact blocker.",
+            "updatedAt": "2026-08-19T12:28:14.775Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "indexRow": {
+        "appId": "may-agent",
+        "taskId": "provider-auth-fallback-hardening-20260810",
+        "generation": 2,
+        "phase": "waiting",
+        "owner": "may",
+        "outcome": "Ensure gpt-5.6-sol sessions survive an expired or unavailable GitHub Copilot credential through an explicitly owned fallback path, then prove both normal and failover model turns with bounded canaries.",
+        "acceptance": [
+          "Identify the authoritative provider/model-group configuration and credential-refresh ownership without exposing credential material.",
+          "Configure or otherwise establish an explicit usable fallback for gpt-5.6-sol, or produce exact evidence that the external provider boundary prevents platform-local configuration and name the accountable boundary.",
+          "Run a bounded normal-path model-turn canary on gpt-5.6-sol and record provider/model/session evidence.",
+          "Run a bounded negative-path or equivalent controlled failover validation proving an unavailable primary does not terminate the session with `Available Model Group Fallbacks=None`.",
+          "Record focused verification evidence and notify the blocked AKS owner path when recovery is safe."
+        ],
+        "summary": "Keep the existing parent task waiting without duplicate work or a new timer. Hao’s exact approve/decline decision remains the authority boundary; after approval, the authorized child must return secret-safe supervisor readiness proof and the dependent child must prove normal and failover canaries, promote only a passing receipt, and notify the blocked AKS path only after May reviews terminal evidence. On decline, stop the mutation and replan; if approval arrives but operator capability or terminal proof is still missing, replan with the accountable supervisor boundary or escalate only that exact blocker.",
+        "conditionIds": []
+      },
+      "frontierAtInspection": {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "provider-auth-fallback-hardening-20260810",
+          "generation": 2,
+          "phase": "waiting",
+          "owner": "may",
+          "conditionIds": []
+        },
+        "outcome": "Ensure gpt-5.6-sol sessions survive an expired or unavailable GitHub Copilot credential through an explicitly owned fallback path, then prove both normal and failover model turns with bounded canaries.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      "directRelationships": [
+        {
+          "app_id": "may-agent",
+          "source_task_id": "ops/authorize-supervisor-model-credential-restore-20260810",
+          "relation_kind": "parent",
+          "target_task_id": "provider-auth-fallback-hardening-20260810"
+        },
+        {
+          "app_id": "may-agent",
+          "source_task_id": "ops/restore-supervisor-shared-model-handoff-20260810",
+          "relation_kind": "parent",
+          "target_task_id": "provider-auth-fallback-hardening-20260810"
+        },
+        {
+          "app_id": "may-agent",
+          "source_task_id": "provider-auth-fallback-hardening-20260810",
+          "relation_kind": "parent",
+          "target_task_id": "runtime/platform-owner-review"
+        }
+      ],
+      "directConditions": [],
+      "relatedConditions": [
+        {
+          "binding": "related or referenced only; do not fabricate direct Task binding",
+          "row": {
+            "app_id": "may-agent",
+            "condition_id": "wait:may-agent:supervisor-model-credential-restore:20260810:g1",
+            "state": "unknown",
+            "condition_json": "{\"metadata\":{\"generation\":2,\"id\":\"wait:may-agent:supervisor-model-credential-restore:20260810:g1\",\"resourceVersion\":4},\"spec\":{\"expected\":{\"anyOf\":[\"approve\",\"decline\"],\"approvalId\":\"may-agent:supervisor-model-credential-restore:20260810:g1\",\"approvalKind\":\"approval-packet-dispatch\",\"artifactFingerprint\":\"sha256:e654fc222f57a96bce460d6ee0eac961b2fd28b6dbec8e3dbd20bed8febcfb4d\",\"field\":\"decision\",\"taskGeneration\":1,\"taskId\":\"ops/authorize-supervisor-model-credential-restore-20260810\"},\"owner\":\"human:hao\",\"subject\":\"project:may-agent\",\"type\":\"project.approval.submitted\"},\"status\":{\"observedAt\":\"2026-08-10T11:26:15.975Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}"
+          }
+        }
+      ],
+      "retainedInputs": [],
+      "legacyOutcomeFulfilled": false,
+      "executionPath": "Existing credential-authorization/canary lineage unresolved; usefulness survives. Reconcile current authority rather than declaring the whole path obsolete.",
+      "recommendation": "May/human creator disposition",
+      "group": "provider-fallback",
+      "acceptedProgress": [
+        "Current Host model-registry.ts explicitly gives gpt-5.6-sol independent anthropic/claude-opus-5 fallback.",
+        "agent-execution.ts invokes fallback once only for the first-event exact GitHub Copilot IDE-token-expired envelope, reusing context/options. Deterministic focused test proves that exact envelope does not return Available Model Group Fallbacks=None after successful synthetic fallback.",
+        "Generic 401/403/500 errors intentionally remain errors; tests prove no silent broad reroute. These are current local checks, not live provider canaries."
+      ],
+      "missingProof": [
+        "Exact secret-free authorized supervisor readiness proof and passing runtime-candidate/canonical receipt absent at required paths.",
+        "Normal-path live gpt-5.6-sol and controlled live failover provider/model/session evidence, accepted credential authority, May promotion/review and safe AKS notification remain unproved.",
+        "Current source supports narrow expiry, not every possible unavailable-primary error; no credential values or availability were inspected."
+      ],
+      "currentUsefulness": "Fallback still matters to current runtime, unlike a wholly retired incident. Source already contains the narrow mechanism, so do not duplicate implementation or broaden auth rerouting from prose alone. The unresolved barrier is the existing human/operator credential boundary and precise live-verification need.",
+      "nextAction": "May should reconcile the retained authorization child and dependent canary child as one existing lineage, identify whether any current credential operation is needed, and either retain an exact current operator/human prerequisite plus bounded authorized verification or withdraw the obsolete operational promise unfulfilled. No new approval prompt, timer, credential mutation or live canary is authorized by this artifact.",
+      "evidence": [
+        "model-source",
+        "fallback-source",
+        "host-tests"
+      ]
+    },
+    {
+      "identity": {
+        "appId": "may-agent",
+        "taskId": "repair-platform-review-terminal-contract-after-unrunnable-owner-20260818",
+        "generation": 2,
+        "phase": "waiting",
+        "owner": "may",
+        "conditionIds": [
+          "existing-unhandled-signal-recovery-terminal"
+        ]
+      },
+      "fullOutcome": "Repair platform owner-review supervision so the existing review cannot converge while its required repair child is nonterminal, then re-drive that review through terminal evidence without replacing or duplicating the existing repair work.",
+      "retainedRow": {
+        "app_id": "may-agent",
+        "task_id": "repair-platform-review-terminal-contract-after-unrunnable-owner-20260818",
+        "generation": 2,
+        "resource_version": 15,
+        "phase": "waiting",
+        "updated_at": 1787049516236,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 2,
+            "id": "repair-platform-review-terminal-contract-after-unrunnable-owner-20260818",
+            "resourceVersion": 15
+          },
+          "spec": {
+            "acceptance": [
+              "Preserve the existing review, repair-child identity, lifecycle evidence, and failure evidence; use the shared task runtime and do not edit generated state or create duplicate repair work.",
+              "The existing repair outcome shows observable forward movement and reaches a terminal result containing the repair artifact, verification evidence, and post-repair remeasurement.",
+              "Regression proof demonstrates that platform owner review remains open or is re-driven whenever a required child is nonterminal.",
+              "May reviews the correlated App result and terminal domain evidence; if repair, regression proof, remeasurement, or terminal evidence is missing, replan with the responsible runtime layer and escalate only a genuine authority blocker.",
+              "Routine recovery remains silent because no human decision is currently required."
+            ],
+            "category": "runtime-supervision",
+            "mode": "achieve",
+            "outcome": "Repair platform owner-review supervision so the existing review cannot converge while its required repair child is nonterminal, then re-drive that review through terminal evidence without replacing or duplicating the existing repair work.",
+            "owner": "may",
+            "parentId": "runtime/platform-owner-review",
+            "priority": "P0"
+          },
+          "status": {
+            "conditionIds": [
+              "existing-unhandled-signal-recovery-terminal"
+            ],
+            "evidence": [
+              "commit:/app/projects/may-agent@8dd6fcab79754b8918116af936645ce54f6718ee — shared reconciler sets a maintain parent to waiting while live children exist and records a child-transition wake after convergence.",
+              "verification:/app/projects/may-agent/src/app/app-task-parent-semantics.test.ts — regression explicitly proves a maintain parent cannot converge with a pending required child and becomes runnable only after the child reaches terminal evidence.",
+              "event:5764980 and event:5765005 — reconcile-unhandled-signal-recurrence-20260816 generation 3 ran under owner:may and returned waiting, replacing the prior unrunnable-owner attention with observable forward movement on the same task identity.",
+              "task:activate-addressed-route-and-remeasure-alert-4566-20260816 generation 2 remains pending behind task:activate-aks-workspace-integrity-release-via-supervisor-20260816; the existing supervisor/activation path is preserved and no duplicate was created.",
+              "task:reconcile-alert-4577-current-lineage-20260818 generation 2 remains waiting on task:prove-alert-4577-after-existing-activation-20260818, preserving alert-4577-specific terminal proof rather than substituting resolved alert-4573 evidence.",
+              "app-request:app_b1662085-dda4-498b-b6dc-374d94ab163d is handling on reconcile-unhandled-signal-recurrence-20260816, and app-request:app_8633038c-432d-4e5a-a492-2211c107b141 is handling on this supervision task; neither correlated App result is falsely terminal.",
+              "checkpoint:/app/projects/may-agent.app/.state/checkpoints checkpoint #1 preserves the exact task states, artifacts, App request identities, and post-completion review branch."
+            ],
+            "observedGeneration": 2,
+            "phase": "waiting",
+            "summary": "Keep the same supervision task open without duplicate repair work. Commit 8dd6fcab and its regression prove the shared runtime keeps a maintain owner review nonterminal while required children are live, and events 5764980/5765005 prove the existing recovery advanced to generation 3 under runnable owner May. Terminal acceptance is still blocked by the preserved activation and alert-4577 proof children; wait only for the exact recovery completion, then review the loaded-runtime canary, repair artifacts, fresh remeasurement, and both correlated App results, replanning with the responsible runtime layer if any proof is missing. The prior timed reviews are stopped; routine event-driven recovery remains silent and requires no human decision.",
+            "updatedAt": "2026-08-18T10:38:36.236Z"
+          }
+        },
+        "trigger_json": null
+      },
+      "indexRow": {
+        "appId": "may-agent",
+        "taskId": "repair-platform-review-terminal-contract-after-unrunnable-owner-20260818",
+        "generation": 2,
+        "phase": "waiting",
+        "owner": "may",
+        "outcome": "Repair platform owner-review supervision so the existing review cannot converge while its required repair child is nonterminal, then re-drive that review through terminal evidence without replacing or duplicating the existing repair work.",
+        "acceptance": [
+          "Preserve the existing review, repair-child identity, lifecycle evidence, and failure evidence; use the shared task runtime and do not edit generated state or create duplicate repair work.",
+          "The existing repair outcome shows observable forward movement and reaches a terminal result containing the repair artifact, verification evidence, and post-repair remeasurement.",
+          "Regression proof demonstrates that platform owner review remains open or is re-driven whenever a required child is nonterminal.",
+          "May reviews the correlated App result and terminal domain evidence; if repair, regression proof, remeasurement, or terminal evidence is missing, replan with the responsible runtime layer and escalate only a genuine authority blocker.",
+          "Routine recovery remains silent because no human decision is currently required."
+        ],
+        "summary": "Keep the same supervision task open without duplicate repair work. Commit 8dd6fcab and its regression prove the shared runtime keeps a maintain owner review nonterminal while required children are live, and events 5764980/5765005 prove the existing recovery advanced to generation 3 under runnable owner May. Terminal acceptance is still blocked by the preserved activation and alert-4577 proof children; wait only for the exact recovery completion, then review the loaded-runtime canary, repair artifacts, fresh remeasurement, and both correlated App results, replanning with the responsible runtime layer if any proof is missing. The prior timed reviews are stopped; routine event-driven recovery remains silent and requires no human decision.",
+        "conditionIds": [
+          "existing-unhandled-signal-recovery-terminal"
+        ]
+      },
+      "frontierAtInspection": {
+        "old": {
+          "appId": "may-agent",
+          "taskId": "repair-platform-review-terminal-contract-after-unrunnable-owner-20260818",
+          "generation": 2,
+          "phase": "waiting",
+          "owner": "may",
+          "conditionIds": [
+            "existing-unhandled-signal-recovery-terminal"
+          ]
+        },
+        "outcome": "Repair platform owner-review supervision so the existing review cannot converge while its required repair child is nonterminal, then re-drive that review through terminal evidence without replacing or duplicating the existing repair work.",
+        "disposition": "inspect-current-evidence-for-alex-continuation",
+        "proposedOwner": "alex",
+        "lineage": null,
+        "replacement": null,
+        "basis": "System-improvement obligation is in Alex scope, but age/status alone cannot prove it remains useful. Check current source, accepted evidence, caller and waits before replacement or supersession.",
+        "preservation": [
+          "latest corrections and acceptance",
+          "accepted evidence/artifacts",
+          "remaining work",
+          "caller/human reply relationship",
+          "exact live Conditions"
+        ]
+      },
+      "directRelationships": [
+        {
+          "app_id": "may-agent",
+          "source_task_id": "repair-platform-review-terminal-contract-after-unrunnable-owner-20260818",
+          "relation_kind": "parent",
+          "target_task_id": "runtime/platform-owner-review"
+        }
+      ],
+      "directConditions": [
+        {
+          "app_id": "may-agent",
+          "condition_id": "existing-unhandled-signal-recovery-terminal",
+          "state": "unknown",
+          "condition_json": "{\"metadata\":{\"generation\":2,\"id\":\"existing-unhandled-signal-recovery-terminal\",\"resourceVersion\":3},\"spec\":{\"expected\":{\"equals\":\"completed\",\"field\":\"phase\",\"project\":\"may-agent\"},\"owner\":\"may\",\"subject\":\"task:reconcile-unhandled-signal-recurrence-20260816\",\"type\":\"project.task.phase\"},\"status\":{\"observedAt\":\"2026-08-18T10:38:36.236Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}"
+        }
+      ],
+      "relatedConditions": [],
+      "retainedInputs": [
+        {
+          "id": "app_8633038c-432d-4e5a-a492-2211c107b141",
+          "app_id": "may-agent",
+          "parent_id": "app_b1662085-dda4-498b-b6dc-374d94ab163d",
+          "conversation_id": null,
+          "conversation_seq": null,
+          "channel": null,
+          "channel_thread_id": null,
+          "channel_message_id": null,
+          "reply_to_source_id": null,
+          "source_kind": "app",
+          "source_id": "may-agent",
+          "input_kind": "owner-review",
+          "input_data": "{\"reason\":\"repair-platform-review-terminal-contract\",\"sourceSessionId\":\"s_1786914469995_22\",\"existingFailedTask\":{\"id\":\"repair-platform-review-terminal-contract-after-unrunnable-owner-20260818\",\"status\":\"attention\",\"summary\":\"Resolved owner may-agent is not a runnable agent\"},\"outcome\":\"Repair platform owner-review supervision so a review cannot converge while a required repair child remains nonterminal, then re-drive the cited review through terminal evidence.\",\"constraints\":[\"Preserve the existing review, child identity, lifecycle state, and failure evidence; do not edit generated state, create duplicate repair work, or treat the app name as a runnable agent.\",\"Keep routine recovery silent because no human decision is required.\",\"Use the accountable app and shared task runtime; leave implementation method to the owner.\"],\"requiredProof\":[\"Observable forward movement on the existing required repair outcome.\",\"The cited required child reaches a terminal result with repair, verification, and remeasurement evidence.\",\"A regression proof shows platform owner review remains open or is re-driven whenever a required child is nonterminal.\",\"May reviews the terminal evidence; if any proof or terminal result remains missing, replan with the responsible runtime layer or escalate only a real authority blocker.\"]}",
+          "status": "handling",
+          "session_id": null,
+          "waiting_on_kind": "session",
+          "waiting_on_id": "s_1787064564636_147",
+          "result": null,
+          "available_at": null,
+          "review_at": null,
+          "lease_generation": 45508,
+          "lease_owner": null,
+          "lease_expires_at": null,
+          "origin_event_id": 5764016,
+          "idempotency_key": "delegate:app_b1662085-dda4-498b-b6dc-374d94ab163d:19",
+          "created_at": 1787045156032,
+          "updated_at": 1787385390724,
+          "completed_at": null,
+          "channel_target_id": null,
+          "continues_request_id": null,
+          "started_at": 1787046242539,
+          "changed_at": 1787385390724,
+          "target_task_id": null,
+          "topic_id": null,
+          "handling": null,
+          "task_admission_key": null,
+          "execution_task_id": null,
+          "creator_json": null,
+          "recovery_json": null
+        }
+      ],
+      "legacyOutcomeFulfilled": false,
+      "executionPath": "obsolete historical path; no replay/activation authority",
+      "recommendation": "May/human creator disposition",
+      "group": "platform-review-supervision",
+      "acceptedProgress": [
+        "Retained row attributes commit 8dd6fcab79754b8918116af936645ce54f6718ee and original child-gating regression; events 5764980/5765005 advanced the same recovery to generation 3 under runnable May. This is historical progress only.",
+        "Current exact May result goal/appdep_7bfd3ac4b0fa68969a9e3b23 withdraws TEN related promises unfulfilled and explicitly identifies this supervision Task as OUTSIDE its scope. It preserves this inbound Condition and caller input chain; therefore do not falsely claim that completed May result covers this eleventh identity."
+      ],
+      "missingProof": [
+        "Original required repair terminal artifacts, loaded-runtime canary, fresh alert-4577/4566 remeasurement and both correlated App results not established.",
+        "Condition existing-unhandled-signal-recovery-terminal remains unknown; withdrawal of its target is not observation phase=completed."
+      ],
+      "currentUsefulness": "Current source and tests intentionally make hierarchy context, not an implicit child-gating or return protocol; explicit Conditions and exact caller returns express actual dependencies. Reintroducing blanket parent convergence fencing would regress the current model. Related historical repair/activation outcomes were withdrawn, so no technical revival is justified.",
+      "nextAction": "May should disposition this exact remaining supervision/caller promise unfulfilled, preserving input app_b1662085-dda4-498b-b6dc-374d94ab163d → app_8633038c-432d-4e5a-a492-2211c107b141 and the exact unknown Condition. Reuse related decisions as evidence, not as scope authority. Routine handling stays silent; no new Hao ask absent a precise surviving decision.",
+      "evidence": [
+        "host-parent-source",
+        "host-tests",
+        "current-unhandled-task",
+        "task-design"
+      ]
+    }
+  ],
+  "relatedContextNotAdditionalDispositionEntries": {
+    "retainedRows": [
+      {
+        "app_id": "may-agent",
+        "task_id": "ops/authorize-supervisor-model-credential-restore-20260810",
+        "generation": 1,
+        "resource_version": 15,
+        "phase": "waiting",
+        "updated_at": 1786461416394,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 1,
+            "id": "ops/authorize-supervisor-model-credential-restore-20260810",
+            "resourceVersion": 15
+          },
+          "spec": {
+            "acceptance": [
+              "Record explicit human approval before any credential, production configuration, reload, or rollout mutation.",
+              "Restore valid MODEL_API_KEY and MODEL_BASE_URL at the supervisor-owned runtime boundary without printing, exposing, returning, or persisting either value.",
+              "Reload the supervised may-agent runtime and provide secret-free proof that the affected service is RUNNING with both variables present and ready for the parent canary rerun.",
+              "Do not promote any provider-fallback receipt and do not emit the AKS recovery notification."
+            ],
+            "category": "operations",
+            "input": {
+              "failedEvidencePath": "/app/projects/may-agent/provider-fallback-negative-20260810/secret-safe-handoff-evidence.json",
+              "securityConstraint": "Never print, expose, return, or persist MODEL_API_KEY or MODEL_BASE_URL; human approval is mandatory before mutation."
+            },
+            "mode": "achieve",
+            "outcome": "Obtain explicit human approval and have an authorized operator restore the valid shared-model credential handoff at the supervisor boundary, reload the supervised runtime, and return secret-free readiness proof.",
+            "outputs": [
+              "/app/projects/may-agent/provider-fallback-negative-20260810/secret-safe-supervisor-restore-evidence.json"
+            ],
+            "owner": "may",
+            "parentId": "provider-auth-fallback-hardening-20260810",
+            "priority": "P0"
+          },
+          "status": {
+            "conditionIds": [
+              "wait:may-agent:supervisor-model-credential-restore:20260810:g1"
+            ],
+            "evidence": [
+              "event:5438280 is the accepted canonical approval request, event:5438377 records admission, and event:5438382 records Telegram delivery.",
+              "A fresh targeted runtime query after event:5438280 returned zero matching project.approval.submitted or inbound-human approve/decline events.",
+              "`/app/projects/may-agent/provider-fallback-negative-20260810/secret-safe-supervisor-restore-evidence.json` is absent, so credential restoration, reload, RUNNING state, variable presence, and readiness are not proved.",
+              "`/app/projects/may-agent/provider-fallback-negative-20260810/supervisor-credential-restore-approval-request.md` retains SHA-256 `e654fc222f57a96bce460d6ee0eac961b2fd28b6dbec8e3dbd20bed8febcfb4d`, matching the Condition fingerprint.",
+              "`/app/projects/may-agent/provider-fallback-negative-20260810/secret-safe-handoff-evidence.json` records `canonicalReceiptPromoted=false` and `notificationEmitted=false`; those forbidden gates remain unchanged.",
+              "The current projection is generation 1/resource_version 11 with no children and the same approval Condition; trigger reviewAttempt=3 and finalReview=true require an event-driven wait without another review timer."
+            ],
+            "observedGeneration": 1,
+            "phase": "waiting",
+            "summary": "Explicit human approval remains pending for `may-agent:supervisor-model-credential-restore:20260810:g1`. This final unchanged review preserves the exact event-driven authority wait without another timer or duplicate prompt: on approval, an authorized supervisor operator may perform only the bounded secret-safe restore/reload and must return RUNNING, variable-presence, and readiness proof; on decline, stop mutation and replan. If approval arrives but operator capability or terminal proof remains missing, replan with the responsible supervisor owner or escalate only that exact remaining blocker.",
+            "updatedAt": "2026-08-11T15:16:56.394Z"
+          }
+        },
+        "trigger_json": null
+      },
+      {
+        "app_id": "may-agent",
+        "task_id": "ops/restore-supervisor-shared-model-handoff-20260810",
+        "generation": 3,
+        "resource_version": 9,
+        "phase": "pending",
+        "updated_at": 1787132241595,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 3,
+            "id": "ops/restore-supervisor-shared-model-handoff-20260810",
+            "resourceVersion": 9
+          },
+          "spec": {
+            "acceptance": [
+              "Require `ops/authorize-supervisor-model-credential-restore-20260810` to converge first with explicit approval and secret-free proof that the authorized restore/reload returned the supervised runtime to RUNNING with both required variables present and ready; do not create or claim a second approval Condition.",
+              "Run `/app/agents/dev/workspace/provider-fallback-negative-canary.ts` through the restored supervised runtime boundary without printing, exposing, or persisting MODEL_API_KEY or MODEL_BASE_URL.",
+              "Produce `/app/projects/may-agent/outputs/ops-receipts/provider-fallback-negative-20260810.json.runtime-candidate` containing only secret-free evidence and proving provider=anthropic, model=claude-opus-5, stopReason=stop, passed=true, and returnedOriginalFallbackError=false, suitable for atomic promotion by the parent.",
+              "Return the authorization/activation artifact and live canary proof for May review; do not promote a failed receipt and do not emit the AKS recovery notification. If approval is declined or any restore, activation, or canary proof is missing, return exact attention evidence on this same task for replan."
+            ],
+            "category": "runtime-credential-handoff",
+            "dependsOn": [
+              "ops/authorize-supervisor-model-credential-restore-20260810"
+            ],
+            "input": {
+              "authorizationTaskId": "ops/authorize-supervisor-model-credential-restore-20260810",
+              "authorizedRestoreEvidencePath": "/app/projects/may-agent/provider-fallback-negative-20260810/secret-safe-supervisor-restore-evidence.json",
+              "candidateReceiptPath": "/app/projects/may-agent/outputs/ops-receipts/provider-fallback-negative-20260810.json.runtime-candidate",
+              "canonicalReceiptPath": "/app/projects/may-agent/outputs/ops-receipts/provider-fallback-negative-20260810.json",
+              "failedEvidencePath": "/app/projects/may-agent/provider-fallback-negative-20260810/secret-safe-handoff-evidence.json",
+              "harnessPath": "/app/agents/dev/workspace/provider-fallback-negative-canary.ts",
+              "securityConstraint": "Never print, expose, return, or persist MODEL_API_KEY or MODEL_BASE_URL; keep receipt promotion and AKS notification gated on May review of a passing candidate."
+            },
+            "mode": "achieve",
+            "outcome": "After the existing authorized supervisor credential-restore task converges, consume its secret-safe readiness proof and produce a validated, atomically promotable passing receipt for provider-fallback-negative-20260810.",
+            "outputs": [
+              "/app/projects/may-agent/outputs/ops-receipts/provider-fallback-negative-20260810.json.runtime-candidate"
+            ],
+            "owner": "may",
+            "parentId": "provider-auth-fallback-hardening-20260810",
+            "priority": "P0"
+          },
+          "status": {
+            "conditionIds": [],
+            "evidence": [
+              "`/app/projects/may-agent.app/.state/tasks/tree.json`: `ops/authorize-supervisor-model-credential-restore-20260810` is waiting on `wait:may-agent:supervisor-model-credential-restore:20260810:g1`, owner `human:hao`; evidence records canonical request event 5438280, admission 5438377, and Telegram delivery 5438382, with no matching approval decision.",
+              "`/app/projects/may-agent/provider-fallback-negative-20260810/secret-safe-handoff-evidence.json`: supervisor services are RUNNING and both required variable names are present, but the bounded canary ends at `anthropic/claude-opus-5` with `stopReason=error`, `errorFamily=authentication`, `passed=false`, `canonicalReceiptPromoted=false`, and `notificationEmitted=false`.",
+              "Targeted filesystem inspection: `/app/projects/may-agent/provider-fallback-negative-20260810/secret-safe-supervisor-restore-evidence.json` and `/app/projects/may-agent/outputs/ops-receipts/provider-fallback-negative-20260810.json.runtime-candidate` are absent; the canonical receipt is empty, and allowlisted summaries of existing temp receipts show `passed=false`.",
+              "Live secret-safe checks: `supervisorctl status` reports `may-agent RUNNING`; boolean-only environment-name inspection reports `MODEL_API_KEY=true` and `MODEL_BASE_URL=true` without reading or emitting either value."
+            ],
+            "observedGeneration": 1,
+            "phase": "pending",
+            "summary": "Reassigned to current App owner may; reconcile the preserved outcome from current evidence.",
+            "updatedAt": "2026-08-19T09:37:21.595Z"
+          }
+        },
+        "trigger_json": null
+      },
+      {
+        "app_id": "may-agent",
+        "task_id": "repair-gym-owner-review-input-correlation-20260820",
+        "generation": 1,
+        "resource_version": 37,
+        "phase": "attention",
+        "updated_at": 1787893375323,
+        "resource_json": {
+          "metadata": {
+            "creator": {
+              "appId": "may"
+            },
+            "generation": 1,
+            "id": "repair-gym-owner-review-input-correlation-20260820",
+            "resourceVersion": 37
+          },
+          "spec": {
+            "acceptance": [
+              "Persist a baseline that reproduces the current defect: an accepted exact-comparison input retains its payload in the App inbox but the Gym task binding drops that payload or coalesces it into unrelated `runtime/owner-review` work.",
+              "Produce the smallest immutable, content-hashed consumer correction and regression proof showing the exact request payload and request identity reach an independently reconcilable Gym owner carrier, its correlated App result, and its terminal artifact; malformed, unsupported, unrelated, and duplicate inputs remain rejected or visibly distinct.",
+              "Obtain one persisted, content-hashed Gym comparison naming exact candidate 96ebe7cb78022737a2675e798d65679c7ba2a3e7 and sole parent 353e4ebc501034f1a3f6c127b2dfceb287ca7f9d and covering tech-lead and app-ops admission without subscriber failure, supported metric-definition projection, and unknown, non-runnable, cross-project, malformed, ambiguous, invalid-definition, and unsupported-projection controls.",
+              "Keep production, benchmark truth, provider/routing configuration, and the prior invalid comparison unchanged unless an exact immutable consumer change is separately presented to Hao and explicitly approved; any approved activation must use the supported supervisor-owned path and prove loaded identity and runtime health before the comparison is accepted.",
+              "Return the corrected consumer proof, correlated Gym App result, comparison path and SHA-256, and completion wake for parent review; if any consumer, identity, receipt, terminal-artifact, activation, or authority link remains missing, preserve the same task and identify that exact gap rather than claiming completion."
+            ],
+            "category": "consumer-repair",
+            "mode": "achieve",
+            "outcome": "Restore a supported request-specific Gym App consumer for the exact addressed-route and metric-definition baseline-vs-candidate comparison, then carry the request for candidate 96ebe7cb78022737a2675e798d65679c7ba2a3e7 and parent 353e4ebc501034f1a3f6c127b2dfceb287ca7f9d through a correlated terminal Gym result and content-hashed comparison without conflating unrelated standing owner-review work or mutating production or benchmark truth.",
+            "outputs": [],
+            "owner": "may",
+            "parentId": "activate-addressed-route-and-remeasure-alert-4566-20260816",
+            "priority": "P0"
+          },
+          "status": {
+            "conditionIds": [],
+            "evidence": [
+              "Observed completed Gym request appdep_78e696bb880935a9485fae40 and exact Task owner-review/appdep_78e696bb880935a9485fae40-b40abb56a34a7e69.",
+              "Preserved comparison artifact SHA-256 e3897576b9e7a4b1294d0fe2b9b0f2f34c2e904cc1a8e0b53c03532e6be1a926 for candidate 96ebe7cb78022737a2675e798d65679c7ba2a3e7 and sole parent 353e4ebc501034f1a3f6c127b2dfceb287ca7f9d.",
+              "Gym's terminal disposition is hold/no-rely, not approval or completion, because fresh metric loading failed and commit 1a523d3615a does not contain the supplied live consumer bytes.",
+              "Gym confirmed that no benchmark truth or production state changed."
+            ],
+            "observedGeneration": 1,
+            "phase": "attention",
+            "summary": "Resolved agent may is not a runnable agent",
+            "updatedAt": "2026-08-28T05:02:55.323Z"
+          }
+        },
+        "trigger_json": null
+      }
+    ],
+    "relations": [
+      {
+        "app_id": "may-agent",
+        "source_task_id": "repair-gym-owner-review-input-correlation-20260820",
+        "relation_kind": "parent",
+        "target_task_id": "activate-addressed-route-and-remeasure-alert-4566-20260816"
+      },
+      {
+        "app_id": "may-agent",
+        "source_task_id": "ops/restore-supervisor-shared-model-handoff-20260810",
+        "relation_kind": "dependency",
+        "target_task_id": "ops/authorize-supervisor-model-credential-restore-20260810"
+      },
+      {
+        "app_id": "may-agent",
+        "source_task_id": "ops/authorize-supervisor-model-credential-restore-20260810",
+        "relation_kind": "parent",
+        "target_task_id": "provider-auth-fallback-hardening-20260810"
+      },
+      {
+        "app_id": "may-agent",
+        "source_task_id": "ops/restore-supervisor-shared-model-handoff-20260810",
+        "relation_kind": "parent",
+        "target_task_id": "provider-auth-fallback-hardening-20260810"
+      },
+      {
+        "app_id": "may-agent",
+        "source_task_id": "evaluate-metric-causal-timestamps-rollout-20260820",
+        "relation_kind": "dependency",
+        "target_task_id": "repair-gym-owner-review-input-correlation-20260820"
+      },
+      {
+        "app_id": "may-agent",
+        "source_task_id": "evaluate-telegram-admission-bounded-lookup-20260820",
+        "relation_kind": "dependency",
+        "target_task_id": "repair-gym-owner-review-input-correlation-20260820"
+      }
+    ],
+    "ownerReviewParentInput": [
+      {
+        "id": "app_b1662085-dda4-498b-b6dc-374d94ab163d",
+        "app_id": "may-agent",
+        "parent_id": null,
+        "conversation_id": null,
+        "conversation_seq": null,
+        "channel": null,
+        "channel_thread_id": null,
+        "channel_message_id": null,
+        "reply_to_source_id": null,
+        "source_kind": "system",
+        "source_id": "event:5741400",
+        "input_kind": "owner-review",
+        "input_data": "{\"reason\":\"evaluation-session-finding\",\"project\":\"may-agent\",\"sourceSessionId\":\"s_1786914469995_22\",\"evaluationVerdict\":\"acceptable\",\"finding\":{\"targetAppId\":\"may-agent\",\"severity\":\"concern\",\"summary\":\"Owner review converged despite a required live recovery child.\",\"message\":\"Review the terminal-state contract for platform owner reviews: session s_1786914469995_22 returned converged while its own result identified reconcile-unhandled-signal-recurrence-20260816 generation 2 as pending/ready and still responsible for repair, verification, and remeasurement. Verify that this review remains open or is re-driven until the child is terminal; no human decision is required.\",\"evidence\":[\"session:s_1786914469995_22 result.json finishParams.result\",\"task:reconcile-unhandled-signal-recurrence-20260816 generation:2 as cited in the bounded review packet\"],\"dedupeKey\":\"owner-review-converged-with-live-required-child\",\"requestedHumanAction\":\"none\"},\"message\":\"Review the terminal-state contract for platform owner reviews: session s_1786914469995_22 returned converged while its own result identified reconcile-unhandled-signal-recurrence-20260816 generation 2 as pending/ready and still responsible for repair, verification, and remeasurement. Verify that this review remains open or is re-driven until the child is terminal; no human decision is required.\"}",
+        "status": "handling",
+        "session_id": null,
+        "waiting_on_kind": "session",
+        "waiting_on_id": "s_1787064587214_0",
+        "result": null,
+        "available_at": null,
+        "review_at": null,
+        "lease_generation": 45657,
+        "lease_owner": null,
+        "lease_expires_at": null,
+        "origin_event_id": 5741400,
+        "idempotency_key": "subscription:may-agent:project-owner-request:event:5741400",
+        "created_at": 1786967025913,
+        "updated_at": 1787385390707,
+        "completed_at": null,
+        "channel_target_id": null,
+        "continues_request_id": null,
+        "started_at": 1787040970143,
+        "changed_at": 1787385390707,
+        "target_task_id": null,
+        "topic_id": null,
+        "handling": null,
+        "task_admission_key": null,
+        "execution_task_id": null,
+        "creator_json": null,
+        "recovery_json": null
+      }
+    ],
+    "currentMetricConditionSnapshot": [
+      {
+        "app_id": "may",
+        "condition_id": "gym-valid-run-rate-retirement-reconcile-7cf298dd9dd55942",
+        "state": "unknown",
+        "condition_json": "{\"metadata\":{\"generation\":1,\"id\":\"gym-valid-run-rate-retirement-reconcile-7cf298dd9dd55942\",\"resourceVersion\":1},\"spec\":{\"expected\":{\"decision\":[\"accept-current-retired-definition\",\"prepare-correction-proposal\",\"defer\"],\"packetSha256\":\"7cf298dd9dd55942c3dec9a28418c9bb74242c5e11730942bef1bd65ecd560ff\",\"taskGeneration\":1,\"taskId\":\"goal/appdep_c1890444e02436f8d2131ffd\"},\"owner\":\"human:Hao\",\"requestedAction\":\"The approved status-only packet could not be executed as written because its drift guard failed. The metric is already retired, but runtime reload events 6636997/6636998 loaded source 126f97edfc59e26a156f6c9e2e35f43673c27dd9 and source declaration 2300003c8331089ffc96a51d07763d0001498de0 replaced old definition/provenance fields: name, owner, target, threshold, unit, priority, project, and description. It also updated 102 other metric rows in the same reload window, so this was not the packet's target-only operation. current=0.76, zero snapshots, all 34 resolved alerts, alert 4916, and legacy state/journal hashes remain preserved. No duplicate write, sample, rollback, or correction was performed. Review packet artifacts/gym-valid-run-rate-retirement-reconciliation-packet.json at commit 30042f88e29d3f7374a768e045b83dc30266dc7e, SHA-256 7cf298dd9dd55942c3dec9a28418c9bb74242c5e11730942bef1bd65ecd560ff. Choose exactly: accept-current-retired-definition (accept the compact retired fields as final with no write), prepare-correction-proposal (prepare a separately reviewed persistent source/runtime correction; do not mutate yet), or defer. Silence and conditional replies do not authorize mutation.\",\"subject\":\"approvalId:metric-retirement-reconciliation:7cf298dd9dd55942c3dec9a28418c9bb74242c5e11730942bef1bd65ecd560ff\",\"type\":\"project.approval.submitted\"},\"status\":{\"createdAt\":\"2026-10-03T20:01:51.377Z\",\"observedAt\":\"2026-10-03T20:01:51.377Z\",\"observedGeneration\":0,\"state\":\"unknown\"}}"
+      }
+    ]
+  },
+  "evidence": {
+    "frontier": {
+      "path": "projects/alex.app/legacy-frontier-disposition-2026-10-04.json",
+      "exists": true,
+      "kind": "file",
+      "sha256": "3daa1edb98afb4d27f04e453512627d520c402325b6204097e609d6d5004d483",
+      "bytes": 274403
+    },
+    "migration-receipt": {
+      "path": "projects/alex.app/migration-receipt-2026-10-04.md",
+      "exists": true,
+      "kind": "file",
+      "sha256": "1655ed7d5d409e7bac54d97e184336e27dfe93fe51ae688db79f4102913ddbd1",
+      "bytes": 84253
+    },
+    "snapshot": {
+      "path": "/app/.state/alex-migration-20261004/legacy-frontier-snapshot.json",
+      "exists": true,
+      "kind": "file",
+      "sha256": "bd3f6a1cc65e125c61f5a8380cba746d55e3d8143edc6f8d6825af286d5d7f97",
+      "bytes": 3205803
+    },
+    "index": {
+      "path": "/app/.state/alex-migration-20261004/legacy-frontier-index.json",
+      "exists": true,
+      "kind": "file",
+      "sha256": "46d61e762a8abac6170b4333c7aac30af2661afabe7fe635294a17318ea1cde9",
+      "bytes": 203282
+    },
+    "race-deploy": {
+      "path": "/app/projects/may-agent/.state/deploy-receipts/handler-failure-storm-50e4cc0d-20260826.json",
+      "exists": true,
+      "kind": "file",
+      "sha256": "038fe937201833be792754536087337c0076cd00d1773f1db270dc46c4790995",
+      "bytes": 786,
+      "content": {
+        "version": 1,
+        "correlation": "handler-failure-storm-50e4cc0d-20260826",
+        "project": "may-agent",
+        "taskId": "ops/repair-handler-failure-storm-2026-08-26",
+        "artifactSha": "4e9633e39ca80f329733f4d9fd4134382cd8906a698a52034e9ba6f3a040727c",
+        "sourceCommit": "50e4cc0de89715610c7d60dfdb1d4da4bc98d180",
+        "phase": "succeeded",
+        "requestedAt": "2026-08-26T17:12:56.065Z",
+        "verification": "After the supervisor settles service and HTTP health, verify loadedArtifactSha equals artifactSha, health is healthy, and duplicateDeploy is false, then complete the owner task without redeploying.",
+        "completedAt": "2026-08-26T17:13:18.468Z",
+        "loadedArtifactSha": "4e9633e39ca80f329733f4d9fd4134382cd8906a698a52034e9ba6f3a040727c",
+        "health": "healthy",
+        "duplicateDeploy": false
+      }
+    },
+    "evaluator-request": {
+      "path": "/app/.state/releases/deploy/evaluation-envelope-repair-f493c9e5325b-20260816T0923Z/request.json",
+      "exists": true,
+      "kind": "file",
+      "sha256": "578a37124b213f987446ead6211e0cdea7739ee36d5ca445c30666cdd0cc47d6",
+      "bytes": 791,
+      "content": {
+        "version": 1,
+        "correlation": "evaluation-envelope-repair-f493c9e5325b-20260816T0923Z",
+        "project": "evaluation",
+        "taskId": "renew-evaluator-envelope-repair-immutable-release-20260816",
+        "sourceRevision": "f493c9e5325b61289fbbd1460b438f633ca5361b",
+        "appRelease": "/app/.state/releases/apps/f493c9e5325b61289fbbd1460b438f633ca5361b",
+        "composeArtifact": "/app/.state/releases/deploy/evaluation-envelope-repair-f493c9e5325b-20260816T0923Z/compose.evaluation-envelope-repair.yml",
+        "requiredOperation": "host-side docker compose recreate of service may exactly once",
+        "requiredVerification": [
+          "terminal correlated receipt is succeeded and healthy",
+          "loaded source/artifact identity matches this request",
+          "targetedWake is true",
+          "duplicateDeploy is false"
+        ]
+      }
+    },
+    "evaluator-failed-other-correlation": {
+      "path": "/app/projects/may-agent/.state/deploy-receipts/evaluation-envelope-repair-f493c9e5325b-20260819T1103Z.json",
+      "exists": true,
+      "kind": "file",
+      "sha256": "ea32de6a4fbdd8f4146cc66cc53b167d4fd06d2ea3be689ad021d48f0e6d1cf2",
+      "bytes": 2068,
+      "content": {
+        "version": 1,
+        "correlation": "evaluation-envelope-repair-f493c9e5325b-20260819T1103Z",
+        "project": "evaluation",
+        "taskId": "renew-evaluator-envelope-repair-immutable-release-20260816",
+        "appRequestId": "appdep_eed5fcc929e58635bd3c8a98",
+        "sourceRevision": "f493c9e5325b61289fbbd1460b438f633ca5361b",
+        "artifactIdentity": {
+          "appRelease": "/app/.state/releases/apps/f493c9e5325b61289fbbd1460b438f633ca5361b/projects/evaluation.app",
+          "releaseTreeSha256": "ec3f5d10114f9df992f9c5c6233d964747c95c43db856136ef6efbe71eb25774",
+          "appEntrySha256": "e106d19efee28ce5da247970027c7bd662bf273f836401297930b92a820f8e4a"
+        },
+        "loadedRuntime": {
+          "sdkRelease": "sdk-42104b5fcf505185c1b992391c4821f399083b5d",
+          "sdkIndexSha256": "51adb683329e3d40fdb7c56940b812cca6df4260093ab0546f4adf2a21c8db36",
+          "sdkAppSha256": "4bce1d499953663c3383230e192b1754ea8ffcb74fc386e97ed601a615a5fbb6",
+          "loadedEvaluationAppEntrySha256": "01174482fc312631a02be6aac551df9434254c626fa1e985329e062620a290b0"
+        },
+        "phase": "failed",
+        "requestedAt": "2026-08-19T11:03:00.000Z",
+        "completedAt": "2026-08-19T13:33:45.556Z",
+        "health": "healthy",
+        "targetedWake": true,
+        "targetedWakeEventId": 5780819,
+        "duplicateDeploy": false,
+        "activationAttempted": false,
+        "mount": {
+          "target": "/app/projects/evaluation.app",
+          "source": "/dev/sdd[/app]",
+          "options": "rw,relatime,discard,errors=remount-ro,data=ordered",
+          "requestedReleaseActive": false
+        },
+        "failure": "compatibility-preflight-failed",
+        "compatibilityGap": [
+          "app.ts imports AppDisposition from @may-agent/sdk, but loaded SDK sdk-42104b5fcf505185c1b992391c4821f399083b5d does not export AppDisposition (TS2305)",
+          "app.ts declares tasks.attach, but loaded SDK AppTaskPolicy has no attach property (TS2353)"
+        ],
+        "verification": "Immutable release typecheck against the currently loaded SDK failed with exactly TS2305 and TS2353. Activation stopped before any host-side recreate; the live runtime remained healthy, and exact-task wake event 5780819 was admitted for the source task."
+      }
+    },
+    "gym-activation": {
+      "path": "/app/projects/gym/.state/proofs/stable-localkey-review-proposal-emission/activation.json",
+      "exists": true,
+      "kind": "file",
+      "sha256": "b2c146ad35b3665b613588cc20a67ae531069f7538e8310830995913ac1e1678",
+      "bytes": 1871,
+      "content": {
+        "schemaVersion": 1,
+        "kind": "gym-workflow-candidate-activation",
+        "candidatePath": "/app/projects/gym/.state/candidates/repair-stable-localkey-review-proposal-emission",
+        "activatedTargetRoot": "/app/projects/gym.app",
+        "fingerprintAlgorithm": "sha256(sorted lines of <file-sha256><two spaces><relative-path><newline>)",
+        "candidateFingerprint": "sha256:765d5999dd5d90e5cc5f53a00a6b930e6809bf19715c5f47aa8069a6f3e19013",
+        "manifest": [
+          {
+            "path": "agents/gym/workflows/lib/review-event.test.ts",
+            "sha256": "521cc822855e91e35af1c02f82c37a2431d6ae734e8725e1e6f111b282defb62",
+            "bytes": 2084,
+            "preActivationTargetSha256": "521cc822855e91e35af1c02f82c37a2431d6ae734e8725e1e6f111b282defb62"
+          },
+          {
+            "path": "agents/gym/workflows/lib/review-event.ts",
+            "sha256": "4301bdc43a7331ae727e58d776fa82061747bcd158a0d3c391cc1fdb638da54c",
+            "bytes": 1671,
+            "preActivationTargetSha256": "4301bdc43a7331ae727e58d776fa82061747bcd158a0d3c391cc1fdb638da54c"
+          },
+          {
+            "path": "agents/gym/workflows/review-and-propose.test.ts",
+            "sha256": "875c9b9c1cd5aaa0496d3bd0428a4a84f649335f1b7bee3d937630358bcf221f",
+            "bytes": 12633,
+            "preActivationTargetSha256": "875c9b9c1cd5aaa0496d3bd0428a4a84f649335f1b7bee3d937630358bcf221f"
+          },
+          {
+            "path": "agents/gym/workflows/review-and-propose.ts",
+            "sha256": "54eb6aace028fd4b5255fdebe3ed50e8d75dabb40f6ce4568693d6c1881facc3",
+            "bytes": 23190,
+            "preActivationTargetSha256": "6cb2adc1c670da2cdf363bd7af4ad6b36239b3917f5ea82faf4a0c2e099bba0a"
+          }
+        ],
+        "activatedAt": "2026-08-25T06:09:56.729797+00:00",
+        "constraints": {
+          "maySourceModified": false,
+          "benchmarkTruthModified": false,
+          "labelsModified": false,
+          "historicalRunsModified": false,
+          "historicalAdjudicationsModified": false
+        },
+        "postActivationVerified": true
+      }
+    },
+    "gym-terminal": {
+      "path": "/app/projects/gym/.state/proofs/stable-localkey-review-proposal-emission/terminal-reconciliation.json",
+      "exists": true,
+      "kind": "file",
+      "sha256": "74ad75a42c907c190aa8670dd708295d495f2a8ac1e3b7c51cc925503e855df5",
+      "bytes": 1774,
+      "content": {
+        "schemaVersion": 1,
+        "kind": "stable-localkey-review-proposal-terminal-reconciliation",
+        "recordedAt": "2026-08-25T07:05:29.112Z",
+        "candidateFingerprint": "sha256:765d5999dd5d90e5cc5f53a00a6b930e6809bf19715c5f47aa8069a6f3e19013",
+        "exactTask": {
+          "appId": "gym",
+          "taskId": "runtime/review-proposal/incident-s_1787442962045_6-d98694f90add3f99",
+          "generation": 1,
+          "attemptId": "r_1_69979979-d586-468c-b4fb-812029b8266b",
+          "workflow": "review-and-propose",
+          "workflowRunId": "wr_1787639781567_kqyx",
+          "workflowStatus": "done",
+          "disposition": "converged"
+        },
+        "events": {
+          "replayRequest": 6076418,
+          "reviewFiltered": 6076612,
+          "approvalResolved": 6076615,
+          "workflowDone": 6076617,
+          "taskReconciled": 6076618
+        },
+        "stableLocalKeys": [
+          "review-proposal-3e4f4bae14f11df6cba4-filtered",
+          "review-proposal-3e4f4bae14f11df6cba4-approval-superseded"
+        ],
+        "postStartStableLocalKeyErrorCount": 0,
+        "artifacts": {
+          "reviewProposalMarkdown": {
+            "path": "/app/projects/gym.app/.state/reviews/incident-s_1787442962045_6.md",
+            "sha256": "9d7ef6829b94d2412f673cfce13bec83d7ecd9b29792a8d2606a3739c4a040a9"
+          },
+          "decisionJson": {
+            "path": "/app/projects/gym.app/.state/reviews/incident-s_1787442962045_6.decision.json",
+            "sha256": "ab087f084fd9b98efb7ec5175cb7bcb39b24be68e9e8e22f48ea45108f946f25"
+          },
+          "workflowRun": {
+            "path": "/app/.state/workflow-runs/wr_1787639781567_kqyx/run.json",
+            "sha256": "adb91b9b694ee796547f97e7913248dd7781e0744d9c76cd24512edd6dc80946"
+          }
+        },
+        "constraints": {
+          "maySourceModified": false,
+          "benchmarkTruthModified": false,
+          "labelsModified": false,
+          "historicalRunsModified": false,
+          "historicalAdjudicationsModified": false
+        }
+      }
+    },
+    "gym-metric-negative": {
+      "path": "/app/projects/gym/.state/proofs/stable-localkey-review-proposal-emission/metric-refresh-20260828T060240Z.json",
+      "exists": true,
+      "kind": "file",
+      "sha256": "aa5f22e24ceaace4f37c588a55f7572a97334147317df6cb13225dab1db6128d",
+      "bytes": 2501,
+      "content": {
+        "schemaVersion": 1,
+        "kind": "gym-valid-run-rate-supported-refresh-readback",
+        "recordedAt": "2026-08-28T06:02:40.883Z",
+        "terminalWorkflow": {
+          "runId": "wr_1787639781567_kqyx",
+          "endedAt": 1787639782467,
+          "endedAtIso": "2026-08-25T06:36:22.467Z",
+          "terminalProof": "/app/projects/gym/.state/proofs/stable-localkey-review-proposal-emission/terminal-reconciliation.json",
+          "status": "preserved"
+        },
+        "previousMetricProof": "/app/projects/gym/.state/proofs/stable-localkey-review-proposal-emission/metric-refresh.json",
+        "refresh": {
+          "controlPlane": "may-agent operator emit",
+          "command": "bun src/app/may.ts --emit trigger.metrics-snapshot '{}'",
+          "eventType": "trigger.metrics-snapshot",
+          "eventId": 6294821,
+          "accepted": true,
+          "processReadback": {
+            "observedAt": "2026-08-28T06:02:40.883Z",
+            "process": "metrics-snapshot",
+            "status": "ok",
+            "lastRun": "1m ago"
+          }
+        },
+        "readback": {
+          "controlPlane": "may-agent read-only HTTP metrics API",
+          "observedAt": "2026-08-28T06:02:40.883Z",
+          "metricEndpoint": "http://127.0.0.1:8081/api/metrics",
+          "historyEndpoint": "http://127.0.0.1:8081/api/metrics/gym.valid-run-rate/history?days=14",
+          "metric": {
+            "id": "gym.valid-run-rate",
+            "current": 0.76,
+            "threshold": 0.95,
+            "target": 1,
+            "updatedAt": 1787847510656,
+            "updatedAtIso": "2026-08-27T16:18:30.656Z"
+          },
+          "sourceSample": {
+            "value": 0.76,
+            "sampleSize": null,
+            "measuredAt": 1787847510656,
+            "measuredAtIso": "2026-08-27T16:18:30.656Z",
+            "measuredBy": "gym-improve-agent",
+            "note": "verification:may-app-outcome-management-transfer-verify-20260827T143948Z-880dd19c"
+          }
+        },
+        "thresholdDisposition": {
+          "operator": ">=",
+          "threshold": 0.95,
+          "value": 0.76,
+          "passes": false,
+          "status": "unrelated-validity-regression-remains",
+          "reason": "The fresh supported refresh/readback observes 0.76, below 0.95. The refresh completed but the metric has no runtime source definition, so it retained the latest Gym-owned source sample. This unrelated validity regression does not weaken or rewrite the preserved terminal stable-localKey proof."
+        },
+        "constraintsObserved": {
+          "benchmarkTruthModified": false,
+          "labelsModified": false,
+          "historicalRunsModified": false,
+          "historicalAdjudicationsModified": false,
+          "productionMayModified": false,
+          "genericBenchmarkLaunched": false,
+          "workHiddenOrArchived": false
+        }
+      }
+    },
+    "gym-run": {
+      "path": "/app/.state/workflow-runs/wr_1787639781567_kqyx/run.json",
+      "exists": true,
+      "kind": "file",
+      "sha256": "adb91b9b694ee796547f97e7913248dd7781e0744d9c76cd24512edd6dc80946",
+      "bytes": 4467,
+      "content": {
+        "schemaVersion": 1,
+        "runId": "wr_1787639781567_kqyx",
+        "workflow": "review-and-propose",
+        "task": "Reconcile task through workflow review-and-propose\napp: /app/projects/gym.app\nproject: /app/projects/gym\n\n## Reconciliation Task\n```json\n{\n  \"appId\": \"gym\",\n  \"taskId\": \"runtime/review-proposal/incident-s_1787442962045_6-d98694f90add3f99\",\n  \"generation\": 1,\n  \"resourceVersion\": 4,\n  \"agent\": \"gym\",\n  \"handler\": \"workflow:review-and-propose\",\n  \"mode\": \"achieve\",\n  \"outcome\": \"Turn one Gym evidence packet into the smallest human-auditable proposal without changing benchmark truth.\",\n  \"acceptance\": [\n    \"A review proposal identifies the evidence, classification, next action, and every human approval boundary.\"\n  ],\n  \"input\": {\n    \"incidentId\": \"s_1787442962045_6\",\n    \"incidentPath\": \"/app/projects/gym.app/.state/incidents/s_1787442962045_6.json\",\n    \"kind\": \"incident\",\n    \"requestKey\": \"incident-s_1787442962045_6\"\n  },\n  \"children\": {\n    \"live\": [],\n    \"completed\": [],\n    \"note\": \"This is a bounded status summary. Use tasks.get for a child's exact input or Conditions.\"\n  },\n  \"waits\": {\n    \"open\": [],\n    \"note\": \"These are accepted waits on this Task and remain part of its current state. Reconcile new events against the Task goal and these waits. Preserve a still-valid wait by requestId; create or replace work only when the goal requires it, never merely because the wait was absent from prose or child summaries. targetTaskId is the request's original target and must be preserved when redeclaring it. resolvedTaskId is only the Task created or found by that request; do not copy it into taskId when targetTaskId is absent.\"\n  },\n  \"paths\": {\n    \"appDir\": \"/app/projects/gym.app\",\n    \"projectDir\": \"/app/projects/gym\",\n    \"workspaceDir\": \"/app/projects/gym.app\"\n  },\n  \"declaredOutputs\": [\n    \"/app/projects/gym/.state/reviews\"\n  ],\n  \"fallbackReason\": null\n}\n```\n\n## New Events\n```json\n{\n  \"items\": [\n    {\n      \"eventId\": 6076418,\n      \"observedAt\": \"2026-08-25T06:32:04.536Z\",\n      \"event\": {\n        \"type\": \"project.owner.requested\",\n        \"data\": {\n          \"appId\": \"gym\",\n          \"candidateFingerprint\": \"sha256:765d5999dd5d90e5cc5f53a00a6b930e6809bf19715c5f47aa8069a6f3e19013\",\n          \"idempotencyKey\": \"stable-localkey-review-proposal-emission-replay-v1\",\n          \"project\": \"gym\",\n          \"reason\": \"Fresh exact-task replay after activating stable-localKey candidate\",\n          \"sourceTaskId\": \"app-request/appdep_a5e1a4e921f4678cc70fd320\",\n          \"taskId\": \"runtime/review-proposal/incident-s_1787442962045_6-d98694f90add3f99\"\n        },\n        \"source\": \"control-socket\",\n        \"owner\": \"app:gym\",\n        \"target\": {\n          \"appId\": \"gym\",\n          \"taskId\": \"runtime/review-proposal/incident-s_1787442962045_6-d98694f90add3f99\"\n        }\n      }\n    }\n  ],\n  \"throughEventId\": 6076418,\n  \"truncated\": false\n}\n```",
+        "parentSessionId": null,
+        "parentWorkflowRunId": null,
+        "depth": 1,
+        "status": "done",
+        "startedAt": 1787639781567,
+        "endedAt": 1787639782467,
+        "result_summary": "Filed Gym review incident-s_1787442962045_6 as runtime; no human decision requested. Coverage: Accepted lesson: system-deputy-operations — stop at the first broken boundary and use the smallest mechanism that can produce verified proof, Accepted lesson: practical-judgment — evidence over narrative and simplicity over unnecessary machinery, Accepted lesson: signals-and-context — inspect underlying evidence and correct the smallest source/runtime issue rather than teaching around it.",
+        "result_reason": null,
+        "resumedFromRunId": null,
+        "projectId": "gym",
+        "sourcePath": "/app/projects/gym.app/agents/gym/workflows/review-and-propose.ts",
+        "sourceScope": "agent",
+        "entryContentHash": "54eb6aace028fd4b5255fdebe3ed50e8d75dabb40f6ce4568693d6c1881facc3",
+        "app_id": "gym",
+        "task_id": "runtime/review-proposal/incident-s_1787442962045_6-d98694f90add3f99",
+        "task_generation": 1,
+        "attempt_id": "r_1_69979979-d586-468c-b4fb-812029b8266b",
+        "taskBinding": {
+          "appId": "gym",
+          "taskId": "runtime/review-proposal/incident-s_1787442962045_6-d98694f90add3f99",
+          "generation": 1,
+          "attemptId": "r_1_69979979-d586-468c-b4fb-812029b8266b"
+        }
+      }
+    },
+    "gym-review": {
+      "path": "/app/projects/gym.app/.state/reviews/incident-s_1787442962045_6.md",
+      "exists": true,
+      "kind": "file",
+      "sha256": "9d7ef6829b94d2412f673cfce13bec83d7ecd9b29792a8d2606a3739c4a040a9",
+      "bytes": 3179,
+      "content": "# Gym Review Proposal\n\nRequest: incident-s_1787442962045_6\nCreated: 2026-08-22T23:59:14.459Z\nReview session: s_1787443117746_10\n\n# Review proposal — incident `s_1787442962045_6`\n\n## Disposition\n\n**Classification:** harness/runtime  \n**Review disposition:** `runtime`  \n**Semantic novelty:** **No materially new benchmark meaning.** Do not create a May scenario or request new ground-truth approval.\n\n## Evidence\n\n- The incident record reports a terminal `done` result whose submitted state is `waiting`, with the exact `HumanApproval` Condition for `human:deployment-retry-app_72ff76c0` and Hao's approve/reject decision.\n- It records that the requested commit was not live, the prior deployment failed before activation, the existing runtime remained healthy, and May did not make an unauthorized second deployment attempt.\n- The evaluator's overall verdict is **acceptable**, with quality `0.9`; the sole criticism is efficiency (`0.64`, 7 wasted calls).\n- The flagged calls are wrong-root path reads, unavailable `rg`/`ss`, a wrong-working-directory version command, incorrect readiness URLs, and repeated status checks. These are path resolution, file/tool discovery, endpoint lookup, tool recovery, and runtime probing mechanics—the categories explicitly excluded from May learning.\n- The supplied artifact is an aftermath/evaluation record rather than the raw transcript. It names the failed calls, but absent the transcript it would not support a stronger semantic judgment against May even if one were contemplated.\n\n## Judgment\n\nThe human outcome and authority boundary were handled correctly: May preserved the healthy deployment, proved the candidate was not active, stopped before another deployment, and asked Hao for the exact required decision. The remaining inefficiency belongs to the responsible app/runtime's discoverability and probing surface, not to benchmark truth and not to a new human-owned behavioral boundary.\n\nThe general judgment already aligns with accepted guidance (`system-deputy-operations`, `practical-judgment`, and `signals-and-context`): inspect evidence, stop at the first proven boundary, and avoid unnecessary machinery. This incident does not add new external decision meaning.\n\n## Smallest next action\n\nRoute the incident evidence to the responsible runtime/app owner for ordinary investigation of canonical project-root propagation, supported tool discovery, and a single authoritative readiness/status path. Preserve this incident unchanged. **Do not modify May, add a benchmark case, change labels, or open a human-review cycle.**\n\n## Human approval boundaries\n\n- **No Hao approval is required** for this review disposition or for a bounded runtime investigation that does not mutate production.\n- **Hao's existing deployment approval remains required** for the exact approve/reject decision on `human:deployment-retry-app_72ff76c0`; this review does not grant or alter it.\n- **Hao approval would be required** before promoting any new preference-sensitive benchmark truth, but no such proposal is recommended here.\n- Any production/runtime mutation must follow its own existing authority boundary; this review authorizes none.\n"
+    },
+    "gym-decision": {
+      "path": "/app/projects/gym.app/.state/reviews/incident-s_1787442962045_6.decision.json",
+      "exists": true,
+      "kind": "file",
+      "sha256": "ab087f084fd9b98efb7ec5175cb7bcb39b24be68e9e8e22f48ea45108f946f25",
+      "bytes": 715,
+      "content": {
+        "disposition": "runtime",
+        "matchedCoverage": [
+          "Accepted lesson: system-deputy-operations — stop at the first broken boundary and use the smallest mechanism that can produce verified proof",
+          "Accepted lesson: practical-judgment — evidence over narrative and simplicity over unnecessary machinery",
+          "Accepted lesson: signals-and-context — inspect underlying evidence and correct the smallest source/runtime issue rather than teaching around it"
+        ],
+        "dispositionReason": "The successful outcome and exact approval wait were correct; the only reported defects concern path, tool, endpoint, and repeated-probe mechanics owned by the app/runtime, with no new human-owned semantic boundary."
+      }
+    },
+    "host-tests": {
+      "path": "/tmp/alex-seven-host-tests.log",
+      "exists": true,
+      "kind": "file",
+      "sha256": "6e8a8f69803552a44acc6c4446c535b247d6f5bfe21bf9ca6cbb9ade50dcc75f",
+      "bytes": 5259,
+      "content": "bun test v1.3.14 (0d9b296a)\n\nsrc/app/model-registry.test.ts:\n(pass) model registry > routes models through the configured endpoint with canonical model names [0.47ms]\n(pass) model registry > uses local no-auth endpoint defaults without inventing a DeepSeek route [0.05ms]\n(pass) model registry > registers DeepSeek only with its complete independent route [0.10ms]\n(pass) model registry > rejects partial DeepSeek configuration without exposing its value [0.10ms]\n(pass) model registry > preserves optional tool fields in configured Responses requests [37.49ms]\n\nsrc/lib/agent-execution.test.ts:\n(pass) GitHub Copilot IDE token recovery > switches the bounded Copilot auth envelope once to the declared independent fallback [0.95ms]\n(pass) GitHub Copilot IDE token recovery > does not silently reroute generic auth or non-auth provider failures [0.27ms]\n(pass) shared agent execution preparation > replaces only the task brief, retaining current execution controls and original input [2.17ms]\n(pass) shared agent execution preparation > rejects a malformed preparation result 0 [0.16ms]\n(pass) shared agent execution preparation > rejects a malformed preparation result 1 [0.04ms]\n(pass) shared agent execution preparation > rejects a malformed preparation result 2 [0.02ms]\n(pass) shared agent execution preparation > rejects a malformed preparation result 3 [0.01ms]\n(pass) shared agent execution preparation > rejects a malformed preparation result 4 [0.01ms]\n(pass) shared agent execution preparation > rejects a malformed preparation result 5 [0.01ms]\n(pass) shared agent execution preparation > preserves preparation failures instead of silently running a different brief [0.09ms]\n(pass) shared agent execution preparation > contains rejected async preparation as an ordinary preparation error [339.77ms]\n(pass) shared agent execution preparation > prepares convention prompts and tools without a manager or database [2.12ms]\n(pass) shared agent execution preparation > synthesizes exactly one checkpoint for explicit full non-persistent preparation [0.26ms]\n(pass) shared agent execution preparation > respects the explicitly selected or saved Task tool policy: full [0.18ms]\n(pass) shared agent execution preparation > respects the explicitly selected or saved Task tool policy: full-no-tasks [0.07ms]\n(pass) shared agent execution preparation > preserves one existing checkpoint without synthesizing a duplicate [0.10ms]\n(pass) shared agent execution preparation > does not broaden checkpoint access outside explicit full non-persistent preparation [0.24ms]\n(pass) shared agent execution preparation > keeps App owners inside the disposition ownership boundary [0.33ms]\n(pass) shared agent execution preparation > leaves compatibility deputy sessions unchanged during migration [0.13ms]\n(pass) shared agent execution preparation > binds shared tools to the exact concurrent agent session [7.56ms]\n(pass) shared agent execution preparation > does not select a skill from Task wording [0.51ms]\n(pass) shared agent execution preparation > adapts the supplied finish capability for structured workflow results [0.15ms]\n(pass) shared agent execution preparation > rebases filesystem tools onto the workflow execution root [2.13ms]\n(pass) shared agent execution preparation > rebases finish deliverable validation onto the workflow execution root [1.14ms]\n(pass) direct structured judgment execution > preserves non-success output with structured=%s [14.96ms]\n(pass) direct structured judgment execution > preserves non-success output with structured=%s [3.70ms]\n(pass) direct structured judgment execution > direct execution returns usage for all corrective replies and excludes inherited messages [1.64ms]\n(pass) direct structured judgment execution > rejects an invalid or uncommitted judgment 0 [4.78ms]\n(pass) direct structured judgment execution > rejects an invalid or uncommitted judgment 1 [2.52ms]\n(pass) direct structured judgment execution > rejects an invalid or uncommitted judgment 2 [2.11ms]\n(pass) direct structured judgment execution > keeps a provider failure as an execution error [0.91ms]\n(pass) direct structured judgment execution > keeps deadline stop before any committed judgment interrupted [51.46ms]\n(pass) direct structured judgment execution > keeps caller stop before any committed judgment interrupted [0.91ms]\n(pass) direct structured judgment execution > retains a committed finish when timeout races with turn cleanup (structured=%s) [1001.78ms]\n(pass) direct structured judgment execution > retains a committed finish when timeout races with turn cleanup (structured=%s) [1001.13ms]\n\nsrc/app/core/tasks/app-task-parent-semantics.test.ts:\n(pass) Task hierarchy is context, not a return protocol > does not wake a quiet structural parent on child answer [80.26ms]\n(pass) Task hierarchy is context, not a return protocol > does not wake a quiet structural parent on child failure [62.70ms]\n(pass) Task hierarchy is context, not a return protocol > does not wake a quiet structural parent on child closure [62.76ms]\n(pass) Task hierarchy is context, not a return protocol > rejects waiting without a Condition even when a child is pending [51.23ms]\n\n 44 pass\n 0 fail\n 206 expect() calls\nRan 44 tests across 3 files. [3.16s]\n"
+    },
+    "app-tests": {
+      "path": "/tmp/alex-seven-app-tests.log",
+      "exists": true,
+      "kind": "file",
+      "sha256": "d1e5416ca7dfb640c7aea5a54ff238353bfb600102a1e02ea0d7cfebea684432",
+      "bytes": 3197,
+      "content": "bun test v1.3.14 (0d9b296a)\n\nprojects/alex.app/agents/evaluator/workflows/evaluation-feedback-projection.test.ts:\n(pass) evaluation feedback projection > projects a genuine actionable evaluation with source, verdict, finding, and verification context exactly once [3.25ms]\n(pass) evaluation feedback projection > projects deep-evaluation verification evidence when the durable fact stores it as a string [1.26ms]\n(pass) evaluation feedback projection > does not label the exact non-actionable Gym evaluation as an issue or required action [1.50ms]\n(pass) evaluation feedback projection > removes stale feedback when the latest evaluation has no issues [1.34ms]\n(pass) evaluation feedback projection > does not recreate false feedback when an older evaluation replays after correction [1.41ms]\n(pass) evaluation feedback projection > repairs the generation-505 false-success mismatch at the canonical app-ops target and exact replay is idempotent [1.97ms]\n(pass) evaluation feedback projection > a materially changed actionable evaluation updates source-session and verification context [1.34ms]\n(pass) evaluation feedback projection > delivers exact actionable aks-explorer evaluation through its manifest-declared owner directory without resolving it [1.89ms]\n(pass) evaluation feedback projection > generation-737 aks-explorer missing-target good evaluation converges as an idempotent verified no-op [1.20ms]\n(pass) evaluation feedback projection > missing-target actionable evaluation remains blocked with finding artifact and verification context [0.51ms]\n(pass) evaluation feedback projection > blocks when no bounded App workspace is allocated [0.15ms]\n(pass) evaluation feedback projection > rejects a feedback key that could escape the generated projection directory [0.70ms]\n\nprojects/alex.app/agents/gym/workflows/compare-candidate.test.ts:\n(pass) standalone Gym comparison adapter > refuses partial or invalid baseline trials before spending a candidate run [10.33ms]\n(pass) standalone Gym comparison adapter > does not trust a passing comparison when the actual trial scope differs [39.67ms]\n(pass) standalone Gym comparison adapter > rejects an identity mismatch before spawning the standalone runner [4.54ms]\n(pass) standalone Gym comparison adapter > checks the requested objective both before execution and on return [41.14ms]\n(pass) standalone Gym comparison adapter > retains a bounded hold receipt for a failing subprocess [45.02ms]\n(pass) standalone Gym comparison adapter > verifies the trusted run and exact identities after a valid subprocess [43.17ms]\n(pass) standalone Gym comparison adapter > holds a verified no-change control without pretending improvement [40.80ms]\n(pass) standalone Gym comparison adapter > kills an aborted subprocess and retains no fabricated successful run [1244.42ms]\n(pass) frozen objective through the real Gym runner > faster [345.74ms]\n(pass) frozen objective through the real Gym runner > unchanged [325.24ms]\n(pass) frozen objective through the real Gym runner > regression [339.26ms]\n(pass) frozen objective through the real Gym runner > missing-timing [373.80ms]\n\n 24 pass\n 0 fail\n 140 expect() calls\nRan 24 tests across 2 files. [2.90s]\n"
+    },
+    "host-race-tests": {
+      "path": "/tmp/alex-seven-race-tests.log",
+      "exists": true,
+      "kind": "file",
+      "sha256": "9e25ab8bb0f08d29875cd7c859ce8b233e469fcea505a249aea0792dc7782ba7",
+      "bytes": 386,
+      "content": "bun test v1.3.14 (0d9b296a)\n\nsrc/app/core/tasks/app-task-reconciler.test.ts:\n(pass) App task reconciler state > releases a current parent while preserving new human input [30.36ms]\n(pass) App task reconciler state > still fences a newer mutation arriving during stale-attempt release [11.24ms]\n\n 2 pass\n 166 filtered out\n 0 fail\n 11 expect() calls\nRan 2 tests across 1 file. [544.00ms]\n"
+    },
+    "model-source": {
+      "path": "/app/projects/may-agent/src/app/model-registry.ts",
+      "exists": true,
+      "kind": "file",
+      "sha256": "db8cec507c548e9df92fda115d9ad12f8ca3156c4b7e9512be78b5748274a942",
+      "bytes": 5703,
+      "lines": "19-25, 35-43, 69-75"
+    },
+    "fallback-source": {
+      "path": "/app/projects/may-agent/src/lib/agent-execution.ts",
+      "exists": true,
+      "kind": "file",
+      "sha256": "ee8e5944e57dd8718835588acb3657f7bc2b62a3233535175f8999dd867404e0",
+      "bytes": 32961,
+      "lines": "100-112, 142-182"
+    },
+    "host-parent-source": {
+      "path": "/app/projects/may-agent/src/app/core/tasks/app-task-parent-semantics.test.ts",
+      "exists": true,
+      "kind": "file",
+      "sha256": "5d5012007524473e0cf1d11f24e4360ef3960d827d41b15c95d9ffc1d329ffb8",
+      "bytes": 4566,
+      "lines": "94-132"
+    },
+    "alex-app-source": {
+      "path": "projects/alex.app/app.ts",
+      "exists": true,
+      "kind": "file",
+      "sha256": "3ab201eaeeeb2ca7e11c00a0eef39f2d8c97ab42636cd7e6933939a1b5914731",
+      "bytes": 20158
+    },
+    "retired-metric-source": {
+      "path": "projects/may.app/retired-legacy-metrics.ts",
+      "exists": true,
+      "kind": "file",
+      "sha256": "059f90dbfc0277434b7cfe327d800f95580b792dac876eb0444588e31c9a0a37",
+      "bytes": 2924,
+      "lines": "47-65"
+    },
+    "task-design": {
+      "path": "projects/alex.app/docs/2a-design/task-resource-engine.md",
+      "exists": true,
+      "kind": "file",
+      "sha256": "04ecba3499f413d7da13c3d0310ee99fcec27b440fd0ef4b9c5e4dd3967cf026",
+      "bytes": 46339,
+      "lines": "359-365"
+    },
+    "migration-task-context": {
+      "path": "/app/.state/task-context/5e6769088329b1a61eeb3209dd7c4641f62ee2190f52dc306bdce52077a23d3d/e896b5c4ccea7a08c52d24d0c0ff91593391aa3b1f2c00bd1b2ac60a115e1b40/TASK.md",
+      "exists": true,
+      "kind": "file",
+      "sha256": "5931d39e9641456c0543aadd8e9e4e0f51962a769d841cd16e56bbcace9346e5",
+      "bytes": 7726
+    },
+    "current-metric-task": {
+      "tool": "tasks.get",
+      "appId": "may",
+      "taskId": "goal/appdep_c1890444e02436f8d2131ffd",
+      "generation": 1,
+      "resourceVersion": 21,
+      "status": "waiting",
+      "acceptedAttempt": "r_1_5935e27a-175d-49e0-a0c1-9d6895421fdd",
+      "scopeRead": "Full outcome, acceptance, input, result, Condition and current obligations read. Current=0.76 is stale/retired; zero snapshots; 34 resolved alerts is not recovery."
+    },
+    "current-hygiene-task": {
+      "tool": "tasks.get",
+      "appId": "may",
+      "taskId": "goal/app_224ef63e-ddd6-4f4b-b159-26de9dd60107",
+      "generation": 2,
+      "resourceVersion": 730,
+      "status": "waiting",
+      "scopeRead": "Full outcome/acceptance/input/current obligations read: May inventory and human /todo only, not all-App inventory. No closure/Condition retirement in last accepted 11:48 cycle."
+    },
+    "current-unhandled-task": {
+      "tool": "tasks.get",
+      "appId": "may",
+      "taskId": "goal/appdep_7bfd3ac4b0fa68969a9e3b23",
+      "generation": 1,
+      "resourceVersion": 4,
+      "status": "done",
+      "acceptedAttempt": "r_1_53d625a3-7d0b-493a-8a36-2419896297d1",
+      "scopeRead": "Full outcome/acceptance/input/result read; ten exact identities; explicitly excludes repair-platform-review-terminal-contract-after-unrunnable-owner-20260818."
+    }
+  },
+  "checks": [
+    {
+      "command": "cd /app/projects/may-agent && bun test ./src/app/model-registry.test.ts ./src/lib/agent-execution.test.ts ./src/app/core/tasks/app-task-parent-semantics.test.ts",
+      "exitCode": 0,
+      "pass": 44,
+      "fail": 0,
+      "expectations": 206,
+      "raw": "host-tests"
+    },
+    {
+      "command": "bun test ./projects/alex.app/agents/evaluator/workflows/evaluation-feedback-projection.test.ts ./projects/alex.app/agents/gym/workflows/compare-candidate.test.ts",
+      "exitCode": 0,
+      "pass": 24,
+      "fail": 0,
+      "expectations": 140,
+      "raw": "app-tests"
+    },
+    {
+      "command": "cd /app/projects/may-agent && bun test ./src/app/core/tasks/app-task-reconciler.test.ts --test-name-pattern 'releases a current parent|still fences a newer mutation'",
+      "exitCode": 0,
+      "pass": 2,
+      "filteredOut": 166,
+      "fail": 0,
+      "expectations": 11,
+      "raw": "host-race-tests"
+    }
+  ],
+  "coverageLimits": [
+    "70 passing current deterministic tests are not historical fulfillment, live model turns, production activation or full CI. Fixture databases/files were scratch-only; no production DB access.",
+    "Current Alex Task list discovery returned no matching new seven-entry technical continuation. It is not a global May inventory. Exact May Task reads establish only the three named scopes. Creator must discover/reuse a matching current disposition before new handoff.",
+    "Original runtime DB, arbitrary provider configuration and approval events were not queried; exact retained rows/Conditions come from pinned read-only snapshot, not fresh legacy state.",
+    "Missing paths and empty bounded filename/retirement-manifest matches establish availability gaps only, not irreversible loss or absence everywhere.",
+    "Initial rg probes included absent evidence/handler directories and returned errors; corrected discovered source paths were inspected. These searches are not passing tests.",
+    "No feedback file existed at worktree or installed Bob feedback paths. No old Condition was inferred approved, rejected, retired, satisfied or rebound."
+  ],
+  "nextActions": [
+    "Alex incorporates this artifact into the existing migration outcome after review; do not create seven technical repairs.",
+    "May handles six exact creator/caller decisions; provider lineage may retain a real operator prerequisite, while five obsolete proof/research/cleanup promises need explicit scope judgment.",
+    "Reuse May goal/appdep_c1890444e02436f8d2131ffd only for the retired metric remainder of the verified Gym localKey incident; no duplicate human ask or metric sample.",
+    "Preserve all unknown Conditions and exact callers; any supported administrative settlement remains separate authorized work."
+  ],
+  "pathObservations": [
+    {
+      "path": "/app/projects/may-agent/evidence/runtime-repair-handler-session-failure-storm-20260826.md",
+      "exists": false,
+      "resolved": "/app/projects/may-agent/evidence/runtime-repair-handler-session-failure-storm-20260826.md"
+    },
+    {
+      "path": "/app/projects/may-agent/.state/deploy-receipts/evaluation-envelope-repair-f493c9e5325b-20260816T0923Z.json",
+      "exists": false,
+      "resolved": "/app/projects/may-agent/.state/deploy-receipts/evaluation-envelope-repair-f493c9e5325b-20260816T0923Z.json"
+    },
+    {
+      "path": "/app/.state/releases/apps/f493c9e5325b61289fbbd1460b438f633ca5361b",
+      "exists": true,
+      "resolved": "/app/.state/releases/apps/f493c9e5325b61289fbbd1460b438f633ca5361b"
+    },
+    {
+      "path": "/app/projects/may-agent/.state/proof-rollout/telegram-admission-bounded-lookup-20260820",
+      "exists": false,
+      "resolved": "/app/projects/may-agent/.state/proof-rollout/telegram-admission-bounded-lookup-20260820"
+    },
+    {
+      "path": "/app/projects/may-agent.app/.state/proof-rollout/telegram-admission-bounded-lookup-20260820",
+      "exists": false,
+      "resolved": "/app/projects/alex.app/archive/retired-apps/may-agent/local/.state/proof-rollout/telegram-admission-bounded-lookup-20260820"
+    },
+    {
+      "path": "/app/.state/proof-rollout/telegram-admission-bounded-lookup-20260820",
+      "exists": false,
+      "resolved": "/app/.state/proof-rollout/telegram-admission-bounded-lookup-20260820"
+    },
+    {
+      "path": "/app/.state/sessions/s_1786869598554_8",
+      "exists": false,
+      "resolved": "/app/.state/sessions/s_1786869598554_8"
+    },
+    {
+      "path": "/app/.state/sessions/s_1786869754817_11",
+      "exists": false,
+      "resolved": "/app/.state/sessions/s_1786869754817_11"
+    },
+    {
+      "path": "/app/projects/may-agent/provider-fallback-negative-20260810/secret-safe-supervisor-restore-evidence.json",
+      "exists": false,
+      "resolved": "/app/projects/may-agent/provider-fallback-negative-20260810/secret-safe-supervisor-restore-evidence.json"
+    },
+    {
+      "path": "/app/projects/may-agent/outputs/ops-receipts/provider-fallback-negative-20260810.json.runtime-candidate",
+      "exists": false,
+      "resolved": "/app/projects/may-agent/outputs/ops-receipts/provider-fallback-negative-20260810.json.runtime-candidate"
+    },
+    {
+      "path": "/app/projects/may-agent/outputs/ops-receipts/provider-fallback-negative-20260810.json",
+      "exists": false,
+      "resolved": "/app/projects/may-agent/outputs/ops-receipts/provider-fallback-negative-20260810.json"
+    }
+  ],
+  "validation": {
+    "exactSelectedCount": 7,
+    "directRelationships": 11,
+    "directConditions": 2,
+    "relatedLegacyConditions": 3,
+    "allConditionsPreservedUnknown": true,
+    "currentChecks": {
+      "passed": 70,
+      "failed": 0,
+      "expectations": 357
+    },
+    "frontierAndReceiptUnchanged": true,
+    "scope": "evidence artifact only; no historical fulfillment or approved settlement"
+  }
+}
