@@ -231,11 +231,14 @@ cache or retry budget:
 | F1 | [Host #328](https://github.com/hao1939/may-agent/pull/328), `f99b80f64`: six key lookups state their nonempty invariant so SQLite uses existing partial indexes | Production-SQL plan regression fails on main and passes with the fix; identity, collision, legacy receipt and fenced emission coverage retained |
 | F2 | [Host #330](https://github.com/hao1939/may-agent/pull/330), `7f0578931`: rank attempt IDs, then join selected bodies by exact App/attempt identity | 36 resource-store tests, including multiple Tasks, cross-App ID reuse, empty references, timestamp ties and clock reversal |
 | F3 | #328 prepares identity before its own transaction and skips unused hashes for unkeyed Events | Standalone preparation failure does not acquire the writer slot; existing rollback, fence and body-persistence tests retained |
-| F4 | [Host #331](https://github.com/hao1939/may-agent/pull/331), `1e6928b11`: reuse two-phase cleanup for expired Event and pair candidates | Ten maintenance tests; a second connection writes during selection, changes eligibility and adds a reference before exact-ID deletion |
+| F4 | [Host #331](https://github.com/hao1939/may-agent/pull/331), `df1073428`: reuse two-phase cleanup for expired Event and pair candidates | Eleven maintenance tests; a second connection writes during selection, changes eligibility and adds a reference before exact-ID deletion; protected admission/input Events cannot starve a bounded batch |
 | F5 | May reliability queries materialize their shared recovery/attempt cohort within each query | 19 App tests, 119 assertions, including production-query plans and unchanged metric values/evidence |
 
 PR #328's prior retry additions are removed from its final diff. Host PRs are
-independent. Full local CI and GitHub check results are tracked on the PRs;
+independent. #328 passed full local CI (3,620 tests, three skips, 19,711 assertions)
+and both GitHub checks; #330 passed full local CI (3,618 tests, three skips,
+19,714 assertions) and both checks. Final #331 review-correction CI results are
+tracked on its PR;
 no source change here is a deployment claim.
 
 An integrated trial invoked both source implementations of `readTaskContext`
@@ -253,6 +256,16 @@ count took 136–139 ms before and 60–75 ms after; oldest recovery age took
 112–113 ms before and 61–63 ms after. Other tests were running on the machine;
 these small trials demonstrate avoidable work, not a latency guarantee.
 
+The #331 review found a pre-existing drift between candidate selection and the
+retention trigger: pending admission plans and unfinished inbox inputs were
+protected at deletion but absent from selection. If the oldest batch contained only protected rows, later eligible Events
+could never be selected. The source
+query now includes both missing indexed checks, matching all six trigger
+reference protections. A batch-size-one regression fails on main and passes on
+the correction, proving progress past protected records and cleanup of completed
+admission/done-input Events. It checks exact surviving IDs rather than a driver's
+change count, which can include a cascading admission-plan deletion.
+
 A separate synthetic Event trial used temporary databases and large payloads,
 measuring acquisition and the full acquired-to-COMMIT interval independently.
 For standalone keyed writes, average hold time was about 30 ms before and
@@ -260,6 +273,15 @@ For standalone keyed writes, average hold time was about 30 ms before and
 Unkeyed writes also remove previously unused hashing. Keyed nested writes still
 perform their preparation within the outer caller transaction; their timing
 variation is not evidence that a nested savepoint releases the writer slot.
+
+The maintenance trial used temporary databases with 20,000 Events and pairs,
+200 eligible deletions in each table, and retained/current records around them.
+It wrapped the actual DELETE execution in an explicit transaction solely to
+measure acquisition and acquired-to-COMMIT time. Both implementations deleted
+exactly the same 200 Events and pairs. Event deletion held the lock for 84 ms
+before and 13 ms after; pair deletion took 17 ms and 11 ms. Total maintenance
+time was 212 ms and 189 ms: discovery still costs time, but it no longer holds
+the writer slot. This single synthetic pass is not production performance proof.
 
 Artifact creation remains after the atomic duplicate check: moving it earlier
 could turn receipt replay into a new filesystem failure. Broader artifact and
@@ -269,6 +291,7 @@ and Events with no saved admission plan have not been replayed or recovered.
 
 Reproduction artifacts are in ignored `.state/sql-audit-20261004/`:
 `integrated-read-trial.ts`, `integrated-read-comparison.json`,
-`event-hold-trial.ts`, `event-hold-comparison.json` and the focused/full CI logs.
+`event-hold-trial.ts`, `event-hold-comparison.json`,
+`maintenance-hold-trial.ts`, `maintenance-hold-comparison.json` and the focused/full CI logs.
 The first trial uses read-only installation data; the Event trial uses only
 synthetic temporary data. Neither is a live rollout or a model-behavior trial.

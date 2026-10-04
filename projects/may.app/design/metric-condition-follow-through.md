@@ -55,7 +55,7 @@ investigation policy; the generic Host Condition engine still executes declared
 observations. The metric observer remains available for explicitly requested
 measurement work outside automated investigation follow-through.
 
-## Keep measurement work bounded
+## Reuse repeated metric calculations
 
 May owns the SQL meaning of its reliability metrics. The unresolved-recovery
 and failed-attempt queries use a query-local materialized cohort when both the

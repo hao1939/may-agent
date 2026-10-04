@@ -1,5 +1,10 @@
 # SQLite contention review — 2026-10-04
 
+The original retry candidate below is historical. PR #328 now removes those
+additions and shortens existing lookup/preparation work instead. See the
+[SQL audit implementation](sql-query-audit-20261004.md#implementation-and-integrated-trial)
+for its current scope and the separate context/maintenance corrections.
+
 ## Findings
 
 The deployed Host was `d8c877577` (PR #325). Four `subscriber.failed` Events
