@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Locked CLI tools shipped in the May Host container",
   "dependencies": {
-    "@anthropic-ai/claude-code": "2.1.281",
+    "@anthropic-ai/claude-code": "2.1.286",
     "@earendil-works/pi-coding-agent": "0.99.2",
     "@openai/codex": "0.159.3"
   },
