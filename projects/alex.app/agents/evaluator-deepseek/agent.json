@@ -1,5 +1,5 @@
 {
-  "name": "alex-evaluator-deepseek",
+  "name": "evaluator-deepseek",
   "description": "Independent DeepSeek reviewer for exact Task outcomes",
   "domain": "independent Task outcome auditing",
   "model": "deepseek-v4-flash",

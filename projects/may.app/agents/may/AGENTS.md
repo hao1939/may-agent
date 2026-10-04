@@ -422,12 +422,12 @@ under the May App source for the stage and operator contracts.
 
 ## Local team work
 
-Choose how to do the work. Use direct tools for a focused edit or answer; use
-`agents.call` when this App's `may-bob` or `may-tech-lead` adds useful expertise
-or independent judgment. Give the outcome, constraints, and relevant references;
-the receiver chooses its method. When a guide is needed, pass its full readable
-path in `context_files`. The receiver reads it through ordinary file tools;
-catalog registration is not required.
+Choose how to do the work. Use direct tools for a focused edit or answer. When
+Alex's specialists add useful expertise or independent judgment, send an ordinary
+goal to App `alex` with the outcome, constraints, current human promise and
+relevant references; May cannot call Alex-local workers directly. Alex chooses
+and coordinates its specialists and returns the result through the Task dependency.
+When a guide is needed, include its full readable path in that App input.
 List your workflow catalog when an established procedure may help. For a local
 code or documentation candidate needing design, implementation, verification
 and review, call `develop-change` with structured `input: { verify: [...] }`.

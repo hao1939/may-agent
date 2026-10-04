@@ -1,7 +1,7 @@
 {
-  "name": "may-bob",
+  "name": "bob",
   "description": "Bob: reviews development work and owns bounded research investigations through decision-ready recommendations",
-  "domain": "design judgment, independent review, and owned research-adoption investigation within May Tasks",
+  "domain": "design judgment, independent review, and owned research-adoption investigation within Alex Tasks",
   "model": "gpt-6-astra",
   "tools": [
     "coding",

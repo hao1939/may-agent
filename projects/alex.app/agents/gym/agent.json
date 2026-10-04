@@ -1,5 +1,5 @@
 {
-  "name": "alex-gym",
+  "name": "gym",
   "description": "Controlled comparison specialist for exact frozen candidates",
   "domain": "agent benchmark governance and regression analysis",
   "model": "gpt-5.6-sol",
