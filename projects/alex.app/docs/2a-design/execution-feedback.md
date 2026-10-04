@@ -77,6 +77,42 @@ existing Task and execution readers. Keep response guidance with its App or
 agent, separate from untrusted external output. A wake is a request to
 reconsider current evidence, never acceptance proof or new authority.
 
+### Return repair evidence to the original work
+
+Completing a repair includes returning its evidence to the Task responsible for
+the original problem. A different implementation, helper or deployment Task
+does not remove that responsibility. Reuse the existing Task when the outcome
+fits; separately delegated contributions retain their normal caller return.
+When independent work addresses a known existing problem, the agent identifies
+that exact Task and submits the relevant evidence through ordinary targeted
+input. Infra handles admission, identity, delivery and waking. It does not infer
+semantic relationships from similar summaries or broadcast every deployment to
+all waiting Tasks.
+
+A waiting Task can receive that input while its Conditions remain unresolved.
+Its agent compares the evidence with the original requirements, then returns
+the considered disposition for the original input as well as any addressed
+update. Acknowledging only the update leaves the original caller unanswered.
+An obsolete approval or procedure wait is explicitly retired with its expected
+Condition generation and reason. Retirement withdraws this Task's interest; it
+does not fabricate approval, claim the old procedure ran, or remove another
+Task's wait on the same fact. Independent requirements remain outstanding.
+
+For example, a Task waiting for permission to repair a service can receive
+verified recovery through a different authorized path. The agent may retire
+the unnecessary maintenance wait and return the verified outcome. If the old
+procedure itself was an explicit requirement, or recovery bypassed rather than
+repaired the defect, the result preserves that distinction and sends any needed
+scope decision to the creator. A healthy symptom alone does not fulfill every
+repair promise.
+
+Use the existing result and Condition return to wake the original caller, which
+judges its own remaining work. Duplicate evidence uses the same admission
+identity and stays quiet after acceptance. No periodic model review is required
+solely to rediscover unchanged repair status. Existing routes cannot deliver an
+undeclared semantic relationship: guidance makes the agent responsible for
+identifying it, while infra guarantees only the admitted relationship.
+
 ### Duplicate delivery and safe reconsideration
 
 Duplicate delivery is expected, including worker relay retries, recovery after

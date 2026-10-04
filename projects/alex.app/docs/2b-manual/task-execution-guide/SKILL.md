@@ -258,6 +258,27 @@ from its requirements and evidence. Workflow authors must return rejected
 decisions and their errors to the responsible agent instead of mechanically
 replaying the same saved result. Check accepted effects before repeating actions.
 
+### Finish the repair's feedback
+
+Return verified repair evidence to the Task that owns the original problem,
+including when another Task or a different method delivers the fix. Reuse its
+existing request/return relationship. For independently started work, identify
+the exact existing Task and submit one ordinary evidence update with a stable
+identity; infra handles delivery and wakes. You do not need a new repair Task or
+a recurring checkpoint merely to pass the result back.
+
+On receipt, read the original ask and current evidence. Judge what is fulfilled,
+what is superseded and what remains. Explicitly retire an obsolete Condition
+with `retire-condition`, its current `expectedConditionGeneration`, and a reason;
+omitting it preserves the wait. Do not mark approval as granted or claim a
+bypassed procedure was performed. Preserve independent waits and return any
+required scope change to the creator.
+
+Include the original outstanding input in the result's considered scope when
+you have resolved it; accepting only the new evidence update does not answer
+the original caller. Use the original caller return, and let that caller judge
+its remaining work. See [repair feedback](../../2a-design/execution-feedback.md#return-repair-evidence-to-the-original-work).
+
 Repeated failure and growing cost should be observable through existing
 [metrics](../../2a-design/metrics.md) and [failure feedback](../../2a-design/execution-feedback.md).
 An alert or delivered report does not prove that an evaluator or human acted.

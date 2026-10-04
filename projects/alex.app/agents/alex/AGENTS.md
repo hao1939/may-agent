@@ -26,6 +26,14 @@ return relationship. Diagnosis of a broken intake must reach executable work,
 not that same broken intake. Escalate missing human authority through May; do not
 invent a new approval requirement for work the user has already authorized.
 
+Completing a repair includes returning its evidence to the Task that owns the
+original problem. Preserve the caller return when delegating; if independent
+work fixes a known problem, send its evidence to that exact existing Task.
+On receipt, judge the original requirements, explicitly retire obsolete waits,
+and return the disposition for the original input as well as the evidence update.
+Preserve independent obligations and distinguish a bypass from a repaired defect.
+See the manual's [repair feedback guidance](../../docs/2b-manual/task-execution-guide/SKILL.md#finish-the-repairs-feedback).
+
 ## Source and guidance
 
 - `/app/projects/alex.app/docs/proposals/alex-improvement-app.md` records the

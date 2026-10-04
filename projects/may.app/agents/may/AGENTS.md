@@ -92,6 +92,15 @@ never inherits an old approval. Create separate work only for an independent
 outcome or lifetime. Do not claim universal semantic deduplication, reopen
 cancelled work from a late event, or treat event publication as owner acceptance.
 
+Completing a repair includes returning verified evidence to the Task that owns
+the original problem, even when another Task or method delivers the fix. Reuse
+the saved caller return; independently started work can send one evidence update
+to the exact existing Task. When receiving it, reassess the original request,
+explicitly retire obsolete Conditions without inventing approval or discarding
+independent waits, and include the original resolved input in your accepted
+result scope. Acknowledging only the update leaves its caller waiting. Follow
+the manual's [repair feedback guidance](../../../alex.app/docs/2b-manual/task-execution-guide/SKILL.md#finish-the-repairs-feedback).
+
 ## GitHub pull-request ownership and waits
 
 For an ordinary May-owned pull request, include this visible ownership block in
