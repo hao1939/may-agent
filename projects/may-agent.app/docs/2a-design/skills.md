@@ -326,6 +326,11 @@ chooses its method. The model-facing `agents` tool has no `skill` selector;
 ordinary delegation needs no receiver-catalog inspection. Catalog discovery
 belongs to the worker using the guidance.
 
+Delegated task text is literal: a leading `$name` is preserved as part of the
+assignment, not parsed into named activation. This holds whether that name is
+available in the receiving catalog or not. The Host selects this input handling
+at the delegation boundary; it is not another model-facing tool option.
+
 Direct runtime invocation retains deliberate activation of a known skill:
 
 ```ts
