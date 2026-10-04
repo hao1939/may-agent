@@ -169,17 +169,25 @@ describe("source-query metric measurement", () => {
 
   it("excludes declared Host lifecycle observations but counts unconsumed actionable signals", () => {
     const db = getDb(persistDir);
+    expect(INTENTIONAL_OBSERVATION_EVENT_TYPES).toEqual(
+      expect.arrayContaining([
+        "handler.workflow_dispatched",
+        "runtime.daemon.heartbeat",
+        "credential.state",
+        "guard.triggered",
+        "skill.loaded",
+      ]),
+    );
     const insert = db.prepare(
       `INSERT INTO events
          (event_type, source, owner, data, timestamp, delivery_status)
        VALUES (?, 'fixture', 'agent:may', '{}', ?, 'unhandled')`,
     );
     for (const type of INTENTIONAL_OBSERVATION_EVENT_TYPES) insert.run(type, Date.now());
-    insert.run("message.created", Date.now());
-    insert.run("session.recovery.requested", Date.now());
+    insert.run("fixture.action.requested", Date.now());
     insert.run("project.task.reconciled", Date.now() - 3_600_001);
 
-    expect(db.prepare(UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY).get()).toEqual({ value: 2 });
+    expect(db.prepare(UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY).get()).toEqual({ value: 1 });
   });
 
   it("records optional observations as accepted facts while preserving real subscriber acceptance", () => {
