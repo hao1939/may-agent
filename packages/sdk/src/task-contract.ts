@@ -93,7 +93,7 @@ const resultFields = {
       maxItems: 64,
       uniqueItems: true,
       description:
-        "Exact requests covered by this result, from assigned input or currentObligations.inputWaits. Read originals with tasks.get({inputKeys}) as needed. Omit to use the saved assignment; [] covers none. Converged answers only this set; waiting/incomplete keep it open. Other requests and Conditions remain.",
+        "Exact outstanding requests on this Task that you considered and cover with this result, including input received during execution. Read originals with tasks.get({inputKeys}) as needed. Omit to use the saved assignment; [] covers none. Converged answers only this set; waiting/incomplete keep it open. Other requests and Conditions remain.",
     }),
   ),
   result: Type.Optional(objectSchema),

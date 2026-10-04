@@ -265,14 +265,16 @@ function consumeSettledTaskEvents(
   tree: TaskTree,
   taskId: string,
   agent: string,
-  eventIds: readonly number[] | undefined,
+  result: { acceptedLiveEventIds?: number[]; inputKeys?: string[] },
 ): void {
-  const accepted = new Set((eventIds ?? []).filter((eventId) => Number.isSafeInteger(eventId) && eventId > 0));
+  const accepted = new Set(result.acceptedLiveEventIds ?? []);
+  const covered = new Set(result.inputKeys ?? []);
   const previous = tree.taskTriggers?.[taskId];
   if (!previous) return;
   const pending = taskTriggerEvents(previous);
   const remaining = pending.filter((entry) => {
     if (entry.event.type === "project.task.tick") return false;
+    if (taskInputAdmissionKeys([entry]).some((key) => covered.has(key))) return false;
     const eventId = Number(entry.event.eventId);
     return !Number.isSafeInteger(eventId) || !accepted.has(eventId);
   });
@@ -594,12 +596,15 @@ function acceptedAttemptResult(
   acceptanceBasis: AppTaskAcceptanceBasis,
 ): NonNullable<AppTaskAttempt["acceptedResult"]> {
   const acceptedIds = new Set(input.acceptedLiveEventIds ?? []);
+  const covered = new Set(input.inputKeys ?? []);
   const trigger = tree.taskTriggers?.[taskId];
   const acceptedLiveEventIds = [
     ...new Set(
-      (trigger ? taskTriggerEvents(trigger) : []).flatMap(({ event }) => {
+      (trigger ? taskTriggerEvents(trigger) : []).flatMap((entry) => {
+        const { event } = entry;
         const id = Number(event.eventId);
-        return Number.isSafeInteger(id) && id > 0 && acceptedIds.has(id) ? [id] : [];
+        return Number.isSafeInteger(id) && id > 0 &&
+          (acceptedIds.has(id) || taskInputAdmissionKeys([entry]).some((key) => covered.has(key))) ? [id] : [];
       }),
     ),
   ];
@@ -642,7 +647,7 @@ function resultInputKeys(
   for (const key of keys) {
     const admission = admissions?.[key];
     if (!admission || admission.taskId !== claim.taskId || admission.taskGeneration > claim.generation ||
-      admission.resultAttemptId || (!assigned.includes(key) && !tree.resources?.[claim.taskId]?.status.inputWaits?.[key])) {
+      admission.resultAttemptId) {
       throw new Error(`inputKeys contains input not outstanding on this Task: ${key}`);
     }
   }
@@ -2482,7 +2487,7 @@ export function reportAppTaskFailure(
   // Accepted facts are not a final answer to the original assignment. Exact
   // admitted input remains unresolved through input waits, while notifications
   // this attempt considered advance instead of restoring the same bounded batch.
-  consumeSettledTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
+  consumeSettledTaskEvents(tree, claim.taskId, claim.agent, attempt.acceptedResult);
   finishAttempt(tree, resource, "completed", summary, now);
   touchResource(resource, {
     phase: "pending",
@@ -3704,7 +3709,7 @@ export function completeAppTask(
   const actionsApplied = applyTaskActions(tree, claim, actions, config);
   const now = new Date().toISOString();
   match.attempt.acceptedResult = acceptedAttemptResult(tree, claim.taskId, "converged", { ...input, inputKeys: resolvedInputKeys }, acceptanceBasis);
-  consumeSettledTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
+  consumeSettledTaskEvents(tree, claim.taskId, claim.agent, match.attempt.acceptedResult);
   unlinkSatisfiedTaskConditions(tree, claim.taskId);
   finishAttempt(tree, resource, "completed", input.summary, now);
   const reconcileActionTaskIds = actions.flatMap((action) => (action.kind === "unblock-task" ? [action.taskId] : []));
@@ -3823,7 +3828,7 @@ export function deferAppTask(
   );
   if (input.report) acceptedResult.report = true;
   if (input.continue) acceptedResult.continue = true;
-  consumeSettledTaskEvents(tree, claim.taskId, claim.agent, input.acceptedLiveEventIds);
+  consumeSettledTaskEvents(tree, claim.taskId, claim.agent, acceptedResult);
   let conditions = input.conditions ?? [];
   const pendingTriggerRecord = tree.taskTriggers?.[claim.taskId];
   const pendingEvents = pendingTriggerRecord ? taskTriggerEvents(pendingTriggerRecord) : [];
