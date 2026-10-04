@@ -656,7 +656,7 @@ function sendChat() {
     // Chat mode — input to the interface agent
     sendIntent(
       'app.input.requested',
-      { input: { kind: 'message', data: { message: msg } }, channel: 'web-ui' },
+      { input: { kind: 'message', data: { message: msg } }, channel: 'web-ui', conversationId: humanInterface.conversationId },
       { target: { appId: humanInterface.appId } },
     );
   }

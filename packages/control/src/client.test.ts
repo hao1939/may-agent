@@ -483,14 +483,14 @@ describe("emitDaemonEvent", () => {
     });
   });
 
-  it("publishes one May App input event and keeps direct agent chat direct", async () => {
+  it("preserves an independent App and retained Conversation and keeps direct agent chat direct", async () => {
     const writes: string[] = [];
 
-    await expect(sendDaemonInput(captureEndpoint(writes), "hello May", "cli", { appId: "may" })).resolves.toMatchObject({
+    await expect(sendDaemonInput(captureEndpoint(writes), "hello helper", "cli", { appId: "support", conversationId: "retained-room" })).resolves.toMatchObject({
       type: "ok",
       command: "publish",
     });
-    await expect(sendAgentMessage(captureEndpoint(writes), "may", "review this", "cli", { interface: { agent: "may", appId: "may" } })).resolves.toMatchObject({
+    await expect(sendAgentMessage(captureEndpoint(writes), "helper", "review this", "cli", { interface: { agent: "helper", appId: "support", conversationId: "retained-room" } })).resolves.toMatchObject({
       type: "ok",
       command: "publish",
     });
@@ -503,8 +503,8 @@ describe("emitDaemonEvent", () => {
       type: "publish",
       event: {
         type: "app.input.requested",
-        target: { appId: "may" },
-        data: { input: { kind: "message", data: { message: "hello May" } }, channel: "cli" },
+        target: { appId: "support" },
+        data: { input: { kind: "message", data: { message: "hello helper" } }, channel: "cli", conversationId: "retained-room" },
         idempotencyKey: expect.stringMatching(/^control-input-/),
       },
     });
@@ -512,8 +512,8 @@ describe("emitDaemonEvent", () => {
       type: "publish",
       event: {
         type: "app.input.requested",
-        target: { appId: "may" },
-        data: { input: { kind: "message", data: { message: "review this" } }, channel: "cli" },
+        target: { appId: "support" },
+        data: { input: { kind: "message", data: { message: "review this" } }, channel: "cli", conversationId: "retained-room" },
         idempotencyKey: expect.stringMatching(/^control-input-/),
       },
     });

@@ -57,13 +57,13 @@ describe("HTTP human Task reads and board", () => {
     registry = new AppRegistry(async () => []);
     service = new HumanTaskService(db, registry);
     control = await attachControlSocket({
-      socketPath: daemonSocketPath(root, { instance: "task-test", interfaceAgent: "may" }),
+      socketPath: daemonSocketPath(root, { instance: "task-test", interfaceAgent: "helper" }),
       getSessionId: () => "fixture",
       getStatus: () => [],
       emitEvent: () => {},
       subscribeEvents: (listener) => { listeners.add(listener); return () => listeners.delete(listener); },
       getAppConversation: (appId, conversationId, options) => {
-        if (appId !== "may" || conversationId !== "may:primary" || options?.limit !== 30) throw new Error("Invalid conversation read");
+        if (appId !== "support" || conversationId !== "retained-room" || options?.limit !== 30) throw new Error("Invalid conversation read");
         if (rejectConversationRead) throw new Error("fixture Conversation storage unavailable");
         return conversation;
       },
@@ -77,7 +77,7 @@ describe("HTTP human Task reads and board", () => {
         }
         return { eventId: published.length, eventType: event.type, delivery: "accepted" };
       },
-      agentName: "may",
+      agentName: "helper",
       instance: "task-test",
       listApps: (appId) => {
         if (rejectAppRead) throw new Error("fixture App reads unavailable");
@@ -106,7 +106,7 @@ describe("HTTP human Task reads and board", () => {
           SHARED_ROOT: root,
           PROJECTS_ROOT: projects,
           DAEMON_INSTANCE: "task-test",
-          AGENT: "may", CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", DAEMON_AGENT: "may",
+          AGENT: "helper", CONVERSATION_APP: "support", CONVERSATION_ID: "retained-room", DAEMON_AGENT: "unused-legacy",
         },
       },
     );
@@ -162,6 +162,19 @@ describe("HTTP human Task reads and board", () => {
     expect(res.status).toBe(status);
     return res.json();
   }
+
+  test("interface-agent HTTP input retains the configured App and Conversation", async () => {
+    const response = await fetch(base + "/api/agents/helper/message", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: "Review the migration" }),
+    });
+    expect(response.status).toBe(200);
+    expect(published).toHaveLength(1);
+    expect(published[0]).toMatchObject({
+      type: "app.input.requested", target: { appId: "support" },
+      data: { conversationId: "retained-room", input: { kind: "message", data: { message: "Review the migration" } } },
+    });
+  });
 
   async function installApps(...ids: string[]) {
     await registry.reload(undefined, async () => ids.map((id) => ({
@@ -298,16 +311,16 @@ describe("HTTP human Task reads and board", () => {
   });
 
   test("HTTP Conversation reads forward exact identity and bounded options", async () => {
-    expect(await read("/api/conversation?appId=may&conversationId=may%3Aprimary")).toEqual(conversation);
-    await read("/api/conversation?appId=may", 400);
-    await read("/api/conversation?conversationId=may%3Aprimary", 400);
+    expect(await read("/api/conversation?appId=support&conversationId=retained-room")).toEqual(conversation);
+    await read("/api/conversation?appId=support", 400);
+    await read("/api/conversation?conversationId=retained-room", 400);
     rejectConversationRead = true;
-    expect(await read("/api/conversation?appId=may&conversationId=may%3Aprimary", 503)).toMatchObject({ error: "fixture Conversation storage unavailable" });
+    expect(await read("/api/conversation?appId=support&conversationId=retained-room", 503)).toMatchObject({ error: "fixture Conversation storage unavailable" });
     rejectConversationRead = false;
-    expect(await read("/api/conversation?appId=may&conversationId=may%3Aprimary")).toEqual(conversation);
+    expect(await read("/api/conversation?appId=support&conversationId=retained-room")).toEqual(conversation);
     expect(published).toHaveLength(0);
     control.close();
-    await read("/api/conversation?appId=may&conversationId=may%3Aprimary", 503);
+    await read("/api/conversation?appId=support&conversationId=retained-room", 503);
   });
 
   test.skipIf(skipBrowser)("May browser Stop retains its observed target and draft, then admits a correction to Conversation", async () => {
@@ -315,7 +328,7 @@ describe("HTTP human Task reads and board", () => {
     try {
       const page = await browser.newPage();
       page.setDefaultTimeout(5000);
-      await page.goto(`${base}/agents/may`, { waitUntil: "domcontentloaded" });
+      await page.goto(`${base}/agents/helper`, { waitUntil: "domcontentloaded" });
       await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
       // HTTP readiness does not prove the notification subscription is active.
       // A status response on the same ordered socket follows the page's subscribe.
@@ -347,13 +360,13 @@ describe("HTTP human Task reads and board", () => {
       await page.type("#chat-input", "Discuss costs before implementing");
       await page.click("#chat-stop");
       await page.waitForFunction(() => document.body.textContent!.includes("Stop request accepted"));
-      expect(published[0]).toMatchObject({ type: "conversation.turn.stop.requested", target: { appId: "may" },
-        data: { conversationId: "may:primary", turnId: "turn-one", expectedRevision: 7 } });
+      expect(published[0]).toMatchObject({ type: "conversation.turn.stop.requested", target: { appId: "support" },
+        data: { conversationId: "retained-room", turnId: "turn-one", expectedRevision: 7 } });
       expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("Discuss costs before implementing");
       await page.click("#chat-send");
       await page.waitForFunction(() => document.querySelector<HTMLInputElement>("#chat-input")!.value === "");
-      expect(published.at(-1)).toMatchObject({ type: "conversation.message.created", target: { appId: "may" },
-        data: { conversationId: "may:primary", text: "Discuss costs before implementing", author: { kind: "human" } } });
+      expect(published.at(-1)).toMatchObject({ type: "conversation.message.created", target: { appId: "support" },
+        data: { conversationId: "retained-room", text: "Discuss costs before implementing", author: { kind: "human" } } });
       rejectPublish = true;
       await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
       await page.click("#chat-stop");
@@ -369,7 +382,7 @@ describe("HTTP human Task reads and board", () => {
       await page.waitForFunction(() => document.querySelector<HTMLInputElement>("#chat-input")!.value === "");
       expect(published.at(-1)).toEqual(unconfirmed);
       rejectConversationRead = true;
-      for (const listener of listeners) listener({ type: "conversation.updated", data: { appId: "may", conversationId: "may:primary" } });
+      for (const listener of listeners) listener({ type: "conversation.updated", data: { appId: "support", conversationId: "retained-room" } });
       await page.waitForFunction(() => document.querySelector("#chat-status")!.textContent!.includes("storage unavailable"));
       // Drop the actual notification connection while the HTTP control route
       // remains usable. Its normal reconnect must later recover a lost wake.
@@ -383,7 +396,7 @@ describe("HTTP human Task reads and board", () => {
         data: { turnId: "turn-two", expectedRevision: 8 } });
       rejectConversationRead = false;
       conversation.activeTurn = undefined;
-      for (const listener of listeners) listener({ type: "conversation.updated", data: { appId: "may", conversationId: "may:primary" } });
+      for (const listener of listeners) listener({ type: "conversation.updated", data: { appId: "support", conversationId: "retained-room" } });
       await page.waitForFunction(() => document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
       expect(published.some(event => event.type === "session.cancel.requested" || event.type === "session.steer.requested")).toBe(false);
     } finally { await browser.close(); }

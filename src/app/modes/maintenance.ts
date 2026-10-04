@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { runDbMaintenancePass } from "../../lib/db/maintenance.js";
 import { closeAllDbs, getDb } from "../../lib/db/connection.js";
 import { DbWriter, EVENT_DELIVERY_HOUSEKEEPING_INTERVAL_MS } from "../../lib/db-writer.js";
-import { daemonSocketPath, sendSocketCommand } from "@may-agent/control/client";
+import { daemonSocketPath, interfaceBinding, sendSocketCommand } from "@may-agent/control/client";
 import { readExecutionStatus } from "../core/reads/execution-status.js";
 
 const LIVENESS_INTERVAL_MS = 30_000;
@@ -73,8 +73,8 @@ export function observeDurableDaemonHeartbeat(
 
 export async function observeDaemonLiveness(persistDir: string): Promise<RuntimeLivenessObservation> {
   const socketPath = daemonSocketPath(persistDir, {
-    instance: process.env.INSTANCE || "default",
-    interfaceAgent: process.env.DAEMON_AGENT || "host",
+    instance: process.env.DAEMON_INSTANCE || process.env.INSTANCE || "default",
+    interfaceAgent: interfaceBinding().agent,
   });
   try {
     const response = await sendSocketCommand(socketPath, { type: "status" }, { timeoutMs: LIVENESS_PROBE_TIMEOUT_MS });

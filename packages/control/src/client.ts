@@ -349,7 +349,7 @@ export function sendDaemonInput(
   endpoint: SocketEndpoint,
   message: string,
   source = "control",
-  opts: { appId: string; timeoutMs?: number },
+  opts: { appId: string; conversationId?: string; timeoutMs?: number },
 ): Promise<SocketResponse> {
   if (!opts?.appId?.trim()) throw new Error("App input requires an explicit appId");
   return sendSocketCommand(
@@ -361,6 +361,7 @@ export function sendDaemonInput(
         target: { appId: opts.appId.trim() },
         data: {
           input: { kind: "message", data: { message } },
+          conversationId: opts.conversationId,
           channel: source,
         },
         idempotencyKey: `control-input-${randomUUID()}`,
@@ -379,7 +380,7 @@ export function sendAgentMessage(
 ): Promise<SocketResponse> {
   const binding = opts?.interface ?? interfaceBinding();
   if (agent === binding.agent && binding.appId) {
-    return sendDaemonInput(endpoint, message, source, { appId: binding.appId, timeoutMs: opts?.timeoutMs });
+    return sendDaemonInput(endpoint, message, source, { appId: binding.appId, conversationId: binding.conversationId, timeoutMs: opts?.timeoutMs });
   }
   return sendSocketCommand(
     endpoint,

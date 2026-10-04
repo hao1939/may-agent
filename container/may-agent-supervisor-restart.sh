@@ -38,7 +38,7 @@ ui_had_previous=0
 ui_activation_started=0
 health_attempts="${MAY_AGENT_HEALTH_ATTEMPTS:-90}"
 health_delay="${MAY_AGENT_HEALTH_DELAY:-1}"
-health_socket="${MAY_AGENT_HEALTH_SOCKET:-${STATE_DIR:-/app/.state}/instances/${DAEMON_INSTANCE:-${INSTANCE:-background}}/${DAEMON_AGENT:-host}.sock}"
+health_socket="${MAY_AGENT_HEALTH_SOCKET:-${STATE_DIR:-/app/.state}/instances/${DAEMON_INSTANCE:-${INSTANCE:-background}}/${AGENT:-${DAEMON_AGENT:-host}}.sock}"
 
 probe_control_socket() {
   SOCKET_PATH="$health_socket" bun -e '

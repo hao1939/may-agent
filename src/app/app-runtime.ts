@@ -486,6 +486,7 @@ export async function runAppRuntime(opts: {
   const commandRouter = attachCommandRouter({
     interfaceAgent,
     conversationAppId,
+    conversationId: humanInterface.conversationId,
     bus,
     manager,
     projectRoot: opts.projectRoot,

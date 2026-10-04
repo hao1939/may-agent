@@ -9,6 +9,7 @@ export { validateSessionControl } from "./adapters/executors/session-control.js"
 export interface CommandRouterOptions {
   interfaceAgent?: string;
   conversationAppId?: string;
+  conversationId?: string;
   bus: EventBus;
   manager: SubagentManager;
   projectRoot: string;
@@ -190,7 +191,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
           data: { message, ...(metadata.context ? { context: metadata.context } : {}) },
         },
         source: { kind: "human", id: metadata.requestId ?? source },
-        conversationId: metadata.conversationId,
+        conversationId: metadata.conversationId ?? options.conversationId,
         conversationSequence: metadata.channelMessageId,
         channel: metadata.channel ?? source,
         channelTargetId: metadata.channelTargetId,

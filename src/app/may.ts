@@ -137,7 +137,6 @@ if (EMIT_MODE) {
       instanceLabel: INSTANCE_LABEL,
       interfaceAgent,
       daemonInstance: process.env.DAEMON_INSTANCE,
-      daemonAgent: process.env.DAEMON_AGENT,
     });
     process.exit(0);
   } catch (err) {

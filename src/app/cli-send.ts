@@ -1,5 +1,5 @@
 /**
- * cli-message.ts -- Send a message to an agent from the command line.
+ * cli-send.ts -- Send a message to an agent from the command line.
  *
  * Usage:
  *   bun src/app/may.ts --send worker --message "do the thing"
@@ -8,8 +8,8 @@
  *
  * Delivery:
  *   1. Uses the convention daemon socket path:
- *      <persistDir>/instances/<DAEMON_INSTANCE>/<DAEMON_AGENT>.sock
- *   2. Sends via socket as "@agent message" so May can delegate/monitor it
+ *      <persistDir>/instances/<DAEMON_INSTANCE>/<interface-agent>.sock
+ *   2. Uses configured App admission for the interface agent, otherwise direct chat
  *   3. Fails clearly if the daemon socket cannot accept the message
  *
  * Exits 0 on success, 1 on error.
@@ -17,7 +17,7 @@
 
 import { resolve } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
-import { daemonSocketPath, sendAgentMessage } from "@may-agent/control/client";
+import { daemonSocketPath, interfaceBinding, sendAgentMessage } from "@may-agent/control/client";
 
 
 export interface SendOptions {
@@ -50,7 +50,7 @@ export async function cliSend(opts: SendOptions): Promise<boolean> {
 
   const socketPath = daemonSocketPath(persistDir, {
     instance: process.env.DAEMON_INSTANCE || process.env.INSTANCE || "default",
-    interfaceAgent: process.env.DAEMON_AGENT || process.env.AGENT || "host",
+    interfaceAgent: interfaceBinding().agent,
   });
 
   try {
@@ -65,7 +65,7 @@ export async function cliSend(opts: SendOptions): Promise<boolean> {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(
       `Daemon socket delivery failed at ${socketPath}: ${msg}. ` +
-      "Task was not delivered. Start the daemon or set DAEMON_INSTANCE/DAEMON_AGENT to the running daemon convention path.",
+      "Task was not delivered. Start the daemon or set DAEMON_INSTANCE/AGENT to the running daemon convention path.",
     );
     return false;
   }

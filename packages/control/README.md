@@ -154,14 +154,16 @@ or new scheduler. Thresholds, review and remediation remain App policy.
 
 ## Selecting a human interface
 
-The installation supplies `AGENT`/`DAEMON_AGENT`, `CONVERSATION_APP` and optional
-`CONVERSATION_ID`; agent and App identities are independent. Missing App wiring
+The installation supplies `AGENT` (falling back to `DAEMON_AGENT`, then `host`),
+`CONVERSATION_APP` and optional `CONVERSATION_ID`; agent and App identities are independent.
+Control clients and liveness/restart probes use the same agent precedence as runtime startup. Missing App wiring
 is a headless installation, not an implicit destination. `daemonSocketPath()`
 uses `host.sock` when no identity is supplied. Supply the configured identity
 when connecting to an existing installation.
 
-`sendDaemonInput` requires an explicit `appId`. `sendAgentMessage` sends to an
-agent; for the configured human interface it uses App admission. An explicit
+`sendDaemonInput` requires an explicit `appId` and accepts a retained `conversationId`.
+`sendAgentMessage` sends to an agent; for the configured human interface it uses App
+admission with both the selected App and Conversation. An explicit
 `interface` option can supply the same binding to clients outside the daemon's
 environment. Ordinary agents need only the desired message and recipient; the
 adapter owns transport and saved Conversation references.

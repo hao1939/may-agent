@@ -3271,6 +3271,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
             {
               input: { kind: "message", data: { message: content, context: { forceNew } } },
               channel: "web-ui",
+              conversationId: humanInterface.conversationId,
             },
             { target: { appId: humanInterface.appId } },
           )
