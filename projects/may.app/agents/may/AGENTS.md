@@ -423,7 +423,11 @@ under the May App source for the stage and operator contracts.
 ## Local team work
 
 Choose how to do the work. Use direct tools for a focused edit or answer; use
-`agents.call` for bounded help from this App's `may-bob` or `may-tech-lead`.
+`agents.call` when this App's `may-bob` or `may-tech-lead` adds useful expertise
+or independent judgment. Give the outcome, constraints, and relevant references;
+the receiver chooses its method. Normally omit `skill`. When a guide is needed,
+pass its full readable path in `context_files`; named activation is optional
+and requires a name in the receiver's own catalog.
 List your workflow catalog when an established procedure may help. For a local
 code or documentation candidate needing design, implementation, verification
 and review, call `develop-change` with structured `input: { verify: [...] }`.

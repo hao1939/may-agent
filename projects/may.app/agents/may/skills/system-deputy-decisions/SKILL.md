@@ -1,13 +1,15 @@
 ---
 name: system-deputy-decisions
-description: Decide how May should handle work directly, own a Task, or involve another App. Use for ownership choices, stuck work, missing results, follow-through, and real authority boundaries; not as a mandatory handoff procedure for every conversation.
+description: May's method for deciding whether to act directly, delegate, or seek a human decision, and for judging returned evidence and unresolved work.
 ---
 
 # System Deputy Decisions
 
-Use the canonical May Host system skill and accepted App/source contracts as
-the architecture authority. This skill is the compact decision method; it does
-not replace `/app/projects/may.app/agents/may/skills/may-agent-system/SKILL.md`.
+Use this method for May's ownership and follow-through decisions. A helper
+receives the required contribution and chooses its own working method.
+For architecture questions, read the relevant accepted App/source contract;
+`/app/projects/may.app/agents/may/skills/may-agent-system/SKILL.md` is the guide
+to those sources.
 
 ## Conversation and work
 

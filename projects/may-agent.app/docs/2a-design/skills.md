@@ -322,19 +322,12 @@ another request or ownership record.
 ### Explicit runtime and delegation invocation
 
 Delegate the outcome, constraints, and supporting references by default. The
-receiver chooses its method. When a specific method is needed, inspect the
-receiver's loaded catalog through the existing agent list:
+receiver chooses its method. Catalog discovery belongs to the worker using the
+guidance; ordinary delegation needs no receiver-catalog inspection. A caller's
+own catalog does not establish availability in another agent's catalog.
 
-```ts
-agents({ action: "list", agent: "bob" });
-```
-
-Named inspection returns that agent's skill names, short descriptions, and
-`filePath` references, without loading bodies. It uses the same loaded catalog
-as execution; changes on disk become available after definition reload. The
-unfiltered list stays compact and does not expand every agent's skills.
-
-An optional skill name at existing session boundaries activates a cataloged method:
+For deliberate activation of a known receiving-catalog skill, the existing
+session boundaries accept an optional name:
 
 ```ts
 manager.run(agent, task, { skill: "verify-change", trace });
@@ -350,8 +343,8 @@ turn has at most one explicit primary skill in v1. Other cataloged skills can
 still be read on demand.
 
 An unavailable explicit name is rejected before model execution. The error
-points the caller to receiver inspection and the alternatives: select a listed
-name, delegate without explicit activation, or provide a readable file reference.
+explains how to delegate without explicit activation and, when that guide is
+needed, provide its readable file reference instead.
 The Host does not silently substitute another method.
 
 The `agents` tool's `context_files` argument appends file references to the

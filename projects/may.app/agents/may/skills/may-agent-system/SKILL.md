@@ -1,6 +1,6 @@
 ---
 name: may-agent-system
-description: Investigate or change May Host and Apps using their owning design. Covers Tasks, events, executors, metrics, recovery and App boundaries.
+description: Guide for the agent investigating or changing May Host or Apps. Read the owning design, diagnose the affected boundary, and verify the smallest justified change.
 ---
 
 # May Host System
@@ -54,19 +54,19 @@ recovery. Autonomous infrastructure may wrap the same run, and explicitly
 supplied tools may access databases or remote services behind their capability
 interfaces.
 
-## Discovery Boundary
+## Using this guidance
 
-This file is the canonical May-local copy and is routed from `agents/may/AGENTS.md`.
-May-native discovery loads canonical immediate `<name>/SKILL.md` packages from
-app-local agent, global agent, and shared roots; closer scope wins. Invalid,
-ambiguous, archived, oversized, or trust-escaping packages are omitted with
-loader diagnostics. New turns receive a bounded metadata catalog, while the
-full body enters context only after a successful model read or explicit
-activation such as `$may-agent-system ...` or a typed `skill` option.
+This canonical guide is in May's local catalog. Apply it to your current
+investigation or change. When a teammate's expertise or independent judgment
+is useful, give them the outcome, constraints, and relevant source references;
+the teammate chooses their method.
 
-Expose this canonical directory to external Codex workers through a supported
-skill location, preferably by symlink, and verify actual discovery; do not
-maintain an unsynchronized copy.
+If the teammate needs this guide, pass its full readable `SKILL.md` path through
+`context_files`. Ordinary file reading works without catalog registration.
+Explicit named activation uses the receiving agent's catalog; seeing a name in
+your own catalog does not establish that it is available to the receiver.
+For skill installation and external CLI discovery, consult the
+[skill contract](/app/projects/may-agent.app/docs/2a-design/skills.md#codex-interoperability).
 
 ## Source Of Truth
 
