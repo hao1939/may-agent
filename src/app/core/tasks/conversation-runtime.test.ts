@@ -2918,7 +2918,6 @@ test("invalid handoff is repairable after reopen and only complete referenced in
     Date.now(),
   ]);
   expect(findAssignment()).toEqual(fallbackAssignment);
-  expect(findAssignment()).toEqual(fallbackAssignment);
   expect(JSON.stringify(saved.spec.input).length).toBeLessThan(1_000);
   expect(readFileSync(documentPath, "utf8")).toContain("Required: preserve source identity.");
 });
