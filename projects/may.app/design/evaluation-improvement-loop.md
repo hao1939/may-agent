@@ -5,6 +5,22 @@ controller. Evaluation findings and observed execution failures share owner
 judgment and the later improvement stages; they keep different evidence readers.
 Normal execution recovery remains in the original work.
 
+Evaluation publications, review-lag breaches and Evaluation operation breaches now
+route to ordinary May `evaluation-intake` work in App source. Each
+report keeps its immutable publication identity and original event/caller context.
+The standing responsibility has a fixed intent, so changed evidence reuses the
+Task without silently revising requirements. Duplicate transport reuses its
+admission. A closed intake still requires explicit authorized reopening.
+
+The Conversation handler is independent of this route. May verifies findings,
+reuses fitting investigation work and returns ordinary Task judgments. Summary,
+facts and results remain quiet unless the agent decides a message is owed.
+This fixes delivery of a diagnosis to executable work; it does not prove that
+Evaluation selects fewer repeated semantic reviews or that live recovery has
+occurred. The connected regression is `evaluation-routing.test.ts`; the broader
+[Task communication proposal](../../may-agent.app/docs/proposals/tasks-and-communication-resources.md)
+retains the common execution change.
+
 The [metric-review source candidate](../../evaluation.app/design/metric-pattern-review.md)
 uses the same judgment and improvement boundary for `{appId, metricId}` reports.
 May's intake verifies immutable publication and rereads the current metric. May

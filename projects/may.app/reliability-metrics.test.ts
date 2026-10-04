@@ -1093,7 +1093,7 @@ test("overdue reviews route to May once per alert, while an empty population rem
       type: "metric.breach",
       data: { metricId: REVIEW_LAG_METRIC },
     } as any),
-  ).toMatchObject({ kind: "message" });
+  ).toMatchObject({ kind: "goal" });
   expect(
     route.toInput({
       type: "metric.breach",

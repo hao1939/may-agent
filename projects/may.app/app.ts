@@ -161,6 +161,20 @@ function researchMode(
   return research.mode;
 }
 
+// One standing intake responsibility; individual publications remain exact Task inputs.
+// Keeping its intent fixed lets new evidence reuse work without revising requirements.
+const evaluationIntakeContract = {
+  outcome: "Review Evaluation findings, verify current concerns and arrange justified follow-through.",
+  acceptance: [
+    "Record an evidence-backed disposition for each admitted finding; reuse fitting investigation work and retain unresolved obligations through ordinary requests and Conditions.",
+  ],
+  operationalReview: "evaluation",
+};
+
+function evaluationWorkInput(instructions: string, context: Record<string, unknown>): AppInput {
+  return { kind: "goal", data: { ...evaluationIntakeContract, instructions, context } };
+}
+
 export function taskForMayInput(
   admitted: Readonly<AppTaskInput>,
 ): AppTaskAttachment {
@@ -188,6 +202,25 @@ export function taskForMayInput(
     );
   }
   const data = record(admitted.input.data);
+  if (data.operationalReview === "evaluation") {
+    if (data.outcome !== evaluationIntakeContract.outcome ||
+        JSON.stringify(data.acceptance) !== JSON.stringify(evaluationIntakeContract.acceptance) ||
+        data.revision !== undefined || data.assignment !== undefined) {
+      throw new Error("Evaluation intake requires its fixed responsibility; use an ordinary goal for different work");
+    }
+    return {
+      kind: "desired",
+      intent: {
+        id: "evaluation-intake",
+        parentId: "may",
+        agent: "may",
+        outcome: evaluationIntakeContract.outcome,
+        acceptance: [...evaluationIntakeContract.acceptance],
+        input: { kind: "goal", data: evaluationIntakeContract },
+        priority: "P1",
+      },
+    };
+  }
   const agent = selectedAgent(data);
   const mode = researchMode(data, agent);
   const metricReview = metricReviewInput(admitted.input);
@@ -390,7 +423,7 @@ export function evaluationHumanDecisionInput(
   };
 }
 
-/** Open one independent May review for each retained Evaluation breach episode. */
+/** Admit each retained breach episode to ordinary accountable May work. */
 export function evaluationOperationAlertInput(
   event: AppEvent<Record<string, unknown>>,
 ): AppInput | null {
@@ -403,13 +436,9 @@ export function evaluationOperationAlertInput(
     data.repeat === true
   )
     return null;
-  return {
-    kind: "message",
-    data: {
-      message: `Independently review this Evaluation operation alert episode through the existing metric-response path. Read its exact evidence, alertId, cohort and accounting limits, then the named Tasks or pre-attempt inputs, accepted results and remaining requirements. Judge whether repeated effort, unsuccessful attempts or retained input-admission recovery warrant a useful correction; high effort can produce valuable partial work. Reuse a fitting investigation and bind the disposition to this episode. Preserve retries, inputs, caller links and Conditions. Operational recovery, a quieter metric, notification or new investigation does not fulfill the original input.`,
-      context: { event: structuredClone(event) },
-    },
-  };
+  return evaluationWorkInput(`Independently review this Evaluation operation alert episode through the existing metric-response path. Read its exact evidence, alertId, cohort and accounting limits, then the named Tasks or pre-attempt inputs, accepted results and remaining requirements. Judge whether repeated effort, unsuccessful attempts or retained input-admission recovery warrant a useful correction; high effort can produce valuable partial work. Reuse a fitting investigation and bind the disposition to this episode. Preserve retries, inputs, caller links and Conditions. Operational recovery, a quieter metric, notification or new investigation does not fulfill the original input.`,
+    { event: structuredClone(event) },
+  );
 }
 
 function reportHash(data: Record<string, unknown>, field: string): string {
@@ -422,7 +451,7 @@ function reportHash(data: Record<string, unknown>, field: string): string {
   return value;
 }
 
-/** Normalize immutable Evaluation publication facts into May's ordinary message path. */
+/** Normalize immutable Evaluation publication facts into May's ordinary work path. */
 export function evaluationTaskReportInput(
   event: AppEvent<Record<string, unknown>>,
 ): AppInput | null {
@@ -466,11 +495,8 @@ export function evaluationTaskReportInput(
     ...(rubricVersion ? { rubricVersion } : {}),
     ...(validityIdentity ? { validityIdentity } : {}),
   };
-  return {
-    kind: "message",
-    data: {
-      message: `This is an automated review, not a new human question. Retain the disposition and evidence in summary/facts; omit response for routine findings, unchanged waits, reused work and background delegation. Use response for a requested answer, a new actionable decision or a material change the human needs to know. Review the published Evaluation report for ${metricId ?? `${appId}/${taskId}`}. Run evaluation-report-intake with this exact context.publication before any duplicate or reuse conclusion; the intake checks exact publication identity before reusing a prior intake, and an unrelated prior disposition is not this report. Then verify material concerns against current evidence and record an ordinary Task disposition. Reuse linked work. Settle the immediate incident separately from the population finding: current recovery does not erase recurring failures, cost or uncertainty. A duplicate or harmless one-off can need no change; a supported recurring pattern can justify the smallest investigation even after recovery. Before proposing a candidate, judge practical value versus cost and whether a simpler solution would suffice. For an unresolved metric concern use metric-response with review:{task,decisions} and the current conversation context to prepare one complete followUp; commission useful work through a request or retain its repair-result, exact breach recovery or human-decision Condition. Do not create sample Conditions or a periodic sample-review loop; if only collection remains, record no-change and finish the review. Return its complete result, not just a fact. Reuse the exact existing Task when scope fits. Notification, acknowledgment and a patch are not verified recovery; metrics do not authorize stopping retries or reopening work.`,
-      context: {
+  return evaluationWorkInput(`This is an automated review, not a new human question. Retain the disposition and evidence in summary/facts; omit response for routine findings, unchanged waits, reused work and background delegation. Use response for a requested answer, a new actionable decision or a material change the human needs to know. Review the published Evaluation report for ${metricId ?? `${appId}/${taskId}`}. Run evaluation-report-intake with this exact context.publication before any duplicate or reuse conclusion; the intake checks exact publication identity before reusing a prior intake, and an unrelated prior disposition is not this report. Then verify material concerns against current evidence and record an ordinary Task disposition. Reuse linked work. Settle the immediate incident separately from the population finding: current recovery does not erase recurring failures, cost or uncertainty. A duplicate or harmless one-off can need no change; a supported recurring pattern can justify the smallest investigation even after recovery. Before proposing a candidate, judge practical value versus cost and whether a simpler solution would suffice. For an unresolved metric concern use metric-response with review:{task,decisions} in this Task context to prepare an ordinary Task result; commission useful work through a request or retain its repair-result, exact breach recovery or human-decision Condition. Do not create sample Conditions or a periodic sample-review loop; if only collection remains, record no-change and finish the review. Return its complete result, not just a fact. Reuse the exact existing Task when scope fits. Notification, acknowledgment and a patch are not verified recovery; metrics do not authorize stopping retries or reopening work.`,
+    {
         publication,
         caller: {
           source: event.source,
@@ -479,9 +505,8 @@ export function evaluationTaskReportInput(
           localKey: event.localKey,
         },
         event: structuredClone(event),
-      },
     },
-  };
+  );
 }
 
 export default defineApp({
@@ -570,14 +595,9 @@ export default defineApp({
           record(event.data).repeat === true
         )
           return null;
-        return {
-          kind: "message",
-          data: {
-            message:
-              "Review the unfinished Evaluation work identified by this metric. Read current review Tasks, allowance and return paths. Preserve retries and reuse linked owner work. If review remains overdue, use metric-response with a complete review and the current conversation context; wait for an actual review result or human decision, or commission useful work, then return the prepared handoff. New samples are evidence, not investigation triggers. This age threshold requests inspection; it is not a promised deadline or authority to stop work.",
-            context: { event: structuredClone(event) },
-          },
-        };
+        return evaluationWorkInput("Review the unfinished Evaluation work identified by this metric. Read current review Tasks, allowance and return paths. Preserve retries and reuse linked owner work. If review remains overdue, use metric-response with a complete review in this Task context; wait for an actual review result or human decision, or commission useful work, then return the ordinary Task result. New samples are evidence, not investigation triggers. This age threshold requests inspection; it is not a promised deadline or authority to stop work.",
+          { event: structuredClone(event) },
+        );
       },
     },
     {
