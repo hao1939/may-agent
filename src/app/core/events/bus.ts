@@ -1533,8 +1533,13 @@ function preferredDelivery(
   candidate: DeliveryResult | undefined,
 ): DeliveryResult | undefined {
   if (!current) return candidate;
-  if (current.route === "noop" && candidate && candidate.route !== "noop") return candidate;
-  return current;
+  const preferred = current.route === "noop" && candidate && candidate.route !== "noop" ? candidate : current;
+  // Receipt provenance has one preferred route, but independent App settlement
+  // must survive whichever accepted route supplied that receipt.
+  if ((current.appAdmission === true || candidate?.appAdmission === true) && preferred.appAdmission !== true) {
+    return { ...preferred, appAdmission: true };
+  }
+  return preferred;
 }
 
 function pairTrackerFallback(event: AgentEvent): DeliveryResult | undefined {
