@@ -2872,6 +2872,13 @@ test("invalid handoff is repairable after reopen and only complete referenced in
     acceptance: assignment.acceptance,
     input: { kind: "review", data: assignment },
   });
+  const assignmentMessage = readAppConversationResource(f.db, app.id, "primary").messages.find(
+    ({ metadata }) => metadata?.followTask?.appId === worker.id && metadata.followTask.taskId === "review",
+  );
+  expect(assignmentMessage).toMatchObject({
+    text: `Assigned to ${worker.id}: ${assignment.outcome}\nTask: ${worker.id}/review`,
+    metadata: { followTask: { appId: worker.id, taskId: "review" } },
+  });
   expect(JSON.stringify(saved.spec.input).length).toBeLessThan(1_000);
   expect(readFileSync(documentPath, "utf8")).toContain("Required: preserve source identity.");
 });

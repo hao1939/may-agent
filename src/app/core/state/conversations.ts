@@ -176,6 +176,28 @@ export function listAppConversationMessages(
     if (message && !eventMessagesById.has(message.id)) eventMessagesById.set(message.id, message);
   }
   const conversationRows = listAppInboxConversationItems(db, appId, conversationId, limit, exactTopicId);
+  const assignmentByInput = new Map<string, { appId: string; taskId: string; outcome: string }>(
+    conversationRows.length
+      ? db
+          .prepare(
+            `SELECT link.origin_input_id, link.task_app_id, link.task_id,
+              json_extract(task.resource_json, '$.spec.outcome') AS outcome
+             FROM (${conversationTaskLinksSql("caller")}) link
+             JOIN app_tasks task ON task.app_id = link.task_app_id AND task.task_id = link.task_id
+             WHERE link.origin_input_id IN (${conversationRows.map(() => "?").join(",")})`,
+          )
+          .all(...conversationRows.map(({ id }) => id))
+          .flatMap((row) => {
+            const inputId = typeof row.origin_input_id === "string" ? row.origin_input_id : "";
+            const taskAppId = typeof row.task_app_id === "string" ? row.task_app_id : "";
+            const taskId = typeof row.task_id === "string" ? row.task_id : "";
+            const outcome = typeof row.outcome === "string" ? row.outcome.trim() : "";
+            return inputId && taskAppId && taskId && outcome
+              ? [[inputId, { appId: taskAppId, taskId, outcome }] as const]
+              : [];
+          })
+      : [],
+  );
   const targetedTaskIds = new Set(conversationRows.flatMap((item) => (item.targetTaskId ? [item.targetTaskId] : [])));
   const explicitlyCommunicatedInputs = new Set(
     conversationRows.length
@@ -251,6 +273,26 @@ export function listAppConversationMessages(
       },
       createdAt: item.completedAt ?? item.updatedAt,
     });
+    const assignment = assignmentByInput.get(item.id);
+    if (assignment) {
+      messages.push({
+        id: `assignment:${item.id}`,
+        sequence,
+        author: { kind: "agent", id: appId },
+        text: boundedConversationText(
+          `Assigned to ${assignment.appId}: ${assignment.outcome}\nTask: ${assignment.appId}/${assignment.taskId}`,
+        ),
+        metadata: {
+          ...(item.channel ? { channel: item.channel } : {}),
+          ...(item.channelTargetId ? { channelTargetId: item.channelTargetId } : {}),
+          ...(item.channelThreadId ? { channelThreadId: item.channelThreadId } : {}),
+          requestId: item.id,
+          ...(item.topicId ? { topicId: item.topicId } : {}),
+          followTask: { appId: assignment.appId, taskId: assignment.taskId },
+        },
+        createdAt: item.completedAt ?? item.updatedAt,
+      });
+    }
   }
 
   // Command views remain in the event journal, but only the newest view for
