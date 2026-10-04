@@ -1,6 +1,7 @@
 # Ordinary agent execution after a procedure fails
 
-Date: 2026-10-04. Merged source; the trials below are not deployment evidence.
+Date: 2026-10-04. Merged source and local rollout; isolated trials and live evidence
+are distinguished below.
 
 ## Question and decision
 
@@ -166,14 +167,108 @@ can cost an agent invocation for a transient failure. Without an available agent
 ordinary paced procedure retries remain. The marker and metric are independent
 of that policy and would also record a later switch if retry policy changes.
 
+## Live rollout
+
+The standalone deployment completed at 13:07:17 UTC on October 4. Its receipt
+records source `d8c87757782ae5750984bedc239b00eab4c76715`, phase `succeeded`, health
+`healthy`, and identical built/loaded artifact hashes:
+`af72410f0ebe7f289a062111781fa5dd15491ce1d809bb01d27bfca0b09fdd56`.
+The live binary reports `v5.4.0 (d8c87757)`; the Host, web service and maintenance
+process are running, and the readiness endpoint reports ready.
+
+The real retained May Conversation had 21 consecutive failures with
+`Conversation input does not belong to this Task attempt`. Its next retry was
+scheduled for 13:46 UTC. One supported operator Retry advanced that deadline;
+normal reconciliation then selected `agent:may`. No Task/database repair or
+second Retry was used. This verifies supported Retry followed by normal failover,
+not the natural expiry of that earlier deadline.
+
+At the 13:20:22 UTC observation cut:
+
+- Seven agent attempts had accepted results; an eighth was running. All seven
+  reported waiting with continuation, not whole-Task convergence.
+- The Task and generation were unchanged. The original failed attempt remained
+  byte-for-byte unchanged, and the original dependency wait remained represented.
+  The broken Conversation executor had not run again.
+- Exactly one first-agent attempt linked to the failed source through
+  `failoverFromAttemptId`; later continuations had no additional marker.
+- May reviewed Evaluation publications, reconciled migration and approval
+  evidence, and asked Scout for a bounded access probe. Scout returned a verified
+  access failure and a narrower automatic-review policy; May consumed the return.
+- May sent one delivered Telegram clarification for an ambiguous human approval.
+  It did not guess which proposal was approved. That input still needs a human
+  answer. No duplicate clarification was delivered in the observation window.
+- Two naturally scheduled metric samples reported value one and exact source/
+  target attempt links. The public metric/attempt reads agreed; query planning
+  used `idx_app_task_attempts_failover`. No alert was expected because the default
+  metric has no threshold.
+
+This establishes useful agent recovery and durable failover observation. It does
+not establish repair of the original handler, independent evaluator follow-up,
+or eventual settlement of every input: one human and 61 system inbox inputs
+were still pending. Accepted waiting results correctly retain their covered
+inputs. Reviewed publications therefore cannot be counted as fulfilled merely
+because a pass says they were considered. The context and result-use findings
+below are follow-up evidence, not reasons to erase outstanding work.
+
+Local rollout evidence is under `.state/failover-rollout-20261004/` in the
+installation: `before.json`, `source-failure.json`, `retry-receipt.json`,
+`live-proof.json`, metric/API reads and timestamped observations. The deploy
+receipt is `.state/deploy-receipts/failover-d8c877577-20261004.json` in the Host
+checkout. These operational files remain local; the portable checks above do
+not require them.
+
+### Context findings
+
+Separate saved input size from the model's actual view. The first assignment
+string was 426,043 bytes; subsequent inspected assignments were roughly
+427–431 KB, fluctuating rather than increasing monotonically. Its initial
+model entry was only 452 bytes, plus system instructions, tool definitions and
+the dynamically supplied decision brief. Replaying the production section
+preview against the first saved decision produced 8,102 bytes of brief sections.
+The large `taskBytes` measurement alone is not model-context or token usage.
+
+Most saved assignment bytes were event payloads (414,868 bytes including JSON
+formatting). Thirty continued input bodies also appeared in the first batch's
+32 new events. Later attempts retained roughly 60 unanswered inputs. The initial
+failure context contained one previous attempt, not 21 copies of its error.
+Increasing failure count alone would not resolve the main cost observed here.
+
+The compact preview exposed only one new event and one continued input; its
+input index exposed only one input ID. May consequently read both a decision
+detail and the attempt snapshot, receiving approximately 50 KB from each before
+tool truncation, and reconstructed input inventories using shell commands. The
+two files also have different roots (`events` versus `reconciliation.events`),
+and the first pass made a failed query against the wrong root before correcting
+it. Twenty-seven intake calls covered 23 distinct report hashes by the cut;
+some revisits may be useful, so repetition alone is not a failure verdict.
+
+The smallest next investigation is presentation and use of existing state:
+
+1. Expose a bounded input index with exact keys, new/continuing membership,
+   current recorded disposition and links. Keep large bodies behind the existing
+   explicit input reads/detail pointers; show coverage limits and remaining items.
+2. Preserve current accepted conclusions and their exact evidence links so a
+   later pass can reuse them. Investigate why completed report reviews are still
+   returned as waiting; do not infer fulfillment from narrative text in the Host.
+3. Summarize identical recurring observations in the current view while keeping
+   raw attempts available. Verify differing failures remain distinguishable.
+
+This follows the existing layered-context design; it needs no new work queue,
+semantic filtering service, separate memory database or physical archive move.
+Before shipping a change, compare model behavior as well as bytes: can the agent
+find a later input, see a human requirement alongside background work, reuse an
+accepted result, and diagnose a changed failure without loading whole histories?
+No context implementation or additional rollout was performed during this audit.
+
 ## Reproduction and source
 
 Host [PR #325](https://github.com/hao1939/may-agent/pull/325) merged as
 `d8c87757782ae5750984bedc239b00eab4c76715`; both GitHub checks passed on the reviewed
 revision. The companion design and this evidence record now live under
 `projects/alex.app/docs` following the separately merged Alex migration.
-The local deployed bundle still identified `fc3b9cab3` when this merge was checked.
-Source merge alone does not establish rollout or live recovery.
+The local bundle initially identified `fc3b9cab3`; the separate live rollout above
+verified the new source and loaded artifact. Source merge alone is not rollout proof.
 
 Host base: `fc3b9cab31d3b3af40ee04453b689a93e0477832` (#324).
 Host candidate: `cf1920e3f726fc77d2c7cc43a9a8685b0fde4d17`.
