@@ -1411,7 +1411,8 @@ export function observeAppTaskIntent(
   let resource: AppTaskResource;
   if (existingResource && sameSpec) {
     resource =
-      desiredStateChanged || laneChanged
+      // Pending input shares the Task's write fence, even when its spec is unchanged.
+      desiredStateChanged || laneChanged || input.trigger
         ? {
             ...existingResource,
             metadata: {
