@@ -184,7 +184,7 @@ test("recovers a report saved before its first App plan, independent of global d
   }
 });
 
-test("first admission after restart uses the current subscription while retaining the Event identity", async () => {
+test("first successful admission after a pre-plan failure uses registry N+1 and retains authored identities", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-event-current-routing-"));
   let runtime: AppInboxRuntime | undefined;
   try {
@@ -192,13 +192,16 @@ test("first admission after restart uses the current subscription while retainin
       type: "probe.changed",
       source: "worker:probe",
       owner: "agent:probe",
+      target: { appId: "current", channel: "retained-target" },
       data: { value: "retained" },
     } as any);
     const eventId = event[EVENT_ROW_ID]!;
     closeDb(root);
     const db = getDb(root);
+    const authored = db.prepare("SELECT source, owner, data, envelope_json FROM events WHERE id = ?").get(eventId);
     const appDir = join(root, "current.app");
     mkdirSync(appDir, { recursive: true });
+    let registryVersion = "N";
     const registry = new AppRegistry(async () => [{
       appDir,
       definition: defineApp({
@@ -207,7 +210,7 @@ test("first admission after restart uses the current subscription while retainin
         agent: "current",
         inputSchema: Type.Object({
           kind: Type.Literal("message"),
-          data: Type.Object({ value: Type.String() }),
+          data: Type.Object({ value: Type.String(), target: Type.String() }),
         }),
         task: ({ id }) => ({
           kind: "desired",
@@ -215,30 +218,281 @@ test("first admission after restart uses the current subscription while retainin
         }),
         tasks: {},
         subscriptions: [{
-          id: "replacement-route",
+          id: `route-${registryVersion}`,
           event: "probe.changed",
-          toInput: (current) => ({ kind: "message", data: { value: `replacement:${current.data.value}` } }),
+          toInput: (current) => ({
+            kind: "message",
+            data: { value: `${registryVersion}:${current.data.value}`, target: String(current.target?.channel) },
+          }),
         }],
       }),
     }]);
     await registry.reload();
+    const generationN = registry.snapshot().generation;
     const bus = producer(root);
     const writer = new DbWriter(root);
     bus.setDeliveryRecorder(writer.recordDelivery);
+
+    const lockHolder = Bun.spawn(
+      [
+        "bun",
+        "-e",
+        `import { Database } from "bun:sqlite";
+         const db = new Database(process.argv[1]);
+         db.exec("PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 0; BEGIN IMMEDIATE");
+         console.log("locked");
+         await Bun.stdin.text();
+         db.exec("COMMIT");
+         db.close();`,
+        join(root, "may.db"),
+      ],
+      { stdin: "pipe", stdout: "pipe", stderr: "pipe" },
+    );
+    try {
+      const lockOutput = lockHolder.stdout.getReader();
+      expect(new TextDecoder().decode((await lockOutput.read()).value)).toContain("locked");
+      runtime = await startAppInboxRuntime({
+        db,
+        bus,
+        registry,
+        persistDir: root,
+        schedulesEnabled: false,
+        scanIntervalMs: 10_000,
+        attachTask: fakeTaskAttacher(db, (input) => ({ taskId: `work/${input.inboxInputId ?? input.inputId}` })),
+      });
+      expect(bus.redeliverPersisted(event, eventId, "app-inbox-route")[EVENT_DELIVERY_RESULT]).toBeUndefined();
+      expect(getAppEventAdmissionPlan(db, eventId)).toBeNull();
+      expect(db.prepare("SELECT app_admission_pending FROM events WHERE id = ?").get(eventId)).toEqual({
+        app_admission_pending: 1,
+      });
+    } finally {
+      runtime?.close();
+      lockHolder.stdin.end();
+      const exitCode = await Promise.race([
+        lockHolder.exited,
+        Bun.sleep(2_000).then(() => -1),
+      ]);
+      if (exitCode === -1) lockHolder.kill();
+      const stderr = await new Response(lockHolder.stderr).text();
+      expect({ exitCode, stderr }).toEqual({ exitCode: 0, stderr: "" });
+    }
+
+    runtime.close();
+    registryVersion = "N+1";
+    await registry.reload();
+    expect(registry.snapshot().generation).toBeGreaterThan(generationN);
     runtime = await startAppInboxRuntime({
       db,
       bus,
       registry,
       persistDir: root,
       schedulesEnabled: false,
+      scanIntervalMs: 10_000,
       attachTask: fakeTaskAttacher(db, (input) => ({ taskId: `work/${input.inboxInputId ?? input.inputId}` })),
     });
     await until(() => db.prepare("SELECT app_admission_pending FROM events WHERE id = ?").get(eventId)?.app_admission_pending === 0);
     await until(() => db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()?.count === 1);
-    expect(getAppEventAdmissionPlan(db, eventId)?.commands[0]?.routeId).toBe("replacement-route");
-    expect(db.prepare("SELECT origin_event_id, input_data FROM app_inbox_items").get()).toEqual({
+    expect(getAppEventAdmissionPlan(db, eventId)).toMatchObject({
+      registryGeneration: registry.snapshot().generation,
+      commands: [expect.objectContaining({ routeId: "route-N+1" })],
+    });
+    expect(db.prepare("SELECT source, owner, data, envelope_json FROM events WHERE id = ?").get(eventId)).toEqual(authored);
+    expect(db.prepare("SELECT origin_event_id, input_kind, input_data FROM app_inbox_items").get()).toEqual({
       origin_event_id: eventId,
-      input_data: JSON.stringify({ value: "replacement:retained" }),
+      input_kind: "message",
+      input_data: JSON.stringify({ value: "N+1:retained", target: "retained-target" }),
+    });
+  } finally {
+    runtime?.close();
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("pre-plan marker recovery preserves an exact Task target and Event envelope identity", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-event-exact-task-recovery-"));
+  let runtime: AppInboxRuntime | undefined;
+  try {
+    const event = producer(root).emit({
+      type: "project.task.tick",
+      source: "app:producer",
+      owner: "agent:producer",
+      target: { appId: "evaluation", taskId: "exact/task-7" },
+      data: { reason: "retained exact wake" },
+    } as any);
+    const eventId = event[EVENT_ROW_ID]!;
+    closeDb(root);
+    const db = getDb(root);
+    const authored = db.prepare("SELECT source, owner, data, envelope_json FROM events WHERE id = ?").get(eventId);
+    const registry = await fixture(root);
+    const admissions: Array<Record<string, unknown>> = [];
+    const bus = producer(root);
+    bus.setDeliveryRecorder(new DbWriter(root).recordDelivery);
+    runtime = await startAppInboxRuntime({
+      db,
+      bus,
+      registry,
+      persistDir: root,
+      schedulesEnabled: false,
+      scanIntervalMs: 10_000,
+      previewTaskEvent: ({ targetedTaskId }) => {
+        expect(targetedTaskId).toBe("exact/task-7");
+        return [];
+      },
+      admitTaskEvent: (input) => {
+        admissions.push(input as unknown as Record<string, unknown>);
+        return { accepted: true, by: "exact-task-fixture", route: "direct" };
+      },
+    });
+    await until(() => admissions.length === 1);
+    expect(admissions[0]).toMatchObject({
+      appId: "evaluation",
+      targetedTaskId: "exact/task-7",
+      conditionTaskIds: [],
+      intent: null,
+      event: {
+        type: "project.task.tick",
+        source: "app:producer",
+        owner: "agent:producer",
+        target: { appId: "evaluation", taskId: "exact/task-7" },
+        data: { reason: "retained exact wake" },
+      },
+    });
+    expect((admissions[0]?.event as any)[EVENT_ROW_ID]).toBe(eventId);
+    expect(getAppEventAdmissionPlan(db, eventId)).toMatchObject({
+      status: "completed",
+      commands: [expect.objectContaining({ kind: "exact-task", targetedTaskId: "exact/task-7" })],
+    });
+    expect(db.prepare("SELECT source, owner, data, envelope_json FROM events WHERE id = ?").get(eventId)).toEqual(authored);
+    expect(db.prepare("SELECT COUNT(*) AS n FROM app_inbox_items").get()).toEqual({ n: 0 });
+    expect(db.prepare("SELECT COUNT(*) AS n FROM execution_usage").get()).toEqual({ n: 0 });
+  } finally {
+    runtime?.close();
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("pre-plan marker recovery preserves exact Condition wake identities without inbox or model work", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-event-condition-recovery-"));
+  let runtime: AppInboxRuntime | undefined;
+  try {
+    const event = producer(root).emit({
+      type: "provider.changed",
+      source: "app:provider",
+      owner: "app:evaluation",
+      data: { subject: "credential:example", revision: 4 },
+    } as any);
+    const eventId = event[EVENT_ROW_ID]!;
+    closeDb(root);
+    const db = getDb(root);
+    const authored = db.prepare("SELECT source, owner, data, envelope_json FROM events WHERE id = ?").get(eventId);
+    const registry = await fixture(root);
+    const admissions: Array<Record<string, unknown>> = [];
+    const bus = producer(root);
+    bus.setDeliveryRecorder(new DbWriter(root).recordDelivery);
+    runtime = await startAppInboxRuntime({
+      db,
+      bus,
+      registry,
+      persistDir: root,
+      schedulesEnabled: false,
+      scanIntervalMs: 10_000,
+      previewTaskEventRoutes: ({ event: current }) => {
+        expect(current).toMatchObject({
+          type: "provider.changed",
+          source: "app:provider",
+          owner: "app:evaluation",
+          data: { subject: "credential:example", revision: 4 },
+        });
+        expect((current as any)[EVENT_ROW_ID]).toBe(eventId);
+        return [{ appId: "evaluation", taskIds: ["waiting/b", "waiting/a"] }];
+      },
+      admitTaskEvent: (input) => {
+        admissions.push(input as unknown as Record<string, unknown>);
+        return { accepted: true, by: "condition-fixture", route: "direct" };
+      },
+    });
+    await until(() => admissions.length === 1);
+    expect(admissions[0]).toMatchObject({
+      appId: "evaluation",
+      conditionTaskIds: ["waiting/a", "waiting/b"],
+      intent: null,
+      event: {
+        type: "provider.changed",
+        source: "app:provider",
+        owner: "app:evaluation",
+        data: { subject: "credential:example", revision: 4 },
+      },
+    });
+    expect((admissions[0]?.event as any)[EVENT_ROW_ID]).toBe(eventId);
+    expect(getAppEventAdmissionPlan(db, eventId)).toMatchObject({
+      status: "completed",
+      commands: [expect.objectContaining({ kind: "task", conditionTaskIds: ["waiting/a", "waiting/b"] })],
+    });
+    expect(db.prepare("SELECT source, owner, data, envelope_json FROM events WHERE id = ?").get(eventId)).toEqual(authored);
+    expect(db.prepare("SELECT COUNT(*) AS n FROM app_inbox_items").get()).toEqual({ n: 0 });
+    expect(db.prepare("SELECT COUNT(*) AS n FROM execution_usage").get()).toEqual({ n: 0 });
+  } finally {
+    runtime?.close();
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("observation-only marker recovery acknowledges inspected no-work without Task, inbox, or model work", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-event-observation-no-work-"));
+  let runtime: AppInboxRuntime | undefined;
+  try {
+    const event = producer(root).emit({
+      type: "probe.observed",
+      source: "app:probe:observer:status",
+      owner: "app:observer",
+      data: { state: "unchanged" },
+    } as any);
+    const eventId = event[EVENT_ROW_ID]!;
+    closeDb(root);
+    const db = getDb(root);
+    const appDir = join(root, "observer.app");
+    mkdirSync(appDir, { recursive: true });
+    const registry = new AppRegistry(async () => [{
+      appDir,
+      definition: defineApp({
+        id: "observer",
+        version: 1,
+        agent: "observer",
+        inputSchema: Type.Object({}),
+        tasks: {},
+        observations: ["probe.observed"],
+      }),
+    }]);
+    await registry.reload();
+    let taskAdmissions = 0;
+    const bus = producer(root);
+    bus.setDeliveryRecorder(new DbWriter(root).recordDelivery);
+    runtime = await startAppInboxRuntime({
+      db,
+      bus,
+      registry,
+      persistDir: root,
+      schedulesEnabled: false,
+      scanIntervalMs: 10_000,
+      previewTaskEventRoutes: () => [],
+      admitTaskEvent: () => {
+        taskAdmissions += 1;
+        return { accepted: true, by: "unexpected", route: "direct" };
+      },
+    });
+    await until(() => db.prepare("SELECT app_admission_pending FROM events WHERE id = ?").get(eventId)?.app_admission_pending === 0);
+    expect(getAppEventAdmissionPlan(db, eventId)).toBeNull();
+    expect(taskAdmissions).toBe(0);
+    expect(db.prepare("SELECT COUNT(*) AS n FROM app_tasks WHERE task_id != 'root'").get()).toEqual({ n: 0 });
+    expect(db.prepare("SELECT COUNT(*) AS n FROM app_inbox_items").get()).toEqual({ n: 0 });
+    expect(db.prepare("SELECT COUNT(*) AS n FROM execution_usage").get()).toEqual({ n: 0 });
+    expect(db.prepare("SELECT delivery_status, delivery_route, accepted_by FROM events WHERE id = ?").get(eventId)).toEqual({
+      delivery_status: "accepted",
+      delivery_route: "noop",
+      accepted_by: "app-runtime:observations:observer",
     });
   } finally {
     runtime?.close();
@@ -318,6 +572,10 @@ test("lost acknowledgement retains an addressed message recipient across owner r
     expect(db.prepare("SELECT app_id, origin_event_id FROM app_inbox_items").all()).toEqual([
       { app_id: "alpha", origin_event_id: eventId },
     ]);
+    const lookupPlan = db.prepare(
+      "EXPLAIN QUERY PLAN SELECT app_id FROM app_inbox_items WHERE origin_event_id = ? LIMIT 1",
+    ).all(eventId) as Array<{ detail?: string }>;
+    expect(lookupPlan.some(({ detail }) => detail?.includes("idx_app_inbox_origin_event"))).toBe(true);
   } finally {
     runtime?.close();
     closeDb(root);

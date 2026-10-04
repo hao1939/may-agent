@@ -559,6 +559,10 @@ export function applyDbSchema(db: SqliteDb): void {
       `);
     }
     ensureTaskResourceSchema(db);
+    // Lost App-route acknowledgement recovers addressed messages by their
+    // originating Event; keep that retry lookup bounded as inbox history grows.
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_app_inbox_origin_event
+      ON app_inbox_items(origin_event_id) WHERE origin_event_id IS NOT NULL`);
     db.exec(METRIC_DISPOSITION_SCHEMA);
     const metricView = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'view' AND name = 'metric_dispositions'")
       .get() as { sql: string } | null;
