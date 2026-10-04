@@ -162,9 +162,10 @@ Result contract:
   Running out of operations before completing useful work is partial progress,
   not an evidence-backed decision that no library change is worthwhile.
 - When one published source record is specifically relevant to this May
-  installation, you may return one optional researchRecommendation with
-  sourceUrl, pinned sourceRevision, artifact, claim, limits,
-  possibleApplication, and optional relatedWork. artifact must be one exact
+  installation, you may return one optional researchRecommendation with the
+  exact keys sourceUrl, sourceRevision, artifact, claim, limits,
+  possibleApplication, and optional relatedWork. sourceRevision must pin the
+  source version you inspected, and artifact must be one exact
   path in outputs. Qualification asks May to investigate; it is not an
   implementation request. Omit it for ordinary notes or uncertain relevance.
 `;
@@ -1064,9 +1065,12 @@ run Git publication or edit the canonical library in this call.`;
         beforePublication.canonicalProjectRoot,
         candidateArtifact.slice(candidateProjectDir.length + 1),
       );
+      const sourceRevision =
+        recommendation.sourceRevision ?? recommendation.pinnedSourceRevision;
       handoffResult = {
         researchRecommendation: {
           ...recommendation,
+          sourceRevision,
           artifact: canonicalArtifact,
         },
       };

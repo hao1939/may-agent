@@ -760,7 +760,7 @@ describe("scout-explore workflow prompt", () => {
           outputs: [candidateFinding, output],
           researchRecommendation: {
             sourceUrl: "https://www.xiaohongshu.com/explore/note-1",
-            sourceRevision: "note-1@observed",
+            pinnedSourceRevision: "note-1@observed",
             artifact: candidateFinding,
             claim: "The pattern may improve local agent maintenance.",
             limits: "One observational source; not locally reproduced.",
@@ -816,7 +816,11 @@ describe("scout-explore workflow prompt", () => {
     expect(emitted[0]).toMatchObject({
       type: "scout.research.qualified",
       localKey: expect.stringMatching(/^research-[a-f0-9]{64}$/),
-      data: { artifact: finding, producerAppId: "scout-knowledge-lib" },
+      data: {
+        artifact: finding,
+        producerAppId: "scout-knowledge-lib",
+        sourceRevision: "note-1@observed",
+      },
     });
     expect(
       execFileSync("git", ["show", `${revision}:scout/knowledge/finding.md`], {
