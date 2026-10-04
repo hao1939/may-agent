@@ -209,6 +209,40 @@ describe("Scout task reconciliation", () => {
     });
   });
 
+  it("routes automatic Reddit wakes review-only without weakening explicit rechecks", () => {
+    const automatic = resolveScoutTask({
+      type: "scout.explore",
+      source: "app:scout-knowledge-lib:schedule:scout-explore-reddit",
+      data: { project: "scout-knowledge-lib", source: "reddit" },
+    });
+    expect(automatic).toMatchObject({
+      id: "explore-reddit",
+      input: {
+        source: "reddit",
+        reconciliation: "review-only",
+        decision:
+          "/app/projects/scout-knowledge-lib/reports/operations/reddit-source-contract-review-2026-09-24.md",
+      },
+    });
+    expect(automatic?.acceptance.join(" ")).toContain(
+      "without a Reddit HTTP scan",
+    );
+    expect(automatic?.acceptance.join(" ")).toContain(
+      "explicit operator request",
+    );
+
+    const operatorRecheck = taskForScoutInput({
+      id: "operator-recheck",
+      source: { kind: "app", id: "may" },
+      input: { kind: "explore", data: { source: "reddit" } },
+    });
+    expect(operatorRecheck.kind).toBe("desired");
+    if (operatorRecheck.kind !== "desired")
+      throw new Error("expected desired Scout Task attachment");
+    expect(operatorRecheck.intent.id).toBe("explore-reddit");
+    expect(operatorRecheck.intent.input).toEqual({ source: "reddit" });
+  });
+
   it("rejects malformed source exploration instead of creating a task", () => {
     expect(
       resolveScoutTask({ type: "scout.explore", source: "unknown" }),

@@ -59,6 +59,8 @@ function ownerRequested(
 }
 
 const scoutSources = new Set(["arxiv", "hn", "xhs", "github", "reddit"]);
+const redditReviewOnlyDecision =
+  "/app/projects/scout-knowledge-lib/reports/operations/reddit-source-contract-review-2026-09-24.md";
 const ownerReviewReasons = new Set([
   "experience-review",
   "library-health-signal",
@@ -79,14 +81,28 @@ export function resolveScoutTask(
         details.researchSource ?? details.source ?? event.source ?? "",
       ).toLowerCase();
       if (!scoutSources.has(source)) return null;
+      const scheduledRedditWake =
+        source === "reddit" &&
+        String(event.source ?? "") ===
+          "app:scout-knowledge-lib:schedule:scout-explore-reddit";
       return {
         id: `explore-${source}`,
         parentId: "ongoing-research",
         outcome: `Continuously explore ${source} for source-grounded AI-agent signals and integrate useful findings into the Scout knowledge library.`,
-        acceptance: [
-          "Reconcile the current source responsibility from all Task facts: review-only outcomes are valid when no scan is useful; any claimed scan uses current non-simulated source proof and integrates useful findings or records an evidence-backed no-op without discarding independent pending obligations.",
-        ],
-        input: { source },
+        acceptance: scheduledRedditWake
+          ? [
+              `Honor the current owner decision at ${redditReviewOnlyDecision}: reconcile this automatic wake review-only without a Reddit HTTP scan while the documented ordinary-permalink block remains current. A newer configured-runtime ordinary-permalink success, a known runtime/network/access-contract change, or an explicit operator request for one bounded recheck ends review-only mode; preserve the standing Task, four-hour schedule, access controls, body-evidence rules, and independent pending obligations.`,
+            ]
+          : [
+              "Reconcile the current source responsibility from all Task facts: review-only outcomes are valid when no scan is useful; any claimed scan uses current non-simulated source proof and integrates useful findings or records an evidence-backed no-op without discarding independent pending obligations.",
+            ],
+        input: scheduledRedditWake
+          ? {
+              source,
+              reconciliation: "review-only",
+              decision: redditReviewOnlyDecision,
+            }
+          : { source },
         outputs: [
           `${projectDir}/knowledge`,
           `${appDir}/agents/scout/workspace/digest/today.md`,
