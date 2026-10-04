@@ -14,7 +14,7 @@ import {
 import {
   readSubjectTask,
   sendPublicReadCommand,
-} from "../../../../evaluation.app/agents/evaluator/workflows/lib/public-task-evidence.js";
+} from "../../../../alex.app/agents/evaluator/workflows/lib/public-task-evidence.js";
 import {
   currentProposalMatches,
   inspectApplication,
@@ -23,7 +23,7 @@ import {
 
 export const name = "improvement-activation-follow-up";
 export const description =
-  "Recheck the exact trusted approval and applied source receipt, request the approved pinned App-definition reload, read its correlated live source identity, then request independent Evaluation of a concrete new subject Task.";
+  "Recheck the exact trusted approval and applied source receipt, request the approved pinned App-definition reload, read its correlated live source identity, then request independent Alex-hosted evaluation of a concrete new subject Task.";
 
 type Input = {
   files: ApplicationFiles;
@@ -41,7 +41,7 @@ function record(value: unknown): Record<string, unknown> {
 
 async function publicEvidenceProvider() {
   const { createPublicTaskEvidenceProvider } =
-    await import("../../../../evaluation.app/agents/evaluator/workflows/lib/public-task-evidence.js");
+    await import("../../../../alex.app/agents/evaluator/workflows/lib/public-task-evidence.js");
   return createPublicTaskEvidenceProvider();
 }
 
@@ -149,14 +149,14 @@ async function acceptedFollowUpSelection(
     .filter(
       (condition) =>
         condition.type === "app.dependency.updated" &&
-        condition.owner === "app:evaluation" &&
+        condition.owner === "app:alex" &&
         condition.subject.startsWith("id:"),
     )
     .map((condition) => condition.subject.slice("id:".length));
   for (const wait of ctx.reconciliation?.waits?.open ?? []) {
     if (
       wait.type === "app.dependency.updated" &&
-      wait.dependency?.appId === "evaluation" &&
+      wait.dependency?.appId === "alex" &&
       wait.subject.startsWith("id:")
     )
       requestIds.push(wait.subject.slice("id:".length));
@@ -445,7 +445,7 @@ export async function runActivationFollowUp(
               generation: selected.generation,
               evidenceHash: selected.evidenceHash,
             },
-            nextOwner: "app:evaluation",
+            nextOwner: "app:alex",
             nextAction: "Return the exact pinned independent review.",
           },
         } satisfies TaskReconcileResult);
@@ -581,7 +581,7 @@ export async function runActivationFollowUp(
     };
     const followUp = {
       id: `post-adoption-review:${approvedPacketHash}:${pinnedSubject.evidenceHash}`,
-      appId: "evaluation" as const,
+      appId: "alex" as const,
       input: {
         kind: "review-task-outcome" as const,
         data: {
@@ -614,7 +614,7 @@ export async function runActivationFollowUp(
           generation: subject.generation,
           evidenceHash: subjectEvidence.evidenceHash,
         },
-        nextOwner: "app:evaluation",
+        nextOwner: "app:alex",
         nextAction: "Independently review the new subject outcome.",
       },
       dependencies: [followUp],
