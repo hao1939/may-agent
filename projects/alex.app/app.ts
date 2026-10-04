@@ -18,6 +18,13 @@ const role = Type.Union([
   Type.Literal("evaluator-deepseek"),
   Type.Literal("gym"),
 ]);
+const STANDING_RESEARCH_TASK_ID = "research-adoption";
+const standingResearchOutcome =
+  "Continuously assess qualified Scout findings and older archived research for small, evidence-backed improvements to this installation.";
+const standingResearchAcceptance = [
+  "Return a current-first Bob recommendation or a supported no-change, negative, or visible deferral outcome; retain source limits, linked evidence, owner and next action without applying a candidate.",
+];
+
 const comparisonData = Type.Object({
   requestId: Type.String({ minLength: 1 }),
   objective: Type.Optional(details),
@@ -212,6 +219,26 @@ export function taskInputForEvent(event: AppEvent<Record<string, unknown>>): App
 
 export function taskForInput(admitted: Readonly<AppTaskInput>) {
   const data = record(admitted.input.data);
+  const context = record(data.context);
+  const research = record(context.research);
+  if (admitted.input.kind === "goal" && research.mode === "standing" && research.adoption === STANDING_RESEARCH_TASK_ID) {
+    const acceptance = Array.isArray(data.acceptance) ? data.acceptance : [];
+    const exactAcceptance = acceptance.length === standingResearchAcceptance.length &&
+      acceptance.every((item, index) => item === standingResearchAcceptance[index]);
+    const assignment = record(data.assignment);
+    if (data.outcome !== standingResearchOutcome || !exactAcceptance || assignment.agent !== "bob") {
+      throw new Error("Standing research adoption requires its exact fixed outcome, acceptance, and Bob assignment; use an ordinary targeted goal for changed requirements");
+    }
+    return { kind: "desired" as const, intent: {
+      id: STANDING_RESEARCH_TASK_ID,
+      parentId: "root",
+      agent: "bob",
+      outcome: standingResearchOutcome,
+      acceptance: standingResearchAcceptance,
+      input: admitted.input,
+      priority: "P2" as const,
+    }};
+  }
   if (admitted.input.kind === "automatic-review") {
     return { kind: "desired" as const, intent: {
       id: "runtime/task-outcome-selector",
@@ -366,10 +393,16 @@ export default defineApp({
       input: {
         kind: "goal" as const,
         data: {
-          outcome: "Assess qualified Scout findings and older archived research for a small evidence-backed improvement, or return a supported no-change or deferral decision.",
-          acceptance: ["Retain source limits and exact evidence; adopt, defer, or reject without inventing authority, and return the next archive cursor."],
+          outcome: standingResearchOutcome,
+          acceptance: standingResearchAcceptance,
           assignment: { agent: "bob" as const },
-          context: { research: { opportunity: "weekly-archive-review", recordLimit: 3, candidateLimit: 1 } },
+          context: { research: {
+            adoption: STANDING_RESEARCH_TASK_ID,
+            mode: "standing",
+            opportunity: "weekly-archive-review",
+            recordLimit: 3,
+            candidateLimit: 1,
+          } },
         },
       },
     },

@@ -155,10 +155,25 @@ test("ordinary Evaluation reports are consumed only by Alex with immutable ident
   expect(() => evaluationReportInput({ ...taskEvent, data: { ...taskEvent.data, jsonHash: "bad" } } as never)).toThrow("SHA-256 jsonHash");
 });
 
-test("weekly research adoption is owned by Alex Bob", () => {
+test("weekly research preserves one standing Alex Bob Task across deliveries", () => {
   const schedule = app.schedules?.find(({ id }) => id === "research-adoption-archive-review");
-  expect(schedule).toMatchObject({ intervalMs: 604800000, catchUp: "latest", input: { kind: "goal", data: { assignment: { agent: "bob" } } } });
-  expect(taskForInput({ id: "weekly-research", input: (schedule as any).input } as never).intent).toMatchObject({ agent: "bob", parentId: "root" });
+  expect(schedule).toMatchObject({
+    intervalMs: 604800000,
+    catchUp: "latest",
+    input: { kind: "goal", data: { assignment: { agent: "bob" }, context: { research: { adoption: "research-adoption", mode: "standing" } } } },
+  });
+  const first = taskForInput({ id: "week-1", input: (schedule as any).input } as never);
+  const second = taskForInput({ id: "week-2", input: (schedule as any).input } as never);
+  expect(first.intent).toMatchObject({ id: "research-adoption", agent: "bob", parentId: "root" });
+  expect(second.intent).toEqual(first.intent);
+
+  const changed = structuredClone((schedule as any).input);
+  changed.data.acceptance = ["Silently replace the standing requirement"];
+  expect(() => taskForInput({ id: "week-3", input: changed } as never)).toThrow("exact fixed outcome");
+
+  const targeted = structuredClone((schedule as any).input);
+  delete targeted.data.context.research.mode;
+  expect(taskForInput({ id: "targeted", input: targeted } as never).intent.id).toBe("input/targeted");
 });
 
 test("comparison inputs attach to the migrated Gym specialist", () => {
