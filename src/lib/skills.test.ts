@@ -125,9 +125,8 @@ describe("May skill catalog", () => {
   it("rejects an unavailable explicit name with discovery and file-reference recovery guidance", () => {
     expect(() => invokeCatalogSkill(undefined, "review-change", "Review this patch")).toThrow(
       'Skill "review-change" is not in this agent\'s catalog. ' +
-      "For delegation, inspect the receiver with agents action='list' and agent=<receiver>. " +
-      "Choose a listed name, or omit skill to let the receiver choose its method. " +
-      "You can also pass a full readable SKILL.md path in context_files without named activation.",
+      "For delegation, omit skill to let the receiver choose its method. " +
+      "If this guide is needed, pass its full readable SKILL.md path in context_files instead.",
     );
   });
 

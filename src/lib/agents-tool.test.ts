@@ -11,7 +11,6 @@ import { SubagentManager } from "./manager.js";
 import { appendSessionMessage } from "./persistence.js";
 import { closeDb } from "./db/connection.js";
 import { upsertSession } from "./db/sessions.js";
-import { discoverAgentSkills } from "./skills.js";
 import { prepareAgentExecution } from "./agent-execution.js";
 import { createReadTool } from "./tools/read.js";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
@@ -84,38 +83,6 @@ describe("agents tool", () => {
     expect(result).toMatchObject({ filter: "all", count: 0, sessions: [] });
     expect(JSON.stringify(tool.parameters)).toContain("sessions");
     expect(JSON.stringify(tool.parameters)).not.toContain('"requests"');
-  });
-
-  it("inspects a receiver's loaded skill metadata without expanding the general list", async () => {
-    const agentDir = join(persistDir, "coder");
-    const skillDir = join(agentDir, "skills", "review-change");
-    mkdirSync(skillDir, { recursive: true });
-    const filePath = join(skillDir, "SKILL.md");
-    const description = "Review a candidate. ".repeat(20);
-    writeFileSync(filePath, `---\nname: review-change\ndescription: ${description}\n---\nPrivate method body\n`);
-    const skillCatalog = await discoverAgentSkills({ agentDir });
-    manager.register({ name: "coder", description: "Writes code", domain: "coding", model: mockModel(), tools: [], skillCatalog });
-    manager.register({ name: "reviewer", description: "Reviews code", domain: "coding", model: mockModel(), tools: [] });
-    // Discovery describes the execution snapshot, not later filesystem edits.
-    writeFileSync(filePath, "Changed after registration");
-    manager.status = () => ["coder", "reviewer"].map((agent) => ({
-      sessionId: `session-${agent}`, agent, task: "Review the patch", status: "running", runtime: "1s",
-    }));
-    const tool = manager.createAgentsTool();
-    const all = await callTool(tool, { action: "list" });
-    expect(all.agents).toHaveLength(2);
-    expect(all.agents.every((agent: Record<string, unknown>) => !("skills" in agent))).toBe(true);
-    expect(all.runningSessions).toHaveLength(2);
-
-    const receiver = await callTool(tool, { action: "list", agent: "coder" });
-    expect(receiver.agents).toEqual([{
-      name: "coder", description: "Writes code", domain: "coding",
-      skills: [{ name: "review-change", description: description.slice(0, 240), filePath }],
-    }]);
-    expect(receiver.runningSessions.map((session: { agent: string }) => session.agent)).toEqual(["coder"]);
-    expect(JSON.stringify(receiver)).not.toContain("Private method body");
-    expect((await callTool(tool, { action: "list", agent: "reviewer" })).agents[0].skills).toEqual([]);
-    expect(await callTool(tool, { action: "list", agent: "missing" })).toEqual({ agents: [], runningSessions: [] });
   });
 
   it("advertises only implemented delegation options", () => {

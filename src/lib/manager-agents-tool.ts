@@ -80,7 +80,7 @@ const AgentsToolParams = Type.Object({
         "'call': run an agent synchronously and get the result (blocks your session until the agent finishes). Creates a child session in your call tree. Returns id, kind, status, summary and output/facts; inspect evidence before accepting the contribution.",
         "'fork': start a bounded helper owned by your live execution. Returns sessionId. Inspect its result before finishing; unfinished helpers stop with you. Durable work belongs to a Task.",
         "'context': query session context — parent's summary, origin session, workflow steps. Use when you need more context than your task provides.",
-        "'list': show available agents and running sessions. Set agent to inspect one receiver, including its skill names, descriptions, and file paths.",
+        "'list': show all available agents with descriptions and any running sessions.",
         "'peek': view recent messages from a running session (requires sessionId).",
         "'cancel': request cancellation through the owning runtime (requires sessionId).",
         "'sessions': query persisted execution sessions (optionally filter by agent or status).",
@@ -91,13 +91,13 @@ const AgentsToolParams = Type.Object({
   agent: Type.Optional(
     Type.String({
       description:
-        "Target agent name. Required for 'call' and 'fork'. Optional for 'list' and 'sessions' (filters by agent). Use 'list' first to see available agents if unsure.",
+        "Target agent name. Required for 'call' and 'fork'. Optional for 'sessions' (filters by agent). Use 'list' first to see available agents if unsure.",
     }),
   ),
   task: Type.Optional(
     Type.String({
       description:
-        "Task description for 'call' or 'fork'. Be specific: include file paths, expected outcomes, and constraints. The agent runs to completion and returns a summary (call) or session id (fork).",
+        "Task description for 'call' or 'fork'. Give the outcome, constraints, and relevant file references; the receiver chooses its method. The agent runs to completion and returns a summary (call) or session id (fork).",
     }),
   ),
   sessionId: Type.Optional(
@@ -129,7 +129,7 @@ const AgentsToolParams = Type.Object({
   ),
   skill: Type.Optional(
     Type.String({
-      description: "For 'call'/'fork': optional skill name from the receiver's catalog. Inspect it with action='list' and agent=<receiver>. Omit to let the receiver choose its method; use context_files for readable guidance outside its catalog.",
+      description: "For 'call'/'fork': optional explicit activation of a skill known to be in the receiving agent's catalog. Normally omit; the receiver chooses its method. A name in your own catalog is not necessarily available there. To share a guide, pass its readable file path in context_files.",
     }),
   ),
   scope: Type.Optional(
@@ -347,32 +347,19 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
           }
 
           case "list": {
-            const agents = Array.from(manager.agents.values())
-              .filter((a) => !params.agent || a.definition.name === params.agent)
-              .map((a) => ({
-                name: a.definition.name,
-                description: a.definition.description,
-                domain: a.definition.domain,
-                ...(a.definition.appLocal ? { project: a.definition.projectId } : {}),
-                ...(params.agent ? {
-                  skills: Array.from(a.definition.skillCatalog?.skills.values() ?? [])
-                    .sort((a, b) => a.name.localeCompare(b.name))
-                    .map((skill) => ({
-                      name: skill.name,
-                      description: skill.description.slice(0, 240),
-                      filePath: skill.canonicalPath,
-                    })),
-                } : {}),
-              }));
-            const sessions = manager.status()
-              .filter((s) => !params.agent || s.agent === params.agent)
-              .map((s) => ({
-                sessionId: s.sessionId,
-                agent: s.agent,
-                task: s.task.slice(0, 100),
-                status: s.status,
-                runtime: s.runtime,
-              }));
+            const agents = Array.from(manager.agents.values()).map((a) => ({
+              name: a.definition.name,
+              description: a.definition.description,
+              domain: a.definition.domain,
+              ...(a.definition.appLocal ? { project: a.definition.projectId } : {}),
+            }));
+            const sessions = manager.status().map((s) => ({
+              sessionId: s.sessionId,
+              agent: s.agent,
+              task: s.task.slice(0, 100),
+              status: s.status,
+              runtime: s.runtime,
+            }));
             return textResult(JSON.stringify({ agents, runningSessions: sessions }, null, 2));
           }
 
