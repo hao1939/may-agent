@@ -38,10 +38,34 @@ export type TaskInputAdmission = {
   requestLink?: Omit<Parameters<typeof linkConversationRequestTask>[1], "taskRef">;
 };
 
+/** Conversation execution consumes saved Conversation input, never an ordinary Task handoff. */
+export function assertTaskInputCompatible(config: AppTaskContext, input: TaskInputAdmission): void {
+  const taskId = (input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id).trim();
+  const current = config.resourceStore.readTask(taskId);
+  const proposed = input.attachment.kind === "desired" ? input.attachment.intent.executor : undefined;
+  if (current?.spec.executor !== "conversation" && proposed !== "conversation") return;
+  const item = getAppInboxItem(config.resourceStore.db, input.inputContext.id);
+  if (
+    !item?.conversationId ||
+    item.appId !== input.appId ||
+    item.status === "done" ||
+    item.lease ||
+    item.executionTaskId !== taskId ||
+    item.taskAdmissionKey !== input.idempotencyKey ||
+    input.idempotencyKey !== `conversation-input:${item.id}` ||
+    !isDeepStrictEqual(item.source, input.inputContext.source) ||
+    !isDeepStrictEqual(item.input, input.inputContext.input)
+  )
+    throw new AppTaskAdmissionError(
+      "Conversation Tasks require Conversation input admission; return the current Conversation decision or select an ordinary work Task for follow-up",
+    );
+}
+
 /** Persist resolved Task input and Conversation links. No App mapping, execution or notification calls. */
 export function admitTaskInput(config: AppTaskContext, input: TaskInputAdmission): AppTaskObservationResult {
   return stateTransaction(config.resourceStore.db, () => {
     input.authorize?.();
+    assertTaskInputCompatible(config, input);
     const db = config.resourceStore.db;
     const item = input.inboxInputId ? getAppInboxItem(db, input.inboxInputId) : null;
     if (input.inboxInputId) {

@@ -322,7 +322,7 @@ export type ConversationDelegation = {
   appId: string;
   /** Complete handoff under the App's contract, including its fixed semantics and any governing references. */
   input: AppInput;
-  /** Reuse this exact open Task when its assignment fits; new input does not revise its specification. */
+  /** Reuse an exact ordinary work Task when its assignment fits; Conversation Tasks use Conversation input. */
   task?: { appId: string; taskId: string };
 };
 
@@ -393,7 +393,7 @@ export const conversationTurnResultSchema = Type.Object(
         {
           additionalProperties: false,
           description:
-            "Submit this input as durable Task work to the selected App. The Host retains the originating Conversation input and returns the selected result automatically. Reuse an exact Task only when its outcome, acceptance, input and execution method fit. The Host admits the handoff when this Turn's result is accepted. Task admission alone does not fulfill a Request.",
+            "Submit this input as durable Task work to the selected App. The Host retains the originating Conversation input and returns the selected result automatically. Reuse an exact ordinary work Task only when its outcome, acceptance, input and execution method fit. Conversation Tasks receive input through Conversation admission; a completed review can return summary and facts without a follow-up. The Host admits the handoff when this Turn's result is accepted. Task admission alone does not fulfill a Request.",
         },
       ),
     ),

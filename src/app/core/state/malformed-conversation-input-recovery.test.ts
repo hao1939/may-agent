@@ -5,14 +5,19 @@ import { tmpdir } from "node:os";
 import { getDb, closeDb } from "../../../lib/requests.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
-import { admitTaskInput } from "./inbox.js";
+import { admitTaskInput, linkTaskInput } from "./inbox.js";
 import {
   admitConversationTaskInput,
   completeConversationTaskTurn,
   conversationTaskId,
   readConversationTaskInputs,
 } from "./conversation-task-turns.js";
-import { appTaskContext, claimObservedAppTask, failAppTaskAttempt } from "../tasks/app-task-reconciler.js";
+import {
+  appTaskContext,
+  claimObservedAppTask,
+  failAppTaskAttempt,
+  observeAppTaskIntent,
+} from "../tasks/app-task-reconciler.js";
 import {
   recoverMalformedConversationInput,
   type MalformedConversationInputRecoveryPlan,
@@ -27,7 +32,7 @@ afterEach(() => {
   });
 });
 
-function fixture() {
+function fixture(acceptedFollowUp = false) {
   const root = mkdtempSync(join(tmpdir(), "may-malformed-conversation-recovery-"));
   roots.push(root);
   const db = getDb(root);
@@ -55,12 +60,13 @@ function fixture() {
     executor: "conversation" as const,
   };
   const seed = admitConversationTaskInput(context, {
-    id: "seed",
+    id: acceptedFollowUp ? "bad-input" : "seed",
     appId: "may",
     conversationId: "may:primary",
     source: { kind: "system", id: "seed" },
     input: { kind: "message", data: { message: "seed" } },
-    idempotencyKey: "seed-v1",
+    idempotencyKey: acceptedFollowUp ? "bad-admission-v1" : "seed-v1",
+    originEventId: acceptedFollowUp ? 77 : undefined,
     intent,
     now: 1,
   });
@@ -81,26 +87,65 @@ function fixture() {
     },
   );
 
-  const source = { kind: "system" as const, id: "codex-supervisor:fixture" };
-  const input = { kind: "message", data: { message: "retained exact feedback" } };
-  const malformed = createAppInboxItem(db, {
-    id: "bad-input",
-    appId: "may",
-    targetTaskId: seed.taskId,
-    source,
-    input,
-    originEventId: 77,
-    idempotencyKey: "bad-admission-v1",
-    now: 4,
-  }).item;
-  admitTaskInput(context, {
-    appId: "may",
-    attachment: { kind: "existing", taskId: seed.taskId },
-    idempotencyKey: `task:${malformed.id}`,
-    inputContext: { id: malformed.id, source, input },
-    inboxInputId: malformed.id,
-    now: 4,
+  const source = acceptedFollowUp ? seed.item.source : { kind: "system" as const, id: "codex-supervisor:fixture" };
+  const input = acceptedFollowUp
+    ? { kind: "goal", data: { outcome: "Review the retained concern", acceptance: ["Record the judgment"] } }
+    : { kind: "message", data: { message: "retained exact feedback" } };
+  const malformed = acceptedFollowUp
+    ? seed.item
+    : createAppInboxItem(db, {
+        id: "bad-input",
+        appId: "may",
+        targetTaskId: seed.taskId,
+        source,
+        input,
+        originEventId: 77,
+        idempotencyKey: "bad-admission-v1",
+        now: 4,
+      }).item;
+  const admissionKey = acceptedFollowUp ? `conversation-follow-up:may:${malformed.id}` : `task:${malformed.id}`;
+  if (acceptedFollowUp) {
+    // Persist the legacy accepted decision. Current public settlement rejects it.
+    const attempt = store.readAttempt(seedClaim.attemptId)!;
+    const result = {
+      conversation: {
+        summary: "Review recorded",
+        topic: { kind: "none" },
+        followUp: { appId: "may", task: { appId: "may", taskId: seed.taskId }, input },
+      },
+    };
+    attempt.acceptedResult!.result = result;
+    db.prepare("UPDATE app_task_attempts SET attempt_json = ? WHERE app_id = ? AND attempt_id = ?").run(
+      JSON.stringify(attempt),
+      "may",
+      seedClaim.attemptId,
+    );
+    db.prepare("UPDATE app_inbox_items SET result = ? WHERE id = ?").run(
+      JSON.stringify({ summary: "Review recorded", result }),
+      malformed.id,
+    );
+  }
+  // Seed the historical bug below public admission, which now rejects it.
+  observeAppTaskIntent(context, {
+    intent: { ...store.readTask(seed.taskId)!.spec, id: seed.taskId },
+    appAgent: "may",
+    admissionKey,
+    trigger: {
+      type: "app.task.requested",
+      source: "app-inbox:may",
+      owner: "agent:may",
+      target: { project: "may", taskId: seed.taskId },
+      idempotencyKey: admissionKey,
+      data: {
+        appId: "may",
+        project: "may",
+        taskId: seed.taskId,
+        idempotencyKey: admissionKey,
+        request: { id: malformed.id, source, input },
+      },
+    },
   });
+  if (!acceptedFollowUp) linkTaskInput(db, malformed.id, seed.taskId, admissionKey, 4);
   const failedClaim = claimObservedAppTask(context, {
     taskId: seed.taskId,
     appAgent: "may",
@@ -118,7 +163,8 @@ function fixture() {
       taskId: seed.taskId,
       originEventId: 77,
       idempotencyKey: "bad-admission-v1",
-      taskAdmissionKey: `task:${malformed.id}`,
+      taskAdmissionKey: admissionKey,
+      ...(acceptedFollowUp ? { acceptedTurn: { attemptId: seedClaim.attemptId, input: seed.item.input } } : {}),
       source,
       input,
     },
@@ -349,6 +395,71 @@ test("an existing recovery key collision is rejected without writes", () => {
   expect(stateSnapshot(f)).toEqual(before);
   expect(() => recoverMalformedConversationInput(f.context, f.plan)).toThrow("idempotency key is already used");
   expect(stateSnapshot(f)).toEqual(before);
+});
+
+test("follow-up recovery preserves the accepted Turn and queued human input across restart", () => {
+  const f = fixture(true);
+  const human = admitConversationTaskInput(f.context, {
+    id: "human-input",
+    appId: "may",
+    conversationId: f.plan.recovery.conversationId,
+    source: { kind: "human", id: "human-message" },
+    input: { kind: "message", data: { text: "Please clarify" } },
+    intent: f.store.readTask(f.taskId)!.spec,
+  }).item;
+  f.plan.taskFence.resourceVersion = f.store.readTask(f.taskId)!.metadata.resourceVersion;
+  const original = getAppInboxItem(f.db, f.plan.malformed.inputId);
+  const accepted = f.store.readAttempt(f.plan.malformed.acceptedTurn!.attemptId);
+  const before = stateSnapshot(f);
+  expect(recoverMalformedConversationInput(f.context, f.plan, { dryRun: true }).status).toBe("would-repair");
+  expect(stateSnapshot(f)).toEqual(before);
+  const result = recoverMalformedConversationInput(f.context, f.plan);
+  expect(result.status).toBe("repaired");
+  expect(getAppInboxItem(f.db, f.plan.malformed.inputId)).toEqual(original);
+  expect(f.store.readAttempt(f.plan.malformed.acceptedTurn!.attemptId)).toEqual(accepted);
+  expect(getAppInboxItem(f.db, human.id)).toEqual(human);
+  expect(getAppInboxItem(f.db, result.recoveredInputId!)?.input).toEqual(f.plan.malformed.input);
+  closeDb(f.root);
+  const store = AppTaskResourceStore.fromDb(getDb(f.root), "may");
+  const context = appTaskContext({
+    appDir: f.root,
+    projectDir: f.root,
+    agent: "may",
+    maxConcurrent: 1,
+    resourceStore: store,
+  });
+  expect(recoverMalformedConversationInput(context, f.plan)).toEqual({ ...result, status: "already-repaired" });
+  setSystemTime(Date.now() + 3_600_000);
+  const claim = claimObservedAppTask(context, { taskId: f.taskId, appAgent: "may", handler: "executor:conversation" });
+  if (claim.kind !== "claimed") throw new Error(`Repaired claim failed: ${claim.kind}`);
+  expect(new Set(readConversationTaskInputs(context, claim).map((item) => item.id))).toEqual(
+    new Set([human.id, result.recoveredInputId!]),
+  );
+  expect(getAppInboxItem(store.db, human.id)?.status).toBe("pending");
+});
+
+test("follow-up recovery refuses changed accepted evidence and stale plans without writes", () => {
+  const f = fixture(true);
+  const before = stateSnapshot(f);
+  for (const mutate of [
+    (plan: MalformedConversationInputRecoveryPlan) => {
+      plan.malformed.acceptedTurn!.attemptId = "other-attempt";
+    },
+    (plan: MalformedConversationInputRecoveryPlan) => {
+      plan.malformed.acceptedTurn!.input = { kind: "message", data: {} };
+    },
+    (plan: MalformedConversationInputRecoveryPlan) => {
+      plan.malformed.input = { kind: "goal", data: {} };
+    },
+    (plan: MalformedConversationInputRecoveryPlan) => {
+      plan.taskFence.resourceVersion += 1;
+    },
+  ]) {
+    const plan = structuredClone(f.plan);
+    mutate(plan);
+    expect(() => recoverMalformedConversationInput(f.context, plan)).toThrow();
+    expect(stateSnapshot(f)).toEqual(before);
+  }
 });
 
 function stateSnapshot(f: ReturnType<typeof fixture>) {

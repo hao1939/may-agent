@@ -25,7 +25,7 @@ import {
   type AppTaskClaim,
   type AppTaskCancellationResult,
 } from "../tasks/app-task-reconciler.js";
-import { admitTaskInput } from "./inbox.js";
+import { admitTaskInput, assertTaskInputCompatible } from "./inbox.js";
 import {
   createAppInboxItem,
   getAppInboxItem,
@@ -148,6 +148,13 @@ function readConversationFollowUp(
   assertValidAppInput(targetApp, desired.input);
   if (desired.task && (desired.task.appId !== desired.appId || !target.resourceStore.readTask(desired.task.taskId)))
     throw new Error("Follow-up requires an exact Task in the selected App");
+  if (desired.task)
+    assertTaskInputCompatible(target, {
+      appId: desired.appId,
+      attachment: { kind: "existing", taskId: desired.task.taskId },
+      idempotencyKey: `conversation-follow-up:${item.appId}:${item.id}`,
+      inputContext: { id: item.id, source: item.source, input: desired.input },
+    });
   const request = desired.requestId
     ? proposedRequests.find(({ id }) => id === desired.requestId) ??
       readConversationRequest(config.resourceStore.db, item.appId, item.conversationId!, desired.requestId)
@@ -339,6 +346,13 @@ export function admitConversationTaskInput(
     const created = prior ? { item: prior, created: false } : createAppInboxItem(db, input);
     const item = created.item;
     const admissionKey = `conversation-input:${item.id}`;
+    // Bind the saved input before shared admission checks executor compatibility.
+    // The surrounding transaction rolls back this link if admission fails.
+    db.run(
+      `UPDATE app_inbox_items SET execution_task_id = ?, task_admission_key = ?,
+      available_at = NULL WHERE id = ?`,
+      [taskId, admissionKey, item.id],
+    );
     const observed = admitTaskInput(config, {
       appId: input.appId,
       attachment: config.resourceStore.readTask(taskId)
@@ -361,11 +375,6 @@ export function admitConversationTaskInput(
       idempotencyKey: admissionKey,
       inputContext: { id: item.id, source: item.source, input: item.input },
     });
-    db.run(
-      `UPDATE app_inbox_items SET execution_task_id = ?, task_admission_key = ?,
-      available_at = NULL WHERE id = ?`,
-      [taskId, admissionKey, item.id],
-    );
     return { item: getAppInboxItem(db, item.id)!, taskId: observed.taskId, created: created.created };
   });
 }

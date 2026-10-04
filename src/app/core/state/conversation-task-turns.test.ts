@@ -134,6 +134,75 @@ function fixture() {
   };
 }
 
+for (const target of ["self", "other-conversation", "mapped"] as const) {
+  test(`rejects ${target} Conversation follow-up without poisoning later input`, () => {
+    const f = fixture();
+    const first = f.admit();
+    const other = admitConversationTaskInput(f.context(), { ...f.input("other"), conversationId: "other-chat" });
+    const claim = f.claim(first.taskId);
+    const targetId = target === "other-conversation" ? other.taskId : first.taskId;
+    const getTaskApp = () => ({
+      app: defineApp({
+        ...app,
+        tasks: {},
+        task: () => ({ kind: "existing" as const, taskId: targetId }),
+      }),
+      config: f.context(),
+    });
+    const proposed: ConversationTurnResult = {
+      ...decision,
+      followUp: {
+        appId: app.id,
+        ...(target === "mapped" ? {} : { task: { appId: app.id, taskId: targetId } }),
+        input: { kind: "message", data: { text: "Follow this up" } },
+      },
+    };
+    const before = f.store.readTaskContext({ taskIds: [first.taskId], admissionIds: [] });
+    if (target !== "mapped")
+      expect(() => validateConversationTaskProposal(f.context(), claim, proposed, getTaskApp)).toThrow(
+        "Conversation input admission",
+      );
+    expect(() => completeConversationTaskTurn(f.context(), claim, proposed, { getTaskApp })).toThrow(
+      "Conversation input admission",
+    );
+    expect(f.store.readTaskContext({ taskIds: [first.taskId], admissionIds: [] })).toEqual(before);
+    expect(getAppInboxItem(f.db, first.item.id)?.status).toBe("pending");
+    expect(readConversationRequest(f.db, app.id, "chat", "comparison")).toBeNull();
+    completeConversationTaskTurn(f.context(), claim, decision, { getTaskApp });
+    f.admit("later", 2, "A new question");
+    f.reopen();
+    const next = f.claim(first.taskId);
+    expect(readConversationTaskInputs(f.context(), next).map((item) => item.id)).toEqual(["later"]);
+    completeConversationTaskTurn(f.context(), next, { summary: "Answered", response: "New answer" });
+    expect(getAppInboxItem(f.db, "later")?.status).toBe("done");
+  });
+}
+
+test("ordinary admission cannot bypass the Conversation input contract", () => {
+  const f = fixture();
+  const first = f.admit();
+  const before = f.store.readTaskContext({ taskIds: [first.taskId], admissionIds: [] });
+  for (const attachment of [
+    { kind: "existing" as const, taskId: first.taskId },
+    { kind: "desired" as const, intent: { ...f.input().intent, id: first.taskId } },
+    { kind: "desired" as const, intent: { ...f.input().intent, id: "another-conversation" } },
+  ]) {
+    expect(() =>
+      admitTaskInput(f.context(), {
+        appId: app.id,
+        attachment,
+        idempotencyKey: "task:ordinary",
+        inputContext: {
+          id: "ordinary",
+          source: { kind: "system", id: "fixture" },
+          input: { kind: "message", data: {} },
+        },
+      }),
+    ).toThrow("Conversation input admission");
+    expect(f.store.readTaskContext({ taskIds: [first.taskId], admissionIds: [] })).toEqual(before);
+  }
+});
+
 test("one Task executes real Conversation input and retains replies and Requests across reopen", async () => {
   const f = fixture();
   const first = f.admit();
