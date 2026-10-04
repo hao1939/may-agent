@@ -167,8 +167,8 @@ export function runDbMaintenancePass(
     [now - 5 * DAY_MS, now - 5 * DAY_MS, now - 5 * DAY_MS, batchSize],
   );
 
-  // Delete only events with no retained causal/commitment reference. This
-  // avoids repeatedly selecting rows the protection trigger must ignore.
+  // Mirror every reference protection in trg_events_referential_retention.
+  // Protected rows must not fill the batch and starve later eligible Events.
   deleted.events = removeEligibleRows(
     db, "events", "id",
     `timestamp < ?
@@ -191,6 +191,14 @@ export function runDbMaintenancePass(
            SELECT 1 FROM sessions s
            WHERE s.status IN ('running', 'idle')
              AND events.session_id = s.sessionId
+         )
+         AND NOT EXISTS (
+           SELECT 1 FROM app_event_admission_plans p
+           WHERE p.event_id = events.id AND p.status = 'pending'
+         )
+         AND NOT EXISTS (
+           SELECT 1 FROM app_inbox_items i
+           WHERE i.origin_event_id = events.id AND i.status != 'done'
          )
     `,
     [now - 5 * DAY_MS], batchSize, "timestamp",

@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { closeDb, getDb } from "./connection.js";
 import { runDbMaintenancePass } from "./maintenance.js";
 import { openDatabase } from "../db.js";
+import { createAppInboxItem } from "../../app/core/state/app-inbox-store.js";
 
 describe("bounded DB maintenance", () => {
   it.each([
@@ -126,6 +127,34 @@ describe("bounded DB maintenance", () => {
     } finally {
       spy.mockRestore();
       writer.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("skips protected admissions and inputs so a small batch reaches later eligible Events", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-maintenance-protected-batch-"));
+    const db = getDb(root);
+    const now = 10 * 86_400_000;
+    try {
+      for (const id of [1, 2, 3, 4]) {
+        db.prepare("INSERT INTO events(id, event_type, timestamp) VALUES (?, 'fixture', ?)").run(id, id);
+      }
+      for (const [id, status] of [[1, "pending"], [3, "completed"]] as const) {
+        db.prepare(`INSERT INTO app_event_admission_plans(event_id, registry_snapshot_id, registry_generation, status, created_at, updated_at)
+          VALUES (?, 'fixture', 1, ?, 1, 1)`).run(id, status);
+      }
+      for (const id of [2, 4]) {
+        createAppInboxItem(db, { id: `input-${id}`, appId: "sample", originEventId: id,
+          source: { kind: "system", id: "fixture" }, input: { kind: "message", data: {} }, now: 1 });
+      }
+      db.run("UPDATE app_inbox_items SET status = 'done' WHERE id = 'input-4'");
+      expect(runDbMaintenancePass(root, { now, batchSize: 1 }).deleted.events).toBe(1);
+      expect(db.prepare("SELECT id FROM events ORDER BY id").all()).toEqual([{ id: 1 }, { id: 2 }, { id: 4 }]);
+      expect(runDbMaintenancePass(root, { now, batchSize: 1 }).deleted.events).toBe(1);
+      expect(runDbMaintenancePass(root, { now, batchSize: 1 }).deleted.events).toBe(0);
+      expect(db.prepare("SELECT id FROM events ORDER BY id").all()).toEqual([{ id: 1 }, { id: 2 }]);
+    } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
     }
