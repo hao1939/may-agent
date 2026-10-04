@@ -17,6 +17,7 @@ import { HostCapacity } from "../scheduling/host-capacity.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { admitConversationTaskInput, conversationTaskId, listPendingConversationTaskChanges } from "../state/conversation-task-turns.js";
 import { getAppInboxItem, listAppInboxItems } from "../state/app-inbox-store.js";
+import { admitTaskInput } from "../state/inbox.js";
 import { claimAppInboxItem } from "../../../../test/fixtures/legacy-inbox.js";
 import { createConversationTopic, linkConversationTopicTask, readAppConversationResource } from "../state/conversations.js";
 import { readConversationRequest, applyConversationRequestUpdates } from "../state/conversation-requests.js";
@@ -633,14 +634,23 @@ test("an unrelated executor named conversation retains the ordinary Task contrac
       executors: { conversation: async () => ({ state: "converged", summary: "Ordinary executor", facts: [] }) },
     }),
   );
-  observeAppTaskIntent(f.context(), {
-    appAgent: app.agent!,
-    intent: {
-      id: "ordinary",
-      parentId: "root",
-      executor: "conversation",
-      outcome: "Ordinary work",
-      acceptance: ["Handled"],
+  admitTaskInput(f.context(), {
+    appId: app.id,
+    attachment: {
+      kind: "desired",
+      intent: {
+        id: "ordinary",
+        parentId: "root",
+        executor: "conversation",
+        outcome: "Ordinary work",
+        acceptance: ["Handled"],
+      },
+    },
+    idempotencyKey: "ordinary-input",
+    inputContext: {
+      id: "ordinary-input",
+      source: { kind: "system", id: "fixture" },
+      input: { kind: "message", data: {} },
     },
   });
   const completed = settled(f.bus, "ordinary");
