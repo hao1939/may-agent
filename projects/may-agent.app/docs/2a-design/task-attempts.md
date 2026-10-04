@@ -240,35 +240,59 @@ Agent selection is:
 task.agent ?? nearest explicit ancestor agent ?? app.agent
 ```
 
-If the Task names a workflow, that exact workflow is the selected handler.
-An unavailable agent, workflow or executor preserves visible failure and retries
-the same Task with backoff. It does not silently select another executor.
-Rejected handler output, explicit workflow blockers, thrown errors and timeouts
-also retain unfinished input and pace another attempt. A function or notification
-still named `attention` does not imply a permanent stop: inspect stored phase
-and retry eligibility. Only explicit workflow `needs-agent` requests a handoff.
+The declared workflow or executor is the initial procedure. If that procedure
+fails and the responsible agent is available, the next eligible attempt uses
+ordinary agent execution on the same Task. An explicit `needs-agent` result
+uses the same handoff. A tool failure already returned to a running agent can
+be handled in place; it does not create another Task or execution loop.
 
-Workspace preparation failure is a failed prerequisite, not a handler
-execution failure. Preserve it as `WorkspacePreparationFailed` and do not invoke
-the handler in that attempt. The same retry policy rechecks the prerequisite;
-it does not prove an unchanged failure is transient. An owner can repair or
-revise the assignment, pause it, or close it. Exact, generation-fenced retry can
-recheck sooner without replacing the Task or erasing earlier attempt evidence.
+The Host persists the failed attempt before handoff. Its summary, failure reason,
+original inputs, effects and evidence remain readable after recovery. The agent
+receives current Task context and the previous attempt, investigates with ordinary
+tools, repairs or works around the problem, and records the outcome and any
+remaining defect for later evaluation. Recovery of the work does not establish
+that its underlying defect is fixed.
 
-These distinctions are implemented in current source. Deployment evidence must
-identify its release separately. Retry policy does not establish that every
-repeated provider failure is transient.
+Handler selection follows retained attempts in the current specification generation.
+Once the agent has taken control, subsequent attempts continue with that agent
+across failures, accepted partial progress, waits and restart; they do not
+silently replay the original procedure. A specification revision selects the
+configured procedure afresh. The agent may invoke an available workflow through
+normal tools when useful. No recovery-mode record or secondary Task lifecycle
+is introduced.
+
+Ordinary failure backoff, exact input settlement, cancellation, workspace and
+Condition checks still apply. Handler selection does not create permission to
+run: an owner Stop remains stopped until eligible new work arrives. Explicit
+handoff remains an immediate continuation; an execution failure retains its
+existing retry deadline and caller failure
+report. After an ordinary procedure failure, a missing fallback agent leaves the
+configured procedure's paced retry available. An explicit agent handoff still
+selects the agent; unavailability becomes a visible, paced execution failure.
+If an already selected fallback agent becomes unavailable, retain that selection
+and its visible failure instead of replaying the old procedure.
+
+Diagnosis does not require a working workflow. When the fallback agent proposes
+completion, the Host rereads the authored workflow contract and runs its verifier
+if configured. An unavailable contract or a rejected verifier prevents completion,
+not diagnosis. A readable contract without a verifier uses ordinary agent
+judgment; infrastructure does not invent an additional acceptance requirement.
+Permissions and the original Task acceptance criteria remain unchanged.
+
+This fallback bypasses a failing procedure, not the common execution infrastructure.
+A failure in shared Task reads, storage, agent availability or required workspace
+preparation can still prevent ordinary agent execution. The existing independent
+operational route and external operator remain necessary at those boundaries.
+There is no promise that an agent can repair an unavailable Host from inside it.
 
 Human/control Task detail, list, and App counts must select the current Task
-generation. A historical completion receipt is evidence about that generation,
-not authority to hide a newer live generation or prevent its fenced retry.
-Same-generation completion still supersedes a stale live row. Cancellation
-keeps its own durable authority and fence.
+generation. Historical completion receipts remain evidence, not authority to hide
+newer work. Cancellation keeps its own durable authority and fence.
 
-A workflow may explicitly return `needs-agent` after exhausting its bounded,
-safe moves. That creates at most one sequential agent attempt for the same
-task. Work for another App is a typed Runtime-managed task dependency, not
-`needs-agent`.
+**Implementation status:** Candidate in Host branch
+`fix/task-agent-failover-20261004`; deployment and live recovery must be reported
+separately. Connected trials and their limits are recorded in
+[the failover review](../archive/reviews/task-agent-failover-20261004.md).
 
 
 ## Result contract
@@ -298,8 +322,8 @@ binds bytes, not source authority or semantic truth. See the
 | Valid `converged` result                                                                | Accept the exact input's outcome when current-attempt checks, evidence, actions and verification permit; keep the Task open                                                          |
 | Valid `waiting` result                                                     | Retain independent Conditions and input; yield on a return route or schedule useful work; structural children alone do not establish a wait |
 | Valid `incomplete` result                                                               | Retain unsuccessful attempt facts, report the input's first accepted blocker to its linked caller, and retry unfinished work with backoff; no cancellation or implicit parent wake |
-| Workflow `needs-agent`                                                                  | At most one sequential selected-agent judgment for the same Task; no ownership transfer                                                                                            |
-| Unavailable agent/workflow/executor or failed workspace prerequisite                    | Visible failure and same-Task paced retry; no silent executor substitution                                                                                                         |
+| Workflow `needs-agent`                                                                  | Sequential ordinary agent execution on the same Task; subsequent attempts retain that selection; no ownership transfer                                                                                            |
+| Unavailable agent/workflow/executor or failed workspace prerequisite                    | Visible failure and same-Task paced recovery; a failed procedure can fall back to the available responsible agent; shared prerequisites still apply                                                                                                         |
 | Invalid/rejected handler result (including self-unblock) or explicitly blocked workflow | Preserve diagnostic evidence and unfinished input, reject proposed effects and retry with pacing; not an accepted answer                                                           |
 | Thrown execution error or timeout                                                       | Same-Task execution-failure recovery, subject to its retry policy                                                                                                                  |
 | Stale generation, resource version or cancelled attempt                                | Reject stale effects; reread current state without replacing accepted state or releasing another attempt                                                                           |
@@ -429,8 +453,9 @@ type TaskAcceptanceBasis = {
 
 A workflow verifier runs after result validation and before commit. It proves a
 positive postcondition. Missing or unknown evidence is not success. When a
-workflow can hand off with `needs-agent`, its hard verifier still applies to a
-later agent claim of convergence.
+workflow has a configured verifier, it still applies to a later fallback agent
+claim of convergence. An unavailable workflow contract prevents acceptance,
+not diagnosis; a readable contract without a verifier allows agent judgment.
 
 Ordinary checks and repairs can run inside the workflow before it returns.
 The Host's final verifier runs after that invocation has ended; rejection records
