@@ -37,12 +37,26 @@ unauthenticated, bounded, and stop-on-boundary. If it succeeds, ordinary source
 exploration may resume and the historical cadence recommendation is void; if it
 fails, this state can be reaffirmed without starting a repeated scan loop.
 
-**Effect and limitation:** this owner policy prevents identical automatic HTTP
-scans while keeping the standing source responsibility observable and
-on-demand. It does not mutate the App's four-hour schedule or assert permanent
-Reddit unavailability. The schedule can continue to wake the standing Task; the
-Task's existing acceptance already permits review-only outcomes when no scan is
-useful.
+**Enforcement status (corrected 2026-10-04):** this report records the owner
+policy but does not itself enforce it. Accepted automatic attempt
+`r_2_aca76d6c-fc03-44a1-b2df-e3fe09e88f0a` began at `16:07:48Z`, after the
+`13:15Z` decision, and still repeated the same search-feed-plus-ordinary-
+permalink sequence (feed HTTP 200, candidate `t3_1wxj9yf`, permalink HTTP 403,
+no publication). No additional Reddit request was made to reconfirm that defect.
+
+The current App resolver still gives every source the same generic acceptance
+and stable `{ source: "reddit" }` input, while the active Scout reconciliation
+instructions only say that review-only outcomes are valid when no scan is useful.
+Neither routing surface carries this report's current block predicate, its three
+exit triggers, or the automatic-versus-explicit-recheck distinction. Therefore
+the smallest durable enforcement change must be made in the active App/agent
+source and its focused reconciliation tests, not in this report. It must make an
+automatic Reddit wake choose review-only while the predicate remains current,
+permit an explicit bounded recheck or the other documented exit triggers, and
+leave the standing Task, four-hour schedule, access controls, and body-evidence
+rules unchanged. The next natural automatic wake remains required live-effect
+evidence after that change is activated; a source-level test alone cannot prove
+installed behavior.
 
 ## 2026-10-02 decision update: daily bounded check, not four-hourly scanning or retirement
 
