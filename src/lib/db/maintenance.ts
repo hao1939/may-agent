@@ -20,18 +20,20 @@ function changes(result: unknown): number {
 }
 
 /** Search without a write transaction; recheck only selected rows while deleting. */
-function removeOrphans(
+function removeEligibleRows(
   db: SqliteDb,
-  table: "event_traces" | "event_trace_links",
-  key: "event_id" | "id",
-  missingEvent: string,
+  table: "event_traces" | "event_trace_links" | "events" | "event_pair_runs",
+  key: "event_id" | "id" | "rowid",
+  eligible: string,
+  params: unknown[],
   batchSize: number,
+  orderBy: string = key,
 ): number {
   const ids = db.prepare(`SELECT ${key} AS id FROM ${table}
-    WHERE ${missingEvent} ORDER BY ${key} LIMIT ?`).all(batchSize).map((row) => row.id);
+    WHERE ${eligible} ORDER BY ${orderBy} LIMIT ?`).all(...params, batchSize).map((row) => row.id);
   if (ids.length === 0) return 0;
   return db.prepare(`DELETE FROM ${table}
-    WHERE ${key} IN (${ids.map(() => "?").join(", ")}) AND (${missingEvent})`).run(...ids).changes;
+    WHERE ${key} IN (${ids.map(() => "?").join(", ")}) AND (${eligible})`).run(...ids, ...params).changes;
 }
 
 function sessionDirectoryIsActive(persistDir: string, sessionId: string): boolean {
@@ -137,15 +139,10 @@ export function runDbMaintenancePass(
 
   // Remove expired closed/orphan commitments first. Open commitments keep their
   // opening event protected by the retention trigger.
-  remove(
-    "event_pair_runs",
-    `DELETE FROM event_pair_runs WHERE rowid IN (
-       SELECT rowid FROM event_pair_runs
-       WHERE status IN ('closed', 'orphan')
-         AND opened_at < ?
-       ORDER BY opened_at LIMIT ?
-     )`,
-    [now - 3 * DAY_MS, PAIR_DELETION_BATCH_SIZE],
+  deleted.event_pair_runs = removeEligibleRows(
+    db, "event_pair_runs", "rowid",
+    "status IN ('closed', 'orphan') AND opened_at < ?",
+    [now - 3 * DAY_MS], PAIR_DELETION_BATCH_SIZE, "opened_at",
   );
 
   // Old closure/reference links may be released only when both endpoints are
@@ -172,50 +169,46 @@ export function runDbMaintenancePass(
 
   // Delete only events with no retained causal/commitment reference. This
   // avoids repeatedly selecting rows the protection trigger must ignore.
-  remove(
-    "events",
-    `DELETE FROM events WHERE id IN (
-       SELECT e.id
-       FROM events e
-       WHERE e.timestamp < ?
+  deleted.events = removeEligibleRows(
+    db, "events", "id",
+    `timestamp < ?
          -- Human approval outcomes are durable business facts. Keep them past
          -- the generic diagnostic-event window regardless of adapter history.
-         AND e.event_type NOT IN ('project.approval.submitted', 'project.approval.resolved')
+         AND events.event_type NOT IN ('project.approval.submitted', 'project.approval.resolved')
          AND NOT EXISTS (
            SELECT 1 FROM event_pair_runs p
-           WHERE p.open_event_id = e.id AND p.status IN ('open', 'orphan')
+           WHERE p.open_event_id = events.id AND p.status IN ('open', 'orphan')
          )
          AND NOT EXISTS (
            SELECT 1 FROM event_traces t
-           WHERE t.parent_event_id = e.id AND t.event_id != e.id
+           WHERE t.parent_event_id = events.id AND t.event_id != events.id
          )
          AND NOT EXISTS (
            SELECT 1 FROM event_trace_links l
-           WHERE l.from_event_id = e.id OR l.to_event_id = e.id
+           WHERE l.from_event_id = events.id OR l.to_event_id = events.id
          )
          AND NOT EXISTS (
            SELECT 1 FROM sessions s
            WHERE s.status IN ('running', 'idle')
-             AND e.session_id = s.sessionId
+             AND events.session_id = s.sessionId
          )
-       ORDER BY e.timestamp LIMIT ?
-     )`,
-    [now - 5 * DAY_MS, batchSize],
+    `,
+    [now - 5 * DAY_MS], batchSize, "timestamp",
   );
 
-  deleted.event_traces = removeOrphans(
+  deleted.event_traces = removeEligibleRows(
     db,
     "event_traces",
     "event_id",
     "event_id NOT IN (SELECT id FROM events)",
-    batchSize,
+    [], batchSize,
   );
-  deleted.event_trace_links_orphaned = removeOrphans(
+  deleted.event_trace_links_orphaned = removeEligibleRows(
     db,
     "event_trace_links",
     "id",
     "from_event_id NOT IN (SELECT id FROM events) OR to_event_id NOT IN (SELECT id FROM events)",
-    batchSize,
+    [], batchSize,
   );
 
   const retiredSessions = removeRetiredSessions(persistDir, now, batchSize);

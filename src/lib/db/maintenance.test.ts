@@ -32,7 +32,7 @@ describe("bounded DB maintenance", () => {
     let candidateReads = 0;
     const spy = spyOn(db, "prepare").mockImplementation((sql) => {
       const statement = prepare(sql);
-      if (!sql.trimStart().startsWith("SELECT") || !sql.includes(`FROM ${table}`)) return statement;
+      if (!sql.trimStart().startsWith(`SELECT ${key} AS id FROM ${table}`)) return statement;
       return {
         ...statement,
         all: (...params) => {
@@ -67,6 +67,62 @@ describe("bounded DB maintenance", () => {
       expect(third.deleted[counter]).toBe(0);
       expect(candidateReads).toBe(3);
       expect(prepare(`SELECT ${key} FROM ${table} WHERE ${key} IN (10, 20, 30)`).all()).toEqual([{ [key]: 10 }]);
+    } finally {
+      spy.mockRestore();
+      writer.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("discovers expired rows alongside another writer and rechecks changes before deleting", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-maintenance-expiry-race-"));
+    const db = getDb(root);
+    const writer = openDatabase(join(root, "may.db"));
+    writer.exec("PRAGMA busy_timeout = 0");
+    const now = 10 * 86_400_000;
+    for (const id of [1, 2, 3, 4]) {
+      db.prepare("INSERT INTO events(id, event_type, timestamp) VALUES (?, 'fixture', 1)").run(id);
+      db.prepare(`INSERT INTO event_pair_runs(id, pair_name, correlation_key, open_event_id, status, opened_at, expected_close_at)
+        VALUES (?, 'fixture', ?, ?, 'closed', 1, ?)`)
+        .run(id, String(id), id, now + 60_000);
+    }
+    const prepare = db.prepare.bind(db);
+    const reads: string[] = [];
+    const spy = spyOn(db, "prepare").mockImplementation((sql) => {
+      const statement = prepare(sql);
+      const table = sql.startsWith("SELECT rowid AS id FROM event_pair_runs") ? "event_pair_runs"
+        : sql.startsWith("SELECT id AS id FROM events") ? "events" : null;
+      if (!table) return statement;
+      return { ...statement, all(...params) {
+        writer.exec("BEGIN IMMEDIATE");
+        try {
+          const rows = statement.all(...params);
+          reads.push(table);
+          if (table === "event_pair_runs") {
+            writer.run("UPDATE event_pair_runs SET status = 'open' WHERE id = 1");
+            writer.run("UPDATE event_pair_runs SET opened_at = ? WHERE id = 2", [now]);
+          } else {
+            // This row was eligible at selection; the new reference must win.
+            writer.run(`INSERT INTO event_trace_links(from_event_id, to_event_id, type, created_at)
+              VALUES (2, 1, 'fixture', ?)`, [now]);
+            writer.run("UPDATE events SET timestamp = ? WHERE id = 3", [now]);
+          }
+          writer.exec("COMMIT");
+          return rows;
+        } catch (error) {
+          writer.exec("ROLLBACK");
+          throw error;
+        }
+      } };
+    });
+    try {
+      const result = runDbMaintenancePass(root, { now, batchSize: 3 });
+      expect(reads).toEqual(["event_pair_runs", "events"]);
+      expect(result.deleted.event_pair_runs).toBe(2);
+      expect(result.deleted.events).toBe(1);
+      expect(prepare("SELECT id FROM event_pair_runs ORDER BY id").all()).toEqual([{ id: 1 }, { id: 2 }]);
+      expect(prepare("SELECT id FROM events ORDER BY id").all()).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
     } finally {
       spy.mockRestore();
       writer.close();
