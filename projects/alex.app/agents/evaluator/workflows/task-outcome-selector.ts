@@ -563,7 +563,7 @@ async function needsReview(
   nowMs = Date.now(),
 ): Promise<{ needed: boolean; unavailableReason?: string }> {
   const subject = await readSubjectTask(
-    { appId, taskId: taskId(item) },
+    { appId, taskId: taskId(item), automatic: true },
     command,
   );
   if (subject.disposition !== "eligible" || !subject.evidenceHash)
@@ -769,7 +769,7 @@ export async function selectFairCandidate(
             const exactTaskId = taskId(sample);
             if (!exactTaskId) continue;
             const subject = await readSubjectTask(
-              { appId, taskId: exactTaskId },
+              { appId, taskId: exactTaskId, automatic: true },
               command,
             );
             if (subject.disposition !== "eligible") continue;

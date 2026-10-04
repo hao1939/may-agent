@@ -301,7 +301,7 @@ export function taskForInput(admitted: Readonly<AppTaskInput>) {
     const taskId = String(data.taskId);
     const reviewer = data.reviewer === "evaluator-deepseek" ? "evaluator-deepseek" : "evaluator";
     return { kind: "desired" as const, intent: {
-      id: `review/${safe(`${appId}/${taskId}/${data.subjectGeneration ?? "current"}/${data.evidenceHash ?? "current"}/${reviewer}`)}`,
+      id: `review/${safe(`${appId}/${taskId}/${data.subjectGeneration ?? "current"}/${data.evidenceHash ?? "current"}/${reviewer}/${data.automatic === true ? "automatic" : "requested"}`)}`,
       parentId: "root",
       agent: reviewer === "evaluator-deepseek" ? "evaluator-deepseek" : "evaluator",
       workflow: "task-outcome-review",

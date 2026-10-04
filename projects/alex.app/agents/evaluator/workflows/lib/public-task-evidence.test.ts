@@ -361,6 +361,58 @@ describe("public Task evidence", () => {
     });
   });
 
+  test("automatic review skips report dispositions but preserves explicit oversight and remediation", async () => {
+    for (const eventType of [
+      "evaluation.task_report_published",
+      "evaluation.metric_report_published",
+    ]) {
+      const dispositionTask = {
+        ...appTask,
+        input: {
+          kind: "message",
+          data: {
+            message: "Disposition the immutable report",
+            context: { event: { type: eventType, data: { evidenceHash: "a".repeat(64) } } },
+          },
+        },
+        agent: "alex",
+        creator: { appId: "alex" },
+      };
+      const automatic = await readSubjectTask(
+        { appId: "sample", taskId: "goal/one", automatic: true },
+        fixture(dispositionTask),
+      );
+      expect(automatic).toMatchObject({
+        disposition: "excluded",
+        reason: expect.stringContaining(eventType),
+      });
+      const explicit = await readSubjectTask(
+        { appId: "sample", taskId: "goal/one" },
+        fixture(dispositionTask),
+      );
+      expect(explicit.disposition).toBe("eligible");
+    }
+
+    const remediation = await readSubjectTask(
+      { appId: "sample", taskId: "goal/one", automatic: true },
+      fixture({
+        ...appTask,
+        input: {
+          kind: "goal",
+          data: {
+            outcome: "Repair the independently admitted defect",
+            context: {
+              finding: { eventType: "evaluation.task_report_published" },
+            },
+          },
+        },
+        agent: "alex",
+        creator: { appId: "alex" },
+      }),
+    );
+    expect(remediation.disposition).toBe("eligible");
+  });
+
   test("excludes canonically recorded Evaluation worker execution under an external owner", async () => {
     for (const worker of ["evaluator", "evaluator-deepseek", "judge"]) {
       const delegated = await readSubjectTask(

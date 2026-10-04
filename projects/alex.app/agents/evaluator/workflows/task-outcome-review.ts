@@ -478,6 +478,7 @@ export async function reviewTaskOutcome(
       ...(ctx.input.populationEnd
         ? { populationEnd: ctx.input.populationEnd }
         : {}),
+      ...(ctx.input?.automatic === true ? { automatic: true } : {}),
     },
     command,
     readSession,
@@ -710,6 +711,7 @@ export async function reviewTaskOutcome(
       ...(ctx.input.populationEnd
         ? { populationEnd: ctx.input.populationEnd }
         : {}),
+      ...(ctx.input?.automatic === true ? { automatic: true } : {}),
     },
     command,
     readSession,

@@ -102,12 +102,19 @@ test("selected review events return to executable Alex review work", () => {
       automatic: true,
     },
   });
-  expect(taskForInput({ id: "selected-review-1", input } as never).intent).toMatchObject({
+  const automatic = taskForInput({ id: "selected-review-1", input } as never).intent;
+  expect(automatic).toMatchObject({
     parentId: "root",
     agent: "evaluator-deepseek",
     workflow: "task-outcome-review",
     input: { appId: "may", taskId: "input/change-1", populationEnd: 42, automatic: true },
   });
+  const requested = taskForInput({ id: "requested-review-1", input: {
+    kind: "review-task-outcome",
+    data: { appId: "may", taskId: "input/change-1", populationEnd: 42, reviewer: "evaluator-deepseek" },
+  } } as never).intent;
+  expect(requested.id).not.toBe(automatic.id);
+  expect((requested.input as any).automatic).toBeUndefined();
 });
 
 test("qualified Scout research reaches executable Alex adoption work", () => {

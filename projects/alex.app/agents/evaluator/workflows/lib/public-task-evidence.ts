@@ -79,6 +79,14 @@ export type SubjectEvidence = {
   acquisitionFailed?: boolean;
 };
 
+type SubjectRequest = {
+  appId: string;
+  taskId: string;
+  populationEnd?: number;
+  /** Automatic selection/recovery, as opposed to deliberate caller-requested oversight. */
+  automatic?: boolean;
+};
+
 function text(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -97,6 +105,42 @@ function object(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
+}
+
+const EVALUATION_REPORT_EVENTS = new Set([
+  "evaluation.task_report_published",
+  "evaluation.metric_report_published",
+]);
+
+/**
+ * A report-disposition Task exists to consume one immutable Evaluation report.
+ * It is useful owner judgment, but automatically evaluating that judgment only
+ * republishes another report for Alex to disposition. Match the retained App
+ * input provenance rather than Task names, ancestry, or report prose so a
+ * separately admitted remediation remains reviewable.
+ */
+export function automaticReviewEligibility(
+  task: Record<string, unknown>,
+): { eligible: boolean; reason: string } {
+  const input = object(task.input);
+  const data = object(input.data);
+  const context = object(data.context);
+  const event = object(context.event);
+  const eventType = text(event.type);
+  if (
+    text(input.kind) === "message" &&
+    EVALUATION_REPORT_EVENTS.has(eventType)
+  ) {
+    return {
+      eligible: false,
+      reason: `Automatic review excludes the Alex disposition created directly from ${eventType}; deliberate caller-requested oversight remains available.`,
+    };
+  }
+  return {
+    eligible: true,
+    reason:
+      "The canonical Task input is not a direct Evaluation report disposition.",
+  };
 }
 
 function stable(value: unknown): string {
@@ -521,7 +565,7 @@ export function unresolvedReviewSubject(
 }
 
 export async function readSubjectTask(
-  subject: { appId: string; taskId: string; populationEnd?: number },
+  subject: SubjectRequest,
   command: PublicCommand = sendPublicReadCommand,
   readSession?: SessionRead,
 ): Promise<SubjectEvidence> {
@@ -554,6 +598,17 @@ export async function readSubjectTask(
       throw new Error("public Task generation mismatch");
     }
     const task = { appTask, detail };
+    if (subject.automatic) {
+      const eligibility = automaticReviewEligibility(appTask);
+      if (!eligibility.eligible)
+        return {
+          disposition: "excluded",
+          reason: eligibility.reason,
+          appId,
+          taskId,
+          task,
+        };
+    }
     // App ownership does not make Evaluation's own delegated execution an
     // independent review subject. Use only worker identities recorded by the
     // canonical App/detail views; caller hints are not exclusion authority.
