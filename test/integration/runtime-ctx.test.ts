@@ -120,24 +120,31 @@ describe("buildRuntimeCtx", () => {
     });
   });
 
-  it("notify appends one tool-authored message to May's shared Conversation", () => {
+  it("notify appends one tool-authored message to the selected Conversation", () => {
     const opts = baseOpts();
-    const rtx = buildRuntimeCtx(opts);
+    const rtx = buildRuntimeCtx({ ...opts, interface: { agent: "helper", appId: "support", conversationId: "retained-room" } });
 
     rtx.notify("something happened");
 
     expect(opts.bus.emit).toHaveBeenCalledWith({
       type: "conversation.message.created",
       source: "agent:test-agent",
-      owner: "app:may",
+      owner: "app:support",
       data: {
-        appId: "may",
-        conversationId: "may:primary",
+        appId: "support",
+        conversationId: "retained-room",
         author: { kind: "tool", id: "test-agent" },
         text: "something happened",
       },
     });
     expect(opts.bus.emit).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports an unavailable human destination without emitting a guessed notice", () => {
+    const opts = baseOpts();
+    const rtx = buildRuntimeCtx({ ...opts, interface: { agent: "host" } });
+    expect(() => rtx.notify("notice")).toThrow("requires CONVERSATION_APP");
+    expect(opts.bus.emit).not.toHaveBeenCalled();
   });
 
   it("supplies real Host reads and events without a placeholder command service", () => {

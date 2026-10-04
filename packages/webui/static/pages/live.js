@@ -224,7 +224,7 @@ async function loadLiveness() {
 
     let html = `<h2>
       <span>System liveness</span>
-      <span class="subtle">${summary.heartbeatAgents4h || 0}/${summary.expectedHeartbeatAgents || summary.agentsConfigured || 0} scheduled agents heartbeated in ${esc(windowLabel)} · ${summary.activeSessions || 0} active</span>
+      <span class="subtle">${summary.heartbeatAgents4h || 0} agents had heartbeat activity in ${esc(windowLabel)} · ${summary.activeSessions || 0} active</span>
       <span class="breach-badge ${(summary.openAlerts || 0) > 0 ? 'alerting' : ''}" onclick="routeTo('/metrics')" title="Alert state is not overall health">${summary.openAlertsTruncated ? 'More than ' + summary.openAlerts + ' open alerts' : (summary.openAlerts || 0) > 0 ? summary.openAlerts + ' open alerts' : 'No open alerts'}${summary.openAlertsTruncated || summary.openAlerts > visibleAlerts.length ? ' · showing newest ' + visibleAlerts.length : ''}</span>
     </h2>`;
     html += '<div id="liveness-measurement-problems" class="liveness-section">Loading measurement coverage…</div>';
@@ -236,8 +236,8 @@ async function loadLiveness() {
         const alerting = metricBreached(metric);
         const value = formatMetricValue(metric.current, metric.unit);
         const threshold = metric.alertsDisabled ? 'Alerts disabled' : metric.threshold == null ? 'no threshold' : `${metric.alert_op === '>' || metric.alert_op === 'above' ? 'max' : 'min'} ${formatMetricValue(metric.threshold, metric.unit)}`;
-        html += `<div class="vital-card ${alerting ? 'alerting' : ''}" onclick="routeTo(${jsStringAttr('/metrics/' + encodeURIComponent(metric.id))})" title="${attrEsc(metric.id + ' · owner ' + (metric.owner || 'may') + ' · ' + threshold)}">
-          <div class="vital-top"><span class="vital-label">${esc(metric.name || metric.id)}</span><span class="vital-owner">${esc(metric.owner || 'may')}</span></div>
+        html += `<div class="vital-card ${alerting ? 'alerting' : ''}" onclick="routeTo(${jsStringAttr('/metrics/' + encodeURIComponent(metric.id))})" title="${attrEsc(metric.id + ' · owner ' + (metric.owner || 'system:host') + ' · ' + threshold)}">
+          <div class="vital-top"><span class="vital-label">${esc(metric.name || metric.id)}</span><span class="vital-owner">${esc(metric.owner || 'system:host')}</span></div>
           <div class="vital-value">${esc(value)}</div>
           <div class="vital-sub">${esc(threshold)}</div><div class="health-note">${esc(metricObservationLabel(metric))}${metric.alertOpen === null ? ' · alert list limited; open metric detail' : ''}</div>
         </div>`;

@@ -118,8 +118,8 @@ esac
     const scripts = JSON.parse(read("package.json")).scripts;
     expect(scripts.test).toContain("scripts/");
     expect(scripts.test).not.toContain("test/deployment/");
-    expect(scripts["test:deployment"]).toContain("test/deployment/");
-    expect(read("test/deployment/installation.ts")).toContain("MAY_AGENT_APP_ROOT");
+    expect(scripts["test:deployment"]).toContain("test/integration/agent-loader.test.ts");
+    expect(read("test/integration/agent-loader.test.ts")).toContain("MAY_AGENT_APP_ROOT");
   });
 
   it("does not give PR code deployment credentials or a privileged trigger", () => {

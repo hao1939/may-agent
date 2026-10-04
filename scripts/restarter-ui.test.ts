@@ -111,7 +111,8 @@ async function fixture(
   writeFileSync(sdkMarker, `${sdkRelease}\n`);
   writeFileSync(uiMarker, `${uiRelease}\n`);
 
-  const healthSocket = join(root, "health.sock");
+  const healthSocket = join(root, "instances", "test", "helper.sock");
+  mkdirSync(join(root, "instances", "test"), { recursive: true });
   const server = createServer((socket) => {
     socket.once("data", () =>
       socket.end(
@@ -153,7 +154,8 @@ async function fixture(
         MAY_AGENT_RESTART_DELAY: "0",
         MAY_AGENT_HEALTH_ATTEMPTS: "1",
         MAY_AGENT_HEALTH_DELAY: "0",
-        MAY_AGENT_HEALTH_SOCKET: healthSocket,
+        STATE_DIR: root, DAEMON_INSTANCE: "test", AGENT: "helper", DAEMON_AGENT: "unused-legacy",
+        MAY_AGENT_HEALTH_SOCKET: "",
         MAY_TEST_UI_TARGET: uiTarget,
         MAY_TEST_WAKE_PATH: wakePath,
         MAY_TEST_FAIL_WAKE: options.failWake ? "1" : "0",

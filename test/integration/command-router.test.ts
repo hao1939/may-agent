@@ -29,6 +29,7 @@ function harness(overrides: Partial<SubagentManager> = {}) {
     ...overrides,
   } as unknown as SubagentManager;
   const router = attachCommandRouter({
+    interfaceAgent: "helper", conversationAppId: "support", conversationId: "retained-room",
     bus,
     manager,
     projectRoot,
@@ -40,12 +41,13 @@ function harness(overrides: Partial<SubagentManager> = {}) {
 }
 
 describe("command router integration", () => {
-  it("normalizes direct console input to the May App", () => {
+  it("normalizes direct console input to the selected App", () => {
     const h = harness();
     h.router.handleInput("from console", "console");
 
     const inputs = h.emitted.filter((event) => event.type === "app.input.requested");
     expect(inputs).toHaveLength(1);
+    expect(inputs[0]).toMatchObject({ owner: "app:support", data: { appId: "support", conversationId: "retained-room" } });
     expect(inputs.map((event) => (event as any).data.input.data.message)).toEqual(["from console"]);
     h.router.close();
   });

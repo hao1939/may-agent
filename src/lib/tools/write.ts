@@ -1,3 +1,4 @@
+import type { FileWritePolicy } from "./file-write-policy.js";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 import { Type } from "@earendil-works/pi-ai";
 import type { TSchema } from "@earendil-works/pi-ai";
@@ -52,6 +53,8 @@ const defaultWriteOperations: WriteOperations = {
 };
 
 export interface WriteToolOptions {
+	/** Captured trusted installation scope; never read from task text. */
+	fileWritePolicy?: FileWritePolicy;
 	/** Custom operations for file writing. Default: local filesystem */
 	operations?: WriteOperations;
 	/** Allow writing content smaller than 50% of existing file. Default: false */
@@ -98,7 +101,7 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 			const dir = dirname(absolutePath);
 
 			// Cross-edit guard: block writes to other agents' protected files
-			const guard = checkCrossEditGuard(absolutePath, agentName, projectRoot);
+			const guard = checkCrossEditGuard(absolutePath, agentName, projectRoot, options?.fileWritePolicy);
 			if (guard.blocked) {
 				return {
 					content: [{ type: "text" as const, text: guard.message! }],

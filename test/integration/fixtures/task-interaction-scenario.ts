@@ -123,7 +123,7 @@ async function conversation() {
   const f = fixture("owner", false, false, true);
   const socketPath = daemonSocketPath(f.persistDir, {
     instance: process.env.INSTANCE || "default",
-    interfaceAgent: process.env.DAEMON_AGENT || "may",
+    interfaceAgent: process.env.AGENT || process.env.DAEMON_AGENT || "host",
   });
   const control = await attachControlSocket({
     socketPath,
@@ -165,7 +165,7 @@ async function conversation() {
         assert.equal(sessions.length, 1);
         assert.equal(readActiveSessionProcessId(f.persistDir, sessions[0]!.sessionId), f.child!.pid);
         assert.notEqual(f.child!.pid, process.pid);
-        assert.deepEqual(await observeDaemonLiveness(f.persistDir), { responsive: true, activeWork: true });
+        assert.deepEqual(await observeDaemonLiveness(f.persistDir, socketPath), { responsive: true, activeWork: true });
         // Public session controls must not bypass the Task that owns this child.
         const manager = new SubagentManager({ persistDir: f.persistDir });
         const router = attachCommandRouter({

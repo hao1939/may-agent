@@ -332,7 +332,7 @@ export async function execute(ctx) {
         ...(schedulesEnabled ? ["--cron"] : []),
         ...(startupJob ? ["--task", "fixture startup job"] : []),
       ],
-      {},
+      { AGENT: "may" },
     ),
     models: { fixture: fakeModel() },
     projectRoot: root,

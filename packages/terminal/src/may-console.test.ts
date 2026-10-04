@@ -313,7 +313,7 @@ describe("May Console", () => {
 
     const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
     const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
-      env: { ...process.env, STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
       stdio: "pipe",
     });
     let output = "";
@@ -807,7 +807,7 @@ describe("May Console", () => {
 
     const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
     const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
-      env: { ...process.env, STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
       stdio: "pipe",
     });
     let output = "";
@@ -913,7 +913,7 @@ describe("May Console", () => {
 
     const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
     const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
-      env: { ...process.env, STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
       stdio: "pipe",
     });
     let output = "";
@@ -1025,7 +1025,7 @@ describe("May Console", () => {
 
     const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
     const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
-      env: { ...process.env, STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
       stdio: "pipe",
     });
     let output = "";
@@ -1138,7 +1138,7 @@ describe("May Console", () => {
     const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
     const children = [0, 1].map(() =>
       spawn("node", [consolePath], {
-        env: { ...process.env, STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+        env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
         stdio: "pipe",
       }),
     );
@@ -1174,7 +1174,7 @@ describe("May Console", () => {
 
     const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
     const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
-      env: { ...process.env, STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
       stdio: "pipe",
     });
     let stderr = "";
@@ -1245,7 +1245,7 @@ test("TTY Esc preserves editing, dismisses completion and stops only the observe
   // util-linux script supplies a real terminal without requiring a live daemon.
   const quotedPath = "'" + consolePath.replaceAll("'", "'\\''") + "'";
   const child = spawn("script", ["-qefc", `node ${quotedPath}`, "/dev/null"], {
-    env: { ...process.env, STATE_DIR: root, DAEMON_INSTANCE: "test", DAEMON_AGENT: "may", TERM: "xterm" },
+    env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: "test", DAEMON_AGENT: "may", TERM: "xterm" },
     stdio: "pipe",
   });
   let output = "";
@@ -1353,7 +1353,7 @@ test("Console replies bind a displayed proposal explicitly and keep it through l
   server.listen(join(socketDir, "may.sock"));
   await once(server, "listening");
   const child = spawn(process.execPath, [resolve(import.meta.dir, "../bin/may-console.cjs")], {
-    env: { ...process.env, STATE_DIR: root, DAEMON_INSTANCE: "test", DAEMON_AGENT: "may" },
+    env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: "test", DAEMON_AGENT: "may" },
     stdio: "pipe",
   });
   child.stdout.on("data", (chunk) => {

@@ -362,7 +362,7 @@ export type SystemEvent =
   | {
       type: "runtime.daemon.heartbeat";
       source: "daemon";
-      owner: "agent:may";
+      owner: string;
       data: {
         pid: number;
         interfaceAgent: string;
@@ -374,13 +374,13 @@ export type SystemEvent =
       type: "handler.started";
       source: "cron";
       owner: string;
-      data: { handler: string; handlerRunId?: string; agent: string };
+      data: { handler: string; handlerRunId?: string; agent?: string };
     }
   | {
       type: "handler.completed";
       source: "cron";
       owner: string;
-      data: { handler: string; handlerRunId?: string; agent: string; durationMs: number };
+      data: { handler: string; handlerRunId?: string; agent?: string; durationMs: number };
     }
   | {
       type: "handler.failed";
@@ -389,7 +389,7 @@ export type SystemEvent =
       data: {
         handler: string;
         handlerRunId?: string;
-        agent: string;
+        agent?: string;
         error: string;
         durationMs: number;
         appId?: string;
@@ -784,7 +784,7 @@ export type SystemEvent =
   | {
       type: "agent.config_invalid";
       source: "loader";
-      owner: "agent:may";
+      owner: string;
       urgency?: "low" | "normal" | "high" | "immediate";
       data: {
         agent?: string;
@@ -1020,7 +1020,7 @@ export type SystemEvent =
   | {
       type: "subscriber.failed";
       source: "event-bus";
-      owner: "agent:may";
+      owner: string;
       timestamp: number;
       data: {
         originalEventType: string;
@@ -1471,7 +1471,7 @@ export class EventBus {
     this.pendingFailureEvents.push({
       type: "subscriber.failed",
       source: "event-bus",
-      owner: "agent:may",
+      owner: "system:host",
       timestamp: Date.now(),
       trace: childEventTrace(event),
       data: {

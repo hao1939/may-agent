@@ -91,7 +91,7 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
   process.env.TELEGRAM_CHAT_ID = "123,456";
   const bot = attachTelegramBot({
     bus,
-    interfaceAgent: "may",
+    interfaceAgent: "may", conversationAppId: "may",
     persistDir: root,
     humanTasks: {
       getTask: ({ taskId, ref }) => {

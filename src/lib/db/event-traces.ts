@@ -49,7 +49,7 @@ export type EventTraceIntegrity = {
   pairTraceSplitCount: number;
   humanRootWithoutSingleIntentCount: number;
   conversationHumanWithoutSingleRequestCount: number;
-  mayResultWithoutConversationCount: number;
+  resultWithoutConversationCount: number;
   bookkeepingOnlyAcceptanceCount: number;
   structuralOk: boolean;
   semanticOk: boolean;
@@ -613,28 +613,26 @@ export function checkEventTraceIntegrity(db: SqliteDb): EventTraceIntegrity {
          FROM events root
          LEFT JOIN app_inbox_items request
            ON request.origin_event_id = root.id
-          AND request.app_id = 'may'
+          AND request.app_id = json_extract(root.data, '$.appId')
           AND request.source_kind = 'human'
          WHERE root.event_type = 'conversation.message.created'
-           AND json_extract(root.data, '$.appId') = 'may'
            AND json_extract(root.data, '$.author.kind') = 'human'
            AND COALESCE(json_extract(root.data, '$.transient'), 0) != 1
          GROUP BY root.id
          HAVING COUNT(request.id) != 1
        ) unmatched`,
     ),
-    mayResultWithoutConversationCount: count(
+    resultWithoutConversationCount: count(
       db,
       `SELECT COUNT(*) AS c
        FROM app_inbox_items request
        JOIN events root ON root.id = request.origin_event_id
-       WHERE request.app_id = 'may'
+       WHERE request.app_id = json_extract(root.data, '$.appId')
          AND request.source_kind = 'human'
          AND request.status = 'done'
          AND request.result IS NOT NULL
          AND trim(request.result) NOT IN ('', '{}')
          AND root.event_type = 'conversation.message.created'
-         AND json_extract(root.data, '$.appId') = 'may'
          AND json_extract(root.data, '$.author.kind') = 'human'
          AND (request.conversation_id IS NULL OR trim(request.conversation_id) = '')`,
     ),
@@ -664,7 +662,7 @@ export function checkEventTraceIntegrity(db: SqliteDb): EventTraceIntegrity {
     result.pairTraceSplitCount === 0 &&
     result.humanRootWithoutSingleIntentCount === 0 &&
     result.conversationHumanWithoutSingleRequestCount === 0 &&
-    result.mayResultWithoutConversationCount === 0 &&
+    result.resultWithoutConversationCount === 0 &&
     result.bookkeepingOnlyAcceptanceCount === 0;
   result.ok = result.structuralOk && result.semanticOk;
   return result;

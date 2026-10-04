@@ -87,7 +87,7 @@ export function loadAgentConfig(agentDir: string, bus: EventBus): AgentConfig | 
     bus.emit({
       type: "agent.config_invalid",
       source: "loader",
-      owner: "agent:may",
+      owner: "system:host",
       urgency: "immediate",
       data: {
         agent: agentDir.split(/[\\/]/).pop() || "<unknown>",

@@ -8,10 +8,12 @@ const { spawn } = require("node:child_process");
 
 const stateDir = process.env.STATE_DIR || "/app/.state";
 const instance = process.env.DAEMON_INSTANCE || process.env.INSTANCE || "background";
-const daemonAgent = process.env.DAEMON_AGENT || "may";
+const daemonAgent = process.env.AGENT?.trim() || process.env.DAEMON_AGENT?.trim() || "host";
 const socketPath = path.join(stateDir, "instances", instance, `${daemonAgent}.sock`);
 const source = "may-console";
-const conversationId = `${daemonAgent}:primary`;
+const conversationAppId = process.env.CONVERSATION_APP?.trim();
+if (!conversationAppId) throw new Error("Console requires CONVERSATION_APP");
+const conversationId = process.env.CONVERSATION_ID?.trim() || `${conversationAppId}:primary`;
 const adapterInstanceId = randomUUID();
 
 let socket = null;
@@ -21,7 +23,7 @@ let reconnectTimer = null;
 let reconnectDelayMs = 250;
 let raw = false;
 let debug = false;
-let selectedApp = "may";
+let selectedApp = conversationAppId;
 let activeTurn = null;
 let completionVisible = false;
 let selectedTopic = null;
@@ -297,7 +299,7 @@ function printActivityText(label, text = "") {
 }
 
 function printResponseText(text = "", onRendered) {
-  printConversationText("may", text, onRendered);
+  printConversationText(daemonAgent, text, onRendered);
 }
 
 function eventPayload(event) {
@@ -328,7 +330,7 @@ function sendFrame(frame, opts = {}) {
   }
 }
 
-function mayInputFrame(message, reply) {
+function conversationInputFrame(message, reply) {
   const sequence = Math.max(Date.now(), lastConversationSequence + 1);
   lastConversationSequence = sequence;
   const messageId = `${source}:${adapterInstanceId}:${sequence}`;
@@ -347,7 +349,7 @@ function mayInputFrame(message, reply) {
       : {}),
     event: {
       type: "conversation.message.created",
-      target: { appId: "may" },
+      target: { appId: conversationAppId },
       data: {
         conversationId,
         author: { kind: "human", id: messageId },
@@ -396,7 +398,7 @@ function sendConversationRead(pending = {}) {
   return sendFrame(
     {
       type: "app.conversation.get",
-      appId: "may",
+      appId: conversationAppId,
       conversationId,
       limit: 30,
       topicLimit: 12,
@@ -514,7 +516,7 @@ function appendConversationMessage({ author, text, transient = false, metadata =
       type: "publish",
       event: {
         type: "conversation.message.created",
-        target: { appId: "may" },
+        target: { appId: conversationAppId },
         data: {
           conversationId,
           author,
@@ -578,7 +580,7 @@ function resolveTopic(topics, ref) {
 
 function topicMessageLine(message) {
   const kind = message?.author?.kind;
-  const speaker = kind === "human" ? "you" : kind === "agent" ? "may" : kind || "event";
+  const speaker = kind === "human" ? "you" : kind === "agent" ? daemonAgent : kind || "event";
   const text = typeof message?.text === "string" ? message.text.trim().replace(/\s+/g, " ") : "";
   return text ? `  ${speaker}: ${text.length > 180 ? `${text.slice(0, 177)}...` : text}` : "";
 }
@@ -1111,7 +1113,7 @@ function renderConversation(messages, options = {}) {
       rememberRenderedConversationMessage(id);
       continue;
     }
-    const baseSpeaker = kind === "human" ? "you" : kind === "agent" ? "may" : kind;
+    const baseSpeaker = kind === "human" ? "you" : kind === "agent" ? daemonAgent : kind;
     const speaker = channel && channel !== source ? `${baseSpeaker}[${channel}]` : baseSpeaker;
     const metadataTaskRefs = Array.isArray(message.metadata?.taskRefs) ? message.metadata.taskRefs : [];
     const taskRefs = metadataTaskRefs.flatMap((task) =>
@@ -1259,7 +1261,7 @@ function handleEvent(event) {
       author.id !== source &&
       typeof data.text === "string"
     ) {
-      const speaker = author.kind === "agent" ? "may" : author.kind || "notice";
+      const speaker = author.kind === "agent" ? daemonAgent : author.kind || "notice";
       printConversationText(speaker, data.text);
     }
     return;
@@ -1282,10 +1284,10 @@ function handleEvent(event) {
         rememberRenderedConversationMessage(`event:${event.eventId}`);
       }
       if (receiptKind === "human-turn") {
-        printNotice("[may] Working on your request… Esc stops this turn.");
+        printNotice(`[${daemonAgent}] Working on your request… Esc stops this turn.`);
       }
       if (receiptKind === "stop-turn") {
-        printNotice(event.delivery === "accepted" ? "[may] Stop request accepted. Background Tasks continue." : "[may] Stop was not accepted; refresh and try again.");
+        printNotice(event.delivery === "accepted" ? `[${daemonAgent}] Stop request accepted. Background Tasks continue.` : `[${daemonAgent}] Stop was not accepted; refresh and try again.`);
         requestConversation("sync");
       }
       if (event.command === "app.conversation.get") {
@@ -1293,7 +1295,7 @@ function handleEvent(event) {
         if (pending?.kind === "startup" || pending?.kind === "sync") {
           const next = event.conversation?.activeTurn ?? null;
           if (next && (!activeTurn || activeTurn.id !== next.id || activeTurn.revision !== next.revision)) {
-            printNotice("[may] Esc: stop this turn. Background Tasks continue.");
+            printNotice(`[${daemonAgent}] Esc: stop this turn. Background Tasks continue.`);
           }
           activeTurn = next;
         }
@@ -1397,7 +1399,7 @@ function handleEvent(event) {
       return;
     case "error":
       if (event.command === "publish" && pendingPublishReceipts.shift() === "stop-turn") {
-        printNotice(`[may] Stop was not confirmed: ${event.message || "unknown error"}`);
+        printNotice(`[${daemonAgent}] Stop was not confirmed: ${event.message || "unknown error"}`);
         requestConversation("sync");
         return;
       }
@@ -1455,7 +1457,7 @@ function handleEvent(event) {
     case "message.created": {
       const normalizedTarget = typeof data.to === "string" ? data.to.trim().toLowerCase() : "";
       if (normalizedTarget === "human" || normalizedTarget === "human:operator") {
-        printLine(`${data.from || "may"}: ${data.content || data.message || ""}`);
+        printLine(`${data.from || daemonAgent}: ${data.content || data.message || ""}`);
       }
       return;
     }
@@ -1579,7 +1581,7 @@ function printHelp() {
       "  /reload                    Reload definitions",
       "  /restart                   Restart the Host",
       "",
-      "Bare text goes to May in the selected App context. While watching, that Task is additional context.",
+      `Bare text goes to ${daemonAgent} in the selected App context. While watching, that Task is additional context.`,
     ].join("\n"),
   );
 }
@@ -1716,7 +1718,7 @@ function handleCommand(input) {
         printLine(`Read /task ${ref} first, then reply to that displayed proposal.`);
         return;
       }
-      submitHumanInput(mayInputFrame(input.replace(/^\/reply\s+\S+\s+/i, ""), reply));
+      submitHumanInput(conversationInputFrame(input.replace(/^\/reply\s+\S+\s+/i, ""), reply));
       return;
     }
     case "watch": {
@@ -1849,7 +1851,7 @@ function handleInput(line) {
   // Conversation history is presentation context, not an admission gate.
   // The daemon owns authoritative context and orders message handling within
   // the Conversation after this Event has been durably accepted.
-  submitHumanInput(mayInputFrame(input));
+  submitHumanInput(conversationInputFrame(input));
 }
 
 function submitHumanInput(frame) {
@@ -1899,15 +1901,15 @@ if (process.stdin.isTTY) {
         return;
       }
       if (!connected) {
-        printNotice("[may] Disconnected; Stop was not confirmed.");
+        printNotice(`[${daemonAgent}] Disconnected; Stop was not confirmed.`);
         return;
       }
       const turn = activeTurn;
       if (!turn) return;
       sendFrame({ type: "publish", event: {
-        type: "conversation.turn.stop.requested", target: { appId: "may" },
+        type: "conversation.turn.stop.requested", target: { appId: conversationAppId },
         data: { conversationId, turnId: turn.id, expectedRevision: turn.revision },
-        idempotencyKey: `conversation-stop:may:${conversationId}:${turn.id}:${turn.revision}`,
+        idempotencyKey: `conversation-stop:${conversationAppId}:${conversationId}:${turn.id}:${turn.revision}`,
       } }, { receiptKind: "stop-turn" });
     } else if (key?.name !== "tab") completionVisible = false;
   });
@@ -1928,6 +1930,6 @@ rl.on("close", () => {
 
 console.log("May daemon terminal");
 console.log(`Socket: ${socketPath}`);
-console.log("Type a message for May. Try /help for console commands.");
+console.log(`Type a message for ${daemonAgent}. Try /help for console commands.`);
 refreshPrompt();
 connectSocket();

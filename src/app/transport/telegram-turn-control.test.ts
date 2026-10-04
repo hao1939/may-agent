@@ -56,7 +56,7 @@ test.each(["system", "console"] as const)("%s work stays visible without unsolic
   process.env.TELEGRAM_CHAT_ID = "123";
   const bus = new EventBus();
   const bot = attachTelegramBot({
-    bus, persistDir: root, interfaceAgent: "may",
+    bus, persistDir: root, interfaceAgent: "may", conversationAppId: "may",
     humanTasks: { listApps: () => [], listTasks: () => ({ items: [], total: 0 }), getTask: () => null },
     publishEvent: () => { throw new Error("Presentation must not publish work"); },
   });
@@ -121,7 +121,7 @@ test("closing the bot aborts its active network poll", async () => {
   const bot = attachTelegramBot({
     bus: new EventBus(),
     persistDir: root,
-    interfaceAgent: "may",
+    interfaceAgent: "may", conversationAppId: "may",
     humanTasks: { listApps: () => [], listTasks: () => ({ items: [], total: 0 }), getTask: () => null },
     publishEvent() {
       throw new Error("No input should be admitted during shutdown");
@@ -200,7 +200,7 @@ test("Telegram Stop buttons retain exact turns, reject old/unauthorized controls
   const bot = attachTelegramBot({
     bus,
     persistDir: root,
-    interfaceAgent: "may",
+    interfaceAgent: "may", conversationAppId: "may",
     humanTasks: { listApps: () => [], listTasks: () => ({ items: [], total: 0 }), getTask: () => null },
     publishEvent(input) {
       events.push(input);

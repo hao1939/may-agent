@@ -72,7 +72,7 @@ async function renderAgentDetail(name) {
     <span style="color:${dotColor};font-size:14px">●</span>
     <h2 style="margin:0;font-size:18px">${esc(name)}</h2>
     ${summary && summary.model ? `<span class="model-chip">${esc(summary.model)}</span>` : ''}
-    ${name === 'may' ? '' : `<button onclick="resetAgentChat('${attrEsc(name)}')" title="Clear chat and start fresh" style="padding:4px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--fg);cursor:pointer;font-size:12px">↻ Reset</button>`}
+    ${name === humanInterface.agent ? '' : `<button onclick="resetAgentChat('${attrEsc(name)}')" title="Clear chat and start fresh" style="padding:4px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--fg);cursor:pointer;font-size:12px">↻ Reset</button>`}
   </div>`;
   if (summary && summary.description) {
     html += `<div style="font-size:12px;color:var(--fg2);margin-bottom:10px">${esc(summary.description)}</div>`;
@@ -127,7 +127,7 @@ function switchAgentSubTab(tab) {
 
 async function loadAgentChatThread(name) {
   if (!name) return;
-  if (name === 'may') {
+  if (name === humanInterface.agent) {
     currentSessionId = null;
     renderSessionPicker();
     subscribeMayConversation();

@@ -692,11 +692,19 @@ describe("served workflow and metric health pages", () => {
         for (const hoursAgo of [6, 5])
           metrics.record("handler.success-rate", 0.9, { measuredAt: now - hoursAgo * 3600000 });
         await page.goto(base, { waitUntil: "domcontentloaded" });
-        const historyResponse = page.waitForResponse(
-          (response) => new URL(response.url()).pathname === "/api/metrics/handler.success-rate/history",
+        // These async panels sit above the summary; wait for their layout
+        // before the pointer click, including when interface loading is delayed.
+        await page.waitForSelector("#workflow-overview [data-workflow-outcomes]");
+        await page.waitForSelector("#liveness-panel .breach-badge");
+        await page.waitForFunction(() =>
+          document.querySelector("#overview-tasks")?.textContent?.includes("Task read unavailable"),
         );
-        await page.click("#legacy-dashboard summary");
-        const history = await historyResponse;
+        const [history] = await Promise.all([
+          page.waitForResponse(
+            (response) => new URL(response.url()).pathname === "/api/metrics/handler.success-rate/history",
+          ),
+          page.click("#legacy-dashboard summary"),
+        ]);
         expect(history.status()).toBe(200);
         const { window: historyWindow } = await history.json();
         expect(historyWindow.end - historyWindow.start).toBe(86400000);

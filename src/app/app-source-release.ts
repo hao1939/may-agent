@@ -179,6 +179,7 @@ function assertCommittedDefinitionSource(projectRoot: string, commit: string, re
   const paths = [
     "agents",
     "shared/common-sense.md",
+    "shared/file-write-policy.json",
     "shared/skills",
     "shared/tools",
     ...trackedNames.map((name) => `projects/${name}`),
@@ -230,6 +231,7 @@ function assertCommittedDefinitionSource(projectRoot: string, commit: string, re
         path.startsWith("shared/skills/") ||
         path.startsWith("shared/tools/") ||
         path === "shared/common-sense.md" ||
+        path === "shared/file-write-policy.json" ||
         skillRoots.some((root) => resolve(canonicalProjectRoot, path).startsWith(`${root}${sep}`))
       ) {
         return true;
@@ -255,6 +257,7 @@ function extractCommittedDefinitions(projectRoot: string, commit: string, stageR
     .map((name) => name.trim())
     .filter((name) => name.endsWith(".app"))
     .sort();
+  const sharedPolicy = execFileSync("git", ["-C", projectRoot, "ls-tree", "--name-only", commit, "--", "shared/file-write-policy.json"], { encoding: "utf8" }).trim();
   const globalAgents = execFileSync("git", ["-C", projectRoot, "ls-tree", "--name-only", commit, "--", "agents"], { encoding: "utf8" }).trim();
   const archivePath = join(stageRoot, ".apps.tar");
   const archiveFd = openSync(archivePath, "w");
@@ -273,6 +276,7 @@ function extractCommittedDefinitions(projectRoot: string, commit: string, stageR
         "shared/common-sense.md",
         "shared/skills",
         ...(sharedTools ? [sharedTools] : []),
+        ...(sharedPolicy ? [sharedPolicy] : []),
         ...trackedNames.map((name) => `projects/${name}`),
       ],
       { stdio: ["ignore", archiveFd, "pipe"] },
@@ -325,6 +329,8 @@ function copyFilesystemDefinitions(projectRoot: string, stageRoot: string): void
   mkdirSync(targetSharedRoot, { recursive: true });
   if (existsSync(commonSense)) cpSync(commonSense, join(targetSharedRoot, "common-sense.md"));
   else writeFileSync(join(targetSharedRoot, "common-sense.md"), "", "utf8");
+  const policy = join(sourceSharedRoot, "file-write-policy.json");
+  if (existsSync(policy)) cpSync(policy, join(targetSharedRoot, "file-write-policy.json"));
   for (const directory of ["skills", "tools"]) {
     const source = join(sourceSharedRoot, directory);
     if (existsSync(source)) {
@@ -388,8 +394,8 @@ export class DefinitionSourceReleaseStore {
     }
     mkdirSync(this.releasesRoot, { recursive: true });
     if (commit) assertCommittedDefinitionSource(this.projectRoot, commit, !expectedSourceCommit);
-    // v4 includes shared tools; never reuse a cached v3 snapshot that omitted them.
-    const id = commit ? `${commit}-definitions-v4` : `filesystem-${Date.now()}-${randomUUID()}-definitions-v4`;
+    // v5 captures installation file policy; never reuse a snapshot that omitted it.
+    const id = commit ? `${commit}-definitions-v5` : `filesystem-${Date.now()}-${randomUUID()}-definitions-v5`;
     const releaseRoot = join(this.releasesRoot, id);
     if (existsSync(releaseRoot)) return validateRelease(releaseRoot);
 
@@ -401,7 +407,7 @@ export class DefinitionSourceReleaseStore {
       // Check the actual snapshot, never mutable source for a pinned release.
       // Reject before caching; validation also covers reuse and activation.
       validateCapturedSkillRoots(stageRoot);
-      // Shared tools change snapshot contents, not the manifest schema. Keep
+      // Shared tools and file policy change snapshot contents, not the manifest schema. Keep
       // active snapshots readable when rolling back to the previous Host.
       const manifest: ReleaseManifest = { version: 3, id, ...(commit ? { sourceCommit: commit } : {}) };
       writeFileSync(join(stageRoot, "release.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");

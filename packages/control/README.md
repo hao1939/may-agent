@@ -128,8 +128,8 @@ subscriptions in the owning App; only add a public event when that integration
 needs one. Private claims, leases, result admission and timer callbacks remain
 ordinary calls/transactions. There is no general event plugin or second router.
 
-The canonical design is
-[Events and Task Admission](../../../may-agent.app/docs/2a-design/events.md).
+The [Host source map](../../src/app/README.md) locates event admission and
+Task persistence; the public protocol lives in this package.
 
 ## SQL diagnostics
 
@@ -151,3 +151,41 @@ Compact cumulative counters also accompany the existing minute
 `runtime.daemon.heartbeat` observation. A consumer can compare samples from the
 same PID and `sql.since`, resetting across restarts. This adds no per-query writes
 or new scheduler. Thresholds, review and remediation remain App policy.
+
+## Selecting a human interface
+
+The CLI resolves one interface binding before selecting runtime, send, emit,
+web-only or maintenance mode. Agent precedence is `--agent` (including
+`--agent=name`), then `AGENT`, then `DAEMON_AGENT`, then `host`. The App and
+Conversation come from `CONVERSATION_APP` and optional `CONVERSATION_ID`;
+an agent override preserves both. Modes receive the resolved binding or socket
+path rather than selecting the agent again from the environment.
+
+| Setting | Selects |
+| --- | --- |
+| `--agent` / `AGENT` | Interface identity and daemon socket name |
+| `--send <recipient>` | Agent receiving this message |
+| `CONVERSATION_APP` | App admitting human-interface input |
+| `CONVERSATION_ID` | Retained communication context; defaults to `<app>:primary` |
+
+Missing App wiring permits headless Task execution, but input addressed to the
+selected human interface fails explicitly. Client and Host admission enforce
+this boundary; missing configuration cannot turn it into direct agent chat.
+Other agents and explicit session controls keep their existing paths and scope.
+Console rejection remains local and leaves unrelated background Tasks running.
+
+Client and maintenance commands must select the same instance and interface
+identity as their target daemon. For example, a daemon started with
+`--agent helper` can be probed using `--maintenance --agent helper` or shared
+`AGENT=helper` configuration. A CLI flag affects that invocation only; it does
+not rewrite a separately started maintenance process or supervisor. The supplied
+container shares its environment with both processes; its shell restarter uses
+that environment or an explicit `MAY_AGENT_HEALTH_SOCKET` override.
+`daemonSocketPath()` uses `host.sock` when no identity is supplied.
+
+`sendDaemonInput` requires an explicit `appId` and accepts a retained `conversationId`.
+`sendAgentMessage` sends to an agent; for the configured human interface it uses App
+admission with both the selected App and Conversation. An explicit
+`interface` option can supply the same binding to clients outside the daemon's
+environment. Ordinary agents need only the desired message and recipient; the
+adapter owns transport and saved Conversation references.
