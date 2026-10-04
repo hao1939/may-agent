@@ -20,7 +20,10 @@ export type AppConversationRequestUpdate = {
   /** Required for a new ask. Omit to retain an existing Request's exact scope. */
   scope?: string;
   disposition: "open" | "fulfilled" | "withdrawn" | "unfulfilled";
-  /** Required in a final turn decision; an open disposition explains continuing work or the remaining gap and wait. */
+  /**
+   * Required for closure; optional for open updates in live and final Task changes.
+   * Legacy Conversation final results require it for every update.
+   */
   reason?: string;
   /** Add relevant Task references; omitted/empty lists retain earlier references. At most 32 distinct references. */
   taskRefs?: Array<{ appId: string; taskId: string }>;
@@ -67,7 +70,7 @@ export const conversationRequestUpdatesSchema = Type.Array(
           maxLength: 2000,
           pattern: "\\S",
           description:
-            "Required for each final requestUpdates entry. Explain fulfillment, withdrawal, an unfulfilled outcome, or the continuing work or remaining gap and wait that keeps this Request open. A reply about another Request is not its explanation.",
+            "Required to close a Request; explain fulfillment, withdrawal or the unfulfilled outcome. Optional for an open Request in live and final Task changes; use it for useful context about remaining work. Closure also needs an accepted explanation to the human. A reply about another Request is not its explanation.",
         }),
       ),
       taskRefs: Type.Optional(

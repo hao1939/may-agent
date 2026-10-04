@@ -269,6 +269,14 @@ export const conversationTurnResultSchema = Type.Object(
       items: {
         ...conversationRequestUpdatesSchema.items,
         required: [...conversationRequestUpdatesSchema.items.required!, "reason"],
+        properties: {
+          ...conversationRequestUpdatesSchema.items.properties,
+          reason: {
+            ...conversationRequestUpdatesSchema.items.properties.reason,
+            description:
+              "Required for every legacy Conversation final update, including open Requests. Explain the outcome or the continuing work or remaining gap and wait.",
+          },
+        },
       },
     }),
     response: Type.Optional(

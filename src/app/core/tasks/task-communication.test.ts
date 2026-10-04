@@ -3,7 +3,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { Type, defineApp, type TaskExecutor, type TaskCommunication } from "@may-agent/sdk";
+import { Type, defineApp, type TaskExecutor, type TaskCommunication, type TaskAttempt } from "@may-agent/sdk";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { getDb, closeDb } from "../../../lib/requests.js";
 import { EventBus } from "../events/bus.js";
@@ -286,6 +286,7 @@ test("one ordinary Task asks for review, continues testing, and answers through 
   const f = await fixture(async (attempt) => {
     if (attempt.task.id === "reviewer") {
       expect(attempt.events.inputs?.[0]?.communication).toBeUndefined();
+      await expect(attempt.read.communication!("ask")).rejects.toThrow("accepted by this Task");
       await expect(
         attempt.apply({ communication: [{ id: "steal-reply", inputId: "ask", message: "I own the ask now" }] }),
       ).rejects.toThrow("accepted by this Task");
@@ -634,6 +635,73 @@ test("managed finish preflight checks a combined decision without keeping state 
     expect(
       listAppConversationMessages(f.db, "sample", "discussion").filter(({ author }) => author.kind === "agent"),
     ).toHaveLength(1);
+  } finally {
+    await f.close();
+  }
+});
+
+test("final Task acceptance can stay quiet and open without a reason; closure still requires an explanation", async () => {
+  const accept = {
+    id: "accept",
+    inputId: "ask",
+    requestUpdates: [{ id: "scope", expectedRevision: 0, scope: "Test the change", disposition: "open" as const }],
+  };
+  const proposal = {
+    state: "waiting" as const,
+    summary: "Accepted the ask; waiting for the test environment",
+    facts: [],
+    communication: [accept],
+    conditions: [
+      { id: "environment", type: "environment.ready", subject: "environment:test", expected: true, owner: "app:sample" },
+    ],
+  };
+  let retainedRead: TaskAttempt["read"]["communication"];
+  const f = await fixture(
+    async (attempt) => {
+      retainedRead = attempt.read.communication;
+      await expect(retainedRead!("ask")).resolves.toMatchObject({ id: "discussion" });
+      return proposal;
+    },
+    "task",
+    async ({ validateResult }) => {
+      expect(validateResult!(proposal)).toBeNull();
+      // A closure must explain both its disposition and the outcome to the human.
+      for (const explanation of [{ message: "Tested" }, { reason: "Tests passed" }]) {
+        const { message, reason } = explanation;
+        expect(
+          validateResult!({
+            ...proposal,
+            communication: [
+              accept,
+              {
+                id: "close",
+                inputId: "ask",
+                ...(message ? { message } : {}),
+                requestUpdates: [
+                  { id: "scope", expectedRevision: 1, disposition: "fulfilled", ...(reason ? { reason } : {}) },
+                ],
+              },
+            ],
+          }),
+        ).toContain("Request closure requires a reason and Conversation explanation");
+      }
+      expect(readConversationRequest(f.db, "sample", "discussion", "scope")).toBeNull();
+    },
+  );
+  try {
+    const item = f.admit("ask").item;
+    await f.run(item.executionTaskId!);
+    expect(f.store.readTask(item.executionTaskId!)?.status).toMatchObject({ phase: "waiting" });
+    expect(readConversationRequest(f.db, "sample", "discussion", "scope")).toMatchObject({
+      status: "open",
+      revision: 1,
+      scope: "Test the change",
+    });
+    expect(f.store.readTrigger(item.executionTaskId!)).toBeNull();
+    expect(
+      listAppConversationMessages(f.db, "sample", "discussion").filter(({ author }) => author.kind === "agent"),
+    ).toEqual([]);
+    await expect(retainedRead!("ask")).rejects.toThrow("Task attempt is closed");
   } finally {
     await f.close();
   }

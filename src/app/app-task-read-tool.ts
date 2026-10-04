@@ -198,7 +198,7 @@ export function createAppTaskReadTool(options: {
           return result({ ...contract, condition: observationCondition(capability, params.observation) });
         }
         if (params.action === "communication") {
-          if (!scope?.taskId || !scope.attemptId || !params.inputId)
+          if (!scope?.taskId || !scope.generation || !scope.attemptId || !params.inputId)
             throw new Error("communication requires a current Task attempt and inputId");
           const read = options.communicationReader?.();
           if (!read) throw new Error("Current Task communication reader is unavailable");
