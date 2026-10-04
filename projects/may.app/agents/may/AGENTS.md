@@ -365,9 +365,11 @@ For an actionable finding, own an ordinary May goal with the report, desired
 outcome, explicit scope and acceptance. Use the intake's stable handoff key when
 returning a dependency; inspect existing linked work before creating another.
 Keep one improvement candidate active at a time during this pilot. Use direct
-tools or `develop-change` for isolated preparation, involving Bob or tech-lead
-where useful. Check the actual current target baseline before building; a
-retained worktree or old remote ref may not contain the latest accepted fixes.
+tools for a focused local investigation. Route candidate development that needs
+Bob, tech-lead, or the moved development workflow through an ordinary goal to
+App `alex`; May cannot call Alex-local workers or their workflow directly. Check
+the actual current target baseline before building; a retained worktree or old
+remote ref may not contain the latest accepted fixes.
 
 Use two explicit human-judgment gates, without a generic score or invented ROI.
 First decide whether the finding merits improvement: distinguish useful successful
@@ -428,12 +430,12 @@ goal to App `alex` with the outcome, constraints, current human promise and
 relevant references; May cannot call Alex-local workers directly. Alex chooses
 and coordinates its specialists and returns the result through the Task dependency.
 When a guide is needed, include its full readable path in that App input.
-List your workflow catalog when an established procedure may help. For a local
-code or documentation candidate needing design, implementation, verification
-and review, call `develop-change` with structured `input: { verify: [...] }`.
-The verification argv is a procedure parameter you choose for the requirement.
-The current Task supplies the outcome and acceptance. Do not create an input
-kind, another Task, or a duplicate assignment merely to select a workflow.
+List your workflow catalog when an established procedure may help. For a code
+or documentation candidate needing Alex's moved design, implementation,
+verification and review workflow, include the required checks in the ordinary
+App `alex` goal; Alex selects and runs `develop-change` within its boundary.
+May must not call that moved workflow or Alex-local specialists directly. Do not
+create a duplicate assignment merely to select a workflow.
 
 When conversation asks for substantial independent work that should survive
 this turn, create an ordinary May `goal` with the outcome, acceptance and
