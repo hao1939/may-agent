@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { automaticReviewConfig } from "./agents/evaluator/workflows/task-outcome-selector.js";
 import { metricReviewTaskId } from "./agents/evaluator/workflows/lib/metric-selection.js";
 import {
   Type,
@@ -11,11 +12,11 @@ import {
 const details = Type.Record(Type.String(), Type.Unknown());
 const role = Type.Union([
   Type.Literal("alex"),
-  Type.Literal("may-bob"),
-  Type.Literal("may-tech-lead"),
-  Type.Literal("alex-evaluator"),
-  Type.Literal("alex-evaluator-deepseek"),
-  Type.Literal("alex-gym"),
+  Type.Literal("bob"),
+  Type.Literal("tech-lead"),
+  Type.Literal("evaluator"),
+  Type.Literal("evaluator-deepseek"),
+  Type.Literal("gym"),
 ]);
 const comparisonData = Type.Object({
   requestId: Type.String({ minLength: 1 }),
@@ -79,6 +80,10 @@ export const inputSchema = Type.Union([
     }, { additionalProperties: false }),
   }, { additionalProperties: false }),
   Type.Object({ kind: Type.Literal("compare-candidate"), data: comparisonData }, { additionalProperties: false }),
+  Type.Object({
+    kind: Type.Literal("automatic-review"),
+    data: details,
+  }, { additionalProperties: false }),
 ]);
 
 function record(value: unknown): Record<string, unknown> {
@@ -122,6 +127,22 @@ export function taskInputForEvent(event: AppEvent<Record<string, unknown>>): App
       ...(Number.isSafeInteger(Number(data.alertId)) && Number(data.alertId) > 0 ? { alertId: Number(data.alertId) } : {}),
     }} as AppInput;
   }
+  if (event.type === "metric.breach" || event.type === "metric.recovered") {
+    const automatic = automaticReviewConfig();
+    if (!automatic.enabled || (event.type === "metric.breach" && data.repeat === true)) return null;
+    const metricId = String(data.metricId ?? data.metric_id ?? event.target?.metricId ?? "").trim();
+    const measuredAt = Number(data.measuredAt ?? data.measured_at);
+    return metricId && Number.isSafeInteger(measuredAt) && measuredAt > 0
+      ? { kind: "review-metric", data: { metricId, end: measuredAt + 1, reviewer: automatic.reviewer ?? "evaluator", automatic: true } } as AppInput
+      : { kind: "automatic-review", data: { reason: event.type } } as AppInput;
+  }
+  if (event.type === "project.task.reconciled") {
+    const automatic = automaticReviewConfig();
+    const appId = String(data.project ?? data.appId ?? "").trim();
+    const taskId = String(data.taskId ?? "").trim();
+    if (!automatic.enabled || !appId || !taskId || (data.disposition !== "incomplete" && data.disposition !== "retrying")) return null;
+    return { kind: "review-task-outcome", data: { appId, taskId, assessmentPurpose: "ongoing", automatic: true, ...(automatic.reviewer === "evaluator-deepseek" ? { reviewer: automatic.reviewer } : {}) } } as AppInput;
+  }
   if (event.type !== "evaluation.task.review.requested") return null;
   const appId = typeof data.appId === "string" ? data.appId.trim() : "";
   const taskId = typeof data.taskId === "string" ? data.taskId.trim() : "";
@@ -145,13 +166,25 @@ export function taskInputForEvent(event: AppEvent<Record<string, unknown>>): App
 
 export function taskForInput(admitted: Readonly<AppTaskInput>) {
   const data = record(admitted.input.data);
+  if (admitted.input.kind === "automatic-review") {
+    return { kind: "desired" as const, intent: {
+      id: "runtime/task-outcome-selector",
+      parentId: "root",
+      agent: "evaluator",
+      workflow: "task-outcome-selector",
+      outcome: "Select bounded external Task and metric reviews under the explicit automatic-review rollout policy.",
+      acceptance: ["New samples alone never invoke an LLM.", "Selected reviews preserve canonical subject identity and evidence cutoffs."],
+      input: admitted.input,
+      priority: "P2" as const,
+    }};
+  }
   if (admitted.input.kind === "review-metric") {
     const metricId = String(data.metricId);
     const reviewer = data.reviewer === "evaluator-deepseek" ? "evaluator-deepseek" : "evaluator";
     return { kind: "desired" as const, intent: {
       id: metricReviewTaskId(metricId, reviewer),
       parentId: "root",
-      agent: reviewer === "evaluator-deepseek" ? "alex-evaluator-deepseek" : "alex-evaluator",
+      agent: reviewer === "evaluator-deepseek" ? "evaluator-deepseek" : "evaluator",
       workflow: "metric-review",
       outcome: `Review observations of metric ${metricId} and return an evidence-backed recommendation.`,
       acceptance: [
@@ -175,7 +208,7 @@ export function taskForInput(admitted: Readonly<AppTaskInput>) {
     return { kind: "desired" as const, intent: {
       id: `review/${safe(`${appId}/${taskId}/${data.subjectGeneration ?? "current"}/${data.evidenceHash ?? "current"}/${reviewer}`)}`,
       parentId: "root",
-      agent: reviewer === "evaluator-deepseek" ? "alex-evaluator-deepseek" : "alex-evaluator",
+      agent: reviewer === "evaluator-deepseek" ? "evaluator-deepseek" : "evaluator",
       workflow: "task-outcome-review",
       outcome: `Independently review ${appId}/${taskId} from canonical Task evidence.`,
       acceptance: [
@@ -199,7 +232,7 @@ export function taskForInput(admitted: Readonly<AppTaskInput>) {
     return { kind: "desired" as const, intent: {
       id: `comparison/${safe(String(data.requestId))}`,
       parentId: "root",
-      agent: "alex-gym",
+      agent: "gym",
       workflow: "compare-candidate",
       outcome: `Run the frozen comparison ${String(data.requestId)} and return bounded evidence.`,
       acceptance: ["Verify all frozen identities before execution.", "Retain a complete comparison receipt and disclose invalid or inconclusive trials."],
@@ -239,14 +272,35 @@ export default defineApp({
   subscriptions: [
     {
       id: "selected-task-review",
-      event: "evaluation.task.review.requested",
+      event: { type: "evaluation.task.review.requested", project: "alex" },
       toInput: taskInputForEvent,
     },
+    {
+      id: "selected-metric-review",
+      event: { type: "evaluation.metric.review.requested", project: "alex" },
+      toInput: taskInputForEvent,
+    },
+    {
+      id: "review-failure-recovery",
+      event: { type: "evaluation.review_failed", project: "alex" },
+      toInput: taskInputForEvent,
+    },
+    ...["metric.breach", "metric.recovered", "project.task.reconciled"].map((event) => ({
+      id: `automatic-${event}`,
+      event,
+      toInput: taskInputForEvent,
+    })),
     {
       id: "qualified-scout-research",
       event: "scout.research.qualified",
       toInput: taskInputForEvent,
     },
   ],
+  schedules: automaticReviewConfig().enabled ? [{
+    id: "task-outcome-selector",
+    intervalMs: automaticReviewConfig().intervalMs,
+    input: { kind: "automatic-review", data: { reason: "scheduled" } },
+    catchUp: "latest" as const,
+  }] : [],
   tasks: { maxConcurrent: 3 },
 });

@@ -31,12 +31,12 @@ Use bounded per-App reads of `resource_json.spec.outcome` and inbox identity on 
 - Independent evaluator implementations and criteria: `agents/evaluator`, `agents/evaluator-deepseek`, `agents/judge`, and `criteria`.
 - Gym comparison: `agents/gym/workflows/compare-candidate.ts`.
 - Scout adoption route: `scout.research.qualified` now targets App/project `alex`.
-- Review routing: production `evaluation.task.review.requested` emissions target Alex; Alex subscribes and creates `alex-evaluator` or `alex-evaluator-deepseek` work. Event names remain retained vocabulary, not an enabled-App dependency.
+- Review routing: production `evaluation.task.review.requested` emissions target Alex; Alex subscribes and creates plain Alex-local `evaluator` or `evaluator-deepseek` work. Event names remain retained vocabulary, not an enabled-App dependency.
 - Root identity: all new Alex attachments use `parentId: "root"`, matching the already-bootstrapped live resource store.
 
 ## Checks and open work
 
-The earlier red expanded run is retained as discovery evidence, not the current result. After localizing the copied fixtures and executable paths, the command
+The earlier red expanded run is retained as discovery evidence, not the current result. Direct mapper tests establish input construction; they did not establish declared event dispatch in commit `d4e5db883b`. Operator review therefore blocked activation. The successor source adds project-filtered selected-review, metric-review, and review-failure subscriptions and restores the explicit-flag-gated selector schedule plus transition-driven metric/task selection. Hao's correction requires plain Alex-local specialist names (`bob`, `tech-lead`, `evaluator`, `evaluator-deepseek`, `gym`, `judge`), removal of May's duplicate specialist definitions, and App-boundary routing rather than direct May calls to Alex-local workers. Those guarded identity/guidance edits are assigned on revised May dependency `appdep_44d8d692bfcbc967b25dbba8`; no registry or activation claim is made until they are incorporated and tested. After localizing the copied fixtures and executable paths, the command
 
 `bun test ./projects/alex.app/app.test.ts ./projects/alex.app/agents/evaluator/workflows/*.test.ts ./projects/alex.app/agents/evaluator/workflows/lib/*.test.ts ./projects/may.app/agents/may/workflows/improvement-activation-follow-up.test.ts`
 

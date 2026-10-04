@@ -18,7 +18,7 @@ function sourceQuery(evaluation: boolean): string {
     FROM execution_usage
     WHERE updated_at >= (SELECT cut - 3600000 FROM clock)
       AND updated_at < (SELECT cut FROM clock)
-      AND ${evaluation ? "app_id = 'evaluation'" : "(app_id IS NULL OR app_id != 'evaluation')"}
+      AND ${evaluation ? "app_id = 'alex'" : "(app_id IS NULL OR app_id != 'alex')"}
   ), attributed AS (
     SELECT * FROM cohort WHERE app_id != '' AND task_id IS NOT NULL AND task_id != ''
   ), groups AS (
@@ -32,7 +32,7 @@ SELECT CASE WHEN EXISTS (
   ) THEN NULL ELSE COALESCE(MAX(replies), 0) END AS value,
   (SELECT COUNT(*) FROM attributed) AS sampleSize,
   (SELECT cut FROM clock) AS measuredAt,
-  json_object('scope', '${evaluation ? "Evaluation" : "Non-Evaluation Apps"}: observed managed invocation replies by Task',
+  json_object('scope', '${evaluation ? "Alex" : "Non-Alex Apps"}: observed managed invocation replies by Task',
     'start', (SELECT cut - 3600000 FROM clock), 'end', (SELECT cut FROM clock),
     'meaning', 'Whole invocation totals for usage rows updated in this hour, including unfinished invocations; not within-hour spend or proof of waste.',
     'candidateThreshold', ${EFFORT_REVIEW_THRESHOLD},
@@ -54,9 +54,9 @@ export const effortMetrics: NonNullable<AppDefinition["metrics"]> = [
   true,
 ].map((evaluation) => ({
   id: evaluation ? EVALUATION_EFFORT_METRIC : TASK_EFFORT_METRIC,
-  name: `${evaluation ? "Evaluation" : "External App"} maximum Task effort from recently active invocations`,
-  owner: evaluation ? "evaluation" : "may",
-  project: evaluation ? "evaluation" : "may",
+  name: `${evaluation ? "Alex" : "External App"} maximum Task effort from recently active invocations`,
+  owner: "may",
+  project: evaluation ? "alex" : "may",
   type: "gauge",
   unit: "observed replies",
   measureInterval: 300_000,

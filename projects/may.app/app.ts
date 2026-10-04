@@ -595,7 +595,7 @@ export default defineApp({
           record(event.data).repeat === true
         )
           return null;
-        return evaluationWorkInput("Review the unfinished Evaluation work identified by this metric. Read current review Tasks, allowance and return paths. Preserve retries and reuse linked owner work. If review remains overdue, use metric-response with a complete review in this Task context; wait for an actual review result or human decision, or commission useful work, then return the ordinary Task result. New samples are evidence, not investigation triggers. This age threshold requests inspection; it is not a promised deadline or authority to stop work.",
+        return evaluationWorkInput("Review the unfinished Alex-hosted review work identified by this metric. Read current review Tasks, allowance and return paths. Preserve retries and reuse linked owner work. If review remains overdue, use metric-response with a complete review in this Task context; wait for an actual review result or human decision, or commission useful work, then return the ordinary Task result. New samples are evidence, not investigation triggers. This age threshold requests inspection; it is not a promised deadline or authority to stop work.",
           { event: structuredClone(event) },
         );
       },

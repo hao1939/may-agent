@@ -723,7 +723,7 @@ test("retained Evaluation admission recovery opens one quiet May oversight episo
     const failedAt = Date.now() - 2 * 86400000;
     createAppInboxItem(beforeRestart, {
       id: "retained-evaluation-input",
-      appId: "evaluation",
+      appId: "alex",
       source: { kind: "app", id: "gym" },
       input: { kind: "read-reports", data: { operation: "list", limit: 2 } },
       now: failedAt,
@@ -825,7 +825,7 @@ test("real Host collection maps one May review input per Evaluation breach episo
     const now = Date.now();
     const insert = store.prepare(
       `INSERT INTO app_task_attempts(app_id, task_id, attempt_id, task_generation, state, started_at, attempt_json)
-       VALUES ('evaluation', 'runtime/compat/owner-review', ?, 4, 'failed', ?, ?)`,
+       VALUES ('alex', 'runtime/compat/owner-review', ?, 4, 'failed', ?, ?)`,
     );
     const addFailure = (index: number) =>
       insert.run(
@@ -892,7 +892,7 @@ test("real Host collection maps one May review input per Evaluation breach episo
 
     store
       .prepare(
-        "UPDATE app_task_attempts SET started_at = ? WHERE app_id = 'evaluation'",
+        "UPDATE app_task_attempts SET started_at = ? WHERE app_id = 'alex'",
       )
       .run(now - 7 * 60 * 60 * 1000);
     await collect();
@@ -906,7 +906,7 @@ test("real Host collection maps one May review input per Evaluation breach episo
 
     store
       .prepare(
-        "UPDATE app_task_attempts SET started_at = ? WHERE app_id = 'evaluation'",
+        "UPDATE app_task_attempts SET started_at = ? WHERE app_id = 'alex'",
       )
       .run(now - 10_000);
     await collect();
@@ -997,7 +997,7 @@ test("Evaluation operation metric names the expanded attempt and admission signa
     (candidate) => candidate.id === EVALUATION_OPERATION_METRIC,
   );
   expect(metric).toMatchObject({
-    name: "Repeated unsuccessful Evaluation operation signals",
+    name: "Repeated unsuccessful Alex operation signals",
     unit: "signals",
   });
   expect(metric?.description).toContain("input-admission recovery");
@@ -1010,7 +1010,7 @@ test("Evaluation oversight groups all supported unsuccessful kinds by Task gener
   });
   const now = Date.now();
   const insert = db.prepare(
-    `INSERT INTO app_task_attempts(app_id, task_id, attempt_id, task_generation, state, started_at, attempt_json) VALUES ('evaluation', ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO app_task_attempts(app_id, task_id, attempt_id, task_generation, state, started_at, attempt_json) VALUES ('alex', ?, ?, ?, ?, ?, ?)`,
   );
   const add = (
     taskId: string,
@@ -1048,7 +1048,7 @@ test("Evaluation oversight groups all supported unsuccessful kinds by Task gener
   const observed = sample(EVALUATION_OPERATION_METRIC);
   expect(observed).toMatchObject({ value: 3, sampleSize: 5 });
   expect(JSON.parse(observed.note)).toMatchObject({
-    denominator: expect.stringContaining("terminal Evaluation attempts"),
+    denominator: expect.stringContaining("terminal Alex attempts"),
     coverage: expect.stringContaining("accepted incomplete"),
     groups: [
       {
@@ -1079,7 +1079,7 @@ test("overdue reviews route to May once per alert, while an empty population rem
   expect(JSON.parse(empty.note).failurePercent).toBeNull();
   createAppInboxItem(db, {
     id: "review",
-    appId: "evaluation",
+    appId: "alex",
     source: { kind: "system", id: "fixture" },
     input: { kind: "review-metric", data: {} },
     now: Date.now() - 3 * 86400000,

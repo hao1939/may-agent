@@ -473,9 +473,6 @@ const EVALUATION_WORKERS = new Set([
   "evaluator",
   "evaluator-deepseek",
   "judge",
-  "alex-evaluator",
-  "alex-evaluator-deepseek",
-  "alex-judge",
 ]);
 
 function isEvaluationWorker(value: unknown): boolean {
