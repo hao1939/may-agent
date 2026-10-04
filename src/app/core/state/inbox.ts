@@ -40,6 +40,7 @@ export type TaskInputAdmission = {
 
 /** Conversation execution consumes saved Conversation input, never an ordinary Task handoff. */
 export function assertTaskInputCompatible(config: AppTaskContext, input: TaskInputAdmission): void {
+  if (config.conversationInputMode === "task") return;
   const taskId = (input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id).trim();
   // Match execution dispatch: retained bindings own Conversation membership.
   // An ordinary App executor may also be named "conversation".

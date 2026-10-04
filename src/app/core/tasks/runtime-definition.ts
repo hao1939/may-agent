@@ -233,6 +233,7 @@ export function appTaskConfig(descriptor: AppTaskRuntimeDescriptor): AppTaskCont
     maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
     resourceStore: descriptor.resourceStore,
   });
+  if (descriptor.app.conversation?.mode === "task") config.conversationInputMode = "task";
   cacheTaskSnapshots(config);
   appTaskConfigs.set(descriptor, config);
   return config;

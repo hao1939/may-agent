@@ -4,6 +4,7 @@ import {
   type Condition as AppTaskConditionSpec,
   type TaskAppRequest,
   type TaskCondition,
+  type TaskCommunication,
   type TaskVerifier as AppTaskVerifier,
 } from "@may-agent/sdk";
 import type { ConversationTaskProposal } from "../state/conversation-task-turns.js";
@@ -38,6 +39,7 @@ export type NormalizedTaskHandlerResult = {
   actions: AppTaskAction[];
   conditions?: TaskCondition[];
   requests?: TaskAppRequest[];
+  communication?: TaskCommunication[];
 };
 
 export function normalizeTaskHandlerResult(

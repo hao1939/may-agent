@@ -144,9 +144,10 @@ export function prepareConversationRequestUpdates(db: SqliteDb, input: Conversat
       db
         .prepare(
           `SELECT 1 FROM app_inbox_items
-        WHERE app_id = ? AND conversation_id = ? AND execution_task_id = ? LIMIT 1`,
+        WHERE app_id = ? AND conversation_id = ? AND
+          (execution_task_id = ? OR (waiting_on_kind = 'task' AND waiting_on_id = ?)) LIMIT 1`,
         )
-        .get(input.appId, input.conversationId, input.actor.taskId);
+        .get(input.appId, input.conversationId, input.actor.taskId, input.actor.taskId);
     if (!ownsConversation) throw new Error("Conversation Request actor does not own this Conversation");
   }
   return input.updates.map((update) => {
