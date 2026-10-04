@@ -88,9 +88,14 @@ describe("independent metric passes", () => {
       expect(db.prepare("SELECT COUNT(*) AS count FROM metric_snapshots WHERE metric_id = ?").get(id)).toEqual({
         count: 1,
       });
+      const releasedAt = Date.now();
       release.resolve();
       await collector.idle();
       expect(metrics.get(id)?.observation?.value).toBe(0);
+      const completed = db.prepare(
+        "SELECT measured_at FROM metric_snapshots WHERE metric_id = ? ORDER BY id DESC LIMIT 1",
+      ).get(id) as { measured_at: number };
+      expect(completed.measured_at).toBeGreaterThanOrEqual(releasedAt);
       expect(events).toEqual(["metric.breach"]);
       scanAt(420_000);
       await evaluator.idle();
