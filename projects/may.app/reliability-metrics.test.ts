@@ -609,30 +609,47 @@ test("Host source collection retains diagnostic evidence and opens one metric br
   }
 });
 
-test("May schedules one normal collection opportunity every five minutes without a Task input", () => {
+test("May schedules recurring metric collection and evaluation independently without a Task input", () => {
   let now = 0;
   const bus = new EventBus();
-  const observed: unknown[] = [];
+  const observed: Array<{ type: string; source?: string; data: Record<string, unknown> }> = [];
   bus.subscribe((event) => {
-    if (event.type === "trigger.metrics-snapshot") observed.push(event);
+    if (event.type === "trigger.metrics-snapshot" || event.type === "trigger.metrics-evaluate") {
+      observed.push(event as (typeof observed)[number]);
+    }
   });
   const producer = createAppScheduleProducer({ bus, now: () => now });
   try {
     producer.replace([{ appDir: "/fixture/may.app", definition: app }]);
     producer.scanNow();
     expect(observed).toEqual([]);
+
+    now = 60_000;
+    producer.scanNow();
+    producer.scanNow();
+    expect(observed).toEqual([
+      expect.objectContaining({
+        type: "trigger.metrics-evaluate",
+        source: "app:may:schedule:metric-evaluation",
+        data: { idempotencyKey: "schedule:may:metric-evaluation:1" },
+      }),
+    ]);
+
     now = 300_000;
     producer.scanNow();
+    expect(observed.filter((event) => event.type === "trigger.metrics-snapshot")).toEqual([
+      expect.objectContaining({
+        type: "trigger.metrics-snapshot",
+        source: "app:may:schedule:metric-source-collection",
+        data: { idempotencyKey: "schedule:may:metric-source-collection:1" },
+      }),
+    ]);
+    expect(observed.filter((event) => event.type === "trigger.metrics-evaluate")).toHaveLength(2);
+
+    now = 360_000;
     producer.scanNow();
-    expect(observed).toHaveLength(1);
-    expect(observed[0]).toMatchObject({
-      type: "trigger.metrics-snapshot",
-      source: "app:may:schedule:metric-source-collection",
-      data: { idempotencyKey: "schedule:may:metric-source-collection:1" },
-    });
-    now = 600_000;
-    producer.scanNow();
-    expect(observed).toHaveLength(2);
+    expect(observed.filter((event) => event.type === "trigger.metrics-snapshot")).toHaveLength(1);
+    expect(observed.filter((event) => event.type === "trigger.metrics-evaluate")).toHaveLength(3);
   } finally {
     producer.close();
   }

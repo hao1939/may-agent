@@ -414,6 +414,16 @@ export default defineApp({
       },
     },
     {
+      id: "metric-evaluation",
+      intervalMs: 60_000,
+      event: {
+        type: "trigger.metrics-evaluate",
+        source: "app:may:schedule:metric-evaluation",
+        owner: "app:may",
+        data: {},
+      },
+    },
+    {
       id: "conversation-supervision-recovery",
       intervalMs: 900_000,
       event: {
