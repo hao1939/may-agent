@@ -407,6 +407,50 @@ describe("source-query metric measurement", () => {
     });
   });
 
+  it("uses producer then caller then completion time without changing late or rate semantics", async () => {
+    const db = getDb(persistDir);
+    const metrics = createMetricService({ getDb: () => db });
+    metrics.define({ id: "time.producer", sourceQuery: "SELECT 1 AS value, 111 AS measuredAt" });
+    metrics.define({ id: "time.caller", sourceQuery: "SELECT 2 AS value" });
+
+    await measureSourceMetrics({
+      bus,
+      persistDir,
+      measuredAt: 222,
+      isDue: ({ id }) => id === "time.producer" || id === "time.caller",
+    });
+    expect(db.prepare("SELECT metric_id, measured_at FROM metric_snapshots WHERE metric_id LIKE 'time.%' ORDER BY metric_id").all())
+      .toEqual([
+        { metric_id: "time.caller", measured_at: 222 },
+        { metric_id: "time.producer", measured_at: 111 },
+      ]);
+
+    const sampler = join(persistDir, "completion.ts");
+    writeFileSync(sampler, `await Bun.sleep(50); console.log(JSON.stringify({ samples: { "completion.a": 3, "completion.b": 4 } }));`);
+    const command = `'${process.execPath.replaceAll("'", "'\\''")}' completion.ts`;
+    for (const id of ["completion.a", "completion.b"]) metrics.define({ id, sourceCommand: command });
+    const requestedAt = Date.now();
+    await measureSourceMetrics({ bus, persistDir, isDue: ({ id }) => id.startsWith("completion.") });
+    const completions = db.prepare(
+      "SELECT measured_at FROM metric_snapshots WHERE metric_id LIKE 'completion.%' ORDER BY metric_id",
+    ).all() as Array<{ measured_at: number }>;
+    expect(completions).toEqual([{ measured_at: completions[0]!.measured_at }, { measured_at: completions[0]!.measured_at }]);
+    expect(completions[0]!.measured_at).toBeGreaterThan(requestedAt);
+
+    metrics.define({ id: "ordering.late", sourceQuery: "SELECT 1 AS value" });
+    metrics.record("ordering.late", 9, { measuredAt: 2_000 });
+    await measureSourceMetrics({ bus, persistDir, measuredAt: 1_000, isDue: ({ id }) => id === "ordering.late" });
+    expect(metrics.get("ordering.late")!.observation).toMatchObject({ value: 9, measuredAt: 2_000 });
+
+    metrics.define({
+      id: "ordering.rate", type: "counter", threshold: 999_999, alertOp: ">",
+      sourceQuery: "SELECT 2 AS value", config: { alert: { mode: "rate", max_rate: 2_000, per: "hour" } },
+    });
+    metrics.record("ordering.rate", 1, { measuredAt: 1_000 });
+    await measureSourceMetrics({ bus, persistDir, measuredAt: 2_000, isDue: ({ id }) => id === "ordering.rate" });
+    expect(metrics.evaluate("ordering.rate")[0]).toMatchObject({ status: "breached", calculation: { value: 2 } });
+  });
+
   it("enforces read-only queries while preserving SQLite first-statement behavior and writer continuity", async () => {
     const db = getDb(persistDir);
     db.exec("CREATE TABLE proof_marker(value INTEGER NOT NULL); INSERT INTO proof_marker VALUES (1)");
