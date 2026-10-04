@@ -815,7 +815,8 @@ describe("Telegram refresh lifecycle", () => {
     const f = fixture();
     const action = "Use the unchanged fallback action.";
     try {
-      await f.command("/apps may");
+      // Finish both configured chats' initial empty refresh before testing manual reads.
+      await waitFor(() => f.listReads.length === 2);
       f.tasks.get("first")!.humanAction = { requestedAction: action };
 
       await f.command("/todo");
@@ -836,7 +837,8 @@ describe("Telegram refresh lifecycle", () => {
   it("delivers an explicit todo directly from its list snapshot without detail reads", async () => {
     const f = fixture();
     try {
-      await f.command("/apps may");
+      // Finish both configured chats' initial empty refresh before testing manual reads.
+      await waitFor(() => f.listReads.length === 2);
       f.tasks.get("first")!.humanAction = { requestedAction: "Use the readable compact action." };
       f.readFailures.add("first");
       await f.command("/todo");
