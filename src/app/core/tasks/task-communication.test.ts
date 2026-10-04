@@ -5,9 +5,21 @@ import { readConversationTaskInputs } from "../state/conversation-task-turns.js"
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { Type, defineApp, type TaskExecutor, type TaskCommunication, type TaskAttempt } from "@may-agent/sdk";
+import {
+  Type,
+  defineApp,
+  type TaskExecutor,
+  type TaskCommunication,
+  type TaskAttempt,
+} from "@may-agent/sdk";
+import { createAssistantMessageEventStream, type ToolCall } from "@earendil-works/pi-ai";
 import { DbWriter } from "../../../lib/db-writer.js";
+import { createAgentRun } from "../../../lib/agent-runner.js";
+import { SubagentManager } from "../../../lib/manager.js";
 import { getDb, closeDb } from "../../../lib/requests.js";
+import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
+import { fakeModel } from "../../../../test/fixtures/model.js";
+import { usageReply } from "../../../../test/fixtures/execution-usage.js";
 import { EventBus } from "../events/bus.js";
 import { AppRegistry } from "../apps/registry.js";
 import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
@@ -27,6 +39,7 @@ async function fixture(
   conversationMode?: "task" | "agent",
   beforeAgent?: (input: TaskAgentInput) => Promise<void>,
   conversations?: TaskConversationRunner,
+  managedAgents?: ReturnType<typeof createTaskAgentRunner>,
 ) {
   const root = mkdtempSync(join(tmpdir(), "task-communication-"));
   const appDir = join(root, "sample.app");
@@ -76,16 +89,18 @@ async function fixture(
         executors: { fixture: execute },
         conversations,
         agents: {
-          available: () => true,
-          prepare: async () => true,
-          role: () => ({ agent: "owner", instructions: "Handle input" }),
+          available: (agent) => managedAgents?.available(agent) ?? true,
+          prepare: async (input) => managedAgents?.prepare(input) ?? true,
+          role: (agent) => managedAgents?.role(agent) ?? { agent: "owner", instructions: "Handle input" },
           snapshot() {
             return this;
           },
           async execute(input) {
             const { attempt } = input;
             await beforeAgent?.(input);
-            return { runId: attempt.attemptId, handlerResult: { ...(await execute(attempt)), actions: [] } };
+            return managedAgents
+              ? managedAgents.execute(input)
+              : { runId: attempt.attemptId, handlerResult: { ...(await execute(attempt)), actions: [] } };
           },
         },
       },
@@ -718,6 +733,213 @@ test("managed finish preflight checks a combined decision without keeping state 
     ).toHaveLength(1);
   } finally {
     await f.close();
+  }
+});
+
+test("managed finish corrects invalid input scope in one model execution and preserves independent work", async () => {
+  const managerRoot = mkdtempSync(join(tmpdir(), "task-managed-finish-"));
+  let originalKey = "";
+  let liveKey = "";
+  let laterKey = "";
+  let wrongTaskKey = "";
+  let addLaterInput = () => {};
+  let modelRequests = 0;
+  let usefulFeedback = "";
+  const proposal = {
+    state: "waiting" as const,
+    summary: "Recorded the reviewed work; independent review remains",
+    facts: ["review:complete"],
+    report: true as const,
+    result: { artifact: "candidate" },
+    inputKeys: [] as string[],
+    conditions: [
+      {
+        id: "independent-review",
+        type: "review.completed",
+        subject: "change:candidate",
+        expected: true,
+        owner: "app:sample",
+      },
+    ],
+  };
+  const finishCall = (id: string, result: typeof proposal): ToolCall => ({
+    type: "toolCall",
+    id,
+    name: "finish",
+    arguments: {
+      status: "success",
+      summary: result.summary,
+      verification_facts: ["Synthetic managed execution completed"],
+      result,
+    },
+  });
+  const manager = new SubagentManager({
+    persistDir: managerRoot,
+    agentRunFactory: (config) =>
+      createAgentRun({
+        ...config,
+        streamFn: (_model, context) => {
+          modelRequests++;
+          if (modelRequests === 2) {
+            usefulFeedback = JSON.stringify(context.messages);
+            addLaterInput();
+          }
+          const result = modelRequests === 1
+            ? { ...proposal, inputKeys: [wrongTaskKey] }
+            : { ...proposal, inputKeys: [originalKey, liveKey] };
+          const stream = createAssistantMessageEventStream();
+          const message = usageReply({
+            stopReason: "toolUse",
+            content: [finishCall(`finish-${modelRequests}`, result)],
+          });
+          stream.push({ type: "done", reason: "toolUse", message });
+          return stream;
+        },
+      }),
+  });
+  const definition = {
+    name: "owner",
+    description: "Synthetic Task owner",
+    domain: "tests",
+    systemPrompt: "Finish the synthetic Task once its explicit input scope is valid.",
+    projectRoot: managerRoot,
+    tools: [],
+    model: fakeModel(),
+  };
+  manager.register(definition);
+  const agents = createTaskAgentRunner({ manager }, new Map([[definition.name, definition]]));
+  const f = await fixture(
+    async () => proposal,
+    "task",
+    async ({ attempt }) => {
+      const accepted = Promise.withResolvers<void>();
+      const unsubscribe = attempt.onEvent((event, accept) => {
+        if (event.type !== "app.task.requested") return;
+        accept();
+        unsubscribe();
+        accepted.resolve();
+      });
+      const config = appTaskContext({
+        appDir: "fixture",
+        projectDir: "fixture",
+        agent: "owner",
+        resourceStore: f.store,
+      });
+      liveKey = "task:synthetic-live-input";
+      const liveEvent = {
+        type: "app.task.requested",
+        source: "fixture",
+        owner: "agent:owner",
+        target: { appId: "sample", taskId: attempt.task.id },
+        idempotencyKey: liveKey,
+        data: {
+          appId: "sample",
+          taskId: attempt.task.id,
+          idempotencyKey: liveKey,
+          request: {
+            id: "synthetic-live-input",
+            source: { kind: "system", id: "fixture" },
+            input: { kind: "message", data: {} },
+          },
+        },
+      };
+      observeAppTaskIntent(config, {
+        appAgent: "owner",
+        intent: { ...f.store.readTask(attempt.task.id)!.spec, id: attempt.task.id },
+        admissionKey: liveKey,
+        trigger: liveEvent,
+      });
+      f.bus.emit(liveEvent);
+      await accepted.promise;
+      proposal.inputKeys = [originalKey, liveKey];
+
+      addLaterInput = () => {
+        laterKey = "task:synthetic-later-input";
+        observeAppTaskIntent(config, {
+          appAgent: "owner",
+          intent: { ...f.store.readTask(attempt.task.id)!.spec, id: attempt.task.id },
+          admissionKey: laterKey,
+          trigger: {
+            ...liveEvent,
+            idempotencyKey: laterKey,
+            data: {
+              ...liveEvent.data,
+              idempotencyKey: laterKey,
+              request: {
+                id: "synthetic-later-input",
+                source: { kind: "system", id: "fixture" },
+                input: { kind: "message", data: {} },
+              },
+            },
+          },
+        });
+      };
+    },
+    undefined,
+    agents,
+  );
+  try {
+    const original = f.admit("ask").item;
+    originalKey = original.taskAdmissionKey!;
+    wrongTaskKey = "task:synthetic-wrong-task-input";
+    const config = appTaskContext({
+      appDir: "fixture",
+      projectDir: "fixture",
+      agent: "owner",
+      resourceStore: f.store,
+    });
+    observeAppTaskIntent(config, {
+      appAgent: "owner",
+      intent: {
+        ...f.store.readTask(original.executionTaskId!)!.spec,
+        id: "synthetic-wrong-task",
+        agent: "reviewer",
+      },
+      admissionKey: wrongTaskKey,
+      trigger: {
+        type: "app.task.requested",
+        source: "fixture",
+        owner: "agent:reviewer",
+        target: { appId: "sample", taskId: "synthetic-wrong-task" },
+        idempotencyKey: wrongTaskKey,
+        data: {
+          appId: "sample",
+          taskId: "synthetic-wrong-task",
+          idempotencyKey: wrongTaskKey,
+          request: {
+            id: "synthetic-wrong-task-input",
+            source: { kind: "system", id: "fixture" },
+            input: { kind: "review", data: {} },
+          },
+        },
+      },
+    });
+    await f.run(original.executionTaskId!);
+
+    expect(modelRequests).toBe(2);
+    expect(usefulFeedback).toContain(
+      `finish() error: inputKeys contains input not outstanding on this Task: ${wrongTaskKey}`,
+    );
+    const taskTree = f.store.readTaskContext({
+      taskIds: [original.executionTaskId!],
+      admissionIds: [originalKey, liveKey, laterKey],
+    });
+    expect(taskTree.appTaskAdmissions?.[originalKey]?.reportAttemptId).toBeTruthy();
+    expect(taskTree.appTaskAdmissions?.[liveKey]?.reportAttemptId).toBeTruthy();
+    expect(taskTree.appTaskAdmissions?.[laterKey]?.reportAttemptId).toBeUndefined();
+    expect(f.store.readTask(original.executionTaskId!)?.status.conditionIds).toEqual(["independent-review"]);
+    const attempts = Object.values(taskTree.attempts ?? {});
+    expect(attempts).toHaveLength(1);
+    expect(attempts[0]?.acceptedResult).toMatchObject({
+      inputKeys: [originalKey, liveKey],
+      result: { artifact: "candidate" },
+      acceptedLiveEventIds: [expect.any(Number)],
+    });
+    expect(laterKey).not.toBe("");
+  } finally {
+    await f.close();
+    closeDb(managerRoot);
+    rmSync(managerRoot, { recursive: true, force: true });
   }
 });
 
