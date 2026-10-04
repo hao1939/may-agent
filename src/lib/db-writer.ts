@@ -161,9 +161,10 @@ export function findPersistedEventId(db: SqliteDb, event: AgentEvent): number | 
   const target = isRecord(record.target) ? record.target : {};
   const source = eventSource(record);
   const owner = eventOwner(record);
+  // The nonempty predicate lets SQLite use the existing partial unique index.
   const row = db.prepare(`SELECT id FROM events
     WHERE event_type = ? AND ingress_source = ? AND idempotency_scope = ?
-      AND idempotency_key = ? AND idempotency_hash = ?`).get(
+      AND idempotency_key = ? AND idempotency_key != '' AND idempotency_hash = ?`).get(
     event.type, ingressSource(event, source), idempotencyScope(eventCorrelation({ ...payload, ...target }), owner),
     key, idempotencyHash(event, payload),
   ) as { id?: unknown } | undefined;
@@ -688,6 +689,36 @@ export class DbWriter {
     project?: () => void,
   ): number | null {
     const timestamp = Date.now();
+    // Prepare identity before taking our writer slot. An outer caller transaction
+    // still owns its lock; unkeyed Events need no identity hash in either case.
+    const persistedPayload = normalizePersistedEscalationPayload(event.type, payload);
+    if (persistedPayload !== payload && isCanonicalEventEnvelope(event)) {
+      (event as AgentEvent & { data: Record<string, unknown> }).data = persistedPayload;
+    }
+    const envelope = event as AgentEvent & { target?: unknown };
+    const target =
+      envelope.target && typeof envelope.target === "object" && !Array.isArray(envelope.target)
+        ? (envelope.target as Record<string, unknown>)
+        : {};
+    // Routing and evidence correlation are independent. Retain the authored
+    // target separately; a Task emission indexes its producer, not its destination.
+    const emissionFence = (event as AgentEvent & { [EVENT_TASK_EMISSION_FENCE]?: EventTaskEmissionFence })[
+      EVENT_TASK_EMISSION_FENCE
+    ];
+    const observedCorrelation = eventCorrelation({ ...persistedPayload, ...target });
+    const correlation = emissionFence
+      ? {
+          ...observedCorrelation,
+          projectId: emissionFence.appId,
+          taskId: emissionFence.taskId,
+          attemptId: emissionFence.attemptId,
+        }
+      : observedCorrelation;
+    const idempotencyKey =
+      typeof persistedPayload.idempotencyKey === "string" ? persistedPayload.idempotencyKey.trim() : "";
+    const trustedIngressSource = ingressSource(event, source);
+    const scope = idempotencyScope(correlation, owner);
+    const inputHash = idempotencyKey ? idempotencyHash(event, persistedPayload) : null;
     const nested = inStateTransaction(this.db);
     const commit = () => this.db.exec(nested ? "RELEASE event_write" : "COMMIT");
     const rollback = () => {
@@ -700,34 +731,6 @@ export class DbWriter {
       this.db.exec(nested ? "SAVEPOINT event_write" : "BEGIN IMMEDIATE");
     });
     try {
-      const persistedPayload = normalizePersistedEscalationPayload(event.type, payload);
-      if (persistedPayload !== payload && isCanonicalEventEnvelope(event)) {
-        (event as AgentEvent & { data: Record<string, unknown> }).data = persistedPayload;
-      }
-      const envelope = event as AgentEvent & { target?: unknown };
-      const target =
-        envelope.target && typeof envelope.target === "object" && !Array.isArray(envelope.target)
-          ? (envelope.target as Record<string, unknown>)
-          : {};
-      // Routing and evidence correlation are independent. Retain the authored
-      // target separately; a Task emission indexes its producer, not its destination.
-      const emissionFence = (event as AgentEvent & { [EVENT_TASK_EMISSION_FENCE]?: EventTaskEmissionFence })[
-        EVENT_TASK_EMISSION_FENCE
-      ];
-      const observedCorrelation = eventCorrelation({ ...persistedPayload, ...target });
-      const correlation = emissionFence
-        ? {
-            ...observedCorrelation,
-            projectId: emissionFence.appId,
-            taskId: emissionFence.taskId,
-            attemptId: emissionFence.attemptId,
-          }
-        : observedCorrelation;
-      const idempotencyKey =
-        typeof persistedPayload.idempotencyKey === "string" ? persistedPayload.idempotencyKey.trim() : "";
-      const trustedIngressSource = ingressSource(event, source);
-      const scope = idempotencyScope(correlation, owner);
-      const inputHash = idempotencyHash(event, persistedPayload);
       if (idempotencyKey) {
         const existing = this.db
           .prepare(
@@ -737,7 +740,7 @@ export class DbWriter {
              WHERE e.event_type = ?
                AND e.ingress_source = ?
                AND e.idempotency_scope = ?
-               AND e.idempotency_key = ?
+               AND e.idempotency_key = ? AND e.idempotency_key != ''
              LIMIT 1`,
           )
           .get(event.type, trustedIngressSource, scope, idempotencyKey) as
@@ -830,6 +833,7 @@ export class DbWriter {
           );
         }
       }
+      // A duplicate returns its receipt without new artifact I/O.
       const body = prepareEventBody(this.persistDir, persistedPayload);
       // Preserve envelope extensions without a column per field. Payload and
       // causal metadata already have their own durable representations.
