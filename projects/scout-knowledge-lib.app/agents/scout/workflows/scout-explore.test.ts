@@ -19,7 +19,10 @@ import { publicationTestFixture } from "./lib/publication-test-fixture";
 import { admitTaskReconcileResult, type WorkflowContext } from "@may-agent/sdk";
 import { Check } from "typebox/value";
 import {
+  acquireArxivSource,
   admittedOutputPaths,
+  arxivEndpoint,
+  arxivTimeoutMs,
   buildExploreTask,
   duplicateSourceReferences,
   executeScoutExplore,
@@ -202,7 +205,19 @@ describe("scout-explore workflow prompt", () => {
       output: join(root, "output"),
     };
 
-    const result = await executeScoutExplore(ctx);
+    const result = await executeScoutExplore(ctx, {
+      prepareXhsSession: async () => ({}) as never,
+      searchXhs: () => ({}) as never,
+      acquireArxiv: async () => ({
+        endpoint: "https://export.arxiv.org/api/query",
+        status: 200,
+        body: "<feed />",
+        latencyMs: 5,
+        requestCount: 1,
+        retryAfter: null,
+        deferUntil: null,
+      }),
+    });
 
     expect(result.status).toBe("blocked");
     expect(result.facts).toMatchObject({
@@ -347,12 +362,215 @@ describe("scout-explore workflow prompt", () => {
       "arxiv",
     );
 
-    expect(task).toContain("Every arXiv HTTP request");
-    expect(task).toContain("`--connect-timeout`");
-    expect(task).toContain("`--max-time`");
-    expect(task).toContain("do not run an unbounded retrieval");
-    expect(task).toContain("Return an evidence-backed no-op with outputs: []");
-    expect(task).toContain("do not substitute another source");
+    expect(task).toContain("one canonical bounded arXiv request");
+    expect(task).toContain("Do not make another arXiv request");
+    expect(task).toContain("retry, fallback, pagination, or query variant");
+    expect(task).toContain("HTTP status, latency, request count");
+    expect(task).toContain("Retry-After availability");
+    expect(task).toContain("Do not substitute another source");
+  });
+
+  it.each([
+    {
+      name: "success",
+      status: 200,
+      body: "<feed><entry /></feed>",
+      retryAfter: null,
+      expectedDeferUntil: null,
+    },
+    {
+      name: "empty-body 406",
+      status: 406,
+      body: "",
+      retryAfter: null,
+      expectedDeferUntil: null,
+    },
+    {
+      name: "429 with Retry-After",
+      status: 429,
+      body: "Rate exceeded.",
+      retryAfter: "7200",
+      expectedDeferUntil: "2026-10-01T02:00:00.050Z",
+    },
+    {
+      name: "429 with oversized numeric Retry-After",
+      status: 429,
+      body: "Rate exceeded.",
+      retryAfter: "172800",
+      expectedDeferUntil: "2026-10-01T04:00:00.050Z",
+    },
+    {
+      name: "429 with oversized HTTP-date Retry-After",
+      status: 429,
+      body: "Rate exceeded.",
+      retryAfter: "Fri, 02 Oct 2026 00:00:00 GMT",
+      expectedDeferUntil: "2026-10-01T04:00:00.050Z",
+    },
+    {
+      name: "429 without Retry-After",
+      status: 429,
+      body: "Rate exceeded.",
+      retryAfter: null,
+      expectedDeferUntil: null,
+    },
+  ])(
+    "acquires one canonical arXiv response for $name",
+    async ({ status, body, retryAfter, expectedDeferUntil }) => {
+      let requests = 0;
+      let configuredTimeoutMs: number | null = null;
+      const times = [
+        Date.parse("2026-10-01T00:00:00.000Z"),
+        Date.parse("2026-10-01T00:00:00.050Z"),
+        Date.parse("2026-10-01T00:00:00.075Z"),
+      ];
+      const acquisition = await acquireArxivSource(
+        (async (input, init) => {
+          requests += 1;
+          expect(String(input)).toBe(arxivEndpoint);
+          expect(init).toMatchObject({
+            headers: {
+              Accept: "application/atom+xml",
+              "User-Agent": expect.stringContaining("ScoutKnowledgeLibrary"),
+            },
+            redirect: "follow",
+            signal: expect.any(AbortSignal),
+          });
+          return new Response(body, {
+            status,
+            headers: retryAfter ? { "Retry-After": retryAfter } : undefined,
+          });
+        }) as typeof fetch,
+        () => times.shift() ?? Date.parse("2026-10-01T00:00:00.075Z"),
+        (milliseconds) => {
+          configuredTimeoutMs = milliseconds;
+          return new AbortController().signal;
+        },
+      );
+
+      expect(requests).toBe(1);
+      expect(configuredTimeoutMs).toBe(arxivTimeoutMs);
+      expect(acquisition).toMatchObject({
+        endpoint: arxivEndpoint,
+        status,
+        body,
+        requestCount: 1,
+        retryAfter,
+        deferUntil: expectedDeferUntil,
+      });
+      expect(acquisition.latencyMs).toBeGreaterThanOrEqual(0);
+    },
+  );
+
+  it("records one bounded arXiv fetch failure without retrying", async () => {
+    let requests = 0;
+    const times = [1000, 1125];
+    const acquisition = await acquireArxivSource(
+      (async () => {
+        requests += 1;
+        throw new DOMException("fixture timeout", "TimeoutError");
+      }) as typeof fetch,
+      () => times.shift() ?? 1125,
+    );
+
+    expect(requests).toBe(1);
+    expect(acquisition).toEqual({
+      endpoint: arxivEndpoint,
+      status: null,
+      body: "",
+      latencyMs: 125,
+      requestCount: 1,
+      retryAfter: null,
+      deferUntil: null,
+      error: "fixture timeout",
+    });
+  });
+
+  it.each([
+    { status: 406, retryAfter: null },
+    { status: 429, retryAfter: "120" },
+    { status: 429, retryAfter: null },
+  ])(
+    "does not dispatch or retry after arXiv HTTP $status (Retry-After=$retryAfter)",
+    async ({ status, retryAfter }) => {
+      let acquisitions = 0;
+      let agentCalls = 0;
+      const ctx = workflowContext(async () => {
+        agentCalls += 1;
+        throw new Error("research agent must not run after source failure");
+      }, "arxiv");
+      const result = await executeScoutExplore(ctx, {
+        prepareXhsSession: async () => ({}) as never,
+        searchXhs: () => ({}) as never,
+        acquireArxiv: async () => {
+          acquisitions += 1;
+          return {
+            endpoint: arxivEndpoint,
+            status,
+            body: status === 406 ? "" : "Rate exceeded.",
+            latencyMs: 42,
+            requestCount: 1,
+            retryAfter,
+            deferUntil: retryAfter ? "2026-10-01T00:02:00.000Z" : null,
+          };
+        },
+      });
+
+      expect(acquisitions).toBe(1);
+      expect(agentCalls).toBe(0);
+      expect(result).toMatchObject({
+        status: "done",
+        output: {
+          state: "converged",
+          facts: expect.arrayContaining([
+            expect.stringContaining('"requestCount":1'),
+            expect.stringContaining(`"status":${status}`),
+            expect.stringContaining(
+              `"retryAfterAvailable":${retryAfter !== null}`,
+            ),
+            "result:evidence-backed-no-op",
+          ]),
+          actions: [],
+        },
+      });
+    },
+  );
+
+  it("does not dispatch after an arXiv timeout/fetch failure", async () => {
+    let agentCalls = 0;
+    const ctx = workflowContext(async () => {
+      agentCalls += 1;
+      throw new Error("research agent must not run after source failure");
+    }, "arxiv");
+    const result = await executeScoutExplore(ctx, {
+      prepareXhsSession: async () => ({}) as never,
+      searchXhs: () => ({}) as never,
+      acquireArxiv: async () => ({
+        endpoint: arxivEndpoint,
+        status: null,
+        body: "",
+        latencyMs: 30_000,
+        requestCount: 1,
+        retryAfter: null,
+        deferUntil: null,
+        error: "fixture timeout",
+      }),
+    });
+
+    expect(agentCalls).toBe(0);
+    expect(result).toMatchObject({
+      status: "done",
+      output: {
+        state: "converged",
+        summary: expect.stringContaining("fetch failure (fixture timeout)"),
+        facts: expect.arrayContaining([
+          expect.stringContaining('"status":null'),
+          expect.stringContaining('"latencyMs":30000'),
+          expect.stringContaining('"requestCount":1'),
+          "result:evidence-backed-no-op",
+        ]),
+        actions: [],
+      },
+    });
   });
 
   it("keeps GitHub exploration read-only, bounded, and complete-search aware", () => {

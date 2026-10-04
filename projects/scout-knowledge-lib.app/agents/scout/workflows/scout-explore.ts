@@ -69,6 +69,22 @@ type SourceObservation = {
 
 type AgentSourceObservation = Omit<SourceObservation, "checkedAt">;
 
+type ArxivAcquisition = {
+  endpoint: string;
+  status: number | null;
+  body: string;
+  latencyMs: number;
+  requestCount: 1;
+  retryAfter: string | null;
+  deferUntil: string | null;
+  error?: string;
+};
+
+type ArxivPacket = Pick<
+  ArxivAcquisition,
+  "endpoint" | "status" | "body" | "latencyMs" | "requestCount" | "retryAfter" | "deferUntil"
+>;
+
 export const ExploreAgentResultSchema = Type.Object({
   summary: Type.String({ minLength: 1, maxLength: 1000 }),
   source: Type.Object({
@@ -93,14 +109,79 @@ type ExploreAgentResult = {
   researchRecommendation?: unknown;
 };
 
+export const arxivEndpoint =
+  "https://export.arxiv.org/api/query?search_query=cat%3Acs.AI&start=0&max_results=20&sortBy=submittedDate&sortOrder=descending";
+export const arxivTimeoutMs = 30_000;
+const maxRetryAfterMs = 4 * 60 * 60 * 1000;
+
+function boundedRetryAfter(
+  value: string | null,
+  now: number,
+): { retryAfter: string | null; deferUntil: string | null } {
+  if (!value) return { retryAfter: null, deferUntil: null };
+  const seconds = /^\d+$/.test(value.trim()) ? Number(value.trim()) : null;
+  const requestedAt =
+    seconds === null ? Date.parse(value) : now + seconds * 1000;
+  if (!Number.isFinite(requestedAt) || requestedAt <= now)
+    return { retryAfter: value, deferUntil: null };
+  return {
+    retryAfter: value,
+    deferUntil: new Date(
+      Math.min(requestedAt, now + maxRetryAfterMs),
+    ).toISOString(),
+  };
+}
+
+export async function acquireArxivSource(
+  fetchImpl: typeof fetch = fetch,
+  now: () => number = Date.now,
+  timeoutSignal: (milliseconds: number) => AbortSignal = AbortSignal.timeout,
+): Promise<ArxivAcquisition> {
+  const startedAt = now();
+  try {
+    const response = await fetchImpl(arxivEndpoint, {
+      headers: {
+        Accept: "application/atom+xml",
+        "User-Agent": "ScoutKnowledgeLibrary/1.0 (bounded research retrieval)",
+      },
+      redirect: "follow",
+      // This total bound also bounds the connection phase; there is no retry.
+      signal: timeoutSignal(arxivTimeoutMs),
+    });
+    const body = await response.text();
+    const retry = boundedRetryAfter(response.headers.get("retry-after"), now());
+    return {
+      endpoint: arxivEndpoint,
+      status: response.status,
+      body,
+      latencyMs: Math.max(0, now() - startedAt),
+      requestCount: 1,
+      ...retry,
+    };
+  } catch (error) {
+    return {
+      endpoint: arxivEndpoint,
+      status: null,
+      body: "",
+      latencyMs: Math.max(0, now() - startedAt),
+      requestCount: 1,
+      retryAfter: null,
+      deferUntil: null,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 export type ScoutExploreDependencies = {
   prepareXhsSession(appDir: string): Promise<XhsCredentialStatus>;
   searchXhs(appDir: string, query: string): XhsSearchResult;
+  acquireArxiv?(): Promise<ArxivAcquisition>;
 };
 
 const defaultDependencies: ScoutExploreDependencies = {
   prepareXhsSession,
   searchXhs,
+  acquireArxiv: acquireArxivSource,
 };
 
 export function buildExploreTask(
@@ -111,6 +192,7 @@ export function buildExploreTask(
   },
   xhsPacket?: { query: string; items: XhsSearchItem[]; evidence?: string[] },
   selectedSource?: SourceName,
+  arxivPacket?: ArxivPacket,
 ): string {
   const source = selectedSource ?? reconciliationSource(task);
   const sourceContract =
@@ -131,8 +213,14 @@ ${JSON.stringify(xhsPacket ?? { query: "missing", items: [] }, null, 2)}
       : source === "arxiv"
         ? `
 arXiv execution contract:
-- Every arXiv HTTP request must have both a bounded connection timeout and a bounded total timeout. For curl, supply both \`--connect-timeout\` and \`--max-time\`; do not run an unbounded retrieval.
-- If arXiv cannot be reached within those bounds, do not substitute another source. Return an evidence-backed no-op with outputs: [], naming the attempted endpoint and the timeout or retrieval error.
+- The workflow already made the cycle's one canonical bounded arXiv request. Do not make another arXiv request, retry, fallback, pagination, or query variant in this run.
+- Use the workflow-owned source packet below. Do not substitute another source.
+- Preserve the packet's endpoint, HTTP status, latency, request count, and Retry-After availability in the assessment. The workflow owns checkedAt.
+
+Current arXiv source packet:
+\`\`\`json
+${JSON.stringify(arxivPacket ?? { error: "missing workflow packet" }, null, 2)}
+\`\`\`
 `
         : source === "github"
           ? `
@@ -914,7 +1002,27 @@ export async function executeScoutExplore(
   let xhsPacket:
     | { query: string; items: XhsSearchItem[]; evidence?: string[] }
     | undefined;
+  let arxivPacket: ArxivPacket | undefined;
   let sourceEvidence: string[] = [];
+
+  if (source === "arxiv") {
+    const acquisition = await (
+      dependencies.acquireArxiv ?? acquireArxivSource
+    )();
+    arxivPacket = acquisition;
+    sourceEvidence = [
+      `arxiv-request:${JSON.stringify({ endpoint: acquisition.endpoint, status: acquisition.status, latencyMs: acquisition.latencyMs, requestCount: acquisition.requestCount, retryAfterAvailable: acquisition.retryAfter !== null, retryAfter: acquisition.retryAfter, deferUntil: acquisition.deferUntil })}`,
+    ];
+    if (acquisition.status !== 200) {
+      const summary = `The one canonical arXiv request returned ${acquisition.status === null ? `a fetch failure (${acquisition.error ?? "unknown"})` : `HTTP ${acquisition.status}`}; no same-run retry or query variant was made.`;
+      return ctx.done(summary, {
+        state: "converged",
+        summary,
+        facts: [...sourceEvidence, "result:evidence-backed-no-op"],
+        actions: [],
+      } satisfies TaskHandlerResult);
+    }
+  }
 
   if (source === "xhs") {
     const credential = await dependencies.prepareXhsSession(appDir);
@@ -997,6 +1105,7 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}
       { appDir, projectDir: candidateProjectDir },
       xhsPacket,
       source,
+      arxivPacket,
     ) +
     `\n\nPublication boundary: edit durable content only in ${candidateProjectDir}.
 The final library root is ${beforePublication.canonicalProjectRoot}; use that
