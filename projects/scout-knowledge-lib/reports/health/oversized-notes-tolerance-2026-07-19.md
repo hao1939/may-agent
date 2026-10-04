@@ -1,6 +1,6 @@
 <ai_context>
-summary: "Rolling review record for oversized canonical notes. Documents why each exceeds the 800-line threshold and whether a split is warranted."
-last_updated: "2026-09-26"
+summary: "Rolling review record for oversized canonical notes. Documents why each exceeds the 800-line threshold and whether a split is warranted; current through the October 4 evaluation and enforcement-evidence review."
+last_updated: "2026-10-04"
 </ai_context>
 
 # Oversized Notes Tolerance Record — 2026-07-19
@@ -201,15 +201,33 @@ source claims or their evidence limitations.
 **Disposition:** split the verified cluster; retain the broader runtime catalog
 and its published path. No child task is warranted.
 
+## Targeted recurrence — 2026-10-04 (evaluation and enforcement evidence)
+
+The observer reported `agent-evaluation.md` at 2,962 physical lines and
+`agent-security-enforcement-evidence.md` at 1,980. Direct `wc -l` measurements
+were again one lower: 2,961 and 1,979 newline-counted lines.
+
+| Note | Observer / direct lines | Current evidence and disposition |
+|------|------------------------:|----------------------------------|
+| `agent-evaluation.md` | 2962 / 2961 | **The planned split is now a real maintenance target, but not a safe inline move in this signal review.** The note has 74 level-three headings. Its coherent `Durable Patterns` catalog now occupies lines 30–1810, after which the older benchmark, tooling, metrics, and research-navigation material remains. Intake has slowed but not stopped: four source publications touched the note after the September 26 review, most recently twice on October 2. A library-wide reference scan found 173 path mentions across 48 other Markdown files, consistent with the previously observed deep-link preservation burden. The next isolated pass should freeze the `Durable Patterns` heading set, move that catalog intact to one companion, leave exact heading-level forwarding links at the published parent path, and verify retained digest snapshots before publication. |
+| `agent-security-enforcement-evidence.md` | 1980 / 1979 | **No-op for active intake.** This companion was updated at 00:13 UTC on October 4, about two minutes before the health observation. It now has 21 level-two studies and 11 level-three follow-ups; recent additions remain distributed across the evidence catalog rather than forming a verified second-companion boundary. A reference scan also found 24 path mentions across six Markdown files, including 14 fragment-bearing forms. Splitting immediately after the newest source landed would repeat the unsafe timing documented on September 26. Re-review after intake settles and only when a thematic block can be moved with exact forwarding anchors. |
+
+This pass updates the existing rolling disposition rather than creating a
+second report or a threshold-only rewrite. The evaluation split remains bounded
+work for the standing maintenance task, so no duplicate child assignment is
+created. The security signal is closed for this cycle by the exact active-intake
+no-op above; its unchanged line-count fact alone does not justify moving content.
+
 ## Current summary
 
 The previously recommended diagnostic-layers split is complete. The runtime
-hardening recurrence now also has a verified disposition: a coherent
-five-pattern enforcement-observability cluster moved intact to a dedicated
-companion, while exact forwarding headings preserve published links and the
-parent returned below the review threshold. `agent-evaluation.md` remains a
-future split candidate after its source intake settles. The enforcement-evidence
-companion remains a separate catalog whose September 26 growth was distributed
-rather than a stable second-split boundary. Other oversized signals are
-format-appropriate logs/ledgers or previously reviewed notes. The unsourced
+hardening recurrence also has a verified disposition: a coherent five-pattern
+enforcement-observability cluster moved intact to a dedicated companion, while
+exact forwarding headings preserve published links and the parent returned below
+the review threshold. `agent-evaluation.md` has now outgrown tolerance and has a
+frozen high-level split direction for a later isolated pass; this review does not
+risk its 48-file reference surface with an inline move. The enforcement-evidence
+companion remains in active source intake as of minutes before the October 4
+signal and still lacks a stable second-split boundary. Other oversized signals
+are format-appropriate logs/ledgers or previously reviewed notes. The unsourced
 backlog received a small evidence-checked batch rather than a bulk metric edit.
