@@ -157,6 +157,12 @@ inside writes, and diagnose slow reads separately: WAL readers need not hold
 the writer slot, but synchronous reads can still stall the Host. The
 [October 4 SQLite review](../archive/reviews/sqlite-contention-20261004.md)
 records the live evidence, isolated regressions and candidate status.
+The follow-up [SQL audit](../archive/reviews/sql-query-audit-20261004.md) records
+query-by-query screening, measured rewrite candidates and remaining transaction
+scope work. Audit the actual parameters, plan, read frequency, intermediate
+payload size and enclosing transaction; a scan or output LIMIT alone is not a
+performance verdict. Prefer matching existing indexes and selecting small
+identities before loading full bodies over adding indexes or retries by default.
 
 Claimed request attachment commits Task input, request wait/claim release and
 Topic correlation together. Settlement persists linked request readiness in
