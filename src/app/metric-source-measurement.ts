@@ -200,20 +200,22 @@ export async function measureSourceMetrics(options: {
     }
     log("warn", `[metrics:${id}] ${reason}`);
   };
-  const defaultMeasuredAt = options.measuredAt ?? Date.now();
   const queryNote = options.triggerEventId ? `source-query; trigger-event:${options.triggerEventId}` : "source-query";
   const commandNote = options.triggerEventId
     ? `source-command; trigger-event:${options.triggerEventId}`
     : "source-command";
   // Cache only this measurement pass, including failures. Execute the exact
   // declared command, once, when its first due command-backed metric is read.
-  // Query-backed or not-due definitions must not trigger producer side effects.
-  const commandOutputs = new Map<string, Promise<string>>();
+  // Its output and completion instant are one producer result shared by every
+  // metric that consumes it. Query-backed or not-due definitions must not
+  // trigger producer side effects.
+  const commandOutputs = new Map<string, Promise<{ output: string; completedAt: number }>>();
 
   for (const row of dueRows) {
     options.onAttempt?.(row);
     try {
       let sample: CommandSample | null = null;
+      let completedAt: number | undefined;
       let measuredBy = "runtime:metric-source-query";
       let note = queryNote;
       if (row.source_query) {
@@ -227,22 +229,25 @@ export async function measureSourceMetrics(options: {
         } finally {
           sourceDb.close();
         }
+        completedAt = Date.now();
       } else if (row.source_command) {
         measuredBy = "runtime:metric-source-command";
         note = commandNote;
-        let output = commandOutputs.get(row.source_command);
-        if (!output) {
-          output = executeCommand(row.source_command);
-          commandOutputs.set(row.source_command, output);
+        let result = commandOutputs.get(row.source_command);
+        if (!result) {
+          result = executeCommand(row.source_command).then((output) => ({ output, completedAt: Date.now() }));
+          commandOutputs.set(row.source_command, result);
         }
-        sample = parseCommandOutput(await output, row.id);
+        const completed = await result;
+        completedAt = completed.completedAt;
+        sample = parseCommandOutput(completed.output, row.id);
       }
       if (!sample) {
         failed(row.id, "Source returned no finite numeric sample");
         continue;
       }
       metrics.record(row.id, sample.value, {
-        measuredAt: sample.measuredAt ?? defaultMeasuredAt,
+        measuredAt: sample.measuredAt ?? options.measuredAt ?? completedAt,
         measuredBy,
         sampleSize: sample.sampleSize,
         note: sample.note ?? note,
@@ -385,11 +390,11 @@ export function attachMetricSourceMeasurement(options: {
   return attachMetricPass(options.bus, METRIC_SOURCE_MEASUREMENT_EVENT, "metric-source-measurement", async (current) => {
     await measureSourceMetrics({
       ...options,
-      ...current,
-      isDue: (metric) => current.forced || current.measuredAt >= (nextDueAt.get(metric.id) ?? 0),
+      triggerEventId: current.triggerEventId,
+      isDue: (metric) => current.forced || current.requestedAt >= (nextDueAt.get(metric.id) ?? 0),
       onAttempt: (metric) => {
         const interval = metric.measure_interval;
-        nextDueAt.set(metric.id, current.measuredAt + (typeof interval === "number" && interval > 0 ? interval : 0));
+        nextDueAt.set(metric.id, current.requestedAt + (typeof interval === "number" && interval > 0 ? interval : 0));
       },
     });
   });
@@ -428,7 +433,7 @@ export function attachMetricEvaluation(options: { bus: EventBus; persistDir: str
   });
 }
 
-type MetricPass = { triggerEventId?: number; measuredAt: number; forced: boolean };
+type MetricPass = { triggerEventId?: number; requestedAt: number; forced: boolean };
 
 /** Each pass has independent progress; repeated wakes coalesce while it is busy. */
 function attachMetricPass(bus: EventBus, type: string, label: string, run: (pass: MetricPass) => Promise<void>): MetricPassRuntime {
@@ -454,7 +459,7 @@ function attachMetricPass(bus: EventBus, type: string, label: string, run: (pass
   bus.listen((event): void => {
     schedule({
       triggerEventId: (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID],
-      measuredAt: Date.now(),
+      requestedAt: Date.now(),
       forced: (event as AgentEvent & { forced?: unknown }).forced === true || eventData(event).forced === true,
     });
   }, { label, types: [type] });
