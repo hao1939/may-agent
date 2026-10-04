@@ -33,6 +33,7 @@ export type ControlStatusSnapshot = { sessions: ControlStatusItem[]; activeWork:
 export type ControlStatus = ControlStatusItem[] | ControlStatusSnapshot;
 
 export interface AttachControlSocketOptions {
+  conversationAppId?: string;
   socketPath: string;
   getSessionId: () => string;
   getStatus: () => ControlStatus;
@@ -163,8 +164,8 @@ function exactRuntimeControl(text: unknown): "runtime.reload.requested" | "runti
   }
 }
 
-function exactMayInputControl(appId: string, input: unknown): ReturnType<typeof exactRuntimeControl> {
-  if (appId !== "may" || !input || typeof input !== "object" || Array.isArray(input)) return null;
+function exactAppInputControl(appId: string, input: unknown, conversationAppId: string | undefined): ReturnType<typeof exactRuntimeControl> {
+  if (!conversationAppId || appId !== conversationAppId || !input || typeof input !== "object" || Array.isArray(input)) return null;
   const record = input as Record<string, unknown>;
   if (record.kind !== "message" || !record.data || typeof record.data !== "object" || Array.isArray(record.data)) {
     return null;
@@ -180,7 +181,7 @@ function socketStatus(status: ControlStatusItem[], currentSessionId: string, age
       sessionId: currentSessionId,
       status: "ready",
       kind: "chat",
-      task: "May chat",
+      task: "Interface chat",
     });
   }
   return active;
@@ -256,6 +257,7 @@ function eventPayload(event: ControlEvent): Record<string, unknown> {
 }
 
 export interface ControlSocketCoreOptions {
+  conversationAppId?: string;
   getSessionId: () => string;
   getStatus: () => ControlStatus;
   getDiagnostics?: AttachControlSocketOptions["getDiagnostics"];
@@ -607,7 +609,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
             const author = eventData.author;
             const runtimeControl =
               eventType === "conversation.message.created" &&
-              eventTarget?.appId === "may" &&
+              Boolean(opts.conversationAppId) && eventTarget?.appId === opts.conversationAppId &&
               author &&
               typeof author === "object" &&
               !Array.isArray(author) &&
@@ -713,7 +715,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
             continue;
           }
           try {
-            const runtimeControl = exactMayInputControl(appId, input);
+            const runtimeControl = exactAppInputControl(appId, input, opts.conversationAppId);
             if (runtimeControl) {
               if (!publishEvent) throw new Error("Event publication is unavailable");
               const receipt = publishEvent({
@@ -1295,6 +1297,7 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
     describeProjectActions: opts.describeProjectActions,
     invokeProjectAction: opts.invokeProjectAction,
     subscribeEvents,
+    conversationAppId: opts.conversationAppId,
     agentName,
     instance,
   });

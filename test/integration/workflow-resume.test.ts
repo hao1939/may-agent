@@ -219,7 +219,7 @@ describe("workflow tool: resume", () => {
     expect(events).toContainEqual(
       expect.objectContaining({
         type: "workflow.resume_failed",
-        owner: "agent:may",
+        owner: "system:host",
         data: expect.objectContaining({
           workflowRunId: "wr_corrupt",
           workflow: "corrupt-workflow",
@@ -263,7 +263,7 @@ describe("workflow tool: resume", () => {
     expect(events).toContainEqual(
       expect.objectContaining({
         type: "workflow.resume_failed",
-        owner: "agent:may",
+        owner: "system:host",
         data: expect.objectContaining({
           workflowRunId: "wr_stale",
           workflow: "deleted-workflow",
@@ -320,7 +320,7 @@ describe("workflow tool: resume", () => {
     expect(events).toContainEqual(
       expect.objectContaining({
         type: "workflow.resume_skipped",
-        owner: "agent:may",
+        owner: "system:host",
         data: expect.objectContaining({
           workflowRunId: "wr_done",
           workflow: "already-done",

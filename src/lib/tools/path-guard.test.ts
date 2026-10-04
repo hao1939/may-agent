@@ -21,12 +21,12 @@ describe("checkCrossEditGuard (P53/P70 cross-agent protection)", () => {
   it("blocks writes to own agent agent.json (P70: immutable self-config)", () => {
     const result = checkCrossEditGuard("/app/agents/bob/agent.json", "bob", PROJECT_ROOT);
     expect(result.blocked).toBe(true);
-    expect(result.message).toContain("P70");
+    expect(result.message).toContain("no declared permission");
     expect(result.message).toContain("agent.json");
   });
 
-  it("allows tech-lead to write own agent.json", () => {
-    expect(isAllowed("/app/agents/tech-lead/agent.json", "tech-lead")).toBe(true);
+  it("requires a grant for a maintainer to write own agent.json", () => {
+    expect(isAllowed("/app/agents/tech-lead/agent.json", "tech-lead")).toBe(false);
   });
 
   it("allows writes to own agent LESSONS.md", () => {
@@ -107,21 +107,21 @@ describe("checkCrossEditGuard (P53/P70 cross-agent protection)", () => {
     expect(isAllowed("/app/agents/.lab/bob-growth-test/agent.json", "coach")).toBe(true);
   });
 
-  // May exemption — May can edit any agent's protected files
-  it("allows May to write to another agent's AGENTS.md", () => {
-    expect(isAllowed("/app/agents/bob/AGENTS.md", "may")).toBe(true);
+  // Agent identity alone grants no file-tool privileges
+  it("requires a grant to write another agent's AGENTS.md", () => {
+    expect(isAllowed("/app/agents/bob/AGENTS.md", "may")).toBe(false);
   });
 
-  it("allows May to write to another agent's agent.json", () => {
-    expect(isAllowed("/app/agents/coder/agent.json", "may")).toBe(true);
+  it("requires a grant to write another agent's agent.json", () => {
+    expect(isAllowed("/app/agents/coder/agent.json", "may")).toBe(false);
   });
 
   it("allows May to write to another agent's LESSONS.md", () => {
     expect(isAllowed("/app/agents/tech-lead/LESSONS.md", "may")).toBe(true);
   });
 
-  it("allows tech-lead to write to another agent's agent.json (P70 config management)", () => {
-    expect(isAllowed("/app/agents/coder/agent.json", "tech-lead")).toBe(true);
+  it("does not infer configuration privileges from a name", () => {
+    expect(isAllowed("/app/agents/coder/agent.json", "tech-lead")).toBe(false);
   });
 
   it("blocks tech-lead from writing to another agent's AGENTS.md", () => {

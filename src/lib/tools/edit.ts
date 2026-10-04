@@ -1,3 +1,4 @@
+import type { FileWritePolicy } from "./file-write-policy.js";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 import { Type } from "@earendil-works/pi-ai";
 import type { TSchema } from "@earendil-works/pi-ai";
@@ -51,6 +52,8 @@ const defaultEditOperations: EditOperations = {
 };
 
 export interface EditToolOptions {
+	/** Captured trusted installation scope; never read from task text. */
+	fileWritePolicy?: FileWritePolicy;
 	/** Custom operations for file editing. Default: local filesystem */
 	operations?: EditOperations;
 	/** Agent name for cross-edit protection. If set, blocks edits to other agents' protected files. */
@@ -85,7 +88,7 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 			const absolutePath = resolveToCwd(path, cwd);
 
 			// Cross-edit guard: block edits to other agents' protected files
-			const guard = checkCrossEditGuard(absolutePath, agentName, projectRoot);
+			const guard = checkCrossEditGuard(absolutePath, agentName, projectRoot, options?.fileWritePolicy);
 			if (guard.blocked) {
 				return {
 					content: [{ type: "text", text: guard.message! }],

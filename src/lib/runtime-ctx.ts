@@ -1,3 +1,4 @@
+import { interfaceBinding, type InterfaceBinding } from "@may-agent/control";
 /**
  * RuntimeCtx — internal infrastructure surface used by workflow-tool and maintenance-api-impl.
  *
@@ -22,7 +23,7 @@ import type { PersistedSession } from "./persistence.js";
 import type { DigestRow, DigestInput, DigestAction } from "./session-digest.js";
 import type { ErrorClass } from "./classify-error.js";
 import { buildCanonicalEventEnvelope } from "../../packages/control/src/event-envelope.js";
-import { mayConversationNoticeEvent } from "../app/app-input-event.js";
+import { conversationNoticeEvent } from "../app/app-input-event.js";
 
 /**
  * RuntimeCtx — internal type for workflow/sdk infra.
@@ -44,6 +45,7 @@ export interface RuntimeCtx {
 }
 
 export interface RuntimeCtxOptions {
+  interface?: InterfaceBinding;
   bus: EventBus;
   persistDir: string;
   projectRoot: string;
@@ -69,6 +71,7 @@ function runtimeEventEnvelope(
 }
 
 export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
+  const destination = opts.interface ?? interfaceBinding();
   let metrics: MetricService | undefined;
   let query: QueryAPI | undefined;
   return {
@@ -88,8 +91,11 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
     },
     log: (msg) => globalLog("info", `[${opts.agentName}] ${msg}`),
     notify: (msg) => {
+      if (!destination.appId || !destination.conversationId) throw new Error("Human notification requires CONVERSATION_APP");
       opts.bus.emit(
-        mayConversationNoticeEvent({
+        conversationNoticeEvent({
+          appId: destination.appId,
+          conversationId: destination.conversationId,
           source: `agent:${opts.agentName}`,
           authorId: opts.agentName,
           text: msg,

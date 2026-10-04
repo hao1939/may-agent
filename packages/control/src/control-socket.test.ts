@@ -101,6 +101,7 @@ function createCore(overrides: Partial<Parameters<typeof createControlSocketCore
   const emitted: ControlEvent[] = [];
   let broadcast: ((event: ControlEvent) => void) | undefined;
   const core = createControlSocketCore({
+    conversationAppId: "may",
     getSessionId: () => "chat-session",
     getStatus: () => [],
     emitEvent: (event) => emitted.push(event),
@@ -1002,7 +1003,7 @@ describe("control socket protocol", () => {
       command: "status",
       activeAgents: [
         { agent: "scout", sessionId: "s_1", status: "running", kind: "call", task: "investigate" },
-        { agent: "may", sessionId: "s_chat_done", status: "ready", kind: "chat", task: "May chat" },
+        { agent: "may", sessionId: "s_chat_done", status: "ready", kind: "chat", task: "Interface chat" },
       ],
     });
   });

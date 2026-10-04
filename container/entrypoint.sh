@@ -3,7 +3,7 @@ set -e
 
 export INSTANCE="${INSTANCE:-background}"
 export DAEMON_INSTANCE="${DAEMON_INSTANCE:-${INSTANCE}}"
-export DAEMON_AGENT="${DAEMON_AGENT:-may}"
+export DAEMON_AGENT="${DAEMON_AGENT:-${AGENT:-host}}"
 export DISPLAY=:99
 export PROJECT_ROOT="${PROJECT_ROOT:-/app}"
 export APP_ROOT="${APP_ROOT:-${PROJECT_ROOT}}"

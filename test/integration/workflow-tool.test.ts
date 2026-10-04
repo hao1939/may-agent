@@ -557,7 +557,7 @@ describe("workflow tool: run", () => {
     expect(runtimeEvents.some((event) => event.type === "escalation.created")).toBe(false);
   });
 
-  it("wakes the project owner when a top-level project workflow blocks", async () => {
+  it("reports a blocked workflow without inventing an App input schema", async () => {
     writeWorkflow(
       "project-blocked.ts",
       `
@@ -604,30 +604,12 @@ describe("workflow tool: run", () => {
     expect(parsed.type).toBe("blocked");
     if (parsed.type !== "blocked") return;
     expect(runtimeEvents.some((event) => event.type === "escalation.created")).toBe(false);
-    expect(runtimeEvents).toContainEqual(
-      expect.objectContaining({
-        type: "app.input.requested",
-        owner: "app:may-agent",
-        data: expect.objectContaining({
-          appId: "may-agent",
-          input: {
-            kind: "owner-review",
-            data: {
-              project: "may-agent",
-              reason: "workflow-blocked",
-              params: expect.objectContaining({
-                workflowRunId: parsed.workflowRunId,
-                workflow: "project-blocked",
-                workflowOwner: "agent:may",
-                projectId: "may-agent",
-                reason: "need owner judgment",
-                context: { detail: "x" },
-              }),
-            },
-          },
-        }),
-      }),
-    );
+    expect(runtimeEvents).toContainEqual(expect.objectContaining({
+      type: "workflow.owner.requested", owner: "agent:may",
+      data: expect.objectContaining({ workflowRunId: parsed.workflowRunId, workflow: "project-blocked",
+        projectId: "may-agent", blockerReason: "need owner judgment", context: { detail: "x" } }),
+    }));
+    expect(runtimeEvents.some(event => event.type === "app.input.requested")).toBe(false);
   });
 
   it("leaves task-bound workflow failure on its explicit task controller", async () => {

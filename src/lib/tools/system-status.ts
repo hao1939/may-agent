@@ -290,7 +290,7 @@ function readTodoSummary(stateDir: string): string {
     const row = db
       .prepare(
         `SELECT COUNT(*) as count FROM events
-         WHERE owner = 'may' AND timestamp > ?`,
+         WHERE timestamp > ?`,
       )
       .get(twoHoursAgo) as { count: number } | null;
     return `${row?.count ?? 0} recent event(s)`;

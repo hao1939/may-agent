@@ -30,14 +30,13 @@ export async function runEmitMode(opts: {
   instanceLabel: string;
   interfaceAgent: string;
   daemonInstance?: string;
-  daemonAgent?: string;
   endpoint?: SocketEndpoint;
   retry?: EmitDaemonEventRetryOptions;
   writeReceipt?: (message: string) => void;
 }): Promise<void> {
   const socketPath = daemonSocketPath(opts.persistDir, {
     instance: opts.daemonInstance || opts.instanceLabel,
-    interfaceAgent: opts.daemonAgent || opts.interfaceAgent,
+    interfaceAgent: opts.interfaceAgent,
   });
 
   try {

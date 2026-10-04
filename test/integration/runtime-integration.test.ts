@@ -184,6 +184,7 @@ describe("runtime integration", () => {
 
     sdk.metrics.define({
       id: "reviewer.queue-depth",
+      owner: "reviewer",
       threshold: 1,
       target: 0,
       alertOp: ">",

@@ -34,6 +34,14 @@ describe("MetricService", () => {
     return { root, db, service, emitted };
   }
 
+  it("does not infer metric ownership from its label", () => {
+    const { service } = harness();
+    service.define({ id: "reviewer.queue" });
+    expect(service.get("reviewer.queue")?.owner).toBe("system:host");
+    service.define({ id: "arbitrary.label", owner: "reviewer" });
+    expect(service.get("arbitrary.label")?.owner).toBe("reviewer");
+  });
+
   it("retires definitions and open alerts atomically without claiming recovery or deleting observations", () => {
     const { db, service, emitted } = harness();
     const definition = { id: "sample.old-check", threshold: 0, alertOp: ">" as const };
@@ -245,7 +253,7 @@ describe("MetricService", () => {
     const { db, service, emitted } = harness();
 
     service.define({
-      id: "scout.idea-yield-24h",
+      id: "scout.idea-yield-24h", owner: "scout",
       name: "Scout useful ideas",
       type: "gauge",
       target: 3,

@@ -1,3 +1,4 @@
+import { readFileWritePolicy } from "../lib/tools/file-write-policy.js";
 import { existsSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { loadAgentConfig, validateAgentConfig } from "./loader/agent-config.js";
@@ -63,6 +64,7 @@ export async function prepareDaemonAgents(opts: {
   appTaskOptions?: AppTaskRuntimeOptions;
   startAppTaskControllers: () => void;
 }> {
+  const fileWritePolicy = readFileWritePolicy(opts.definitionSharedRoot, opts.projectRoot);
   const loaderOpts: AgentLoaderOptions = {
     agentsRoot: opts.agentsRoot,
     sharedRoot: opts.sharedRoot,
@@ -125,6 +127,7 @@ export async function prepareDaemonAgents(opts: {
       model,
       tools: await buildTools(config, {
         ...loaderOpts,
+        fileWritePolicy,
         agentsRoot: resolve(appDir, "agents"),
         globalAgentsRoot: opts.agentsRoot,
         agentDir,
@@ -140,6 +143,7 @@ export async function prepareDaemonAgents(opts: {
     for (const diagnostic of definition.skillCatalog?.diagnostics ?? []) {
       opts.bus.emit({ type: "info", message: `[app-task] ${config.name} skill diagnostic: ${diagnostic}` });
     }
+    definition.fileWritePolicy = fileWritePolicy;
     opts.manager.register(definition);
 
     opts.bus.emit({

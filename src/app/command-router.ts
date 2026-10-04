@@ -7,6 +7,9 @@ import { validateSessionControl } from "./adapters/executors/session-control.js"
 export { validateSessionControl } from "./adapters/executors/session-control.js";
 
 export interface CommandRouterOptions {
+  interfaceAgent?: string;
+  conversationAppId?: string;
+  conversationId?: string;
   bus: EventBus;
   manager: SubagentManager;
   projectRoot: string;
@@ -70,7 +73,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       bus.emit({
         type: "runtime.reload.finished",
         source: "runtime",
-        owner: isRecord(event) ? String(event.owner ?? "agent:may") : "agent:may",
+        owner: isRecord(event) ? String(event.owner ?? "system:host") : "system:host",
         data: {
           ...(nonEmptyString(request.requestId) ? { requestId: nonEmptyString(request.requestId) } : {}),
           ok: result.ok,
@@ -122,10 +125,10 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     const data = eventData(event);
     const message = nonEmptyString(data.message);
     if (!message) return;
-    const agent = nonEmptyString(data.agent) ?? "may";
+    const agent = nonEmptyString(data.agent) ?? options.interfaceAgent ?? "host";
     const source = eventSource(event, nonEmptyString(data.channel) ?? "human");
-    if (agent === "may") {
-      admitMayInput(message, source, {
+    if (agent === options.interfaceAgent) {
+      admitInterfaceInput(message, source, {
         requestId: nonEmptyString(data.requestId) ?? undefined,
         conversationId: nonEmptyString(data.conversationId) ?? undefined,
         channel: nonEmptyString(data.channel) ?? source,
@@ -134,7 +137,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         channelMessageId: integerField(data, "channelMessageId") ?? undefined,
         context: isRecord(data.context) ? data.context : undefined,
       });
-      return accepted("may-input-admitted");
+      return accepted("interface-input-admitted");
     }
     const openingEventId = eventRowId(event);
     const sessionPrefix = manager.getAgentDefinition?.(agent)?.sessionIdPrefix?.trim() || "s";
@@ -163,7 +166,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     return accepted(`agent:${agent}`);
   }
 
-  function admitMayInput(
+  function admitInterfaceInput(
     message: string,
     source: string,
     metadata: {
@@ -176,18 +179,19 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       context?: Record<string, unknown>;
     } = {},
   ): void {
+    if (!options.conversationAppId) throw new Error("No Conversation App is configured");
     bus.emit({
       type: "app.input.requested",
       source,
-      owner: "app:may",
+      owner: `app:${options.conversationAppId}`,
       data: {
-        appId: "may",
+        appId: options.conversationAppId,
         input: {
           kind: "message",
           data: { message, ...(metadata.context ? { context: metadata.context } : {}) },
         },
         source: { kind: "human", id: metadata.requestId ?? source },
-        conversationId: metadata.conversationId,
+        conversationId: metadata.conversationId ?? options.conversationId,
         conversationSequence: metadata.channelMessageId,
         channel: metadata.channel ?? source,
         channelTargetId: metadata.channelTargetId,
@@ -207,7 +211,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       bus.emit({
         type: "session.cancel_all.requested",
         source: channel,
-        owner: "agent:may",
+        owner: "system:host",
         data: { reason: "human requested cancel all" },
       });
       return;
@@ -222,12 +226,12 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       bus.emit({
         type,
         source: channel,
-        owner: "agent:may",
+        owner: "system:host",
         data: { reason: `human requested ${lower.slice(1)}` },
       } as any);
       return;
     }
-    admitMayInput(text, channel);
+    admitInterfaceInput(text, channel);
   }
 
   const unsubscribeRequiredControls = bus.subscribeDurableRoute((event) => {

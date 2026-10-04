@@ -39,7 +39,7 @@ import {
   renderTelegramTopic,
   renderTelegramTopics,
   renderTelegramTodos,
-  telegramMayInputEvent,
+  telegramConversationInputEvent,
 } from "./telegram.js";
 
 function attachTelegramBot(
@@ -47,6 +47,7 @@ function attachTelegramBot(
     Partial<Pick<Parameters<typeof attachTelegramBotRuntime>[0], "publishEvent">>,
 ): ReturnType<typeof attachTelegramBotRuntime> {
   return attachTelegramBotRuntime({
+    conversationAppId: "may",
     ...options,
     publishEvent(input, authorization) {
       if (options.publishEvent) return options.publishEvent(input, authorization);
@@ -148,6 +149,7 @@ function durableTelegramFixture() {
       hasApp: () => true, hasAgent: () => true, hasSession: () => false });
     publish = (input, approvalAuthorization) => events.publish(input, { source: "telegram", approvalAuthorization });
     return attachTelegramBotRuntime({
+    conversationAppId: "may",
       persistDir: root, bus, interfaceAgent: "may",
       humanTasks: {
         listApps: (id) => [{ id: id ?? "may", activeTasks: 2, attentionTasks: 0, runningTasks: 2, waitingTasks: 0 }],
@@ -894,7 +896,8 @@ describe("Telegram durable input and natural follow-up", () => {
 describe("Telegram May input", () => {
   it("maps one Telegram turn to one durable May request with exact reply identity", () => {
     expect(
-      telegramMayInputEvent({
+      telegramConversationInputEvent({
+        appId: "may",
         message: "Please inspect this",
         chatId: "123",
         messageId: 502,

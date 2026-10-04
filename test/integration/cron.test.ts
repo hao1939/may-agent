@@ -143,7 +143,7 @@ describe("HostMaintenance event triggers", () => {
       expect(handler.mock.calls[0]?.[0]).toMatchObject({
         type: "trigger.legacy-config-agent",
         source: "manual",
-        owner: "agent:may",
+        owner: "system:host",
         data: { entry: "legacy-config-agent" },
       });
     } finally {

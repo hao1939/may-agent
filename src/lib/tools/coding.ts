@@ -1,3 +1,4 @@
+import type { FileWritePolicy } from "./file-write-policy.js";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 import type { TSchema } from "@earendil-works/pi-ai";
 import { createReadTool } from "./read.js";
@@ -6,6 +7,7 @@ import { createEditTool } from "./edit.js";
 import { createWriteTool } from "./write.js";
 
 export interface CodingToolsOptions {
+  fileWritePolicy?: FileWritePolicy;
   /** Working directory for all tools */
   cwd?: string;
   /** Agent name for cross-edit protection */
@@ -21,7 +23,7 @@ export function createCodingTools(projectRoot: string, options?: CodingToolsOpti
   return [
     createReadTool(projectRoot),
     createBashTool(projectRoot),
-    createEditTool(projectRoot, { agentName, projectRoot }),
-    createWriteTool(projectRoot, { agentName, projectRoot }),
+    createEditTool(projectRoot, { agentName, projectRoot, fileWritePolicy: options?.fileWritePolicy }),
+    createWriteTool(projectRoot, { agentName, projectRoot, fileWritePolicy: options?.fileWritePolicy }),
   ];
 }

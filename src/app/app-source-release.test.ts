@@ -60,6 +60,20 @@ describe("App source releases", () => {
     return { root, stateDir, appPath };
   }
 
+  it.each([true, false])("captures file policy with its definition release (git: %s)", async (withGit) => {
+    const { root, stateDir } = await fixture(withGit);
+    const policyPath = join(root, "shared", "file-write-policy.json");
+    const policy = JSON.stringify({ protectedPaths: ["projects/sample.app/criteria/**"], grants: [] });
+    writeFileSync(policyPath, policy);
+    if (withGit) { await git(root, "add", "shared/file-write-policy.json"); await git(root, "commit", "-qm", "policy"); }
+    const store = new DefinitionSourceReleaseStore(root, stateDir);
+    const first = store.ensureCurrent();
+    writeFileSync(policyPath, JSON.stringify({ protectedPaths: [], grants: [] }));
+    expect(readFileSync(join(first.sharedRoot, "file-write-policy.json"), "utf8")).toBe(policy);
+    expect(store.ensureCurrent().id).toBe(first.id);
+    if (withGit) expect(() => store.stage()).toThrow();
+  });
+
   it.each([true, false])("supports an installation with only App-local agents (git: %s)", async (withGit) => {
     const { root, stateDir } = await fixture(withGit);
     const local = join(root, "projects", "sample.app", "agents");
@@ -204,7 +218,7 @@ describe("App source releases", () => {
         })
       ).map((tool) => tool.name);
     expect(await load(first)).toEqual(["sample-v1"]);
-    expect(first.id).toEndWith("-definitions-v4");
+    expect(first.id).toEndWith("-definitions-v5");
     // Content cache identity changes; the manifest schema does not. Previous
     // Hosts must still be able to read the active source after binary rollback.
     expect(JSON.parse(readFileSync(join(first.root, "release.json"), "utf8")).version).toBe(3);
