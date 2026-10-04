@@ -655,20 +655,17 @@ export class DbWriter {
     const rowId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
     if (typeof rowId !== "number" || !Number.isFinite(rowId)) return;
     try {
-      withSqliteBusyRetry(`record delivery acceptance for event ${rowId}`, () => {
-        const now = Date.now();
-        stateTransaction(this.db, () => {
-          this.db.run(
-            `UPDATE events
-             SET delivery_status = 'accepted',
-                 accepted_by = ?,
-                 accepted_at = ?,
-                 delivery_route = ?,
-                 delivery_note = ?
-             WHERE id = ?`,
-            [result.by, now, result.route ?? "direct", result.note ?? null, rowId],
-          );
-        });
+      stateTransaction(this.db, () => {
+        this.db.run(
+          `UPDATE events
+           SET delivery_status = 'accepted',
+               accepted_by = ?,
+               accepted_at = ?,
+               delivery_route = ?,
+               delivery_note = ?
+           WHERE id = ?`,
+          [result.by, Date.now(), result.route ?? "direct", result.note ?? null, rowId],
+        );
       });
     } catch (error) {
       log(

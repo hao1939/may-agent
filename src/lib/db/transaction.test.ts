@@ -20,7 +20,7 @@ describe("state transaction delivery", () => {
       db.run("INSERT INTO evidence VALUES ('other writer')");
       db.exec("COMMIT");
       db.close();
-    `, path], { stdin: "pipe", stdout: "pipe", stderr: "pipe" });
+    `, path], { stdin: "pipe", stdout: "pipe", stderr: "pipe", timeout: 5_000 });
     let bodyCalls = 0;
     let contended = false;
     const guarded = {
