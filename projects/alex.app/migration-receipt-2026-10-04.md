@@ -119,3 +119,51 @@ The frontier now records both paths as obsolete candidates awaiting May's exact 
 The operator's separately reviewed source retirement is integrated in Apps main `b924e240dadd1c5d9042cd0f5d0c5b235ae35aee` (retirement commit `83475307bffffc269789508a4bbb7ac0a910a592`) and this branch merges that main revision. Reload `alex-retirement-b924e240da-20261004` succeeded in event `6643341`, reporting nine intended updated agents, exactly three Task-enabled Apps and three durable App addresses; readiness is healthy. The affected suite reports **418 passed / 0 failed**, design and registry/workflow checks pass, and the immutable release invoked both relocated shared skills without diagnostics.
 
 Useful manuals and skills now live under `projects/alex.app/docs`, historical specialist knowledge under `projects/alex.app/knowledge`, criteria under `projects/alex.app/criteria`, and retired source/evidence under `projects/alex.app/archive/retired-apps`. The local preservation receipt records 22,264 entries with matching hashes and compatibility aliases for saved artifact references. Do not delete those aliases or archives. Old may-agent, Evaluation and Gym executable manifests/profiles are removed; eleven retired Evaluation metrics are declared by Alex and retired in live storage. This cleanup did not delete or fulfill any legacy Task, input or Condition. Exact operator evidence is in `/app/.state/alex-migration-20261004/retirement-summary.json`, `retirement-local-preservation.json`, `retirement-source-map.json`, and `retirement-activation-result.json`. The remaining API scan of disabled `sample-reviewer` is the already-recorded filesystem projection limitation, not a loaded old controller.
+
+## Returned dependency-authority disposition
+
+May Task `goal/appdep_6cc0d62a8a22a1ca0cb4d1e8` returned the exact
+`withdraw-obsolete-activation-ask-unfulfilled` disposition. May neither approved
+nor rejected the frozen `dc15a38b…` manifest. Condition
+`approval-dependency-authority-contract-20260820-dc15a38b` remains historical
+state unknown, the activation-child → repair-parent →
+`runtime/platform-owner-review` chain remains preserved, and the missing
+May/AKS terminal results and scoped remeasurement remain unproved. The
+immutable patch's unrelated `installed-app-resolver-observation` behavior still
+makes it unsafe to activate. May found no surviving precise current caller
+obligation; reopen only from an exact failing public-protocol trace supplied by
+an enabled App. May's structured result artifact is
+`artifacts/dependency-authority-may-disposition-2026-10-04.json` (SHA-256
+`db81afbe1e4cb28a4da877ad3c6eb8b9f4ad3a203e666195e81c0499864ec019`).
+No old Task, Condition or runtime state was mutated.
+
+## Owner-review contract lineage reconciliation
+
+Activated plain Bob reconciled the two old `owner-review-contract` Tasks in
+session `s_1791119677933_304bf703-3466-4ffa-8838-123800717094`. The bounded
+contribution is `projects/alex.app/owner-review-contract-reconciliation-2026-10-04.json`
+(SHA-256 `e9bed7fcd5753d94e4e5643d88b47e2ab75a27ea3dd60a2f7a2f48660808d614`).
+It preserves both complete retained specs, caller chains, historical Condition
+`approve-owner-signal-boundary-62890907`, and the easily missed unresolved stop
+`resume-grouped-goal-repair-after-stop`, which is absent from the final Task's
+condition ID array but present in retained Condition and parent/child evidence.
+
+Neither historical outcome is fulfilled. Frozen Host candidate `62890907…` is
+not an ancestor of deployed Host `d8c877577…`, uses obsolete
+`app.dependency.completed` receipts and has no recovered approval or live
+terminal proof. Current Task communication has exact receipt and replay
+behavior, but that does not establish the old requested terminal signal counts
+or finding-versus-remediation proof. No current recurrence warrants reviving the
+old controller, a global message suppression heuristic or the frozen candidate.
+
+A current semantic question remains narrower than the old blanket grouping
+rule: Alex's ordinary report mapper creates distinct input Tasks for distinct
+admissions, but the agreed design permits intake Tasks with independent
+assessment outcomes. One bounded Alex continuation must exercise actual Host
+admission for repeated concern, replay, new evidence and an independent outcome,
+then either retain a linked no-change decision or correct only a demonstrated
+App-local reuse defect. Separately, May must disposition the obsolete exact
+activation ask and the stopped grouped-goal historical candidate; neither old
+Condition is rebound or settled. Bob's current deterministic checks passed
+**230/230** Host tests with 2,588 expectations and **31/31** Alex/May tests with
+163 expectations.

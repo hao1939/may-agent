@@ -1,10 +1,10 @@
 {
   "kind": "alex-legacy-frontier-disposition",
   "capturedAt": "2026-10-04T12:13:00Z",
-  "generatedAt": "2026-10-04T13:14:00Z",
+  "generatedAt": "2026-10-04T13:20:00Z",
   "source": "/app/.state/alex-migration-20261004/legacy-frontier-index.json",
   "sourceSha256": "46d61e762a8abac6170b4333c7aac30af2661afabe7fe635294a17318ea1cde9",
-  "status": "bounded semantic migration in progress: writer-containment, app-dependency completion and dependency-authority reconciled without historical fulfillment; Gym metric-only paths partially superseded; dependency-authority exact candidate awaits May disposition; no old outcome falsely fulfilled",
+  "status": "bounded semantic migration in progress: writer-containment and app-dependency completion reconciled; dependency-authority withdrawn unfulfilled; owner-review contract contribution accepted with current Alex and May disposition work pending; Gym metric-only paths partially superseded; no old outcome falsely fulfilled",
   "rules": [
     "No old Task is marked fulfilled by this receipt.",
     "replacement=null means no replacement Task has been admitted yet.",
@@ -15,15 +15,16 @@
     "total": 117,
     "byDisposition": {
       "inspect-current-evidence-for-alex-continuation": 35,
-      "obsolete-approval-request-withdrawn-unfulfilled": 1,
+      "obsolete-approval-request-withdrawn-unfulfilled": 3,
       "superseded-no-current-continuation-not-fulfilled": 3,
-      "obsolete-candidate-awaiting-may-disposition-unfulfilled": 2,
-      "consolidate-lineage-after-current-state-check": 26,
+      "consolidate-lineage-after-current-state-check": 24,
       "retain-may-boundary": 6,
       "source-identified-current-lineage-check": 37,
       "partial-execution-path-supersession-nonmetric-open": 4,
       "retain-may-boundary-after-alex-technical-reconciliation": 2,
-      "current-protocol-verified-old-outcome-unfulfilled": 1
+      "current-protocol-verified-old-outcome-unfulfilled": 1,
+      "current-alex-continuation-and-may-stop-disposition-needed-unfulfilled": 1,
+      "obsolete-candidate-awaiting-may-disposition-unfulfilled": 1
     },
     "byProposedOwner": {
       "alex": 105,
@@ -165,18 +166,21 @@
         ]
       },
       "outcome": "Isolate and review the verified dependency-authority replacement without absorbing unrelated dirty App work; produce the exact immutable May App and May Runtime artifact, obtain the required production activation decision, activate only through the supervisor-owned path if approved, and carry a fresh schema-valid AKS request through a correlated terminal May App result and the requesting AKS `runtime/owner-review` lineage’s terminal task/domain result.",
-      "disposition": "obsolete-candidate-awaiting-may-disposition-unfulfilled",
+      "disposition": "obsolete-approval-request-withdrawn-unfulfilled",
       "proposedOwner": "alex",
       "lineage": "dependency-authority",
       "replacement": {
         "appId": "alex",
         "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452",
-        "role": "bounded exact supersession recommendation; human authority and caller disposition remain with May",
-        "status": "awaiting-may-disposition",
+        "role": "bounded exact supersession recommendation; May authority/caller disposition returned",
+        "status": "may-withdrew-obsolete-request-unfulfilled",
         "artifact": "projects/alex.app/dependency-authority-reconciliation-2026-10-04.json",
-        "artifactSha256": "6a9c15a12e9bebc759a616fbfa0127e09e3f2a4448e42732f3eac6a5ec63408b"
+        "artifactSha256": "6a9c15a12e9bebc759a616fbfa0127e09e3f2a4448e42732f3eac6a5ec63408b",
+        "mayDispositionTask": "goal/appdep_6cc0d62a8a22a1ca0cb4d1e8",
+        "mayDispositionArtifact": "artifacts/dependency-authority-may-disposition-2026-10-04.json",
+        "mayDispositionArtifactSha256": "db81afbe1e4cb28a4da877ad3c6eb8b9f4ad3a203e666195e81c0499864ec019"
       },
-      "basis": "Current three-App source has no incident-specific AKS consumer or old owner tree. Current request/return and authority-scoping fixtures pass; no current defect warrants resurrection. The frozen artifact is not safely reusable because its App patch also contains an unrelated installed-app-resolver-observation contract. Neither old terminal outcome is fulfilled. Preserve the exact unknown approval Condition and parent/caller chain while May dispositions the obsolete candidate request.",
+      "basis": "May withdrew the obsolete dc15a38b… activation ask unfulfilled, neither approving nor rejecting it. The exact unknown historical Condition and activation-child → repair-parent → runtime/platform-owner-review chain remain preserved; missing May/AKS terminal results and remeasurement remain unproved. The unsafe artifact is not activated and no current precise caller obligation survives; reopen only for an exact failure from a currently enabled App.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -3403,18 +3407,21 @@
         "conditionIds": []
       },
       "outcome": "Resolve rejected AKS request appdep_b0fced12cada9800c8035457 through a supported, schema-valid May App contract: adjudicate the current validity of the historical direct Host-test edit and ensure dependency-scoped owner guidance treats the supplied dependency observation as authoritative without directing App owners to inspect Host-private task-tree projections; then carry the request through a correlated terminal May App result and the requesting AKS task’s terminal evidence without weakening unknown-input rejection or duplicating alert-4602 taxonomy work.",
-      "disposition": "obsolete-candidate-awaiting-may-disposition-unfulfilled",
+      "disposition": "obsolete-approval-request-withdrawn-unfulfilled",
       "proposedOwner": "alex",
       "lineage": "dependency-authority",
       "replacement": {
         "appId": "alex",
         "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452",
-        "role": "bounded exact supersession recommendation; human authority and caller disposition remain with May",
-        "status": "awaiting-may-disposition",
+        "role": "bounded exact supersession recommendation; May authority/caller disposition returned",
+        "status": "may-withdrew-obsolete-request-unfulfilled",
         "artifact": "projects/alex.app/dependency-authority-reconciliation-2026-10-04.json",
-        "artifactSha256": "6a9c15a12e9bebc759a616fbfa0127e09e3f2a4448e42732f3eac6a5ec63408b"
+        "artifactSha256": "6a9c15a12e9bebc759a616fbfa0127e09e3f2a4448e42732f3eac6a5ec63408b",
+        "mayDispositionTask": "goal/appdep_6cc0d62a8a22a1ca0cb4d1e8",
+        "mayDispositionArtifact": "artifacts/dependency-authority-may-disposition-2026-10-04.json",
+        "mayDispositionArtifactSha256": "db81afbe1e4cb28a4da877ad3c6eb8b9f4ad3a203e666195e81c0499864ec019"
       },
-      "basis": "Current three-App source has no incident-specific AKS consumer or old owner tree. Current request/return and authority-scoping fixtures pass; no current defect warrants resurrection. The frozen artifact is not safely reusable because its App patch also contains an unrelated installed-app-resolver-observation contract. Neither old terminal outcome is fulfilled. Preserve the exact unknown approval Condition and parent/caller chain while May dispositions the obsolete candidate request.",
+      "basis": "May withdrew the obsolete dc15a38b… activation ask unfulfilled, neither approving nor rejecting it. The exact unknown historical Condition and activation-child → repair-parent → runtime/platform-owner-review chain remain preserved; missing May/AKS terminal results and remeasurement remain unproved. The unsafe artifact is not activated and no current precise caller obligation survives; reopen only for an exact failure from a currently enabled App.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -3456,11 +3463,18 @@
         "conditionIds": []
       },
       "outcome": "Identify and correct the May Host/runtime and shared App-definition task-creation rule that permits one Task per finding, check, proposal, session audit, or work item to regenerate instead of retaining one durable Task per meaningful goal; prove the corrected rule preserves item-level evidence and legitimate waits inside the retained goal Task without altering foreign App-owned task state directly.",
-      "disposition": "consolidate-lineage-after-current-state-check",
+      "disposition": "current-alex-continuation-and-may-stop-disposition-needed-unfulfilled",
       "proposedOwner": "alex",
       "lineage": "owner-review-contract",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "alex",
+        "taskId": null,
+        "role": "bounded current intake/owner-work reuse investigation recommended; separate historical stop remains May-owned",
+        "status": "pending-admission",
+        "artifact": "projects/alex.app/owner-review-contract-reconciliation-2026-10-04.json",
+        "artifactSha256": "e9bed7fcd5753d94e4e5643d88b47e2ab75a27ea3dd60a2f7a2f48660808d614"
+      },
+      "basis": "Current source retains stable standing identities in several paths, but Alex report admissions remain distinct input Tasks and mapper evidence alone cannot establish harmful duplicate repair commissioning. The old outcome is unfulfilled. Admit one bounded current Alex investigation using actual Host admission and preserve every report/caller/wait; separately ask May to disposition the historical unknown stop Condition resume-grouped-goal-repair-after-stop without treating migration authority as resolution.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -3529,11 +3543,18 @@
         ]
       },
       "outcome": "Complete the existing may-agent owner-review notification-boundary repair demonstrated by session s_1787653153677_77 and independently reviewed in session s_1787683908535_443. Integrate terminal-signal disclosure into the actual terminal path; ensure canonical delivery and remediation receipt lookup occurs before every agent or human owner-signal path; route a genuinely new finding through one supported accountable App or Task owner; make an exact replay create zero new signals; and truthfully disclose the count and event IDs of signals created by the attempt. Run all focused tests and typecheck after the final source change. Preserve the distinction between finding delivery and remediation, request approval only after the candidate is fully integrated and verified, and perform no production mutation without that approval. Replan on this same task if any receipt binding, route, regression, post-change check, activation identity, or live terminal proof is incomplete.",
-      "disposition": "consolidate-lineage-after-current-state-check",
+      "disposition": "obsolete-candidate-awaiting-may-disposition-unfulfilled",
       "proposedOwner": "alex",
       "lineage": "owner-review-contract",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "alex",
+        "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452",
+        "role": "bounded exact supersession recommendation; human authority remains with May",
+        "status": "awaiting-may-disposition",
+        "artifact": "projects/alex.app/owner-review-contract-reconciliation-2026-10-04.json",
+        "artifactSha256": "e9bed7fcd5753d94e4e5643d88b47e2ab75a27ea3dd60a2f7a2f48660808d614"
+      },
+      "basis": "Frozen Host commit 62890907 is not deployed and uses obsolete app.dependency.completed receipts. Current Task communication has exact receipt/replay behavior, but does not prove the requested historical terminal disclosure/count outcome. No current recurrence justifies a Host patch or global message suppression. Preserve Condition approve-owner-signal-boundary-62890907 and caller chain while May withdraws the obsolete request unfulfilled or identifies a precise surviving obligation.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
