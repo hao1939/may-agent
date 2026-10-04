@@ -89,24 +89,27 @@ test("recovers a report saved before its first App plan, independent of global d
     db = getDb(root);
     const bus = producer(root);
     const writer = new DbWriter(root);
-    let acknowledgementAttempts = 0;
-    const receiptDb = new Proxy(db as object, {
-      get(target, property) {
-        if (property === "exec") {
-          return (sql: string) => {
-            if (sql === "BEGIN IMMEDIATE") {
-              acknowledgementAttempts += 1;
-              if (acknowledgementAttempts === 1) throw new Error("database is locked");
-            }
-            return db.exec(sql);
-          };
-        }
-        const value = Reflect.get(target, property);
-        return typeof value === "function" ? value.bind(target) : value;
-      },
-    });
-    (writer as unknown as { db: typeof db }).db = receiptDb as typeof db;
     bus.setDeliveryRecorder(writer.recordDelivery);
+    // Hold the real WAL writer slot from a second process. The App route must
+    // retain the marker across this boundary and complete after the lock is
+    // released; a mocked exec() would not exercise SQLite's contention path.
+    const lockHolder = Bun.spawn(
+      [
+        "bun",
+        "-e",
+        `import { Database } from "bun:sqlite";
+         const db = new Database(process.argv[1]);
+         db.exec("PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 0; BEGIN IMMEDIATE");
+         console.log("locked");
+         await Bun.sleep(250);
+         db.exec("COMMIT");
+         db.close();`,
+        join(root, "may.db"),
+      ],
+      { stdout: "pipe", stderr: "pipe" },
+    );
+    const lockOutput = lockHolder.stdout.getReader();
+    expect(new TextDecoder().decode((await lockOutput.read()).value)).toContain("locked");
     runtime = await startAppInboxRuntime({
       db,
       bus,
@@ -118,10 +121,26 @@ test("recovers a report saved before its first App plan, independent of global d
         return { taskId: `work/${input.inboxInputId ?? input.inputId}` };
       }),
     });
-    // The marker is acknowledged once the complete plan is durable; command
-    // dispatch follows asynchronously from that saved authority.
+    // The first delivery observes the real lock and leaves the marker owed.
+    // Once the independent writer releases it, the bounded recovery path can
+    // retry the same Event identity and acknowledge the durable plan.
+    expect(await lockHolder.exited).toBe(0);
+    expect(db.prepare("SELECT app_admission_pending FROM events WHERE id = ?").get(eventId)).toEqual({
+      app_admission_pending: 1,
+    });
+    runtime.close();
+    runtime = await startAppInboxRuntime({
+      db,
+      bus,
+      registry,
+      persistDir: root,
+      schedulesEnabled: false,
+      scanIntervalMs: 10_000,
+      attachTask: fakeTaskAttacher(db, (input) => {
+        return { taskId: `work/${input.inboxInputId ?? input.inputId}` };
+      }),
+    });
     await until(() => db.prepare("SELECT app_admission_pending FROM events WHERE id = ?").get(eventId)?.app_admission_pending === 0);
-    expect(acknowledgementAttempts).toBe(2);
     await until(() => db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()?.count === 1);
     expect(db.prepare("SELECT origin_event_id FROM app_inbox_items").all()).toEqual([{ origin_event_id: eventId }]);
     await until(() => getAppEventAdmissionPlan(db, eventId)?.status === "completed");
@@ -147,6 +166,69 @@ test("recovers a report saved before its first App plan, independent of global d
     const plan = db.prepare(`EXPLAIN QUERY PLAN SELECT id FROM events INDEXED BY idx_events_app_admission_pending
       WHERE app_admission_pending = 1 AND id > ? ORDER BY id LIMIT ?`).all(0, 64) as Array<{ detail?: string }>;
     expect(plan.some(({ detail }) => detail?.includes("idx_events_app_admission_pending"))).toBe(true);
+  } finally {
+    runtime?.close();
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("first admission after restart uses the current subscription while retaining the Event identity", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-event-current-routing-"));
+  let runtime: AppInboxRuntime | undefined;
+  try {
+    const event = producer(root).emit({
+      type: "probe.changed",
+      source: "worker:probe",
+      owner: "agent:probe",
+      data: { value: "retained" },
+    } as any);
+    const eventId = event[EVENT_ROW_ID]!;
+    closeDb(root);
+    const db = getDb(root);
+    const appDir = join(root, "current.app");
+    mkdirSync(appDir, { recursive: true });
+    const registry = new AppRegistry(async () => [{
+      appDir,
+      definition: defineApp({
+        id: "current",
+        version: 1,
+        agent: "current",
+        inputSchema: Type.Object({
+          kind: Type.Literal("message"),
+          data: Type.Object({ value: Type.String() }),
+        }),
+        task: ({ id }) => ({
+          kind: "desired",
+          intent: { id: `work/${id}`, parentId: "root", outcome: "Review current route", acceptance: ["Reviewed"] },
+        }),
+        tasks: {},
+        subscriptions: [{
+          id: "replacement-route",
+          event: "probe.changed",
+          toInput: (current) => ({ kind: "message", data: { value: `replacement:${current.data.value}` } }),
+        }],
+      }),
+    }]);
+    await registry.reload();
+    const bus = producer(root);
+    const writer = new DbWriter(root);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    runtime = await startAppInboxRuntime({
+      db,
+      bus,
+      registry,
+      persistDir: root,
+      schedulesEnabled: false,
+      attachTask: fakeTaskAttacher(db, (input) => ({ taskId: `work/${input.inboxInputId ?? input.inputId}` })),
+    });
+    await until(() => db.prepare("SELECT app_admission_pending FROM events WHERE id = ?").get(eventId)?.app_admission_pending === 0);
+    await until(() => db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()?.count === 1);
+    expect(getAppEventAdmissionPlan(db, eventId)?.commands[0]?.routeId).toBe("replacement-route");
+    expect(db.prepare("SELECT origin_event_id, input_data FROM app_inbox_items").get()).toEqual({
+      origin_event_id: eventId,
+      input_data: JSON.stringify({ value: "replacement:retained" }),
+    });
   } finally {
     runtime?.close();
     closeDb(root);
