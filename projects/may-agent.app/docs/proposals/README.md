@@ -18,6 +18,7 @@ before acting on an old checklist.
 
 | Proposal | Owning need or contract | Remaining review scope |
 | --- | --- | --- |
+| [Tasks and communication resources](tasks-and-communication-resources.md) | [Understand intent and close the loop](../2a-design/system-model.md#understand-intent-and-close-the-loop) | Ordinary Task execution with scoped Conversation, Request and Topic capabilities; resource boundaries, authority, compatibility and connected proof remain proposed. |
 | [Agent capability guidance and infra contract](task-execution-capabilities-20261002.md) | [Host And App Boundary](../2a-design/system-boundary.md) | Proposed common discovery using existing requests and separate Conditions; current use has a separate guide. |
 | [Task execution capability contracts](task-execution-capability-contracts-20261003.md) | [Agent capability guidance and infra contract](task-execution-capabilities-20261002.md) | Existing calling and return contracts, proposed discovery improvements and verification cases. |
 | [Explicit attempt decision (deferred)](task-attempt-decision-schema-20261002.md) | [Task attempts](../2a-design/task-attempts.md) | Deferred output spelling only; current state/continue behavior stays in the attempt contract. |

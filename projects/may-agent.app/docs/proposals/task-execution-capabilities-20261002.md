@@ -19,6 +19,11 @@ to perform work today; its text is usable directly as a skill. The
 [90-PR review](../archive/reviews/task-capability-pr-review-20261003.md) supplies
 dated evidence, including successful behavior worth preserving.
 
+The [Tasks and communication resources proposal](tasks-and-communication-resources.md)
+refines the boundary between work and communication: Conversation handling is
+ordinary Task work, with scoped discussion, accepted-ask and grouping capabilities.
+That consolidation remains proposed; current use follows the installed contracts.
+
 ## Purpose
 
 This feature design supports [useful action within authority](../2a-design/system-model.md#enable-useful-action-within-authority)
