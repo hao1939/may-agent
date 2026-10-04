@@ -1,10 +1,10 @@
 {
   "kind": "alex-legacy-frontier-disposition",
   "capturedAt": "2026-10-04T12:13:00Z",
-  "generatedAt": "2026-10-04T13:20:00Z",
+  "generatedAt": "2026-10-04T13:28:00Z",
   "source": "/app/.state/alex-migration-20261004/legacy-frontier-index.json",
   "sourceSha256": "46d61e762a8abac6170b4333c7aac30af2661afabe7fe635294a17318ea1cde9",
-  "status": "bounded semantic migration in progress: writer-containment and app-dependency completion reconciled; dependency-authority withdrawn unfulfilled; owner-review contract contribution accepted with current Alex and May disposition work pending; Gym metric-only paths partially superseded; no old outcome falsely fulfilled",
+  "status": "bounded semantic migration in progress: owner-review current intake verified no-change and historical asks withdrawn unfulfilled; seven AKS taxonomy/correlation paths technically reconciled with May authority disposition pending; prior writer, dependency and Gym decisions retained; no old outcome falsely fulfilled",
   "rules": [
     "No old Task is marked fulfilled by this receipt.",
     "replacement=null means no replacement Task has been admitted yet.",
@@ -17,14 +17,15 @@
       "inspect-current-evidence-for-alex-continuation": 35,
       "obsolete-approval-request-withdrawn-unfulfilled": 3,
       "superseded-no-current-continuation-not-fulfilled": 3,
-      "consolidate-lineage-after-current-state-check": 24,
+      "obsolete-lineage-awaiting-may-disposition-unfulfilled": 7,
       "retain-may-boundary": 6,
       "source-identified-current-lineage-check": 37,
+      "consolidate-lineage-after-current-state-check": 17,
       "partial-execution-path-supersession-nonmetric-open": 4,
       "retain-may-boundary-after-alex-technical-reconciliation": 2,
       "current-protocol-verified-old-outcome-unfulfilled": 1,
-      "current-alex-continuation-and-may-stop-disposition-needed-unfulfilled": 1,
-      "obsolete-candidate-awaiting-may-disposition-unfulfilled": 1
+      "current-protocol-no-change-and-historical-stop-withdrawn-unfulfilled": 1,
+      "obsolete-activation-ask-withdrawn-unfulfilled": 1
     },
     "byProposedOwner": {
       "alex": 105,
@@ -226,11 +227,20 @@
         ]
       },
       "outcome": "Through the supported privileged host release boundary, complete the already-requested may-agent App activation for correlation may-ops-health-aks-taxonomy-3bf56cf5f4-20260816 at most once, then emit a targeted wake for the parent to perform the fresh ops-health proof.",
-      "disposition": "consolidate-lineage-after-current-state-check",
+      "disposition": "obsolete-lineage-awaiting-may-disposition-unfulfilled",
       "proposedOwner": "alex",
       "lineage": "aks-taxonomy-and-correlation",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "alex",
+        "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452",
+        "role": "bounded seven-identity technical reconciliation; authority/caller disposition remains May-owned",
+        "status": "technical-no-current-defect; awaiting-may-disposition",
+        "artifact": "projects/alex.app/aks-taxonomy-correlation-reconciliation-2026-10-04.json",
+        "artifactSha256": "b38fa79f00a0fc8902ef6dbe2949375ba2c1e38e74f3f7828fc427b31f835f56",
+        "mayDispositionTask": "goal/appdep_b9d63909a838fa7ad225d6b6",
+        "mayDispositionConditionId": "app-request:appdep_b9d63909a838fa7ad225d6b6"
+      },
+      "basis": "The old AKS taxonomy/correlation execution path depends on retired Apps/controllers and candidates that are not ancestors of the deployed Host. One c6636d34 activation receipt is recovered, but required problem-task terminal links, full six-pair proof, staged 3bf56cf5 activation, f9824eb7 approval and caller closure remain missing, so no old outcome is fulfilled. Current saved-result, delivery and metric-source checks show no precise enabled-App defect requiring new Alex technical work. May must disposition the exact obsolete authority/caller boundary without activating old candidates or rebinding Conditions.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -2850,11 +2860,20 @@
         "conditionIds": []
       },
       "outcome": "Collect terminal results for the two already-started correlated AKS requests and complete the fresh six-pair watcher proof without duplicating work.",
-      "disposition": "consolidate-lineage-after-current-state-check",
+      "disposition": "obsolete-lineage-awaiting-may-disposition-unfulfilled",
       "proposedOwner": "alex",
       "lineage": "aks-taxonomy-and-correlation",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "alex",
+        "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452",
+        "role": "bounded seven-identity technical reconciliation; authority/caller disposition remains May-owned",
+        "status": "technical-no-current-defect; awaiting-may-disposition",
+        "artifact": "projects/alex.app/aks-taxonomy-correlation-reconciliation-2026-10-04.json",
+        "artifactSha256": "b38fa79f00a0fc8902ef6dbe2949375ba2c1e38e74f3f7828fc427b31f835f56",
+        "mayDispositionTask": "goal/appdep_b9d63909a838fa7ad225d6b6",
+        "mayDispositionConditionId": "app-request:appdep_b9d63909a838fa7ad225d6b6"
+      },
+      "basis": "The old AKS taxonomy/correlation execution path depends on retired Apps/controllers and candidates that are not ancestors of the deployed Host. One c6636d34 activation receipt is recovered, but required problem-task terminal links, full six-pair proof, staged 3bf56cf5 activation, f9824eb7 approval and caller closure remain missing, so no old outcome is fulfilled. Current saved-result, delivery and metric-source checks show no precise enabled-App defect requiring new Alex technical work. May must disposition the exact obsolete authority/caller boundary without activating old candidates or rebinding Conditions.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -2923,11 +2942,20 @@
         "conditionIds": []
       },
       "outcome": "Activate may-agent App commit 3bf56cf5f416d2bd4989f676190202971edd7a68 through the supported immutable App release control plane exactly once, then trigger and inspect a fresh ops-health observation proving the corrected event-delivery taxonomy.",
-      "disposition": "consolidate-lineage-after-current-state-check",
+      "disposition": "obsolete-lineage-awaiting-may-disposition-unfulfilled",
       "proposedOwner": "alex",
       "lineage": "aks-taxonomy-and-correlation",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "alex",
+        "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452",
+        "role": "bounded seven-identity technical reconciliation; authority/caller disposition remains May-owned",
+        "status": "technical-no-current-defect; awaiting-may-disposition",
+        "artifact": "projects/alex.app/aks-taxonomy-correlation-reconciliation-2026-10-04.json",
+        "artifactSha256": "b38fa79f00a0fc8902ef6dbe2949375ba2c1e38e74f3f7828fc427b31f835f56",
+        "mayDispositionTask": "goal/appdep_b9d63909a838fa7ad225d6b6",
+        "mayDispositionConditionId": "app-request:appdep_b9d63909a838fa7ad225d6b6"
+      },
+      "basis": "The old AKS taxonomy/correlation execution path depends on retired Apps/controllers and candidates that are not ancestors of the deployed Host. One c6636d34 activation receipt is recovered, but required problem-task terminal links, full six-pair proof, staged 3bf56cf5 activation, f9824eb7 approval and caller closure remain missing, so no old outcome is fulfilled. Current saved-result, delivery and metric-source checks show no precise enabled-App defect requiring new Alex technical work. May must disposition the exact obsolete authority/caller boundary without activating old candidates or rebinding Conditions.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -3113,11 +3141,20 @@
         ]
       },
       "outcome": "Correct the immutable activation-lineage gap for completed task activate-aks-workspace-integrity-release-via-supervisor-20260816 by establishing whether a currently loaded May App artifact contains watcher correction f9824eb793304c801ce514bfb40e19677f1813fb or a source-equivalent successor; if not, preserve production safety and obtain the exact authority required before any pinned activation, then return terminal scheduled watcher and downstream evidence without reopening the completed receipt or duplicating alert-4602 work.",
-      "disposition": "consolidate-lineage-after-current-state-check",
+      "disposition": "obsolete-lineage-awaiting-may-disposition-unfulfilled",
       "proposedOwner": "alex",
       "lineage": "aks-taxonomy-and-correlation",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "alex",
+        "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452",
+        "role": "bounded seven-identity technical reconciliation; authority/caller disposition remains May-owned",
+        "status": "technical-no-current-defect; awaiting-may-disposition",
+        "artifact": "projects/alex.app/aks-taxonomy-correlation-reconciliation-2026-10-04.json",
+        "artifactSha256": "b38fa79f00a0fc8902ef6dbe2949375ba2c1e38e74f3f7828fc427b31f835f56",
+        "mayDispositionTask": "goal/appdep_b9d63909a838fa7ad225d6b6",
+        "mayDispositionConditionId": "app-request:appdep_b9d63909a838fa7ad225d6b6"
+      },
+      "basis": "The old AKS taxonomy/correlation execution path depends on retired Apps/controllers and candidates that are not ancestors of the deployed Host. One c6636d34 activation receipt is recovered, but required problem-task terminal links, full six-pair proof, staged 3bf56cf5 activation, f9824eb7 approval and caller closure remain missing, so no old outcome is fulfilled. Current saved-result, delivery and metric-source checks show no precise enabled-App defect requiring new Alex technical work. May must disposition the exact obsolete authority/caller boundary without activating old candidates or rebinding Conditions.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -3324,11 +3361,20 @@
         "conditionIds": []
       },
       "outcome": "Repair and live-prove the AKS request/task correlation needed for the accountable aks-rp-e2e App owner to carry the current watcher-taxonomy request, then obtain the terminal six-pair delivery result without reusing an immutable prior receipt or claiming unapplied work.",
-      "disposition": "consolidate-lineage-after-current-state-check",
+      "disposition": "obsolete-lineage-awaiting-may-disposition-unfulfilled",
       "proposedOwner": "alex",
       "lineage": "aks-taxonomy-and-correlation",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "alex",
+        "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452",
+        "role": "bounded seven-identity technical reconciliation; authority/caller disposition remains May-owned",
+        "status": "technical-no-current-defect; awaiting-may-disposition",
+        "artifact": "projects/alex.app/aks-taxonomy-correlation-reconciliation-2026-10-04.json",
+        "artifactSha256": "b38fa79f00a0fc8902ef6dbe2949375ba2c1e38e74f3f7828fc427b31f835f56",
+        "mayDispositionTask": "goal/appdep_b9d63909a838fa7ad225d6b6",
+        "mayDispositionConditionId": "app-request:appdep_b9d63909a838fa7ad225d6b6"
+      },
+      "basis": "The old AKS taxonomy/correlation execution path depends on retired Apps/controllers and candidates that are not ancestors of the deployed Host. One c6636d34 activation receipt is recovered, but required problem-task terminal links, full six-pair proof, staged 3bf56cf5 activation, f9824eb7 approval and caller closure remain missing, so no old outcome is fulfilled. Current saved-result, delivery and metric-source checks show no precise enabled-App defect requiring new Alex technical work. May must disposition the exact obsolete authority/caller boundary without activating old candidates or rebinding Conditions.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -3463,21 +3509,22 @@
         "conditionIds": []
       },
       "outcome": "Identify and correct the May Host/runtime and shared App-definition task-creation rule that permits one Task per finding, check, proposal, session audit, or work item to regenerate instead of retaining one durable Task per meaningful goal; prove the corrected rule preserves item-level evidence and legitimate waits inside the retained goal Task without altering foreign App-owned task state directly.",
-      "disposition": "current-alex-continuation-and-may-stop-disposition-needed-unfulfilled",
+      "disposition": "current-protocol-no-change-and-historical-stop-withdrawn-unfulfilled",
       "proposedOwner": "alex",
       "lineage": "owner-review-contract",
       "replacement": {
         "appId": "alex",
         "taskId": "input/appdep_34a3e05d87955f537e05b372",
-        "role": "bounded current intake/owner-work reuse investigation recommended; separate historical stop remains May-owned",
-        "status": "admitted-current-investigation",
+        "role": "bounded current intake/reuse verification; historical stop disposition remains May-owned",
+        "status": "done-no-change-linked-reuse; may-withdrew-stopped-candidate-unfulfilled",
         "artifact": "projects/alex.app/owner-review-contract-reconciliation-2026-10-04.json",
         "artifactSha256": "e9bed7fcd5753d94e4e5643d88b47e2ab75a27ea3dd60a2f7a2f48660808d614",
-        "conditionId": "app-request:appdep_34a3e05d87955f537e05b372",
+        "currentCandidate": "9009a1d57a6fc3ef1d6530c6ec7232ea5bf70a28",
         "mayDispositionTask": "goal/appdep_bc9a845ad126f8632071584a",
-        "mayDispositionConditionId": "app-request:appdep_bc9a845ad126f8632071584a"
+        "mayDispositionArtifact": "artifacts/owner-review-contract-may-disposition-2026-10-04.json",
+        "mayDispositionArtifactSha256": "5ab3a9836c17bb38b65f5161dd6d9953c2440208f9c6b3170b4f479294422483"
       },
-      "basis": "Current source retains stable standing identities in several paths, but Alex report admissions remain distinct input Tasks and mapper evidence alone cannot establish harmful duplicate repair commissioning. The old outcome is unfulfilled. Admit one bounded current Alex investigation using actual Host admission and preserve every report/caller/wait; separately ask May to disposition the historical unknown stop Condition resume-grouped-goal-repair-after-stop without treating migration authority as resolution.",
+      "basis": "Actual current Host admissions preserve separate immutable intake assessments while explicit links reuse existing consequential work: replay is idempotent, new evidence remains distinct, and an independent outcome is not collapsed. This is a current no-change decision, not fulfillment of the old blanket grouped-goal outcome. May separately withdrew the historical stopped candidate unfulfilled; Condition resume-grouped-goal-repair-after-stop remains unknown historical evidence and the cleanup caller and missing old proof remain preserved.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -3546,20 +3593,21 @@
         ]
       },
       "outcome": "Complete the existing may-agent owner-review notification-boundary repair demonstrated by session s_1787653153677_77 and independently reviewed in session s_1787683908535_443. Integrate terminal-signal disclosure into the actual terminal path; ensure canonical delivery and remediation receipt lookup occurs before every agent or human owner-signal path; route a genuinely new finding through one supported accountable App or Task owner; make an exact replay create zero new signals; and truthfully disclose the count and event IDs of signals created by the attempt. Run all focused tests and typecheck after the final source change. Preserve the distinction between finding delivery and remediation, request approval only after the candidate is fully integrated and verified, and perform no production mutation without that approval. Replan on this same task if any receipt binding, route, regression, post-change check, activation identity, or live terminal proof is incomplete.",
-      "disposition": "obsolete-candidate-awaiting-may-disposition-unfulfilled",
+      "disposition": "obsolete-activation-ask-withdrawn-unfulfilled",
       "proposedOwner": "alex",
       "lineage": "owner-review-contract",
       "replacement": {
         "appId": "alex",
         "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452",
-        "role": "bounded exact supersession recommendation; human authority remains with May",
-        "status": "awaiting-may-disposition",
+        "role": "bounded exact supersession recommendation; human authority disposition returned by May",
+        "status": "may-withdrew-obsolete-activation-ask-unfulfilled",
         "artifact": "projects/alex.app/owner-review-contract-reconciliation-2026-10-04.json",
         "artifactSha256": "e9bed7fcd5753d94e4e5643d88b47e2ab75a27ea3dd60a2f7a2f48660808d614",
         "mayDispositionTask": "goal/appdep_bc9a845ad126f8632071584a",
-        "mayDispositionConditionId": "app-request:appdep_bc9a845ad126f8632071584a"
+        "mayDispositionArtifact": "artifacts/owner-review-contract-may-disposition-2026-10-04.json",
+        "mayDispositionArtifactSha256": "5ab3a9836c17bb38b65f5161dd6d9953c2440208f9c6b3170b4f479294422483"
       },
-      "basis": "Frozen Host commit 62890907 is not deployed and uses obsolete app.dependency.completed receipts. Current Task communication has exact receipt/replay behavior, but does not prove the requested historical terminal disclosure/count outcome. No current recurrence justifies a Host patch or global message suppression. Preserve Condition approve-owner-signal-boundary-62890907 and caller chain while May withdraws the obsolete request unfulfilled or identifies a precise surviving obligation.",
+      "basis": "Frozen Host candidate 62890907 is not deployed, uses an obsolete protocol/controller, lacks recovered approval/live terminal proof, and has no demonstrated current recurrence. May withdrew the exact activation ask obsolete and unfulfilled, neither approving nor rejecting it. Condition approve-owner-signal-boundary-62890907 remains unknown historical evidence; caller chain and missing disclosure/count proof remain preserved.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -3835,11 +3883,20 @@
         ]
       },
       "outcome": "Restore execution and terminal result propagation for the already-admitted AKS problem task runtime/problem-solver/live-proof-aks-taxonomy-c6636d34-20260818-1346, then obtain the correlated terminal App result without duplicating the request or domain task.",
-      "disposition": "consolidate-lineage-after-current-state-check",
+      "disposition": "obsolete-lineage-awaiting-may-disposition-unfulfilled",
       "proposedOwner": "alex",
       "lineage": "aks-taxonomy-and-correlation",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "alex",
+        "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452",
+        "role": "bounded seven-identity technical reconciliation; authority/caller disposition remains May-owned",
+        "status": "technical-no-current-defect; awaiting-may-disposition",
+        "artifact": "projects/alex.app/aks-taxonomy-correlation-reconciliation-2026-10-04.json",
+        "artifactSha256": "b38fa79f00a0fc8902ef6dbe2949375ba2c1e38e74f3f7828fc427b31f835f56",
+        "mayDispositionTask": "goal/appdep_b9d63909a838fa7ad225d6b6",
+        "mayDispositionConditionId": "app-request:appdep_b9d63909a838fa7ad225d6b6"
+      },
+      "basis": "The old AKS taxonomy/correlation execution path depends on retired Apps/controllers and candidates that are not ancestors of the deployed Host. One c6636d34 activation receipt is recovered, but required problem-task terminal links, full six-pair proof, staged 3bf56cf5 activation, f9824eb7 approval and caller closure remain missing, so no old outcome is fulfilled. Current saved-result, delivery and metric-source checks show no precise enabled-App defect requiring new Alex technical work. May must disposition the exact obsolete authority/caller boundary without activating old candidates or rebinding Conditions.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
@@ -3858,11 +3915,20 @@
         "conditionIds": []
       },
       "outcome": "Repair and live-prove the AKS watcher delivery taxonomy so the accountable AKS App owns the intended watcher source/event pairs and expected observations are not reported as unexpected unhandled signals, while actionable run events still reach their exact consumers.",
-      "disposition": "consolidate-lineage-after-current-state-check",
+      "disposition": "obsolete-lineage-awaiting-may-disposition-unfulfilled",
       "proposedOwner": "alex",
       "lineage": "aks-taxonomy-and-correlation",
-      "replacement": null,
-      "basis": "Overlapping system-improvement lineage. Reconcile current source/results and preserve exact live Conditions before admitting at most one coherent Alex continuation; duplicates become superseded only after mapping.",
+      "replacement": {
+        "appId": "alex",
+        "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452",
+        "role": "bounded seven-identity technical reconciliation; authority/caller disposition remains May-owned",
+        "status": "technical-no-current-defect; awaiting-may-disposition",
+        "artifact": "projects/alex.app/aks-taxonomy-correlation-reconciliation-2026-10-04.json",
+        "artifactSha256": "b38fa79f00a0fc8902ef6dbe2949375ba2c1e38e74f3f7828fc427b31f835f56",
+        "mayDispositionTask": "goal/appdep_b9d63909a838fa7ad225d6b6",
+        "mayDispositionConditionId": "app-request:appdep_b9d63909a838fa7ad225d6b6"
+      },
+      "basis": "The old AKS taxonomy/correlation execution path depends on retired Apps/controllers and candidates that are not ancestors of the deployed Host. One c6636d34 activation receipt is recovered, but required problem-task terminal links, full six-pair proof, staged 3bf56cf5 activation, f9824eb7 approval and caller closure remain missing, so no old outcome is fulfilled. Current saved-result, delivery and metric-source checks show no precise enabled-App defect requiring new Alex technical work. May must disposition the exact obsolete authority/caller boundary without activating old candidates or rebinding Conditions.",
       "preservation": [
         "latest corrections and acceptance",
         "accepted evidence/artifacts",
