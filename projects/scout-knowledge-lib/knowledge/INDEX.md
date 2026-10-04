@@ -72,6 +72,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ### 2026-10-04
 
+- [Share coordination state, not an undifferentiated agent transcript](./findings/2026-10-04-duomind-structured-semantic-coordination.md) — complete DuoMind paper review separates intention, expected subgoal, task belief, and uncertainty in peer messages; two-robot simulations with constrained instructions and shared global-camera views limit transfer.
 - [Infer a partner's constraints from the team, not only the partner](./findings/2026-10-04-joint-behavior-partner-constraints.md) — complete-paper review finds that compensating teammates can make joint traces more diagnostic than the constrained partner's trace alone; simulation assumptions and an uninspected promised code release limit transfer.
 - [Keep shared working state beside the agent transcript](./findings/2026-10-04-easl-shared-agent-workspace.md) — revision-pinned static inspection separates append-only history from explicitly addressed, revision-aware working context; the macOS application and its tests were not run.
 
