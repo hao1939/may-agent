@@ -9,6 +9,8 @@ import { withSqliteBusyRetry } from "../lib/db/busy-retry.js";
 import { resolveRuntimeRoots } from "./path-roots.js";
 import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.js";
 import { TASK_FAILOVER_METRIC } from "./adapters/reporting/task-failover-metrics.js";
+import { TASK_SKIPPED_CHECK_METRIC } from "./adapters/reporting/task-check-metrics.js";
+import { readTaskChecks, resetTaskChecks } from "./core/tasks/task-check-observations.js";
 import { redactTranscriptSecrets } from "../lib/persistence.js";
 
 export const METRIC_SOURCE_MEASUREMENT_EVENT = "trigger.metrics-snapshot";
@@ -149,7 +151,7 @@ function measurementError(error: unknown): string {
 }
 
 /**
- * Measure active metrics backed by a persisted source query or source command.
+ * Measure active query, command and Host counter sources.
  *
  * The metric definition remains the domain authority. This Host consumer only
  * executes that accepted definition and records the correlated observation. Each source
@@ -174,10 +176,11 @@ export async function measureSourceMetrics(options: {
        FROM metrics
        WHERE status = 'active'
          AND ((source_query IS NOT NULL AND trim(source_query) != '')
-           OR (source_command IS NOT NULL AND trim(source_command) != ''))
+           OR (source_command IS NOT NULL AND trim(source_command) != '')
+           OR id = ?)
        ORDER BY id`,
     )
-    .all() as SourceMetric[];
+    .all(TASK_SKIPPED_CHECK_METRIC.id) as SourceMetric[];
   const dueRows = options.isDue ? rows.filter(options.isDue) : rows;
   const measured: string[] = [];
   const skipped: string[] = [];
@@ -219,7 +222,17 @@ export async function measureSourceMetrics(options: {
       let completedAt: number | undefined;
       let measuredBy = "runtime:metric-source-query";
       let note = queryNote;
-      if (row.source_query) {
+      if (row.id === TASK_SKIPPED_CHECK_METRIC.id) {
+        const { since, counts } = readTaskChecks(options.bus);
+        const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+        completedAt = Date.now();
+        measuredBy = "runtime:task-checks";
+        sample = {
+          value: total - counts.claimed,
+          sampleSize: total,
+          note: JSON.stringify({ since, until: completedAt, counts }),
+        };
+      } else if (row.source_query) {
         // SQLite prepare executes the first statement and ignores SQL tail; it
         // is not a parser-based single-statement guarantee. Give every query its
         // own read-only connection and close it before the writer records or
@@ -253,6 +266,9 @@ export async function measureSourceMetrics(options: {
         sampleSize: sample.sampleSize,
         note: sample.note ?? note,
       });
+      // Sampling is synchronous. Retain counters if persistence failed; the next
+      // ordinary pass includes that activity and its original window start.
+      if (row.id === TASK_SKIPPED_CHECK_METRIC.id) resetTaskChecks(options.bus, completedAt);
       measured.push(row.id);
     } catch (error) {
       failed(row.id, measurementError(error));
@@ -277,6 +293,7 @@ export function attachMetricSourceMeasurement(options: {
 }): MetricPassRuntime {
   const db = getDb(options.persistDir);
   const metricService = createMetricService({ getDb: () => db });
+  readTaskChecks(options.bus);
   // Startup registrations are repeatable definition writes, not observations.
   // Reuse the bounded storage policy when another startup process owns SQLite's
   // writer lock; keep measurement and subscription effects outside this retry.
@@ -285,6 +302,9 @@ export function attachMetricSourceMeasurement(options: {
     // Install observation defaults once; retain any App-owned calibration or retirement.
     if (!db.prepare("SELECT id FROM metrics WHERE id = ?").get(TASK_FAILOVER_METRIC.id)) {
       metricService.define(TASK_FAILOVER_METRIC);
+    }
+    if (!db.prepare("SELECT id FROM metrics WHERE id = ?").get(TASK_SKIPPED_CHECK_METRIC.id)) {
+      metricService.define(TASK_SKIPPED_CHECK_METRIC);
     }
     const subscriberFailureSource = {
       source: "rolling one-hour subscriber.failed event count",

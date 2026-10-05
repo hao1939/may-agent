@@ -53,6 +53,7 @@ import {
 } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
 import type { PreparedTaskWorkspace } from "./workspace.js";
+import { recordTaskCheck } from "./task-check-observations.js";
 
 export type AppTaskTiming = {
   dispatch: AppTaskDispatch;
@@ -88,6 +89,7 @@ export async function runTaskAttempt(input: {
       reason: input.reason ?? "task-controller",
       recoverSessionHandoff: (attempt) => opts.sessions?.handoff(attempt),
     });
+    recordTaskCheck(opts.bus, claim.kind);
     if (claim.kind !== "claimed") {
       if (claim.kind === "busy") {
         const active = claim.attemptId ? config.resourceStore.readAttempt(claim.attemptId) : null;

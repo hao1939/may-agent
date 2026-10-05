@@ -10,6 +10,8 @@ import { attachEventPersistence } from "./daemon-events.js";
 import { EventBus, EVENT_ROW_ID, EVENT_RECORD_ONLY } from "./core/events/bus.js";
 import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.js";
 import { TASK_FAILOVER_METRIC } from "./adapters/reporting/task-failover-metrics.js";
+import { TASK_SKIPPED_CHECK_METRIC } from "./adapters/reporting/task-check-metrics.js";
+import { readTaskChecks, recordTaskCheck } from "./core/tasks/task-check-observations.js";
 import {
   attachMetricSourceMeasurement,
   measureSourceMetrics,
@@ -45,6 +47,70 @@ describe("source-query metric measurement", () => {
     rmSync(persistDir, { recursive: true, force: true });
     if (originalAppRoot === undefined) delete process.env.APP_ROOT;
     else process.env.APP_ROOT = originalAppRoot;
+  });
+
+  it("samples skipped checks quietly and leaves breach/recovery to metric evaluation", async () => {
+    const db = getDb(persistDir);
+    const metrics = createMetricService({ getDb: () => db });
+    const id = TASK_SKIPPED_CHECK_METRIC.id;
+    const observed: string[] = [];
+    bus.subscribe((event) => observed.push(event.type));
+    for (let n = 0; n < 1_000; n++) recordTaskCheck(bus, "waiting");
+    recordTaskCheck(bus, "busy");
+    recordTaskCheck(bus, "claimed");
+    expect(observed).toEqual([]);
+    expect(metrics.get(id)!.observation).toBeNull();
+
+    const sample = () => measureSourceMetrics({ bus, persistDir, isDue: (row) => row.id === id });
+    expect((await sample()).measured).toEqual([id]);
+    expect(metrics.get(id)!.observation).toMatchObject({ value: 1_001, sampleSize: 1_002 });
+    expect(JSON.parse(metrics.get(id)!.observation!.note!)).toMatchObject({
+      since: expect.any(Number), until: expect.any(Number),
+      counts: { waiting: 1_000, busy: 1, claimed: 1, attention: 0, completed: 0 },
+    });
+    expect(db.prepare("SELECT COUNT(*) AS n FROM metric_snapshots WHERE metric_id = ?").get(id)).toEqual({ n: 1 });
+    await evaluateMetrics({ bus, persistDir });
+    expect(observed).toEqual([]); // Observation defaults do not impose an alert policy.
+
+    db.run("UPDATE metrics SET threshold = 100, alert_op = '>' WHERE id = ?", [id]);
+    await evaluateMetrics({ bus, persistDir });
+    await evaluateMetrics({ bus, persistDir });
+    expect(observed).toEqual(["metric.breach"]);
+    await sample(); // An idle interval is a real zero sample, not missing evidence.
+    expect(metrics.get(id)!.observation).toMatchObject({ value: 0, sampleSize: 0 });
+    expect(observed).toEqual(["metric.breach"]);
+    await evaluateMetrics({ bus, persistDir });
+    expect(observed).toEqual(["metric.breach", "metric.recovered"]);
+  });
+
+  it("retains check counts after a failed sample and honors sampling cadence and retirement", async () => {
+    const db = getDb(persistDir);
+    const id = TASK_SKIPPED_CHECK_METRIC.id;
+    recordTaskCheck(bus, "waiting");
+    const before = readTaskChecks(bus);
+    const run = db.run.bind(db);
+    const write = spyOn(db, "run").mockImplementation((sql, params) => {
+      if (sql.startsWith("INSERT INTO metric_snapshots")) throw new Error("fixture sample unavailable");
+      return run(sql, params);
+    });
+    try {
+      const result = await measureSourceMetrics({ bus, persistDir, isDue: (row) => row.id === id });
+      expect(result.failures).toHaveLength(1);
+      expect(readTaskChecks(bus)).toEqual(before);
+    } finally {
+      write.mockRestore();
+    }
+    bus.emit({ type: "trigger.metrics-snapshot" });
+    await measurement.idle();
+    expect(createMetricService({ getDb: () => db }).get(id)!.observation?.value).toBe(1);
+    recordTaskCheck(bus, "completed");
+    bus.emit({ type: "trigger.metrics-snapshot" });
+    await measurement.idle();
+    expect(readTaskChecks(bus).counts.completed).toBe(1);
+    expect(db.prepare("SELECT COUNT(*) AS n FROM metric_snapshots WHERE metric_id = ?").get(id)).toEqual({ n: 1 });
+    db.run("UPDATE metrics SET status = 'retired' WHERE id = ?", [id]);
+    await measureSourceMetrics({ bus, persistDir, isDue: (row) => row.id === id });
+    expect(readTaskChecks(bus).counts.completed).toBe(1);
   });
 
   it("registers metrics after a short competing startup writer without losing samples or calibration", async () => {

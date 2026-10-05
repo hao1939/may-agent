@@ -15,6 +15,7 @@ import {
   type TaskExecutor,
 } from "@may-agent/sdk";
 import { addLogSubscriber } from "../../../lib/log.js";
+import { readTaskChecks } from "./task-check-observations.js";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { openDatabase } from "../../../lib/db.js";
 import { EVENT_DELIVERY_RESULT, EVENT_ROW_ID, EventBus, type AgentEvent } from "../events/bus.js";
@@ -4771,6 +4772,7 @@ describe("canonical App task runtime", () => {
 
         if (automaticRecovery) {
           await waitFor("three mechanical checks while the answer is still pending", () => quietRecoveryChecks >= 3);
+          expect(readTaskChecks(bus).counts.waiting).toBeGreaterThanOrEqual(quietRecoveryChecks);
           expect(ownerInputs).toHaveLength(1);
           expect(config.resourceStore.readTask("work/owner")?.status.reviewAt).toBeUndefined();
         }

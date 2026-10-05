@@ -122,8 +122,13 @@ Use the source map above for the lifecycle and persistence owners. Include
 external requirements in a work item's context when the change spans an App;
 do not make these entry points depend on that App's name or manual location.
 
-Routine Task checks use debug logging and do not publish Task updates or timing
-without an attempt. Actual recovery transitions and attempt timing remain evidence.
+Routine Task checks increment bounded counters instead of publishing Task updates
+or timing without an attempt. Private workers return those counts with their result;
+the existing sampler records `task.skipped-check-count` every five minutes, with
+the window, reason counts and total checks. Sampling creates no event. The metric
+has no default alert; Apps can calibrate a rule using ordinary metric evaluation.
+Unsampled counts may be lost on restart or worker loss; these are activity samples,
+not an exact audit. Actual recovery transitions and attempt timing remain evidence.
 Passive diagnostics use the Event bus record-only marker: interested subscribers
 still receive them, but they do not require a new worker. The originating failed
 publication keeps its own delivery status. Observer failure notifications track
