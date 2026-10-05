@@ -1,47 +1,67 @@
-# Event → App admission bounded-cost comparison
+# Event → App admission: recovery boundary and cost
 
-Compared candidates:
+PR #336 closes a gap between saving an Event and saving its App admission.
+An Event can survive a crash or failed database write before an admission plan
+or inbox entry exists. The existing recovery paths cannot select that missing
+record. A receipt from an unrelated Event consumer does not prove App admission.
 
-- **Discarded direct/hybrid route ledger:** `fix/durable-route-preplan-recovery-20261004` at `3667d2e18` (schema and recovery query).
-- **Selected Event marker:** this branch, based on `a8424fe4eca9bede4213c056b9e81701bc89ddf6` plus the accompanying tests/index change.
+## Reuse existing recovery
 
-This is a row-operation/query-plan comparison, not an elapsed-time benchmark. Counts below are for one newly journaled Event and one App durable route. Both candidates also pay the unchanged Event payload, trace, correlation, and admission-plan costs, so those common costs are excluded.
+| Saved state | Recovery owner |
+|---|---|
+| Event, without durable App admission | The existing input recovery scan retries the App route using the Event's pending marker. |
+| Admission plan | Existing plan recovery retries its unresolved commands. |
+| App inbox entry | Existing inbox recovery attaches the input to its Task. |
+| Task and linked result | Existing Task reconciliation and result recovery continue the work. |
 
-| Boundary | Direct/hybrid route ledger | Event marker |
-|---|---:|---:|
-| Initial journal transaction | 1 Event INSERT + 1 `event_durable_routes` INSERT | 1 Event INSERT containing `app_admission_pending=1` |
-| Accepted-work acknowledgement | 1 route-ledger UPDATE plus the existing Event receipt UPDATE | 1 existing Event receipt UPDATE that also clears the marker |
-| Inspected no-work acknowledgement | 1 route-ledger UPDATE | 1 standalone Event marker UPDATE (no receipt is invented) |
-| Recovery candidate scan | 1 indexed ledger scan with LEFT JOIN to plans, limit 16 | 1 partial-index Event scan, window 64, processing batch 16 |
-| Recovery bookkeeping before row load | 1 route-ledger `updated_at` UPDATE per selected pre-plan Event | none |
-| Event reconstruction | 1 Event row/body load per selected Event | 1 Event row/body load per selected Event |
-| Addressed-message lost-ack check | absent; the discarded candidate did not preserve a previously accepted recipient across owner remap | 1 `origin_event_id` lookup using partial index `idx_app_inbox_origin_event`, then no new inbox write when found |
+The marker clears when the App route has durably accepted the input, saved its
+plan, or inspected the Event and found no App work. Once that responsibility
+is recorded, the existing recovery path owns the next step. Retries use the
+same Event and input identities; they do not replay ordinary fanout or controls.
+Delivery is at least once.
 
-Thus the marker removes one table, one index, one INSERT for every Event, one UPDATE for ordinary accepted work, and the per-recovery-attempt bookkeeping UPDATE. Its explicit cost is the same one UPDATE on the uncommon no-work path and one indexed origin lookup on addressed-message recovery. The origin lookup initially planned as a table scan; the production-path `EXPLAIN QUERY PLAN` regression exposed that real defect, so this candidate adds the partial index rather than describing the scan as bounded.
+Producer retry helps only if the producer runs again and retries that Event.
+Failure logs and evaluation can support diagnosis, but neither substitutes for
+an indexed record of admission still owed. This change adds no queue, generic
+route registry, recovery timer, or model call.
 
-## Reproduction
+## Incremental cost over main before this PR
 
-Run:
+Every newly journaled Event starts with `app_admission_pending=1`, including
+Events that ultimately need no App work. This avoids a second routing decision
+inside the Event writer.
+
+| Operation | Added cost |
+|---|---|
+| Event journal write | One field in the existing INSERT, plus pending-index maintenance. |
+| Accepted App admission | Clear the field in the existing receipt UPDATE. |
+| Inspected no-work | One extra UPDATE to clear the marker; this path can be common. |
+| Pending recovery | Existing scan reads a fixed high-water mark and up to 64 indexed IDs per pass, loading at most 16 readable Events. |
+| Addressed agent message | One indexed lookup by origin Event on admission, preserving a previously accepted recipient after lost acknowledgement. |
+| Storage | Two partial indexes, their write maintenance, and retention of still-pending Events. |
+
+An empty recovery scan does not read historical Event bodies. Persistent
+failures remain pending and retry on the existing cadence; this PR does not
+add a new escalation policy or guarantee recovery from corrupt evidence.
+
+Migration preserves the old outstanding Conversation recovery subset: pending
+or unhandled `conversation.message.created` Events with approval metadata or an
+external body. Other historical Events remain unmarked. Older stranded reports
+need a separate, verified recovery of their exact Events, not blanket replay.
+
+## Verification and limits
 
 ```sh
 bun test src/app/composition/direct-event-recovery.test.ts
+bun test src/app/core/events/bus.test.ts src/lib/db/schema.test.ts src/lib/db/maintenance.test.ts
 ```
 
-The suite executes production persistence and App admission. It asserts:
+These tests exercise real persistence and admission, restart, a second-process
+SQLite writer lock, independent receipts, stable identities, current routing
+before a plan, retained recipients afterward, no-work settlement, fair retry,
+Stop non-replay, migration and retention. Query-plan assertions cover
+`idx_events_app_admission_pending` and `idx_app_inbox_origin_event`.
 
-1. marker recovery uses `idx_events_app_admission_pending` for
-   `WHERE app_admission_pending = 1 AND id > ? ORDER BY id LIMIT 64`;
-2. addressed-message origin recovery uses `idx_app_inbox_origin_event` for
-   `WHERE origin_event_id = ? LIMIT 1`;
-3. no-work acknowledgement clears the marker with zero inbox, Task, or model rows;
-4. a real second-process SQLite writer lock leaves marker=1 and no plan before registry N is replaced by N+1.
-
-To inspect the discarded comparison source directly:
-
-```sh
-git show 3667d2e18:src/lib/db/schema.ts | sed -n '209,225p'
-git show 3667d2e18:src/app/composition/app-inbox-runtime.ts | sed -n '720,790p'
-git show 3667d2e18:src/lib/db-writer.ts | sed -n '900,925p'
-```
-
-Limitations: this report counts SQLite statements/rows and verifies access paths; it does not claim latency, I/O, cache, or contention measurements. Admission-plan writes are intentionally excluded because both candidates use the same plan store after first successful routing.
+This is a statement and query-plan accounting, not a performance benchmark.
+No latency, throughput or contention improvement has been measured. Check live
+write cost and recovery backlog after deployment before adding optimizations.
