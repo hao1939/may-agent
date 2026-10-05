@@ -261,6 +261,53 @@ describe("publication-coupled observation memory", () => {
     };
   }
 
+  it("reports changed failures and recurrence while repeated checks only refresh health", async () => {
+    let error: string | undefined = "provider unavailable";
+    const f = fixture(async () => {
+      if (error) throw new Error(error);
+      return [];
+    });
+    const failures: unknown[] = [];
+    f.bus.subscribe((event) => failures.push(event.data));
+    try {
+      for (let n = 0; n < 3; n++) await f.scan();
+      expect(failures).toHaveLength(1);
+      expect(f.runtime.health("sample")[0]).toMatchObject({
+        lastError: "provider unavailable", lastCompletedAt: 201,
+      });
+      error = "credentials expired";
+      await f.scan();
+      expect(failures).toHaveLength(2);
+      error = undefined;
+      await f.scan();
+      expect(f.runtime.health("sample")[0]?.lastError).toBeUndefined();
+      error = "credentials expired";
+      await f.scan();
+      expect(failures).toHaveLength(3);
+    } finally { f.runtime.close(); }
+  });
+
+  it.each(["throws", "no-receipt"])("retries a failure report whose publication %s", async (mode) => {
+    const f = fixture(async () => { throw new Error("provider unavailable"); });
+    let publications = 0;
+    const quietLog = spyOn(console, "error").mockImplementation(() => {});
+    f.bus.setPersistenceSubscriber((event) => {
+      publications++;
+      if (publications === 1) {
+        if (mode === "throws") throw new Error("storage unavailable");
+        return;
+      }
+      f.persist(event);
+    });
+    try {
+      await f.scan();
+      await f.scan();
+      await f.scan();
+      expect(publications).toBe(2);
+      expect(f.runtime.health("sample")[0]?.lastError).toBe("provider unavailable");
+    } finally { quietLog.mockRestore(); f.runtime.close(); }
+  });
+
   it("retries a failed transition, stays quiet after publication, and reports recurrence", async () => {
     let state = "ready",
       fail = false;
@@ -390,7 +437,7 @@ describe("publication-coupled observation memory", () => {
       await f.scan();
       expect(seen.slice(1)).toEqual(Array(8).fill("valid"));
       expect(published.filter((type) => type === "sample.fact")).toHaveLength(2);
-      expect(published.filter((type) => type === "app.observer.failed")).toHaveLength(7);
+      expect(published.filter((type) => type === "app.observer.failed")).toHaveLength(6);
     } finally {
       f.runtime.close();
     }
@@ -409,7 +456,7 @@ describe("publication-coupled observation memory", () => {
         await f.scan();
         expect(stringify.mock.calls.some(([value]) => value === snapshot || value === huge)).toBe(false);
       }
-      expect(events).toEqual(Array(3).fill("app.observer.failed"));
+      expect(events).toEqual(["app.observer.failed"]);
     } finally {
       stringify.mockRestore();
       f.runtime.close();

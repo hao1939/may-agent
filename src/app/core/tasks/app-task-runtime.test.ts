@@ -14,6 +14,8 @@ import {
   type AppInputContext,
   type TaskExecutor,
 } from "@may-agent/sdk";
+import { addLogSubscriber } from "../../../lib/log.js";
+import { readTaskChecks } from "./task-check-observations.js";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { openDatabase } from "../../../lib/db.js";
 import { EVENT_DELIVERY_RESULT, EVENT_ROW_ID, EventBus, type AgentEvent } from "../events/bus.js";
@@ -389,6 +391,15 @@ it("reopens with mapped requirements and one durable input, rolling back failed 
   expect(readAppTaskAdmissionOutcome(config, taskId, "original")?.summary).toBe("Existing platforms pass");
   expect(reopenLoadedAppTask({ ...control, bus })).toEqual(receipt);
   expect(config.resourceStore.readTrigger(taskId)).toBeNull();
+  const checks: string[] = [];
+  const stopChecks = bus.subscribe((event) => checks.push(event.type));
+  try {
+    for (let n = 0; n < 3; n++) await reconcileLoadedAppTaskOnce({
+      bus, appId: "sample", taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+    });
+    expect(checks).toEqual([]);
+  } finally { stopChecks(); }
 });
 
 it("retains closed-Task observations as history without treating desired work as an observation", async () => {
@@ -4697,7 +4708,7 @@ describe("canonical App task runtime", () => {
           console.info(
             "automatic-recovery-timeout",
             description,
-            { quietRecoveryChecks, recoveryScans, ownerDispatches },
+            { recoveryScans, ownerDispatches },
           );
         expect(predicate(), `Timed out waiting for ${description}`).toBeTrue();
       };
@@ -4705,12 +4716,8 @@ describe("canonical App task runtime", () => {
       const recoveryScans: Array<{ at: number; taskIds: string[] }> = [];
       const config = loadedTaskConfig(f);
       let quietRecoveryChecks = 0;
-      bus.listen((event) => {
-        if (
-          event.data.taskId === "work/owner" &&
-          event.type === "project.task.reconcile.skipped" &&
-          event.data.reason === "conditions-open"
-        ) quietRecoveryChecks += 1;
+      const stopCheckLog = addLogSubscriber((level, message) => {
+        if (level === "debug" && message === "[app-task:sample] work/owner check: waiting") quietRecoveryChecks++;
       });
       const source = installed[0]!.resourceStore;
       const listRecoveryCandidates = source.listRecoveryCandidates.bind(source);
@@ -4765,6 +4772,8 @@ describe("canonical App task runtime", () => {
 
         if (automaticRecovery) {
           await waitFor("three mechanical checks while the answer is still pending", () => quietRecoveryChecks >= 3);
+          expect(readTaskChecks(bus).counts.waiting).toBeGreaterThanOrEqual(quietRecoveryChecks);
+          expect(readTaskChecks(bus).examples).toContainEqual({ appId: "sample", taskId: "work/owner", outcome: "waiting" });
           expect(ownerInputs).toHaveLength(1);
           expect(config.resourceStore.readTask("work/owner")?.status.reviewAt).toBeUndefined();
         }
@@ -4907,6 +4916,7 @@ describe("canonical App task runtime", () => {
       } finally {
         releaseFirstReview();
         source.listRecoveryCandidates = listRecoveryCandidates;
+        stopCheckLog();
         source.nextDueAt = nextDueAt;
         inbox.close();
         await closeInstalledAppTaskRuntimes(bus);
@@ -4940,7 +4950,7 @@ describe("canonical App task runtime", () => {
       });
       const install = async () => {
         bus.listen((event) => {
-          if (event.type === "project.task.reconcile.skipped" || event.type === "project.task.reconciled")
+          if (event.type === "project.task.reconciled")
             diagnostics.push(structuredClone(event));
         });
         await installCoreTaskRuntimes({
