@@ -33,11 +33,6 @@ export const INTENTIONAL_OBSERVATION_EVENT_TYPES = [
   "metric.evaluation.failed",
   "conversation.updated",
   "project.approval.resolved",
-  "handler.workflow_dispatched",
-  "runtime.daemon.heartbeat",
-  "credential.state",
-  "guard.triggered",
-  "skill.loaded",
 ] as const;
 const intentionalObservationSql = INTENTIONAL_OBSERVATION_EVENT_TYPES.map((type) => `'${type}'`).join(",");
 export const UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY = `SELECT COUNT(*) AS value

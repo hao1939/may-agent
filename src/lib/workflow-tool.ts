@@ -68,7 +68,7 @@ import { createUnavailableMetricService } from "./metrics.js";
 import type { AppTaskEvents } from "../app/core/tasks/app-task-emitter.js";
 import { importRuntimeModule } from "./runtime-import.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
-import type { EventTrace } from "../app/core/events/bus.js";
+import { EVENT_RECORD_ONLY, type EventTrace } from "../app/core/events/bus.js";
 import type {
   AppRead,
   AgentCallOptions,
@@ -1105,6 +1105,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       const emitGuardSignal: GuardSignalEmitter = (demand, action, extra = {}) => {
         const sourceEventType = typeof extra.sourceEventType === "string" ? extra.sourceEventType : "unknown";
         emitRuntimeEvent({
+          [EVENT_RECORD_ONLY]: true,
           type: "guard.triggered",
           source: "workflow",
           owner: normalizeEventOwner(opts.agentName),
