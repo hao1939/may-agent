@@ -53,9 +53,17 @@ const parameters = Type.Object(
         ]),
       ),
     ),
-    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+    limit: Type.Optional(
+      Type.Integer({
+        minimum: 1,
+        maximum: 100,
+        description: "For list: page size, default 20. Returns previews; use get for full requirements and evidence.",
+      }),
+    ),
     cursor: Type.Optional(Type.String({ minLength: 1 })),
-    includeDone: Type.Optional(Type.Boolean()),
+    includeDone: Type.Optional(
+      Type.Boolean({ description: "For outcomes only. For list, use status; omitted status includes every phase." }),
+    ),
     inputKeys: Type.Optional(
       Type.Array(Type.String({ minLength: 1 }), {
         maxItems: 8,
@@ -137,6 +145,25 @@ type Params = {
 
 function result(value: unknown): AgentToolResult<undefined> {
   return { content: [{ type: "text", text: JSON.stringify(value, null, 2) }], details: undefined };
+}
+
+/** Discovery is navigation, not evidence for accepting or revising an assignment. */
+function discoveryPage(page: TaskPage) {
+  const preview = (value: string) => (value.length <= 240 ? value : `${value.slice(0, 239)}…`);
+  return {
+    projection: "discovery",
+    detailHint:
+      "Previews may be shortened. Use get with an exact Task id for full requirements, results and evidence before reusing or changing work.",
+    items: page.items.map(({ id, closed, status, generation, outcome, summary }) => ({
+      id,
+      ...(closed === undefined ? {} : { closed }),
+      status,
+      generation,
+      outcomePreview: preview(outcome),
+      ...(summary === undefined ? {} : { summaryPreview: preview(summary) }),
+    })),
+    ...(page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor }),
+  };
 }
 
 /** Task collection and fenced event capability scoped to the running App attempt. */
@@ -306,7 +333,7 @@ export function createAppTaskReadTool(options: {
         }
         const listOptions: TaskListOptions = {
           ...(params.status ? { status: params.status } : {}),
-          ...(params.limit === undefined ? {} : { limit: params.limit }),
+          limit: params.limit ?? 20,
           ...(params.cursor ? { cursor: params.cursor } : {}),
         };
         const reader = options.reader ?? (await import("./core/tasks/app-task-runtime.js"));
@@ -314,7 +341,7 @@ export function createAppTaskReadTool(options: {
           "list" in reader
             ? await reader.list({ bus: options.bus, appId, options: listOptions })
             : await reader.listLoadedAppTaskViews({ bus: options.bus, appId, options: listOptions });
-        return result(value);
+        return result(discoveryPage(value));
       } catch (error) {
         return result({ error: error instanceof Error ? error.message : String(error) });
       }

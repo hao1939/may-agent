@@ -556,10 +556,22 @@ it("shares Task detail, evidence and exact outcome reads between tools and execu
         );
         const page = await read.tasks.list({ limit: 1 });
         expect(page.nextCursor).toBeString();
-        expect(await toolRead({ action: "list", limit: 1 })).toEqual(JSON.parse(JSON.stringify(page)));
-        expect(await toolRead({ action: "list", limit: 1, cursor: page.nextCursor })).toEqual(
-          JSON.parse(JSON.stringify(await read.tasks.list({ limit: 1, cursor: page.nextCursor }))),
-        );
+        const discovery = await toolRead({ action: "list", limit: 1 });
+        expect(discovery).toMatchObject({
+          projection: "discovery",
+          nextCursor: page.nextCursor,
+          items: [{
+            id: page.items[0]!.id,
+            status: page.items[0]!.status,
+            generation: page.items[0]!.generation,
+            outcomePreview: page.items[0]!.outcome,
+          }],
+        });
+        expect(discovery.items[0]).not.toHaveProperty("result");
+        const next = await toolRead({ action: "list", limit: 1, cursor: page.nextCursor });
+        const nextPage = await read.tasks.list({ limit: 1, cursor: page.nextCursor });
+        expect(next.items.map((item: { id: string }) => item.id)).toEqual(nextPage.items.map((item) => item.id));
+        expect(next.nextCursor).toBe(nextPage.nextCursor);
         for (const includeDone of [false, true]) {
           const projection = { taskId: "work/accepted", includeDone };
           const outcome = await read.tasks.outcomes(projection);

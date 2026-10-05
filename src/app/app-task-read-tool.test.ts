@@ -28,7 +28,9 @@ describe("App Task read tool", () => {
     });
 
     expect(text(await tool.execute("call-list", { action: "list", status: ["running"], limit: 10 }))).toEqual({
-      items: [{ id: "review", status: "running", generation: 2, outcome: "Review docs" }],
+      projection: "discovery",
+      detailHint: expect.stringContaining("Use get"),
+      items: [{ id: "review", status: "running", generation: 2, outcomePreview: "Review docs" }],
     });
     expect(text(await tool.execute("call-get", { action: "get", taskId: "review" }))).toMatchObject({
       id: "review",
@@ -54,6 +56,53 @@ describe("App Task read tool", () => {
         options: { acceptedEvidence: { limit: 4, cursor: "older" }, inputKeys: ["request:earlier"] },
       }),
     ]);
+  });
+
+  it("bounds discovery text without losing identities, pagination or exact evidence", async () => {
+    const body = "long accepted evidence ".repeat(10_000);
+    const task = {
+      id: "one/exact-task",
+      status: "waiting" as const,
+      generation: 7,
+      closed: false,
+      outcome: "Keep the original requirements. ".repeat(100),
+      summary: "Earlier observation. ".repeat(100),
+      response: body,
+      facts: [body],
+      result: { report: body },
+    };
+    const calls: unknown[] = [];
+    const tool = createAppTaskReadTool({
+      bus: new EventBus(),
+      appId: () => "current",
+      reader: {
+        list: ({ options }) => {
+          calls.push(options);
+          return {
+            items: Array.from({ length: options?.limit ?? 20 }, (_, i) => ({ ...task, id: `${task.id}/${i}` })),
+            nextCursor: "opaque-next",
+          };
+        },
+        get: () => task,
+      },
+    });
+    const page = text(await tool.execute("discover", { action: "list", cursor: "opaque-before", status: ["waiting"] })) as {
+      nextCursor: string;
+      items: Array<{ outcomePreview: string; summaryPreview: string }>;
+    };
+    expect(calls).toEqual([{ limit: 20, cursor: "opaque-before", status: ["waiting"] }]);
+    expect(page.nextCursor).toBe("opaque-next");
+    expect(page.items).toHaveLength(20);
+    expect(page.items[0]).toMatchObject({ id: "one/exact-task/0", generation: 7, status: "waiting", closed: false });
+    expect(page.items[0].outcomePreview).toHaveLength(240);
+    expect(page.items[0].summaryPreview).toHaveLength(240);
+    expect(page.items[0].outcomePreview.endsWith("…")).toBe(true);
+    expect(JSON.stringify(page).length).toBeLessThan(15_000);
+    expect(page.items[0]).not.toHaveProperty("facts");
+    expect(page.items[0]).not.toHaveProperty("result");
+    expect(page.items[0]).not.toHaveProperty("response");
+    expect(text(await tool.execute("exact", { action: "get", taskId: task.id }))).toEqual(task);
+    expect(task.facts).toEqual([body]);
   });
 
   it("requires an exact task for outcome reads and preserves the reader's report", async () => {
