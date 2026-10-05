@@ -61,6 +61,10 @@ export function applyTaskChanges(input: {
       requests: changes.requests ?? [],
       conditions: changes.conditions ?? [],
       actions: changes.actions ?? [],
+      // A method decision may be repeated during a later recovery in the same
+      // generation. Within this attempt, live and final replays share a receipt.
+      ...(changes.actions?.some((action) => action.kind === "select-execution")
+        ? { executionAttemptId: input.claim.attemptId } : {}),
       inputKeys,
       ...(changes.communication?.length ? { communication: changes.communication } : {}),
     });
@@ -107,7 +111,9 @@ export function applyTaskChanges(input: {
     const actionReceiptKeys: string[] = [];
     const replayedActions: string[] = [];
     for (const action of changes.actions ?? []) {
-      const actionKey = changeKey({ action });
+      const actionKey = changeKey({ action,
+        ...(action.kind === "select-execution" ? { attemptId: input.claim.attemptId } : {}),
+      });
       const saved = config.resourceStore.readTaskChangeReceipt(input.claim.taskId, input.claim.generation, actionKey);
       if (saved) replayedActions.push(...saved.actionsApplied);
       else {

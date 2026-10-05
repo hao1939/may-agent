@@ -1841,6 +1841,63 @@ it("releases failed context preparation before later Task events and recovers af
   expect(readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult?.summary).toBe("Recovered after role repair");
 });
 
+it.each(["final", "live-and-final"] as const)("returns to the configured workflow through %s execution selection", async (mode) => {
+  const f = fixture();
+  const bus = eventBus();
+  const taskId = "work/choose-procedure";
+  let workflowCalls = 0;
+  let agentCalls = 0;
+  const changes = { facts: ["source:read-now-succeeds"], actions: [{
+    kind: "select-execution" as const, execution: "declared" as const, reason: "Resume the configured reader",
+  }] };
+  const agents: TaskAgentRunner = {
+    available: () => true, prepare: async () => true, snapshot: () => agents,
+    role: (agent) => ({ agent, instructions: "Fixture recovery policy" }),
+    async execute({ attempt }) {
+      agentCalls++;
+      expect(attempt.previousAttempt?.summary).toContain("Read timed out");
+      if (mode === "live-and-final") await attempt.apply(changes);
+      return { handlerResult: { state: "waiting", continue: true, summary: "Read repaired; procedure should retry", ...changes }, runId: null };
+    },
+  };
+  const workflows: TaskWorkflowRunner = {
+    async inspect() { return { available: true, error: null, workspace: "shared" }; },
+    async execute({ attempt }) {
+      workflowCalls++;
+      if (workflowCalls === 1) throw new Error("Read timed out");
+      if (workflowCalls === 2)
+        expect(attempt.previousAttempt?.executionSelection).toEqual({ execution: "declared", reason: "Resume the configured reader" });
+      return { handlerResult: { state: "converged", summary: "Read succeeded", facts: ["source:value:17"] }, runId: null };
+    },
+  };
+  await installCoreTaskRuntimes({ ...options(f, bus), agents, workflows, installControllers: false,
+    appRegistrySnapshot: { id: `execution-choice:${mode}`, generation: 1,
+      entries: [{ appDir: f.appDir, definition: definition() }] },
+  });
+  const config = loadedTaskConfig(f);
+  observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+    id: taskId, parentId: "operations", outcome: "Read the value", acceptance: ["Value returned"], workflow: "reader",
+  } });
+  const run = () => reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+    dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+  await run();
+  expect(workflowCalls).toBe(1);
+  expect(agentCalls).toBe(0);
+  advanceRuntimeTaskRetry(config, taskId);
+  await run();
+  expect(agentCalls).toBe(1);
+  expect(readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult?.state).toBe("waiting");
+  await run();
+  expect(workflowCalls).toBe(2);
+  expect(readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult?.summary).toBe("Read succeeded");
+  await run(); // No method decision itself creates work.
+  expect(workflowCalls).toBe(2);
+  recordAppTaskTrigger(config, taskId, { type: "sample.new-value", eventId: 700 });
+  await run();
+  expect(workflowCalls).toBe(3);
+  expect(agentCalls).toBe(1);
+});
+
 it("lets the handoff agent diagnose while the workflow is unavailable, then verifies completion", async () => {
   const f = fixture();
   const bus = eventBus();

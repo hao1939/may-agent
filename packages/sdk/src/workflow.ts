@@ -490,6 +490,8 @@ export type TaskAttempt = {
     state: "running" | "completed" | "failed" | "interrupted";
     summary?: string;
     failureReason?: string;
+    /** Explicit method choice admitted by this earlier attempt; not a completion judgment. */
+    executionSelection?: { execution: "declared" | "agent"; reason: string };
     sessionId?: string;
     workspacePath?: string;
     /** Execution's proposed result whose settlement failed. Evidence for review, never accepted effects. */

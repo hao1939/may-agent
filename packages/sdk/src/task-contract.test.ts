@@ -223,7 +223,7 @@ describe("project task handler contract", () => {
     expect(admitTaskReconcileResult(result, workflowOptions)).toMatchObject({
       ok: false,
       error:
-        "actions[0].kind must be unblock-task or retire-condition; revise requirements through tasks update and delegate new work through requests",
+        "actions[0].kind must be unblock-task, retire-condition or select-execution; revise requirements through tasks update and delegate new work through requests",
     });
   });
 
@@ -443,7 +443,7 @@ describe("project task handler contract", () => {
     expect(admitTaskReconcileResult(output, workflowOptions)).toEqual({
       ok: false,
       error:
-        "actions[0].kind must be unblock-task or retire-condition; revise requirements through tasks update and delegate new work through requests",
+        "actions[0].kind must be unblock-task, retire-condition or select-execution; revise requirements through tasks update and delegate new work through requests",
     });
   });
 
@@ -733,4 +733,26 @@ describe("project task handler contract", () => {
       }),
     ).toEqual({ ok: false, error: "verifier accepted must be boolean" });
   });
+});
+
+
+it("exposes execution selection through the same live and final action schemas", () => {
+  for (const execution of ["agent", "declared"] as const) {
+    const changes = { facts: ["read:healthy"], actions: [{ kind: "select-execution", execution, reason: "Next method chosen" }] };
+    expect(Check(taskChangesSchema, changes)).toBe(true);
+    for (const state of ["waiting", "converged"] as const) {
+      const result = { state, summary: "Method selected", ...changes };
+      for (const schema of [taskAgentResultSchema, taskReconcileResultSchema])
+        expect(admitTaskResultForSchema(schema, result)).toMatchObject({ ok: true, result });
+    }
+  }
+  for (const action of [
+    { kind: "select-execution", execution: "other", reason: "Unknown" },
+    { kind: "select-execution", execution: "agent", reason: " " },
+    { kind: "select-execution", execution: "agent", reason: "Scoped", taskId: "other-task" },
+  ]) {
+    expect(admitTaskResultForSchema(taskAgentResultSchema, {
+      state: "converged", summary: "Invalid choice", facts: ["observed"], actions: [action],
+    })?.ok).toBe(false);
+  }
 });
