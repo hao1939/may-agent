@@ -148,9 +148,13 @@ in another retry. Nested operations share that transaction through savepoints. A
 inside the body rolls it back; failure delivering a committed result does not
 authorize replaying the body. A single atomic append can retry the rejected
 statement. Exhaustion remains observable. Existing admission-plan recovery covers
-saved plans; failure before a plan is saved remains a delivery gap, recorded in
-the review below. A contention retry alone does not close that gap. This is not
-an unlimited wait or a new queue.
+saved plans. Failure before a plan or inbox entry is saved requires a durable
+Event admission obligation; a contention retry alone does not close that gap.
+[App admission recovery](events.md#recovering-app-admission) describes Host PR
+#336's pending marker and reuse of the existing recovery scan. That candidate
+awaits merge and deployment as of 2026-10-05. It introduces no new queue and
+preserves only the old outstanding Conversation subset during migration, leaving
+other historical Events untouched.
 
 Keep acquisition waits and lock-holding work distinct. Shorten expensive work
 inside writes, and diagnose slow reads separately: WAL readers need not hold
