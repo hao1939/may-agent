@@ -577,6 +577,48 @@ describe("scout-explore workflow prompt", () => {
     },
   );
 
+  it.each(["", "fixture body reset"])(
+    "does not dispatch after an arXiv body failure with message %j",
+    async (error) => {
+      let agentCalls = 0;
+      const ctx = workflowContext(async () => {
+        agentCalls += 1;
+        throw new Error("research agent must not run after source failure");
+      }, "arxiv");
+      const result = await executeScoutExplore(ctx, {
+        prepareXhsSession: async () => ({}) as never,
+        searchXhs: () => ({}) as never,
+        acquireArxiv: async () => ({
+          endpoint: arxivEndpoint,
+          status: 200,
+          body: "",
+          latencyMs: 75,
+          requestCount: 1,
+          retryAfter: null,
+          deferUntil: null,
+          error,
+        }),
+      });
+
+      expect(agentCalls).toBe(0);
+      expect(result).toMatchObject({
+        status: "done",
+        output: {
+          state: "converged",
+          summary: expect.stringContaining(
+            `body failure (${error || "unknown"})`,
+          ),
+          facts: expect.arrayContaining([
+            expect.stringContaining('"status":200'),
+            expect.stringContaining('"requestCount":1'),
+            "result:evidence-backed-no-op",
+          ]),
+          actions: [],
+        },
+      });
+    },
+  );
+
   it("does not dispatch after an arXiv timeout/fetch failure", async () => {
     let agentCalls = 0;
     const ctx = workflowContext(async () => {

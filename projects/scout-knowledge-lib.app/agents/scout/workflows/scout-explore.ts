@@ -1021,8 +1021,9 @@ export async function executeScoutExplore(
     sourceEvidence = [
       `arxiv-request:${JSON.stringify({ endpoint: acquisition.endpoint, status: acquisition.status, latencyMs: acquisition.latencyMs, requestCount: acquisition.requestCount, retryAfterAvailable: acquisition.retryAfter !== null, retryAfter: acquisition.retryAfter, deferUntil: acquisition.deferUntil })}`,
     ];
-    if (acquisition.status !== 200 || acquisition.error) {
-      const summary = `The one canonical arXiv request returned ${acquisition.status === null ? `a fetch failure (${acquisition.error ?? "unknown"})` : acquisition.error ? `HTTP ${acquisition.status} with a body failure (${acquisition.error})` : `HTTP ${acquisition.status}`}; no same-run retry or query variant was made.`;
+    const acquisitionFailed = acquisition.error !== undefined;
+    if (acquisition.status !== 200 || acquisitionFailed) {
+      const summary = `The one canonical arXiv request returned ${acquisition.status === null ? `a fetch failure (${acquisition.error || "unknown"})` : acquisitionFailed ? `HTTP ${acquisition.status} with a body failure (${acquisition.error || "unknown"})` : `HTTP ${acquisition.status}`}; no same-run retry or query variant was made.`;
       return ctx.done(summary, {
         state: "converged",
         summary,
