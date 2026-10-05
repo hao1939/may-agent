@@ -598,16 +598,22 @@ export type FindingIndexAdmissionIssue = {
 
 function markdownLinkTargets(content: string): string[] {
   // Let the runtime's Markdown parser decide what is a rendered navigation
-  // link. Regex extraction cannot reliably distinguish links from code,
-  // comments, escapes, or reference-definition precedence.
-  const targets: string[] = [];
-  Bun.markdown.render(content, {
-    link(children, { href }) {
-      targets.push(href);
-      return children;
-    },
+  // link. Its HTML renderer also applies Markdown character-reference
+  // semantics; callback href values intentionally retain those source bytes.
+  // Raw HTML is disabled so only Markdown navigation links can produce anchors.
+  const withoutComments = content.replace(/<!--[\s\S]*?(?:-->|$)/g, "");
+  const html = Bun.markdown.html(withoutComments, {
+    noHtmlBlocks: true,
+    noHtmlSpans: true,
   });
-  return targets;
+  return [...html.matchAll(/<a href="([^"]*)"/g)].map((match) =>
+    match[1]
+      .replace(/&amp;/g, "&")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">"),
+  );
 }
 
 function relativeMarkdownTarget(target: string): string | null {

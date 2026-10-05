@@ -1074,6 +1074,24 @@ describe("scout-explore workflow prompt", () => {
       reason: "duplicate-link",
     },
     {
+      label: "decimal character-reference duplicate",
+      links:
+        "- [Inline](findings/rejected-index.md)\n- [Encoded](findings/rejected-i&#110;dex.md)\n",
+      reason: "duplicate-link",
+    },
+    {
+      label: "hex character-reference duplicate",
+      links:
+        "- [Inline](findings/rejected-index.md)\n- [Encoded](findings/rejected-i&#x6e;dex.md)\n",
+      reason: "duplicate-link",
+    },
+    {
+      label: "named character-reference duplicate",
+      links:
+        "- [Inline](findings/rejected-index.md)\n- [Encoded](findings/rejected-index&period;md)\n",
+      reason: "duplicate-link",
+    },
+    {
       label: "indented-code-only",
       links: "    [Code](findings/rejected-index.md)\n",
       reason: "missing-link",
