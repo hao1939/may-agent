@@ -215,6 +215,12 @@ CREATE INDEX IF NOT EXISTS idx_events_session ON events(session_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_workflow ON events(workflow_run_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_project ON events(project_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_project_task ON events(project_id, task_id, timestamp, id);
+-- Match taskHistory's filters so routine polls do not add work to bounded reads.
+CREATE INDEX IF NOT EXISTS idx_events_project_task_history
+  ON events(project_id, task_id, timestamp, id)
+  WHERE event_type LIKE 'project.task.%'
+    AND event_type <> 'project.task.reconcile.skipped'
+    AND NOT (event_type = 'project.task.reconcile.profiled' AND attempt_id IS NULL);
 CREATE INDEX IF NOT EXISTS idx_events_task_executor_progress
   ON events(project_id, task_id, id DESC)
   WHERE event_type = 'project.task.executor.progress';

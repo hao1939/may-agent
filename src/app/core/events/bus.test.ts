@@ -357,6 +357,8 @@ describe("EventBus subscriber priority", () => {
     await failed;
 
     expect(events.map((event) => event.type)).toEqual(["info", "subscriber.failed"]);
+    expect(events[0][EVENT_DELIVERY_RESULT]).toBeUndefined();
+    expect(events[1][EVENT_DELIVERY_RESULT]).toMatchObject({ route: "noop", by: "event-interface:record" });
     expect(events[1]).toMatchObject({
       type: "subscriber.failed",
       source: "event-bus",

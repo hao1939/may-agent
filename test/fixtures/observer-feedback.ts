@@ -168,22 +168,12 @@ export async function observerFeedbackFixture(definition: AppDefinition, observe
     },
     async runTask(taskId: string) {
       const startedAt = ++dispatchId;
-      const profiled = Promise.withResolvers<void>();
-      const unsubscribe = bus.subscribe((event) => {
-        if (event.type === "project.task.reconcile.profiled" && event.data.startedAt === startedAt) profiled.resolve();
+      return reconcileLoadedAppTaskOnce({
+        bus,
+        appId: app.id,
+        taskId,
+        dispatch: { enqueuedAt: startedAt, startedAt, readyWaitMs: 0, lane: "normal" },
       });
-      try {
-        return await reconcileLoadedAppTaskOnce({
-          bus,
-          appId: app.id,
-          taskId,
-          dispatch: { enqueuedAt: startedAt, startedAt, readyWaitMs: 0, lane: "normal" },
-        });
-      } finally {
-        // Reconciliation's deferred profiling append must drain before closing SQLite.
-        await profiled.promise;
-        unsubscribe();
-      }
     },
     async close() {
       runtime.close();

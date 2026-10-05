@@ -21,6 +21,7 @@ import type { SqliteDb } from "../../lib/db.js";
 import { withSqliteBusyRetry } from "../../lib/db/busy-retry.js";
 import { loadPersistedEvent } from "../core/events/persisted.js";
 import {
+  EVENT_RECORD_ONLY,
   EVENT_DELIVERY_RESULT,
   EVENT_REDELIVERY_REQUIRED,
   EVENT_ROW_ID,
@@ -116,7 +117,7 @@ export type StartAppInboxRuntimeOptions = {
   previewTaskEventRoutes?: (input: { event: AgentEvent }) => Array<{ appId: string; taskIds: string[] }>;
   readDependency?: (input: {
     appId: string;
-    appDir: string;
+    appDir?: string;
     dependency: { kind: "task"; id: string };
     admissionKey?: string;
   }) => Promise<AppDependencyObservation | null>;
@@ -284,6 +285,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       pendingConversationUpdates.delete(key);
       try {
         options.bus.emit({
+          [EVENT_RECORD_ONLY]: true,
           type: "conversation.updated",
           source: "app-inbox",
           owner: `app:${update.appId}`,
@@ -344,8 +346,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     readDependency: options.readDependency
       ? async (input) => {
           const appDir = appDirById.get(input.appId);
-          if (!appDir) return null;
-          return options.readDependency!({ ...input, appDir });
+          return options.readDependency!({ ...input, ...(appDir ? { appDir } : {}) });
         }
       : undefined,
     now: options.now,

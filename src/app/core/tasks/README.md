@@ -130,9 +130,14 @@ To inspect an older request before its timer is due, use `tasks.get` with exact
 `inputKeys` (up to eight). The canonical reader returns original `inputEvents`;
 reading changes no state. An ordinary result's `inputKeys` names its complete
 scope (up to 64); omission uses the saved assignment and accepted live requests,
-and `[]` covers none. `resultInputKeys()` validates that scope once; the ordinary
-input/result links record its answer or report. Time and Condition changes do
-not expand an answer. Unselected assigned inputs remain pending. Continuation
+and `[]` covers none. When `inputKeys` is explicitly supplied, the managed
+agent's `finish()` contract previews only that scope with the authoritative
+`resultInputKeys()` validator, including live input the agent explicitly accepted,
+so invalid, stale, wrong-Task, or child identities can
+be corrected within the same execution. Preview is read-only; fenced settlement
+runs the same validation again against current state. The ordinary input/result
+links record its answer or report. Time and Condition changes do not expand an
+answer. Unselected assigned inputs remain pending. Continuation
 is saved as `inputWaits[key].pending`, alongside independent waits/deadlines;
 claiming reads current work instead of inferring it from previous attempts.
 Agent, workflow and executor use the same result contract.

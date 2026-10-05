@@ -337,6 +337,7 @@ export async function runAppRuntime(opts: {
     previewTaskEventRoutes: ({ event }) => appTasks.previewEventRoutes({ event }),
     readDependency: (input) =>
       appTasks.readDependency({
+        appId: input.appId,
         appDir: input.appDir,
         dependency: input.dependency,
         admissionKey: input.admissionKey,

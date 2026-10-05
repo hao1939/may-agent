@@ -1503,7 +1503,7 @@ export class EventBus {
       this.reportingFailures = true;
       try {
         try {
-          this.emit(failure);
+          this.emit({ ...failure, [EVENT_RECORD_ONLY]: true });
         } catch (error) {
           // subscriber.failed is passive observation, not part of the
           // originating event's acceptance boundary. If storage is full, the

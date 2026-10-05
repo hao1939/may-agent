@@ -61,6 +61,24 @@ test("old and missing evidence remain visible even outside the comparison window
   expect(readMetricEvidence(db, "unknown", { end, windowMs }).available).toBe(false);
 });
 
+test("exposes the alert's calculation basis at the evidence cut while preserving raw samples", () => {
+  const metrics = createMetricService({ getDb: () => db });
+  const rule = { method: "mean" as const, windowMs: 1_800_000, minSamples: 3 };
+  metrics.define({ id: "sample.check-rate", measureInterval: 300_000, config: { calculation: rule } });
+  for (const [offset, value] of [[900_000, 0], [600_000, 0], [300_000, 60], [0, 999]]) {
+    metrics.record("sample.check-rate", value, { measuredAt: end - offset });
+  }
+  expect(readMetricEvidence(db, "sample.check-rate", { end, windowMs })).toMatchObject({
+    latest: { value: 60 },
+    calculationRule: rule,
+    calculation: { method: "mean", value: 20, calculatedAt: end - 1, sampleCount: 3 },
+  });
+  db.run("UPDATE metrics SET config = ? WHERE id = 'sample.check-rate'", ['{"calculation":{"method":"unknown"}}']);
+  expect(readMetricEvidence(db, "sample.check-rate", { end, windowMs })).toMatchObject({
+    available: true, latest: { value: 60 }, calculation: { value: null, reason: expect.any(String) },
+  });
+});
+
 test("limits examples while preserving whole-window statistics and rejects invalid windows", () => {
   const metrics = createMetricService({ getDb: () => db });
   metrics.define({ id: "sample", measureInterval: 100 });

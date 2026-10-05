@@ -261,13 +261,10 @@ test("one wake handles the pending Conversation batch; repeated signals only rec
   const first = f.admit("first", "Compare A and B", 1);
   f.admit("second", "Include cost", 2);
   f.admit("third", "And speed", 3);
-  const rechecked = eventAfter(
-    f.bus,
-    (event) =>
-      event.type === "project.task.reconcile.profiled" && event.data.taskId === first.taskId && !event.data.attemptId,
-  );
+  const rechecked = settled(f.bus, first.taskId);
   wakeLoadedAppTasks({ bus: f.bus, appId: app.id, taskIds: [first.taskId] });
   await rechecked;
+  await f.run(first.taskId);
   expect(batches).toEqual([["first", "second", "third"]]);
   for (const id of batches[0]!) expect(getAppInboxItem(f.db, id)?.status).toBe("done");
   expect(f.store.readTrigger(first.taskId)).toBeNull();
