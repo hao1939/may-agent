@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { openReadOnlyDatabase } from "../lib/db.js";
 import { createMetricService } from "../lib/metrics.js";
 import { log } from "../lib/log.js";
-import { EVENT_ROW_ID, eventData, type AgentEvent, type EventBus } from "./core/events/bus.js";
+import { EVENT_RECORD_ONLY, EVENT_ROW_ID, eventData, type AgentEvent, type EventBus } from "./core/events/bus.js";
 import { getDb } from "../lib/db/connection.js";
 import { withSqliteBusyRetry } from "../lib/db/busy-retry.js";
 import { resolveRuntimeRoots } from "./path-roots.js";
@@ -190,6 +190,7 @@ export async function measureSourceMetrics(options: {
     // or an alert. Diagnostic storage failure must not stop other sources.
     try {
       options.bus.emit({
+        [EVENT_RECORD_ONLY]: true,
         type: "metric.measurement.failed",
         source: "runtime:metric-source-measurement",
         owner: "system:host",
@@ -416,7 +417,7 @@ export async function evaluateMetrics(options: { bus: EventBus; persistDir: stri
       const reason = measurementError(error);
       log("warn", `[metrics:${id}] Evaluation failed: ${reason}`);
       try {
-        options.bus.emit({ type: "metric.evaluation.failed", source: "runtime:metric-evaluation",
+        options.bus.emit({ [EVENT_RECORD_ONLY]: true, type: "metric.evaluation.failed", source: "runtime:metric-evaluation",
           owner: "system:host", data: { metricId: String(id), reason } });
       } catch (error) {
         log("warn", `[metrics:${id}] Could not retain evaluation diagnostic: ${measurementError(error)}`);

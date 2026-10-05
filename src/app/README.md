@@ -121,3 +121,12 @@ Keep behavioral detail and change status with their owners:
 Use the source map above for the lifecycle and persistence owners. Include
 external requirements in a work item's context when the change spans an App;
 do not make these entry points depend on that App's name or manual location.
+
+Routine Task checks use debug logging and do not publish Task updates or timing
+without an attempt. Actual recovery transitions and attempt timing remain evidence.
+Passive diagnostics use the Event bus record-only marker: interested subscribers
+still receive them, but they do not require a new worker. The originating failed
+publication keeps its own delivery status. Observer failure notifications track
+changes within the current runtime; repeated failures refresh readable health,
+success clears the episode, and failed publication retries on the normal cadence.
+Resource observers also deliver unchanged values to new exact Conditions.

@@ -1,3 +1,4 @@
+import { EVENT_RECORD_ONLY } from "../events/bus.js";
 import { taskEventPredatesReopening } from "./app-task-state.js";
 import {
   type AppInputContext,
@@ -92,6 +93,7 @@ function publishAppTaskTiming(
     // Execution can drain and release its database before this optional report runs.
     if (!appRouterOptionsByBus.has(opts.bus)) return;
     opts.bus.emit({
+      [EVENT_RECORD_ONLY]: true,
       type: "project.task.reconcile.profiled",
       source: `app-task:${descriptor.id}:observer`,
       owner: `agent:${descriptor.agent}`,

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DbWriter } from "../lib/db-writer.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { closeDb, getDb } from "../lib/requests.js";
 import { createMetricService } from "../lib/metrics.js";
@@ -140,6 +141,29 @@ describe("source-query metric measurement", () => {
       source_query: SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY,
       measure_interval: 300_000,
     });
+  });
+
+  it("counts the lost publication once while retaining its subscriber-failure diagnostic", async () => {
+    const db = getDb(persistDir);
+    const writer = new DbWriter(persistDir);
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const reported = Promise.withResolvers<void>();
+    const stop = bus.subscribe((event) => {
+      if (event.type === "sample.report.published") throw new Error("consumer unavailable");
+      if (event.type === "subscriber.failed") reported.resolve();
+    });
+    try {
+      bus.emit({ type: "sample.report.published", source: "fixture", owner: "app:sample", data: { result: "retained" } });
+      await reported.promise;
+      writer.runHousekeeping(Date.now() + 3_600_000);
+      expect(db.prepare(UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY).get()).toEqual({ value: 1 });
+      expect(db.prepare(SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY).get()).toEqual({ value: 1 });
+      expect(db.prepare("SELECT event_type, delivery_status FROM events ORDER BY id").all()).toEqual([
+        { event_type: "sample.report.published", delivery_status: "unhandled" },
+        { event_type: "subscriber.failed", delivery_status: "accepted" },
+      ]);
+    } finally { stop(); }
   });
 
   it("restores the canonical unexpected-unhandled source while preserving alert calibration", () => {
@@ -637,9 +661,10 @@ describe("source-query metric measurement", () => {
     closeDb(persistDir);
     const reopened = getDb(persistDir);
     const failures = reopened
-      .prepare("SELECT source, owner, data FROM events WHERE event_type = 'metric.measurement.failed' ORDER BY id")
-      .all() as Array<{ source: string; owner: string; data: string }>;
+      .prepare("SELECT source, owner, data, delivery_status FROM events WHERE event_type = 'metric.measurement.failed' ORDER BY id")
+      .all() as Array<{ source: string; owner: string; data: string; delivery_status: string }>;
     expect(failures).toHaveLength(2);
+    expect(failures.map((row) => row.delivery_status)).toEqual(["accepted", "accepted"]);
     expect(
       failures.every((row) => row.source === "runtime:metric-source-measurement" && row.owner === "system:host"),
     ).toBe(true);

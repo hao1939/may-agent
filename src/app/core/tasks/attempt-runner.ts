@@ -6,6 +6,7 @@ import {
   type TaskAttempt,
 } from "@may-agent/sdk";
 import { join } from "node:path";
+import { log } from "../../../lib/log.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import type { EventEnvelope } from "../events/bus.js";
 import { childEventTrace, type AgentEvent, type EventBus } from "../events/bus.js";
@@ -128,27 +129,14 @@ export async function runTaskAttempt(input: {
           }
         }
       }
-      const skip =
-        claim.kind === "busy"
-          ? { reason: "attempt-active", attemptId: claim.attemptId }
-          : claim.kind === "waiting"
-            ? claim.dependencyIds?.length
-              ? { reason: "dependencies-open", dependencyIds: claim.dependencyIds }
-              : { reason: "conditions-open", conditionIds: claim.conditionIds }
-            : claim.kind === "attention"
-              ? { reason: "attention-required", generation: claim.generation, summary: claim.summary }
-              : { reason: "already-completed", generation: claim.generation };
-      emitTaskReconciliationEvent(opts, descriptor, undefined, "project.task.reconcile.skipped", input.taskId, {
-        route: "task-controller",
-        ...skip,
-      });
+      log("debug", `[app-task:${descriptor.id}] ${input.taskId} check: ${claim.kind}`);
       return recoveredTaskIds;
     }
     timing.attemptId = claim.attemptId;
     timing.generation = claim.generation;
     return [...new Set([...recoveredTaskIds, ...(await runClaimedTask(opts, descriptor, config, claim))])];
   } finally {
-    input.reportTiming(timing);
+    if (timing.attemptId) input.reportTiming(timing);
   }
 }
 

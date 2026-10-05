@@ -20,6 +20,7 @@ import { log } from "../../lib/log.js";
 import type { SqliteDb } from "../../lib/db.js";
 import { loadPersistedEvent } from "../core/events/persisted.js";
 import {
+  EVENT_RECORD_ONLY,
   EVENT_DELIVERY_RESULT,
   EVENT_ROW_ID,
   eventData,
@@ -279,6 +280,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       pendingConversationUpdates.delete(key);
       try {
         options.bus.emit({
+          [EVENT_RECORD_ONLY]: true,
           type: "conversation.updated",
           source: "app-inbox",
           owner: `app:${update.appId}`,
