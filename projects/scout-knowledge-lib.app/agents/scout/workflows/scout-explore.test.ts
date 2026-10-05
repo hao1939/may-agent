@@ -1058,8 +1058,7 @@ describe("scout-explore workflow prompt", () => {
     },
     {
       label: "comment inside destination",
-      links:
-        "- [Malformed](findings/rejected-<!-- hidden -->index.md)\n",
+      links: "- [Malformed](findings/rejected-<!-- hidden -->index.md)\n",
       reason: "missing-link",
     },
     {
