@@ -375,9 +375,9 @@ evidence. "The daemon restarted" is not itself a blocker.
 
 ## Installation wiring during App migration
 
-Host #326 is a source candidate, not yet a deployed capability. Its adoption
-requires committing the installation's `shared/file-write-policy.json` and
-supplying `shared/host.env` to the Host and human adapters before rollout. The
+The installation contract is implemented in merged Host #326. Commit
+`shared/file-write-policy.json` and supply the values from `shared/host.env`
+to the Host and human adapters before rollout. The
 environment selects the interface agent, Conversation App and retained
 Conversation ID independently. Preserve the existing ID when keeping human
 history. Missing routing is an explicit error; it is not permission to guess
@@ -392,5 +392,7 @@ the new Host has activated the companion Apps revision. Shell/native CLI
 access requires its own authority and is not enforced by this file-tool guard.
 
 Use the [boundary cleanup](../proposals/app-policy-and-host-boundary-cleanup.md)
-for integration order and limitations. Renaming an App does not rename saved
+for integration order, the dated adoption record and limitations. Check the
+current installation's receipt before deciding another rollout is needed.
+Renaming an App does not rename saved
 Tasks, Requests, return links or historical result databases.

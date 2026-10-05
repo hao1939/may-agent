@@ -53,9 +53,9 @@ A verified publication is not guaranteed truth; a completed rollout does not
 independently fulfill every feature-verification requirement.
 
 The targeted live feedback and orphan-process cleanup are complete. Host #339,
-#340, #341 and #342 are merged. The App reader and guidance companion remains
-unmerged on `fix/agent-evidence-guidance-20261005`. This merge-status follow-up
-performed no deployment and did not verify live adoption of these changes;
+#340, #341 and #342 are merged. The App reader and guidance are implemented
+in the companion source, with integration follow-through recorded below.
+The source-status checks performed no deployment or live adoption verification;
 byte-size and query trials are not live model-savings claims. Scout's
 INDEX-publication correction remains owned by its existing Alex implementation
 request, not duplicated by this work; its status was not rechecked here.
@@ -133,3 +133,41 @@ GitHub confirmed the final Host source merges on October 5:
 #340 had already merged as `f59f71040`. The passing CI results above identify
 the reviewed candidates; they are not a new combined-main run or deployment
 receipt. App companion integration and installation verification remain separate.
+
+## Design-alignment follow-through
+
+The review reproduced a remaining test-only process leak: standalone HTTP
+fixtures still served requests after their runner was killed. The Host follow-up
+reuses one parent-pipe launcher for sandbox daemons, standalone HTTP servers,
+web-only CLI and maintenance fixtures. Existing stdin and IPC protocol tests
+keep their own protocol. Normal teardown owns temporary files; parent-pipe loss
+stops execution even when teardown cannot run. This adds no production watchdog.
+
+The owning Event, storage and operator guidance now describe merged #336 and
+#326 source consistently. Pre-journal persistence failures, historical Events
+outside the migration subset, and independent control recovery remain explicit.
+Installed-state claims still require the current receipt.
+
+The App companion includes the reader and its Alex catalog entry. A trial
+through the actual workflow tool discovered it without catalog diagnostics and
+read eight accepted Unicode reports with zero agent steps, valid source-prefix
+previews and correct continuation offsets; responses were about 9.8 KB each.
+That establishes capability availability in source, not live agent adoption.
+After activation, use existing report-handling work to verify a supported
+disposition, preserved obligations and actual usage, rather than creating a
+second investigation or treating a smaller response as measured token savings.
+
+The reader and guidance companion reached Apps main at `e53ccbfba2`. This
+records source integration; no App activation or production restart was
+performed by this follow-through. The test-launcher follow-up remains a Host
+source candidate pending its ordinary PR review.
+
+The review and portable fixture trials are retained locally at
+`/app/.state/alignment-review-20261005/`; follow-through checks are at
+`/app/.state/alignment-fixes-20261005/`.
+
+The focused Host fixture/interface checks passed 44 tests. Removing the lifetime
+hook made the new HTTP runner-death regression fail because the child remained
+alive; restoring it passed. App reader, routing, systemic-review and intake
+checks passed 40 tests. Design integrity, examples and canonical App checks
+passed with the existing unclassified `reports` warning.

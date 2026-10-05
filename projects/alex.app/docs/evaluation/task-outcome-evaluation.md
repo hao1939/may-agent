@@ -469,8 +469,9 @@ reader checks the retained marker, full report identity and both file hashes in
 code, then returns a bounded Markdown preview, verification receipt and full
 content reference. Pending publication and invalid/tampered evidence return a
 blocked read rather than staged bytes. The read starts no evaluator call.
-This operation is implemented in the report-reader candidate; activate its App
-definitions before use. See the [trial and validation record](../archive/reviews/post337-evidence-cost-20261005.md).
+This operation is implemented in source and exposed in Alex's workflow catalog;
+verify that the installed App definitions include it before use. See the
+[trial and validation record](../archive/reviews/post337-evidence-cost-20261005.md).
 
 Alex judges relevance and the next action. Start from the supplied Task identity
 and existing return links; discover missing ownership with a small filtered page.

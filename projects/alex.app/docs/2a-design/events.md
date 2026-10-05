@@ -87,9 +87,11 @@ if translation failed before a Task could be created. Recover through existing
 admission state; unrelated routes must remain usable. Invalid input can be
 rejected explicitly. An intentional no-work decision is different from a broken
 translator or an absent owner. A durable event alone does not prove that its
-work reached an owner. App translation now follows a saved unresolved admission
-command; failure before any accountable route can be recorded still requires
-explicit diagnostic handling.
+work reached an owner. Once an Event is journaled, its pending App-admission
+marker makes failure before a route plan recoverable. Saved plans and inbox
+entries then own their remaining work. A failure to persist the Event itself
+must surface to the publisher; there is no retained input to recover. See
+[App admission recovery](#recovering-app-admission) for migration limits.
 
 ### Immediate reactions
 
@@ -304,12 +306,10 @@ durable message and request are the acceptance boundary. The derived
 `conversation.updated` presentation wake is coalesced and emitted afterward;
 it cannot delay or invalidate the publisher's receipt.
 Ordinary reported facts are record-only. An event may remain `recorded` after
-persistence when its route fails. Existing input/plan recovery retries retained
-App admission with the same identity. A failure before those records exist is
-currently diagnostic evidence without automatic admission recovery; control
-commands also retain their own recovery contract. App subscription translation
-now runs after unresolved routing responsibility is saved, so a thrown translator
-uses the existing plan recovery; this is not a failure before plan creation.
+persistence when its route fails. [App admission recovery](#recovering-app-admission)
+retries newly journaled Events even before a plan or inbox entry exists, then
+continues through those saved records with the same identity. Control commands
+retain their own recovery contract; App recovery does not repeat their effects.
 
 ## Routing outcomes
 
@@ -555,10 +555,10 @@ cannot replace Task or request completion.
 
 ## Recovering App admission
 
-Host [PR #336](https://github.com/hao1939/may-agent/pull/336) is a reviewed
-candidate, awaiting merge and deployment as of 2026-10-05. It replaces the older
-PR #312 route-ledger proposal with a marker on the existing Event row. This
-section describes that candidate, not a claim about the running installation.
+**Source status:** Implemented in merged Host
+[PR #336](https://github.com/hao1939/may-agent/pull/336). It replaces the older
+PR #312 route-ledger proposal with a marker on the existing Event row. Verify
+the installed revision separately; source status is not deployment evidence.
 
 Every newly journaled Event starts with `app_admission_pending=1`. Only the App
 route clears it, after durable direct acceptance, a saved admission plan, or

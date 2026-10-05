@@ -151,8 +151,8 @@ statement. Exhaustion remains observable. Existing admission-plan recovery cover
 saved plans. Failure before a plan or inbox entry is saved requires a durable
 Event admission obligation; a contention retry alone does not close that gap.
 [App admission recovery](events.md#recovering-app-admission) describes Host PR
-#336's pending marker and reuse of the existing recovery scan. That candidate
-awaits merge and deployment as of 2026-10-05. It introduces no new queue and
+#336's merged implementation: a pending marker and the existing recovery scan.
+Installed adoption requires separate evidence. It introduces no new queue and
 preserves only the old outstanding Conversation subset during migration, leaving
 other historical Events untouched.
 
