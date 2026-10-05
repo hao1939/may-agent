@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { spawn, type ChildProcess } from "node:child_process";
+import type { ChildProcess } from "node:child_process";
+import { spawnFixtureProcess } from "../fixtures/owned-process.js";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -21,13 +22,11 @@ describe("HTTP event reads", () => {
     root = mkdtempSync(join(tmpdir(), "may-http-events-"));
     db = openStateDb(join(root, "may.db"));
     // Exercise the standalone adapter, not a daemon or model-backed App.
-    child = spawn(
-      "bun",
+    child = spawnFixtureProcess(
       [resolve(import.meta.dir, "../../src/app/http/server.ts"), "--state-dir", root, "--port", "0"],
       {
         cwd: root,
         env: { ...process.env, AGENT: "helper", CONVERSATION_APP: "support", CONVERSATION_ID: "retained-room", PROJECT_ROOT: root, AGENTS_ROOT: root, PROJECTS_ROOT: root, SHARED_ROOT: root },
-        stdio: ["ignore", "pipe", "pipe"],
       },
     );
     stopped = new Promise((done) => child.once("close", () => done()));
