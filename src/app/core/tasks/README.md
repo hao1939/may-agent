@@ -216,7 +216,9 @@ within their originating attempt; the same decision in a later attempt remains
 a new choice. Distinct decisions can replace the next method before settlement;
 an old replay cannot overwrite a later admitted choice. Use a fresh reason for
 a reconsidered decision, rather than resubmitting an earlier operation. One
-batch cannot contain competing execution selections. Claims and change receipts
+batch cannot contain multiple execution selections, including already-receipted
+ones. A live admitted choice survives later execution failure or interruption;
+an unadmitted final choice does not. Claims and change receipts
 commit atomically and reject stale attempts. Intentional agent selection is not
 counted as an unexpected failover. The existing workflow `needs-agent` result
 is a final agent choice with immediate continuation and supersedes an earlier
