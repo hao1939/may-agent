@@ -191,6 +191,41 @@ describe("canonical database schema", () => {
     }
   });
 
+  it("preserves only the retired direct-input recovery subset at marker cutover", () => {
+    const db = openDatabase(":memory:");
+    try {
+      db.exec(`
+        CREATE TABLE events (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          event_type TEXT NOT NULL,
+          data TEXT,
+          body_ref TEXT,
+          timestamp INTEGER NOT NULL,
+          delivery_status TEXT DEFAULT 'pending'
+        );
+        INSERT INTO events(event_type, data, body_ref, timestamp, delivery_status) VALUES
+          ('conversation.message.created', '{"approvalReply":{"hostApproval":{}}}', NULL, 1, 'pending'),
+          ('conversation.message.created', '{}', 'event-bodies/large.json', 2, 'unhandled'),
+          ('conversation.message.created', '{"approvalReply":{"hostApproval":{}}}', NULL, 3, 'accepted'),
+          ('conversation.message.created', '{}', NULL, 4, 'pending'),
+          ('unrelated.event', '{"approvalReply":{"hostApproval":{}}}', NULL, 5, 'pending');
+      `);
+
+      applyDbSchema(db);
+      expect(db.prepare("SELECT id, app_admission_pending FROM events ORDER BY id").all()).toEqual([
+        { id: 1, app_admission_pending: 1 },
+        { id: 2, app_admission_pending: 1 },
+        { id: 3, app_admission_pending: null },
+        { id: 4, app_admission_pending: null },
+        { id: 5, app_admission_pending: null },
+      ]);
+      applyDbSchema(db);
+      expect(db.prepare("SELECT COUNT(*) AS count FROM events WHERE app_admission_pending = 1").get()).toEqual({ count: 2 });
+    } finally {
+      db.close();
+    }
+  });
+
   it("backfills event traces once when upgrading a pre-trace database", () => {
     const db = openDatabase(":memory:");
     try {

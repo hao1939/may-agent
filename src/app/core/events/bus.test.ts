@@ -34,6 +34,28 @@ describe("EventBus subscriber priority", () => {
     expect(calls).toEqual(["durable"]);
   });
 
+  it("preserves App settlement when another route supplies the preferred receipt", () => {
+    const bus = new EventBus();
+    let recorded: unknown;
+    bus.subscribeDurableRoute(() => ({ accepted: true, by: "other-route", route: "direct" }));
+    bus.subscribeDurableRoute(() => ({
+      accepted: true,
+      by: "app-inbox-route",
+      route: "direct",
+      appAdmission: true,
+    }));
+    bus.setDeliveryRecorder((_event, result) => { recorded = result; });
+
+    bus.emit({ type: "info", message: "multiple durable routes" });
+
+    expect(recorded).toEqual({
+      accepted: true,
+      by: "other-route",
+      route: "direct",
+      appAdmission: true,
+    });
+  });
+
   it("redelivers an existing journal row without appending or replaying side effects", () => {
     const bus = new EventBus();
     const calls: string[] = [];
