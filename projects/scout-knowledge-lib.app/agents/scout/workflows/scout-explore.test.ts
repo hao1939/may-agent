@@ -411,8 +411,8 @@ describe("scout-explore workflow prompt", () => {
         {
           id: "credential-ready:xhs",
           type: "credential.state",
-          subject: "credential:xhs",
-          expected: { field: "state", equals: "ready" },
+          subject: "resource:xhs",
+          expected: { field: "state", equals: "ready", source: "app:scout-knowledge-lib:observer:xhs-credential" },
           owner: "human:operator",
           reviewAfterMs: 3_600_000,
         },

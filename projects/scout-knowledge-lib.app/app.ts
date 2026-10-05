@@ -8,7 +8,7 @@ import {
   type TaskIntent,
 } from "@may-agent/sdk";
 import { sourceAssessmentInputSchema } from "./agents/scout/workflows/scout-assess-source.js";
-import { xhsCredentialObserver } from "./watchers/xhs-credential.js";
+import { createXhsCredentialObserver } from "./watchers/xhs-credential.js";
 
 const projectId = "scout-knowledge-lib";
 const appDir = "/app/projects/scout-knowledge-lib.app";
@@ -460,7 +460,7 @@ export default defineApp({
     },
   ],
   observations: ["project.knowledge.maintained"],
-  observers: [xhsCredentialObserver],
+  observers: [createXhsCredentialObserver(appDir)],
 
   schedules: [
     {

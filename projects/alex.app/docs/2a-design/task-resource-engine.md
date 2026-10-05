@@ -560,7 +560,9 @@ events and reads exact saved request answers or selected reports. A new fact
 uses the normal Condition/event route. With no changed fact, new input, useful
 continuation or explicit `reviewAt`, the worker re-arms the recovery index and
 returns without calling the agent, adding an attempt or changing observation
-timestamps. Storage failures retain retryable recovery work.
+timestamps. Quiet checks use debug logging rather than `reconcile.skipped` events
+or no-attempt timing rows. Real attempts retain timing evidence; actual recovery
+transitions retain their events. Storage failures retain retryable recovery work.
 
 Startup repairs missing or overly late recovery indexes for existing open
 waits. It schedules a code-only check, respecting execution backoff, so a result

@@ -1142,6 +1142,24 @@ describe("automatic task outcome selector", () => {
     );
   });
 
+  test("reviews broad populations daily while ordinary task selection continues", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-daily-population-"));
+    const tasks = [task("gym", "goal/population", 0, "done"), task("gym", "goal/due", 0, "waiting")];
+    let reads = 0;
+    const base = populationCommand(() => {
+      reads++;
+      return populationReport(NOW, [{ taskId: "goal/population", attemptId: "attempt-one", state: "completed" }]);
+    }, { gym: tasks });
+    const first = await selectFairCandidate(base, config, root, undefined, NOW);
+    expect(first.candidate?.populationEnd).toBe(NOW);
+    expect(reads).toBe(1);
+    const next = await selectFairCandidate(base, config, root,
+      { ...first.state, populationTurn: true }, NOW + 60 * 60_000);
+    expect(reads).toBe(1);
+    expect(next.candidate).toMatchObject({ appId: "gym", assessmentPurpose: "ongoing" });
+    expect(next.candidate?.populationEnd).toBeUndefined();
+  });
+
   test("skips a clock-only population repeat without suppressing ordinary or changed evidence", async () => {
     const root = mkdtempSync(join(tmpdir(), "selector-population-evidence-"));
     const populationTask = task("gym", "goal/population", 0, "done");
@@ -1178,16 +1196,16 @@ describe("automatic task outcome selector", () => {
       populationEnd: NOW,
     });
 
-    currentPopulation = populationReport(NOW + 60 * 60_000, [example]);
+    currentPopulation = populationReport(NOW + 24 * 60 * 60_000, [example]);
     const clockOnly = await selectFairCandidate(
       command,
       config,
       root,
       { ...first.state, populationTurn: true },
-      NOW + 60 * 60_000,
+      NOW + 24 * 60 * 60_000,
     );
     expect(clockOnly.navigationFacts).toContain(
-      `selector:population-unchanged:gym:cut=${NOW + 60 * 60_000}`,
+      `selector:population-unchanged:gym:cut=${NOW + 24 * 60 * 60_000}`,
     );
     expect(clockOnly.candidate).toEqual({
       appId: "gym",
@@ -1195,7 +1213,7 @@ describe("automatic task outcome selector", () => {
       assessmentPurpose: "ongoing",
     });
 
-    currentPopulation = populationReport(NOW + 2 * 60 * 60_000, [
+    currentPopulation = populationReport(NOW + 2 * 24 * 60 * 60_000, [
       { ...example, attemptId: "attempt-two", sessionId: "session-two" },
     ]);
     const newAttempt = await selectFairCandidate(
@@ -1203,16 +1221,16 @@ describe("automatic task outcome selector", () => {
       config,
       root,
       clockOnly.state,
-      NOW + 2 * 60 * 60_000,
+      NOW + 2 * 24 * 60 * 60_000,
     );
     expect(newAttempt.candidate).toEqual({
       appId: "gym",
       taskId: "goal/population",
       assessmentPurpose: "ongoing",
-      populationEnd: NOW + 2 * 60 * 60_000,
+      populationEnd: NOW + 2 * 24 * 60 * 60_000,
     });
 
-    currentPopulation = populationReport(NOW + 3 * 60 * 60_000, [
+    currentPopulation = populationReport(NOW + 3 * 24 * 60 * 60_000, [
       { ...example, attemptId: "attempt-two", sessionId: "session-two" },
     ]);
     (currentPopulation.current as Record<string, unknown>).groupsTruncated =
@@ -1222,13 +1240,13 @@ describe("automatic task outcome selector", () => {
       config,
       root,
       { ...newAttempt.state, populationTurn: true },
-      NOW + 3 * 60 * 60_000,
+      NOW + 3 * 24 * 60 * 60_000,
     );
     expect(changedCoverage.candidate).toEqual({
       appId: "gym",
       taskId: "goal/population",
       assessmentPurpose: "ongoing",
-      populationEnd: NOW + 3 * 60 * 60_000,
+      populationEnd: NOW + 3 * 24 * 60 * 60_000,
     });
     expect(selectorStateFact(changedCoverage.state).length).toBeLessThan(8_000);
   });
@@ -1266,7 +1284,7 @@ describe("automatic task outcome selector", () => {
     expect(first.candidate).toBeNull();
 
     readable = true;
-    end += 60 * 60_000;
+    end += 24 * 60 * 60_000;
     const retried = await selectFairCandidate(
       command,
       config,

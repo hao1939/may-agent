@@ -473,10 +473,21 @@ without durable acceptance remains visible for recovery. Invalid or unknown
 external input and nonexistent required targets create no event receipt.
 
 Internal passive producers use the same record-only marker as the App event
-interface. Heartbeat, workflow-dispatch and skill-load facts can still reach
-interested subscribers, but their persistence does not require an extra worker
-to accept them. Mark the producer's intent rather than adding its name to a
-metric exclusion list whenever optional telemetry appears unanswered.
+interface. Heartbeat, workflow-dispatch, skill-load, attempt timing, presentation
+updates and failure diagnostics can still reach interested subscribers, but their
+persistence does not require an extra worker to accept them. A `subscriber.failed`
+diagnostic does not settle the originating publication: the original required
+event remains accountable, and subscriber failure metrics still count the diagnostic.
+Mark producer intent rather than adding names to a metric exclusion list.
+
+Routine checks that find no new work produce debug diagnostics, not Task events.
+An observer reports a new or changed failure after durable publication, then keeps
+refreshing its current health on repeated checks. A successful run clears that
+failure episode; recurrence is reportable again. Failed publication retries on the
+normal cadence. This memory is an optimization within one observer lifetime;
+replacement or restart may repeat a fact. New open Conditions can still require
+an unchanged external value. The existing resource observer supplies that value
+through the exact Condition, without global polling notifications.
 
 ## Results and correlation
 

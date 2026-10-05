@@ -14,11 +14,13 @@ import {
 } from "node:fs";
 import { isAbsolute, resolve, sep } from "node:path";
 import {
+  observationCondition,
   type ExecutionResult,
   type TaskReconcileResult,
   Type,
   type WorkflowContext,
 } from "@may-agent/sdk";
+import { xhsCredentialContract } from "../../../watchers/xhs-credential.js";
 import {
   prepareXhsSession,
   type XhsCredentialStatus,
@@ -243,10 +245,12 @@ export function xhsWaitResult(
     actions: [],
     conditions: [
       {
-        id: "credential-ready:xhs",
-        type: "credential.state",
-        subject: "credential:xhs",
-        expected: { field: "state", equals: "ready" },
+        ...observationCondition(xhsCredentialContract, {
+          observerId: xhsCredentialContract.id,
+          id: "credential-ready:xhs",
+          resource: "xhs",
+          expected: { field: "state", equals: "ready" },
+        }),
         owner: "human:operator",
         requestedAction:
           "Sign in to Xiaohongshu in the container browser; the current page inspection found a login screen. Scout will recheck access and resume the same Task.",

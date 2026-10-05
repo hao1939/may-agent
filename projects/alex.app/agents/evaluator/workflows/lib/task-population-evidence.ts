@@ -3,7 +3,7 @@ import { hostReportUrl } from "./host-reporting.js";
 
 export const POPULATION_WINDOW_MS = 86_400_000;
 export const populationCut = (now = Date.now()) =>
-  Math.floor(now / 3_600_000) * 3_600_000;
+  Math.floor(now / POPULATION_WINDOW_MS) * POPULATION_WINDOW_MS;
 
 /** Public Host reporting endpoint; kept separate from the daemon's Task reads. */
 export async function readPublicAttempts(

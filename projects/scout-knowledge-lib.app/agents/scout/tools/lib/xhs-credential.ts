@@ -91,8 +91,9 @@ export function parseXhsCredentialOutput(
 
 export function inspectXhsCredential(
   appDir: string,
+  signal?: AbortSignal,
 ): Promise<XhsCredentialStatus> {
-  return runXhsStatus(appDir, "status");
+  return runXhsStatus(appDir, "status", signal);
 }
 
 /** Workflow action: restore an absent tab, then inspect the actual page. */
@@ -105,6 +106,7 @@ export function prepareXhsSession(
 function runXhsStatus(
   appDir: string,
   command: "status" | "prepare",
+  signal?: AbortSignal,
 ): Promise<XhsCredentialStatus> {
   const toolPath = join(appDir, "agents", "scout", "tools", "xhs-browse.mjs");
   return new Promise((resolve, reject) => {
@@ -113,6 +115,7 @@ function runXhsStatus(
       [toolPath, command],
       {
         encoding: "utf8",
+        signal,
         timeout: 30_000,
         killSignal: "SIGKILL",
       },

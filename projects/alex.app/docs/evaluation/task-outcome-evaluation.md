@@ -385,7 +385,10 @@ registry, ancestry walk, name convention, or review-depth counter and without
 weakening human-requested oversight.
 
 Population sampling retains one bounded per-App checkpoint in the same selector
-state. The checkpoint combines the latest observed hourly cut with the last selected evidence digest of
+state. Broad population review uses a daily UTC cut over two adjacent 24-hour
+cohorts. Ordinary Task selection keeps its existing cadence, while failure and
+metric breach/recovery requests retain their immediate routes and capacity rules.
+The checkpoint combines the latest observed daily cut with the last selected evidence digest of
 the full public population report after removing only the top-level cut and each
 cohort's `start`/`end` window coordinates. A later cut with otherwise identical
 evidence advances the checkpoint but does not request another model assessment;
@@ -398,7 +401,8 @@ having no prior digest and receives one normal selection before deduplication.
 An unavailable or ineligible representative does not advance the selected-evidence
 digest, so a later normal observation can retry that undelivered review.
 This avoids a clock-only repeat without creating a report registry or claiming
-that counts alone establish an unchanged population.
+that counts alone establish an unchanged population. See the
+[producer and cadence verification](meaningful-events-verification-20261005.md).
 
 Each fixed reviewer profile has an atomic semantic allowance independent from selector cadence. Routine review of the same metric is daily for both profiles; breach and recovery transitions request immediate review subject to the shared capacity. The App mapper must retain the exact positive `alertId` and observation cutoff through Task admission and report publication. Otherwise a new episode is incorrectly treated as routine work under the previous cooldown. Replaying a transition reuses that episode's retained report; new samples and repeat breach notifications remain quiet. Already-consumed transitions require explicit recovery under their original alert identity; changing future routing alone does not reassess them. Repeated samples update evidence without creating new reviews. The default `evaluator` (Sol) counter uses `EVALUATION_ASSESSMENT_ALLOWANCE_INTERVAL_MS` and `EVALUATION_ASSESSMENT_CALLS_PER_INTERVAL`; its source fallback remains the legacy one day, while the current rollout explicitly retains the existing one-hour environment setting. The dedicated `evaluator-deepseek` counter uses a separate receipt namespace plus `EVALUATION_DEEPSEEK_ALLOWANCE_INTERVAL_MS` (default five minutes) and `EVALUATION_DEEPSEEK_CALLS_PER_INTERVAL`. Both limits remain clamped to two, and App `maxConcurrent: 1` serializes execution. Retained requested review Tasks have priority only within the selected reviewer's capacity: DeepSeek requests defer routine DeepSeek sampling, while a Sol-only deferred request does not stop DeepSeek progress. The selector preserves its cursor when it defers; a missing or truncated snapshot yields an explicit unknown-backlog coverage fact instead of a false empty claim. Already-running work is not preempted. Exhaustion is admitted as `waiting`, retaining exact subject generation, evidence hash, reviewer, slot, limit and next eligibility. Its waiting result carries the Host's absolute `reviewAt`, not a synthetic Condition or event producer. Early wakes preserve that deadline and do not call the model; at eligibility the same exact request is reconsidered. Elapsed time never proves an external fact.
 

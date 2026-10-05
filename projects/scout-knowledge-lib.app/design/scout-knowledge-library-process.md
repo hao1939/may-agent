@@ -354,9 +354,9 @@ access check finds setup missing or an unknown failure
 
 access check establishes a human login or authority requirement
   -> return waiting
-  -> Condition: credential.state / credential:xhs / state=ready
+  -> Condition: credential.state / resource:xhs / state=ready / exact observer source
   -> report the exact request through existing May/Conversation delivery
-  -> credential watcher or human action emits the semantic observation
+  -> Host checks the declared resource observer and publishes fresh evidence
   -> the Condition becomes true
   -> explore-xhs wakes and reconciles again
 ```
@@ -389,26 +389,25 @@ can satisfy the wait sooner. Source retrieval starts after readiness is verified
 the owner can diagnose setup before that point. The review deadline schedules
 reconsideration. Tests admit this wait through the current Host result contract.
 
-Credential observations are level-triggered. A transition to `ready` wakes the
-waiting source task once; repeated `ready` observations and stale observations
-from an older credential revision do not start work. A transition back to
-`unavailable` updates the level and future exact wait without creating a retry
-storm. Regression tests cover repeated same-level observations, stale
-revisions, restart, and ready/unavailable transitions.
+XHS uses the common resource observer contract. Scout declares how to inspect
+`xhs` and what `state=ready` means; the Host discovers open Conditions, runs the
+read, publishes changes and supplies unchanged evidence when a new wait needs
+it. Without an open interest there is no browser probe. Repeated unchanged checks
+produce no global observation events. The login Condition still names
+`human:operator` with the concrete action and review boundary; its exact observer
+source supplies evidence independently of who must perform the login.
 
-The credential preflight runs asynchronously with a 30-second subprocess
-deadline, so a pending browser check does not block the Host event loop. Both
-the observer and exploration workflow await its result. A timeout kills the
-probe. Its failure remains diagnostic evidence for the owner and does not, by
-itself, establish a human prerequisite.
+The observer probes `status` with the existing asynchronous 30-second subprocess
+deadline and propagates Host cancellation. A timeout kills the probe. Failures
+remain access evidence and do not establish a human prerequisite. Source setup
+continues to use `prepare` and owns restoring an absent tab.
 
-The observer reads Host-retained `previousObservation` and returns events plus
-`nextObservation`. The Host advances that memory after publishing the facts and
-discards results from a replaced observer generation. A closed observer's
-process may continue until its subprocess deadline. Ready facts replay on later
-scans; unavailable facts are emitted on a state transition. These observations
-describe access. Human delivery uses the existing caller/Conversation path and
-requires its own receipt.
+The Host advances observation memory only after publication and fences replaced
+observer results. A new wait receives fresh ready evidence even if an earlier
+wait used the same resource and value. Human request delivery still uses the
+existing caller/Conversation path and requires its own receipt. Existing legacy
+credential Conditions retain their normal review deadline; the owner can reread
+access and replace them with the declared resource Condition at reconciliation.
 
 ## Library Health
 
