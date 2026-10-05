@@ -77,8 +77,15 @@ export type TaskCondition = Condition | TaskRequestCondition;
 /** @deprecated Return requests and caller Conditions instead. */
 export type TaskAppDependency = TaskAppRequest;
 
-/** Reconsider an existing wait through a fenced attempt. Revise requirements with TaskAttempt.reviseTask. */
+/** Decisions admitted through the current fenced attempt. Revise requirements with TaskAttempt.reviseTask. */
 export type TaskAction =
+  | {
+      /** Choose the next eligible attempt's method; does not schedule work or settle input.
+       * `declared` uses this Task's workflow/executor; `agent` uses its responsible agent. */
+      kind: "select-execution";
+      execution: "declared" | "agent";
+      reason: string;
+    }
   | {
       kind: "unblock-task";
       taskId: string;

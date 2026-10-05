@@ -38,6 +38,17 @@ const objectSchema = Type.Unsafe<Record<string, unknown>>({
 export const taskActionSchema = Type.Union([
   Type.Object(
     {
+      kind: Type.Literal("select-execution"),
+      execution: Type.Union([Type.Literal("declared"), Type.Literal("agent")]),
+      reason: nonEmptyStringSchema,
+    },
+    {
+      additionalProperties: false,
+      description: "Select the current Task's next eligible execution: declared uses its configured workflow/executor; agent uses its responsible agent. One choice per submission. Does not wake work, settle input or retire waits. Omit to retain ordinary handler selection. Exact replays in the same attempt are idempotent.",
+    },
+  ),
+  Type.Object(
+    {
       kind: Type.Literal("unblock-task"),
       taskId: nonEmptyStringSchema,
       expectedGeneration: Type.Integer({ minimum: 1 }),
@@ -327,6 +338,13 @@ function optionalString(value: Record<string, unknown>, key: string): { ok: true
 function normalizeAction(value: unknown, index: number): TaskAction | string {
   if (!isRecord(value)) return `actions[${index}] must be an object`;
   switch (value.kind) {
+    case "select-execution": {
+      if (value.execution !== "declared" && value.execution !== "agent")
+        return `actions[${index}].execution must be declared or agent`;
+      const reason = normalizedString(value.reason);
+      if (!reason) return `actions[${index}].reason must be a non-empty string`;
+      return { kind: "select-execution", execution: value.execution, reason };
+    }
     case "update-task":
       return `actions[${index}].update-task is retired; use tasks update or TaskAttempt.reviseTask before returning a result`;
     case "unblock-task": {
@@ -355,7 +373,7 @@ function normalizeAction(value: unknown, index: number): TaskAction | string {
       };
     }
     default:
-      return `actions[${index}].kind must be unblock-task or retire-condition; revise requirements through tasks update and delegate new work through requests`;
+      return `actions[${index}].kind must be unblock-task, retire-condition or select-execution; revise requirements through tasks update and delegate new work through requests`;
   }
 }
 
@@ -511,6 +529,9 @@ export function admitTaskReconcileResult(
     if (typeof normalized === "string") return { ok: false, error: normalized };
     actions.push(normalized);
   }
+  // Validate the submitted decision before live admission removes receipted actions.
+  if (actions.filter((action) => action.kind === "select-execution").length > 1)
+    return { ok: false, error: "actions contain multiple execution selections" };
 
   const rawConditions = admittedOutput.conditions ?? [];
   if (!Array.isArray(rawConditions)) return { ok: false, error: "conditions must be an array" };
