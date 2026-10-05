@@ -14,11 +14,12 @@ record. A receipt from an unrelated Event consumer does not prove App admission.
 | App inbox entry | Existing inbox recovery attaches the input to its Task. |
 | Task and linked result | Existing Task reconciliation and result recovery continue the work. |
 
-The marker clears when the App route has durably accepted the input, saved its
-plan, or inspected the Event and found no App work. Once that responsibility
-is recorded, the existing recovery path owns the next step. Retries use the
-same Event and input identities; they do not replay ordinary fanout or controls.
-Delivery is at least once.
+Saving an admission plan transfers unresolved work to plan recovery. The pending
+marker clears later, when the App route's accepted result is recorded, or directly
+after inspection finds no App work. If plan persistence succeeds but that later
+acknowledgement is lost, both scans may observe the same stable Event/input work;
+their idempotent identities prevent a second consequential admission. Retries do
+not replay ordinary fanout or controls. Delivery is at least once.
 
 Producer retry helps only if the producer runs again and retries that Event.
 Failure logs and evaluation can support diagnosis, but neither substitutes for
@@ -38,7 +39,7 @@ inside the Event writer.
 | Inspected no-work | One extra UPDATE to clear the marker; this path can be common. |
 | Pending recovery | Existing scan reads a fixed high-water mark and up to 64 indexed IDs per pass, loading at most 16 readable Events. |
 | Addressed agent message | One indexed lookup by origin Event on admission, preserving a previously accepted recipient after lost acknowledgement. |
-| Storage | Two partial indexes, their write maintenance, and retention of still-pending Events. |
+| Storage | One new partial pending-Event index, reuse of the existing full inbox-origin index, their write maintenance, and retention of still-pending Events. |
 
 An empty recovery scan does not read historical Event bodies. Persistent
 failures remain pending and retry on the existing cadence; this PR does not
