@@ -996,8 +996,10 @@ export function readLoadedAppTaskInputClosure(input: { bus: EventBus; appDir: st
 }
 
 /** Read the stable task projection for an inbox dependency after any restart. */
-export function readLoadedAppTaskView(input: { bus: EventBus; appDir: string; taskId: string }): TaskDetail | null {
-  const config = readableAppTaskContext(input.bus, input.appDir);
+export function readLoadedAppTaskView(input: { bus: EventBus; appId?: string; appDir?: string; taskId: string }): TaskDetail | null {
+  const config = input.appId
+    ? readableAppTaskContextById(input.bus, input.appId)
+    : input.appDir ? readableAppTaskContext(input.bus, input.appDir) : null;
   return config ? readRuntimeTaskView({ taskStateConfig: config }, input.taskId) : null;
 }
 

@@ -326,6 +326,9 @@ test("exact diagnostics preserve bounded Conditions and dependency states withou
   );
   // An unrelated corrupt payload must not enter an exact read.
   db.prepare("UPDATE app_tasks SET resource_json = 'invalid' WHERE app_id = 'other'").run();
+  // Eligibility polling must not evict actual attempts from the work history.
+  const skip = db.prepare("INSERT INTO events(event_type, source, owner, project_id, task_id, timestamp, data) VALUES ('project.task.reconcile.skipped', 'test', 'test', 'alpha', 'work', ?, '{}')");
+  for (let n = 0; n < 40; n++) skip.run(200 + n);
   const service = new HumanTaskService(db, registry("alpha"));
   const detail = service.getTask({ appId: "alpha", taskId: "work" })!;
   expect(detail.diagnostics).toMatchObject({

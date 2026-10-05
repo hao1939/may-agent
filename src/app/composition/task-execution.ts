@@ -1,3 +1,4 @@
+import { getDb } from "../../lib/db/connection.js";
 import { taskExecutionContext } from "../adapters/executors/task-context.js";
 import type { SubagentManager } from "../../lib/index.js";
 import type { SubagentDefinition } from "../../lib/types.js";
@@ -34,8 +35,10 @@ export function createTaskExecutionBackends(input: {
         }),
         readDependency: async ({ appId, ...dependency }) => {
           const entry = turn.registry.entries.find(({ definition }) => definition.id === appId);
-          if (!entry) return null;
-          return createAppTaskCapability({ bus: input.bus }).readDependency({ appDir: entry.appDir, ...dependency });
+          return createAppTaskCapability({
+            bus: input.bus,
+            db: input.persistDir ? getDb(input.persistDir) : undefined,
+          }).readDependency({ appId, appDir: entry?.appDir, ...dependency });
         },
       }),
     snapshot: () => conversations(captureAgentDefinitions(input.manager) ?? definitions),
