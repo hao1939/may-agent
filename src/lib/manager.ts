@@ -667,6 +667,7 @@ export class SubagentManager {
       bashProcessGroupOwner: { persistDir: this._persistDir, sessionId },
       onGuard: ({ context, guard, block, reason }) => {
         this.bus?.emit({
+          [EVENT_RECORD_ONLY]: true,
           type: "guard.triggered",
           source: "tool",
           owner: normalizeEventOwner(def.name),

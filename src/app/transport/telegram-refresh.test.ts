@@ -17,7 +17,38 @@ async function waitFor(predicate: () => boolean): Promise<void> {
   }
 }
 
-type Send = { chat_id: string; text: string; reply_parameters?: { message_id: number } };
+type Send = {
+  chat_id: string;
+  text: string;
+  parse_mode?: string;
+  reply_parameters?: { message_id: number };
+  reply_markup?: { inline_keyboard: Array<Array<{ text: string; callback_data: string }>> };
+};
+
+function exactAction(id: string, requestedAction: string, generation = 1) {
+  return {
+    humanAction: { requestedAction },
+    diagnostics: {
+      conditions: [
+        {
+          id,
+          condition: {
+            metadata: { id, generation, resourceVersion: generation },
+            spec: {
+              type: "human.answer.received",
+              subject: `id:${id}`,
+              owner: "human",
+              requestedAction,
+              expected: { answer: true },
+            },
+            status: { state: "false" },
+          },
+        },
+      ],
+      conditionsTruncated: false,
+    },
+  };
+}
 
 function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
   const root = options.root ?? mkdtempSync(join(tmpdir(), "may-telegram-refresh-"));
@@ -586,7 +617,7 @@ describe("Telegram refresh lifecycle", () => {
     try {
       Object.assign(restarted.tasks.get("first")!, exactAction);
       restarted.tasks.get("second")!.humanAction = { requestedAction: "Retry the unrelated failed action." };
-      restarted.sendFailures.add("2 Tasks need your action");
+      restarted.sendFailures.add("Retry the unrelated failed action.");
       restarted.wake("second");
       await waitFor(() => restarted.errors.filter((text) => text.includes("Send failed")).length >= 2);
 
@@ -601,11 +632,140 @@ describe("Telegram refresh lifecycle", () => {
       restarted.tasks.get("second")!.humanAction = { requestedAction: "Retry the unrelated failed action." };
       restarted.wake("second");
       await waitFor(() => restarted.sent.length >= failedBaseline + 2);
-      expect(restarted.sent.slice(failedBaseline).every((send) => send.text.includes("2 Tasks need your action"))).toBe(
-        true,
-      );
+      expect(
+        restarted.sent
+          .slice(failedBaseline)
+          .every(
+            (send) =>
+              send.text.includes("Retry the unrelated failed action.") &&
+              !send.text.includes("Keep the completed receipt suppressed."),
+          ),
+      ).toBe(true);
     } finally {
       await restarted.close();
+    }
+  });
+
+  it("durably suppresses an unchanged aggregate after restart", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-telegram-aggregate-restart-"));
+    const first = fixture({ root, removeOnClose: false });
+    try {
+      Object.assign(first.tasks.get("first")!, exactAction("first-step", "Complete first exact step."));
+      Object.assign(first.tasks.get("second")!, exactAction("second-step", "Complete second exact step."));
+      first.wake("first");
+      await waitFor(() => first.sent.filter((send) => send.text.includes("Complete first exact step.")).length === 2);
+      expect(first.sent.filter((send) => send.text.includes("Complete second exact step."))).toHaveLength(2);
+      expect(first.sent[0]?.parse_mode).toBe("HTML");
+      expect(first.sent[0]?.reply_markup?.inline_keyboard).toHaveLength(2);
+    } finally {
+      await first.close();
+    }
+
+    const restarted = fixture({ root });
+    try {
+      Object.assign(restarted.tasks.get("first")!, exactAction("first-step", "Complete first exact step."));
+      Object.assign(restarted.tasks.get("second")!, exactAction("second-step", "Complete second exact step."));
+      restarted.wake("first");
+      await Bun.sleep(40);
+      expect(restarted.sent.some((send) => send.text.includes("Complete first exact step."))).toBe(false);
+      expect(restarted.sent.some((send) => send.text.includes("Complete second exact step."))).toBe(false);
+    } finally {
+      await restarted.close();
+    }
+  });
+
+  it("ignores resource-only reconciliation and renders only one changed action", async () => {
+    const f = fixture();
+    try {
+      Object.assign(f.tasks.get("first")!, exactAction("first-step", "Leave first action unchanged."));
+      Object.assign(f.tasks.get("second")!, exactAction("second-step", "Leave second action unchanged."));
+      f.wake("first");
+      await waitFor(() => f.sent.filter((send) => send.text.includes("Leave first action unchanged.")).length === 2);
+      const baseline = f.sent.length;
+
+      f.tasks.get("first")!.resourceVersion = 99;
+      f.tasks.get("second")!.resourceVersion = 100;
+      f.wake("first");
+      await Bun.sleep(40);
+      expect(f.sent).toHaveLength(baseline);
+
+      Object.assign(f.tasks.get("second")!, exactAction("second-step", "Perform the materially changed action.", 2));
+      f.wake("second");
+      await waitFor(() => f.sent.length === baseline + 2);
+      expect(
+        f.sent
+          .slice(baseline)
+          .every(
+            (send) =>
+              send.text.includes("Perform the materially changed action.") &&
+              !send.text.includes("Leave first action unchanged."),
+          ),
+      ).toBe(true);
+    } finally {
+      await f.close();
+    }
+  });
+
+  it("renders several changed actions without unchanged actions", async () => {
+    const f = fixture();
+    try {
+      f.tasks.set("third", {
+        ...f.tasks.get("second")!,
+        taskId: "third",
+        ref: "third",
+        outcome: "Complete third",
+        summary: "Working on third",
+      });
+      Object.assign(f.tasks.get("first")!, exactAction("first-step", "Keep first unchanged."));
+      Object.assign(f.tasks.get("second")!, exactAction("second-step", "Keep second unchanged."));
+      Object.assign(f.tasks.get("third")!, exactAction("third-step", "Keep third unchanged."));
+      f.wake("first");
+      await waitFor(() => f.sent.filter((send) => send.text.includes("Keep third unchanged.")).length === 2);
+      const baseline = f.sent.length;
+
+      Object.assign(f.tasks.get("second")!, exactAction("second-step", "Second changed action.", 2));
+      Object.assign(f.tasks.get("third")!, exactAction("third-step", "Third changed action.", 2));
+      f.wake("second");
+      await waitFor(() => f.sent.length === baseline + 2);
+      expect(
+        f.sent
+          .slice(baseline)
+          .every(
+            (send) =>
+              send.text.includes("Second changed action.") &&
+              send.text.includes("Third changed action.") &&
+              !send.text.includes("Keep first unchanged."),
+          ),
+      ).toBe(true);
+    } finally {
+      await f.close();
+    }
+  });
+
+  it("retries every exact action after a failed aggregate delivery", async () => {
+    const f = fixture();
+    try {
+      Object.assign(f.tasks.get("first")!, exactAction("first-step", "Retry first aggregate action."));
+      Object.assign(f.tasks.get("second")!, exactAction("second-step", "Retry second aggregate action."));
+      f.sendFailures.add("Retry first aggregate action.");
+      f.wake("first");
+      await waitFor(() => f.errors.filter((text) => text.includes("Send failed")).length >= 2);
+      const baseline = f.sent.length;
+
+      f.sendFailures.clear();
+      f.wake("first");
+      await waitFor(() => f.sent.length === baseline + 2);
+      expect(
+        f.sent
+          .slice(baseline)
+          .every(
+            (send) =>
+              send.text.includes("Retry first aggregate action.") &&
+              send.text.includes("Retry second aggregate action."),
+          ),
+      ).toBe(true);
+    } finally {
+      await f.close();
     }
   });
 
@@ -655,7 +815,8 @@ describe("Telegram refresh lifecycle", () => {
     const f = fixture();
     const action = "Use the unchanged fallback action.";
     try {
-      await f.command("/apps may");
+      // Finish both configured chats' initial empty refresh before testing manual reads.
+      await waitFor(() => f.listReads.length === 2);
       f.tasks.get("first")!.humanAction = { requestedAction: action };
 
       await f.command("/todo");
@@ -676,7 +837,8 @@ describe("Telegram refresh lifecycle", () => {
   it("delivers an explicit todo directly from its list snapshot without detail reads", async () => {
     const f = fixture();
     try {
-      await f.command("/apps may");
+      // Finish both configured chats' initial empty refresh before testing manual reads.
+      await waitFor(() => f.listReads.length === 2);
       f.tasks.get("first")!.humanAction = { requestedAction: "Use the readable compact action." };
       f.readFailures.add("first");
       await f.command("/todo");

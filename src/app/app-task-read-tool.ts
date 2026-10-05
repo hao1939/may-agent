@@ -53,9 +53,18 @@ const parameters = Type.Object(
         ]),
       ),
     ),
-    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+    limit: Type.Optional(
+      Type.Integer({
+        minimum: 1,
+        maximum: 100,
+        description:
+          "For list: page size, default 20. Returns previews; use get for full requirements and current results, with acceptedEvidence to read accepted-attempt history.",
+      }),
+    ),
     cursor: Type.Optional(Type.String({ minLength: 1 })),
-    includeDone: Type.Optional(Type.Boolean()),
+    includeDone: Type.Optional(
+      Type.Boolean({ description: "For outcomes only. For list, use status; omitted status includes every phase." }),
+    ),
     inputKeys: Type.Optional(
       Type.Array(Type.String({ minLength: 1 }), {
         maxItems: 8,
@@ -89,7 +98,10 @@ const parameters = Type.Object(
           limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 8 })),
           cursor: Type.Optional(Type.String({ minLength: 1 })),
         },
-        { additionalProperties: false },
+        {
+          additionalProperties: false,
+          description: "For get: opt in to a bounded page of accepted-attempt history. Follow its nextCursor for more.",
+        },
       ),
     ),
     inputId: Type.Optional(Type.String({ minLength: 1 })),
@@ -137,6 +149,32 @@ type Params = {
 
 function result(value: unknown): AgentToolResult<undefined> {
   return { content: [{ type: "text", text: JSON.stringify(value, null, 2) }], details: undefined };
+}
+
+/** Discovery is navigation, not evidence for accepting or revising an assignment. */
+function discoveryPage(page: TaskPage) {
+  const preview = (value: string) => {
+    const characters: string[] = [];
+    for (const character of value) {
+      characters.push(character);
+      if (characters.length > 240) return `${characters.slice(0, 239).join("")}…`;
+    }
+    return value;
+  };
+  return {
+    projection: "discovery",
+    detailHint:
+      "Previews may be shortened. Use get with an exact Task id for full requirements and current results before reusing or changing work. Accepted-attempt history is opt-in: add acceptedEvidence, then follow its nextCursor as needed.",
+    items: page.items.map(({ id, closed, status, generation, outcome, summary }) => ({
+      id,
+      ...(closed === undefined ? {} : { closed }),
+      status,
+      generation,
+      outcomePreview: preview(outcome),
+      ...(summary === undefined ? {} : { summaryPreview: preview(summary) }),
+    })),
+    ...(page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor }),
+  };
 }
 
 /** Task collection and fenced event capability scoped to the running App attempt. */
@@ -306,7 +344,7 @@ export function createAppTaskReadTool(options: {
         }
         const listOptions: TaskListOptions = {
           ...(params.status ? { status: params.status } : {}),
-          ...(params.limit === undefined ? {} : { limit: params.limit }),
+          limit: params.limit ?? 20,
           ...(params.cursor ? { cursor: params.cursor } : {}),
         };
         const reader = options.reader ?? (await import("./core/tasks/app-task-runtime.js"));
@@ -314,7 +352,7 @@ export function createAppTaskReadTool(options: {
           "list" in reader
             ? await reader.list({ bus: options.bus, appId, options: listOptions })
             : await reader.listLoadedAppTaskViews({ bus: options.bus, appId, options: listOptions });
-        return result(value);
+        return result(discoveryPage(value));
       } catch (error) {
         return result({ error: error instanceof Error ? error.message : String(error) });
       }

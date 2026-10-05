@@ -482,25 +482,40 @@ function renderTelegramTaskUpdate(task: HumanTaskView): string {
   ].join("\n");
 }
 
+function taskReferences(value: unknown): Array<{ appId: string; taskId: string }> {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((task) =>
+    task && typeof task.appId === "string" && task.appId && typeof task.taskId === "string" && task.taskId
+      ? [{ appId: task.appId, taskId: task.taskId }]
+      : [],
+  );
+}
+
 function singleTaskReference(value: unknown): { appId: string; taskId: string } | undefined {
-  if (!Array.isArray(value) || value.length !== 1) return undefined;
-  const task = value[0];
-  return task && typeof task.appId === "string" && task.appId && typeof task.taskId === "string" && task.taskId
-    ? { appId: task.appId, taskId: task.taskId }
-    : undefined;
+  const tasks = taskReferences(value);
+  return tasks.length === 1 ? tasks[0] : undefined;
 }
 
 function taskButtons(taskRefs: unknown) {
-  return singleTaskReference(taskRefs)
-    ? {
-        inline_keyboard: [
-          [
-            { text: "Details", callback_data: "task:details" },
-            { text: "Follow updates", callback_data: "task:follow" },
-          ],
+  const tasks = taskReferences(taskRefs);
+  if (tasks.length === 0) return undefined;
+  if (tasks.length === 1)
+    return {
+      inline_keyboard: [
+        [
+          { text: "Details", callback_data: "task:details" },
+          { text: "Follow updates", callback_data: "task:follow" },
         ],
-      }
-    : undefined;
+      ],
+    };
+  return {
+    inline_keyboard: tasks.map((task, index) => [
+      {
+        text: `Details · ${task.appId}/${task.taskId}`.slice(0, 64),
+        callback_data: `task:details:${index}`,
+      },
+    ]),
+  };
 }
 
 function renderTelegramConversationMessage(message: AppConversationMessage): string {
@@ -855,7 +870,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const chatId = String(query.message?.chat?.id ?? "");
     let text = "This control is unavailable. Ask May for the current status.";
     if (!isAllowed(query.message?.chat?.id)) text = "Unauthorized.";
-    else if (query.data === "task:details" || query.data === "task:follow") {
+    else if (/^task:(details(?::\d+)?|follow)$/.test(query.data)) {
       const stored = getNotificationMessage(persistDir, chatId, query.message?.message_id);
       let data: Record<string, unknown> | undefined;
       try {
@@ -863,7 +878,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       } catch {
         /* legacy facts */
       }
-      const target = singleTaskReference(data?.followTask ? [data.followTask] : data?.taskRefs);
+      const indexedDetails = /^task:details:(\d+)$/.exec(query.data);
+      const refs = taskReferences(data?.followTask ? [data.followTask] : data?.taskRefs);
+      const target = indexedDetails ? refs[Number(indexedDetails[1])] : singleTaskReference(refs);
       if (target && opts.humanTasks.getTask(target)) {
         handleTelegramCommand(
           query.data === "task:follow" ? "/watch linked" : "/task linked",
@@ -1110,11 +1127,16 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     shownTodoActions.set(surface, next);
     if (changed.length === 0) return;
     const first = changed[0]!;
-    const single = page.total === 1 && changed.length === 1;
+    const single = changed.length === 1;
     // The detail was read once above, so displayed text and immutable approval
     // anchor share the same snapshot without a list/detail race.
-    const proposal = single ? first.detail : first.task;
-    const taskRefs = (single ? [proposal] : page.items).map((task) => ({ appId: task.appId, taskId: task.taskId }));
+    const proposal = first.detail;
+    const taskRefs = changed.map(({ detail }) => ({ appId: detail.appId, taskId: detail.taskId }));
+    const completedHumanActions = changed.flatMap(({ detail, signature }) =>
+      signature.exact
+        ? [{ version: 1, appId: detail.appId, taskId: detail.taskId, signature: signature.value }]
+        : [],
+    );
     const displayedApproval = single ? approvalProposalForTask(proposal) : null;
     const displayedHumanCondition = single && !displayedApproval ? humanConditionAnchor(proposal) : null;
     const decisionAction = displayedApproval ? displayedApproval.requestedAction : null;
@@ -1139,8 +1161,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
               : []),
           ].join("\n")
         : `Needs your action: ${proposal.outcome}\n${fullHumanActionText(proposal)}\n\nReply here to discuss this work or report completion.`
-      : `${page.total ?? page.items.length} Tasks need your action in ${appId}. Ask May what needs your attention, or use /todo.`;
-    const messageId = await sendMessage(coordinates.chatId, text, undefined, {
+      : renderTelegramTodos(
+          changed.map(({ detail }) => detail),
+          changed.length,
+          appId,
+        );
+    const messageId = await sendMessage(coordinates.chatId, text, single ? undefined : "HTML", {
       eventType: "task.human-action",
       agent: opts.interfaceAgent,
       messageThreadId: coordinates.topicId,
@@ -1149,19 +1175,14 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         taskRefs,
         ...(displayedApproval ? { approvalAnchor: displayedApproval } : {}),
         ...(displayedHumanCondition ? { humanCondition: displayedHumanCondition } : {}),
-        ...(single && first.signature.exact
-          ? {
-              completedHumanAction: {
-                version: 1,
-                appId: first.detail.appId,
-                taskId: first.detail.taskId,
-                signature: first.signature.value,
-              },
-            }
-          : {}),
+        ...(single && completedHumanActions[0]
+          ? { completedHumanAction: completedHumanActions[0] }
+          : completedHumanActions.length > 0
+            ? { completedHumanActions }
+            : {}),
       }),
       bindToCompleteDelivery: Boolean(
-        displayedApproval || displayedHumanCondition || (single && first.signature.exact),
+        displayedApproval || displayedHumanCondition || completedHumanActions.length > 0,
       ),
     });
     if (!messageId || !running) return;

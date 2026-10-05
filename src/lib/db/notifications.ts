@@ -49,6 +49,22 @@ export type CompletedHumanActionDelivery = {
   signature: string;
 };
 
+const COMPLETED_ACTION_MATCH = `(
+  (
+    json_extract(data, '$.completedHumanAction.version') = 1
+    AND json_extract(data, '$.completedHumanAction.appId') = ?
+    AND json_extract(data, '$.completedHumanAction.taskId') = ?
+    AND json_extract(data, '$.completedHumanAction.signature') = ?
+  )
+  OR EXISTS (
+    SELECT 1 FROM json_each(json_extract(messages.data, '$.completedHumanActions')) AS completed
+    WHERE json_extract(completed.value, '$.version') = 1
+      AND json_extract(completed.value, '$.appId') = ?
+      AND json_extract(completed.value, '$.taskId') = ?
+      AND json_extract(completed.value, '$.signature') = ?
+  )
+)`;
+
 /**
  * Read only complete, destination-scoped action receipts. The complete marker is
  * stripped from partial multipart sends by the Telegram client, so a row's mere
@@ -69,10 +85,7 @@ export function hasCompletedHumanActionDelivery(
        WHERE chat_id = ? AND event_type IN ('task.human-action', 'task.watch')
          AND json_valid(data)
          AND coalesce(json_extract(data, '$.channelThreadId'), '') = coalesce(?, '')
-         AND json_extract(data, '$.completedHumanAction.version') = 1
-         AND json_extract(data, '$.completedHumanAction.appId') = ?
-         AND json_extract(data, '$.completedHumanAction.taskId') = ?
-         AND json_extract(data, '$.completedHumanAction.signature') = ?
+         AND ${COMPLETED_ACTION_MATCH}
          AND EXISTS (
            SELECT 1 FROM json_each(json_extract(messages.data, '$.taskRefs')) AS ref
            WHERE json_extract(ref.value, '$.appId') = ?
@@ -83,6 +96,9 @@ export function hasCompletedHumanActionDelivery(
     .get(
       chatId,
       expectedThread,
+      action.appId,
+      action.taskId,
+      action.signature,
       action.appId,
       action.taskId,
       action.signature,

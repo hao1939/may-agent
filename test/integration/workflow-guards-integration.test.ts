@@ -8,6 +8,12 @@
 
 import { describe, test, expect } from "bun:test";
 import { join, dirname } from "node:path";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { EventBus } from "../../src/app/core/events/bus.js";
+import { DbWriter } from "../../src/lib/db-writer.js";
+import { closeDb, getDb } from "../../src/lib/db/connection.js";
+import { buildRuntimeCtx } from "../../src/lib/runtime-ctx.js";
 import { fileURLToPath } from "node:url";
 import { createWorkflowTool } from "../../src/lib/workflow-tool.js";
 import type { WorkflowToolResult } from "../../src/lib/workflow.js";
@@ -78,6 +84,16 @@ describe("Guard integration: warn demand delivery", () => {
   test("warn guard fires on step_done, warning appears in next step task", async () => {
     const { calls, manager } = createMockManager();
     const emitted: any[] = [];
+    const root = mkdtempSync(join(tmpdir(), "may-workflow-guard-observation-"));
+    const bus = new EventBus();
+    const writer = new DbWriter(root);
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    bus.subscribe((event) => { emitted.push(event); });
+    const runtimeCtx = buildRuntimeCtx({
+      bus, persistDir: root, projectRoot: root, projectsRoot: root,
+      agentsRoot: root, sharedRoot: root, agentName: "test-agent",
+    });
 
     // Use ONLY the warn guard (not the blocker or inject guards)
     // We create a dedicated guard dir with just the warn guard
@@ -89,7 +105,7 @@ describe("Guard integration: warn demand delivery", () => {
       // Use DISABLED_GUARDS to disable all except the warn guard.
       guardsDir: TEST_GUARDS_DIR,
       agentName: "test-agent",
-      runtimeCtx: createRuntimeCtx(emitted),
+      runtimeCtx,
     });
 
     // Disable all guards except the warn one
@@ -134,7 +150,14 @@ describe("Guard integration: warn demand delivery", () => {
           sessionId: expect.any(String),
         }),
       }));
+      const observations = getDb(root)
+        .prepare("SELECT delivery_status, delivery_route FROM events WHERE event_type = 'guard.triggered'")
+        .all();
+      expect(observations.length).toBeGreaterThan(0);
+      expect(observations.every((row) => row.delivery_status === "accepted" && row.delivery_route === "noop")).toBe(true);
     } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
       if (origDisabled === undefined) {
         delete process.env.DISABLED_GUARDS;
       } else {

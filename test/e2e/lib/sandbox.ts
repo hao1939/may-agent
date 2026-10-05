@@ -26,7 +26,7 @@
  *   }
  */
 
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn, type ChildProcess, type SpawnOptionsWithoutStdio } from "node:child_process";
 import {
   cpSync,
   existsSync,
@@ -45,6 +45,14 @@ import { sendSocketCommand } from "../../../packages/control/src/client.js";
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FIXTURES_ROOT = resolve(REPO_ROOT, "test", "e2e", "fixtures");
 const MAY_TS = resolve(REPO_ROOT, "src", "app", "may.ts");
+
+/** An open parent pipe owns the fixture daemon even if the runner is killed. */
+export function spawnSandboxDaemon(args: string[], options: SpawnOptionsWithoutStdio) {
+  return spawn(process.execPath, ["--preload", join(REPO_ROOT, "test/e2e/lib/daemon-lifetime.ts"), MAY_TS, ...args], {
+    ...options,
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+}
 
 export interface SandboxSpec {
   /** Fixture agents to copy from test/e2e/fixtures/agents/ into sandbox agents/. */
@@ -258,10 +266,9 @@ export async function buildSandbox(spec: SandboxSpec = {}): Promise<Sandbox> {
   };
 
   const args = daemonArgs;
-  const child: ChildProcess = spawn("bun", [MAY_TS, ...args], {
+  const child: ChildProcess = spawnSandboxDaemon(args, {
     cwd: REPO_ROOT,
     env,
-    stdio: ["ignore", "pipe", "pipe"],
   });
 
   if (captureLogs) {

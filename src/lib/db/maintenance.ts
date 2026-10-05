@@ -200,6 +200,8 @@ export function runDbMaintenancePass(
            SELECT 1 FROM app_inbox_items i
            WHERE i.origin_event_id = events.id AND i.status != 'done'
          )
+         -- Prospective App-admission obligations retain their owning Event.
+         AND events.app_admission_pending IS NOT 1
     `,
     [now - 5 * DAY_MS], batchSize, "timestamp",
   );

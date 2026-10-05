@@ -142,6 +142,30 @@ test("completed human-action delivery is exact and destination scoped", () => {
       }),
     });
     expect(hasCompletedHumanActionDelivery(root, "123", 9, second)).toBe(true);
+
+    const third = { appId: "may", taskId: "goal/third", signature: "third-v1" };
+    storeNotificationMessage(root, {
+      chat_id: "123",
+      telegram_msg_id: 98,
+      event_type: "task.human-action",
+      agent: "may",
+      session_id: null,
+      project_id: null,
+      data: JSON.stringify({
+        taskRefs: [
+          { appId: action.appId, taskId: action.taskId },
+          { appId: third.appId, taskId: third.taskId },
+        ],
+        channelThreadId: "9",
+        completedHumanActions: [
+          { version: 1, ...action },
+          { version: 1, ...third },
+        ],
+      }),
+    });
+    expect(hasCompletedHumanActionDelivery(root, "123", 9, third)).toBe(true);
+    expect(hasCompletedHumanActionDelivery(root, "123", 10, third)).toBe(false);
+    expect(hasCompletedHumanActionDelivery(root, "123", 9, { ...third, signature: "third-v2" })).toBe(false);
   } finally {
     closeDb(root);
     rmSync(root, { recursive: true, force: true });

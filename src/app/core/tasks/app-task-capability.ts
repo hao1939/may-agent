@@ -1,3 +1,7 @@
+import type { SqliteDb } from "../../../lib/db.js";
+import { getDb } from "../../../lib/db/connection.js";
+import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
+import { readAppTaskAdmissionOutcome } from "./app-task-reconciler.js";
 import type {
   TaskDetail,
   TaskIntent,
@@ -30,8 +34,7 @@ import {
   previewLoadedCanonicalAppTaskEvent,
   previewLoadedCanonicalAppTaskEventRoutes,
   readLoadedAppTaskView,
-  readLoadedAppTaskInputResult,
-  readLoadedAppTaskInputClosure,
+  readLoadedAppTaskContext,
   retryLoadedFailedAppTask,
   stopLoadedConversationTurn,
   wakeLoadedAppTasks,
@@ -67,7 +70,8 @@ export type AppTaskCapability = {
     event: Parameters<typeof previewLoadedCanonicalAppTaskEventRoutes>[0]["event"];
   }): Array<{ appId: string; taskIds: string[] }>;
   readDependency(input: {
-    appDir: string;
+    appId?: string;
+    appDir?: string;
     dependency: { kind: "task"; id: string };
     admissionKey?: string;
   }): Promise<TaskInputObservation | null>;
@@ -117,6 +121,7 @@ export type AppTaskCapability = {
  */
 export function createAppTaskCapability(options: {
   bus: EventBus;
+  db?: SqliteDb;
   runtime?: AppTaskRuntimeOptions;
 }): AppTaskCapability {
   return {
@@ -144,15 +149,17 @@ export function createAppTaskCapability(options: {
       });
       return { apps: result.installed.length };
     },
-    async readDependency({ appDir, dependency, admissionKey }) {
-      const task = readLoadedAppTaskView({ bus: options.bus, appDir, taskId: dependency.id });
+    async readDependency({ appId, appDir, dependency, admissionKey }) {
+      const task = readLoadedAppTaskView({ bus: options.bus, appId, appDir, taskId: dependency.id });
+      // Admission outcomes and closures outlive executable App definitions.
+      // Read existing authority only; never bootstrap or enable an absent App.
+      const db = options.db ?? (options.runtime?.persistDir ? getDb(options.runtime.persistDir) : undefined);
+      const resourceStore = readLoadedAppTaskContext({ bus: options.bus, appId, appDir })?.resourceStore
+        ?? (appId && db ? AppTaskResourceStore.activeFromDb(db, appId) : null);
       if (admissionKey) {
-        const accepted = readLoadedAppTaskInputResult({
-          bus: options.bus,
-          appDir,
-          taskId: dependency.id,
-          admissionKey,
-        });
+        const accepted = resourceStore
+          ? readAppTaskAdmissionOutcome({ resourceStore }, dependency.id, admissionKey)
+          : null;
         if (accepted)
           return {
             kind: "task",
@@ -164,22 +171,21 @@ export function createAppTaskCapability(options: {
             result: accepted.result,
             facts: accepted.facts,
           };
-        const closure = readLoadedAppTaskInputClosure({ bus: options.bus, appDir, taskId: dependency.id, admissionKey });
+        const closure = resourceStore?.readAdmissionCancellation(dependency.id, admissionKey);
         if (closure) return {
           kind: "task", id: dependency.id, status: "attention", closed: true,
           summary: "The Task closed without an accepted outcome for this input", facts: closure.facts,
         };
         // A later cycle or an unrelated retained wait cannot answer this input.
-        const report = readLoadedAppTaskInputResult({
-          bus: options.bus,
-          appDir,
-          taskId: dependency.id,
-          admissionKey,
-          kind: "report",
-        });
+        const report = resourceStore
+          ? readAppTaskAdmissionOutcome({ resourceStore }, dependency.id, admissionKey, "report")
+          : null;
         // An unavailable target is not ordinary pending work. Independently
         // retained exact answers/reports above remain readable without it.
-        if (!task && !report) return null;
+        const retainedAdmission = resourceStore?.readTaskContext({ taskIds: [], admissionIds: [admissionKey] })
+          .appTaskAdmissions?.[admissionKey];
+        const retainedPending = retainedAdmission?.taskId === dependency.id && resourceStore?.readTask(dependency.id);
+        if (!task && !report && !retainedPending) return null;
         return {
           kind: "task",
           id: dependency.id,

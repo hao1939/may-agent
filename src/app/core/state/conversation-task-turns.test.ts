@@ -926,11 +926,12 @@ test("settlement resolves the exact App again and rolls back a mismatched or mis
 });
 
 test.each([
-  ["existing", "human"], ["mapped", "human"],
-  ["existing", "system"], ["mapped", "system"],
+  ["existing", "human", true], ["mapped", "human", true],
+  ["existing", "system", false], ["mapped", "system", false],
+  ["existing", "system", true], ["mapped", "system", true],
 ] as const)(
-  "%s handoff from %s maps once; background delegation can stay quiet",
-  async (kind, source) => {
+  "%s handoff from %s maps once; assignment visibility follows published reply (%s)",
+  async (kind, source, published) => {
     const f = fixture();
     const admitted = admitConversationTaskInput(f.context(), {
       ...f.input(), source: { kind: source, id: "first" },
@@ -951,7 +952,7 @@ test.each([
     const getTaskApp = () => ({ app: targetApp, config: f.context() });
     const answer: ConversationTurnResult = {
       summary: "Continue the work",
-      ...(source === "human" ? { response: "I will continue the requested work." } : {}),
+      ...(published ? { response: "I will continue the requested work." } : {}),
       topic: { kind: "new", title: "Measurement" },
       followUp: {
         appId: app.id,
@@ -981,11 +982,17 @@ test.each([
     expect(f.store.readTask("before-settlement")).toBeNull();
     expect(f.store.readTask("unrelated")).toBeNull();
     expect(getAppInboxItem(f.db, "first")?.status).toBe("done");
-    if (source === "system") {
+    if (!published) {
       expect(readAppConversationResource(f.db, app.id, "chat").messages).toEqual([]);
       f.reopen();
       expect(readAppConversationResource(f.db, app.id, "chat").messages).toEqual([]);
       expect(f.store.readTask(kind === "existing" ? "chosen" : "at-settlement")).not.toBeNull();
+    } else {
+      const assignments = readAppConversationResource(f.db, app.id, "chat").messages
+        .flatMap(({ metadata }) => metadata?.followTask ?? []);
+      expect(assignments).toEqual([
+        expect.objectContaining({ appId: app.id, taskId: kind === "existing" ? "chosen" : "at-settlement" }),
+      ]);
     }
   },
 );
@@ -1173,6 +1180,7 @@ test("the common controller returns a delegated answer without a Topic after int
         .messages.filter(({ author }) => author.kind === "agent")
         .map(({ text }) => text),
     ).toEqual([
+      "Assigned to sample: Measure the sample\nTask: sample/A",
       "I'll get the measurement and return it here.",
       "A threshold is the minimum acceptable value.",
       "The measured value is 17.",
@@ -1859,6 +1867,31 @@ test("recovery scopes report lookups to linked Tasks without changing legacy JSO
   const input = f.admit();
   completeConversationTaskTurn(f.context(), f.claim(input.taskId), decision);
   const topic = readAppConversationResource(f.db, app.id, "chat").topics[0]!;
+  // Historical self-subscriptions must be excluded before their attempt bodies
+  // are materialized, not just discarded after interpreting all their history.
+  linkConversationTopicTask(f.db, topic.id, app.id, input.taskId);
+  // This worker has history and a real link, but its only Conversation is closed.
+  const closedInput = admitConversationTaskInput(f.context(), {
+    ...f.input("closed-input"), conversationId: "closed-chat",
+  });
+  completeConversationTaskTurn(f.context(), f.claim(closedInput.taskId), decision);
+  const closedTopic = readAppConversationResource(f.db, app.id, "closed-chat").topics[0]!;
+  observeAppTaskIntent(f.context(), {
+    appAgent: app.id,
+    intent: { id: "closed-only", parentId: "root", outcome: "Historical measurement", acceptance: ["Measured"] },
+  });
+  completeAppTask(f.context(), f.claim("closed-only"), { summary: "Measured", result: { value: 17 } });
+  linkConversationTopicTask(f.db, closedTopic.id, app.id, "closed-only");
+  const closedOwner = f.store.readTask(closedInput.taskId)!;
+  cancelAppTask(f.context(), {
+    appId: app.id,
+    taskId: closedInput.taskId,
+    expectedGeneration: closedOwner.metadata.generation,
+    expectedResourceVersion: closedOwner.metadata.resourceVersion,
+    decision: "app-policy",
+    reason: "Conversation retired",
+  });
+  expect(listConversationTaskLinks(f.db, app.id, "closed-only")).toHaveLength(1);
   admitTaskInput(f.context(), {
     appId: app.id,
     idempotencyKey: "measurement",
@@ -1953,6 +1986,10 @@ test("recovery scopes report lookups to linked Tasks without changing legacy JSO
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE linked_attempts"))).toHaveLength(1);
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE selected_reports"))).toHaveLength(1);
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE live_conversations"))).toHaveLength(1);
+    const ctes = recoverySql.slice(0, recoverySql.lastIndexOf("    SELECT appId, conversationId, topicId"));
+    expect(prepare(`${ctes} SELECT app_id, task_id FROM linked_tasks`).all(...recoveryArgs.slice(0, -1))).toEqual([
+      { app_id: app.id, task_id: "7" },
+    ]);
     f.db.prepare("UPDATE app_task_admissions SET admission_json = ? WHERE app_id = ? AND task_id = ?")
       .run(admission.admission_json, app.id, admission.task_id);
     expect(admitConversationTaskChange(f.context(), f.context(), ref).created).toBe(true);

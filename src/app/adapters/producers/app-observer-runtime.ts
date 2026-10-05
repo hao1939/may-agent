@@ -25,6 +25,7 @@ type ObserverState = {
   lastStartedAt?: number;
   lastCompletedAt?: number;
   lastError?: string;
+  reportedError?: string;
   resource?: ReturnType<typeof bindResourceObserver>;
   source: string;
   factType?: string;
@@ -174,12 +175,15 @@ export function createAppObserverRuntime(options: {
       if (!closed && states.get(key) === state) {
         state.observation = observation;
         state.lastError = undefined;
+        state.reportedError = undefined;
       }
     } catch (error) {
       if (closed || states.get(key) !== state) return;
-      state.lastError = String(error instanceof Error ? error.message : error).slice(0, 2000);
+      const message = String(error instanceof Error ? error.message : error);
+      state.lastError = message.slice(0, 2000);
+      if (state.reportedError === message) return;
       try {
-        options.bus.emit({
+        const published = options.bus.emit({
           type: "app.observer.failed",
           source: "app-host",
           owner: `app:${state.appId}`,
@@ -187,9 +191,13 @@ export function createAppObserverRuntime(options: {
           data: {
             appId: state.appId,
             observerId: state.observer.id,
-            error: error instanceof Error ? error.message : String(error),
+            error: message,
           },
         } as never);
+        // A missed publication must retry. Successful checks clear the episode,
+        // so a later recurrence is new evidence even if its text is unchanged.
+        const eventId = published[EVENT_ROW_ID] ?? 0;
+        if (Number.isSafeInteger(eventId) && eventId > 0) state.reportedError = message;
       } catch (reportError) {
         // Publication may be the failed operation. Do not recursively report
         // through unavailable persistence or leave an unhandled rejection.

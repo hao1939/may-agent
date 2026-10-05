@@ -4,7 +4,9 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
 import { fakeModel } from "../../test/fixtures/model.js";
-import { createAgentRun } from "./agent-runner.js";
+import { createAgentRun, type AgentRunnerConfig } from "./agent-runner.js";
+import { EventBus } from "../app/core/events/bus.js";
+import { DbWriter } from "./db-writer.js";
 import { closeDb, getDb } from "./db/connection.js";
 import { SubagentManager } from "./manager.js";
 
@@ -22,6 +24,8 @@ function definition(version: string) {
 describe("manager session lifecycle", () => {
   let persistDir: string;
   let manager: SubagentManager;
+  let bus: EventBus;
+  let beforeToolCall: AgentRunnerConfig["beforeToolCall"];
   let holdReplies: boolean;
   let replyFailure: string | undefined;
   let started: ReturnType<typeof Promise.withResolvers<void>>;
@@ -33,10 +37,13 @@ describe("manager session lifecycle", () => {
     replyFailure = undefined;
     started = Promise.withResolvers<void>();
     requests = [];
+    bus = new EventBus();
     manager = new SubagentManager({
       persistDir,
-      agentRunFactory: (config) =>
-        createAgentRun({
+      bus,
+      agentRunFactory: (config) => {
+        beforeToolCall = config.beforeToolCall;
+        return createAgentRun({
           ...config,
           streamFn: (model, context) => {
             const stream = createAssistantMessageEventStream();
@@ -67,7 +74,8 @@ describe("manager session lifecycle", () => {
             if (!holdReplies) reply();
             return stream;
           },
-        }),
+        });
+      },
     });
     manager.register(definition("old"));
   });
@@ -82,6 +90,32 @@ describe("manager session lifecycle", () => {
       closeDb(persistDir);
       rmSync(persistDir, { recursive: true, force: true });
     }
+  });
+
+  it("records a tool guard decision without requiring a consumer", async () => {
+    const writer = new DbWriter(persistDir);
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    holdReplies = true;
+    const sessionId = manager.run("worker", "Test guard observation");
+    await started.promise;
+
+    const result = await beforeToolCall!({
+      toolCall: { name: "finish", id: "guard-call" },
+      args: {
+        status: "success",
+        summary: "Implemented the fix",
+        deliverables: [{ path: "src/fix.ts", description: "implementation" }],
+      },
+      context: { messages: [] },
+    } as any);
+
+    expect(result).toMatchObject({ block: false, reason: expect.stringContaining("no write, edit") });
+    const row = getDb(persistDir)
+      .prepare("SELECT data, delivery_status, delivery_route FROM events WHERE event_type = 'guard.triggered'")
+      .get();
+    expect(row).toMatchObject({ delivery_status: "accepted", delivery_route: "noop" });
+    expect(JSON.parse(String(row!.data))).toMatchObject({ sessionId, guard: "finish-evidence", action: "warned" });
   });
 
   const skill = {
