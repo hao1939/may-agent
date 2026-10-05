@@ -268,24 +268,28 @@ describe("source-query metric measurement", () => {
     });
   });
 
-  it("counts the lost publication once while retaining its subscriber-failure diagnostic", async () => {
+  it.each(["sample.report.published", "guard.triggered"])("counts failed required delivery of %s while retaining its diagnostic", async (eventType) => {
     const db = getDb(persistDir);
     const writer = new DbWriter(persistDir);
     bus.setPersistenceSubscriber(writer.handler);
     bus.setDeliveryRecorder(writer.recordDelivery);
     const reported = Promise.withResolvers<void>();
-    const stop = bus.subscribe((event) => {
-      if (event.type === "sample.report.published") throw new Error("consumer unavailable");
+    const stop = bus.subscribeDurableRoute((event) => {
+      if (event.type === eventType) throw new Error("consumer unavailable");
       if (event.type === "subscriber.failed") reported.resolve();
     });
     try {
-      bus.emit({ type: "sample.report.published", source: "fixture", owner: "app:sample", data: { result: "retained" } });
+      bus.emit({
+        type: eventType,
+        ...(eventType === "guard.triggered" ? { [EVENT_RECORD_ONLY]: true } : {}),
+        source: "fixture", owner: "app:sample", data: { result: "retained" },
+      });
       await reported.promise;
       writer.runHousekeeping(Date.now() + 3_600_000);
       expect(db.prepare(UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY).get()).toEqual({ value: 1 });
       expect(db.prepare(SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY).get()).toEqual({ value: 1 });
       expect(db.prepare("SELECT event_type, delivery_status FROM events ORDER BY id").all()).toEqual([
-        { event_type: "sample.report.published", delivery_status: "unhandled" },
+        { event_type: eventType, delivery_status: "unhandled" },
         { event_type: "subscriber.failed", delivery_status: "accepted" },
       ]);
     } finally { stop(); }
