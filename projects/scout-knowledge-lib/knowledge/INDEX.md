@@ -70,6 +70,10 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ## Recent Source-Grounded Findings
 
+### 2026-10-05
+
+- [A personal agent system should be ported, not blindly installed](./findings/2026-10-05-homestead-personal-agent-portability.md) — pinned Homestead inspection exposes host, connector, ownership, and operator-policy coupling; the public mirror has not been installed fresh or independently run.
+
 ### 2026-10-04
 
 - [Share coordination state, not an undifferentiated agent transcript](./findings/2026-10-04-duomind-structured-semantic-coordination.md) — complete DuoMind paper review separates intention, expected subgoal, task belief, and uncertainty in peer messages; two-robot simulations with constrained instructions and shared global-camera views limit transfer.
