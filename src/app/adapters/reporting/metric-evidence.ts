@@ -1,4 +1,5 @@
 import type { SqliteDb } from "../../../lib/db.js";
+import { calculateMetric, metricCalculationOptions } from "../../../lib/metric-calculation.js";
 
 const SAMPLE_LIMIT = 12;
 const NOTE_LIMIT = 4_000;
@@ -62,10 +63,17 @@ export function readMetricEvidence(db: SqliteDb, metricId: string, query: Return
     if (!definition) return { version: 1, available: false, metricId, ...query };
     const { config, ...metric } = definition;
     let alertRule: unknown = null;
+    let calculationRule: unknown = null;
+    let calculation: ReturnType<typeof calculateMetric> | { value: null; reason: string };
     try {
-      alertRule = JSON.parse(config ?? "null")?.alert ?? null;
+      const parsedConfig = JSON.parse(config ?? "null");
+      alertRule = parsedConfig?.alert ?? null;
+      calculationRule = metricCalculationOptions(parsedConfig);
+      calculation = calculateMetric(db,
+        { id: metricId, config: parsedConfig, measure_interval: metric.measureInterval }, query.end - 1);
     } catch {
-      /* Unknown configuration remains explicit. */
+      // Keep samples reviewable even when a retained calculation cannot run.
+      calculation = { value: null, reason: "Current calculation configuration or evidence is unavailable" };
     }
     const { end, windowMs } = query;
     const window = (start: number, cut: number) => {
@@ -163,6 +171,8 @@ export function readMetricEvidence(db: SqliteDb, metricId: string, query: Return
       windowMs,
       metric,
       alertRule,
+      calculationRule,
+      calculation,
       latest,
       freshness,
       previous,

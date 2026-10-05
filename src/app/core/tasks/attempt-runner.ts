@@ -89,7 +89,7 @@ export async function runTaskAttempt(input: {
       reason: input.reason ?? "task-controller",
       recoverSessionHandoff: (attempt) => opts.sessions?.handoff(attempt),
     });
-    recordTaskCheck(opts.bus, claim.kind);
+    recordTaskCheck(opts.bus, claim.kind, { appId: descriptor.id, taskId: input.taskId });
     if (claim.kind !== "claimed") {
       if (claim.kind === "busy") {
         const active = claim.attemptId ? config.resourceStore.readAttempt(claim.attemptId) : null;

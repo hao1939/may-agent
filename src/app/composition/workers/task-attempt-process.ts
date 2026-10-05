@@ -553,12 +553,12 @@ async function runTaskWorker(input: {
       bus,
       () => appSources.current()?.projectsRoot === activeSource.projectsRoot,
     );
-    await writeWorkerFrame({ kind: "result", dependentTaskIds, taskChecks: readTaskChecks(bus).counts });
+    await writeWorkerFrame({ kind: "result", dependentTaskIds, taskChecks: readTaskChecks(bus) });
   } catch (error) {
     await writeWorkerFrame({
       kind: "error",
       error: error instanceof Error ? error.message : String(error),
-      taskChecks: readTaskChecks(bus).counts,
+      taskChecks: readTaskChecks(bus),
     });
     throw error;
   } finally {

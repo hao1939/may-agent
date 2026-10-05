@@ -4773,6 +4773,7 @@ describe("canonical App task runtime", () => {
         if (automaticRecovery) {
           await waitFor("three mechanical checks while the answer is still pending", () => quietRecoveryChecks >= 3);
           expect(readTaskChecks(bus).counts.waiting).toBeGreaterThanOrEqual(quietRecoveryChecks);
+          expect(readTaskChecks(bus).examples).toContainEqual({ appId: "sample", taskId: "work/owner", outcome: "waiting" });
           expect(ownerInputs).toHaveLength(1);
           expect(config.resourceStore.readTask("work/owner")?.status.reviewAt).toBeUndefined();
         }

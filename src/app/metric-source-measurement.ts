@@ -223,14 +223,22 @@ export async function measureSourceMetrics(options: {
       let measuredBy = "runtime:metric-source-query";
       let note = queryNote;
       if (row.id === TASK_SKIPPED_CHECK_METRIC.id) {
-        const { since, counts } = readTaskChecks(options.bus);
+        const observation = readTaskChecks(options.bus);
+        const { since, counts } = observation;
         const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
-        completedAt = Date.now();
+        completedAt = options.measuredAt ?? Date.now();
+        const windowMs = completedAt - since;
+        // A startup/forced check with no elapsed interval is not a rate sample.
+        // Keep the counts for the next ordinary pass without inventing a zero.
+        if (windowMs <= 0) {
+          skipped.push(row.id);
+          continue;
+        }
         measuredBy = "runtime:task-checks";
         sample = {
-          value: total - counts.claimed,
+          value: ((total - counts.claimed) * 60_000) / windowMs,
           sampleSize: total,
-          note: JSON.stringify({ since, until: completedAt, counts }),
+          note: JSON.stringify({ ...observation, until: completedAt, windowMs, skippedChecks: total - counts.claimed }),
         };
       } else if (row.source_query) {
         // SQLite prepare executes the first statement and ignores SQL tail; it
