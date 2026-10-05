@@ -44,7 +44,7 @@ export const taskActionSchema = Type.Union([
     },
     {
       additionalProperties: false,
-      description: "Select the current Task's next eligible execution. Does not wake work, settle input or retire waits. Omit to retain ordinary handler selection. Exact replays in the same attempt are idempotent.",
+      description: "Select the current Task's next eligible execution: declared uses its configured workflow/executor; agent uses its responsible agent. One choice per submission. Does not wake work, settle input or retire waits. Omit to retain ordinary handler selection. Exact replays in the same attempt are idempotent.",
     },
   ),
   Type.Object(
@@ -529,6 +529,9 @@ export function admitTaskReconcileResult(
     if (typeof normalized === "string") return { ok: false, error: normalized };
     actions.push(normalized);
   }
+  // Validate the submitted decision before live admission removes receipted actions.
+  if (actions.filter((action) => action.kind === "select-execution").length > 1)
+    return { ok: false, error: "actions contain multiple execution selections" };
 
   const rawConditions = admittedOutput.conditions ?? [];
   if (!Array.isArray(rawConditions)) return { ok: false, error: "conditions must be an array" };

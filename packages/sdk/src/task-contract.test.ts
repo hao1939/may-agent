@@ -3,6 +3,7 @@ import { Type } from "typebox";
 import { Check } from "typebox/value";
 import { conversationTurnResultSchema } from "./app.js";
 import {
+  admitTaskChanges,
   admitTaskReconcileResult,
   admitTaskResultForSchema,
   admitTaskVerificationResult,
@@ -754,5 +755,19 @@ it("exposes execution selection through the same live and final action schemas",
     expect(admitTaskResultForSchema(taskAgentResultSchema, {
       state: "converged", summary: "Invalid choice", facts: ["observed"], actions: [action],
     })?.ok).toBe(false);
+  }
+});
+
+it("rejects multiple execution choices at live and final admission", () => {
+  for (const execution of ["agent", "declared"] as const) {
+    const changes = { facts: ["decision:observed"], actions: [
+      { kind: "select-execution", execution: "declared", reason: "The procedure can read" },
+      { kind: "select-execution", execution, reason: "Reconsider the next method" },
+    ] };
+    expect(admitTaskChanges(changes)).toMatchObject({ ok: false });
+    for (const state of ["waiting", "converged"] as const)
+      for (const schema of [taskAgentResultSchema, taskReconcileResultSchema])
+        expect(admitTaskResultForSchema(schema, { state, summary: "Method selected", ...changes }))
+          .toMatchObject({ ok: false });
   }
 });

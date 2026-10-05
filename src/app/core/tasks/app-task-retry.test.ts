@@ -22,6 +22,8 @@ import {
   observeAppTaskIntent,
   readAppTaskAdmissionOutcome,
   recordAppTaskTrigger,
+  recoverableAppTaskAttempts,
+  releaseInterruptedAppTaskAttempt,
   retryFailedAppTask,
   reportAppTaskFailure,
   stopAppTaskAttempt,
@@ -792,9 +794,42 @@ it("rejects absent procedures and conflicting selections atomically; replay does
   f.reopen();
   expect(f.config.resourceStore.readAttempt(current.attemptId)?.executionSelection).toBeUndefined();
   f.apply(current, { facts: ["observed"], actions: [declared] });
+  const saved = f.config.resourceStore.readAttempt(current.attemptId);
+  // Reject the whole submission before removing an already-receipted choice.
+  expect(() => f.apply(current, { facts: ["observed"], actions: [declared, agent] }))
+    .toThrow("multiple execution selections");
+  expect(f.config.resourceStore.readAttempt(current.attemptId)).toEqual(saved);
   f.apply(current, { facts: ["observed"], actions: [agent] });
   f.apply(current, { facts: ["observed"], actions: [declared] });
   expect(f.config.resourceStore.readAttempt(current.attemptId)?.executionSelection?.execution).toBe("agent");
+});
+
+it.each(["agent", "declared"] as const)("retains a live %s choice through interrupted-attempt recovery", (execution) => {
+  const f = fixture();
+  observeAppTaskIntent(f.config, { appAgent: "owner", intent: { ...f.intent, workflow: "measure" } });
+  const current = f.claim(execution === "declared" ? "agent" : "auto");
+  const selection = { execution, reason: "Use this method for the remaining input" };
+  f.apply(current, { facts: ["decision:observed"], actions: [{ kind: "select-execution", ...selection }] });
+  const task = f.config.resourceStore.readTask("work")!;
+  const interrupted = f.config.resourceStore.readAttempt(current.attemptId)!;
+  interrupted.runtimeId = "previous-runtime";
+  interrupted.metadata.resourceVersion++;
+  expect(f.config.resourceStore.commit({
+    fences: [{ taskId: "work", resourceVersion: task.metadata.resourceVersion,
+      generation: current.generation, currentAttemptId: current.attemptId }],
+    attempts: [interrupted],
+  })).toBe(true);
+  f.reopen();
+  const [recovery] = recoverableAppTaskAttempts(f.config, Date.now(), true, ["work"]);
+  expect(recovery).toBeDefined();
+  expect(releaseInterruptedAppTaskAttempt(f.config, recovery, "Previous runtime stopped").released).toBe(true);
+  f.reopen();
+  const next = f.claim("auto");
+  expect(next.handler).toBe(execution === "declared" ? "workflow:measure" : "agent:owner");
+  expect(next.previousAttempt).toMatchObject({ state: "interrupted", executionSelection: selection });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toBeNull();
+  expect(() => f.apply(current, { facts: ["old:decision"], actions: [{ kind: "select-execution", ...selection }] }))
+    .toThrow("stale");
 });
 
 
