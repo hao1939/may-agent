@@ -14,7 +14,9 @@ import {
 import { intakeEvaluationReport } from "../../../../may.app/agents/may/workflows/evaluation-report-intake.js";
 
 test("recovered work reaches population review, preserves its cut through admission/reuse, and passes May intake", async () => {
-  const end = Date.UTC(2026, 8, 26, 12);
+  // Broad population evidence uses the last daily cut, even for a midday wake.
+  const end = Date.UTC(2026, 8, 26);
+  const now = end + 12 * 3_600_000;
   const root = mkdtempSync(join(tmpdir(), "systemic-review-"));
   const appRoot = fileURLToPath(new URL("../../../", import.meta.url));
   const workspace = { root, appRoot, projectRoot: appRoot, output: root };
@@ -121,7 +123,7 @@ test("recovered work reaches population review, preserves its cut through admiss
       config,
       root,
       undefined,
-      end + 1000,
+      now + 1000,
     );
     expect(selection.candidate).toEqual({
       appId: "sample",
@@ -134,7 +136,7 @@ test("recovered work reaches population review, preserves its cut through admiss
       config,
       root,
       selection.state,
-      end + 3_601_000,
+      now + 3_601_000,
     );
     expect(ordinary.candidate).toEqual({ appId: "sample", taskId: "chat" });
     const input = taskInputForEvent({
