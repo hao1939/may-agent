@@ -117,6 +117,25 @@ after acquiring the write transaction, alongside the current evidence and alert
 state; time spent waiting for that lock must not backdate the decision. Save
 the transition and its Event together, then notify after commit.
 
+### Delivery failures and diagnostic observations
+
+The unhandled-signal metric measures missed delivery, not whether a diagnostic
+fact attracted a worker. Producers declare passive facts using the existing
+record-only marker. Successful persistence without a required consumer settles
+that observation. A failing required consumer keeps its delivery obligation,
+and subscriber-failure evidence remains independently measurable. Excluding an
+entire event name can hide that distinction; fix the producer's intent instead
+of extending the metric's historical exclusion list.
+
+Retain useful guard decisions and failure details for exact investigation.
+Repeated routine activity belongs in interval samples; meaningful metric
+breach/recovery transitions can request review. This does not require a new
+metric for every diagnostic type or a rewrite of historical Events. The existing
+unhandled count uses a rolling one-hour window, so old false positives age out.
+
+**Source status:** Revised Host PR #334 applies this convention to tool and
+workflow guard producers. Merge and deployment remain separate checks.
+
 ## Default failure visibility
 
 The merged source keeps measurements outside core execution: the optional source

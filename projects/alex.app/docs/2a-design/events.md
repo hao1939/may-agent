@@ -474,8 +474,12 @@ external input and nonexistent required targets create no event receipt.
 
 Internal passive producers use the same record-only marker as the App event
 interface. Heartbeat, workflow-dispatch, skill-load, attempt timing, presentation
-updates and failure diagnostics can still reach interested subscribers, but their
-persistence does not require an extra worker to accept them. A `subscriber.failed`
+updates, guard decisions and failure diagnostics can still reach interested
+subscribers, but their persistence does not require an extra worker to accept
+them. A guard's blocked, warned or injected action happens in its execution
+path; `guard.triggered` records that decision with the original reason and
+execution links. If a declared durable consumer fails, the Event remains pending
+for delivery even when its producer marked it record-only. A `subscriber.failed`
 diagnostic does not settle the originating publication: the original required
 event remains accountable, and subscriber failure metrics still count the diagnostic.
 Mark producer intent rather than adding names to a metric exclusion list.
@@ -516,20 +520,10 @@ their saved fingerprint identity. A newer report revision or separate request
 remains distinct even when its wording is identical. Intermediate reports do
 not complete the request.
 
-The existing event journal owns persistence and delivery receipts. An accepted
-delivery is reused across recovery scans and restart. Pending or no-op delivery
-can retry the existing durable routes without appending another event or
-repeating ordinary fanout. PR #312 proposes that each durable route have a
-stable identity recorded with the original event before its handler runs. A
-private worker would receive the parent Host's current route-identity snapshot
-and persist that same ledger with worker-origin events before relaying them,
-including startup recovery workers. Completing one route would record its
-evidence transactionally; whole-event acceptance would be projected only after
-every recorded route is settled and at least one route supplies actual consumer
-acceptance. Void completions alone are not acceptance. An explicit direct
-acceptance outranks no-op evidence, while a handler returning no receipt does not
-erase earlier evidence. Failed persistence remains retryable. Agents decide what
-new evidence means; publication identity requires no semantic text matching.
+The existing event journal owns persistence and delivery receipts. Acceptance by
+one consumer does not settle an independent App admission obligation. Agents
+decide what new evidence means; publication identity requires no semantic text
+matching.
 
 Closure is an authorized state operation whose consequences may publish facts;
 a late fact cannot reopen the closed Task. System origin, exact saved
@@ -558,6 +552,48 @@ adapter may append a command-view message after it actually displays the result.
 Escalation uses exact Task/request dependencies, not event pairs. Metric alert
 state remains a metric projection. Trace closure records causal evidence and
 cannot replace Task or request completion.
+
+## Recovering App admission
+
+Host [PR #336](https://github.com/hao1939/may-agent/pull/336) is a reviewed
+candidate, awaiting merge and deployment as of 2026-10-05. It replaces the older
+PR #312 route-ledger proposal with a marker on the existing Event row. This
+section describes that candidate, not a claim about the running installation.
+
+Every newly journaled Event starts with `app_admission_pending=1`. Only the App
+route clears it, after durable direct acceptance, a saved admission plan, or
+inspection that finds no App work. A global delivery receipt from another route
+cannot clear it. The existing bounded input recovery scan retries pending
+Events through that same App route, preserving authored identities and skipping
+ordinary fanout and controls. Delivery remains at least once.
+
+Recovery follows the saved responsibility: before App admission, the Event
+marker makes the obligation discoverable; after a plan or inbox entry is saved,
+existing plan or inbox recovery owns the next step. Task reconciliation and
+linked-result recovery then continue the work. Before a plan exists, routing
+uses current App subscriptions and Conditions. Once a plan exists, its exact
+unresolved recipients and Task/Condition targets remain authoritative. A lost
+acknowledgement reuses already accepted input rather than choosing a new owner.
+
+Producer retry may help, but requires the producer to run and publish again.
+Task failover cannot recover input that never reached a Task. Failure logs and
+evaluation support diagnosis; they do not replace a discoverable admission
+obligation. No additional queue, generic route registry, timer, or agent
+failover is required for this boundary.
+
+The normal path adds a marker to the Event INSERT and clears it in the receipt
+UPDATE. Inspected no-work needs an extra UPDATE and can be common. Two partial
+indexes support pending discovery and origin-Event lookup; pending rows are
+protected from retention. Live performance benefit is not yet measured. See the
+Host's `scripts/operations/event-app-admission-cost-comparison.md` for costs and
+portable verification.
+
+Migration retains the exact old Conversation recovery subset: pending or
+unhandled `conversation.message.created` Events with approval metadata or an
+external body. Other historical Events remain unmarked. Recover older stranded
+reports only after verifying their exact Events and missing admission; this
+prospective change does not automatically replay all historical publications.
+
 
 ## Core event vocabulary
 

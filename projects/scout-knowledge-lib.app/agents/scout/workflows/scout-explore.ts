@@ -12,7 +12,7 @@ import {
   realpathSync,
   statSync,
 } from "node:fs";
-import { isAbsolute, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, resolve, sep } from "node:path";
 import {
   observationCondition,
   type ExecutionResult,
@@ -39,6 +39,7 @@ import {
 } from "./lib/research-adoption-handoff.js";
 import {
   changedKnowledgePaths,
+  type KnowledgeSnapshot,
   publicationFacts,
   publishKnowledgeChanges,
   retainedCandidateFacts,
@@ -185,6 +186,7 @@ Output contract:
 - Search primary Source:/Repo: URLs case-insensitively before writing. If any search returns a matching file, open it before deciding. Never create a new finding that repeats a primary source already present elsewhere; update the matched file or return an evidence-backed no-op.
 - When an existing note still covers the question and current evidence, leave it unchanged, return outputs: [], and cite its path and the comparison in summary. When evidence or required coverage changes, update the fitting note; create a finding only when no existing note fits. A shared topic alone does not make two subjects the same.
 - Before creating a finding, inspect the exact target path. Choose an unused descriptive topic slug; do not use a scan number as a shared filename allocator.
+- For every newly created flat \`knowledge/findings/*.md\` record, also add exactly one concise relative Markdown link to it in \`knowledge/INDEX.md\`. Ground that INDEX description in the inspected source and state the material evidence limitation; do not overstate source support.
 - Update an existing finding only for the same subject, and preserve all of its existing primary Source:/Repo: declarations.
 - Read every created or changed output back before returning it.
 - Treat these absolute roots as authoritative. Never prepend \`projects/scout-knowledge-lib\` to the current working directory.
@@ -585,6 +587,147 @@ function repeatedPrimarySourceReferences(
     }
   }
   return duplicates;
+}
+
+export type FindingIndexAdmissionIssue = {
+  finding: string;
+  basename: string;
+  matchingLinks: string[];
+  reason: "index-unchanged" | "missing-link" | "duplicate-link" | "broken-link";
+};
+
+function decodeMarkdownCharacterReferences(value: string): string {
+  return value.replace(
+    /&(?:#[0-9]{1,7}|#[xX][0-9A-Fa-f]{1,6}|[A-Za-z][A-Za-z0-9]+);/g,
+    (reference) => {
+      const rendered = Bun.markdown.html(reference).trim();
+      const text = rendered.match(/^<p>([\s\S]*)<\/p>$/)?.[1];
+      if (text === undefined) return reference;
+      return text
+        .replace(/&amp;/g, "&")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">");
+    },
+  );
+}
+
+function markdownLinkTargets(content: string): string[] {
+  // Parse the original document so comments, code spans, and malformed link
+  // destinations retain their Markdown meaning. The callback sees Markdown
+  // links only (not raw HTML anchors), but preserves character-reference source
+  // bytes, so normalize those after parsing rather than mutating the document.
+  const targets: string[] = [];
+  Bun.markdown.render(content, {
+    link(children, { href }) {
+      targets.push(decodeMarkdownCharacterReferences(href));
+      return children;
+    },
+  });
+  return targets;
+}
+
+function relativeMarkdownTarget(target: string): string | null {
+  const rawPath = target.split(/[?#]/, 1)[0];
+  let decodedPath: string;
+  try {
+    decodedPath = decodeURIComponent(rawPath);
+  } catch {
+    return null;
+  }
+  if (
+    decodedPath.length === 0 ||
+    decodedPath.endsWith("/") ||
+    decodedPath.endsWith("\\") ||
+    isAbsolute(decodedPath) ||
+    decodedPath.startsWith("\\") ||
+    /^[A-Za-z][A-Za-z0-9+.-]*:/.test(decodedPath)
+  )
+    return null;
+  return decodedPath;
+}
+
+/**
+ * Require every newly created flat finding to enter the exhaustive INDEX in the
+ * same candidate. The baseline is the isolated publication snapshot, so an
+ * update to an existing finding does not create navigation churn.
+ */
+export function findingIndexAdmission(
+  before: KnowledgeSnapshot,
+  durableChanges = changedKnowledgePaths(before),
+): FindingIndexAdmissionIssue[] {
+  const findingsRoot = resolve(before.projectRoot, "knowledge/findings");
+  const indexPath = resolve(before.projectRoot, "knowledge/INDEX.md");
+  const newFindings = durableChanges.filter(
+    (path) =>
+      dirname(path) === findingsRoot &&
+      path.endsWith(".md") &&
+      !before.files.has(path) &&
+      existsSync(path),
+  );
+  if (newFindings.length === 0) return [];
+  if (!durableChanges.includes(indexPath)) {
+    return newFindings.map((finding) => ({
+      finding,
+      basename: basename(finding),
+      matchingLinks: [],
+      reason: "index-unchanged" as const,
+    }));
+  }
+
+  let targets: string[] = [];
+  try {
+    targets = markdownLinkTargets(readFileSync(indexPath, "utf8"));
+  } catch {
+    return newFindings.map((finding) => ({
+      finding,
+      basename: basename(finding),
+      matchingLinks: [],
+      reason: "missing-link" as const,
+    }));
+  }
+  return newFindings.flatMap<FindingIndexAdmissionIssue>((finding) => {
+    const findingBasename = basename(finding);
+    const matchingLinks = targets.filter((target) => {
+      const path = target.split(/[?#]/, 1)[0];
+      try {
+        return basename(decodeURIComponent(path)) === findingBasename;
+      } catch {
+        return basename(path) === findingBasename;
+      }
+    });
+    if (matchingLinks.length === 0)
+      return [
+        {
+          finding,
+          basename: findingBasename,
+          matchingLinks,
+          reason: "missing-link" as const,
+        },
+      ];
+    if (matchingLinks.length > 1)
+      return [
+        {
+          finding,
+          basename: findingBasename,
+          matchingLinks,
+          reason: "duplicate-link" as const,
+        },
+      ];
+    const relativeTarget = relativeMarkdownTarget(matchingLinks[0]);
+    return relativeTarget !== null &&
+      resolve(dirname(indexPath), relativeTarget) === finding
+      ? []
+      : [
+          {
+            finding,
+            basename: findingBasename,
+            matchingLinks,
+            reason: "broken-link" as const,
+          },
+        ];
+  });
 }
 
 export function duplicateSourceReferences(
@@ -998,6 +1141,19 @@ run Git publication or edit the canonical library in this call.`;
       omittedOutputs,
       candidateFacts: retainedCandidateFacts(beforePublication),
     });
+  }
+  const indexIssues = findingIndexAdmission(beforePublication, durableChanges);
+  if (indexIssues.length > 0) {
+    return ctx.blocked(
+      "Scout exploration created a finding without exactly one resolving INDEX link",
+      {
+        executionId: result.id,
+        outputs,
+        indexIssues,
+        uncommittedChanges: durableChanges,
+        candidateFacts: retainedCandidateFacts(beforePublication),
+      },
+    );
   }
   let publication;
   // Scratch/digest paths passed the existing App-workspace admission above.
