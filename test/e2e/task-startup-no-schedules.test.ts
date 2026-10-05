@@ -1,10 +1,10 @@
 import { expect, test } from "bun:test";
-import { spawn, type ChildProcess } from "node:child_process";
+import type { ChildProcess } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
-import { buildSandbox } from "./lib/sandbox.js";
+import { buildSandbox, spawnSandboxDaemon } from "./lib/sandbox.js";
 import { openSandboxDb, pollUntil, socketEmit, socketStatus } from "./lib/live-daemon.js";
 
 // Real daemon, socket, durable admission and isolated workflow workers. No model
@@ -91,9 +91,8 @@ test.each(["waiting", "running"] as const)(
           },
           { timeoutMs: 5000, description: "fixture daemon exit" },
         );
-        restarted = spawn(
-          process.execPath,
-          [fileURLToPath(new URL("../../src/app/may.ts", import.meta.url)), "--socket"],
+        restarted = spawnSandboxDaemon(
+          ["--socket"],
           {
             cwd: fileURLToPath(new URL("../../", import.meta.url)),
             env: {
@@ -112,7 +111,6 @@ test.each(["waiting", "running"] as const)(
               TELEGRAM_CHAT_ID: "",
               MAY_TEST_HOLD_STARTUP_ATTEMPT: "0",
             },
-            stdio: ["ignore", "pipe", "pipe"],
           },
         );
         restarted.stdout!.on("data", (chunk) => {
