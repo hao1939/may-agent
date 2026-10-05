@@ -1,7 +1,6 @@
 export const TASK_UPDATE_EVENT_TYPES = [
   "project.task.reconcile.started",
   "project.task.reconciled",
-  "project.task.reconcile.skipped",
   "project.task.handler.unavailable",
   "project.task.handler.recovered",
   "project.task.verification.failed",

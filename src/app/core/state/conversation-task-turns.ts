@@ -742,6 +742,8 @@ function conversationChangesSql(selectedReportSql: string, materializedAttempts 
   FROM links link
   JOIN ${materializedAttempts ? "linked_attempts" : "app_task_attempts"} attempt
     ON attempt.app_id = link.task_app_id AND attempt.task_id = link.task_id
+      AND (link.origin_input_id IS NULL
+        OR attempt.attempt_id = COALESCE(link.result_attempt_id, link.report_attempt_id))
   WHERE ${returnedLinkAttemptSql(selectedReportSql, materializedAttempts ? "attempt.returnable" : returnedWithoutSelectionSql)}
   UNION ALL
   SELECT link.app_id, link.conversation_id, link.topic_id, link.origin_input_id, link.link_id,
@@ -763,13 +765,30 @@ export function listPendingConversationTaskChanges(
 ): ConversationTaskChangeRef[] {
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100)
     throw new Error("Conversation change limit must be an integer from 1 to 100");
-  // Many caller/Topic links can refer to one Task. Interpret each retained
-  // attempt once, then join its small projection instead of reparsing the body
-  // and checking its admissions for every link. Exact admission reads stay direct.
+  // Exclude closed conversations and self-returns before reading attempt bodies.
+  // Many caller/Topic links can refer to one Task; interpret each eligible
+  // Task's retained attempts once. Exact admission reads stay direct.
   return db
     .prepare(
       `
-    WITH links AS MATERIALIZED (SELECT * FROM (${conversationTaskLinksSql()}) WHERE app_id = ?),
+    WITH live_conversations AS MATERIALIZED (
+      SELECT DISTINCT input.app_id, input.conversation_id
+      FROM app_inbox_items input
+      JOIN app_tasks owner ON owner.app_id = input.app_id AND owner.task_id = input.execution_task_id
+      WHERE input.app_id = ? AND input.conversation_id IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM app_task_cancellations closed
+          WHERE closed.app_id = owner.app_id AND closed.task_id = owner.task_id)
+    ), links AS MATERIALIZED (
+      SELECT candidate.* FROM (${conversationTaskLinksSql()}) candidate
+      WHERE candidate.app_id = ?
+        AND EXISTS (SELECT 1 FROM live_conversations live
+          WHERE live.app_id = candidate.app_id AND live.conversation_id = candidate.conversation_id)
+        AND NOT EXISTS (SELECT 1 FROM app_inbox_items conversation_execution
+          WHERE conversation_execution.app_id = candidate.app_id
+            AND conversation_execution.conversation_id = candidate.conversation_id
+            AND candidate.task_app_id = conversation_execution.app_id
+            AND candidate.task_id = conversation_execution.execution_task_id)
+    ),
     linked_tasks AS MATERIALIZED (
       SELECT DISTINCT task_app_id AS app_id, task_id FROM links
     ), linked_attempts AS MATERIALIZED (
@@ -793,24 +812,10 @@ export function listPendingConversationTaskChanges(
         ON origin_input.id = json_extract(admission.admission_json, '$.inputEvent.data.request.id')
       WHERE json_extract(admission.admission_json, '$.resultAttemptId') IS NULL
         AND json_extract(admission.admission_json, '$.reportAttemptId') IS NOT NULL
-    ), live_conversations AS MATERIALIZED (
-      SELECT DISTINCT input.app_id, input.conversation_id
-      FROM app_inbox_items input
-      JOIN app_tasks owner ON owner.app_id = input.app_id AND owner.task_id = input.execution_task_id
-      WHERE input.app_id = ? AND input.conversation_id IS NOT NULL
-        AND NOT EXISTS (SELECT 1 FROM app_task_cancellations closed
-          WHERE closed.app_id = owner.app_id AND closed.task_id = owner.task_id)
     ), changes AS (${conversationChangesSql(materializedSelectedReportSql, true)})
     SELECT appId, conversationId, topicId, originInputId, taskAppId, taskId, attemptId, closedGeneration
     FROM changes
-    WHERE EXISTS (SELECT 1 FROM live_conversations live
-        WHERE live.app_id = changes.appId AND live.conversation_id = changes.conversationId)
-      AND NOT EXISTS (SELECT 1 FROM app_inbox_items conversation_execution
-        WHERE conversation_execution.app_id = changes.appId
-          AND conversation_execution.conversation_id = changes.conversationId
-          AND changes.taskAppId = conversation_execution.app_id
-          AND changes.taskId = conversation_execution.execution_task_id)
-      AND ${undeliveredChangeSql}
+    WHERE ${undeliveredChangeSql}
     ORDER BY changedAt, taskAppId, taskId, inputId LIMIT ?
   `,
     )

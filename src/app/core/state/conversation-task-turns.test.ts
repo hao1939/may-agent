@@ -1867,6 +1867,31 @@ test("recovery scopes report lookups to linked Tasks without changing legacy JSO
   const input = f.admit();
   completeConversationTaskTurn(f.context(), f.claim(input.taskId), decision);
   const topic = readAppConversationResource(f.db, app.id, "chat").topics[0]!;
+  // Historical self-subscriptions must be excluded before their attempt bodies
+  // are materialized, not just discarded after interpreting all their history.
+  linkConversationTopicTask(f.db, topic.id, app.id, input.taskId);
+  // This worker has history and a real link, but its only Conversation is closed.
+  const closedInput = admitConversationTaskInput(f.context(), {
+    ...f.input("closed-input"), conversationId: "closed-chat",
+  });
+  completeConversationTaskTurn(f.context(), f.claim(closedInput.taskId), decision);
+  const closedTopic = readAppConversationResource(f.db, app.id, "closed-chat").topics[0]!;
+  observeAppTaskIntent(f.context(), {
+    appAgent: app.id,
+    intent: { id: "closed-only", parentId: "root", outcome: "Historical measurement", acceptance: ["Measured"] },
+  });
+  completeAppTask(f.context(), f.claim("closed-only"), { summary: "Measured", result: { value: 17 } });
+  linkConversationTopicTask(f.db, closedTopic.id, app.id, "closed-only");
+  const closedOwner = f.store.readTask(closedInput.taskId)!;
+  cancelAppTask(f.context(), {
+    appId: app.id,
+    taskId: closedInput.taskId,
+    expectedGeneration: closedOwner.metadata.generation,
+    expectedResourceVersion: closedOwner.metadata.resourceVersion,
+    decision: "app-policy",
+    reason: "Conversation retired",
+  });
+  expect(listConversationTaskLinks(f.db, app.id, "closed-only")).toHaveLength(1);
   admitTaskInput(f.context(), {
     appId: app.id,
     idempotencyKey: "measurement",
@@ -1961,6 +1986,10 @@ test("recovery scopes report lookups to linked Tasks without changing legacy JSO
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE linked_attempts"))).toHaveLength(1);
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE selected_reports"))).toHaveLength(1);
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE live_conversations"))).toHaveLength(1);
+    const ctes = recoverySql.slice(0, recoverySql.lastIndexOf("    SELECT appId, conversationId, topicId"));
+    expect(prepare(`${ctes} SELECT app_id, task_id FROM linked_tasks`).all(...recoveryArgs.slice(0, -1))).toEqual([
+      { app_id: app.id, task_id: "7" },
+    ]);
     f.db.prepare("UPDATE app_task_admissions SET admission_json = ? WHERE app_id = ? AND task_id = ?")
       .run(admission.admission_json, app.id, admission.task_id);
     expect(admitConversationTaskChange(f.context(), f.context(), ref).created).toBe(true);

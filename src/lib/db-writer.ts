@@ -9,6 +9,7 @@
 import { createHash } from "node:crypto";
 import { readTaskEventTarget } from "../app/core/events/task-target.js";
 import {
+  EVENT_APP_ADMISSION_REDELIVERY_REQUIRED,
   EVENT_DEDUPLICATED,
   EVENT_DELIVERY_RESULT,
   EVENT_INGRESS_SOURCE,
@@ -665,9 +666,17 @@ export class DbWriter {
                  accepted_by = ?,
                  accepted_at = ?,
                  delivery_route = ?,
-                 delivery_note = ?
+                 delivery_note = ?,
+                 app_admission_pending = CASE WHEN ? = 1 THEN 0 ELSE app_admission_pending END
              WHERE id = ?`,
-            [result.by, now, result.route ?? "direct", result.note ?? null, rowId],
+            [
+              result.by,
+              now,
+              result.route ?? "direct",
+              result.note ?? null,
+              result.appAdmission === true ? 1 : 0,
+              rowId,
+            ],
           );
         });
       });
@@ -734,7 +743,7 @@ export class DbWriter {
       if (idempotencyKey) {
         const existing = this.db
           .prepare(
-            `SELECT e.id, e.idempotency_hash, e.delivery_status, e.accepted_by, e.delivery_route,
+            `SELECT e.id, e.idempotency_hash, e.delivery_status, e.accepted_by, e.delivery_route, e.app_admission_pending,
                     e.source, e.owner, e.timestamp
              FROM events e
              WHERE e.event_type = ?
@@ -750,6 +759,7 @@ export class DbWriter {
               delivery_status?: unknown;
               accepted_by?: unknown;
               delivery_route?: unknown;
+              app_admission_pending?: unknown;
               source?: unknown;
               owner?: unknown;
               timestamp?: unknown;
@@ -760,7 +770,10 @@ export class DbWriter {
           if (existing?.idempotency_hash !== inputHash) {
             throw new Error(`Idempotency key ${idempotencyKey} was already used with different event input`);
           }
-          const retryEvent = event as AgentEvent & Record<string, unknown>;
+          const retryEvent = event as AgentEvent & Record<string, unknown> & {
+            [EVENT_REDELIVERY_REQUIRED]?: boolean;
+            [EVENT_APP_ADMISSION_REDELIVERY_REQUIRED]?: boolean;
+          };
           if (typeof existing.source === "string") retryEvent.source = existing.source;
           if (typeof existing.owner === "string") retryEvent.owner = existing.owner;
           if (typeof existing.timestamp === "number") retryEvent.timestamp = existing.timestamp;
@@ -771,6 +784,7 @@ export class DbWriter {
           Object.defineProperty(event, EVENT_ROW_ID, { value: existingId, configurable: true });
           Object.defineProperty(event, EVENT_DEDUPLICATED, { value: true, configurable: true });
           if (
+            existing.app_admission_pending !== 1 &&
             existing.delivery_status === "accepted" &&
             typeof existing.accepted_by === "string" &&
             existing.delivery_route !== "noop"
@@ -782,6 +796,23 @@ export class DbWriter {
             });
           }
           if (
+            existing.app_admission_pending === 1 &&
+            existing.delivery_status === "accepted" &&
+            existing.delivery_route !== "noop"
+          ) {
+            // Global Event acceptance and App admission are independent receipts.
+            // Limit this producer retry to the outstanding App route; unrelated
+            // durable routes may already have performed their effects.
+            if (!retryEvent[EVENT_REDELIVERY_REQUIRED]) {
+              Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true, configurable: true });
+            }
+            if (!retryEvent[EVENT_APP_ADMISSION_REDELIVERY_REQUIRED]) {
+              Object.defineProperty(event, EVENT_APP_ADMISSION_REDELIVERY_REQUIRED, {
+                value: true,
+                configurable: true,
+              });
+            }
+          } else if (
             existing.delivery_status === "pending" ||
             existing.delivery_status === "unhandled" ||
             (existing.delivery_status === "accepted" && existing.delivery_route === "noop")
@@ -847,8 +878,8 @@ export class DbWriter {
            session_id, workflow_run_id, project_id, task_id, attempt_id, handler,
            metric_id, alert_id, escalation_id, subject_status, duration_ms,
            timestamp, urgency, ttl_ms, idempotency_key, idempotency_scope,
-           idempotency_hash, ingress_source)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           idempotency_hash, ingress_source, app_admission_pending)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
         [
           event.type,
           source,

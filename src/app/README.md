@@ -121,3 +121,21 @@ Keep behavioral detail and change status with their owners:
 Use the source map above for the lifecycle and persistence owners. Include
 external requirements in a work item's context when the change spans an App;
 do not make these entry points depend on that App's name or manual location.
+
+Routine Task checks increment bounded counters instead of publishing Task updates
+or timing without an attempt. Private workers return those counts with their result;
+the existing sampler records `task.skipped-check-rate` every five minutes. Its
+checks/minute value uses the actual elapsed interval; evidence retains raw counts
+and three recent exact Task references. Sampling creates no event. The metric
+has no default alert; Apps can calibrate a rule using ordinary metric evaluation.
+Unsampled counts may be lost on restart or worker loss; these are activity samples,
+not an exact audit. A skip can preserve a valid wait or recover state; its rate
+is not a measure of waste, progress or model tokens. Metric evidence exposes the
+existing calculation at the selected cut alongside raw samples, so reviewers can
+understand a smoothed alert. Actual recovery transitions and attempt timing remain evidence.
+Passive diagnostics use the Event bus record-only marker: interested subscribers
+still receive them, but they do not require a new worker. The originating failed
+publication keeps its own delivery status. Observer failure notifications track
+changes within the current runtime; repeated failures refresh readable health,
+success clears the episode, and failed publication retries on the normal cadence.
+Resource observers also deliver unchanged values to new exact Conditions.

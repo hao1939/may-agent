@@ -1,7 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, setSystemTime, spyOn } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DbWriter } from "../lib/db-writer.js";
 import { applyDbSchema } from "../lib/db/schema.js";
 import { closeDb, getDb } from "../lib/requests.js";
 import { createMetricService } from "../lib/metrics.js";
@@ -9,6 +10,8 @@ import { attachEventPersistence } from "./daemon-events.js";
 import { EventBus, EVENT_ROW_ID, EVENT_RECORD_ONLY } from "./core/events/bus.js";
 import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.js";
 import { TASK_FAILOVER_METRIC } from "./adapters/reporting/task-failover-metrics.js";
+import { TASK_SKIPPED_CHECK_METRIC } from "./adapters/reporting/task-check-metrics.js";
+import { readTaskChecks, recordTaskCheck, resetTaskChecks } from "./core/tasks/task-check-observations.js";
 import {
   attachMetricSourceMeasurement,
   measureSourceMetrics,
@@ -40,10 +43,133 @@ describe("source-query metric measurement", () => {
 
   afterEach(async () => {
     await measurement.idle();
+    setSystemTime();
     closeDb(persistDir);
     rmSync(persistDir, { recursive: true, force: true });
     if (originalAppRoot === undefined) delete process.env.APP_ROOT;
     else process.env.APP_ROOT = originalAppRoot;
+  });
+
+  it("samples check rates quietly with bounded exact Task references", async () => {
+    const db = getDb(persistDir);
+    const metrics = createMetricService({ getDb: () => db });
+    const id = TASK_SKIPPED_CHECK_METRIC.id;
+    const start = Date.now();
+    resetTaskChecks(bus, start);
+    const observed: string[] = [];
+    bus.subscribe((event) => observed.push(event.type));
+    for (let n = 0; n < 1_000; n++) recordTaskCheck(bus, "waiting", { appId: "sample", taskId: `work/${n % 4}` });
+    recordTaskCheck(bus, "busy", { appId: "sample", taskId: "work/3" });
+    recordTaskCheck(bus, "claimed");
+    expect(observed).toEqual([]);
+    expect(metrics.get(id)!.observation).toBeNull();
+
+    const sample = () => measureSourceMetrics({ bus, persistDir, isDue: (row) => row.id === id });
+    setSystemTime(start + 300_000);
+    expect((await sample()).measured).toEqual([id]);
+    expect(metrics.get(id)!.observation).toMatchObject({ value: 200.2, sampleSize: 1_002 });
+    const note = JSON.parse(metrics.get(id)!.observation!.note!);
+    expect(note).toMatchObject({
+      since: start, until: start + 300_000, windowMs: 300_000, skippedChecks: 1_001,
+      counts: { waiting: 1_000, busy: 1, claimed: 1, attention: 0, completed: 0 },
+      examplesTruncated: true,
+      examples: [
+        { appId: "sample", taskId: "work/1", outcome: "waiting" },
+        { appId: "sample", taskId: "work/2", outcome: "waiting" },
+        { appId: "sample", taskId: "work/3", outcome: "busy" },
+      ],
+    });
+    expect(db.prepare("SELECT COUNT(*) AS n FROM metric_snapshots WHERE metric_id = ?").get(id)).toEqual({ n: 1 });
+    await evaluateMetrics({ bus, persistDir });
+    expect(observed).toEqual([]); // Activity alone does not impose an alert policy.
+    setSystemTime(start + 600_000);
+    await sample();
+    expect(metrics.get(id)!.observation).toMatchObject({ value: 0, sampleSize: 0 });
+    expect(observed).toEqual([]);
+  });
+
+  it("normalizes delayed samples and preserves counts when no interval has elapsed", async () => {
+    const id = TASK_SKIPPED_CHECK_METRIC.id;
+    const metrics = createMetricService({ getDb: () => getDb(persistDir) });
+    const start = Date.now();
+    resetTaskChecks(bus, start);
+    setSystemTime(start);
+    for (let n = 0; n < 100; n++) recordTaskCheck(bus, "waiting");
+    const sample = () => measureSourceMetrics({ bus, persistDir, isDue: (row) => row.id === id });
+    expect(await sample()).toEqual({ measured: [], skipped: [id], failures: [] });
+    expect(readTaskChecks(bus).counts.waiting).toBe(100);
+    setSystemTime(start + 300_000);
+    await sample();
+    expect(metrics.get(id)!.observation).toMatchObject({ value: 20, sampleSize: 100 });
+    for (let n = 0; n < 300; n++) recordTaskCheck(bus, "waiting");
+    setSystemTime(start + 1_200_000);
+    await sample();
+    // Three times the count across three times the duration is unchanged activity.
+    expect(metrics.get(id)!.observation).toMatchObject({ value: 20, sampleSize: 300 });
+    expect(JSON.parse(metrics.get(id)!.observation!.note!)).toMatchObject({ windowMs: 900_000 });
+  });
+
+  it("lets an App smooth a spike and review a sustained rate with one breach and recovery", async () => {
+    const db = getDb(persistDir);
+    const metrics = createMetricService({ getDb: () => db });
+    const id = TASK_SKIPPED_CHECK_METRIC.id;
+    // Illustrative calibration, not a shipped skip-rate threshold.
+    metrics.define({ ...TASK_SKIPPED_CHECK_METRIC, threshold: 30, alertOp: ">",
+      config: { calculation: { method: "mean", windowMs: 1_800_000, minSamples: 3 } } });
+    const start = Date.now();
+    resetTaskChecks(bus, start);
+    const events: string[] = [];
+    bus.subscribe((event) => events.push(event.type));
+    let interval = 0;
+    const sample = async (checks: number) => {
+      for (let n = 0; n < checks; n++) recordTaskCheck(bus, "waiting");
+      setSystemTime(start + ++interval * 300_000);
+      await measureSourceMetrics({ bus, persistDir, isDue: (row) => row.id === id });
+      await evaluateMetrics({ bus, persistDir });
+    };
+    await sample(0);
+    await sample(0);
+    await sample(300);
+    expect(metrics.get(id)!.calculation.value).toBe(20);
+    expect(events).toEqual([]);
+    await sample(300);
+    await sample(300);
+    await sample(300);
+    expect(events).toEqual(["metric.breach"]);
+    for (let n = 0; n < 4; n++) await sample(0);
+    expect(events).toEqual(["metric.breach", "metric.recovered"]);
+  });
+
+  it("retains check counts after a failed sample and honors sampling cadence and retirement", async () => {
+    const db = getDb(persistDir);
+    const id = TASK_SKIPPED_CHECK_METRIC.id;
+    resetTaskChecks(bus);
+    recordTaskCheck(bus, "waiting");
+    const before = readTaskChecks(bus);
+    setSystemTime(before.since + 300_000);
+    const run = db.run.bind(db);
+    const write = spyOn(db, "run").mockImplementation((sql, params) => {
+      if (sql.startsWith("INSERT INTO metric_snapshots")) throw new Error("fixture sample unavailable");
+      return run(sql, params);
+    });
+    try {
+      const result = await measureSourceMetrics({ bus, persistDir, isDue: (row) => row.id === id });
+      expect(result.failures).toHaveLength(1);
+      expect(readTaskChecks(bus)).toEqual(before);
+    } finally {
+      write.mockRestore();
+    }
+    bus.emit({ type: "trigger.metrics-snapshot" });
+    await measurement.idle();
+    expect(createMetricService({ getDb: () => db }).get(id)!.observation?.value).toBe(0.2);
+    recordTaskCheck(bus, "completed");
+    bus.emit({ type: "trigger.metrics-snapshot" });
+    await measurement.idle();
+    expect(readTaskChecks(bus).counts.completed).toBe(1);
+    expect(db.prepare("SELECT COUNT(*) AS n FROM metric_snapshots WHERE metric_id = ?").get(id)).toEqual({ n: 1 });
+    db.run("UPDATE metrics SET status = 'retired' WHERE id = ?", [id]);
+    await measureSourceMetrics({ bus, persistDir, isDue: (row) => row.id === id });
+    expect(readTaskChecks(bus).counts.completed).toBe(1);
   });
 
   it("registers metrics after a short competing startup writer without losing samples or calibration", async () => {
@@ -140,6 +266,29 @@ describe("source-query metric measurement", () => {
       source_query: SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY,
       measure_interval: 300_000,
     });
+  });
+
+  it("counts the lost publication once while retaining its subscriber-failure diagnostic", async () => {
+    const db = getDb(persistDir);
+    const writer = new DbWriter(persistDir);
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const reported = Promise.withResolvers<void>();
+    const stop = bus.subscribe((event) => {
+      if (event.type === "sample.report.published") throw new Error("consumer unavailable");
+      if (event.type === "subscriber.failed") reported.resolve();
+    });
+    try {
+      bus.emit({ type: "sample.report.published", source: "fixture", owner: "app:sample", data: { result: "retained" } });
+      await reported.promise;
+      writer.runHousekeeping(Date.now() + 3_600_000);
+      expect(db.prepare(UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY).get()).toEqual({ value: 1 });
+      expect(db.prepare(SUBSCRIBER_FAILED_COUNT_SOURCE_QUERY).get()).toEqual({ value: 1 });
+      expect(db.prepare("SELECT event_type, delivery_status FROM events ORDER BY id").all()).toEqual([
+        { event_type: "sample.report.published", delivery_status: "unhandled" },
+        { event_type: "subscriber.failed", delivery_status: "accepted" },
+      ]);
+    } finally { stop(); }
   });
 
   it("restores the canonical unexpected-unhandled source while preserving alert calibration", () => {
@@ -645,9 +794,10 @@ describe("source-query metric measurement", () => {
     closeDb(persistDir);
     const reopened = getDb(persistDir);
     const failures = reopened
-      .prepare("SELECT source, owner, data FROM events WHERE event_type = 'metric.measurement.failed' ORDER BY id")
-      .all() as Array<{ source: string; owner: string; data: string }>;
+      .prepare("SELECT source, owner, data, delivery_status FROM events WHERE event_type = 'metric.measurement.failed' ORDER BY id")
+      .all() as Array<{ source: string; owner: string; data: string; delivery_status: string }>;
     expect(failures).toHaveLength(2);
+    expect(failures.map((row) => row.delivery_status)).toEqual(["accepted", "accepted"]);
     expect(
       failures.every((row) => row.source === "runtime:metric-source-measurement" && row.owner === "system:host"),
     ).toBe(true);

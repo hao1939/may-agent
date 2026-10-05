@@ -734,7 +734,7 @@ export class AppInboxHost {
     for (const { inputId } of page.items) {
       if (this.#closed) return;
       const item = this.get(inputId);
-      if (item && this.#apps.has(item.appId)) await this.#projectTaskResult(item);
+      if (item) await this.#projectTaskResult(item);
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
     }
   }

@@ -1,3 +1,4 @@
+import { EVENT_RECORD_ONLY } from "../events/bus.js";
 import { taskEventPredatesReopening } from "./app-task-state.js";
 import {
   type AppInputContext,
@@ -92,6 +93,7 @@ function publishAppTaskTiming(
     // Execution can drain and release its database before this optional report runs.
     if (!appRouterOptionsByBus.has(opts.bus)) return;
     opts.bus.emit({
+      [EVENT_RECORD_ONLY]: true,
       type: "project.task.reconcile.profiled",
       source: `app-task:${descriptor.id}:observer`,
       owner: `agent:${descriptor.agent}`,
@@ -995,9 +997,16 @@ export function readLoadedAppTaskInputClosure(input: { bus: EventBus; appDir: st
   return readableAppTaskContext(input.bus, input.appDir)?.resourceStore.readAdmissionCancellation(input.taskId, input.admissionKey) ?? null;
 }
 
+/** Host-private read authority; resolving it never installs an App. */
+export function readLoadedAppTaskContext(input: { bus: EventBus; appId?: string; appDir?: string }): AppTaskContext | null {
+  return input.appId
+    ? readableAppTaskContextById(input.bus, input.appId)
+    : input.appDir ? readableAppTaskContext(input.bus, input.appDir) : null;
+}
+
 /** Read the stable task projection for an inbox dependency after any restart. */
-export function readLoadedAppTaskView(input: { bus: EventBus; appDir: string; taskId: string }): TaskDetail | null {
-  const config = readableAppTaskContext(input.bus, input.appDir);
+export function readLoadedAppTaskView(input: { bus: EventBus; appId?: string; appDir?: string; taskId: string }): TaskDetail | null {
+  const config = readLoadedAppTaskContext(input);
   return config ? readRuntimeTaskView({ taskStateConfig: config }, input.taskId) : null;
 }
 

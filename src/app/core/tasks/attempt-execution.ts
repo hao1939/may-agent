@@ -36,6 +36,7 @@ import {
   APP_TASK_ATTEMPT_LEASE_DURATION_MS,
   recordAppTaskAttemptSession,
   renewAppTaskAttemptLease,
+  readTaskChangeInputKeys,
   type AppTaskChildContext,
   type AppTaskClaim,
   type AppTaskLiveSnapshot,
@@ -419,9 +420,10 @@ export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabil
     },
     dependencies: appDependencyCatalog(configuredRegistryEntries(opts)),
     validateResult(result) {
-      if (result.state !== "converged" && result.state !== "waiting") return null;
       try {
         const config = appTaskConfig(descriptor);
+        if (result.inputKeys !== undefined) readTaskChangeInputKeys(config, claim, result.inputKeys);
+        if (result.state !== "converged" && result.state !== "waiting") return null;
         const changes = taskResultCommunication(config, claim, result);
         return changes?.length ? validateTaskCommunication(config, claim, changes, execution.taskEvents) : null;
       } catch (error) {

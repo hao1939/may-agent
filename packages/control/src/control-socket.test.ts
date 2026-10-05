@@ -1160,6 +1160,13 @@ describe("control socket protocol", () => {
     stream.destroy();
   });
 
+  it("does not refresh a Task for a routine check", () => {
+    expect(taskUpdateIdentity({
+      type: "project.task.reconcile.skipped",
+      data: { project: "sample", taskId: "work/check" },
+    })).toBeNull();
+  });
+
   it("turns passive executor progress into an identity-only wake without forwarding its payload", async () => {
     expect(
       taskUpdateIdentity({

@@ -162,6 +162,33 @@ describe("bounded DB maintenance", () => {
     }
   });
 
+  it("retains prospective App-admission markers and expires them after acknowledgement", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-maintenance-app-admission-"));
+    const db = getDb(root);
+    const now = 10 * 86_400_000;
+    try {
+      db.prepare(`INSERT INTO events
+        (id, event_type, data, timestamp, delivery_status, app_admission_pending)
+        VALUES (1, 'app.input.requested', ?, 1, 'accepted', 1)`).run(
+        JSON.stringify({ appId: "sample", input: { kind: "message", data: { message: "owed" } } }),
+      );
+      // Historical and manually imported rows remain NULL and gain no new obligation.
+      db.prepare(`INSERT INTO events
+        (id, event_type, data, timestamp, delivery_status)
+        VALUES (2, 'fixture', '{}', 1, 'pending')`).run();
+
+      expect(runDbMaintenancePass(root, { now, batchSize: 100 }).deleted.events).toBe(1);
+      expect(db.prepare("SELECT id FROM events ORDER BY id").all()).toEqual([{ id: 1 }]);
+
+      db.prepare("UPDATE events SET app_admission_pending = 0 WHERE id = 1").run();
+      expect(runDbMaintenancePass(root, { now, batchSize: 100 }).deleted.events).toBe(1);
+      expect(db.prepare("SELECT id FROM events").all()).toEqual([]);
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("indexes the retained-event cutoff instead of sorting event history under the writer lock", () => {
     const persistDir = mkdtempSync(join(tmpdir(), "may-maintenance-event-index-"));
     try {

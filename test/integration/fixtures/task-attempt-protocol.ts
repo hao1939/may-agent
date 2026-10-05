@@ -1,6 +1,7 @@
 import { expect } from "bun:test";
 import { spawn, type ChildProcess } from "node:child_process";
 import { EventBus } from "../../../src/app/core/events/bus.js";
+import { readTaskChecks } from "../../../src/app/core/tasks/task-check-observations.js";
 import {
   createTaskAttemptProcessExecutor,
   createTaskRecoveryProcessExecutor,
@@ -105,12 +106,15 @@ const scenarios: Record<string, () => void | Promise<void>> = {
         scriptedWorker(`
 
           process.send({kind:"event",eventId:41,event:{type:"info",message:"working"}});
-          process.send({kind:"result",dependentTaskIds:["work/one","work/two"]});
+          process.send({kind:"result",dependentTaskIds:["work/one","work/two"],
+            taskChecks:{counts:{waiting:1},examples:[{appId:"sample",taskId:"work/one",outcome:"waiting"}]}});
         `),
     });
 
     await expect(execute(request)).resolves.toEqual(["work/one", "work/two"]);
     expect(observed).toEqual(["info"]);
+    expect(readTaskChecks(bus).counts.waiting).toBe(1);
+    expect(readTaskChecks(bus).examples).toEqual([{ appId: "sample", taskId: "work/one", outcome: "waiting" }]);
   },
 
   async liveInput() {

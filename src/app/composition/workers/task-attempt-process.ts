@@ -8,6 +8,7 @@ import { AppRegistry } from "../../core/apps/registry.js";
 import { discoverAppDefinitions } from "../../adapters/discovery/app-definitions.js";
 import { DefinitionSourceReleaseStore, type DefinitionSourceRelease } from "../../app-source-release.js";
 import type { AppTaskDispatch } from "../../core/tasks/controller.js";
+import { mergeTaskChecks, readTaskChecks } from "../../core/tasks/task-check-observations.js";
 import { AppTaskResourceStore } from "../../core/state/app-task-resource-store.js";
 import { appTaskContext, readAppTaskAgent } from "../../core/tasks/app-task-reconciler.js";
 import {
@@ -65,8 +66,8 @@ function scheduleWorkerRelay(bus: EventBus, callback: () => void): void {
 }
 
 type WorkerEventFrame = { kind: "event"; eventId: number; event: AgentEvent };
-type WorkerResultFrame = { kind: "result"; dependentTaskIds: string[] };
-type WorkerErrorFrame = { kind: "error"; error: string };
+type WorkerResultFrame = { kind: "result"; dependentTaskIds: string[]; taskChecks?: unknown };
+type WorkerErrorFrame = { kind: "error"; error: string; taskChecks?: unknown };
 type WorkerFrame = WorkerEventFrame | WorkerResultFrame | WorkerErrorFrame;
 
 export type TaskAttemptProcessRequest = {
@@ -109,10 +110,11 @@ function parseWorkerFrame(value: unknown): WorkerFrame {
     return {
       kind: "result",
       dependentTaskIds: parsed.dependentTaskIds.map((value) => required(String(value), "dependent Task id")),
+      taskChecks: parsed.taskChecks,
     };
   }
   if (parsed.kind === "error" && typeof parsed.error === "string" && parsed.error.trim()) {
-    return { kind: "error", error: parsed.error.trim() };
+    return { kind: "error", error: parsed.error.trim(), taskChecks: parsed.taskChecks };
   }
   throw new Error("Task worker returned an unknown frame");
 }
@@ -155,7 +157,7 @@ function spawnPrivateWorker(args: string[]): ChildProcess {
 /**
  * Run the expensive Task attempt outside the interface event loop. Task state
  * remains in the shared canonical resource store; IPC carries only wake-like
- * event observations and the final dependent identities back to the parent.
+ * event observations, bounded check counts and final dependent identities.
  */
 export function createTaskAttemptProcessExecutor(input: {
   bus: EventBus;
@@ -239,8 +241,11 @@ async function runWorkerProcess(
     if (frame.kind === "event") {
       relayedEvents.add(frame.event);
       bus.fanoutPersisted(frame.event, frame.eventId);
-    } else if (frame.kind === "result") result = frame.dependentTaskIds;
-    else workerError = frame.error;
+    } else {
+      mergeTaskChecks(bus, frame.taskChecks);
+      if (frame.kind === "result") result = frame.dependentTaskIds;
+      else workerError = frame.error;
+    }
   };
   const drainFrames = () => {
     relayScheduled = false;
@@ -548,9 +553,13 @@ async function runTaskWorker(input: {
       bus,
       () => appSources.current()?.projectsRoot === activeSource.projectsRoot,
     );
-    await writeWorkerFrame({ kind: "result", dependentTaskIds });
+    await writeWorkerFrame({ kind: "result", dependentTaskIds, taskChecks: readTaskChecks(bus) });
   } catch (error) {
-    await writeWorkerFrame({ kind: "error", error: error instanceof Error ? error.message : String(error) });
+    await writeWorkerFrame({
+      kind: "error",
+      error: error instanceof Error ? error.message : String(error),
+      taskChecks: readTaskChecks(bus),
+    });
     throw error;
   } finally {
     process.off("message", incoming);
