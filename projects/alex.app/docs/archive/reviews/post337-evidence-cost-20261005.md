@@ -159,9 +159,11 @@ second investigation or treating a smaller response as measured token savings.
 
 The reader and guidance companion reached Apps main at `e53ccbfba2`. This
 records source integration; no App activation or production restart was
-performed by this follow-through. The test-launcher follow-up is published as
-[#343](https://github.com/hao1939/may-agent/pull/343), candidate `cd0bb0fc1`,
-pending its ordinary PR review.
+performed by this follow-through. The test-launcher follow-up
+[#343](https://github.com/hao1939/may-agent/pull/343) merged as `4f5cf99a3`
+on October 5 at 06:53:12 UTC. GitHub Quality and Container checks passed on
+candidate `cd0bb0fc1`; Container classified this test/documentation-only change
+as not requiring an image build. Merge is not a deployment receipt.
 
 The review and portable fixture trials are retained locally at
 `/app/.state/alignment-review-20261005/`; follow-through checks are at
