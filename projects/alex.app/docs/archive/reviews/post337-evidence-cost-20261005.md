@@ -159,8 +159,9 @@ second investigation or treating a smaller response as measured token savings.
 
 The reader and guidance companion reached Apps main at `e53ccbfba2`. This
 records source integration; no App activation or production restart was
-performed by this follow-through. The test-launcher follow-up remains a Host
-source candidate pending its ordinary PR review.
+performed by this follow-through. The test-launcher follow-up is published as
+[#343](https://github.com/hao1939/may-agent/pull/343), candidate `cd0bb0fc1`,
+pending its ordinary PR review.
 
 The review and portable fixture trials are retained locally at
 `/app/.state/alignment-review-20261005/`; follow-through checks are at
@@ -170,4 +171,7 @@ The focused Host fixture/interface checks passed 44 tests. Removing the lifetime
 hook made the new HTTP runner-death regression fail because the child remained
 alive; restoring it passed. App reader, routing, systemic-review and intake
 checks passed 40 tests. Design integrity, examples and canonical App checks
-passed with the existing unclassified `reports` warning.
+passed with the existing unclassified `reports` warning. Full Host CI passed
+on `cd0bb0fc1`: 3,609 tests passed, three installation-only checks skipped, and
+zero failures; browser tests ran. This remains source verification, not live
+adoption or measured token savings.
