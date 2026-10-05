@@ -885,7 +885,10 @@ describe("Task outcome review", () => {
     await reviewTaskOutcome(
       ctx,
       reader(() => ({ ...detail, ref: "new-ref", resourceVersion: 9,
-        history: [{ eventId: 40, timestamp: 400, eventType: "project.task.reconcile.skipped" }],
+        history: [
+          { eventId: 40, timestamp: 400, eventType: "project.task.reconcile.skipped" },
+          { eventId: 41, timestamp: 400, eventType: "project.task.reconcile.profiled" },
+        ],
       })),
       root,
     );

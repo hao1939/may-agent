@@ -308,8 +308,9 @@ changes in judgments.
 ## Reports and use
 
 Review reuse follows decision-relevant evidence. Routine
-`project.task.reconcile.skipped` checks do not create a new identity for either
-the subject or a linked Task. They remain available in the event log; the bounded
+`project.task.reconcile.skipped` checks and their no-attempt
+`project.task.reconcile.profiled` timing do not create a new identity for either
+the subject or a linked Task. Timing attached to a real attempt remains evidence. They remain available in the event log; the bounded
 Task work history reserves its space for actual changes and attempts. Evaluation
 also filters these checks when reading older Hosts. It does not recursively
 strip App-authored fields: changed requirements, accepted results, failures,

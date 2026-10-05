@@ -551,11 +551,15 @@ test("routine checks preserve review identity while real failures, Conditions an
   const original = identity(snapshot);
   const checked = structuredClone(snapshot);
   for (const detail of [checked.detail, checked.readBack.links[0]!.detail]) {
-    (detail.history as unknown[]) = [{ eventType: "project.task.reconcile.skipped", eventId: 50, timestamp: 1000 }];
+    (detail.history as unknown[]) = [
+      { eventType: "project.task.reconcile.skipped", eventId: 50, timestamp: 1000 },
+      { eventType: "project.task.reconcile.profiled", eventId: 51, timestamp: 1001 },
+    ];
   }
   expect(identity(checked)).toBe(original);
   for (const change of [
     { history: [{ eventType: "project.task.reconciled", attemptId: "failed-attempt", disposition: "retrying" }] },
+    { history: [{ eventType: "project.task.reconcile.profiled", attemptId: "real-attempt", timestamp: 1001 }] },
     { diagnostics: { conditions: [{ id: "review", state: "satisfied" }] } },
     { result: { history: [{ eventType: "project.task.reconcile.skipped" }] } },
   ]) {
