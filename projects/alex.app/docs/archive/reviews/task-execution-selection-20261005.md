@@ -64,6 +64,11 @@ choices across Task-store reopen and ordinary recovery, without answering the
 original input or accepting later stale actions. The SDK and durable-retry
 suite passed 71 tests on the revised candidate.
 
+Final local Host CI passed: 3,623 tests, zero failures, and three optional
+installed-agent checks skipped. The App selector suite passed 44 tests. Design
+integrity and executable examples passed with the existing unclassified `reports`
+directory warning. These results describe the candidate source, not deployment.
+
 ## Reproduction and limits
 
 From the Host candidate checkout:
