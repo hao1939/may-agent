@@ -517,6 +517,7 @@ function previousAttemptFacts(attempt: AppTaskAttempt): NonNullable<TaskAttempt[
     state: attempt.state,
     ...(attempt.summary ? { summary: attempt.summary } : {}),
     ...(attempt.failureReason ? { failureReason: attempt.failureReason } : {}),
+    ...(attempt.executionSelection ? { executionSelection: { ...attempt.executionSelection } } : {}),
     ...(attempt.sessionId ? { sessionId: attempt.sessionId } : {}),
     ...(attempt.workspace ? { workspacePath: attempt.workspace.path } : {}),
     ...(attempt.unacceptedResult ? { unacceptedResult: structuredClone(attempt.unacceptedResult) } : {}),
@@ -549,6 +550,7 @@ function needsAgentHandoff(tree: TaskTree, resource: AppTaskResource): boolean {
 
 function continueWithAgent(resource: AppTaskResource, attempt: AppTaskAttempt | undefined): boolean {
   if (!attempt) return false;
+  if (attempt.executionSelection) return attempt.executionSelection.execution === "agent";
   // The failed attempt is the durable handoff. Continue ordinary agent work
   // across retries and waits; a new specification generation selects afresh.
   if (attempt.handler.startsWith("agent:"))
@@ -2704,6 +2706,7 @@ export function claimObservedAppTask(
   const latestAttempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
   const useAgentFallback = continueWithAgent(resource, latestAttempt) && (
     needsAgentHandoff(tree, resource) ||
+    latestAttempt?.executionSelection?.execution === "agent" ||
     latestAttempt?.handler.startsWith("agent:") ||
     input.canUseAgentFallback?.(agent) !== false
   );
@@ -2890,7 +2893,8 @@ export function claimObservedAppTask(
     // Record the switch atomically with its claim, even if execution never starts.
     // Continuing agent attempts and intentional handoffs are not new failovers.
     ...(agentHandoff && latestAttempt?.state === "failed" &&
-      !latestAttempt.handler.startsWith("agent:") && !isAgentHandoffReason(latestAttempt.failureReason)
+      !latestAttempt.handler.startsWith("agent:") && !latestAttempt.executionSelection &&
+      !isAgentHandoffReason(latestAttempt.failureReason)
       ? { failoverFromAttemptId: latestAttempt.metadata.id } : {}),
     runtimeId: reconcilerRuntimeId,
     state: "running",
@@ -3039,6 +3043,8 @@ export function failAppTaskAttempt(
   restoreAttemptEvents(tree, claim.taskId, resource, attempt, now);
   finishAttempt(tree, resource, "failed", failure, now);
   attempt.failureReason = details.reason ?? "HandlerExecutionFailed";
+  // The final explicit handoff is a later method decision than any live action.
+  if (handoff) attempt.executionSelection = { execution: "agent", reason: failure };
   if (details.unacceptedResult) attempt.unacceptedResult = structuredClone(details.unacceptedResult);
   touchResource(resource, {
     phase: handoff ? "attention" : "pending",
@@ -3348,13 +3354,25 @@ function mutableActionResource(
 function validateTaskActions(tree: TaskTree, actions: AppTaskAction[], runningTaskId: string): void {
   if (actions.length > 16) throw new Error("Handler result exceeds the 16-action reconciliation budget");
   const identities = new Set<string>();
+  let hasExecutionSelection = false;
   for (const rawAction of actions as unknown[]) {
     if (!isRecord(rawAction)) throw new Error("Handler result contains a non-object action");
     if (rawAction.kind === "update-task")
       throw new Error("update-task is retired; use tasks update or TaskAttempt.reviseTask before returning a result");
-    if (rawAction.kind !== "unblock-task" && rawAction.kind !== "retire-condition")
+    if (rawAction.kind !== "unblock-task" && rawAction.kind !== "retire-condition" && rawAction.kind !== "select-execution")
       throw new Error(`Handler result contains an unsupported action kind: ${String(rawAction.kind)}`);
     const action = rawAction as unknown as AppTaskAction;
+    if (action.kind === "select-execution") {
+      if (hasExecutionSelection) throw new Error("Handler result contains multiple execution selections");
+      hasExecutionSelection = true;
+      if (action.execution !== "declared" && action.execution !== "agent")
+        throw new Error("Handler select-execution requires declared or agent");
+      requireNonEmptyString(action.reason, "Handler select-execution reason");
+      const spec = tree.resources?.[runningTaskId]?.spec;
+      if (action.execution === "declared" && !spec?.workflow && (!spec?.executor || spec.executor === "agent"))
+        throw new Error("Handler select-execution declared requires a configured workflow or executor");
+      continue;
+    }
     if (action.kind === "retire-condition") {
       const conditionId = requireNonEmptyString(action.conditionId, "Handler retire-condition identity");
       const identity = `condition:${conditionId}`;
@@ -3489,6 +3507,13 @@ function applyTaskActions(
   validateTaskActions(tree, actions, claim.taskId);
   const applied: string[] = [];
   for (const action of actions) {
+    if (action.kind === "select-execution") {
+      const attempt = tree.attempts![claim.attemptId]!;
+      attempt.executionSelection = { execution: action.execution, reason: action.reason.trim() };
+      attempt.metadata.resourceVersion++;
+      applied.push(`selected ${action.execution} execution`);
+      continue;
+    }
     if (action.kind === "retire-condition") {
       unlinkExactTaskCondition(tree, claim.taskId, action.conditionId);
       applied.push(`retired condition ${action.conditionId} generation ${action.expectedConditionGeneration}`);

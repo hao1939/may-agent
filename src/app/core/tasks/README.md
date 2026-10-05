@@ -195,6 +195,33 @@ A missed Condition checkpoint reports which waits are due. It carries no "final
 review" count: repeated reviews keep the declared timing, and the owner decides
 whether the assignment should continue.
 
+Apps choose execution policy; the Host persists and executes it through the
+current attempt. `select-execution` in `TaskAttempt.apply()` / `tasks.apply` or
+final result actions selects `declared` (the Task's configured workflow/executor)
+or `agent` (its responsible agent), with a reason. This chooses the **next
+eligible attempt**, without waking it, answering input, changing requirements,
+or retiring Conditions. A Task without a configured procedure cannot select
+`declared`. Ordinary backoff, Stop, capacity, workspace and verification rules
+still apply.
+
+The decision and reason live on the ordinary attempt as `executionSelection`
+and are included in the next attempt's context. No decision preserves existing
+behavior: unexpected procedure failure hands off to an available agent; that
+agent continues until an explicit choice or specification revision. Convergence
+alone does not imply handback. The next claim records the selected handler;
+a later failure can hand off again. New generations ignore old choices.
+
+Live and final changes share admission. Identical selection actions replay
+within their originating attempt; the same decision in a later attempt remains
+a new choice. Distinct decisions can replace the next method before settlement;
+an old replay cannot overwrite a later admitted choice. Use a fresh reason for
+a reconsidered decision, rather than resubmitting an earlier operation. One
+batch cannot contain competing execution selections. Claims and change receipts
+commit atomically and reject stale attempts. Intentional agent selection is not
+counted as an unexpected failover. The existing workflow `needs-agent` result
+is a final agent choice with immediate continuation and supersedes an earlier
+live execution selection.
+
 New work is requested through `TaskReconcileResult.dependencies`: the destination
 App validates `input` and chooses its Task specification and executor. Workers
 cannot return raw `create-task` or `update-task` actions. `unblock-task` reconsiders
