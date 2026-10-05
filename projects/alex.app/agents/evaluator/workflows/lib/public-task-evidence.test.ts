@@ -7,6 +7,7 @@ import {
   configuredControlSocket,
   createPublicTaskEvidenceProvider,
   readSubjectTask,
+  taskEvidenceHash,
   sendPublicReadCommand,
   type PublicCommand,
 } from "./public-task-evidence.ts";
@@ -540,4 +541,27 @@ describe("public Task evidence", () => {
       reason: expect.stringContaining("identity mismatch"),
     });
   });
+});
+
+test("routine checks preserve review identity while real failures, Conditions and authored evidence invalidate it", () => {
+  const snapshot = { appTask, detail: taskDetail, readBack: { links: [
+    { appId: "sample", taskId: "helper", detail: { ...taskDetail } },
+  ] } };
+  const identity = (value: unknown) => taskEvidenceHash("sample", "goal/one", value as any);
+  const original = identity(snapshot);
+  const checked = structuredClone(snapshot);
+  for (const detail of [checked.detail, checked.readBack.links[0]!.detail]) {
+    (detail.history as unknown[]) = [{ eventType: "project.task.reconcile.skipped", eventId: 50, timestamp: 1000 }];
+  }
+  expect(identity(checked)).toBe(original);
+  for (const change of [
+    { history: [{ eventType: "project.task.reconciled", attemptId: "failed-attempt", disposition: "retrying" }] },
+    { diagnostics: { conditions: [{ id: "review", state: "satisfied" }] } },
+    { result: { history: [{ eventType: "project.task.reconcile.skipped" }] } },
+  ]) {
+    expect(identity({ ...snapshot, detail: { ...taskDetail, ...change } })).not.toBe(original);
+    const linked = structuredClone(snapshot);
+    Object.assign(linked.readBack.links[0]!.detail, change);
+    expect(identity(linked)).not.toBe(original);
+  }
 });

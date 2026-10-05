@@ -255,26 +255,42 @@ test.each([null, end + 10_000])(
     const now = end + 10_000;
     setSystemTime(now);
     let read: { metricId: string; cut: number; alertId?: number } | undefined;
+    const previousEnabled = process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+    process.env.EVALUATION_AUTO_REVIEW_ENABLED = "true";
+    let admitted;
+    try {
+      const event = {
+        type: resolvedAt === null ? "metric.breach" : "metric.recovered",
+        data: { metricId: "may.daemon-sql-time-percent", measuredAt: now, alertId: 7 },
+      };
+      const input = taskInputForEvent(event as any)!;
+      expect(input).toMatchObject({ kind: "review-metric", data: { alertId: 7 } });
+      admitted = taskIntentForInput(input);
+      expect(taskInputForEvent({ ...event, type: "metric.breach", data: { ...event.data, repeat: true } } as any)).toBeNull();
+      expect(taskInputForEvent({ ...event, type: "metric.sample" } as any)).toBeNull();
+    } finally {
+      if (previousEnabled === undefined) delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+      else process.env.EVALUATION_AUTO_REVIEW_ENABLED = previousEnabled;
+    }
+    let modelCalls = 0;
     const ctx = context({
-      input: {
-        metricId: "may.daemon-sql-time-percent",
-        end: now + 1,
-        automatic: true,
-        alertId: 7,
-      },
+      input: admitted!.input,
       read: createTestAppRead({
         tasks: {
           get: async () =>
             ({ result: { nextReviewAt: now + 86_400_000 } }) as any,
         },
       }),
-      callAgent: async () => ({
-        id: "exact-signal-review",
-        kind: "agent",
-        status: "done",
-        summary: "reviewed",
-        output: judgment,
-      }),
+      callAgent: async () => {
+        modelCalls++;
+        return {
+          id: "exact-signal-review",
+          kind: "agent",
+          status: "done",
+          summary: "reviewed",
+          output: judgment,
+        };
+      },
     });
     const reviewed = await reviewMetric(
       ctx,
@@ -298,6 +314,11 @@ test.each([null, end + 10_000])(
         publication: { metricId: "may.daemon-sql-time-percent", alertId: 7 },
       },
     });
+
+    await reviewMetric(ctx, async (metricId, cut) => ({
+      ...evidence(metricId, cut), alerts: [{ alertId: 7, createdAt: now - 1000, resolvedAt }],
+    }), root);
+    expect(modelCalls).toBe(1);
 
     let evidenceRead = false;
     const notDue = await reviewMetric(

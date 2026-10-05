@@ -1,3 +1,4 @@
+import { meaningfulTaskDetail } from "./task-evidence-identity.js";
 import {
   readPublicAttempts,
   readPopulation,
@@ -155,25 +156,6 @@ function stable(value: unknown): string {
   return JSON.stringify(value) ?? "null";
 }
 
-const PRESENTATION_ONLY_EVIDENCE_KEYS = new Set([
-  "ref",
-  "resourceVersion",
-  "updatedAt",
-  "progress",
-]);
-
-function meaningfulTaskDetail(detail: Record<string, unknown>): unknown {
-  // Only these HumanTaskView envelope fields are presentation metadata. Never
-  // recurse: input/result/artifact contents (including identically named keys)
-  // belong to the App and may change the judgment. The App Task view is retained
-  // whole because its contract does not define these presentation fields.
-  return Object.fromEntries(
-    Object.entries(detail).filter(
-      ([key]) => !PRESENTATION_ONLY_EVIDENCE_KEYS.has(key),
-    ),
-  );
-}
-
 export function taskEvidenceHash(
   appId: string,
   taskId: string,
@@ -186,7 +168,15 @@ export function taskEvidenceHash(
         taskId,
         appTask: task.appTask,
         detail: meaningfulTaskDetail(object(task.detail)),
-        readBack: task.readBack,
+        readBack: task.readBack && {
+          ...object(task.readBack),
+          ...(Array.isArray(object(task.readBack).links) ? {
+            links: (object(task.readBack).links as unknown[]).map((link) => {
+              const value = object(link);
+              return value.detail ? { ...value, detail: meaningfulTaskDetail(object(value.detail)) } : value;
+            }),
+          } : {}),
+        },
         ...(task.population ? { population: task.population } : {}),
       }),
     )

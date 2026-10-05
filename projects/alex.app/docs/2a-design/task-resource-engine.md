@@ -510,6 +510,17 @@ an action was admitted while withholding that action. Immediate actions and new
 cross-App requests retain the same attempt/authority checks. Rejected results
 remain recovery evidence; failure findings remain failed-attempt evidence.
 
+Disabling or removing an App stops executable admission; it does not revoke
+read access to its retained input outcomes and closures. The Host's existing
+inbox recovery scans those saved returns without loading the old App. It first
+reads the exact admission's accepted answer; otherwise an applicable cancellation
+returns closure as unfulfilled, preserving its facts and original caller. An
+unrelated later Task result cannot answer that input. A retained unfinished
+admission remains pending; missing authority remains an explicit recovery gap.
+Completion uses the same compare-and-set and stable return identity as live
+notification, so repeat recovery does not create another return. Operators do
+not need to re-enable a retired App or ask an agent to perform bookkeeping.
+
 Delivery identity survives claim, settlement and late relay; receipt is not outcome acceptance.
 See [duplicate handling](execution-feedback.md#duplicate-delivery-and-safe-reconsideration) for Host/App duties and Host #175.
 

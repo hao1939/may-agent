@@ -884,7 +884,9 @@ describe("Task outcome review", () => {
     const original = readFileSync(join(root, report), "utf8");
     await reviewTaskOutcome(
       ctx,
-      reader(() => ({ ...detail, ref: "new-ref", resourceVersion: 9 })),
+      reader(() => ({ ...detail, ref: "new-ref", resourceVersion: 9,
+        history: [{ eventId: 40, timestamp: 400, eventType: "project.task.reconcile.skipped" }],
+      })),
       root,
     );
     expect(calls).toBe(1);
