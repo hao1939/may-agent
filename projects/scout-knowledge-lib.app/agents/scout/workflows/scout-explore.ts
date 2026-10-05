@@ -596,24 +596,36 @@ export type FindingIndexAdmissionIssue = {
   reason: "index-unchanged" | "missing-link" | "duplicate-link" | "broken-link";
 };
 
-function markdownLinkTargets(content: string): string[] {
-  // Let the runtime's Markdown parser decide what is a rendered navigation
-  // link. Its HTML renderer also applies Markdown character-reference
-  // semantics; callback href values intentionally retain those source bytes.
-  // Raw HTML is disabled so only Markdown navigation links can produce anchors.
-  const withoutComments = content.replace(/<!--[\s\S]*?(?:-->|$)/g, "");
-  const html = Bun.markdown.html(withoutComments, {
-    noHtmlBlocks: true,
-    noHtmlSpans: true,
-  });
-  return [...html.matchAll(/<a href="([^"]*)"/g)].map((match) =>
-    match[1]
-      .replace(/&amp;/g, "&")
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">"),
+function decodeMarkdownCharacterReferences(value: string): string {
+  return value.replace(
+    /&(?:#[0-9]{1,7}|#[xX][0-9A-Fa-f]{1,6}|[A-Za-z][A-Za-z0-9]+);/g,
+    (reference) => {
+      const rendered = Bun.markdown.html(reference).trim();
+      const text = rendered.match(/^<p>([\s\S]*)<\/p>$/)?.[1];
+      if (text === undefined) return reference;
+      return text
+        .replace(/&amp;/g, "&")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">");
+    },
   );
+}
+
+function markdownLinkTargets(content: string): string[] {
+  // Parse the original document so comments, code spans, and malformed link
+  // destinations retain their Markdown meaning. The callback sees Markdown
+  // links only (not raw HTML anchors), but preserves character-reference source
+  // bytes, so normalize those after parsing rather than mutating the document.
+  const targets: string[] = [];
+  Bun.markdown.render(content, {
+    link(children, { href }) {
+      targets.push(decodeMarkdownCharacterReferences(href));
+      return children;
+    },
+  });
+  return targets;
 }
 
 function relativeMarkdownTarget(target: string): string | null {
@@ -626,6 +638,8 @@ function relativeMarkdownTarget(target: string): string | null {
   }
   if (
     decodedPath.length === 0 ||
+    decodedPath.endsWith("/") ||
+    decodedPath.endsWith("\\") ||
     isAbsolute(decodedPath) ||
     decodedPath.startsWith("\\") ||
     /^[A-Za-z][A-Za-z0-9+.-]*:/.test(decodedPath)

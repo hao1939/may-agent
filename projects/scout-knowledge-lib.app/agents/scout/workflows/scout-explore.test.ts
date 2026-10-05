@@ -936,7 +936,7 @@ describe("scout-explore workflow prompt", () => {
       );
       writeFileSync(
         index,
-        "# Index\n\n- [Atomic finding](findings/atomic-index.md) — source-backed observation; limited to one unreplicated report.\n",
+        "# Index\n\n`<!--` is documented syntax, not an HTML comment.\n\n- [Atomic finding](findings/atomic-index.md) — source-backed observation; limited to one unreplicated report.\n",
       );
       return {
         status: "done",
@@ -1055,6 +1055,17 @@ describe("scout-explore workflow prompt", () => {
       label: "comment-only",
       links: "<!-- [Hidden](findings/rejected-index.md) -->\n",
       reason: "missing-link",
+    },
+    {
+      label: "comment inside destination",
+      links:
+        "- [Malformed](findings/rejected-<!-- hidden -->index.md)\n",
+      reason: "missing-link",
+    },
+    {
+      label: "trailing-slash destination",
+      links: "- [Directory form](findings/rejected-index.md/)\n",
+      reason: "broken-link",
     },
     {
       label: "image-only",
