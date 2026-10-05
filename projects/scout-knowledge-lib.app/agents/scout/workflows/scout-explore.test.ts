@@ -331,7 +331,9 @@ describe("scout-explore workflow prompt", () => {
     );
     expect(task).toContain("Choose an unused descriptive topic slug");
     expect(task).toContain("exactly one concise relative Markdown link");
-    expect(task).toContain("Ground that INDEX description in the inspected source");
+    expect(task).toContain(
+      "Ground that INDEX description in the inspected source",
+    );
     expect(task).toContain("state the material evidence limitation");
     expect(task).toContain("do not overstate source support");
     expect(task).toContain("Read every created or changed output back");
@@ -913,9 +915,7 @@ describe("scout-explore workflow prompt", () => {
         "Scout exploration created a finding without exactly one resolving INDEX link",
       facts: {
         executionId: "s_unindexed",
-        indexIssues: [
-          { basename: "unindexed.md", reason: "index-unchanged" },
-        ],
+        indexIssues: [{ basename: "unindexed.md", reason: "index-unchanged" }],
       },
     });
     expect(fixture.git("rev-parse", "HEAD")).toBe(originalHead);
@@ -930,7 +930,10 @@ describe("scout-explore workflow prompt", () => {
       const finding = join(project, "knowledge/findings/atomic-index.md");
       const index = join(project, "knowledge/INDEX.md");
       mkdirSync(dirname(finding), { recursive: true });
-      writeFileSync(finding, "# Atomic finding\n\nSource: https://example.test/atomic\n");
+      writeFileSync(
+        finding,
+        "# Atomic finding\n\nSource: https://example.test/atomic\n",
+      );
       writeFileSync(
         index,
         "# Index\n\n- [Atomic finding](findings/atomic-index.md) — source-backed observation; limited to one unreplicated report.\n",
@@ -953,13 +956,18 @@ describe("scout-explore workflow prompt", () => {
 
     const result = await executeScoutExplore(ctx);
     const commit = fixture.git("rev-parse", "HEAD");
-    const changed = fixture.git("diff-tree", "--no-commit-id", "--name-only", "-r", commit).split("\n");
+    const changed = fixture
+      .git("diff-tree", "--no-commit-id", "--name-only", "-r", commit)
+      .split("\n");
     const indexContent = readFileSync(
       join(fixture.workspace.projectRoot, "knowledge/INDEX.md"),
       "utf8",
     );
 
-    expect(result).toMatchObject({ status: "done", output: { state: "converged" } });
+    expect(result).toMatchObject({
+      status: "done",
+      output: { state: "converged" },
+    });
     expect(commit).not.toBe(originalHead);
     expect(changed.sort()).toEqual(
       [
@@ -968,6 +976,67 @@ describe("scout-explore workflow prompt", () => {
       ].sort(),
     );
     expect(indexContent.match(/atomic-index\.md/g)).toHaveLength(1);
+  });
+
+  it("publishes an existing flat finding update without INDEX churn", async () => {
+    const fixture = publicationTestFixture();
+    temporaryRoots.push(fixture.repositoryRoot);
+    const canonicalFinding = join(
+      fixture.workspace.projectRoot,
+      "knowledge/findings/existing.md",
+    );
+    const canonicalIndex = join(
+      fixture.workspace.projectRoot,
+      "knowledge/INDEX.md",
+    );
+    mkdirSync(dirname(canonicalFinding), { recursive: true });
+    writeFileSync(
+      canonicalFinding,
+      "# Existing finding\n\nOriginal evidence.\n",
+    );
+    writeFileSync(
+      canonicalIndex,
+      "# Index\n\n- [Existing](findings/existing.md) — original source evidence; not independently reproduced.\n",
+    );
+    fixture.git("add", "projects/scout-knowledge-lib/knowledge");
+    fixture.git("commit", "-m", "seed existing finding");
+    const originalIndex = readFileSync(canonicalIndex, "utf8");
+    const ctx = workflowContext(async (_agent, task) => {
+      const finding = join(
+        candidateProjectFromPrompt(task),
+        "knowledge/findings/existing.md",
+      );
+      writeFileSync(
+        finding,
+        "# Existing finding\n\nUpdated source evidence.\n",
+      );
+      return {
+        status: "done",
+        sessionId: "s_existing_finding",
+        structuredResult: {
+          summary: "Updated the existing finding for the same source.",
+          source: {
+            name: "hn",
+            queryOrFeed: "https://news.ycombinator.com/newest",
+            itemIdsOrUrls: ["https://news.ycombinator.com/item?id=903"],
+          },
+          outputs: [finding],
+        },
+      };
+    }, "hn");
+    ctx.workspace = { ...fixture.workspace };
+
+    const result = await executeScoutExplore(ctx);
+    const commit = fixture.git("rev-parse", "HEAD");
+
+    expect(result).toMatchObject({
+      status: "done",
+      output: { state: "converged" },
+    });
+    expect(
+      fixture.git("diff-tree", "--no-commit-id", "--name-only", "-r", commit),
+    ).toBe("projects/scout-knowledge-lib/knowledge/findings/existing.md");
+    expect(readFileSync(canonicalIndex, "utf8")).toBe(originalIndex);
   });
 
   it.each([
@@ -982,6 +1051,27 @@ describe("scout-explore workflow prompt", () => {
       links: "- [Broken](elsewhere/rejected-index.md)\n",
       reason: "broken-link",
     },
+    {
+      label: "comment-only",
+      links: "<!-- [Hidden](findings/rejected-index.md) -->\n",
+      reason: "missing-link",
+    },
+    {
+      label: "image-only",
+      links: "![Not navigation](findings/rejected-index.md)\n",
+      reason: "missing-link",
+    },
+    {
+      label: "reference-style duplicate",
+      links:
+        "- [Inline](findings/rejected-index.md)\n- [Reference][finding]\n\n[finding]: findings/rejected-index.md\n",
+      reason: "duplicate-link",
+    },
+    {
+      label: "absolute candidate",
+      links: "ABSOLUTE_CANDIDATE_LINK",
+      reason: "broken-link",
+    },
   ])("rejects a $label INDEX reference", async ({ links, reason }) => {
     const fixture = publicationTestFixture();
     temporaryRoots.push(fixture.repositoryRoot);
@@ -992,7 +1082,11 @@ describe("scout-explore workflow prompt", () => {
       const index = join(project, "knowledge/INDEX.md");
       mkdirSync(dirname(finding), { recursive: true });
       writeFileSync(finding, "# Finding\n");
-      writeFileSync(index, `# Index\n\n${links}`);
+      const candidateLinks =
+        links === "ABSOLUTE_CANDIDATE_LINK"
+          ? `- [Ephemeral candidate](${finding})\n`
+          : links;
+      writeFileSync(index, `# Index\n\n${candidateLinks}`);
       return {
         status: "done",
         sessionId: "s_rejected_index",
@@ -1036,7 +1130,10 @@ describe("scout-explore workflow prompt", () => {
         recursive: true,
       });
       writeFileSync(candidate, "# Published despite malformed advice\n");
-      const index = join(candidateProjectFromPrompt(task), "knowledge/INDEX.md");
+      const index = join(
+        candidateProjectFromPrompt(task),
+        "knowledge/INDEX.md",
+      );
       writeFileSync(
         index,
         "# Index\n\n- [Malformed advice finding](findings/malformed-recommendation.md) — HN source evidence; limited to one observed item.\n",
@@ -1118,7 +1215,10 @@ describe("scout-explore workflow prompt", () => {
         recursive: true,
       });
       writeFileSync(candidate, "# Retry-stable research handoff\n");
-      const index = join(candidateProjectFromPrompt(task), "knowledge/INDEX.md");
+      const index = join(
+        candidateProjectFromPrompt(task),
+        "knowledge/INDEX.md",
+      );
       writeFileSync(
         index,
         "# Index\n\n- [Retry-stable handoff](findings/recovered-handoff.md) — one observed HN item; not locally reproduced.\n",

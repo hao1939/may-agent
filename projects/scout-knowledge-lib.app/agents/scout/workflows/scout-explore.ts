@@ -597,9 +597,55 @@ export type FindingIndexAdmissionIssue = {
 };
 
 function markdownLinkTargets(content: string): string[] {
-  return [...content.matchAll(/\[[^\]]*\]\(\s*<?([^\s)>]+)>?(?:\s+[^)]*)?\)/g)].map(
-    (match) => match[1],
-  );
+  // Admission is intentionally conservative: only rendered navigation links
+  // count. References hidden in comments/code, image destinations, and
+  // malformed inline-link syntax must not satisfy the exhaustive INDEX.
+  const visible = content
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/^ {0,3}(`{3,}|~{3,}).*$[\s\S]*?^ {0,3}\1\s*$/gm, "")
+    .replace(/`[^`\n]*`/g, "");
+  const targets = [
+    ...visible.matchAll(
+      /(?<!!)\[[^\]\n]*\]\(\s*(?:<([^>\n]+)>|([^\s)]+))(?:\s+(?:"[^"]*"|'[^']*'|\([^)]*\)))?\s*\)/g,
+    ),
+  ].map((match) => match[1] ?? match[2]);
+
+  const definitions = new Map<string, string>();
+  for (const match of visible.matchAll(
+    /^ {0,3}\[([^\]\n]+)\]:\s*(?:<([^>\n]+)>|([^\s]+))(?:\s+(?:"[^"]*"|'[^']*'|\([^)]*\)))?\s*$/gm,
+  )) {
+    definitions.set(
+      match[1].trim().toLowerCase().replace(/\s+/g, " "),
+      match[2] ?? match[3],
+    );
+  }
+  for (const match of visible.matchAll(/(?<!!)\[([^\]\n]+)\]\[([^\]\n]*)\]/g)) {
+    const label = (match[2] || match[1])
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+    const target = definitions.get(label);
+    if (target) targets.push(target);
+  }
+  return targets;
+}
+
+function relativeMarkdownTarget(target: string): string | null {
+  const rawPath = target.split(/[?#]/, 1)[0];
+  let decodedPath: string;
+  try {
+    decodedPath = decodeURIComponent(rawPath);
+  } catch {
+    return null;
+  }
+  if (
+    decodedPath.length === 0 ||
+    isAbsolute(decodedPath) ||
+    decodedPath.startsWith("\\") ||
+    /^[A-Za-z][A-Za-z0-9+.-]*:/.test(decodedPath)
+  )
+    return null;
+  return decodedPath;
 }
 
 /**
@@ -641,7 +687,7 @@ export function findingIndexAdmission(
       reason: "missing-link" as const,
     }));
   }
-  return newFindings.flatMap((finding) => {
+  return newFindings.flatMap<FindingIndexAdmissionIssue>((finding) => {
     const findingBasename = basename(finding);
     const matchingLinks = targets.filter((target) => {
       const path = target.split(/[?#]/, 1)[0];
@@ -652,19 +698,35 @@ export function findingIndexAdmission(
       }
     });
     if (matchingLinks.length === 0)
-      return [{ finding, basename: findingBasename, matchingLinks, reason: "missing-link" as const }];
+      return [
+        {
+          finding,
+          basename: findingBasename,
+          matchingLinks,
+          reason: "missing-link" as const,
+        },
+      ];
     if (matchingLinks.length > 1)
-      return [{ finding, basename: findingBasename, matchingLinks, reason: "duplicate-link" as const }];
-    const rawPath = matchingLinks[0].split(/[?#]/, 1)[0];
-    let decodedPath: string;
-    try {
-      decodedPath = decodeURIComponent(rawPath);
-    } catch {
-      decodedPath = rawPath;
-    }
-    return resolve(dirname(indexPath), decodedPath) === finding
+      return [
+        {
+          finding,
+          basename: findingBasename,
+          matchingLinks,
+          reason: "duplicate-link" as const,
+        },
+      ];
+    const relativeTarget = relativeMarkdownTarget(matchingLinks[0]);
+    return relativeTarget !== null &&
+      resolve(dirname(indexPath), relativeTarget) === finding
       ? []
-      : [{ finding, basename: findingBasename, matchingLinks, reason: "broken-link" as const }];
+      : [
+          {
+            finding,
+            basename: findingBasename,
+            matchingLinks,
+            reason: "broken-link" as const,
+          },
+        ];
   });
 }
 
