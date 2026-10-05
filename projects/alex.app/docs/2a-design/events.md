@@ -474,8 +474,12 @@ external input and nonexistent required targets create no event receipt.
 
 Internal passive producers use the same record-only marker as the App event
 interface. Heartbeat, workflow-dispatch, skill-load, attempt timing, presentation
-updates and failure diagnostics can still reach interested subscribers, but their
-persistence does not require an extra worker to accept them. A `subscriber.failed`
+updates, guard decisions and failure diagnostics can still reach interested
+subscribers, but their persistence does not require an extra worker to accept
+them. A guard's blocked, warned or injected action happens in its execution
+path; `guard.triggered` records that decision with the original reason and
+execution links. If a declared durable consumer fails, the Event remains pending
+for delivery even when its producer marked it record-only. A `subscriber.failed`
 diagnostic does not settle the originating publication: the original required
 event remains accountable, and subscriber failure metrics still count the diagnostic.
 Mark producer intent rather than adding names to a metric exclusion list.
