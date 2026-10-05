@@ -486,6 +486,48 @@ describe("scout-explore workflow prompt", () => {
   });
 
   it.each([
+    { status: 429, retryAfter: "120" },
+    { status: 200, retryAfter: null },
+  ])(
+    "preserves observed HTTP $status evidence when the body fails",
+    async ({ status, retryAfter }) => {
+      let requests = 0;
+      const times = [
+        Date.parse("2026-10-01T00:00:00.000Z"),
+        Date.parse("2026-10-01T00:00:00.050Z"),
+        Date.parse("2026-10-01T00:00:00.075Z"),
+      ];
+      const acquisition = await acquireArxivSource(
+        (async () => {
+          requests += 1;
+          const body = new ReadableStream({
+            start(controller) {
+              controller.error(new Error("fixture body reset"));
+            },
+          });
+          return new Response(body, {
+            status,
+            headers: retryAfter ? { "Retry-After": retryAfter } : undefined,
+          });
+        }) as typeof fetch,
+        () => times.shift() ?? Date.parse("2026-10-01T00:00:00.075Z"),
+      );
+
+      expect(requests).toBe(1);
+      expect(acquisition).toEqual({
+        endpoint: arxivEndpoint,
+        status,
+        body: "",
+        latencyMs: 75,
+        requestCount: 1,
+        retryAfter,
+        deferUntil: retryAfter ? "2026-10-01T00:02:00.050Z" : null,
+        error: "fixture body reset",
+      });
+    },
+  );
+
+  it.each([
     { status: 406, retryAfter: null },
     { status: 429, retryAfter: "120" },
     { status: 429, retryAfter: null },

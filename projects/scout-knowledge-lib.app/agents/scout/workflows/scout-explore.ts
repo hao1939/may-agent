@@ -138,6 +138,11 @@ export async function acquireArxivSource(
   timeoutSignal: (milliseconds: number) => AbortSignal = AbortSignal.timeout,
 ): Promise<ArxivAcquisition> {
   const startedAt = now();
+  let observedStatus: number | null = null;
+  let observedRetry: ReturnType<typeof boundedRetryAfter> = {
+    retryAfter: null,
+    deferUntil: null,
+  };
   try {
     const response = await fetchImpl(arxivEndpoint, {
       headers: {
@@ -148,25 +153,28 @@ export async function acquireArxivSource(
       // This total bound also bounds the connection phase; there is no retry.
       signal: timeoutSignal(arxivTimeoutMs),
     });
+    observedStatus = response.status;
+    observedRetry = boundedRetryAfter(
+      response.headers.get("retry-after"),
+      now(),
+    );
     const body = await response.text();
-    const retry = boundedRetryAfter(response.headers.get("retry-after"), now());
     return {
       endpoint: arxivEndpoint,
-      status: response.status,
+      status: observedStatus,
       body,
       latencyMs: Math.max(0, now() - startedAt),
       requestCount: 1,
-      ...retry,
+      ...observedRetry,
     };
   } catch (error) {
     return {
       endpoint: arxivEndpoint,
-      status: null,
+      status: observedStatus,
       body: "",
       latencyMs: Math.max(0, now() - startedAt),
       requestCount: 1,
-      retryAfter: null,
-      deferUntil: null,
+      ...observedRetry,
       error: error instanceof Error ? error.message : String(error),
     };
   }
