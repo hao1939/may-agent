@@ -263,13 +263,50 @@ legacy `needs-owner` handoffs are not additional failovers. The optional metric
 sampler [counts the retained switches](metrics.md#procedure-to-agent-failovers);
 recording them does not itself request work.
 
-Handler selection follows retained attempts in the current specification generation.
-Once the agent has taken control, subsequent attempts continue with that agent
-across failures, accepted partial progress, waits and restart; they do not
-silently replay the original procedure. A specification revision selects the
-configured procedure afresh. The agent may invoke an available workflow through
-normal tools when useful. No recovery-mode record or secondary Task lifecycle
-is introduced.
+Apps choose the method; the Host durably executes the choice. This supports
+[useful work with less supervision](../1-principles/purpose.md) by allowing an
+agent to repair a procedure and return routine work to it, while keeping
+recovery policy outside the stable Host. Result acceptance, input fulfillment,
+waiting and execution selection remain independent facts.
+
+**Execution-selection status:** implemented in the candidate Host branch
+`fix/task-execution-selection-20261005`, not yet merged or deployed. The current
+installed default still retains agent execution until a specification revision.
+Only use the action after its schema is available at the execution boundary.
+See the [contrasting trial and limits](../archive/reviews/task-execution-selection-20261005.md).
+
+A `select-execution` action, admitted through the same live/final change path,
+chooses `declared` (this Task's configured workflow or executor) or `agent`
+(its responsible agent), with a reason. It applies to the next **eligible**
+attempt of this Task and generation. It does not change requirements, answer
+input, retire a Condition, wake work or bypass backoff and Stop. Selecting
+`declared` requires a configured procedure. This is a method choice within the
+assignment, not reassignment authority.
+
+The decision and reason are saved on the ordinary attempt and passed to the
+next attempt as `previousAttempt.executionSelection`. The next claim records
+the chosen handler. Its later failure can enter agent recovery again. A
+specification revision selects afresh; stale attempts cannot redirect it.
+There is no recovery-mode record or secondary Task lifecycle.
+
+Omission retains the existing selection rule: a failed procedure hands off to
+an available responsible agent, and subsequent attempts remain with that agent
+across failures, partial progress, waits, convergence and restart. A successful
+result alone never says which method should run next. An App may keep agent
+recovery, return to its procedure, or implement a known retry policy through
+ordinary workflow actions. It must not require infra to classify its errors.
+The agent may also invoke an available workflow through normal tools.
+
+Identical selection actions are idempotent within their originating attempt;
+the same choice in a later recovery is a new decision. Live and final replays
+share the receipt. Distinct decisions may replace the next method before
+settlement; replaying an old decision cannot overwrite a newer admitted one.
+Use a fresh reason for a reconsidered decision. A batch cannot contain
+competing selections. Selection and its receipt commit atomically; failed
+settlement rolls them back together. An intentional choice of agent execution
+is not counted as an unexpected procedure failover. The existing workflow
+`needs-agent` result is a final agent choice with immediate continuation and
+supersedes an earlier live execution selection.
 
 Ordinary failure backoff, exact input settlement, cancellation, workspace and
 Condition checks still apply. Handler selection does not create permission to

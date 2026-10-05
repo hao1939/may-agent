@@ -18,6 +18,29 @@ May/reviewer costs and is not a billing receipt. Two selector canaries rotated
 from May to Scout without selecting Evaluation or causing a storm. The original
 daily cadence was a bounded pilot and has been superseded for this installation.
 
+## Selector recovery policy
+
+The selector workflow owns routine catalog reads, cursor handling, reviewer
+choice and capacity separation. A procedure failure can hand the same Task to
+its responsible agent for diagnosis. Alex's policy is to use that agent to
+restore the service and return routine selection to the declared workflow when
+appropriate. Remaining investigation or an independent review may continue;
+neither proves that the workflow itself has recovered.
+
+The Host supplies the generic
+[execution-selection action](../2a-design/task-attempts.md#selecting-the-attempt-mechanism).
+Its candidate implementation is not deployed. It preserves the choice and
+executes the next eligible attempt; it does not know selector names, reviewers,
+error classes or how long Alex wants diagnosis to continue. Convergence is
+not a handback signal. Existing unexpected-failure fallback remains the default.
+A retained failure and its cost remain reviewable after handback.
+
+The [evaluator guidance](../../agents/evaluator/AGENTS.md#recovering-the-automatic-selector)
+owns the practical decision. Deployment must install the Host capability before
+activating guidance that uses it. Source fixtures establish routing and retained
+obligations; only a subsequent installed workflow attempt can establish live
+recovery and reduced selector model usage.
+
 ## Boundary
 
 **Observer evidence (activated September 30):** See the

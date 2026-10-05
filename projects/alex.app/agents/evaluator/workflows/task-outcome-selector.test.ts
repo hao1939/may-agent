@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { admitTaskReconcileResult } from "@may-agent/sdk";
 import { createHash } from "node:crypto";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -255,6 +255,33 @@ function catalogCommand(
 }
 
 describe("automatic task outcome selector", () => {
+  test("exposes a catalog timeout and resumes configured DeepSeek selection without using the Sol backlog", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-recovery-choice-"));
+    const events: Record<string, unknown>[] = [];
+    const ctx = {
+      reconciliation: {
+        taskId: "runtime/task-outcome-selector", resourceVersion: 1,
+        taskSnapshot: { live: [{ taskId: "runtime/task-outcome/v2/sample/sol/outcome/contract-sol", status: "waiting" }], truncated: false },
+      },
+      read: { tasks: { get: async () => ({ facts: [] }) } },
+      events: { emit: async (event: Record<string, unknown>) => { events.push(event); } },
+      done: (_summary: string, result: Record<string, unknown>) => result,
+    } as never;
+    try {
+      const failure = new Error("Public evidence read timed out after 5000ms");
+      await expect(runTaskOutcomeSelector(ctx, async () => { throw failure; }, deepseekConfig, root))
+        .rejects.toBe(failure);
+      expect(events).toEqual([]);
+      const result = await runTaskOutcomeSelector(ctx, catalogCommand({
+        sample: [{ ...task("sample", "work/ready"), updatedAt: Date.now() }],
+      }), deepseekConfig, root);
+      expect(result).toMatchObject({ state: "converged" });
+      expect(events).toHaveLength(1);
+      expect(events[0]).toMatchObject({ type: "evaluation.task.review.requested",
+        data: { appId: "sample", taskId: "work/ready", reviewer: "evaluator-deepseek" } });
+      expect(admitTaskReconcileResult(result, { allowNeedsAgent: true }).ok).toBe(true);
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
   test("is initially off and bounds recent navigation configuration", () => {
     expect(automaticReviewConfig({})).toMatchObject({
       enabled: false,
