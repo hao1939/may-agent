@@ -280,6 +280,17 @@ exact wait; a failed or rolled-back receipt is a terminal disposition. Stop
 when these bounded facts answer the request—do not scan the workspace, inspect
 unrelated worktrees, or tail broad logs as a substitute for receipt evidence.
 
+### Return an independently completed rollout
+
+After applying a repair outside its original Task, deliver the exact receipt and
+source inclusion evidence to that existing Task through ordinary targeted input
+admission with a stable identity. The owner reconciles its original requirements,
+retires any obsolete approval Condition and returns remaining checks or results
+through its saved caller relationships. Do not create another rollout just because
+the old Task still says “waiting for deployment.” Source activation, feature
+verification and fulfillment of the original input remain independent facts.
+Use the [repair feedback contract](../2a-design/execution-feedback.md#return-repair-evidence-to-the-original-work).
+
 ### Retained local rollout receipt: 2026-09-19
 
 The authorized in-container rollout after Host PRs #200, #202, and #203 merged

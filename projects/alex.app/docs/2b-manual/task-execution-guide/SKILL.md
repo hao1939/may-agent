@@ -66,6 +66,17 @@ discovering work. Large evidence should remain referenced until needed. See
 [Task reads](../../2a-design/task-resource-read-interface.md) for exact operations,
 pagination, input keys and coverage limits.
 
+Use a small page and relevant status filters for discovery. The agent's compact
+list candidate returns `outcomePreview`/`summaryPreview`, not full acceptance
+evidence; use the exact `get` before reusing or changing work. Do not load every
+Task's results just to find a possible owner.
+
+A fresh Task read can contain an old observation. If your decision depends on
+what is installed now, inspect the current deployment receipt/runtime status;
+another Task's saved “not deployed” statement is historical evidence. A verified
+report establishes the accepted bytes and their identity, not the freshness or
+correctness of every claim. Recheck the material claim needed for your decision.
+
 Treat free-form input as requirements to understand, not text to silently
 discard after a structured request arrives. Several inputs can refine one ask.
 Preserve material constraints and uncertainty. Decide which inputs your result

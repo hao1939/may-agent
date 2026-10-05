@@ -355,6 +355,15 @@ history. [Architecture](architecture.md#conversation-core-and-capability-boundar
 owns placement; the [storage proposal](../proposals/storage-state-service.md#conversation-state-and-handler-extraction)
 records the current helpers, extraction order and proof required.
 
+Conversation recovery filters out closed conversations and self-returns before
+materializing attempt history. A saved ordinary input return selects its exact
+result/report attempt; legacy Topic subscriptions retain their broader eligible
+history. The same receipt, cancellation and generation rules still decide what
+can be returned. This query-scope correction reduces repeated reads without a
+new cursor, replay limit or copied completion state. Source candidate: Host
+conversation-recovery-scope; deployment and worst-case latency remain separate
+checks. See the [query trial and source record](../archive/reviews/post337-evidence-cost-20261005.md).
+
 ## Retention And Maintenance
 
 Retention is bounded work owned by the runtime maintenance boundary, not by an

@@ -18,9 +18,14 @@ import {
 
 export const name = "evaluation-report-reader";
 export const description =
-  "List or read retained Evaluation reports without starting a new evaluation.";
+  'Read retained Evaluation evidence without a model call. Input {operation: "read-publication", publication: <saved publication reference>} verifies identity and hashes and returns a bounded Markdown preview. Also supports {operation: "list", limit?} and {operation: "read", path}. Verification establishes accepted bytes, not current truth.';
 
-type Input = { operation?: string; path?: string; limit?: number };
+type Input = {
+  operation?: string;
+  path?: string;
+  limit?: number;
+  publication?: PublishedReportRequest;
+};
 const MAX_LIST_ITEMS = 5;
 const MAX_PREVIEW_BYTES = 8_000;
 const MAX_PREVIEW_JSON_BYTES = 8_000;
@@ -207,19 +212,47 @@ export async function readEvaluationReports(
       actions: [],
     });
   }
-  if (operation !== "read")
+  if (operation !== "read" && operation !== "read-publication")
     return ctx.blocked(`Unsupported report operation: ${operation}`);
-  const path = text(ctx.input?.path);
-  if (path.length > 512)
-    return ctx.blocked("Report path exceeds 512 characters.");
   try {
-    if (!isPublishedTaskReportPath(reportRoot, path))
+    let path = text(ctx.input?.path);
+    let verification: {
+      status: "valid";
+      evidenceHash: string;
+      executionId: string;
+      jsonHash: string;
+      markdownHash: string;
+    } | undefined;
+    if (operation === "read-publication") {
+      const publication = ctx.input?.publication;
+      if (!publication)
+        return ctx.blocked("publication is required for read-publication.");
+      const checked = readPublishedEvaluationReport(publication, reportRoot);
+      if (checked.status !== "valid")
+        return ctx.blocked(
+          checked.status === "publication-pending"
+            ? "Report publication is not committed yet; retained bytes are not accepted evidence."
+            : `Report publication is invalid: ${checked.reason}`,
+        );
+      path = publication.report;
+      verification = {
+        status: "valid",
+        evidenceHash: publication.evidenceHash,
+        executionId: publication.executionId,
+        jsonHash: checked.jsonHash,
+        markdownHash: checked.markdownHash,
+      };
+    }
+    if (path.length > 512) return ctx.blocked("Report path exceeds 512 characters.");
+    if (!verification && !isPublishedTaskReportPath(reportRoot, path))
       return ctx.blocked("Report is not an accepted published report.");
     const absolute = resolveTaskReportPath(reportRoot, path);
     const bytes = readFileSync(absolute);
     const content = boundedPreview(bytes);
     const truncated = Buffer.byteLength(content) < bytes.byteLength;
     const hash = createHash("sha256").update(bytes).digest("hex");
+    if (verification && hash !== verification.markdownHash)
+      return ctx.blocked("Report bytes changed after publication verification.");
     const summary = `Read retained Evaluation report ${path}${truncated ? " (bounded preview; use the canonical path for full content)" : ""}.`;
     return ctx.done(summary, {
       state: "converged",
@@ -231,6 +264,7 @@ export async function readEvaluationReports(
         content,
         bytes: bytes.byteLength,
         sha256: hash,
+        ...(verification ? { verification } : {}),
         truncated,
         continuation: truncated
           ? { offset: Buffer.byteLength(content), path: absolute }

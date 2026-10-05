@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { appendFileSync, mkdtempSync } from "node:fs";
+import { appendFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
@@ -79,6 +79,59 @@ function publishFixture(
 }
 
 describe("evaluation report reader", () => {
+  test("checks exact publication identity in code and returns bounded evidence without another evaluation", async () => {
+    const root = mkdtempSync(join(tmpdir(), "report-reader-publication-"));
+    try {
+      const paths = publishFixture(
+        root,
+        "Finding with a long supporting explanation. ".repeat(1500),
+      );
+      const publication = {
+        appId: "may",
+        taskId: "goal/one",
+        evidenceHash: "abc",
+        executionId: "s_1",
+        report: paths.markdownPath,
+        facts: paths.jsonPath,
+        jsonHash: hashReport(resolveTaskReportPath(root, paths.jsonPath)),
+        markdownHash: hashReport(resolveTaskReportPath(root, paths.markdownPath)),
+      };
+      const run = (value: typeof publication) => readEvaluationReports(
+        createTestAppWorkflowContext({
+          input: { operation: "read-publication", publication: value },
+        }),
+        root,
+      );
+      const valid = await run(publication);
+      expect(valid.status).toBe("done");
+      const result = (valid.output as {
+        result: {
+          verification: unknown;
+          truncated: boolean;
+          continuation: { path: string };
+        };
+      }).result;
+      expect(result.verification).toEqual({
+        status: "valid",
+        evidenceHash: "abc",
+        executionId: "s_1",
+        jsonHash: publication.jsonHash,
+        markdownHash: publication.markdownHash,
+      });
+      expect(result.truncated).toBe(true);
+      expect(result.continuation.path).toBe(resolveTaskReportPath(root, paths.markdownPath));
+      expect(Buffer.byteLength(JSON.stringify(result))).toBeLessThan(10_000);
+      expect((await run({ ...publication, executionId: "another-run" })).status).toBe("blocked");
+      expect((await run({ ...publication, jsonHash: "wrong" })).status).toBe("blocked");
+      appendFileSync(resolveTaskReportPath(root, paths.markdownPath), "tampered");
+      expect((await run(publication)).status).toBe("blocked");
+      rmSync(resolveTaskReportPath(root, paths.publicationPath));
+      expect((await run(publication)).status).toBe("blocked");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("keeps legacy outcome Markdown stable and rejects purpose/rubric mismatches both ways", () => {
     const legacy = {
       version: 1,

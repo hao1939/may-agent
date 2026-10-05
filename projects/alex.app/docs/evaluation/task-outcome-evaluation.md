@@ -463,6 +463,22 @@ and scoped; ordinary selection does not sweep or replay historical requests.
 
 ### Listing retained reports
 
+For an exact publication, use the existing `evaluation-report-reader` workflow
+with `{operation: "read-publication", publication: context.publication}`. The
+reader checks the retained marker, full report identity and both file hashes in
+code, then returns a bounded Markdown preview, verification receipt and full
+content reference. Pending publication and invalid/tampered evidence return a
+blocked read rather than staged bytes. The read starts no evaluator call.
+This operation is implemented in the report-reader candidate; activate its App
+definitions before use. See the [trial and validation record](../archive/reviews/post337-evidence-cost-20261005.md).
+
+Alex judges relevance and the next action. Start from the supplied Task identity
+and existing return links; discover missing ownership with a small filtered page.
+Read more evidence when it changes that decision. Code-verified publication
+integrity does not make historical runtime observations current or guarantee
+the evaluator's conclusion. Routine manual re-hashing and broad transcript
+searches are not part of normal report intake.
+
 The report reader returns the newest valid published reports across all App and
 reviewer directories. The result limit bounds returned entries, not a prefix of
 the filesystem traversal. Each publication still passes the existing marker,

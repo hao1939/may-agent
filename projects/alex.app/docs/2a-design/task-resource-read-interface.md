@@ -39,7 +39,7 @@ This prevents a reconciliation attempt that already knows its Task or accepted
 wait from loading the App's complete outcome projection into model context.
 Use bounded `tasks.list` for discovery and `tasks.get` for exact Task detail.
 
-The current shared `TaskView` is deliberately small:
+The shared programmatic `TaskView` contains current accepted evidence:
 
 ```text
 { id, status, closed?, generation, outcome, summary?, response?, result?, facts? }
@@ -51,6 +51,19 @@ owner closure. Accepted results, Conditions and pending work can coexist.
 The list form returns bounded views from live resources and immutable completed
 receipts. It accepts exact status filters, a capped page size, and an opaque
 continuation token. Omitting status includes every phase.
+
+The agent tool presents a discovery page from that same reader: exact `id`,
+`status`, `closed` and `generation`, plus `outcomePreview` and `summaryPreview`
+limited to 240 characters each. It defaults to 20 items and preserves the
+reader's cursor. Full responses, results and facts stay in `get`; previews are
+navigation, not enough evidence to accept or revise an assignment. Programmatic
+SDK/socket/HTTP callers retain the full shared view. This presentation boundary
+keeps a search across many Tasks from repeatedly loading all their evidence
+into the model. `includeDone` applies to `outcomes`; `list` uses `status`.
+
+**Source status:** This discovery presentation is implemented in the compact
+Task-discovery Host candidate; activate that change before relying on it. See
+the [bounded trial and source record](../archive/reviews/post337-evidence-cost-20261005.md).
 
 `result` is a bounded App-defined object for machine-readable domain decisions.
 Runtime validates its transport shape and size but never interprets its domain
@@ -153,8 +166,10 @@ The contract is shared; only scope binding and transport differ:
 - the UI uses the HTTP adapter and renders the returned resources.
 
 There is no separate HTTP read model, agent task model, or SDK task model.
-Adapters translate argument placement but preserve the same exact `TaskView`,
-`TaskDetail`, and pagination contract.
+Adapters translate argument placement and preserve the underlying state and
+pagination contract. The agent's list explicitly returns discovery previews;
+its exact `get` preserves `TaskDetail`. A shortened preview is never another
+source of Task truth.
 
 Exact absence returns not-found. Invalid limits or continuation tokens are
 caller errors. HTTP maps absence to 404 and invalid reads to a 400 response;

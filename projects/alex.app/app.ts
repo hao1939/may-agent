@@ -138,7 +138,7 @@ export function evaluationReportInput(event: AppEvent<Record<string, unknown>>):
   return {
     kind: "message",
     data: {
-      message: `Review the immutable Evaluation ${metric ? "metric" : "Task"} report for ${metricId ?? `${appId}/${taskId}`}. Verify its exact identity and current evidence, then record a supported disposition, reuse fitting work, or commission the smallest justified improvement. Do not treat acknowledgment, a patch, or current recovery as verified resolution.`,
+      message: `Review the Evaluation ${metric ? "metric" : "Task"} report for ${metricId ?? `${appId}/${taskId}`}. Use the existing evaluation-report-reader workflow with input {operation: "read-publication", publication: context.publication} for deterministic identity/hash checks and a bounded Markdown preview. Judge the finding and read only the current evidence needed for your next decision. Start from exact linked Task IDs; use a small filtered Task list only to discover missing ownership. A current Task read may contain historical observations: check current deployment receipts/status before claiming a change is still undeployed. Record a supported disposition, reuse fitting work, or commission the smallest justified improvement. Verified report bytes establish their identity, not the truth or freshness of every claim.`,
       context: {
         publication,
         caller: { source: event.source, owner: event.owner, target: structuredClone(event.target), localKey: event.localKey },
