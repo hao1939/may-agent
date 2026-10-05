@@ -360,9 +360,10 @@ materializing attempt history. A saved ordinary input return selects its exact
 result/report attempt; legacy Topic subscriptions retain their broader eligible
 history. The same receipt, cancellation and generation rules still decide what
 can be returned. This query-scope correction reduces repeated reads without a
-new cursor, replay limit or copied completion state. Source candidate: Host
-conversation-recovery-scope; deployment and worst-case latency remain separate
-checks. See the [query trial and source record](../archive/reviews/post337-evidence-cost-20261005.md).
+new cursor, replay limit or copied completion state. The correction is merged
+in Host #340, with closed-conversation regression coverage in #342. Deployment
+and worst-case latency remain separate checks. See the
+[query trial and source record](../archive/reviews/post337-evidence-cost-20261005.md).
 
 ## Retention And Maintenance
 

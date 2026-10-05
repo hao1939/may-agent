@@ -64,8 +64,8 @@ SDK/socket/HTTP callers retain the full shared view. This presentation boundary
 keeps a search across many Tasks from repeatedly loading all their evidence
 into the model. `includeDone` applies to `outcomes`; `list` uses `status`.
 
-**Source status:** This discovery presentation is implemented in the compact
-Task-discovery Host candidate; activate that change before relying on it. See
+**Source status:** This discovery presentation is merged in Host #339. Verify
+that the installed Host includes it before relying on the compact form. See
 the [bounded trial and source record](../archive/reviews/post337-evidence-cost-20261005.md).
 
 `result` is a bounded App-defined object for machine-readable domain decisions.

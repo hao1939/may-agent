@@ -39,7 +39,7 @@ from October 3. Its isolated /tmp fixture held a 5.6 GB WAL after more than two
 days of operation. Its exact command and open fixture descriptors were checked;
 terminating that daemon and its admission worker checkpointed the database to
 51 MB and freed about 5.5 GB. No production database was deleted or rewritten.
-A separate Host test-harness candidate binds initial and restarted sandbox
+A separate Host test-harness change (#341) binds initial and restarted sandbox
 processes to the runner's open pipe, with a real abrupt-parent-exit regression.
 Production runtime receives no test watchdog. This explains one concrete source
 of storage pressure, not every historical SQL spike.
@@ -52,16 +52,19 @@ judges relevance, the current claim and whether to reuse, repair or take no acti
 A verified publication is not guaranteed truth; a completed rollout does not
 independently fulfill every feature-verification requirement.
 
-The targeted live feedback and orphan-process cleanup are complete. The source
-candidates need their normal review and activation; byte-size and query trials
-are not live model-savings claims. Scout's INDEX-publication correction remains
-owned by its existing Alex implementation request, not duplicated by this work.
+The targeted live feedback and orphan-process cleanup are complete. Host #339,
+#340, #341 and #342 are merged. The App reader and guidance companion remains
+unmerged on `fix/agent-evidence-guidance-20261005`. This merge-status follow-up
+performed no deployment and did not verify live adoption of these changes;
+byte-size and query trials are not live model-savings claims. Scout's
+INDEX-publication correction remains owned by its existing Alex implementation
+request, not duplicated by this work; its status was not rechecked here.
 The broad-review integration fixture was aligned with the already merged daily
 population cut; the assertion now checks a midday wake retains that fixed cut.
 
 ## Source and validation
 
-The Host candidates are independent changes based on `af41ca863`:
+The initial Host candidates were independent changes based on `af41ca863`:
 
 - `3a6d45124`: compact agent Task discovery. Full `bun run ci`: 3,589 passed,
   three installation-only checks skipped, zero failed.
@@ -114,5 +117,19 @@ with 3,590 passing tests, `027db6141` ([#341](https://github.com/hao1939/may-age
 with 3,591, and `7e9252576` ([#342](https://github.com/hao1939/may-agent/pull/342),
 the #340 test follow-up) with 3,588. Each skipped the three installation-only
 checks and had zero failures. All five original review discussions have fix
-references and are resolved; the open source candidates still need merge and
-activation. Local review logs are in `/app/.state/review339-341-20261005/`.
+references and are resolved. Local review logs are in
+`/app/.state/review339-341-20261005/`.
+
+## Merge confirmation
+
+GitHub confirmed the final Host source merges on October 5:
+
+| PR | Merge commit | Merge time (UTC) |
+| --- | --- | --- |
+| #339 — compact Task discovery | `abebee2195c15e590ae7965ed0fb3266a23024d1` | 06:24:20 |
+| #341 — test daemon lifetime | `7315d7a6c1a4b3380637bf12f96d5311f8a647d9` | 06:26:13 |
+| #342 — closed-conversation regression | `d2970acd38f742761c7e8499f918d440dfc0e266` | 06:20:49 |
+
+#340 had already merged as `f59f71040`. The passing CI results above identify
+the reviewed candidates; they are not a new combined-main run or deployment
+receipt. App companion integration and installation verification remain separate.

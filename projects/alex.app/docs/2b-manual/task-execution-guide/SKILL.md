@@ -67,8 +67,8 @@ discovering work. Large evidence should remain referenced until needed. See
 pagination, input keys and coverage limits.
 
 Use a small page and relevant status filters for discovery. The agent's compact
-list candidate returns `outcomePreview`/`summaryPreview`, not full acceptance
-evidence; use the exact `get` before reusing or changing work. When accepted
+list returns `outcomePreview`/`summaryPreview` on Hosts that include #339, not
+full acceptance evidence; use the exact `get` before reusing or changing work. When accepted
 attempts matter, add `acceptedEvidence: { limit: 4 }` to `get` and follow that
 page's `nextCursor` as needed. A plain `get` supplies current detail and history
 navigation, without loading those bodies. Do not load every Task's results just
