@@ -933,7 +933,8 @@ function taskHistory(
 ): Pick<HumanTaskView, "history" | "historyTruncated" | "historyError"> {
   try {
     // Eligibility checks remain in the event log, without evicting actual
-    // attempts from this bounded work-history projection.
+    // attempts from this bounded work-history projection. Keep these predicates
+    // aligned with idx_events_project_task_history so reads skip routine polls.
     const rows = db
       .prepare(
         `SELECT id, event_type, timestamp, attempt_id, handler, data FROM events

@@ -354,6 +354,8 @@ test("exact diagnostics preserve bounded Conditions and dependency states withou
 
 test("history is exact, indexed, bounded, and never a substitute for terminal authority", () => {
   const db = database();
+  // Simulate an existing installation before the filtered history index.
+  db.exec("DROP INDEX idx_events_project_task_history");
   insertTask(db, { appId: "alpha", taskId: "work", phase: "pending", updatedAt: 1 });
   const event = db.prepare(
     "INSERT INTO events(event_type, source, owner, project_id, task_id, timestamp, attempt_id, data) VALUES ('project.task.reconciled', 'test', 'test', ?, ?, ?, 'old-attempt', ?)",
@@ -364,25 +366,43 @@ test("history is exact, indexed, bounded, and never a substitute for terminal au
   event.run("alpha", "event-only", 101, '{"disposition":"converged"}');
   // Each skipped poll also publishes timing without an attempt. Neither may
   // evict actual work; timing that belongs to an attempt remains evidence.
-  const observation = db.prepare("INSERT INTO events(event_type, source, owner, project_id, task_id, timestamp, attempt_id, data) VALUES (?, 'test', 'test', 'alpha', 'work', ?, ?, '{}')");
+  const observation = db.prepare(
+    "INSERT INTO events(event_type, source, owner, project_id, task_id, timestamp, attempt_id, data) VALUES (?, 'test', 'test', 'alpha', 'work', ?, ?, '{}')",
+  );
   observation.run("project.task.reconcile.profiled", 102, "old-attempt");
   for (let n = 0; n < 40; n++) {
     observation.run("project.task.reconcile.skipped", 200 + n * 2, null);
     observation.run("project.task.reconcile.profiled", 201 + n * 2, null);
+    observation.run("metric.sampled", 202 + n * 2, null);
   }
-  const service = new HumanTaskService(db, registry("alpha"));
+  // Startup adds the index over retained events; repeated startup is safe.
+  applyDbSchema(db);
+  applyDbSchema(db);
+  const historyPlans: string[] = [];
+  const observed: SqliteDb = {
+    ...db,
+    prepare(sql) {
+      const statement = db.prepare(sql);
+      if (!sql.includes("SELECT id, event_type, timestamp, attempt_id, handler, data")) return statement;
+      return {
+        ...statement,
+        all(...values) {
+          historyPlans.push(JSON.stringify(db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...values)));
+          return statement.all(...values);
+        },
+      };
+    },
+  };
+  const service = new HumanTaskService(observed, registry("alpha"));
   const detail = service.getTask({ appId: "alpha", taskId: "work" })!;
   expect(detail).toMatchObject({ status: "pending", terminal: false, historyTruncated: true });
   expect(detail.history).toHaveLength(20);
   expect(detail.history![0]).toMatchObject({ eventType: "project.task.reconcile.profiled", attemptId: "old-attempt" });
   expect(detail.history![1]).toMatchObject({ summary: "old-24", generation: 1, attemptId: "old-attempt" });
   expect(service.getTask({ appId: "alpha", taskId: "event-only" })).toBeNull();
-  const plan = db
-    .prepare(
-      "EXPLAIN QUERY PLAN SELECT id FROM events WHERE project_id = ? AND task_id = ? AND event_type LIKE 'project.task.%' ORDER BY timestamp DESC, id DESC LIMIT 21",
-    )
-    .all("alpha", "work");
-  expect(JSON.stringify(plan)).toContain("idx_events_project_task");
+  expect(historyPlans).toHaveLength(1);
+  expect(historyPlans[0]).toContain("USING INDEX idx_events_project_task_history (project_id=? AND task_id=?)");
+  expect(historyPlans[0]).not.toContain("TEMP B-TREE");
   insertReceipt(db, "alpha", "work", 50);
   expect(service.listTasks({ appId: "alpha", includeDone: true, status: ["waiting"] }).items).toEqual([]);
   expect(service.listTasks({ appId: "alpha", includeDone: true, status: ["done"] }).items).toHaveLength(1);
