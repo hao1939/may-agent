@@ -307,7 +307,10 @@ a method creates no wake and does not satisfy a review or approval Condition.
 Reuse the exact action if its acknowledgment is lost within this attempt.
 A new attempt may make the same choice again. If you reconsider within the
 attempt, use a new reason; replaying an older action must not undo a later
-choice. Keep error and repair evidence even when returning to the procedure.
+choice. Submit one choice at a time. Once a live choice is admitted, a later
+failure or interruption does not undo it; a choice only proposed in a rejected
+final result has not taken effect. Keep error and repair evidence even when
+returning to the procedure.
 
 ### Finish the repair's feedback
 

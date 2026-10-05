@@ -24,7 +24,7 @@ return routine work to its configured workflow when appropriate.
 
 ## Source and fixture observations
 
-Host candidate: `02b64fbb2fd40d6afdfb139b137b0dd6ba11fb45`, branch
+Host candidate: `7d697f3dced9cf908ca3f885fb89d45b86058c8a`, [PR #344](https://github.com/hao1939/may-agent/pull/344), branch
 `fix/task-execution-selection-20261005`, based on `285100b18`.
 App companion: branch `fix/selector-execution-choice-20261005`, based on
 `e4c882d0d2`. The companion includes the owning contracts, evaluator guidance
@@ -54,6 +54,15 @@ convergence without handback, unavailable selected agents, and final `needs-agen
 precedence over an earlier live choice. Normal runtime tests cover both final-only
 and live-plus-final actions. The selector regression checks that a catalog timeout
 remains an error and subsequent successful selection preserves DeepSeek routing.
+
+Further admission review reproduced a conflict hidden by replay filtering:
+after a live procedure choice, a batch repeating that choice and also selecting
+the agent was incorrectly accepted. Shared live/final admission now rejects
+multiple choices before replay filtering. The regression failed before the fix
+and passed afterward. Interruption trials also retained both possible live
+choices across Task-store reopen and ordinary recovery, without answering the
+original input or accepting later stale actions. The SDK and durable-retry
+suite passed 71 tests on the revised candidate.
 
 ## Reproduction and limits
 

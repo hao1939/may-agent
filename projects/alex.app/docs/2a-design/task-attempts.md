@@ -288,6 +288,8 @@ next attempt as `previousAttempt.executionSelection`. The next claim records
 the chosen handler. Its later failure can enter agent recovery again. A
 specification revision selects afresh; stale attempts cannot redirect it.
 There is no recovery-mode record or secondary Task lifecycle.
+An admitted live choice survives later execution failure or interruption.
+A choice proposed only in a rejected final result has not been admitted.
 
 Omission retains the existing selection rule: a failed procedure hands off to
 an available responsible agent, and subsequent attempts remain with that agent
@@ -301,9 +303,10 @@ Identical selection actions are idempotent within their originating attempt;
 the same choice in a later recovery is a new decision. Live and final replays
 share the receipt. Distinct decisions may replace the next method before
 settlement; replaying an old decision cannot overwrite a newer admitted one.
-Use a fresh reason for a reconsidered decision. A batch cannot contain
-competing selections. Selection and its receipt commit atomically; failed
-settlement rolls them back together. An intentional choice of agent execution
+Use a fresh reason for a reconsidered decision. Each submission must contain
+at most one choice, including replayed actions. Selection and its receipt commit
+atomically. A rejected final settlement admits no new choice and leaves earlier
+live admissions intact. An intentional choice of agent execution
 is not counted as an unexpected procedure failover. The existing workflow
 `needs-agent` result is a final agent choice with immediate continuation and
 supersedes an earlier live execution selection.
