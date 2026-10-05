@@ -51,6 +51,38 @@ one opening transition, followed by one recovery when the condition clears.
 Manual alerts and administrative closure are explicit operations, described
 below, rather than samples disguised as state changes.
 
+### Routine checks are sampled activity
+
+A check that finds nothing to do is still measurable activity. Record a bounded
+counter by outcome, then save interval samples through the existing metric store.
+Do not publish a Task event for each skipped check or use the Event journal as a
+raw counter. Agents and code follow the same rule: repeated observations update
+measurement evidence; requests and material changes retain their own identities.
+
+For Task routing, the Host records `task.skipped-check-count`: checks that did
+not claim an attempt since the previous successful sample. `sampleSize` is all
+reported checks, including claimed ones. The sample note contains the actual
+window and counts for `waiting`, `busy`, `attention`, `completed`, and `claimed`.
+There are no per-Task metric labels. The Task remains the authority for its
+current Conditions and required work; samples describe activity across Tasks.
+
+Private workers return their counts through their existing result channel. The
+Host's existing sampler saves one observation per interval, five minutes by
+default, including zero activity. It clears the counters only after that write
+succeeds. These are best-effort activity samples: a lost worker or Host restart
+may lose unsampled counts, and a long-running worker reports at completion.
+They are not an exact audit or proof that all work is healthy. Missing samples
+remain missing evidence; a saved zero means no checks reported in that window.
+
+No skip-count alert is enabled by default. Waiting and busy checks are often
+correct. Evaluate frequency, the skipped share, actual sample duration and
+progress before selecting a useful rule. App declarations own that calibration;
+only breach/recovery transitions from the metric service trigger the declared
+review route. Samples themselves do not wake the evaluator. This reuses metric
+collection and evaluation, with no new scheduler or review mechanism.
+
+**Source availability:** Host PR #338; deployment verification remains separate.
+
 Sample time and transition time have different meanings. A late observation
 keeps its original measurement time. Evaluation captures its decision time only
 after acquiring the write transaction, alongside the current evidence and alert

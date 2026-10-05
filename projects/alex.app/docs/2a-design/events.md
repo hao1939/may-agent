@@ -480,7 +480,12 @@ diagnostic does not settle the originating publication: the original required
 event remains accountable, and subscriber failure metrics still count the diagnostic.
 Mark producer intent rather than adding names to a metric exclusion list.
 
-Routine checks that find no new work produce debug diagnostics, not Task events.
+Routine checks that find no new work update bounded activity counters. The
+existing sampler retains totals, reasons and the observation window in metric
+samples; a check does not create a Task event. Metric calculation and
+breach/recovery notifications remain separate from sampling. See
+[routine check measurement](metrics.md#routine-checks-are-sampled-activity).
+Actual recovery transitions and durable failures still retain their evidence.
 An observer reports a new or changed failure after durable publication, then keeps
 refreshing its current health on repeated checks. A successful run clears that
 failure episode; recurrence is reportable again. Failed publication retries on the
