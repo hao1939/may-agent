@@ -1045,7 +1045,7 @@ describe("Telegram May input", () => {
         1,
         "evaluation",
       ),
-    ).toContain("<b>Needs you for evaluation</b>\n\n🔴 <b>Approve or reject deployment.</b>");
+    ).toContain("<b>Needs you for evaluation</b>\n\n🔴 <b>Action: Approve or reject deployment.</b>");
     const recurringTodos = renderTelegramTodos([
       {
         ...task,
@@ -1067,7 +1067,7 @@ describe("Telegram May input", () => {
           humanAction: { requestedAction: "Approve <this> & that." },
         },
       ]),
-    ).toContain("<b>Approve &lt;this&gt; &amp; that.</b>\n  Review &lt;unsafe&gt; &amp; confirm");
+    ).toContain("<b>Action: Approve &lt;this&gt; &amp; that.</b>\n  Purpose: Review &lt;unsafe&gt; &amp; confirm");
     expect(
       renderTelegramTodos(
         [{ ...task, status: "waiting", humanAction: { requestedAction: "Provide the rollout window." } }],
@@ -1690,9 +1690,9 @@ describe("Telegram May input", () => {
         "Exact proposal: apply the reviewed docs candidate at commit 01234567; cost is one restart; simpler option is no change.";
       const approvalCards = sent.filter((text) => text.includes(exactProposal));
       expect(approvalCards).toHaveLength(2);
-      const decisionCards = approvalCards.filter((text) => text.includes("Needs your decision:"));
+      const decisionCards = approvalCards.filter((text) => text.includes("Decision needed"));
       expect(decisionCards.length).toBeGreaterThan(0);
-      expect(decisionCards.every((text) => text.includes("Reply here with your decision."))).toBe(true);
+      expect(decisionCards.every((text) => text.includes("How to respond"))).toBe(true);
       const boundCards = getDb(root)
         .prepare("SELECT data FROM notification_messages WHERE event_type = 'task.human-action'")
         .all() as Array<{ data: string }>;
