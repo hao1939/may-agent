@@ -105,6 +105,37 @@ describe("App Task read tool", () => {
     expect(task.facts).toEqual([body]);
   });
 
+  it("preserves astral characters at and across the preview boundary", async () => {
+    const cases = [
+      { text: "😀".repeat(121), preview: "😀".repeat(121) },
+      { text: "😀".repeat(240), preview: "😀".repeat(240) },
+      { text: "😀".repeat(241), preview: `${"😀".repeat(239)}…` },
+      { text: `${"a".repeat(238)}😀zz`, preview: `${"a".repeat(238)}😀…` },
+    ];
+    const tool = createAppTaskReadTool({
+      bus: new EventBus(),
+      appId: () => "sample",
+      reader: {
+        list: () => ({
+          items: cases.map(({ text }, i) => ({
+            id: String(i),
+            status: "running" as const,
+            generation: 1,
+            outcome: text,
+            summary: text,
+          })),
+        }),
+        get: () => null,
+      },
+    });
+    const page = text(await tool.execute("unicode-list", { action: "list" })) as {
+      items: Array<{ outcomePreview: string; summaryPreview: string }>;
+    };
+    expect(page.items.map(({ outcomePreview, summaryPreview }) => [outcomePreview, summaryPreview])).toEqual(
+      cases.map(({ preview }) => [preview, preview]),
+    );
+  });
+
   it("requires an exact task for outcome reads and preserves the reader's report", async () => {
     let requestedProjection: TaskOutcomeProjection | undefined;
     const tool = createAppTaskReadTool({

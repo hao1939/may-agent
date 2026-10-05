@@ -57,7 +57,8 @@ const parameters = Type.Object(
       Type.Integer({
         minimum: 1,
         maximum: 100,
-        description: "For list: page size, default 20. Returns previews; use get for full requirements and evidence.",
+        description:
+          "For list: page size, default 20. Returns previews; use get for full requirements and current results, with acceptedEvidence to read accepted-attempt history.",
       }),
     ),
     cursor: Type.Optional(Type.String({ minLength: 1 })),
@@ -97,7 +98,10 @@ const parameters = Type.Object(
           limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 8 })),
           cursor: Type.Optional(Type.String({ minLength: 1 })),
         },
-        { additionalProperties: false },
+        {
+          additionalProperties: false,
+          description: "For get: opt in to a bounded page of accepted-attempt history. Follow its nextCursor for more.",
+        },
       ),
     ),
     inputId: Type.Optional(Type.String({ minLength: 1 })),
@@ -149,11 +153,18 @@ function result(value: unknown): AgentToolResult<undefined> {
 
 /** Discovery is navigation, not evidence for accepting or revising an assignment. */
 function discoveryPage(page: TaskPage) {
-  const preview = (value: string) => (value.length <= 240 ? value : `${value.slice(0, 239)}…`);
+  const preview = (value: string) => {
+    const characters: string[] = [];
+    for (const character of value) {
+      characters.push(character);
+      if (characters.length > 240) return `${characters.slice(0, 239).join("")}…`;
+    }
+    return value;
+  };
   return {
     projection: "discovery",
     detailHint:
-      "Previews may be shortened. Use get with an exact Task id for full requirements, results and evidence before reusing or changing work.",
+      "Previews may be shortened. Use get with an exact Task id for full requirements and current results before reusing or changing work. Accepted-attempt history is opt-in: add acceptedEvidence, then follow its nextCursor as needed.",
     items: page.items.map(({ id, closed, status, generation, outcome, summary }) => ({
       id,
       ...(closed === undefined ? {} : { closed }),
