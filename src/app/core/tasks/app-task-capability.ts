@@ -34,8 +34,7 @@ import {
   previewLoadedCanonicalAppTaskEvent,
   previewLoadedCanonicalAppTaskEventRoutes,
   readLoadedAppTaskView,
-  readLoadedAppTaskInputResult,
-  readLoadedAppTaskInputClosure,
+  readLoadedAppTaskContext,
   retryLoadedFailedAppTask,
   stopLoadedConversationTurn,
   wakeLoadedAppTasks,
@@ -155,16 +154,12 @@ export function createAppTaskCapability(options: {
       // Admission outcomes and closures outlive executable App definitions.
       // Read existing authority only; never bootstrap or enable an absent App.
       const db = options.db ?? (options.runtime?.persistDir ? getDb(options.runtime.persistDir) : undefined);
-      const resourceStore = appId && db ? AppTaskResourceStore.activeFromDb(db, appId) : null;
+      const resourceStore = readLoadedAppTaskContext({ bus: options.bus, appId, appDir })?.resourceStore
+        ?? (appId && db ? AppTaskResourceStore.activeFromDb(db, appId) : null);
       if (admissionKey) {
         const accepted = resourceStore
           ? readAppTaskAdmissionOutcome({ resourceStore }, dependency.id, admissionKey)
-          : appDir ? readLoadedAppTaskInputResult({
-              bus: options.bus,
-              appDir,
-              taskId: dependency.id,
-              admissionKey,
-            }) : null;
+          : null;
         if (accepted)
           return {
             kind: "task",
@@ -176,9 +171,7 @@ export function createAppTaskCapability(options: {
             result: accepted.result,
             facts: accepted.facts,
           };
-        const closure = resourceStore
-          ? resourceStore.readAdmissionCancellation(dependency.id, admissionKey)
-          : appDir ? readLoadedAppTaskInputClosure({ bus: options.bus, appDir, taskId: dependency.id, admissionKey }) : null;
+        const closure = resourceStore?.readAdmissionCancellation(dependency.id, admissionKey);
         if (closure) return {
           kind: "task", id: dependency.id, status: "attention", closed: true,
           summary: "The Task closed without an accepted outcome for this input", facts: closure.facts,
@@ -186,13 +179,7 @@ export function createAppTaskCapability(options: {
         // A later cycle or an unrelated retained wait cannot answer this input.
         const report = resourceStore
           ? readAppTaskAdmissionOutcome({ resourceStore }, dependency.id, admissionKey, "report")
-          : appDir ? readLoadedAppTaskInputResult({
-              bus: options.bus,
-              appDir,
-              taskId: dependency.id,
-              admissionKey,
-              kind: "report",
-            }) : null;
+          : null;
         // An unavailable target is not ordinary pending work. Independently
         // retained exact answers/reports above remain readable without it.
         const retainedAdmission = resourceStore?.readTaskContext({ taskIds: [], admissionIds: [admissionKey] })

@@ -995,11 +995,16 @@ export function readLoadedAppTaskInputClosure(input: { bus: EventBus; appDir: st
   return readableAppTaskContext(input.bus, input.appDir)?.resourceStore.readAdmissionCancellation(input.taskId, input.admissionKey) ?? null;
 }
 
-/** Read the stable task projection for an inbox dependency after any restart. */
-export function readLoadedAppTaskView(input: { bus: EventBus; appId?: string; appDir?: string; taskId: string }): TaskDetail | null {
-  const config = input.appId
+/** Host-private read authority; resolving it never installs an App. */
+export function readLoadedAppTaskContext(input: { bus: EventBus; appId?: string; appDir?: string }): AppTaskContext | null {
+  return input.appId
     ? readableAppTaskContextById(input.bus, input.appId)
     : input.appDir ? readableAppTaskContext(input.bus, input.appDir) : null;
+}
+
+/** Read the stable task projection for an inbox dependency after any restart. */
+export function readLoadedAppTaskView(input: { bus: EventBus; appId?: string; appDir?: string; taskId: string }): TaskDetail | null {
+  const config = readLoadedAppTaskContext(input);
   return config ? readRuntimeTaskView({ taskStateConfig: config }, input.taskId) : null;
 }
 

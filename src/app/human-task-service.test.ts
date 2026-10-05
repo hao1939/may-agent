@@ -326,9 +326,6 @@ test("exact diagnostics preserve bounded Conditions and dependency states withou
   );
   // An unrelated corrupt payload must not enter an exact read.
   db.prepare("UPDATE app_tasks SET resource_json = 'invalid' WHERE app_id = 'other'").run();
-  // Eligibility polling must not evict actual attempts from the work history.
-  const skip = db.prepare("INSERT INTO events(event_type, source, owner, project_id, task_id, timestamp, data) VALUES ('project.task.reconcile.skipped', 'test', 'test', 'alpha', 'work', ?, '{}')");
-  for (let n = 0; n < 40; n++) skip.run(200 + n);
   const service = new HumanTaskService(db, registry("alpha"));
   const detail = service.getTask({ appId: "alpha", taskId: "work" })!;
   expect(detail.diagnostics).toMatchObject({
@@ -365,11 +362,20 @@ test("history is exact, indexed, bounded, and never a substitute for terminal au
     event.run("alpha", "work", n, JSON.stringify({ generation: 1, disposition: "converged", summary: `old-${n}` }));
   event.run("other", "work", 100, "{}");
   event.run("alpha", "event-only", 101, '{"disposition":"converged"}');
+  // Each skipped poll also publishes timing without an attempt. Neither may
+  // evict actual work; timing that belongs to an attempt remains evidence.
+  const observation = db.prepare("INSERT INTO events(event_type, source, owner, project_id, task_id, timestamp, attempt_id, data) VALUES (?, 'test', 'test', 'alpha', 'work', ?, ?, '{}')");
+  observation.run("project.task.reconcile.profiled", 102, "old-attempt");
+  for (let n = 0; n < 40; n++) {
+    observation.run("project.task.reconcile.skipped", 200 + n * 2, null);
+    observation.run("project.task.reconcile.profiled", 201 + n * 2, null);
+  }
   const service = new HumanTaskService(db, registry("alpha"));
   const detail = service.getTask({ appId: "alpha", taskId: "work" })!;
   expect(detail).toMatchObject({ status: "pending", terminal: false, historyTruncated: true });
   expect(detail.history).toHaveLength(20);
-  expect(detail.history![0]).toMatchObject({ summary: "old-24", generation: 1, attemptId: "old-attempt" });
+  expect(detail.history![0]).toMatchObject({ eventType: "project.task.reconcile.profiled", attemptId: "old-attempt" });
+  expect(detail.history![1]).toMatchObject({ summary: "old-24", generation: 1, attemptId: "old-attempt" });
   expect(service.getTask({ appId: "alpha", taskId: "event-only" })).toBeNull();
   const plan = db
     .prepare(

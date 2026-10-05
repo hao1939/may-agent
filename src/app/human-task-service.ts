@@ -939,6 +939,7 @@ function taskHistory(
         `SELECT id, event_type, timestamp, attempt_id, handler, data FROM events
       WHERE project_id = ? AND task_id = ? AND event_type LIKE 'project.task.%'
         AND event_type <> 'project.task.reconcile.skipped'
+        AND NOT (event_type = 'project.task.reconcile.profiled' AND attempt_id IS NULL)
       ORDER BY timestamp DESC, id DESC LIMIT ?`,
       )
       .all(appId, taskId, TASK_HISTORY_LIMIT + 1) as Array<{
