@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { spawn } from "node:child_process";
+import { spawnFixtureProcess } from "../fixtures/owned-process.js";
 import { once } from "node:events";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { createServer, type Socket } from "node:net";
@@ -69,9 +70,8 @@ async function fixture(
           env: { ...process.env, STATE_DIR: root, DAEMON_INSTANCE: "text-test", AGENT: "may", CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", DAEMON_AGENT: "may" },
           stdio: "pipe",
         })
-      : spawn("bun", [resolve(import.meta.dir, "../../src/app/http/server.ts"), "--state-dir", root, "--port", "0"], {
+      : spawnFixtureProcess([resolve(import.meta.dir, "../../src/app/http/server.ts"), "--state-dir", root, "--port", "0"], {
           cwd: root,
-          stdio: "pipe",
           env: {
             ...process.env,
             PROJECT_ROOT: root,

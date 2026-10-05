@@ -1,4 +1,4 @@
-// Loaded only by the test launcher. The runner holds stdin open; its death
+// Loaded only by the shared fixture launcher. The runner holds stdin open; its death
 // closes the pipe even when afterAll/finally cannot run. Production has no hook.
 process.stdin.resume();
 process.stdin.once("end", () => {
