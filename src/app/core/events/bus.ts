@@ -1063,6 +1063,8 @@ export type DeliveryResult = {
   by: string;
   route?: DeliveryRoute;
   note?: string;
+  /** The App route inspected and durably settled its independent admission obligation. */
+  appAdmission?: true;
 };
 export type SubscriberResult = DeliveryResult | void;
 export type Subscriber = (event: AgentEvent) => SubscriberResult;
@@ -1087,6 +1089,8 @@ type EventListenerState = {
 export const EVENT_ROW_ID = Symbol.for("may-agent.eventRowId");
 export const EVENT_DEDUPLICATED = Symbol.for("may-agent.eventDeduplicated");
 export const EVENT_REDELIVERY_REQUIRED = Symbol.for("may-agent.eventRedeliveryRequired");
+/** Limits a producer retry to the independent App-admission durable route. */
+export const EVENT_APP_ADMISSION_REDELIVERY_REQUIRED = Symbol.for("may-agent.eventAppAdmissionRedeliveryRequired");
 
 // One listener notification per turn keeps socket polling responsive even
 // when several independent listeners have accumulated worker Event bursts.
@@ -1251,6 +1255,7 @@ export class EventBus {
   redeliverPersisted(
     input: AgentEvent,
     eventId: number,
+    durableRouteLabel?: string,
   ): AgentEvent & {
     [EVENT_ROW_ID]?: number;
     [EVENT_DELIVERY_RESULT]?: DeliveryResult;
@@ -1262,7 +1267,7 @@ export class EventBus {
     Object.defineProperty(event, EVENT_ROW_ID, { value: eventId, configurable: true });
     Object.defineProperty(event, EVENT_DEDUPLICATED, { value: true, configurable: true });
     Object.defineProperty(event, EVENT_REDELIVERY_REQUIRED, { value: true, configurable: true });
-    return this.dispatch(event, false);
+    return this.dispatch(event, false, durableRouteLabel);
   }
 
   /**
@@ -1290,6 +1295,7 @@ export class EventBus {
   private dispatch(
     input: AgentEvent,
     persist: boolean,
+    durableRouteLabel?: string,
   ): AgentEvent & {
     [EVENT_ROW_ID]?: number;
     [EVENT_DELIVERY_RESULT]?: DeliveryResult;
@@ -1317,11 +1323,15 @@ export class EventBus {
       const retry = event as AgentEvent & {
         [EVENT_DEDUPLICATED]?: boolean;
         [EVENT_REDELIVERY_REQUIRED]?: boolean;
+        [EVENT_APP_ADMISSION_REDELIVERY_REQUIRED]?: boolean;
       };
       if (retry[EVENT_DEDUPLICATED] && !retry[EVENT_REDELIVERY_REQUIRED]) {
         return event as AgentEvent & { [EVENT_ROW_ID]?: number };
       }
       for (const fn of this.durableRouteSubscribers) {
+        const routeLabel = this.subscriberLabels.get(fn);
+        if (durableRouteLabel && routeLabel !== durableRouteLabel) continue;
+        if (retry[EVENT_APP_ADMISSION_REDELIVERY_REQUIRED] && routeLabel !== "app-inbox-route") continue;
         try {
           const result = normalizeDeliveryResult(this.runSubscriber(event, "first", fn));
           delivery = preferredDelivery(delivery, result);
@@ -1519,6 +1529,7 @@ function normalizeDeliveryResult(result: SubscriberResult): DeliveryResult | und
     by: result.by.trim(),
     ...(result.route ? { route: result.route } : {}),
     ...(result.note ? { note: result.note } : {}),
+    ...(result.appAdmission === true ? { appAdmission: true as const } : {}),
   };
 }
 
@@ -1527,8 +1538,13 @@ function preferredDelivery(
   candidate: DeliveryResult | undefined,
 ): DeliveryResult | undefined {
   if (!current) return candidate;
-  if (current.route === "noop" && candidate && candidate.route !== "noop") return candidate;
-  return current;
+  const preferred = current.route === "noop" && candidate && candidate.route !== "noop" ? candidate : current;
+  // Receipt provenance has one preferred route, but independent App settlement
+  // must survive whichever accepted route supplied that receipt.
+  if ((current.appAdmission === true || candidate?.appAdmission === true) && preferred.appAdmission !== true) {
+    return { ...preferred, appAdmission: true };
+  }
+  return preferred;
 }
 
 function pairTrackerFallback(event: AgentEvent): DeliveryResult | undefined {

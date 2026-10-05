@@ -1870,6 +1870,28 @@ test("recovery scopes report lookups to linked Tasks without changing legacy JSO
   // Historical self-subscriptions must be excluded before their attempt bodies
   // are materialized, not just discarded after interpreting all their history.
   linkConversationTopicTask(f.db, topic.id, app.id, input.taskId);
+  // This worker has history and a real link, but its only Conversation is closed.
+  const closedInput = admitConversationTaskInput(f.context(), {
+    ...f.input("closed-input"), conversationId: "closed-chat",
+  });
+  completeConversationTaskTurn(f.context(), f.claim(closedInput.taskId), decision);
+  const closedTopic = readAppConversationResource(f.db, app.id, "closed-chat").topics[0]!;
+  observeAppTaskIntent(f.context(), {
+    appAgent: app.id,
+    intent: { id: "closed-only", parentId: "root", outcome: "Historical measurement", acceptance: ["Measured"] },
+  });
+  completeAppTask(f.context(), f.claim("closed-only"), { summary: "Measured", result: { value: 17 } });
+  linkConversationTopicTask(f.db, closedTopic.id, app.id, "closed-only");
+  const closedOwner = f.store.readTask(closedInput.taskId)!;
+  cancelAppTask(f.context(), {
+    appId: app.id,
+    taskId: closedInput.taskId,
+    expectedGeneration: closedOwner.metadata.generation,
+    expectedResourceVersion: closedOwner.metadata.resourceVersion,
+    decision: "app-policy",
+    reason: "Conversation retired",
+  });
+  expect(listConversationTaskLinks(f.db, app.id, "closed-only")).toHaveLength(1);
   admitTaskInput(f.context(), {
     appId: app.id,
     idempotencyKey: "measurement",
