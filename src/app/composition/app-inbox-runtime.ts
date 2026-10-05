@@ -112,7 +112,7 @@ export type StartAppInboxRuntimeOptions = {
   previewTaskEventRoutes?: (input: { event: AgentEvent }) => Array<{ appId: string; taskIds: string[] }>;
   readDependency?: (input: {
     appId: string;
-    appDir: string;
+    appDir?: string;
     dependency: { kind: "task"; id: string };
     admissionKey?: string;
   }) => Promise<AppDependencyObservation | null>;
@@ -339,8 +339,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     readDependency: options.readDependency
       ? async (input) => {
           const appDir = appDirById.get(input.appId);
-          if (!appDir) return null;
-          return options.readDependency!({ ...input, appDir });
+          return options.readDependency!({ ...input, ...(appDir ? { appDir } : {}) });
         }
       : undefined,
     now: options.now,

@@ -1185,3 +1185,18 @@ test("finish preflight and settlement share the communication limit after adding
     await f.close();
   }
 });
+
+test("loaded dependency reads resolve exact answers by App identity without an App path or injected database", async () => {
+  const f = await fixture(async () => ({ state: "converged", summary: "The requested work is done", facts: [] }));
+  try {
+    f.admit("identity-only");
+    await f.run();
+    const item = f.inbox.host.get("identity-only")!;
+    const capability = createAppTaskCapability({ bus: f.bus });
+    expect(await capability.readDependency({
+      appId: "sample", dependency: { kind: "task", id: "work" }, admissionKey: item.taskAdmissionKey,
+    })).toMatchObject({ status: "done", summary: "The requested work is done" });
+  } finally {
+    await f.close();
+  }
+});
