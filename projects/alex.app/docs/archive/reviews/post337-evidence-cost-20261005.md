@@ -108,3 +108,11 @@ daemon. Cleanup identity is published before readiness, and the outer test waits
 separately for the startup result. Real trials cover killing the helper, closing
 its parent pipe, and failed startup with removal of the temporary root. These
 are test-harness refinements and add no production supervision mechanism.
+
+Full CI passed on the reviewed candidates: `d15cf4631` ([#339](https://github.com/hao1939/may-agent/pull/339))
+with 3,590 passing tests, `027db6141` ([#341](https://github.com/hao1939/may-agent/pull/341))
+with 3,591, and `7e9252576` ([#342](https://github.com/hao1939/may-agent/pull/342),
+the #340 test follow-up) with 3,588. Each skipped the three installation-only
+checks and had zero failures. All five original review discussions have fix
+references and are resolved; the open source candidates still need merge and
+activation. Local review logs are in `/app/.state/review339-341-20261005/`.
