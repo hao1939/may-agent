@@ -72,6 +72,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ### 2026-10-05
 
+- [Context preservation and model visibility are different guarantees](./findings/2026-10-05-cosh-context-preservation-vs-model-view.md) — pinned Cosh inspection separates append-only source history from compacted model views and recoverable omitted payloads; static code and scripted fixtures were inspected, but the application and tests were not run.
 - [A personal agent system should be ported, not blindly installed](./findings/2026-10-05-homestead-personal-agent-portability.md) — pinned Homestead inspection exposes host, connector, ownership, and operator-policy coupling; the public mirror has not been installed fresh or independently run.
 
 ### 2026-10-04
