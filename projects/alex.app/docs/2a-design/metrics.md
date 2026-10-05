@@ -53,33 +53,61 @@ below, rather than samples disguised as state changes.
 
 ### Routine checks are sampled activity
 
-A check that finds nothing to do is still measurable activity. Record a bounded
-counter by outcome, then save interval samples through the existing metric store.
-Do not publish a Task event for each skipped check or use the Event journal as a
-raw counter. Agents and code follow the same rule: repeated observations update
-measurement evidence; requests and material changes retain their own identities.
+The question is **how often Task routing returns without claiming an attempt**.
+A skipped check can preserve a valid wait, notice another active owner, or
+recover a missed fact. Its label is not a judgment of waste or a measure of
+progress. Apps judge usefulness against the Task's requirements and evidence.
 
-For Task routing, the Host records `task.skipped-check-count`: checks that did
-not claim an attempt since the previous successful sample. `sampleSize` is all
-reported checks, including claimed ones. The sample note contains the actual
-window and counts for `waiting`, `busy`, `attention`, `completed`, and `claimed`.
-There are no per-Task metric labels. The Task remains the authority for its
-current Conditions and required work; samples describe activity across Tasks.
+Keep activity in bounded counters and interval samples, with no Task event per
+check. Host metric `task.skipped-check-rate` records:
 
-Private workers return their counts through their existing result channel. The
-Host's existing sampler saves one observation per interval, five minutes by
-default, including zero activity. It clears the counters only after that write
-succeeds. These are best-effort activity samples: a lost worker or Host restart
-may lose unsampled counts, and a long-running worker reports at completion.
-They are not an exact audit or proof that all work is healthy. Missing samples
-remain missing evidence; a saved zero means no checks reported in that window.
+```text
+skipped checks × 60,000 / elapsed milliseconds since the last successful sample
+```
 
-No skip-count alert is enabled by default. Waiting and busy checks are often
-correct. Evaluate frequency, the skipped share, actual sample duration and
-progress before selecting a useful rule. App declarations own that calibration;
-only breach/recovery transitions from the metric service trigger the declared
-review route. Samples themselves do not wake the evaluator. This reuses metric
-collection and evaluation, with no new scheduler or review mechanism.
+Its unit is **checks/minute**. The actual duration matters: 100 checks in five
+minutes and 300 checks in fifteen minutes both mean 20 checks/minute. Delayed
+collection must not manufacture an apparent rise in activity. An interval with
+no elapsed time leaves counters pending; it does not invent a zero or a rate.
+
+| Retained evidence | Meaning and use |
+| --- | --- |
+| Rate and actual observation window | Compare checking frequency across samples with different durations. |
+| Raw counts by `waiting`, `busy`, `attention`, `completed`, and `claimed` | Explain routing decisions. These labels describe individual checks, not mutually exclusive Task attributes. |
+| `sampleSize` | All reported checks, including claims. It is not a success, useful-work, or progress denominator. |
+| Up to three recent distinct `{appId, taskId, outcome}` references | Let Evaluation reread exact Tasks and their Conditions, inputs and results. These are recent examples, not a ranking of offenders. Omission is explicit. |
+| Calculation rule and calculated value | Show whether a raw spike differs from the smoothed value behind an alert. The evidence reader reuses the metric calculator at its end-exclusive cut. |
+
+The worker returns counters and bounded references with its existing result.
+The Host samples every five minutes by default and clears them only after a
+successful write. Repeated checks do not cause database writes or Event delivery.
+A failed sample keeps the counts and original start time for the next pass.
+Saved zero means no checks reported in that interval. Missing samples remain
+missing evidence. Restart or worker loss can lose unsampled activity, and a
+long-running worker reports at completion. This is best-effort activity
+measurement, not an exact audit or real-time worker occupancy measurement.
+
+**Review policy belongs to Apps.** Start by comparing representative Tasks and
+workload, plus existing SQL time, interface latency, execution effort and outcome
+evidence. A large rate alone does not establish costly work, token waste or
+stalled progress. Many healthy waits can explain it. A high skipped share can
+also be correct; claiming more attempts is not an optimization target.
+
+When calibration is justified, use the existing metric calculation and alert
+configuration. A 30-minute mean with at least three samples is a starting
+experiment, not a required setting. It is a mean of observed interval rates,
+not a time-weighted total across arbitrary gaps. Choose the threshold from
+observed workload and acceptable cost; confirm both an expected busy period and
+an abnormal pattern before enabling it. Collection gaps cannot prove recovery.
+
+Sampling stays quiet. The declared breach/recovery route requests Evaluation,
+whose report supports May's decision about worthwhile investigation or no change.
+The existing daily selector can review changed or missing evidence; it is not a
+promise to select an unchanged high rate. After deployment, use one explicit
+metric review to establish the baseline and choose calibration. No skip-rate
+alert is enabled in the Host, and this observation alone does not claim to close
+automatic oversight. Reuse existing Task work and review dispositions rather than
+creating an investigation for each sample.
 
 **Source availability:** Host PR #338; deployment verification remains separate.
 

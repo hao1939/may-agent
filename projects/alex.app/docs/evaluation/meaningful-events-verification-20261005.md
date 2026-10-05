@@ -8,7 +8,9 @@ provider results. They make no model calls and do not change live Task state.
 | Contract | Result |
 | --- | --- |
 | Quiet Task checks preserve recovery | The indexed scheduler recovers the exact missed answer and invokes its owner once; repeated pending checks invoke no agent and emit no Task update. |
-| Checks remain measurable | Interval samples retain skipped and total checks, with bounded outcome counts. Worker results carry counters back to the Host without additional events. Sampling and breach/recovery evaluation remain separate. |
+| Checks remain measurable | 1,002 reported checks produce one sample: 1,001 skips in five minutes = 200.2 checks/minute, with raw counts and three exact recent Task references. Worker results carry this evidence without additional events. |
+| Collection delay does not fabricate a regression | 100 checks in five minutes and 300 checks in fifteen minutes both report 20 checks/minute. With no elapsed interval, counts stay pending. |
+| Alert evidence explains the decision | With an illustrative App-owned 30-minute mean and minimum three samples, a single spike causes no breach; sustained activity causes one breach and later zero samples produce one recovery. The evidence read returns both raw samples and the calculated value at its cut. |
 | XHS observes open demand | Three scans without a wait perform zero browser probes. Three unchanged blocked polls add no new observation. |
 | A new wait can use the same external value | After one ready wait completes, a second wait for the same XHS resource receives fresh ready evidence and becomes runnable. The human login action remains attached to the Condition. |
 | Failure reports describe changes | Three identical failures produce one notification. A changed error produces another. Success clears current health; recurrence is reported again. A failed publication, including one without a durable receipt, retries. |
@@ -26,7 +28,7 @@ covering retained evidence identity, metric episode identity, ordinary selection
 source publication and browser access. Design integrity and example checks pass.
 
 Deployment verification should compare new events after activation: quiet checks
-should stop generating Task records and appear in `task.skipped-check-count`
+should stop generating Task records and appear in `task.skipped-check-rate`
 samples instead; XHS facts should correspond to open demand;
 real failed publication and provider error evidence must remain visible. Old
 records remain historical evidence. The separate durable-admission recovery fix
@@ -35,4 +37,9 @@ still owns retrying a publication that failed to reach its consumer.
 Check counters are best-effort activity evidence, not an exact execution audit.
 Long-running workers report at completion; lost workers or a Host restart can
 lose unsampled counts. Failed sample persistence retains counters for the next
-ordinary pass. No skip-count alert is enabled before App-owned calibration.
+ordinary pass. No skip-rate alert is enabled before App-owned calibration.
+
+These trials establish accounting, quiet sampling and configured transition
+behavior; they do not establish that any skip rate is wasteful or select a
+production threshold. The first deployed review should compare exact Tasks,
+workload and measured effort, using the existing Evaluation workflow.

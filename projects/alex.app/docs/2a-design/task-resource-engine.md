@@ -562,8 +562,9 @@ continuation or explicit `reviewAt`, the worker re-arms the recovery index and
 returns without calling the agent, adding an attempt or changing observation
 timestamps. Quiet checks update bounded counters sampled through the existing
 metrics path, rather than `reconcile.skipped` events or no-attempt timing rows.
-Samples retain the interval, skip reasons and total checks; they do not wake
-an agent. See [routine check measurement](metrics.md#routine-checks-are-sampled-activity).
+The rate uses the actual interval. Samples retain raw reasons and total checks,
+plus a few exact Task references for inspection; they do not wake an agent or
+judge useful progress. See [routine check measurement](metrics.md#routine-checks-are-sampled-activity).
 Real attempts retain timing evidence; actual recovery
 transitions retain their events. Storage failures retain retryable recovery work.
 

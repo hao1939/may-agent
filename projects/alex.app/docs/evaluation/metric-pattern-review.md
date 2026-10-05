@@ -195,3 +195,17 @@ stop, metric-specific repair lifecycle or automatic reopening authority is added
 Deploy the reviewed Host evidence endpoint before activating the paired May and
 Evaluation definitions. Existing automatic-review settings govern scheduling and
 spend; source checks do not enable the feature in a running installation.
+
+## Routine activity measurements
+
+For Task checking frequency, read the actual sample duration, raw outcome counts
+and the bounded exact Task references. A skipped check can preserve a valid wait
+or recover state; a claim does not establish progress. Compare cost and accepted
+Task evidence before recommending an optimization. Recent references are leads,
+not a top-offender ranking. The Host evidence read supplies the existing
+calculation rule and its value at the pinned cut alongside raw samples, so a
+reviewer can distinguish a spike from the smoothed basis of an alert.
+
+The first baseline review can be assigned explicitly through `metric-review`.
+Daily selection and any later calibrated breach/recovery route reuse the same
+workflow and retained dispositions. The Host has no default skip-rate threshold.
