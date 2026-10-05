@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion to agent-runtime-unattended-execution-and-replay.md for workflow and control-plane recovery boundaries: host-owned durability, trace-compilation limits, deterministic recovery projections, and pause-versus-execution authority."
-triggers: ["AgentRun", "workflow DSL", "late settlement", "Hotpath", "trace compilation", "workflow drift", "Kiso", "recovery projection", "crash matrix", "LoopX", "hard lease", "agent pause", "lease retirement"]
-last_updated: "2026-10-01"
-source_basis: "Extracted intact from agent-runtime-unattended-execution-and-replay.md during its 2026-10-01 oversized-note review. Each section retains stable source links, pinned revisions, inspected implementation or repository-authored test evidence, and explicit execution limitations."
+summary: "Companion to agent-runtime-unattended-execution-and-replay.md for workflow and control-plane recovery boundaries: host-owned durability, trace-compilation limits, deterministic recovery projections, pause-versus-execution authority, and receipt-bound action selection."
+triggers: ["AgentRun", "workflow DSL", "late settlement", "Hotpath", "trace compilation", "workflow drift", "Kiso", "recovery projection", "crash matrix", "LoopX", "hard lease", "agent pause", "lease retirement", "host-owned turn", "action selection", "receipt binding"]
+last_updated: "2026-10-05"
+source_basis: "Extracted intact from agent-runtime-unattended-execution-and-replay.md during its 2026-10-01 oversized-note review, then extended with pinned LoopX evidence on host-owned Turn selection. Each section retains stable source links, pinned revisions, inspected implementation or repository-authored test evidence, and explicit execution limitations."
 </ai_context>
 
 # Agent Runtime Workflow and Control-Plane Recovery
@@ -197,3 +197,40 @@ provider.
 - **Inspected revision:** https://github.com/loopx-project/loopx/commit/ab83c672b9e11bb2cabb446bafeef838639472bb
 - **Primary sources:** [hard-lease lifecycle implementation](https://github.com/loopx-project/loopx/blob/ab83c672b9e11bb2cabb446bafeef838639472bb/loopx/control_plane/coordination/todo_blocked_lifecycle.ts), [atomic update integration](https://github.com/loopx-project/loopx/blob/ab83c672b9e11bb2cabb446bafeef838639472bb/loopx/control_plane/coordination/todo_update.ts), [admission checks](https://github.com/loopx-project/loopx/blob/ab83c672b9e11bb2cabb446bafeef838639472bb/loopx/control_plane/coordination/todo_update_admission.ts), [lifecycle contract](https://github.com/loopx-project/loopx/blob/ab83c672b9e11bb2cabb446bafeef838639472bb/docs/project-agent-todo-contract.md), and [file/SQLite tests](https://github.com/loopx-project/loopx/blob/ab83c672b9e11bb2cabb446bafeef838639472bb/tests/control_plane_ts/blocked_hard_lease_lifecycle.test.ts)
 - **Discovery query:** GitHub Repository Search API `topic:ai-agents pushed:>2026-09-24 stars:>10`, sorted by updated; `total_count: 726`, `incomplete_results: false`
+
+## A Host-Selected Action Must Be Admitted Before Its Receipt Is Bound — LoopX (GitHub, October 2026)
+
+A later LoopX revision extends typed Todo selection from its guided-start profiles to
+any host that supplies a Turn identity, including generic CLI, outer-controller, and
+native CLI profiles. The code does not treat `--todo-id` as authority merely because
+an orchestrator supplied it. It normalizes the request, projects the current policy
+and delivery boundary, and qualifies the requested Todo before binding the Turn's
+settlement receipt. A rejected first request therefore leaves no false receipt; an
+accepted request records the selected Todo with the same Turn identity used for
+replay and settlement.
+
+The order matters. Binding the receipt before admission would make an ineligible or
+capability-incompatible choice look durable, while ignoring host selection would let
+the control plane silently execute a different item. The implementation also keeps
+outer-controller settlement with the outer host, rejects a conflicting later Todo
+for the same Turn, and reuses the bound identity on replay. Project-authored tests
+cover those paths across `generic_cli`, `outer_controller`, and `codex_cli`; they also
+extend rejection, capability-readiness, and pre-bind qualification checks to a
+generic host profile.
+
+**Runtime rule:** treat a host's explicit work choice as a requested binding, not an
+execution grant. Route it through the same typed admission owner as automatic
+selection; only then commit the Turn-to-work receipt. On replay, preserve that exact
+identity; on conflict, fail instead of silently replacing either the host's choice or
+the admitted work. Keep settlement ownership explicit when an outer controller, not
+the inner agent, owns the Turn.
+
+Scout inspected the pinned commit patch, the complete action-selection module, its
+quota contract documentation, and the modified repository-authored tests. Scout did
+not clone the repository or execute the test suite, so this establishes implemented
+and authored-test intent, not deployed behavior or cross-process linearizability.
+
+- **Repo:** https://github.com/loopx-project/loopx
+- **Inspected revision:** https://github.com/loopx-project/loopx/commit/04b0a04eba135661870cc4c2c59d17862c16c55c
+- **Primary sources:** [host-owned selection implementation](https://github.com/loopx-project/loopx/blob/04b0a04eba135661870cc4c2c59d17862c16c55c/loopx/cli_commands/quota_action_selection.py), [quota allocation contract](https://github.com/loopx-project/loopx/blob/04b0a04eba135661870cc4c2c59d17862c16c55c/docs/quota-allocation.md), and [settlement CLI tests](https://github.com/loopx-project/loopx/blob/04b0a04eba135661870cc4c2c59d17862c16c55c/tests/control_plane/test_quota_settlement_cli.py)
+- **Discovery query:** GitHub Repository Search API `"AI agent" durable execution in:name,description,readme pushed:>=2026-09-01`, sorted by updated; `total_count: 9453`, `incomplete_results: false`

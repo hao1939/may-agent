@@ -1,14 +1,14 @@
 <ai_context>
-summary: "Agent browsers are separating into task-specific operating points and explicit action-safety contracts. Kitesurf trades compatibility and latency for disposable isolation; Safari MCP reuses a logged-in browser but needs session-scoped ownership; Public Browser v3 prevents ambiguous selectors and retired element references from silently retargeting actions, and reports an unobserved drag effect as unconfirmed rather than successful. Browser selection, target identity, state authority, and outcome confidence belong in the runtime—not in an undifferentiated browse tool."
-triggers: ["Kitesurf", "Safari MCP", "Public Browser", "agent-first browser", "V8 isolates", "Browser Run", "agent browser runtime", "Chromium alternative", "CDP", "disposable browser", "tab ownership", "authenticated browser", "stale ref", "strict selector", "unconfirmed action"]
-last_updated: "2026-09-24"
-source_basis: "HN items 49208393 and 49836880, Cloudflare's Kitesurf launch post, Safari MCP revision 5d28de6, and Public Browser v3.0.0 revision 99df536; performance claims remain project-authored rather than independent benchmarks."
+summary: "Agent browsers are separating into task-specific operating points and explicit state and action contracts. Kitesurf trades compatibility and latency for disposable isolation; Safari MCP reuses a logged-in browser but needs session-scoped ownership; Public Browser v3 makes target identity and outcome confidence explicit; an XHS analysis of agent-browser's delta snapshots highlights that compressed observations need revision checks, full-state fallback, and separate business-result verification."
+triggers: ["Kitesurf", "Safari MCP", "Public Browser", "agent-browser", "snapshot --delta", "baseRevision", "agent-first browser", "V8 isolates", "Browser Run", "agent browser runtime", "Chromium alternative", "CDP", "disposable browser", "tab ownership", "authenticated browser", "stale ref", "strict selector", "unconfirmed action"]
+last_updated: "2026-10-05"
+source_basis: "HN items 49208393 and 49836880, Cloudflare's Kitesurf launch post, Safari MCP revision 5d28de6, Public Browser v3.0.0 revision 99df536, and XHS post 6ac045d1000000001801201b discussing agent-browser v0.38.2; performance and implementation claims remain project- or author-authored rather than independently reproduced."
 </ai_context>
 
 # Agent Browsers Are Becoming Task-Specific Runtimes
 
 Date: 2026-08-07
-last_updated: 2026-09-24
+last_updated: 2026-10-05
 Source: https://news.ycombinator.com/item?id=49208393
 Source: https://blog.cloudflare.com/kitesurf/
 Tags: hn, agent-browser, browser-runtime, isolation, resource-efficiency, cdp, cloudflare-workers
@@ -105,8 +105,25 @@ This yields a reusable browser-action receipt with at least four fields: target 
 
 The release also reports a five-run, 30-task comparison against `agent-browser` with lower median tokens, cost, tool calls, and time. That benchmark is project-authored, runs on the project's own page, and has not been independently reproduced here. It does not establish general efficiency or correctness; the stronger signal is the source-visible distinction between ambiguous target, stale target, dispatched action, and observed effect.
 
+## 2026-10-05 XHS update: compressed observations need revision and outcome contracts
+
+Source: https://www.xiaohongshu.com/explore/6ac045d1000000001801201b  
+Repo named by source: https://github.com/vercel-labs/agent-browser  
+Version discussed by source: v0.38.2
+
+A current XHS post by Shanghai Jiao Tong University teacher Wang Shuo analyzes `agent-browser`'s `snapshot --delta` behavior as a state-synchronization protocol, not merely a token-saving switch. The post says the first observation returns a full accessibility-text tree and element metadata, while later observations can return unchanged, delta, or full-state responses. Its central warning is that compact element changes do not alone preserve checked state, input values, hierarchy, or order; the separate text-tree patch also matters.
+
+The post describes a receiver contract with four parts: retain the full baseline, verify `baseRevision`, apply both the element and tree patches, and advance the local revision. If the receiver has missed a revision, it should request a full snapshot rather than infer the gap. Changing the URL or observation options also changes the compared scope and causes a full response, so snapshots taken with different filters, depth, or selectors should not be spliced together.
+
+This extends the browser runtime's action contract upstream into an **observation continuity contract**. A compact update is trustworthy only relative to an identified baseline and observation scope. Tool traces should therefore distinguish full, unchanged, and delta responses; retain base and resulting revisions; and surface full-state resynchronization rather than silently accepting an out-of-sequence patch.
+
+The post also draws an important limit around “unchanged”: it means only that the compared text representation did not change. It does not establish that pixels, animation, hidden application state, or the business transaction stayed unchanged. Likewise, observing a checked box does not prove a form was accepted. Representation continuity and task-effect verification remain separate receipts.
+
+This scan read the XHS body and its empty comment section. It did not independently inspect or execute the named repository or reproduce v0.38.2 behavior, so the implementation details above remain a source-authored technical analysis rather than verified repository findings. The reusable conclusion is narrower: observation compression needs explicit baseline, scope, fallback, and outcome-verification semantics.
+
 ### Caveats
 
+- The XHS delta-snapshot analysis is author-authored and declares AI-generated content; the repository and named version were not independently inspected or executed in this scan.
 - Safari MCP is macOS-only, and its JavaScript-from-Apple-Events setup grants a powerful local automation path.
 - The repository's CPU, latency, and process-count comparisons are maintainer-reported; they were not independently reproduced in this scan.
 - Source and regression tests establish the intended guard design, not a formal proof that every Safari or extension race is eliminated.
