@@ -1068,6 +1068,38 @@ describe("scout-explore workflow prompt", () => {
       reason: "duplicate-link",
     },
     {
+      label: "shortcut-reference duplicate",
+      links:
+        "- [Inline](findings/rejected-index.md)\n- [finding]\n\n[finding]: findings/rejected-index.md\n",
+      reason: "duplicate-link",
+    },
+    {
+      label: "indented-code-only",
+      links: "    [Code](findings/rejected-index.md)\n",
+      reason: "missing-link",
+    },
+    {
+      label: "unclosed-fence-only",
+      links: "```md\n[Code](findings/rejected-index.md)\n",
+      reason: "missing-link",
+    },
+    {
+      label: "unclosed-comment-only",
+      links: "<!--\n[Hidden](findings/rejected-index.md)\n",
+      reason: "missing-link",
+    },
+    {
+      label: "escaped-link-only",
+      links: "\\[Escaped](findings/rejected-index.md)\n",
+      reason: "missing-link",
+    },
+    {
+      label: "first reference definition wins",
+      links:
+        "[Finding][target]\n\n[target]: elsewhere/rejected-index.md\n[target]: findings/rejected-index.md\n",
+      reason: "broken-link",
+    },
+    {
       label: "absolute candidate",
       links: "ABSOLUTE_CANDIDATE_LINK",
       reason: "broken-link",
