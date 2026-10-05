@@ -54,8 +54,11 @@ continuation token. Omitting status includes every phase.
 
 The agent tool presents a discovery page from that same reader: exact `id`,
 `status`, `closed` and `generation`, plus `outcomePreview` and `summaryPreview`
-limited to 240 characters each. It defaults to 20 items and preserves the
-reader's cursor. Full responses, results and facts stay in `get`; previews are
+limited to 240 Unicode code points each, without splitting surrogate pairs.
+It defaults to 20 items and preserves the reader's cursor. `get` returns full
+requirements and current accepted responses, results and facts. Accepted-attempt
+history is an explicit `acceptedEvidence` page on `get`, with its own cursor;
+a plain `get` returns its navigation, not the historical bodies. Previews are
 navigation, not enough evidence to accept or revise an assignment. Programmatic
 SDK/socket/HTTP callers retain the full shared view. This presentation boundary
 keeps a search across many Tasks from repeatedly loading all their evidence

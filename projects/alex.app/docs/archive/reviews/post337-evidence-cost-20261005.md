@@ -89,3 +89,22 @@ Local evidence and check logs are retained at
 `/app/.state/post337-fixes-20261005/`; the preceding read-only audit is at
 `/app/.state/post337-audit-20261005/report.md`. The test cases and owning contract
 changes are the portable reproduction paths.
+
+## Review refinements
+
+Review of #339 found that UTF-16 truncation could split an astral character and
+that the discovery hint did not explain the accepted-history opt-in. The revised
+preview walks at most 241 Unicode code points, keeping its own work bounded,
+and the tool and manual distinguish current detail from `acceptedEvidence`.
+Boundary cases include 121, 240 and 241 emoji and a mixed ASCII/emoji prefix.
+
+#340 has merged as `f59f71040`. Its test follow-up adds a real closed Conversation
+with a separate linked worker and retained attempt, then checks that only the
+live Conversation's worker enters history materialization. This covers the
+early closed-Conversation exclusion independently of the existing self-return.
+
+#341's helper now uses the same parent-owned pipe and lifetime preload as its
+daemon. Cleanup identity is published before readiness, and the outer test waits
+separately for the startup result. Real trials cover killing the helper, closing
+its parent pipe, and failed startup with removal of the temporary root. These
+are test-harness refinements and add no production supervision mechanism.

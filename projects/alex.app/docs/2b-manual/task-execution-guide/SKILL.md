@@ -68,8 +68,11 @@ pagination, input keys and coverage limits.
 
 Use a small page and relevant status filters for discovery. The agent's compact
 list candidate returns `outcomePreview`/`summaryPreview`, not full acceptance
-evidence; use the exact `get` before reusing or changing work. Do not load every
-Task's results just to find a possible owner.
+evidence; use the exact `get` before reusing or changing work. When accepted
+attempts matter, add `acceptedEvidence: { limit: 4 }` to `get` and follow that
+page's `nextCursor` as needed. A plain `get` supplies current detail and history
+navigation, without loading those bodies. Do not load every Task's results just
+to find a possible owner.
 
 A fresh Task read can contain an old observation. If your decision depends on
 what is installed now, inspect the current deployment receipt/runtime status;
