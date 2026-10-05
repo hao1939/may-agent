@@ -329,7 +329,13 @@ describe("pinned Task evidence read-back", () => {
       if (request.taskId === "helper/one") {
         const task = response.task as Record<string, unknown>;
         if (request.type === "app.task.get") task.facts = [helperFact];
-        else task.resourceVersion = resourceVersion;
+        else {
+          task.resourceVersion = resourceVersion;
+          task.history = [
+            { eventId: resourceVersion, timestamp: resourceVersion, eventType: "project.task.reconcile.skipped" },
+            { eventId: resourceVersion + 1, timestamp: resourceVersion, eventType: "project.task.reconcile.profiled" },
+          ];
+        }
       }
       return response;
     };

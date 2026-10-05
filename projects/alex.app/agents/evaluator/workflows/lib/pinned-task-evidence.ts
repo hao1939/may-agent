@@ -1,3 +1,4 @@
+import { meaningfulTaskDetail } from "./task-evidence-identity.js";
 import { taskReviewValidity } from "./task-assessment-context.js";
 import {
   readPinnedArtifact,
@@ -132,8 +133,7 @@ export async function readPinnedTaskEvidence(
           appTask.generation !== detail.generation
         )
           throw new Error("generation mismatch");
-        const { ref, resourceVersion, updatedAt, progress, ...evidence } =
-          detail;
+        const evidence = meaningfulTaskDetail(detail);
         const validity = taskReviewValidity(appTask, evidence);
         const bytes = Buffer.byteLength(
           JSON.stringify({ appTask, detail: evidence, validity }),

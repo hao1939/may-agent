@@ -105,6 +105,15 @@ coverage of the original read. See the
 
 ### Current view and supporting detail
 
+The human Task detail exposes at most 20 recent work-history events. Routine
+`project.task.reconcile.skipped` eligibility checks and their
+`project.task.reconcile.profiled` timing records without an attempt ID stay in the
+event log and do not consume that window. Timing for actual attempts remains. This preserves exact reconciled attempt references for
+bounded process inspection; it neither suppresses attempts nor declares a wait
+healthy. `historyTruncated` describes the remaining work-history window, not the
+complete event log. The evaluator tolerates skip entries from older Hosts.
+
+
 The default context is a working view, not a transcript: assignment and acceptance,
 current conclusions, open obligations, changed facts and exact references to their
 supporting evidence. Failures, useful progress and waits can coexist. Show enough
