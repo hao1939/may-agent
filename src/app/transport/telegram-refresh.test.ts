@@ -383,9 +383,9 @@ describe("Telegram refresh lifecycle", () => {
         ).toHaveLength(1);
       }
       expect(f.sent).toContainEqual(
-        expect.objectContaining({ text: expect.stringContaining("Needs your action: Complete first") }),
+        expect.objectContaining({ text: expect.stringContaining("Needs your action") }),
       );
-      expect(f.sent.some((send) => send.text.includes("Reply here with your decision."))).toBe(false);
+      expect(f.sent.some((send) => send.text.includes("How to respond"))).toBe(true);
     } finally {
       await f.close();
     }
@@ -427,10 +427,10 @@ describe("Telegram refresh lifecycle", () => {
       await f.command("/apps may");
       f.wake("first");
       await waitFor(() =>
-        f.sent.some((send) => send.text.startsWith("Needs your action:") && send.text.includes("IMPORTANT:")),
+        f.sent.some((send) => send.text.startsWith("Needs your action") && send.text.includes("IMPORTANT:")),
       );
       const generalAlert = f.sent.find(
-        (send) => send.text.startsWith("Needs your action:") && send.text.includes("IMPORTANT:"),
+        (send) => send.text.startsWith("Needs your action") && send.text.includes("IMPORTANT:"),
       )!;
       expect(generalAlert.text).toContain(independentAction);
 
@@ -445,14 +445,14 @@ describe("Telegram refresh lifecycle", () => {
       });
       f.wake("first");
       await waitFor(() =>
-        f.sent.some((send) => send.text.startsWith("Needs your decision:") && send.text.includes(independentAction)),
+        f.sent.some((send) => send.text.startsWith("Needs your decision") && send.text.includes(independentAction)),
       );
       const approvalAlert = f.sent.find(
-        (send) => send.text.startsWith("Needs your decision:") && send.text.includes(independentAction),
+        (send) => send.text.startsWith("Needs your decision") && send.text.includes(independentAction),
       )!;
       expect(approvalAlert.text).toContain(decisionAction);
-      expect(approvalAlert.text).toContain("Also needs your action (separate from the decision):");
-      expect(approvalAlert.text).toContain("Reply here with your decision.");
+      expect(approvalAlert.text).toContain("Other action needed (separate from this decision)");
+      expect(approvalAlert.text).toContain("How to respond");
 
       await f.command("/watch first");
       Object.assign(task, {
@@ -491,9 +491,9 @@ describe("Telegram refresh lifecycle", () => {
       const approvalUpdate = f.sent.find(
         (send) => send.text.includes("Approval and blocker changed") && send.text.includes(independentAction),
       )!;
-      expect(approvalUpdate.text).toContain(`Needs your decision: ${decisionAction}`);
-      expect(approvalUpdate.text).toContain("Also needs your action (separate from the decision):");
-      expect(approvalUpdate.text).toContain("Reply here with your decision.");
+      expect(approvalUpdate.text).toContain(`Decision needed\n${decisionAction}`);
+      expect(approvalUpdate.text).toContain("Other action needed (separate from this decision)");
+      expect(approvalUpdate.text).toContain("How to respond");
     } finally {
       await f.close();
     }

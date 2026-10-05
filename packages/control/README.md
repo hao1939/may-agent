@@ -45,10 +45,20 @@ name is attribution, not authenticated human identity.
 
 `/todo` lists requests for attention. Open `/task <ref>` to read the full
 proposal and any other pending human actions, then reply to that detail.
+Automatic Telegram cards label the Task purpose, exact requested action and
+supported reply values when the Condition declares them; the full current state
+and evidence stay behind **Details**. Apps remain responsible for putting the
+plain-language reason, meaningful choices and consequences, recommendation and
+material uncertainty in `requestedAction` when those are needed for a decision.
+The transport preserves and labels that content; it does not invent a rationale
+or choose on the App's behalf.
+
 An incomplete proposal binding leaves the message as conversation and records
 no approval. For feedback, use the same reply gesture with ordinary text, for example
 `/reply <ref> Please simplify this before I approve.` Feedback remains
-conversation for the App to interpret.
+conversation for the App to interpret. A qualified or ambiguous reply is likewise
+feedback rather than approval; exact supported decisions keep their displayed
+Task, generation, Condition and proposal correlation.
 
 The Host recognizes exact decisions, preserves the input and proposal, then
 publishes the existing decision event from its durable Conversation route. Its

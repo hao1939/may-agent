@@ -311,19 +311,24 @@ function humanActionText(task: HumanTaskView): string {
   return task.humanAction?.requestedAction.trim() || task.summary?.trim() || task.outcome;
 }
 
+function replyInstruction(_task: HumanTaskView, _conditionId?: string): string {
+  return "Reply to this message with an exact response requested above, or with the requested completion evidence. A question, qualification, or requested change is feedback, not completion.";
+}
+
 function humanActionLine(task: HumanTaskView): string {
   const owner = task.humanAction?.task;
-  const decisionAction = (approvalProposalForTask(task)?.requestedAction ?? null);
-  const otherActions = decisionAction ? humanConditionActions(task, approvalProposalForTask(task)?.conditionId) : [];
+  const approval = approvalProposalForTask(task);
+  const decisionAction = approval?.requestedAction ?? null;
+  const otherActions = decisionAction ? humanConditionActions(task, approval?.conditionId) : [];
   const text = decisionAction
     ? [
-        `Needs your decision: ${decisionAction}`,
-        "Reply here with your decision.",
+        `Decision needed\n${decisionAction}`,
+        `How to respond\n${replyInstruction(task, approval?.conditionId)}`,
         ...(otherActions.length > 0
-          ? [`Also needs your action (separate from the decision): ${otherActions.join("\n\n")}`]
+          ? [`Other action needed (separate from this decision)\n${otherActions.join("\n\n")}`]
           : []),
       ].join("\n\n")
-    : fullHumanActionText(task);
+    : [`Action needed\n${fullHumanActionText(task)}`, `How to respond\n${replyInstruction(task)}`].join("\n\n");
   return owner ? `On Task ${owner.ref} · ${owner.appId}: ${text}` : text;
 }
 
@@ -356,8 +361,8 @@ export function renderTelegramTodos(
         const since = task.humanAction?.since;
         return [
           [
-            `🔴 <b>${escapeTelegramHtml(humanActionText(task))}</b>`,
-            `  ${escapeTelegramHtml(task.outcome)}`,
+            `🔴 <b>Action: ${escapeTelegramHtml(humanActionText(task))}</b>`,
+            `  Purpose: ${escapeTelegramHtml(task.outcome)}`,
             ...(recurrenceLine(task) ? [recurrenceLine(task)!] : []),
             `  ${escapeTelegramHtml(task.appId)} · <code>${escapeTelegramHtml(task.ref)}</code>${since === undefined ? "" : ` · waiting ${elapsedText(since)}`}`,
           ].join("\n"),
@@ -463,20 +468,20 @@ function renderTelegramTaskUpdate(task: HumanTaskView): string {
       ? decisionAction
         ? [
             "",
-            `Needs your decision: ${decisionAction}`,
-            "Reply here with your decision.",
+            `Decision needed\n${decisionAction}`,
+            `How to respond\n${replyInstruction(task, approvalProposalForTask(task)?.conditionId)}`,
             ...(otherActions.length > 0
               ? [
                   "",
-                  `Also needs your action (separate from the decision): ${otherActions.join("\n\n")}`,
-                  "Reply separately to discuss this work or report completion.",
+                  `Other action needed (separate from this decision)\n${otherActions.join("\n\n")}`,
+                  "Reply separately with the requested answer or completion evidence.",
                 ]
               : []),
           ]
         : [
             "",
-            `Needs your action: ${fullHumanActionText(task)}`,
-            "Reply here to discuss this work or report completion.",
+            `Action needed\n${fullHumanActionText(task)}`,
+            `How to respond\n${replyInstruction(task)}`,
           ]
       : []),
   ].join("\n");
@@ -1146,21 +1151,26 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const text = single
       ? decisionAction
         ? [
-            `Needs your decision: ${proposal.outcome}`,
-            decisionAction,
-            "",
-            "Reply here with your decision.",
+            "Needs your decision",
+            `Purpose\n${proposal.outcome}`,
+            `Decision needed\n${decisionAction}`,
+            `How to respond\n${replyInstruction(proposal, displayedApproval?.conditionId)}`,
             ...(otherActions.length > 0
               ? [
-                  "",
-                  "Also needs your action (separate from the decision):",
+                  "Other action needed (separate from this decision)",
                   otherActions.join("\n\n"),
-                  "",
-                  "Reply separately to discuss this work or report completion.",
+                  "Reply separately with the requested answer or completion evidence.",
                 ]
               : []),
-          ].join("\n")
-        : `Needs your action: ${proposal.outcome}\n${fullHumanActionText(proposal)}\n\nReply here to discuss this work or report completion.`
+            "Use Details for the current state and evidence.",
+          ].join("\n\n")
+        : [
+            "Needs your action",
+            `Purpose\n${proposal.outcome}`,
+            `Action needed\n${fullHumanActionText(proposal)}`,
+            `How to respond\n${replyInstruction(proposal)}`,
+            "Use Details for the current state and evidence.",
+          ].join("\n\n")
       : renderTelegramTodos(
           changed.map(({ detail }) => detail),
           changed.length,
