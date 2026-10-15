@@ -1184,6 +1184,12 @@ function recoverInterruptedAppTasks(
           `Recovered task ${recovery.taskId} interrupted an orphaned agent session from a previous runtime`,
           recovery.taskId,
           true,
+          {
+            appId: descriptor.id,
+            taskId: recovery.taskId,
+            generation: recovery.taskGeneration,
+            attemptId: recovery.attemptId,
+          },
         );
       }
       const released = releaseInterruptedAppTaskAttempt(

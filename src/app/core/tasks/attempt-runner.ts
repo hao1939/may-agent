@@ -94,6 +94,12 @@ export async function runTaskAttempt(input: {
           `Validating retained recovery evidence before replacing Task ${input.taskId} ownership`,
           input.taskId,
           true,
+          {
+            appId: descriptor.id,
+            taskId: attempt.taskId,
+            generation: attempt.taskGeneration,
+            attemptId: attempt.metadata.id,
+          },
         );
       },
       recoverSessionHandoff: (attempt) => opts.sessions?.handoff(attempt),
@@ -120,7 +126,19 @@ export async function runTaskAttempt(input: {
         if (expired && sessionId && terminalStatus && !hasLiveAppTaskSession(opts, sessionId)) {
           // A session artifact is facts, not an accepted Task result. Drain
           // the exact old execution before retrying through normal settlement.
-          interruptSupersededAgentSession(opts, sessionId, "Retrying an uncommitted Task attempt", input.taskId, true);
+          interruptSupersededAgentSession(
+            opts,
+            sessionId,
+            "Retrying an uncommitted Task attempt",
+            input.taskId,
+            true,
+            {
+              appId: descriptor.id,
+              taskId: expired.taskId,
+              generation: expired.taskGeneration,
+              attemptId: expired.attemptId,
+            },
+          );
           const released = releaseTerminalSessionExpiredAppTaskAttempt(
             config,
             { ...expired, sessionId, terminalStatus },

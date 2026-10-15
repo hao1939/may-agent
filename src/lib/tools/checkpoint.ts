@@ -96,12 +96,32 @@ export function readLatestCheckpoint(persistDir: string, sessionId: string): Che
   return entries.length > 0 ? entries[entries.length - 1] : null;
 }
 
+function isCheckpointEntry(value: unknown): value is CheckpointEntry {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const entry = value as Record<string, unknown>;
+  return (
+    typeof entry.sessionId === "string" &&
+    typeof entry.agentName === "string" &&
+    Number.isSafeInteger(entry.step) &&
+    (entry.step as number) > 0 &&
+    typeof entry.summary === "string" &&
+    entry.data !== null &&
+    typeof entry.data === "object" &&
+    !Array.isArray(entry.data) &&
+    typeof entry.timestamp === "number" &&
+    Number.isFinite(entry.timestamp)
+  );
+}
+
 /** Inspect checkpoint history without treating malformed evidence as absence. */
 export function readCheckpointRecoveryEvidence(
   persistDir: string,
   sessionId: string,
 ): JsonlRecoveryEvidence<CheckpointEntry> {
-  return readJsonlRecoveryEvidence<CheckpointEntry>(resolve(persistDir, "checkpoints", `${sessionId}.jsonl`));
+  return readJsonlRecoveryEvidence<CheckpointEntry>(
+    resolve(persistDir, "checkpoints", `${sessionId}.jsonl`),
+    isCheckpointEntry,
+  );
 }
 
 // ── Tool factory ───────────────────────────────────────────────────────

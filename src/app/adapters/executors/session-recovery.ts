@@ -10,6 +10,7 @@ import {
   markSessionInactive,
   readActiveSessionProcessId,
   readSessionMeta,
+  readSessionMetaRecoveryEvidence,
   readSessionRecoveryEvidence,
   writeSessionMeta,
   sessionDir,
@@ -26,6 +27,7 @@ import { writeSessionResult } from "../../../lib/artifacts.js";
 import type { AgentEvent, EventBus } from "../../core/events/bus.js";
 import { appTaskSessionBinding } from "../../core/tasks/session-binding.js";
 import type { TaskSessionRecovery } from "../../core/tasks/execution.js";
+import type { TaskBinding } from "../../../lib/persistence.js";
 
 type TaskSessionAdapterOptions = {
   manager: SubagentManager;
@@ -50,8 +52,8 @@ export function createTaskSessionRecovery(opts: TaskSessionAdapterOptions): Task
     read: (id) => (opts.persistDir ? readSessionMeta(opts.persistDir, id) : null),
     isLive: (id) => hasLiveAppTaskSession(opts, id),
     lastActivityAt: (id) => (opts.persistDir ? readSessionLastActivityAt(opts.persistDir, id) : null),
-    interrupt: (id, reason, taskId, beforeReplay) =>
-      interruptSupersededAgentSession(opts, id, reason, taskId, beforeReplay),
+    interrupt: (id, reason, taskId, beforeReplay, expectedBinding) =>
+      interruptSupersededAgentSession(opts, id, reason, taskId, beforeReplay, expectedBinding),
     handoff: (attempt) => buildRecoveredSessionHandoff(opts.persistDir, attempt),
     workflowInterrupted: (id) => workflowWasInterruptedByRestart(opts.persistDir, id),
   };
@@ -155,6 +157,7 @@ function interruptSupersededAgentSession(
   reason: string,
   taskId?: string,
   beforeReplay = false,
+  expectedBinding?: TaskBinding,
 ): boolean {
   const cleanSessionId = sessionId.trim();
   if (!cleanSessionId) return false;
@@ -164,7 +167,10 @@ function interruptSupersededAgentSession(
     throw new Error(`Cannot supersede session ${cleanSessionId}: its external owner is still live`);
   }
 
-  const meta = opts.persistDir ? readSessionMeta(opts.persistDir, cleanSessionId) : null;
+  const metaEvidence = opts.persistDir
+    ? readSessionMetaRecoveryEvidence(opts.persistDir, cleanSessionId)
+    : ({ state: "absent" } as const);
+  const meta = metaEvidence.state === "valid" ? metaEvidence.meta : null;
 
   // Replacement ownership cannot begin while the superseded exact session's
   // shell descendants remain live. Drain durable groups even when session meta
@@ -193,11 +199,25 @@ function interruptSupersededAgentSession(
   const checkpointEvidence = inspectRecoveryEvidence
     ? readCheckpointRecoveryEvidence(opts.persistDir!, cleanSessionId)
     : null;
+  const bindingMismatch =
+    beforeReplay &&
+    expectedBinding &&
+    meta &&
+    (!meta.taskBinding ||
+      meta.taskBinding.appId !== expectedBinding.appId ||
+      meta.taskBinding.taskId !== expectedBinding.taskId ||
+      meta.taskBinding.generation !== expectedBinding.generation ||
+      meta.taskBinding.attemptId !== expectedBinding.attemptId);
   if (
     (beforeReplay || !recoveredFinish) &&
-    (transcriptEvidence?.state === "corrupt" || checkpointEvidence?.state === "corrupt")
+    (metaEvidence.state === "corrupt" ||
+      bindingMismatch ||
+      transcriptEvidence?.state === "corrupt" ||
+      checkpointEvidence?.state === "corrupt")
   ) {
     const corrupt = [
+      ...(metaEvidence.state === "corrupt" ? ["session metadata"] : []),
+      ...(bindingMismatch ? ["session Task binding"] : []),
       ...(transcriptEvidence?.state === "corrupt"
         ? [`session.jsonl lines ${transcriptEvidence.corruptLineNumbers.join(",")}`]
         : []),

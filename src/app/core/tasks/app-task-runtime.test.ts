@@ -6640,6 +6640,12 @@ describe("canonical App task runtime", () => {
       projectId: "sample",
       recoveryOwner: "app-task-reconciler",
       kind: "call",
+      taskBinding: {
+        appId: "sample",
+        taskId: claim.taskId,
+        generation: claim.generation,
+        attemptId: claim.attemptId,
+      },
     });
 
     const recovered = await installAppTaskRuntimes(runtimeOptions, { includeFreshLeases: true });
@@ -6688,6 +6694,12 @@ describe("canonical App task runtime", () => {
       projectId: "sample",
       recoveryOwner: "app-task-reconciler",
       kind: "call",
+      taskBinding: {
+        appId: "sample",
+        taskId: claim.taskId,
+        generation: claim.generation,
+        attemptId: claim.attemptId,
+      },
     });
 
     const staleMutation = join(f.root, "superseded-owner-mutation");
@@ -10757,13 +10769,17 @@ describe("canonical App task runtime", () => {
           taskId,
           dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
         });
-      const writeTerminalSession = (sessionId: string) => {
+      const writeTerminalSession = (
+        sessionId: string,
+        taskBinding: { appId: string; taskId: string; generation: number; attemptId: string },
+      ) => {
         writeSessionMeta(persistDir, sessionId, {
           agent: "sample-owner",
           task: "Produce a checked decision",
           status: "done",
           startedAt: Date.now(),
           endedAt: Date.now(),
+          taskBinding,
         });
         writeFileSync(
           join(persistDir, "sessions", sessionId, "result.json"),
@@ -10791,7 +10807,12 @@ describe("canonical App task runtime", () => {
         expect(claim.handler).toBe("agent:sample-owner");
         const sessionId = `session-${taskId}`;
         expect(recordAppTaskAttemptSession(config, claim, sessionId)).toBe(true);
-        writeTerminalSession(sessionId);
+        writeTerminalSession(sessionId, {
+          appId: "sample",
+          taskId: claim.taskId,
+          generation: claim.generation,
+          attemptId: claim.attemptId,
+        });
         return claim;
       };
       return {

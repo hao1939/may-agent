@@ -234,6 +234,91 @@ it.each([
   },
 );
 
+it.each([
+  { evidence: "transcript", contents: "{}\n", expected: "session.jsonl lines 1" },
+  { evidence: "transcript", contents: '{"role":"assistant","content":[{}]}\n', expected: "session.jsonl lines 1" },
+  { evidence: "checkpoint", contents: "{}\n", expected: "checkpoint JSONL lines 1" },
+] as const)("quarantines structurally invalid $evidence evidence before replay", ({ evidence, contents, expected }) => {
+  const root = mkdtempSync(join(tmpdir(), "may-recovery-invalid-structure-"));
+  roots.push(root);
+  const sessionId = `invalid-${evidence}`;
+  writeSessionMeta(root, sessionId, {
+    agent: "judge",
+    task: "Do not replay structurally invalid retained evidence",
+    status: "running",
+    startedAt: 1,
+    kind: "call",
+  });
+  if (evidence === "transcript") {
+    writeFileSync(join(root, "sessions", sessionId, "session.jsonl"), contents);
+  } else {
+    mkdirSync(join(root, "checkpoints"), { recursive: true });
+    writeFileSync(join(root, "checkpoints", `${sessionId}.jsonl`), contents);
+  }
+  const recovery = createTaskSessionRecovery({
+    persistDir: root,
+    manager: new SubagentManager({ persistDir: root }),
+    bus: new EventBus(),
+  });
+
+  expect(() => recovery.interrupt(sessionId, "Replay follows", undefined, true)).toThrow(expected);
+  expect(() => recovery.interrupt(sessionId, "Replay follows", undefined, true)).toThrow(
+    "explicit reconciliation is required",
+  );
+  expect(readSessionMeta(root, sessionId)?.status).toBe("running");
+  expect(existsSync(join(root, "sessions", sessionId, "result.json"))).toBe(false);
+});
+
+it("quarantines parseable invalid metadata before replay", () => {
+  const root = mkdtempSync(join(tmpdir(), "may-recovery-invalid-meta-"));
+  roots.push(root);
+  const sessionId = "invalid-meta";
+  mkdirSync(join(root, "sessions", sessionId), { recursive: true });
+  writeFileSync(join(root, "sessions", sessionId, "meta.json"), '{"status":"bogus"}');
+  const recovery = createTaskSessionRecovery({
+    persistDir: root,
+    manager: new SubagentManager({ persistDir: root }),
+    bus: new EventBus(),
+  });
+
+  expect(() => recovery.interrupt(sessionId, "Replay follows", undefined, true)).toThrow("session metadata");
+  expect(() => recovery.interrupt(sessionId, "Replay follows", undefined, true)).toThrow(
+    "explicit reconciliation is required",
+  );
+  expect(existsSync(join(root, "sessions", sessionId, "result.json"))).toBe(false);
+});
+
+it.each(["absent", "mismatched"] as const)("quarantines %s exact Task binding before replay", (status) => {
+  const root = mkdtempSync(join(tmpdir(), "may-recovery-task-binding-"));
+  roots.push(root);
+  const sessionId = `binding-${status}`;
+  const expectedBinding = { appId: "sample", taskId: "input/one", generation: 3, attemptId: "attempt-one" };
+  writeSessionMeta(root, sessionId, {
+    agent: "judge",
+    task: "Preserve the exact retained Task owner",
+    status: "running",
+    startedAt: 1,
+    kind: "call",
+    ...(status === "mismatched"
+      ? { taskBinding: { ...expectedBinding, attemptId: "attempt-other" } }
+      : {}),
+  });
+  const recovery = createTaskSessionRecovery({
+    persistDir: root,
+    manager: new SubagentManager({ persistDir: root }),
+    bus: new EventBus(),
+  });
+
+  expect(() => recovery.interrupt(sessionId, "Replay follows", undefined, true, expectedBinding)).toThrow(
+    "session Task binding",
+  );
+  expect(() => recovery.interrupt(sessionId, "Replay follows", undefined, true, expectedBinding)).toThrow(
+    "explicit reconciliation is required",
+  );
+  expect(readSessionMeta(root, sessionId)).toMatchObject({ status: "running" });
+  expect(existsSync(join(root, "sessions", sessionId, "result.json"))).toBe(false);
+});
+
 it.each(["done", "error", "interrupted"] as const)(
   "quarantines malformed terminal-session evidence before replay for %s sessions",
   (status) => {
