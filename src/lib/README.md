@@ -108,10 +108,16 @@ or create another Task. Acceptance means queued for consideration: inspect the
 returned contribution before claiming the correction was handled. Cancellation
 and the finish boundary can still end execution before queued input is considered.
 
+This updates the caller's instructions for one helper. Requirement changes that
+must survive failure belong in durable Task input. Existing Task feedback already
+notifies active helpers; callers do not need to forward every update manually.
+
 `tools/message-tool.ts` records messages through declared App routes. Its
 priority describes the message for the receiver; it does not schedule a helper.
 The loader checks destinations against current installed App owners with a
-message handler, including peer Apps in a scoped worker. Configured private
+message handler, including peer Apps in a scoped worker. These addresses come
+from the published App registry independently of Task-runtime installation, so
+non-background senders retain the same destinations. Configured private
 agents are not automatically inboxes. Unavailable targets return an error and
 available destinations before publishing `message.created`. App input schema
 validation and durable admission remain with the ordinary routing path; address

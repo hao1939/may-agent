@@ -66,6 +66,7 @@ export async function prepareDaemonAgents(opts: {
 }> {
   const fileWritePolicy = readFileWritePolicy(opts.definitionSharedRoot, opts.projectRoot);
   const loaderOpts: AgentLoaderOptions = {
+    appRegistry: opts.appRegistry,
     agentsRoot: opts.agentsRoot,
     sharedRoot: opts.sharedRoot,
     definitionSharedRoot: opts.definitionSharedRoot,

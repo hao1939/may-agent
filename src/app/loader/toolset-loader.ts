@@ -1,6 +1,7 @@
 import type { FileWritePolicy } from "../../lib/tools/file-write-policy.js";
 import { createRuntimeAppRead } from "../core/reads/app-read.js";
-import { getLoadedAppInputContract, getLoadedAppMessageTargets } from "../core/tasks/app-task-runtime.js";
+import { getLoadedAppInputContract } from "../core/tasks/app-task-runtime.js";
+import type { AppRegistry } from "../core/apps/registry.js";
 import { readMetricView } from "../adapters/reporting/metric-read.js";
 import type { WorkflowEvent } from "../../lib/workflow.js";
 import { resolve } from "node:path";
@@ -28,6 +29,7 @@ import { loadAgentLocalTools } from "./agent-local-tools.js";
 import { createAppTaskReadTool } from "../app-task-read-tool.js";
 
 export interface ToolsetLoaderOptions {
+  appRegistry?: AppRegistry;
   fileWritePolicy?: FileWritePolicy;
   agentsRoot: string;
   sharedRoot: string;
@@ -83,9 +85,9 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
           createMessageTool({
             agentName: config.name,
             persistDir,
-            // Resolve at invocation, including in one-App workers whose
-            // installed registry retains peer routes without running peers.
-            allowedTargets: () => getLoadedAppMessageTargets(bus),
+            // Read the published registry at invocation, even without Task
+            // scheduling or when this worker executes only one App.
+            allowedTargets: () => opts.appRegistry?.messageTargets() ?? [],
             emit: (event: { type: string; [key: string]: unknown }) => bus.emit(event as any),
             getCallerSessionId: () => currentAgentSessionId(config.name) ?? opts.getAgentSessionId(config.name),
             getCallerTrace: () => {

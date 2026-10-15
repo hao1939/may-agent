@@ -83,7 +83,7 @@ const AgentsToolParams = Type.Object({
         "'context': query session context — parent's summary, origin session, workflow steps. Use when you need more context than your task provides.",
         "'list': show all available agents with descriptions and any running sessions.",
         "'peek': view recent messages from a running session (requires sessionId).",
-        "'follow-up': send a correction or additional context to your running helper using its returned sessionId and content. Queued for consideration; does not create new work or prove the correction was applied.",
+        "'follow-up': send a correction or additional context to your running helper using its returned sessionId and content. Queued for consideration; does not create new work or prove the correction was applied. Durable requirement changes belong in Task input; existing Task feedback already reaches active helpers.",
         "'cancel': request cancellation through the owning runtime (requires sessionId).",
         "'sessions': query persisted execution sessions (optionally filter by agent or status).",
         "For independent FYI notifications to an available recipient, use `message`. To update a helper, use 'follow-up', not its agent name.",
