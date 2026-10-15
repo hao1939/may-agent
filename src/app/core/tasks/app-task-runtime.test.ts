@@ -703,9 +703,12 @@ describe("caller feedback PoC", () => {
                   requests: [{ id: "sample", appId: "sample", input: { kind: "collect", data: {} } }],
                   conditions: [{ requestId: "sample", ...(progress ? { progress } : {}) }],
                 });
-                for (const choice of ["immediate", "next-wake", "immediate", progress ?? "next-wake"] as const) {
-                  await attempt.apply({ conditions: [{ requestId: "sample", progress: choice }] });
-                  expect(config().resourceStore.readTaskConditions("work/caller")[0]?.spec.progress).toBe(choice);
+                expect(config().resourceStore.readTaskConditions("work/caller")[0]?.spec.progress).toBe(progress ?? "next-wake");
+                if (progress === "immediate") {
+                  for (const choice of ["next-wake", "immediate", "next-wake", "immediate"] as const) {
+                    await attempt.apply({ conditions: [{ requestId: "sample", progress: choice }] });
+                    expect(config().resourceStore.readTaskConditions("work/caller")[0]?.spec.progress).toBe(choice);
+                  }
                 }
                 return { state: "waiting", summary: "Await sample", facts: [], reviewAt };
               }
@@ -5174,7 +5177,7 @@ describe("canonical App task runtime", () => {
         .find((entry) => entry.metadata.id === conditionId);
       expect(condition()?.status).toMatchObject({ state: "false", observed: { state: "blocked" } });
       expect(readAppTaskWaitPromptContext(loadedTaskConfig(f).resourceStore, getDb(persistDir), "work/caller").open)
-        .toEqual(expect.arrayContaining([expect.objectContaining({ dependency: expect.objectContaining({ report: expect.objectContaining({ summary: "Source unavailable (1)" }) }) })]));
+        .toEqual(expect.arrayContaining([expect.objectContaining({ dependency: expect.objectContaining({ reports: expect.objectContaining({ failure: expect.objectContaining({ summary: "Source unavailable (1)" }) }) }) })]));
       const retainedRetry = loadedTaskConfig(f).resourceStore.readTrigger("work/caller");
       for (let retry = 0; retry < 2; retry++) {
         const retryAt = loadedTaskConfig(f).resourceStore.readTask("work/collector")!.status.executionRetryAt!;

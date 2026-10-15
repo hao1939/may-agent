@@ -101,9 +101,8 @@ export function applyTaskChanges(input: {
       if (!("requestId" in condition)) return [];
       const resolved = submitted.get(condition.requestId) ?? resolveTaskRequestCondition(config, input.claim, condition.requestId);
       const previous = linked.all.find(({ id }) => id === resolved.id);
-      const progress: NonNullable<Condition["progress"]> =
-        condition.progress ?? previous?.progress ?? (previous ? "immediate" : "next-wake");
-      return [{ ...resolved, progress }];
+      const progress = condition.progress ?? previous?.progress ?? (previous ? undefined : "next-wake" as const);
+      return [{ ...(previous ?? resolved), ...(progress === undefined ? {} : { progress }) }];
     });
     const declaredIds = new Set([...references, ...explicit].map(({ id }) => id));
     const resolved = mergeTaskConditions(

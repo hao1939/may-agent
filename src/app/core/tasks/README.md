@@ -239,12 +239,13 @@ A missed Condition checkpoint reports which waits are due. It carries no "final
 review" count: repeated reviews keep the declared timing, and the owner decides
 whether the assignment should continue.
 
-New work is requested through `TaskReconcileResult.dependencies`: the destination
+New work is requested through `TaskReconcileResult.requests`: the destination
 App validates `input` and chooses its Task specification and executor. Workers
 cannot return raw `create-task` or `update-task` actions. `unblock-task` reconsiders
 an existing wait using its current generation and creator authority.
-`admitTaskAppDependencies()` in `dependency-admission.ts` saves and notifies delegated
-input; `app-task-inputs.ts` resumes the caller's exact saved input when feedback
+`admitTaskAppRequests()` in `dependency-admission.ts` saves and notifies delegated
+input; callers declare Conditions when they need the answer. Deprecated
+`dependencies` normalize to requests and immediate-progress Conditions; `app-task-inputs.ts` resumes the caller's exact saved input when feedback
 arrives through its retained wait.
 
 Parent links organize work and scope reads; creator metadata controls changes.
