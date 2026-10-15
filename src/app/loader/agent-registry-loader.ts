@@ -195,7 +195,6 @@ export async function prepareAgents(
           fileWritePolicy,
           projectRoot: effectiveProjectRoot,
           agentsRoot: agentsRootForAgentDir(source),
-          globalAgentsRoot: agentsRoot,
           agentDir: source.dir,
           getAgentSessionId: staged.runtime.getAgentSessionId,
           getAgentMaintenance: () => staged.maintenance,

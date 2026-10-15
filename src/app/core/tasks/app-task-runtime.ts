@@ -26,6 +26,7 @@ import { canonicalAppEvent } from "../../canonical-app-event.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "../events/bus.js";
 import { createRuntimeTaskRead, readRuntimeTaskView } from "../reads/app-read.js";
 import { readInstalledAppContract } from "../reads/app-contract.js";
+import { appInputRoute } from "../apps/input-routing.js";
 import type { AppTurnTarget, CreateAppInboxItem } from "../state/app-inbox-store.js";
 import { getAppInboxItem } from "../state/app-inbox-store.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
@@ -1014,6 +1015,16 @@ export function readLoadedAppTaskView(input: { bus: EventBus; appId?: string; ap
 export function getLoadedAppInputContract(input: { bus: EventBus; appId: string }) {
   const opts = appRouterOptionsByBus.get(input.bus);
   return readInstalledAppContract(opts ? configuredRegistryEntries(opts) : [], input.appId);
+}
+
+/** Message addresses come from installed App handlers, not agent discovery. */
+export function getLoadedAppMessageTargets(bus: EventBus): string[] {
+  const opts = appRouterOptionsByBus.get(bus);
+  const entries = opts ? configuredRegistryEntries(opts) : [];
+  return [...new Set(entries
+    .filter(({ definition }) => appInputRoute(definition, "message") !== null)
+    .map(({ definition }) => (definition.agent ?? definition.owner ?? "").trim().replace(/^agent:/, ""))
+    .filter(Boolean))].sort();
 }
 
 export function listLoadedAppTaskViews(input: { bus: EventBus; appId: string; options?: TaskListOptions }): TaskPage {

@@ -129,7 +129,6 @@ export async function prepareDaemonAgents(opts: {
         ...loaderOpts,
         fileWritePolicy,
         agentsRoot: resolve(appDir, "agents"),
-        globalAgentsRoot: opts.agentsRoot,
         agentDir,
         getAgentSessionId,
         getAgentMaintenance: () => getAgentMaintenance(),
