@@ -7,6 +7,7 @@ import { closeDb, getDb } from "../../lib/requests.js";
 import { fakeTaskAttacher } from "../../../test/fixtures/task-attachment.js";
 import { AppRegistry } from "../core/apps/registry.js";
 import { EventBus, EVENT_ROW_ID } from "../core/events/bus.js";
+import { createEventInterface } from "../core/events/interface.js";
 import { discoverAppDefinitions } from "../adapters/discovery/app-definitions.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 
@@ -141,6 +142,76 @@ test("terminally settles a persistently unroutable durable address and does not 
     expect(db.prepare("SELECT COUNT(*) count FROM app_inbox_items WHERE origin_event_id = ?").get(eventId)).toEqual({
       count: 0,
     });
+    expect(db.prepare("SELECT COUNT(*) count FROM events WHERE event_type = 'subscriber.failed'").get()).toEqual({
+      count: 2,
+    });
+  } finally {
+    runtime?.close();
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("Event-interface keyed retries preserve terminal rejection evidence", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-unroutable-address-interface-"));
+  let runtime: AppInboxRuntime | undefined;
+  try {
+    const eventBus = bus(root);
+    const db = getDb(root);
+    runtime = await startAppInboxRuntime({
+      registry: await registry(root),
+      db,
+      bus: eventBus,
+      deferStart: true,
+      schedulesEnabled: false,
+    });
+    const events = createEventInterface({
+      bus: eventBus,
+      db,
+      validateAppInput: () => {},
+      hasApp: () => false,
+      hasAgent: () => false,
+      hasSession: () => false,
+    });
+    const publication = {
+      type: "message.created" as const,
+      idempotencyKey: "unroutable-address-interface-fixture",
+      data: {
+        from: "sender",
+        to: "missing-owner",
+        content: "fixture",
+        intent: "status-update",
+        priority: "P2",
+      },
+    };
+
+    const first = events.publish(publication, { source: "fixture", allowUnregisteredFact: true });
+    events.publish(publication, { source: "fixture", allowUnregisteredFact: true });
+    const third = events.publish(publication, { source: "fixture", allowUnregisteredFact: true });
+    await settleFailureEvents();
+    await settleFailureEvents();
+
+    expect(third.eventId).toBe(first.eventId);
+    const terminal = db
+      .prepare(
+        "SELECT app_admission_attempts, app_admission_pending, delivery_status, delivery_note FROM events WHERE id = ?",
+      )
+      .get(first.eventId) as Record<string, unknown>;
+    expect(terminal).toMatchObject({
+      app_admission_attempts: 3,
+      app_admission_pending: 0,
+      delivery_status: "unhandled",
+    });
+    expect(terminal.delivery_note).toContain("terminal App admission after 3 unroutable address attempts");
+
+    events.publish(publication, { source: "fixture", allowUnregisteredFact: true });
+    expect(
+      db
+        .prepare(
+          "SELECT app_admission_attempts, app_admission_pending, delivery_status, delivery_note FROM events WHERE id = ?",
+        )
+        .get(first.eventId),
+    ).toEqual(terminal);
     expect(db.prepare("SELECT COUNT(*) count FROM events WHERE event_type = 'subscriber.failed'").get()).toEqual({
       count: 2,
     });

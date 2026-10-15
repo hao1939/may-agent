@@ -906,6 +906,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           Number(exhausted?.app_admission_attempts ?? 0) >= UNROUTABLE_ADDRESS_MAX_ATTEMPTS &&
           exhausted?.app_admission_pending === 0
         ) {
+          // An Event-interface publication may carry record-only fallback
+          // acceptance. Terminal App settlement must remain unhandled instead
+          // of letting that generic fallback replace its audit evidence.
+          Object.defineProperty(event, EVENT_RECORD_ONLY, { value: false, configurable: true });
           return;
         }
         const candidates = host.matchingAppIds(message.targetOwner, message.input);
@@ -936,9 +940,13 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       if (candidates.length === 0 && eventId) {
         const attempt = recordUnroutableAddressAttempt(options.db, eventId, diagnostic);
         // Terminal settlement is an auditable no-work disposition, not
-        // successful delivery. Returning no receipt preserves `unhandled`
-        // while the cleared marker prevents another recovery attempt.
-        if (attempt.terminal) return;
+        // successful delivery. Disable Event-interface record-only fallback so
+        // returning no receipt preserves `unhandled`; the cleared marker also
+        // prevents another recovery attempt.
+        if (attempt.terminal) {
+          Object.defineProperty(event, EVENT_RECORD_ONLY, { value: false, configurable: true });
+          return;
+        }
       }
       throw new Error(diagnostic);
       }
