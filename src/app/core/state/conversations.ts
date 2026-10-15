@@ -644,6 +644,19 @@ export function readConversationMessageTopicId(
   }
 }
 
+/** Whether an accepted decision explicitly selected a Topic or selected no Topic. */
+export function hasConversationInputTopicSelection(db: SqliteDb, item: AppInboxItem): boolean {
+  if (!item.conversationId) return false;
+  return Boolean(
+    db
+      .prepare(
+        `SELECT 1 FROM conversation_input_topic_selections
+         WHERE app_id = ? AND conversation_id = ? AND input_id = ?`,
+      )
+      .get(item.appId, item.conversationId, item.id),
+  );
+}
+
 /** Retain explicit Conversation context without asking the agent to repeat its identity. */
 export function readConversationInputTopicId(db: SqliteDb, item: AppInboxItem): string | undefined {
   if (!item.conversationId) return undefined;

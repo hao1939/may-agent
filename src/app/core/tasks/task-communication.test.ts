@@ -1070,7 +1070,18 @@ test("accepted Topic decisions persist across same-input messages and Request up
           summary: "Opened the replied-to Topic",
           facts: [],
           communication: [
-            { id: "open", inputId: "ask", message: "Topic B", topic: { kind: "new", title: "Topic B" } },
+            {
+              id: "open",
+              inputId: "ask",
+              message: "Topic B",
+              topic: { kind: "new", title: "Topic B" },
+              requestUpdates: Array.from({ length: 8 }, (_, index) => ({
+                id: `scope-${index}`,
+                expectedRevision: 0,
+                scope: `initial-${index}`,
+                disposition: "open" as const,
+              })),
+            },
           ],
         };
       const topic =
@@ -1091,7 +1102,7 @@ test("accepted Topic decisions persist across same-input messages and Request up
             topic,
             requestUpdates: Array.from({ length: 8 }, (_, index) => ({
               id: `scope-${index}`,
-              expectedRevision: 0,
+              expectedRevision: 1,
               scope: String(index).repeat(2_000),
               disposition: "open" as const,
               reason: "r".repeat(2_000),
@@ -1103,7 +1114,7 @@ test("accepted Topic decisions persist across same-input messages and Request up
             message: "Continue at destination",
             requestUpdates: Array.from({ length: 8 }, (_, index) => ({
               id: `scope-${index}`,
-              expectedRevision: 1,
+              expectedRevision: 2,
               scope: `updated-${index}`,
               disposition: "open" as const,
             })),
@@ -1143,7 +1154,7 @@ test("accepted Topic decisions persist across same-input messages and Request up
       expect(expected).not.toBe(selection === "none" ? originalTopic : undefined);
       expect(continued.metadata?.topicId).toBe(expected);
       expect(readConversationRequest(f.db, "sample", "discussion", "scope-0")).toMatchObject({
-        revision: 2,
+        revision: 3,
         scope: "updated-0",
         ...(expected ? { topicId: expected } : {}),
       });

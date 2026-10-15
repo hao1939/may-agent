@@ -19,6 +19,7 @@ import {
 } from "../state/conversation-requests.js";
 import {
   createConversationTopic,
+  hasConversationInputTopicSelection,
   readConversationInputTopicId,
   readConversationTopic,
 } from "../state/conversations.js";
@@ -152,6 +153,7 @@ export function applyTaskCommunication(
         appId: item.appId,
         conversationId,
         topicId,
+        topicSelected: hasConversationInputTopicSelection(db, item),
         updates: [update],
         updateKey: `communication:${identity}`,
         messageId,
