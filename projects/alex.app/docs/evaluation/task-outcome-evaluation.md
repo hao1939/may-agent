@@ -390,11 +390,19 @@ does not suppress a later request about changed evidence. Delivery remains
 at least once; this removes recurring unnecessary work without an exactly-once
 attention ledger.
 
+The judgment is the `result` of the ordinary `finish` call. That call also needs
+its outer `summary` and `verification_facts`; the judgment's similarly named
+fields do not replace them. Cite supplied evidence as supplied evidence, or
+actual reads, without inventing verification. The `none` decision contains only
+`kind`; omit `message` instead of sending an empty string. Clear completion
+guidance avoids resending an entire report to repair an invalid envelope.
+
 The existing report reader can list and read quiet reports for an explicit or
 batched audit. This change adds no periodic audit schedule. Trust the reviewer by
 default, but do not treat `none` as guaranteed health. Contract tests establish
-retention, routing and recovery; an actual model comparison and live observation
-are still needed to establish judgment quality and savings.
+retention, routing and recovery. The [bounded judgment trial](../archive/reviews/evaluation-follow-up-trial-2026-10-16.md)
+records the tested decisions, context limits and completion corrections; it does
+not establish general judgment accuracy or production savings.
 
 Reports are evidence, not commands or issue state. Use Alex's existing
 `evaluation-report-reader` workflow to list and read reports without rerunning

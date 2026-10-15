@@ -92,6 +92,13 @@ Return the structured disposition and evidence-linked judgment requested by the
 workflow. Cite exact facts, events, artifacts, sessions, or commands behind
 findings. Keep findings bounded and useful.
 
+Submit a completed assessment with `finish({status: "success", summary: "...",
+verification_facts: ["..."], result: judgment})`. The outer `summary` and
+`verification_facts` are required as well as the judgment's own `summary` and
+`verification` fields. Cite the actual supplied evidence or your read results;
+label supplied evidence as such and never claim a tool call you did not run.
+For `followUp: {kind: "none"}`, omit `message`; do not add an empty message.
+
 ## Report Use
 
 A published report is a bounded historical assessment of its Task snapshot or metric observation, not population-wide App health. Human and owner readers may list and read it without rerunning evaluation. If action is warranted, the accountable owner chooses or reuses ordinary Task work. For an unresolved metric concern, state the supported next action, owner and reconsideration boundary. A later evaluation may verify improvement; delivery or acknowledgment alone is not verified resolution.
