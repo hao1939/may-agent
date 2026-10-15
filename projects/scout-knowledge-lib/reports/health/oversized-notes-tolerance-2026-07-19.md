@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Rolling review record for oversized canonical notes. Documents why each exceeds the 800-line threshold and whether a split is warranted; current through the October 15 review of seven recurring note-size signals."
+summary: "Rolling review record for oversized canonical notes. Documents why each exceeds the 800-line threshold and whether a split is warranted; current through the October 15 review of eight recurring note-size signals and the unchanged unsourced-index backlog."
 last_updated: "2026-10-15"
 </ai_context>
 
@@ -240,14 +240,39 @@ isolated evaluation split and can separately freeze architecture or protocol
 boundaries after reference mapping; creating parallel tasks from the same size
 facts would duplicate project work.
 
+## Recurrence review — 2026-10-15 (logs, ledgers, and governance notes)
+
+A second October 15 packet named eight notes already covered by the September 18
+review and reported an unchanged 195-entry unsourced backlog. Direct `wc -l`
+measurements were again one below the observer's physical-line convention. The
+new evidence supports two refreshed boundary dispositions and six exact no-ops:
+
+| Note | Observer / direct lines | Current evidence and disposition |
+|------|------------------------:|----------------------------------|
+| `agent-security-event-log.md` | 1320 / 1319 | **No-op.** The count is unchanged from September 18. Its 16 level-two narratives remain a chronological security-event log, and no source publication has changed it since September 25. |
+| `agent-security-governance.md` | 1412 / 1411 | **Boundary mapping warranted, but no inline split.** The note has 16 level-two sections and has not changed since September 24. Sections 6–14 now form a plausible authority-and-composition companion, extending the earlier sections 6–12 candidate with signed identity, authorization continuity, and effect-gate material. Before extraction, compare overlap with the existing defense and state-level-governance companions and preserve inbound fragments. |
+| `hn-agent-operational-memory.md` | 1298 / 1297 | **Retain the published path.** The note grew after September 18 through source-grounded context-integrity and compaction patterns, most recently on October 3. Its existing extraction log already delegates the comprehension-cliff arc, while the current parent remains the operational-memory canon plus a long tracking tail. A later cleanup may compact stale tracking items, but the size signal alone does not establish a lossless companion boundary. |
+| `the-oversight-inversion.md` | 2056 / 2055 | **No-op; existing boundary plan remains current.** Only 50 lines were added since September 18, and the note has not changed since September 22. The previously mapped `Verification Harness` block at roughly lines 730–1844 remains the isolated review target; repeating that mapping or moving it inside this multi-signal pass would add risk without new evidence. |
+| `xhs-prediction-tracker.md` | 966 / 965 | **No-op.** The count is unchanged. Its status table, scan updates, and prediction history remain one cross-referenced tracker. |
+| `xhs-scan-log-june2026.md` | 1989 / 1988 | **No-op.** The count is unchanged. This is a closed chronological June archive whose last publication was August 12. |
+| `xhs-seed-ledger.md` | 2873 / 2872 | **No-op.** The count is unchanged. Cycle order, access-boundary evidence, and reconciliation history are the ledger's useful structure; its last publication was September 9. |
+| `xhs-topic-map.md` | 18182 / 18181 | **No-op without opening or rewriting the large artifact.** The count and September 9 last-publication boundary are unchanged. App policy reserves this living ranked map for choosing unresolved questions or a separately scoped structural review, neither of which this packet requests. |
+
+`INDEX.md` still contains exactly 195 `Not yet sourced` markers, matching the
+observer's `delta: 0` after 64 unchanged windows. The backlog is not growing, so
+this pass does not repeat the September five-entry metadata batch or bulk-edit
+markers merely to lower a metric. A future evidence-checked batch remains useful
+when a source-review pass identifies exact entries; no capacity blocker or child
+assignment is created from an unchanged count.
+
 ## Current summary
 
 The previously recommended diagnostic-layers and runtime-hardening splits are
 complete. `agent-evaluation.md` remains the clearest next isolated split target;
-`agent-architectures.md` and `agent-protocols-mcp-a2a.md` have crossed their old
-tolerance ranges and now merit boundary mapping, not immediate movement.
-Runtime hardening, runtime verdict integrity, defense architectures, and
-enforcement evidence have evidence-backed no-op dispositions for this cycle.
-Other oversized signals remain format-appropriate logs/ledgers or previously
-reviewed notes. The unsourced backlog received a small evidence-checked batch
-rather than a bulk metric edit.
+`agent-architectures.md`, `agent-protocols-mcp-a2a.md`, and now
+`agent-security-governance.md` merit boundary mapping, not immediate movement.
+The oversight verification-harness boundary remains mapped for an isolated
+review. Other oversized signals are format-appropriate logs, trackers, ledgers,
+or notes with current evidence-backed no-op dispositions. The unsourced backlog
+is stable at 195 after the earlier evidence-checked batch, so no threshold-only
+or metric-only rewrite is warranted.
