@@ -657,7 +657,10 @@ export function readConversationInputTopicId(db: SqliteDb, item: AppInboxItem): 
   const replied = item.replyToSourceId
     ? readConversationMessageTopicId(db, item.appId, item.conversationId, item.replyToSourceId)
     : undefined;
-  for (const candidate of [item.topicId, replied, hint]) {
+  // An explicit reply anchors the current discussion. The inbox Topic is the
+  // committed input correlation and the adapter context is only a fallback
+  // hint when no reply anchor can be resolved.
+  for (const candidate of [replied, item.topicId, hint]) {
     if (typeof candidate !== "string" || !candidate.trim()) continue;
     const topic = readConversationTopic(db, item.appId, item.conversationId, candidate);
     if (topic) return topic.id;
