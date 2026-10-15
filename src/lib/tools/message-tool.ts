@@ -36,7 +36,7 @@ export interface MessageToolOptions {
   getCallerSessionId?: () => string | undefined;
   /** Resolve the active caller turn trace. */
   getCallerTrace?: () => EventTrace | undefined;
-  /** Optional: list of agents this tool is allowed to send to.
+  /** Optional: installed message destinations this tool is allowed to send to.
    *  Can be a static array or a lazy function (re-evaluated on each call)
    *  so that targets discovered after tool creation are visible. */
   allowedTargets?: string[] | (() => string[]);
@@ -45,7 +45,7 @@ export interface MessageToolOptions {
 const messageParams = Type.Object({
   to: Type.String({
     description:
-      "Receiver agent name, or 'human'. Do not use tool names like 'functions.message' or 'functions.finish'. Declared App routes handle the recorded message.",
+      "Available receiver agent name, or 'human'. Private helpers are not independent inboxes: correct your running helper with agents({ action: 'follow-up', sessionId, content }). Declared App routes handle independent messages.",
   }),
   content: Type.String({
     description:
@@ -118,8 +118,8 @@ function targetHint(target: string, allowedTargets: Set<string> | null): string 
   if (target.includes(".")) {
     return `"${target}" does not look like an agent name. Use an exact configured agent name or "human".`;
   }
-  const allowed = allowedTargets ? [...allowedTargets].sort().join(", ") : "configured agent names or human";
-  return `Use one of: ${allowed}.`;
+  const allowed = allowedTargets ? [...allowedTargets].sort().join(", ") : "available message recipients or human";
+  return `Use one of: ${allowed}. For a running helper, use agents({ action: 'follow-up', sessionId, content }) with its returned sessionId. Agent discovery alone does not provide an inbox.`;
 }
 
 /**
