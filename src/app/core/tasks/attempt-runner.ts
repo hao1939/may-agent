@@ -85,7 +85,6 @@ export async function runTaskAttempt(input: {
       taskId: input.taskId,
       appAgent: descriptor.agent,
       handler: "auto",
-      canUseAgentFallback: (agent) => opts.agents?.available(agent) ?? false,
       reason: input.reason ?? "task-controller",
       recoverSessionHandoff: (attempt) => opts.sessions?.handoff(attempt),
     });

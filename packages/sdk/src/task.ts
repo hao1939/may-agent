@@ -29,6 +29,7 @@ export type TaskIntent = {
   agent?: string;
   /** @deprecated Use `agent`. Retained temporarily for source compatibility. */
   owner?: string;
+  /** App procedure for each eligible attempt; nested agent calls do not replace it. */
   workflow?: string;
   /** Registered bounded executor adapter. Omit or use `agent` for the managed agent. */
   executor?: TaskExecutorName;
@@ -77,15 +78,8 @@ export type TaskCondition = Condition | TaskRequestCondition;
 /** @deprecated Return requests and caller Conditions instead. */
 export type TaskAppDependency = TaskAppRequest;
 
-/** Decisions admitted through the current fenced attempt. Revise requirements with TaskAttempt.reviseTask. */
+/** Reconsider an existing wait through a fenced attempt. Revise requirements with TaskAttempt.reviseTask. */
 export type TaskAction =
-  | {
-      /** Choose the next eligible attempt's method; does not schedule work or settle input.
-       * `declared` uses this Task's workflow/executor; `agent` uses its responsible agent. */
-      kind: "select-execution";
-      execution: "declared" | "agent";
-      reason: string;
-    }
   | {
       kind: "unblock-task";
       taskId: string;
@@ -181,6 +175,7 @@ export type TaskReconcileResult = {
       communication?: never;
     }
   | {
+      /** @deprecated Call ctx.agents.call inside the workflow. This legacy handoff runs one agent attempt, not a permanent executor change. */
       state: "needs-agent";
       inputKeys?: never;
       response?: never;

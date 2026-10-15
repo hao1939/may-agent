@@ -31,6 +31,28 @@ event emission and output-path helpers live beside their lifecycle callers.
 `execution.ts` and `workspace.ts` are private contracts; concrete implementations
 live in `adapters/` and `conversations/`, selected in `composition/task-execution.ts`.
 
+## Execution procedure and recovery
+
+The assigned agent owns the outcome. The App declares the execution procedure;
+Host claims use that workflow or executor on every attempt. A failed procedure,
+an old agent fallback, partial progress or convergence cannot change it.
+Workflows compose judgment through `ctx.agents.call`; the nested call inherits
+the Task context and authority and does not replace future workflow attempts.
+The App decides how to use its returned contribution and publishes the result.
+
+Failures retain the same Task, pending inputs, accepted effects and previous
+attempt evidence. The Host schedules retry with backoff and emits the existing
+`project.task.reconciled` event. App subscriptions and metric policies decide
+which failures need investigation or escalation, including failures before
+workflow code runs. No Host-invented diagnosis Task or App-specific policy is
+needed. Calling an agent and accepting progress do not establish repair.
+
+For compatibility, an explicit workflow `needs-agent` (or retained
+`needs-owner`) result still invokes its responsible agent once. Later work
+returns to the declared procedure. New workflows should use ordinary calls;
+no execution-selection action or sticky fallback state is supported.
+Historical `failoverFromAttemptId` records remain readable as evidence.
+
 ## Trace one Task
 
 ```text
@@ -194,35 +216,6 @@ spending. The owner can revise, pause or close the assignment.
 A missed Condition checkpoint reports which waits are due. It carries no "final
 review" count: repeated reviews keep the declared timing, and the owner decides
 whether the assignment should continue.
-
-Apps choose execution policy; the Host persists and executes it through the
-current attempt. `select-execution` in `TaskAttempt.apply()` / `tasks.apply` or
-final result actions selects `declared` (the Task's configured workflow/executor)
-or `agent` (its responsible agent), with a reason. This chooses the **next
-eligible attempt**, without waking it, answering input, changing requirements,
-or retiring Conditions. A Task without a configured procedure cannot select
-`declared`. Ordinary backoff, Stop, capacity, workspace and verification rules
-still apply.
-
-The decision and reason live on the ordinary attempt as `executionSelection`
-and are included in the next attempt's context. No decision preserves existing
-behavior: unexpected procedure failure hands off to an available agent; that
-agent continues until an explicit choice or specification revision. Convergence
-alone does not imply handback. The next claim records the selected handler;
-a later failure can hand off again. New generations ignore old choices.
-
-Live and final changes share admission. Identical selection actions replay
-within their originating attempt; the same decision in a later attempt remains
-a new choice. Distinct decisions can replace the next method before settlement;
-an old replay cannot overwrite a later admitted choice. Use a fresh reason for
-a reconsidered decision, rather than resubmitting an earlier operation. One
-batch cannot contain multiple execution selections, including already-receipted
-ones. A live admitted choice survives later execution failure or interruption;
-an unadmitted final choice does not. Claims and change receipts
-commit atomically and reject stale attempts. Intentional agent selection is not
-counted as an unexpected failover. The existing workflow `needs-agent` result
-is a final agent choice with immediate continuation and supersedes an earlier
-live execution selection.
 
 New work is requested through `TaskReconcileResult.dependencies`: the destination
 App validates `input` and chooses its Task specification and executor. Workers
