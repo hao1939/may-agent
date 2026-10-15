@@ -647,6 +647,27 @@ describe("shared agent execution preparation", () => {
     expect((prepared.tools[0]!.parameters as any).required).toContain("result");
   });
 
+  test("rejects duplicate finish capabilities after structured-result adaptation", () => {
+    expect(() =>
+      prepareAgentExecution({
+        definition: {
+          name: "duplicate-finish",
+          description: "sample",
+          domain: "tests",
+          systemPrompt: "identity",
+          model: { contextWindow: 10_000 } as any,
+          tools: [tool("finish"), tool("finish")],
+        },
+        projectRoot: "/tmp",
+        sessionId: "duplicate-finish",
+        task: "return a result",
+        outputSchema: Type.Object({ verdict: Type.String() }),
+      }),
+    ).toThrow(
+      'Agent duplicate-finish has duplicate model-visible tool name "finish" from registered definition for "duplicate-finish" and registered definition for "duplicate-finish"',
+    );
+  });
+
   test("rebases filesystem tools onto the workflow execution root", async () => {
     const registeredRoot = mkdtempSync(join(tmpdir(), "agent-registered-root-"));
     const executionRoot = mkdtempSync(join(tmpdir(), "agent-execution-root-"));
