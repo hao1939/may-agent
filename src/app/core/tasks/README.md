@@ -47,11 +47,12 @@ which failures need investigation or escalation, including failures before
 workflow code runs. No Host-invented diagnosis Task or App-specific policy is
 needed. Calling an agent and accepting progress do not establish repair.
 
-For compatibility, an explicit workflow `needs-agent` (or retained
-`needs-owner`) result still invokes its responsible agent once. Later work
-returns to the declared procedure. New workflows should use ordinary calls;
-no execution-selection action or sticky fallback state is supported.
-Historical `failoverFromAttemptId` records remain readable as evidence.
+Workflows and registered executors return the same result contract as agents.
+`needs-agent` and `needs-owner` outputs are rejected visibly through ordinary
+paced failure recovery. Code that needs judgment calls the agent directly;
+results do not select execution. Saved legacy workflow handoffs resume their
+declared procedure with retained inputs and evidence. Owner-stopped Tasks stay
+stopped. Historical `failoverFromAttemptId` records remain readable as evidence.
 
 ## Trace one Task
 

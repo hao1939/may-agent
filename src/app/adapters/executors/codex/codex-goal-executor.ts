@@ -394,9 +394,7 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
           throw new Error(`Codex goal turn ended ${completion.turn.status}`);
         }
         const answer = await finalAnswer(client, threadId, completedTurnId);
-        const admitted = admitCodexGoalTaskResult(answer, {
-          allowNeedsAgent: false,
-        });
+        const admitted = admitCodexGoalTaskResult(answer);
         if (admitted.kind === "retry") {
           correction = admitted.nextAttemptContext;
           continue;

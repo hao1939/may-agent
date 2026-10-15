@@ -288,36 +288,23 @@ it.each(["executor failure", "rejected result"])("human input arriving during %s
   expect(() => f.claim()).toThrow("waiting");
 });
 
-it("keeps an internal workflow handoff quiet, then returns the agent failure through the shared path", () => {
+it("reports rejected workflow output and retries the declared procedure with backoff", () => {
   const f = fixture();
-  const workflow = f.claim("workflow:measure");
-  failAppTaskAttempt(f.config, workflow, "Need agent judgment", {
-    reason: "needs-agent",
-    facts: ["workflow:observation"],
-  });
-  f.reopen();
-  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "report")).toBeNull();
-  expect(f.config.resourceStore.readTask("work")?.status.executionRetryAt).toBeUndefined();
-  const agent = claimObservedAppTask(f.config, {
-    taskId: "work", appAgent: "owner", handler: "auto",
-  });
-  if (agent.kind !== "claimed") throw new Error(`Expected handoff, got ${agent.kind}`);
-  expect(agent.handler).toBe("agent:owner");
-  expect(agent.handoff?.reason).toBe("needs-agent");
-  expect(f.config.resourceStore.readAttempt(agent.attemptId)?.failoverFromAttemptId).toBeUndefined();
-  expect(agent.events).toEqual(workflow.events);
-  failAppTaskAttempt(f.config, agent, "Agent result failed verification", {
-    reason: "HandlerResultInvalid",
-    facts: ["verifier:rejected"],
+  observeAppTaskIntent(f.config, { appAgent: "owner", intent: { ...f.intent, workflow: "measure" } });
+  const workflow = f.claim("auto");
+  failAppTaskAttempt(f.config, workflow, "Handler result was rejected: obsolete execution decision", {
+    reason: "HandlerResultInvalid", facts: ["workflow:observation"],
   });
   f.reopen();
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "report"))
-    .toMatchObject({ attemptId: agent.attemptId, state: "error", reportRevision: 1 });
+    .toMatchObject({ attemptId: workflow.attemptId, state: "error", reportRevision: 1 });
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toBeNull();
-  expect(f.config.resourceStore.readAttempt(agent.attemptId)?.acceptedResult).toBeUndefined();
-  expect(f.config.resourceStore.isCancelled("work")).toBe(false);
+  expect(() => f.claim("auto")).toThrow("waiting");
   setSystemTime(f.config.resourceStore.readTask("work")!.status.executionRetryAt!);
-  const retry = f.claim();
+  const retry = f.claim("auto");
+  expect(retry.handler).toBe("workflow:measure");
+  expect(retry.handoff).toBeUndefined();
+  expect(retry.events).toEqual(workflow.events);
   completeAppTask(f.config, retry, { summary: "Verified measurement", result: { value: 17 } });
   f.reopen();
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure"))

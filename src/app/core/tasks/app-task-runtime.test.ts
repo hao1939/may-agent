@@ -1863,11 +1863,12 @@ it("releases failed context preparation before later Task events and recovers af
   expect(readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult?.summary).toBe("Recovered after role repair");
 });
 
-it("lets the handoff agent diagnose while the workflow is unavailable, then verifies completion", async () => {
+it.each(["needs-agent", "needs-owner"])("rejects obsolete executor %s output visibly without switching handlers", async (state) => {
   const f = fixture();
   const bus = eventBus();
+  let executorCalls = 0;
   let agentCalls = 0;
-  let verified = 0;
+  let corrected = false;
   const agents: TaskAgentRunner = {
     available: () => true,
     prepare: async () => true,
@@ -1875,97 +1876,49 @@ it("lets the handoff agent diagnose while the workflow is unavailable, then veri
     role: (agent) => ({ agent, instructions: "Fixture" }),
     async execute() {
       agentCalls++;
-      return Object.freeze({
-        handlerResult: Object.freeze({ state: "converged", summary: "Agent proposes completion", facts: [], actions: [] }),
-        runId: null,
-      });
+      throw new Error("The Host must not switch to the agent");
     },
   };
-  const workflows: TaskWorkflowRunner = {
-    async inspect() {
-      return {
-        available: true,
-        error: null,
-        workspace: "shared",
-        verifier: {
-          name: "required-proof",
-          sourcePath: "fixture",
-          verify: async () => {
-            verified++;
-            return { accepted: true, summary: "Postcondition verified", facts: ["fixture:verified"] };
-          },
-        },
-      };
-    },
-    async execute() {
-      return {
-        handlerResult: { state: "needs-agent", summary: "Agent judgment required", facts: [], actions: [] },
-        runId: "fixture-handoff",
-      };
-    },
-  };
-  const base = {
-    projectsRoot: f.projectsRoot,
-    projectRoot: f.root,
-    persistDir: join(f.root, "state"),
-    bus,
-    hostCapacity: new HostCapacity(2),
-    installControllers: false,
-    agents,
-    appRegistrySnapshot: {
-      id: "handoff-boundary:1",
-      generation: 1,
-      entries: [{ appDir: f.appDir, definition: definition() }],
-    },
-  };
-  await installCoreTaskRuntimes({ ...base, workflows });
-  const config = loadedTaskConfig(f);
-  const taskId = "work/handoff";
-  observeAppTaskIntent(config, {
-    appAgent: "sample-owner",
-    intent: {
-      id: taskId,
-      parentId: "operations",
-      outcome: "Verify before completion",
-      acceptance: ["Required verifier passes"],
-      workflow: "verify",
+  const reconciled: AgentEvent[] = [];
+  bus.subscribe((event) => { if (event.type === "project.task.reconciled") reconciled.push(event); });
+  await installCoreTaskRuntimes({
+    ...options(f, bus), agents, installControllers: false,
+    appRegistrySnapshot: { id: "obsolete-switch", generation: 1, entries: [{ appDir: f.appDir, definition: definition() }] },
+    executors: {
+      worker: async () => {
+        executorCalls++;
+        return corrected
+          ? { state: "converged", summary: "Procedure repaired", facts: ["checked"] }
+          : { state, summary: "Legacy switch", facts: ["needs judgment"] } as never;
+      },
     },
   });
-  const run = () =>
-    reconcileLoadedAppTaskOnce({
-      bus,
-      appId: "sample",
-      taskId,
-      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
-    });
-  await run();
-  await installCoreTaskRuntimes(base);
-  await run();
-  expect(agentCalls).toBe(1);
-  expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("pending");
-  await installCoreTaskRuntimes(base);
-  expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("pending");
+  const config = loadedTaskConfig(f);
+  const taskId = "work/obsolete-switch";
+  observeAppTaskIntent(config, {
+    appAgent: "sample-owner",
+    intent: { id: taskId, parentId: "operations", outcome: "Measure", acceptance: ["Measured"], executor: "worker" },
+    trigger: { type: "measure.requested", eventId: 123 },
+  });
+  const run = () => reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+    dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+  expect(await run()).toEqual([]);
+  const task = config.resourceStore.readTask(taskId)!;
+  expect(task.status).toMatchObject({ phase: "pending", executionFailures: 1 });
+  expect(task.status.summary).toContain("state must be converged, waiting, or incomplete");
+  expect(task.status.executionRetryAt).toBeGreaterThan(Date.now());
+  expect(reconciled.at(-1)?.data).toMatchObject({ disposition: "retrying", handler: "executor:worker" });
   expect(config.resourceStore.readReceipt(taskId)).toBeNull();
-  const before = config.resourceStore.readTaskContext({ taskIds: [taskId] });
-  const withoutVerifier: TaskWorkflowRunner = {
-    ...workflows,
-    async inspect(input) {
-      return { ...(await workflows.inspect(input)), verifier: undefined };
-    },
-  };
-  await installCoreTaskRuntimes({ ...base, workflows: withoutVerifier });
-  expect(config.resourceStore.readTaskContext({ taskIds: [taskId] })).toEqual(before);
-  expect(agentCalls).toBe(1);
-  expect(verified).toBe(0);
-  await installCoreTaskRuntimes({ ...base, workflows });
-  advanceRuntimeTaskRetry(config, taskId);
-  await run(); // The workflow runs again and explicitly requests another legacy handoff.
-  expect(agentCalls).toBe(1);
+  expect(config.resourceStore.readTaskContext({ taskIds: [taskId] }).taskTriggers?.[taskId]?.events)
+    .toEqual(expect.arrayContaining([expect.objectContaining({ event: { type: "measure.requested", eventId: 123 } })]));
   await run();
-  expect(verified).toBe(1);
-  expect(agentCalls).toBe(2);
-  expect(readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult?.acceptanceBasis.method).toBe("deterministic");
-  expect(config.resourceStore.isCancelled(taskId)).toBe(false);
+  expect(executorCalls).toBe(1);
+  corrected = true;
+  advanceRuntimeTaskRetry(config, taskId);
+  await run();
+  expect(executorCalls).toBe(2);
+  expect(agentCalls).toBe(0);
+  expect(readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult?.summary).toBe("Procedure repaired");
 });
 
 function activateTaskResources(config: AppTaskContext, persistDir: string, appId = "sample"): AppTaskContext {
@@ -9666,7 +9619,7 @@ describe("canonical App task runtime", () => {
     const bus = eventBus();
     let calls = 0;
     const rejection = invalid === "invalid-state"
-      ? "Handler result was rejected: state must be converged, waiting, incomplete, or needs-agent"
+      ? "Handler result was rejected: state must be converged, waiting, or incomplete"
       : "Handler actions were rejected: Handler action cannot unblock its own running task work/invalid-result; return the attempt result without a self-unblock action";
     await installAppTaskRuntimes({
       ...options(f, bus),
@@ -10667,11 +10620,11 @@ describe("canonical App task runtime", () => {
           }),
         );
       };
-      const saveTerminalSession = (taskId: string) => {
+      const saveTerminalSession = (taskId: string, handler = "auto") => {
         const claim = claimObservedAppTask(config, {
           taskId,
           appAgent: "sample-owner",
-          handler: "auto",
+          handler,
           reason: "test",
         });
         if (claim.kind !== "claimed") throw new Error("expected agent claim");
@@ -11042,13 +10995,14 @@ describe("canonical App task runtime", () => {
 
     for (const route of ["startup", "busy"] as const) {
       it.each(["accept", "reject", "missing"] as const)(
-        `retries a terminal workflow handoff through ${route} with a %s verifier`,
+        `resumes a historical agent session through its workflow after ${route} with a %s verifier`,
         async (verification) => {
           const f = setup();
           let workflowCalls = 0;
           let verificationCalls = 0;
-          let externalCreates = 0;
-          const operations = new Set<string>();
+          // The historical attempt already performed this external operation.
+          let externalCreates = 1;
+          const operations = new Set<string>([String(f.payload.operationId)]);
           const workflows: TaskWorkflowRunner = {
             async inspect() {
               return {
@@ -11087,16 +11041,16 @@ describe("canonical App task runtime", () => {
                 externalCreates++;
               }
               return {
-                handlerResult: { state: "needs-agent", summary: "Check external operation", facts: [], actions: [] },
+                handlerResult: f.terminalResult,
+                verifier: (await workflows.inspect({} as never)).verifier,
                 runId: "fixture-workflow",
               };
             },
           };
           await installCoreTaskRuntimes({ ...f.base, workflows });
           f.observe("handoff", "must-verify");
-          await f.run("handoff");
-          const claim = f.saveTerminalSession("handoff");
-          expect(claim.handoff?.reason).toBe("needs-agent");
+          const claim = f.saveTerminalSession("handoff", "agent:sample-owner");
+          expect(claim.handoff).toBeUndefined();
           expect(externalCreates).toBe(1);
 
           if (route === "startup") {
@@ -11121,9 +11075,9 @@ describe("canonical App task runtime", () => {
           // Retry the declared workflow; its stable operation key prevents duplicate effects.
           await f.run(claim.taskId);
           await f.run(claim.taskId);
-          expect(workflowCalls).toBe(2);
+          expect(workflowCalls).toBe(1);
           expect(externalCreates).toBe(1);
-          expect(f.agentCalls()).toBe(1);
+          expect(f.agentCalls()).toBe(0);
           expect(verificationCalls).toBe(verification === "missing" ? 0 : 1);
           if (verification !== "reject") {
             expect(readAcceptedRuntimeAttempt(f.config, claim.taskId)).toMatchObject({
@@ -11132,7 +11086,7 @@ describe("canonical App task runtime", () => {
                 result: f.payload,
                 acceptanceBasis: verification === "accept"
                   ? { method: "deterministic", verifier: "required-proof" }
-                  : { method: "agent-judgment" },
+                  : { method: "workflow-contract" },
               },
             });
           } else {
@@ -11146,8 +11100,8 @@ describe("canonical App task runtime", () => {
           }
           expect(f.config.resourceStore.isCancelled(claim.taskId)).toBe(false);
           await f.run(claim.taskId);
-          expect(workflowCalls).toBe(2);
-          expect(f.agentCalls()).toBe(1);
+          expect(workflowCalls).toBe(1);
+          expect(f.agentCalls()).toBe(0);
         },
       );
     }

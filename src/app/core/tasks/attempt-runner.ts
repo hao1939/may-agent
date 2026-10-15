@@ -632,7 +632,6 @@ async function runClaimedTask(
       run.unavailable ||
       run.handlerBlocked ||
       run.workspacePreparationFailed ||
-      (workflowKey && result.state === "needs-agent") ||
       result.resultRejected;
     const details = diagnostic
       ? {
@@ -647,9 +646,7 @@ async function runClaimedTask(
                 ? "HandlerExecutionFailed"
                 : run.workspacePreparationFailed
                   ? "WorkspacePreparationFailed"
-                  : result.state === "needs-agent"
-                    ? "needs-agent"
-                    : "handler-blocked",
+                  : "handler-blocked",
         }
       : unacceptedResult
         ? { reason: "HandlerResultSettlementFailed", unacceptedResult }
@@ -657,16 +654,14 @@ async function runClaimedTask(
     try {
       const failure = persistResult(() => failAppTaskAttempt(config, claim, result.summary, details));
       if (failure.status === "superseded") return [];
-      const handoff = failure.status === "handoff";
       emit("project.task.reconciled", {
-        disposition: handoff ? "agent-handoff" : failure.status,
-        ...(!handoff ? { retryAt: failure.retryAt } : {}),
+        disposition: failure.status,
+        retryAt: failure.retryAt,
         input: intent.input ?? {},
         summary: failure.summary,
       });
-      // Only a recorded handoff continues immediately. Stored retry deadlines
-      // and the existing recovery scheduler own every other unsuccessful attempt.
-      return handoff ? [claim.taskId] : [];
+      // Stored retry deadlines and the recovery scheduler pace unsuccessful attempts.
+      return [];
     } catch (error) {
       const stale = rejectStaleEffect(error, run);
       if (!stale) throw error;
@@ -857,32 +852,7 @@ async function establishTaskAcceptance(input: {
 }): Promise<{ ok: true; acceptanceBasis: AppTaskAcceptanceBasis } | { ok: false; summary: string; facts: string[] }> {
   const { descriptor, intent, claim, capability } = input;
   const workflow = claim.handler.startsWith("workflow:");
-  let verifier = capability.verifier;
-  if (claim.handoff && intent.workflow) {
-    // Failure must not prevent diagnosis. Check the authored verifier only
-    // when the agent proposes completion, after it has had a chance to repair.
-    try {
-      const selected = await input.opts.workflows?.inspect({
-        source: input.opts,
-        appDir: descriptor.appDir,
-        agent: claim.agent,
-        workflow: intent.workflow,
-      });
-      if (!selected?.available)
-        return {
-          ok: false,
-          summary: selected?.error ?? "Task workflow contract is unavailable for verification",
-          facts: capability.handlerResult.facts,
-        };
-      verifier = selected.verifier;
-    } catch (error) {
-      return {
-        ok: false,
-        summary: `Task workflow contract could not be read: ${String(error)}`,
-        facts: capability.handlerResult.facts,
-      };
-    }
-  }
+  const verifier = capability.verifier;
   if (!verifier) {
     if (!workflow) {
       return {

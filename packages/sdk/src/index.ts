@@ -114,7 +114,6 @@ export type {
   TaskVerificationResult,
   TaskVerifier,
   TaskReconcileAdmission,
-  TaskReconcileAdmissionOptions,
 } from "./task.js";
 export { workflowResult, workflowResultVersion } from "./workflow-result.js";
 export type {
