@@ -986,7 +986,7 @@ export function readLoadedAppTaskInputResult(input: {
   appDir: string;
   taskId: string;
   admissionKey: string;
-  kind?: "answer" | "report";
+  kind?: "answer" | "report" | "progress" | "failure";
 }) {
   const config = readableAppTaskContext(input.bus, input.appDir);
   return config ? readAppTaskAdmissionOutcome(config, input.taskId, input.admissionKey, input.kind) : null;

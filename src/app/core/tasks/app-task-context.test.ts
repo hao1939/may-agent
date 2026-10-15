@@ -87,6 +87,7 @@ describe("Task context projections", () => {
         conditionGeneration: 1,
         type: "app.dependency.updated",
         subject: "id:review",
+        progress: "immediate",
         state: "unknown",
         dependency: {
           requestId: "review",
@@ -101,6 +102,7 @@ describe("Task context projections", () => {
         conditionGeneration: 1,
         type: "app.dependency.updated",
         subject: "id:missing",
+        progress: "immediate",
         state: "false",
       },
       {
@@ -108,6 +110,7 @@ describe("Task context projections", () => {
         conditionGeneration: 1,
         type: "app.dependency.updated",
         subject: "id:new",
+        progress: "immediate",
         state: "unknown",
         dependency: { requestId: "new", appId: "evaluation", status: "handling", resolvedTaskId: "new-task" },
       },
@@ -146,6 +149,7 @@ describe("Task context projections", () => {
             conditionGeneration: 1,
             type: "app.dependency.updated",
             subject: "id:open",
+            progress: "immediate",
             state: "unknown",
           },
         ],

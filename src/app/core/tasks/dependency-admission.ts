@@ -463,24 +463,19 @@ export function recoverTaskConditions(
       const item = getAppInboxItem(db, condition.spec.subject.slice(3));
       if (!item || item.source.kind !== "app" || item.source.id !== descriptor.id) continue;
       const source = AppTaskResourceStore.activeFromDb(db, item.appId);
-      const report =
-        item.status !== "done" &&
-        item.taskAdmissionKey &&
-        item.waitingOn?.kind === "task" &&
-        source &&
-        !source.isCancelled(item.waitingOn.id)
-          ? readAppTaskAdmissionOutcome({ resourceStore: source }, item.waitingOn.id, item.taskAdmissionKey, "report")
-          : null;
-      const result = item.status === "done" ? item.result : report;
-      if (!result) continue;
-      const event = appInputFeedbackEvent(item, result, item.status === "done" ? "done" : "blocked")!;
-      if (!matchesAppTaskCondition(condition, event)) continue;
-      for (const wake of trackAppTaskConditionEventForTasks(
-        config,
-        event,
-        taskIds.filter((id) => allowed.has(id)),
-      ))
-        recoveredTaskIds.add(wake.taskId);
+      const reports = item.taskAdmissionKey && item.waitingOn?.kind === "task" && source && !source.isCancelled(item.waitingOn.id)
+        ? (["progress", "failure"] as const).flatMap((kind) => {
+            const report = readAppTaskAdmissionOutcome({ resourceStore: source }, item.waitingOn!.id, item.taskAdmissionKey!, kind);
+            return report ? [report] : [];
+          }).sort((a, b) => (a.reportRevision ?? 1) - (b.reportRevision ?? 1))
+        : [];
+      const events = reports.map((report) => appInputFeedbackEvent(item, report, "blocked")!);
+      if (item.status === "done" && item.result) events.push(appInputFeedbackEvent(item, item.result, "done")!);
+      for (const event of events) {
+        if (!matchesAppTaskCondition(condition, event)) continue;
+        for (const wake of trackAppTaskConditionEventForTasks(config, event, taskIds.filter((id) => allowed.has(id))))
+          recoveredTaskIds.add(wake.taskId);
+      }
     }
   }
   const wakes = events.flatMap((event) => {

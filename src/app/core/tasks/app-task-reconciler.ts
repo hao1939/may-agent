@@ -654,13 +654,24 @@ function resultInputKeys(
   return [...new Set(keys)];
 }
 
+/** Read independent feedback, including the historical single-report representation. */
+function admissionFeedback(config: Pick<AppTaskContext, "resourceStore">, admission: AppTaskAdmission) {
+  const feedback = { ...admission.feedback };
+  if (admission.reportAttemptId) {
+    const attempt = config.resourceStore.readAttempt(admission.reportAttemptId);
+    const kind = attempt?.acceptedResult?.state === "waiting" ? "progress" : "failure";
+    feedback[kind] ??= { attemptId: admission.reportAttemptId, revision: admission.reportRevision ?? 1 };
+  }
+  return feedback;
+}
+
 /** Bind only exact admitted input considered by this attempt; reports are not answers. */
 function inputOutcomeAdmissions(
   config: AppTaskContext,
   tree: TaskTree,
   claim: AppTaskClaim,
   input: { acceptedLiveEventIds?: number[]; inputKeys?: string[]; report?: true } = {},
-  kind: "answer" | "report" | "retain" = "answer",
+  kind: "answer" | "progress" | "failure" | "retain" = "answer",
 ) {
   const keys = resultInputKeys(config, tree, claim, input);
   const resource = tree.resources![claim.taskId]!;
@@ -676,19 +687,15 @@ function inputOutcomeAdmissions(
     const admission = admissions?.[key];
     if (!admission || admission.taskId !== claim.taskId || admission.taskGeneration > claim.generation ||
       admission.resultAttemptId) return [];
-    if (kind === "report")
-      return admission.reportAttemptId && !input.report
-        ? []
-        : [
-            {
-              taskId: key,
-              value: {
-                ...admission,
-                reportAttemptId: claim.attemptId,
-                reportRevision: (admission.reportRevision ?? (admission.reportAttemptId ? 1 : 0)) + 1,
-              },
-            },
-          ];
+    if (kind === "progress" || kind === "failure") {
+      const feedback = admissionFeedback(config, admission);
+      if (feedback[kind] && !input.report) return [];
+      const revision = Math.max(0, ...Object.values(feedback).map((entry) => entry.revision)) + 1;
+      feedback[kind] = { attemptId: claim.attemptId, revision };
+      return [{ taskId: key, value: {
+        ...admission, feedback, reportAttemptId: undefined, reportRevision: undefined,
+      } }];
+    }
     delete tree.resources?.[claim.taskId]?.status.inputWaits?.[key];
     return [{ taskId: key, value: { ...admission, resultAttemptId: claim.attemptId } }];
   });
@@ -702,7 +709,7 @@ export function readAppTaskAdmissionOutcome(
   config: Pick<AppTaskContext, "resourceStore">,
   taskId: string,
   admissionKey: string,
-  kind: "answer" | "report" = "answer",
+  kind: "answer" | "report" | "progress" | "failure" = "answer",
 ):
   | (Omit<NonNullable<AppTaskAttempt["acceptedResult"]>, "state"> & {
       attemptId: string;
@@ -713,14 +720,19 @@ export function readAppTaskAdmissionOutcome(
   | null {
   const admission = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: [admissionKey] })
     .appTaskAdmissions?.[admissionKey];
-  const attemptId = kind === "answer" ? admission?.resultAttemptId : admission?.reportAttemptId;
-  if (admission?.taskId !== taskId || !attemptId) return null;
+  if (admission?.taskId !== taskId) return null;
+  const feedback = kind === "answer" ? {} : admissionFeedback(config, admission);
+  const selected = kind === "report"
+    ? Object.values(feedback).sort((a, b) => b.revision - a.revision)[0]
+    : kind === "answer" ? undefined : feedback[kind];
+  const attemptId = kind === "answer" ? admission.resultAttemptId : selected?.attemptId;
+  if (!attemptId) return null;
   const attempt = config.resourceStore.readAttempt(attemptId);
   if (attempt?.taskId !== taskId || attempt.taskGeneration < admission.taskGeneration) return null;
   const identity = {
     attemptId: attempt.metadata.id,
     generation: attempt.taskGeneration,
-    ...(kind === "report" ? { reportRevision: admission.reportRevision ?? 1 } : {}),
+    ...(selected ? { reportRevision: selected.revision } : {}),
   };
   const accepted = attempt.acceptedResult;
   if (kind === "answer") return accepted?.state === "converged" ? { ...identity, ...accepted } : null;
@@ -894,6 +906,7 @@ function materializeWaitingConditions(
       ...(raw.requestedAction?.trim() ? { requestedAction: raw.requestedAction.trim() } : {}),
       owner: raw.owner!.trim(),
       ...(reviewAfterMs === undefined ? {} : { reviewAfterMs }),
+      ...((raw.progress ?? current?.spec.progress) === undefined ? {} : { progress: raw.progress ?? current?.spec.progress }),
     };
     const sameSpec = current && JSON.stringify(stableValue(current.spec)) === JSON.stringify(stableValue(spec));
     const linkedToAnotherTask = Object.values(tree.resources ?? {}).some(
@@ -901,6 +914,19 @@ function materializeWaitingConditions(
     );
     if (current && !sameSpec && linkedToAnotherTask) {
       throw new Error(`Condition ${id} is already linked to another task with a different specification`);
+    }
+    // Changing when to consider progress does not invalidate the observed fact.
+    const { progress: _oldInterest, ...oldObservationSpec } = current?.spec ?? {};
+    const { progress: _newInterest, ...newObservationSpec } = spec;
+    const onlyInterestChanged = current && !sameSpec &&
+      JSON.stringify(stableValue(oldObservationSpec)) === JSON.stringify(stableValue(newObservationSpec));
+    if (onlyInterestChanged) {
+      registry[id] = {
+        ...current, spec,
+        metadata: { ...current.metadata, generation: current.metadata.generation + 1, resourceVersion: current.metadata.resourceVersion + 1 },
+        status: { ...current.status, observedGeneration: current.status.state === "unknown" ? 0 : current.metadata.generation + 1 },
+      };
+      continue;
     }
     const startsNewObservation = !sameSpec;
     registry[id] = startsNewObservation
@@ -2468,7 +2494,7 @@ export function reportAppTaskFailure(
   requireStringList(input.facts, "Incomplete report facts");
   const summary = `Outcome not achieved: ${input.summary.trim()}; continuing after backoff`;
   const { resource, attempt } = match;
-  const { keys: resolvedInputKeys, writes: admissions } = inputOutcomeAdmissions(config, tree, claim, input, "report");
+  const { keys: resolvedInputKeys, writes: admissions } = inputOutcomeAdmissions(config, tree, claim, input, "failure");
   const mutationScope = beginResourceMutationScope(tree, claim, []);
   const now = new Date().toISOString();
   attempt.acceptedResult = acceptedAttemptResult(
@@ -2987,7 +3013,7 @@ export function failAppTaskAttempt(
   if (!match) return { status: "superseded", summary: failure };
   const { resource, attempt } = match;
   const mutationScope = beginResourceMutationScope(tree, claim, []);
-  const admissions = inputOutcomeAdmissions(config, tree, claim, {}, "report").writes;
+  const admissions = inputOutcomeAdmissions(config, tree, claim, {}, "failure").writes;
   const failures = (resource.status.executionFailures ?? 0) + 1;
   const summary = failure;
   const now = new Date().toISOString();
@@ -3399,6 +3425,11 @@ function validateConditions(
     if (!("expected" in condition)) {
       throw new Error(`Handler result Condition ${identity} requires an expected value`);
     }
+    if (condition.progress !== undefined &&
+        (type !== "app.dependency.updated" || !identity.startsWith("app-request:") ||
+         (condition.progress !== "immediate" && condition.progress !== "next-wake"))) {
+      throw new Error(`Handler result Condition ${identity} progress requires an App request Condition and immediate or next-wake`);
+    }
     if (condition.requestedAction !== undefined) {
       requireNonEmptyString(condition.requestedAction, `Handler result Condition ${identity} requestedAction`);
     }
@@ -3785,7 +3816,7 @@ export function deferAppTask(
   }
   const { resource } = match;
   const { keys: inputKeys, writes: admissions } = inputOutcomeAdmissions(
-    config, tree, claim, input, input.report ? "report" : "retain",
+    config, tree, claim, input, input.report ? "progress" : "retain",
   );
   const retainedReviewAt = [
     resource.status.reviewAt,

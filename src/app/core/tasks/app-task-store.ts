@@ -139,7 +139,9 @@ export type AppTaskAdmission = {
   inputEvent?: Record<string, unknown>;
   /** Exact accepted answer for this input; later Task outcomes do not replace it. */
   resultAttemptId?: string;
-  /** Selected report: first failure, or an explicit update while waiting/retrying. Never an answer. */
+  /** Independent selected feedback. Progress cannot replace an undelivered failure. */
+  feedback?: Partial<Record<"progress" | "failure", { attemptId: string; revision: number }>>;
+  /** Legacy single selected report, retained for reading existing admissions. */
   reportAttemptId?: string;
   /** Monotonic within this input; older notifications cannot replace newer feedback. */
   reportRevision?: number;

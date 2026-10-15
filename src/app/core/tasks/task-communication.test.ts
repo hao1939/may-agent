@@ -907,9 +907,9 @@ test("managed finish corrects invalid input scope in one model execution and pre
       taskIds: [original.executionTaskId!],
       admissionIds: [originalKey, liveKey, laterKey],
     });
-    expect(taskTree.appTaskAdmissions?.[originalKey]?.reportAttemptId).toBeTruthy();
-    expect(taskTree.appTaskAdmissions?.[liveKey]?.reportAttemptId).toBeTruthy();
-    expect(taskTree.appTaskAdmissions?.[laterKey]?.reportAttemptId).toBeUndefined();
+    expect(taskTree.appTaskAdmissions?.[originalKey]?.feedback?.progress?.attemptId).toBeTruthy();
+    expect(taskTree.appTaskAdmissions?.[liveKey]?.feedback?.progress?.attemptId).toBeTruthy();
+    expect(taskTree.appTaskAdmissions?.[laterKey]?.feedback).toBeUndefined();
     expect(f.store.readTask(original.executionTaskId!)?.status.conditionIds).toEqual(["independent-review"]);
     const attempts = Object.values(taskTree.attempts ?? {});
     expect(attempts).toHaveLength(1);

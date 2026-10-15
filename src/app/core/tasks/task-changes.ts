@@ -65,8 +65,18 @@ export function applyTaskChanges(input: {
       ...(changes.communication?.length ? { communication: changes.communication } : {}),
     });
     const previous = config.resourceStore.readTaskChangeReceipt(input.claim.taskId, input.claim.generation, key);
-    if (previous) return previous;
     const conditions = changes.conditions ?? [];
+    const linked = linkedTaskAppDependencyConditions(config, input.claim.taskId);
+    // Effect receipts remain idempotent, but an explicit attention choice is
+    // desired state: A -> B -> A must restore A, not replay its obsolete receipt.
+    const interestChanged = previous && conditions.some((condition) => {
+      if (condition.progress === undefined) return false;
+      const id = "requestId" in condition
+        ? resolveTaskRequestCondition(config, input.claim, condition.requestId).id : condition.id;
+      const saved = linked.all.find((entry) => entry.id === id);
+      return saved && (saved.progress ?? "immediate") !== condition.progress;
+    });
+    if (previous && !interestChanged) return previous;
     for (const action of changes.actions ?? []) {
       const problem = input.descriptor.app.tasks?.validateAction?.(action);
       if (problem) throw new Error(problem);
@@ -80,7 +90,6 @@ export function applyTaskChanges(input: {
     const explicit = mergeTaskConditions(
       conditions.filter((condition): condition is Condition => !("requestId" in condition)),
     );
-    const linked = linkedTaskAppDependencyConditions(config, input.claim.taskId);
     mergeTaskConditions([...linked.all, ...explicit], new Set(linked.all.map(({ id }) => id)));
     const submitted = admitTaskAppRequests({
       ...input,
@@ -88,14 +97,17 @@ export function applyTaskChanges(input: {
       existingConditions: linked.unfinished,
       deferPublication: (publish) => publications.push(publish),
     });
-    const references = conditions.flatMap((condition) =>
-      "requestId" in condition
-        ? [submitted.get(condition.requestId) ?? resolveTaskRequestCondition(config, input.claim, condition.requestId)]
-        : [],
-    );
+    const references = conditions.flatMap((condition) => {
+      if (!("requestId" in condition)) return [];
+      const resolved = submitted.get(condition.requestId) ?? resolveTaskRequestCondition(config, input.claim, condition.requestId);
+      const previous = linked.all.find(({ id }) => id === resolved.id);
+      const progress: NonNullable<Condition["progress"]> =
+        condition.progress ?? previous?.progress ?? (previous ? "immediate" : "next-wake");
+      return [{ ...resolved, progress }];
+    });
     const declaredIds = new Set([...references, ...explicit].map(({ id }) => id));
     const resolved = mergeTaskConditions(
-      [...references, ...linked.all, ...explicit],
+      [...linked.all, ...references, ...explicit],
       new Set([...references, ...linked.all].map(({ id }) => id)),
     ).filter(({ id }) => declaredIds.has(id));
     const retired = new Set(

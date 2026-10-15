@@ -91,6 +91,7 @@ function currentTaskObligations(
             admission: admission
               ? {
                   available: true as const,
+                  ...(admission.feedback ? { feedback: admission.feedback } : {}),
                   ...(admission.reportAttemptId ? { reportAttemptId: admission.reportAttemptId } : {}),
                   ...(admission.reportRevision !== undefined ? { reportRevision: admission.reportRevision } : {}),
                   ...(admission.resultAttemptId ? { resultAttemptId: admission.resultAttemptId } : {}),

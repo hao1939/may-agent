@@ -273,20 +273,37 @@ function isAppInputReport(condition: AppTaskCondition, event: Record<string, unk
   return condition.spec.type === "app.dependency.updated" && event.type === condition.spec.type &&
     condition.metadata.id.startsWith("app-request:") &&
     condition.spec.subject === `id:${String(eventField(event, "id") ?? "")}` &&
-    eventField(event, "kind") === "app" && eventField(event, "status") === "blocked" &&
+    eventField(event, "kind") === "app" && ["blocked", "progress"].includes(String(eventField(event, "status"))) &&
     stableEquals(condition.spec.expected, { field: "status", equals: "done" });
+}
+
+function observedReports(condition: AppTaskCondition) {
+  const reports = { ...condition.status.reports };
+  const observed = condition.status.observed;
+  if (isRecord(observed)) {
+    if (observed.state === "progress") reports.progress ??= observed;
+    if (observed.state === "blocked") reports.failure ??= observed;
+  }
+  return reports;
 }
 
 export function matchesAppTaskCondition(
   condition: unknown,
   event: Record<string, unknown>,
 ): condition is AppTaskCondition {
-  return isCondition(condition) && condition.status.state !== "true" &&
-    (matches(condition, event) || (isAppInputReport(condition, event) &&
-      (!isRecord(condition.status.observed) || condition.status.observed.state !== "blocked" ||
-        (Number.isSafeInteger(eventField(event, "reportRevision")) &&
-          // Reports observed before revisions existed already represent revision 1.
-          Number(eventField(event, "reportRevision")) > Number(condition.status.observed.reportRevision ?? 1)))));
+  if (!isCondition(condition) || condition.status.state === "true") return false;
+  if (matches(condition, event)) return true;
+  if (!isAppInputReport(condition, event)) return false;
+  const kind = eventField(event, "status") === "progress" ? "progress" : "failure";
+  const reports = observedReports(condition);
+  const previous = reports[kind];
+  // Historical progress used the blocked wire status. An exact old receipt
+  // does not become a new report merely because its spelling is now corrected.
+  if (Object.values(reports).some((report) => report.reportAttemptId &&
+      report.reportAttemptId === eventField(event, "reportAttemptId") &&
+      Number(report.reportRevision ?? 1) === Number(eventField(event, "reportRevision") ?? 1))) return false;
+  return !previous || (Number.isSafeInteger(eventField(event, "reportRevision")) &&
+    Number(eventField(event, "reportRevision")) > Number(previous.reportRevision ?? 1));
 }
 
 /** Recognize the facts that belong to a wait, including an already observed fact. */
@@ -296,7 +313,7 @@ export function matchesAppTaskConditionFacts(condition: unknown, event: Record<s
 
 function observation(event: Record<string, unknown>): Record<string, unknown> {
   return {
-    ...(event.type === "app.dependency.updated" && eventField(event, "status") === "blocked"
+    ...(event.type === "app.dependency.updated" && ["blocked", "progress"].includes(String(eventField(event, "status")))
       ? { summary: eventField(event, "summary"), response: eventField(event, "response"),
           reportAttemptId: eventField(event, "reportAttemptId"),
           reportRevision: eventField(event, "reportRevision"),
@@ -345,15 +362,23 @@ function applyConditionEvent(
     if (condition.status.state !== "true") {
       condition.metadata.resourceVersion += 1;
       condition.status = {
+        ...condition.status,
         observedGeneration: condition.metadata.generation,
         state: report ? "false" : "true",
         observed: observation(event),
+        ...(report ? { reports: { ...observedReports(condition),
+          [eventField(event, "status") === "progress" ? "progress" : "failure"]: observation(event),
+        } } : {}),
         observedAt: now,
         facts: [`event:${String(event.type)}`, ...(event.source ? [`source:${String(event.source)}`] : [])],
       };
       changedConditionIds?.add(id);
       changed = true;
     }
+    // A quiet report updates the saved wait context, not the runnable input queue.
+    // Exact Condition matches (including explicit interest in a partial fact),
+    // failures and legacy waits retain immediate delivery.
+    if (report && eventField(event, "status") === "progress" && condition.spec.progress === "next-wake") continue;
     for (const resource of waitingResources) {
       const taskId = resource.metadata.id;
       if (eventWakes.has(taskId)) continue;

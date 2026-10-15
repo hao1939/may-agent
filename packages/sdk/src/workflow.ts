@@ -546,12 +546,18 @@ export type TaskAttempt = {
       type: string;
       subject: string;
       state: string;
+      /** When this caller considers intermediate reports; completion and failures still wake. */
+      progress?: "immediate" | "next-wake";
       dependency?: {
         requestId: string;
         appId: string;
         status: string;
         targetTaskId?: string;
         resolvedTaskId?: string;
+        /** Latest retained report, including quiet progress received between attempts. */
+        report?: unknown;
+        /** Independent progress and failure observations; neither resolves the other. */
+        reports?: Partial<Record<"progress" | "failure", unknown>>;
       };
     }>;
     note: string;

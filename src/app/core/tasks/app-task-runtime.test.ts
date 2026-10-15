@@ -666,6 +666,163 @@ it.each(["converged", "waiting", "incomplete"] as const)("carries explicit earli
 });
 
 describe("caller feedback PoC", () => {
+  it.each([undefined, "next-wake", "immediate"] as const)(
+    "retains 54 progress reports with caller-selected attention, then delivers failure and completion (%s)",
+    async (progress) => {
+      const f = fixture();
+      const persistDir = join(f.root, "state");
+      let bus = eventBus();
+      let host: AppInboxHost;
+      let requestId = "";
+      let workerCalls = 0;
+      let stage: "progress" | "failure" | "done" = "progress";
+      let loseFeedback = false;
+      const callerInputs: Parameters<TaskExecutor>[0][] = [];
+      const reviewAt = Date.now() + 60_000;
+      const app = defineApp({
+        ...definition(),
+        task: ({ input }) => ({ kind: "desired", intent: {
+          id: input.kind === "review" ? "work/caller" : "work/collector", parentId: "operations",
+          outcome: "Collect the requested sample", acceptance: ["Return the sample"],
+          executor: input.kind === "review" ? "caller" : "collector",
+        } }),
+      });
+      const config = () => loadedTaskConfig(f);
+      const install = async () => {
+        await installCoreTaskRuntimes({
+          ...options(f, bus), installControllers: false,
+          appRegistrySnapshot: { id: "progress-interest", generation: 1, entries: [{ appDir: f.appDir, definition: app }] },
+          executors: {
+            caller: async (attempt) => {
+              callerInputs.push(attempt);
+              if (attempt.events.items.some(({ event }) => event.type === "app.dependency.updated" && event.data.status === "done"))
+                return { state: "converged", summary: "Used returned sample", facts: ["sample:received"] };
+              if (callerInputs.length === 1) {
+                // Live declaration uses the same admission as a final result.
+                await attempt.apply({
+                  requests: [{ id: "sample", appId: "sample", input: { kind: "collect", data: {} } }],
+                  conditions: [{ requestId: "sample", ...(progress ? { progress } : {}) }],
+                });
+                for (const choice of ["immediate", "next-wake", "immediate", progress ?? "next-wake"] as const) {
+                  await attempt.apply({ conditions: [{ requestId: "sample", progress: choice }] });
+                  expect(config().resourceStore.readTaskConditions("work/caller")[0]?.spec.progress).toBe(choice);
+                }
+                return { state: "waiting", summary: "Await sample", facts: [], reviewAt };
+              }
+              // Omission of interest retains the saved choice on final admission.
+              return { state: "waiting", summary: "Retained useful progress", facts: [], conditions: [{ requestId: "sample" }] };
+            },
+            collector: async () => {
+              workerCalls++;
+              if (stage === "done") return { state: "converged", summary: "Sample ready", facts: ["sample:ready"], result: { score: 0.92 } };
+              if (stage === "failure") {
+                if (progress === "immediate") throw new Error("Sample access failed");
+                // Failure selection is independent of progress reporting.
+                return { state: "incomplete", summary: "Sample access failed", facts: ["sample:access-failed"] };
+              }
+              return { state: "waiting", continue: true, report: true, summary: `Collected ${workerCalls} observations`,
+                facts: [`observations:${workerCalls}`], result: { observations: workerCalls } };
+            },
+          },
+        });
+        host = new AppInboxHost({
+          db: getDb(persistDir), apps: [app], attachTask: (input) => admitTaskInput(config(), input),
+          readDependency: (input) => createAppTaskCapability({ bus }).readDependency({ ...input, appDir: f.appDir }),
+          onRequestUpdated(item, result, status) {
+            if (loseFeedback) throw new Error("Synthetic lost feedback");
+            const event = appInputFeedbackEvent(item, result, status)!;
+            return admitLoadedCanonicalAppTaskEvent({ bus, appId: "sample", event, intent: null,
+              conditionTaskIds: previewLoadedCanonicalAppTaskEvent({ bus, appId: "sample", event }),
+            })?.accepted;
+          },
+        });
+        bus.subscribe((event) => {
+          if (event.type !== "app.input.requested") return;
+          requestId = String(event.data.requestId);
+          host.admit({ id: requestId, appId: "sample", source: { kind: "app", id: "sample" },
+            input: event.data.input as { kind: string; data: unknown }, idempotencyKey: String(event.data.idempotencyKey) });
+          return { accepted: true, by: "fixture-inbox", route: "direct" };
+        });
+      };
+      const run = (taskId: string) => reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+      const restart = async () => {
+        host.close();
+        await closeInstalledAppTaskRuntimes(bus);
+        closeDb(persistDir);
+        bus = eventBus();
+        await install();
+      };
+      try {
+        await install();
+        host!.admit({ id: "original-ask", appId: "sample", source: { kind: "system", id: "fixture" }, input: { kind: "review", data: {} } });
+        await run("work/caller");
+        for (let revision = 1; revision <= 54; revision++) {
+          loseFeedback = revision === 27;
+          await run("work/collector");
+          await host!.refreshTaskResults("sample", "work/collector");
+          if (loseFeedback) {
+            await restart();
+            loseFeedback = false;
+            await recoverInstalledAppTasks(bus);
+          }
+          await run("work/caller");
+          expect(callerInputs).toHaveLength(progress === "immediate" ? revision + 1 : 1);
+          expect(config().resourceStore.readTaskConditions("work/caller")[0]).toMatchObject({
+            spec: { progress: progress ?? "next-wake" },
+            status: { state: "false", observed: { state: "progress", reportRevision: revision, result: { observations: revision } } },
+          });
+        }
+        const progressCalls = callerInputs.length - 1;
+        expect(workerCalls).toBe(54);
+        // A deliberate review runs on time and receives retained progress after restart.
+        await restart();
+        setSystemTime(reviewAt + 1);
+        await recoverInstalledAppTasks(bus);
+        await run("work/caller");
+        expect(callerInputs).toHaveLength(progressCalls + 2);
+        expect(callerInputs.at(-1)?.waits.open[0]?.dependency?.reports?.progress).toMatchObject({
+          state: "progress", reportRevision: 54, result: { observations: 54 },
+        });
+        stage = "failure";
+        loseFeedback = true;
+        await run("work/collector");
+        await host!.refreshTaskResults("sample", "work/collector");
+        setSystemTime(config().resourceStore.readTask("work/collector")!.status.executionRetryAt! + 1);
+        // Newer accepted progress must not overwrite the undelivered failure.
+        stage = "progress";
+        await run("work/collector");
+        await host!.refreshTaskResults("sample", "work/collector");
+        await restart();
+        loseFeedback = false;
+        await recoverInstalledAppTasks(bus);
+        await run("work/caller");
+        expect(callerInputs).toHaveLength(progressCalls + 3);
+        expect(callerInputs.at(-1)?.events.items.some(({ event }) => event.data.status === "blocked")).toBe(true);
+        expect(callerInputs.at(-1)?.waits.open[0]?.dependency?.reports).toMatchObject({
+          failure: { state: "blocked", reportRevision: 55 },
+          progress: { state: "progress", reportRevision: 56 },
+        });
+        const beforeRetry = callerInputs.length;
+        stage = "failure";
+        await run("work/collector");
+        await host!.refreshTaskResults("sample", "work/collector");
+        await recoverInstalledAppTasks(bus);
+        await run("work/caller");
+        expect(callerInputs).toHaveLength(beforeRetry);
+        stage = "done";
+        setSystemTime(config().resourceStore.readTask("work/collector")!.status.executionRetryAt! + 1);
+        await run("work/collector");
+        await host!.refreshTaskResults("sample", "work/collector");
+        await run("work/caller");
+        expect(callerInputs).toHaveLength(beforeRetry + 1);
+        expect(host!.get(requestId)?.status).toBe("done");
+        expect(config().resourceStore.readTask("work/caller")?.status.phase).toBe("converged");
+        console.log(JSON.stringify({ poc: "caller-progress-interest", progress: progress ?? "default", reports: 54, progressCalls,
+          reviewReceivedLatest: true, firstFailureDelivered: true, repeatedFailureQuiet: true, completionDelivered: true }));
+      } finally { host!.close(); }
+    },
+  );
   it("reads the full installed input contract through tasks without starting target work", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -1311,7 +1468,7 @@ describe("caller feedback PoC", () => {
         expect(callerInputs).toHaveLength(expectedCalls);
         if (scenario !== "quiet") {
           const feedback = callerInputs[1]!.events.items.find(({ event }) => event.type === "app.dependency.updated");
-          expect(feedback?.event.data).toMatchObject({ id: requestId, status: "blocked", summary: first!.summary });
+          expect(feedback?.event.data).toMatchObject({ id: requestId, status: first!.state === "waiting" ? "progress" : "blocked", summary: first!.summary });
           expect(callerInputs[1]!.waits.open[0]?.state).toBe("false");
         }
         if (scenario === "report-continue") {
@@ -1342,7 +1499,7 @@ describe("caller feedback PoC", () => {
             await run("work/caller");
             expectedCalls++;
             const feedback = callerInputs.at(-1)!.events.items.find(({ event }) => event.type === "app.dependency.updated");
-            expect(feedback?.event.data).toMatchObject({ status: "blocked", summary: selected!.summary, reportAttemptId: selected!.attemptId });
+            expect(feedback?.event.data).toMatchObject({ status: selected!.state === "waiting" ? "progress" : "blocked", summary: selected!.summary, reportAttemptId: selected!.attemptId });
             // A delayed old notification must not undo the newer observation
             // or wake the caller again after it already handled both reports.
             expect(trackAppTaskConditionEventForTasks(loadedTaskConfig(f),
