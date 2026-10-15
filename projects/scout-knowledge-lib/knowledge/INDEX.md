@@ -72,6 +72,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ### 2026-10-15
 
+- [Long-horizon agent control needs four independently checked states](./findings/2026-10-15-xhs-four-state-long-horizon-agent-control.md) — a complete XHS post separates goal, task, environment, and recovery state and names practical drift signals, but supplies no implementation, trace, experiment, or measured result.
 - [Agent approval policy must be sealed from the agent it constrains](./findings/2026-10-15-evo-agent-policy-seal.md) — pinned evo-agent source defines fail-visible policy loading, non-overridable blocked tools, manual-review red lines, governance-file self-protection, and sequence limits; Scout did not execute the project or inspect its separate server-side TCB.
 - [Collision awareness is not agent ownership](./findings/2026-10-15-gtree-agent-collision-coordination.md) — gtree's product documentation separates same-worktree pre-edit messaging, cross-worktree overlap warnings, cross-project questions, and a human-attention inbox; no public protocol, source, tests, traces, or live reproduction establish atomic ownership or conflict prevention.
 - [Agent context observability needs explicit claim tiers](./findings/2026-10-15-agentfootprint-context-evidence-claim-tiers.md) — pinned Agentfootprint documentation separates recorded occurrence, structural linkage, lexical membership, correlational usage, and counterfactual ablation; Scout did not execute the software, tests, traces, or reruns.
