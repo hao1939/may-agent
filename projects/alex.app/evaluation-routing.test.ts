@@ -144,6 +144,24 @@ test("published diagnoses execute in Alex while May Conversation remains broken"
       "evaluation.metric_report_published",
     ].entries()) {
       const ordinal = index + 1;
+      const quiet = bus.emit({
+        type,
+        source: "workflow:review",
+        owner: "app:alex",
+        target: { appId: "alex" },
+        data: {
+          appId: "may",
+          ...(index === 0 ? { taskId: human.taskId } : { metricId: "may.fixture-failure", alertId: 7 }),
+          evidenceHash: "0".repeat(64), executionId: "quiet-" + ordinal,
+          report: "reports/quiet.md", facts: "reports/quiet.json",
+          jsonHash: "b".repeat(64), markdownHash: "c".repeat(64),
+          followUp: { kind: "none" },
+        },
+      });
+      await until(() => (db.prepare("SELECT delivery_status FROM events WHERE id = ?")
+        .get(quiet[EVENT_ROW_ID]!) as { delivery_status: string } | null)?.delivery_status === "accepted");
+      expect(reportInputs()).toHaveLength(index);
+      expect(calls).toBe(index);
       const emitted = bus.emit({
         type,
         source: "workflow:review",
@@ -158,6 +176,7 @@ test("published diagnoses execute in Alex while May Conversation remains broken"
           facts: "reports/" + ordinal + ".json",
           jsonHash: "b".repeat(64),
           markdownHash: "c".repeat(64),
+          followUp: { kind: "request", message: "Repair the newly demonstrated failure; preserve the existing human ask." },
         },
       });
       await until(() => {
@@ -175,6 +194,7 @@ test("published diagnoses execute in Alex while May Conversation remains broken"
       expect(calls).toBe(ordinal);
       expect(alexStore.readTrigger(taskId)).toBeNull();
       handled.push(taskId);
+      bus.redeliverPersisted(quiet, quiet[EVENT_ROW_ID]!);
       bus.redeliverPersisted(emitted, emitted[EVENT_ROW_ID]!);
       inbox.scanNow();
       await Bun.sleep(10);

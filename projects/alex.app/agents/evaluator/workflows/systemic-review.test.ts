@@ -176,6 +176,7 @@ test("recovered work reaches population review, preserves its cut through admiss
             findings: ["Population has three failures; cause unassessed"],
             verification: ["Current Task and fixed population read"],
             delivery: "Report returned",
+            followUp: { kind: "request", message: "Investigate the uncovered recurring App failures while preserving the recovered input." },
           },
         };
       },

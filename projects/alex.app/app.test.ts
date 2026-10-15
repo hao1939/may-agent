@@ -189,6 +189,18 @@ test("ordinary Evaluation reports are consumed only by Alex with immutable ident
     expect(input.kind).toBe("message");
     expect((input.data as any).context.publication.evidenceHash).toBe(hash("a"));
     expect(taskForInput({ id: String(event.localKey), input } as never).intent).toMatchObject({ agent: "alex", input });
+    // No interpretation of prose, finding count or assessment disposition.
+    expect(evaluationReportInput({ ...event, data: { ...event.data,
+      followUp: { kind: "none" }, disposition: "insufficient-evidence", findings: ["known issue"],
+    } } as never)).toBeNull();
+    const request = evaluationReportInput({ ...event, data: { ...event.data,
+      followUp: { kind: "request", message: "Reuse repair/one to check the new recurrence." }, findings: [],
+    } } as never)!;
+    expect((request.data as any).message).toContain("Reuse repair/one to check the new recurrence.");
+    expect((request.data as any).context.publication).toEqual((input.data as any).context.publication);
+    for (const followUp of [null, false, { kind: "quiet" }, { kind: "none", message: "hidden request" }, { kind: "request", message: " " }]) {
+      expect(() => evaluationReportInput({ ...event, data: { ...event.data, followUp } } as never)).toThrow("Invalid evaluation followUp");
+    }
   }
   expect(app.subscriptions?.filter(({ id }) => id === "evaluation-task-report" || id === "evaluation-metric-report")).toHaveLength(2);
   expect(() => evaluationReportInput({ ...taskEvent, data: { ...taskEvent.data, jsonHash: "bad" } } as never)).toThrow("SHA-256 jsonHash");
