@@ -502,6 +502,7 @@ test("offline cutover restores only the first accepted failure for its exact inp
   reportAppTaskFailure(f.config, f.claim(), { summary: "Source still unavailable", facts: ["HTTP:503"] });
   const saved = f.store.readTaskContext({ taskIds: [], admissionIds: ["task:first"] }).appTaskAdmissions!["task:first"]!;
   delete saved.reportAttemptId;
+  delete saved.feedback;
   f.store.commit({ fences: [{ taskId: "work", resourceVersion: f.store.readTask("work")!.metadata.resourceVersion }],
     admissions: [{ taskId: "task:first", value: saved }] });
   expect(f.migrate().inputs).toBe(1);

@@ -690,8 +690,18 @@ export class AppInboxHost {
         );
         return;
       }
+      // Attempt every independent report. A failed notification cannot block
+      // saving an accepted answer; linked Conditions can recover retained facts.
+      let reportFailure: { error: unknown } | undefined;
+      for (const report of observed.reports ?? (observed.report ? [observed.report] : [])) {
+        try {
+          this.#onRequestUpdated?.(item, report, "blocked");
+        } catch (error) {
+          reportFailure ??= { error };
+        }
+      }
       if (!REVIEWABLE_TASK_DEPENDENCY_STATUSES.has(observed.status)) {
-        if (observed.report) this.#onRequestUpdated?.(item, observed.report, "blocked");
+        if (reportFailure) throw reportFailure.error;
         resolveAppInboxRecovery(this.#db, item.id, "input-result", this.#now());
         return;
       }

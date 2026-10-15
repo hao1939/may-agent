@@ -59,6 +59,10 @@ export const taskActionSchema = Type.Union([
   ),
 ]);
 
+const progressInterestSchema = Type.Union([Type.Literal("immediate"), Type.Literal("next-wake")], {
+  description: "When to consider intermediate progress: immediately or at the next wake. New request waits default to next-wake; omission preserves existing interest. Completion and failures still wake promptly. Use reviewAt if consideration has a deadline.",
+});
+
 export const conditionSchema = Type.Object(
   {
     id: nonEmptyStringSchema,
@@ -70,6 +74,7 @@ export const conditionSchema = Type.Object(
     }),
     subject: typedConditionSubjectSchema,
     expected: Type.Unknown(),
+    progress: Type.Optional(progressInterestSchema),
     requestedAction: Type.Optional(
       Type.String({ minLength: 1, description: "Needed action; use a delivery capability to contact its owner." }),
     ),
@@ -139,7 +144,7 @@ const resultFields = {
       Type.Union([
         conditionSchema,
         Type.Object(
-          { requestId: nonEmptyStringSchema },
+          { requestId: nonEmptyStringSchema, progress: Type.Optional(progressInterestSchema) },
           {
             additionalProperties: false,
             description:
@@ -204,7 +209,7 @@ export const taskAgentResultSchema = Type.Union(
         ...resultFields,
         report: Type.Literal(true, {
           description:
-            "Return new caller-relevant progress or a blocker with facts. Existing independent waits remain; omit for an unchanged quiet wait.",
+            "Share informative progress: changes, checks, uncertainty, remaining work and evidence. The caller chooses when to consider it. Ask for guidance or approval through requests; reporting progress alone does not ask for action. Existing independent waits remain.",
         }),
         continue: Type.Optional(
           Type.Literal(true, {
@@ -240,7 +245,7 @@ export const taskAgentResultSchema = Type.Union(
   {
     $id: TASK_AGENT_RESULT_SCHEMA_ID,
     description:
-      "Report one Task attempt against its goal and acceptance. Put supported progress, limitations and exact evidence links in facts; partial output may be retained in result. Existing independent obligations survive omitted fields. Supported observations settle Conditions; authorized decisions supply approval. Feedback is evidence to assess. The Host persists and delivers results; the App judges outcomes. Waiting may set reviewAt (Unix milliseconds) for deliberate agent reconsideration. Conditions recover missed observations in code without periodic agent calls. Requests submit independently owned work: reuse stable id and exact taskId when applicable. The receiver handles the request independently. To wait for its result, return conditions:[{requestId: id}] and state waiting; Host resolves the reference into an ordinary Condition. continue:true permits independent work. Requests without Conditions may accompany convergence. Omission never retires an existing wait; use retire-condition for that decision. Host publishes and correlates; blocked retains the wait, done returns an answer or owner closure. Parent links organize work; dependsOn gates execution. Use ordinary helper calls for bounded contributions.",
+      "Report one Task attempt against its goal and acceptance. Put supported progress, limitations and exact evidence links in facts; partial output may be retained in result. Existing independent obligations survive omitted fields. Supported observations settle Conditions; authorized decisions supply approval. Feedback is evidence to assess. The Host persists and delivers results; the App judges outcomes. Waiting may set reviewAt (Unix milliseconds) for deliberate agent reconsideration. Conditions recover missed observations in code without periodic agent calls. Requests submit independently owned work: reuse stable id and exact taskId when applicable. The receiver handles the request independently. To wait for its result, return conditions:[{requestId: id}] and state waiting; Host resolves the reference into an ordinary Condition. continue:true permits independent work. Requests without Conditions may accompany convergence. Omission never retires an existing wait; use retire-condition for that decision. Host publishes and correlates independent progress, failure (blocked), and answer/owner closure (done) facts. New request Conditions default to progress: next-wake; choose immediate for eager progress or a separate Condition for a needed partial fact. Failure and completion still wake promptly. Omission preserves saved interest. Progress does not erase failure or ask for help. Parent links organize work; dependsOn gates execution. Use ordinary helper calls for bounded contributions.",
   },
 );
 
@@ -378,6 +383,11 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
   if (!conditionOwnerPattern.test(owner)) {
     return `conditions[${index}].owner must be a canonical kind:identity`;
   }
+  if (value.progress !== undefined &&
+      (type !== "app.dependency.updated" || !id.startsWith("app-request:") ||
+       (value.progress !== "immediate" && value.progress !== "next-wake"))) {
+    return `conditions[${index}].progress requires an App request Condition and immediate or next-wake`;
+  }
   const reviewAfterMs = value.reviewAfterMs;
   if (
     reviewAfterMs !== undefined &&
@@ -393,6 +403,7 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
     ...(requestedAction.value ? { requestedAction: requestedAction.value } : {}),
     owner,
     ...(reviewAfterMs === undefined ? {} : { reviewAfterMs: Number(reviewAfterMs) }),
+    ...(value.progress === undefined ? {} : { progress: value.progress as "immediate" | "next-wake" }),
   };
 }
 
@@ -411,7 +422,8 @@ export function admitTaskReconcileResult(output: unknown): TaskReconcileAdmissio
       requests: dependencies,
       conditions: [
         ...(Array.isArray(rest.conditions) ? rest.conditions : []),
-        ...dependencies.map((dependency) => ({ requestId: isRecord(dependency) ? dependency.id : undefined })),
+        // Legacy callers requested every intermediate report; retain that choice.
+        ...dependencies.map((dependency) => ({ requestId: isRecord(dependency) ? dependency.id : undefined, progress: "immediate" })),
       ],
     };
   }
@@ -477,7 +489,9 @@ export function admitTaskReconcileResult(output: unknown): TaskReconcileAdmissio
     if (isRecord(declaration) && "requestId" in declaration) {
       const requestId = normalizedString(declaration.requestId);
       if (!requestId) return { ok: false, error: `conditions[${index}].requestId must be a non-empty string` };
-      conditions.push({ requestId });
+      if (declaration.progress !== undefined && declaration.progress !== "immediate" && declaration.progress !== "next-wake")
+        return { ok: false, error: `conditions[${index}].progress must be immediate or next-wake` };
+      conditions.push({ requestId, ...(declaration.progress === undefined ? {} : { progress: declaration.progress }) });
       continue;
     }
     const normalized = normalizeCondition(declaration, index);

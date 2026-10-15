@@ -532,7 +532,7 @@ export function previewLoadedCanonicalAppTaskEventRoutes(input: {
   const loadedApps = new Set(descriptors.map((descriptor) => descriptor.id));
   const store = descriptors[0]!.resourceStore;
   for (const route of store.readConditionRoutesForAllApps(String(event.type ?? ""), subjects)) {
-    if (!loadedApps.has(route.appId) || !matchesAppTaskCondition(route.condition, event)) continue;
+    if (!loadedApps.has(route.appId) || !matchesAppTaskCondition(route.condition, event, store)) continue;
     const taskIds = matchesByApp.get(route.appId) ?? new Set<string>();
     for (const taskId of route.taskIds) taskIds.add(taskId);
     matchesByApp.set(route.appId, taskIds);
@@ -986,7 +986,7 @@ export function readLoadedAppTaskInputResult(input: {
   appDir: string;
   taskId: string;
   admissionKey: string;
-  kind?: "answer" | "report";
+  kind?: "answer" | "report" | "progress" | "failure";
 }) {
   const config = readableAppTaskContext(input.bus, input.appDir);
   return config ? readAppTaskAdmissionOutcome(config, input.taskId, input.admissionKey, input.kind) : null;

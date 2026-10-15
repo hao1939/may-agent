@@ -181,21 +181,48 @@ synchronous helpers and explicit fenced controls keep their existing contracts.
 `project.task.reconciled` and `app.task.cancelled` also notify result readers.
 Composition refreshes exact input feedback and linked Conversation observations
 from those facts. `core/inbox/input-result.ts` builds `app.dependency.updated`
-for both live delivery and recovery: `blocked` returns the input's selected
-report; `done` returns its answer or owner closure. A report may be accepted
-`incomplete`/`waiting` facts or a factual failed-attempt reference, never an
-invented answer. `failAppTaskAttempt()` saves the first failure report in the
-same transaction as retry state; its diagnostic wrapper shares that path.
-Internal workflow-to-agent handoff does not select a failure report.
-`app-task-condition-tracker.ts` wakes the caller once per selected report
-revision while keeping the wait unsatisfied. Automatic retries remain quiet.
-An agent may deliberately select new feedback with `report: true` on `waiting`
-or `incomplete`, with non-empty facts. Omitting the flag keeps an ordinary wait
-quiet and preserves the first failure report during retries. Delayed older reports cannot
-replace the latest selection. This does not guarantee every intermediate update.
-The later answer satisfies the wait, even if the caller is retrying its own work.
-Conversation uses the same saved selection; answer or closure suppresses newly
-admitting obsolete reports without erasing inputs already admitted as history.
+for both live delivery and recovery: `progress` carries selected accepted waiting
+facts, `blocked` carries failure evidence, and `done` returns an answer or owner
+closure. Neither intermediate fact fulfills the input. Internal workflow-to-agent
+handoff does not select a failure report.
+
+Progress and failure have independent selected references on each exact input
+admission. Selecting one does not overwrite the other. The first failure is
+selected automatically; `report: true` selects fresh progress on `waiting` or
+fresh failure evidence on `incomplete`. Repeated automatic failures reuse the
+saved failure reference. Selection revisions provide ordering within each kind;
+exact attempt/revision identities deduplicate live delivery and recovery. Legacy
+single-report admissions remain readable. Replaying one preserves its original
+wire content and identity, including the historical `blocked` status for progress.
+The observer resolves that old status from its exact source attempt; unavailable
+attempts remain unclassified in `reports.unknown`. Current publications declare
+their report kind, so later retention does not make their meaning ambiguous.
+The retained view holds the latest
+selected report of each kind, not an outbox of every intermediate update. Accepted
+attempt history remains available under its existing retention contract.
+
+The caller declares `conditions: [{ requestId, progress: "next-wake" }]` to retain
+progress for its next execution, or `progress: "immediate"` to become runnable on
+new progress. New request references default to `next-wake`; omission on a saved
+wait preserves its choice. Historical waits and deprecated `dependencies` keep
+immediate behavior. Both live `apply` and final declarations use this resolution.
+An explicit changed choice takes effect even if the same choice had an earlier
+receipt. It preserves observed facts, wait age, and every input's correlation to
+the same Condition. Changing attention alone cannot make another input runnable.
+
+Quiet progress updates the Condition observation without adding a Task trigger
+or input obligation. Failure, answer, ordinary input and a matching explicit
+Condition still wake promptly. A caller needing a partial fact declares that
+Condition; a caller needing a time limit chooses Task `reviewAt`. No new recurring
+timer, grace window or competing attempt is introduced. A wake schedules the
+Task's declared procedure, not necessarily a model. Quiet progress becomes
+available in the next attempt's wait context; it does not interrupt an active
+attempt. Informational reports alone do not carry requests for help: use ordinary
+Task input for an explicit action request.
+
+Report delivery failures do not block saving an accepted answer. Saved references
+remain recoverable through open Conditions; completion/closure retains normal
+lifecycle behavior and does not reopen settled work to deliver historical reports.
 This is not a general progress stream. Apps can still declare relevant event routes.
 
 ## Outcome and control names
@@ -218,12 +245,13 @@ A missed Condition checkpoint reports which waits are due. It carries no "final
 review" count: repeated reviews keep the declared timing, and the owner decides
 whether the assignment should continue.
 
-New work is requested through `TaskReconcileResult.dependencies`: the destination
+New work is requested through `TaskReconcileResult.requests`: the destination
 App validates `input` and chooses its Task specification and executor. Workers
 cannot return raw `create-task` or `update-task` actions. `unblock-task` reconsiders
 an existing wait using its current generation and creator authority.
-`admitTaskAppDependencies()` in `dependency-admission.ts` saves and notifies delegated
-input; `app-task-inputs.ts` resumes the caller's exact saved input when feedback
+`admitTaskAppRequests()` in `dependency-admission.ts` saves and notifies delegated
+input; callers declare Conditions when they need the answer. Deprecated
+`dependencies` normalize to requests and immediate-progress Conditions; `app-task-inputs.ts` resumes the caller's exact saved input when feedback
 arrives through its retained wait.
 
 Parent links organize work and scope reads; creator metadata controls changes.
