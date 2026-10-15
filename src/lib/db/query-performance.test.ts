@@ -89,3 +89,129 @@ test("SQL diagnostics bound distinct shapes and expose omitted work instead of c
     db.close();
   }
 });
+
+test("SQL diagnostics retain one bounded parameterized plan only for a slow successful read", () => {
+  let duration = 0;
+  let start = true;
+  const elapsedNow = () => {
+    start = !start;
+    return start ? duration : 0;
+  };
+  const profile = new SqlPerformance(512, () => 123_456, elapsedNow);
+  const underlying = openDatabase(":memory:");
+  let explainCalls = 0;
+  const explainParams: unknown[][] = [];
+  const observed = {
+    exec: (sql: string) => underlying.exec(sql),
+    run: (sql: string, params?: unknown[]) => underlying.run(sql, params),
+    prepare(sql: string) {
+      const statement = underlying.prepare(sql);
+      if (!sql.startsWith("EXPLAIN QUERY PLAN ")) return statement;
+      return {
+        ...statement,
+        all(...params: unknown[]) {
+          explainCalls++;
+          explainParams.push(params);
+          return statement.all(...params);
+        },
+      };
+    },
+    close: () => underlying.close(),
+  };
+  const db = profileDatabase(observed, profile);
+  try {
+    db.exec("CREATE TABLE sample(value TEXT UNIQUE)");
+    db.prepare("INSERT INTO sample VALUES (?)").run("private parameter");
+
+    const ordinary = db.prepare("SELECT value FROM sample WHERE value IS NOT NULL");
+    expect(ordinary.get()).toEqual({ value: "private parameter" });
+    expect(explainCalls).toBe(0);
+
+    const write = db.prepare("UPDATE sample SET value = ?");
+    duration = 2_000;
+    expect(write.run("private parameter").changes).toBe(1);
+    expect(db.prepare("UPDATE sample SET value = ? RETURNING value").get("private parameter")).toEqual({
+      value: "private parameter",
+    });
+    expect(db.prepare("WITH next(value) AS (SELECT ?) UPDATE sample SET value = (SELECT value FROM next) RETURNING value").all("private parameter")).toEqual([
+      { value: "private parameter" },
+    ]);
+    expect(
+      db
+        .prepare("WITH select2(value) AS (SELECT ?) UPDATE sample SET value = (SELECT value FROM select2) RETURNING value")
+        .all("private parameter"),
+    ).toEqual([{ value: "private parameter" }]);
+    expect(
+      db
+        .prepare("WITH selecté(value) AS (SELECT ?) UPDATE sample SET value = (SELECT value FROM selecté) RETURNING value")
+        .all("private parameter"),
+    ).toEqual([{ value: "private parameter" }]);
+    const longCte = "a".repeat(790);
+    expect(
+      db
+        .prepare(
+          `WITH ${longCte} AS (SELECT 1), select2(value) AS (SELECT ?) UPDATE sample SET value = (SELECT value FROM select2) RETURNING value`,
+        )
+        .all("private parameter"),
+    ).toEqual([{ value: "private parameter" }]);
+    expect(db.prepare("CREATE TABLE written AS SELECT 1 AS value").all()).toEqual([]);
+    expect(explainCalls).toBe(0);
+
+    const read = db.prepare("SELECT value FROM sample WHERE value = ?");
+    duration = 3_000;
+    expect(read.get("private parameter")).toEqual({ value: "private parameter" });
+    const slow = profile.snapshot().queries.topByWorstTime.find((row) => row.operation === "get" && row.plan);
+    expect(slow?.plan).toMatchObject({
+      fingerprint: slow?.id,
+      shape: "SELECT value FROM sample WHERE value = ?",
+      capturedAt: 123_456,
+      rowsTruncated: false,
+    });
+    expect(slow?.plan?.rows.length).toBeGreaterThan(0);
+    expect(slow?.plan?.rows.length).toBeLessThanOrEqual(20);
+    expect(explainParams).toEqual([["private parameter"]]);
+    expect(JSON.stringify(profile.snapshot())).not.toContain("private parameter");
+
+    for (let i = 0; i < 25; i++) read.get("private parameter");
+    expect(explainCalls).toBe(1);
+  } finally {
+    db.close();
+  }
+});
+
+test("a failed plan capture cannot change a successful slow read", () => {
+  let start = true;
+  const profile = new SqlPerformance(
+    512,
+    () => 123_456,
+    () => {
+      start = !start;
+      return start ? 1_001 : 0;
+    },
+  );
+  const underlying = openDatabase(":memory:");
+  let planAttempts = 0;
+  const db = profileDatabase(
+    {
+      exec: (sql) => underlying.exec(sql),
+      run: (sql, params) => underlying.run(sql, params),
+      prepare(sql) {
+        if (sql.startsWith("EXPLAIN QUERY PLAN ")) {
+          planAttempts++;
+          throw new Error("plan unavailable");
+        }
+        return underlying.prepare(sql);
+      },
+      close: () => underlying.close(),
+    },
+    profile,
+  );
+  try {
+    const read = db.prepare("SELECT ? AS value");
+    for (let i = 0; i < 25; i++) expect(read.get("still returned")).toEqual({ value: "still returned" });
+    expect(planAttempts).toBe(1);
+    expect(profile.snapshot().queries.topByWorstTime.find((row) => row.operation === "get")?.plan).toBeUndefined();
+  } finally {
+    db.close();
+  }
+});

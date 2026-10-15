@@ -147,6 +147,16 @@ rows, database paths and error messages are omitted; SQL literals and comments
 are masked. SQL structure remains operator diagnostic data. Lock waits count as
 elapsed SQL time; sleeps outside SQLite do not.
 
+After a successful individual `get` or `all` call exceeds 1000 ms, its tracked
+operation/shape row may also contain one `plan` witness. The witness repeats the
+masked `fingerprint` and `shape`, records `capturedAt`, and retains at most 20
+`EXPLAIN QUERY PLAN` rows (`id`, `parent`, and a detail string bounded to 500
+characters), with `rowsTruncated` indicating omission. The plan uses the
+original bindings without retaining them. It is captured once per tracked
+operation/shape in the five-minute window; `prepare`, `run`, and `exec` calls
+never trigger planning. Plan errors are omitted and do not change the completed
+read result.
+
 Compact cumulative counters also accompany the existing minute
 `runtime.daemon.heartbeat` observation. A consumer can compare samples from the
 same PID and `sql.since`, resetting across restarts. This adds no per-query writes
