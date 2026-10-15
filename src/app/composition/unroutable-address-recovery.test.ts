@@ -47,7 +47,14 @@ function message() {
     type: "message.created" as const,
     source: "agent:sender",
     owner: "agent:missing-owner",
-    data: { from: "sender", to: "missing-owner", content: "fixture", intent: "status-update", priority: "P2" },
+    data: {
+      from: "sender",
+      to: "missing-owner",
+      content: "fixture",
+      intent: "status-update",
+      priority: "P2",
+      idempotencyKey: "unroutable-address-fixture",
+    },
   };
 }
 
@@ -113,6 +120,26 @@ test("terminally settles a persistently unroutable durable address and does not 
     await settleFailureEvents();
     expect(db.prepare("SELECT app_admission_attempts FROM events WHERE id = ?").get(eventId)).toEqual({
       app_admission_attempts: 3,
+    });
+    expect(db.prepare("SELECT COUNT(*) count FROM events WHERE event_type = 'subscriber.failed'").get()).toEqual({
+      count: 2,
+    });
+
+    installRecipient(root);
+    await runtime.reload();
+    const retried = restartedBus.emit(message());
+    expect(retried[EVENT_ROW_ID]).toBe(eventId);
+    restartedBus.redeliverPersisted(message(), eventId, "app-inbox-route");
+    await settleFailureEvents();
+    expect(
+      db
+        .prepare(
+          "SELECT app_admission_attempts, app_admission_pending, delivery_status, delivery_note FROM events WHERE id = ?",
+        )
+        .get(eventId),
+    ).toEqual(terminal);
+    expect(db.prepare("SELECT COUNT(*) count FROM app_inbox_items WHERE origin_event_id = ?").get(eventId)).toEqual({
+      count: 0,
     });
     expect(db.prepare("SELECT COUNT(*) count FROM events WHERE event_type = 'subscriber.failed'").get()).toEqual({
       count: 2,

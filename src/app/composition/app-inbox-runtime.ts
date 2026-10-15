@@ -893,6 +893,21 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             note: "addressed agent message already admitted to App inbox",
           };
         }
+        // A keyed producer retry can redeliver an already-settled unhandled
+        // Event even after its admission marker is cleared. Keep terminal
+        // settlement absorbing before registry selection so a later App install
+        // cannot resurrect the original publication or replace its audit note.
+        const exhausted = eventId
+          ? (options.db
+              .prepare("SELECT app_admission_attempts, app_admission_pending FROM events WHERE id = ?")
+              .get(eventId) as { app_admission_attempts?: unknown; app_admission_pending?: unknown } | undefined)
+          : undefined;
+        if (
+          Number(exhausted?.app_admission_attempts ?? 0) >= UNROUTABLE_ADDRESS_MAX_ATTEMPTS &&
+          exhausted?.app_admission_pending === 0
+        ) {
+          return;
+        }
         const candidates = host.matchingAppIds(message.targetOwner, message.input);
         if (candidates.length === 1) {
           const admitted = host.admit({
