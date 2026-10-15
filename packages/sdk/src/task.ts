@@ -52,6 +52,8 @@ export type Condition = {
   owner?: string;
   /** @deprecated Retained for compatibility; use Task reviewAt to request agent reconsideration. */
   reviewAfterMs?: number;
+  /** Caller interest in intermediate progress on an App request. Completion and failures still wake. */
+  progress?: "immediate" | "next-wake";
 };
 
 /**
@@ -72,7 +74,13 @@ export type TaskAppRequest = {
 };
 
 /** Caller wait on a new or already admitted request in this Task generation. */
-export type TaskRequestCondition = { requestId: string };
+export type TaskRequestCondition = {
+  requestId: string;
+  /** New waits default to next-wake. Omit on an existing wait to retain its choice.
+   * Immediate considers each new progress report; next-wake retains it as context.
+   * Neither delays completion, failures, explicit requests or other Conditions. */
+  progress?: "immediate" | "next-wake";
+};
 export type TaskCondition = Condition | TaskRequestCondition;
 
 /** @deprecated Return requests and caller Conditions instead. */
@@ -155,7 +163,8 @@ export type TaskReconcileResult = {
     } & (
       | { report?: never }
       | {
-          /** Return a new caller-relevant update without answering the input. */
+          /** Share informative progress without answering the input. The caller chooses when to consider it.
+           * Ask for guidance or approval through an ordinary request; a progress report is not an ask. */
           report: true;
           facts: [string, ...string[]];
         }

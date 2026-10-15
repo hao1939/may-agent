@@ -313,8 +313,10 @@ describe("App read projections", () => {
         taskGeneration: 1,
         specHash: "standing",
         admittedAt: new Date(2).toISOString(),
-        reportAttemptId: "report-unanswered",
-        reportRevision: 4,
+        feedback: {
+          progress: { attemptId: "report-progress", revision: 3, legacyBlocked: true },
+          failure: { attemptId: "report-unanswered", revision: 4 },
+        },
       }),
     );
 
@@ -378,7 +380,10 @@ describe("App read projections", () => {
             conditionCount: 0,
             correlation: {
               input: { available: true, id: "current-unanswered", kind: "message", status: "pending" },
-              admission: { available: true, reportAttemptId: "report-unanswered", reportRevision: 4 },
+              admission: { available: true, feedback: {
+                progress: { attemptId: "report-progress", revision: 3 },
+                failure: { attemptId: "report-unanswered", revision: 4 },
+              } },
             },
           },
         ],
