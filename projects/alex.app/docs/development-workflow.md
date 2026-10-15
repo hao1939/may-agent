@@ -295,17 +295,22 @@ no May delivery Task, do not fabricate one or relabel the Alex Task as May.
 When a May-owned delivery is waiting on a GitHub PR, use the registered
 `github-pull-request` observer contract documented in
 [`../../may.app/design/github-pull-request-observation.md`](../../may.app/design/github-pull-request-observation.md).
-Return a `may.github.pull-request.state` Condition with canonical subject
-`pull-request:github:<owner>/<repo>#<number>`, matching provider/repository, and
-`{ "field": "fingerprint", "notEquals": null }` for the initial observation.
-After judgment, rearm with the last observed fingerprint when further PR change
-is relevant. Do not infer links from prose or require a magic human reply.
+Use `tasks.contract` / `read.contract("may")` to discover `github-pull-request`.
+Build and save its observation Condition for resource
+`github:hao1939/may-agent#<number>` and the required fact, such as
+`{ "field": "fingerprint", "notEquals": null }` for the initial snapshot.
+After judgment, rearm with the observed fingerprint if later changes matter.
+The public PR owner block supplies live routing; the saved Condition supplies
+missed-change recovery, including a PR already merged before observation began.
+No second tracking file or model polling loop is required.
 
-The observer uses fair bounded passes, at most eleven real GitHub requests every
-fifteen minutes, and provider-directed rate-limit deferral. Do not add a parallel
-poller, tracking file, or manual retry loop to make one PR faster. A malformed
-provider response, unsafe pagination link, redirect, quota deferral, or incomplete
-review read is unavailable evidence rather than an unchanged or closed PR.
+Live discovery checks open PRs every fifteen minutes. Exact Condition checks use
+the existing Host resource observer, with an hourly fallback and a prompt check
+after admitted Task results. Both paths share provider rate-limit deferral.
+Read failures leave the wait intact. PR/review facts do not include CI checks,
+unresolved review threads or branch-protection decisions; obtain those separately
+when delivery acceptance needs them. See the owning contract for read bounds and
+legacy Condition migration.
 
 From the Apps repository root, run the maintained production-composition probe
 against an explicit Host checkout (never a guessed checkout):

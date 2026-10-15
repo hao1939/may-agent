@@ -116,18 +116,22 @@ final remote body before considering publication complete:
 Use the exact Task identity from current context. Do not publish secrets,
 worktree paths, Task prose, or session IDs; do not infer ownership from branch
 names or free prose. Ordinary `gh pr create` and `gh pr edit` remain supported.
-The block is routing metadata, not approval or provenance, and requires no watch
-registration or special Condition. See `design/github-pull-request-observation.md`.
+The block supplies live routing, not approval or provenance. When later PR facts
+matter, also retain the needed Condition so a missed live update can be recovered.
+There is no separate watch registration. See `design/github-pull-request-observation.md`.
 
-When current May-owned delivery genuinely depends on an exact GitHub PR, retain
-that identity in a `may.github.pull-request.state` Condition with subject
-`pull-request:github:<owner>/<repo>#<number>`. Match the same provider and
-repository with this exact shape for the initial current fact:
-`expected: { provider: "github", repository: "<owner>/<repo>", field: "fingerprint", notEquals: null }`.
-`notEquals` is a sibling of `field`, not nested under `fingerprint`.
-After reviewing a fact, replace only that Condition with its exact 64-character
-fingerprint baseline when later changes still matter. Keep deliberate Task review decisions,
-independent human questions, other Conditions, and useful work intact.
+When current delivery depends on an exact GitHub PR, discover May's installed
+`github-pull-request` observation capability with `tasks.contract`. Supply
+`observation: { observerId: "github-pull-request", id: "pr-state", resource: "github:hao1939/may-agent#<number>", expected: { field: "fingerprint", notEquals: null } }`
+and save the returned Condition through the ordinary Task result or `tasks.apply`.
+The helper supplies source and resource correlation. After reviewing a snapshot,
+rearm with its fingerprint if later changes matter; for closure-only interest,
+use `expected: { field: "state", equals: "closed" }`. The direct check can see a
+PR merged before observation began. Unchanged unmet waits stay quiet; `reviewAt`
+is for deliberate agent reconsideration. Preserve independent work and waits.
+Legacy `pull-request:github:...` Conditions need the owning guide's mechanical
+upgrade before they drive direct checks. Provider fields do not include CI checks
+or unresolved threads; read that evidence separately when acceptance needs it.
 
 Treat the observation as provider evidence, never as approval or authority to
 merge, deploy, close work, or satisfy unrelated acceptance. Judge merge/state,

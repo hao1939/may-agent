@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
+import { matchesAppTaskCondition } from "../../may-agent/src/app/core/tasks/app-task-condition-tracker.ts";
 import type { Condition, ObserverContext, TaskDetail } from "@may-agent/sdk";
 import {
   GITHUB_PULL_REQUEST_EVENT,
-  createGitHubPullRequestObserver,
+  createGitHubPullRequestObservers,
+  upgradeGitHubPullRequestCondition,
   observeGitHubPullRequests,
   parseMayTaskOwner,
   parsePullRequestSubject,
@@ -215,8 +217,8 @@ describe("May GitHub pull-request resource ownership", () => {
       pullRequestId: "github:hao1939/may-agent#215",
     });
     expect(validateGitHubPullRequestCondition(condition)).toBeNull();
-    expect(createGitHubPullRequestObserver(scope)).toMatchObject({
-      id: "github-pull-request",
+    expect(createGitHubPullRequestObservers(scope)[0]).toMatchObject({
+      id: "github-pull-request-live",
       intervalMs: 900000,
     });
   });
@@ -254,8 +256,8 @@ describe("May GitHub pull-request resource ownership", () => {
       target: { appId: "may", project: "may", taskId: "goal/linked-pr" },
       data: { number: 215, state: "open", merged: false },
     });
-    expect(calls.filter((url) => url.includes("?state="))).toHaveLength(2);
-    expect(calls).toHaveLength(4);
+    expect(calls.filter((url) => url.includes("?state="))).toHaveLength(1);
+    expect(calls).toHaveLength(3);
   });
   test("suppresses unchanged facts and emits open-to-merged", async () => {
     const tasks = new Map([["goal/linked-pr", task("goal/linked-pr")]]);
@@ -279,17 +281,23 @@ describe("May GitHub pull-request resource ownership", () => {
       merged: true,
     });
   });
-  test("routes initially merged resources from recent closed discovery", async () => {
-    const result = await observe(
-      context(new Map([["goal/linked-pr", task("goal/linked-pr")]])),
-      provider(
-        new Map([[215, pullPayload(215, ownerBody(), { merged: true })]]),
-      ),
+  test("live discovery does not scan closed history; exact recovery sees an initially merged PR", async () => {
+    const calls: string[] = [];
+    const fetcher = provider(
+      new Map([[215, pullPayload(215, ownerBody(), { merged: true })]]),
+      calls,
     );
-    expect(result.events[0].data).toMatchObject({
-      merged: true,
-      state: "closed",
+    const [live, recovery] = createGitHubPullRequestObservers(scope, fetcher);
+    const result = await live.run(context(new Map()));
+    expect(result).toMatchObject({ events: [] });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toContain("state=open");
+    const fact = await recovery.inspect("github:hao1939/may-agent#215", {
+      signal: new AbortController().signal,
     });
+    expect(fact).toMatchObject({ merged: true, state: "closed" });
+    expect(fact).not.toHaveProperty("fetchedAt");
+    expect(calls.slice(1).every((url) => !url.includes("?state="))).toBeTrue();
   });
   test("revalidates metadata and never reuses cached ownership", async () => {
     const tasks = new Map([
@@ -492,7 +500,7 @@ describe("May GitHub pull-request resource ownership", () => {
         ? response({ message: "unavailable" }, 503)
         : response([])) as typeof fetch;
     await expect(observe(context(new Map()), fetcher)).rejects.toThrow(
-      "discovery unavailable: open: GitHub read failed HTTP 503; closed: GitHub read failed HTTP 503",
+      "discovery unavailable: open: GitHub read failed HTTP 503",
     );
 
     unavailable = false;
@@ -505,9 +513,9 @@ describe("May GitHub pull-request resource ownership", () => {
     });
   });
 
-  test("preserves provider deferral across mixed discovery failures in either state ordering", async () => {
+  test("preserves provider deferral during open PR discovery", async () => {
     const nowMs = new Date("2026-09-21T01:00:00Z").getTime();
-    for (const rateLimitedState of ["open", "closed"] as const) {
+    for (const rateLimitedState of ["open"] as const) {
       const calls: string[] = [];
       const ctx = context(new Map());
       const result = await observe(ctx, (async (
@@ -530,9 +538,7 @@ describe("May GitHub pull-request resource ownership", () => {
           `${rateLimitedState}: GitHub read failed HTTP 429`,
         ),
       );
-      expect(calls).toEqual(
-        rateLimitedState === "open" ? ["open"] : ["open", "closed"],
-      );
+      expect(calls).toEqual(["open"]);
     }
   });
 
@@ -702,5 +708,205 @@ describe("May GitHub pull-request resource ownership", () => {
     );
     expect(calls).toHaveLength(0);
     expect(result.events).toHaveLength(0);
+  });
+});
+
+describe("GitHub live observation and saved Condition recovery", () => {
+  test("both paths satisfy the same saved interest; upgrade preserves the owner's expectation", async () => {
+    const original = {
+      ...condition,
+      requestedAction: "Review a changed PR",
+      reviewAfterMs: 3600000,
+    };
+    const upgraded = upgradeGitHubPullRequestCondition(original);
+    expect(upgraded).toMatchObject({
+      id: original.id,
+      requestedAction: original.requestedAction,
+      reviewAfterMs: original.reviewAfterMs,
+      subject: "resource:github:hao1939/may-agent#215",
+      expected: {
+        ...(original.expected as object),
+        source: "app:may:observer:github-pull-request",
+      },
+    });
+    expect(original.subject).toBe("pull-request:github:hao1939/may-agent#215");
+    expect(upgradeGitHubPullRequestCondition(upgraded)).toBe(upgraded);
+    expect(validateGitHubPullRequestCondition(upgraded)).toBeNull();
+    const tasks = new Map([
+      ["goal/linked-pr", { ...task("goal/linked-pr"), conditions: [upgraded] }],
+    ]);
+    const [live, recovery] = createGitHubPullRequestObservers(
+      scope,
+      provider(new Map([[215, pullPayload(215)]])),
+    );
+    const result = (await live.run(context(tasks))) as { events: any[] };
+    const liveFact = result.events[0];
+    const saved = {
+      metadata: { id: upgraded.id, generation: 1, resourceVersion: 1 },
+      spec: upgraded,
+      status: { state: "unknown", observedGeneration: 0 },
+    } as any;
+    expect(matchesAppTaskCondition(saved, liveFact)).toBeTrue();
+    const fact = await recovery.inspect("github:hao1939/may-agent#215", {
+      signal: new AbortController().signal,
+    });
+    expect(
+      matchesAppTaskCondition(saved, {
+        type: recovery.type,
+        source: liveFact.source,
+        data: { ...fact, resource: "github:hao1939/may-agent#215" },
+      }),
+    ).toBeTrue();
+    expect(
+      validateGitHubPullRequestCondition({
+        ...upgraded,
+        expected: { field: "state", equals: "closed", source: liveFact.source },
+      }),
+    ).toBeNull();
+    expect(
+      validateGitHubPullRequestCondition({
+        ...upgraded,
+        expected: { source: "app:other" },
+      }),
+    ).toContain("installed");
+  });
+
+  test("normalizes numeric pagination hints without fetching numeric or other repository URLs", async () => {
+    const calls: string[] = [];
+    const fetcher = (async (input: string | URL | Request) => {
+      const url = new URL(String(input));
+      calls.push(url.href);
+      if (url.searchParams.has("state")) {
+        if (url.searchParams.has("page")) return response([pullPayload(215)]);
+        return response([], 200, {
+          link: '<https://api.github.com/repositories/1171846913/pulls?state=open&sort=updated&direction=desc&per_page=50&page=2>; rel="next"',
+        });
+      }
+      if (url.pathname.endsWith("/reviews")) {
+        if (url.searchParams.has("page"))
+          return response([
+            {
+              id: 2,
+              state: "APPROVED",
+              commit_id: "head-215",
+              submitted_at: null,
+              user: { login: "reviewer" },
+            },
+          ]);
+        return response([], 200, {
+          link: '<https://api.github.com/repositories/1171846913/pulls/215/reviews?per_page=50&page=2>; rel="next"',
+        });
+      }
+      return response(pullPayload(215));
+    }) as typeof fetch;
+    const result = await observe(
+      context(new Map([["goal/linked-pr", task("goal/linked-pr")]])),
+      fetcher,
+    );
+    expect(result.events[0].data).toMatchObject({
+      reviewsComplete: true,
+      reviews: [{ id: 2, state: "approved" }],
+    });
+    expect(calls).toHaveLength(5);
+    expect(
+      calls.every((url) =>
+        url.startsWith("https://api.github.com/repos/hao1939/may-agent/pulls"),
+      ),
+    ).toBeTrue();
+    expect(calls.some((url) => url.includes("state=closed"))).toBeFalse();
+  });
+
+  test("refuses unsafe numeric review links while retaining independently valid PR state", async () => {
+    for (const link of [
+      "https://evil.example/repositories/1171846913/pulls/215/reviews?per_page=50&page=2",
+      "https://api.github.com/repositories/1171846913/pulls/216/reviews?per_page=50&page=2",
+      "https://api.github.com/repositories/1171846913/pulls/215/reviews?per_page=50&page=2&page=3",
+      "https://api.github.com/repos/other/repo/pulls/215/reviews?per_page=50&page=2",
+      "https://api.github.com/repositories/9007199254740992/pulls/215/reviews?per_page=50&page=2",
+    ]) {
+      let calls = 0;
+      const fact = await readGitHubPullRequest(scope.repository, 215, (async (
+        input: string | URL | Request,
+      ) => {
+        calls++;
+        return String(input).includes("/reviews")
+          ? response([], 200, { link: `<${link}>; rel="next"` })
+          : response(pullPayload(215));
+      }) as typeof fetch);
+      expect(fact).toMatchObject({ state: "open", reviewsComplete: false });
+      expect(fact.reviewError).toBeString();
+      expect(calls).toBe(2);
+    }
+  });
+
+  test("provider deferral is shared between live and recovery paths, in either direction", async () => {
+    for (const first of ["live", "recovery"] as const) {
+      let calls = 0;
+      let clock = Date.parse("2026-10-15T15:00:00Z");
+      let limited = true;
+      const [live, recovery] = createGitHubPullRequestObservers(
+        scope,
+        (async (input: string | URL | Request) => {
+          calls++;
+          if (limited) return response({}, 429, { "retry-after": "3600" });
+          return String(input).includes("/reviews") ||
+            String(input).includes("?state=")
+            ? response([])
+            : response(pullPayload(215));
+        }) as typeof fetch,
+        () => new Date(clock),
+      );
+      const check = () =>
+        recovery.inspect("github:hao1939/may-agent#215", {
+          signal: new AbortController().signal,
+        });
+      if (first === "live") await live.run(context(new Map()));
+      else await expect(check()).rejects.toThrow("429");
+      await expect(check()).rejects.toThrow("deferral");
+      await live.run(context(new Map()));
+      expect(calls).toBe(1);
+      clock += 3600001;
+      limited = false;
+      await expect(check()).resolves.toMatchObject({ state: "open" });
+      expect(calls).toBe(3);
+    }
+  });
+
+  test("exact recovery rejects out-of-scope references and honors cancellation during review read", async () => {
+    let calls = 0;
+    const abort = new AbortController();
+    const [, recovery] = createGitHubPullRequestObservers(scope, (async (
+      input: string | URL | Request,
+      init?: RequestInit,
+    ) => {
+      calls++;
+      expect(init?.signal).toBeDefined();
+      if (String(input).includes("/reviews"))
+        abort.abort(new Error("fixture cancelled"));
+      return String(input).includes("/reviews")
+        ? response([])
+        : response(pullPayload(215));
+    }) as typeof fetch);
+    for (const resource of [
+      "github:other/repo#215",
+      "https://evil.example",
+      "github:hao1939/may-agent#0",
+    ])
+      await expect(
+        recovery.inspect(resource, { signal: abort.signal }),
+      ).rejects.toThrow("configured repository");
+    expect(calls).toBe(0);
+    await expect(
+      recovery.inspect("github:hao1939/may-agent#215", {
+        signal: abort.signal,
+      }),
+    ).rejects.toThrow("fixture cancelled");
+    expect(calls).toBe(2);
+    await expect(
+      recovery.inspect("github:hao1939/may-agent#215", {
+        signal: abort.signal,
+      }),
+    ).rejects.toThrow("fixture cancelled");
+    expect(calls).toBe(2);
   });
 });

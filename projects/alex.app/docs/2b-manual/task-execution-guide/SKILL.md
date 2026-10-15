@@ -111,6 +111,14 @@ The following groups organize guidance; they are not new runtime APIs.
 | Receive a later result or changed external fact | Caller Condition or a supported resource-observation Condition | [Conditions](../../2a-design/task-resource-engine.md#conditions), [observers](../../2a-design/agent-app.md#task-driven-resource-observation) |
 | Report progress and decide the next step | Scoped progress capabilities and the supplied final result schema | [Attempt results](../../2a-design/task-attempts.md#result-contract) |
 
+When unfinished work depends on an external resource, save an observation
+Condition from the installed capability. A live notification can arrive promptly;
+the same saved interest lets infrastructure read the exact current state after a
+missed notification or restart. Do not ask the model to poll unchanged Conditions.
+Use `reviewAt` for deliberate reconsideration, and rearm a satisfied interest only
+when later changes still matter. A resource owner label provides live routing but
+cannot replace this recovery interest. See [live changes and missed facts](../../2a-design/agent-app.md#live-changes-and-missed-facts).
+
 Use the description and schema of the capability exposed in this attempt. Check
 what it returns: a completed result, accepted work with a reference, or failure.
 Do not infer that acceptance means the requested work is finished. Use logical

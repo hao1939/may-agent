@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { defineObserver, observationCondition } from "@may-agent/sdk";
 import type {
   AppEvent,
   AppObserver,
@@ -6,6 +7,7 @@ import type {
   Condition,
   ObserverContext,
   TaskDetail,
+  ResourceObserver,
 } from "@may-agent/sdk";
 
 export const GITHUB_PULL_REQUEST_EVENT = "may.github.pull-request.state";
@@ -13,8 +15,11 @@ export const GITHUB_PULL_REQUEST_PREFIX = "pull-request:github:";
 const GITHUB_API_ORIGIN = "https://api.github.com";
 const PER_PAGE = 50;
 const MAX_REVIEW_PAGES = 4;
-const MAX_DISCOVERY_PAGES_PER_STATE = 2;
+const MAX_DISCOVERY_PAGES = 2;
+export const GITHUB_PULL_REQUEST_OBSERVER = "github-pull-request";
+const CONDITION_CHECK_INTERVAL_MS = 60 * 60_000;
 const REQUEST_TIMEOUT_MS = 15_000;
+const CONDITION_READ_TIMEOUT_MS = REQUEST_TIMEOUT_MS * (MAX_REVIEW_PAGES + 1);
 const OBSERVER_INTERVAL_MS = 15 * 60_000;
 const MAX_HTTP_REQUESTS_PER_RUN = 11;
 const MAX_RESOURCES = 64;
@@ -31,7 +36,12 @@ export type GitHubPullRequestScope = {
 };
 
 type FetchLike = typeof fetch;
-type RequestBudget = { remaining: number; deferUntil?: number; nowMs: number };
+type RequestBudget = {
+  remaining: number;
+  deferUntil?: number;
+  nowMs: number;
+  signal?: AbortSignal;
+};
 type Owner = { appId: string; taskId: string };
 type Resource = { repository: string; number: number };
 type RememberedResource = Resource & { open: boolean };
@@ -125,6 +135,19 @@ export function validateGitHubPullRequestCondition(
   condition: Condition,
 ): string | null {
   if (condition.type !== GITHUB_PULL_REQUEST_EVENT) return null;
+  if (condition.subject.startsWith("resource:")) {
+    const parsed = parsePullRequestSubject(
+      `pull-request:${condition.subject.slice("resource:".length)}`,
+    );
+    if (!parsed)
+      return "GitHub observation needs resource:github:<owner>/<repo>#<number>";
+    if (
+      record(condition.expected).source !==
+      `app:may:observer:${GITHUB_PULL_REQUEST_OBSERVER}`
+    )
+      return "Build the GitHub Condition from the installed github-pull-request observation capability";
+    return null;
+  }
   const parsed = parsePullRequestSubject(condition.subject);
   if (!parsed)
     return `GitHub pull-request Conditions require ${GITHUB_PULL_REQUEST_PREFIX}<owner>/<repo>#<number>`;
@@ -199,8 +222,8 @@ function parseLinkNext(value: string | null): string | null {
 function pullUrl(repository: string, number: number): string {
   return `${GITHUB_API_ORIGIN}/repos/${repository}/pulls/${number}`;
 }
-function listUrl(repository: string, state: "open" | "closed"): string {
-  return `${GITHUB_API_ORIGIN}/repos/${repository}/pulls?state=${state}&sort=updated&direction=desc&per_page=${PER_PAGE}`;
+function listUrl(repository: string): string {
+  return `${GITHUB_API_ORIGIN}/repos/${repository}/pulls?state=open&sort=updated&direction=desc&per_page=${PER_PAGE}`;
 }
 
 function isPositiveSafeInteger(value: string): boolean {
@@ -227,15 +250,27 @@ function assertAllowedUrl(
     kind === "list"
       ? `/repos/${repository}/pulls`
       : `/repos/${repository}/pulls/${number}${kind === "reviews" ? "/reviews" : ""}`;
-  if (url.pathname !== expectedPath)
-    throw new Error("refused GitHub URL outside fixed endpoint");
+  if (url.pathname !== expectedPath) {
+    // GitHub uses numeric repository aliases in pagination links. Consume the
+    // page hint only: always rebuild under the configured named repository.
+    const alias = url.pathname.match(
+      /^\/repositories\/([1-9][0-9]*)\/pulls(.*)$/,
+    );
+    const suffix =
+      kind === "list"
+        ? ""
+        : `/${number}${kind === "reviews" ? "/reviews" : ""}`;
+    if (!alias || !isPositiveSafeInteger(alias[1]) || alias[2] !== suffix)
+      throw new Error("refused GitHub URL outside fixed endpoint");
+    url.pathname = expectedPath;
+  }
   if (kind === "pull" && url.search)
     throw new Error("refused query parameters on GitHub pull-request URL");
   if (kind === "list") {
     const allowed = ["state", "sort", "direction", "per_page", "page"];
     const pages = url.searchParams.getAll("page");
     if (
-      !["open", "closed"].includes(url.searchParams.get("state") ?? "") ||
+      url.searchParams.get("state") !== "open" ||
       url.searchParams.getAll("state").length !== 1 ||
       url.searchParams.get("sort") !== "updated" ||
       url.searchParams.getAll("sort").length !== 1 ||
@@ -293,6 +328,7 @@ async function githubJson(
   fetchImpl: FetchLike,
   number?: number,
 ): Promise<{ value: unknown; next: string | null }> {
+  budget.signal?.throwIfAborted();
   const requested = assertAllowedUrl(url, scope.repository, kind, number);
   if (budget.deferUntil && budget.deferUntil > budget.nowMs)
     throw new DeferredReadError("GitHub rate-limit deferral remains active");
@@ -306,8 +342,14 @@ async function githubJson(
       "X-GitHub-Api-Version": "2022-11-28",
     },
     redirect: "manual",
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    signal: budget.signal
+      ? AbortSignal.any([
+          budget.signal,
+          AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        ])
+      : AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
+  budget.signal?.throwIfAborted();
   const deferred = parseDeferral(response, budget.nowMs);
   if (deferred) budget.deferUntil = deferred;
   if (response.redirected || (response.url && response.url !== requested.href))
@@ -429,6 +471,7 @@ async function readOwnedGitHubPullRequest(
       next = page.next;
     }
   } catch (error) {
+    budget.signal?.throwIfAborted();
     reviewError = error instanceof Error ? error.message : String(error);
   }
   reviews.sort((a, b) => a.id - b.id);
@@ -464,19 +507,20 @@ async function readOwnedGitHubPullRequest(
   };
 }
 
-/** Public direct reader retained for read-only connectivity and parser checks. */
+/** Shared exact-resource reader for live observation, recovery and read-only checks. */
 export async function readGitHubPullRequest(
   repository: string,
   number: number,
   fetchImpl: FetchLike = fetch,
   now: () => Date = () => new Date(),
+  signal?: AbortSignal,
 ): Promise<GitHubPullRequestFact> {
   const owned = await readOwnedGitHubPullRequest(
     { repository, author: "hao1939", appId: "may", project: "may" },
     number,
     fetchImpl,
     now(),
-    { remaining: MAX_REVIEW_PAGES + 1, nowMs: now().getTime() },
+    { remaining: MAX_REVIEW_PAGES + 1, nowMs: now().getTime(), signal },
     false,
   );
   return owned.fact;
@@ -498,62 +542,55 @@ async function discoverResources(
   let truncated = false;
   let successfulPages = 0;
   let deferred = false;
-  for (const state of ["open", "closed"] as const) {
-    let next: string | null = listUrl(scope.repository, state);
-    const visited = new Set<string>();
-    try {
-      for (
-        let pageNumber = 0;
-        next && pageNumber < MAX_DISCOVERY_PAGES_PER_STATE;
-        pageNumber++
-      ) {
-        const normalized = assertAllowedUrl(
-          next,
-          scope.repository,
-          "list",
-        ).href;
-        if (visited.has(normalized))
-          throw new Error("GitHub discovery pagination repeated a page");
-        visited.add(normalized);
-        const page = await githubJson(
-          normalized,
-          scope,
-          "list",
-          budget,
-          fetchImpl,
-        );
-        if (!Array.isArray(page.value))
-          throw new Error("GitHub discovery response is not an array");
-        successfulPages++;
-        for (const item of page.value) {
-          const pr = record(item);
-          const number = pr.number;
-          const author = text(record(pr.user).login);
-          const baseRepo = text(record(record(pr.base).repo).full_name);
-          const owner = parseMayTaskOwner(pr.body);
-          if (
-            Number.isSafeInteger(number) &&
-            Number(number) > 0 &&
-            author.toLowerCase() === scope.author.toLowerCase() &&
-            baseRepo.toLowerCase() === scope.repository.toLowerCase() &&
-            owner?.appId === scope.appId
-          )
-            found.set(Number(number), {
-              repository: scope.repository,
-              number: Number(number),
-            });
-        }
-        next = page.next;
-      }
-      if (next) truncated = true;
-    } catch (error) {
-      failures.push(
-        `${state}: ${error instanceof Error ? error.message : String(error)}`,
+  let next: string | null = listUrl(scope.repository);
+  const visited = new Set<string>();
+  try {
+    for (
+      let pageNumber = 0;
+      next && pageNumber < MAX_DISCOVERY_PAGES;
+      pageNumber++
+    ) {
+      const normalized = assertAllowedUrl(next, scope.repository, "list").href;
+      if (visited.has(normalized))
+        throw new Error("GitHub discovery pagination repeated a page");
+      visited.add(normalized);
+      const page = await githubJson(
+        normalized,
+        scope,
+        "list",
+        budget,
+        fetchImpl,
       );
-      if (error instanceof DeferredReadError) {
-        deferred = true;
-        break;
+      if (!Array.isArray(page.value))
+        throw new Error("GitHub discovery response is not an array");
+      successfulPages++;
+      for (const item of page.value) {
+        const pr = record(item);
+        const number = pr.number;
+        const author = text(record(pr.user).login);
+        const baseRepo = text(record(record(pr.base).repo).full_name);
+        const owner = parseMayTaskOwner(pr.body);
+        if (
+          Number.isSafeInteger(number) &&
+          Number(number) > 0 &&
+          author.toLowerCase() === scope.author.toLowerCase() &&
+          baseRepo.toLowerCase() === scope.repository.toLowerCase() &&
+          owner?.appId === scope.appId
+        )
+          found.set(Number(number), {
+            repository: scope.repository,
+            number: Number(number),
+          });
       }
+      next = page.next;
+    }
+    if (next) truncated = true;
+  } catch (error) {
+    failures.push(
+      `open: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    if (error instanceof DeferredReadError) {
+      deferred = true;
     }
   }
   return {
@@ -583,8 +620,9 @@ function requestScope(
     .filter(
       (condition) =>
         condition.type === GITHUB_PULL_REQUEST_EVENT &&
-        condition.subject ===
-          `${GITHUB_PULL_REQUEST_PREFIX}${fact.repository}#${fact.number}`,
+        (condition.subject ===
+          `${GITHUB_PULL_REQUEST_PREFIX}${fact.repository}#${fact.number}` ||
+          condition.subject === `resource:${fact.pullRequestId}`),
     )
     .map((condition) => [
       condition.id,
@@ -602,7 +640,8 @@ function publication(
   const { fetchedAt: _fetchedAt, ...value } = fact;
   return {
     ...value,
-    idempotencyKey: `github-pr:${marker(
+    resource: fact.pullRequestId,
+    idempotencyKey: `github-pr:v2:${marker(
       JSON.stringify([
         owner.appId,
         owner.taskId,
@@ -655,7 +694,7 @@ export async function observeGitHubPullRequests(
     );
   if (discovery.truncated)
     ctx.log.warn(
-      `GitHub pull-request discovery exceeded the bounded ${MAX_DISCOVERY_PAGES_PER_STATE}-page-per-state window`,
+      `GitHub pull-request discovery exceeded the bounded ${MAX_DISCOVERY_PAGES}-page open-PR window`,
     );
 
   // Admit remembered open resources first, up to their explicit reservation.
@@ -753,6 +792,7 @@ export async function observeGitHubPullRequests(
       if (prior.success !== success) {
         events.push({
           type: GITHUB_PULL_REQUEST_EVENT,
+          source: `app:${scope.appId}:observer:${GITHUB_PULL_REQUEST_OBSERVER}`,
           target: {
             appId: scope.appId,
             project: scope.project,
@@ -834,12 +874,88 @@ export async function observeGitHubPullRequests(
   };
 }
 
-export function createGitHubPullRequestObserver(
+/** Two entry paths, one provider scope. No separate watch registry or Task scan. */
+export function createGitHubPullRequestObservers(
   scope: GitHubPullRequestScope,
-): AppObserver {
+  fetchImpl: FetchLike = fetch,
+  now: () => Date = () => new Date(),
+): [AppObserver, ResourceObserver] {
+  if (!validRepository(scope.repository) || scope.appId !== "may")
+    throw new Error("invalid GitHub pull-request observer scope");
+  // GitHub's deferral applies to this provider client, whichever path met it.
+  let deferUntil = 0;
+  const provider: FetchLike = (async (input, init) => {
+    if (deferUntil > now().getTime())
+      throw new DeferredReadError("GitHub rate-limit deferral remains active");
+    const response = await fetchImpl(input, init);
+    deferUntil = Math.max(
+      deferUntil,
+      parseDeferral(response, now().getTime()) ?? 0,
+    );
+    return response;
+  }) as FetchLike;
+  return [
+    {
+      id: "github-pull-request-live",
+      intervalMs: OBSERVER_INTERVAL_MS,
+      run: (ctx) => observeGitHubPullRequests(ctx, scope, provider, now),
+    },
+    defineObserver({
+      id: GITHUB_PULL_REQUEST_OBSERVER,
+      type: GITHUB_PULL_REQUEST_EVENT,
+      description: `Read an exact PR in ${scope.repository}: resource github:<owner>/<repo>#<number>. Returns state, merged, headSha, draft, commit-bound reviews, reviewsComplete and fingerprint. Does not read CI checks or unresolved review threads. Save a Condition for a needed fact; no separate watch registration.`,
+      intervalMs: CONDITION_CHECK_INTERVAL_MS,
+      timeoutMs: CONDITION_READ_TIMEOUT_MS,
+      async inspect(resource, { signal }) {
+        const parsed = parsePullRequestSubject(`pull-request:${resource}`);
+        if (!parsed || parsed.repository !== scope.repository)
+          throw new Error(
+            "GitHub resource is outside the configured repository",
+          );
+        const { fetchedAt: _fetchedAt, ...fact } = await readGitHubPullRequest(
+          parsed.repository,
+          parsed.number,
+          provider,
+          now,
+          signal,
+        );
+        return fact;
+      },
+    }),
+  ];
+}
+
+/** Mechanical upgrade only. Keep the owner's expectation and independent waits. */
+export function upgradeGitHubPullRequestCondition(
+  condition: Condition,
+): Condition {
+  if (
+    condition.type !== GITHUB_PULL_REQUEST_EVENT ||
+    condition.subject.startsWith("resource:")
+  )
+    return condition;
+  const parsed = parsePullRequestSubject(condition.subject);
+  const error = validateGitHubPullRequestCondition(condition);
+  if (!parsed || error) throw new Error(error ?? "Invalid GitHub Condition");
+  const upgraded = observationCondition(
+    {
+      appId: "may",
+      id: GITHUB_PULL_REQUEST_OBSERVER,
+      type: GITHUB_PULL_REQUEST_EVENT,
+      description: "GitHub PR",
+      intervalMs: CONDITION_CHECK_INTERVAL_MS,
+      timeoutMs: CONDITION_READ_TIMEOUT_MS,
+    },
+    {
+      observerId: GITHUB_PULL_REQUEST_OBSERVER,
+      id: condition.id,
+      resource: parsed.pullRequestId,
+      expected: record(condition.expected),
+    },
+  );
   return {
-    id: "github-pull-request",
-    intervalMs: OBSERVER_INTERVAL_MS,
-    run: (ctx) => observeGitHubPullRequests(ctx, scope),
+    ...condition,
+    subject: upgraded.subject,
+    expected: upgraded.expected,
   };
 }

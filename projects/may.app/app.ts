@@ -8,7 +8,7 @@ import {
   type AppTaskInput,
 } from "@may-agent/sdk";
 import {
-  createGitHubPullRequestObserver,
+  createGitHubPullRequestObservers,
   validateGitHubPullRequestCondition,
 } from "./watchers/github-pull-request.js";
 
@@ -28,7 +28,7 @@ import {
   readMetricReview,
 } from "./metric-follow-through.js";
 
-const githubPullRequestObserver = createGitHubPullRequestObserver({
+const githubPullRequestObservers = createGitHubPullRequestObservers({
   repository: "hao1939/may-agent",
   author: "hao1939",
   appId: "may",
@@ -240,7 +240,11 @@ export function observerFailureInput(
   event: AppEvent<Record<string, unknown>>,
 ): AppInput | null {
   const data = record(event.data);
-  if (event.source !== "app-host" || data.appId !== "may") return null;
+  if (data.appId !== "may") return null;
+  const isResourceFailure =
+    data.observerId === "github-pull-request" &&
+    event.source === "app:may:observer:github-pull-request";
+  if (event.source !== "app-host" && !isResourceFailure) return null;
   const observerId = requiredText(data, "observerId", event.type);
   const error = requiredText(data, "error", event.type);
   return {
@@ -395,7 +399,7 @@ export default defineApp({
   agent: "may",
   workspace: { kind: "git", localPath: ".", branch: "main" },
   description:
-    "Hao's deputy: handles conversation and authorized direct work, owns ongoing Tasks, and involves other Apps when useful or required. Use goal for ongoing work. May chooses available tools, specialists and workflows to meet the outcome; procedure parameters belong in context, not new input kinds. The scoped github-pull-request observer discovers exact May Task ownership from PR metadata and supplies targeted may.github.pull-request.state facts without watch registration.",
+    "Hao's deputy: handles conversation and authorized direct work, owns ongoing Tasks, and involves other Apps when useful or required. Use goal for ongoing work. May chooses available tools, specialists and workflows to meet the outcome; procedure parameters belong in context, not new input kinds. Live GitHub observation routes active PR changes by Task metadata; the github-pull-request observation capability checks exact saved Conditions, including changes missed during downtime. Both supply may.github.pull-request.state facts without watch registration.",
   inputSchema: mayInputSchema,
   conversation: {
     mode: "agent",
@@ -440,7 +444,7 @@ export default defineApp({
     maxConcurrent: 4,
     validateCondition: validateGitHubPullRequestCondition,
   },
-  observers: [githubPullRequestObserver, createMetricEvidenceObserver()],
+  observers: [...githubPullRequestObservers, createMetricEvidenceObserver()],
   subscriptions: [
     {
       id: "evaluation-review-lag",

@@ -566,6 +566,26 @@ safe known resource. Success requires a saved wait, a durable matching event
 and an accepted result from a later owner attempt. A direct detector call or
 healthy inspection alone proves less. See the [smoke recipe](../2b-manual/sdk-quickstart.md#smoke-test-the-installed-observation-path).
 
+### Live changes and missed facts
+
+Live observation and reconciliation have complementary jobs. A live source
+reports current changes; a saved resource Condition also permits an exact current
+read to recover a notification missed before startup or during downtime. Replaying
+retained events alone cannot discover a provider fact that was never recorded.
+Reuse the provider reader and ordinary Condition matching in both paths; do not
+scan closed resource history or invoke an agent merely to check an unchanged wait.
+The App provides provider semantics; existing Host observation schedules and
+retained Conditions provide recovery. `reviewAt` separately requests agent judgment.
+
+Keep a resource interest whenever unfinished work depends on its later state.
+A public owner link can route unsolicited live facts, but it is not a durable
+request to recover an unobserved change. Periodic checks stop when the interest is
+satisfied, removed or cancelled. Occasional duplicate consideration from the two
+paths is acceptable; prevent persistent unchanged wakes and duplicate committed
+effects instead of maintaining another delivery ledger.
+See [May's GitHub adapter](../../../may.app/design/github-pull-request-observation.md)
+for the two existing observer forms composed without Host changes.
+
 ### Resource ownership by convention
 
 For resources created for one Task, prefer a resource-carried owner link over

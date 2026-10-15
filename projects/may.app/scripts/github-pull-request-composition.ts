@@ -215,7 +215,7 @@ const provider: any = async (u: any) => {
   return Response.json(url.includes("/reviews") ? [] : pull);
 };
 const observer = {
-  ...definition.observers.find((o: any) => o.id === "github-pull-request"),
+  ...definition.observers.find((o: any) => o.id === "github-pull-request-live"),
   run: async (ctx: any) => {
     try {
       return await observeGitHubPullRequests(ctx, scope, provider);
@@ -375,9 +375,9 @@ try {
   assert.deepEqual(observerFailures.at(-1).target, { project: "may" });
   const exactFailure = {
     appId: "may",
-    observerId: "github-pull-request",
+    observerId: "github-pull-request-live",
     error:
-      "GitHub pull-request discovery unavailable: open: GitHub read failed HTTP 503; closed: GitHub read failed HTTP 503",
+      "GitHub pull-request discovery unavailable: open: GitHub read failed HTTP 503",
   };
   assert.deepEqual(observerFailures.at(-1).data, exactFailure);
   assert.ok(

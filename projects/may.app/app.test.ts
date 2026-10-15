@@ -1,3 +1,4 @@
+import { readAppContract } from "../may-agent/src/app/core/reads/app-contract.js";
 import { validateAppDefinition } from "../may-agent/src/app/core/apps/definition-validation.js";
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
@@ -50,10 +51,14 @@ describe("canonical May conversation App", () => {
     expect(app.tasks).toMatchObject({ maxConcurrent: 4 });
     expect(app.tasks?.validateCondition).toBeFunction();
     expect(app.observers?.map(({ id }) => id)).toEqual([
+      "github-pull-request-live",
       "github-pull-request",
       "metric-evidence",
     ]);
     expect(app.description).toContain("may.github.pull-request.state");
+    expect(readAppContract(app).observations.find(({id}) => id === "github-pull-request")).toMatchObject({
+      appId: "may", id: "github-pull-request", type: "may.github.pull-request.state", intervalMs: 3600000,
+    });
     expect(app.subscriptions?.map(({ id }) => id)).toEqual([
       "evaluation-review-lag",
       "evaluation-operation-oversight",
@@ -368,6 +373,8 @@ describe("canonical May conversation App", () => {
       "not an operation failure or a reason for human escalation",
     );
     expect(Check(app.inputSchema, input)).toBeTrue();
+    expect(observerFailureInput({ ...event, source: "app:may:observer:github-pull-request" })).toMatchObject({ kind: "message" });
+    expect(observerFailureInput({ ...event, source: "app:may:observer:other" })).toBeNull();
     expect(observerFailureInput({ ...event, source: "app:other" })).toBeNull();
     expect(
       observerFailureInput({
