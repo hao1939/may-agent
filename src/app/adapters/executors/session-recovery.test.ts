@@ -230,6 +230,45 @@ it.each(["done", "error", "interrupted"] as const)(
   },
 );
 
+it("quarantines malformed replay evidence even when a committed finish receipt is present", () => {
+  const root = mkdtempSync(join(tmpdir(), "may-recovery-finish-replay-corrupt-"));
+  roots.push(root);
+  const sessionId = "finish-before-replay-corrupt";
+  writeSessionMeta(root, sessionId, {
+    agent: "judge",
+    task: "Do not replay ambiguous effects",
+    status: "running",
+    startedAt: 1,
+    kind: "call",
+  });
+  writeFileSync(join(root, "sessions", sessionId, "session.jsonl"), "malformed\n");
+  appendSessionMessage(root, sessionId, {
+    role: "assistant",
+    content: [
+      { type: "toolCall", id: "finish-call", name: "finish", arguments: { status: "success", summary: "Committed" } },
+    ],
+  } as AgentMessage);
+  appendSessionMessage(root, sessionId, {
+    role: "toolResult",
+    toolCallId: "finish-call",
+    toolName: "finish",
+    content: [{ type: "text", text: "Recorded" }],
+    isError: false,
+    timestamp: 2,
+  });
+  const recovery = createTaskSessionRecovery({
+    persistDir: root,
+    manager: new SubagentManager({ persistDir: root }),
+    bus: new EventBus(),
+  });
+
+  expect(() => recovery.interrupt(sessionId, "Replay follows", undefined, true)).toThrow(
+    "explicit reconciliation is required",
+  );
+  expect(readSessionMeta(root, sessionId)?.status).toBe("running");
+  expect(existsSync(join(root, "sessions", sessionId, "result.json"))).toBe(false);
+});
+
 it("preserves a committed finish receipt despite unrelated earlier malformed transcript evidence", () => {
   const root = mkdtempSync(join(tmpdir(), "may-recovery-valid-finish-"));
   roots.push(root);

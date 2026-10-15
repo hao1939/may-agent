@@ -2610,6 +2610,7 @@ export function claimObservedAppTask(
     reason?: string;
     isAgentRunnable?: (agent: string) => boolean;
     recoverSessionHandoff?: (attempt: AppTaskAttempt | undefined) => AppTaskClaim["handoff"];
+    validatePreviousSession?: (attempt: AppTaskAttempt) => void;
   },
 ): AppTaskClaimResult {
   const snapshotRevision = config.resourceStore.revision();
@@ -2699,6 +2700,13 @@ export function claimObservedAppTask(
         ? managedAgentHandler(agent)
         : input.handler;
   const priorFacts = latestAttempt ?? latestTaskAttempt(tree, resource.metadata.id);
+  if (
+    latestAttempt?.sessionId &&
+    (latestAttempt.runtimeId !== reconcilerRuntimeId ||
+      latestAttempt.failureReason === "previous-runtime-attempt-requeued")
+  ) {
+    input.validatePreviousSession?.(latestAttempt);
+  }
   const recoveredSessionHandoff = input.recoverSessionHandoff?.(latestAttempt);
   const previousAttempt = currentResourceAttempt(tree, resource);
   if (resource.status.phase === "running" && !previousAttempt) {

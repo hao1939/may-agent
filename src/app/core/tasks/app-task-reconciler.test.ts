@@ -4148,10 +4148,35 @@ describe("App task reconciler state", () => {
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
 
+    expect(recordAppTaskAttemptSession(config, claim, "retained-session")).toBe(true);
     mutateAttemptFixture(config, claim.taskId, claim.attemptId, (attempt) => {
       attempt.runtimeId = "previous-runtime";
     });
     const interruptedResourceConfig = state.config;
+    let validationCalls = 0;
+    const validatePreviousSession = () => {
+      validationCalls++;
+      throw new Error("ambiguous retained recovery evidence");
+    };
+    const replayClaim = () =>
+      claimObservedAppTask(interruptedResourceConfig, {
+        taskId: claim.taskId,
+        appAgent: "app-owner",
+        handler: "workflow:known-workflow",
+        reason: `attempt-recovery:${claim.taskId}`,
+        validatePreviousSession,
+      });
+    expect(replayClaim).toThrow("ambiguous retained recovery evidence");
+    expect(replayClaim).toThrow("ambiguous retained recovery evidence");
+    expect(validationCalls).toBe(2);
+    expect(interruptedResourceConfig.resourceStore.readTask(claim.taskId)?.status.currentAttemptId).toBe(
+      claim.attemptId,
+    );
+    expect(interruptedResourceConfig.resourceStore.readAttempt(claim.attemptId)).toMatchObject({
+      state: "running",
+      sessionId: "retained-session",
+      runtimeId: "previous-runtime",
+    });
 
     const [recovery] = recoverableAppTaskAttempts(interruptedResourceConfig, Date.now(), false, [claim.taskId]);
     expect(recovery).toMatchObject({
@@ -4166,7 +4191,7 @@ describe("App task reconciler state", () => {
 
     expect(releaseInterruptedAppTaskAttempt(interruptedResourceConfig, recovery, "previous runtime stopped")).toEqual({
       released: true,
-      sessionIds: [],
+      sessionIds: ["retained-session"],
     });
     const pending = interruptedResourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
     expect(pending.resources?.[claim.taskId].status).toMatchObject({

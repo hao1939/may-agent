@@ -86,6 +86,16 @@ export async function runTaskAttempt(input: {
       appAgent: descriptor.agent,
       handler: "auto",
       reason: input.reason ?? "task-controller",
+      validatePreviousSession: (attempt) => {
+        if (!attempt.sessionId) return;
+        interruptSupersededAgentSession(
+          opts,
+          attempt.sessionId,
+          `Validating retained recovery evidence before replacing Task ${input.taskId} ownership`,
+          input.taskId,
+          true,
+        );
+      },
       recoverSessionHandoff: (attempt) => opts.sessions?.handoff(attempt),
     });
     recordTaskCheck(opts.bus, claim.kind, { appId: descriptor.id, taskId: input.taskId });

@@ -196,7 +196,7 @@ function interruptSupersededAgentSession(
       ? readCheckpointRecoveryEvidence(opts.persistDir!, cleanSessionId)
       : null;
   if (
-    !recoveredFinish &&
+    (beforeReplay || !recoveredFinish) &&
     (transcriptEvidence?.state === "corrupt" || checkpointEvidence?.state === "corrupt")
   ) {
     const corrupt = [
