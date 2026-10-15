@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { retiredEvaluationMetrics } from "./retired-evaluation-metrics.js";
 import { automaticReviewConfig } from "./agents/evaluator/workflows/task-outcome-selector.js";
 import { metricReviewTaskId } from "./agents/evaluator/workflows/lib/metric-selection.js";
+import { readReportFollowUp } from "./agents/evaluator/workflows/lib/report-follow-up.js";
 import {
   Type,
   defineApp,
@@ -112,7 +113,7 @@ function reportHash(data: Record<string, unknown>, field: string, eventType: str
   return value;
 }
 
-/** Preserve an immutable Evaluation publication as ordinary Alex improvement work. */
+/** Publication retains evidence; the evaluator decides whether Alex is needed. */
 export function evaluationReportInput(event: AppEvent<Record<string, unknown>>): AppInput | null {
   const data = record(event.data);
   const metric = event.type === "evaluation.metric_report_published";
@@ -135,10 +136,12 @@ export function evaluationReportInput(event: AppEvent<Record<string, unknown>>):
     ...(typeof data.rubricVersion === "string" && data.rubricVersion.trim() ? { rubricVersion: data.rubricVersion.trim() } : {}),
     ...(typeof data.validityIdentity === "string" && data.validityIdentity.trim() ? { validityIdentity: data.validityIdentity.trim() } : {}),
   };
+  const followUp = readReportFollowUp(data.followUp);
+  if (followUp?.kind === "none") return null;
   return {
     kind: "message",
     data: {
-      message: `Review the Evaluation ${metric ? "metric" : "Task"} report for ${metricId ?? `${appId}/${taskId}`}. Use the existing evaluation-report-reader workflow with input {operation: "read-publication", publication: context.publication} for deterministic identity/hash checks and a bounded Markdown preview. Judge the finding and read only the current evidence needed for your next decision. Start from exact linked Task IDs; use a small filtered Task list only to discover missing ownership. A current Task read may contain historical observations: check current deployment receipts/status before claiming a change is still undeployed. Record a supported disposition, reuse fitting work, or commission the smallest justified improvement. Verified report bytes establish their identity, not the truth or freshness of every claim.`,
+      message: `${followUp?.kind === "request" ? `Evaluator requests follow-up: ${followUp.message}\n\n` : ""}Review the Evaluation ${metric ? "metric" : "Task"} report for ${metricId ?? `${appId}/${taskId}`}. Use the existing evaluation-report-reader workflow with input {operation: "read-publication", publication: context.publication} for deterministic identity/hash checks and a bounded Markdown preview. Judge the finding and read only the current evidence needed for your next decision. Start from exact linked Task IDs; use a small filtered Task list only to discover missing ownership. A current Task read may contain historical observations: check current deployment receipts/status before claiming a change is still undeployed. Record a supported disposition, reuse fitting work, or commission the smallest justified improvement. Verified report bytes establish their identity, not the truth or freshness of every claim.`,
       context: {
         publication,
         caller: { source: event.source, owner: event.owner, target: structuredClone(event.target), localKey: event.localKey },

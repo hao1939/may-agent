@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { reviewMetric } from "./metric-review.js";
+import { publishRetainedReport } from "./lib/report-publication.js";
 import { readPublishedEvaluationReport } from "./evaluation-report-reader.js";
 import {
   selectMetricCandidate,
@@ -18,7 +19,7 @@ import {
   resolveMetricResponsibility,
   type MetricEvidence,
 } from "./lib/metric-evidence.js";
-import { taskInputForEvent, taskIntentForInput } from "../../../app.js";
+import { evaluationReportInput, taskInputForEvent, taskIntentForInput } from "../../../app.js";
 import { evaluationTaskReportInput } from "../../../../may.app/app.js";
 import { intakeEvaluationReport } from "../../../../may.app/agents/may/workflows/evaluation-report-intake.js";
 
@@ -61,6 +62,7 @@ function evidence(metricId = "sample.failures", cut = end): MetricEvidence {
   };
 }
 const judgment = {
+  followUp: { kind: "request" as const, message: "Investigate the unresolved admission using the retained input reference." },
   disposition: "assessed",
   summary:
     "Unresolved admission warrants investigation; greater volume alone is not a regression.",
@@ -82,6 +84,49 @@ function context(options: any = {}) {
     ...options,
   });
 }
+
+test.each([
+  { kind: "none" as const },
+  { kind: "request" as const, message: "Reuse the investigation to check whether this new failure is covered." },
+])("metric reports retain the evaluator's follow-up decision across publication retry: %j", async (followUp) => {
+  const root = mkdtempSync(join(tmpdir(), "metric-followup-"));
+  roots.push(root);
+  const events: any[] = [];
+  let calls = 0;
+  const ctx = context({
+    callAgent: async (_agent: string, prompt: string) => {
+      calls++;
+      expect(prompt).toContain("Choose followUp explicitly");
+      return { id: "followup-review", kind: "agent", status: "done", summary: "reviewed", output: { ...judgment, followUp } };
+    },
+    emit: async (event: any) => {
+      events.push(structuredClone(event));
+      if (events.length === 1) throw new Error("publication unavailable");
+    },
+  });
+  await expect(reviewMetric(ctx, async () => evidence(), root)).rejects.toThrow("publication unavailable");
+  expect(readPublishedEvaluationReport(events[0].data, root).status).toBe("publication-pending");
+  const path = join(root, events[0].data.facts);
+  const saved = readFileSync(path, "utf8");
+  const tampered = JSON.parse(saved);
+  tampered.judgment.followUp = followUp.kind === "none"
+    ? { kind: "request", message: "unaccepted request" }
+    : { kind: "none" };
+  writeFileSync(path, JSON.stringify(tampered));
+  await expect(publishRetainedReport(ctx, events[0], root)).rejects.toThrow("differs from the requested bytes");
+  expect(events).toHaveLength(1);
+  writeFileSync(path, saved);
+  await reviewMetric(ctx, async () => { throw new Error("must reuse evidence"); }, root);
+  expect(calls).toBe(1);
+  expect(events[1]).toEqual(events[0]);
+  expect(events[1].data.followUp).toEqual(followUp);
+  const retained = readPublishedEvaluationReport(events[1].data, root);
+  expect(retained.status).toBe("valid");
+  if (retained.status === "valid") expect((retained.facts.judgment as any).followUp).toEqual(followUp);
+  const input = evaluationReportInput(events[1]);
+  if (followUp.kind === "none") expect(input).toBeNull();
+  else expect((input!.data as any).message).toContain(followUp.message);
+});
 
 test("pre-Task evidence uses the existing report, publication reader and May intake without inventing a Task", async () => {
   const root = mkdtempSync(join(tmpdir(), "metric-review-"));

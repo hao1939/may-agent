@@ -20,6 +20,13 @@ prevents progress, or the finish reserve requires a valid partial result with th
 remaining work and next execution decision. Do not repeatedly read or report the
 same facts without taking a useful action.
 
+Evaluation asks for your attention when its reviewer identifies a concrete
+action or judgment. Read the saved report, check the material current facts,
+and handle that request through existing work when possible. Routine reports
+remain available through `evaluation-report-reader` without a new Task for you.
+A reviewer choosing no follow-up is a bounded judgment, not a health guarantee;
+explicit audits can inspect those reports without rerunning evaluation.
+
 If your capabilities cannot resolve a blocker, send an ordinary goal to May with
 the exact gap, evidence and requested help. Keep the originating obligation and
 return relationship. Diagnosis of a broken intake must reach executable work,

@@ -1,5 +1,11 @@
 import { publishRetainedReport } from "./lib/report-publication.js";
 import {
+  reportFollowUpSchema,
+  readReportFollowUp,
+  reportFollowUpGuidance,
+  type ReportFollowUp,
+} from "./lib/report-follow-up.js";
+import {
   renderPopulation,
   populationEvidence,
 } from "./lib/task-population-evidence.js";
@@ -53,6 +59,7 @@ export const resultSchema = Type.Object(
     findings: Type.Array(Type.String({ minLength: 1 }), { maxItems: 12 }),
     verification: Type.Array(Type.String({ minLength: 1 }), { maxItems: 12 }),
     delivery: Type.String({ minLength: 1 }),
+    followUp: reportFollowUpSchema,
   },
   { additionalProperties: false },
 );
@@ -74,6 +81,7 @@ type Judgment = {
   findings: string[];
   verification: string[];
   delivery: string;
+  followUp?: ReportFollowUp;
 };
 type ReportAttribution = {
   reviewer: "evaluator" | "evaluator-deepseek";
@@ -192,8 +200,18 @@ function resultFacts(
   ];
 }
 
-export function parsedJudgment(value: unknown): Judgment | null {
+export function parsedJudgment(
+  value: unknown,
+  requireFollowUp = false,
+): Judgment | null {
   const item = object(value);
+  let followUp: ReportFollowUp | undefined;
+  try {
+    followUp = readReportFollowUp(item.followUp);
+  } catch {
+    return null;
+  }
+  if (requireFollowUp && followUp === undefined) return null;
   const disposition = text(item.disposition);
   const summary = text(item.summary);
   const responsibility = text(item.responsibility);
@@ -205,7 +223,10 @@ export function parsedJudgment(value: unknown): Judgment | null {
     summary &&
     responsibility &&
     delivery
-    ? { disposition, summary, responsibility, findings, verification, delivery }
+    ? {
+        disposition, summary, responsibility, findings, verification, delivery,
+        ...(followUp === undefined ? {} : { followUp }),
+      }
     : null;
 }
 
@@ -408,7 +429,7 @@ async function publish(
       data: {
         appId: subject.appId,
         taskId: subject.taskId,
-        evidenceHash: subject.evidenceHash,
+        evidenceHash: subject.evidenceHash!,
         executionId: report.executionId,
         ...(report.attribution.reviewer === "evaluator-deepseek"
           ? {
@@ -667,6 +688,7 @@ export async function reviewTaskOutcome(
         : []),
       "Completion contract: assessed and insufficient-evidence are both successful evaluator judgments. Return the schema-valid judgment in finish().result and finish the evaluator execution with status success. Use partial/failure only when your own reviewer execution truly cannot complete; adverse findings about the subject are not reviewer execution failure. Return only the requested structured result.",
       "Report ownership: do not write Markdown, JSON, or any other task-outcome report file. The workflow validates your judgment and exclusively writes, reads back, and publishes the canonical report.",
+      reportFollowUpGuidance,
       `Trusted shared Evaluation criteria (source: criteria/criteria.md):\n\n${criteria}`,
       JSON.stringify({
         subject: { appId, taskId, evidenceHash: subject.evidenceHash },
@@ -698,7 +720,7 @@ export async function reviewTaskOutcome(
       ],
     });
   }
-  const judgment = parsedJudgment(execution.output);
+  const judgment = parsedJudgment(execution.output, true);
   if (!judgment)
     return ctx.blocked("Evaluator returned an invalid task-outcome judgment.", [
       `execution:${execution.id}`,

@@ -1,5 +1,11 @@
 # Task-outcome evaluation and report use
 
+**Supports:** [Useful completed work](../1-principles/purpose.md). Evaluation
+finds worthwhile corrections without turning every observation into more work.
+**Choice basis:** [Agents judge; code executes](../1-principles/core-principles.md#code-executes-and-brings-back-evidence-agents-judge).
+The reviewer chooses whether a finding needs attention; App code retains and
+routes that decision using the existing Host contract.
+
 **Current operating profile (September 21):** The installed App uses the existing
 single selector and serialized Evaluation lifecycle. Routine sampling explicitly
 selects `evaluator-deepseek` at a five-minute selector/allowance cadence; Sol keeps
@@ -344,22 +350,72 @@ assessment when the Host history fix is activated.
 
 Each successful review stages an immutable Markdown report and JSON facts sidecar under the configured durable `${EVALUATION_REPORT_ROOT:-${MAY_PERSIST_DIR:-/app/.state}/evaluation/reports}/task-outcomes/<app>/<rubric-version>/<task>-<evidence-hash>.*`, then emits `evaluation.task_report_published` with a stable Task-owned `localKey` and both content hashes. The reviewer returns only its schema-valid judgment; it does not write report files. `assessed` and `insufficient-evidence` are successful judgments, including when they contain adverse findings. Reviewer execution is partial or failed only when the reviewer itself cannot complete. The workflow exclusively validates, writes, reads back, and publishes canonical reports. Only after the emit succeeds does it write an immutable `.published.json` marker. Listing and reading require the marker and revalidate the JSON identity, recorded JSON/Markdown hashes, and deterministically rendered Markdown bytes. A failed publish therefore leaves staged files undiscoverable, while a retry republishes the same validated bytes without another model call. A rubric change creates a new directory and deliberate assessment rather than overwriting history.
 
-Reports are evidence, not commands or issue state. May should discover Evaluation through the normal App catalog and bounded Task list, inspect accepted review Task facts, and read the referenced report and sidecar. A human answer should state the covered subjects/time, a few material findings, missing evidence, exact report/evidence paths, and whether remediation is only delivered/acknowledged, claimed complete, or independently rechecked. Repeating a query reuses published reports; it does not automatically launch another evaluation. Responsible Apps receive exact findings through ordinary App inputs/Tasks and retain remediation results there.
+## Follow-up is an evaluator decision
+
+**Source contract; activation is separate.** Task and metric reviewers return
+`followUp` alongside their assessment:
+
+```json
+{"followUp": {"kind": "none"}}
+```
+
+This keeps a routine report available without starting another Alex model call.
+When a finding needs intervention, the reviewer instead returns:
+
+```json
+{"followUp": {"kind": "request", "message": "Check the new workspace failure against the existing repair Task and correct the uncovered cause."}}
+```
+
+The request names the useful action or judgment, why it is needed now, and
+existing work to reuse when known. A healthy wait, recovered incident or concern
+already covered by active work can need no new action. Material uncertainty,
+an uncovered failure or recurring waste can warrant a request. The evaluator
+judges this; App code does not infer it from prose, finding count, severity or
+`assessed` versus `insufficient-evidence`.
+
+Every valid report is saved, read back and published through the existing path.
+The publication event carries the decision from the immutable JSON judgment.
+For `none`, Alex's subscription admits no work. For `request`, it admits ordinary
+Alex work with the exact report references and the requested action. Alex checks
+current relevance and owns remediation or escalation to May. Publication does
+not assign the reported subject away from its owner, grant repair authority,
+settle its Conditions, or verify recovery. Execution failures still use their
+existing recovery routes independently of report decisions.
+
+Publication retries reuse the saved judgment and decision without another model
+call. Historical reports that lack `followUp` retain their original bytes and
+existing Alex intake behavior. Fresh model output must contain a valid decision;
+missing or malformed decisions leave the review unfinished. One quiet report
+does not suppress a later request about changed evidence. Delivery remains
+at least once; this removes recurring unnecessary work without an exactly-once
+attention ledger.
+
+The existing report reader can list and read quiet reports for an explicit or
+batched audit. This change adds no periodic audit schedule. Trust the reviewer by
+default, but do not treat `none` as guaranteed health. Contract tests establish
+retention, routing and recovery; an actual model comparison and live observation
+are still needed to establish judgment quality and savings.
+
+Reports are evidence, not commands or issue state. Use Alex's existing
+`evaluation-report-reader` workflow to list and read reports without rerunning
+evaluation. A human answer should state the covered subjects/time, material
+findings, missing evidence and whether remediation was proposed, delivered or
+verified. Accountable Apps retain remediation results in ordinary Tasks.
 
 An actionable finding includes a recommendation ready for owner judgment:
 observed impact and evidence, supported cause or exact uncertainty, the smallest
 useful correction or investigation, its owner, benefit versus cost, and how to
 verify the result. A no-change recommendation is valid. The shared
 [report criteria](../../criteria/criteria.md#findings-and-recommendations) apply to
-both Task and metric reviews through their existing report fields; no schema,
-queue or automatic repair authority is added. May checks current relevance and
+both Task and metric reviews; the follow-up decision adds no queue or automatic
+repair authority. Alex checks current relevance and
 accepts or declines the proposal, or requests specific missing evidence.
 Technical investigation and implementation remain ordinary work for the
 accountable App and its specialists. Evaluation later assesses the resulting
 work independently; accepting a proposal does not establish success or replace
 the existing human approval required for applying an automatic improvement.
 
-May's intake rereads its current owner's accepted result through `ctx.read.tasks.get`.
+When explicitly used, May's intake rereads its current owner's accepted result through `ctx.read.tasks.get`.
 An exact prior `evaluation-report-intake` result (including identical publication
 hashes and subject) reuses its handoff or no-change disposition. If it carries a
 `linkedTaskId`, that same-App owner is read before reuse; an unavailable link

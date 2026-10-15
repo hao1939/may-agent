@@ -16,11 +16,12 @@ import { EvidenceStore } from "../../../../../shared/tools/task-evidence.js";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { taskForInput, taskInputForEvent } from "../../../app.ts";
+import { evaluationReportInput, taskForInput, taskInputForEvent } from "../../../app.ts";
 import {
   assessmentContext,
   claimSemanticAllowance,
   reviewTaskOutcome,
+  parsedJudgment,
 } from "./task-outcome-review.ts";
 import {
   readSubjectTask,
@@ -196,6 +197,7 @@ const judgment = {
   findings: [],
   verification: ["commit abc read back"],
   delivery: "verified",
+  followUp: { kind: "none" as const },
 };
 
 function factsOf(
@@ -911,7 +913,7 @@ describe("Task outcome review", () => {
       subject: { appId, taskId, evidenceHash: subject.evidenceHash },
       evidence: subject.task,
       evaluator: { executionId: "s_legacy", cost: "unknown" },
-      judgment,
+      judgment: { ...judgment, followUp: undefined },
     };
     writeImmutable(
       resolveTaskReportPath(root, paths.jsonPath),
@@ -1080,11 +1082,15 @@ describe("Task outcome review", () => {
     ]);
   });
 
-  test("keeps a failed publication undiscoverable and publishes the staged retry without another model call", async () => {
+  test.each([
+    { kind: "none" as const },
+    { kind: "request" as const, message: "Investigate the repeated checkout failure using the existing repair Task." },
+  ])("retains follow-up through failed publication and retry: %j", async (followUp) => {
     const reportRoot = mkdtempSync(join(tmpdir(), "task-review-publish-"));
     const workspaceRoot = mkdtempSync(join(tmpdir(), "task-review-workspace-"));
     let emitAttempts = 0;
     let modelCalls = 0;
+    const events: any[] = [];
     const ctx = createTestAppWorkflowContext({
       input: { appId, taskId },
       reconciliation: reconciliation(),
@@ -1101,10 +1107,11 @@ describe("Task outcome review", () => {
           kind: "agent",
           status: "done",
           summary: "done",
-          output: judgment,
+          output: { ...judgment, followUp },
         };
       },
-      emit: async () => {
+      emit: async (event) => {
+        events.push(structuredClone(event));
         emitAttempts += 1;
         if (emitAttempts === 1) throw new Error("publication unavailable");
       },
@@ -1122,6 +1129,27 @@ describe("Task outcome review", () => {
     expect(emitAttempts).toBe(2);
     expect(listTaskReports(reportRoot)).toHaveLength(1);
     expect(listTaskReports(workspaceRoot)).toEqual([]);
+    expect(events[0].data.followUp).toEqual(followUp);
+    expect(events[1]).toEqual(events[0]);
+    const admitted = evaluationReportInput(events[1]);
+    if (followUp.kind === "none") expect(admitted).toBeNull();
+    else expect((admitted!.data as any).message).toContain(followUp.message);
+    const entry = listTaskReports(reportRoot)[0];
+    expect(JSON.parse(readFileSync(entry.absoluteJsonPath, "utf8")).judgment.followUp).toEqual(followUp);
+    expect(readFileSync(entry.absoluteMarkdownPath, "utf8")).toContain("## Follow-up");
+  });
+
+  test("fresh evaluator output must explicitly decide follow-up, while legacy reports remain readable", () => {
+    const { followUp, ...legacy } = judgment;
+    expect(parsedJudgment(legacy)).not.toBeNull();
+    expect(parsedJudgment(legacy, true)).toBeNull();
+    for (const invalid of [null, { kind: "skip" }, { kind: "request", message: " " }, { kind: "none", extra: true }]) {
+      expect(parsedJudgment({ ...judgment, followUp: invalid }, true)).toBeNull();
+    }
+    for (const disposition of ["assessed", "insufficient-evidence"]) {
+      expect(parsedJudgment({ ...judgment, disposition }, true)?.followUp).toEqual(followUp);
+      expect(parsedJudgment({ ...judgment, disposition, followUp: { kind: "request", message: "Decide how to resolve this material gap." } }, true)?.followUp?.kind).toBe("request");
+    }
   });
 
   test("publishes the inspected judgment with snapshot identity separate from current freshness", async () => {

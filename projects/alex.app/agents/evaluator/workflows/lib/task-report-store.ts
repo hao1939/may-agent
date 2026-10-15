@@ -1,3 +1,4 @@
+import { readReportFollowUp, type ReportFollowUp } from "./report-follow-up.js";
 import { renderPopulation } from "./task-population-evidence.js";
 import { createHash } from "node:crypto";
 import {
@@ -304,6 +305,14 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
     !representableTimestamp(createdAt)
   )
     return null;
+  let followUp: ReportFollowUp | undefined;
+  try {
+    followUp = readReportFollowUp(judgment.followUp);
+  } catch {
+    return null;
+  }
+  const followUpMarkdown = followUp === undefined ? "" :
+    `\n## Follow-up\n\n${followUp.kind === "none" ? "Retain this report; no Alex follow-up requested." : `Alex requested: ${followUp.message}`}\n`;
   const findings = strings(judgment.findings).slice(0, 12);
   const verification = strings(judgment.verification).slice(0, 12);
   if (metricId) {
@@ -322,7 +331,7 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
       (appId && text(object(evidence.metric).project) !== appId)
     )
       return null;
-    return `# Evaluation report\n\n- Metric: \`${appId ? `${appId}/` : ""}${metricId}\`\n- Evidence: \`${evidenceHash}\`\n- Purpose: metric\n- Rubric: \`${rubricVersion}\`\n- Source revision: \`${sourceRevision}\`\n${reviewerLines}- Disposition: \`${disposition}\`\n- Created: \`${new Date(createdAt).toISOString()}\`\n- Evaluator execution: \`${executionId}\`\n\n## Summary\n\n${summary}\n\n## Recorded comparison\n\n\`\`\`json\n${JSON.stringify({ end: evidence.end, responsibility: evidence.responsibility, alerts: evidence.alerts, freshness: evidence.freshness, latest: evidence.latest, comparison: evidence.comparison }, null, 2)}\n\`\`\`\n\nMetric changes do not establish cause or fulfillment of individual requests.\n\n## Responsibility\n\n${responsibility}\n\n## Findings\n\n${findings.map((item) => `- ${item}`).join("\n") || "- None."}\n\n## Verification and delivery\n\n${verification.map((item) => `- ${item}`).join("\n") || "- No verification cited."}\n- Delivery: ${delivery}\n`;
+    return `# Evaluation report\n\n- Metric: \`${appId ? `${appId}/` : ""}${metricId}\`\n- Evidence: \`${evidenceHash}\`\n- Purpose: metric\n- Rubric: \`${rubricVersion}\`\n- Source revision: \`${sourceRevision}\`\n${reviewerLines}- Disposition: \`${disposition}\`\n- Created: \`${new Date(createdAt).toISOString()}\`\n- Evaluator execution: \`${executionId}\`\n\n## Summary\n\n${summary}\n\n## Recorded comparison\n\n\`\`\`json\n${JSON.stringify({ end: evidence.end, responsibility: evidence.responsibility, alerts: evidence.alerts, freshness: evidence.freshness, latest: evidence.latest, comparison: evidence.comparison }, null, 2)}\n\`\`\`\n\nMetric changes do not establish cause or fulfillment of individual requests.\n\n## Responsibility\n\n${responsibility}\n\n## Findings\n\n${findings.map((item) => `- ${item}`).join("\n") || "- None."}\n\n## Verification and delivery\n\n${verification.map((item) => `- ${item}`).join("\n") || "- No verification cited."}\n- Delivery: ${delivery}\n${followUpMarkdown}`;
   }
   if (
     rubricVersion === TASK_OUTCOME_RUBRIC_VERSION &&
@@ -330,7 +339,7 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
     !Object.keys(snapshot).length &&
     !Object.keys(freshness).length
   )
-    return `# Evaluation report\n\n- Subject: \`${appId}/${taskId}\`\n- Evidence: \`${evidenceHash}\`\n- Rubric: \`${rubricVersion}\`\n- Source revision: \`${sourceRevision}\`\n${reviewerLines}- Disposition: \`${disposition}\`\n- Created: \`${new Date(createdAt).toISOString()}\`\n- Evaluator execution: \`${executionId}\`\n- Cost: unknown\n\n## Summary\n\n${summary}\n\n## Responsibility\n\n${responsibility}\n\n## Findings\n\n${findings.map((item) => `- ${item}`).join("\n") || "- None."}\n\n## Verification and delivery\n\n${verification.map((item) => `- ${item}`).join("\n") || "- No verification cited."}\n- Delivery: ${delivery}\n`;
+    return `# Evaluation report\n\n- Subject: \`${appId}/${taskId}\`\n- Evidence: \`${evidenceHash}\`\n- Rubric: \`${rubricVersion}\`\n- Source revision: \`${sourceRevision}\`\n${reviewerLines}- Disposition: \`${disposition}\`\n- Created: \`${new Date(createdAt).toISOString()}\`\n- Evaluator execution: \`${executionId}\`\n- Cost: unknown\n\n## Summary\n\n${summary}\n\n## Responsibility\n\n${responsibility}\n\n## Findings\n\n${findings.map((item) => `- ${item}`).join("\n") || "- None."}\n\n## Verification and delivery\n\n${verification.map((item) => `- ${item}`).join("\n") || "- No verification cited."}\n- Delivery: ${delivery}\n${followUpMarkdown}`;
   const populationMarkdown = renderPopulation(
     object(object(report.evidence).population),
   );
@@ -341,7 +350,7 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
   const freshnessLines = Object.keys(freshness).length
     ? `- Snapshot generation: \`${Number(snapshot.generation)}\`\n- Snapshot freshness at check: \`${freshnessStatus}\`\n- Freshness checked: \`${new Date(Number(freshness.checkedAt)).toISOString()}\`\n`
     : "";
-  return `# Evaluation report\n\n- Subject: \`${appId}/${taskId}\`\n- Evidence: \`${evidenceHash}\`\n- Purpose: \`${purpose}\`\n- Rubric: \`${rubricVersion}\`\n- Source revision: \`${sourceRevision}\`\n${validityLines}${freshnessLines}${reviewerLines}- Disposition: \`${disposition}\`\n- Created: \`${new Date(createdAt).toISOString()}\`\n- Evaluator execution: \`${executionId}\`\n- Cost: unknown\n\n## Summary\n\n${summary}\n\n${populationMarkdown}## Responsibility\n\n${responsibility}\n\n## Findings\n\n${findings.map((item) => `- ${item}`).join("\n") || "- None."}\n\n## Verification and delivery\n\n${verification.map((item) => `- ${item}`).join("\n") || "- No verification cited."}\n- Delivery: ${delivery}\n`;
+  return `# Evaluation report\n\n- Subject: \`${appId}/${taskId}\`\n- Evidence: \`${evidenceHash}\`\n- Purpose: \`${purpose}\`\n- Rubric: \`${rubricVersion}\`\n- Source revision: \`${sourceRevision}\`\n${validityLines}${freshnessLines}${reviewerLines}- Disposition: \`${disposition}\`\n- Created: \`${new Date(createdAt).toISOString()}\`\n- Evaluator execution: \`${executionId}\`\n- Cost: unknown\n\n## Summary\n\n${summary}\n\n${populationMarkdown}## Responsibility\n\n${responsibility}\n\n## Findings\n\n${findings.map((item) => `- ${item}`).join("\n") || "- None."}\n\n## Verification and delivery\n\n${verification.map((item) => `- ${item}`).join("\n") || "- No verification cited."}\n- Delivery: ${delivery}\n${followUpMarkdown}`;
 }
 
 export function markTaskReportPublished(
