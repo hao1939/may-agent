@@ -129,7 +129,7 @@ The failed business implementation must not be the only path that notices and
 reports its failure. A thrown workflow error must still be retained by the
 outer execution boundary and reach its exact caller. The owner can then
 investigate using ordinary tools. An explicit workflow assignment changes only
-through its authorized owner or the supported needs-agent result; the Host does
+through ordinary calls within its workflow or an authorized repair request; the Host does
 not silently replace a workflow after an error count.
 
 Use the narrow fallback already available: current Task read if TASK.md is

@@ -62,7 +62,7 @@ function productionAdmission(resultPath) {
     'import { readFileSync } from "node:fs";',
     'import { admitTaskReconcileResult } from "@may-agent/sdk";',
     'const value = JSON.parse(readFileSync(process.argv[1], "utf8"));',
-    'process.stdout.write(JSON.stringify(admitTaskReconcileResult(value, { allowNeedsAgent: false, defaultParentId: "may" })));',
+    'process.stdout.write(JSON.stringify(admitTaskReconcileResult(value)));',
   ].join("\n");
   const run = spawnSync("bun", ["-e", source, resultPath], {
     cwd: process.cwd(),

@@ -101,7 +101,6 @@ try {
       facts: [],
       actions: eligible.actions,
     },
-    { allowNeedsAgent: true },
   );
   assert.equal(admission.ok, false);
   results.retiredAction = admission;

@@ -268,18 +268,18 @@ investigation. The Host does not guess the investigator. Shared infrastructure
 failure may require the installation's independent supervisor/operator; an agent
 inside an unavailable Host cannot guarantee its repair.
 
-**Compatibility:** existing workflow `needs-agent` and retained `needs-owner`
-results still request one agent invocation on the same Task. The authored
-workflow verifier still governs completion. Subsequent attempts return to the
-declared procedure; partial progress, failure and convergence do not keep the
-agent selected. New workflows should call agents directly. Historical
-`failoverFromAttemptId` records remain evidence, not routing authority.
+**Migration:** workflows, registered executors and agents share one result
+contract. `needs-agent` and `needs-owner` outputs are rejected with a visible
+failure and ordinary backoff. Migrate callers to ordinary agent calls and
+activate the Host, candidate SDK and companion Apps together. Saved legacy workflow handoffs resume the declared
+procedure with their retained inputs; owner cancellation still prevents execution.
+Historical `failoverFromAttemptId` records are evidence, not routing authority.
 
 **Status:** candidate revision of Host [PR #344](https://github.com/hao1939/may-agent/pull/344).
 The earlier execution-selection action was withdrawn. See the
 [trial record](../archive/reviews/task-execution-selection-20261005.md) for the
 superseded experiment and current verification limits. Activate the companion
-App failure routes before or with this Host change; do not assume that merged
+App failure routes with the matching Host/SDK revision; do not assume that merged
 source proves live recovery.
 
 Human/control Task detail, list, and App counts must select the current Task
@@ -321,14 +321,13 @@ binds bytes, not source authority or semantic truth. See the
 | Valid `converged` result                                                                | Accept the exact input's outcome when current-attempt checks, evidence, actions and verification permit; keep the Task open                                                          |
 | Valid `waiting` result                                                     | Retain independent Conditions and input; yield on a return route or schedule useful work; structural children alone do not establish a wait |
 | Valid `incomplete` result                                                               | Retain unsuccessful attempt facts, report the input's first accepted blocker to its linked caller, and retry unfinished work with backoff; no cancellation or implicit parent wake |
-| Workflow `needs-agent`                                                                  | Sequential ordinary agent execution on the same Task; one invocation only; later attempts run the declared procedure; no ownership transfer                                                                                            |
 | Unavailable agent/workflow/executor or failed workspace prerequisite                    | Visible failure and same-Task paced recovery; the declared procedure retries and App routes arrange investigation; shared prerequisites still apply                                                                                                         |
 | Invalid/rejected handler result (including self-unblock) or explicitly blocked workflow | Preserve diagnostic evidence and unfinished input, reject proposed effects and retry with pacing; not an accepted answer                                                           |
 | Thrown execution error or timeout                                                       | Same-Task execution-failure recovery, subject to its retry policy                                                                                                                  |
 | Stale generation, resource version or cancelled attempt                                | Reject stale effects; reread current state without replacing accepted state or releasing another attempt                                                                           |
 | Durable cancellation                                                                    | Retain cancellation, interrupt the exact attempt and reject its later stale result                                                                                                 |
 
-Unknown result fields are rejected. `needs-agent` is workflow-only. A waiting
+Unknown result fields and execution-switch decisions are rejected. A waiting
 result may retain a bounded typed judgment in `result`; later attempts read it
 without reconstructing state from prose. A result may explicitly
 `retire-condition` only for one Condition currently linked to its own Task and

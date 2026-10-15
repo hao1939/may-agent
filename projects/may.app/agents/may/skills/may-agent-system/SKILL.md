@@ -285,8 +285,9 @@ the installed CLI, and closure verification; do not rediscover runtime internals
   bootstrap intent; Apps and agents consume only bounded task views.
 - Workflows use their reconciliation context and exact `ctx.read.task` views;
   agents use bounded task readouts. They return `converged`, `waiting` with
-  exact Conditions or typed App dependencies, `incomplete` for failure, or `needs-agent` before an
-  executor is selected, plus typed actions for Runtime to validate and apply.
+  exact Conditions or typed App dependencies, or `incomplete` for failure, plus
+  typed actions for Runtime to validate and apply. Workflows call agents directly
+  when judgment helps; result fields do not select the next executor.
 - When an App looks stuck, inspect the App and canonical Task state first.
   Reuse its existing Task and Condition, wake it through a declared App
   action, and follow the same trace through a typed response to a terminal
@@ -360,7 +361,7 @@ Distinguish local blockers from ownership-boundary escalations.
 - A workflow `ctx.blocked(...)` result is local and synchronous. The caller
   records it, returns it to the task/project owner, or promotes it only when it
   crosses an owner boundary.
-- An unresolved executor selection may return `needs-agent`; an App Task waiting
+- A workflow can call an agent to judge local recovery; an App Task waiting
   on an external fact returns `waiting` with an exact observable Condition.
   Runtime records the attempt and owns retry and recovery—do not emit a
   parallel task-completion event.

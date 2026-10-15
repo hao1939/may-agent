@@ -150,8 +150,9 @@ Return cross-App result work as a typed dependency; do not emit
 
 Use `ctx.agents.call` for judgment and incorporate its contribution in the
 ordinary workflow result. The workflow remains the procedure for later attempts.
-Legacy `needs-agent` is retained for one invocation only; do not use it to build
-a new recovery controller or clear the workflow to change execution.
+The call can be part of normal work or an error handler. Return its contribution
+through the same result admission and authored verification. Do not return
+`needs-agent` or clear the workflow to change execution.
 
 ### Cross-App outcome reviews
 

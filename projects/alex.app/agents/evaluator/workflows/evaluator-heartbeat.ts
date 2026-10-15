@@ -13,7 +13,7 @@ export const description =
   "Review the evaluator's bounded task frontier in Alex without creating a private work tree.";
 
 type OwnerReviewInput = { scope?: string; reason?: string };
-type AgentResult = Exclude<TaskReconcileResult, { state: "needs-agent" }>;
+type AgentResult = TaskReconcileResult;
 
 function incompleteResult(summary: string, facts: string[]): AgentResult {
   return {
@@ -27,9 +27,7 @@ export function normalizeAgentResult(
   output: unknown,
   reconciliation: TaskReconciliationContext<OwnerReviewInput>,
 ): AgentResult {
-  const admission = admitTaskReconcileResult(output, {
-    allowNeedsAgent: false,
-  });
+  const admission = admitTaskReconcileResult(output);
   if (admission.ok === false) {
     return incompleteResult(
       `Owner review returned an invalid structured result; preserving current desired state. ${admission.error}`,

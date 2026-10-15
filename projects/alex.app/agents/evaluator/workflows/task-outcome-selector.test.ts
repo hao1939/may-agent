@@ -279,7 +279,7 @@ describe("automatic task outcome selector", () => {
       expect(events).toHaveLength(1);
       expect(events[0]).toMatchObject({ type: "evaluation.task.review.requested",
         data: { appId: "sample", taskId: "work/ready", reviewer: "evaluator-deepseek" } });
-      expect(admitTaskReconcileResult(result, { allowNeedsAgent: true }).ok).toBe(true);
+      expect(admitTaskReconcileResult(result).ok).toBe(true);
     } finally { rmSync(root, { recursive: true, force: true }); }
   });
   test("is initially off and bounds recent navigation configuration", () => {
@@ -1565,7 +1565,7 @@ describe("automatic task outcome selector", () => {
       16 * 1_024,
     );
     expect(
-      admitTaskReconcileResult(simulatedResult, { allowNeedsAgent: false }).ok,
+      admitTaskReconcileResult(simulatedResult).ok,
     ).toBeTrue();
   });
 

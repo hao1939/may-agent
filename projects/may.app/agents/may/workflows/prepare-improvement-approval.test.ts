@@ -209,9 +209,7 @@ test("execute returns a canonically admitted wait bound to the exact proposal", 
   expect(output.response).toBeUndefined();
   expect(output.summary).toContain("human review is required");
 
-  const admitted = admitTaskReconcileResult(output, {
-    allowNeedsAgent: false,
-  });
+  const admitted = admitTaskReconcileResult(output);
   expect(admitted.ok).toBe(true);
   if (!admitted.ok) throw new Error(admitted.error);
 

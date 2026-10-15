@@ -155,9 +155,7 @@ function trial() {
   const run = async (ctx = context()) => {
     const response = await execute(ctx);
     const output = response.output as TaskReconcileResult;
-    const admitted = admitTaskReconcileResult(output, {
-      allowNeedsAgent: false,
-    });
+    const admitted = admitTaskReconcileResult(output);
     expect(admitted.ok).toBe(true);
     if (!admitted.ok) throw Error(JSON.stringify(admitted));
     current.result = output.result;

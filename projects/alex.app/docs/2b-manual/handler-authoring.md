@@ -50,8 +50,9 @@ Return the existing attempt `state`:
 - `waiting` yields on saved Conditions or a review deadline; add `continue: true`
   to schedule another attempt for useful independent work.
 - `incomplete` retains failure evidence and unfinished work for recovery.
-- Workflows call `ctx.agents.call` for bounded judgment, then return the ordinary
-  result. Legacy `needs-agent` remains one compatible invocation only.
+
+Workflows call `ctx.agents.call` for bounded judgment, then return the ordinary
+result. The Host does not accept execution-switch decisions from any handler.
 
 The [checked `waitingResult`](../examples/app.ts) illustrates an exact fact contract
 and canonical owner. Replace its illustrative pipeline identity with your actual

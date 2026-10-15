@@ -180,7 +180,7 @@ it("the procedure saves and reads back the analysis with code-owned coverage", a
   expect(options).toMatchObject({ tools: "readonly" });
   expect(result.output).toHaveProperty("state", "converged");
   expect(
-    admitTaskReconcileResult(result.output, { allowNeedsAgent: true }).ok,
+    admitTaskReconcileResult(result.output).ok,
   ).toBe(true);
   const record = assessmentRecord(root, sourceUrl);
   const saved = readFileSync(record.path, "utf8");

@@ -12,8 +12,10 @@ procedure. The replacement is documented in
 [Task attempts](../../2a-design/task-attempts.md#selecting-the-attempt-mechanism):
 run the declared procedure on every attempt and compose agent calls within it.
 Alex routes selector failures to ordinary owned investigation. No new execution
-flag, recovery mode or handback operation is introduced. Legacy explicit
-handoffs remain one invocation for compatibility.
+flag, recovery mode or handback operation is introduced. The final revision
+also removes `needs-agent`/`needs-owner` results; Scout diagnoses publication
+failure through an ordinary call inside its workflow. Saved historical handoffs
+resume the declared procedure.
 
 All counts and source revisions below describe the **superseded experiment**,
 not verification of the replacement or a live deployment. The current owning

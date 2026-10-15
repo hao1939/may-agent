@@ -157,10 +157,11 @@ owner or review interval is needed. Pending publication or human help does
 not by itself prevent an independent useful scan, and a completed scan does not
 satisfy those independent obligations.
 
-When a `needs-agent` handoff reports that publication failed after a bounded
-writer returned, inspect its exact writer, archive, unpublished-candidate, and
-failure facts on this same Task. Decide whether current evidence justifies a
-new planner adaptation, an honest wait, or an incomplete result on this Task.
-Recheck the candidate and any existing effect before repeating a write. Any converged
-recovery still requires the planner's read-only publication verifier, while
-unchanged independent Conditions and dependencies remain separate obligations.
+When the publication workflow calls you to diagnose a failure after a bounded
+writer returned, inspect the exact writer, archive, unpublished candidate, and
+failure facts against the same Task. That diagnosis call is read-only. Return
+an ordinary result describing the next step, a supported wait, or unfinished
+work. Do not repeat publication in the diagnosis call. Subsequent candidate
+changes use the planner's publisher. Convergence still requires the planner's
+read-only publication verifier; independent Conditions and dependencies remain
+separate obligations.

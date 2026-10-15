@@ -294,8 +294,9 @@ before claiming recovery; an accepted diagnosis is not that verification.
 
 The revised rule requires Host PR #344. Older Hosts can retain agent fallback
 until a Task revision; inspect the installed version and report that limitation
-rather than inventing an execution-selection action. Existing `needs-agent`
-workflows remain a compatibility path for one invocation only.
+rather than inventing an execution-selection action. Migrate existing
+`needs-agent` callers to ordinary agent calls and activate the matching App,
+Host and SDK revisions together; that output is rejected for every executor.
 
 ### Finish the repair's feedback
 

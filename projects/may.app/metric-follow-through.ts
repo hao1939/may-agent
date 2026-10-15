@@ -73,9 +73,7 @@ export function readMetricReview(
 ): MetricReview & { task: TaskReconcileResult } {
   // Saved reviews can use dependencies; reuse SDK admission to resolve that spelling.
   const input = value as { task?: unknown } | null;
-  const admitted = admitTaskReconcileResult(input?.task, {
-    allowNeedsAgent: false,
-  });
+  const admitted = admitTaskReconcileResult(input?.task);
   if (!admitted.ok) throw new Error(admitted.error);
   const review = { ...input, task: admitted.result };
   if (!Check(metricReviewSchema, review))
@@ -157,7 +155,6 @@ function composeMetricReview(
         ...facts,
       ],
     },
-    { allowNeedsAgent: false },
   );
   if (!composed.ok) throw new Error(composed.error);
   return composed.result;

@@ -628,11 +628,11 @@ task.workflow present -> agents/<agent>/workflows/<workflow>.ts
 task.workflow absent  -> one bounded run of the selected agent
 ```
 
-A workflow may return the compatibility state `needs-agent` for one bounded
-handoff to that agent; it does not transfer Task ownership.
-Future attempts run the declared procedure. Prefer `ctx.agents.call` inside the
-workflow for new code. Unavailable named workflows produce visible paced retry;
-they are not silently treated as unbound agent work.
+A workflow calls `ctx.agents.call` directly when it needs judgment and decides
+how to use the contribution. It returns the same ordinary result contract as an
+agent or registered executor. Future attempts still run the declared procedure.
+Unavailable named workflows produce visible paced retry and the App's declared
+operational routes arrange investigation.
 
 Targeted task wakes, Condition observations, recovery, and delivery resync
 enqueue stable task identities through the same controller. The queue never

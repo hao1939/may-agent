@@ -186,9 +186,7 @@ export async function execute(ctx: WorkflowContext) {
         ? { result: { development: { version: 2, evidence, report } } }
         : {}),
     };
-    const admitted = admitTaskReconcileResult(result, {
-      allowNeedsAgent: false,
-    });
+    const admitted = admitTaskReconcileResult(result);
     if (!admitted.ok) {
       const failure = `Development delivery rejected: ${admitted.error}`.slice(
         0,
