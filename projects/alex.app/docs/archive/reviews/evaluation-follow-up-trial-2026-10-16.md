@@ -90,11 +90,29 @@ correct attention routing do not certify all proposed repair details.
 
 ## Activation
 
-These checks support activating the report-follow-up change with the clarified
-completion guidance. The timeline candidate remains separate and unactivated.
-The installation's reload receipt and subsequent publication observations belong
-under the local review directory; source integration alone does not establish
-activation or sustained savings.
+The local installation activated Apps revision
+`20c24fc1af4d0f14288c7a86b72c4917ea3a1519`. Reload request `6664788` completed
+successfully in event `6664790`; the reported revision and loaded App/agent bytes
+match the integrated source. Host/SDK remain at `cbd71af075` (#344). The timeline
+candidate remains separate and unactivated.
+
+The next naturally scheduled Task review used that definition release and
+published event `6664818` with `followUp: {kind: "none"}`. The retained JSON and
+Markdown hashes match the publication, its marker exists, and the completed
+admission plan contains only Alex's admitted `noop` route. No Alex review Task
+was requested by that publication. The evaluator made four model replies while
+reading evidence, with zero finish-validation corrections. This establishes one
+live quiet publication, not sustained savings or general judgment accuracy.
+The actionable route is covered by the Host-backed fixture and model decisions;
+no synthetic actionable report was sent to production to exercise it.
+
+The installation receipts, byte checks and publication/admission proof are in
+`followup-reload-completed.json`, `followup-activated-bytes.json` and
+`followup-live-proof.json` under the local review directory. During observation,
+subscriber failures `6664792` and `6664804` concerned Alex's earlier direct message
+`6664767` to `tech-lead`, which has no canonical owner App address for that route.
+That input predates this rollout; it is a separate unresolved delivery issue,
+not an Evaluation publication failure.
 
 ## Deterministic verification and separate timeline repair
 

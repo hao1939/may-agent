@@ -352,7 +352,7 @@ Each successful review stages an immutable Markdown report and JSON facts sideca
 
 ## Follow-up is an evaluator decision
 
-**Source contract; activation is separate.** Task and metric reviewers return
+**Implemented contract; activation depends on the installation.** Task and metric reviewers return
 `followUp` alongside their assessment:
 
 ```json
