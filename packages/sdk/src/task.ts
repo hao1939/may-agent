@@ -29,6 +29,7 @@ export type TaskIntent = {
   agent?: string;
   /** @deprecated Use `agent`. Retained temporarily for source compatibility. */
   owner?: string;
+  /** App procedure for each eligible attempt; nested agent calls do not replace it. */
   workflow?: string;
   /** Registered bounded executor adapter. Omit or use `agent` for the managed agent. */
   executor?: TaskExecutorName;
@@ -58,7 +59,7 @@ export type Condition = {
  * the Task open. `incomplete` reports an unsuccessful attempt; unfinished work retries
  * with backoff until progress or owner closure.
  */
-export type TaskReconcileState = "converged" | "waiting" | "needs-agent" | "incomplete";
+export type TaskReconcileState = "converged" | "waiting" | "incomplete";
 
 /** Work submitted to another App, independent of whether the caller waits. */
 export type TaskAppRequest = {
@@ -173,17 +174,6 @@ export type TaskReconcileResult = {
       requests?: never;
       communication?: never;
     }
-  | {
-      state: "needs-agent";
-      inputKeys?: never;
-      response?: never;
-      result?: never;
-      actions?: never;
-      conditions?: never;
-      dependencies?: never;
-      requests?: never;
-      communication?: never;
-    }
 );
 
 /** Changes admitted while running or as part of the final result; never a Task replacement. */
@@ -249,4 +239,4 @@ export {
   taskReconcileResultSchema,
   taskVerificationResultSchema,
 } from "./task-contract.js";
-export type { TaskReconcileAdmission, TaskReconcileAdmissionOptions } from "./task-contract.js";
+export type { TaskReconcileAdmission } from "./task-contract.js";

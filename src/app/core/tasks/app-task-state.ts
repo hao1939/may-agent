@@ -130,7 +130,7 @@ export type AppTaskAttempt = {
   specHash: string;
   owner: string;
   handler: string;
-  /** First agent claim after a procedure failure; evidence, not handler-selection state. */
+  /** Historical automatic fallback from older Hosts; evidence, never routing authority. */
   failoverFromAttemptId?: string;
   runtimeId: string;
   state: "running" | "completed" | "failed" | "interrupted";

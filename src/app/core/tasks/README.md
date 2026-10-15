@@ -31,6 +31,29 @@ event emission and output-path helpers live beside their lifecycle callers.
 `execution.ts` and `workspace.ts` are private contracts; concrete implementations
 live in `adapters/` and `conversations/`, selected in `composition/task-execution.ts`.
 
+## Execution procedure and recovery
+
+The assigned agent owns the outcome. The App declares the execution procedure;
+Host claims use that workflow or executor on every attempt. A failed procedure,
+an old agent fallback, partial progress or convergence cannot change it.
+Workflows compose judgment through `ctx.agents.call`; the nested call inherits
+the Task context and authority and does not replace future workflow attempts.
+The App decides how to use its returned contribution and publishes the result.
+
+Failures retain the same Task, pending inputs, accepted effects and previous
+attempt evidence. The Host schedules retry with backoff and emits the existing
+`project.task.reconciled` event. App subscriptions and metric policies decide
+which failures need investigation or escalation, including failures before
+workflow code runs. No Host-invented diagnosis Task or App-specific policy is
+needed. Calling an agent and accepting progress do not establish repair.
+
+Workflows and registered executors return the same result contract as agents.
+`needs-agent` and `needs-owner` outputs are rejected visibly through ordinary
+paced failure recovery. Code that needs judgment calls the agent directly;
+results do not select execution. Saved legacy workflow handoffs resume their
+declared procedure with retained inputs and evidence. Owner-stopped Tasks stay
+stopped. Historical `failoverFromAttemptId` records remain readable as evidence.
+
 ## Trace one Task
 
 ```text

@@ -244,21 +244,8 @@ export const taskAgentResultSchema = Type.Union(
   },
 );
 
-/** Model-output schema for a workflow, including its explicit agent handoff. */
-export const taskReconcileResultSchema = Type.Union(
-  [
-    taskAgentResultSchema,
-    Type.Object(
-      {
-        state: Type.Literal("needs-agent"),
-        summary: nonEmptyStringSchema,
-        facts: Type.Array(nonEmptyStringSchema, { maxItems: 32 }),
-      },
-      { additionalProperties: false },
-    ),
-  ],
-  { $id: TASK_RECONCILE_RESULT_SCHEMA_ID },
-);
+/** Workflows and agents share one Task result contract. Keep the schema ID for saved sessions. */
+export const taskReconcileResultSchema = { ...taskAgentResultSchema, $id: TASK_RECONCILE_RESULT_SCHEMA_ID };
 
 const changeFields = {
   communication: resultFields.communication,
@@ -290,10 +277,6 @@ export const taskVerificationResultSchema = Type.Object(
 );
 
 export type TaskReconcileAdmission = { ok: true; result: TaskReconcileResult } | { ok: false; error: string };
-
-export type TaskReconcileAdmissionOptions = {
-  allowNeedsAgent: boolean;
-};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -414,10 +397,7 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
 }
 
 /** The single production admission and normalization boundary for task handlers. */
-export function admitTaskReconcileResult(
-  output: unknown,
-  options: TaskReconcileAdmissionOptions,
-): TaskReconcileAdmission {
+export function admitTaskReconcileResult(output: unknown): TaskReconcileAdmission {
   if (!isRecord(output)) return { ok: false, error: "expected an object" };
   if (output.dependencies !== undefined) {
     if (output.requests !== undefined) return { ok: false, error: "use requests or legacy dependencies, not both" };
@@ -441,32 +421,8 @@ export function admitTaskReconcileResult(
   if (!facts) return { ok: false, error: "facts must be a string array" };
   if (facts.length > 32) return { ok: false, error: "facts exceeds the 32-entry limit" };
 
-  if (output.state === "needs-agent" || output.state === "needs-owner") {
-    if (!options.allowNeedsAgent) return { ok: false, error: "a resolved agent cannot return needs-agent" };
-    if (
-      output.response !== undefined ||
-      output.result !== undefined ||
-      output.actions !== undefined ||
-      output.conditions !== undefined ||
-      output.requests !== undefined
-    ) {
-      return { ok: false, error: "needs-agent cannot include response, result, actions, Conditions, or requests" };
-    }
-    const canonicalOutput = output.state === "needs-owner" ? { ...output, state: "needs-agent" } : output;
-    if (!Check(taskReconcileResultSchema, canonicalOutput)) {
-      const first = [...Errors(taskReconcileResultSchema, canonicalOutput)][0];
-      return {
-        ok: false,
-        error: `handler result schema rejected ${first?.instancePath || "result"}: ${first?.message ?? "invalid value"}`,
-      };
-    }
-    return {
-      ok: true,
-      result: { state: "needs-agent", summary: output.summary.trim(), facts },
-    };
-  }
   if (output.state !== "converged" && output.state !== "waiting" && output.state !== "incomplete") {
-    return { ok: false, error: "state must be converged, waiting, incomplete, or needs-agent" };
+    return { ok: false, error: "state must be converged, waiting, or incomplete" };
   }
   if (
     output.report !== undefined &&
@@ -622,7 +578,6 @@ export function admitTaskChanges(output: unknown): { ok: true; changes: TaskChan
     };
   const admitted = admitTaskReconcileResult(
     { state: "waiting", summary: "Apply Task changes", facts: [], ...(output as TaskChanges) },
-    { allowNeedsAgent: false },
   );
   if (!admitted.ok) return admitted;
   const { requests, conditions, actions, inputKeys, facts, communication } = admitted.result;
@@ -648,11 +603,8 @@ export function admitTaskChanges(output: unknown): { ok: true; changes: TaskChan
  */
 export function admitTaskResultForSchema(schema: TSchema | undefined, output: unknown): TaskReconcileAdmission | null {
   const id = (schema as (TSchema & { $id?: unknown }) | undefined)?.$id;
-  if (id === TASK_AGENT_RESULT_SCHEMA_ID) {
-    return admitTaskReconcileResult(output, { allowNeedsAgent: false });
-  }
-  if (id === TASK_RECONCILE_RESULT_SCHEMA_ID) {
-    return admitTaskReconcileResult(output, { allowNeedsAgent: true });
+  if (id === TASK_AGENT_RESULT_SCHEMA_ID || id === TASK_RECONCILE_RESULT_SCHEMA_ID) {
+    return admitTaskReconcileResult(output);
   }
   return null;
 }

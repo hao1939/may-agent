@@ -175,7 +175,7 @@ describe("prepared completion contract", () => {
     const corrected = { ...args, result: correctedResult };
     const ctx = context(corrected);
     const params = validateToolArguments(finish, ctx.toolCall);
-    expect(admitTaskReconcileResult(params.result, { allowNeedsAgent: false }).ok).toBe(true);
+    expect(admitTaskReconcileResult(params.result).ok).toBe(true);
     expect(await prepared.runner.beforeToolCall!(ctx)).toBeUndefined();
     expect((await finish.execute(ctx.toolCall.id, params)).terminate).toBe(true);
   });
