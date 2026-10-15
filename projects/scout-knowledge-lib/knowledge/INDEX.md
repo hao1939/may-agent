@@ -72,6 +72,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ### 2026-10-15
 
+- [Corrupt replay evidence needs authority-aware recovery](./findings/2026-10-15-corrupt-replay-evidence-needs-authority-aware-recovery.md) — pinned Smithers documentation and project-authored tests distinguish evictable cache corruption from poisoned replay evidence on an already-succeeded attempt; Scout did not execute the release candidate, its tests, or a corruption-recovery scenario.
 - [An agent VM “air gap” is a mediation topology, not absence of connectivity](./findings/2026-10-15-capsem-air-gap-is-mediated-egress.md) — pinned Capsem documentation exposes no-uplink VM networking, host-mediated DNS and HTTP(S), and explicit private-network and published-port exceptions; Scout did not run the pre-release system or reproduce its containment tests.
 - [Reusable agents need admission and retirement, not just retrieval](./findings/2026-10-15-lago-reusable-agent-options.md) — full-paper review of LAGO finds a versioned, verified agent-option library actively reused in author-run task streams, while unmatched inference budgets, noisy 50-task ablations, and incomplete isolation of transferred skill limit causal claims.
 
