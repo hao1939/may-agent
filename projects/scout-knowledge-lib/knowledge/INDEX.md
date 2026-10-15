@@ -72,6 +72,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ### 2026-10-15
 
+- [A wake receipt is not a work-completion receipt](./findings/2026-10-15-aweb-wake-receipt-boundaries.md) — pinned aweb documentation, implementation, and project-authored tests separate durable content, wake observation, accepted terminal presentation, read acknowledgement, and completed work; Scout did not run the project, its tests, or a crash-recovery scenario.
 - [Agent authority is a topology, not a property of one tool gate](./findings/2026-10-15-antiproton-authority-topology.md) — pinned Antiproton gateway code and project-authored tests separate credential opacity, mount policy, exact-request approval, and replay admission; Scout did not execute the project or establish complete mediation across all plugins and equivalent effects.
 - [Long-horizon agent control needs four independently checked states](./findings/2026-10-15-xhs-four-state-long-horizon-agent-control.md) — a complete XHS post separates goal, task, environment, and recovery state and names practical drift signals, but supplies no implementation, trace, experiment, or measured result.
 - [Agent memory needs lifecycle boundaries, including forgetting](./findings/2026-10-15-xhs-memory-lifecycle-needs-forgetting.md) — a complete XHS post extends a familiar three-part memory taxonomy with procedural promotion and forgetting, but its named PDF, images, implementation, and any measured evidence were not inspected.
