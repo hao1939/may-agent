@@ -120,6 +120,7 @@ export function projectAppTaskWaitPromptContext(waits: readonly AppTaskWaitObser
     type: string;
     subject: string;
     state: string;
+    progress?: "immediate" | "next-wake";
     dependency?: {
       requestId: string;
       appId: string;
@@ -127,6 +128,7 @@ export function projectAppTaskWaitPromptContext(waits: readonly AppTaskWaitObser
       targetTaskId?: string;
       resolvedTaskId?: string;
       report?: unknown;
+      reports?: Partial<Record<"progress" | "failure", unknown>>;
     };
   }>;
   note: string;
@@ -144,6 +146,7 @@ export function projectAppTaskWaitPromptContext(waits: readonly AppTaskWaitObser
         type: condition.spec.type,
         subject: condition.spec.subject,
         state: condition.status.state,
+        ...(requestId ? { progress: condition.spec.progress ?? "immediate" as const } : {}),
         ...(item
           ? {
               dependency: {
@@ -152,8 +155,8 @@ export function projectAppTaskWaitPromptContext(waits: readonly AppTaskWaitObser
                 status: item.status,
                 ...(item.targetTaskId ? { targetTaskId: item.targetTaskId } : {}),
                 ...(item.waitingOn?.kind === "task" ? { resolvedTaskId: item.waitingOn.id } : {}),
-                ...(condition.status.state === "false" && condition.status.observed
-                  ? { report: condition.status.observed } : {}),
+                ...(condition.status.reports ? { reports: condition.status.reports }
+                  : condition.status.state === "false" && condition.status.observed ? { report: condition.status.observed } : {}),
               },
             }
           : {}),
