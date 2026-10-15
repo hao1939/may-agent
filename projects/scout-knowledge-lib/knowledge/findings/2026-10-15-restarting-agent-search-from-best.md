@@ -59,4 +59,4 @@ The useful addition is a distinction between **compaction** and **reset**. Compa
 
 ## Retrieval record
 
-The workflow made one canonical request to `https://export.arxiv.org/api/query?search_query=cat%3Acs.AI&start=0&max_results=20&sortBy=submittedDate&sortOrder=descending`. It returned HTTP 200 in 434 ms; request count was 1; no `Retry-After` value was present. This assessment made no additional arXiv request.
+The workflow made one canonical request to `https://export.arxiv.org/api/query?search_query=cat%3Acs.AI&start=0&max_results=20&sortBy=submittedDate&sortOrder=descending`. It returned HTTP 200 in 438 ms; request count was 1; no `Retry-After` value was present. This assessment made no additional arXiv request.
