@@ -4156,7 +4156,7 @@ describe("App task reconciler state", () => {
     let validationCalls = 0;
     const validatePreviousSession = () => {
       validationCalls++;
-      throw new Error("ambiguous retained recovery evidence");
+      return false;
     };
     const replayClaim = () =>
       claimObservedAppTask(interruptedResourceConfig, {
@@ -4166,8 +4166,8 @@ describe("App task reconciler state", () => {
         reason: `attempt-recovery:${claim.taskId}`,
         validatePreviousSession,
       });
-    expect(replayClaim).toThrow("ambiguous retained recovery evidence");
-    expect(replayClaim).toThrow("ambiguous retained recovery evidence");
+    expect(replayClaim).toThrow("retained session retained-session could not be validated for replay");
+    expect(replayClaim).toThrow("retained session retained-session could not be validated for replay");
     expect(validationCalls).toBe(2);
     expect(interruptedResourceConfig.resourceStore.readTask(claim.taskId)?.status.currentAttemptId).toBe(
       claim.attemptId,

@@ -2649,7 +2649,7 @@ export function claimObservedAppTask(
     reason?: string;
     isAgentRunnable?: (agent: string) => boolean;
     recoverSessionHandoff?: (attempt: AppTaskAttempt | undefined) => AppTaskClaim["handoff"];
-    validatePreviousSession?: (attempt: AppTaskAttempt) => void;
+    validatePreviousSession?: (attempt: AppTaskAttempt) => boolean | void;
   },
 ): AppTaskClaimResult {
   const snapshotRevision = config.resourceStore.revision();
@@ -2744,7 +2744,12 @@ export function claimObservedAppTask(
     (latestAttempt.runtimeId !== reconcilerRuntimeId ||
       latestAttempt.failureReason === "previous-runtime-attempt-requeued")
   ) {
-    input.validatePreviousSession?.(latestAttempt);
+    const validated = input.validatePreviousSession?.(latestAttempt);
+    if (validated === false) {
+      throw new Error(
+        `Cannot replace Task ${input.taskId} ownership: retained session ${latestAttempt.sessionId} could not be validated for replay`,
+      );
+    }
   }
   const recoveredSessionHandoff = input.recoverSessionHandoff?.(latestAttempt);
   const previousAttempt = currentResourceAttempt(tree, resource);

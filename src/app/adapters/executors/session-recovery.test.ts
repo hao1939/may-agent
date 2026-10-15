@@ -199,6 +199,41 @@ it.each([
   expect(events.filter((event) => event.type === "session.end")).toHaveLength(0);
 });
 
+it.each([
+  { metadata: "absent", evidence: "transcript", expected: "session.jsonl lines 1" },
+  { metadata: "absent", evidence: "checkpoint", expected: "checkpoint JSONL lines 1" },
+  { metadata: "malformed", evidence: "transcript", expected: "session.jsonl lines 1" },
+  { metadata: "malformed", evidence: "checkpoint", expected: "checkpoint JSONL lines 1" },
+] as const)(
+  "quarantines malformed $evidence before replay when metadata is $metadata",
+  ({ metadata, evidence, expected }) => {
+    const root = mkdtempSync(join(tmpdir(), "may-recovery-missing-meta-"));
+    roots.push(root);
+    const sessionId = `${metadata}-${evidence}`;
+    mkdirSync(join(root, "sessions", sessionId), { recursive: true });
+    if (metadata === "malformed") {
+      writeFileSync(join(root, "sessions", sessionId, "meta.json"), '{"status":"running"');
+    }
+    if (evidence === "transcript") {
+      writeFileSync(join(root, "sessions", sessionId, "session.jsonl"), '{"role":"toolResult"\n');
+    } else {
+      mkdirSync(join(root, "checkpoints"), { recursive: true });
+      writeFileSync(join(root, "checkpoints", `${sessionId}.jsonl`), '{"step":1\n');
+    }
+    const recovery = createTaskSessionRecovery({
+      persistDir: root,
+      manager: new SubagentManager({ persistDir: root }),
+      bus: new EventBus(),
+    });
+
+    expect(() => recovery.interrupt(sessionId, "Replay follows", undefined, true)).toThrow(expected);
+    expect(() => recovery.interrupt(sessionId, "Replay follows", undefined, true)).toThrow(
+      "explicit reconciliation is required",
+    );
+    expect(existsSync(join(root, "sessions", sessionId, "result.json"))).toBe(false);
+  },
+);
+
 it.each(["done", "error", "interrupted"] as const)(
   "quarantines malformed terminal-session evidence before replay for %s sessions",
   (status) => {

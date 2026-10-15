@@ -88,7 +88,7 @@ export async function runTaskAttempt(input: {
       reason: input.reason ?? "task-controller",
       validatePreviousSession: (attempt) => {
         if (!attempt.sessionId) return;
-        interruptSupersededAgentSession(
+        return interruptSupersededAgentSession(
           opts,
           attempt.sessionId,
           `Validating retained recovery evidence before replacing Task ${input.taskId} ownership`,

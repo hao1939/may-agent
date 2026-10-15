@@ -180,21 +180,19 @@ function interruptSupersededAgentSession(
       `Cannot recover session ${cleanSessionId}: one or more durable bash process groups did not exit after bounded SIGTERM/SIGKILL drain`,
     );
   }
-  if (!meta) return false;
 
-  // A terminal session projection does not make effect evidence safe to ignore
-  // when the caller is about to release and replay its Task attempt. Inspect it
-  // before that replay boundary; cleanup-only reconciliation retains the
-  // historical terminal projection without imposing this stronger check.
-  const transcriptEvidence =
-    beforeReplay || meta.status === "running" || meta.status === "idle"
-      ? readSessionRecoveryEvidence(opts.persistDir!, cleanSessionId)
-      : null;
+  // A replay-sensitive validation must inspect retained effect evidence even
+  // when meta.json is absent or unreadable. Metadata is only a projection; it
+  // cannot safely collapse a corrupt transcript/checkpoint to "no session".
+  const inspectRecoveryEvidence =
+    Boolean(opts.persistDir) && (beforeReplay || meta?.status === "running" || meta?.status === "idle");
+  const transcriptEvidence = inspectRecoveryEvidence
+    ? readSessionRecoveryEvidence(opts.persistDir!, cleanSessionId)
+    : null;
   const recoveredFinish = transcriptEvidence ? extractFinishParams(transcriptEvidence.entries as any[]) : undefined;
-  const checkpointEvidence =
-    beforeReplay || meta.status === "running" || meta.status === "idle"
-      ? readCheckpointRecoveryEvidence(opts.persistDir!, cleanSessionId)
-      : null;
+  const checkpointEvidence = inspectRecoveryEvidence
+    ? readCheckpointRecoveryEvidence(opts.persistDir!, cleanSessionId)
+    : null;
   if (
     (beforeReplay || !recoveredFinish) &&
     (transcriptEvidence?.state === "corrupt" || checkpointEvidence?.state === "corrupt")
@@ -209,6 +207,7 @@ function interruptSupersededAgentSession(
     ];
     throw new SessionRecoveryEvidenceAmbiguityError(cleanSessionId, corrupt);
   }
+  if (!meta) return false;
 
   if (meta.status !== "running" && meta.status !== "idle") {
     if (!opts.persistDir) return false;
