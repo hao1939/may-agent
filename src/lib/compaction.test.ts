@@ -8,7 +8,7 @@ import {
 } from "./compaction.js";
 import type { CompactionInfo, KeyFacts } from "./compaction.js";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
-import type { Model } from "@earendil-works/pi-ai";
+import { getCurrentSystemPrompt, getCurrentTools, Type, type Model } from "@earendil-works/pi-ai";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -101,6 +101,35 @@ function longText(tokens: number): string {
 // ── Tests ──────────────────────────────────────────────────────────────
 
 describe("createCompactionTransform", () => {
+  it("preserves replayed instructions and tool changes through repeated compaction", async () => {
+    const transform = createCompactionTransform(fakeModel(1000), { threshold: 0.5, keepRatio: 0.3 });
+    const read = { name: "read", description: "Read evidence", parameters: Type.Object({}) };
+    const finish = { name: "finish", description: "Submit result", parameters: Type.Object({}) };
+    const messages: AgentMessage[] = [
+      { role: "system", content: "Standing instructions", sections: { scope: "Old scope" }, toolsAdded: [read], timestamp: 1 },
+      userMsg("Original requirement"),
+      assistantMsg(longText(500)),
+      { role: "system", content: "Additional instruction", sections: { scope: "Current scope" }, toolsRemoved: [{ name: "read" }], toolsAdded: [finish], timestamp: 2 },
+      userMsg(longText(300)),
+      assistantMsg(longText(300)),
+    ];
+    const prompt = getCurrentSystemPrompt(messages);
+    const first = await transform(messages);
+    const second = await transform([...first, userMsg(longText(500)), assistantMsg(longText(500))]);
+    for (const result of [first, second]) {
+      expect(result).not.toBe(messages);
+      expect(result[0].role).toBe("system");
+      expect(result.filter((message) => message.role === "system")).toHaveLength(1);
+      expect(getCurrentSystemPrompt(result)).toBe(prompt);
+      expect(getCurrentTools(result)).toEqual([finish]);
+      expect(JSON.stringify(result[1])).toContain("COMPACTED CONTEXT");
+      expect(JSON.stringify(result[1])).toContain("Original requirement");
+      expect(JSON.stringify(result[1])).not.toContain("Standing instructions");
+    }
+    expect(messages).toHaveLength(6);
+    expect(messages[0]).toMatchObject({ toolsAdded: [read], sections: { scope: "Old scope" } });
+  });
+
   it("returns messages unchanged when under threshold", async () => {
     const model = fakeModel(10000);
     const transform = createCompactionTransform(model, { threshold: 0.7 });

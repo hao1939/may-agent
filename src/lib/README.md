@@ -74,6 +74,24 @@ result admission still checks current authority and accounts for handled input.
 The brief does not accumulate in the saved transcript. The source guide describes
 these existing roles; it does not introduce another context store or controller.
 
+Pi's provider context carries instructions and tool declarations in system
+messages. `restoreAgentMessages` restores prior work under the current
+invocation's instructions and tools, including transcripts saved before this
+format existed. `compaction.ts` replays system messages without summarizing
+them; only conversation history becomes a lossy summary. Provider integrations
+read the effective prompt and tools with Pi's transcript helpers. Progress and
+returned execution history continue to expose work messages, not system setup.
+
+An accepted `finish` ends the invocation through Pi's `finishTurn` hook. Tools
+remaining in that assistant batch are blocked, and queued steering or follow-up
+input remains available for a later invocation. A rejected finish remains
+correctable in the current invocation.
+
+`isOverflowError` accepts the provider name for provider-specific errors. A
+bodyless HTTP 400/413 alone does not prove a context overflow; Pi recognizes
+that response for Cerebras only. Explicit token-limit errors still work without
+a provider name.
+
 ## Agent cooperation tools
 
 `manager-agents-tool.ts` offers bounded `call` and `fork` using a `task`

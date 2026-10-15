@@ -6,9 +6,9 @@ import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { TaskDetail } from "@may-agent/sdk";
 import { createTaskDecisionContext } from "./task-decision-context.js";
 import { prepareTaskWorkspaceContext } from "./task-workspace-context.js";
-import { Type, createAssistantMessageEventStream, type Context } from "@earendil-works/pi-ai";
+import { Type, createAssistantMessageEventStream, getCurrentSystemPrompt, getCurrentTools, type TranscriptContext } from "@earendil-works/pi-ai";
 import { createFinishTool } from "./tools/lifecycle.js";
-import { createAgentRun } from "./agent-runner.js";
+import { createAgentRun, restoreAgentMessages } from "./agent-runner.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 import { prepareAgentExecution } from "./agent-execution.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
@@ -369,7 +369,7 @@ test("the production transform restores current facts after compaction without a
       timestamp: i,
       content: [{ type: "text", text: "Old unrelated note. ".repeat(100) }],
     }));
-    const requests: Context[] = [];
+    const requests: TranscriptContext[] = [];
     const agent = createAgentRun({
       ...prepared.runner,
       streamFn: (_model, context) => {
@@ -395,7 +395,7 @@ test("the production transform restores current facts after compaction without a
         return stream;
       },
     });
-    agent.state.messages = messages;
+    restoreAgentMessages(agent, messages);
     await agent.prompt(prepared.prompt);
     expect(requests[0].messages.length).toBeLessThan(30);
     expect(JSON.stringify(requests[0].messages)).toContain("COMPACTED CONTEXT");
@@ -409,11 +409,11 @@ test("the production transform restores current facts after compaction without a
       expect(current.assignment.creator).toEqual({ appId: "caller", taskId: "requester" });
       expect(current.work.assignedAtStart.continuingInputs).toBe(1);
       expect(current.work.previousResult.coveredInputs).toBe(0);
-      expect(request.systemPrompt).toContain("App reviewer: assess evidence quality.");
-      expect(request.systemPrompt).toContain("a helper still owes only its assigned contribution");
-      expect(request.systemPrompt).toContain(skill.canonicalPath);
-      expect(request.systemPrompt).not.toContain("workflow step");
-      const finish = request.tools!.find((tool) => tool.name === "finish")!;
+      expect(getCurrentSystemPrompt(request.messages)).toContain("App reviewer: assess evidence quality.");
+      expect(getCurrentSystemPrompt(request.messages)).toContain("a helper still owes only its assigned contribution");
+      expect(getCurrentSystemPrompt(request.messages)).toContain(skill.canonicalPath);
+      expect(getCurrentSystemPrompt(request.messages)).not.toContain("workflow step");
+      const finish = getCurrentTools(request.messages).find((tool) => tool.name === "finish")!;
       expect(finish.parameters.properties.result).toEqual(helperSchema);
       expect(JSON.stringify(request.messages).split("Task decision brief")).toHaveLength(2);
     }

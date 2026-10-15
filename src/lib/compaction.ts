@@ -11,7 +11,7 @@ import {
   estimateTokens as estimatePiMessageTokens,
 } from "@earendil-works/pi-agent-core";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
-import type { Model, ToolResultMessage } from "@earendil-works/pi-ai";
+import { getCurrentSystemMessage, type Model, type ToolResultMessage } from "@earendil-works/pi-ai";
 
 const DEFAULT_THRESHOLD = 0.6;
 const DEFAULT_KEEP_RATIO = 0.35;
@@ -321,14 +321,19 @@ export function createCompactionTransform(model: Model<any>, options: Compaction
     const tokensBefore = estimateTokens(messages);
     if (tokensBefore < model.contextWindow * threshold) return messages;
 
-    const splitAt = splitMessages(messages, keepRatio);
+    // Pi stores instructions and tool declarations in system messages. Replay
+    // those exactly; only conversation history may become a lossy summary.
+    const baseline = getCurrentSystemMessage(messages);
+    const history = messages.filter((message) => message.role !== "system");
+    if (history.length <= 1) return messages;
+    const splitAt = splitMessages(history, keepRatio);
     if (splitAt <= 0) return messages;
 
-    const previousSummary = extractExistingSummary(messages);
-    const compacted = messages.slice(0, splitAt);
-    const kept = messages.slice(splitAt);
+    const previousSummary = extractExistingSummary(history);
+    const compacted = history.slice(0, splitAt);
+    const kept = history.slice(splitAt);
     const summary = buildSummary(compacted, previousSummary);
-    const result = [textMessage(summary), ...kept];
+    const result = [...(baseline ? [baseline] : []), textMessage(summary), ...kept];
     const tokensAfter = estimateTokens(result);
 
     compactionCount += 1;

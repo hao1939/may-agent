@@ -4,7 +4,10 @@ import {
   createAssistantMessageEventStream,
   Type,
   type AssistantMessage,
-  type Context,
+  normalizeContext,
+  getCurrentSystemPrompt,
+  getCurrentTools,
+  type TranscriptContext,
   type Model,
   type StreamFunction,
 } from "@earendil-works/pi-ai";
@@ -98,10 +101,14 @@ async function resultWithoutHang(stream: ReturnType<typeof createAssistantMessag
 
 describe("GitHub Copilot IDE token recovery", () => {
   test("switches the bounded Copilot auth envelope once to the declared independent fallback", async () => {
-    const context: Context = { messages: [{ role: "user", content: "keep me", timestamp: 1 }] };
+    const context = normalizeContext({
+      systemPrompt: "Keep the current instructions",
+      tools: [tool("read")],
+      messages: [{ role: "user", content: "keep me", timestamp: 1 }],
+    });
     const originalMessages = context.messages;
     const options = { apiKey: "opaque-test-key" };
-    const calls: Array<{ model: Model<any>; context: Context; options: unknown }> = [];
+    const calls: Array<{ model: Model<any>; context: TranscriptContext; options: unknown }> = [];
     const boundedEnvelope = `OpenAI API error (401): {"message":"litellm.AuthenticationError: AuthenticationError: Github_copilotException - IDE token expired: unauthorized: token expired\\n. Received Model Group=gpt-5.6-sol\\nAvailable Model Group Fallbacks=None","type":null,"param":null,"code":"401"}`;
     const provider: StreamFunction = (model, receivedContext, receivedOptions) => {
       calls.push({ model, context: receivedContext, options: receivedOptions });
@@ -127,7 +134,9 @@ describe("GitHub Copilot IDE token recovery", () => {
     expect(calls[0]?.options).toBe(options);
     expect(calls[1]?.options).toBe(options);
     expect(context.messages).toBe(originalMessages);
-    expect(context.messages).toHaveLength(1);
+    expect(context.messages).toHaveLength(2);
+    expect(getCurrentSystemPrompt(context.messages)).toBe("Keep the current instructions");
+    expect(getCurrentTools(context.messages).map((tool) => tool.name)).toEqual(["read"]);
   });
 
   test("does not silently reroute generic auth or non-auth provider failures", async () => {
@@ -143,7 +152,7 @@ describe("GitHub Copilot IDE token recovery", () => {
       };
 
       const result = await resultWithoutHang(
-        withGithubCopilotIdeTokenRecovery(provider)(streamTestModel, { messages: [] }),
+        withGithubCopilotIdeTokenRecovery(provider)(streamTestModel, normalizeContext({ messages: [] })),
       );
 
       expect(calls).toEqual([streamTestModel]);
@@ -743,6 +752,29 @@ describe("direct structured judgment execution", () => {
     });
     return stream;
   }
+
+  test.each([false, true])("restores history with current instructions and tools (saved system messages: %s)", async (withSystem) => {
+    const prepared = prepare(true);
+    const history = [{ role: "user" as const, content: "Earlier evidence", timestamp: 1 }];
+    const initialMessages = withSystem
+      ? normalizeContext({ systemPrompt: "Obsolete instructions", tools: [tool("obsolete")], messages: history }).messages
+      : history;
+    let request: TranscriptContext | undefined;
+    prepared.runner.streamFn = (_model, context) => {
+      request = context;
+      return finishStream(finishArgs);
+    };
+
+    const result = await executePreparedAgent(prepared, { initialMessages });
+
+    expect(result.status).toBe("done");
+    expect(getCurrentSystemPrompt(request!.messages)).toBe(prepared.systemPrompt);
+    expect(getCurrentTools(request!.messages).map((tool) => tool.name)).toEqual(prepared.tools.map((tool) => tool.name));
+    expect(request!.messages).toContainEqual(history[0]);
+    expect(request!.messages.filter((message) => message.role === "system")).toHaveLength(1);
+    expect(result.messages.some((message) => message.role === "system")).toBe(false);
+    expect(initialMessages).toHaveLength(withSystem ? 2 : 1);
+  });
 
   test.each([true, false])("preserves non-success output with structured=%s", async (structured) => {
     const prepared = prepare(structured);

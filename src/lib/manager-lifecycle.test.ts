@@ -2,13 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
+import { createAssistantMessageEventStream, getCurrentSystemPrompt, type AssistantMessage } from "@earendil-works/pi-ai";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { createAgentRun, type AgentRunnerConfig } from "./agent-runner.js";
 import { EventBus } from "../app/core/events/bus.js";
 import { DbWriter } from "./db-writer.js";
 import { closeDb, getDb } from "./db/connection.js";
 import { SubagentManager } from "./manager.js";
+import { appendSessionMessage } from "./persistence.js";
 
 function definition(version: string) {
   return {
@@ -69,7 +70,7 @@ describe("manager session lifecycle", () => {
               if (replyFailure) stream.push({ type: "error", reason: "error", error: message });
               else stream.push({ type: "done", reason: "stop", message });
             };
-            requests.push({ model: model.id, systemPrompt: context.systemPrompt ?? "", prompt: JSON.stringify(context.messages), reply });
+            requests.push({ model: model.id, systemPrompt: getCurrentSystemPrompt(context.messages), prompt: JSON.stringify(context.messages), reply });
             started.resolve();
             if (!holdReplies) reply();
             return stream;
@@ -216,6 +217,28 @@ describe("manager session lifecycle", () => {
     expect(manager.result(sessionId)).toEqual(results[0]);
   });
 
+  it.each(["job", "chat"] as const)("resumes a %s with current instructions and retained work", async (kind) => {
+    const sessionId = manager.run("worker", "Original work", { kind, ...(kind === "chat" ? { autoClose: "never" as const } : {}) });
+    if (kind === "chat") {
+      await manager.waitForIdle(sessionId);
+      manager.close(sessionId);
+    } else {
+      await manager.waitFor(sessionId);
+    }
+    manager.register(definition("new"));
+    started = Promise.withResolvers<void>();
+    manager.resumeSession(sessionId, "Continue the work");
+    await started.promise;
+    await manager.waitForIdle(sessionId);
+
+    expect(requests).toHaveLength(2);
+    expect(requests[1].systemPrompt).toContain("Instructions for new");
+    expect(requests[1].systemPrompt).not.toContain("Instructions for old");
+    expect(requests[1].prompt).toContain("Original work");
+    expect(requests[1].prompt).toContain("Reply from old");
+    expect(requests[1].prompt).toContain("Continue the work");
+  });
+
   it("records persistent chat replies without recounting retained history on resume", async () => {
     const taskBinding = { appId: "example", taskId: "conversation", generation: 1, attemptId: "attempt-1" };
     const sessionId = manager.run("worker", "First chat input", { kind: "chat", autoClose: "never", taskBinding });
@@ -309,6 +332,20 @@ describe("manager session lifecycle", () => {
     expect(result.status).toBe("done");
     manager.cancel(sessionId);
     expect(manager.result(sessionId)).toEqual(result);
+  });
+
+  it("keeps recovered system setup out of progress and results before and after restart", async () => {
+    const sessionId = manager.run("worker", "Retain the work history");
+    const result = await manager.waitFor(sessionId);
+    // Transcript recovery may save system messages along with the work.
+    appendSessionMessage(persistDir, sessionId, {
+      role: "system", content: "Recovered system setup", timestamp: Date.now(),
+    });
+    const restarted = new SubagentManager({ persistDir });
+    for (const reader of [manager, restarted]) {
+      expect(reader.progress(sessionId)).toEqual(result.messages);
+      expect(reader.result(sessionId).messages).toEqual(result.messages);
+    }
   });
 
   it("keeps the completed duration when the wall clock advances", async () => {

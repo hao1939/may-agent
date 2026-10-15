@@ -28,9 +28,16 @@ describe("isOverflowError", () => {
     expect(isOverflowError("token limit exceeded")).toBe(true);
   });
 
-  it("detects Cerebras/Mistral empty body overflow", () => {
-    expect(isOverflowError("400 status code (no body)")).toBe(true);
-    expect(isOverflowError("413 (no body)")).toBe(true);
+  it("detects Cerebras empty body overflow when the provider is known", () => {
+    expect(isOverflowError("400 status code (no body)", "cerebras")).toBe(true);
+    expect(isOverflowError("413 (no body)", "cerebras")).toBe(true);
+  });
+
+  it("does not infer overflow from a bodyless client error from another or unknown provider", () => {
+    for (const provider of [undefined, "mistral", "openai"]) {
+      expect(isOverflowError("400 status code (no body)", provider)).toBe(false);
+      expect(isOverflowError("413 (no body)", provider)).toBe(false);
+    }
   });
 
   it("rejects non-overflow errors", () => {
