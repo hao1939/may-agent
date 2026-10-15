@@ -7,6 +7,7 @@ const incomplete = { state: "incomplete" as const, ...report };
 accepts({ state: "converged", ...report });
 accepts({ state: "waiting", ...report });
 accepts({ state: "incomplete", ...report });
+// @ts-expect-error Workflows call agents directly; results do not select execution.
 accepts({ state: "needs-agent", ...report });
 accepts({ ...incomplete, result: { partial: "Retained observation" } });
 accepts({ ...report, state: "waiting", dependencies: [] });

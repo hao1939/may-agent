@@ -275,8 +275,9 @@ async function retryWhenDue(f: ReturnType<typeof fixture>, agent: string) {
     await run(f);
     const accepted = acceptedAttempt(f);
     assert(Date.parse(accepted.startedAt) >= due, "A fresh worker must obey persisted pacing");
-    assert.equal(accepted.handler, `agent:${agent}`);
-    assert.equal(calls, 1);
+    assert.equal(accepted.handler, "workflow:probe");
+    assert.equal(accepted.owner, agent);
+    assert.equal(calls, 0, "Retry must not replace the procedure with a model call");
   } finally {
     await server.stop(true);
   }
@@ -388,7 +389,7 @@ const scenarios: Record<string, () => Promise<void>> = {
       0,
     );
     await retryWhenDue(f, "specialist");
-    assert.equal(acceptedAttempt(f).acceptedResult?.summary, "completed by specialist after recovery");
+    assert.equal(acceptedAttempt(f).acceptedResult?.summary, "completed by specialist");
     assert.deepEqual(f.store.readAttempt(attempt!.metadata.id), attempt);
   },
 
@@ -433,7 +434,7 @@ export async function execute(ctx) {
     await run(f, true);
     assert.equal(f.store.readTask("work/one")?.status.phase, "pending");
     await retryWhenDue(f, "owner");
-    assert.equal(acceptedAttempt(f).acceptedResult?.summary, "completed by owner after recovery");
+    assert.equal(acceptedAttempt(f).acceptedResult?.summary, "current handler ran");
   },
 
   async restoredHandler() {
@@ -470,7 +471,7 @@ export async function execute(ctx) {
     );
 
     await retryWhenDue(f, "owner");
-    assert.equal(acceptedAttempt(f).acceptedResult?.summary, "completed by owner after recovery");
+    assert.equal(acceptedAttempt(f).acceptedResult?.summary, "repaired workflow ran");
     assert.equal(acceptedAttempt(f).taskGeneration, task.metadata.generation);
   },
 

@@ -612,7 +612,7 @@ function installConventionTaskControllers(
           );
           for (const dependentTaskId of dependentTaskIds) {
             // A same-task result is an immediate continuation, such as a
-            // workflow-to-agent handoff. Other children/dependents enter the
+            // useful work after partial progress. Other children/dependents enter the
             // priority-ordered ordinary lane so continuation bursts stay bounded.
             controller.enqueue(dependentTaskId, {
               promote: dependentTaskId === taskId,

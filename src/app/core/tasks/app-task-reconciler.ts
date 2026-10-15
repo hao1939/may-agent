@@ -75,7 +75,7 @@ export type AppTaskClaim = {
   declaredOutputPaths: string[];
   supersededSessionIds?: string[];
   handoff?: {
-    reason: "needs-agent" | "recovered-session";
+    reason: "recovered-session";
     summary: string;
     facts: string[];
   };
@@ -537,26 +537,13 @@ function previousAttemptFacts(attempt: AppTaskAttempt): NonNullable<TaskAttempt[
   };
 }
 
-function isAgentHandoffReason(reason: string | undefined): boolean {
-  return reason === "needs-agent" || reason === "needs-owner";
-}
-
-function needsAgentHandoff(tree: TaskTree, resource: AppTaskResource): boolean {
+// Read old saved handoffs as unfinished workflow work; never select another executor.
+function hasLegacyWorkflowHandoff(tree: TaskTree, resource: AppTaskResource): boolean {
   if (resource.status.phase !== "attention") return false;
   const attempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
-  return Boolean(attempt?.handler.startsWith("workflow:") && isAgentHandoffReason(attempt.failureReason));
-}
-
-function continueWithAgent(resource: AppTaskResource, attempt: AppTaskAttempt | undefined): boolean {
-  if (!attempt) return false;
-  // The failed attempt is the durable handoff. Continue ordinary agent work
-  // across retries and waits; a new specification generation selects afresh.
-  if (attempt.handler.startsWith("agent:"))
-    return Boolean(resource.spec.workflow || (resource.spec.executor && resource.spec.executor !== "agent"));
-  return attempt.state === "failed" && (
-    attempt.handler.startsWith("workflow:") ||
-    attempt.handler.startsWith("executor:") ||
-    attempt.handler.startsWith("cli:")
+  return Boolean(
+    attempt?.handler.startsWith("workflow:") &&
+    (attempt.failureReason === "needs-agent" || attempt.failureReason === "needs-owner"),
   );
 }
 
@@ -1935,7 +1922,7 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): b
     if (reviewAt !== null) return reviewAt <= Date.now();
     return !(resource.status.conditionIds?.length ?? 0);
   }
-  if (resource.status.phase === "attention") return needsAgentHandoff(tree, resource);
+  if (resource.status.phase === "attention") return hasLegacyWorkflowHandoff(tree, resource);
   if (resource.status.phase === "running") return true;
   return false;
 }
@@ -2622,7 +2609,6 @@ export function claimObservedAppTask(
     handler: string;
     reason?: string;
     isAgentRunnable?: (agent: string) => boolean;
-    canUseAgentFallback?: (agent: string) => boolean;
     recoverSessionHandoff?: (attempt: AppTaskAttempt | undefined) => AppTaskClaim["handoff"];
   },
 ): AppTaskClaimResult {
@@ -2702,27 +2688,18 @@ export function claimObservedAppTask(
     };
   }
   const latestAttempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
-  const useAgentFallback = continueWithAgent(resource, latestAttempt) && (
-    needsAgentHandoff(tree, resource) ||
-    latestAttempt?.handler.startsWith("agent:") ||
-    input.canUseAgentFallback?.(agent) !== false
-  );
   const handler =
     input.handler === "auto"
-      ? useAgentFallback
-        ? managedAgentHandler(agent)
-        : intent.workflow?.trim()
-          ? `workflow:${intent.workflow.trim()}`
-          : intent.executor && intent.executor !== "agent"
-            ? `executor:${intent.executor}`
-            : managedAgentHandler(agent)
+      ? intent.workflow?.trim()
+        ? `workflow:${intent.workflow.trim()}`
+        : intent.executor && intent.executor !== "agent"
+          ? `executor:${intent.executor}`
+          : managedAgentHandler(agent)
       : input.handler === "agent" || input.handler === "owner"
         ? managedAgentHandler(agent)
         : input.handler;
-  const agentHandoff = useAgentFallback && isManagedAgentHandler(handler, agent);
   const priorFacts = latestAttempt ?? latestTaskAttempt(tree, resource.metadata.id);
-  const handoffAttempt = agentHandoff ? latestAttempt : undefined;
-  const recoveredSessionHandoff = !agentHandoff ? input.recoverSessionHandoff?.(latestAttempt) : undefined;
+  const recoveredSessionHandoff = input.recoverSessionHandoff?.(latestAttempt);
   const previousAttempt = currentResourceAttempt(tree, resource);
   if (resource.status.phase === "running" && !previousAttempt) {
     const now = new Date().toISOString();
@@ -2808,8 +2785,7 @@ export function claimObservedAppTask(
     resource.status.phase === "attention" &&
     resource.status.observedGeneration >= resource.metadata.generation &&
     !pendingTrigger &&
-    !(agentHandoff && needsAgentHandoff(tree, resource)) &&
-    input.reason !== "workflow-fallback"
+    !hasLegacyWorkflowHandoff(tree, resource)
   ) {
     return {
       kind: "attention",
@@ -2887,11 +2863,6 @@ export function claimObservedAppTask(
     specHash,
     owner: agent,
     handler,
-    // Record the switch atomically with its claim, even if execution never starts.
-    // Continuing agent attempts and intentional handoffs are not new failovers.
-    ...(agentHandoff && latestAttempt?.state === "failed" &&
-      !latestAttempt.handler.startsWith("agent:") && !isAgentHandoffReason(latestAttempt.failureReason)
-      ? { failoverFromAttemptId: latestAttempt.metadata.id } : {}),
     runtimeId: reconcilerRuntimeId,
     state: "running",
     reason: input.reason ?? "event",
@@ -2967,22 +2938,7 @@ export function claimObservedAppTask(
     ...(trigger ? { trigger: structuredClone(trigger) } : {}),
     declaredOutputPaths,
     ...(supersededSessionIds.size > 0 ? { supersededSessionIds: [...supersededSessionIds] } : {}),
-    ...(handoffAttempt || recoveredSessionHandoff
-      ? {
-          handoff:
-            handoffAttempt
-              ? {
-                  reason: "needs-agent",
-                  summary:
-                    resource.status.summary ??
-                    handoffAttempt.summary ??
-                    handoffAttempt.failureReason ??
-                    "Continue the Task through ordinary agent execution",
-                  facts: [...(resource.status.facts ?? [])],
-                }
-              : recoveredSessionHandoff,
-        }
-      : {}),
+    ...(recoveredSessionHandoff ? { handoff: recoveredSessionHandoff } : {}),
   };
 }
 
@@ -3024,15 +2980,14 @@ export function failAppTaskAttempt(
     facts?: string[];
     unacceptedResult?: AppTaskAttempt["unacceptedResult"];
   } = {},
-): { status: "retrying" | "handoff" | "superseded"; summary: string; retryAt?: number | null } {
+): { status: "retrying" | "superseded"; summary: string; retryAt?: number | null } {
   const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
   const match = matchingClaimAttempt(tree.resources?.[claim.taskId], tree.attempts?.[claim.attemptId], claim);
   // Execution failure is still a fact after the requirements change.
   if (!match) return { status: "superseded", summary: failure };
   const { resource, attempt } = match;
   const mutationScope = beginResourceMutationScope(tree, claim, []);
-  const handoff = isAgentHandoffReason(details.reason);
-  const admissions = handoff ? [] : inputOutcomeAdmissions(config, tree, claim, {}, "report").writes;
+  const admissions = inputOutcomeAdmissions(config, tree, claim, {}, "report").writes;
   const failures = (resource.status.executionFailures ?? 0) + 1;
   const summary = failure;
   const now = new Date().toISOString();
@@ -3041,15 +2996,11 @@ export function failAppTaskAttempt(
   attempt.failureReason = details.reason ?? "HandlerExecutionFailed";
   if (details.unacceptedResult) attempt.unacceptedResult = structuredClone(details.unacceptedResult);
   touchResource(resource, {
-    phase: handoff ? "attention" : "pending",
-    ...(handoff
-      ? {}
-      : {
-          executionFailures: failures,
-          executionRetryAt: resource.status.freshHumanInput
-            ? undefined
-            : Date.parse(now) + taskExecutionRetryDelay(failures),
-        }),
+    phase: "pending",
+    executionFailures: failures,
+    executionRetryAt: resource.status.freshHumanInput
+      ? undefined
+      : Date.parse(now) + taskExecutionRetryDelay(failures),
     observedGeneration: claim.generation,
     currentAttemptId: undefined,
     summary,
@@ -3060,9 +3011,9 @@ export function failAppTaskAttempt(
     resourceMutation: { ...finishResourceMutationScope(mutationScope, tree), admissions },
   });
   return {
-    status: handoff ? "handoff" : "retrying",
+    status: "retrying",
     summary,
-    ...(!handoff ? { retryAt: resource.status.executionRetryAt ?? null } : {}),
+    retryAt: resource.status.executionRetryAt ?? null,
   };
 }
 

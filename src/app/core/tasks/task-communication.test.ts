@@ -186,29 +186,13 @@ const progress: TaskCommunication = {
   message: "The tests passed; review is still pending.",
 };
 
-test("a malformed Conversation handoff falls back to its agent, retains failure across restart, and answers the original input", async () => {
+test("a malformed Conversation procedure retains failure and original obligations across paced retry and restart", async () => {
   let agentCalls = 0;
   let conversationCalls = 0;
-  const f = await fixture(async (attempt) => {
+  const f = await fixture(async () => {
     agentCalls++;
-    expect(attempt.events.inputs?.map(({ key }) => key).sort()).toEqual([
-      "conversation-follow-up:sample:ask", "conversation-input:ask",
-    ]);
-    expect(attempt.events.inputs?.find(({ key }) => key.startsWith("conversation-follow-up:"))?.communication)
-      .toBeUndefined();
-    if (agentCalls === 1) {
-      expect(attempt.previousAttempt?.summary).toContain("Conversation input does not belong to this Task attempt");
-      throw new Error("Temporary diagnostic failure");
-    }
-    expect(attempt.previousAttempt?.summary).toContain("Temporary diagnostic failure");
-    return {
-      state: "converged", summary: "Answered through ordinary Task communication",
-      facts: ["Recovered the original ask; the retained legacy routing defect needs later investigation."],
-      communication: [{ id: "recovered-answer", inputId: "ask", message: "Here is the requested answer." }],
-    };
-  }, "agent", async (input) => {
-    expect(input.fallbackReason).toBeTruthy();
-  }, {
+    throw new Error("Host must not silently replace the failing procedure");
+  }, "agent", undefined, {
     async execute({ config, claim }) {
       conversationCalls++;
       readConversationTaskInputs(config, claim);
@@ -244,19 +228,18 @@ test("a malformed Conversation handoff falls back to its agent, retains failure 
       await f.run(taskId);
     }
     await f.inbox.host.refreshTaskResults("sample", taskId);
-    expect(agentCalls).toBe(2);
-    expect(conversationCalls).toBe(1);
+    expect(agentCalls).toBe(0);
+    expect(conversationCalls).toBe(3);
     expect(f.store.readAttempt(failedId)).toEqual(failure);
-    expect(f.store.readTask(taskId)).toMatchObject({ metadata: { generation }, status: { phase: "converged" } });
+    expect(f.store.readTask(taskId)).toMatchObject({ metadata: { generation }, status: { phase: "pending" } });
     const admissions = f.store.readTaskContext({ taskIds: [], admissionIds: [
       "conversation-input:ask", "conversation-follow-up:sample:ask",
     ] }).appTaskAdmissions!;
-    expect(admissions["conversation-input:ask"]?.resultAttemptId).toBeTruthy();
-    expect(admissions["conversation-follow-up:sample:ask"]?.resultAttemptId)
-      .toBe(admissions["conversation-input:ask"]?.resultAttemptId);
-    expect(listAppInboxItems(f.db, { appId: "sample" }).find(({ id }) => id === "ask")?.status).toBe("done");
-    expect(listAppConversationMessages(f.db, "sample", "discussion").filter(({ author }) => author.kind === "agent")
-      .map(({ text }) => text)).toEqual(["Here is the requested answer."]);
+    expect(admissions["conversation-input:ask"]?.resultAttemptId).toBeFalsy();
+    expect(admissions["conversation-follow-up:sample:ask"]?.resultAttemptId).toBeFalsy();
+    expect(listAppInboxItems(f.db, { appId: "sample" }).find(({ id }) => id === "ask")?.status).not.toBe("done");
+    expect(listAppConversationMessages(f.db, "sample", "discussion").filter(({ author }) => author.kind === "agent"))
+      .toEqual([]);
   } finally {
     setSystemTime();
     await f.close();
