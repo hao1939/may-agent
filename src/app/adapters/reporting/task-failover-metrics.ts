@@ -10,7 +10,7 @@ export const TASK_FAILOVER_METRIC: MetricDefinition = {
   measureInterval: 300_000,
   source: "Retained first agent claims after procedure failure, [now-24h, now)",
   description:
-    "Counts marked workflow/executor/CLI-to-agent switches, including interrupted startup and subsequently recovered work. Agent continuations and intentional needs-agent handoffs are excluded. sampleSize is the marked cohort, not all attempts or a success-rate denominator. Older unmarked history is unknown. No automatic alert; Apps own review policy.",
+    "Counts marked workflow/executor/CLI-to-agent switches, including interrupted startup and subsequently recovered work. Agent continuations and historical intentional handoffs are excluded. sampleSize is the marked cohort, not all attempts or a success-rate denominator. Older unmarked history is unknown. No automatic alert; Apps own review policy.",
   sourceQuery: `WITH failovers AS (
     SELECT app_id, task_id, attempt_id, started_at,
       json_extract(attempt_json, '$.failoverFromAttemptId') AS from_attempt_id

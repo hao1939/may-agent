@@ -25,7 +25,7 @@ export type TaskCapabilityRun = {
 
 export type NormalizedTaskHandlerResult = {
   /** `error` is an attempt/runtime outcome, never a valid handler decision. */
-  state: "converged" | "waiting" | "needs-agent" | "incomplete" | "error";
+  state: "converged" | "waiting" | "incomplete" | "error";
   /** A rejected contract needs correction, not a transport retry. Host-only. */
   resultRejected?: true;
   inputKeys?: string[];
@@ -46,7 +46,6 @@ export function normalizeTaskHandlerResult(
   output: unknown,
   fallback: { type: "done" | "blocked"; summary: string; runId: string | null },
   options: {
-    allowNeedsAgent?: boolean;
     validateAction?: (action: AppTaskAction) => string | null;
     validateCondition?: (condition: AppTaskConditionSpec) => string | null;
   } = {},
@@ -59,9 +58,7 @@ export function normalizeTaskHandlerResult(
       actions: [],
     };
   }
-  const admission = admitAppTaskHandlerResult(output, {
-    allowNeedsAgent: options.allowNeedsAgent ?? true,
-  });
+  const admission = admitAppTaskHandlerResult(output);
   if (!admission.ok) {
     return {
       state: "error",

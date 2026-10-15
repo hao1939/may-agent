@@ -1,5 +1,11 @@
 import type { SqliteDb } from "../../../lib/db.js";
 
+/** Latest independent selections plus the readable legacy single-report form. */
+export const admissionReportIdsSql = `json_array(
+  json_extract(admission.admission_json, '$.reportAttemptId'),
+  json_extract(admission.admission_json, '$.feedback.progress.attemptId'),
+  json_extract(admission.admission_json, '$.feedback.failure.attemptId'))`;
+
 /**
  * Conversation return relationships already retained by admission. A worker
  * sees only its assigned input. Older explicit Topic subscriptions remain
@@ -15,7 +21,7 @@ export function conversationTaskLinksSql(from: "caller" | "task" = "caller"): st
   SELECT topic.app_id, topic.conversation_id, topic.id AS topic_id,
     linked.app_id AS task_app_id, linked.task_id,
     'topic:' || topic.id AS link_id, NULL AS origin_input_id,
-    NULL AS task_generation, NULL AS result_attempt_id, NULL AS report_attempt_id,
+    NULL AS task_generation, NULL AS result_attempt_id, NULL AS report_attempt_ids,
     linked.linked_at
   FROM conversation_topics topic
   JOIN conversation_topic_tasks linked ON linked.topic_id = topic.id
@@ -25,7 +31,7 @@ export function conversationTaskLinksSql(from: "caller" | "task" = "caller"): st
     'input:' || origin.id, origin.id,
     json_extract(admission.admission_json, '$.taskGeneration'),
     json_extract(admission.admission_json, '$.resultAttemptId'),
-    json_extract(admission.admission_json, '$.reportAttemptId'),
+    ${admissionReportIdsSql},
     CAST(unixepoch(json_extract(admission.admission_json, '$.admittedAt')) * 1000 AS INTEGER)
   FROM ${handoffs}
     ON CAST(json_extract(admission.admission_json, '$.inputEvent.data.request.id') AS TEXT) = origin.id

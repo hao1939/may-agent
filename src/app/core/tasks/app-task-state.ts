@@ -34,6 +34,8 @@ export type AppTaskCondition = {
     /** When the current Condition specification first began waiting. */
     createdAt?: string;
     observed?: unknown;
+    /** Independently observed caller feedback; progress does not resolve a failure. */
+    reports?: Partial<Record<"progress" | "failure" | "unknown", Record<string, unknown>>>;
     observedAt?: string;
     facts?: string[];
   };
@@ -130,7 +132,7 @@ export type AppTaskAttempt = {
   specHash: string;
   owner: string;
   handler: string;
-  /** First agent claim after a procedure failure; evidence, not handler-selection state. */
+  /** Historical automatic fallback from older Hosts; evidence, never routing authority. */
   failoverFromAttemptId?: string;
   runtimeId: string;
   state: "running" | "completed" | "failed" | "interrupted";

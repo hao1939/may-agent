@@ -35,7 +35,7 @@ import {
   type AppTurnTarget,
 } from "./app-inbox-store.js";
 import { createConversationTopic, readConversationTopic, readConversationInputTopicId } from "./conversations.js";
-import { conversationTaskLinksSql, listConversationTaskLinks } from "./conversation-task-links.js";
+import { admissionReportIdsSql, conversationTaskLinksSql, listConversationTaskLinks } from "./conversation-task-links.js";
 function stableTopicId(appId: string, conversationId: string, originMessageId: string): string {
   return `topic_${createHash("sha256").update([appId, conversationId, originMessageId].join("\0")).digest("hex").slice(0, 24)}`;
 }
@@ -677,7 +677,7 @@ const directSelectedReportSql = `SELECT 1 FROM app_task_admissions admission
     AND CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT) = attempt.task_id
     AND json_extract(admission.admission_json, '$.taskGeneration') = attempt.task_generation
     AND json_extract(admission.admission_json, '$.resultAttemptId') IS NULL
-    AND json_extract(admission.admission_json, '$.reportAttemptId') = attempt.attempt_id
+    AND attempt.attempt_id IN (SELECT value FROM json_each(${admissionReportIdsSql}))
     AND origin_input.app_id = link.app_id
     AND origin_input.conversation_id = link.conversation_id
     AND origin_input.topic_id = link.topic_id`;
@@ -703,7 +703,7 @@ function returnedLinkAttemptSql(selectedReportSql: string, returnedSql = returne
     OR (link.origin_input_id IS NOT NULL AND ${continuedCallerSql}
       AND link.task_generation <= attempt.task_generation
       AND (link.result_attempt_id = attempt.attempt_id
-        OR (link.result_attempt_id IS NULL AND link.report_attempt_id = attempt.attempt_id
+        OR (link.result_attempt_id IS NULL AND attempt.attempt_id IN (SELECT value FROM json_each(link.report_attempt_ids))
           AND NOT EXISTS (SELECT 1 FROM app_task_cancellations closed
             WHERE closed.app_id = attempt.app_id AND closed.task_id = attempt.task_id)))))`;
 }
@@ -743,7 +743,8 @@ function conversationChangesSql(selectedReportSql: string, materializedAttempts 
   JOIN ${materializedAttempts ? "linked_attempts" : "app_task_attempts"} attempt
     ON attempt.app_id = link.task_app_id AND attempt.task_id = link.task_id
       AND (link.origin_input_id IS NULL
-        OR attempt.attempt_id = COALESCE(link.result_attempt_id, link.report_attempt_id))
+        OR attempt.attempt_id = link.result_attempt_id
+        OR (link.result_attempt_id IS NULL AND attempt.attempt_id IN (SELECT value FROM json_each(link.report_attempt_ids))))
   WHERE ${returnedLinkAttemptSql(selectedReportSql, materializedAttempts ? "attempt.returnable" : returnedWithoutSelectionSql)}
   UNION ALL
   SELECT link.app_id, link.conversation_id, link.topic_id, link.origin_input_id, link.link_id,
@@ -800,7 +801,7 @@ export function listPendingConversationTaskChanges(
       SELECT admission.app_id,
         CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT) AS task_id,
         json_extract(admission.admission_json, '$.taskGeneration') AS task_generation,
-        json_extract(admission.admission_json, '$.reportAttemptId') AS attempt_id,
+        report.value AS attempt_id,
         origin_input.app_id AS origin_app_id,
         origin_input.conversation_id AS origin_conversation_id,
         origin_input.topic_id AS origin_topic_id
@@ -810,8 +811,9 @@ export function listPendingConversationTaskChanges(
           AND CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT) = linked.task_id
       JOIN app_inbox_items origin_input
         ON origin_input.id = json_extract(admission.admission_json, '$.inputEvent.data.request.id')
+      JOIN json_each(${admissionReportIdsSql}) report
       WHERE json_extract(admission.admission_json, '$.resultAttemptId') IS NULL
-        AND json_extract(admission.admission_json, '$.reportAttemptId') IS NOT NULL
+        AND report.value IS NOT NULL
     ), changes AS (${conversationChangesSql(materializedSelectedReportSql, true)})
     SELECT appId, conversationId, topicId, originInputId, taskAppId, taskId, attemptId, closedGeneration
     FROM changes

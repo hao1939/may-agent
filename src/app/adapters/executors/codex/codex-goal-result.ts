@@ -1,4 +1,4 @@
-import { admitTaskReconcileResult, type TaskReconcileAdmissionOptions, type TaskReconcileResult } from "@may-agent/sdk";
+import { admitTaskReconcileResult, type TaskReconcileResult } from "@may-agent/sdk";
 
 const MAX_ADMISSION_ERROR_CHARS = 1_024;
 
@@ -11,10 +11,7 @@ function boundedError(error: string): string {
 }
 
 /** Boundary between one terminal Codex goal turn and May Task admission. */
-export function admitCodexGoalTaskResult(
-  finalAnswer: string | null,
-  options: TaskReconcileAdmissionOptions,
-): CodexGoalTaskResultAdmission {
+export function admitCodexGoalTaskResult(finalAnswer: string | null): CodexGoalTaskResultAdmission {
   if (!finalAnswer?.trim()) {
     return retry("terminal Codex turn returned no final answer");
   }
@@ -26,7 +23,7 @@ export function admitCodexGoalTaskResult(
     return retry(`terminal Codex answer was not exact JSON: ${error instanceof Error ? error.message : String(error)}`);
   }
 
-  const admitted = admitTaskReconcileResult(candidate, options);
+  const admitted = admitTaskReconcileResult(candidate);
   if (!admitted.ok) return retry(`May Task result admission rejected the candidate: ${admitted.error}`);
   return { kind: "accepted", result: admitted.result };
 }

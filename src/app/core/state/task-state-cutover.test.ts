@@ -61,7 +61,7 @@ function fixture() {
       return config.resourceStore;
     },
     request,
-    ask(id: string, taskId = "work") {
+    ask(id: string, taskId = "work", workflow?: string) {
       return admitTaskInput(config, {
         appId: "sample",
         idempotencyKey: `task:${id}`,
@@ -73,6 +73,7 @@ function fixture() {
             parentId: "root",
             outcome: "Measure samples and explain results",
             acceptance: ["Retain measured facts"],
+            ...(workflow ? { workflow } : {}),
           },
         },
       });
@@ -383,22 +384,22 @@ test("structural-wait failure rolls back the composed cutover, including first-p
   expect(f.store.readAttempt(old.attemptId)?.acceptedResult?.state).toBe("incomplete");
 });
 
-test("workflow-to-agent handoff retains its original input without turning into another workflow retry", () => {
+test.each(["needs-agent", "needs-owner"])("legacy %s handoff retains its original input and resumes the declared procedure", (reason) => {
   const f = fixture();
-  f.ask("measurement");
+  f.ask("measurement", "work", "measure");
   failAppTaskAttempt(f.config, f.claim("work", "workflow:measure"), "Needs judgment");
   f.legacy((tree) => {
     tree.resources!.work!.status.phase = "attention";
     delete tree.resources!.work!.status.executionRetryAt;
-    Object.values(tree.attempts!)[0]!.failureReason = "needs-agent";
+    Object.values(tree.attempts!)[0]!.failureReason = reason;
   });
   f.migrate();
   const version = f.store.revision();
   expect(f.migrate().tasks).toBe(0);
   expect(f.store.revision()).toBe(version);
   const claim = f.claim("work", "auto");
-  expect(claim.handler).toBe("agent:worker");
-  expect(claim.handoff?.reason).toBe("needs-agent");
+  expect(claim.handler).toBe("workflow:measure");
+  expect(claim.handoff).toBeUndefined();
   expect(claim.events[0]?.event.data).toMatchObject({ request: f.request("measurement") });
 });
 
@@ -501,6 +502,7 @@ test("offline cutover restores only the first accepted failure for its exact inp
   reportAppTaskFailure(f.config, f.claim(), { summary: "Source still unavailable", facts: ["HTTP:503"] });
   const saved = f.store.readTaskContext({ taskIds: [], admissionIds: ["task:first"] }).appTaskAdmissions!["task:first"]!;
   delete saved.reportAttemptId;
+  delete saved.feedback;
   f.store.commit({ fences: [{ taskId: "work", resourceVersion: f.store.readTask("work")!.metadata.resourceVersion }],
     admissions: [{ taskId: "task:first", value: saved }] });
   expect(f.migrate().inputs).toBe(1);

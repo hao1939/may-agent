@@ -169,7 +169,7 @@ export function migrateOpenTaskState(config: AppTaskContext, input: { oldRuntime
       for (const [key, admission] of admissions) {
         if (admission.resultAttemptId) continue;
         // Recover only a proven first report, never infer one from current status.
-        if (!admission.reportAttemptId) {
+        if (!admission.reportAttemptId && !admission.feedback?.failure) {
           const report = attempts.find((attempt) =>
             attempt.acceptedResult?.state === "incomplete" && attempt.specHash === admission.specHash &&
             taskInputAdmissionKeys(attemptEvents(attempt), attempt.continuedInputKeys).includes(key));

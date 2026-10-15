@@ -666,6 +666,166 @@ it.each(["converged", "waiting", "incomplete"] as const)("carries explicit earli
 });
 
 describe("caller feedback PoC", () => {
+  it.each([undefined, "next-wake", "immediate"] as const)(
+    "retains 54 progress reports with caller-selected attention, then delivers failure and completion (%s)",
+    async (progress) => {
+      const f = fixture();
+      const persistDir = join(f.root, "state");
+      let bus = eventBus();
+      let host: AppInboxHost;
+      let requestId = "";
+      let workerCalls = 0;
+      let stage: "progress" | "failure" | "done" = "progress";
+      let loseFeedback = false;
+      const callerInputs: Parameters<TaskExecutor>[0][] = [];
+      const reviewAt = Date.now() + 60_000;
+      const app = defineApp({
+        ...definition(),
+        task: ({ input }) => ({ kind: "desired", intent: {
+          id: input.kind === "review" ? "work/caller" : "work/collector", parentId: "operations",
+          outcome: "Collect the requested sample", acceptance: ["Return the sample"],
+          executor: input.kind === "review" ? "caller" : "collector",
+        } }),
+      });
+      const config = () => loadedTaskConfig(f);
+      const install = async () => {
+        await installCoreTaskRuntimes({
+          ...options(f, bus), installControllers: false,
+          appRegistrySnapshot: { id: "progress-interest", generation: 1, entries: [{ appDir: f.appDir, definition: app }] },
+          executors: {
+            caller: async (attempt) => {
+              callerInputs.push(attempt);
+              if (attempt.events.items.some(({ event }) => event.type === "app.dependency.updated" && event.data.status === "done"))
+                return { state: "converged", summary: "Used returned sample", facts: ["sample:received"] };
+              if (callerInputs.length === 1) {
+                // Live declaration uses the same admission as a final result.
+                await attempt.apply({
+                  requests: [{ id: "sample", appId: "sample", input: { kind: "collect", data: {} } }],
+                  conditions: [{ requestId: "sample", ...(progress ? { progress } : {}) }],
+                });
+                expect(config().resourceStore.readTaskConditions("work/caller")[0]?.spec.progress).toBe(progress ?? "next-wake");
+                if (progress === "immediate") {
+                  for (const choice of ["next-wake", "immediate", "next-wake", "immediate"] as const) {
+                    await attempt.apply({ conditions: [{ requestId: "sample", progress: choice }] });
+                    expect(config().resourceStore.readTaskConditions("work/caller")[0]?.spec.progress).toBe(choice);
+                  }
+                }
+                return { state: "waiting", summary: "Await sample", facts: [], reviewAt };
+              }
+              // Omission of interest retains the saved choice on final admission.
+              return { state: "waiting", summary: "Retained useful progress", facts: [], conditions: [{ requestId: "sample" }] };
+            },
+            collector: async () => {
+              workerCalls++;
+              if (stage === "done") return { state: "converged", summary: "Sample ready", facts: ["sample:ready"], result: { score: 0.92 } };
+              if (stage === "failure") {
+                if (progress === "immediate") throw new Error("Sample access failed");
+                // Failure selection is independent of progress reporting.
+                return { state: "incomplete", summary: "Sample access failed", facts: ["sample:access-failed"] };
+              }
+              return { state: "waiting", continue: true, report: true, summary: `Collected ${workerCalls} observations`,
+                facts: [`observations:${workerCalls}`], result: { observations: workerCalls } };
+            },
+          },
+        });
+        host = new AppInboxHost({
+          db: getDb(persistDir), apps: [app], attachTask: (input) => admitTaskInput(config(), input),
+          readDependency: (input) => createAppTaskCapability({ bus }).readDependency({ ...input, appDir: f.appDir }),
+          onRequestUpdated(item, result, status) {
+            if (loseFeedback) throw new Error("Synthetic lost feedback");
+            const event = appInputFeedbackEvent(item, result, status)!;
+            return admitLoadedCanonicalAppTaskEvent({ bus, appId: "sample", event, intent: null,
+              conditionTaskIds: previewLoadedCanonicalAppTaskEvent({ bus, appId: "sample", event }),
+            })?.accepted;
+          },
+        });
+        bus.subscribe((event) => {
+          if (event.type !== "app.input.requested") return;
+          requestId = String(event.data.requestId);
+          host.admit({ id: requestId, appId: "sample", source: { kind: "app", id: "sample" },
+            input: event.data.input as { kind: string; data: unknown }, idempotencyKey: String(event.data.idempotencyKey) });
+          return { accepted: true, by: "fixture-inbox", route: "direct" };
+        });
+      };
+      const run = (taskId: string) => reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+      const restart = async () => {
+        host.close();
+        await closeInstalledAppTaskRuntimes(bus);
+        closeDb(persistDir);
+        bus = eventBus();
+        await install();
+      };
+      try {
+        await install();
+        host!.admit({ id: "original-ask", appId: "sample", source: { kind: "system", id: "fixture" }, input: { kind: "review", data: {} } });
+        await run("work/caller");
+        for (let revision = 1; revision <= 54; revision++) {
+          loseFeedback = revision === 27;
+          await run("work/collector");
+          await host!.refreshTaskResults("sample", "work/collector");
+          if (loseFeedback) {
+            await restart();
+            loseFeedback = false;
+            await recoverInstalledAppTasks(bus);
+          }
+          await run("work/caller");
+          expect(callerInputs).toHaveLength(progress === "immediate" ? revision + 1 : 1);
+          expect(config().resourceStore.readTaskConditions("work/caller")[0]).toMatchObject({
+            spec: { progress: progress ?? "next-wake" },
+            status: { state: "false", observed: { state: "progress", reportRevision: revision, result: { observations: revision } } },
+          });
+        }
+        const progressCalls = callerInputs.length - 1;
+        expect(workerCalls).toBe(54);
+        // A deliberate review runs on time and receives retained progress after restart.
+        await restart();
+        setSystemTime(reviewAt + 1);
+        await recoverInstalledAppTasks(bus);
+        await run("work/caller");
+        expect(callerInputs).toHaveLength(progressCalls + 2);
+        expect(callerInputs.at(-1)?.waits.open[0]?.dependency?.reports?.progress).toMatchObject({
+          state: "progress", reportRevision: 54, result: { observations: 54 },
+        });
+        stage = "failure";
+        loseFeedback = true;
+        await run("work/collector");
+        await host!.refreshTaskResults("sample", "work/collector");
+        setSystemTime(config().resourceStore.readTask("work/collector")!.status.executionRetryAt! + 1);
+        // Newer accepted progress must not overwrite the undelivered failure.
+        stage = "progress";
+        await run("work/collector");
+        await host!.refreshTaskResults("sample", "work/collector");
+        await restart();
+        loseFeedback = false;
+        await recoverInstalledAppTasks(bus);
+        await run("work/caller");
+        expect(callerInputs).toHaveLength(progressCalls + 3);
+        expect(callerInputs.at(-1)?.events.items.some(({ event }) => event.data.status === "blocked")).toBe(true);
+        expect(callerInputs.at(-1)?.waits.open[0]?.dependency?.reports).toMatchObject({
+          failure: { state: "blocked", reportRevision: 55 },
+          progress: { state: "progress", reportRevision: 56 },
+        });
+        const beforeRetry = callerInputs.length;
+        stage = "failure";
+        await run("work/collector");
+        await host!.refreshTaskResults("sample", "work/collector");
+        await recoverInstalledAppTasks(bus);
+        await run("work/caller");
+        expect(callerInputs).toHaveLength(beforeRetry);
+        stage = "done";
+        setSystemTime(config().resourceStore.readTask("work/collector")!.status.executionRetryAt! + 1);
+        await run("work/collector");
+        await host!.refreshTaskResults("sample", "work/collector");
+        await run("work/caller");
+        expect(callerInputs).toHaveLength(beforeRetry + 1);
+        expect(host!.get(requestId)?.status).toBe("done");
+        expect(config().resourceStore.readTask("work/caller")?.status.phase).toBe("converged");
+        console.log(JSON.stringify({ poc: "caller-progress-interest", progress: progress ?? "default", reports: 54, progressCalls,
+          reviewReceivedLatest: true, firstFailureDelivered: true, repeatedFailureQuiet: true, completionDelivered: true }));
+      } finally { host!.close(); }
+    },
+  );
   it("reads the full installed input contract through tasks without starting target work", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -1311,7 +1471,7 @@ describe("caller feedback PoC", () => {
         expect(callerInputs).toHaveLength(expectedCalls);
         if (scenario !== "quiet") {
           const feedback = callerInputs[1]!.events.items.find(({ event }) => event.type === "app.dependency.updated");
-          expect(feedback?.event.data).toMatchObject({ id: requestId, status: "blocked", summary: first!.summary });
+          expect(feedback?.event.data).toMatchObject({ id: requestId, status: first!.state === "waiting" ? "progress" : "blocked", summary: first!.summary });
           expect(callerInputs[1]!.waits.open[0]?.state).toBe("false");
         }
         if (scenario === "report-continue") {
@@ -1342,7 +1502,7 @@ describe("caller feedback PoC", () => {
             await run("work/caller");
             expectedCalls++;
             const feedback = callerInputs.at(-1)!.events.items.find(({ event }) => event.type === "app.dependency.updated");
-            expect(feedback?.event.data).toMatchObject({ status: "blocked", summary: selected!.summary, reportAttemptId: selected!.attemptId });
+            expect(feedback?.event.data).toMatchObject({ status: selected!.state === "waiting" ? "progress" : "blocked", summary: selected!.summary, reportAttemptId: selected!.attemptId });
             // A delayed old notification must not undo the newer observation
             // or wake the caller again after it already handled both reports.
             expect(trackAppTaskConditionEventForTasks(loadedTaskConfig(f),
@@ -1548,7 +1708,24 @@ it("keeps omitted workflows visible, continues unrelated work, and recovers with
   setSystemTime(new Date());
   const f = fixture();
   const bus = eventBus();
+  let agentCalls = 0;
+  const agents: TaskAgentRunner = {
+    available: () => true,
+    prepare: async () => true,
+    snapshot: () => agents,
+    role: (agent) => ({ agent, instructions: "Fixture" }),
+    async execute() {
+      agentCalls++;
+      throw new Error("Host must not select agent recovery for a failed procedure");
+    },
+  };
+  const reported = Promise.withResolvers<unknown>();
+  bus.subscribe((event) => {
+    if (event.type === "project.task.reconciled" && event.data.taskId === "work/workflow")
+      reported.resolve(event.data);
+  });
   const base = {
+    agents,
     projectsRoot: f.projectsRoot,
     projectRoot: f.root,
     persistDir: join(f.root, "state"),
@@ -1589,6 +1766,10 @@ it("keeps omitted workflows visible, continues unrelated work, and recovers with
       dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
     });
   await run("work/workflow");
+  expect(await reported.promise).toMatchObject({
+    taskId: "work/workflow", handler: "workflow:verify", disposition: "retrying",
+    summary: expect.stringContaining("workflow runner is not installed"),
+  });
   const waiting = config.resourceStore.readTask("work/workflow")!;
   expect(waiting.status.phase).toBe("pending");
   expect(waiting.status.executionRetryAt).toBeGreaterThan(Date.now());
@@ -1630,6 +1811,7 @@ it("keeps omitted workflows visible, continues unrelated work, and recovers with
   advanceRuntimeTaskRetry(config, "work/workflow");
   await run("work/workflow");
   expect(calls).toBe(1);
+  expect(agentCalls).toBe(0);
   expect(readAcceptedRuntimeAttempt(config, "work/workflow")).toMatchObject({
     taskGeneration: waiting.metadata.generation,
     acceptedResult: { summary: "Verified by supplied runner" },
@@ -1841,11 +2023,12 @@ it("releases failed context preparation before later Task events and recovers af
   expect(readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult?.summary).toBe("Recovered after role repair");
 });
 
-it("lets the handoff agent diagnose while the workflow is unavailable, then verifies completion", async () => {
+it.each(["needs-agent", "needs-owner"])("rejects obsolete executor %s output visibly without switching handlers", async (state) => {
   const f = fixture();
   const bus = eventBus();
+  let executorCalls = 0;
   let agentCalls = 0;
-  let verified = 0;
+  let corrected = false;
   const agents: TaskAgentRunner = {
     available: () => true,
     prepare: async () => true,
@@ -1853,95 +2036,49 @@ it("lets the handoff agent diagnose while the workflow is unavailable, then veri
     role: (agent) => ({ agent, instructions: "Fixture" }),
     async execute() {
       agentCalls++;
-      return Object.freeze({
-        handlerResult: Object.freeze({ state: "converged", summary: "Agent proposes completion", facts: [], actions: [] }),
-        runId: null,
-      });
+      throw new Error("The Host must not switch to the agent");
     },
   };
-  const workflows: TaskWorkflowRunner = {
-    async inspect() {
-      return {
-        available: true,
-        error: null,
-        workspace: "shared",
-        verifier: {
-          name: "required-proof",
-          sourcePath: "fixture",
-          verify: async () => {
-            verified++;
-            return { accepted: true, summary: "Postcondition verified", facts: ["fixture:verified"] };
-          },
-        },
-      };
-    },
-    async execute() {
-      return {
-        handlerResult: { state: "needs-agent", summary: "Agent judgment required", facts: [], actions: [] },
-        runId: "fixture-handoff",
-      };
-    },
-  };
-  const base = {
-    projectsRoot: f.projectsRoot,
-    projectRoot: f.root,
-    persistDir: join(f.root, "state"),
-    bus,
-    hostCapacity: new HostCapacity(2),
-    installControllers: false,
-    agents,
-    appRegistrySnapshot: {
-      id: "handoff-boundary:1",
-      generation: 1,
-      entries: [{ appDir: f.appDir, definition: definition() }],
-    },
-  };
-  await installCoreTaskRuntimes({ ...base, workflows });
-  const config = loadedTaskConfig(f);
-  const taskId = "work/handoff";
-  observeAppTaskIntent(config, {
-    appAgent: "sample-owner",
-    intent: {
-      id: taskId,
-      parentId: "operations",
-      outcome: "Verify before completion",
-      acceptance: ["Required verifier passes"],
-      workflow: "verify",
+  const reconciled: AgentEvent[] = [];
+  bus.subscribe((event) => { if (event.type === "project.task.reconciled") reconciled.push(event); });
+  await installCoreTaskRuntimes({
+    ...options(f, bus), agents, installControllers: false,
+    appRegistrySnapshot: { id: "obsolete-switch", generation: 1, entries: [{ appDir: f.appDir, definition: definition() }] },
+    executors: {
+      worker: async () => {
+        executorCalls++;
+        return corrected
+          ? { state: "converged", summary: "Procedure repaired", facts: ["checked"] }
+          : { state, summary: "Legacy switch", facts: ["needs judgment"] } as never;
+      },
     },
   });
-  const run = () =>
-    reconcileLoadedAppTaskOnce({
-      bus,
-      appId: "sample",
-      taskId,
-      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
-    });
-  await run();
-  await installCoreTaskRuntimes(base);
-  await run();
-  expect(agentCalls).toBe(1);
-  expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("pending");
-  await installCoreTaskRuntimes(base);
-  expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("pending");
+  const config = loadedTaskConfig(f);
+  const taskId = "work/obsolete-switch";
+  observeAppTaskIntent(config, {
+    appAgent: "sample-owner",
+    intent: { id: taskId, parentId: "operations", outcome: "Measure", acceptance: ["Measured"], executor: "worker" },
+    trigger: { type: "measure.requested", eventId: 123 },
+  });
+  const run = () => reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+    dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+  expect(await run()).toEqual([]);
+  const task = config.resourceStore.readTask(taskId)!;
+  expect(task.status).toMatchObject({ phase: "pending", executionFailures: 1 });
+  expect(task.status.summary).toContain("state must be converged, waiting, or incomplete");
+  expect(task.status.executionRetryAt).toBeGreaterThan(Date.now());
+  expect(reconciled.at(-1)?.data).toMatchObject({ disposition: "retrying", handler: "executor:worker" });
   expect(config.resourceStore.readReceipt(taskId)).toBeNull();
-  const before = config.resourceStore.readTaskContext({ taskIds: [taskId] });
-  const withoutVerifier: TaskWorkflowRunner = {
-    ...workflows,
-    async inspect(input) {
-      return { ...(await workflows.inspect(input)), verifier: undefined };
-    },
-  };
-  await installCoreTaskRuntimes({ ...base, workflows: withoutVerifier });
-  expect(config.resourceStore.readTaskContext({ taskIds: [taskId] })).toEqual(before);
-  expect(agentCalls).toBe(1);
-  expect(verified).toBe(0);
-  await installCoreTaskRuntimes({ ...base, workflows });
+  expect(config.resourceStore.readTaskContext({ taskIds: [taskId] }).taskTriggers?.[taskId]?.events)
+    .toEqual(expect.arrayContaining([expect.objectContaining({ event: { type: "measure.requested", eventId: 123 } })]));
+  await run();
+  expect(executorCalls).toBe(1);
+  corrected = true;
   advanceRuntimeTaskRetry(config, taskId);
   await run();
-  expect(verified).toBe(1);
-  expect(agentCalls).toBe(2);
-  expect(readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult?.acceptanceBasis.method).toBe("deterministic");
-  expect(config.resourceStore.isCancelled(taskId)).toBe(false);
+  expect(executorCalls).toBe(2);
+  expect(agentCalls).toBe(0);
+  expect(readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult?.summary).toBe("Procedure repaired");
 });
 
 function activateTaskResources(config: AppTaskContext, persistDir: string, appId = "sample"): AppTaskContext {
@@ -5040,7 +5177,7 @@ describe("canonical App task runtime", () => {
         .find((entry) => entry.metadata.id === conditionId);
       expect(condition()?.status).toMatchObject({ state: "false", observed: { state: "blocked" } });
       expect(readAppTaskWaitPromptContext(loadedTaskConfig(f).resourceStore, getDb(persistDir), "work/caller").open)
-        .toEqual(expect.arrayContaining([expect.objectContaining({ dependency: expect.objectContaining({ report: expect.objectContaining({ summary: "Source unavailable (1)" }) }) })]));
+        .toEqual(expect.arrayContaining([expect.objectContaining({ dependency: expect.objectContaining({ reports: expect.objectContaining({ failure: expect.objectContaining({ summary: "Source unavailable (1)" }) }) }) })]));
       const retainedRetry = loadedTaskConfig(f).resourceStore.readTrigger("work/caller");
       for (let retry = 0; retry < 2; retry++) {
         const retryAt = loadedTaskConfig(f).resourceStore.readTask("work/collector")!.status.executionRetryAt!;
@@ -9642,7 +9779,7 @@ describe("canonical App task runtime", () => {
     const bus = eventBus();
     let calls = 0;
     const rejection = invalid === "invalid-state"
-      ? "Handler result was rejected: state must be converged, waiting, incomplete, or needs-agent"
+      ? "Handler result was rejected: state must be converged, waiting, or incomplete"
       : "Handler actions were rejected: Handler action cannot unblock its own running task work/invalid-result; return the attempt result without a self-unblock action";
     await installAppTaskRuntimes({
       ...options(f, bus),
@@ -10643,11 +10780,11 @@ describe("canonical App task runtime", () => {
           }),
         );
       };
-      const saveTerminalSession = (taskId: string) => {
+      const saveTerminalSession = (taskId: string, handler = "auto") => {
         const claim = claimObservedAppTask(config, {
           taskId,
           appAgent: "sample-owner",
-          handler: "auto",
+          handler,
           reason: "test",
         });
         if (claim.kind !== "claimed") throw new Error("expected agent claim");
@@ -11018,13 +11155,14 @@ describe("canonical App task runtime", () => {
 
     for (const route of ["startup", "busy"] as const) {
       it.each(["accept", "reject", "missing"] as const)(
-        `retries a terminal workflow handoff through ${route} with a %s verifier`,
+        `resumes a historical agent session through its workflow after ${route} with a %s verifier`,
         async (verification) => {
           const f = setup();
           let workflowCalls = 0;
           let verificationCalls = 0;
-          let externalCreates = 0;
-          const operations = new Set<string>();
+          // The historical attempt already performed this external operation.
+          let externalCreates = 1;
+          const operations = new Set<string>([String(f.payload.operationId)]);
           const workflows: TaskWorkflowRunner = {
             async inspect() {
               return {
@@ -11063,16 +11201,16 @@ describe("canonical App task runtime", () => {
                 externalCreates++;
               }
               return {
-                handlerResult: { state: "needs-agent", summary: "Check external operation", facts: [], actions: [] },
+                handlerResult: f.terminalResult,
+                verifier: (await workflows.inspect({} as never)).verifier,
                 runId: "fixture-workflow",
               };
             },
           };
           await installCoreTaskRuntimes({ ...f.base, workflows });
           f.observe("handoff", "must-verify");
-          await f.run("handoff");
-          const claim = f.saveTerminalSession("handoff");
-          expect(claim.handoff?.reason).toBe("needs-agent");
+          const claim = f.saveTerminalSession("handoff", "agent:sample-owner");
+          expect(claim.handoff).toBeUndefined();
           expect(externalCreates).toBe(1);
 
           if (route === "startup") {
@@ -11094,12 +11232,12 @@ describe("canonical App task runtime", () => {
           expect(f.config.resourceStore.readReceipt(claim.taskId)).toBeNull();
           expect(f.config.resourceStore.readTask(claim.taskId)?.status.phase).toBe("pending");
           expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
-          // Resume the agent directly; do not replay the workflow's effects.
+          // Retry the declared workflow; its stable operation key prevents duplicate effects.
           await f.run(claim.taskId);
           await f.run(claim.taskId);
           expect(workflowCalls).toBe(1);
           expect(externalCreates).toBe(1);
-          expect(f.agentCalls()).toBe(1);
+          expect(f.agentCalls()).toBe(0);
           expect(verificationCalls).toBe(verification === "missing" ? 0 : 1);
           if (verification !== "reject") {
             expect(readAcceptedRuntimeAttempt(f.config, claim.taskId)).toMatchObject({
@@ -11108,7 +11246,7 @@ describe("canonical App task runtime", () => {
                 result: f.payload,
                 acceptanceBasis: verification === "accept"
                   ? { method: "deterministic", verifier: "required-proof" }
-                  : { method: "agent-judgment" },
+                  : { method: "workflow-contract" },
               },
             });
           } else {
@@ -11123,7 +11261,7 @@ describe("canonical App task runtime", () => {
           expect(f.config.resourceStore.isCancelled(claim.taskId)).toBe(false);
           await f.run(claim.taskId);
           expect(workflowCalls).toBe(1);
-          expect(f.agentCalls()).toBe(1);
+          expect(f.agentCalls()).toBe(0);
         },
       );
     }

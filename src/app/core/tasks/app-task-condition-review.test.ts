@@ -5,9 +5,11 @@ import { join } from "node:path";
 import { appTaskTestContext } from "./app-task-test-support.js";
 import { readTaskSnapshot } from "./app-task-store.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
+import { admitTaskInput } from "../state/inbox.js";
 import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
 import {
   claimObservedAppTask,
+  applyRunningTaskChanges,
   completeAppTask,
   deferAppTask,
   listRunnableAppTaskIds,
@@ -72,6 +74,137 @@ afterEach(() => {
 });
 
 describe("App task Condition recovery and explicit review", () => {
+  it.each(["live", "final"])("preserves both input waits when only attention changes through %s admission", (mode) => {
+    const config = fixture();
+    const condition = { id: "app-request:sample", type: "app.dependency.updated", subject: "id:sample",
+      expected: { field: "status", equals: "done" }, owner: "app:sample", progress: "next-wake" as const };
+    const admit = (id: string) => admitTaskInput(config, { appId: "sample",
+      attachment: { kind: "existing", taskId: "human-request" }, idempotencyKey: id,
+      inputContext: { id, source: { kind: "human", id: "operator" }, input: { kind: "message", data: {} } },
+    });
+    try {
+      admit("input-a");
+      deferAppTask(config, claim(config), { disposition: "waiting", summary: "Await the result", conditions: [condition] });
+      const before = config.resourceStore.readTask("human-request")!.status.inputWaits!["input-a"]!;
+      admit("input-b");
+      const second = claim(config);
+      expect(second.continuedInputKeys ?? []).not.toContain("input-a");
+      const changed = { ...condition, progress: "immediate" as const };
+      if (mode === "live") applyRunningTaskChanges(config, second, {
+        operationKey: "change-attention", actionReceiptKeys: [], replayedActions: [], requests: [], conditions: [changed],
+      });
+      deferAppTask(config, second, { disposition: "waiting", summary: "Consider progress immediately",
+        conditions: [changed], inputKeys: ["input-b"],
+      });
+      const generation = config.resourceStore.readTaskConditions("human-request")[0]!.metadata.generation;
+      const task = config.resourceStore.readTask("human-request")!;
+      expect(task.status.phase).toBe("waiting");
+      expect(task.status.inputWaits!["input-a"]).toEqual({ ...before, conditions: [{ id: condition.id, generation }] });
+      expect(task.status.inputWaits!["input-b"]?.conditions).toEqual([{ id: condition.id, generation }]);
+      config.resourceStore.close();
+      config.resourceStore = AppTaskResourceStore.openStandalone(join(config.appDir, "../..", "host.sqlite"), "sample");
+      expect(listRunnableAppTaskIds(config)).toEqual([]);
+      expect(claimObservedAppTask(config, { taskId: "human-request", appAgent: "app-owner", handler: "agent" }).kind).toBe("waiting");
+    } finally { config.resourceStore.close(); }
+  });
+
+  it("retains an older failure independently of newer progress and deduplicates both after restart", () => {
+    const config = fixture();
+    const event = (status: string, reportRevision: number) => ({ type: "app.dependency.updated", data: {
+      kind: "app", id: "sample", status, reportRevision, reportAttemptId: `attempt-${reportRevision}`,
+    } });
+    try {
+      deferAppTask(config, claim(config), { disposition: "waiting", summary: "Await completion", conditions: [{
+        id: "app-request:sample", type: "app.dependency.updated", subject: "id:sample",
+        expected: { field: "status", equals: "done" }, owner: "app:sample", progress: "next-wake",
+      }] });
+      expect(trackAppTaskConditionEventForTasks(config, event("progress", 3), ["human-request"])).toEqual([]);
+      expect(trackAppTaskConditionEventForTasks(config, event("blocked", 2), ["human-request"]))
+        .toEqual([{ taskId: "human-request", conditionId: "app-request:sample" }]);
+      deferAppTask(config, claim(config), { disposition: "waiting", summary: "Considered failure" });
+      config.resourceStore.close();
+      config.resourceStore = AppTaskResourceStore.openStandalone(join(config.appDir, "../..", "host.sqlite"), "sample");
+      for (const [status, revision] of [["blocked", 2], ["progress", 3], ["progress", 1]] as const)
+        expect(trackAppTaskConditionEventForTasks(config, event(status, revision), ["human-request"])).toEqual([]);
+      expect(config.resourceStore.readTaskConditions("human-request")[0]?.status.reports).toMatchObject({
+        progress: { reportRevision: 3 }, failure: { reportRevision: 2 },
+      });
+    } finally { config.resourceStore.close(); }
+  });
+
+  it("retains quiet progress across restart and wakes for a needed partial fact, failure or completion", () => {
+    const config = fixture();
+    const id = "app-request:sample";
+    const completion = { id, type: "app.dependency.updated", subject: "id:sample",
+      expected: { field: "status", equals: "done" }, owner: "app:sample", progress: "next-wake" as const };
+    const feedback = (reportRevision: number, status = "progress") => ({
+      type: "app.dependency.updated", data: { id: "sample", kind: "app", status,
+        reportRevision, summary: `Progress ${reportRevision}`, result: { checked: reportRevision } },
+    });
+    try {
+      deferAppTask(config, claim(config), { disposition: "waiting", summary: "Await completion", conditions: [completion] });
+      const before = config.resourceStore.readTask("human-request")!;
+      for (let revision = 1; revision <= 54; revision++) {
+        expect(trackAppTaskConditionEventForTasks(config, feedback(revision), ["human-request"])).toEqual([]);
+        expect(listRunnableAppTaskIds(config, "app-owner")).toEqual([]);
+      }
+      expect(config.resourceStore.readTask("human-request")!.metadata).toEqual(before.metadata);
+      expect(config.resourceStore.readTrigger("human-request")).toBeNull();
+      expect(config.resourceStore.readTaskConditions("human-request")[0]?.status).toMatchObject({
+        state: "false", observed: { state: "progress", reportRevision: 54, result: { checked: 54 } },
+      });
+      config.resourceStore.close();
+      config.resourceStore = AppTaskResourceStore.openStandalone(join(config.appDir, "../..", "host.sqlite"), "sample");
+      for (const revision of [1, 54]) expect(trackAppTaskConditionEventForTasks(config, feedback(revision), ["human-request"])).toEqual([]);
+
+      // A normal input wakes independently of the quiet report preference.
+      recordAppTaskTrigger(config, "human-request", { type: "user.question", data: { question: "Check the first usable result" } });
+      deferAppTask(config, claim(config), { disposition: "waiting", summary: "Need the next usable contribution",
+        conditions: [{ id: "usable", type: "app.dependency.updated", subject: "id:sample",
+          expected: { field: "reportRevision", gt: 54 }, owner: "app:sample" }],
+      });
+      expect(trackAppTaskConditionEventForTasks(config, feedback(55), ["human-request"]))
+        .toEqual([{ taskId: "human-request", conditionId: "usable" }]);
+      expect(config.resourceStore.readTaskConditions("human-request").find((c) => c.metadata.id === id)?.status.state).toBe("false");
+      deferAppTask(config, claim(config), { disposition: "waiting", summary: "Considered partial result; still await completion" });
+      expect(trackAppTaskConditionEventForTasks(config, feedback(56, "blocked"), ["human-request"]))
+        .toEqual([{ taskId: "human-request", conditionId: id }]);
+      deferAppTask(config, claim(config), { disposition: "waiting", summary: "Handled blocker; still await completion" });
+      expect(trackAppTaskConditionEventForTasks(config, feedback(56, "blocked"), ["human-request"])).toEqual([]);
+      expect(trackAppTaskConditionEventForTasks(config, feedback(57, "done"), ["human-request"]))
+        .toEqual([{ taskId: "human-request", conditionId: id }]);
+      expect(config.resourceStore.readTaskConditions("human-request").find((c) => c.metadata.id === id)?.status.reports)
+        .toMatchObject({ progress: { reportRevision: 55 }, failure: { reportRevision: 56 } });
+    } finally { config.resourceStore.close(); }
+  });
+
+  it("changes progress interest without losing observations or restarting the completion wait", () => {
+    const config = fixture();
+    const id = "app-request:sample";
+    const condition = { id, type: "app.dependency.updated", subject: "id:sample",
+      expected: { field: "status", equals: "done" }, owner: "app:sample", progress: "next-wake" as const };
+    const event = (reportRevision: number) => ({ type: "app.dependency.updated", data: {
+      id: "sample", kind: "app", status: "progress", reportRevision,
+    } });
+    try {
+      deferAppTask(config, claim(config), { disposition: "waiting", summary: "Await result", conditions: [condition] });
+      const createdAt = config.resourceStore.readTaskConditions("human-request")[0]!.status.createdAt;
+      trackAppTaskConditionEventForTasks(config, event(1), ["human-request"]);
+      const before = config.resourceStore.readTaskConditions("human-request")[0]!;
+      recordAppTaskTrigger(config, "human-request", { type: "user.question", data: {} });
+      deferAppTask(config, claim(config), { disposition: "waiting", summary: "Watch progress closely",
+        conditions: [{ ...condition, progress: "immediate" }],
+      });
+      const after = config.resourceStore.readTaskConditions("human-request")[0]!;
+      expect(after.status).toMatchObject({ state: "false", observed: before.status.observed, observedAt: before.status.observedAt, createdAt });
+      expect(trackAppTaskConditionEventForTasks(config, event(1), ["human-request"])).toEqual([]);
+      expect(trackAppTaskConditionEventForTasks(config, event(2), ["human-request"]))
+        .toEqual([{ taskId: "human-request", conditionId: id }]);
+      deferAppTask(config, claim(config), { disposition: "waiting", summary: "Keep watching", conditions: [{ ...condition, progress: "immediate" }] });
+      expect(trackAppTaskConditionEventForTasks(config, event(2), ["human-request"])).toEqual([]);
+    } finally { config.resourceStore.close(); }
+  });
+
   it("keeps a legacy observed report quiet after reopen but admits a newer revision once", () => {
     const config = fixture();
     try {

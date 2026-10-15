@@ -75,7 +75,7 @@ export type AppTaskClaim = {
   declaredOutputPaths: string[];
   supersededSessionIds?: string[];
   handoff?: {
-    reason: "needs-agent" | "recovered-session";
+    reason: "recovered-session";
     summary: string;
     facts: string[];
   };
@@ -537,26 +537,13 @@ function previousAttemptFacts(attempt: AppTaskAttempt): NonNullable<TaskAttempt[
   };
 }
 
-function isAgentHandoffReason(reason: string | undefined): boolean {
-  return reason === "needs-agent" || reason === "needs-owner";
-}
-
-function needsAgentHandoff(tree: TaskTree, resource: AppTaskResource): boolean {
+// Read old saved handoffs as unfinished workflow work; never select another executor.
+function hasLegacyWorkflowHandoff(tree: TaskTree, resource: AppTaskResource): boolean {
   if (resource.status.phase !== "attention") return false;
   const attempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
-  return Boolean(attempt?.handler.startsWith("workflow:") && isAgentHandoffReason(attempt.failureReason));
-}
-
-function continueWithAgent(resource: AppTaskResource, attempt: AppTaskAttempt | undefined): boolean {
-  if (!attempt) return false;
-  // The failed attempt is the durable handoff. Continue ordinary agent work
-  // across retries and waits; a new specification generation selects afresh.
-  if (attempt.handler.startsWith("agent:"))
-    return Boolean(resource.spec.workflow || (resource.spec.executor && resource.spec.executor !== "agent"));
-  return attempt.state === "failed" && (
-    attempt.handler.startsWith("workflow:") ||
-    attempt.handler.startsWith("executor:") ||
-    attempt.handler.startsWith("cli:")
+  return Boolean(
+    attempt?.handler.startsWith("workflow:") &&
+    (attempt.failureReason === "needs-agent" || attempt.failureReason === "needs-owner"),
   );
 }
 
@@ -667,13 +654,26 @@ function resultInputKeys(
   return [...new Set(keys)];
 }
 
+/** Read independent feedback, including the historical single-report representation. */
+function admissionFeedback(config: Pick<AppTaskContext, "resourceStore">, admission: AppTaskAdmission) {
+  const feedback = { ...admission.feedback };
+  if (admission.reportAttemptId) {
+    const attempt = config.resourceStore.readAttempt(admission.reportAttemptId);
+    if (attempt && appTaskAttemptReport(attempt)) {
+      const kind = attempt.acceptedResult?.state === "waiting" ? "progress" : "failure";
+      feedback[kind] ??= { attemptId: admission.reportAttemptId, revision: admission.reportRevision ?? 1, legacyBlocked: true };
+    }
+  }
+  return feedback;
+}
+
 /** Bind only exact admitted input considered by this attempt; reports are not answers. */
 function inputOutcomeAdmissions(
   config: AppTaskContext,
   tree: TaskTree,
   claim: AppTaskClaim,
   input: { acceptedLiveEventIds?: number[]; inputKeys?: string[]; report?: true } = {},
-  kind: "answer" | "report" | "retain" = "answer",
+  kind: "answer" | "progress" | "failure" | "retain" = "answer",
 ) {
   const keys = resultInputKeys(config, tree, claim, input);
   const resource = tree.resources![claim.taskId]!;
@@ -689,19 +689,16 @@ function inputOutcomeAdmissions(
     const admission = admissions?.[key];
     if (!admission || admission.taskId !== claim.taskId || admission.taskGeneration > claim.generation ||
       admission.resultAttemptId) return [];
-    if (kind === "report")
-      return admission.reportAttemptId && !input.report
-        ? []
-        : [
-            {
-              taskId: key,
-              value: {
-                ...admission,
-                reportAttemptId: claim.attemptId,
-                reportRevision: (admission.reportRevision ?? (admission.reportAttemptId ? 1 : 0)) + 1,
-              },
-            },
-          ];
+    if (kind === "progress" || kind === "failure") {
+      const feedback = admissionFeedback(config, admission);
+      if (feedback[kind] && !input.report) return [];
+      const migrated = Object.values(feedback).some((entry) => entry.attemptId === admission.reportAttemptId);
+      const revision = Math.max(admission.reportRevision ?? 0, ...Object.values(feedback).map((entry) => entry.revision)) + 1;
+      feedback[kind] = { attemptId: claim.attemptId, revision };
+      return [{ taskId: key, value: {
+        ...admission, feedback, ...(migrated ? { reportAttemptId: undefined, reportRevision: undefined } : {}),
+      } }];
+    }
     delete tree.resources?.[claim.taskId]?.status.inputWaits?.[key];
     return [{ taskId: key, value: { ...admission, resultAttemptId: claim.attemptId } }];
   });
@@ -715,25 +712,32 @@ export function readAppTaskAdmissionOutcome(
   config: Pick<AppTaskContext, "resourceStore">,
   taskId: string,
   admissionKey: string,
-  kind: "answer" | "report" = "answer",
+  kind: "answer" | "report" | "progress" | "failure" = "answer",
 ):
   | (Omit<NonNullable<AppTaskAttempt["acceptedResult"]>, "state"> & {
       attemptId: string;
       generation: number;
       state: "converged" | "waiting" | "incomplete" | "error";
       reportRevision?: number;
+      reportStatus?: "blocked";
     })
   | null {
   const admission = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: [admissionKey] })
     .appTaskAdmissions?.[admissionKey];
-  const attemptId = kind === "answer" ? admission?.resultAttemptId : admission?.reportAttemptId;
-  if (admission?.taskId !== taskId || !attemptId) return null;
+  if (admission?.taskId !== taskId) return null;
+  const feedback = kind === "answer" ? {} : admissionFeedback(config, admission);
+  const selected = kind === "report"
+    ? Object.values(feedback).sort((a, b) => b.revision - a.revision)[0]
+    : kind === "answer" ? undefined : feedback[kind];
+  const attemptId = kind === "answer" ? admission.resultAttemptId : selected?.attemptId;
+  if (!attemptId) return null;
   const attempt = config.resourceStore.readAttempt(attemptId);
   if (attempt?.taskId !== taskId || attempt.taskGeneration < admission.taskGeneration) return null;
   const identity = {
     attemptId: attempt.metadata.id,
     generation: attempt.taskGeneration,
-    ...(kind === "report" ? { reportRevision: admission.reportRevision ?? 1 } : {}),
+    ...(selected ? { reportRevision: selected.revision } : {}),
+    ...(selected?.legacyBlocked ? { reportStatus: "blocked" as const } : {}),
   };
   const accepted = attempt.acceptedResult;
   if (kind === "answer") return accepted?.state === "converged" ? { ...identity, ...accepted } : null;
@@ -907,6 +911,7 @@ function materializeWaitingConditions(
       ...(raw.requestedAction?.trim() ? { requestedAction: raw.requestedAction.trim() } : {}),
       owner: raw.owner!.trim(),
       ...(reviewAfterMs === undefined ? {} : { reviewAfterMs }),
+      ...((raw.progress ?? current?.spec.progress) === undefined ? {} : { progress: raw.progress ?? current?.spec.progress }),
     };
     const sameSpec = current && JSON.stringify(stableValue(current.spec)) === JSON.stringify(stableValue(spec));
     const linkedToAnotherTask = Object.values(tree.resources ?? {}).some(
@@ -914,6 +919,27 @@ function materializeWaitingConditions(
     );
     if (current && !sameSpec && linkedToAnotherTask) {
       throw new Error(`Condition ${id} is already linked to another task with a different specification`);
+    }
+    // Changing when to consider progress does not invalidate the observed fact.
+    const { progress: _oldInterest, ...oldObservationSpec } = current?.spec ?? {};
+    const { progress: _newInterest, ...newObservationSpec } = spec;
+    const onlyInterestChanged = current && !sameSpec &&
+      JSON.stringify(stableValue(oldObservationSpec)) === JSON.stringify(stableValue(newObservationSpec));
+    if (onlyInterestChanged) {
+      registry[id] = {
+        ...current, spec,
+        metadata: { ...current.metadata, generation: current.metadata.generation + 1, resourceVersion: current.metadata.resourceVersion + 1 },
+        status: { ...current.status, observedGeneration: current.status.state === "unknown" ? 0 : current.metadata.generation + 1 },
+      };
+      // The observed requirement did not change. Every input sharing this wait
+      // keeps its correlation; an attention preference is not new work.
+      for (const wait of Object.values(tree.resources?.[taskId]?.status.inputWaits ?? {})) {
+        for (const reference of wait.conditions) {
+          if (reference.id === id && reference.generation === current.metadata.generation)
+            reference.generation = registry[id].metadata.generation;
+        }
+      }
+      continue;
     }
     const startsNewObservation = !sameSpec;
     registry[id] = startsNewObservation
@@ -1935,7 +1961,7 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): b
     if (reviewAt !== null) return reviewAt <= Date.now();
     return !(resource.status.conditionIds?.length ?? 0);
   }
-  if (resource.status.phase === "attention") return needsAgentHandoff(tree, resource);
+  if (resource.status.phase === "attention") return hasLegacyWorkflowHandoff(tree, resource);
   if (resource.status.phase === "running") return true;
   return false;
 }
@@ -2481,7 +2507,7 @@ export function reportAppTaskFailure(
   requireStringList(input.facts, "Incomplete report facts");
   const summary = `Outcome not achieved: ${input.summary.trim()}; continuing after backoff`;
   const { resource, attempt } = match;
-  const { keys: resolvedInputKeys, writes: admissions } = inputOutcomeAdmissions(config, tree, claim, input, "report");
+  const { keys: resolvedInputKeys, writes: admissions } = inputOutcomeAdmissions(config, tree, claim, input, "failure");
   const mutationScope = beginResourceMutationScope(tree, claim, []);
   const now = new Date().toISOString();
   attempt.acceptedResult = acceptedAttemptResult(
@@ -2622,7 +2648,6 @@ export function claimObservedAppTask(
     handler: string;
     reason?: string;
     isAgentRunnable?: (agent: string) => boolean;
-    canUseAgentFallback?: (agent: string) => boolean;
     recoverSessionHandoff?: (attempt: AppTaskAttempt | undefined) => AppTaskClaim["handoff"];
   },
 ): AppTaskClaimResult {
@@ -2702,27 +2727,18 @@ export function claimObservedAppTask(
     };
   }
   const latestAttempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
-  const useAgentFallback = continueWithAgent(resource, latestAttempt) && (
-    needsAgentHandoff(tree, resource) ||
-    latestAttempt?.handler.startsWith("agent:") ||
-    input.canUseAgentFallback?.(agent) !== false
-  );
   const handler =
     input.handler === "auto"
-      ? useAgentFallback
-        ? managedAgentHandler(agent)
-        : intent.workflow?.trim()
-          ? `workflow:${intent.workflow.trim()}`
-          : intent.executor && intent.executor !== "agent"
-            ? `executor:${intent.executor}`
-            : managedAgentHandler(agent)
+      ? intent.workflow?.trim()
+        ? `workflow:${intent.workflow.trim()}`
+        : intent.executor && intent.executor !== "agent"
+          ? `executor:${intent.executor}`
+          : managedAgentHandler(agent)
       : input.handler === "agent" || input.handler === "owner"
         ? managedAgentHandler(agent)
         : input.handler;
-  const agentHandoff = useAgentFallback && isManagedAgentHandler(handler, agent);
   const priorFacts = latestAttempt ?? latestTaskAttempt(tree, resource.metadata.id);
-  const handoffAttempt = agentHandoff ? latestAttempt : undefined;
-  const recoveredSessionHandoff = !agentHandoff ? input.recoverSessionHandoff?.(latestAttempt) : undefined;
+  const recoveredSessionHandoff = input.recoverSessionHandoff?.(latestAttempt);
   const previousAttempt = currentResourceAttempt(tree, resource);
   if (resource.status.phase === "running" && !previousAttempt) {
     const now = new Date().toISOString();
@@ -2808,8 +2824,7 @@ export function claimObservedAppTask(
     resource.status.phase === "attention" &&
     resource.status.observedGeneration >= resource.metadata.generation &&
     !pendingTrigger &&
-    !(agentHandoff && needsAgentHandoff(tree, resource)) &&
-    input.reason !== "workflow-fallback"
+    !hasLegacyWorkflowHandoff(tree, resource)
   ) {
     return {
       kind: "attention",
@@ -2887,11 +2902,6 @@ export function claimObservedAppTask(
     specHash,
     owner: agent,
     handler,
-    // Record the switch atomically with its claim, even if execution never starts.
-    // Continuing agent attempts and intentional handoffs are not new failovers.
-    ...(agentHandoff && latestAttempt?.state === "failed" &&
-      !latestAttempt.handler.startsWith("agent:") && !isAgentHandoffReason(latestAttempt.failureReason)
-      ? { failoverFromAttemptId: latestAttempt.metadata.id } : {}),
     runtimeId: reconcilerRuntimeId,
     state: "running",
     reason: input.reason ?? "event",
@@ -2967,22 +2977,7 @@ export function claimObservedAppTask(
     ...(trigger ? { trigger: structuredClone(trigger) } : {}),
     declaredOutputPaths,
     ...(supersededSessionIds.size > 0 ? { supersededSessionIds: [...supersededSessionIds] } : {}),
-    ...(handoffAttempt || recoveredSessionHandoff
-      ? {
-          handoff:
-            handoffAttempt
-              ? {
-                  reason: "needs-agent",
-                  summary:
-                    resource.status.summary ??
-                    handoffAttempt.summary ??
-                    handoffAttempt.failureReason ??
-                    "Continue the Task through ordinary agent execution",
-                  facts: [...(resource.status.facts ?? [])],
-                }
-              : recoveredSessionHandoff,
-        }
-      : {}),
+    ...(recoveredSessionHandoff ? { handoff: recoveredSessionHandoff } : {}),
   };
 }
 
@@ -3024,15 +3019,14 @@ export function failAppTaskAttempt(
     facts?: string[];
     unacceptedResult?: AppTaskAttempt["unacceptedResult"];
   } = {},
-): { status: "retrying" | "handoff" | "superseded"; summary: string; retryAt?: number | null } {
+): { status: "retrying" | "superseded"; summary: string; retryAt?: number | null } {
   const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
   const match = matchingClaimAttempt(tree.resources?.[claim.taskId], tree.attempts?.[claim.attemptId], claim);
   // Execution failure is still a fact after the requirements change.
   if (!match) return { status: "superseded", summary: failure };
   const { resource, attempt } = match;
   const mutationScope = beginResourceMutationScope(tree, claim, []);
-  const handoff = isAgentHandoffReason(details.reason);
-  const admissions = handoff ? [] : inputOutcomeAdmissions(config, tree, claim, {}, "report").writes;
+  const admissions = inputOutcomeAdmissions(config, tree, claim, {}, "failure").writes;
   const failures = (resource.status.executionFailures ?? 0) + 1;
   const summary = failure;
   const now = new Date().toISOString();
@@ -3041,15 +3035,11 @@ export function failAppTaskAttempt(
   attempt.failureReason = details.reason ?? "HandlerExecutionFailed";
   if (details.unacceptedResult) attempt.unacceptedResult = structuredClone(details.unacceptedResult);
   touchResource(resource, {
-    phase: handoff ? "attention" : "pending",
-    ...(handoff
-      ? {}
-      : {
-          executionFailures: failures,
-          executionRetryAt: resource.status.freshHumanInput
-            ? undefined
-            : Date.parse(now) + taskExecutionRetryDelay(failures),
-        }),
+    phase: "pending",
+    executionFailures: failures,
+    executionRetryAt: resource.status.freshHumanInput
+      ? undefined
+      : Date.parse(now) + taskExecutionRetryDelay(failures),
     observedGeneration: claim.generation,
     currentAttemptId: undefined,
     summary,
@@ -3060,9 +3050,9 @@ export function failAppTaskAttempt(
     resourceMutation: { ...finishResourceMutationScope(mutationScope, tree), admissions },
   });
   return {
-    status: handoff ? "handoff" : "retrying",
+    status: "retrying",
     summary,
-    ...(!handoff ? { retryAt: resource.status.executionRetryAt ?? null } : {}),
+    retryAt: resource.status.executionRetryAt ?? null,
   };
 }
 
@@ -3447,6 +3437,11 @@ function validateConditions(
     }
     if (!("expected" in condition)) {
       throw new Error(`Handler result Condition ${identity} requires an expected value`);
+    }
+    if (condition.progress !== undefined &&
+        (type !== "app.dependency.updated" || !identity.startsWith("app-request:") ||
+         (condition.progress !== "immediate" && condition.progress !== "next-wake"))) {
+      throw new Error(`Handler result Condition ${identity} progress requires an App request Condition and immediate or next-wake`);
     }
     if (condition.requestedAction !== undefined) {
       requireNonEmptyString(condition.requestedAction, `Handler result Condition ${identity} requestedAction`);
@@ -3834,7 +3829,7 @@ export function deferAppTask(
   }
   const { resource } = match;
   const { keys: inputKeys, writes: admissions } = inputOutcomeAdmissions(
-    config, tree, claim, input, input.report ? "report" : "retain",
+    config, tree, claim, input, input.report ? "progress" : "retain",
   );
   const retainedReviewAt = [
     resource.status.reviewAt,
@@ -3922,7 +3917,7 @@ export function deferAppTask(
   // New input remains pending until accepted, whether or not it satisfies a
   // Condition. Also apply matching facts to waits installed by this attempt.
   for (const entry of pendingEvents) {
-    for (const wake of applyAppTaskConditionEvent(tree, entry.event)) {
+    for (const wake of applyAppTaskConditionEvent(tree, entry.event, config.resourceStore)) {
       trackResourceMutationTask(mutationScope, tree, wake.taskId);
     }
   }
