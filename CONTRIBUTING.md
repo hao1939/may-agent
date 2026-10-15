@@ -86,6 +86,13 @@ assertions; a failed request must not satisfy a success test. Share small data
 factories, not live managers. Close databases and remove temporary roots in
 teardown even when assertions fail; setup and cleanup are not test cases.
 
+Long-running Bun test servers and daemon fixtures use
+`test/fixtures/owned-process.ts`. Its test-only preload reserves stdin as an
+open parent pipe and stops the child if the runner disappears. Keep normal
+teardown for temporary files and explicit shutdown. Fixtures that test stdin
+itself or a production IPC lifetime retain that protocol; do not replace it
+with the lifetime pipe. Production launchers never load the test hook.
+
 Wait for the exact event or result, not a fixed sleep. Keep real timers where
 scheduling is what the test proves; other lifecycle tests can use real event
 ingress. Remove examples that only exercise test-local SQL or algorithms, not

@@ -8,7 +8,7 @@ import { cliSend } from "../../src/app/cli-send.js";
 import { parseAppArgs } from "../../src/app/app-args.js";
 import { observeDaemonLiveness } from "../../src/app/modes/maintenance.js";
 import { runEmitMode } from "../../src/app/modes/emit.js";
-import { spawn } from "node:child_process";
+import { spawnFixtureProcess } from "../fixtures/owned-process.js";
 import { once } from "node:events";
 import { fileURLToPath } from "node:url";
 import { closeDb, getDb } from "../../src/lib/db/connection.js";
@@ -90,20 +90,22 @@ test("maintenance CLI probes its selected daemon even when environment identitie
       return timer;
     };
   `);
-  const child = Bun.spawn([process.execPath, "--preload", preload, cli, "--maintenance", "--agent", "helper"], {
-    env: cliEnv(root), stdin: "ignore", stdout: "pipe", stderr: "pipe", timeout: 10_000,
+  const child = spawnFixtureProcess(["--preload", preload, cli, "--maintenance", "--agent", "helper"], {
+    env: cliEnv(root), timeout: 10_000,
   });
-  const output = Promise.all([new Response(child.stdout).text(), new Response(child.stderr).text()]);
+  const exited = new Promise<number | null>((resolve) => child.once("close", resolve));
+  let output = "";
+  child.stdout.on("data", (chunk) => { output += chunk.toString(); });
+  child.stderr.on("data", (chunk) => { output += chunk.toString(); });
   try {
-    await Promise.race([observed.promise, child.exited.then(async code => {
-      throw new Error(`Maintenance exited before probing helper (${code}): ${(await output).join("\n")}`);
+    await Promise.race([observed.promise, exited.then(code => {
+      throw new Error(`Maintenance exited before probing helper (${code}): ${output}`);
     })]);
     child.kill();
-    expect(await child.exited).toBe(0);
+    expect(await exited).toBe(0);
   } finally {
     child.kill();
-    await child.exited;
-    await output;
+    await exited;
     control.close();
     rmSync(root, { recursive: true, force: true });
   }
@@ -117,11 +119,11 @@ test("web-only CLI forwards its selected agent through to HTTP and the control s
     getStatus: () => ({ sessions: [], activeWork: false }),
     emitEvent: () => {}, subscribeEvents: () => () => {},
   });
-  const child = spawn(process.execPath, [fileURLToPath(new URL("../../src/app/may.ts", import.meta.url)), "--web", "--agent", "helper"], {
+  const child = spawnFixtureProcess([fileURLToPath(new URL("../../src/app/may.ts", import.meta.url)), "--web", "--agent", "helper"], {
     env: { ...process.env, APP_ROOT: root, PROJECT_ROOT: root, STATE_DIR: root,
       WEB_PORT: "0", AGENT: "unused-env-agent", DAEMON_AGENT: "unused-legacy",
       INSTANCE: "web-test", DAEMON_INSTANCE: "web-test" },
-    stdio: ["ignore", "pipe", "pipe"], timeout: 10_000,
+    timeout: 10_000,
   });
   let output = "";
   child.stderr.on("data", chunk => { output += chunk.toString(); });

@@ -1,5 +1,47 @@
 # Changelog
 
+## [5.5.0](https://github.com/hao1939/may-agent/compare/v5.4.0...v5.5.0) (2026-10-05)
+
+
+### Features
+
+* **tasks:** support communication through ordinary task execution ([#321](https://github.com/hao1939/may-agent/issues/321)) ([c1a6adb](https://github.com/hao1939/may-agent/commit/c1a6adb38c24bb506e207b9e8f5e65a7b200f0d3))
+
+
+### Bug Fixes
+
+* **agents:** remove skill selection from delegation ([#323](https://github.com/hao1939/may-agent/issues/323)) ([4648c62](https://github.com/hao1939/may-agent/commit/4648c627f079cc346ca2878d1da83307edf568f6))
+* **conversation:** reject incompatible task follow-ups ([#319](https://github.com/hao1939/may-agent/issues/319)) ([59425a8](https://github.com/hao1939/may-agent/commit/59425a8809df47ec24dbbee7ee0491eb8114685b))
+* **conversation:** show the task assigned to a request ([#333](https://github.com/hao1939/may-agent/issues/333)) ([8f512dc](https://github.com/hao1939/may-agent/commit/8f512dc564d5e0ffb0f1441aac603039b4092295))
+* **db:** keep orphan scans outside maintenance writes ([#320](https://github.com/hao1939/may-agent/issues/320)) ([2bcf20f](https://github.com/hao1939/may-agent/commit/2bcf20fd2b5fb476cd43432f4e96e2996d4317ea))
+* **events:** keep routine checks from creating new work ([#338](https://github.com/hao1939/may-agent/issues/338)) ([af41ca8](https://github.com/hao1939/may-agent/commit/af41ca863d987612acc560c51869cc454ea83dba))
+* **events:** mark guard decisions as record-only observations ([#334](https://github.com/hao1939/may-agent/issues/334)) ([cebedfd](https://github.com/hao1939/may-agent/commit/cebedfde63240351fad199b587d259003d4e1a6b))
+* **events:** recover App admission from the Event journal ([#336](https://github.com/hao1939/may-agent/issues/336)) ([43161f9](https://github.com/hao1939/may-agent/commit/43161f99da66a024511fbbb411d6af0a8eb0f799))
+* **metrics:** timestamp source fallbacks at completion ([#327](https://github.com/hao1939/may-agent/issues/327)) ([2f6b343](https://github.com/hao1939/may-agent/commit/2f6b3434e31bbcaa402ebc4d8292fd952748ae69))
+* **runtime:** contain heartbeat collection and persistence failures ([#322](https://github.com/hao1939/may-agent/issues/322)) ([4527c0c](https://github.com/hao1939/may-agent/commit/4527c0cdd3b7ef5b0300d4b6a063edabbf5e1963))
+* **runtime:** reserve time to submit results before timeout ([#308](https://github.com/hao1939/may-agent/issues/308)) ([e23ed14](https://github.com/hao1939/may-agent/commit/e23ed14bc5e103d3e671f88ec379861b8c2d9c75))
+* **tasks:** accept explicitly covered outstanding input ([#313](https://github.com/hao1939/may-agent/issues/313)) ([1bb35ac](https://github.com/hao1939/may-agent/commit/1bb35ac1e42fe10cdf17f79c9bc57b1cff36b79c))
+* **tasks:** expose responsible agents in reads and context ([#314](https://github.com/hao1939/may-agent/issues/314)) ([169396a](https://github.com/hao1939/may-agent/commit/169396a4040f7b9b43cbbafb87d5d24e8e773f4c))
+* **tasks:** fence new input against concurrent task writes ([#324](https://github.com/hao1939/may-agent/issues/324)) ([fc3b9ca](https://github.com/hao1939/may-agent/commit/fc3b9cab31d3b3af40ee04453b689a93e0477832))
+* **tasks:** keep agent discovery pages compact ([#339](https://github.com/hao1939/may-agent/issues/339)) ([abebee2](https://github.com/hao1939/may-agent/commit/abebee2195c15e590ae7965ed0fb3266a23024d1))
+* **tasks:** preflight explicit result input keys ([#335](https://github.com/hao1939/may-agent/issues/335)) ([86e00ee](https://github.com/hao1939/may-agent/commit/86e00ee13c2762cdae4a6ecc5f0015ba6ac19eba))
+* **tasks:** preserve work evidence across checks and app removal ([#337](https://github.com/hao1939/may-agent/issues/337)) ([d6ad3a1](https://github.com/hao1939/may-agent/commit/d6ad3a1b0b73bd883dbd46552f33427b1bac4085))
+* **tasks:** recover failed procedures through the responsible agent ([#325](https://github.com/hao1939/may-agent/issues/325)) ([d8c8775](https://github.com/hao1939/may-agent/commit/d8c87757782ae5750984bedc239b00eab4c76715))
+* **tasks:** retain dirty workspace results ([#309](https://github.com/hao1939/may-agent/issues/309)) ([e0979a4](https://github.com/hao1939/may-agent/commit/e0979a4f954c809421e8ddf917ba37f72792c7d1))
+* **telegram:** notify only new or changed todo actions ([#332](https://github.com/hao1939/may-agent/issues/332)) ([8856d55](https://github.com/hao1939/may-agent/commit/8856d557066639ccf8c1ccb476ef0c6bf243450a))
+* **test:** stop sandbox daemons when their runner exits ([#341](https://github.com/hao1939/may-agent/issues/341)) ([7315d7a](https://github.com/hao1939/may-agent/commit/7315d7a6c1a4b3380637bf12f96d5311f8a647d9))
+* **test:** stop server fixtures when their runner exits ([#343](https://github.com/hao1939/may-agent/issues/343)) ([4f5cf99](https://github.com/hao1939/may-agent/commit/4f5cf99a3367d6aa923a0e95ac6d4ef163cb1973))
+* **usage:** record persistent chat replies and recover interrupted accounting ([#307](https://github.com/hao1939/may-agent/issues/307)) ([24da472](https://github.com/hao1939/may-agent/commit/24da4722dc6212cae684975184f4a862837b3985))
+
+
+### Performance Improvements
+
+* **conversation:** calculate attempt returnability once per recovery read ([#329](https://github.com/hao1939/may-agent/issues/329)) ([6b507d4](https://github.com/hao1939/may-agent/commit/6b507d42916ae5e0f64483311984302b20079d92))
+* **conversation:** scope recovery before reading attempt history ([#340](https://github.com/hao1939/may-agent/issues/340)) ([f59f710](https://github.com/hao1939/may-agent/commit/f59f71040fac73902945e7018ec474a667154a9d))
+* **db:** find expired Event candidates outside the writer lock ([#331](https://github.com/hao1939/may-agent/issues/331)) ([87fbffc](https://github.com/hao1939/may-agent/commit/87fbffc82371a80d3c7729586bae06106a265a80))
+* **db:** shorten Event and inbox write-lock work ([#328](https://github.com/hao1939/may-agent/issues/328)) ([f40a45f](https://github.com/hao1939/may-agent/commit/f40a45fba7e4af7e98ea77d44630b5bbb56c89ec))
+* **tasks:** rank attempt identities before loading context bodies ([#330](https://github.com/hao1939/may-agent/issues/330)) ([3202aff](https://github.com/hao1939/may-agent/commit/3202affbbf60dc8f277debdfc1986c6e2d6b99cf))
+
 ## [5.4.0](https://github.com/hao1939/may-agent/compare/v5.3.0...v5.4.0) (2026-10-03)
 
 

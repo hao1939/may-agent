@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
-import { spawn } from "node:child_process";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { pollUntil, socketStatus } from "./lib/live-daemon.js";
+import { spawnFixtureProcess } from "../fixtures/owned-process.js";
 
 function hasExited(pid: number): boolean {
   try {
@@ -18,18 +18,14 @@ test.each(["parent killed", "parent pipe closed", "startup failure"] as const)(
   "sandbox lifetime and cleanup: %s",
   async (scenario) => {
     const modulePath = fileURLToPath(new URL("./lib/sandbox.ts", import.meta.url));
-    const preload = fileURLToPath(new URL("./lib/daemon-lifetime.ts", import.meta.url));
     // --help cannot create a socket. Its short deadline exercises failure, not a
     // race between normal daemon startup and an artificially short timeout.
     const spec =
       scenario === "startup failure"
         ? { fixtureAgents: ["may"], daemonArgs: ["--help"], startupTimeoutMs: 100 }
         : { fixtureAgents: ["may"], daemonArgs: ["--socket"] };
-    const parent = spawn(
-      process.execPath,
+    const parent = spawnFixtureProcess(
       [
-        "--preload",
-        preload,
         "-e",
         `
       import { buildSandbox } from ${JSON.stringify(modulePath)};
@@ -44,7 +40,6 @@ test.each(["parent killed", "parent pipe closed", "startup failure"] as const)(
       await new Promise(() => {});
     `,
       ],
-      { stdio: ["pipe", "pipe", "pipe"] },
     );
     let output = "";
     let errors = "";

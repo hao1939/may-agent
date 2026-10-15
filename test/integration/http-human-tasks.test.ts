@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { spawn, type ChildProcess } from "node:child_process";
+import type { ChildProcess } from "node:child_process";
+import { spawnFixtureProcess } from "../fixtures/owned-process.js";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -97,12 +98,10 @@ describe("HTTP human Task reads and board", () => {
   });
 
   async function startWeb(conversationApp = "support", conversationId = "retained-room") {
-    child = spawn(
-      "bun",
+    child = spawnFixtureProcess(
       [resolve(import.meta.dir, "../../src/app/http/server.ts"), "--state-dir", root, "--port", "0"],
       {
         cwd: root,
-        stdio: ["ignore", "pipe", "pipe"],
         env: {
           ...process.env,
           PROJECT_ROOT: root,
