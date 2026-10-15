@@ -140,7 +140,8 @@ export type AppTaskAdmission = {
   /** Exact accepted answer for this input; later Task outcomes do not replace it. */
   resultAttemptId?: string;
   /** Independent selected feedback. Progress cannot replace an undelivered failure. */
-  feedback?: Partial<Record<"progress" | "failure", { attemptId: string; revision: number }>>;
+  // legacyBlocked retains the original wire envelope when upgrading an old selection.
+  feedback?: Partial<Record<"progress" | "failure", { attemptId: string; revision: number; legacyBlocked?: true }>>;
   /** Legacy single selected report, retained for reading existing admissions. */
   reportAttemptId?: string;
   /** Monotonic within this input; older notifications cannot replace newer feedback. */

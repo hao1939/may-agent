@@ -3,6 +3,7 @@ import { isDeepStrictEqual } from "node:util";
 import { commitTaskMutation, type AppTaskContext, type TaskTree } from "./app-task-store.js";
 import { taskEventPredatesReopening, type AppTaskCondition } from "./app-task-state.js";
 import { isHumanActionOwner } from "./human-condition.js";
+import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 
 export type AppTaskConditionWake = {
   conditionId: string;
@@ -277,12 +278,32 @@ function isAppInputReport(condition: AppTaskCondition, event: Record<string, unk
     stableEquals(condition.spec.expected, { field: "status", equals: "done" });
 }
 
-function observedReports(condition: AppTaskCondition) {
+type ReportKind = "progress" | "failure" | "unknown";
+
+/** Old wire status `blocked` covered both progress and failure. Read its exact
+ * source attempt without rewriting the immutable publication or guessing from prose. */
+function reportKind(event: Record<string, unknown>, store?: AppTaskResourceStore): ReportKind {
+  const declared = eventField(event, "reportKind");
+  if (declared === "progress" || declared === "failure") return declared;
+  if (eventField(event, "state", "status") === "progress") return "progress";
+  const source = eventField(event, "source");
+  const attemptId = eventField(event, "reportAttemptId");
+  const taskId = eventField(event, "taskId");
+  if (typeof source !== "string" || !source.startsWith("app-inbox:") || typeof attemptId !== "string")
+    return "failure";
+  const appId = source.slice("app-inbox:".length);
+  const attempt = store && appId && AppTaskResourceStore.inspectFromDb(store.db, appId).readAttempt(attemptId);
+  if (!attempt || attempt.taskId !== taskId) return "unknown";
+  if (attempt.acceptedResult?.state === "waiting") return "progress";
+  return attempt.acceptedResult?.state === "incomplete" || attempt.state === "failed" ? "failure" : "unknown";
+}
+
+function observedReports(condition: AppTaskCondition, store?: AppTaskResourceStore) {
   const reports = { ...condition.status.reports };
   const observed = condition.status.observed;
-  if (isRecord(observed)) {
-    if (observed.state === "progress") reports.progress ??= observed;
-    if (observed.state === "blocked") reports.failure ??= observed;
+  if (isRecord(observed) && ["progress", "blocked"].includes(String(observed.state))) {
+    const kind = reportKind(observed, store);
+    reports[kind] ??= kind === "progress" ? { ...observed, state: "progress" } : observed;
   }
   return reports;
 }
@@ -290,13 +311,19 @@ function observedReports(condition: AppTaskCondition) {
 export function matchesAppTaskCondition(
   condition: unknown,
   event: Record<string, unknown>,
+  store?: AppTaskResourceStore,
 ): condition is AppTaskCondition {
   if (!isCondition(condition) || condition.status.state === "true") return false;
   if (matches(condition, event)) return true;
   if (!isAppInputReport(condition, event)) return false;
-  const kind = eventField(event, "status") === "progress" ? "progress" : "failure";
-  const reports = observedReports(condition);
+  const kind = reportKind(event, store);
+  const reports = observedReports(condition, store);
   const previous = reports[kind];
+  // A consumed old single-report revision superseded earlier legacy receipts.
+  // Keep that boundary if its attempt has aged out; it must not suppress the
+  // independently selected failure/progress facts of the current contract.
+  if (reports.unknown && eventField(event, "status") === "blocked" && !eventField(event, "reportKind") &&
+      Number(eventField(event, "reportRevision") ?? 1) <= Number(reports.unknown.reportRevision ?? 1)) return false;
   // Historical progress used the blocked wire status. An exact old receipt
   // does not become a new report merely because its spelling is now corrected.
   if (Object.values(reports).some((report) => report.reportAttemptId &&
@@ -317,6 +344,7 @@ function observation(event: Record<string, unknown>): Record<string, unknown> {
       ? { summary: eventField(event, "summary"), response: eventField(event, "response"),
           reportAttemptId: eventField(event, "reportAttemptId"),
           reportRevision: eventField(event, "reportRevision"),
+          reportKind: eventField(event, "reportKind"),
           result: eventField(event, "result"), facts: eventField(event, "facts") }
       : {}),
     eventType: event.type,
@@ -338,6 +366,7 @@ function applyConditionEvent(
   wakes: Map<string, AppTaskConditionWake>,
   allowedTaskIds?: ReadonlySet<string>,
   changedConditionIds?: Set<string>,
+  store?: AppTaskResourceStore,
 ): boolean {
   const now = new Date().toISOString();
   let changed = false;
@@ -346,7 +375,9 @@ function applyConditionEvent(
   for (const [id, condition] of Object.entries(tree.conditions ?? {})) {
     if (!isCondition(condition)) continue;
     const report = isAppInputReport(condition, event);
-    if (report ? !matchesAppTaskCondition(condition, event) : !matches(condition, event)) continue;
+    if (report ? !matchesAppTaskCondition(condition, event, store) : !matches(condition, event)) continue;
+    const kind = report ? reportKind(event, store) : undefined;
+    const observed = { ...observation(event), ...(kind === "progress" ? { state: "progress" } : {}) };
     const waitingResources = Object.values(tree.resources ?? {}).filter(
       (resource) =>
         ["waiting", "running", "pending"].includes(resource.status.phase) &&
@@ -365,9 +396,9 @@ function applyConditionEvent(
         ...condition.status,
         observedGeneration: condition.metadata.generation,
         state: report ? "false" : "true",
-        observed: observation(event),
-        ...(report ? { reports: { ...observedReports(condition),
-          [eventField(event, "status") === "progress" ? "progress" : "failure"]: observation(event),
+        observed,
+        ...(kind ? { reports: { ...observedReports(condition, store),
+          [kind]: observed,
         } } : {}),
         observedAt: now,
         facts: [`event:${String(event.type)}`, ...(event.source ? [`source:${String(event.source)}`] : [])],
@@ -378,7 +409,7 @@ function applyConditionEvent(
     // A quiet report updates the saved wait context, not the runnable input queue.
     // Exact Condition matches (including explicit interest in a partial fact),
     // failures and legacy waits retain immediate delivery.
-    if (report && eventField(event, "status") === "progress" && condition.spec.progress === "next-wake") continue;
+    if (kind === "progress" && condition.spec.progress === "next-wake") continue;
     for (const resource of waitingResources) {
       const taskId = resource.metadata.id;
       if (eventWakes.has(taskId)) continue;
@@ -474,9 +505,9 @@ function saveConditionMutation(
  * The task reconciler uses this when an event arrived while a task was running
  * and the task only declared its next wait at the end of that attempt.
  */
-export function applyAppTaskConditionEvent(tree: TaskTree, event: Record<string, unknown>): AppTaskConditionWake[] {
+export function applyAppTaskConditionEvent(tree: TaskTree, event: Record<string, unknown>, store?: AppTaskResourceStore): AppTaskConditionWake[] {
   const wakes = new Map<string, AppTaskConditionWake>();
-  applyConditionEvent(tree, event, wakes);
+  applyConditionEvent(tree, event, wakes, undefined, undefined, store);
   return [...wakes.values()];
 }
 
@@ -491,7 +522,7 @@ export function matchingAppTaskConditionTaskIds(
   const routes = config.resourceStore.readConditionRoutes(eventType, allowed);
   const matched = new Set<string>();
   for (const { condition, taskIds } of routes ?? []) {
-    if (!matchesAppTaskCondition(condition, event)) continue;
+    if (!matchesAppTaskCondition(condition, event, config.resourceStore)) continue;
     for (const taskId of taskIds) {
       if (allowed && !allowed.has(taskId)) continue;
       if (
@@ -528,14 +559,14 @@ export function trackAppTaskConditionEventForTasks(
     // Consuming a wake does not erase evidence for a newly declared wait.
     // The current Condition must still need and match this observation.
     const provesOpenCondition = tree.resources?.[taskId]?.status.conditionIds?.some((id) =>
-      matchesAppTaskCondition(tree.conditions?.[id], event),
+      matchesAppTaskCondition(tree.conditions?.[id], event, config.resourceStore),
     );
     if (!provesOpenCondition) allowed.delete(taskId);
   }
   if (allowed.size === 0) return [];
   const wakes = new Map<string, AppTaskConditionWake>();
   const changedConditionIds = new Set<string>();
-  if (applyConditionEvent(tree, event, wakes, allowed, changedConditionIds)) {
+  if (applyConditionEvent(tree, event, wakes, allowed, changedConditionIds, config.resourceStore)) {
     saveConditionMutation(config, tree, wakes, changedConditionIds);
   }
   return [...wakes.values()];

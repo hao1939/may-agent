@@ -532,7 +532,7 @@ export function previewLoadedCanonicalAppTaskEventRoutes(input: {
   const loadedApps = new Set(descriptors.map((descriptor) => descriptor.id));
   const store = descriptors[0]!.resourceStore;
   for (const route of store.readConditionRoutesForAllApps(String(event.type ?? ""), subjects)) {
-    if (!loadedApps.has(route.appId) || !matchesAppTaskCondition(route.condition, event)) continue;
+    if (!loadedApps.has(route.appId) || !matchesAppTaskCondition(route.condition, event, store)) continue;
     const taskIds = matchesByApp.get(route.appId) ?? new Set<string>();
     for (const taskId of route.taskIds) taskIds.add(taskId);
     matchesByApp.set(route.appId, taskIds);

@@ -2,7 +2,13 @@ import type { AppInputContext, AppDependencyObservation, AppResult } from "@may-
 import type { SqliteDb } from "../../../lib/db.js";
 import { getAppInboxItem, type AppInboxItem } from "../state/app-inbox-store.js";
 
-type TaskInputReport = AppResult & { attemptId: string; reportRevision?: number; state?: string };
+type TaskInputReport = AppResult & {
+  attemptId: string;
+  reportRevision?: number;
+  /** Preserve a historical publication's wire status on retry. */
+  reportStatus?: "blocked";
+  state?: string;
+};
 export type TaskInputObservation = AppDependencyObservation & {
   /** Independent selected progress and failure facts, in selection order. */
   reports?: TaskInputReport[];

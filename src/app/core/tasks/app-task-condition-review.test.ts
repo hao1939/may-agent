@@ -5,9 +5,11 @@ import { join } from "node:path";
 import { appTaskTestContext } from "./app-task-test-support.js";
 import { readTaskSnapshot } from "./app-task-store.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
+import { admitTaskInput } from "../state/inbox.js";
 import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
 import {
   claimObservedAppTask,
+  applyRunningTaskChanges,
   completeAppTask,
   deferAppTask,
   listRunnableAppTaskIds,
@@ -72,6 +74,40 @@ afterEach(() => {
 });
 
 describe("App task Condition recovery and explicit review", () => {
+  it.each(["live", "final"])("preserves both input waits when only attention changes through %s admission", (mode) => {
+    const config = fixture();
+    const condition = { id: "app-request:sample", type: "app.dependency.updated", subject: "id:sample",
+      expected: { field: "status", equals: "done" }, owner: "app:sample", progress: "next-wake" as const };
+    const admit = (id: string) => admitTaskInput(config, { appId: "sample",
+      attachment: { kind: "existing", taskId: "human-request" }, idempotencyKey: id,
+      inputContext: { id, source: { kind: "human", id: "operator" }, input: { kind: "message", data: {} } },
+    });
+    try {
+      admit("input-a");
+      deferAppTask(config, claim(config), { disposition: "waiting", summary: "Await the result", conditions: [condition] });
+      const before = config.resourceStore.readTask("human-request")!.status.inputWaits!["input-a"]!;
+      admit("input-b");
+      const second = claim(config);
+      expect(second.continuedInputKeys ?? []).not.toContain("input-a");
+      const changed = { ...condition, progress: "immediate" as const };
+      if (mode === "live") applyRunningTaskChanges(config, second, {
+        operationKey: "change-attention", actionReceiptKeys: [], replayedActions: [], requests: [], conditions: [changed],
+      });
+      deferAppTask(config, second, { disposition: "waiting", summary: "Consider progress immediately",
+        conditions: [changed], inputKeys: ["input-b"],
+      });
+      const generation = config.resourceStore.readTaskConditions("human-request")[0]!.metadata.generation;
+      const task = config.resourceStore.readTask("human-request")!;
+      expect(task.status.phase).toBe("waiting");
+      expect(task.status.inputWaits!["input-a"]).toEqual({ ...before, conditions: [{ id: condition.id, generation }] });
+      expect(task.status.inputWaits!["input-b"]?.conditions).toEqual([{ id: condition.id, generation }]);
+      config.resourceStore.close();
+      config.resourceStore = AppTaskResourceStore.openStandalone(join(config.appDir, "../..", "host.sqlite"), "sample");
+      expect(listRunnableAppTaskIds(config)).toEqual([]);
+      expect(claimObservedAppTask(config, { taskId: "human-request", appAgent: "app-owner", handler: "agent" }).kind).toBe("waiting");
+    } finally { config.resourceStore.close(); }
+  });
+
   it("retains an older failure independently of newer progress and deduplicates both after restart", () => {
     const config = fixture();
     const event = (status: string, reportRevision: number) => ({ type: "app.dependency.updated", data: {

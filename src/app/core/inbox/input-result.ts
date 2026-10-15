@@ -32,7 +32,7 @@ export function appInputAdmissionFailureEvent(
 }
 
 /** The same exact caller feedback for live notification and saved-state recovery. */
-export function appInputFeedbackEvent(item: AppInboxItem, result: AppResult & { attemptId?: string; reportRevision?: number; state?: string }, status: "done" | "blocked" = "done"): AgentEvent | null {
+export function appInputFeedbackEvent(item: AppInboxItem, result: AppResult & { attemptId?: string; reportRevision?: number; reportStatus?: "blocked"; state?: string }, status: "done" | "blocked" = "done"): AgentEvent | null {
   if (item.source.kind !== "app") return null;
   const recoveryFingerprint = result.facts?.find((fact) => fact.startsWith("recovery-fingerprint:"))
     ?.slice("recovery-fingerprint:".length);
@@ -53,7 +53,9 @@ export function appInputFeedbackEvent(item: AppInboxItem, result: AppResult & { 
       ...(idempotencyKey ? { idempotencyKey } : {}),
       kind: "app",
       id: item.id,
-      status: status === "blocked" && result.state === "waiting" ? "progress" : status,
+      status: status === "blocked" && result.state === "waiting" ? result.reportStatus ?? "progress" : status,
+      ...(status === "blocked" && result.attemptId && !result.reportStatus
+        ? { reportKind: result.state === "waiting" ? "progress" : "failure" } : {}),
       ...(status === "blocked" && result.attemptId ? { reportAttemptId: result.attemptId } : {}),
       ...(status === "blocked" && result.reportRevision ? { reportRevision: result.reportRevision } : {}),
       summary: result.summary,

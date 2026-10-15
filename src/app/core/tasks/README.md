@@ -192,7 +192,12 @@ selected automatically; `report: true` selects fresh progress on `waiting` or
 fresh failure evidence on `incomplete`. Repeated automatic failures reuse the
 saved failure reference. Selection revisions provide ordering within each kind;
 exact attempt/revision identities deduplicate live delivery and recovery. Legacy
-single-report admissions remain readable. The retained view holds the latest
+single-report admissions remain readable. Replaying one preserves its original
+wire content and identity, including the historical `blocked` status for progress.
+The observer resolves that old status from its exact source attempt; unavailable
+attempts remain unclassified in `reports.unknown`. Current publications declare
+their report kind, so later retention does not make their meaning ambiguous.
+The retained view holds the latest
 selected report of each kind, not an outbox of every intermediate update. Accepted
 attempt history remains available under its existing retention contract.
 
@@ -202,7 +207,8 @@ new progress. New request references default to `next-wake`; omission on a saved
 wait preserves its choice. Historical waits and deprecated `dependencies` keep
 immediate behavior. Both live `apply` and final declarations use this resolution.
 An explicit changed choice takes effect even if the same choice had an earlier
-receipt. It preserves observed facts and wait age.
+receipt. It preserves observed facts, wait age, and every input's correlation to
+the same Condition. Changing attention alone cannot make another input runnable.
 
 Quiet progress updates the Condition observation without adding a Task trigger
 or input obligation. Failure, answer, ordinary input and a matching explicit

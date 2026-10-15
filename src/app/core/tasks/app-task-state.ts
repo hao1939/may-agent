@@ -35,7 +35,7 @@ export type AppTaskCondition = {
     createdAt?: string;
     observed?: unknown;
     /** Independently observed caller feedback; progress does not resolve a failure. */
-    reports?: Partial<Record<"progress" | "failure", Record<string, unknown>>>;
+    reports?: Partial<Record<"progress" | "failure" | "unknown", Record<string, unknown>>>;
     observedAt?: string;
     facts?: string[];
   };

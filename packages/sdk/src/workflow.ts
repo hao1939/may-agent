@@ -87,6 +87,7 @@ export type TaskInputObligation = {
     admission:
       | {
           available: true;
+          feedback?: Partial<Record<"progress" | "failure", { attemptId: string; revision: number }>>;
           reportAttemptId?: string;
           reportRevision?: number;
           resultAttemptId?: string;
@@ -557,7 +558,8 @@ export type TaskAttempt = {
         /** Latest retained report, including quiet progress received between attempts. */
         report?: unknown;
         /** Independent progress and failure observations; neither resolves the other. */
-        reports?: Partial<Record<"progress" | "failure", unknown>>;
+        /** Historical reports whose referenced attempt is unavailable remain unknown. */
+        reports?: Partial<Record<"progress" | "failure" | "unknown", unknown>>;
       };
     }>;
     note: string;

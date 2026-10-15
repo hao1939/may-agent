@@ -659,8 +659,10 @@ function admissionFeedback(config: Pick<AppTaskContext, "resourceStore">, admiss
   const feedback = { ...admission.feedback };
   if (admission.reportAttemptId) {
     const attempt = config.resourceStore.readAttempt(admission.reportAttemptId);
-    const kind = attempt?.acceptedResult?.state === "waiting" ? "progress" : "failure";
-    feedback[kind] ??= { attemptId: admission.reportAttemptId, revision: admission.reportRevision ?? 1 };
+    if (attempt && appTaskAttemptReport(attempt)) {
+      const kind = attempt.acceptedResult?.state === "waiting" ? "progress" : "failure";
+      feedback[kind] ??= { attemptId: admission.reportAttemptId, revision: admission.reportRevision ?? 1, legacyBlocked: true };
+    }
   }
   return feedback;
 }
@@ -690,10 +692,11 @@ function inputOutcomeAdmissions(
     if (kind === "progress" || kind === "failure") {
       const feedback = admissionFeedback(config, admission);
       if (feedback[kind] && !input.report) return [];
-      const revision = Math.max(0, ...Object.values(feedback).map((entry) => entry.revision)) + 1;
+      const migrated = Object.values(feedback).some((entry) => entry.attemptId === admission.reportAttemptId);
+      const revision = Math.max(admission.reportRevision ?? 0, ...Object.values(feedback).map((entry) => entry.revision)) + 1;
       feedback[kind] = { attemptId: claim.attemptId, revision };
       return [{ taskId: key, value: {
-        ...admission, feedback, reportAttemptId: undefined, reportRevision: undefined,
+        ...admission, feedback, ...(migrated ? { reportAttemptId: undefined, reportRevision: undefined } : {}),
       } }];
     }
     delete tree.resources?.[claim.taskId]?.status.inputWaits?.[key];
@@ -716,6 +719,7 @@ export function readAppTaskAdmissionOutcome(
       generation: number;
       state: "converged" | "waiting" | "incomplete" | "error";
       reportRevision?: number;
+      reportStatus?: "blocked";
     })
   | null {
   const admission = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: [admissionKey] })
@@ -733,6 +737,7 @@ export function readAppTaskAdmissionOutcome(
     attemptId: attempt.metadata.id,
     generation: attempt.taskGeneration,
     ...(selected ? { reportRevision: selected.revision } : {}),
+    ...(selected?.legacyBlocked ? { reportStatus: "blocked" as const } : {}),
   };
   const accepted = attempt.acceptedResult;
   if (kind === "answer") return accepted?.state === "converged" ? { ...identity, ...accepted } : null;
@@ -926,6 +931,14 @@ function materializeWaitingConditions(
         metadata: { ...current.metadata, generation: current.metadata.generation + 1, resourceVersion: current.metadata.resourceVersion + 1 },
         status: { ...current.status, observedGeneration: current.status.state === "unknown" ? 0 : current.metadata.generation + 1 },
       };
+      // The observed requirement did not change. Every input sharing this wait
+      // keeps its correlation; an attention preference is not new work.
+      for (const wait of Object.values(tree.resources?.[taskId]?.status.inputWaits ?? {})) {
+        for (const reference of wait.conditions) {
+          if (reference.id === id && reference.generation === current.metadata.generation)
+            reference.generation = registry[id].metadata.generation;
+        }
+      }
       continue;
     }
     const startsNewObservation = !sameSpec;
@@ -3904,7 +3917,7 @@ export function deferAppTask(
   // New input remains pending until accepted, whether or not it satisfies a
   // Condition. Also apply matching facts to waits installed by this attempt.
   for (const entry of pendingEvents) {
-    for (const wake of applyAppTaskConditionEvent(tree, entry.event)) {
+    for (const wake of applyAppTaskConditionEvent(tree, entry.event, config.resourceStore)) {
       trackResourceMutationTask(mutationScope, tree, wake.taskId);
     }
   }

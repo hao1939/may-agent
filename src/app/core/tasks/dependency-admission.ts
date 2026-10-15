@@ -472,7 +472,7 @@ export function recoverTaskConditions(
       const events = reports.map((report) => appInputFeedbackEvent(item, report, "blocked")!);
       if (item.status === "done" && item.result) events.push(appInputFeedbackEvent(item, item.result, "done")!);
       for (const event of events) {
-        if (!matchesAppTaskCondition(condition, event)) continue;
+        if (!matchesAppTaskCondition(condition, event, config.resourceStore)) continue;
         for (const wake of trackAppTaskConditionEventForTasks(config, event, taskIds.filter((id) => allowed.has(id))))
           recoveredTaskIds.add(wake.taskId);
       }
