@@ -94,6 +94,15 @@ export function applyTaskCommunication(
         originMessageId: item.source.id,
       });
     }
+    if (change.topic)
+      db.run(
+        `INSERT INTO conversation_input_topic_selections
+           (app_id, conversation_id, input_id, topic_id, selected_at)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT(app_id, conversation_id, input_id) DO UPDATE SET
+           topic_id = excluded.topic_id, selected_at = excluded.selected_at`,
+        [item.appId, conversationId, item.id, topicId ?? null, Date.now()],
+      );
     let messageId = change.message ? `task-message:${identity}` : undefined;
     if (change.replyId) {
       const prior = events.read("conversation.message.created", `communication:${change.replyId}`);

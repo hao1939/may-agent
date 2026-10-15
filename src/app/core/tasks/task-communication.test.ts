@@ -31,8 +31,13 @@ import {
 } from "./app-task-runtime.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { readConversationRequest } from "../state/conversation-requests.js";
-import { listAppConversationMessages, readConversationMessageTopicId } from "../state/conversations.js";
-import { listAppInboxItems } from "../state/app-inbox-store.js";
+import {
+  createConversationTopic,
+  listAppConversationMessages,
+  readConversationInputTopicId,
+  readConversationMessageTopicId,
+} from "../state/conversations.js";
+import { getAppInboxItem, listAppInboxItems } from "../state/app-inbox-store.js";
 
 async function fixture(
   execute: TaskExecutor,
@@ -1051,6 +1056,104 @@ test("a reply to a common Task publication retains Topic and Task navigation wit
     expect(messages[1]?.metadata?.topicId).toBe(topicId);
   } finally {
     await f.close();
+  }
+});
+
+test("accepted Topic decisions persist across same-input messages and Request updates", async () => {
+  for (const selection of ["new", "existing", "none"] as const) {
+    let replyTo: string | undefined;
+    let originalTopic: string | undefined;
+    const f = await fixture(async () => {
+      if (!replyTo)
+        return {
+          state: "converged",
+          summary: "Opened the replied-to Topic",
+          facts: [],
+          communication: [
+            { id: "open", inputId: "ask", message: "Topic B", topic: { kind: "new", title: "Topic B" } },
+          ],
+        };
+      const topic =
+        selection === "new"
+          ? { kind: "new" as const, title: "Topic C" }
+          : selection === "existing"
+            ? { kind: "existing" as const, id: "topic-c" }
+            : { kind: "none" as const };
+      return {
+        state: "converged",
+        summary: `Applied ${selection} Topic decision`,
+        facts: [],
+        communication: [
+          {
+            id: "choose",
+            inputId: "followup",
+            message: "Choose destination",
+            topic,
+            requestUpdates: Array.from({ length: 8 }, (_, index) => ({
+              id: `scope-${index}`,
+              expectedRevision: 0,
+              scope: String(index).repeat(2_000),
+              disposition: "open" as const,
+              reason: "r".repeat(2_000),
+            })),
+          },
+          {
+            id: "continue",
+            inputId: "followup",
+            message: "Continue at destination",
+            requestUpdates: Array.from({ length: 8 }, (_, index) => ({
+              id: `scope-${index}`,
+              expectedRevision: 1,
+              scope: `updated-${index}`,
+              disposition: "open" as const,
+            })),
+          },
+        ],
+      };
+    }, "task");
+    try {
+      const original = f.admit("ask").item;
+      await f.run(original.executionTaskId!);
+      const parent = listAppConversationMessages(f.db, "sample", "discussion").find(({ text }) => text === "Topic B")!;
+      replyTo = parent.id;
+      originalTopic = parent.metadata?.topicId;
+      if (selection === "existing")
+        createConversationTopic(f.db, {
+          id: "topic-c",
+          appId: "sample",
+          conversationId: "discussion",
+          title: "Topic C",
+          openedBy: "human",
+          originMessageId: "topic-c-origin",
+        });
+      const followup = f.inbox.host.admit({
+        id: "followup",
+        appId: "sample",
+        conversationId: "discussion",
+        conversationSequence: 2,
+        source: { kind: "human", id: "followup" },
+        replyToSourceId: replyTo,
+        input: { kind: "message", data: { message: "Move this discussion" } },
+      }).item;
+      await f.run(followup.executionTaskId!);
+      const messages = listAppConversationMessages(f.db, "sample", "discussion");
+      const chosen = messages.find(({ text }) => text === "Choose destination")!;
+      const continued = messages.find(({ text }) => text === "Continue at destination")!;
+      const expected = selection === "none" ? undefined : chosen.metadata?.topicId;
+      expect(expected).not.toBe(selection === "none" ? originalTopic : undefined);
+      expect(continued.metadata?.topicId).toBe(expected);
+      expect(readConversationRequest(f.db, "sample", "discussion", "scope-0")).toMatchObject({
+        revision: 2,
+        scope: "updated-0",
+        ...(expected ? { topicId: expected } : {}),
+      });
+      if (selection === "none")
+        expect(readConversationRequest(f.db, "sample", "discussion", "scope-0")?.topicId).toBeUndefined();
+      f.db.run("DELETE FROM events WHERE event_type = 'app.task.communication.updated'");
+      expect(readConversationInputTopicId(f.db, getAppInboxItem(f.db, "followup")!)).toBe(expected);
+    } finally {
+      await f.close();
+    }
   }
 });
 

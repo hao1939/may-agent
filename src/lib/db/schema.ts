@@ -320,6 +320,15 @@ CREATE TABLE IF NOT EXISTS conversation_topics (
 CREATE INDEX IF NOT EXISTS idx_conversation_topics_conversation
   ON conversation_topics(app_id, conversation_id, created_at DESC);
 
+CREATE TABLE IF NOT EXISTS conversation_input_topic_selections (
+  app_id          TEXT NOT NULL,
+  conversation_id TEXT NOT NULL,
+  input_id        TEXT NOT NULL,
+  topic_id        TEXT,
+  selected_at     INTEGER NOT NULL,
+  PRIMARY KEY(app_id, conversation_id, input_id)
+);
+
 CREATE TABLE IF NOT EXISTS conversation_topic_tasks (
   topic_id   TEXT NOT NULL,
   app_id     TEXT NOT NULL,
