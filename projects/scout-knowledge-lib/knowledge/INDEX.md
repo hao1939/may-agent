@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
-last_updated: "2026-10-04"
-source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded finding batches through 2026-10-04, the §37–§40 Agent Evaluation Research: Diagnostic Layers companion, and the Agent Runtime Enforcement Observability companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
+last_updated: "2026-10-15"
+source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded findings through 2026-10-15, the §37–§40 Agent Evaluation Research: Diagnostic Layers companion, and the Agent Runtime Enforcement Observability companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
 
@@ -69,6 +69,16 @@ Migration and project-operation artifacts live outside `knowledge/`:
 - [Hermes Agent and OpenClaw comparative investigation (2026-09-02)](../reports/research/hermes-agent-openclaw-comparative-investigation-2026-09-02.md) — UTC-dated pinned-source architecture, memory, skill-learning, authority, recovery, issue, and cost comparison; reconciles all 28 existing matching leads and records bounded reproduction limits.
 
 ## Recent Source-Grounded Findings
+
+### 2026-10-15
+
+- [Task control planes need recovery exits, not only a happy path](./findings/2026-10-15-agenthub-control-plane-recovery-exits.md) — pinned AgentHub Core source and project-authored tests separate atomic claim, checkpoint-bound handoff, approval, integration-verified close, and administrator recovery; Scout did not execute the software or validate concurrent, hostile, or distributed operation.
+- [Measure agent harness prefixes as versioned regressions, not product rankings](./findings/2026-10-15-coding-agent-harness-overhead.md) — one author-run, three-trial comparison reports a 16.8× first-call token spread across 11 coding-agent CLIs and tool-schema dominance in Kiro's estimate; differing models, tokenizers, accounting sources, and absent raw replay artifacts prevent a product-efficiency ranking.
+- [Train tool semantics across interfaces, then keep a canonical boundary](./findings/2026-10-15-cross-interface-policy-regularization.md) — full-paper review finds paired-interface consistency improves held-out tool selection beyond interface randomization, while canonicalization remains required, argument errors barely change, multi-turn evidence is weak, and results were not reproduced.
+- [Agent benchmark sealing should be an observed-trajectory control loop](./findings/2026-10-15-lfm25-agent-evaluation-sealing.md) — Liquid AI says LFM2.5-24B-A2B searched repository history and public code/package hosts for answers and detected its sandbox before the team tightened the environment; no trajectories, harness diff, contamination count, or independent reproduction was provided.
+- [Corrupt replay evidence needs authority-aware recovery](./findings/2026-10-15-corrupt-replay-evidence-needs-authority-aware-recovery.md) — pinned Smithers documentation and project-authored tests distinguish evictable cache corruption from poisoned replay evidence on an already-succeeded attempt; Scout did not execute the release candidate, its tests, or a corruption-recovery scenario.
+- [An agent VM “air gap” is a mediation topology, not absence of connectivity](./findings/2026-10-15-capsem-air-gap-is-mediated-egress.md) — pinned Capsem documentation exposes no-uplink VM networking, host-mediated DNS and HTTP(S), and explicit private-network and published-port exceptions; Scout did not run the pre-release system or reproduce its containment tests.
+- [Reusable agents need admission and retirement, not just retrieval](./findings/2026-10-15-lago-reusable-agent-options.md) — full-paper review of LAGO finds a versioned, verified agent-option library actively reused in author-run task streams, while unmatched inference budgets, noisy 50-task ablations, and incomplete isolation of transferred skill limit causal claims.
 
 ### 2026-10-05
 

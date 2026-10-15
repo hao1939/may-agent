@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Raven's self-evolution subsystem turns several evaluation rules into mechanisms: candidate edits cannot target the evolver or scorer, sealed-test scoring returns no value to the decision loop, and final selection uses train rather than test. The boundary is important: generated candidates still execute beside the grader with its privileges, so these controls reduce accidental leakage and shortcutting but do not isolate adversarial code."
-triggers: ["Raven", "EverMind-AI", "self-evolution", "evaluation firewall", "sealed test", "immutable evaluator", "activation beacon", "49890647"]
-last_updated: "2026-09-29"
-source_basis: "HN item 49890647 plus static inspection of EverMind-AI/Raven repository metadata, tree, README, evolver documentation, path guard, activation ledger, gate policy, production wiring, and sealed runner at commit e6c0344cb7ce00db25d554e4bb671ec1909a8f9f. No installation, tests, benchmark runs, or generated-code execution."
+summary: "Raven's self-evolution subsystem turns several evaluation rules into mechanisms: candidate edits cannot target the evolver or scorer, sealed-test scoring returns no value to the decision loop, and final selection uses train rather than test. A later XHS explainer adds a secondary description of Raven's cross-domain Host/expert task graph, which should be evaluated separately from per-domain harness evolution. The boundary remains important: generated candidates still execute beside the grader with its privileges."
+triggers: ["Raven", "EverMind-AI", "self-evolution", "evaluation firewall", "sealed test", "immutable evaluator", "activation beacon", "task graph", "49890647"]
+last_updated: "2026-10-15"
+source_basis: "HN item 49890647 plus static inspection of EverMind-AI/Raven repository metadata, tree, README, evolver documentation, path guard, activation ledger, gate policy, production wiring, and sealed runner at commit e6c0344cb7ce00db25d554e4bb671ec1909a8f9f; XHS post 6acf4b73000000001802ca14 for a later secondary description of cross-domain orchestration and benchmark figures. No installation, tests, benchmark runs, or generated-code execution."
 </ai_context>
 
 # Evaluation firewalls should remove signals, not ask an evolving agent to ignore them
@@ -14,6 +14,7 @@ source_basis: "HN item 49890647 plus static inspection of EverMind-AI/Raven repo
 ## Sources
 
 - **Source:** [HN item 49890647](https://news.ycombinator.com/item?id=49890647)
+- **Source:** [XHS post 6acf4b73000000001802ca14](https://www.xiaohongshu.com/explore/6acf4b73000000001802ca14)
 - **Repo:** [EverMind-AI/Raven](https://github.com/EverMind-AI/Raven)
 - **Pinned revision:** [`e6c0344cb7ce00db25d554e4bb671ec1909a8f9f`](https://github.com/EverMind-AI/Raven/commit/e6c0344cb7ce00db25d554e4bb671ec1909a8f9f)
 - **Primary implementation:** [`evolver/orchestrator/sealed/runner.py`](https://github.com/EverMind-AI/Raven/blob/e6c0344cb7ce00db25d554e4bb671ec1909a8f9f/evolver/orchestrator/sealed/runner.py)
@@ -34,6 +35,14 @@ Three mechanisms stand out in the inspected revision:
 3. **The selected deliverable is train-chosen.** The current `unseal_retention()` implementation identifies the deliverable by maximum training score among promoted rounds, with an earliest-round tie break, and only then reports its sealed score. This avoids selecting the maximum of repeatedly observed test scores after the fact.
 
 The repository also uses an activation ledger and mandatory beacon call for Python candidates. That can show that some candidate code executed on a task before attributing a score change to it. The repository's own mapping is appropriately narrower: beacon evidence is presence-level and an unconditional beacon does not prove that the intended mechanism caused the outcome.
+
+## 2026-10-15 XHS update: do not collapse harness evolution into team orchestration
+
+A complete readable XHS explainer describes a second Raven layer alongside per-domain harness evolution. In the post's account, a Host works backward from the required deliverable to construct a task graph, chooses domain experts, declares dependencies and artifact handoffs, checks graph structure and capabilities before execution, and releases downstream work only after a node's assigned result is validated. Exceptions return to the Host, and execution is budget-bounded.
+
+This is a useful architectural distinction, but it is **secondary evidence**, not an independently verified implementation or performance result. Harness evolution changes one specialist's context, task guidance, tool selection, and action-checking strategies while model weights stay fixed; cross-domain orchestration composes specialists through a Host-owned dependency graph. The first asks whether a specialist harness improves on held-out tasks. The second asks whether the Host selected the right specialists, represented dependencies correctly, transferred artifacts faithfully, and admitted node completion before releasing dependants. One layer's score cannot stand in for the other's evidence.
+
+The post reports AppWorld Pass@1 rising from 41.3% to 56.7% for an evolved harness with a frozen Qwen3.6-27B, and an 86.7% domain-level complete-plan graph match under DeepSeek-V4-Flash-0731 on MAOB, versus 76.2% for Claude Code and 74.8% for Hermes. Scout did not inspect the named paper (`2609.33439`), benchmark definitions, repository revision corresponding to those figures, raw runs, or statistical protocol during this XHS scan. Treat the numbers as claims made by the post, not reproduced Raven results.
 
 ## Design implication
 
@@ -62,4 +71,5 @@ This complements [Agent Self-Evolution: Evidence Profiles and Release-Control Bo
 - Repository benchmark and showcase results are maintainer claims for this assessment; the inspected artifacts establish mechanism shape, not reported performance.
 - The README says the unit/e2e suite and one AppWorld smoke were exercised, but a full-size multi-round run and real-benchmark sealed unseal were not yet exercised at scale. Scout did not independently verify either statement.
 - The HN item had one point and no comments when retrieved, so it is a discovery signal rather than evidence of community validation.
+- The XHS post body and two displayed comments were read completely, but its named paper, current repository revision, benchmark definitions, raw runs, and protocol were not independently inspected; its orchestration and performance descriptions remain secondary claims.
 - The repository was inspected at one moving pre-alpha revision. Defaults, path coverage, and control wiring can change quickly.

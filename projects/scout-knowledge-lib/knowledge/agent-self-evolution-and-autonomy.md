@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Agent self-evolution is not one mechanism. The credible core is a governed release loop over explicit mutable surfaces: skills, memory, routing, harness code, weights, world models, or evaluators. Current evidence is strongest when an external fixed evaluator controls admission, and much weaker for self-generated or co-evolving judges and broad-goal autonomy."
 triggers: ["agent self-evolution", "self-improving agents", "recursive self-improvement", "agent autonomy", "skill evolution", "harness evolution", "world models", "co-evolving evaluators"]
-last_updated: "2026-09-24"
-source_basis: "A source-agnostic 984-row lead ledger: 908 observed cards from the human's Xiaohongshu collection, including a bounded authenticated frontier of 11 readable text bodies and one image-only cover; 69 primary paper, repository, benchmark, survey, blog, and interview records; and 8 existing Scout artifacts, plus 2026-09-10 direct XHS inspection of HarnessEvolve reception, an HN-surfaced primary-paper inspection of Procedural Graphs (arXiv 2609.09153), 2026-09-11 inspection of HN-surfaced Salesforce Beagle at commit 15f12b7, 2026-09-11 full-paper inspection of Ecdysis (arXiv 2609.11677v1), 2026-09-12 direct XHS inspection of the Seed/TokenWave Self-Developing Agents announcement, 2026-09-13 direct XHS inspection of Procedural Graphs reception, 2026-09-14 direct XHS inspection of a six-survey self-evolution reading map and its practitioner discussion, 2026-09-15 inspection of the HN-surfaced rekursiv.ai auto-autoresearch report plus its runnable NanoChat recipe at Priml commit 92c6bd2, 2026-09-16 inspection of EvoOntology's ontology-evolution lifecycle and admission boundary at commit ace8ff69, 2026-09-19 abstract-level inspection of SoL-Pi (arXiv 2609.20519v1), 2026-09-19 inspection of SourceShift/mini-ork's path-specific self-modification controls at commit 962bf478, 2026-09-22 direct XHS inspection of Chinese-language reception of the matched-budget harness-evolution critique and RSIAgent's exploration-memory framing, 2026-09-23 full-paper inspection of the HN-surfaced AIDE² recursive harness-improvement study (arXiv 2609.26457v1), 2026-09-23 direct XHS inspection of a secondary RRSI explainer (arXiv 2609.24972 named but not inspected), 2026-09-24 direct XHS inspection of a secondary Mobile Planner Agent explainer, and 2026-09-24 inspection of Bitterbot's peer-skill admission and propagation controls at commit 873e5d58. Claims are traced to full primary sources and pinned code where available; XHS reception is labeled as secondary commentary, and titles remain discovery metadata, never technical evidence."
+last_updated: "2026-10-15"
+source_basis: "A source-agnostic 984-row lead ledger: 908 observed cards from the human's Xiaohongshu collection, including a bounded authenticated frontier of 11 readable text bodies and one image-only cover; 69 primary paper, repository, benchmark, survey, blog, and interview records; and 8 existing Scout artifacts, plus 2026-09-10 direct XHS inspection of HarnessEvolve reception, an HN-surfaced primary-paper inspection of Procedural Graphs (arXiv 2609.09153), 2026-09-11 inspection of HN-surfaced Salesforce Beagle at commit 15f12b7, 2026-09-11 full-paper inspection of Ecdysis (arXiv 2609.11677v1), 2026-09-12 direct XHS inspection of the Seed/TokenWave Self-Developing Agents announcement, 2026-09-13 direct XHS inspection of Procedural Graphs reception, 2026-09-14 direct XHS inspection of a six-survey self-evolution reading map and its practitioner discussion, 2026-09-15 inspection of the HN-surfaced rekursiv.ai auto-autoresearch report plus its runnable NanoChat recipe at Priml commit 92c6bd2, 2026-09-16 inspection of EvoOntology's ontology-evolution lifecycle and admission boundary at commit ace8ff69, 2026-09-19 abstract-level inspection of SoL-Pi (arXiv 2609.20519v1), 2026-09-19 inspection of SourceShift/mini-ork's path-specific self-modification controls at commit 962bf478, 2026-09-22 direct XHS inspection of Chinese-language reception of the matched-budget harness-evolution critique and RSIAgent's exploration-memory framing, 2026-09-23 full-paper inspection of the HN-surfaced AIDE² recursive harness-improvement study (arXiv 2609.26457v1), 2026-09-23 direct XHS inspection of a secondary RRSI explainer (arXiv 2609.24972 named but not inspected), 2026-09-24 direct XHS inspection of a secondary Mobile Planner Agent explainer, 2026-09-24 inspection of Bitterbot's peer-skill admission and propagation controls at commit 873e5d58, and 2026-10-15 direct XHS inspection of a secondary Evo² explainer (arXiv 2610.13025 named but not independently inspected). Claims are traced to full primary sources and pinned code where available; XHS reception is labeled as secondary commentary, and titles remain discovery metadata, never technical evidence."
 </ai_context>
 
 # Agent Self-Evolution and Autonomy: What Actually Changes?
@@ -251,6 +251,40 @@ over two rounds across two Qwen scales and three benchmarks. This is promising
 joint optimization, but not yet recursive general improvement: the study is
 math-focused, contains two full rounds, needs a capable critic and substantial
 training compute, and leaves structural harness redesign to humans.
+
+### XHS signal: a joint loop still has distinct mutable and fixed roles
+
+A current [XHS explainer of Evo²](https://www.xiaohongshu.com/explore/6acf37b3000000000b007023)
+describes a tighter coupling between harness search and weight updates. One
+shared policy takes two roles: a Proposer edits the harness, while a Reflector
+reads the code diff, score change, and execution trajectory and chooses whether
+to revise, cross over, or retain the candidate. Accepted and failed edit traces
+then become training material through edit extraction or prefix continuation,
+followed by supervised fine-tuning and alternating reinforcement learning for
+the two roles.
+
+The useful reporting lesson is that **“joint evolution” does not mean every
+component evolves together**. In the post's account, the Proposer/Reflector
+policy changes and the harness candidates change, but a separate execution
+model runs the coding tasks as a fixed component. A joint-evolution claim should
+therefore name at least three identities separately: the mutable harness, the
+policy that proposes or reflects on edits, and the task executor whose behavior
+produces the score. Otherwise a gain can be incorrectly attributed to recursive
+improvement of one undifferentiated “agent.” The same separation is needed for
+admission: reflection supplies a search decision, while task execution and
+benchmark scoring supply different evidence.
+
+The post reports 82.1% pass@1 on Polyglot, 48.3% resolved on SWE-bench Verified,
+and 58.0% on held-out LiveCodeBench, with comparisons to named baselines. These
+figures remain secondary claims. This XHS scan read the complete post and its
+four displayed comments, but did not inspect arXiv 2610.13025, its benchmark
+protocol, code, model checkpoints, seeds, statistical uncertainty, or
+compute-matched baselines. The post's description of a “fixed” executor also
+needs primary-source confirmation before it supports a causal attribution.
+
+- **Source:** https://www.xiaohongshu.com/explore/6acf37b3000000000b007023
+- **Coverage:** complete readable XHS post body and four displayed comments;
+  named paper not independently inspected
 
 RHO shows that label-free retrospective proposal can help on resettable past
 trajectories, with separate optimization and held-out benchmark splits. It does

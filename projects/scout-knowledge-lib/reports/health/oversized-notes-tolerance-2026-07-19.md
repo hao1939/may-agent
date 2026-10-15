@@ -1,6 +1,6 @@
 <ai_context>
-summary: "Rolling review record for oversized canonical notes. Documents why each exceeds the 800-line threshold and whether a split is warranted; current through the October 4 evaluation and enforcement-evidence review."
-last_updated: "2026-10-04"
+summary: "Rolling review record for oversized canonical notes. Documents why each exceeds the 800-line threshold and whether a split is warranted; current through the October 15 review of seven recurring note-size signals."
+last_updated: "2026-10-15"
 </ai_context>
 
 # Oversized Notes Tolerance Record — 2026-07-19
@@ -218,16 +218,36 @@ work for the standing maintenance task, so no duplicate child assignment is
 created. The security signal is closed for this cycle by the exact active-intake
 no-op above; its unchanged line-count fact alone does not justify moving content.
 
+## Recurrence review — 2026-10-15 (seven canonical notes)
+
+The observer named seven notes. Direct `wc -l` measurements were again one below
+its physical-line values. Git history and heading structure support one existing
+split target, two boundary-review targets, and four exact no-ops rather than a
+threshold-only rewrite:
+
+| Note | Observer / direct lines | Current evidence and disposition |
+|------|------------------------:|----------------------------------|
+| `agent-architectures.md` | 1709 / 1708 | **Boundary review warranted, but no inline split.** The old 1,200-line re-review threshold has been exceeded. The note has eight level-two and 59 level-three headings; the most recent source publication was 2026-09-24. A later isolated pass should map the large nested catalog and inbound fragments before choosing a lossless companion boundary. Line count alone does not authorize moving a published interface. |
+| `agent-evaluation.md` | 2962 / 2961 | **Existing split target remains current.** The count is unchanged from the October 4 review and no source publication has touched the note since 2026-10-02. The already identified `Durable Patterns` catalog remains the next isolated extraction target, with exact heading-level forwarding links required across its 48-file reference surface. Repeating that move inside this multi-signal review would be unsafe and duplicate the recorded plan. |
+| `agent-protocols-mcp-a2a.md` | 1371 / 1370 | **Boundary review warranted, but no line-count split.** The comparison note has ten level-two and 35 level-three headings; its last source publication was 2026-09-27. The long §8 MCP-spec follow-through is a plausible companion candidate, but its comparison and deep-link value must be mapped before extraction. |
+| `agent-runtime-hardening.md` | 833 / 832 | **No-op.** The verified 2026-10-03 extraction already returned the parent close to threshold. Its 32 level-two patterns remain a runtime-hardening catalog, the companion handoff is intact, and no later source publication changed it. |
+| `agent-runtime-verdict-integrity.md` | 978 / 977 | **No-op.** The note has 21 level-two studies and only one level-three follow-up; its latest source publication was 2026-09-30. No cohesive second-companion block is established by the current structure. |
+| `agent-security-defense-architectures.md` | 1128 / 1127 | **No-op.** The count and content are unchanged since the September 18 recurrence review. Existing forwarding sections already distribute enforcement and research-frontier material; another move still requires an inbound-link and duplication review, not a repeated size response. |
+| `agent-security-enforcement-evidence.md` | 1980 / 1979 | **No-op.** The count is unchanged from October 4 and the note has received no later source publication. Its 21 level-two studies and 11 distributed follow-ups still do not define a verified second-companion boundary. |
+
+No child assignment is created. The standing maintenance task already owns the
+isolated evaluation split and can separately freeze architecture or protocol
+boundaries after reference mapping; creating parallel tasks from the same size
+facts would duplicate project work.
+
 ## Current summary
 
-The previously recommended diagnostic-layers split is complete. The runtime
-hardening recurrence also has a verified disposition: a coherent five-pattern
-enforcement-observability cluster moved intact to a dedicated companion, while
-exact forwarding headings preserve published links and the parent returned below
-the review threshold. `agent-evaluation.md` has now outgrown tolerance and has a
-frozen high-level split direction for a later isolated pass; this review does not
-risk its 48-file reference surface with an inline move. The enforcement-evidence
-companion remains in active source intake as of minutes before the October 4
-signal and still lacks a stable second-split boundary. Other oversized signals
-are format-appropriate logs/ledgers or previously reviewed notes. The unsourced
-backlog received a small evidence-checked batch rather than a bulk metric edit.
+The previously recommended diagnostic-layers and runtime-hardening splits are
+complete. `agent-evaluation.md` remains the clearest next isolated split target;
+`agent-architectures.md` and `agent-protocols-mcp-a2a.md` have crossed their old
+tolerance ranges and now merit boundary mapping, not immediate movement.
+Runtime hardening, runtime verdict integrity, defense architectures, and
+enforcement evidence have evidence-backed no-op dispositions for this cycle.
+Other oversized signals remain format-appropriate logs/ledgers or previously
+reviewed notes. The unsourced backlog received a small evidence-checked batch
+rather than a bulk metric edit.

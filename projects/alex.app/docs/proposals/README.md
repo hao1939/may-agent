@@ -41,6 +41,7 @@ before acting on an old checklist.
 
 | Proposal | Owning need or contract | Remaining review scope |
 | --- | --- | --- |
+| [Keep the Host boring and let Apps change](host-stability-and-app-extensibility-20261005.md) | [Host And App Boundary](../2a-design/system-boundary.md) | Adopt the smallest release boundary suite, paired real-App compatibility check, and current-design status correction; broader capability unification is explicitly deferred. |
 | [Alex: an App for useful system improvement](alex-improvement-app.md) | [Improvement through ordinary App work](../2a-design/practice-learning-loop.md) | May–Alex–Scout installation; App `alex` and owner agent `alex` consolidate improvement capabilities, carrying ongoing work through a breaking migration. Not implemented or activated. |
 | [Durable Tasks for agents without an App](standalone-agent-tasks.md) | [Agent ownership and App scope](../2a-design/agents.md#task-ownership-and-app-scope) | Accepted direction; direct admission, identity compatibility, authority and restart proof remain unimplemented. App addressing stays supported. |
 | [Keep domain policy in Apps, keep the Host generic](app-policy-and-host-boundary-cleanup.md) | [Host And App Boundary](../2a-design/system-boundary.md) | Broader App-policy cleanup beyond the recorded implemented slices. |
