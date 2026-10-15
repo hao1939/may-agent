@@ -2,6 +2,8 @@ import type { AppTaskLane } from "./queue.js";
 import type { IndexedTaskCandidatePage, IndexedTaskRecoveryCursor } from "../state/app-task-resource-store.js";
 import { OwnedTimer } from "../scheduling/timer.js";
 
+const MAX_TIMER_DELAY_MS = 2_147_483_647;
+
 export type IndexedTaskRecoverySource = {
   listRecoveryCandidates(now?: number, limit?: number, after?: IndexedTaskRecoveryCursor): IndexedTaskCandidatePage;
   nextDueAt(): number | null;
@@ -88,7 +90,10 @@ export class AppTaskRecoveryScheduler {
     if (next <= now && !force && this.lastRecoveryAt !== undefined && next <= this.lastRecoveryAt) return;
     if (!force && this.dueTimer.armed && this.dueAt === next) return;
     this.dueAt = next;
-    this.dueTimer.after(Math.max(1, next - now), () => {
+    // Node clamps larger delays to 1 ms. Wake at the largest supported delay
+    // and re-arm against the retained absolute deadline instead of busy-looping.
+    const delayMs = Math.min(MAX_TIMER_DELAY_MS, Math.max(1, next - now));
+    this.dueTimer.after(delayMs, () => {
       this.dueAt = undefined;
       this.recover();
       // Timers may fire just before the persisted millisecond deadline. Re-arm

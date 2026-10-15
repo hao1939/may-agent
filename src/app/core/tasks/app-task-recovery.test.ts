@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, spyOn } from "bun:test";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import type { IndexedTaskCandidate, IndexedTaskRecoveryCursor } from "../state/app-task-resource-store.js";
 
@@ -135,6 +135,27 @@ describe("AppTaskRecoveryScheduler", () => {
       expect(recoveryCalls).toBeGreaterThanOrEqual(3);
     } finally {
       scheduler.close();
+    }
+  });
+
+  it("caps distant deadline timers at Node's supported delay", () => {
+    const timers = spyOn(globalThis, "setTimeout");
+    const now = 100;
+    const scheduler = new AppTaskRecoveryScheduler({
+      source: {
+        listRecoveryCandidates: () => ({ items: [], nextCursor: null }),
+        nextDueAt: () => now + 2_147_483_647 + 1_000,
+      },
+      enqueue: () => {},
+      safetyIntervalMs: 10_000,
+      now: () => now,
+    });
+    try {
+      scheduler.start();
+      expect(timers.mock.calls.some(([, delay]) => delay === 2_147_483_647)).toBe(true);
+    } finally {
+      scheduler.close();
+      timers.mockRestore();
     }
   });
 
