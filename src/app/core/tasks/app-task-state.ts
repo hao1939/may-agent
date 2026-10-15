@@ -1,4 +1,4 @@
-import type { TaskChangeReceipt } from "@may-agent/sdk";
+import type { TaskChangeReceipt, TaskView } from "@may-agent/sdk";
 import type { Condition, ResourceCreator, TaskAcceptanceBasis, TaskAttempt, TaskIntent } from "@may-agent/sdk";
 
 export const CONDITION_RECOVERY_INTERVAL_MS = 300_000;
@@ -83,8 +83,12 @@ export type AppTaskResource = {
     observedAttemptId?: string;
     /** Exact workspace record; execution history and wall-clock order are not ownership. */
     workspaceAttemptId?: string;
-    /** Consecutive unsuccessful attempts in this generation, cleared by progress or owner retry. */
+    /** Consecutive unsuccessful attempts; accepted incomplete results still count. */
     executionFailures?: number;
+    /** Cheap pre-claim checks have their own backoff and do not spend an attempt. */
+    admissionFailures?: number;
+    /** Stops automatic execution, independently of unfinished input and Conditions. */
+    retryExhausted?: AppTaskRetryExhaustion;
     /** Earliest next attempt after execution failure; ordinary wakes do not waive it. */
     executionRetryAt?: number;
     /** Absolute Task reconsideration deadline; elapsed time only makes another attempt eligible. */
@@ -101,7 +105,14 @@ export type AppTaskResource = {
   };
 };
 
-/** Quick transient retry, then up to one hour between failures; never abandon work. */
+export type AppTaskRetryExhaustion = NonNullable<TaskView["retryExhausted"]>;
+
+/** A fresh human admission permits one claim, without erasing the failed episode. */
+export function taskExecutionRetryExhausted(resource: AppTaskResource): boolean {
+  return Boolean(resource.status.retryExhausted) && !resource.status.freshHumanInput;
+}
+
+/** Quick transient retry, then up to one hour between failures within the allowance. */
 export function taskExecutionRetryDelay(failures: number): number {
   return Math.min(60 * 60_000, 250 * 2 ** Math.min(14, Math.max(0, failures - 1)));
 }
@@ -168,6 +179,8 @@ export type AppTaskAttempt = {
   finishedAt?: string;
   summary?: string;
   failureReason?: string;
+  /** Immutable evidence of reaching the App's automatic execution limit. */
+  retryExhausted?: AppTaskRetryExhaustion;
   /** Retained separately from acceptance so recovery can reuse execution evidence. */
   unacceptedResult?: NonNullable<TaskAttempt["previousAttempt"]>["unacceptedResult"];
   sessionId?: string;

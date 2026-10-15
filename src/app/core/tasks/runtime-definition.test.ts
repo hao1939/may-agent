@@ -7,7 +7,7 @@ import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { migrateTaskCompletionReceipts } from "../state/task-receipt-cutover.js";
 import { appTaskContext, appTaskSpecHash } from "./app-task-reconciler.js";
-import { prepareAppTaskRuntimeDescriptors, standaloneAppTaskAdmissionDescriptors } from "./runtime-definition.js";
+import { appTaskConfig, prepareAppTaskRuntimeDescriptors, standaloneAppTaskAdmissionDescriptors } from "./runtime-definition.js";
 
 test("runtime preparation requires offline receipt conversion before admission or execution", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-runtime-definition-"));
@@ -16,7 +16,7 @@ test("runtime preparation requires offline receipt conversion before admission o
     version: 1,
     agent: "worker",
     inputSchema: Type.Object({}),
-    tasks: {},
+    tasks: { maxConsecutiveFailures: 3 },
   });
   try {
     const store = AppTaskResourceStore.fromDb(getDb(root), app.id);
@@ -67,7 +67,9 @@ test("runtime preparation requires offline receipt conversion before admission o
 
     const config = appTaskContext({ appDir: root, agent: "worker", resourceStore: store });
     expect(migrateTaskCompletionReceipts(config, { oldRuntimeStopped: true }).imported).toBe(1);
-    expect(await prepare()).toHaveLength(1);
+    const prepared = await prepare();
+    expect(prepared).toHaveLength(1);
+    expect(appTaskConfig(prepared[0]!).maxConsecutiveFailures).toBe(3);
     expect(standaloneAppTaskAdmissionDescriptors(options).size).toBe(1);
     expect(store.readReceipt(assignment.id)).toEqual(receipt);
     expect(store.readTask(assignment.id)?.status.result).toEqual({ value: 17 });

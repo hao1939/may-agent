@@ -2691,7 +2691,7 @@ describe("App task reconciler state", () => {
     expect(tree.resources?.["evaluate:session-1"]).toMatchObject({
       status: {
         phase: "pending",
-        executionFailures: 1,
+        admissionFailures: 1,
         summary: "Resolved agent human is not a runnable agent",
       },
     });

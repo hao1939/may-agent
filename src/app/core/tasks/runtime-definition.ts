@@ -105,6 +105,10 @@ function validatePreparedAppTaskRuntime(descriptor: AppTaskRuntimeDescriptor): v
   if (!Number.isInteger(concurrency) || concurrency <= 0) {
     throw new Error(`App ${id} task maxConcurrent must be a positive integer`);
   }
+  const limit = app.tasks?.maxConsecutiveFailures;
+  if (limit !== undefined && (!Number.isSafeInteger(limit) || limit <= 0)) {
+    throw new Error(`App ${id} task maxConsecutiveFailures must be a positive safe integer`);
+  }
   descriptor.resourceStore.assertCompletionReceiptsImported();
 }
 
@@ -231,6 +235,7 @@ export function appTaskConfig(descriptor: AppTaskRuntimeDescriptor): AppTaskCont
     projectDir: descriptor.projectDir,
     agent: descriptor.agent,
     maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
+    maxConsecutiveFailures: descriptor.app.tasks?.maxConsecutiveFailures,
     resourceStore: descriptor.resourceStore,
   });
   if (descriptor.app.conversation?.mode === "task") config.conversationInputMode = "task";

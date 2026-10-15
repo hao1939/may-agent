@@ -49,7 +49,8 @@ export function migrateOpenTaskState(config: AppTaskContext, input: { oldRuntime
       const latest = attempts.at(-1);
       const observed = attempts.find((attempt) => attempt.metadata.id === resource.status.observedAttemptId);
       // Human Stop is Turn-scoped and must remain quiet, even during an upgrade.
-      if (resource.status.phase === "attention" && latest?.failureReason === "owner-stopped") continue;
+      if (resource.status.retryExhausted ||
+        (resource.status.phase === "attention" && latest?.failureReason === "owner-stopped")) continue;
       const pending = tree.taskTriggers?.[taskId];
       const pendingEvents =
         pending?.events ?? (pending ? [{ event: pending.event, observedAt: pending.observedAt }] : []);

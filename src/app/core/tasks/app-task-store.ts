@@ -174,6 +174,7 @@ export type AppTaskContext = {
   projectDir: string;
   agent: string;
   maxConcurrent: number;
+  maxConsecutiveFailures?: number;
   resourceStore: AppTaskResourceStore;
 };
 

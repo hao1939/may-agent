@@ -441,6 +441,11 @@ export type AppTaskPolicy = {
   validateCondition?: (condition: Condition) => string | null;
   /** Background attempt limit; one human Conversation turn may also run within the Host limit. */
   maxConcurrent?: number;
+  /** Total consecutive unsuccessful attempts before owner attention (initial attempt included).
+   * Omit to retain paced unlimited retries. Cheap admission checks do not count.
+   * Explicit owner retry renews the allowance; ordinary Events and spec saves do not.
+   */
+  maxConsecutiveFailures?: number;
 };
 
 /** Conversation input executes through one stable Task per Conversation. */

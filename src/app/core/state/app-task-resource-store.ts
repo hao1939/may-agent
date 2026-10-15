@@ -10,7 +10,7 @@ import {
   ensureTaskResourceSchema,
 } from "../../../lib/db/task-resource-schema.js";
 import { indexTaskReference } from "./task-reference-index.js";
-import { CONDITION_RECOVERY_INTERVAL_MS, pendingTaskExecutionRetryAt } from "../tasks/app-task-state.js";
+import { CONDITION_RECOVERY_INTERVAL_MS, pendingTaskExecutionRetryAt, taskExecutionRetryExhausted } from "../tasks/app-task-state.js";
 import type {
   AppTaskAttempt,
   AppTaskCancellation,
@@ -259,6 +259,7 @@ export class AppTaskResourceStore {
   ): void {
     // Retain pending input without a ready hint that bypasses its cooldown.
     const retryAt = pendingTaskExecutionRetryAt(resource);
+    const exhausted = taskExecutionRetryExhausted(resource);
     const activeAttempt = resource.status.currentAttemptId;
     const leaseUntil = activeAttempt
       ? ((
@@ -289,8 +290,8 @@ export class AppTaskResourceStore {
         resource.status.observedGeneration,
         resource.status.phase,
         resource.status.lane ?? "normal",
-        !retryAt && taskChanged(resource, trigger) ? 1 : 0,
-        !retryAt && ready ? 1 : 0,
+        !retryAt && !exhausted && taskChanged(resource, trigger) ? 1 : 0,
+        !retryAt && !exhausted && ready ? 1 : 0,
         retryAt ?? nextCheckAt,
         leaseUntil,
         resource.status.currentAttemptId ?? null,
@@ -1642,6 +1643,7 @@ export class AppTaskResourceStore {
       const resource = this.readTask(taskId);
       const retryAt = resource && pendingTaskExecutionRetryAt(resource);
       if (retryAt) input = { ...input, ready: false, changed: false, nextCheckAt: retryAt };
+      if (resource && taskExecutionRetryExhausted(resource)) input = { ...input, ready: false, changed: false };
       const assignments: string[] = [];
       const assignmentValues: unknown[] = [];
       const changedPredicates: string[] = [];

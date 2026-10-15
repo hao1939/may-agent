@@ -280,6 +280,7 @@ async function runClaimedTask(
         const staleResult = applied.status === "stale" ? recoverStaleTaskResult(config, claim) : null;
         emit("project.task.reconciled", {
           disposition: applied.status === "applied" ? "incomplete" : "stale",
+          ...(applied.retryExhausted ? { retryExhausted: applied.retryExhausted } : {}),
           summary: applied.summary ?? result.summary,
           facts,
         });
