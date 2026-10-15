@@ -1,4 +1,5 @@
-import { Agent } from "@earendil-works/pi-agent-core";
+import { Agent, type AgentMessage } from "@earendil-works/pi-agent-core";
+import { createInitialSystemMessage, toToolDeclaration } from "@earendil-works/pi-ai";
 
 export type AgentRunnerConfig = ConstructorParameters<typeof Agent>[0];
 export type AgentRuntimeListener = Parameters<Agent["subscribe"]>[0];
@@ -52,4 +53,14 @@ class PiAgentRun implements AgentRun {
 
 export function createAgentRun(config: AgentRunnerConfig): AgentRun {
   return new PiAgentRun(new Agent(config));
+}
+
+/**
+ * Restore work history under this invocation's current instructions and tools.
+ * Saved transcripts may predate Pi's system messages or carry an older loadout.
+ */
+export function restoreAgentMessages(agent: AgentRun, messages: AgentMessage[]): void {
+  const baseline = createInitialSystemMessage(agent.state.systemPrompt, agent.state.tools.map(toToolDeclaration));
+  const history = messages.filter((message) => message.role !== "system");
+  agent.state.messages = baseline ? [baseline, ...history] : history;
 }

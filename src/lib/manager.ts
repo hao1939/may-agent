@@ -13,7 +13,7 @@ import { prepareTaskWorkspaceContext, taskWorkspacePrompt } from "./task-workspa
 
 import type { AgentTool, AgentMessage } from "@earendil-works/pi-agent-core";
 import { readWorkflowFacts } from "./workflow-facts.js";
-import { createAgentRun, type AgentRun } from "./agent-runner.js";
+import { createAgentRun, restoreAgentMessages, type AgentRun } from "./agent-runner.js";
 import { bindToolsToExecutionScope, prepareAgentExecution } from "./agent-execution.js";
 import { observeExecutionUsage, recoverExecutionUsage, type UsageOutcome } from "./db/execution-usage.js";
 import { extractFinishParams } from "./agent-result.js";
@@ -829,7 +829,7 @@ export class SubagentManager {
         session,
         async () => {
           if (session.resumeMessages) {
-            agent.state.messages = session.resumeMessages as any;
+            restoreAgentMessages(agent, session.resumeMessages as AgentMessage[]);
           }
           await agent.prompt(prepared.prompt);
         },
@@ -977,12 +977,13 @@ export class SubagentManager {
     if (normalizedLimit === 0) return [];
 
     const session = this._sessions.get(sessionId);
-    if (session) return (session.agent.state.messages as AgentMessage[]).slice(-normalizedLimit);
+    if (session) return session.agent.state.messages.filter((message) => message.role !== "system").slice(-normalizedLimit);
 
     const persisted = this._registry.getSession(sessionId);
     if (!persisted) throw new Error(`Session "${sessionId}" not found`);
 
-    return readSessionMessagesTail(this._persistDir, sessionId, normalizedLimit, MAX_TRANSCRIPT_TAIL_BYTES);
+    return readSessionMessagesTail(this._persistDir, sessionId, normalizedLimit, MAX_TRANSCRIPT_TAIL_BYTES)
+      .filter((message) => message.role !== "system");
   }
 
   // ── Await ──
@@ -1743,7 +1744,7 @@ export class SubagentManager {
       sessionId,
       MAX_RESULT_MESSAGES,
       MAX_TRANSCRIPT_TAIL_BYTES,
-    );
+    ).filter((message) => message.role !== "system");
     const finishResult = extractFinishParams(messages as any[]);
     return {
       sessionId,
@@ -1766,7 +1767,7 @@ export class SubagentManager {
         result.sessionId,
         MAX_RESULT_MESSAGES,
         MAX_TRANSCRIPT_TAIL_BYTES,
-      ),
+      ).filter((message) => message.role !== "system"),
     };
   }
 
@@ -1943,7 +1944,7 @@ export class SubagentManager {
     try {
       await this.withExecutionScope(session, async () => {
         if (session.resumeMessages) {
-          agent.state.messages = session.resumeMessages as any;
+          restoreAgentMessages(agent, session.resumeMessages as AgentMessage[]);
         }
         let recoveredThrownFailure = false;
         try {
@@ -2119,7 +2120,7 @@ export class SubagentManager {
       sessionId,
       status,
       lastAssistantText: lastText,
-      messages,
+      messages: messages.filter((message) => message.role !== "system"),
       duration: formatDuration(durationMs),
       outputDir: sessionOutputDir(this._persistDir, sessionId),
       error: errorText,
@@ -2282,7 +2283,7 @@ export class SubagentManager {
         sessionId,
         status,
         lastAssistantText: lastText,
-        messages,
+        messages: messages.filter((message) => message.role !== "system"),
         duration: formatDuration(durationMs),
         outputDir: sessionOutputDir(this._persistDir, sessionId),
         error: errorText,

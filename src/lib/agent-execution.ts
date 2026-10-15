@@ -5,9 +5,11 @@ import type {
 } from "@earendil-works/pi-agent-core";
 import {
   createAssistantMessageEventStream,
+  type Api,
   type AssistantMessage,
   type AssistantMessageEvent,
   type StreamFunction,
+  type SimpleStreamOptions,
   type TSchema,
 } from "@earendil-works/pi-ai";
 import { streamSimple } from "@earendil-works/pi-ai/compat";
@@ -30,7 +32,7 @@ import { createReadTool } from "./tools/read.js";
 import { createBashTool } from "./tools/bash.js";
 import { createEditTool } from "./tools/edit.js";
 import { createWriteTool } from "./tools/write.js";
-import { createAgentRun, type AgentRunnerConfig, type AgentRuntimeListener } from "./agent-runner.js";
+import { createAgentRun, restoreAgentMessages, type AgentRunnerConfig, type AgentRuntimeListener } from "./agent-runner.js";
 import { extractFinishParams, type FinishParams } from "./agent-result.js";
 import {
   classifyTerminalAssistantFailure,
@@ -135,12 +137,14 @@ function streamFailureMessage(model: Parameters<StreamFunction>[0], error: unkno
   };
 }
 
+type SimpleStreamFunction = StreamFunction<Api, SimpleStreamOptions>;
+
 /**
  * Switch once to a model's independent fallback when GitHub Copilot immediately
  * reports its IDE credential expired. The caller's context and options objects are
  * reused unchanged, preserving transcript/session ownership across the provider hop.
  */
-export function withGithubCopilotIdeTokenRecovery(stream: StreamFunction): StreamFunction {
+export function withGithubCopilotIdeTokenRecovery(stream: SimpleStreamFunction): SimpleStreamFunction {
   return (model, context, options) => {
     const recovered = createAssistantMessageEventStream();
     void (async () => {
@@ -172,7 +176,7 @@ export function withGithubCopilotIdeTokenRecovery(stream: StreamFunction): Strea
   };
 }
 
-const boundedStreamSimple: typeof streamSimple = withGithubCopilotIdeTokenRecovery((model, context, options) =>
+const boundedStreamSimple = withGithubCopilotIdeTokenRecovery((model, context, options) =>
   streamSimple(model, context, {
     ...options,
     signal: options?.signal
@@ -634,7 +638,8 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
       },
       // Pi's batch hint alone can continue mixed batches or consume queued input.
       // Stop before another model request; queued input belongs to later work.
-      shouldStopAfterTurn: ({ message }) => finishedTurn !== undefined && message === finishedTurn,
+      finishTurn: ({ message }) =>
+        finishedTurn !== undefined && message === finishedTurn ? { action: "end" } : undefined,
       transformContext,
       getApiKey: options.definition.apiKey ? () => options.definition.apiKey! : undefined,
     },
@@ -655,7 +660,7 @@ export async function executePreparedAgent(
   });
   const usage = createExecutionUsage(prepared.preparation);
   const unsubscribeUsage = agent.subscribe(usage.observe);
-  if (options.initialMessages) agent.state.messages = [...options.initialMessages] as any;
+  if (options.initialMessages) restoreAgentMessages(agent, options.initialMessages);
   const unsubscribe = options.onObservation ? agent.subscribe(options.onObservation) : undefined;
   let boundedFinishRequested = false;
   const requestFinish = () => {
@@ -795,7 +800,7 @@ export async function executePreparedAgent(
   return {
     status,
     usage: usage.snapshot(),
-    messages,
+    messages: messages.filter((message) => message.role !== "system"),
     lastAssistantText: assistantText,
     ...(error ? { error } : {}),
     ...(finishResult ? { finishResult, structuredResult: finishResult.result } : {}),
