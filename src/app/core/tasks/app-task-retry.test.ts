@@ -56,6 +56,36 @@ function fixture() {
   };
 }
 
+it("reads legacy progress independently and retains it when the first failure is selected", () => {
+  const f = fixture();
+  const progress = f.claim();
+  deferAppTask(f.config, progress, {
+    disposition: "waiting", continue: true, report: true,
+    summary: "One measurement saved", facts: ["sample:one"],
+  });
+  const admission = f.config.resourceStore.readTaskContext({ taskIds: [], admissionIds: ["ask:measure"] })
+    .appTaskAdmissions!["ask:measure"]!;
+  delete admission.feedback;
+  admission.reportAttemptId = progress.attemptId;
+  admission.reportRevision = 1;
+  f.config.resourceStore.commit({
+    fences: [{ taskId: "work", resourceVersion: f.config.resourceStore.readTask("work")!.metadata.resourceVersion }],
+    admissions: [{ taskId: "ask:measure", value: admission }],
+  });
+  f.reopen();
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "progress"))
+    .toMatchObject({ attemptId: progress.attemptId, reportRevision: 1 });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "failure")).toBeNull();
+  const failure = f.claim();
+  failAppTaskAttempt(f.config, failure, "Source unavailable");
+  f.reopen();
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "progress"))
+    .toMatchObject({ attemptId: progress.attemptId, reportRevision: 1 });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "failure"))
+    .toMatchObject({ attemptId: failure.attemptId, reportRevision: 2 });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toBeNull();
+});
+
 it("continues hourly after prolonged failure, preserving its deadline and input across reopen", () => {
   const f = fixture();
   let now = Date.now();

@@ -3,6 +3,7 @@ import { Type } from "typebox";
 import { Check } from "typebox/value";
 import { conversationTurnResultSchema } from "./app.js";
 import {
+  admitTaskChanges,
   admitTaskReconcileResult,
   admitTaskResultForSchema,
   admitTaskVerificationResult,
@@ -10,6 +11,21 @@ import {
   taskReconcileResultSchema,
   taskChangesSchema,
 } from "./task-contract.js";
+
+it("keeps caller progress interest in both live and final admission", () => {
+  for (const progress of [undefined, "immediate", "next-wake"] as const) {
+    const conditions = [{ requestId: "review", ...(progress ? { progress } : {}) }];
+    expect(admitTaskChanges({ conditions })).toMatchObject({ ok: true, changes: { conditions } });
+    expect(admitTaskResultForSchema(taskAgentResultSchema, {
+      state: "waiting", summary: "Await review", facts: [], conditions,
+    })).toMatchObject({ ok: true, result: { conditions } });
+  }
+  for (const progress of [null, true, "soon"]) {
+    expect(admitTaskChanges({ conditions: [{ requestId: "review", progress }] }).ok).toBe(false);
+  }
+  expect(admitTaskChanges({ conditions: [{ id: "build", type: "build.finished", subject: "build:one",
+    expected: "done", owner: "app:builder", progress: "next-wake" }] }).ok).toBe(false);
+});
 
 it("allows open Requests without a reason in live and final Task changes while retaining the legacy contract", () => {
   const requestUpdates = [{ id: "ask", expectedRevision: 0, scope: "Test the change", disposition: "open" }];
@@ -386,7 +402,7 @@ describe("project task handler contract", () => {
         facts: ["dependency:evaluation/review"],
         actions: [],
         requests: [dependency],
-        conditions: [{ requestId: "review" }],
+        conditions: [{ requestId: "review", progress: "immediate" }],
       },
     });
     expect(

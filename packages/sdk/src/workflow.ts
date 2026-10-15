@@ -87,6 +87,7 @@ export type TaskInputObligation = {
     admission:
       | {
           available: true;
+          feedback?: Partial<Record<"progress" | "failure", { attemptId: string; revision: number }>>;
           reportAttemptId?: string;
           reportRevision?: number;
           resultAttemptId?: string;
@@ -546,12 +547,19 @@ export type TaskAttempt = {
       type: string;
       subject: string;
       state: string;
+      /** When this caller considers intermediate reports; completion and failures still wake. */
+      progress?: "immediate" | "next-wake";
       dependency?: {
         requestId: string;
         appId: string;
         status: string;
         targetTaskId?: string;
         resolvedTaskId?: string;
+        /** Latest retained report, including quiet progress received between attempts. */
+        report?: unknown;
+        /** Independent progress and failure observations; neither resolves the other. */
+        /** Historical reports whose referenced attempt is unavailable remain unknown. */
+        reports?: Partial<Record<"progress" | "failure" | "unknown", unknown>>;
       };
     }>;
     note: string;

@@ -157,6 +157,11 @@ export function createAppTaskCapability(options: {
       const resourceStore = readLoadedAppTaskContext({ bus: options.bus, appId, appDir })?.resourceStore
         ?? (appId && db ? AppTaskResourceStore.activeFromDb(db, appId) : null);
       if (admissionKey) {
+        const reports = resourceStore ? (["progress", "failure"] as const)
+          .flatMap((kind) => {
+            const report = readAppTaskAdmissionOutcome({ resourceStore }, dependency.id, admissionKey, kind);
+            return report ? [report] : [];
+          }).sort((a, b) => (a.reportRevision ?? 1) - (b.reportRevision ?? 1)) : [];
         const accepted = resourceStore
           ? readAppTaskAdmissionOutcome({ resourceStore }, dependency.id, admissionKey)
           : null;
@@ -170,6 +175,7 @@ export function createAppTaskCapability(options: {
             response: accepted.response,
             result: accepted.result,
             facts: accepted.facts,
+            ...(reports.length ? { reports } : {}),
           };
         const closure = resourceStore?.readAdmissionCancellation(dependency.id, admissionKey);
         if (closure) return {
@@ -189,7 +195,7 @@ export function createAppTaskCapability(options: {
         return {
           kind: "task",
           id: dependency.id,
-          ...(report && !task?.closed ? { report } : {}),
+          ...(report && !task?.closed ? { report, reports } : {}),
           ...(task?.closed ? { closed: true } : {}),
           status: task?.closed ? "attention" : "pending",
           summary: task?.closed

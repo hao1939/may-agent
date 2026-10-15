@@ -1313,21 +1313,24 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
         expect(admitConversationTaskChange(f.context(), worker, { ...returned, originInputId: undefined, ...topic }).created).toBe(false);
     }
     createAppInboxItem(f.db, { ...f.input("ordinary", 2), input: { kind: "goal", data: {} } });
-    const wake = admitConversationTaskChange(f.context(), worker, returned, ["message"]);
-    expect(wake.taskId).toBe(first.taskId);
-    expect(wake.item.input.data).toMatchObject({
-      appId: "worker",
-      taskId: "measurement",
-      attemptId: claim.attemptId,
-      outcome:
-        scenario === "answer"
-          ? { state: "converged", result: { value: 17 } }
-          : scenario === "waiting-report"
-            ? { state: "waiting", report: true, summary: "Please restore source access" }
-            : { state: "error", facts: [`task-attempt:${claim.attemptId}`] },
-    });
-    expect(readConversationRequest(f.db, app.id, "chat", "comparison")?.status).toBe("open");
-    expect(admitConversationTaskChange(f.context(), worker, returned, ["message"]).created).toBe(false);
+    // Lose the first failure notification; newer progress must not replace it.
+    if (scenario !== "execution-error") {
+      const wake = admitConversationTaskChange(f.context(), worker, returned, ["message"]);
+      expect(wake.taskId).toBe(first.taskId);
+      expect(wake.item.input.data).toMatchObject({
+        appId: "worker",
+        taskId: "measurement",
+        attemptId: claim.attemptId,
+        outcome:
+          scenario === "answer"
+            ? { state: "converged", result: { value: 17 } }
+            : scenario === "waiting-report"
+              ? { state: "waiting", report: true, summary: "Please restore source access" }
+              : { state: "error", facts: [`task-attempt:${claim.attemptId}`] },
+      });
+      expect(readConversationRequest(f.db, app.id, "chat", "comparison")?.status).toBe("open");
+      expect(admitConversationTaskChange(f.context(), worker, returned, ["message"]).created).toBe(false);
+    }
     if (scenario === "answer") return;
 
     const inputKey = `conversation-follow-up:${app.id}:${first.item.id}`;
@@ -1368,7 +1371,14 @@ test.each(["answer", "waiting-report", "execution-error"] as const)(
     }
     f.reopen();
     worker = appTaskContext({ ...f.context(), resourceStore: AppTaskResourceStore.fromDb(f.db, "worker") });
-    expect(listPendingConversationTaskChanges(f.db, app.id).map((change) => change.attemptId)).toEqual([reportIds[1]!]);
+    expect(listPendingConversationTaskChanges(f.db, app.id).map((change) => change.attemptId))
+      .toEqual(scenario === "execution-error" ? [claim.attemptId, reportIds[1]!] : [reportIds[1]!]);
+    if (scenario === "execution-error") {
+      const failure = admitConversationTaskChange(f.context(), worker, returned, ["message"]);
+      expect(failure.item?.input.data).toMatchObject({ outcome: { state: "error" } });
+      expect(admitConversationTaskChange(f.context(), worker, returned, ["message"]).created).toBe(false);
+      expect(listPendingConversationTaskChanges(f.db, app.id).map((change) => change.attemptId)).toEqual([reportIds[1]!]);
+    }
     for (const topic of unrelatedTopics)
       expect(admitConversationTaskChange(f.context(), worker, { ...returned, originInputId: undefined, ...topic, attemptId: reportIds[1]! }).created).toBe(false);
     expect(admitConversationTaskChange(f.context(), worker, { ...returned, attemptId: reportIds[0]! }).created).toBe(
