@@ -130,7 +130,10 @@ use `expected: { field: "state", equals: "closed" }`. The direct check can see a
 PR merged before observation began. Unchanged unmet waits stay quiet; `reviewAt`
 is for deliberate agent reconsideration. Preserve independent work and waits.
 Legacy `pull-request:github:...` Conditions need the owning guide's mechanical
-upgrade before they drive direct checks. Provider fields do not include CI checks
+upgrade before they drive direct checks. When retaining one during an ordinary
+attempt, use `tasks.contract` with its existing ID, exact resource and saved
+predicate, then save the returned Condition and preserve independent waits.
+Provider fields do not include CI checks
 or unresolved threads; read that evidence separately when acceptance needs it.
 
 Treat the observation as provider evidence, never as approval or authority to

@@ -146,6 +146,50 @@ const observe = (ctx: ObserverContext, fetcher: typeof fetch) =>
     () => new Date("2026-09-21T01:00:00Z"),
   );
 describe("May GitHub pull-request resource ownership", () => {
+  test.each(["GH_TOKEN", "GITHUB_TOKEN", "public"])(
+    "both observation paths use configured credentials without retaining them: %s",
+    async (mode) => {
+      const saved = {
+        GH_TOKEN: process.env.GH_TOKEN,
+        GITHUB_TOKEN: process.env.GITHUB_TOKEN,
+      };
+      const token = "fixture-observer-credential";
+      try {
+        delete process.env.GH_TOKEN;
+        delete process.env.GITHUB_TOKEN;
+        if (mode === "GH_TOKEN") {
+          process.env.GH_TOKEN = token;
+          process.env.GITHUB_TOKEN = "unused-fallback";
+        } else if (mode === "GITHUB_TOKEN") process.env.GITHUB_TOKEN = token;
+        const calls: string[] = [];
+        const fake = provider(new Map([[215, pullPayload(215)]]), calls);
+        const fetcher = (async (input, init) => {
+          expect(new URL(String(input)).origin).toBe("https://api.github.com");
+          expect(init?.redirect).toBe("manual");
+          expect(new Headers(init?.headers).get("Authorization")).toBe(
+            mode === "public" ? null : `Bearer ${token}`,
+          );
+          return fake(input, init);
+        }) as typeof fetch;
+        const [live, recovery] = createGitHubPullRequestObservers(scope, fetcher);
+        const result = await live.run(
+          context(new Map([["goal/linked-pr", task("goal/linked-pr")]])),
+        );
+        const fact = await recovery.inspect("github:hao1939/may-agent#215", {
+          signal: new AbortController().signal,
+        });
+        expect(calls).toHaveLength(5);
+        expect(result.events).toHaveLength(1);
+        expect(fact).toMatchObject({ number: 215, reviewsComplete: true });
+        expect(JSON.stringify({ result, fact })).not.toContain(token);
+      } finally {
+        for (const [key, value] of Object.entries(saved)) {
+          if (value === undefined) delete process.env[key];
+          else process.env[key] = value;
+        }
+      }
+    },
+  );
   test("republication is stable across fetch times and distinguishes provider revisions and owner generations", async () => {
     const tasks = new Map([["goal/linked-pr", task("goal/linked-pr")]]);
     const pulls = new Map([[215, pullPayload(215, ownerBody())]]);

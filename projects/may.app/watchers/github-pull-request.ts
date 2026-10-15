@@ -335,11 +335,15 @@ async function githubJson(
   if (budget.remaining <= 0)
     throw new DeferredReadError("conservative GitHub request budget exhausted");
   budget.remaining--;
+  // Read installation credentials only after validating the fixed GitHub URL.
+  // Never retain credentials in observer snapshots, Conditions or facts.
+  const token = process.env.GH_TOKEN?.trim() || process.env.GITHUB_TOKEN?.trim();
   const response = await fetchImpl(requested, {
     headers: {
       Accept: "application/vnd.github+json",
       "User-Agent": "may-agent-github-pr-observer",
       "X-GitHub-Api-Version": "2022-11-28",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     redirect: "manual",
     signal: budget.signal

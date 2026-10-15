@@ -99,6 +99,13 @@ or Task-close authority, nor proof of who last edited the body.
 
 ## Provider facts and bounded execution
 
+The App reader uses the installation's `GH_TOKEN`, falling back to `GITHUB_TOKEN`.
+With neither configured, public reads remain possible but share GitHub's smaller
+anonymous quota. Credentials are attached only after fixed-origin/endpoint
+validation, redirects are not followed, and credentials never enter facts,
+Conditions or observer snapshots. Both paths use the same authentication policy;
+the Host does not need GitHub credential logic.
+
 Both paths read PR state, head SHA, draft/merge fields and commit-bound reviews.
 They return `reviewsComplete` and any review-read error alongside independently
 valid PR facts. They **do not collect CI checks, unresolved review threads or
@@ -139,18 +146,22 @@ identical failures are suppressed within the observer generation. Partial review
 failure retains valid PR state and an explicit evidence gap. It is not unchanged
 or complete work. No automatic merge, incident service or escalation is added.
 
-## Upgrading existing waits before rollout
+## Upgrading existing waits during rollout
 
 The legacy `pull-request:github:...` Condition only matches live events; it has no
 source-bound resource interest for the Host to inspect. Keep it readable during
 transition. The pure `upgradeGitHubPullRequestCondition` helper converts that
 subject and adds the declared source while preserving the Condition ID,
 expectation, requested action and independent fields. It performs no storage write
-or agent judgment. Save its result through the current Task's ordinary fenced
-change/result path, preserving other Conditions. Do not edit runtime database rows.
+or agent judgment. Prefer saving its result through the current Task's ordinary
+fenced change/result path, preserving other Conditions.
 
-Before replacing live definitions, inspect unfinished delivery Tasks and their
-exact PRs. Upgrade relevant legacy waits. If a Task has no PR Condition, its owner
+Before rollout, inspect unfinished delivery Tasks and their exact PRs. Activate
+the compatible definitions before asking an owner to retain the new format; the
+old validator does not accept it. Legacy live delivery remains supported during
+this transition. Verify relevant retained waits actually upgraded: an unchanged
+fact can leave an owner's existing Condition untouched. Do not call activation
+alone complete recovery coverage. If a Task has no PR Condition, its owner
 must decide and retain the needed interest; a public owner block alone cannot
 provide recovery after a lost notification. Do not revive fulfilled requirements
 or manufacture waits for every historical PR. Verify the current baseline when
@@ -160,6 +171,26 @@ At the October 15 review, open PRs #352, #353, #354 and #356 had legacy PR
 Conditions, while #355 did not; #352's initial-snapshot Condition was already
 satisfied. These are rollout leads, not authority to change those Tasks blindly.
 Re-read them before migration because ongoing agents can change their state.
+
+For a mechanical operator migration, use the Host's fenced resource-store commit
+with an exact saved before/after plan, never raw SQL writes or a fabricated agent
+attempt. Only migrate an unsatisfied wait on an inactive waiting Task. Recheck the
+complete Task, Condition and exclusive link in the same transaction; reject drift
+or an active attempt. Preserve the predicate, owner, requested action, Task,
+input waits and other Conditions. A representation-only conversion retains the
+logical Condition generation and observation, and advances its resource version;
+changing the generation alone would strand saved input-wait references. Predicate
+changes or rearming satisfied interests belong to ordinary owner judgment.
+
+Such a format migration does not emit a pretend Task result or force a model call.
+The periodic observer discovers it on its next due check. Verify both the stored
+interest and a subsequent read; distinguish eligibility from observed recovery.
+Keep the plan and migration receipt so rollback can be reviewed against current
+state rather than restoring a stale database over subsequent work.
+
+The [October 15 local trial](../docs/github-pr-condition-recovery-trial-2026-10-15.md)
+records actual activation, native owner behavior and separate provider-backed
+recovery checks.
 
 ## Validation
 
