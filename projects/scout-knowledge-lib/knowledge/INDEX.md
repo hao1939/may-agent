@@ -72,6 +72,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ### 2026-10-15
 
+- [Agent authority is a topology, not a property of one tool gate](./findings/2026-10-15-antiproton-authority-topology.md) — pinned Antiproton gateway code and project-authored tests separate credential opacity, mount policy, exact-request approval, and replay admission; Scout did not execute the project or establish complete mediation across all plugins and equivalent effects.
 - [Long-horizon agent control needs four independently checked states](./findings/2026-10-15-xhs-four-state-long-horizon-agent-control.md) — a complete XHS post separates goal, task, environment, and recovery state and names practical drift signals, but supplies no implementation, trace, experiment, or measured result.
 - [Agent approval policy must be sealed from the agent it constrains](./findings/2026-10-15-evo-agent-policy-seal.md) — pinned evo-agent source defines fail-visible policy loading, non-overridable blocked tools, manual-review red lines, governance-file self-protection, and sequence limits; Scout did not execute the project or inspect its separate server-side TCB.
 - [Agent recovery should restore state without rewriting lineage](./findings/2026-10-15-pong-handoff-recovery-lineage.md) — pinned Pong source keeps handoff, checkpoint, resume, rollback, and version ancestry as distinct durable relations with exact-retry and old-or-new recovery rules; Scout did not compile or run the early project or its tests.
