@@ -16,6 +16,7 @@ import type { TSchema } from "@earendil-works/pi-ai";
 import { mkdirSync, appendFileSync, readFileSync, writeFileSync, existsSync } from "fs";
 import { resolve } from "path";
 import { createCheckpointDigest } from "../session-digest.js";
+import { readJsonlRecoveryEvidence, type JsonlRecoveryEvidence } from "../persistence.js";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -95,6 +96,14 @@ export function readLatestCheckpoint(persistDir: string, sessionId: string): Che
   return entries.length > 0 ? entries[entries.length - 1] : null;
 }
 
+/** Inspect checkpoint history without treating malformed evidence as absence. */
+export function readCheckpointRecoveryEvidence(
+  persistDir: string,
+  sessionId: string,
+): JsonlRecoveryEvidence<CheckpointEntry> {
+  return readJsonlRecoveryEvidence<CheckpointEntry>(resolve(persistDir, "checkpoints", `${sessionId}.jsonl`));
+}
+
 // ── Tool factory ───────────────────────────────────────────────────────
 
 /**
@@ -148,7 +157,7 @@ export function createCheckpointTool(options: CheckpointToolOptions): AgentTool<
         // Read and append stay synchronous under the session's single writer;
         // this is not a cross-process multi-writer allocation protocol.
         const previousStep = readCheckpoints(persistDir, sid).reduce(
-          (highest, saved) => Number.isSafeInteger(saved?.step) && saved.step > highest ? saved.step : highest,
+          (highest, saved) => (Number.isSafeInteger(saved?.step) && saved.step > highest ? saved.step : highest),
           0,
         );
         entry = {

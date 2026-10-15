@@ -10,12 +10,16 @@ import {
   markSessionInactive,
   readActiveSessionProcessId,
   readSessionMeta,
-  readSessionMessages,
+  readSessionRecoveryEvidence,
   writeSessionMeta,
   sessionDir,
 } from "../../../lib/persistence.js";
 import { extractFinishParams } from "../../../lib/agent-result.js";
-import { readLatestCheckpoint, type CheckpointEntry } from "../../../lib/tools/checkpoint.js";
+import {
+  readCheckpointRecoveryEvidence,
+  readLatestCheckpoint,
+  type CheckpointEntry,
+} from "../../../lib/tools/checkpoint.js";
 import { drainPersistedSessionBashProcessGroups } from "../../../lib/tools/bash.js";
 import { STATE_CHANGING_TOOLS } from "../../../lib/manager-utils.js";
 import { writeSessionResult } from "../../../lib/artifacts.js";
@@ -29,6 +33,17 @@ type TaskSessionAdapterOptions = {
   bus: EventBus;
   drainPersistedBashProcessGroups?: typeof drainPersistedSessionBashProcessGroups;
 };
+
+export class SessionRecoveryEvidenceAmbiguityError extends Error {
+  readonly code = "SESSION_RECOVERY_EVIDENCE_AMBIGUOUS";
+
+  constructor(sessionId: string, corruptEvidence: string[]) {
+    super(
+      `Cannot recover session ${sessionId}: malformed ${corruptEvidence.join(" and ")} may conceal a completion or effect receipt; explicit reconciliation is required before requeue or retry`,
+    );
+    this.name = "SessionRecoveryEvidenceAmbiguityError";
+  }
+}
 
 export function createTaskSessionRecovery(opts: TaskSessionAdapterOptions): TaskSessionRecovery {
   return {
@@ -73,8 +88,7 @@ function hasLiveAppTaskSession(opts: TaskSessionAdapterOptions, sessionId: strin
   return false;
 }
 
-function recoverPendingToolResultsFromTranscript(persistDir: string, sessionId: string): string[] {
-  const messages = readSessionMessages(persistDir, sessionId) as any[];
+function recoverPendingToolResultsFromTranscript(persistDir: string, sessionId: string, messages: any[]): string[] {
   const last = messages[messages.length - 1] as any;
   if (last?.role !== "assistant" || !Array.isArray(last.content)) return [];
 
@@ -179,15 +193,28 @@ function interruptSupersededAgentSession(
     return true;
   }
 
-  // Capture a completed finish call before repairing genuinely pending tool
-  // calls: finish() may be the final transcript entry, and synthesizing an
-  // interruption result for it would hide the valid terminal decision.
-  const recoveredFinish = opts.persistDir
-    ? extractFinishParams(readSessionMessages(opts.persistDir, cleanSessionId) as any[])
-    : null;
-  const repairedPendingTools = opts.persistDir
-    ? recoverPendingToolResultsFromTranscript(opts.persistDir, cleanSessionId)
-    : [];
+  // Inspect effect-sensitive evidence before any transcript repair or Task
+  // replacement can authorize another attempt. A valid committed finish wins:
+  // it is terminal evidence and recovery will not replay the Task's effects.
+  const transcriptEvidence = readSessionRecoveryEvidence(opts.persistDir!, cleanSessionId);
+  const recoveredFinish = extractFinishParams(transcriptEvidence.entries as any[]);
+  const checkpointEvidence = readCheckpointRecoveryEvidence(opts.persistDir!, cleanSessionId);
+  if (!recoveredFinish && (transcriptEvidence.state === "corrupt" || checkpointEvidence.state === "corrupt")) {
+    const corrupt = [
+      ...(transcriptEvidence.state === "corrupt"
+        ? [`session.jsonl lines ${transcriptEvidence.corruptLineNumbers.join(",")}`]
+        : []),
+      ...(checkpointEvidence.state === "corrupt"
+        ? [`checkpoint JSONL lines ${checkpointEvidence.corruptLineNumbers.join(",")}`]
+        : []),
+    ];
+    throw new SessionRecoveryEvidenceAmbiguityError(cleanSessionId, corrupt);
+  }
+  const repairedPendingTools = recoverPendingToolResultsFromTranscript(
+    opts.persistDir!,
+    cleanSessionId,
+    transcriptEvidence.entries as any[],
+  );
   const interruptedRecovery = summarizeInterruptedAgentRecovery({
     meta,
     persistDir: opts.persistDir!,
@@ -364,15 +391,28 @@ export function buildRecoveredSessionHandoff(
       ? "agent session"
       : `${attempt.handler} session`;
   const checkpointPath = join(persistDir, "checkpoints", `${attempt.sessionId}.jsonl`);
-  const checkpoint = readLatestCheckpoint(persistDir, attempt.sessionId);
-  const transcriptMessages = existsSync(transcriptPath) ? readSessionMessages(persistDir, attempt.sessionId) : [];
+  const checkpointEvidence = readCheckpointRecoveryEvidence(persistDir, attempt.sessionId);
+  const checkpoint = checkpointEvidence.state === "valid" ? (checkpointEvidence.entries.at(-1) ?? null) : null;
+  const transcriptEvidence = existsSync(transcriptPath)
+    ? readSessionRecoveryEvidence(persistDir, attempt.sessionId)
+    : { state: "absent" as const, entries: [], corruptLineNumbers: [] as [] };
+  const transcriptMessages = transcriptEvidence.entries;
   const transcriptCheckpoint = checkpoint ? null : latestReceiptedTranscriptCheckpoint(transcriptMessages);
   const facts = [
     `Recovered interrupted ${sessionLabel} path: ${interruptedSessionPath}`,
     `Recovered interrupted ${sessionLabel} metadata: ${metaPath}`,
     `Recovered interrupted ${sessionLabel} artifact: ${resultPath}`,
     `Recovered interrupted ${sessionLabel} transcript: ${transcriptPath}`,
-    checkpointRecoveryFacts(checkpointPath, transcriptPath, checkpoint, transcriptCheckpoint, attempt.sessionId),
+    ...(checkpointEvidence.state === "corrupt"
+      ? [
+          `Recovery evidence ambiguous: malformed checkpoint JSONL ${checkpointPath} lines ${checkpointEvidence.corruptLineNumbers.join(",")}; explicit reconciliation is required before retry`,
+        ]
+      : [checkpointRecoveryFacts(checkpointPath, transcriptPath, checkpoint, transcriptCheckpoint, attempt.sessionId)]),
+    ...(transcriptEvidence.state === "corrupt"
+      ? [
+          `Recovery evidence ambiguous: malformed transcript ${transcriptPath} lines ${transcriptEvidence.corruptLineNumbers.join(",")}; explicit reconciliation is required before retry`,
+        ]
+      : []),
   ];
   if (transcriptMessages.length > 0) {
     for (const snippet of transcriptMessages

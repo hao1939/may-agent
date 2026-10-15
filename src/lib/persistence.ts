@@ -130,6 +130,34 @@ function toPersistedConfig(def: SubagentDefinition): PersistedAgentConfig {
 
 // ── Shared JSONL parser ─────────────────────────────────────────────────
 
+export type JsonlRecoveryEvidence<T> =
+  | { state: "absent"; entries: T[]; corruptLineNumbers: [] }
+  | { state: "valid"; entries: T[]; corruptLineNumbers: [] }
+  | { state: "corrupt"; entries: T[]; corruptLineNumbers: number[] };
+
+/**
+ * Read JSONL for an effect-sensitive recovery decision without collapsing
+ * malformed records into ordinary absence. Valid entries remain available so
+ * a committed terminal receipt can still win over unrelated earlier damage.
+ */
+export function readJsonlRecoveryEvidence<T>(filePath: string): JsonlRecoveryEvidence<T> {
+  if (!existsSync(filePath)) return { state: "absent", entries: [], corruptLineNumbers: [] };
+  const raw = readFileSync(filePath, "utf-8");
+  const entries: T[] = [];
+  const corruptLineNumbers: number[] = [];
+  for (const [index, line] of raw.split("\n").entries()) {
+    if (!line.trim()) continue;
+    try {
+      entries.push(JSON.parse(line) as T);
+    } catch {
+      corruptLineNumbers.push(index + 1);
+    }
+  }
+  return corruptLineNumbers.length > 0
+    ? { state: "corrupt", entries, corruptLineNumbers }
+    : { state: "valid", entries, corruptLineNumbers: [] };
+}
+
 /** Read all JSON lines from a file, skipping corrupted lines. Returns [] if not found or empty. */
 function readJsonlFile<T>(filePath: string): T[] {
   if (!existsSync(filePath)) return [];
@@ -300,6 +328,14 @@ export function rewriteSessionMessages(persistDir: string, sessionId: string, me
  *  Corrupted lines are skipped with a warning. */
 export function readSessionMessages(persistDir: string, sessionId: string): AgentMessage[] {
   return readJsonlFile<AgentMessage>(sessionJsonlPath(persistDir, sessionId));
+}
+
+/** Inspect a complete transcript for effect-sensitive recovery decisions. */
+export function readSessionRecoveryEvidence(
+  persistDir: string,
+  sessionId: string,
+): JsonlRecoveryEvidence<AgentMessage> {
+  return readJsonlRecoveryEvidence<AgentMessage>(sessionJsonlPath(persistDir, sessionId));
 }
 
 /**

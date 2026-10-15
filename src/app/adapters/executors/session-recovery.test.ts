@@ -152,3 +152,90 @@ it.each(["interrupted", "done", "error"] as const)(
     expect(events.filter((event) => event.type === "session.end")).toHaveLength(1);
   },
 );
+
+it.each([
+  { evidence: "transcript", expected: "session.jsonl lines 2" },
+  { evidence: "checkpoint", expected: "checkpoint JSONL lines 2" },
+] as const)("quarantines malformed $evidence recovery evidence before requeue", ({ evidence, expected }) => {
+  const root = mkdtempSync(join(tmpdir(), "may-recovery-corrupt-"));
+  roots.push(root);
+  const sessionId = `corrupt-${evidence}`;
+  writeSessionMeta(root, sessionId, {
+    agent: "judge",
+    task: "Recover without replaying an ambiguous effect",
+    status: "running",
+    startedAt: 1,
+    kind: "call",
+  });
+  if (evidence === "transcript") {
+    appendSessionMessage(root, sessionId, {
+      role: "assistant",
+      content: [{ type: "toolCall", id: "effect-call", name: "bash", arguments: { command: "external-effect" } }],
+    } as AgentMessage);
+    writeFileSync(
+      join(root, "sessions", sessionId, "session.jsonl"),
+      '{"role":"assistant","content":[{"type":"toolCall","id":"effect-call","name":"bash","arguments":{}}]}\n{"role":"toolResult"\n',
+    );
+  } else {
+    mkdirSync(join(root, "checkpoints"), { recursive: true });
+    writeFileSync(
+      join(root, "checkpoints", `${sessionId}.jsonl`),
+      `${JSON.stringify({ sessionId, agentName: "judge", step: 1, summary: "Known progress", data: {}, timestamp: 1 })}\n{"step":2\n`,
+    );
+  }
+  const bus = new EventBus();
+  const events: AgentEvent[] = [];
+  bus.subscribe((event) => events.push(event));
+  const recovery = createTaskSessionRecovery({
+    persistDir: root,
+    manager: new SubagentManager({ persistDir: root }),
+    bus,
+  });
+
+  expect(() => recovery.interrupt(sessionId, "Previous worker exited")).toThrow(expected);
+  expect(() => recovery.interrupt(sessionId, "Previous worker exited")).toThrow("explicit reconciliation is required");
+  expect(readSessionMeta(root, sessionId)?.status).toBe("running");
+  expect(existsSync(join(root, "sessions", sessionId, "result.json"))).toBe(false);
+  expect(events.filter((event) => event.type === "session.end")).toHaveLength(0);
+});
+
+it("preserves a committed finish receipt despite unrelated earlier malformed transcript evidence", () => {
+  const root = mkdtempSync(join(tmpdir(), "may-recovery-valid-finish-"));
+  roots.push(root);
+  const sessionId = "valid-finish-after-corruption";
+  writeSessionMeta(root, sessionId, {
+    agent: "judge",
+    task: "Retain the committed decision",
+    status: "running",
+    startedAt: 1,
+    kind: "call",
+  });
+  writeFileSync(join(root, "sessions", sessionId, "session.jsonl"), "malformed\n");
+  appendSessionMessage(root, sessionId, {
+    role: "assistant",
+    content: [
+      { type: "toolCall", id: "finish-call", name: "finish", arguments: { status: "success", summary: "Committed" } },
+    ],
+  } as AgentMessage);
+  appendSessionMessage(root, sessionId, {
+    role: "toolResult",
+    toolCallId: "finish-call",
+    toolName: "finish",
+    content: [{ type: "text", text: "Recorded" }],
+    isError: false,
+    timestamp: 2,
+  });
+  const bus = new EventBus();
+  const recovery = createTaskSessionRecovery({
+    persistDir: root,
+    manager: new SubagentManager({ persistDir: root }),
+    bus,
+  });
+
+  expect(recovery.interrupt(sessionId, "Previous worker exited")).toBe(true);
+  expect(readSessionMeta(root, sessionId)?.status).toBe("done");
+  expect(JSON.parse(readFileSync(join(root, "sessions", sessionId, "result.json"), "utf8"))).toMatchObject({
+    status: "done",
+    finishParams: { status: "success", summary: "Committed" },
+  });
+});
