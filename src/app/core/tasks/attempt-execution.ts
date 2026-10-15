@@ -80,10 +80,11 @@ export function interruptSupersededAgentSession(
   sessionId: string,
   reason: string,
   taskId?: string,
+  beforeReplay = false,
 ): boolean {
   if (!opts.sessions)
     throw new Error("Task session recovery is unavailable; retained session ownership cannot be replaced safely");
-  return opts.sessions.interrupt(sessionId, reason, taskId);
+  return opts.sessions.interrupt(sessionId, reason, taskId, beforeReplay);
 }
 
 export async function runTaskWorkflow(

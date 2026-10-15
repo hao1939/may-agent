@@ -110,7 +110,7 @@ export async function runTaskAttempt(input: {
         if (expired && sessionId && terminalStatus && !hasLiveAppTaskSession(opts, sessionId)) {
           // A session artifact is facts, not an accepted Task result. Drain
           // the exact old execution before retrying through normal settlement.
-          interruptSupersededAgentSession(opts, sessionId, "Retrying an uncommitted Task attempt", input.taskId);
+          interruptSupersededAgentSession(opts, sessionId, "Retrying an uncommitted Task attempt", input.taskId, true);
           const released = releaseTerminalSessionExpiredAppTaskAttempt(
             config,
             { ...expired, sessionId, terminalStatus },

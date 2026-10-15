@@ -199,6 +199,37 @@ it.each([
   expect(events.filter((event) => event.type === "session.end")).toHaveLength(0);
 });
 
+it.each(["done", "error", "interrupted"] as const)(
+  "quarantines malformed terminal-session evidence before replay for %s sessions",
+  (status) => {
+    const root = mkdtempSync(join(tmpdir(), "may-recovery-terminal-corrupt-"));
+    roots.push(root);
+    const sessionId = `terminal-corrupt-${status}`;
+    writeSessionMeta(root, sessionId, {
+      agent: "judge",
+      task: "Do not replay ambiguous terminal evidence",
+      status,
+      startedAt: 1,
+      endedAt: 2,
+      kind: "call",
+    });
+    writeFileSync(join(root, "sessions", sessionId, "session.jsonl"), '{"role":"toolResult"\n');
+    const recovery = createTaskSessionRecovery({
+      persistDir: root,
+      manager: new SubagentManager({ persistDir: root }),
+      bus: new EventBus(),
+    });
+
+    // Terminal projection cleanup remains idempotent and does not reinterpret
+    // retained outcome evidence when no Task replay follows.
+    expect(recovery.interrupt(sessionId, "Cleanup only")).toBe(true);
+    expect(() => recovery.interrupt(sessionId, "Replay follows", undefined, true)).toThrow(
+      "explicit reconciliation is required",
+    );
+    expect(readSessionMeta(root, sessionId)?.status).toBe(status);
+  },
+);
+
 it("preserves a committed finish receipt despite unrelated earlier malformed transcript evidence", () => {
   const root = mkdtempSync(join(tmpdir(), "may-recovery-valid-finish-"));
   roots.push(root);

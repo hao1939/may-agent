@@ -50,7 +50,8 @@ export function createTaskSessionRecovery(opts: TaskSessionAdapterOptions): Task
     read: (id) => (opts.persistDir ? readSessionMeta(opts.persistDir, id) : null),
     isLive: (id) => hasLiveAppTaskSession(opts, id),
     lastActivityAt: (id) => (opts.persistDir ? readSessionLastActivityAt(opts.persistDir, id) : null),
-    interrupt: (id, reason, taskId) => interruptSupersededAgentSession(opts, id, reason, taskId),
+    interrupt: (id, reason, taskId, beforeReplay) =>
+      interruptSupersededAgentSession(opts, id, reason, taskId, beforeReplay),
     handoff: (attempt) => buildRecoveredSessionHandoff(opts.persistDir, attempt),
     workflowInterrupted: (id) => workflowWasInterruptedByRestart(opts.persistDir, id),
   };
@@ -153,6 +154,7 @@ function interruptSupersededAgentSession(
   sessionId: string,
   reason: string,
   taskId?: string,
+  beforeReplay = false,
 ): boolean {
   const cleanSessionId = sessionId.trim();
   if (!cleanSessionId) return false;
@@ -179,6 +181,35 @@ function interruptSupersededAgentSession(
     );
   }
   if (!meta) return false;
+
+  // A terminal session projection does not make effect evidence safe to ignore
+  // when the caller is about to release and replay its Task attempt. Inspect it
+  // before that replay boundary; cleanup-only reconciliation retains the
+  // historical terminal projection without imposing this stronger check.
+  const transcriptEvidence =
+    beforeReplay || meta.status === "running" || meta.status === "idle"
+      ? readSessionRecoveryEvidence(opts.persistDir!, cleanSessionId)
+      : null;
+  const recoveredFinish = transcriptEvidence ? extractFinishParams(transcriptEvidence.entries as any[]) : undefined;
+  const checkpointEvidence =
+    beforeReplay || meta.status === "running" || meta.status === "idle"
+      ? readCheckpointRecoveryEvidence(opts.persistDir!, cleanSessionId)
+      : null;
+  if (
+    !recoveredFinish &&
+    (transcriptEvidence?.state === "corrupt" || checkpointEvidence?.state === "corrupt")
+  ) {
+    const corrupt = [
+      ...(transcriptEvidence?.state === "corrupt"
+        ? [`session.jsonl lines ${transcriptEvidence.corruptLineNumbers.join(",")}`]
+        : []),
+      ...(checkpointEvidence?.state === "corrupt"
+        ? [`checkpoint JSONL lines ${checkpointEvidence.corruptLineNumbers.join(",")}`]
+        : []),
+    ];
+    throw new SessionRecoveryEvidenceAmbiguityError(cleanSessionId, corrupt);
+  }
+
   if (meta.status !== "running" && meta.status !== "idle") {
     if (!opts.persistDir) return false;
     // meta.json is authoritative. Repair only its known terminal lifecycle
@@ -196,19 +227,8 @@ function interruptSupersededAgentSession(
   // Inspect effect-sensitive evidence before any transcript repair or Task
   // replacement can authorize another attempt. A valid committed finish wins:
   // it is terminal evidence and recovery will not replay the Task's effects.
-  const transcriptEvidence = readSessionRecoveryEvidence(opts.persistDir!, cleanSessionId);
-  const recoveredFinish = extractFinishParams(transcriptEvidence.entries as any[]);
-  const checkpointEvidence = readCheckpointRecoveryEvidence(opts.persistDir!, cleanSessionId);
-  if (!recoveredFinish && (transcriptEvidence.state === "corrupt" || checkpointEvidence.state === "corrupt")) {
-    const corrupt = [
-      ...(transcriptEvidence.state === "corrupt"
-        ? [`session.jsonl lines ${transcriptEvidence.corruptLineNumbers.join(",")}`]
-        : []),
-      ...(checkpointEvidence.state === "corrupt"
-        ? [`checkpoint JSONL lines ${checkpointEvidence.corruptLineNumbers.join(",")}`]
-        : []),
-    ];
-    throw new SessionRecoveryEvidenceAmbiguityError(cleanSessionId, corrupt);
+  if (!transcriptEvidence || !checkpointEvidence) {
+    throw new Error(`Cannot recover session ${cleanSessionId}: recovery evidence was not inspected`);
   }
   const repairedPendingTools = recoverPendingToolResultsFromTranscript(
     opts.persistDir!,

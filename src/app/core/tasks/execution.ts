@@ -136,6 +136,6 @@ export type TaskSessionRecovery = {
   isLive(sessionId: string): boolean;
   lastActivityAt(sessionId: string): number | null;
   /** Returns true only after the durable session projection was reconciled. */
-  interrupt(sessionId: string, reason: string, taskId?: string): boolean;
+  interrupt(sessionId: string, reason: string, taskId?: string, beforeReplay?: boolean): boolean;
   workflowInterrupted(workflowRunId: string | null): boolean;
 };
