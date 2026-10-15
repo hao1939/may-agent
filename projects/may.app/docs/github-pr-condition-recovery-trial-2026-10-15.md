@@ -57,6 +57,21 @@ changed fingerprint matching its exact saved Task. These diagnostic reads did
 not publish events; its still-unhandled change remained eligible on the second
 read. That repeat is necessary recovery behavior, not duplicate agent work.
 
+The credential correction was then integrated and activated as
+`d2a0c3629fbdc4e76c8ba60dedcf692be31f513b`; reload completion `6664296` confirmed
+success. The normal 15:30 UTC live pass delivered #354's new current-head review
+in event `6664327`. Its existing `pr-state` Condition became true and the same
+Task began attempt `r_1_e3c0a6f1-3ecd-4464-b330-c6d886b23ad7`. This establishes
+live change delivery and native execution, not completion of that PR's review
+or delivery requirements.
+
+Changed Condition encodings/baselines also caused one fresh live consideration
+for #352, #353 and #356. This is the accepted at-least-once rollout behavior;
+do not describe the trial as eliminating every duplicate consideration. #356
+retained both waits, and its subsequent installed exact check, event `6664340`,
+selected zero work routes. Its migrated demand has now been read by the running
+observer as well as by the earlier read-only diagnostic.
+
 ## Evidence and limits
 
 Local receipts and reproducible trial scripts are retained under
@@ -72,8 +87,9 @@ separate composition trials cover publication failure, restart, shared reads,
 independent waits and removal of demand.
 
 This is a bounded trial. The real merged-PR recovery happened in isolated Tasks,
-not by merging a production PR for testing. The format migration establishes
-#356's saved demand; its installed hourly read is separate evidence. There is no
+not by merging a production PR for testing. The installed #356 check was prompted
+by its accepted Task result; a full hourly interval was not observed. There is no
 claim that CI checks, unresolved review threads, protected delivery or whole-Task
-acceptance are covered by PR observation. Follow the operation receipt for the
-exact final activated revision after the credential correction.
+acceptance are covered by PR observation. The operation receipt retains the exact
+activated revision and observation window; this documentation can advance later
+without implying another runtime rollout.
