@@ -213,6 +213,16 @@ export function taskInputForEvent(event: AppEvent<Record<string, unknown>>): App
     const automatic = automaticReviewConfig();
     const appId = String(data.project ?? data.appId ?? "").trim();
     const taskId = String(data.taskId ?? "").trim();
+    // A broken selector is an operational problem for Alex, not a subject for
+    // its own semantic reviewer. This also catches load failures and timeouts
+    // before the workflow can produce a result. Keep exact attempt evidence.
+    if (appId === "alex" && taskId === "runtime/task-outcome-selector" &&
+        (data.disposition === "retrying" || data.disposition === "incomplete")) {
+      return { kind: "message", data: {
+        message: "Investigate the automatic selector failure. Read the exact affected Task and its current evidence before acting. Preserve its pending inputs, cursor and configured reviewer. Normal retries run the declared workflow; verify a successful workflow attempt before claiming recovery. Repair within Alex or escalate an unresolved blocker to May.",
+        context: { selectorFailure: structuredClone(data) },
+      } } as AppInput;
+    }
     // App-generated outcome reviews have the canonical review Task prefix and
     // workflow handler. Their incomplete reconciliation is retry evidence for
     // that same review, not a new subject for another automatic review.
@@ -246,6 +256,26 @@ export function taskInputForEvent(event: AppEvent<Record<string, unknown>>): App
 export function taskForInput(admitted: Readonly<AppTaskInput>) {
   const data = record(admitted.input.data);
   const context = record(data.context);
+  const selectorFailure = record(context.selectorFailure);
+  if (admitted.input.kind === "message" &&
+      (selectorFailure.project ?? selectorFailure.appId) === "alex" &&
+      selectorFailure.taskId === "runtime/task-outcome-selector") {
+    // Repeated notices join one ordinary owned outcome. The saved admissions
+    // retain each attempt's evidence; they do not revise the repair assignment.
+    return { kind: "desired" as const, intent: {
+      id: "runtime/selector-recovery",
+      parentId: "root",
+      agent: "alex",
+      outcome: "Restore automatic review selection and verify the declared workflow works, or escalate the remaining blocker to May.",
+      acceptance: [
+        "Read current selector evidence and account for each admitted failure notice.",
+        "Preserve original Task inputs, selection cursor and independent reviewer allowances.",
+        "Return verified recovery evidence or the exact remaining blocker to the affected Task and assigning owner.",
+      ],
+      input: { appId: "alex", taskId: "runtime/task-outcome-selector" },
+      priority: "P1" as const,
+    }};
+  }
   const research = record(context.research);
   if (admitted.input.kind === "goal" && research.mode === "standing" && research.adoption === STANDING_RESEARCH_TASK_ID) {
     const acceptance = Array.isArray(data.acceptance) ? data.acceptance : [];

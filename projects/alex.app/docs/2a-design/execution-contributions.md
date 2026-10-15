@@ -462,7 +462,7 @@ For task-owned work:
 - continue locally while bounded in-scope repair remains;
 - return exact Conditions only after establishing the corresponding external
   dependency;
-- use `needs-agent` only for exceptional same-App judgment the learned workflow
+- call `ctx.agents.call` for exceptional same-App judgment the learned workflow
   cannot safely resolve;
 - create cross-App/human escalation only through an explicit App/task
   dependency; and

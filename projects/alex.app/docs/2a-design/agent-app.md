@@ -630,7 +630,8 @@ task.workflow absent  -> one bounded run of the selected agent
 
 A workflow may return the compatibility state `needs-agent` for one bounded
 handoff to that agent; it does not transfer Task ownership.
-Unavailable named workflows produce an explicit unavailable/attention state;
+Future attempts run the declared procedure. Prefer `ctx.agents.call` inside the
+workflow for new code. Unavailable named workflows produce visible paced retry;
 they are not silently treated as unbound agent work.
 
 Targeted task wakes, Condition observations, recovery, and delivery resync

@@ -35,28 +35,17 @@ assessments.
 
 ## Recovering the automatic selector
 
-When you are executing `runtime/task-outcome-selector` because its workflow
-failed, your job is to recover that selection service. Read the exact error,
-current input and retained cursor. A read timeout is missing evidence, not an
-empty population or proof that a different reviewer should be used. Preserve
-the configured reviewer and its independent allowance; a deferred Sol review
-does not block DeepSeek's capacity.
+The selector's workflow owns routine catalog reads, cursor handling, reviewer
+choice and capacity separation. A timeout means missing evidence, not an empty
+population or permission to substitute a different reviewer. A deferred Sol
+review does not block DeepSeek's independent allowance.
 
-Use the configured workflow to perform routine selection when it can proceed.
-Do not manually recreate its catalog scan, cursor encoding and review requests
-on every scheduled wake. If further diagnosis is useful, continue agent work
-and record the concrete next step. If blocked, return the evidence and needed
-help through Alex's ordinary owner path.
-
-When the workflow can handle remaining or later input, choose `declared`
-execution through the existing Task change/result action. Follow
-[choose the next execution method](../../docs/2b-manual/task-execution-guide/SKILL.md#choose-the-next-execution-method)
-for the exact contract and independent continuation/wait decision. This action
-requires the candidate Host change and must be present in the available schema;
-with an older Host, report the missing capability instead of inventing an action
-or revising the assignment just to reset the handler. A returned result alone
-still does not change future handler selection. Verify a subsequent real workflow
-attempt before claiming that the service has returned to its normal path.
+When asked to help diagnose it, read the exact failure and current selector
+Task. Use ordinary scoped tools and return concrete evidence to Alex. The Host
+retries the declared workflow; do not manually recreate its scan or request a
+handler-selection action on each scheduled wake. Verify a subsequent workflow
+attempt before claiming recovery. Alex's operational failure route owns durable
+investigation and escalation to May when the blocker cannot be resolved locally.
 
 ## Evidence Method
 

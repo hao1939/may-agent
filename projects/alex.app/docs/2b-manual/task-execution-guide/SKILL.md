@@ -272,45 +272,30 @@ from its requirements and evidence. Workflow authors must return rejected
 decisions and their errors to the responsible agent instead of mechanically
 replaying the same saved result. Check accepted effects before repeating actions.
 
-### Choose the next execution method
+### Recover within the declared procedure
 
-When a workflow or executor fails, the responsible agent receives the same
-Task with the failed attempt and outstanding input. Repair or work around the
-problem within the assignment. Completing a useful result does not implicitly
-return future work to that procedure.
+The Task's assigned agent owns the outcome; its App owns the procedure. Read
+current input, accepted effects and `previousAttempt` before deciding what needs
+repair. A read timeout means evidence is unavailable, not an empty population.
 
-**Candidate capability:** the following requires the Host execution-selection
-change described in [attempt selection](../../2a-design/task-attempts.md#selecting-the-attempt-mechanism).
-Check the available `tasks.apply` / result schema before using it; an older
-Host does not support this action.
+Workflow authors call `ctx.agents.call` when judgment is useful, then use the
+returned contribution and submit the ordinary result. Future attempts still run
+the declared workflow. The Host handles bounded execution, retry/backoff and
+restart; there is no action to select or hand back the next executor. A partial
+result can preserve useful progress while independent Conditions remain open.
+For repair that needs a separate durable owner, use an ordinary request and
+Condition, preserving the original return relationship.
 
-When the configured procedure is appropriate for the next eligible attempt,
-submit through `tasks.apply` / `TaskAttempt.apply`, or include in final actions:
+An error before your procedure runs is still recorded and reported. Declare an
+App subscription or metric policy that reaches executable investigation; do not
+assume the Host invents a recovery agent. Check the affected Task's current
+state before acting on old failure notices. Verify a real procedure execution
+before claiming recovery; an accepted diagnosis is not that verification.
 
-```json
-{
-  "facts": ["The source read now succeeds; routine selection can use its configured workflow."],
-  "actions": [{
-    "kind": "select-execution",
-    "execution": "declared",
-    "reason": "Resume the configured procedure for remaining or later input"
-  }]
-}
-```
-
-Choose `execution: "agent"` to continue agent work explicitly. Omission retains
-the existing selection. Choose result state separately: `waiting` with
-`continue: true` requests useful remaining work now, `reviewAt` requests later
-reconsideration, and convergence answers only the considered input. Selecting
-a method creates no wake and does not satisfy a review or approval Condition.
-
-Reuse the exact action if its acknowledgment is lost within this attempt.
-A new attempt may make the same choice again. If you reconsider within the
-attempt, use a new reason; replaying an older action must not undo a later
-choice. Submit one choice at a time. Once a live choice is admitted, a later
-failure or interruption does not undo it; a choice only proposed in a rejected
-final result has not taken effect. Keep error and repair evidence even when
-returning to the procedure.
+The revised rule requires Host PR #344. Older Hosts can retain agent fallback
+until a Task revision; inspect the installed version and report that limitation
+rather than inventing an execution-selection action. Existing `needs-agent`
+workflows remain a compatibility path for one invocation only.
 
 ### Finish the repair's feedback
 

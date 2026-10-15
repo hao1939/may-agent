@@ -286,14 +286,11 @@ interpret uncertain causes and decide whether improvement is worth its cost.
 
 ### Procedure-to-agent failovers
 
-The merged source in [PR #325](https://github.com/hao1939/may-agent/pull/325) records
-each failure-driven procedure-to-agent switch on its first agent attempt as
-`failoverFromAttemptId`. The claim and marker commit together; a crash before
-agent startup cannot lose the marker. Later settlement leaves it intact.
-This adds optional attempt metadata and a partial index, not another event
-queue, counter store or recovery lifecycle. Handler selection still uses the
-ordinary attempt history. Intentional handoff is not an unexpected failure;
-agent retries and continuations are not new switches.
+Older Hosts recorded failure-driven switches as `failoverFromAttemptId` on
+the first agent attempt. Host PR #344 removes automatic procedure replacement;
+ordinary retries run the declared procedure, and workflow agent calls do not
+count as these historical switches. Keep retained markers and the existing
+read contract for historical investigation. They are never selection authority.
 
 The existing optional sampler installs `task.failover-count-24h`, measured at
 five-minute intervals. It counts retained marked claims whose start time lies in

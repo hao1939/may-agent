@@ -1,9 +1,32 @@
-# Explicit execution selection trial — October 5, 2026
+# Superseded execution-selection trial — October 5, 2026
 
 **Supports:** [Task attempts](../../2a-design/task-attempts.md#selecting-the-attempt-mechanism).
 **Choice basis:** [Apps own meaning; the Host owns mechanics](../../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics), [simple first](../../1-principles/core-principles.md#simple-first), and [purpose](../../1-principles/purpose.md).
 
-## Question and decision
+## October 15 revision
+
+The explicit selection action below was rejected during design review and is
+removed from PR #344. It put App recovery policy back into Host routing and
+required replay/precedence rules for a fact already expressed by the declared
+procedure. The replacement is documented in
+[Task attempts](../../2a-design/task-attempts.md#selecting-the-attempt-mechanism):
+run the declared procedure on every attempt and compose agent calls within it.
+Alex routes selector failures to ordinary owned investigation. No new execution
+flag, recovery mode or handback operation is introduced. Legacy explicit
+handoffs remain one invocation for compatibility.
+
+All counts and source revisions below describe the **superseded experiment**,
+not verification of the replacement or a live deployment. The current owning
+regressions cover same-procedure failure/restart/partial progress, historical
+fallback evidence, nested Task context, original communication obligations,
+selector timeout followed by restored selection, and stable operational repair
+admission. The current focused App suites pass 58 tests; design integrity,
+executable examples and canonical App checks pass with the existing unclassified
+`reports` warning. Host verification and exact source revision are recorded on
+PR #344. No installed controller, paid model, deployment or live Task mutation
+was used for this revision.
+
+## Historical question and decision
 
 Can an App return routine work to its configured procedure after agent recovery,
 without making the Host infer that a successful result ends recovery?

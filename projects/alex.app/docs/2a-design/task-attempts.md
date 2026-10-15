@@ -240,107 +240,47 @@ Agent selection is:
 task.agent ?? nearest explicit ancestor agent ?? app.agent
 ```
 
-The declared workflow or executor is the initial procedure. If that procedure
-fails and the responsible agent is available, the next eligible attempt uses
-ordinary agent execution on the same Task. An explicit `needs-agent` result
-uses the same handoff. A tool failure already returned to a running agent can
-be handled in place; it does not create another Task or execution loop.
+The assigned agent owns the outcome. The App declares the execution procedure;
+the Host runs that workflow or executor on every eligible attempt. This supports
+[useful work with less supervision](../1-principles/purpose.md) and follows
+[Apps own meaning; the Host owns mechanics](../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics).
+Neither a failure nor an earlier agent session changes the procedure. Results,
+input fulfillment and Conditions remain independent of how execution runs.
 
-The Host persists the failed attempt before handoff. Its summary, failure reason,
-original inputs, effects and evidence remain readable after recovery. The agent
-receives current Task context and the previous attempt, investigates with ordinary
-tools, repairs or works around the problem, and records the outcome and any
-remaining defect for later evaluation. Recovery of the work does not establish
-that its underlying defect is fixed.
+A workflow composes agent judgment with `ctx.agents.call`. It receives the
+contribution, decides how to use it and returns the ordinary Task result.
+The nested agent inherits the Task context and scoped authority; it does not
+become the next attempt's executor. The procedure can use the retained previous
+attempt to decide what recovery is useful. If repair needs independent durable
+work, use ordinary requests and Conditions and retain the original Task's inputs
+and return relationships. Do not create a replacement Task for every failed retry.
 
-The first agent claim after an unexpected procedure failure saves
-`failoverFromAttemptId` on the ordinary attempt, atomically with that claim.
-It links the exact failed attempt in the same Task and generation. This is
-observation metadata, not another execution state or handler-selection input.
-It survives a crash before agent startup and remains after accepted recovery.
-Agent continuations, failed claim writes and intentional `needs-agent` or
-legacy `needs-owner` handoffs are not additional failovers. The optional metric
-sampler [counts the retained switches](metrics.md#procedure-to-agent-failovers);
-recording them does not itself request work.
+The Host persists failed attempts, accepted effects and partial results. It
+retries the same declared procedure after backoff, applying normal deadlines,
+cancellation, workspace checks and result fences. Later input and restart use
+the same rule, including Tasks with historical agent-fallback attempts. There
+is no selection flag, handback action or inferred recovery success.
 
-Apps choose the method; the Host durably executes the choice. This supports
-[useful work with less supervision](../1-principles/purpose.md) by allowing an
-agent to repair a procedure and return routine work to it, while keeping
-recovery policy outside the stable Host. Result acceptance, input fulfillment,
-waiting and execution selection remain independent facts.
+Failures before App code can handle them—load errors, crashes or deadlines—also
+retain diagnostics and produce the existing reconciliation report. Apps declare
+subscriptions or metric breach policies that turn those observations into owned
+investigation. The Host does not guess the investigator. Shared infrastructure
+failure may require the installation's independent supervisor/operator; an agent
+inside an unavailable Host cannot guarantee its repair.
 
-**Execution-selection status:** implemented in the candidate Host branch
-`fix/task-execution-selection-20261005`, not yet merged or deployed. The current
-installed default still retains agent execution until a specification revision.
-Only use the action after its schema is available at the execution boundary.
-See the [contrasting trial and limits](../archive/reviews/task-execution-selection-20261005.md).
+**Compatibility:** existing workflow `needs-agent` and retained `needs-owner`
+results still request one agent invocation on the same Task. The authored
+workflow verifier still governs completion. Subsequent attempts return to the
+declared procedure; partial progress, failure and convergence do not keep the
+agent selected. New workflows should call agents directly. Historical
+`failoverFromAttemptId` records remain evidence, not routing authority.
 
-A `select-execution` action, admitted through the same live/final change path,
-chooses `declared` (this Task's configured workflow or executor) or `agent`
-(its responsible agent), with a reason. It applies to the next **eligible**
-attempt of this Task and generation. It does not change requirements, answer
-input, retire a Condition, wake work or bypass backoff and Stop. Selecting
-`declared` requires a configured procedure. This is a method choice within the
-assignment, not reassignment authority.
-
-The decision and reason are saved on the ordinary attempt and passed to the
-next attempt as `previousAttempt.executionSelection`. The next claim records
-the chosen handler. Its later failure can enter agent recovery again. A
-specification revision selects afresh; stale attempts cannot redirect it.
-There is no recovery-mode record or secondary Task lifecycle.
-An admitted live choice survives later execution failure or interruption.
-A choice proposed only in a rejected final result has not been admitted.
-
-Omission retains the existing selection rule: a failed procedure hands off to
-an available responsible agent, and subsequent attempts remain with that agent
-across failures, partial progress, waits, convergence and restart. A successful
-result alone never says which method should run next. An App may keep agent
-recovery, return to its procedure, or implement a known retry policy through
-ordinary workflow actions. It must not require infra to classify its errors.
-The agent may also invoke an available workflow through normal tools.
-
-Identical selection actions are idempotent within their originating attempt;
-the same choice in a later recovery is a new decision. Live and final replays
-share the receipt. Distinct decisions may replace the next method before
-settlement; replaying an old decision cannot overwrite a newer admitted one.
-Use a fresh reason for a reconsidered decision. Each submission must contain
-at most one choice, including replayed actions. Selection and its receipt commit
-atomically. A rejected final settlement admits no new choice and leaves earlier
-live admissions intact. An intentional choice of agent execution
-is not counted as an unexpected procedure failover. The existing workflow
-`needs-agent` result is a final agent choice with immediate continuation and
-supersedes an earlier live execution selection.
-
-Ordinary failure backoff, exact input settlement, cancellation, workspace and
-Condition checks still apply. Handler selection does not create permission to
-run: an owner Stop remains stopped until eligible new work arrives. Explicit
-handoff remains an immediate continuation; an execution failure retains its
-existing retry deadline and caller failure
-report. After an ordinary procedure failure, a missing fallback agent leaves the
-configured procedure's paced retry available. An explicit agent handoff still
-selects the agent; unavailability becomes a visible, paced execution failure.
-If an already selected fallback agent becomes unavailable, retain that selection
-and its visible failure instead of replaying the old procedure.
-
-Retry repeats a procedure and can resolve a transient failure. Failover returns
-the same assignment to the responsible agent for diagnosis and choice of method.
-This rule does not classify errors or add a fixed number of procedure retries
-before switching: even a transient failure can cost an agent invocation. The
-agent may retry the operation with its ordinary tools. Retained failover evidence
-lets Apps assess that cost without assuming that every switch required repair.
-
-Diagnosis does not require a working workflow. When the fallback agent proposes
-completion, the Host rereads the authored workflow contract and runs its verifier
-if configured. An unavailable contract or a rejected verifier prevents completion,
-not diagnosis. A readable contract without a verifier uses ordinary agent
-judgment; infrastructure does not invent an additional acceptance requirement.
-Permissions and the original Task acceptance criteria remain unchanged.
-
-This fallback bypasses a failing procedure, not the common execution infrastructure.
-A failure in shared Task reads, storage, agent availability or required workspace
-preparation can still prevent ordinary agent execution. The existing independent
-operational route and external operator remain necessary at those boundaries.
-There is no promise that an agent can repair an unavailable Host from inside it.
+**Status:** candidate revision of Host [PR #344](https://github.com/hao1939/may-agent/pull/344).
+The earlier execution-selection action was withdrawn. See the
+[trial record](../archive/reviews/task-execution-selection-20261005.md) for the
+superseded experiment and current verification limits. Activate the companion
+App failure routes before or with this Host change; do not assume that merged
+source proves live recovery.
 
 Human/control Task detail, list, and App counts must select the current Task
 generation. Historical completion receipts remain evidence, not authority to hide
@@ -381,8 +321,8 @@ binds bytes, not source authority or semantic truth. See the
 | Valid `converged` result                                                                | Accept the exact input's outcome when current-attempt checks, evidence, actions and verification permit; keep the Task open                                                          |
 | Valid `waiting` result                                                     | Retain independent Conditions and input; yield on a return route or schedule useful work; structural children alone do not establish a wait |
 | Valid `incomplete` result                                                               | Retain unsuccessful attempt facts, report the input's first accepted blocker to its linked caller, and retry unfinished work with backoff; no cancellation or implicit parent wake |
-| Workflow `needs-agent`                                                                  | Sequential ordinary agent execution on the same Task; subsequent attempts retain that selection; no ownership transfer                                                                                            |
-| Unavailable agent/workflow/executor or failed workspace prerequisite                    | Visible failure and same-Task paced recovery; a failed procedure can fall back to the available responsible agent; shared prerequisites still apply                                                                                                         |
+| Workflow `needs-agent`                                                                  | Sequential ordinary agent execution on the same Task; one invocation only; later attempts run the declared procedure; no ownership transfer                                                                                            |
+| Unavailable agent/workflow/executor or failed workspace prerequisite                    | Visible failure and same-Task paced recovery; the declared procedure retries and App routes arrange investigation; shared prerequisites still apply                                                                                                         |
 | Invalid/rejected handler result (including self-unblock) or explicitly blocked workflow | Preserve diagnostic evidence and unfinished input, reject proposed effects and retry with pacing; not an accepted answer                                                           |
 | Thrown execution error or timeout                                                       | Same-Task execution-failure recovery, subject to its retry policy                                                                                                                  |
 | Stale generation, resource version or cancelled attempt                                | Reject stale effects; reread current state without replacing accepted state or releasing another attempt                                                                           |
