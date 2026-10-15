@@ -20,6 +20,7 @@ import { buildAgentDefinition } from "./loader/agent-definition.js";
 import { resolveRuntimeAgentDirectory, type AgentDirectory } from "./loader/agent-discovery.js";
 import { readAgentConfigFile, validateAgentConfig, type AgentConfig } from "./loader/agent-config.js";
 import { loadAgentLocalTools } from "./loader/agent-local-tools.js";
+import { assertUniqueToolNames } from "../lib/tool-name-audit.js";
 
 export type ToolDenial = {
   name: string;
@@ -126,6 +127,7 @@ async function buildDirectTools(
   fileWritePolicy: FileWritePolicy,
 ): Promise<{ tools: AgentTool[]; cleanup: Array<() => void> }> {
   const tools: AgentTool[] = [];
+  const sources: string[] = [];
   const cleanup: Array<() => void> = [];
   for (const capability of effectiveTools) {
     switch (capability) {
@@ -163,14 +165,16 @@ async function buildDirectTools(
             `the caller must provide an explicit denial or a direct tool implementation`,
         );
     }
+    while (sources.length < tools.length) sources.push(`configured capability "${capability}"`);
   }
-  tools.push(
-    ...(await loadAgentLocalTools(config.name, source.dir, {
+  const localTools = await loadAgentLocalTools(config.name, source.dir, {
       projectRoot: options.workRoot,
       persistDir: options.outputRoot,
       onNotice: options.onNotice,
-    })),
-  );
+    });
+  tools.push(...localTools);
+  sources.push(...localTools.map(() => `agent-local tools for "${config.name}"`));
+  assertUniqueToolNames(tools.map((tool, index) => ({ tool, source: sources[index]! })), config.name);
   return { tools, cleanup };
 }
 
