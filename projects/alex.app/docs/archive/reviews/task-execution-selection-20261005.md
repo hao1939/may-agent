@@ -17,16 +17,30 @@ also removes `needs-agent`/`needs-owner` results; Scout diagnoses publication
 failure through an ordinary call inside its workflow. Saved historical handoffs
 resume the declared procedure.
 
-All counts and source revisions below describe the **superseded experiment**,
-not verification of the replacement or a live deployment. The current owning
-regressions cover same-procedure failure/restart/partial progress, historical
-fallback evidence, nested Task context, original communication obligations,
-selector timeout followed by restored selection, and stable operational repair
-admission. The current focused App suites pass 58 tests; design integrity,
-executable examples and canonical App checks pass with the existing unclassified
-`reports` warning. Host verification and exact source revision are recorded on
-PR #344. No installed controller, paid model, deployment or live Task mutation
-was used for this revision.
+The historical question, source revisions and trial counts in the following
+sections describe the **superseded experiment**. The replacement was checked on
+Host `d7d93ca2228267bb2cfc12033ba073a81efdcd5c` and companion App source
+`e18858a75d3e4fda1b1e8874319879f5813daa24`:
+
+- [Current-head CI](https://github.com/hao1939/may-agent/actions/runs/38712401091)
+  passed Quality and Container: 3,620 tests passed, 3 optional installation
+  checks skipped, 0 failed.
+- Focused App recovery/routing/selector tests passed 85 checks against that
+  candidate SDK. The broader affected suites passed 236 and failed 3; all three
+  also fail on unchanged App code (missing `pypdf` and two existing publication
+  expectations).
+- The final local Host run passed 3,619 and hit one intermittent observer-fixture
+  deadline. That file passed all 15 tests separately; hosted full CI passed it.
+- Design integrity, examples and App checks passed with the existing unclassified
+  `reports` warning. All four Apps loaded against the candidate SDK artifact.
+
+The regressions cover same-procedure failure/restart/partial progress, historical
+session evidence, original communication obligations, inherited nested-call
+context, obsolete executor output, retained unpublished evidence, publication
+verification, restored selector operation and stable repair admission. Activate
+the matching Host, SDK and companion App routes together. No installed controller,
+paid model, deployment or live Task mutation was used; live recovery and cost
+reduction remain unverified.
 
 ## Historical question and decision
 
