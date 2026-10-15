@@ -25,18 +25,13 @@ import {
   verifyArchivedCandidateAtCanonicalHead,
 } from "./lib/knowledge-publication.js";
 
-type AgentResult = Exclude<TaskReconcileResult, { state: "needs-agent" }>;
+type AgentResult = TaskReconcileResult;
 
 export function admitExperienceReviewResult(
   value: unknown,
 ): { ok: true; result: AgentResult } | { ok: false; error: string } {
-  const admitted = admitTaskReconcileResult(value, {
-    allowNeedsAgent: false,
-  });
+  const admitted = admitTaskReconcileResult(value);
   if (!admitted.ok) return admitted;
-  if (admitted.result.state === "needs-agent") {
-    return { ok: false, error: "experience review cannot return needs-agent" };
-  }
   const requests = admitted.result.requests ?? [];
   if (requests.length > 1) {
     return {
@@ -148,38 +143,100 @@ export const name = "knowledge-planner";
 export const description =
   "Scout knowledge-library planner. Reviews current task resources and performs the smallest useful library maintenance step.";
 
-function publicationFailureHandoff(
-  error: unknown,
+async function reviewPublicationFailure(
+  ctx: WorkflowContext,
+  error: KnowledgePublicationError,
   executionId: string,
   recovery: AcceptedPublicationRecovery,
   result: AgentResult,
-): Extract<TaskReconcileResult, { state: "needs-agent" }> | undefined {
-  if (!(error instanceof KnowledgePublicationError)) return undefined;
+): Promise<ExecutionResult> {
   const publication = error;
-  return {
-    state: "needs-agent",
-    summary:
-      "Publication failed after Scout returned; the native Task owner must judge the retained failure and unpublished candidate.",
-    facts: [
-      `publication:failed:${publication.message}`,
-      `writer-execution:${executionId}`,
-      `accepted-archive-ref:${recovery.ref}`,
-      `accepted-archive-revision:${recovery.revision}`,
-      `accepted-archive-paths:${JSON.stringify(recovery.changedPaths)}`,
-      ...(publication.candidateRef
-        ? [`unpublished-candidate-ref:${publication.candidateRef}`]
-        : []),
-      ...(publication.candidateRevision
-        ? [`unpublished-candidate-revision:${publication.candidateRevision}`]
-        : []),
-      ...(publication.candidateBase
-        ? [`unpublished-candidate-base:${publication.candidateBase}`]
-        : []),
-      `unpublished-candidate-paths:${JSON.stringify(publication.changedPaths)}`,
-      "publication:unverified",
-      `unaccepted-workflow-result:${JSON.stringify(result)}`,
-    ],
-  };
+  const facts = [
+    `publication:failed:${publication.message}`,
+    `writer-execution:${executionId}`,
+    `accepted-archive-ref:${recovery.ref}`,
+    `accepted-archive-revision:${recovery.revision}`,
+    `accepted-archive-paths:${JSON.stringify(recovery.changedPaths)}`,
+    ...(publication.candidateRef
+      ? [`unpublished-candidate-ref:${publication.candidateRef}`]
+      : []),
+    ...(publication.candidateRevision
+      ? [`unpublished-candidate-revision:${publication.candidateRevision}`]
+      : []),
+    ...(publication.candidateBase
+      ? [`unpublished-candidate-base:${publication.candidateBase}`]
+      : []),
+    `unpublished-candidate-paths:${JSON.stringify(publication.changedPaths)}`,
+    "publication:unverified",
+    `unaccepted-workflow-result:${JSON.stringify(result)}`,
+  ];
+  let review: ExecutionResult;
+  try {
+    review = await ctx.agents.call(
+      "scout",
+      `Publication failed after your writer call.
+Review this failure against the original Task and return an ordinary Task result.
+This call is read-only: inspect the exact archive and candidate before judging.
+Do not repeat publication or edit the canonical library in this diagnosis call.
+You can request independent repair, wait on a concrete Condition, or leave the
+same Task incomplete with the evidence and next useful step. Do not create a
+second Task for the publication already owned here. Convergence requires current
+canonical publication evidence and will still pass the workflow verifier.
+
+## Retained publication evidence
+${facts.join("\n")}
+
+## Current Task
+${JSON.stringify(ctx.reconciliation, null, 2)}`,
+      {
+        timeoutMs: 1_800_000,
+        schema: taskAgentResultSchema,
+      },
+    );
+  } catch (error) {
+    return ctx.blocked("Scout publication diagnosis failed", {
+      error: error instanceof Error ? error.message : String(error),
+      publicationFacts: facts,
+    });
+  }
+  const admitted =
+    review.status === "done"
+      ? admitTaskReconcileResult(review.output)
+      : undefined;
+  const partial =
+    review.facts &&
+    typeof review.facts === "object" &&
+    "status" in review.facts &&
+    review.facts.status === "partial";
+  if (!admitted?.ok || partial) {
+    return ctx.blocked(
+      "Scout publication diagnosis did not return an accepted result",
+      {
+        executionId: review.id,
+        error: admitted && !admitted.ok ? admitted.error : review.summary,
+        publicationFacts: facts,
+        unacceptedReview: review.output,
+      },
+    );
+  }
+  // Keep failure evidence even when the diagnosis omits it. Never accept the
+  // writer's unpublished result by treating a successful helper call as proof.
+  const reviewed = admitTaskReconcileResult({
+    ...admitted.result,
+    facts: [...facts, ...admitted.result.facts],
+  });
+  if (!reviewed.ok) {
+    return ctx.blocked(
+      "Scout publication diagnosis could not retain its evidence",
+      {
+        executionId: review.id,
+        error: reviewed.error,
+        publicationFacts: facts,
+        unacceptedReview: review.output,
+      },
+    );
+  }
+  return ctx.done(reviewed.result.summary, reviewed.result);
 }
 
 export async function verify(
@@ -432,13 +489,11 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
       ...candidateFailureDetails(),
     });
   }
-  const admitted = admitTaskReconcileResult(result.output, {
-    allowNeedsAgent: false,
-  });
-  if (!admitted.ok || admitted.result.state === "needs-agent") {
+  const admitted = admitTaskReconcileResult(result.output);
+  if (!admitted.ok) {
     return ctx.blocked("Scout owner maintenance returned an invalid result", {
       executionId: result.id,
-      error: admitted.ok ? "needs-agent is not accepted" : admitted.error,
+      error: admitted.error,
       ...candidateFailureDetails(),
     });
   }
@@ -481,14 +536,8 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
             recovery,
           });
     if (retained) return ctx.done(retained.summary, retained);
-    if (recovery) {
-      const handoff = publicationFailureHandoff(
-        error,
-        result.id,
-        recovery,
-        agentResult,
-      );
-      if (handoff) return ctx.done(handoff.summary, handoff);
+    if (recovery && error instanceof KnowledgePublicationError) {
+      return reviewPublicationFailure(ctx, error, result.id, recovery, agentResult);
     }
     return ctx.blocked("Scout maintenance was not published", {
       executionId: result.id,

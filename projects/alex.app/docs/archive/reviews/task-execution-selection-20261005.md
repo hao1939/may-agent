@@ -1,0 +1,142 @@
+# Superseded execution-selection trial — October 5, 2026
+
+**Supports:** [Task attempts](../../2a-design/task-attempts.md#selecting-the-attempt-mechanism).
+**Choice basis:** [Apps own meaning; the Host owns mechanics](../../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics), [simple first](../../1-principles/core-principles.md#simple-first), and [purpose](../../1-principles/purpose.md).
+
+## October 15 revision
+
+The explicit selection action below was rejected during design review and is
+removed from PR #344. It put App recovery policy back into Host routing and
+required replay/precedence rules for a fact already expressed by the declared
+procedure. The replacement is documented in
+[Task attempts](../../2a-design/task-attempts.md#selecting-the-attempt-mechanism):
+run the declared procedure on every attempt and compose agent calls within it.
+Alex routes selector failures to ordinary owned investigation. No new execution
+flag, recovery mode or handback operation is introduced. The final revision
+also removes `needs-agent`/`needs-owner` results; Scout diagnoses publication
+failure through an ordinary call inside its workflow. Saved historical handoffs
+resume the declared procedure.
+
+The historical question, source revisions and trial counts in the following
+sections describe the **superseded experiment**. The replacement was checked on
+Host `d7d93ca2228267bb2cfc12033ba073a81efdcd5c` and companion App source
+`e18858a75d3e4fda1b1e8874319879f5813daa24`:
+
+- [Current-head CI](https://github.com/hao1939/may-agent/actions/runs/38712401091)
+  passed Quality and Container: 3,620 tests passed, 3 optional installation
+  checks skipped, 0 failed.
+- Focused App recovery/routing/selector tests passed 85 checks against that
+  candidate SDK. The broader affected suites passed 236 and failed 3; all three
+  also fail on unchanged App code (missing `pypdf` and two existing publication
+  expectations).
+- The final local Host run passed 3,619 and hit one intermittent observer-fixture
+  deadline. That file passed all 15 tests separately; hosted full CI passed it.
+- Design integrity, examples and App checks passed with the existing unclassified
+  `reports` warning. All four Apps loaded against the candidate SDK artifact.
+
+The regressions cover same-procedure failure/restart/partial progress, historical
+session evidence, original communication obligations, inherited nested-call
+context, obsolete executor output, retained unpublished evidence, publication
+verification, restored selector operation and stable repair admission. Activate
+the matching Host, SDK and companion App routes together. No installed controller,
+paid model, deployment or live Task mutation was used; live recovery and cost
+reduction remain unverified.
+
+## Historical question and decision
+
+Can an App return routine work to its configured procedure after agent recovery,
+without making the Host infer that a successful result ends recovery?
+
+The previous contract deliberately retained agent execution for the whole Task
+generation. A selector read timeout therefore changed every later selector wake
+into agent execution. It also allowed the agent to manually substitute a different
+reviewer and capacity policy. The underlying cause of that five-second read delay
+was not established. This trial addresses persistent method selection, not the
+read latency or model judgment quality.
+
+Add one action through existing live/final Task changes: `select-execution`,
+with `execution: declared | agent` and a reason. Save the choice on the ordinary
+attempt; the next eligible claim records the chosen handler. No separate recovery
+Task, mode, timer or App-specific Host rule is needed. Convergence does not choose
+a method. Alex's guidance asks its recovery agent to restore the selector and
+return routine work to its configured workflow when appropriate.
+
+## Source and fixture observations
+
+Host candidate: `7d697f3dced9cf908ca3f885fb89d45b86058c8a`, [PR #344](https://github.com/hao1939/may-agent/pull/344), branch
+`fix/task-execution-selection-20261005`, based on `285100b18`.
+App companion: branch `fix/selector-execution-choice-20261005`, based on
+`e4c882d0d2`. The companion includes the owning contracts, evaluator guidance
+and a selector regression; it changes no installed definitions.
+
+The combined fixture used the actual Host claim/change/settlement functions,
+file-backed Task state reopened after the agent result, and the actual selector.
+Only the catalog, metric reader, emitted-event sink and agent decision were
+scripted. One initial catalog timeout was followed by restored reads. A retained
+Sol-only review was present throughout.
+
+| Run | Recovery and later handlers | Scripted agent passes | Routine reviewer |
+| --- | --- | --- | --- |
+| No execution choice | Agent recovery, then agent on three later wakes | 4 | Control agent did not execute the selector |
+| Explicit declared choice | One agent pass, then workflow continuation and three later workflow wakes | 1 | `evaluator-deepseek` on each selector emission |
+
+In the explicit-choice run, the original input remained unanswered after the
+agent's partial result and was fulfilled by the resumed workflow. Restart did
+not erase the choice. The Sol backlog did not block DeepSeek selection. This
+establishes the routing correction under the scripted decision; it is not a
+measured token-saving percentage or a live behavior claim.
+
+Host regressions additionally cover both workflow and executor return, retained
+Conditions and deadlines, repeated recovery in the same generation, stale claims,
+specification revisions, atomic rollback, replay after a newer decision, ordinary
+convergence without handback, unavailable selected agents, and final `needs-agent`
+precedence over an earlier live choice. Normal runtime tests cover both final-only
+and live-plus-final actions. The selector regression checks that a catalog timeout
+remains an error and subsequent successful selection preserves DeepSeek routing.
+
+Further admission review reproduced a conflict hidden by replay filtering:
+after a live procedure choice, a batch repeating that choice and also selecting
+the agent was incorrectly accepted. Shared live/final admission now rejects
+multiple choices before replay filtering. The regression failed before the fix
+and passed afterward. Interruption trials also retained both possible live
+choices across Task-store reopen and ordinary recovery, without answering the
+original input or accepting later stale actions. The SDK and durable-retry
+suite passed 71 tests on the revised candidate.
+
+Final local Host CI passed: 3,623 tests, zero failures, and three optional
+installed-agent checks skipped. The App selector suite passed 44 tests. Design
+integrity and executable examples passed with the existing unclassified `reports`
+directory warning. These results describe the candidate source, not deployment.
+
+## Reproduction and limits
+
+From the Host candidate checkout:
+
+```sh
+bun test ./src/app/core/tasks/app-task-retry.test.ts ./packages/sdk/src/task-contract.test.ts
+bun test ./src/app/core/tasks/app-task-runtime.test.ts -t 'returns to the configured workflow through'
+bun run ci
+```
+
+From the App companion checkout with its source SDK available:
+
+```sh
+bun test ./projects/alex.app/agents/evaluator/workflows/task-outcome-selector.test.ts
+bun run check:may-design
+```
+
+The local combined harness and JSON output are retained under
+`.state/evaluator-execution-choice-poc-20261005/`. Its `trial.ts` takes
+`TRIAL_HOST_SOURCE` and `TRIAL_APPS_SOURCE` pointing to those checkouts. It uses
+only temporary databases and synthetic reads; its attempt driver is manual.
+The committed regressions own the enduring contract, not this disposable harness.
+
+No paid model, installed controller, downstream review delivery, container restart
+or live Task mutation was used. The trial does not show that the evaluator reads
+the guidance or reliably judges when handback is appropriate. It does not certify
+all selector failure paths, the timeout's underlying cause, or live cost reduction.
+
+Install the Host capability before activating App guidance that uses it. Then
+observe the existing selector Task through recovery, an explicitly selected
+workflow attempt, and later ordinary wakes; verify exact reviewer routing,
+retained input and session usage. A merged source PR alone is not that evidence.

@@ -495,81 +495,124 @@ describe("Scout owner reconciliation boundary", () => {
     },
   );
 
-  it("hands a recovery publication failure to the native owner with exact unpublished evidence", async () => {
-    const fixture = publicationTestFixture();
-    const lock = join(fixture.repositoryRoot, ".git/index.lock");
-    const ref = "refs/archive/scout-publication/native-owner-handoff";
-    const revision = fixture.git("rev-parse", "HEAD");
-    fixture.git("update-ref", ref, revision);
-    try {
-      const result = await execute(
-        createTestAppWorkflowContext({
-          input: {},
-          reconciliation: {
-            appId: "scout-knowledge-lib",
-            taskId: "goal/native-owner-handoff",
-            generation: 1,
-            resourceVersion: 1,
-            agent: "scout",
-            outcome: "Deliver accepted knowledge",
-            acceptance: ["Canonical publication is verified"],
-            input: {
-              kind: "goal",
-              data: {
-                outcome: "Deliver accepted knowledge",
-                context: {
-                  reason: "accepted-publication-recovery",
-                  candidateRef: ref,
-                  candidateRevision: revision,
-                  changedPaths: [
-                    "projects/scout-knowledge-lib/knowledge/README.md",
-                  ],
+  it.each(["incomplete", "waiting", "invalid", "throw"] as const)(
+    "keeps publication diagnosis inside the workflow and retains evidence after %s",
+    async (outcome) => {
+      const fixture = publicationTestFixture();
+      const lock = join(fixture.repositoryRoot, ".git/index.lock");
+      const ref = "refs/archive/scout-publication/native-owner-handoff";
+      const revision = fixture.git("rev-parse", "HEAD");
+      fixture.git("update-ref", ref, revision);
+      let calls = 0;
+      try {
+        const result = await execute(
+          createTestAppWorkflowContext({
+            input: {},
+            reconciliation: {
+              appId: "scout-knowledge-lib",
+              taskId: "goal/native-owner-handoff",
+              generation: 1,
+              resourceVersion: 1,
+              agent: "scout",
+              outcome: "Deliver accepted knowledge",
+              acceptance: ["Canonical publication is verified"],
+              input: {
+                kind: "goal",
+                data: {
+                  outcome: "Deliver accepted knowledge",
+                  context: {
+                    reason: "accepted-publication-recovery",
+                    candidateRef: ref,
+                    candidateRevision: revision,
+                    changedPaths: [
+                      "projects/scout-knowledge-lib/knowledge/README.md",
+                    ],
+                  },
                 },
               },
+              children: { live: [], completed: [] },
+              events: { items: [], truncated: false },
             },
-            children: { live: [], completed: [] },
-            events: { items: [], truncated: false },
-          },
-          workspace: fixture.workspace,
-          callAgent: (async (_agent, prompt) => {
-            const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
-            const output = join(candidate!, "knowledge/adaptation.md");
-            writeFileSync(output, "Unpublished adaptation\n");
-            writeFileSync(lock, "publisher failure\n");
-            return {
-              id: "s_post_writer_failure",
-              kind: "agent",
-              status: "done",
-              summary: "Adaptation ready",
-              output: {
-                state: "converged",
+            workspace: fixture.workspace,
+            callAgent: (async (_agent, prompt) => {
+              calls++;
+              if (calls === 2) {
+                expect(prompt).toContain(
+                  "Publication failed after your writer call",
+                );
+                expect(prompt).toContain(`accepted-archive-ref:${ref}`);
+                expect(prompt).toContain("unpublished-candidate-revision:");
+                expect(prompt).toContain("read-only");
+                if (outcome === "throw")
+                  throw new Error("Diagnosis provider unavailable");
+                return {
+                  id: "s_diagnosis",
+                  kind: "agent",
+                  status: "done",
+                  summary: "Publisher remains blocked",
+                  output: {
+                    state: outcome === "invalid" ? "needs-agent" : outcome,
+                    summary: "Publisher remains blocked",
+                    facts: ["lock:observed"],
+                    ...(outcome === "waiting"
+                      ? { reviewAt: Date.now() + 60_000 }
+                      : {}),
+                  },
+                };
+              }
+              const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
+              const output = join(candidate!, "knowledge/adaptation.md");
+              writeFileSync(output, "Unpublished adaptation\n");
+              writeFileSync(lock, "publisher failure\n");
+              return {
+                id: "s_post_writer_failure",
+                kind: "agent",
+                status: "done",
                 summary: "Adaptation ready",
-                facts: [`output:${output}`, "owner-judgment:adaptation"],
-              },
-            };
-          }) as WorkflowContext["agents"]["call"],
-        }),
-      );
-      expect(result.status).toBe("done");
-      expect(result.output).toMatchObject({ state: "needs-agent" });
-      const evidence = result.output?.facts?.join("\n") ?? "";
-      expect(evidence).toContain("writer-execution:s_post_writer_failure");
-      expect(evidence).toContain(`accepted-archive-ref:${ref}`);
-      expect(evidence).toContain(`accepted-archive-revision:${revision}`);
-      expect(evidence).toContain("unpublished-candidate-ref:");
-      expect(evidence).toContain("unpublished-candidate-revision:");
-      expect(evidence).toContain("unpublished-candidate-base:");
-      expect(evidence).toContain("unpublished-candidate-paths:");
-      expect(evidence).toContain("publication:unverified");
-      expect(evidence).toContain("unaccepted-workflow-result:");
-      expect(evidence).toContain('"state":"converged"');
-      expect(result.output).not.toHaveProperty("conditions");
-      expect(result.output).not.toHaveProperty("requests");
-    } finally {
-      rmSync(lock, { force: true });
-      rmSync(fixture.repositoryRoot, { recursive: true, force: true });
-    }
-  });
+                output: {
+                  state: "converged",
+                  summary: "Adaptation ready",
+                  facts: [`output:${output}`, "owner-judgment:adaptation"],
+                },
+              };
+            }) as WorkflowContext["agents"]["call"],
+          }),
+        );
+        expect(calls).toBe(2);
+        if (outcome === "invalid" || outcome === "throw") {
+          expect(result.status).toBe("blocked");
+          const evidence = JSON.stringify(result);
+          expect(evidence).toContain(`accepted-archive-ref:${ref}`);
+          expect(evidence).toContain("unpublished-candidate-revision:");
+          expect(evidence).toContain("unaccepted-workflow-result:");
+          expect(result.output).toBeUndefined();
+          return;
+        }
+        expect(result.status).toBe("done");
+        expect(result.output).toMatchObject({
+          state: outcome,
+          summary: "Publisher remains blocked",
+        });
+        expect(result.output?.facts).toContain("lock:observed");
+        const evidence = result.output?.facts?.join("\n") ?? "";
+        expect(evidence).toContain("writer-execution:s_post_writer_failure");
+        expect(evidence).toContain(`accepted-archive-ref:${ref}`);
+        expect(evidence).toContain(`accepted-archive-revision:${revision}`);
+        expect(evidence).toContain("unpublished-candidate-ref:");
+        expect(evidence).toContain("unpublished-candidate-revision:");
+        expect(evidence).toContain("unpublished-candidate-base:");
+        expect(evidence).toContain("unpublished-candidate-paths:");
+        expect(evidence).toContain("publication:unverified");
+        expect(evidence).toContain("unaccepted-workflow-result:");
+        expect(evidence).toContain('"state":"converged"');
+        expect(result.output).not.toHaveProperty("conditions");
+        expect(result.output).not.toHaveProperty("requests");
+      } finally {
+        rmSync(lock, { force: true });
+        rmSync(fixture.repositoryRoot, { recursive: true, force: true });
+      }
+    },
+  );
 
   it("verifies a publisher-backed owner adaptation without allocating a candidate", async () => {
     const fixture = publicationTestFixture();
@@ -1223,7 +1266,6 @@ describe("Scout owner reconciliation boundary", () => {
     });
     const admitted = admitTaskReconcileResult(
       result.status === "done" ? result.output : undefined,
-      { allowNeedsAgent: true },
     );
     expect(admitted.ok && admitted.result.requests?.[0]).toMatchObject({
       id: "repair-navigation",

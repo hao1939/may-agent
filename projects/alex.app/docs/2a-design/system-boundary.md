@@ -302,15 +302,17 @@ same Task generation; changing the specification is not itself a recovery requir
 Prepared alternatives, backoff and idempotency guards are mechanical prerequisites,
 not proof that an agent diagnosed unfamiliar broken code. Such proof needs the
 agent's own investigation and authorized correction, followed by verification of
-the original outcome through normal settlement. The selected procedure is the
-initial execution path. On failure, the Host can give the same Task to its
-responsible agent through ordinary execution,
-retaining the failed attempt and original obligations. This changes execution,
-not scope or authority; configured verification still governs completion.
-The Host marks each failure-driven switch on the agent's first attempt and
-exposes it through existing metrics and attempt reads. Successful recovery does
-not erase that evidence. Apps judge whether its frequency or cost warrants repair;
-recording a switch alone does not create another request or notification.
+the original outcome through normal settlement.
+
+The App owns the declared execution procedure and its recovery decisions.
+The Host runs that procedure on every eligible attempt, retains failed and
+accepted evidence, and supplies scoped capabilities and normal retry mechanics.
+A workflow can call its responsible agent for judgment with ordinary
+`ctx.agents.call`, use the contribution and return the Task result. Neither
+failure nor the helper session becomes authority to select a different procedure
+on future attempts. Convergence does not establish repair. App subscriptions
+and metric policies route failures into owned investigation; the Host keeps
+those failures observable even when execution failed before App code ran.
 [Attempt selection](task-attempts.md#selecting-the-attempt-mechanism) owns the
 exact handoff and restart behavior. A dead Host requires the installation's
 process supervisor/operator; an unavailable owner uses only the fallback

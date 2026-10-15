@@ -18,6 +18,28 @@ May/reviewer costs and is not a billing receipt. Two selector canaries rotated
 from May to Scout without selecting Evaluation or causing a storm. The original
 daily cadence was a bounded pilot and has been superseded for this installation.
 
+## Selector recovery policy
+
+The selector workflow owns routine catalog reads, cursor handling, reviewer
+choice and capacity separation. Failure retains its original inputs and cursor;
+Host backoff retries that declared workflow. No failure-driven model invocation
+replaces routine selection on later wakes.
+
+Alex routes selector `retrying` and `incomplete` reconciliation reports to one
+ordinary `runtime/selector-recovery` Task assigned to Alex. Repeated notices
+retain separate admissions and exact attempt evidence under the same stable
+assignment. This also covers errors before workflow code runs and remains active
+when automatic semantic sampling is disabled. It does not create a semantic
+review of the evaluator's own selector. Alex reads current state, repairs or
+requests help, and escalates unresolved blockers to May through ordinary work.
+
+The original selector keeps retrying independently. A repair result does not
+settle its pending input, prove a successful selection or alter the configured
+reviewer. Verify a subsequent real workflow attempt before claiming recovery.
+The [Task execution contract](../2a-design/task-attempts.md#selecting-the-attempt-mechanism)
+is revised in Host PR #344; activate this App route before or with that change.
+Portable fixtures prove routing and retained obligations, not live cost savings.
+
 ## Boundary
 
 **Observer evidence (activated September 30):** See the

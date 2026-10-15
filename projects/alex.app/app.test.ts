@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import app, { evaluationReportInput, taskForInput, taskInputForEvent } from "./app.ts";
-import { assertValidAppDefinition } from "/app/projects/may-agent/src/app/core/apps/definition-validation.ts";
+import { assertValidAppDefinition } from "../may-agent/src/app/core/apps/definition-validation.ts";
 
 test("Alex bootstrap uses ordinary durable Task admission", () => {
   expect(() => assertValidAppDefinition(app)).not.toThrow();
@@ -240,4 +240,31 @@ test("Alex translates its blocked standalone workflow facts into ordinary owned 
   expect(taskForInput({ id: "workflow-report", input } as never).intent).toMatchObject({ agent: "alex", input });
   expect(taskInputForEvent({ ...fact, data: { ...fact.data, projectId: "another" } })).toBeNull();
   expect(taskInputForEvent({ ...fact, data: { ...fact.data, workflowRunId: "" } })).toBeNull();
+});
+
+test("selector failures reach one executable repair Task even when automatic sampling is disabled", () => {
+  const enabled = process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+  process.env.EVALUATION_AUTO_REVIEW_ENABLED = "false";
+  try {
+    const makeInput = (attemptId: string, disposition = "retrying", project = "alex") => taskInputForEvent({
+      type: "project.task.reconciled",
+      data: { project, taskId: "runtime/task-outcome-selector", attemptId,
+        handler: "workflow:task-outcome-selector", disposition,
+        summary: "Public evidence read timed out" },
+    } as never);
+    const first = makeInput("failed-1")!;
+    const next = makeInput("failed-2", "incomplete")!;
+    expect(first.kind).toBe("message");
+    expect(first.data).toMatchObject({ context: { selectorFailure: { attemptId: "failed-1" } } });
+    expect(next.data).toMatchObject({ context: { selectorFailure: { attemptId: "failed-2" } } });
+    const task = taskForInput({ id: "notice-1", input: first } as never);
+    expect(taskForInput({ id: "notice-2", input: next } as never)).toEqual(task);
+    expect(task.intent).toMatchObject({ id: "runtime/selector-recovery", agent: "alex" });
+    expect(task.intent).not.toHaveProperty("workflow");
+    expect(makeInput("recovered", "converged")).toBeNull();
+    expect(makeInput("other", "retrying", "other-app")).toBeNull();
+  } finally {
+    if (enabled === undefined) delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+    else process.env.EVALUATION_AUTO_REVIEW_ENABLED = enabled;
+  }
 });

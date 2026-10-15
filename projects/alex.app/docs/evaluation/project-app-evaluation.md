@@ -335,9 +335,10 @@ freshness, next check, owner, and fallback. A Condition change wakes affected
 tasks.
 
 An attempt failure does not prove the desired outcome impossible or justify a
-generic blocked task. A workflow asks for one owner judgment only by returning
-`needs-agent`; an unavailable named workflow leaves the task in `attention`
-until its binding is repaired. Supervision repairs only broken mechanical
+generic blocked task. A workflow calls an agent directly for judgment; an
+unavailable named workflow produces a visible failure and paced retries of
+the declared procedure. The App routes its failure evidence to owned repair.
+Supervision repairs only broken mechanical
 invariants such as lost delivery or a dead attempt; it does not repeat
 evaluation judgment.
 

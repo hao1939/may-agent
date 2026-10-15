@@ -148,9 +148,11 @@ For a resource-backed task, publish facts only with
 Return cross-App result work as a typed dependency; do not emit
 `app.input.requested` directly.
 
-Use `needs-agent` only when the same App needs exceptional judgment from its
-selected agent. Do not clear an explicit workflow merely to let an agent perform
-workflow-owned effects.
+Use `ctx.agents.call` for judgment and incorporate its contribution in the
+ordinary workflow result. The workflow remains the procedure for later attempts.
+The call can be part of normal work or an error handler. Return its contribution
+through the same result admission and authored verification. Do not return
+`needs-agent` or clear the workflow to change execution.
 
 ### Cross-App outcome reviews
 

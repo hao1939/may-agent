@@ -67,9 +67,7 @@ describe("accepted publication ownership", () => {
       acceptedWaiting: first,
     });
 
-    const admitted = admitTaskReconcileResult(first, {
-      allowNeedsAgent: false,
-    });
+    const admitted = admitTaskReconcileResult(first);
     if (!admitted.ok) throw new Error(admitted.error);
     expect(admitted.result.requests).toEqual(first?.requests);
     expect(admitted.result.conditions).toEqual(first?.conditions);

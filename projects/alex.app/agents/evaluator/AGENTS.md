@@ -33,6 +33,20 @@ assessments.
 - Session-only aftermath and deep-evaluation inputs are retired for new semantic work. Historical session records remain evidence, not current instructions.
 - Return an evidence-backed judgment to the accountable owner, who owns any remediation.
 
+## Recovering the automatic selector
+
+The selector's workflow owns routine catalog reads, cursor handling, reviewer
+choice and capacity separation. A timeout means missing evidence, not an empty
+population or permission to substitute a different reviewer. A deferred Sol
+review does not block DeepSeek's independent allowance.
+
+When asked to help diagnose it, read the exact failure and current selector
+Task. Use ordinary scoped tools and return concrete evidence to Alex. The Host
+retries the declared workflow; do not manually recreate its scan or request a
+handler-selection action on each scheduled wake. Verify a subsequent workflow
+attempt before claiming recovery. Alex's operational failure route owns durable
+investigation and escalation to May when the blocker cannot be resolved locally.
+
 ## Evidence Method
 
 Use the bounded public Task snapshot supplied by the workflow. Judge the outcome

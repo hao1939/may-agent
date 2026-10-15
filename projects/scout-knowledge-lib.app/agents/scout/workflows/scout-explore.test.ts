@@ -735,7 +735,7 @@ describe("scout-explore workflow prompt", () => {
     );
     // Assert the production result contract, not just the workflow's old shape.
     expect(
-      admitTaskReconcileResult(result, { allowNeedsAgent: false }),
+      admitTaskReconcileResult(result),
     ).toMatchObject({
       ok: true,
       result: {
@@ -1638,7 +1638,7 @@ describe("scout-explore workflow prompt", () => {
       },
     });
     expect(
-      admitTaskReconcileResult(first.output, { allowNeedsAgent: false }),
+      admitTaskReconcileResult(first.output),
     ).toMatchObject({ ok: true });
 
     const retry = async (acceptedResult: unknown) => {
@@ -1662,7 +1662,7 @@ describe("scout-explore workflow prompt", () => {
       output: { state: "incomplete", result: first.output!.result },
     });
     expect(
-      admitTaskReconcileResult(second.output, { allowNeedsAgent: false }),
+      admitTaskReconcileResult(second.output),
     ).toMatchObject({ ok: true });
     const third = await retry(second.output);
 
@@ -1686,7 +1686,7 @@ describe("scout-explore workflow prompt", () => {
       },
     });
     expect(
-      admitTaskReconcileResult(third.output, { allowNeedsAgent: false }),
+      admitTaskReconcileResult(third.output),
     ).toMatchObject({ ok: true });
     expect(writerCalls).toBe(1);
     expect(emitAttempts).toBe(3);

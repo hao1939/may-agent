@@ -272,6 +272,32 @@ from its requirements and evidence. Workflow authors must return rejected
 decisions and their errors to the responsible agent instead of mechanically
 replaying the same saved result. Check accepted effects before repeating actions.
 
+### Recover within the declared procedure
+
+The Task's assigned agent owns the outcome; its App owns the procedure. Read
+current input, accepted effects and `previousAttempt` before deciding what needs
+repair. A read timeout means evidence is unavailable, not an empty population.
+
+Workflow authors call `ctx.agents.call` when judgment is useful, then use the
+returned contribution and submit the ordinary result. Future attempts still run
+the declared workflow. The Host handles bounded execution, retry/backoff and
+restart; there is no action to select or hand back the next executor. A partial
+result can preserve useful progress while independent Conditions remain open.
+For repair that needs a separate durable owner, use an ordinary request and
+Condition, preserving the original return relationship.
+
+An error before your procedure runs is still recorded and reported. Declare an
+App subscription or metric policy that reaches executable investigation; do not
+assume the Host invents a recovery agent. Check the affected Task's current
+state before acting on old failure notices. Verify a real procedure execution
+before claiming recovery; an accepted diagnosis is not that verification.
+
+The revised rule requires Host PR #344. Older Hosts can retain agent fallback
+until a Task revision; inspect the installed version and report that limitation
+rather than inventing an execution-selection action. Migrate existing
+`needs-agent` callers to ordinary agent calls and activate the matching App,
+Host and SDK revisions together; that output is rejected for every executor.
+
 ### Finish the repair's feedback
 
 Return verified repair evidence to the Task that owns the original problem,

@@ -46,7 +46,7 @@ import {
   snapshotKnowledge,
 } from "./lib/knowledge-publication.js";
 
-type TaskHandlerResult = Exclude<TaskReconcileResult, { state: "needs-agent" }>;
+type TaskHandlerResult = TaskReconcileResult;
 
 export const name = "scout-explore";
 export const description =

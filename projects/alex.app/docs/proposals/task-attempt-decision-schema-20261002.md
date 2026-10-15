@@ -122,28 +122,16 @@ type TaskAgentResult =
       reviewAt?: never;
     });
 
-// Workflow-only handoff; never exposed as an agent choice.
-type TaskReconcileResult = TaskAgentResult | {
-  decision: "needs-agent";
-  summary: string;
-  facts: string[];
-  inputKeys?: never;
-  result?: never;
-  response?: never;
-  report?: never;
-  requests?: never;
-  conditions?: never;
-  actions?: never;
-  reviewAt?: never;
-};
+// One result contract; workflows compose their own calls.
+type TaskReconcileResult = TaskAgentResult;
 ```
 
 Every JSON branch rejects unknown fields. Branch-only fields are forbidden in
 other branches, even if their value is an empty array. Numeric bounds,
 non-empty values and current-state checks are enforced at admission/settlement,
 not implied by a TypeScript `string` or `number`.
-`error` is Host execution evidence, never an agent decision. A resolved agent
-cannot return `needs-agent` or choose another execution owner this way.
+`error` is Host execution evidence, never an agent decision. No handler result
+selects another executor; workflow code calls agents directly when needed.
 
 ### Field meanings and allowed combinations
 
@@ -417,7 +405,7 @@ sessions. Normalize supported old outputs once at SDK admission:
 | `state: waiting`, no continuation | wait |
 | `state: converged` | converged |
 | `state: incomplete` | incomplete |
-| Workflow `state: needs-agent` / supported legacy alias | needs-agent, workflow only |
+| Workflow `state: needs-agent` / legacy alias | Removed by PR #344; call the agent within the workflow |
 
 Validate the old contract before converting it. Preserve reports, facts,
 scope, deadlines, Conditions and actions. Keep #285's legacy dependency
