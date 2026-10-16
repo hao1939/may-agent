@@ -113,8 +113,9 @@ specify the intended corrections and their trials.
 ### Return unresolved work to agent judgment
 
 **Status:** Accepted flow; optional-report Host fix is
-[Host `791abcc11`](https://github.com/hao1939/may-agent/commit/791abcc11), based on
-Host main `0fa9a8a12`. No deployment is established. The
+[Host PR #373](https://github.com/hao1939/may-agent/pull/373) at `791abcc11`, based on
+Host main `0fa9a8a12`. Local CI and both GitHub checks passed; review and deployment
+remain separate. The
 [source review](../archive/reviews/agent-judgment-and-code-paths-20261016.md)
 reproduced late App-reader rejection and hidden requirements on optional
 finish diagnostics. Requiring a report is useful; requiring complete findings
