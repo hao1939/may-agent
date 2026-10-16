@@ -260,16 +260,11 @@ describe("prepared completion contract", () => {
     }
   });
 
-  it("does not terminate successful attempts that lack facts or claim nonexistent files", async () => {
+  it("does not terminate successful attempts that claim nonexistent files", async () => {
     const { finish, context } = prepare();
-    for (const [args, error] of [
-      [{ ...review, verification_facts: [] }, "verification_facts"],
-      [{ ...review, deliverables: [{ path: "missing.txt", description: "missing proof" }] }, "Deliverables not found"],
-    ] as const) {
-      const ctx = context(args);
-      const result = await finish.execute(ctx.toolCall.id, validateToolArguments(finish, ctx.toolCall));
-      expect(result.terminate).toBeUndefined();
-      expect(result.content).toContainEqual({ type: "text", text: expect.stringContaining(error) });
-    }
+    const ctx = context({ ...review, deliverables: [{ path: "missing.txt", description: "missing proof" }] });
+    const result = await finish.execute(ctx.toolCall.id, validateToolArguments(finish, ctx.toolCall));
+    expect(result.terminate).toBeUndefined();
+    expect(result.content).toContainEqual({ type: "text", text: expect.stringContaining("Deliverables not found") });
   });
 });
