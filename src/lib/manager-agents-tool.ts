@@ -1,5 +1,5 @@
 /**
- * Agents tool — lets agents cooperate: call, fork, context, list, peek, cancel, sessions.
+ * Agents tool — bounded calls, helper follow-up, inspection and cancellation.
  *
  * Takes manager dependencies as parameters to avoid circular imports.
  */
@@ -46,6 +46,7 @@ export interface AgentsToolManagerDeps {
   progress(sessionId: string, limit?: number): AgentMessage[];
   hasActiveSession(sessionId: string): boolean;
   cancel(sessionId: string): void;
+  followUpHelper(sessionId: string, text: string, callerSessionId?: string): void;
   getSessionSummary(sessionId: string): { task: string; summary: string; status: string };
   getWorkflowSteps(workflowRunId: string): Array<{ step: string; sessionId: string; summary: string }>;
   registry: {
@@ -74,7 +75,7 @@ function textResult(text: string): AgentToolResult<string> {
 
 const AgentsToolParams = Type.Object({
   action: StringEnum(
-    ["call", "fork", "context", "list", "peek", "cancel", "sessions"] as const,
+    ["call", "fork", "follow-up", "context", "list", "peek", "cancel", "sessions"] as const,
     {
       description: [
         "'call': run an agent synchronously and get the result (blocks your session until the agent finishes). Creates a child session in your call tree. Returns id, kind, status, summary and output/facts; inspect evidence before accepting the contribution.",
@@ -82,9 +83,10 @@ const AgentsToolParams = Type.Object({
         "'context': query session context — parent's summary, origin session, workflow steps. Use when you need more context than your task provides.",
         "'list': show all available agents with descriptions and any running sessions.",
         "'peek': view recent messages from a running session (requires sessionId).",
+        "'follow-up': send a correction or additional context to your running helper using its returned sessionId and content. Queued for consideration; does not create new work or prove the correction was applied. Durable requirement changes belong in Task input; existing Task feedback already reaches active helpers.",
         "'cancel': request cancellation through the owning runtime (requires sessionId).",
         "'sessions': query persisted execution sessions (optionally filter by agent or status).",
-        "To send a one-way FYI notification, use the separate `message` tool instead of this action list.",
+        "For independent FYI notifications to an available recipient, use `message`. To update a helper, use 'follow-up', not its agent name.",
       ].join(" "),
     },
   ),
@@ -101,8 +103,9 @@ const AgentsToolParams = Type.Object({
     }),
   ),
   sessionId: Type.Optional(
-    Type.String({ description: "Session ID for 'peek' or 'cancel'. Get session IDs from 'list' output." }),
+    Type.String({ description: "Session ID for 'peek', 'follow-up' or 'cancel'. Use the exact ID returned by 'fork' for helper follow-up." }),
   ),
+  content: Type.Optional(Type.String({ description: "Correction or additional context for 'follow-up'. Does not expand the helper's authority." })),
   limit: Type.Optional(
     Type.Number({
       description:
@@ -209,7 +212,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
     name: "agents",
     label: "Agents",
     description:
-      "Cooperate with other agents. Use 'list' to see available agents, 'call' to run one synchronously, 'fork' for a bounded helper owned by your live session, 'peek'/'cancel' to monitor sessions, and 'sessions' to query persisted execution. For one-way FYI notifications, use the separate `message` tool.",
+      "Cooperate with other agents. Use 'list' for discovery, 'call' to await a result, 'fork' for a bounded helper, 'follow-up' to correct that helper, 'peek'/'cancel' to inspect or stop it, and 'sessions' for execution history. Independent notifications use `message`; helper updates use the exact sessionId.",
     parameters: AgentsToolParams,
     execute: async (_toolCallId, _params, signal) => {
       const params = _params as AgentsToolParamsType;
@@ -220,7 +223,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
           return textResult(
             JSON.stringify({
               error:
-                "The agents.message and agents.send actions have been removed. Use the message tool: message({ to, content, intent?, priority? }) for async inter-agent communication, or agents.call/agents.fork with { agent, task } for a bounded helper. Durable work belongs to an App Task.",
+                "The agents.message and agents.send actions have been removed. Use the message tool: message({ to, content, intent?, priority? }) for independent notifications, agents({ action: 'follow-up', sessionId, content }) to correct your running helper, or agents.call/agents.fork with { agent, task } for a bounded helper. Durable work belongs to an App Task.",
             }),
           );
         }
@@ -336,7 +339,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                 status: "started",
                 sessionId,
                 agent: params.agent,
-                hint: `Use peek({ sessionId: "${sessionId}" }) to monitor progress.`,
+                hint: `Use agents({ action: 'peek', sessionId: '${sessionId}' }) to inspect progress, or action: 'follow-up' with this sessionId and content to correct the helper. Inspect current evidence before cancelling; reading and recovering a tool error can be useful progress.`,
               }),
             );
           }
@@ -374,6 +377,18 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               return textResult(JSON.stringify({ error: msg }));
             }
           }
+          case "follow-up": {
+            if (!params.sessionId || !params.content?.trim()) {
+              return textResult(JSON.stringify({ error: "'follow-up' requires 'sessionId' and non-empty 'content'" }));
+            }
+            manager.followUpHelper(params.sessionId, params.content, getCallerSessionId?.());
+            return textResult(JSON.stringify({
+              accepted: true,
+              sessionId: params.sessionId,
+              delivery: "queued for the running helper; inspect its result to confirm consideration",
+            }));
+          }
+
           case "cancel": {
             if (!params.sessionId) return textResult(JSON.stringify({ error: "'cancel' requires 'sessionId'" }));
             if (!opts?.validateControl) throw new Error("Session control is not configured");

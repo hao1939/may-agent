@@ -98,6 +98,78 @@ describe("direct agent tool policy", () => {
     }
   });
 
+  test("rejects duplicate concrete names from overlapping configured capabilities", async () => {
+    const root = await mkdtemp(join(tmpdir(), "may-direct-overlap-"));
+    const agentDir = join(root, "agents", "example");
+    await mkdir(agentDir, { recursive: true });
+    await writeFile(
+      join(agentDir, "agent.json"),
+      JSON.stringify({
+        name: "example",
+        description: "example",
+        domain: "test",
+        model: "test",
+        tools: ["coding", "read-only"],
+      }),
+    );
+    try {
+      await expect(
+        prepareDirectAgentExecution({
+          agentName: "example",
+          task: "Inspect the fixture",
+          projectRoot: root,
+          workRoot: root,
+          agentsRoot: join(root, "agents"),
+          sharedRoot: join(root, "shared"),
+          outputRoot: join(root, "output"),
+          models: { test: { id: "test-model" } as any },
+        }),
+      ).rejects.toThrow(
+        'Agent example has duplicate model-visible tool name "read" from configured capability "coding" and configured capability "read-only"',
+      );
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects an agent-local tool that collides with a configured concrete tool", async () => {
+    const root = await mkdtemp(join(tmpdir(), "may-direct-local-"));
+    const agentDir = join(root, "agents", "example");
+    await mkdir(join(agentDir, "tools"), { recursive: true });
+    await writeFile(
+      join(agentDir, "agent.json"),
+      JSON.stringify({
+        name: "example",
+        description: "example",
+        domain: "test",
+        model: "test",
+        tools: ["read-only"],
+      }),
+    );
+    await writeFile(
+      join(agentDir, "tools", "read.ts"),
+      'export default () => ({ name: "read" });',
+    );
+    try {
+      await expect(
+        prepareDirectAgentExecution({
+          agentName: "example",
+          task: "Inspect the fixture",
+          projectRoot: root,
+          workRoot: root,
+          agentsRoot: join(root, "agents"),
+          sharedRoot: join(root, "shared"),
+          outputRoot: join(root, "output"),
+          models: { test: { id: "test-model" } as any },
+        }),
+      ).rejects.toThrow(
+        'Agent example has duplicate model-visible tool name "read" from configured capability "read-only" and agent-local tools for "example"',
+      );
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   test("reports expanded coding and agent-local tools from actual preparation", async () => {
     const root = await mkdtemp(join(tmpdir(), "may-direct-manifest-"));
     const agentDir = join(root, "agents", "example");
