@@ -256,8 +256,13 @@ async function observationDelivery(consumer: "none" | "accept" | "fail") {
   f.db = getDb(f.persistDir);
   f.store = AppTaskResourceStore.fromDb(f.db, "sample");
   assert.deepEqual(receipts(), expired);
+  // This worker/parent boundary owns these two receipts. A concurrent receipt
+  // write for the subscriber-failure diagnostic can also fail under contention;
+  // the global metric must retain that additional failure, not hide it to make
+  // this assertion exact. Check these observations' contribution to the metric.
   assert.deepEqual(
-    f.db.prepare(UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY).get(),
+    f.db.prepare(`${UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY}
+      AND event_type IN ('project.task.reconcile.started', 'project.task.reconciled')`).get(),
     { value: consumer === "fail" ? 2 : 0 },
   );
   assert.deepEqual(acceptedAttempt(f), accepted);
