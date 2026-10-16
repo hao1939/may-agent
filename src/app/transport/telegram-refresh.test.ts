@@ -243,7 +243,7 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
 }
 
 describe("Telegram refresh lifecycle", () => {
-  it.each(["second", "first"])("keeps the new %s watch when an old terminal send finishes", async (next) => {
+  it.each(["second", "first"])("restores the new %s watch after an old terminal send finishes", async (next) => {
     const f = fixture();
     try {
       await f.command("/watch first");
@@ -254,12 +254,14 @@ describe("Telegram refresh lifecycle", () => {
 
       // Re-watching the same Task is a new selection too, even if its identity matches.
       Object.assign(f.tasks.get("first")!, { terminal: false, status: "running", summary: "New generation" });
+      const restoredText = next === "first" ? "New generation" : "Working on second";
       await f.command(`/watch ${next}`);
+      expect(f.sent.filter((send) => send.text.includes(restoredText))).toHaveLength(1);
+
       old.release();
       await waitFor(() => old.finished);
-      await Bun.sleep(20);
-      await f.command("/watch");
-      expect(f.sent.at(-1)?.text).toContain(`Task ${next}`);
+      await waitFor(() => f.sent.filter((send) => send.text.includes(restoredText)).length === 2);
+      expect(f.sent.at(-1)?.text).toContain(restoredText);
     } finally {
       await f.close();
     }

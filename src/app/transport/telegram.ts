@@ -1034,7 +1034,17 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     // must not commit stale progress to the Conversation or suppress the fresh
     // terminal presentation. Re-read after provider I/O even when no wake was
     // observed; a provider call is not a Task-state fence.
-    if (!delivered || !running || watchedTasks.get(surface) !== watched) return;
+    if (!delivered || !running) return;
+    if (watchedTasks.get(surface) !== watched) {
+      // A replacement watch can be displayed while this provider send is
+      // stalled. Restore it after the older send lands and becomes Telegram's
+      // latest message; an ended watch has nothing to restore.
+      if (watchedTasks.has(surface)) {
+        shownWatchRevisions.delete(surface);
+        watchRefresh.queue(surface);
+      }
+      return;
+    }
     const currentTask = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
     if (!currentTask || taskPresentationRevision(currentTask) !== revision) {
       // The replacement may return to a presentation shown before this send.
