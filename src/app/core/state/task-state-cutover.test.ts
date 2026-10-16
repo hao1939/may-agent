@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { appTaskTestContext } from "../tasks/app-task-test-support.js";
 import {
   appTaskContext,
+  retryFailedAppTask,
   claimObservedAppTask,
   completeAppTask,
   deferAppTask,
@@ -203,13 +204,18 @@ test("old Condition waits retain their facts and review deadline, then continue 
   expect(readAppTaskAdmissionOutcome(f.config, "work", "task:measurement")?.result).toEqual({ value: 17 });
 });
 
-test("old exhausted work keeps its input and failure count, respects pause, then retries without owner intervention", () => {
+test("old exhausted work keeps its input and failure count, respects pause, then requires explicit recovery under the default allowance", () => {
   const f = fixture();
   f.ask("measurement");
-  failAppTaskAttempt(f.config, f.claim(), "Provider unavailable");
+  f.config.maxConsecutiveFailures = "unlimited";
+  for (let index = 0; index < 6; index++) {
+    failAppTaskAttempt(f.config, f.claim(), "Provider unavailable");
+    f.advance();
+  }
+  f.config.maxConsecutiveFailures = undefined;
   f.legacy((tree) => {
     tree.resources!.work!.status.phase = "attention";
-    tree.resources!.work!.status.executionFailures = 6;
+    delete tree.resources!.work!.status.executionFailureAttemptId;
     delete tree.resources!.work!.status.executionRetryAt;
     delete tree.taskTriggers!.work;
   });
@@ -224,6 +230,11 @@ test("old exhausted work keeps its input and failure count, respects pause, then
   f.advance();
   expect(claimObservedAppTask(f.config, { taskId: "work", appAgent: "worker", handler: "agent" }).kind).toBe("waiting");
   f.store.setProjectLifecycle("active");
+  expect(() => f.claim()).toThrow('"kind":"attention"');
+  const exhausted = f.store.readTask("work")!;
+  expect(exhausted.status.retryExhausted).toMatchObject({ failures: 6, limit: 3 });
+  retryFailedAppTask(f.config, { appId: "sample", taskId: "work",
+    expectedGeneration: exhausted.metadata.generation, expectedResourceVersion: exhausted.metadata.resourceVersion });
   const claim = f.claim();
   expect(claim.previousAttempt?.summary).toBe("Provider unavailable");
   expect(claim.events[0]?.event.data).toMatchObject({ request: f.request("measurement") });
@@ -239,6 +250,7 @@ test("offline interruption fences the old attempt and retains the original ask f
   recordAppTaskTrigger(f.config, "work", { type: "sample.after", eventId: 21, data: { corrected: 23 } });
   f.legacy();
   expect(f.migrate().continued).toBe(1);
+  expect(f.store.readTask("work")!.status.executionFailures).toBeUndefined();
   expect(completeAppTask(f.config, obsolete, { summary: "Late result" }).status).toBe("stale");
   expect(f.store.readAttempt(obsolete.attemptId)).toMatchObject({
     state: "interrupted",

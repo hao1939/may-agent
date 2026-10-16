@@ -44,3 +44,18 @@ export function appTaskTestContext(input: AppTaskTestContextInput): AppTaskConte
     resourceStore: store,
   });
 }
+
+/** Start a fixture at an elapsed cooldown; the retry timer regression owns real pacing. */
+export function makeTaskRetryDue(store: AppTaskResourceStore, taskId: string): number {
+  const task = store.readTask(taskId);
+  if (!task || !Number.isFinite(task.status.executionRetryAt)) throw new Error(`Expected retry deadline for ${taskId}`);
+  const resourceVersion = task.metadata.resourceVersion;
+  const due = Date.now() - 1;
+  task.status.executionRetryAt = due;
+  task.metadata.resourceVersion += 1;
+  store.commit({
+    fences: [{ taskId, resourceVersion }],
+    tasks: [{ resource: task, trigger: store.readTrigger(taskId) ?? undefined, ready: true }],
+  });
+  return due;
+}

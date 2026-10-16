@@ -679,7 +679,7 @@ export function getEventView(db: SqliteDb, eventId: number): EventView | undefin
   const row = db
     .prepare(
       `SELECT id, event_type, source, owner, data, timestamp, delivery_status,
-                accepted_by, delivery_note, envelope_json
+                accepted_by, delivery_note, envelope_json, app_admission_error
          FROM events WHERE id = ?`,
     )
     .get(eventId) as Record<string, unknown> | undefined;
@@ -697,6 +697,16 @@ export function getEventView(db: SqliteDb, eventId: number): EventView | undefin
         : required && storedStatus === "accepted"
           ? "accepted"
           : "recorded";
+  const links = linksForEvent(db, eventId, String(row.event_type), data);
+  const admissionError = optionalText(row.app_admission_error);
+  if (admissionError) {
+    links.push({
+      kind: "delivery",
+      id: `app-admission:${eventId}`,
+      state: "failed",
+      summary: admissionError,
+    });
+  }
   return {
     event: {
       ...publicEvent({ ...metadata, data } as AgentEvent),
@@ -710,7 +720,7 @@ export function getEventView(db: SqliteDb, eventId: number): EventView | undefin
         ? { note: optionalText(row.delivery_note) }
         : {}),
     },
-    links: linksForEvent(db, eventId, String(row.event_type), data),
+    links,
   };
 }
 

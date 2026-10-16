@@ -1,3 +1,4 @@
+import { makeTaskRetryDue } from "./app-task-test-support.js";
 import { readConversationReplyContext } from "../../../../test/fixtures/conversation-prompt.js";
 import { afterEach, expect, setSystemTime, test } from "bun:test";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -219,7 +220,10 @@ test.each(["throws", "invalid", "unavailable-topic"] as const)(
     expect(failedAttempt.summary).toBeTruthy();
     expect(AppTaskResourceStore.activeFromDb(f.db, background.id)?.readTask("sample")).toBeNull();
     if (failure !== "throws") await f.reopen();
-    await settled(f.bus, admitted.taskId); // The real recovery timer performs the retry, also after reopen.
+    const retried = settled(f.bus, admitted.taskId);
+    makeTaskRetryDue(f.store, admitted.taskId);
+    wakeLoadedAppTasks({ bus: f.bus, appId: app.id, taskIds: [admitted.taskId] });
+    await retried;
     expect(calls).toHaveLength(2);
     expect(contexts[1]).toMatchObject({
       previousAttempt: {
@@ -498,15 +502,7 @@ test.each(["during failure", "during cooldown and reopen"])(
       updates: [{ id: "compare", expectedRevision: 0, scope: "Compare A and B", disposition: "open" }],
     });
     const admitted = f.admit();
-    // Seed prior failures so this check cannot accidentally pass by waiting out
-    // the first 250 ms delay. The runtime, not the fixture, settles the next failure.
-    const resource = f.store.readTask(admitted.taskId)!;
-    resource.metadata.resourceVersion++;
-    resource.status.executionFailures = 7;
-    f.store.commit({
-      fences: [{ taskId: admitted.taskId, resourceVersion: resource.metadata.resourceVersion - 1 }],
-      tasks: [{ resource, trigger: f.store.readTrigger(admitted.taskId)!, ready: true }],
-    });
+    // The default first cooldown is long enough to prove that human input waives it.
     f.store.setProjectLifecycle("paused");
     let ingress = await startConversationIngress(f);
     let releaseCapacity: (() => void) | undefined;
@@ -540,7 +536,7 @@ test.each(["during failure", "during cooldown and reopen"])(
         state: "failed",
         summary: expect.stringContaining("Source temporarily unavailable"),
       });
-      expect(f.store.readTask(admitted.taskId)?.status.executionFailures).toBe(8);
+      expect(f.store.readTask(admitted.taskId)?.status.executionFailures).toBe(1);
       expect(f.store.projectLifecycle()).toBe("paused");
       expect(readConversationRequest(f.db, app.id, "primary", "compare")?.status).toBe("open");
       const done = settled(f.bus, admitted.taskId);
@@ -754,7 +750,10 @@ test.each(["available", "removed"] as const)(
     if (availability === "removed") configured!.appRegistrySnapshot = withoutTarget;
     await f.reopen();
     if (availability === "removed") {
-      await settled(f.bus, admitted.taskId);
+      const unavailable = settled(f.bus, admitted.taskId);
+      makeTaskRetryDue(f.store, admitted.taskId);
+      wakeLoadedAppTasks({ bus: f.bus, appId: app.id, taskIds: [admitted.taskId] });
+      await unavailable;
       expect(judgments).toBe(2);
       expect(backgroundRuns).toBe(0);
       expect(getAppInboxItem(f.db, "ask")?.status).not.toBe("done");
@@ -764,7 +763,10 @@ test.each(["available", "removed"] as const)(
       configured!.appRegistrySnapshot = { ...available, generation: withoutTarget.generation + 1 };
       await f.reopen();
     }
-    await settled(f.bus, "sample");
+    const delivered = settled(f.bus, "sample");
+    makeTaskRetryDue(f.store, admitted.taskId);
+    wakeLoadedAppTasks({ bus: f.bus, appId: app.id, taskIds: [admitted.taskId] });
+    await delivered;
     expect(judgments).toBe(availability === "removed" ? 3 : 2);
     expect(backgroundRuns).toBe(1);
     expect(readConversationRequest(f.db, app.id, "primary", "measurement")).toMatchObject({
@@ -1422,7 +1424,7 @@ test.each(["incomplete", "execution-error"])(
         executors: {
           measure: async (attempt) => {
             priorAttempts.push(attempt.previousAttempt);
-            if (++runs <= 3) {
+            if (++runs <= 2) {
               if (failure === "execution-error") throw new Error(`Synthetic source offline (${runs})`);
               return {
                 state: "incomplete",
@@ -1448,15 +1450,17 @@ test.each(["incomplete", "execution-error"])(
       );
       const repeated = eventAfter(
         f.bus,
-        (event) => event.type === "project.task.reconciled" && event.data.taskId === "sample" && runs === 3,
+        (event) => event.type === "project.task.reconciled" && event.data.taskId === "sample" && runs === 2,
       );
       ingress.publish("ask", "Get the measurement and report it here");
       await reported;
       expect(readConversationRequest(f.db, app.id, "primary", "measurement")?.status).toBe("open");
       const child = AppTaskResourceStore.activeFromDb(f.db, background.id)!;
       expect(child.isCancelled("sample")).toBe(false);
+      makeTaskRetryDue(child, "sample");
+      wakeLoadedAppTasks({ bus: f.bus, appId: background.id, taskIds: ["sample"] });
       await repeated;
-      expect(child.readTask("sample")?.status.executionFailures).toBe(3);
+      expect(child.readTask("sample")?.status.executionFailures).toBe(2);
       f.bus.emit({ type: "conversation.supervision.review", source: "timer", data: { project: app.id, limit: 10 } });
       expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
       expect(listAppInboxItems(f.db, { appId: app.id }).filter((item) => item.source.kind === "system")).toHaveLength(
@@ -1469,8 +1473,10 @@ test.each(["incomplete", "execution-error"])(
           readConversationRequest(f.db, app.id, "primary", "measurement")?.status === "closed",
       );
       repair.resolve();
+      makeTaskRetryDue(child, "sample");
+      wakeLoadedAppTasks({ bus: f.bus, appId: background.id, taskIds: ["sample"] });
       await finished;
-      expect(runs).toBe(4);
+      expect(runs).toBe(3);
       expect(priorAttempts[0]).toBeUndefined();
       expect(priorAttempts[1]).toMatchObject(
         failure === "execution-error"
