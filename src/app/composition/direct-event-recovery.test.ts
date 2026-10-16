@@ -71,13 +71,19 @@ test("journal recovery yields between retained inputs instead of accumulating on
     const db = getDb(root);
     let timerRan = false;
     const observed: boolean[] = [];
-    runtime = await startAppInboxRuntime({
-      db, bus, registry, persistDir: root, schedulesEnabled: false, scanIntervalMs: 10_000,
-      attachTask: fakeTaskAttacher(db, (input) => {
+    const redeliver = bus.redeliverPersisted.bind(bus);
+    bus.redeliverPersisted = (event, eventId, route) => {
+      if (event.type === "evaluation.task_report_published") {
         observed.push(timerRan);
         if (observed.length === 1) timer = setTimeout(() => { timerRan = true; }, 0);
-        return { taskId: `work/${input.inboxInputId ?? input.inputId}` };
-      }),
+      }
+      return redeliver(event, eventId, route);
+    };
+    runtime = await startAppInboxRuntime({
+      db, bus, registry, persistDir: root, schedulesEnabled: false, scanIntervalMs: 10_000,
+      attachTask: fakeTaskAttacher(db, (input) => ({
+        taskId: `work/${input.inboxInputId ?? input.inputId}`,
+      })),
     });
     await until(() => observed.length === 2);
     expect(observed).toEqual([false, true]);
