@@ -271,6 +271,47 @@ describe("agents tool", () => {
     expect(manager.registryStore.getSession("detached")?.status).toBe("running");
   });
 
+  it("follow-up reaches only a live owned helper in the same Task attempt", async () => {
+    const binding = { appId: "sample", taskId: "work", generation: 2, attemptId: "current" };
+    const received: Array<{ id: string; message: unknown }> = [];
+    for (const [id, parentSessionId, taskBinding, status] of [
+      ["parent", undefined, binding, "running"],
+      ["helper", "parent", binding, "running"],
+      ["nested", "helper", binding, "running"],
+      ["foreign", undefined, binding, "running"],
+      ["old", "parent", { ...binding, attemptId: "old" }, "running"],
+      ["unbound", "parent", undefined, "running"],
+      ["stopped", "parent", binding, "interrupted"],
+      ["standalone", undefined, undefined, "running"],
+      ["standalone-child", "standalone", undefined, "running"],
+    ] as const) {
+      manager.activeSessions.set(id, {
+        sessionId: id, parentSessionId, taskBinding, status,
+        agent: { steer: (message: unknown) => received.push({ id, message }) },
+      } as never);
+    }
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => "parent" });
+    try {
+      for (const sessionId of ["helper", "nested"]) {
+        expect(await callTool(tool, { action: "follow-up", sessionId, content: "$unknown Keep the existing patch" }))
+          .toMatchObject({ accepted: true, sessionId, delivery: expect.stringContaining("queued") });
+      }
+      for (const sessionId of ["parent", "foreign", "old", "unbound", "stopped", "finished"]) {
+        const rejected = await callTool(tool, { action: "follow-up", sessionId, content: "Correction" });
+        expect(rejected.error).toBeString();
+        expect(rejected.accepted).toBeUndefined();
+      }
+      expect((await callTool(tool, { action: "follow-up", sessionId: "helper", content: " " })).error).toContain("requires");
+      expect((await callTool(manager.createAgentsTool(), { action: "follow-up", sessionId: "helper", content: "Correction" })).error).toContain("owned");
+      const standalone = manager.createAgentsTool({ getCallerSessionId: () => "standalone" });
+      expect((await callTool(standalone, { action: "follow-up", sessionId: "standalone-child", content: "Continue" })).accepted).toBe(true);
+      expect(received).toEqual([
+        ...["helper", "nested"].map((id) => ({ id, message: { role: "user", content: [{ type: "text", text: "$unknown Keep the existing patch" }] } })),
+        { id: "standalone-child", message: { role: "user", content: [{ type: "text", text: "Continue" }] } },
+      ]);
+    } finally { manager.activeSessions.clear(); }
+  });
+
   it("peek without sessionId returns error", async () => {
     const tool = manager.createAgentsTool();
     const result = await callTool(tool, { action: "peek" });
