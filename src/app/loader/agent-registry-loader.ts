@@ -6,6 +6,7 @@ import type { SubagentDefinition } from "../../lib/types.js";
 import type { SubagentManager } from "../../lib/manager.js";
 import type { HostMaintenance } from "../adapters/maintenance/runtime.js";
 import type { EventBus } from "../core/events/bus.js";
+import type { AppRegistry } from "../core/apps/registry.js";
 import { readAgentConfigFile, validateAgentConfig, type AgentConfig, type ValidationError } from "./agent-config.js";
 import {
   agentProjectRoot,
@@ -17,6 +18,8 @@ import { buildAgentDefinition } from "./agent-definition.js";
 import { prepareMaintenance } from "../composition/maintenance.js";
 
 export interface AgentLoaderOptions {
+  /** Published App addresses; discovery does not depend on Task scheduling. */
+  appRegistry?: AppRegistry;
   agentsRoot: string;
   sharedRoot: string;
   /** Immutable prompt and shared-skill root for this definition generation. */
@@ -195,7 +198,6 @@ export async function prepareAgents(
           fileWritePolicy,
           projectRoot: effectiveProjectRoot,
           agentsRoot: agentsRootForAgentDir(source),
-          globalAgentsRoot: agentsRoot,
           agentDir: source.dir,
           getAgentSessionId: staged.runtime.getAgentSessionId,
           getAgentMaintenance: () => staged.maintenance,
