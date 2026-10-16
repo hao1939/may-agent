@@ -17,7 +17,12 @@ into this directory before reading the relevant core state machine.
 
 Workers enter through the existing CLI modes in `may.ts`, using the same binary
 entrypoint as before. They construct concrete registries, execution and
-persistence. Their subprocess protocol and lifetime limits remain unchanged.
+persistence. Attempt and recovery workers append Events to the shared journal
+and relay their exact identity and observation intent. The parent runs its
+durable routes and records delivery acceptance against that same row. Workers
+do not record acceptance: their local fallback cannot establish that parent
+consumers succeeded. A failed or lost relay leaves delivery unsettled without
+invalidating an accepted Task result.
 Input routing belongs here because it selects concrete behavior.
 [`core/inbox`](../core/inbox/README.md) owns admission and correlation;
 [`core/tasks`](../core/tasks/README.md) owns execution claims and transitions.

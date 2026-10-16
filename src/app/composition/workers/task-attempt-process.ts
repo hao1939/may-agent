@@ -17,11 +17,11 @@ import {
   recoverInstalledAppTasks,
 } from "../../core/tasks/app-task-runtime.js";
 import type { AppTaskRuntimeOptions } from "../../core/tasks/runtime-options.js";
-import { attachEventPersistence } from "../../daemon-events.js";
+import { DbWriter } from "../../../lib/db-writer.js";
 import { prepareDaemonAgents } from "../../daemon-agents.js";
 import { listConfiguredAgentNames } from "../../loader/agent-discovery.js";
 import { readTaskOutcomes } from "../../adapters/reporting/task-outcomes.js";
-import { EventBus, EVENT_ROW_ID, type AgentEvent } from "../../core/events/bus.js";
+import { EventBus, EVENT_RECORD_ONLY, EVENT_ROW_ID, type AgentEvent } from "../../core/events/bus.js";
 import { HostCapacity } from "../../core/scheduling/host-capacity.js";
 import { isBundled } from "../../bundle-mode.js";
 import type { ModelRegistry } from "../../model-registry.js";
@@ -65,7 +65,13 @@ function scheduleWorkerRelay(bus: EventBus, callback: () => void): void {
   setTimeout(drainOne, WORKER_RELAY_TURN_DELAY_MS);
 }
 
-type WorkerEventFrame = { kind: "event"; eventId: number; event: AgentEvent };
+type WorkerEventFrame = {
+  kind: "event";
+  eventId: number;
+  event: AgentEvent;
+  /** Preserve the producer's observation intent across JSON IPC; this is not acceptance. */
+  recordOnly?: true;
+};
 type WorkerResultFrame = { kind: "result"; dependentTaskIds: string[]; taskChecks?: unknown };
 type WorkerErrorFrame = { kind: "error"; error: string; taskChecks?: unknown };
 type WorkerFrame = WorkerEventFrame | WorkerResultFrame | WorkerErrorFrame;
@@ -101,7 +107,10 @@ function parseWorkerFrame(value: unknown): WorkerFrame {
   if (!value || typeof value !== "object") throw new Error("Task worker returned an invalid frame");
   const parsed = value as Partial<WorkerFrame>;
   if (parsed.kind === "event") {
-    if (!Number.isSafeInteger(parsed.eventId) || Number(parsed.eventId) <= 0 || !parsed.event) {
+    if (
+      !Number.isSafeInteger(parsed.eventId) || Number(parsed.eventId) <= 0 || !parsed.event ||
+      (parsed.recordOnly !== undefined && parsed.recordOnly !== true)
+    ) {
       throw new Error("Task worker returned an invalid event frame");
     }
     return parsed as WorkerEventFrame;
@@ -239,6 +248,7 @@ async function runWorkerProcess(
         });
   const applyFrame = (frame: WorkerFrame) => {
     if (frame.kind === "event") {
+      if (frame.recordOnly) Object.defineProperty(frame.event, EVENT_RECORD_ONLY, { value: true, configurable: true });
       relayedEvents.add(frame.event);
       bus.fanoutPersisted(frame.event, frame.eventId);
     } else {
@@ -453,7 +463,12 @@ async function runTaskWorker(input: {
   const stopWithParent = () => process.exit(143);
   process.once("disconnect", stopWithParent);
   const bus = new EventBus();
-  attachEventPersistence({ bus, persistDir: input.roots.persistDir });
+  // Workers append facts, but only the parent has the complete durable routes.
+  // Do not install a delivery recorder here: a local fallback must not hide a
+  // later parent-consumer failure or a lost relay. The parent's fan-out records
+  // acceptance against this same journal row after its routes have run.
+  const writer = new DbWriter(input.roots.persistDir);
+  bus.setPersistenceSubscriber(writer.handler);
   const receivedEvents = new WeakSet<AgentEvent>();
   const incoming = (message: unknown) => {
     const frame = parseWorkerFrame(message);
@@ -467,7 +482,11 @@ async function runTaskWorker(input: {
       if (receivedEvents.has(event)) return;
       const eventId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
       if (Number.isSafeInteger(eventId) && Number(eventId) > 0) {
-        void writeWorkerFrame({ kind: "event", eventId: Number(eventId), event }).catch(stopWithParent);
+        const recordOnly = (event as AgentEvent & { [EVENT_RECORD_ONLY]?: boolean })[EVENT_RECORD_ONLY];
+        void writeWorkerFrame({
+          kind: "event", eventId: Number(eventId), event,
+          ...(recordOnly ? { recordOnly: true } : {}),
+        }).catch(stopWithParent);
       }
     },
     { label: "task-worker-event-relay" },

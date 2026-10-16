@@ -16,6 +16,7 @@ import {
 } from "@may-agent/sdk";
 import { addLogSubscriber } from "../../../lib/log.js";
 import { readTaskChecks } from "./task-check-observations.js";
+import { UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY } from "../../metric-source-measurement.js";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { openDatabase } from "../../../lib/db.js";
 import { EVENT_DELIVERY_RESULT, EVENT_ROW_ID, EventBus, type AgentEvent } from "../events/bus.js";
@@ -210,6 +211,56 @@ function options(f: ReturnType<typeof fixture>, bus: EventBus) {
     hostCapacity: new HostCapacity(2),
   };
 }
+
+it.each(["none", "accept", "fail"] as const)("records attempt facts independently of their consumer: %s", async (consumer) => {
+  const f = fixture();
+  const bus = eventBus();
+  const persistDir = join(f.root, "state");
+  const writer = new DbWriter(persistDir, { housekeepingIntervalMs: 0 });
+  bus.setPersistenceSubscriber(writer.handler);
+  bus.setDeliveryRecorder(writer.recordDelivery);
+  const types = new Set(["project.task.reconcile.started", "project.task.reconciled"]);
+  const observed: string[] = [];
+  bus.subscribe((event) => { if (types.has(event.type)) observed.push(event.type); });
+  bus.subscribeDurableRoute((event) => {
+    if (!types.has(event.type) || consumer === "none") return;
+    if (consumer === "fail") throw new Error("Consumer admission unavailable");
+    return { accepted: true, by: "fixture:consumer", route: "direct" };
+  });
+  await installCoreTaskRuntimes({
+    ...options(f, bus), installControllers: false,
+    executors: {
+      fixture: async () => ({ state: "converged", summary: "Work completed", facts: ["fixture:verified"] }),
+    },
+    appRegistrySnapshot: {
+      id: "attempt-observations", generation: 1,
+      entries: [{ appDir: f.appDir, definition: definition() }],
+    },
+  });
+  const config = loadedTaskConfig(f);
+  const taskId = "work/observation";
+  observeAppTaskIntent(config, {
+    appAgent: "sample-owner",
+    intent: { id: taskId, parentId: "operations", outcome: "Verify", acceptance: ["Value verified"], agent: "sample-owner", executor: "fixture" },
+  });
+  await reconcileLoadedAppTaskOnce({
+    bus, appId: "sample", taskId,
+    dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+  });
+  expect(observed).toEqual([...types]);
+  expect(acceptedTaskAttempt(config, taskId)?.acceptedResult?.summary).toBe("Work completed");
+  const db = getDb(persistDir);
+  const receipts = () => db.prepare(`SELECT event_type, delivery_status, accepted_by FROM events
+    WHERE event_type IN ('project.task.reconcile.started', 'project.task.reconciled') ORDER BY id`).all();
+  expect(receipts()).toEqual([...types].map((event_type) => ({
+    event_type,
+    delivery_status: consumer === "fail" ? "pending" : "accepted",
+    accepted_by: consumer === "fail" ? null : consumer === "accept" ? "fixture:consumer" : "event-interface:record",
+  })));
+  writer.runHousekeeping(Date.now() + 120_001);
+  expect(receipts().map((row) => row.delivery_status)).toEqual(consumer === "fail" ? ["unhandled", "unhandled"] : ["accepted", "accepted"]);
+  expect(db.prepare(UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY).get()).toEqual({ value: consumer === "fail" ? 2 : 0 });
+});
 
 it("publishes one reopening fact despite a lost publication and operator replay across restart", async () => {
   const f = fixture();
