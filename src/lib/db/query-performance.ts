@@ -119,7 +119,7 @@ export class SqlPerformance {
         }
         if (
           !failed &&
-          elapsed > slowReadThresholdMs &&
+          elapsed >= slowReadThresholdMs &&
           (operation === "get" || operation === "all") &&
           query &&
           !this.planAttempts.has(id) &&
