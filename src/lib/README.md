@@ -20,6 +20,32 @@ guide. `app/direct-agent.ts` also uses the prepared execution path for direct
 calls. A returned session result is execution evidence; the Task reconciler
 owns acceptance of Task results.
 
+## Shared execution environment
+
+Agents, App workflows, Task workers and native executors inherit the environment
+provided by the installation. Moving work to a worker or choosing another
+executor must preserve App settings, service credentials, network configuration
+and tool paths, including names the Host does not recognize. Apps can add a
+service or setting without changing a Host allowlist.
+
+Use ordinary process inheritance, with explicit changes only for the execution
+being started: its identity, working directory, executor configuration and
+private protocol state. Task worker identity is process-local; the retired
+`MAY_TASK_ATTEMPT_CHILD` environment marker is cleared at worker entry so ordinary
+descendant commands do not acquire the worker's database restrictions. Native
+CLI endpoint/configuration mappings remain local to their adapter.
+
+The installation supplies access; the Task still supplies authority for an
+action. Inheritance is not a security sandbox, and environment values must not
+be copied into prompts, logs or diagnostic reports. A deliberately restricted
+environment belongs to explicit installation/executor policy, not an inferred
+permission boundary based on whether code, an agent or a worker runs the work.
+
+The real admission and Task-worker fixtures cover unknown App settings,
+synthetic credentials and empty values through definition loading, workflow
+execution, Bash and native CLI descendants. They read back only those synthetic
+values and keep private worker-role checks separate.
+
 ## Find the owner
 
 | Change | Start here |

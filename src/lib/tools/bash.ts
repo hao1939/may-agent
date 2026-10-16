@@ -23,7 +23,6 @@ import {
 } from "@earendil-works/pi-agent-core";
 import { Type } from "@earendil-works/pi-ai";
 import type { TSchema } from "@earendil-works/pi-ai";
-import { agentShellEnvironment } from "../process-environment.js";
 import {
 	addSessionBashProcessGroup,
 	readSessionBashProcessGroups,
@@ -35,7 +34,7 @@ function getShellEnv(): NodeJS.ProcessEnv {
 	// file also prepended `$STATE_DIR/.bun/bin` as a hot-swap override, but
 	// that shadow drifted silently against the image's bun and has been
 	// removed in favour of a single source of truth — the pinned image bun.
-	return agentShellEnvironment();
+	return { ...process.env };
 }
 
 export const BASH_PROCESS_GROUP_TERM_GRACE_MS = 250;

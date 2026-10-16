@@ -34,6 +34,15 @@ if (process.argv.includes("--task-admission-worker")) {
 const root = mkdtempSync(join(tmpdir(), "task-admission-test-"));
 process.env.ADMISSION_TEST_ROOT = root;
 process.env.ADMISSION_TEST_SCENARIO = scenario;
+const environment = {
+  EXAMPLE_APP_SETTING: "custom installation value",
+  EXAMPLE_SERVICE_TOKEN: "synthetic-service-key",
+  EXAMPLE_EMPTY_SETTING: "",
+};
+if (scenario === "environment") {
+  Object.assign(process.env, environment);
+  process.env.MAY_TASK_ATTEMPT_CHILD = "1";
+}
 const persistDir = join(root, "state");
 for (const directory of ["projects/sample.app/tasks", "agents", "shared/skills", "state"]) {
   mkdirSync(join(root, directory), { recursive: true });
@@ -48,7 +57,13 @@ writeFileSync(
 );
 writeFileSync(
   join(root, "projects/sample.app/app.js"),
-  `export default {
+  `${scenario === "environment" ? `
+  for (const [key, value] of Object.entries(${JSON.stringify(environment)})) {
+    if (process.env[key] !== value) throw new Error("Admission lost installation setting: " + key);
+  }
+  if (process.env.MAY_TASK_ATTEMPT_CHILD !== undefined) throw new Error("Admission inherited retired worker marker");
+  ` : ""}
+  export default {
   id: "sample", version: 1, agent: "sample-owner", inputSchema: { type: "object" },
   tasks: { subscriptions: ["sample.changed"], maxConcurrent: 1, resolve() { return null; } }
 };\n`,

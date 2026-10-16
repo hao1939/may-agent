@@ -9,7 +9,6 @@ import { admitStandaloneCanonicalAppTaskEvent } from "../../core/tasks/app-task-
 import { standaloneAppTaskAdmissionDescriptors } from "../../core/tasks/runtime-definition.js";
 import { EVENT_ROW_ID, type AgentEvent } from "../../core/events/bus.js";
 import { isBundled } from "../../bundle-mode.js";
-import { taskAdmissionEnvironment } from "../../../lib/process-environment.js";
 import type { TaskWorkerDefinitionSource } from "./task-attempt-process.js";
 
 export type TaskAdmissionProcessResult = {
@@ -50,7 +49,8 @@ export function createTaskAdmissionProcess(
     ],
     {
       cwd: process.cwd(),
-      env: taskAdmissionEnvironment(),
+      // Retire the inherited marker before this worker can launch ordinary commands.
+      env: { ...process.env, MAY_TASK_ATTEMPT_CHILD: undefined },
       stdio: ["ignore", "inherit", "inherit", "ipc"],
       serialization: "json",
     },
