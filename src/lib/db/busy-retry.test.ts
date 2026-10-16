@@ -1,22 +1,20 @@
 import { describe, expect, it } from "bun:test";
-import { withSqliteBusyRetry } from "./busy-retry.js";
+import { withSqliteBusyRetry, withSqliteInitializationRetry } from "./busy-retry.js";
 
 describe("withSqliteBusyRetry", () => {
-  it("retries transient SQLite busy errors and returns the eventual result", () => {
+  it("leaves serving-path retry with the operation owner", () => {
     let attempts = 0;
-    const result = withSqliteBusyRetry("workflow-finalize", () => {
+    const busy = new Error("database is locked");
+    expect(() => withSqliteBusyRetry("persist event", () => {
       attempts += 1;
-      if (attempts < 3) throw new Error("database is locked");
-      return "ok";
-    });
-
-    expect(result).toBe("ok");
-    expect(attempts).toBe(3);
+      throw busy;
+    })).toThrow(busy);
+    expect(attempts).toBe(1);
   });
 
-  it("outlasts a short competing writer instead of restarting the Host", () => {
+  it("keeps repeatable initialization retry separate from serving operations", () => {
     let attempts = 0;
-    const result = withSqliteBusyRetry("persist event", () => {
+    const result = withSqliteInitializationRetry("apply database schema", () => {
       attempts += 1;
       if (attempts < 6) throw new Error("SQLITE_BUSY");
       return "recorded";

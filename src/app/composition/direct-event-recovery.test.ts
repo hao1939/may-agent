@@ -57,6 +57,44 @@ async function fixture(root: string) {
   return registry;
 }
 
+test("journal recovery yields between retained inputs instead of accumulating one blocking batch", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-event-recovery-turn-"));
+  let runtime: AppInboxRuntime | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const registry = await fixture(root);
+    const bus = producer(root);
+    for (const id of [1, 2]) bus.emit({
+      type: "evaluation.task_report_published", source: "fixture", owner: "app:evaluation",
+      data: { report: `report-${id}`, idempotencyKey: `report-${id}` },
+    } as any);
+    const db = getDb(root);
+    let timerRan = false;
+    const observed: boolean[] = [];
+    const redeliver = bus.redeliverPersisted.bind(bus);
+    bus.redeliverPersisted = (event, eventId, route) => {
+      if (event.type === "evaluation.task_report_published") {
+        observed.push(timerRan);
+        if (observed.length === 1) timer = setTimeout(() => { timerRan = true; }, 0);
+      }
+      return redeliver(event, eventId, route);
+    };
+    runtime = await startAppInboxRuntime({
+      db, bus, registry, persistDir: root, schedulesEnabled: false, scanIntervalMs: 10_000,
+      attachTask: fakeTaskAttacher(db, (input) => ({
+        taskId: `work/${input.inboxInputId ?? input.inputId}`,
+      })),
+    });
+    await until(() => observed.length === 2);
+    expect(observed).toEqual([false, true]);
+  } finally {
+    runtime?.close();
+    clearTimeout(timer);
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("recovers a report saved before its first App plan, independent of global delivery status", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-event-app-outbox-"));
   let runtime: AppInboxRuntime | undefined;
