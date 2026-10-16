@@ -422,6 +422,9 @@ describe("HTTP human Task reads and board", () => {
       expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("Discuss costs before implementing");
       await page.click("#chat-send");
       await page.waitForFunction(() => document.querySelector<HTMLInputElement>("#chat-input")!.value === "");
+      // Publication clears the draft before the send's Conversation refresh finishes.
+      // A later click during that refresh is still ignored as a duplicate send.
+      await page.waitForFunction("!maySendPending");
       expect(published.at(-1)).toMatchObject({ type: "conversation.message.created", target: { appId: "support" },
         data: { conversationId: "retained-room", text: "Discuss costs before implementing", author: { kind: "human" } } });
       rejectPublish = true;
