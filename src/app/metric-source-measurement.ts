@@ -5,7 +5,7 @@ import { createMetricService } from "../lib/metrics.js";
 import { log } from "../lib/log.js";
 import { EVENT_RECORD_ONLY, EVENT_ROW_ID, eventData, type AgentEvent, type EventBus } from "./core/events/bus.js";
 import { getDb } from "../lib/db/connection.js";
-import { withSqliteBusyRetry } from "../lib/db/busy-retry.js";
+import { withSqliteInitializationRetry } from "../lib/db/busy-retry.js";
 import { resolveRuntimeRoots } from "./path-roots.js";
 import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.js";
 import { TASK_FAILOVER_METRIC } from "./adapters/reporting/task-failover-metrics.js";
@@ -303,7 +303,7 @@ export function attachMetricSourceMeasurement(options: {
   // Startup registrations are repeatable definition writes, not observations.
   // Reuse the bounded storage policy when another startup process owns SQLite's
   // writer lock; keep measurement and subscription effects outside this retry.
-  withSqliteBusyRetry("register source metric definitions", () => {
+  withSqliteInitializationRetry("register source metric definitions", () => {
     metricService.defineMany(WORKFLOW_OUTCOME_METRICS);
     // Install observation defaults once; retain any App-owned calibration or retirement.
     if (!db.prepare("SELECT id FROM metrics WHERE id = ?").get(TASK_FAILOVER_METRIC.id)) {

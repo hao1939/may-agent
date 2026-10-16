@@ -32,9 +32,18 @@ owns acceptance of Task results.
 | Execution results and retained evidence | `execution-result.ts`, `workflow-facts.ts`, `artifacts.ts` |
 | Session transcripts and metadata files | `persistence.ts` |
 | SQLite connection, schema and queries | Focused modules in `db/`; `db.ts` adapts Bun/Node SQLite |
+
 | Event persistence | `db-writer.ts`; Task resource operations remain in `app/core/state/` |
 | Coding tools and skills | `tools/`, `skills.ts` |
 | Host maintenance capabilities | `app/adapters/maintenance/context.ts` and `handler-loader.ts` |
+
+Ordinary serving-path SQLite operations use the connection's 50 ms busy wait
+without extra synchronous sleeps. Unsaved input fails to its caller; already
+accepted work keeps its Event/Task identity for the existing recovery owner.
+Receipt repair does not replay committed effects. Isolated Task workers retain
+their bounded retry schedule. Repeatable schema/metric-definition installation
+uses the separate initialization retry helper; it is not an ordinary delivery
+allowance. Session/workflow artifacts remain evidence if a SQL projection fails.
 
 `session-subscribers.ts` contains the digest and last-session writers registered
 by `app/daemon-events.ts`. Completion suggestions stay in the saved result;

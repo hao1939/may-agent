@@ -2,7 +2,7 @@ import { isTaskWorkerProcess } from "../task-worker-context.js";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { openDatabase, type SqliteDb } from "../db.js";
-import { withSqliteBusyRetry } from "./busy-retry.js";
+import { withSqliteInitializationRetry } from "./busy-retry.js";
 import { applyDbSchema } from "./schema.js";
 
 const dbCache = new Map<string, SqliteDb>();
@@ -91,7 +91,7 @@ export function getDb(persistDir: string, options: DatabaseConnectionOptions = {
   // applying a legitimate schema upgrade while another reaches this point;
   // wait for that bounded writer instead of making Supervisor restart a
   // healthy process generation.
-  withSqliteBusyRetry("apply database schema", () => applyDbSchema(db));
+  withSqliteInitializationRetry("apply database schema", () => applyDbSchema(db));
 
   dbCache.set(persistDir, db);
   return db;
