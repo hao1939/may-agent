@@ -1,6 +1,6 @@
 # Observer delivery intent: implementation trial — 2026-10-16
 
-**Status:** Published as [Host PR #371](https://github.com/hao1939/may-agent/pull/371); local CI and GitHub Quality/Container checks passed; awaiting review. Not deployed.
+**Status:** Published as [Host PR #371](https://github.com/hao1939/may-agent/pull/371); revised after the combined expiry trial; new full CI/hosted checks in progress. Not deployed.
 **Supports:** [Event admission](../../2a-design/events.md#admission-state) and
 [Host contract improvements](../../proposals/host-contract-improvements-20261016.md).
 
@@ -18,7 +18,9 @@ exact targets and Conditions keep deciding what reaches a Task.
 ## Source and correction
 
 Host baseline: merged #370, `a0b153b45`. Candidate branch:
-`fix/observer-delivery-intent-20261016`, revision `8fca1840ce8a422cb2fa321581f74b9f48e31919`.
+`fix/observer-delivery-intent-20261016`, initial revision `8fca1840ce8a422cb2fa321581f74b9f48e31919`.
+The revised implementation is `2dfd61f92`; `21abd7b9b` adds the explicit filtered
+App-only recovery regression after the integration finding below.
 Design baseline: `fd30c1344facfc55551ce1445294a9869d141112`.
 
 - Ordinary observer output and observer-failure diagnostics use the existing
@@ -27,8 +29,9 @@ Design baseline: `fd30c1344facfc55551ce1445294a9869d141112`.
   with default zero for existing rows. Keyed retry restores the saved value even
   if today's producer supplies another value; journal loading restores it too.
   No event-name inference or rewrite of historical failure evidence occurs.
-- Storage-only acceptance cannot replace an unhandled receipt or another
-  consumer's direct acceptance. App admission acknowledges its own inspection
+- Storage-only acceptance cannot replace a known failed required attempt or
+  another consumer's direct acceptance. An uninspected observation timeout remains
+  correctable by no-work inspection. App admission acknowledges its own inspection
   separately inside the same transaction. Real required delivery can still
   recover through its existing owner; this is not a global prohibition on retry.
 - Metric measurement/evaluation failure producers already declare observations.
@@ -36,7 +39,8 @@ Design baseline: `fd30c1344facfc55551ce1445294a9869d141112`.
   Five other legacy exclusions remain outside this focused producer review.
 
 The cost is one private integer per Event and, when App admission acknowledges,
-one extra update within the existing bounded transaction. There is no public SDK
+one extra update within the existing bounded transaction. A failed required
+route now also records its attempt on the existing row. There is no public SDK
 shape change, new queue, scheduler, agent instruction or model call.
 Schema initialization must run before workers using the new reader/writer.
 Normal Host startup owns this additive setup. Reverting code can leave the unused
@@ -75,7 +79,7 @@ bun run ci
 
 The 19 persistence/schema tests passed, as did all 19 existing real worker
 boundary cases. The three final observer integration cases passed. Full
-`bun run ci` passed at the candidate: 3,754 passed, three installation-dependent
+`bun run ci` passed at the initial candidate: 3,754 passed, three installation-dependent
 skips, zero failures; 21,495 assertions across 338 files in 263.95 seconds. The
 browser ran. `bun run check:may-design` passed with zero errors and the existing
 unclassified `reports` warning; 310 local links/heading targets passed.
@@ -87,3 +91,32 @@ It does not make receipt expiry restart-independent; that is the next separate
 fix. It also does not change App investigation policy, automate model judgment,
 or guarantee exactly-once observation. Repeated consideration remains acceptable;
 saved identity and admission owners protect the existing effect boundaries.
+
+## Combined expiry finding and correction
+
+The restart-independent expiry candidate exposed a missing case: an observation
+saved before routing could time out before recovery inspected it. The original
+no-op guard preserved this unknown timeout as though a required consumer had
+actually failed. The combined trial failed with an unhandled harmless fact.
+
+The bus now records a failed required delivery outcome through its existing
+recorder. The writer retains a direct-delivery attempt and a diagnostic note on
+an unaccepted row, without acknowledging App admission or replacing an accepted
+receipt. Detailed failure evidence remains in linked `subscriber.failed` Events.
+Storage-only acceptance cannot settle that failed required route, before or after
+expiry. A saved record-only Event that timed out without a recorded required
+attempt can still settle as no-work on inspection. No new column or public App
+contract is introduced.
+
+The first correction also revealed that the App no-work path can clear its marker
+before the global recorder runs. Requiring that marker to remain pending incorrectly
+coupled independent acknowledgements; the final predicate uses saved publication
+intent and required-attempt evidence instead. The bus regression now verifies a
+recorded failure outcome with no acceptance, rather than absence of any recording.
+
+The refined observer/replay/bus checks passed 36 cases. An isolated combined
+checkout applies the expiry predicate and runs housekeeping before startup recovery;
+the same 36 cases pass, including quiet facts, genuine required failure, pending
+failure fallback, and independent acceptance. These are synthetic boundary trials,
+not proof of live token savings. The compatibility worktree is temporary evidence;
+permanent regressions live with their owning source contracts.

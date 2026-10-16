@@ -493,14 +493,27 @@ Producer intent survives worker relay, persistence and replay. The original
 Event owns that intent: a keyed retry cannot replace it with today's producer
 declaration. Old Events with no saved intent retain their previous classification;
 do not infer intent from their names. Only the delivery owner can acknowledge its
-consumers. Storage-only acceptance cannot overwrite a failed receipt or another
-consumer's acceptance. App admission may still acknowledge its independent
-inspection in the same transaction.
+consumers. A known failed required route is recorded as a direct-delivery attempt
+without acceptance; storage-only fallback cannot settle it, even before expiry.
+Another consumer's acceptance also remains independent. A receipt that timed out
+before any required attempt was recorded can still settle as no-work when its
+saved observation is inspected. App admission may acknowledge its independent
+inspection in the same transaction. This distinguishes an unresolved timeout from
+a known failed operation without adding a new work lifecycle.
 
 The [observer implementation trial](../archive/reviews/observer-delivery-intent-20261016.md)
-records the source candidate and verification; deployment is separate. Receipt
-expiry must use durable status and timing so restart cannot hide overdue delivery.
-That expiry correction remains an [implementation gap](../proposals/host-contract-improvements-20261016.md).
+records the source candidate and verification; deployment is separate.
+
+Receipt expiry uses saved status, publication time and TTL, independently of
+process start. Every prospective Event carries an App-admission marker: either
+value establishes that it belongs to tracked delivery. A pending saved admission
+plan also establishes that obligation. Legacy rows with neither remain uncertain;
+age alone cannot turn old history into newly failed work. Expiry marks an overdue
+pending receipt without replaying effects, changing accepted receipts or clearing
+independent App admission. The existing exact-target plan expiry still applies;
+broad App admission can recover through its own saved marker or plan.
+The [expiry implementation trial](../archive/reviews/event-receipt-expiry-20261016.md)
+records the source candidate and remaining verification; it is not deployed.
 
 Routine checks that find no new work update bounded activity counters. The
 existing sampler retains totals, reasons and the observation window in metric

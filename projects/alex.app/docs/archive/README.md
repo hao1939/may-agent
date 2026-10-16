@@ -34,6 +34,9 @@ contracts; Tier-2 design governs when wording conflicts.
 
 ## Reviews
 
+- [Event receipt expiry: implementation trial — 2026-10-16](reviews/event-receipt-expiry-20261016.md)
+  — durable deadlines across restart, preserved historical uncertainty and independent admission recovery.
+
 - [Observer delivery intent: implementation trial — 2026-10-16](reviews/observer-delivery-intent-20261016.md)
   — ordinary facts, persisted publication intent and independent receipt evidence.
 - [Serving database contention: implementation trial — 2026-10-16](reviews/host-contention-fix-20261016.md)
