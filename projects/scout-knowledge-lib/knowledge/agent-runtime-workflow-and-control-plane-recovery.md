@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion to agent-runtime-unattended-execution-and-replay.md for workflow and control-plane recovery boundaries: host-owned durability, trace-compilation limits, deterministic recovery projections, pause-versus-execution authority, and receipt-bound action selection."
-triggers: ["AgentRun", "workflow DSL", "late settlement", "Hotpath", "trace compilation", "workflow drift", "Kiso", "recovery projection", "crash matrix", "LoopX", "hard lease", "agent pause", "lease retirement", "host-owned turn", "action selection", "receipt binding"]
-last_updated: "2026-10-05"
-source_basis: "Extracted intact from agent-runtime-unattended-execution-and-replay.md during its 2026-10-01 oversized-note review, then extended with pinned LoopX evidence on host-owned Turn selection. Each section retains stable source links, pinned revisions, inspected implementation or repository-authored test evidence, and explicit execution limitations."
+summary: "Companion to agent-runtime-unattended-execution-and-replay.md for workflow and control-plane recovery boundaries: host-owned durability, trace-compilation limits, deterministic recovery projections, pause-versus-execution authority, receipt-bound action selection, and fresh-state checks after concurrency fences."
+triggers: ["AgentRun", "workflow DSL", "late settlement", "Hotpath", "trace compilation", "workflow drift", "Kiso", "recovery projection", "crash matrix", "LoopX", "hard lease", "agent pause", "lease retirement", "host-owned turn", "action selection", "receipt binding", "concurrent admission", "fresh-state recovery"]
+last_updated: "2026-10-16"
+source_basis: "Extracted intact from agent-runtime-unattended-execution-and-replay.md during its 2026-10-01 oversized-note review, then extended with pinned LoopX evidence on host-owned Turn selection and concurrent recovery admission. Each section retains stable source links, pinned revisions, inspected implementation or repository-authored test evidence, and explicit execution limitations."
 </ai_context>
 
 # Agent Runtime Workflow and Control-Plane Recovery
@@ -234,3 +234,44 @@ and authored-test intent, not deployed behavior or cross-process linearizability
 - **Inspected revision:** https://github.com/loopx-project/loopx/commit/04b0a04eba135661870cc4c2c59d17862c16c55c
 - **Primary sources:** [host-owned selection implementation](https://github.com/loopx-project/loopx/blob/04b0a04eba135661870cc4c2c59d17862c16c55c/loopx/cli_commands/quota_action_selection.py), [quota allocation contract](https://github.com/loopx-project/loopx/blob/04b0a04eba135661870cc4c2c59d17862c16c55c/docs/quota-allocation.md), and [settlement CLI tests](https://github.com/loopx-project/loopx/blob/04b0a04eba135661870cc4c2c59d17862c16c55c/tests/control_plane/test_quota_settlement_cli.py)
 - **Discovery query:** GitHub Repository Search API `"AI agent" durable execution in:name,description,readme pushed:>=2026-09-01`, sorted by updated; `total_count: 9453`, `incomplete_results: false`
+
+## Recovery Must Recheck State After Waiting on an In-Flight Admission — LoopX (GitHub, October 2026)
+
+LoopX's latest Lark transport fix demonstrates a small but consequential recovery
+race. Intake first persists a transport record as `captured`, then admits it into the
+core while still owning that record's file-lock fence. A concurrent reconciler can
+read the intermediate `captured` snapshot even though intake is still progressing.
+Retrying admission directly from that stale read can create two core admissions for
+one external message.
+
+The fix does not infer abandonment from the intermediate status. Recovery acquires
+the same capture fence, waits for its current owner, and then reads the record again.
+Only if the post-fence state is still `captured` does it retry admission. A separate
+change similarly reloads the current Turn after potentially slow provider feedback
+before starting progress output, preventing a terminal answer that completed during
+feedback from being displaced or deferred by a stale `running` observation.
+
+Project-authored concurrency tests force both interleavings. One holds core admission
+while recovery observes `captured`, then asserts exactly one admission, one user
+message, one `turn/start`, and one final provider write. Another makes the Turn
+complete during provider feedback and asserts the final answer is delivered without
+a provisional progress record. The abandoned-capture cases also recheck the current
+binding: recovery proceeds only while it remains valid and leaves a revoked capture
+unadmitted.
+
+**Runtime rule:** a persisted intermediate state is not proof that its owner has
+abandoned the operation. Recovery should join the operation's existing ownership
+fence, re-read after the wait, and act only on that fresh state. Repeat the same
+fresh-read discipline after slow presentation or provider calls; otherwise recovery
+can duplicate admission or publish an obsolete progress state after completion.
+
+Scout inspected the pinned commit patch and complete modified implementation and test
+files. It did not clone LoopX, execute the tests, exercise Lark, or reproduce the
+race independently. This is static implementation and repository-authored test
+evidence, not proof of deployed exactly-once behavior or correctness across other
+transports and process boundaries.
+
+- **Repo:** https://github.com/loopx-project/loopx
+- **Inspected revision:** https://github.com/loopx-project/loopx/commit/bece55a770c1a378a0419b8fb987fce0705605ae
+- **Primary sources:** [Lark recovery implementation](https://github.com/loopx-project/loopx/blob/bece55a770c1a378a0419b8fb987fce0705605ae/loopx/extensions/lark/private_conversations.py) and [forced-interleaving tests](https://github.com/loopx-project/loopx/blob/bece55a770c1a378a0419b8fb987fce0705605ae/tests/test_lark_private_conversations.py)
+- **Discovery query:** GitHub Repository Search API `"AI agent" memory in:name,description,readme pushed:>2026-10-10 stars:>20`, sorted by updated; `total_count: 3127`, `incomplete_results: false`
