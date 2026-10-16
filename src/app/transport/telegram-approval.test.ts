@@ -204,8 +204,8 @@ describe("Telegram exact approval presentation", () => {
         const watchCard = renderTelegramTask(serviceDetail);
         for (const requestedAction of scenario.actions) expect(watchCard).toContain(requestedAction);
         if (scenario.approval) {
-          expect(watchCard).toContain(`Needs your decision: ${decisionAction}`);
-          expect(watchCard).toContain("Also needs your action (separate from the decision):");
+          expect(watchCard).toContain(`Decision needed\n${decisionAction}`);
+          expect(watchCard).toContain("Other action needed (separate from this decision)");
         }
 
         globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
@@ -242,9 +242,9 @@ describe("Telegram exact approval presentation", () => {
         expect(sent).toHaveLength(1);
         for (const requestedAction of scenario.actions) expect(sent[0]).toContain(requestedAction);
         if (scenario.approval) {
-          expect(sent[0]).toContain("Needs your decision:");
-          expect(sent[0]).toContain("Also needs your action (separate from the decision):");
-          expect(sent[0]).toContain("Reply here with your decision.");
+          expect(sent[0]).toContain("Needs your decision");
+          expect(sent[0]).toContain("Other action needed (separate from this decision)");
+          expect(sent[0]).toContain("How to respond");
           const notification = db
             .prepare("SELECT data FROM notification_messages WHERE event_type = 'task.human-action'")
             .get() as { data: string };

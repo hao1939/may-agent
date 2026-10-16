@@ -12,6 +12,7 @@ import {
   findConversationTopics,
   readAppConversationResource,
   listConversationTopicPage,
+  readConversationInputTopicId,
   readConversationMessageTopicId,
   readConversationTopic,
 } from "./conversations.js";
@@ -25,6 +26,40 @@ describe("Conversation store", () => {
   });
 
   afterEach(() => db.close());
+
+  it("uses an explicit reply Topic before the current inbox Topic", () => {
+    for (const [id, title] of [["topic-a", "Selected"], ["topic-b", "Reply"]] as const) {
+      createConversationTopic(db, {
+        id,
+        appId: "may",
+        conversationId: "may:primary",
+        title,
+        openedBy: "human",
+        originMessageId: `${id}-origin`,
+      });
+    }
+    createAppInboxItem(db, {
+      id: "reply-target",
+      appId: "may",
+      conversationId: "may:primary",
+      conversationSequence: 1,
+      topicId: "topic-b",
+      source: { kind: "human", id: "reply-target" },
+      input: { kind: "message", data: { message: "Discuss B" } },
+    });
+    const current = createAppInboxItem(db, {
+      id: "current",
+      appId: "may",
+      conversationId: "may:primary",
+      conversationSequence: 2,
+      topicId: "topic-a",
+      replyToSourceId: "reply-target",
+      source: { kind: "human", id: "current" },
+      input: { kind: "message", data: { message: "Continue" } },
+    }).item;
+
+    expect(readConversationInputTopicId(db, current)).toBe("topic-b");
+  });
 
   it("projects one conversation resource and excludes transient events from context", () => {
     createAppInboxItem(db, {

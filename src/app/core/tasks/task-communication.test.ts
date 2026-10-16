@@ -1,3 +1,4 @@
+import { makeTaskRetryDue } from "./app-task-test-support.js";
 import type { TaskAgentInput, TaskConversationRunner } from "./execution.js";
 import { expect, test, setSystemTime } from "bun:test";
 import { appTaskContext, observeAppTaskIntent } from "./app-task-reconciler.js";
@@ -31,8 +32,13 @@ import {
 } from "./app-task-runtime.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { readConversationRequest } from "../state/conversation-requests.js";
-import { listAppConversationMessages, readConversationMessageTopicId } from "../state/conversations.js";
-import { listAppInboxItems } from "../state/app-inbox-store.js";
+import {
+  createConversationTopic,
+  listAppConversationMessages,
+  readConversationInputTopicId,
+  readConversationMessageTopicId,
+} from "../state/conversations.js";
+import { getAppInboxItem, listAppInboxItems } from "../state/app-inbox-store.js";
 
 async function fixture(
   execute: TaskExecutor,
@@ -231,7 +237,8 @@ test("a malformed Conversation procedure retains failure and original obligation
     expect(agentCalls).toBe(0);
     expect(conversationCalls).toBe(3);
     expect(f.store.readAttempt(failedId)).toEqual(failure);
-    expect(f.store.readTask(taskId)).toMatchObject({ metadata: { generation }, status: { phase: "pending" } });
+    expect(f.store.readTask(taskId)).toMatchObject({ metadata: { generation },
+      status: { phase: "attention", retryExhausted: { failures: 3, limit: 3 } } });
     const admissions = f.store.readTaskContext({ taskIds: [], admissionIds: [
       "conversation-input:ask", "conversation-follow-up:sample:ask",
     ] }).appTaskAdmissions!;
@@ -324,12 +331,9 @@ test("ordinary Task publishes before failure, reuses the publication after resta
         .map(({ text }) => text),
     ).toEqual([progress.message!]);
     await f.reopen();
-    // The existing recovery timer retries the failed assignment after reopening.
-    const deadline = Date.now() + 4000;
-    while (calls < 2 || f.store.readTask("work")?.status.phase === "running") {
-      if (Date.now() > deadline) throw new Error("Recovery did not settle");
-      await Bun.sleep(5);
-    }
+    // A due retry after reopening reuses the already committed publication.
+    makeTaskRetryDue(f.store, "work");
+    await f.run();
     expect(calls).toBe(2);
     expect(f.store.readTask("work")?.status.phase).toBe("waiting");
     expect(readConversationRequest(f.db, "sample", "discussion", "requested-work")?.status).toBe("open");
@@ -1054,6 +1058,115 @@ test("a reply to a common Task publication retains Topic and Task navigation wit
   }
 });
 
+test("accepted Topic decisions persist across same-input messages and Request updates", async () => {
+  for (const selection of ["new", "existing", "none"] as const) {
+    let replyTo: string | undefined;
+    let originalTopic: string | undefined;
+    const f = await fixture(async () => {
+      if (!replyTo)
+        return {
+          state: "converged",
+          summary: "Opened the replied-to Topic",
+          facts: [],
+          communication: [
+            {
+              id: "open",
+              inputId: "ask",
+              message: "Topic B",
+              topic: { kind: "new", title: "Topic B" },
+              requestUpdates: Array.from({ length: 8 }, (_, index) => ({
+                id: `scope-${index}`,
+                expectedRevision: 0,
+                scope: `initial-${index}`,
+                disposition: "open" as const,
+              })),
+            },
+          ],
+        };
+      const topic =
+        selection === "new"
+          ? { kind: "new" as const, title: "Topic C" }
+          : selection === "existing"
+            ? { kind: "existing" as const, id: "topic-c" }
+            : { kind: "none" as const };
+      return {
+        state: "converged",
+        summary: `Applied ${selection} Topic decision`,
+        facts: [],
+        communication: [
+          {
+            id: "choose",
+            inputId: "followup",
+            message: "Choose destination",
+            topic,
+            requestUpdates: Array.from({ length: 8 }, (_, index) => ({
+              id: `scope-${index}`,
+              expectedRevision: 1,
+              scope: String(index).repeat(2_000),
+              disposition: "open" as const,
+              reason: "r".repeat(2_000),
+            })),
+          },
+          {
+            id: "continue",
+            inputId: "followup",
+            message: "Continue at destination",
+            requestUpdates: Array.from({ length: 8 }, (_, index) => ({
+              id: `scope-${index}`,
+              expectedRevision: 2,
+              scope: `updated-${index}`,
+              disposition: "open" as const,
+            })),
+          },
+        ],
+      };
+    }, "task");
+    try {
+      const original = f.admit("ask").item;
+      await f.run(original.executionTaskId!);
+      const parent = listAppConversationMessages(f.db, "sample", "discussion").find(({ text }) => text === "Topic B")!;
+      replyTo = parent.id;
+      originalTopic = parent.metadata?.topicId;
+      if (selection === "existing")
+        createConversationTopic(f.db, {
+          id: "topic-c",
+          appId: "sample",
+          conversationId: "discussion",
+          title: "Topic C",
+          openedBy: "human",
+          originMessageId: "topic-c-origin",
+        });
+      const followup = f.inbox.host.admit({
+        id: "followup",
+        appId: "sample",
+        conversationId: "discussion",
+        conversationSequence: 2,
+        source: { kind: "human", id: "followup" },
+        replyToSourceId: replyTo,
+        input: { kind: "message", data: { message: "Move this discussion" } },
+      }).item;
+      await f.run(followup.executionTaskId!);
+      const messages = listAppConversationMessages(f.db, "sample", "discussion");
+      const chosen = messages.find(({ text }) => text === "Choose destination")!;
+      const continued = messages.find(({ text }) => text === "Continue at destination")!;
+      const expected = selection === "none" ? undefined : chosen.metadata?.topicId;
+      expect(expected).not.toBe(selection === "none" ? originalTopic : undefined);
+      expect(continued.metadata?.topicId).toBe(expected);
+      expect(readConversationRequest(f.db, "sample", "discussion", "scope-0")).toMatchObject({
+        revision: 3,
+        scope: "updated-0",
+        ...(expected ? { topicId: expected } : {}),
+      });
+      if (selection === "none")
+        expect(readConversationRequest(f.db, "sample", "discussion", "scope-0")?.topicId).toBeUndefined();
+      f.db.run("DELETE FROM events WHERE event_type = 'app.task.communication.updated'");
+      expect(readConversationInputTopicId(f.db, getAppInboxItem(f.db, "followup")!)).toBe(expected);
+    } finally {
+      await f.close();
+    }
+  }
+});
+
 test("maximal Request scopes retain message history, reply links and exact receipts across restart", async () => {
   const communication: TaskCommunication = {
     id: "large-acceptance",
@@ -1116,7 +1229,9 @@ test("maximal Request scopes retain message history, reply links and exact recei
     expect(f.store.readTask("work")?.status.summary).toContain("Interrupted after large publication");
     expect(topicId).toMatch(/^task-topic:/);
     await f.reopen();
-    await until(() => f.store.readTask("work")?.status.phase === "waiting");
+    makeTaskRetryDue(f.store, "work");
+    await f.run();
+    expect(f.store.readTask("work")?.status.phase).toBe("waiting");
     expect(calls).toBe(2);
     const messages = listAppConversationMessages(f.db, "sample", "discussion").filter(
       ({ author }) => author.kind === "agent",

@@ -755,8 +755,11 @@ describe("Telegram durable input and natural follow-up", () => {
         owner: "app:may", data: { appId: "may", taskId: "first" } });
       wake();
       await waitFor(() => sendStarted);
-      f.message(102, "/topic bbbbbbbb", { message_thread_id: 7 });
-      await waitFor(() => f.published.some((e) => e.data.metadata?.command === "/topic bbbbbbbb"));
+      // Re-selecting a Topic linked to the watched Task preserves the watch;
+      // selecting an unrelated Topic intentionally ends it and suppresses the
+      // stale in-flight acknowledgement.
+      f.message(102, "/topic aaaaaaaa", { message_thread_id: 7 });
+      await waitFor(() => f.published.filter((e) => e.data.metadata?.command === "/topic aaaaaaaa").length === 2);
       held.resolve();
       await waitFor(() => f.published.some((e) => e.data.metadata?.command === "/watch update"));
       const progress = f.published.find((e) => e.data.metadata?.command === "/watch update")!;
@@ -773,22 +776,24 @@ describe("Telegram durable input and natural follow-up", () => {
       expect(f.inputs()[0].data).toMatchObject({ metadata: { topicId: "topic_aaaaaaaa" },
         context: { focusedTask: { appId: "may", taskId: "first" } } });
 
+      f.message(104, "/topic bbbbbbbb", { message_thread_id: 7 });
+      await waitFor(() => f.published.some((e) => e.data.metadata?.command === "/topic bbbbbbbb"));
       // Re-following this Task clears the unrelated Topic, including on later updates.
-      f.message(104, "/watch first", { message_thread_id: 7 });
+      f.message(105, "/watch first", { message_thread_id: 7 });
       await waitFor(() => f.published.filter((e) => e.data.metadata?.command === "/watch first").length === 2);
       f.tasks.get("first")!.summary = "Progress without a matching Topic";
       wake();
       await waitFor(() => f.published.filter((e) => e.data.metadata?.command === "/watch update").length === 2);
       expect(f.published.filter((e) => e.data.metadata?.command === "/watch update")[1].data.metadata.topicId)
         .toBeUndefined();
-      for (const [id, action, command] of [[105, "details", "/task linked"], [106, "follow", "/watch linked"]] as const) {
+      for (const [id, action, command] of [[106, "details", "/task linked"], [107, "follow", "/watch linked"]] as const) {
         f.send([{ update_id: id, callback_query: { id: action, data: `task:${action}`,
           message: { message_id: messageId, chat: { id: 123 }, message_thread_id: 7 } } }]);
         await waitFor(() => f.published.some((e) => e.data.metadata?.command === command));
         expect(f.published.find((e) => e.data.metadata?.command === command)!.data.metadata.topicId)
           .toBe("topic_aaaaaaaa");
       }
-      f.message(107, "What's next?", { message_thread_id: 7 });
+      f.message(108, "What's next?", { message_thread_id: 7 });
       await waitFor(() => f.inputs().length === 2);
       expect(f.inputs()[1].data.metadata.topicId).toBe("topic_aaaaaaaa");
     } finally { held.resolve(); await f.close(); }
@@ -1045,7 +1050,7 @@ describe("Telegram May input", () => {
         1,
         "evaluation",
       ),
-    ).toContain("<b>Needs you for evaluation</b>\n\n🔴 <b>Approve or reject deployment.</b>");
+    ).toContain("<b>Needs you for evaluation</b>\n\n🔴 <b>Action: Approve or reject deployment.</b>");
     const recurringTodos = renderTelegramTodos([
       {
         ...task,
@@ -1067,7 +1072,7 @@ describe("Telegram May input", () => {
           humanAction: { requestedAction: "Approve <this> & that." },
         },
       ]),
-    ).toContain("<b>Approve &lt;this&gt; &amp; that.</b>\n  Review &lt;unsafe&gt; &amp; confirm");
+    ).toContain("<b>Action: Approve &lt;this&gt; &amp; that.</b>\n  Purpose: Review &lt;unsafe&gt; &amp; confirm");
     expect(
       renderTelegramTodos(
         [{ ...task, status: "waiting", humanAction: { requestedAction: "Provide the rollout window." } }],
@@ -1690,9 +1695,9 @@ describe("Telegram May input", () => {
         "Exact proposal: apply the reviewed docs candidate at commit 01234567; cost is one restart; simpler option is no change.";
       const approvalCards = sent.filter((text) => text.includes(exactProposal));
       expect(approvalCards).toHaveLength(2);
-      const decisionCards = approvalCards.filter((text) => text.includes("Needs your decision:"));
+      const decisionCards = approvalCards.filter((text) => text.includes("Decision needed"));
       expect(decisionCards.length).toBeGreaterThan(0);
-      expect(decisionCards.every((text) => text.includes("Reply here with your decision."))).toBe(true);
+      expect(decisionCards.every((text) => text.includes("How to respond"))).toBe(true);
       const boundCards = getDb(root)
         .prepare("SELECT data FROM notification_messages WHERE event_type = 'task.human-action'")
         .all() as Array<{ data: string }>;
