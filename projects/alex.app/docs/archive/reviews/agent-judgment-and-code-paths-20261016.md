@@ -313,7 +313,10 @@ The focused tests passed: 77 completion/agent/Task checks and 33 correction/
 handoff checks. `check:may-design` passed in the isolated Apps worktree with
 one existing root-layout warning. A direct trial of the manual example retained
 the same incomplete report for both done and blocked helper outcomes, without
-inventing a verdict. Full Host CI is recorded with the source PR.
+inventing a verdict. Full `bun run ci` passed: 3,772 tests passed, three
+installation-only checks skipped, zero failed; browser coverage ran.
+[Host PR #373](https://github.com/hao1939/may-agent/pull/373) has successful
+Quality and Container checks for `791abcc11`. No deployment was performed.
 
 These trials do not establish live model behavior or token savings. App schema/
 reader alignment and the pinned tool validator's implicit conversion remain
