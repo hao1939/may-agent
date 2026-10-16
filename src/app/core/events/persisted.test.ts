@@ -80,9 +80,73 @@ test("observation fallback cannot erase failed delivery or replace an independen
 
     const accepted = bus.emit({ type: "fixture.accepted", source: "fixture", owner: "app:producer", data: {} });
     writer.recordDelivery(accepted, { accepted: true, by: "owner", route: "direct" });
+    const directReceipt = db.prepare("SELECT delivery_status, delivery_route, delivery_note, accepted_by, accepted_at FROM events WHERE id = ?")
+      .get(accepted[EVENT_ROW_ID]!);
+    writer.recordDelivery(accepted, { accepted: false, note: "Another required route failed" });
+    expect(db.prepare("SELECT delivery_status, delivery_route, delivery_note, accepted_by, accepted_at FROM events WHERE id = ?")
+      .get(accepted[EVENT_ROW_ID]!)).toEqual(directReceipt);
     writer.recordDelivery(accepted, { accepted: true, by: "observation", route: "noop", appAdmission: true });
     expect(db.prepare("SELECT delivery_status, accepted_by, app_admission_pending FROM events WHERE id = ?")
       .get(accepted[EVENT_ROW_ID]!)).toEqual({ delivery_status: "accepted", accepted_by: "owner", app_admission_pending: 0 });
+  } finally {
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a failed keyed retry replaces storage-only acceptance and survives fallback and restart", () => {
+  const root = mkdtempSync(join(tmpdir(), "may-observation-retry-"));
+  try {
+    const bus = new EventBus();
+    const writer = new DbWriter(root, { housekeepingIntervalMs: 0 });
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const input = {
+      type: "fixture.observed", source: "fixture", owner: "app:producer",
+      data: { idempotencyKey: "same-observation", value: 1 }, [EVENT_RECORD_ONLY]: true,
+    };
+    const id = bus.emit({ ...input })[EVENT_ROW_ID]!;
+    let db = getDb(root);
+    const receipt = () => db.prepare(
+      "SELECT delivery_status, delivery_route, delivery_note, accepted_by, accepted_at, app_admission_pending FROM events WHERE id = ?",
+    ).get(id);
+    expect(receipt()).toMatchObject({ delivery_status: "accepted", delivery_route: "noop", accepted_at: expect.any(Number) });
+    let attempts = 0;
+    const stop = bus.subscribeDurableRoute((event) => {
+      if (event.type !== input.type) return;
+      attempts++;
+      throw new Error("Required consumer unavailable");
+    });
+    expect(bus.emit({ ...input })[EVENT_ROW_ID]).toBe(id);
+    expect(attempts).toBe(1);
+    const failed = receipt();
+    expect(failed).toMatchObject({
+      delivery_status: "pending", delivery_route: "direct", accepted_by: null, accepted_at: null,
+      delivery_note: expect.stringContaining("required durable route failed"), app_admission_pending: 1,
+    });
+    stop();
+    bus.redeliverPersisted(loadPersistedEvent(db, id, root)!, id);
+    expect(receipt()).toEqual(failed);
+    writer.runHousekeeping(Date.now() + 120_001);
+    const expired = receipt();
+    expect(expired).toEqual({ ...failed, delivery_status: "unhandled" });
+
+    closeDb(root);
+    db = getDb(root);
+    const recovered = new EventBus();
+    const recoveredWriter = new DbWriter(root);
+    recovered.setPersistenceSubscriber(recoveredWriter.handler);
+    recovered.setDeliveryRecorder(recoveredWriter.recordDelivery);
+    recovered.redeliverPersisted(loadPersistedEvent(db, id, root)!, id);
+    expect(receipt()).toEqual(expired);
+    recovered.subscribeDurableRoute((event) => event.type === input.type
+      ? { accepted: true, by: "required-consumer", route: "direct", appAdmission: true } : undefined);
+    expect(recovered.emit({ ...input })[EVENT_ROW_ID]).toBe(id);
+    expect(receipt()).toMatchObject({
+      delivery_status: "accepted", delivery_route: "direct", accepted_by: "required-consumer",
+      accepted_at: expect.any(Number), app_admission_pending: 0,
+    });
+    expect(db.prepare("SELECT COUNT(*) AS n FROM events WHERE event_type = ?").get(input.type)).toEqual({ n: 1 });
   } finally {
     closeDb(root);
     rmSync(root, { recursive: true, force: true });

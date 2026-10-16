@@ -49,9 +49,11 @@ Observer facts need no consumer unless a declared route uses them. Their trusted
 record-only intent is saved with the Event and restored on keyed retry and journal
 recovery; it is not an App routing option or proof of delivery. Missing historical
 intent stays unclassified. A failed required route is recorded as a direct-delivery
-attempt, without acceptance; storage-only fallback cannot settle it or replace
-another consumer's acceptance. A timeout before any recorded required attempt can
-still settle as no-work when the saved observation is inspected. App admission
+attempt, without acceptance; a failed keyed retry reopens a prior storage-only
+receipt as pending and clears its acceptance fields. Storage-only fallback cannot
+settle that failure or replace another consumer's acceptance. An expired failure
+stays unhandled until real delivery succeeds. A timeout before any recorded required
+attempt can still settle as no-work when the saved observation is inspected. App admission
 acknowledges its own inspection independently, in the same transaction. See the observer-delivery,
 persisted-event and worker-boundary regressions for these failure paths.
 

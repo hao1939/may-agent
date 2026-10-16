@@ -650,12 +650,16 @@ export class DbWriter {
         const now = Date.now();
         stateTransaction(this.db, () => {
           if (!result.accepted) {
-            // Record the failed required route without acknowledging App admission
-            // or replacing an independently accepted receipt. A later no-work
-            // inspection cannot stand in for this missing required acceptance.
+            // Storage-only acceptance does not cover a required route that fails
+            // on retry. Reopen that receipt, preserving independent acceptance
+            // and any failure that has already expired. App admission is separate.
             this.db.run(
-              `UPDATE events SET delivery_route = 'direct', delivery_note = ?
-               WHERE id = ? AND delivery_status IN ('pending', 'unhandled')`,
+              `UPDATE events
+               SET delivery_status = CASE WHEN delivery_status = 'accepted' THEN 'pending' ELSE delivery_status END,
+                   accepted_by = NULL, accepted_at = NULL,
+                   delivery_route = 'direct', delivery_note = ?
+               WHERE id = ? AND (delivery_status IN ('pending', 'unhandled')
+                 OR (delivery_status = 'accepted' AND delivery_route = 'noop'))`,
               [result.note, rowId],
             );
             return;
