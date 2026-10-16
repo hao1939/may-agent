@@ -3,7 +3,7 @@
 **Status:** Direction accepted, implementation in progress, 2026-10-16.
 Principles and contract refinements are integrated into their owning documents.
 Database contention is fixed in merged [Host PR #370](https://github.com/hao1939/may-agent/pull/370).
-The observer-accounting change is published in [Host PR #371](https://github.com/hao1939/may-agent/pull/371); the original revision passed local/GitHub checks; a combined expiry trial exposed a correction now in verification. Receipt expiry is published in [Host PR #372](https://github.com/hao1939/may-agent/pull/372); local CI passed and hosted verification remains. Later steps remain open.
+The observer-accounting change is published in [Host PR #371](https://github.com/hao1939/may-agent/pull/371); the original revision passed local/GitHub checks; a combined expiry trial exposed a correction whose local CI passed; current hosted checks remain pending. Receipt expiry is published in [Host PR #372](https://github.com/hao1939/may-agent/pull/372); local CI and hosted checks passed; review remains. Later steps remain open.
 No deployment is established by this document.
 
 **Parent:** [Keep the Host boring and let Apps change](host-stability-and-app-extensibility-20261005.md).
@@ -89,8 +89,8 @@ Preserve already-fixed behavior and make separate runtime changes in this order:
 | Step | Change and contract | Value / evidence |
 | --- | --- | --- |
 | 1 | Bound serving-path SQL waits; preserve operation-owned retry (C3/C5) | Merged #370; source verification complete, rollout not established |
-| 2 | Apply observation semantics through ordinary producers and relays (C2/C6) | PR #371 retains original intent and independent receipts; combined expiry trial now distinguishes a required failure from an uninspected timeout; revised verification in progress |
-| 3 | Expire delivery receipts from durable status/timing (C3) | PR #372 uses the existing durable admission marker and saved timing; local CI passed; hosted checks and review remain |
+| 2 | Apply observation semantics through ordinary producers and relays (C2/C6) | PR #371 retains original intent and independent receipts; combined expiry trial now distinguishes a required failure from an uninspected timeout; revised local CI passed; current hosted checks pending |
+| 3 | Expire delivery receipts from durable status/timing (C3) | PR #372 uses the existing durable admission marker and saved timing; local/hosted checks passed; ready for review |
 | 4 | Trial one private recovery success meaning across callers/backends (C4/C6) | Consistent safe retry without adding optional-artifact gates |
 | 5 | Profile metric queries; optimize or contain demonstrated cost (C5) | Synthetic blocking shown; installed query impact remains unmeasured |
 

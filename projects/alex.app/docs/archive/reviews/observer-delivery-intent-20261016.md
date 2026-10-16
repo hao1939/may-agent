@@ -1,6 +1,6 @@
 # Observer delivery intent: implementation trial — 2026-10-16
 
-**Status:** Published as [Host PR #371](https://github.com/hao1939/may-agent/pull/371); revised after the combined expiry trial; new full CI/hosted checks in progress. Not deployed.
+**Status:** Published as [Host PR #371](https://github.com/hao1939/may-agent/pull/371); revised after the combined expiry trial; revised full local CI and focused checks passed; current hosted checks pending. Not deployed.
 **Supports:** [Event admission](../../2a-design/events.md#admission-state) and
 [Host contract improvements](../../proposals/host-contract-improvements-20261016.md).
 
@@ -120,3 +120,9 @@ the same 36 cases pass, including quiet facts, genuine required failure, pending
 failure fallback, and independent acceptance. These are synthetic boundary trials,
 not proof of live token savings. The compatibility worktree is temporary evidence;
 permanent regressions live with their owning source contracts.
+
+The revised implementation passed full local `bun run ci`: 3,755 passed, three
+installation-dependent skips, zero failures; 21,509 assertions across 338 files
+in 345.10 seconds. The final `21abd7b9b` filtered-recovery regression passes in
+the 36-case focused suite (183 assertions); current-head static/SDK/boundary/lint
+checks also pass. Its review thread is resolved; hosted validation is still pending.

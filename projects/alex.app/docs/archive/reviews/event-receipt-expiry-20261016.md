@@ -1,6 +1,6 @@
 # Event receipt expiry: implementation trial — 2026-10-16
 
-**Status:** Published as [Host PR #372](https://github.com/hao1939/may-agent/pull/372); full local CI passed, hosted checks and review pending. Not deployed.
+**Status:** Published as [Host PR #372](https://github.com/hao1939/may-agent/pull/372); full local CI and hosted checks passed; ready for review. Not deployed.
 **Supports:** [Event admission](../../2a-design/events.md#admission-state) and
 [Host contract improvements](../../proposals/host-contract-improvements-20261016.md).
 
@@ -67,7 +67,8 @@ bun run ci
 Full local `bun run ci` passed: 3,750 tests passed, three installation-dependent
 skips, zero failures; 21,474 assertions across 338 files in 306.12 seconds.
 The browser ran. Design checks passed with zero errors and the existing unclassified
-`reports` warning. Hosted checks remain pending.
+`reports` warning. GitHub [Quality and Container checks](https://github.com/hao1939/may-agent/actions/runs/38922124492)
+both passed at `09457950f`; the PR is ready for review.
 
 A combined trial with the initial #371 reproduced a harmless expired observation
 remaining unhandled after inspection. The refined #371 now records a known required
