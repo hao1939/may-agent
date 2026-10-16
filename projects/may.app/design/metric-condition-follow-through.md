@@ -168,7 +168,7 @@ Task `reviewAt`; missed delivery recovery does not require an agent checkpoint.
 
 ## SQL cost review
 
-The October 17 candidate sets the metric-query target to **under 100 ms** through
+The App sets the metric-query target to **under 100 ms** through
 `metric.source-query-worst-ms`, the Host's passive maximum duration for SQL sources
 actually attempted in one collection pass. May supplies `threshold: 100` and
 `alertOp: ">="`; Host supplies the execution observation without an alert default.
@@ -191,7 +191,8 @@ window; invalid optional evidence does not discard the timing sample. Existing
 Host plan capture still starts at 1,000 ms, so 100 ms breaches can lack a plan.
 See the [Host contract](../../alex.app/docs/2a-design/metrics.md) and
 [October 17 evidence](../../alex.app/docs/archive/reviews/metric-query-cost-20261017.md).
-This candidate has not been activated or shown to reduce live query cost.
+Host #377 and this policy were activated on October 17; the linked rollout
+record separates installed behavior from evidence of reduced query cost.
 
 The October 2 source candidate adds `may.daemon-sql-time-percent` to May's
 existing five-minute metric collection. It compares retained daemon heartbeat

@@ -489,7 +489,7 @@ it already warrants comparison against the new target. Retained history also
 contains a 7.3-second execution of that query. A healthy copy or current window
 cannot establish that the earlier problem is fixed.
 
-**Source candidate:** Host now records one passive cost gauge per collection
+**Implemented:** merged Host #377 records one passive cost gauge per collection
 pass, without a default alert. It times the actual SQL source executions and
 retains the maximum, attempted/failure counts and bounded source/plan evidence.
 The App supplies the `>= 100 ms` rule and preserves optional plans in its existing
@@ -502,9 +502,11 @@ ran again or was repaired.
 
 Portable trials cover the 99/100 ms boundary, quiet repeated breaches, ordinary
 Alex routing, recovery, no-query passes, failed sources and bounded plan retention.
-**Remaining:** review and install the Host support before activating the App
-policy, then verify a fresh sample and the actual investigation path. No deployment
-or performance mitigation is claimed by these source tests.
+Host support and the App policy were activated on October 17; see the
+[rollout evidence](../archive/reviews/metric-query-cost-20261017.md#rollout-verification).
+The first natural sample exposed a 5.9-second query and reached Alex review,
+which retained a budget-deferred obligation. **Remaining:** complete investigation
+and verify any mitigation. Neither source tests nor deployment establish a fix.
 
 A read-only connection protects data but a synchronous query still blocks the
 serving process. Yielding between queries cannot interrupt a single slow query,

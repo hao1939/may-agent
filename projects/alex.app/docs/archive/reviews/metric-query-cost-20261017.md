@@ -2,10 +2,10 @@
 
 **Status:** profiling complete; direct SQL stays on the main thread for now by
 user decision. The accepted metric-query target is under 100 ms. A Host/App
-source candidate now covers metric-query cost and retained plans; activation
-remains pending. Asynchronous SQL execution remains deferred.
-The initial profiling changed no source or installation state. The later source
-candidate has not changed installed metrics, production state or deployment.
+implementation covers metric-query cost and retained plans. Host #377 is merged
+and deployed; the App policy is activated. Asynchronous SQL execution remains
+deferred. Initial profiling changed no installation state; subsequent authorized
+rollout is recorded below and does not establish a performance improvement.
 
 **Supports:** [Purpose and value](../../1-principles/purpose.md): keep work
 responsive and steerable while avoiding unnecessary machinery and model calls.
@@ -104,7 +104,7 @@ This was more than an unconsumed alert:
 The initial inspection also found an App evidence gap:
 `scripts/daemon-sql-latency.ts` retained fingerprints, shapes and timings but
 omitted the Host ranking's optional plan. The evaluator's ordinary evidence read
-could not recover a plan after it expired from diagnostics. The source candidate
+could not recover a plan after it expired from diagnostics. The implementation
 below adds bounded plan retention; the merged Host capture alone did not complete
 that evidence path.
 
@@ -149,12 +149,12 @@ resource usage. CPU, memory and disk remain shared resources.
 Keep direct SQL on the main thread for now, as requested. Do not introduce a
 worker, change collection policy, or pretend the historical spikes disappeared.
 The target is **under 100 ms for each metric query**, separate from the existing
-all-SQL one-second alert. The source candidate now records actual query cost,
+all-SQL one-second alert. The implementation records actual query cost,
 keeps routine samples quiet and routes App-declared breaches through Alex. It
 also retains available captured plans. None of this changes the execution
 thread or allows Host to choose a mitigation.
 
-### Source candidate and portable evidence
+### Source implementation and portable evidence
 
 Host [PR #377](https://github.com/hao1939/may-agent/pull/377), candidate [`3089c4371a`](https://github.com/hao1939/may-agent/commit/3089c4371aeb00bacf8e2845aa49c60a9f3b11db),
 based on `68bc5c7cf`. Companion App code is in `may.app/reliability-metrics.ts`
@@ -193,7 +193,9 @@ Validation uses disposable databases and synthetic timing/plan fixtures:
 - Full Host `bun run ci`: 3,800 passed, three installation-only tests skipped,
   zero failures. Final Host/SDK types, App boundary and ESLint: passed.
 - GitHub [Quality and Container](https://github.com/hao1939/may-agent/actions/runs/38961424576)
-  both passed on `3089c4371a`; PR #377 is ready for review, not merged or deployed.
+  both passed on `3089c4371a`; PR #377 merged as
+  `8eabb85d1b3af4c7e578359c61ff437d5b54282e`. Merge CI also passed.
+  Deployment is recorded separately below.
 - Companion `may.app/reliability-metrics.test.ts`: 20 passed.
 - `check:may-design` in the isolated source worktree: zero errors; existing
   unclassified `reports` warning. The integrated shared checkout passes document
@@ -217,3 +219,50 @@ scheduled sample. No mechanism is justified merely by renaming a function
 Private raw inventory, plans, timing outputs, status capture and trial scripts
 are retained together in the operator's `metric-query-profile-20261017` evidence
 archive. They contain installation state and are not fixtures for public Host CI.
+
+
+## Rollout verification
+
+The user authorized rollout after #377 merged. The supported deployment path
+built immutable Host commit `8eabb85d1b3af4c7e578359c61ff437d5b54282e`, including
+#376 recovery changes, and settled successfully at `2026-10-16T20:30:39Z`
+(October 17 local time). The deployment correlation is
+`host-metric-query-8eabb85d-20261017`; its exact receipt is under the Host checkout's
+`.state/deploy-receipts/host-metric-query-8eabb85d-20261017.json`.
+The loaded and requested artifact hashes both equal
+`ccd239be7834fc19e2737d6be52dee139b47f316f3bc7c92e5c07bff8b44a198`;
+health is healthy and `duplicateDeploy` is false. Binary version, SDK release,
+UI release, supervisor processes and control-socket readiness were checked.
+
+App activation separately pinned commit
+`6b1cf88cb66560084a0b5fd9ad6b46f0982aba47`. Reload request Event `6677262`
+completed successfully as record-only Event `6677264`; the active definition
+link matches that commit. The live gauge now reports owner `may`, threshold
+`100` and operator `>=`. Restart alone retained the prior App release, so the
+explicit activation was necessary. No synthetic sample or alert was inserted.
+
+The three enabled App definitions loaded against the deployed SDK. The broader
+optional source-boundary scan stopped at a pre-existing broken symlink inside
+Scout's retained research workspace; the underlying App/artifact compatibility
+check passed separately. No workspace was removed to make the scan pass.
+Deployment's 68 control checks passed, as did both merge CI jobs. Native CLI
+versions were unchanged; no model-backed compatibility claim is made.
+
+The first natural collection completed at `2026-10-16T20:35:44.975Z`: 17 SQL
+sources attempted, zero failures, maximum **5,905.7 ms**, total **6,472.7 ms**.
+The slowest source was `may.failed-task-attempts-24h`; its bounded note retained
+fingerprint `get:c2578eb640700e60` and an available plan showing an
+`app_task_attempts` scan. Other retained examples took 312.1 ms and 122.1 ms.
+This was after restart and while local source tests ran. It establishes real
+latency, not its cause or steady-state performance. No extra diagnostic SQL ran.
+
+Normal evaluation created alert `4989` and breach Event `6677292` at
+`2026-10-16T20:36:37.861Z`. The Event was accepted by Alex's ordinary metric route
+with no pending admission error. It admitted the exact Task
+`runtime/metric-review/evaluator-deepseek/a6b77df2b98b9cd7f45a01f4`.
+The workflow retained the obligation as `waiting` / `budget-deferred` because
+its shared semantic allowance was exhausted, with `reviewAt` and `nextEligibleAt`
+both `1792183200000` (`2026-10-16T20:40:00Z`). This proves sampling, threshold
+evaluation, routing and durable deferral; it does not yet establish a completed
+assessment or mitigation. The metric remains breached and no query repair is
+claimed.

@@ -382,7 +382,7 @@ CPU and disk resources, and their work is outside Host-process SQL counters.
 
 The accepted current choice is to keep direct SQL on the main thread and monitor
 cost. Apps own query meaning, thresholds and review; Host owns truthful execution
-evidence and responsiveness. The October 17 source candidate adds the passive
+evidence and responsiveness. Merged [Host #377](https://github.com/hao1939/may-agent/pull/377) adds the passive
 `metric.source-query-worst-ms` gauge. Host registers it without an alert rule and
 preserves an existing App calibration or retirement. The installation's App sets
 its performance target to **under 100 ms**, alerting at `>= 100`; this requests
@@ -407,8 +407,10 @@ Source failures remain separate facts. Collection creates no attention event;
 the existing evaluator applies the App rule and emits breach/recovery transitions.
 There is no per-source metric registry or additional schedule.
 
-**Activation:** this candidate requires Host support before the App definition;
-portable tests are not live rollout evidence. If execution moves to a worker
+**Activation:** install Host support before the App definition. The October 17
+[rollout record](../archive/reviews/metric-query-cost-20261017.md#rollout-verification)
+records the deployed Host and activated App policy; deployment alone does not
+establish improved performance. If execution moves to a worker
 later, the same query declaration should continue to work without App-managed
 process wiring. See the [measurement and remaining work](../proposals/host-contract-improvements-20261016.md#5-measure-metric-query-cost-before-adding-isolation)
 and the [operator guide](../2b-manual/metric-alerts.md#investigating-query-cost).
@@ -491,7 +493,7 @@ stores a scalar observation. It does not enforce monotonic counters, handle
 resets or store histograms. `health` and `derived` are May classifications,
 not additional Prometheus numeric types.
 Threshold evaluation defaults to below (`<`); `above` and `below` are strict
-aliases for `>` and `<`. The October 17 source candidate also supports `>=` and
+aliases for `>` and `<`. Host #377 also supports `>=` and
 `<=`, with the same equality boundary in evaluation, reporting and UI labels.
 More specialized rate, stall, sustained, or consecutive-failure behavior belongs
 in the definition's typed configuration and is evaluated by the same service.

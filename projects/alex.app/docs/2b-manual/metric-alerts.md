@@ -123,7 +123,7 @@ without reducing total work. Consult the
 [App policy](../../../may.app/design/metric-condition-follow-through.md#sql-cost-review)
 for definitions, alert rules and collection limits.
 
-The October 17 source candidate adds `metric.source-query-worst-ms`: the slowest
+Host #377 adds `metric.source-query-worst-ms`: the slowest
 direct metric SQL source attempted in a collection pass. The App alerts at
 `>= 100 ms`, keeping healthy collection quiet and using ordinary Alex review.
 Activate Host support before this App definition. The existing all-SQL one-second
@@ -135,7 +135,7 @@ sample untouched; check freshness. A lower later sample covers only that pass's
 attempted sources. Confirm the previously slow source ran again before claiming
 its repair, and check collection failures separately.
 
-The App candidate also preserves optional plans from the existing all-SQL
+The App also preserves optional plans from the existing all-SQL
 ranking. It checks the fingerprint, shape and capture window and bounds retained
 rows/text. An invalid optional plan does not discard valid latency evidence.
 Host plan capture remains at least 1,000 ms, so a 100 ms alert can have no plan;
