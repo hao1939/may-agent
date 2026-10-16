@@ -1,3 +1,4 @@
+import { readNewJudgment, evaluationJudgmentSchema } from "./lib/evaluation-judgment.js";
 import { describe, expect, setSystemTime, test } from "bun:test";
 import { admitTaskReconcileResult } from "@may-agent/sdk";
 import {
@@ -210,6 +211,68 @@ function factsOf(
 }
 
 describe("Task outcome review", () => {
+  test("optional evidence survives publication retry without another judgment", async () => {
+    const root = mkdtempSync(join(tmpdir(), "task-review-optional-"));
+    try {
+      const { findings, verification, ...output } = judgment;
+      const report = { ...output, disposition: "insufficient-evidence", summary: "Recovery evidence is unavailable." };
+      const events: any[] = [];
+      let calls = 0;
+      const ctx = createTestAppWorkflowContext({
+        input: { appId, taskId },
+        reconciliation: reconciliation(),
+        callAgent: async (_agent, _prompt, options) => {
+          calls++;
+          expect(options?.schema).toBe(evaluationJudgmentSchema);
+          return { id: "optional-report", kind: "agent", status: "done", summary: report.summary, output: report };
+        },
+        emit: async (event) => {
+          events.push(structuredClone(event));
+          if (events.length === 1) throw new Error("publication unavailable");
+        },
+      });
+      await expect(reviewTaskOutcome(ctx, reader(), root)).rejects.toThrow("publication unavailable");
+      const path = join(root, events[0].data.facts);
+      const saved = readFileSync(path, "utf8");
+      expect(JSON.parse(saved).judgment).toEqual(report);
+      expect(JSON.parse(saved).judgment).not.toHaveProperty("verification");
+      expect(JSON.parse(saved).judgment).not.toHaveProperty("findings");
+      expect((await reviewTaskOutcome(ctx, reader(), root)).status).toBe("done");
+      expect(calls).toBe(1);
+      expect(events[1]).toEqual(events[0]);
+      expect(readFileSync(path, "utf8")).toBe(saved);
+      expect(listTaskReports(root)).toHaveLength(1);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("new malformed evidence is not silently dropped before Task report publication", async () => {
+    const root = mkdtempSync(join(tmpdir(), "task-review-malformed-"));
+    try {
+      let calls = 0;
+      let publications = 0;
+      const ctx = createTestAppWorkflowContext({
+        input: { appId, taskId },
+        reconciliation: reconciliation(),
+        callAgent: async (_agent, _prompt, options) => {
+          calls++;
+          expect(options?.schema).toBe(evaluationJudgmentSchema);
+          return { id: "bad-report", kind: "agent", status: "done", summary: "reviewed", output: { ...judgment, verification: "not an array" } };
+        },
+        emit: async () => { publications++; },
+      });
+      const result = await reviewTaskOutcome(ctx, reader(), root);
+      expect(result.status).toBe("blocked");
+      expect(result.summary).toContain("invalid task-outcome judgment");
+      expect(calls).toBe(1);
+      expect(publications).toBe(0);
+      expect(listTaskReports(root)).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("retains detector evidence in the report without making quiet polling stale Task evidence", async () => {
     const root = mkdtempSync(join(tmpdir(), "task-review-observer-"));
     let prompt = "";
@@ -1216,13 +1279,13 @@ describe("Task outcome review", () => {
   test("fresh evaluator output must explicitly decide follow-up, while legacy reports remain readable", () => {
     const { followUp, ...legacy } = judgment;
     expect(parsedJudgment(legacy)).not.toBeNull();
-    expect(parsedJudgment(legacy, true)).toBeNull();
+    expect(readNewJudgment(legacy)).toBeNull();
     for (const invalid of [null, { kind: "skip" }, { kind: "request", message: " " }, { kind: "none", extra: true }]) {
-      expect(parsedJudgment({ ...judgment, followUp: invalid }, true)).toBeNull();
+      expect(readNewJudgment({ ...judgment, followUp: invalid })).toBeNull();
     }
     for (const disposition of ["assessed", "insufficient-evidence"]) {
-      expect(parsedJudgment({ ...judgment, disposition }, true)?.followUp).toEqual(followUp);
-      expect(parsedJudgment({ ...judgment, disposition, followUp: { kind: "request", message: "Decide how to resolve this material gap." } }, true)?.followUp?.kind).toBe("request");
+      expect(readNewJudgment({ ...judgment, disposition })?.followUp).toEqual(followUp);
+      expect(readNewJudgment({ ...judgment, disposition, followUp: { kind: "request", message: "Decide how to resolve this material gap." } })?.followUp?.kind).toBe("request");
     }
   });
 

@@ -99,11 +99,15 @@ workflow. Cite exact facts, events, artifacts, sessions, or commands behind
 findings. Keep findings bounded and useful.
 
 Submit a completed assessment with `finish({status: "success", summary: "...",
-verification_facts: ["..."], result: judgment})`. The outer `summary` and
-`verification_facts` are required as well as the judgment's own `summary` and
-`verification` fields. Cite the actual supplied evidence or your read results;
-label supplied evidence as such and never claim a tool call you did not run.
-For `followUp: {kind: "none"}`, omit `message`; do not add an empty message.
+result: judgment})` using the workflow's supplied schema. The outer `summary`
+is required; `verification_facts` is optional. In the judgment, findings and
+verification may be omitted when unavailable. Explain material gaps in the
+summary and use `insufficient-evidence` when a material claim cannot be assessed.
+Cite available evidence, retain supported adverse findings, and never invent a
+fact to populate an optional field. Label supplied evidence as such and never
+claim a tool call you did not run. For `followUp: {kind: "none"}`, omit `message`.
+If finish rejects the result, correct the identified fields in this execution
+using the same evidence; a formatting correction does not require reassessment.
 
 ## Report Use
 

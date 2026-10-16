@@ -1,11 +1,12 @@
 import { Type } from "typebox";
+import { Check } from "typebox/value";
 
 /** The evaluator chooses whether its report needs another agent's attention. */
 export const reportFollowUpSchema = Type.Union([
   Type.Object({ kind: Type.Literal("none") }, { additionalProperties: false }),
   Type.Object({
     kind: Type.Literal("request"),
-    message: Type.String({ minLength: 1, maxLength: 2000 }),
+    message: Type.String({ minLength: 1, maxLength: 2000, pattern: "\\S" }),
   }, { additionalProperties: false }),
 ]);
 
@@ -16,14 +17,7 @@ export type ReportFollowUp =
 /** Absence is a legacy report, never an inferred no-action decision. */
 export function readReportFollowUp(value: unknown): ReportFollowUp | undefined {
   if (value === undefined) return undefined;
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    const item = value as Record<string, unknown>;
-    if (item.kind === "none" && Object.keys(item).length === 1)
-      return { kind: "none" };
-    if (item.kind === "request" && Object.keys(item).length === 2 &&
-        typeof item.message === "string" && item.message.trim() && item.message.length <= 2000)
-      return { kind: "request", message: item.message };
-  }
+  if (Check(reportFollowUpSchema, value)) return value;
   throw new Error("Invalid evaluation followUp decision");
 }
 

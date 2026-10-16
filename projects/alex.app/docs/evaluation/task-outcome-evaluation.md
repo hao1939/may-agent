@@ -390,12 +390,25 @@ does not suppress a later request about changed evidence. Delivery remains
 at least once; this removes recurring unnecessary work without an exactly-once
 attention ledger.
 
-The judgment is the `result` of the ordinary `finish` call. That call also needs
-its outer `summary` and `verification_facts`; the judgment's similarly named
-fields do not replace them. Cite supplied evidence as supplied evidence, or
-actual reads, without inventing verification. The `none` decision contains only
-`kind`; omit `message` instead of sending an empty string. Clear completion
-guidance avoids resending an entire report to repair an invalid envelope.
+The judgment is the `result` of the ordinary `finish` call. Its outer `summary`
+is required; outer `verification_facts` is optional on Host #373 and later.
+Task and metric reviews share `evaluation-judgment.ts`: its schema is supplied
+to the agent and used unchanged to admit new output. Disposition, nonblank
+summary/responsibility/delivery and an explicit follow-up decision are required.
+Findings and verification are optional arrays of at most twelve nonblank strings;
+omit unavailable information and explain material gaps rather than inventing it.
+Malformed supplied values, blank required text and unsupported properties are
+rejected without filtering, truncation or type coercion. Schema acceptance does
+not prove substantive correctness or that missing evidence was verified.
+
+Cite supplied evidence as supplied evidence, or actual reads. The `none` decision
+contains only `kind`; omit `message` instead of sending an empty string. A format
+error should be corrected within the same execution from the existing evidence.
+Historical reports retain their bytes and existing interpretation/publication
+reuse; the new-output schema is not applied retroactively. Strict handling of
+original values in the Host model-tool validator and shorter rejection feedback
+are separate Host work; App schema alignment alone does not fix implicit tool
+argument conversion or full-argument error echoes.
 
 The existing report reader can list and read quiet reports for an explicit or
 batched audit. This change adds no periodic audit schedule. Trust the reviewer by

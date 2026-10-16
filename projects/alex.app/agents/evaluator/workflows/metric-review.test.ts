@@ -1,3 +1,4 @@
+import { evaluationJudgmentSchema } from "./lib/evaluation-judgment.js";
 import { afterEach, expect, setSystemTime, test } from "bun:test";
 import {
   createTestAppRead,
@@ -763,4 +764,56 @@ test("new reports for a breach retain the direct owner's investigation and dupli
     },
   );
   expect(missing.output).toMatchObject({ state: "incomplete" });
+});
+
+
+test("metric optional evidence preserves the original report through publication retry", async () => {
+  const root = mkdtempSync(join(tmpdir(), "metric-optional-"));
+  roots.push(root);
+  const { findings, verification, ...output } = judgment;
+  const report = { ...output, disposition: "insufficient-evidence", summary: "Recovery evidence is unavailable." };
+  const events: any[] = [];
+  let calls = 0;
+  const ctx = context({
+    callAgent: async (_agent: string, _prompt: string, options: any) => {
+      calls++;
+      expect(options?.schema).toBe(evaluationJudgmentSchema);
+      return { id: "optional-metric", kind: "agent", status: "done", summary: report.summary, output: report };
+    },
+    emit: async (event: any) => {
+      events.push(structuredClone(event));
+      if (events.length === 1) throw new Error("publication unavailable");
+    },
+  });
+  await expect(reviewMetric(ctx, async () => evidence(), root)).rejects.toThrow("publication unavailable");
+  const path = join(root, events[0].data.facts);
+  const saved = readFileSync(path, "utf8");
+  expect(JSON.parse(saved).judgment).toEqual(report);
+  expect(JSON.parse(saved).judgment).not.toHaveProperty("verification");
+  expect(JSON.parse(saved).judgment).not.toHaveProperty("findings");
+  await reviewMetric(ctx, async () => { throw new Error("must reuse evidence"); }, root);
+  expect(calls).toBe(1);
+  expect(events[1]).toEqual(events[0]);
+  expect(readFileSync(path, "utf8")).toBe(saved);
+  expect(readPublishedEvaluationReport(events[1].data, root).status).toBe("valid");
+});
+
+test("metric review does not silently accept malformed supplied evidence", async () => {
+  const root = mkdtempSync(join(tmpdir(), "metric-malformed-"));
+  roots.push(root);
+  let calls = 0;
+  let publications = 0;
+  const ctx = context({
+    callAgent: async (_agent: string, _prompt: string, options: any) => {
+      calls++;
+      expect(options?.schema).toBe(evaluationJudgmentSchema);
+      return { id: "bad-metric", kind: "agent", status: "done", summary: "reviewed", output: { ...judgment, verification: "not an array" } };
+    },
+    emit: async () => { publications++; },
+  });
+  const result = await reviewMetric(ctx, async () => evidence(), root);
+  expect(result.output).toMatchObject({ state: "incomplete" });
+  expect(result.summary).toContain("did not return a valid judgment");
+  expect(calls).toBe(1);
+  expect(publications).toBe(0);
 });

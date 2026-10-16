@@ -1,6 +1,11 @@
+import {
+  evaluationJudgmentSchema,
+  evaluationJudgmentGuidance,
+  readNewJudgment,
+  type EvaluationJudgment,
+} from "./lib/evaluation-judgment.js";
 import { publishRetainedReport } from "./lib/report-publication.js";
 import {
-  reportFollowUpSchema,
   readReportFollowUp,
   reportFollowUpGuidance,
   type ReportFollowUp,
@@ -14,7 +19,6 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
-import { Type } from "typebox";
 import {
   readSubjectTask,
   taskEvidenceHash,
@@ -48,21 +52,7 @@ export const name = "task-outcome-review";
 export const description =
   "Review one canonically identified external App Task and publish an immutable evidence report.";
 
-export const resultSchema = Type.Object(
-  {
-    disposition: Type.Union([
-      Type.Literal("assessed"),
-      Type.Literal("insufficient-evidence"),
-    ]),
-    summary: Type.String({ minLength: 1 }),
-    responsibility: Type.String({ minLength: 1 }),
-    findings: Type.Array(Type.String({ minLength: 1 }), { maxItems: 12 }),
-    verification: Type.Array(Type.String({ minLength: 1 }), { maxItems: 12 }),
-    delivery: Type.String({ minLength: 1 }),
-    followUp: reportFollowUpSchema,
-  },
-  { additionalProperties: false },
-);
+export { evaluationJudgmentSchema as resultSchema } from "./lib/evaluation-judgment.js";
 
 type Input = {
   appId?: string;
@@ -74,13 +64,7 @@ type Input = {
   automatic?: true;
   populationEnd?: number;
 };
-type Judgment = {
-  disposition: "assessed" | "insufficient-evidence";
-  summary: string;
-  responsibility: string;
-  findings: string[];
-  verification: string[];
-  delivery: string;
+type Judgment = Omit<EvaluationJudgment, "followUp"> & {
   followUp?: ReportFollowUp;
 };
 type ReportAttribution = {
@@ -200,10 +184,8 @@ function resultFacts(
   ];
 }
 
-export function parsedJudgment(
-  value: unknown,
-  requireFollowUp = false,
-): Judgment | null {
+/** Retained report interpretation; new contributions use readNewJudgment. */
+export function parsedJudgment(value: unknown): Judgment | null {
   const item = object(value);
   let followUp: ReportFollowUp | undefined;
   try {
@@ -211,7 +193,6 @@ export function parsedJudgment(
   } catch {
     return null;
   }
-  if (requireFollowUp && followUp === undefined) return null;
   const disposition = text(item.disposition);
   const summary = text(item.summary);
   const responsibility = text(item.responsibility);
@@ -689,6 +670,7 @@ export async function reviewTaskOutcome(
       "Completion contract: assessed and insufficient-evidence are both successful evaluator judgments. Return the schema-valid judgment in finish().result and finish the evaluator execution with status success. Use partial/failure only when your own reviewer execution truly cannot complete; adverse findings about the subject are not reviewer execution failure. Return only the requested structured result.",
       "Report ownership: do not write Markdown, JSON, or any other task-outcome report file. The workflow validates your judgment and exclusively writes, reads back, and publishes the canonical report.",
       reportFollowUpGuidance,
+      evaluationJudgmentGuidance,
       `Trusted shared Evaluation criteria (source: criteria/criteria.md):\n\n${criteria}`,
       JSON.stringify({
         subject: { appId, taskId, evidenceHash: subject.evidenceHash },
@@ -696,7 +678,7 @@ export async function reviewTaskOutcome(
         task: subject.task,
       }),
     ].join("\n\n"),
-    { schema: resultSchema },
+    { schema: evaluationJudgmentSchema },
   );
   if (execution.status !== "done") {
     const summary = `Evaluator execution ${execution.id} ended ${execution.status}; this exact review remains unfinished.`;
@@ -720,7 +702,7 @@ export async function reviewTaskOutcome(
       ],
     });
   }
-  const judgment = parsedJudgment(execution.output, true);
+  const judgment = readNewJudgment(execution.output);
   if (!judgment)
     return ctx.blocked("Evaluator returned an invalid task-outcome judgment.", [
       `execution:${execution.id}`,
