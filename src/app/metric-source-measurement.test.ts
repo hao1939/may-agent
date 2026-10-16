@@ -268,7 +268,7 @@ describe("source-query metric measurement", () => {
     });
   });
 
-  it.each(["sample.report.published", "guard.triggered"])("counts failed required delivery of %s while retaining its diagnostic", async (eventType) => {
+  it.each(["sample.report.published", "guard.triggered", "metric.measurement.failed", "metric.evaluation.failed"])("counts failed required delivery of %s while retaining its diagnostic", async (eventType) => {
     const db = getDb(persistDir);
     const writer = new DbWriter(persistDir);
     bus.setPersistenceSubscriber(writer.handler);
@@ -281,7 +281,7 @@ describe("source-query metric measurement", () => {
     try {
       bus.emit({
         type: eventType,
-        ...(eventType === "guard.triggered" ? { [EVENT_RECORD_ONLY]: true } : {}),
+        ...(eventType !== "sample.report.published" ? { [EVENT_RECORD_ONLY]: true } : {}),
         source: "fixture", owner: "app:sample", data: { result: "retained" },
       });
       await reported.promise;

@@ -45,6 +45,14 @@ their bounded retry schedule. Repeatable schema/metric-definition installation
 uses the separate initialization retry helper; it is not an ordinary delivery
 allowance. Session/workflow artifacts remain evidence if a SQL projection fails.
 
+Observer facts need no consumer unless a declared route uses them. Their trusted
+record-only intent is saved with the Event and restored on keyed retry and journal
+recovery; it is not an App routing option or proof of delivery. Missing historical
+intent stays unclassified. Storage-only acceptance cannot erase a failed receipt
+or replace another consumer's acceptance. App admission acknowledges its own
+inspection independently, in the same transaction. See the observer-delivery,
+persisted-event and worker-boundary regressions for these failure paths.
+
 `session-subscribers.ts` contains the digest and last-session writers registered
 by `app/daemon-events.ts`. Completion suggestions stay in the saved result;
 they do not rewrite guidance or enter future prompts automatically. The retired

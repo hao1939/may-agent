@@ -14,6 +14,7 @@ import {
   EVENT_DELIVERY_RESULT,
   EVENT_INGRESS_SOURCE,
   EVENT_INTERFACE_INPUT,
+  EVENT_RECORD_ONLY,
   EVENT_REDELIVERY_REQUIRED,
   EVENT_ROW_ID,
   EVENT_TASK_EMISSION_FENCE,
@@ -654,18 +655,24 @@ export class DbWriter {
                  accepted_by = ?,
                  accepted_at = ?,
                  delivery_route = ?,
-                 delivery_note = ?,
-                 app_admission_pending = CASE WHEN ? = 1 THEN 0 ELSE app_admission_pending END
-             WHERE id = ?`,
+                 delivery_note = ?
+             WHERE id = ? AND (? != 'noop' OR delivery_status = 'pending'
+               OR (delivery_status = 'accepted' AND delivery_route = 'noop'))`,
             [
               result.by,
               now,
               result.route ?? "direct",
               result.note ?? null,
-              result.appAdmission === true ? 1 : 0,
               rowId,
+              result.route ?? "direct",
             ],
           );
+          // Storage-only acceptance cannot replace a failed delivery or another
+          // owner's receipt. App admission still acknowledges its independent
+          // inspection, atomically, even when the global receipt is retained.
+          if (result.appAdmission === true) {
+            this.db.run("UPDATE events SET app_admission_pending = 0 WHERE id = ?", [rowId]);
+          }
         });
       });
     } catch (error) {
@@ -732,7 +739,7 @@ export class DbWriter {
         const existing = this.db
           .prepare(
             `SELECT e.id, e.idempotency_hash, e.delivery_status, e.accepted_by, e.delivery_route, e.app_admission_pending,
-                    e.source, e.owner, e.timestamp
+                    e.source, e.owner, e.timestamp, e.record_only
              FROM events e
              WHERE e.event_type = ?
                AND e.ingress_source = ?
@@ -751,6 +758,7 @@ export class DbWriter {
               source?: unknown;
               owner?: unknown;
               timestamp?: unknown;
+              record_only?: unknown;
             }
           | undefined;
         const existingId = Number(existing?.id);
@@ -765,6 +773,9 @@ export class DbWriter {
           if (typeof existing.source === "string") retryEvent.source = existing.source;
           if (typeof existing.owner === "string") retryEvent.owner = existing.owner;
           if (typeof existing.timestamp === "number") retryEvent.timestamp = existing.timestamp;
+          // Publication intent belongs to the original saved Event. A keyed
+          // retry cannot turn a required delivery into an optional observation.
+          Object.defineProperty(event, EVENT_RECORD_ONLY, { value: existing.record_only === 1, configurable: true });
           // Authored fields already matched the saved hash. Restore causality
           // without adding defaults that would change a subsequent retry's input.
           const { trace } = readEventTraceMetadata(this.db, existingId);
@@ -866,8 +877,8 @@ export class DbWriter {
            session_id, workflow_run_id, project_id, task_id, attempt_id, handler,
            metric_id, alert_id, escalation_id, subject_status, duration_ms,
            timestamp, urgency, ttl_ms, idempotency_key, idempotency_scope,
-           idempotency_hash, ingress_source, app_admission_pending)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+           idempotency_hash, ingress_source, record_only, app_admission_pending)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
         [
           event.type,
           source,
@@ -895,6 +906,7 @@ export class DbWriter {
           scope,
           idempotencyKey ? inputHash : null,
           trustedIngressSource,
+          (event as AgentEvent & { [EVENT_RECORD_ONLY]?: boolean })[EVENT_RECORD_ONLY] === true ? 1 : 0,
         ],
       );
       const rowId = Number(info.lastInsertRowid);

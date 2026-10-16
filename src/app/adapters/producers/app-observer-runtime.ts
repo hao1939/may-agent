@@ -10,7 +10,7 @@ import {
   type ResourceObserver,
 } from "@may-agent/sdk";
 import type { LoadedAppDefinition } from "../../core/apps/registry.js";
-import { EVENT_ROW_ID, type EventBus } from "../../core/events/bus.js";
+import { EVENT_RECORD_ONLY, EVENT_ROW_ID, type EventBus } from "../../core/events/bus.js";
 import { OwnedTimer } from "../../core/scheduling/timer.js";
 
 type ObserverState = {
@@ -162,6 +162,7 @@ export function createAppObserverRuntime(options: {
         if (closed || states.get(key) !== state) return;
         const published = options.bus.emit({
           ...fact,
+          [EVENT_RECORD_ONLY]: true,
           source: fact.source ?? `app:${state.appId}:observer:${state.observer.id}`,
           owner: fact.owner ?? `app:${state.appId}`,
         } as never);
@@ -185,6 +186,7 @@ export function createAppObserverRuntime(options: {
       try {
         const published = options.bus.emit({
           type: "app.observer.failed",
+          [EVENT_RECORD_ONLY]: true,
           source: "app-host",
           owner: `app:${state.appId}`,
           target: { project: state.appId },

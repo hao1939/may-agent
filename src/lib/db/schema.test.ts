@@ -4,6 +4,21 @@ import { TASK_RESOURCE_SCHEMA, ensureTaskResourceSchema } from "./task-resource-
 import { applyDbSchema } from "./schema.js";
 
 describe("canonical database schema", () => {
+  it("adds observation intent without guessing historical intent or changing delivery evidence", () => {
+    const db = openDatabase(":memory:");
+    try {
+      applyDbSchema(db);
+      db.exec("ALTER TABLE events DROP COLUMN record_only");
+      db.exec(`INSERT INTO events (event_type, data, timestamp, delivery_status, delivery_note)
+        VALUES ('fixture.observed', '{}', 1, 'unhandled', 'original failure')`);
+      applyDbSchema(db);
+      applyDbSchema(db);
+      expect(db.prepare("SELECT record_only, delivery_status, delivery_note FROM events").get())
+        .toEqual({ record_only: 0, delivery_status: "unhandled", delivery_note: "original failure" });
+    } finally {
+      db.close();
+    }
+  });
   it("creates the complete schema idempotently without migration state", () => {
     const db = openDatabase(":memory:");
     try {

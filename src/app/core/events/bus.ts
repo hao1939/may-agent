@@ -1102,6 +1102,8 @@ export const EVENT_INGRESS_SOURCE = Symbol.for("may-agent.eventIngressSource");
 export const EVENT_DELIVERY_RESULT = Symbol.for("may-agent.eventDeliveryResult");
 /** Marks events admitted through the semantic EventInput boundary. */
 export const EVENT_INTERFACE_INPUT = Symbol.for("may-agent.eventInterfaceInput");
+/** Trusted publication intent: storage suffices when no durable route needs the
+ * fact. DbWriter preserves it across retry/restart; it cannot excuse a failed route. */
 export const EVENT_RECORD_ONLY = Symbol.for("may-agent.eventRecordOnly");
 /** Trusted, non-serializable source-attempt fence consumed by DbWriter. */
 export const EVENT_TASK_EMISSION_FENCE = Symbol.for("may-agent.eventTaskEmissionFence");

@@ -5,10 +5,78 @@ import { join } from "node:path";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { describeText } from "../../../lib/artifacts.js";
 import { closeDb, getDb } from "../../../lib/requests.js";
-import { EVENT_ROW_ID, EventBus } from "./bus.js";
+import { EVENT_RECORD_ONLY, EVENT_ROW_ID, EventBus, type AgentEvent } from "./bus.js";
 import { loadPersistedEvent } from "./persisted.js";
 import { getEventView } from "./interface.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
+
+test.each([true, false])("retry and restart retain original publication intent (record-only: %s)", (recordOnly) => {
+  const root = mkdtempSync(join(tmpdir(), "may-event-intent-"));
+  try {
+    const input = { type: "fixture.observed", source: "fixture", owner: "app:producer",
+      data: { idempotencyKey: "original", value: 1 } };
+    const producer = new EventBus();
+    producer.setPersistenceSubscriber(new DbWriter(root).handler);
+    // The process stops after append, before recording delivery acceptance.
+    const id = producer.emit({ ...input, [EVENT_RECORD_ONLY]: recordOnly })[EVENT_ROW_ID]!;
+    closeDb(root);
+    const db = getDb(root);
+    const writer = new DbWriter(root);
+    const bus = new EventBus();
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    let effects = 0;
+    bus.subscribe(() => { effects++; });
+    const restored = loadPersistedEvent(db, id, root)!;
+    expect((restored as AgentEvent & { [EVENT_RECORD_ONLY]?: boolean })[EVENT_RECORD_ONLY]).toBe(recordOnly);
+    bus.redeliverPersisted(restored, id);
+    // A new producer declaration cannot change the first publication's intent.
+    const retry = bus.emit({ ...input, [EVENT_RECORD_ONLY]: !recordOnly });
+    expect(retry[EVENT_ROW_ID]).toBe(id);
+    expect((retry as AgentEvent & { [EVENT_RECORD_ONLY]?: boolean })[EVENT_RECORD_ONLY]).toBe(recordOnly);
+    expect(db.prepare("SELECT record_only, delivery_status, delivery_route FROM events WHERE id = ?").get(id))
+      .toEqual({ record_only: recordOnly ? 1 : 0, delivery_status: recordOnly ? "accepted" : "pending",
+        delivery_route: recordOnly ? "noop" : null });
+    expect(db.prepare("SELECT COUNT(*) AS n FROM events").get()).toEqual({ n: 1 });
+    expect(effects).toBe(0);
+  } finally {
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("observation fallback cannot erase failed delivery or replace an independent acceptance", () => {
+  const root = mkdtempSync(join(tmpdir(), "may-event-intent-receipt-"));
+  try {
+    const bus = new EventBus();
+    const writer = new DbWriter(root, { housekeepingIntervalMs: 0 });
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const stop = bus.subscribeDurableRoute((event) => {
+      if (event.type === "fixture.observed") throw new Error("Required consumer unavailable");
+    });
+    const failed = bus.emit({ type: "fixture.observed", source: "fixture", owner: "app:producer",
+      data: {}, [EVENT_RECORD_ONLY]: true });
+    writer.runHousekeeping(Date.now() + 120_001);
+    const db = getDb(root);
+    const receipt = () => db.prepare("SELECT delivery_status, delivery_note, accepted_by FROM events WHERE id = ?")
+      .get(failed[EVENT_ROW_ID]!);
+    const terminal = receipt();
+    expect(terminal?.delivery_status).toBe("unhandled");
+    stop();
+    bus.redeliverPersisted(loadPersistedEvent(db, failed[EVENT_ROW_ID]!, root)!, failed[EVENT_ROW_ID]!);
+    expect(receipt()).toEqual(terminal);
+
+    const accepted = bus.emit({ type: "fixture.accepted", source: "fixture", owner: "app:producer", data: {} });
+    writer.recordDelivery(accepted, { accepted: true, by: "owner", route: "direct" });
+    writer.recordDelivery(accepted, { accepted: true, by: "observation", route: "noop", appAdmission: true });
+    expect(db.prepare("SELECT delivery_status, accepted_by, app_admission_pending FROM events WHERE id = ?")
+      .get(accepted[EVENT_ROW_ID]!)).toEqual({ delivery_status: "accepted", accepted_by: "owner", app_admission_pending: 0 });
+  } finally {
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test.each([undefined, "default", "detail"] as const)(
   "repeated publication preserves its receipt and authored visibility (%s)",
