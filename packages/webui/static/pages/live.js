@@ -146,8 +146,21 @@ function metricBreached(metric) {
   if ('thresholdBreached' in metric) return !!metric.thresholdBreached;
   if (metric.breached) return true;
   if (metric.threshold == null || metric.current == null) return false;
-  const above = metric.alert_op === '>' || metric.alert_op === 'above';
-  return above ? Number(metric.current) > Number(metric.threshold) : Number(metric.current) < Number(metric.threshold);
+  const value = Number(metric.current), limit = Number(metric.threshold);
+  switch (metric.alert_op) {
+    case '>':
+    case 'above': return value > limit;
+    case '>=': return value >= limit;
+    case '<=': return value <= limit;
+    default: return value < limit;
+  }
+}
+
+// Healthy side of the declared breach rule, including strict boundary labels.
+function metricHealthyOperator(metric) {
+  if (metric.alert_op === '>=') return '<';
+  if (metric.alert_op === '<=') return '>';
+  return metric.alert_op === '>' || metric.alert_op === 'above' ? '≤' : '≥';
 }
 
 function metricPriorityRank(priority) {
@@ -235,7 +248,7 @@ async function loadLiveness() {
       for (const metric of vitals) {
         const alerting = metricBreached(metric);
         const value = formatMetricValue(metric.current, metric.unit);
-        const threshold = metric.alertsDisabled ? 'Alerts disabled' : metric.threshold == null ? 'no threshold' : `${metric.alert_op === '>' || metric.alert_op === 'above' ? 'max' : 'min'} ${formatMetricValue(metric.threshold, metric.unit)}`;
+        const threshold = metric.alertsDisabled ? 'Alerts disabled' : metric.threshold == null ? 'no threshold' : `${metricHealthyOperator(metric)} ${formatMetricValue(metric.threshold, metric.unit)}`;
         html += `<div class="vital-card ${alerting ? 'alerting' : ''}" onclick="routeTo(${jsStringAttr('/metrics/' + encodeURIComponent(metric.id))})" title="${attrEsc(metric.id + ' · owner ' + (metric.owner || 'system:host') + ' · ' + threshold)}">
           <div class="vital-top"><span class="vital-label">${esc(metric.name || metric.id)}</span><span class="vital-owner">${esc(metric.owner || 'system:host')}</span></div>
           <div class="vital-value">${esc(value)}</div>
@@ -445,7 +458,7 @@ async function renderLivenessProjects() {
         const breached = metricBreached(metric);
         const value = formatMetricValue(metric.current, metric.unit);
         const label = shortMetricLabel(metric, p);
-        const thresholdLabel = metric.threshold == null ? '' : `${metric.alert_op === '<' || metric.alert_op === 'below' ? 'min' : 'max'} ${formatMetricValue(metric.threshold, metric.unit)}`;
+        const thresholdLabel = metric.threshold == null ? '' : `${metricHealthyOperator(metric)} ${formatMetricValue(metric.threshold, metric.unit)}`;
         return `<button class="project-metric-chip ${breached ? 'alerting' : ''}" onclick="event.stopPropagation(); routeTo(${jsStringAttr('/metrics/' + encodeURIComponent(metric.id))})" title="${attrEsc(metric.id + (thresholdLabel ? ' · ' + thresholdLabel : ''))}">
           <span class="project-metric-label">${esc(label)}</span>
           <b>${esc(value)}</b><span>${esc(metric.freshness || 'unknown')}</span>

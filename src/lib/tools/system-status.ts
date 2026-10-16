@@ -18,6 +18,7 @@ import { existsSync, readFileSync, statSync, openSync, readSync, closeSync } fro
 import { join } from "node:path";
 import type { PersistedSession } from "../persistence.js";
 import { getDb } from "../db/connection.js";
+import { metricThresholdBreached } from "../metrics.js";
 import type { ExecutionStatus } from "../../app/core/reads/execution-status.js";
 
 // ── Tail utility ────────────────────────────────────────────────────────
@@ -168,28 +169,19 @@ function formatMetricsSection(metrics: MetricRow[], agent?: string): string {
       const typeTag = m.type ? ` [${m.type}]` : "";
       const targetPart = `target: ${m.target}`;
       const thresholdPart = m.threshold != null ? `, threshold: ${m.threshold}` : "";
+      const breached = m.current != null && m.threshold != null &&
+        metricThresholdBreached({ current: m.current, threshold: m.threshold, alert_op: m.alert_op });
 
       // Type-aware value display
       let currentDisplay = m.current != null ? `${m.current}` : "unmeasured";
       if (m.type === "health" && m.current != null && m.threshold != null) {
-        const passing = m.alert_op === ">" ? m.current <= m.threshold : m.current >= m.threshold;
-        currentDisplay = passing ? "PASS" : `FAILING (${m.current})`;
+        currentDisplay = breached ? `FAILING (${m.current})` : "PASS";
       } else if (m.type === "counter" && m.unit === "count" && m.current != null) {
         currentDisplay = `${m.current}`;
       }
 
       // Per-type alert evaluation
-      let warn = "";
-      if (m.current != null && m.threshold != null) {
-        const op = m.alert_op;
-        const breached =
-          op === ">" || op === "above"
-            ? m.current > m.threshold
-            : op === "<" || op === "below" || m.type === "health"
-              ? m.current < m.threshold
-              : false;
-        if (breached) warn = " ⚠️";
-      }
+      const warn = breached ? " ⚠️" : "";
       lines.push(`- **${m.name}**${typeTag}: ${currentDisplay}${unitDisplay} (${targetPart}${thresholdPart})${warn}`);
     }
   }

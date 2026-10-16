@@ -26,6 +26,7 @@ import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
 import type { Duplex } from "node:stream";
 import { createQueryService } from "../../lib/query-service.js";
+import { metricThresholdBreached } from "../../lib/metrics.js";
 import {
   connectSocketEndpoint,
   daemonSocketPath,
@@ -2013,9 +2014,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
                 const row = db.prepare("SELECT current, threshold, alert_op FROM metrics WHERE id = ?").get(id) as any;
                 const current = row?.current ?? null;
                 const threshold = row?.threshold;
-                const above = row?.alert_op === "above" || row?.alert_op === ">";
                 const breached =
-                  threshold != null && current != null && (above ? current > threshold : current < threshold);
+                  threshold != null && current != null && metricThresholdBreached(row);
                 return { id, current, target, breached };
               });
             } catch {
@@ -3038,8 +3038,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         a.metricCount = mets.length;
         a.metricBreached = mets.filter((m) => {
           if (m.threshold == null || m.current == null) return false;
-          const above = m.alert_op === "above" || m.alert_op === ">";
-          return above ? m.current > m.threshold : m.current < m.threshold;
+          return metricThresholdBreached({ current: m.current, threshold: m.threshold, alert_op: m.alert_op });
         }).length;
       }
 

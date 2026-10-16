@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import type { SqliteDb, Statement } from "../db.js";
 
 type Timing = { calls: number; errors: number; totalMs: number; maxMs: number };
-type QueryPlan = {
+export type QueryPlan = {
   fingerprint: string;
   shape: string;
   capturedAt: number;
@@ -10,6 +10,7 @@ type QueryPlan = {
   rowsTruncated: boolean;
 };
 type QueryTiming = Timing & { id: string; operation: string; sql: string; plan?: QueryPlan };
+export type SqlQueryEvidence = Pick<QueryTiming, "id" | "sql" | "plan">;
 const emptyTiming = (): Timing => ({ calls: 0, errors: 0, totalMs: 0, maxMs: 0 });
 const slowReadThresholdMs = 1_000;
 const planRowLimit = 20;
@@ -81,10 +82,7 @@ export class SqlPerformance {
     this.queriesSince = now;
   }
 
-  statement(
-    sql: string,
-    explain?: (params: readonly unknown[]) => Array<Record<string, unknown>>,
-  ): <T>(operation: string, work: () => T, params?: readonly unknown[]) => T {
+  private identity(sql: string) {
     let identity = this.shapes.get(sql);
     if (!identity) {
       const fullShape = queryShape(sql);
@@ -94,7 +92,22 @@ export class SqlPerformance {
       };
       if (sql.length <= 16_384 && this.shapes.size < this.limit) this.shapes.set(sql, identity);
     }
-    const { shape, hash } = identity;
+    return identity;
+  }
+
+  /** Read existing evidence without executing or explaining the query again. */
+  queryEvidence(sql: string, operation = "get"): SqlQueryEvidence | undefined {
+    this.rotateQueries();
+    const query = this.queries.get(`${operation}:${this.identity(sql).hash}`);
+    if (!query) return undefined;
+    return structuredClone({ id: query.id, sql: query.sql, ...(query.plan ? { plan: query.plan } : {}) });
+  }
+
+  statement(
+    sql: string,
+    explain?: (params: readonly unknown[]) => Array<Record<string, unknown>>,
+  ): <T>(operation: string, work: () => T, params?: readonly unknown[]) => T {
+    const { shape, hash } = this.identity(sql);
     return <T>(operation: string, work: () => T, params: readonly unknown[] = []): T => {
       const id = `${operation}:${hash}`;
       const started = this.elapsedNow();
@@ -185,6 +198,7 @@ export class SqlPerformance {
 
 const performanceByProcess = new SqlPerformance();
 export const readSqlPerformance = () => performanceByProcess.snapshot();
+export const readSqlQueryEvidence = (sql: string) => performanceByProcess.queryEvidence(sql);
 
 export function profileDatabase(db: SqliteDb, profile = performanceByProcess): SqliteDb {
   return {

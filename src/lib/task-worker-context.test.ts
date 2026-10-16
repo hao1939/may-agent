@@ -66,8 +66,8 @@ describe("Task worker process role", () => {
   it("ignores a stale marker in an ordinary process", async () => {
     const result = await runProbe("ordinary", false);
     expect(result).toMatchObject({ connected: false, worker: false, initialized: true, legacyMarker: "1" });
-    expect(result.waits).toEqual([5, 10, 20, 40, 80, 160, 320, 640]);
-    expect(result.retryAttempts).toBe(9);
+    expect(result.waits).toEqual([]);
+    expect(result.retryAttempts).toBe(1);
   });
 
   it("requires parent IPC before entry and does not partially enter", async () => {
@@ -75,15 +75,15 @@ describe("Task worker process role", () => {
     expect(result.worker).toBe(false);
     expect(result.entryError).toBe("Task worker mode requires its parent IPC connection");
     expect(result.initialized).toBe(true);
-    expect(result.waits).toEqual([5, 10, 20, 40, 80, 160, 320, 640]);
-    expect(result.retryAttempts).toBe(9);
+    expect(result.waits).toEqual([]);
+    expect(result.retryAttempts).toBe(1);
   });
 
   it("does not infer worker role from IPC alone", async () => {
     const result = await runProbe("ordinary-with-ipc", true);
     expect(result).toMatchObject({ connected: true, worker: false, initialized: true });
-    expect(result.waits).toEqual([5, 10, 20, 40, 80, 160, 320, 640]);
-    expect(result.retryAttempts).toBe(9);
+    expect(result.waits).toEqual([]);
+    expect(result.retryAttempts).toBe(1);
   });
 
   it("refuses missing schema and selects worker retry pacing after entry", async () => {

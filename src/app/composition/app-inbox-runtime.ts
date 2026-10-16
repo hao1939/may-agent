@@ -518,6 +518,11 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         }
         let recovered = 0;
         for (const row of rows) {
+          // A short SQLite wait per Event must not become one long blocking
+          // recovery batch. Share the existing admission turn gap and honor
+          // shutdown before reading or delivering the next retained item.
+          await new Promise<void>((resolve) => setTimeout(resolve, ADMISSION_COMMAND_TURN_GAP_MS));
+          if (closed) return;
           const eventId = Number(row.id);
           inputRecoveryCursor = eventId;
           const event = loadPersistedEvent(options.db, eventId, options.persistDir);

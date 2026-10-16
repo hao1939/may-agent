@@ -50,10 +50,11 @@ const finishSchema: TSchema = Type.Object({
     [Type.Literal("success"), Type.Literal("failure"), Type.Literal("blocked"), Type.Literal("partial")],
     {
       description:
-        "'success': task completed fully. 'failure': task failed (include blockers). 'blocked': cannot proceed without external input. 'partial': some progress made but not complete (include next_steps).",
+        "Your assessment of this contribution: 'success', 'failure', 'blocked' (needs external input), or 'partial' (work remains). The caller judges fulfillment of its assignment; this status does not settle a Task.",
     },
   ),
   summary: Type.String({
+    pattern: "\\S",
     description:
       "1-2 sentence executive summary of what was accomplished. This is shown to the calling agent, so be concrete: mention specific files changed, tests passed, or errors encountered.",
   }),
@@ -75,13 +76,13 @@ const finishSchema: TSchema = Type.Object({
         reason: Type.String({ description: "What is blocking progress" }),
         context: Type.String({ description: "Additional context: what you tried, why it failed, what's needed" }),
       }),
-      { description: "What prevented completion. Required when status is 'failure' or 'blocked'." },
+      { description: "Additional details about what prevented completion, when available. The summary can explain the blocker without this field." },
     ),
   ),
   next_steps: Type.Optional(
     Type.String({
       description:
-        "Recommended next actions for whoever picks this up. Required when status is 'partial' or 'blocked'.",
+        "Recommended next actions for whoever picks this up, when known.",
     }),
   ),
   completed_items: Type.Optional(
@@ -120,11 +121,11 @@ const finishSchema: TSchema = Type.Object({
     Type.Array(
       Type.String({
         description:
-          "Reference to a specific tool output proving your work. Format: 'Step N: <tool> showed <result>'. Example: 'Step 12: read(src/app.ts) confirmed new function exists', 'Step 8: bash test exit code 0'.",
+          "Available evidence or a reference supporting your report. Example: 'bash test exit code 0' or 'Accepted test receipt: artifact/tests.json'.",
       }),
       {
         description:
-          "Facts from this session's tool outputs that verify your deliverables. Required when status is 'success'. Cite specific tool calls and their results.",
+          "Optional supporting observations. Required domain evidence belongs in the caller's result contract; this field need not repeat it or require another tool call.",
       },
     ),
   ),
@@ -205,19 +206,6 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
         };
       }
 
-      // ── Validate blockers required for blocked/failure ─────────
-      if ((status === "blocked" || status === "failure") && (!blockers || blockers.length === 0)) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `finish() error: 'blockers' required when status is '${status}'.`,
-            },
-          ],
-          details: undefined,
-        };
-      }
-
       // ── Validate deliverable paths exist (for success) ─────────
       const missingDeliverables: string[] = [];
       if (deliverables && deliverables.length > 0) {
@@ -237,25 +225,6 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
               text:
                 `finish() error: Deliverables not found on disk: ${missingDeliverables.join(", ")}. ` +
                 `Cannot declare success with missing deliverables.`,
-            },
-          ],
-          details: undefined,
-        };
-      }
-
-      // ── Require verification facts for success ─────────────
-      if (status === "success" && (!params.verification_facts || params.verification_facts.length === 0)) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text:
-                "finish() error: 'verification_facts' is required when status is 'success'. " +
-                "Cite specific tool outputs that verify your work, e.g.:\n" +
-                '- "Step 5: read(src/app.ts) shows new function added"\n' +
-                '- "Step 8: bash test suite exit code 0"\n' +
-                '- "Step 3: edit() confirmed by read-back"\n' +
-                "Add verification_facts and try again.",
             },
           ],
           details: undefined,

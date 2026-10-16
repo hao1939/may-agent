@@ -1,16 +1,18 @@
 import { execFile, type ExecFileOptionsWithStringEncoding } from "node:child_process";
 import { join } from "node:path";
 import { openReadOnlyDatabase } from "../lib/db.js";
+import { readSqlQueryEvidence } from "../lib/db/query-performance.js";
 import { createMetricService } from "../lib/metrics.js";
 import { log } from "../lib/log.js";
 import { EVENT_RECORD_ONLY, EVENT_ROW_ID, eventData, type AgentEvent, type EventBus } from "./core/events/bus.js";
 import { getDb } from "../lib/db/connection.js";
-import { withSqliteBusyRetry } from "../lib/db/busy-retry.js";
+import { withSqliteInitializationRetry } from "../lib/db/busy-retry.js";
 import { resolveRuntimeRoots } from "./path-roots.js";
 import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.js";
 import { TASK_FAILOVER_METRIC } from "./adapters/reporting/task-failover-metrics.js";
 import { TASK_SKIPPED_CHECK_METRIC } from "./adapters/reporting/task-check-metrics.js";
 import { readTaskChecks, resetTaskChecks } from "./core/tasks/task-check-observations.js";
+import { METRIC_QUERY_DURATION_METRIC, MetricQueryObservations } from "./adapters/reporting/metric-query-metrics.js";
 import { redactTranscriptSecrets } from "../lib/persistence.js";
 
 export const METRIC_SOURCE_MEASUREMENT_EVENT = "trigger.metrics-snapshot";
@@ -22,13 +24,12 @@ WHERE event_type = 'subscriber.failed'
   AND timestamp >= (strftime('%s','now') * 1000 - 3600000)`;
 export const UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID = "event.unhandled-signal-count-1h";
 // Remaining legacy producers require a separate declaration review. Reconciliation
-// facts now declare record-only intent, so their failed consumers must count.
+// and metric-failure facts declare durable record-only intent, so their failed
+// consumers must count.
 export const INTENTIONAL_OBSERVATION_EVENT_TYPES = [
   "project.task.executor.progress",
   "handler.routed",
   "metric.breach",
-  "metric.measurement.failed",
-  "metric.evaluation.failed",
   "conversation.updated",
   "project.approval.resolved",
 ] as const;
@@ -212,6 +213,8 @@ export async function measureSourceMetrics(options: {
   // metric that consumes it. Query-backed or not-due definitions must not
   // trigger producer side effects.
   const commandOutputs = new Map<string, Promise<{ output: string; completedAt: number }>>();
+  const queryObservations = db.prepare("SELECT id FROM metrics WHERE id = ? AND status = 'active'")
+    .get(METRIC_QUERY_DURATION_METRIC.id) ? new MetricQueryObservations() : undefined;
 
   for (const row of dueRows) {
     options.onAttempt?.(row);
@@ -243,11 +246,27 @@ export async function measureSourceMetrics(options: {
         // is not a parser-based single-statement guarantee. Give every query its
         // own read-only connection and close it before the writer records or
         // evaluates the sample, so query transaction state cannot leak forward.
-        const sourceDb = openReadOnlyDatabase(join(options.persistDir, "may.db"));
+        const started = performance.now();
+        let failed = true;
         try {
-          sample = sourceQuerySample(sourceDb.prepare(row.source_query).get() as Record<string, unknown> | null);
+          const sourceDb = openReadOnlyDatabase(join(options.persistDir, "may.db"));
+          try {
+            sample = sourceQuerySample(sourceDb.prepare(row.source_query).get() as Record<string, unknown> | null);
+          } finally {
+            sourceDb.close();
+          }
+          failed = sample === null;
         } finally {
-          sourceDb.close();
+          const durationMs = performance.now() - started;
+          if (queryObservations) {
+            let evidence;
+            try {
+              evidence = readSqlQueryEvidence(row.source_query);
+            } catch {
+              // Optional diagnostics must not change the source's result or timing.
+            }
+            queryObservations.record(row.id, durationMs, failed, evidence);
+          }
         }
         completedAt = Date.now();
       } else if (row.source_command) {
@@ -286,6 +305,16 @@ export async function measureSourceMetrics(options: {
     }
   }
 
+  const querySample = queryObservations?.sample();
+  if (querySample) {
+    try {
+      metrics.record(METRIC_QUERY_DURATION_METRIC.id, querySample.value, {
+        ...querySample, measuredBy: "runtime:metric-source-query-cost",
+      });
+    } catch (error) {
+      failed(METRIC_QUERY_DURATION_METRIC.id, measurementError(error));
+    }
+  }
   return { measured, skipped, failures };
 }
 
@@ -303,7 +332,7 @@ export function attachMetricSourceMeasurement(options: {
   // Startup registrations are repeatable definition writes, not observations.
   // Reuse the bounded storage policy when another startup process owns SQLite's
   // writer lock; keep measurement and subscription effects outside this retry.
-  withSqliteBusyRetry("register source metric definitions", () => {
+  withSqliteInitializationRetry("register source metric definitions", () => {
     metricService.defineMany(WORKFLOW_OUTCOME_METRICS);
     // Install observation defaults once; retain any App-owned calibration or retirement.
     if (!db.prepare("SELECT id FROM metrics WHERE id = ?").get(TASK_FAILOVER_METRIC.id)) {
@@ -311,6 +340,9 @@ export function attachMetricSourceMeasurement(options: {
     }
     if (!db.prepare("SELECT id FROM metrics WHERE id = ?").get(TASK_SKIPPED_CHECK_METRIC.id)) {
       metricService.define(TASK_SKIPPED_CHECK_METRIC);
+    }
+    if (!db.prepare("SELECT id FROM metrics WHERE id = ?").get(METRIC_QUERY_DURATION_METRIC.id)) {
+      metricService.define(METRIC_QUERY_DURATION_METRIC);
     }
     const subscriberFailureSource = {
       source: "rolling one-hour subscriber.failed event count",

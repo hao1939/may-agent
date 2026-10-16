@@ -6,11 +6,60 @@ import { createTaskAgentRunner } from "./managed-agent.js";
 import type { SubagentManager } from "../../../lib/manager.js";
 import type { TaskAgentInput } from "../../core/tasks/execution.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace } from "../../core/tasks/app-task-output-paths.js";
-import { prepareAgentExecution } from "../../../lib/agent-execution.js";
+import { executePreparedAgent, prepareAgentExecution } from "../../../lib/agent-execution.js";
+import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
+import { usageReply } from "../../../../test/fixtures/execution-usage.js";
 import type { CallAgentOptions } from "../../../lib/manager.js";
 import type { SubagentDefinition } from "../../../lib/types.js";
 import { createWriteTool } from "../../../lib/tools/write.js";
 import { createFinishTool } from "../../../lib/tools/lifecycle.js";
+
+test.each(["success", "partial", "blocked", "failure"])("a valid %s report retains useful work and the Task's continuation decision", async (status) => {
+  const root = mkdtempSync(join(tmpdir(), "may-task-report-"));
+  try {
+    const report = {
+      state: "waiting", continue: true, summary: "Patch written; verification remains.",
+      facts: ["Patch saved"], result: { changes: ["parser.ts"] },
+    };
+    let calls = 0;
+    const runner = createTaskAgentRunner({ manager: {
+      callAgent: async (_agent: string, task: string, options: CallAgentOptions) => {
+        const prepared = prepareAgentExecution({
+          ...options, task, projectRoot: root, sessionId: "report-fixture",
+          definition: { name: "worker", description: "fixture", domain: "test", tools: [],
+            model: { api: "openai-responses", provider: "fixture", id: "model-a" } as SubagentDefinition["model"] },
+          createFinish: () => createFinishTool({ agentName: "worker", projectRoot: root }),
+        });
+        prepared.runner.streamFn = () => {
+          calls++;
+          const stream = createAssistantMessageEventStream();
+          stream.push({ type: "done", reason: "toolUse", message: usageReply({
+            stopReason: "toolUse", content: [{ type: "toolCall", id: "report", name: "finish",
+              arguments: { status, summary: report.summary, result: report } }],
+          }) });
+          return stream;
+        };
+        const result = await executePreparedAgent(prepared);
+        return { ...result, sessionId: prepared.sessionId, duration: "0s", outputDir: root };
+      },
+    } as unknown as SubagentManager });
+    const result = await runner.execute({
+      descriptor: { id: "sample", app: {} },
+      attempt: { read: { tasks: {} },
+        task: { id: "work", generation: 1, outcome: "Implement and test", acceptance: [] },
+        role: { agent: "worker", instructions: "Implement and test" }, events: { items: [] }, waits: {} },
+      executionPaths: { projectDir: root, workspaceDir: root },
+      childContext: { live: [], completed: [] }, dependencies: [],
+    } as unknown as TaskAgentInput);
+    expect(calls).toBe(1);
+    expect(result.executionFailed).toBeUndefined();
+    expect(result.handlerResult).toMatchObject(report);
+    expect(result.handlerResult.result).not.toHaveProperty("testResults");
+    expect(result.handlerResult.actions).toEqual([]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test.each([false, true])("managed Task passes policy scope through real preparation (checkout=%s)", async (checkout) => {
   const root = mkdtempSync(join(tmpdir(), "may-managed-policy-"));

@@ -14,12 +14,13 @@ import {
   EVENT_DELIVERY_RESULT,
   EVENT_INGRESS_SOURCE,
   EVENT_INTERFACE_INPUT,
+  EVENT_RECORD_ONLY,
   EVENT_REDELIVERY_REQUIRED,
   EVENT_ROW_ID,
   EVENT_TASK_EMISSION_FENCE,
   type EventTaskEmissionFence,
   type AgentEvent,
-  type DeliveryResult,
+  type DeliveryOutcome,
   type DeferredEventDelivery,
 } from "../app/core/events/bus.js";
 import { getDb } from "./db/connection.js";
@@ -475,7 +476,6 @@ function pairCorrelationColumn(
 export class DbWriter {
   private db: SqliteDb;
   private persistDir: string;
-  private deliveryTrackingStartedAt = Date.now();
   private reconciledUnhandledAdmissionPlans = false;
   private lastHousekeepingAt = Date.now();
   private housekeepingIntervalMs: number;
@@ -641,37 +641,61 @@ export class DbWriter {
     }
   };
 
-  recordDelivery = (event: AgentEvent, result: DeliveryResult): void => {
+  recordDelivery = (event: AgentEvent, result: DeliveryOutcome): void => {
     const rowId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
     if (typeof rowId !== "number" || !Number.isFinite(rowId)) return;
     try {
-      withSqliteBusyRetry(`record delivery acceptance for event ${rowId}`, () => {
+      withSqliteBusyRetry(`record delivery outcome for event ${rowId}`, () => {
         const now = Date.now();
         stateTransaction(this.db, () => {
+          if (!result.accepted) {
+            // Storage-only acceptance does not cover a required route that fails
+            // on retry. Reopen that receipt, preserving independent acceptance
+            // and any failure that has already expired. App admission is separate.
+            this.db.run(
+              `UPDATE events
+               SET delivery_status = CASE WHEN delivery_status = 'accepted' THEN 'pending' ELSE delivery_status END,
+                   accepted_by = NULL, accepted_at = NULL,
+                   delivery_route = 'direct', delivery_note = ?
+               WHERE id = ? AND (delivery_status IN ('pending', 'unhandled')
+                 OR (delivery_status = 'accepted' AND delivery_route = 'noop'))`,
+              [result.note, rowId],
+            );
+            return;
+          }
           this.db.run(
             `UPDATE events
              SET delivery_status = 'accepted',
                  accepted_by = ?,
                  accepted_at = ?,
                  delivery_route = ?,
-                 delivery_note = ?,
-                 app_admission_pending = CASE WHEN ? = 1 THEN 0 ELSE app_admission_pending END
-             WHERE id = ?`,
+                 delivery_note = ?
+             WHERE id = ? AND (? != 'noop'
+               OR (delivery_status = 'pending' AND delivery_route IS NOT 'direct')
+               OR (delivery_status = 'accepted' AND delivery_route = 'noop')
+               OR (delivery_status = 'unhandled' AND delivery_route IS NULL
+                 AND record_only = 1))`,
             [
               result.by,
               now,
               result.route ?? "direct",
               result.note ?? null,
-              result.appAdmission === true ? 1 : 0,
               rowId,
+              result.route ?? "direct",
             ],
           );
+          // Storage-only acceptance cannot replace a failed delivery or another
+          // owner's receipt. App admission still acknowledges its independent
+          // inspection, atomically, even when the global receipt is retained.
+          if (result.appAdmission === true) {
+            this.db.run("UPDATE events SET app_admission_pending = 0 WHERE id = ?", [rowId]);
+          }
         });
       });
     } catch (error) {
       log(
         "warn",
-        `[event-delivery] failed to record acceptance for event ${rowId}: ${error instanceof Error ? error.message : String(error)}`,
+        `[event-delivery] failed to record outcome for event ${rowId}: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   };
@@ -732,7 +756,7 @@ export class DbWriter {
         const existing = this.db
           .prepare(
             `SELECT e.id, e.idempotency_hash, e.delivery_status, e.accepted_by, e.delivery_route, e.app_admission_pending,
-                    e.source, e.owner, e.timestamp
+                    e.source, e.owner, e.timestamp, e.record_only
              FROM events e
              WHERE e.event_type = ?
                AND e.ingress_source = ?
@@ -751,6 +775,7 @@ export class DbWriter {
               source?: unknown;
               owner?: unknown;
               timestamp?: unknown;
+              record_only?: unknown;
             }
           | undefined;
         const existingId = Number(existing?.id);
@@ -765,6 +790,9 @@ export class DbWriter {
           if (typeof existing.source === "string") retryEvent.source = existing.source;
           if (typeof existing.owner === "string") retryEvent.owner = existing.owner;
           if (typeof existing.timestamp === "number") retryEvent.timestamp = existing.timestamp;
+          // Publication intent belongs to the original saved Event. A keyed
+          // retry cannot turn a required delivery into an optional observation.
+          Object.defineProperty(event, EVENT_RECORD_ONLY, { value: existing.record_only === 1, configurable: true });
           // Authored fields already matched the saved hash. Restore causality
           // without adding defaults that would change a subsequent retry's input.
           const { trace } = readEventTraceMetadata(this.db, existingId);
@@ -866,8 +894,8 @@ export class DbWriter {
            session_id, workflow_run_id, project_id, task_id, attempt_id, handler,
            metric_id, alert_id, escalation_id, subject_status, duration_ms,
            timestamp, urgency, ttl_ms, idempotency_key, idempotency_scope,
-           idempotency_hash, ingress_source, app_admission_pending)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+           idempotency_hash, ingress_source, record_only, app_admission_pending)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
         [
           event.type,
           source,
@@ -895,6 +923,7 @@ export class DbWriter {
           scope,
           idempotencyKey ? inputHash : null,
           trustedIngressSource,
+          (event as AgentEvent & { [EVENT_RECORD_ONLY]?: boolean })[EVENT_RECORD_ONLY] === true ? 1 : 0,
         ],
       );
       const rowId = Number(info.lastInsertRowid);
@@ -1179,6 +1208,9 @@ export class DbWriter {
     try {
       // Acceptance is recorded by delivery, never inferred from a terminal
       // payload: even a completed session can have a failed required consumer.
+      // Every prospective Event has an admission marker (1 pending, 0 inspected).
+      // Its presence, or a saved pending plan, establishes tracked delivery even
+      // after restart. Null legacy rows without a plan retain their uncertainty.
       const newlyUnhandled = this.db.run(
         `UPDATE events
          SET delivery_status = 'unhandled',
@@ -1186,13 +1218,13 @@ export class DbWriter {
          WHERE delivery_status = 'pending'
            AND timestamp + COALESCE(ttl_ms, ?) < ?
            AND (
-             timestamp >= ?
+             app_admission_pending IS NOT NULL
              OR EXISTS (
                SELECT 1 FROM app_event_admission_plans plan
                WHERE plan.event_id = events.id AND plan.status = 'pending'
              )
            )`,
-        [DEFAULT_UNACCEPTED_TTL_MS, now, this.deliveryTrackingStartedAt],
+        [DEFAULT_UNACCEPTED_TTL_MS, now],
       );
 
       // An unavailable exact target never accepted the requested update and can

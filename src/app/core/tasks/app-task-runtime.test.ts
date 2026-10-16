@@ -6918,7 +6918,7 @@ describe("canonical App task runtime", () => {
     });
     let replacementCalls = 0;
 
-    await installAppTaskRuntimes({
+    await expect(installAppTaskRuntimes({
       ...options(f, bus),
       persistDir,
       manager: {
@@ -6935,7 +6935,7 @@ describe("canonical App task runtime", () => {
         generation: 1,
         entries: [{ appDir: f.appDir, definition: definition() }],
       },
-    });
+    })).rejects.toThrow("session metadata is missing; lifecycle and ownership remain unconfirmed");
 
     expect(replacementCalls).toBe(0);
     expect(readSessionMeta(persistDir, "owner-missing-meta")).toBeNull();
@@ -11019,7 +11019,7 @@ describe("canonical App task runtime", () => {
           field === "array-status"
             ? "invalid session metadata"
             : field === "missing-meta"
-              ? "session recovery was not confirmed"
+              ? "session metadata is missing"
               : "session Task binding",
         );
         expect(readTaskSnapshot(f.config)).toEqual(before);
@@ -11196,6 +11196,144 @@ describe("canonical App task runtime", () => {
         expect(f.agentCalls()).toBe(1);
       },
     );
+
+    it.each(["startup", "busy", "claim"] as const)("reports unconfirmed session recovery without releasing ownership through %s", async (route) => {
+      const f = setup();
+      let confirmed = false;
+      const sessions: TaskSessionRecovery = {
+        ...f.base.sessions,
+        interrupt: (...args) => confirmed ? f.base.sessions.interrupt(...args) : false,
+      };
+      await installCoreTaskRuntimes({ ...f.base, sessions });
+      f.observe("owner");
+      recordAppTaskTrigger(f.config, "owner", { type: "sample.changed", data: { instruction: "Continue work" } });
+      const claim = f.saveTerminalSession("owner");
+      mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+        attempt.lease!.expiresAt = new Date(Date.now() - 1_000).toISOString();
+        if (route !== "busy") {
+          attempt.runtimeId = "previous-runtime";
+          attempt.lease!.runtimeId = "previous-runtime";
+        }
+      });
+      const before = readTaskSnapshot(f.config);
+      const recover = () => route === "startup" ? recoverInstalledAppTasks(f.base.bus) : f.run("owner");
+      await expect(recover()).rejects.toThrow("Task session recovery was not confirmed");
+      expect(readTaskSnapshot(f.config)).toEqual(before);
+      expect(f.agentCalls()).toBe(0);
+
+      confirmed = true;
+      await recover();
+      if (route !== "claim") await f.run("owner");
+      expect(f.agentCalls()).toBe(1);
+      expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
+      expect(acceptedTaskAttempt(f.config, "owner")?.acceptedResult?.result).toEqual(f.payload);
+    });
+
+    it("delivers failed recovery to declared agent work while retaining the unresolved attempt", async () => {
+      const f = setup();
+      let drained = false;
+      const sessions = createTaskSessionRecovery({
+        persistDir: f.base.persistDir,
+        bus: f.base.bus,
+        manager: { hasActiveSession: () => false } as never,
+        drainPersistedBashProcessGroups: () => drained,
+      });
+      const app = defineApp({
+        ...definition(),
+        tasks: {
+          subscriptions: ["handler.failed"],
+          resolve: (event) => event.data.taskId === "owner"
+            ? {
+                id: "recovery",
+                parentId: "operations",
+                outcome: "Assess the unresolved recovery and choose the next action",
+                acceptance: ["Preserve confirmed facts and explicit uncertainty"],
+              }
+            : null,
+        },
+      });
+      const registry = new AppRegistry(async () => [
+        { appDir: f.base.appRegistrySnapshot.entries[0].appDir, definition: app },
+      ]);
+      await registry.reload();
+      let decisions = 0;
+      const agents: TaskAgentRunner = {
+        ...f.base.agents,
+        snapshot: () => agents,
+        async execute(input) {
+          if (input.attempt.task.id !== "recovery") return f.base.agents.execute(input);
+          const failure = input.attempt.events.items.find(({ event }) => event.type === "handler.failed")?.event;
+          expect(failure?.data).toMatchObject({ appId: "sample", taskId: "owner", stage: "task-reconciliation" });
+          expect(failure?.data.error).toContain("session-owner");
+          expect(failure?.data.error).toContain("did not exit");
+          decisions++;
+          return {
+            handlerResult: {
+              state: "waiting",
+              summary: "Wait for confirmed process cleanup before retrying the original work",
+              reviewAt: Date.now() + 60 * 60_000,
+              facts: ["Stop attempt failed; old execution remains unconfirmed"],
+              actions: [],
+            },
+            runId: null,
+          };
+        },
+      };
+      const opts = { ...f.base, sessions, agents, appRegistrySnapshot: registry.snapshot() };
+      await installCoreTaskRuntimes(opts);
+      f.observe("owner");
+      recordAppTaskTrigger(f.config, "owner", { type: "sample.changed", data: { instruction: "Continue work" } });
+      const claim = f.saveTerminalSession("owner");
+      mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+        attempt.runtimeId = "previous-runtime";
+        attempt.lease!.runtimeId = "previous-runtime";
+        attempt.lease!.expiresAt = new Date(Date.now() - 1_000).toISOString();
+      });
+      const original = f.config.resourceStore.readAttempt(claim.attemptId);
+      const writer = new DbWriter(f.base.persistDir, { housekeepingIntervalMs: 0 });
+      f.base.bus.setPersistenceSubscriber(writer.handler);
+      f.base.bus.setDeliveryRecorder(writer.recordDelivery);
+      const inbox = await startAppInboxRuntime({
+        db: getDb(f.base.persistDir),
+        bus: f.base.bus,
+        registry,
+        deferStart: true,
+        admitTaskEvent: (input) => admitLoadedCanonicalAppTaskEvent({ ...input, bus: f.base.bus }),
+      });
+      const settled = Promise.withResolvers<void>();
+      f.base.bus.subscribe((event) => {
+        if (event.type === "project.task.reconciled" && event.data.taskId === "recovery") {
+          if (event.data.disposition === "waiting") settled.resolve();
+          else settled.reject(new Error(`Recovery decision was not accepted: ${event.data.summary}`));
+        }
+      });
+      try {
+        await installCoreTaskRuntimes({ ...opts, installControllers: true }, { deferRecovery: true });
+        await settled.promise;
+        await closeInstalledAppTaskRuntimes(f.base.bus);
+        expect(decisions).toBeGreaterThan(0);
+        expect(f.agentCalls()).toBe(0);
+        expect(f.config.resourceStore.readAttempt(claim.attemptId)).toEqual(original);
+        expect(f.config.resourceStore.readTask("owner")?.status.currentAttemptId).toBe(claim.attemptId);
+        expect(acceptedTaskAttempt(f.config, "recovery")?.acceptedResult).toMatchObject({
+          state: "waiting",
+          summary: "Wait for confirmed process cleanup before retrying the original work",
+        });
+        expect(getDb(f.base.persistDir).prepare("SELECT delivery_status FROM events WHERE event_type = 'handler.failed' ORDER BY id LIMIT 1").get())
+          .toEqual({ delivery_status: "accepted" });
+
+        // Once the missing fact changes, ordinary recovery can continue the
+        // original Task. The diagnostic Task did not grant replacement ownership.
+        drained = true;
+        await installCoreTaskRuntimes(opts);
+        await f.run("owner");
+        expect(f.agentCalls()).toBe(1);
+        expect(acceptedTaskAttempt(f.config, "owner")?.acceptedResult?.result).toEqual(f.payload);
+      } finally {
+        inbox.close();
+        await closeInstalledAppTaskRuntimes(f.base.bus);
+      }
+    });
 
     it.each(["startup", "busy"] as const)("requires confirmed session drain before %s redo", async (route) => {
       const f = setup();

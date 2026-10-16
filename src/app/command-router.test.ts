@@ -148,6 +148,11 @@ describe("command router", () => {
           },
         }),
       );
+      expect(
+        getDb(f.root)
+          .prepare("SELECT record_only, delivery_status, accepted_by FROM events WHERE event_type = 'runtime.reload.finished'")
+          .get(),
+      ).toEqual({ record_only: 1, delivery_status: "accepted", accepted_by: "event-interface:record" });
     } finally {
       result.resolve({ ok: true, summary: "[reload] Fixture cleanup" });
       await Bun.sleep(0);

@@ -57,6 +57,93 @@ async function fixture(root: string) {
   return registry;
 }
 
+test("journal recovery yields between retained inputs instead of accumulating one blocking batch", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-event-recovery-turn-"));
+  let runtime: AppInboxRuntime | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const registry = await fixture(root);
+    const bus = producer(root);
+    for (const id of [1, 2]) bus.emit({
+      type: "evaluation.task_report_published", source: "fixture", owner: "app:evaluation",
+      data: { report: `report-${id}`, idempotencyKey: `report-${id}` },
+    } as any);
+    const db = getDb(root);
+    let timerRan = false;
+    const observed: boolean[] = [];
+    const redeliver = bus.redeliverPersisted.bind(bus);
+    bus.redeliverPersisted = (event, eventId, route) => {
+      if (event.type === "evaluation.task_report_published") {
+        observed.push(timerRan);
+        if (observed.length === 1) timer = setTimeout(() => { timerRan = true; }, 0);
+      }
+      return redeliver(event, eventId, route);
+    };
+    runtime = await startAppInboxRuntime({
+      db, bus, registry, persistDir: root, schedulesEnabled: false, scanIntervalMs: 10_000,
+      attachTask: fakeTaskAttacher(db, (input) => ({
+        taskId: `work/${input.inboxInputId ?? input.inputId}`,
+      })),
+    });
+    await until(() => observed.length === 2);
+    expect(observed).toEqual([false, true]);
+  } finally {
+    runtime?.close();
+    clearTimeout(timer);
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("an expired receipt after restart keeps pre-plan App admission recoverable without effect replay", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-expired-admission-"));
+  let runtime: AppInboxRuntime | undefined;
+  try {
+    const event = producer(root).emit({
+      type: "evaluation.task_report_published", source: "fixture", owner: "app:evaluation",
+      data: { report: "retained", idempotencyKey: "retained-report" },
+    });
+    const eventId = event[EVENT_ROW_ID]!;
+    closeDb(root);
+    const db = getDb(root);
+    const writer = new DbWriter(root, { housekeepingIntervalMs: 0 });
+    writer.runHousekeeping(Date.now() + 300_000);
+    expect(db.prepare("SELECT delivery_status, app_admission_pending FROM events WHERE id = ?").get(eventId))
+      .toEqual({ delivery_status: "unhandled", app_admission_pending: 1 });
+    expect(getAppEventAdmissionPlan(db, eventId)).toBeNull();
+
+    const registry = await fixture(root);
+    const bus = producer(root);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    let fanout = 0;
+    bus.subscribe(() => { fanout++; });
+    const attached: string[] = [];
+    runtime = await startAppInboxRuntime({
+      db, bus, registry, persistDir: root, schedulesEnabled: false, scanIntervalMs: 10_000,
+      attachTask: fakeTaskAttacher(db, (input) => {
+        const taskId = `work/${input.inboxInputId ?? input.inputId}`;
+        attached.push(taskId);
+        return { taskId };
+      }),
+    });
+    await until(() => getAppEventAdmissionPlan(db, eventId)?.status === "completed");
+    const originalInput = db.prepare("SELECT id, origin_event_id FROM app_inbox_items").get();
+    expect(originalInput).toMatchObject({ origin_event_id: eventId });
+    expect(attached).toHaveLength(1);
+    expect(fanout).toBe(0);
+    expect(db.prepare("SELECT delivery_status, app_admission_pending FROM events WHERE id = ?").get(eventId))
+      .toEqual({ delivery_status: "accepted", app_admission_pending: 0 });
+    bus.emit({ type: event.type, source: event.source, owner: event.owner, data: event.data });
+    expect(db.prepare("SELECT id, origin_event_id FROM app_inbox_items").all()).toEqual([originalInput]);
+    expect(attached).toHaveLength(1);
+    expect(db.prepare("SELECT COUNT(*) AS n FROM execution_usage").get()).toEqual({ n: 0 });
+  } finally {
+    runtime?.close();
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("recovers a report saved before its first App plan, independent of global delivery status", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-event-app-outbox-"));
   let runtime: AppInboxRuntime | undefined;

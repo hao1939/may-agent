@@ -5,10 +5,153 @@ import { join } from "node:path";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { describeText } from "../../../lib/artifacts.js";
 import { closeDb, getDb } from "../../../lib/requests.js";
-import { EVENT_ROW_ID, EventBus } from "./bus.js";
+import { EVENT_RECORD_ONLY, EVENT_ROW_ID, EventBus, type AgentEvent } from "./bus.js";
 import { loadPersistedEvent } from "./persisted.js";
 import { getEventView } from "./interface.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
+
+test.each([true, false])("retry and restart retain original publication intent (record-only: %s)", (recordOnly) => {
+  const root = mkdtempSync(join(tmpdir(), "may-event-intent-"));
+  try {
+    const input = { type: "fixture.observed", source: "fixture", owner: "app:producer",
+      data: { idempotencyKey: "original", value: 1 } };
+    const producer = new EventBus();
+    producer.setPersistenceSubscriber(new DbWriter(root).handler);
+    // The process stops after append, before recording delivery acceptance.
+    const id = producer.emit({ ...input, [EVENT_RECORD_ONLY]: recordOnly })[EVENT_ROW_ID]!;
+    closeDb(root);
+    const db = getDb(root);
+    const writer = new DbWriter(root);
+    const bus = new EventBus();
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    let effects = 0;
+    bus.subscribe(() => { effects++; });
+    const restored = loadPersistedEvent(db, id, root)!;
+    expect((restored as AgentEvent & { [EVENT_RECORD_ONLY]?: boolean })[EVENT_RECORD_ONLY]).toBe(recordOnly);
+    bus.redeliverPersisted(restored, id);
+    // A new producer declaration cannot change the first publication's intent.
+    const retry = bus.emit({ ...input, [EVENT_RECORD_ONLY]: !recordOnly });
+    expect(retry[EVENT_ROW_ID]).toBe(id);
+    expect((retry as AgentEvent & { [EVENT_RECORD_ONLY]?: boolean })[EVENT_RECORD_ONLY]).toBe(recordOnly);
+    expect(db.prepare("SELECT record_only, delivery_status, delivery_route FROM events WHERE id = ?").get(id))
+      .toEqual({ record_only: recordOnly ? 1 : 0, delivery_status: recordOnly ? "accepted" : "pending",
+        delivery_route: recordOnly ? "noop" : null });
+    expect(db.prepare("SELECT COUNT(*) AS n FROM events").get()).toEqual({ n: 1 });
+    expect(effects).toBe(0);
+  } finally {
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("observation fallback cannot erase failed delivery or replace an independent acceptance", () => {
+  const root = mkdtempSync(join(tmpdir(), "may-event-intent-receipt-"));
+  try {
+    const bus = new EventBus();
+    const writer = new DbWriter(root, { housekeepingIntervalMs: 0 });
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const stop = bus.subscribeDurableRoute((event) => {
+      if (event.type === "fixture.observed") throw new Error("Required consumer unavailable");
+    });
+    const failed = bus.emit({ type: "fixture.observed", source: "fixture", owner: "app:producer",
+      data: {}, [EVENT_RECORD_ONLY]: true });
+    const db = getDb(root);
+    const receipt = () => db.prepare("SELECT delivery_status, delivery_route, delivery_note, accepted_by FROM events WHERE id = ?")
+      .get(failed[EVENT_ROW_ID]!);
+    const pending = receipt();
+    expect(pending).toMatchObject({ delivery_status: "pending", delivery_route: "direct", accepted_by: null });
+    // Recovery inspects only the App route; the failed required route remains
+    // installed, but is not retried by this narrower acknowledgement.
+    bus.subscribeDurableRoute((event) => event.type === "fixture.observed"
+      ? { accepted: true, by: "app-inbox-route", route: "noop", appAdmission: true } : undefined,
+      { label: "app-inbox-route" });
+    bus.redeliverPersisted(loadPersistedEvent(db, failed[EVENT_ROW_ID]!, root)!, failed[EVENT_ROW_ID]!, "app-inbox-route");
+    expect(receipt()).toEqual(pending);
+    expect(db.prepare("SELECT app_admission_pending FROM events WHERE id = ?").get(failed[EVENT_ROW_ID]!))
+      .toEqual({ app_admission_pending: 0 });
+    writer.runHousekeeping(Date.now() + 120_001);
+    const terminal = receipt();
+    expect(terminal?.delivery_status).toBe("unhandled");
+    stop();
+    bus.redeliverPersisted(loadPersistedEvent(db, failed[EVENT_ROW_ID]!, root)!, failed[EVENT_ROW_ID]!);
+    expect(receipt()).toEqual(terminal);
+
+    const accepted = bus.emit({ type: "fixture.accepted", source: "fixture", owner: "app:producer", data: {} });
+    writer.recordDelivery(accepted, { accepted: true, by: "owner", route: "direct" });
+    const directReceipt = db.prepare("SELECT delivery_status, delivery_route, delivery_note, accepted_by, accepted_at FROM events WHERE id = ?")
+      .get(accepted[EVENT_ROW_ID]!);
+    writer.recordDelivery(accepted, { accepted: false, note: "Another required route failed" });
+    expect(db.prepare("SELECT delivery_status, delivery_route, delivery_note, accepted_by, accepted_at FROM events WHERE id = ?")
+      .get(accepted[EVENT_ROW_ID]!)).toEqual(directReceipt);
+    writer.recordDelivery(accepted, { accepted: true, by: "observation", route: "noop", appAdmission: true });
+    expect(db.prepare("SELECT delivery_status, accepted_by, app_admission_pending FROM events WHERE id = ?")
+      .get(accepted[EVENT_ROW_ID]!)).toEqual({ delivery_status: "accepted", accepted_by: "owner", app_admission_pending: 0 });
+  } finally {
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a failed keyed retry replaces storage-only acceptance and survives fallback and restart", () => {
+  const root = mkdtempSync(join(tmpdir(), "may-observation-retry-"));
+  try {
+    const bus = new EventBus();
+    const writer = new DbWriter(root, { housekeepingIntervalMs: 0 });
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const input = {
+      type: "fixture.observed", source: "fixture", owner: "app:producer",
+      data: { idempotencyKey: "same-observation", value: 1 }, [EVENT_RECORD_ONLY]: true,
+    };
+    const id = bus.emit({ ...input })[EVENT_ROW_ID]!;
+    let db = getDb(root);
+    const receipt = () => db.prepare(
+      "SELECT delivery_status, delivery_route, delivery_note, accepted_by, accepted_at, app_admission_pending FROM events WHERE id = ?",
+    ).get(id);
+    expect(receipt()).toMatchObject({ delivery_status: "accepted", delivery_route: "noop", accepted_at: expect.any(Number) });
+    let attempts = 0;
+    const stop = bus.subscribeDurableRoute((event) => {
+      if (event.type !== input.type) return;
+      attempts++;
+      throw new Error("Required consumer unavailable");
+    });
+    expect(bus.emit({ ...input })[EVENT_ROW_ID]).toBe(id);
+    expect(attempts).toBe(1);
+    const failed = receipt();
+    expect(failed).toMatchObject({
+      delivery_status: "pending", delivery_route: "direct", accepted_by: null, accepted_at: null,
+      delivery_note: expect.stringContaining("required durable route failed"), app_admission_pending: 1,
+    });
+    stop();
+    bus.redeliverPersisted(loadPersistedEvent(db, id, root)!, id);
+    expect(receipt()).toEqual(failed);
+    writer.runHousekeeping(Date.now() + 120_001);
+    const expired = receipt();
+    expect(expired).toEqual({ ...failed, delivery_status: "unhandled" });
+
+    closeDb(root);
+    db = getDb(root);
+    const recovered = new EventBus();
+    const recoveredWriter = new DbWriter(root);
+    recovered.setPersistenceSubscriber(recoveredWriter.handler);
+    recovered.setDeliveryRecorder(recoveredWriter.recordDelivery);
+    recovered.redeliverPersisted(loadPersistedEvent(db, id, root)!, id);
+    expect(receipt()).toEqual(expired);
+    recovered.subscribeDurableRoute((event) => event.type === input.type
+      ? { accepted: true, by: "required-consumer", route: "direct", appAdmission: true } : undefined);
+    expect(recovered.emit({ ...input })[EVENT_ROW_ID]).toBe(id);
+    expect(receipt()).toMatchObject({
+      delivery_status: "accepted", delivery_route: "direct", accepted_by: "required-consumer",
+      accepted_at: expect.any(Number), app_admission_pending: 0,
+    });
+    expect(db.prepare("SELECT COUNT(*) AS n FROM events WHERE event_type = ?").get(input.type)).toEqual({ n: 1 });
+  } finally {
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test.each([undefined, "default", "detail"] as const)(
   "repeated publication preserves its receipt and authored visibility (%s)",

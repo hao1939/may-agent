@@ -56,7 +56,7 @@ test("a rejected finish stays correctable without making another call after acce
   let requests = 0;
   prepared.runner.streamFn = () => {
     requests++;
-    return stream(requests > 3 ? [] : [call(`finish-${requests}`, requests === 1 ? { ...args, verification_facts: [] } : args)]);
+    return stream(requests > 3 ? [] : [call(`finish-${requests}`, requests === 1 ? { ...args, summary: " " } : args)]);
   };
   const result = await executePreparedAgent(prepared);
   expect(result.status).toBe("done");

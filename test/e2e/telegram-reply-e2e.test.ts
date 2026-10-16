@@ -898,35 +898,49 @@ describe("telegram reply e2e", () => {
     });
 
     const bus = new EventBus();
+    const listen = bus.listen.bind(bus);
+    let deliveredWakes = 0;
+    vi.spyOn(bus, "listen").mockImplementation((listener, options) => listen((event) => {
+      const result = listener(event);
+      if (options?.label === "telegram-conversation" && event.type === "conversation.updated") deliveredWakes++;
+      return result;
+    }, options));
     const bot = attachTelegramBot({ persistDir, bus, interfaceAgent: "may", humanTasks });
     const baselineReads = conversationReads;
-    createAppInboxItem(db, {
-      id: "console-storm-message",
-      appId: "may",
-      source: { kind: "human", id: "may-console:storm:1" },
-      input: { kind: "message", data: { message: "One durable message" } },
-      conversationId: "may:primary",
-      conversationSequence: 1,
-      channel: "may-console",
-      now: 1,
-    });
-    const wake = {
-      type: "conversation.updated",
-      source: "app-inbox",
-      owner: "app:may",
-      data: { appId: "may", conversationId: "may:primary" },
-    } as const;
-    bus.emit(wake);
-    await waitFor(() => expect(sendCalls).toBe(1));
-    for (let index = 0; index < 50; index++) bus.emit(wake);
-    releaseSend();
+    try {
+      createAppInboxItem(db, {
+        id: "console-storm-message",
+        appId: "may",
+        source: { kind: "human", id: "may-console:storm:1" },
+        input: { kind: "message", data: { message: "One durable message" } },
+        conversationId: "may:primary",
+        conversationSequence: 1,
+        channel: "may-console",
+        now: 1,
+      });
+      const wake = {
+        type: "conversation.updated",
+        source: "app-inbox",
+        owner: "app:may",
+        data: { appId: "may", conversationId: "may:primary" },
+      } as const;
+      bus.emit(wake);
+      await waitFor(() => expect(sendCalls).toBe(1));
+      for (let index = 0; index < 50; index++) bus.emit(wake);
+      // Publication queues optional listeners. Establish the intended interleaving:
+      // all wakes reached Telegram while its first send was still held.
+      await waitFor(() => expect(deliveredWakes).toBe(51));
+      expect(conversationReads).toBe(baselineReads + 1);
+      releaseSend();
 
-    // The initial read plus one dirty retry is sufficient for all 50 wakes.
-    await waitFor(() => expect(conversationReads).toBe(baselineReads + 2));
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(conversationReads).toBe(baselineReads + 2);
-    expect(sendCalls).toBe(1);
-    bot.close();
+      // The initial read plus one dirty retry is sufficient for all 50 wakes.
+      await waitFor(() => expect(conversationReads).toBe(baselineReads + 2));
+      expect(sendCalls).toBe(1);
+    } finally {
+      releaseSend();
+      bot.close();
+      db.prepare = prepare;
+    }
   });
 
   it("rejects removed session commands and unknown commands locally without creating May work", async () => {

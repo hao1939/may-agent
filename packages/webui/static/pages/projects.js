@@ -246,8 +246,7 @@ async function showProjectDetail(path, initialTab) {
     html += `<h3 style="margin:0 0 8px;font-size:13px;color:var(--fg2);display:flex;align-items:center;gap:8px">Metrics <span style="font-size:11px;font-weight:normal">${detail.ownedMetrics.length} owned${detail.citedMetricsResolved.length > 0 ? `, ${detail.citedMetricsResolved.length} cited` : ''}</span></h3>`;
     html += `<div id="project-metrics-grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:8px">`;
     for (const m of projectMetrics) {
-      const above = m.alert_op === 'above' || m.alert_op === '>';
-      const breached = m.threshold != null && m.current != null && (above ? m.current > m.threshold : m.current < m.threshold);
+      const breached = metricBreached(m);
       const sparkColor = breached ? 'var(--red)' : 'var(--accent)';
       const cited = !detail.ownedMetrics.find(o => o.id === m.id);
       html += `<div data-metric-id="${esc(m.id)}" onclick="showMetricHistory('${esc(m.id)}')" style="background:var(--bg2);border:1px solid ${breached ? 'var(--red)' : 'var(--border)'};border-radius:6px;padding:10px;cursor:pointer" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='${breached ? 'var(--red)' : 'var(--border)'}'">`;
@@ -255,7 +254,7 @@ async function showProjectDetail(path, initialTab) {
       html += `<div style="font-size:10px;color:var(--fg2);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(m.id)}</div>`;
       // Sparkline placeholder — will be filled async after this loop.
       html += `<div class="spark-slot" style="min-height:32px"><span style="font-size:10px;color:var(--fg2)">loading…</span></div>`;
-      html += `<div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px"><span style="font-weight:600;${breached ? 'color:var(--red)' : ''}">${m.current ?? '—'}${m.unit||''}</span>${m.threshold != null ? `<span style="color:var(--fg2)">${above ? '≤' : '≥'} ${m.threshold}${m.unit||''}</span>` : ''}</div>`;
+      html += `<div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px"><span style="font-weight:600;${breached ? 'color:var(--red)' : ''}">${m.current ?? '—'}${m.unit||''}</span>${m.threshold != null ? `<span style="color:var(--fg2)">${esc(metricHealthyOperator(m))} ${m.threshold}${m.unit||''}</span>` : ''}</div>`;
       html += `</div>`;
     }
     // Cited but not in DB.
@@ -309,8 +308,7 @@ async function showProjectDetail(path, initialTab) {
         if (series.length < 2) {
           slot.innerHTML = '<span style="font-size:10px;color:var(--fg2)">no history yet</span>';
         } else {
-          const above = m.alert_op === 'above' || m.alert_op === '>';
-          const breached = m.threshold != null && m.current != null && (above ? m.current > m.threshold : m.current < m.threshold);
+          const breached = metricBreached(m);
           slot.innerHTML = sparkline(series, { threshold: m.threshold, color: breached ? 'var(--red)' : 'var(--accent)', width: 200, height: 32 });
         }
       });

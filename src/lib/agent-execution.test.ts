@@ -10,7 +10,9 @@ import {
   type TranscriptContext,
   type Model,
   type StreamFunction,
+  type TSchema,
 } from "@earendil-works/pi-ai";
+import { Value } from "typebox/value";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -22,6 +24,7 @@ import {
 import { readFileWritePolicy } from "./tools/file-write-policy.js";
 import { currentAgentSessionId } from "./agent-session-context.js";
 import { createFinishTool } from "./tools/lifecycle.js";
+import { agentExecutionResult } from "./execution-handoff.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace } from "../app/core/tasks/app-task-output-paths.js";
@@ -740,7 +743,10 @@ describe("direct structured judgment execution", () => {
     result: judgment,
   };
 
-  function prepare(structured = true) {
+  function prepare(
+    structured = true,
+    schema: TSchema = Type.Object({ state: Type.Literal("incomplete"), summary: Type.String() }),
+  ) {
     const root = mkdtempSync(join(tmpdir(), "agent-judgment-"));
     roots.push(root);
     return prepareAgentExecution({
@@ -756,11 +762,11 @@ describe("direct structured judgment execution", () => {
       sessionId: "judgment-fixture",
       task: "Decide whether recovery is worthwhile.",
       requireFinish: true,
-      ...(structured ? { outputSchema: Type.Object({ state: Type.Literal("incomplete"), summary: Type.String() }) } : {}),
+      ...(structured ? { outputSchema: schema } : {}),
     });
   }
 
-  function finishStream(args: Record<string, unknown>) {
+  function finishStream(args: Record<string, unknown>, id = "judgment-finish") {
     const stream = createAssistantMessageEventStream();
     stream.push({
       type: "done",
@@ -768,11 +774,124 @@ describe("direct structured judgment execution", () => {
       message: {
         ...assistantMessage("stop"),
         stopReason: "toolUse",
-        content: [{ type: "toolCall", id: "judgment-finish", name: "finish", arguments: args }],
+        content: [{ type: "toolCall", id, name: "finish", arguments: args }],
       },
     });
     return stream;
   }
+
+  test.each(["success", "partial", "blocked", "failure"])("returns a valid %s report in one reply without optional diagnostics", async (status) => {
+    const prepared = prepare();
+    let calls = 0;
+    prepared.runner.streamFn = () => {
+      calls++;
+      return finishStream({ status, summary: judgment.summary, result: judgment });
+    };
+
+    const result = await executePreparedAgent(prepared);
+
+    expect(calls).toBe(1);
+    expect(result.status).toBe("done");
+    expect(result.error).toBeUndefined();
+    expect(result.finishResult?.status).toBe(status);
+    // The invocation returned; its report still says the assignment is incomplete.
+    expect(result.structuredResult).toEqual(judgment);
+    expect(agentExecutionResult({ ...result, sessionId: prepared.sessionId, duration: "0s", outputDir: "" })).toMatchObject({
+      output: judgment,
+      status: status === "success" ? "done" : status === "failure" ? "error" : "blocked",
+    });
+  });
+
+  test.each([
+    { ...finishArgs, result: { ...judgment, summary: 42 } },
+    { ...finishArgs, result: { ...judgment, summary: false } },
+    { ...finishArgs, result: { ...judgment, summary: null } },
+    { ...finishArgs, result: { state: "incomplete" } },
+    { ...finishArgs, summary: 42 },
+    { ...finishArgs, verification_facts: [false] },
+    { ...finishArgs, verification_facts: null },
+  ])("corrects original report types before acceptance without losing the rejected report %#", async (invalid) => {
+    const prepared = prepare();
+    let calls = 0;
+    let correctionContext: TranscriptContext | undefined;
+    prepared.runner.streamFn = (_model, context) => {
+      if (++calls === 1) return finishStream(invalid, "invalid-report");
+      correctionContext = context;
+      return finishStream(finishArgs, "corrected-report");
+    };
+
+    const result = await executePreparedAgent(prepared);
+
+    expect(result.status).toBe("done");
+    expect(calls).toBe(2);
+    expect(result.structuredResult).toEqual(judgment);
+    const rejection = correctionContext!.messages.find((message) =>
+      message.role === "toolResult" && message.toolCallId === "invalid-report",
+    );
+    expect(rejection).toMatchObject({ isError: true, content: [{ type: "text", text: expect.stringContaining("supplied schema") }] });
+    expect(JSON.stringify(rejection)).not.toContain("Received arguments");
+    expect(result.messages).toContainEqual(expect.objectContaining({
+      role: "assistant", content: [{ type: "toolCall", id: "invalid-report", name: "finish", arguments: invalid }],
+    }));
+  });
+
+  test.each([
+    { summary: "  Draft available; review remains  ", expectedSummary: "Draft available; review remains" },
+    { summary: 42, expectedSummary: "42" },
+  ])("allows declared normalization through one App admission helper without a correction turn %#", async ({ summary, expectedSummary }) => {
+    // This App accepts either representation and uses one helper for reports
+    // from code and agents. Shape acceptance does not judge the report's value.
+    const schema = Type.Object({
+      reference: Type.Union([Type.String({ minLength: 1 }), Type.Integer({ minimum: 0 })]),
+      summary: Type.Union([Type.String(), Type.Number()]),
+    });
+    const admit = (report: unknown) => {
+      if (!Value.Check(schema, report)) throw new Error("Invalid App report");
+      return { ...report, reference: String(report.reference), summary: String(report.summary).trim() };
+    };
+    const raw = { reference: 42, summary };
+    const fromCode = admit(raw);
+    const prepared = prepare(true, schema);
+    let calls = 0;
+    prepared.runner.streamFn = () => {
+      calls++;
+      return finishStream({ status: "partial", summary: "Draft report", result: raw });
+    };
+
+    const execution = await executePreparedAgent(prepared);
+    expect(execution.status).toBe("done");
+    expect(execution.finishResult?.status).toBe("partial");
+    expect(calls).toBe(1);
+    expect(execution.structuredResult).toEqual(raw);
+    expect(admit(execution.structuredResult)).toEqual(fromCode);
+    expect(fromCode).toEqual({ reference: "42", summary: expectedSummary });
+  });
+
+  test("bounds schema feedback for a large rejected report while retaining the original", async () => {
+    const prepared = prepare();
+    const invalid = {
+      ...finishArgs,
+      summary: "retained-large-report:" + "x".repeat(100_000),
+      verification_facts: Array.from({ length: 1000 }, () => ({ unexpected: "report" })),
+    };
+    let calls = 0;
+    prepared.runner.streamFn = () => ++calls === 1
+      ? finishStream(invalid, "large-report")
+      : finishStream(finishArgs, "corrected-report");
+    const result = await executePreparedAgent(prepared);
+    expect(calls).toBe(2);
+    expect(result.status).toBe("done");
+    const rejection = result.messages.find((message) => message.role === "toolResult" && message.toolCallId === "large-report");
+    const feedback = JSON.stringify(rejection);
+    expect(feedback.length).toBeLessThan(4000);
+    expect(feedback).toContain("/verification_facts/0");
+    expect(feedback).toContain("must be string");
+    expect(feedback).toContain("up to 8 errors shown");
+    expect(feedback).not.toContain("retained-large-report");
+    expect(result.messages).toContainEqual(expect.objectContaining({
+      role: "assistant", content: [{ type: "toolCall", id: "large-report", name: "finish", arguments: invalid }],
+    }));
+  });
 
   test.each([false, true])("restores history with current instructions and tools (saved system messages: %s)", async (withSystem) => {
     const prepared = prepare(true);
@@ -840,7 +959,6 @@ describe("direct structured judgment execution", () => {
   test.each([
     { ...finishArgs, result: { state: "unsupported" } },
     { ...finishArgs, result: undefined },
-    { ...finishArgs, blockers: [] },
   ])("rejects an invalid or uncommitted judgment %#", async (args) => {
     const prepared = prepare();
     let calls = 0;
