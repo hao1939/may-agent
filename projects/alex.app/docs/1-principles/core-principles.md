@@ -125,6 +125,14 @@ See the [agent-first test](code-vs-data.md#before-adding-runtime-behavior) and
 
 ### Code executes and brings back evidence; agents judge
 
+Use code for known work. Infra retries failures that safe repetition can resolve;
+unresolved situations return to the responsible agent. If an agent already owns
+the invocation, give it feedback there. A workflow uses an ordinary agent call
+when judgment is needed. This is one work loop with the same ownership and bounds.
+See [agents and code](design-philosophy.md#agents-handle-variety-code-makes-known-work-efficient)
+for its value and the [recovery contract](../2a-design/system-boundary.md#retry-and-recovery-ownership)
+for responsibility at each boundary.
+
 Execution includes the feedback loop, not just starting an action. Code collects
 information, responses and signals; tracks operations and their reported
 progress; preserves outputs and failures; and makes relevant evidence available
@@ -403,6 +411,11 @@ Metrics expose health, progress, and blind spots. A breach is evidence for the
 owning App to interpret, not automatic proof of failure or permission to
 mutate work. Pair activity measures with outcome evidence where useful, and
 retire metrics whose meaning is weak.
+
+Successful agent recovery and recurring recovery cost are independent facts.
+Retain both for periodic or breach-driven audit. An isolated transient or legacy
+case may justify no code change; a costly recurring pattern may justify one.
+Collecting each failure does not require judging it with another model call.
 
 See [metrics.md](../2a-design/metrics.md).
 

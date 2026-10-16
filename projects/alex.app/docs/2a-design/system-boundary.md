@@ -585,6 +585,36 @@ it earns its complexity. See the
 
 ### Retry and recovery ownership
 
+The default flow is:
+
+```text
+code handles known work
+  -> success: continue
+  -> safe repetition can help: infra retries within the operation's policy
+  -> unresolved: responsible agent receives the problem and chooses the next step
+```
+
+A schema mismatch or other known nonretryable failure can go directly to
+judgment. Do not replay it unchanged merely to spend a retry count. If there is
+no suitable code path, the agent can handle the assignment directly. Existing
+operation budgets apply; this convention adds no retry layer or universal count.
+
+Host returns the original operation/input reference, specific failure, useful
+partial evidence and known or uncertain effects through the existing call or
+Task feedback. It records acceptance separately from a proposed result. An agent
+already running handles that feedback in its invocation. An App workflow owns
+the ordinary agent call when its code cannot proceed. Host does not choose a
+model or switch the Task's executor because an error occurred. If the procedure
+cannot run at all, its existing caller or declared operational route receives
+the failure; merely saving a diagnostic is not a completed handoff.
+
+Keep unfamiliar content available as evidence for interpretation. App input
+policy can admit it through an ordinary message/goal rather than a narrow
+domain operation. Host still validates routing, identity, authority and effects.
+Rejected admission does not create destination responsibility or authorize an
+automatic replacement Task. The existing caller can correct the request or
+choose another supported route.
+
 Following the [safe-retry principle](../1-principles/core-principles.md#safe-retry-by-default-explicit-exceptions),
 infra owns routine retries of the same operation: identity, timing, backoff,
 replay and recovery under the existing execution policy. The owning Task runtime,
@@ -614,6 +644,14 @@ attempts. Return known input or authority errors for correction; mechanical
 retry does not invent new input or permissions. Retain progress and correlated
 failures in existing context, metrics and declared review routes. Recurring
 retries must remain observable without making an agent administer each one.
+
+**Coverage:** same-invocation tool feedback, workflow agent calls, retained prior
+attempts and owner feedback already support this flow. Some App readers reject
+results only after their agent has finished; caller-specific completion feedback
+and concise validation diagnostics still have gaps. The
+[implementation proposal](../proposals/host-contract-improvements-20261016.md#return-unresolved-work-to-agent-judgment)
+tracks these gaps. This contract does not promise that every installed procedure
+already returns control correctly.
 
 ### Safe retry and declared exceptions
 

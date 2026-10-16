@@ -430,10 +430,32 @@ existing recovery path. Evidence preservation must not turn failure into an
 accepted result or require a new Task lifecycle.
 
 When later workflow code requires structured agent output, the workflow owns a
-TypeBox or equivalent schema and validates `result.output` before use. A prose
-response or invalid payload cannot become trusted domain data. A rejected
-completion can be corrected within the same invocation and its existing execution
-allowance; validation does not start a separate invocation.
+TypeBox or equivalent schema and validates `result.output` before use. Schema
+success enables that code path; the caller still judges the contribution's
+meaning. Unfamiliar or invalid content remains evidence that an agent can
+interpret, but cannot directly drive effects that require validated data.
+
+Return correctable failures while the contributing agent can still act, sharing
+the App's new-output checks with its consumer. A rejected completion can be
+corrected within the same invocation and its existing allowance. If the method
+does not fit, the responsible agent may use another supported method or report
+the blocker. It need not keep formatting the same proposal forever. Final commit
+still checks current authority and state; a concurrent change can reject a
+previously valid proposal and must leave evidence for the next permitted attempt.
+
+Completion of an invocation and availability of a domain result are independent.
+An inability report must not require fabricating the expected result. An App
+defines the evidence its contribution needs; supplied observations can support
+judgment without another tool call. Host records execution and enforces the
+declared contract, rather than requiring a particular domain work method.
+
+**Implementation gap:** caller schemas currently require `finish.result` even
+for blocked/partial/failed finishes, and generic success guidance asks for
+session tool-output evidence. Public workflow agent calls expose a schema but
+not the direct Task agent's pure completion callback. The
+[implementation proposal](../proposals/host-contract-improvements-20261016.md#return-unresolved-work-to-agent-judgment)
+specifies the coordinated changes; callers must use installed contracts until
+then. Existing App schemas can already express meaningful unavailable outcomes.
 
 For a direct Task agent, Host supplies the App's pure action/Condition admission
 checks to `finish` alongside the shared result schema. A correctable shape or

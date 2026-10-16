@@ -347,6 +347,21 @@ Do not let metric code mutate tasks or dispatch sessions directly.
 
 ## Pure Functions And Retry
 
+Follow the [common recovery flow](../2a-design/system-boundary.md#retry-and-recovery-ownership):
+run the known code path, let the owning capability handle safe mechanical retry,
+and use `ctx.agents.call` when the unresolved problem needs judgment. If an agent
+is already producing the result, return knowable validation errors before its
+invocation ends. Share the new-output schema/checks with the consumer; keep
+historical compatibility reading separate.
+
+Give the agent the assignment, original input or its readable reference, exact
+failure, useful partial work and known effect status. Ask it to resolve the work,
+not just make an object parse. Use current `ctx.reconciliation.previousAttempt`
+when recovery crosses attempts, so the same known failure does not restart the
+identical procedure without reconsideration. Cancellation and lost authority
+still stop execution. If allowance is exhausted or the workflow cannot start,
+preserve the problem for the existing Task/caller recovery route.
+
 Call pure deterministic functions normally. Routine delivery retry, backoff and
 replay belong to the owning infra capability; workflow authors need no wrapper
 loop for them. A workflow may choose retry, repair or failover as a domain

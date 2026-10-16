@@ -280,6 +280,15 @@ accepted result before treating follow-up work or Request closure as committed.
 
 ## Recover and return problems to the owner
 
+Let code handle known work and infra perform its supported retries. When a
+failure returns to you, read the original input, specific error, useful results
+and effect status, then choose the next useful action. Correct a malformed
+proposal, interpret unfamiliar content, try another authorized method, or ask
+your owner for help. A known shape error does not benefit from identical replay.
+Keep the same Task and reuse accepted work. A successful recovery remains useful
+work; record its evidence and cost for later audit rather than opening a new
+investigation for every correction.
+
 Repair within this attempt when authorized work can progress and allowance
 remains. Infra owns routine retry and delivery recovery under existing policy.
 An agent can choose a different repair, retry or failover when judgment is needed.

@@ -3,7 +3,7 @@
 **Status:** Direction accepted, implementation in progress, 2026-10-16.
 Principles and contract refinements are integrated into their owning documents.
 Database contention is fixed in merged [Host PR #370](https://github.com/hao1939/may-agent/pull/370).
-The observer-accounting change is published in [Host PR #371](https://github.com/hao1939/may-agent/pull/371); the original revision passed local/GitHub checks; a combined expiry trial exposed a correction whose local CI passed; current hosted checks remain pending. Receipt expiry is published in [Host PR #372](https://github.com/hao1939/may-agent/pull/372); local CI and hosted checks passed; review remains. Later steps remain open.
+The observer-accounting change is ready for review in [Host PR #371](https://github.com/hao1939/may-agent/pull/371); revised local CI and current-head hosted checks passed. Receipt expiry is ready for review in [Host PR #372](https://github.com/hao1939/may-agent/pull/372); local CI and hosted checks passed. The common code/retry/agent flow is accepted below; its completion-feedback implementation remains proposed. Other later steps remain open.
 No deployment is established by this document.
 
 **Parent:** [Keep the Host boring and let Apps change](host-stability-and-app-extensibility-20261005.md).
@@ -18,12 +18,21 @@ support those outcomes. Apps need room to improve their methods independently.
 
 **Choice basis:** [Simple first](../1-principles/core-principles.md#simple-first),
 [Host mechanics and App meaning](../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics),
+[agents handle variety; code makes known work efficient](../1-principles/design-philosophy.md#agents-handle-variety-code-makes-known-work-efficient),
 and [safe retry](../1-principles/core-principles.md#safe-retry-by-default-explicit-exceptions).
 Repair existing owners and remove duplicated bookkeeping. Accept delayed
 projections and occasional repeated consideration; protect accepted work,
 ownership and external effects. Extra machinery must earn its cost.
 
 ## Direction and value
+
+Use one recovery flow: **code handles known work; infra retries recoverable
+failures; unresolved problems return to the responsible agent.** The agent
+repairs, chooses another approach or escalates. Preserve the same Task, useful
+work and effect identities. Record outcomes and recovery cost for later audit.
+A known schema mismatch can go straight to judgment; it need not consume
+identical retries. This is the [shared contract](../2a-design/system-boundary.md#retry-and-recovery-ownership),
+not a new recovery framework or a Host-selected model fallback.
 
 Keep the current Task, Event, Condition and execution-adapter model. The recurring
 weakness is that a sound rule is implemented in one path while another path
@@ -50,6 +59,7 @@ the linked principles and contracts; this proposal tracks implementation gaps.
 | Let the owner of a fact acknowledge it | Recover the same obligation without false acceptance or another ledger | [One authority](../1-principles/core-principles.md#one-authority-for-each-resource), [Events](../2a-design/events.md) |
 | Make existing context, correction and execution usable before adding rescue policy | Repair the broken feedback path instead of repeating its failure | [Fix the layer that failed](../1-principles/core-principles.md#fix-the-layer-that-failed), [Task execution guide](../2b-manual/task-execution-guide/SKILL.md) |
 | Apps compose strategy; Host maintains the execution contract | Apps can improve methods without a Host policy change | [Host/App boundary](../2a-design/system-boundary.md), [Runtime recovery](../2a-design/runtime.md#recovery) |
+| Return unresolved work to agent judgment through ordinary feedback | Keep useful work moving when the code path cannot handle the case | [Common recovery flow](../2a-design/system-boundary.md#retry-and-recovery-ownership), [Result admission](../2a-design/execution-contributions.md#result-admission) |
 | Bound total work and preserve a path to finish | Keep controls responsive and retain useful partial results | [Review rule](../1-principles/core-principles.md#review-rule), [Storage](../2a-design/storage.md), [Task lifecycle](../2a-design/task-resource-engine.md#one-lifecycle-baseline) |
 | Preserve the same contract across alternate paths | Worker relay, restart and reload keep accepted work and meaning intact | [Review rule](../1-principles/core-principles.md#review-rule), [Design authoring](../2b-manual/design-authoring/SKILL.md) |
 
@@ -84,13 +94,14 @@ recovery, though it can delay semantic investigation and human escalation.
 ## Implementation order
 
 The owning contracts and stale retry/source-status prose have been updated.
-Preserve already-fixed behavior and make separate runtime changes in this order:
+Preserve already-fixed behavior and keep runtime changes independently reviewable:
 
 | Step | Change and contract | Value / evidence |
 | --- | --- | --- |
 | 1 | Bound serving-path SQL waits; preserve operation-owned retry (C3/C5) | Merged #370; source verification complete, rollout not established |
-| 2 | Apply observation semantics through ordinary producers and relays (C2/C6) | PR #371 retains original intent and independent receipts; combined expiry trial now distinguishes a required failure from an uninspected timeout; revised local CI passed; current hosted checks pending |
+| 2 | Apply observation semantics through ordinary producers and relays (C2/C6) | PR #371 retains original intent and independent receipts; revised local CI and current-head hosted checks passed; ready for review |
 | 3 | Expire delivery receipts from durable status/timing (C3) | PR #372 uses the existing durable admission marker and saved timing; local/hosted checks passed; ready for review |
+| Next | Return unresolved work to agent judgment (C1/C4/C5/C6) | App adoption plus focused Host completion feedback, as specified below; does not wait for query profiling or private recovery cleanup |
 | 4 | Trial one private recovery success meaning across callers/backends (C4/C6) | Consistent safe retry without adding optional-artifact gates |
 | 5 | Profile metric queries; optimize or contain demonstrated cost (C5) | Synthetic blocking shown; installed query impact remains unmeasured |
 
@@ -98,6 +109,113 @@ The [original evidence](../archive/reviews/host-contract-review-20261016.md)
 pins the tests and probes. The [commit review](../archive/reviews/host-two-week-design-review-20261016.md)
 adds source-history reasoning, not new runtime measurements. The details below
 specify the intended corrections and their trials.
+
+### Return unresolved work to agent judgment
+
+**Status:** Accepted flow; implementation proposed. The
+[source review](../archive/reviews/agent-judgment-and-code-paths-20261016.md)
+reproduced late App-reader rejection and inability reports requiring a normal
+domain payload. Existing same-invocation correction and workflow agent calls
+already provide most of the mechanism. Alex's candidate `cc24d7290a` improves
+guidance and evidence reuse; it does not close all of these boundaries.
+
+**Value:** finish useful work without another human intervention or full restart
+for every unfamiliar format. Accept occasional agent recovery; add automation
+when repeated cost justifies it. This work has two implementation pieces, under
+one flow.
+
+**App adoption — Alex owns meaning and the next action.**
+
+1. Use one App-owned definition for newly generated judgments. Reuse it in
+   `task-outcome-review.ts`, `metric-review.ts` and their new-output reader.
+   Express known structural requirements, including nonblank text, in the schema
+   seen by the model. Keep legacy report reading separate so history remains
+   readable. A reader must not add a hidden structural hurdle after finish.
+2. In the existing workflow, call the responsible agent when a reader or operation
+   cannot handle the case after its supported mechanical recovery. Supply the
+   assignment, original input/reference, exact failure, useful work and effect
+   status. The agent may interpret a legacy report or choose another method;
+   producing the original schema is only necessary when that code consumer will
+   use the result. Already-running agents receive ordinary tool feedback.
+3. Keep this within the current invocation/attempt while allowance remains.
+   Across attempts, inspect existing `previousAttempt` and accepted work before
+   repeating the procedure. If the procedure cannot start, use its declared
+   caller/operational route. Do not add a recovery Task per error, an App retry
+   controller, or a field asking Host to switch executors.
+
+The first App trial uses a valid ordinary `message`/`goal` envelope carrying
+unfamiliar content as evidence. It does not weaken Host admission or silently
+convert a denied typed action into work. Retained report publication and explicit
+follow-up decisions keep their existing effect protection.
+
+**Host completion feedback — generic support for any App.**
+
+1. In `workflow-finish.ts`, `agent-execution.ts` and `workflow-tool.ts`, make
+   the expected domain payload mandatory for successful contribution, while
+   allowing an explicit blocked/partial/failed finish to explain inability
+   without that payload. Any supplied typed payload must still validate.
+   Preserve other useful evidence through existing `facts`/execution references.
+   Reuse `ExecutionResult` and `execution-handoff.ts` status projection; add no
+   result state. Direct Task execution must also interpret those statuses,
+   keeping an absent domain result incomplete rather than treating a terminated
+   invocation as Task convergence. Schema admission callbacks run on supplied
+   proposals, not on an absent inability-report payload.
+2. Correct the generic finish guidance so supplied evidence is a valid source;
+   success does not necessarily require another tool call. Keep the current outer
+   fields initially. Removing redundant fields is a later simplification only
+   if it eliminates real cost without losing information needed by a consumer.
+3. Return concise validation failures and retain original evidence by reference.
+   Use the existing tool-error and execution-record boundaries for rejection and
+   correction facts. The pinned Pi validator rejects before ordinary tool hooks
+   and echoes full arguments: choose a supported library/adapter integration,
+   not an `afterToolCall` patch that never receives the error. Do not edit installed
+   dependencies or parse arbitrary error prose into routing policy.
+
+Prefer schemas for deterministic shape checks. If an App needs a demonstrated
+pure semantic admission check, extend the existing internal `validateOutput`
+capability to workflow calls, preserving feedback before finish. Do not introduce
+that public option merely to fix whitespace. Its trial must cover every supported
+dispatch/relay path; an in-memory callback alone is not a cross-worker contract.
+Final authority/freshness checks still run at settlement.
+
+**Audit reuses the current loop.** Retain rejected proposals, repair effort,
+final outcome and linked execution evidence. Begin with bounded reads of existing
+records; add a mechanical observation only where a demonstrated gap prevents
+that read. Alex's existing periodic audit chooses no change for a transient,
+legacy or low-value exception, or chooses guidance/code improvement for a useful
+pattern. Samples do not commission reviews. A successful correction remains a
+successful contribution, independently of its cost.
+
+**Implementation order and compatibility:** Alex can align its schemas and
+exercise ordinary interpretation now. The Host changes above are focused patches
+under one shared contract, each with its own source verification. Before changing
+finish admission, check direct agents, managed workflow calls, captured-finish
+recovery and every consumer that treats `done` as an available domain result.
+Update their behavior together; an optional field change alone is insufficient.
+Keep the new inability-report behavior inactive in Apps until the compatible
+Host is installed. No retained Task, original input or report requires rewriting.
+Changes to caller schemas stay App-owned and need no new Host policy branch.
+
+**Decisive trials:** use the real runner/validator with synthetic model responses
+for mechanics; reserve any real-model interpretation trial for a separately
+authorized bounded environment or naturally due work.
+
+| Situation | Required outcome |
+| --- | --- |
+| Known code path succeeds | No recovery-model call |
+| Retryable operation recovers | Same operation identity; no recovery-model call or duplicate effect |
+| Schema/check rejects a proposal | Exact feedback reaches the active agent; correction is accepted without repeating completed work |
+| Code cannot interpret a legacy input | One ordinary agent invocation can interpret or escalate it with original evidence; no new Task is required |
+| Agent cannot produce the domain result | Honest existing blocked/error result reaches caller without fabricated output or Task convergence |
+| Publication succeeded before later failure | Retry reuses the publication and retains any independent unfinished obligation |
+| Deadline, cancellation, denied authority or unavailable owner | Existing fences/bounds apply; unresolved work and undelivered feedback remain visible |
+| Audit sees recovered exceptions | Can retain no-change disposition or reuse an existing improvement Task; no per-sample review loop |
+
+No universal maximum number of agent judgments follows from the single-call
+legacy-input trial. Each decision remains subject to the existing attempt bound,
+Task retry policy and a useful next step. Completion quality, cost per delivered
+result and owner intervention decide improvement; first-format validity is only
+an efficiency measure. Source tests do not prove model judgment or live savings.
 
 ### 1. Keep database contention off the serving loop
 

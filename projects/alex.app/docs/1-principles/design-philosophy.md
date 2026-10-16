@@ -35,6 +35,25 @@ goal when human priorities or evidence change, and explain the change.
 
 May's concrete goal and measures of useful progress live in [Purpose and value](purpose.md).
 
+## Agents handle variety; code makes known work efficient
+
+Agents interpret intent, adapt to unfamiliar situations and judge what is useful.
+Code and the execution harness make understood work faster, cheaper and more
+reliable, including its storage, delivery and recovery. Contracts explain how
+these responsibilities cooperate. A coded procedure does not define the limit
+of what the system can try to accomplish.
+
+Use code where it fits and let infra retry failures that safe repetition can
+resolve. When that path cannot resolve the problem, return the evidence to the
+responsible agent to repair, choose another method or escalate. A schema mismatch
+can need judgment immediately; repeating unchanged input need not come first.
+Agents remain subject to authority and execution bounds, and may be unable to
+complete the work. Record what happened and its outcome. Later audit decides
+whether an exception warrants better code or can remain agent-handled.
+
+This supports useful outcomes without coding every rare case in advance. Apply
+it through the [shared recovery contract](../2a-design/system-boundary.md#retry-and-recovery-ownership).
+
 ## Value and cost
 
 **Value is what a choice contributes to the project goal:** better outcomes,

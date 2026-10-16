@@ -269,7 +269,21 @@ judges and reports.
 
 The audit covers recurring failure, no-progress and handoff loops, model usage
 versus delivered progress, recovered failures, useful behavior, and its own
-coverage/cost. It returns at most three prioritized patterns and links existing
+coverage/cost. Count corrected proposals and recovery effort separately from
+final useful outcomes. A corrected result can be successful work, while a
+recurring expensive correction can still deserve improvement. Use existing
+execution evidence and state any missing correction/usage coverage; final
+success alone does not establish an inexpensive process.
+
+Choose a disposition by value: retain a transient, legacy or low-impact exception
+without a code change; improve guidance; or improve the responsible App, shared
+capability or provider boundary for a worthwhile recurring pattern. An unfamiliar
+schema alone does not require a patch, and an accepted format alone does not
+establish correctness. Preserve the decision and supporting evidence in the
+ordinary audit result. Routine samples and correction logs do not create a
+separate model review.
+
+The audit returns at most three prioritized patterns and links existing
 owner Tasks or PRs. When a finding becomes newly actionable, the direct Evaluator
 Task submits one ordinary request to the Alex App in its Task result, naming the
 exact work to reuse when one exists. `context.audit.owner` is descriptive metadata and report
