@@ -161,6 +161,35 @@ describe("manager session lifecycle", () => {
     expect(requests[1].prompt).toContain("Review in a procedure");
   });
 
+  it("delivers a helper correction into its next model request without starting another execution", async () => {
+    manager.register(skilledWorker());
+    holdReplies = true;
+    const caller = manager.run("worker", "Coordinate the review");
+    await started.promise;
+    started = Promise.withResolvers<void>();
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => caller });
+    const call = async (params: Record<string, unknown>) => {
+      const response = await tool.execute("helper-control", params);
+      return JSON.parse((response.content[0] as { text: string }).text);
+    };
+    const helper = await call({ action: "fork", agent: "worker", task: "Inspect the candidate" });
+    await started.promise;
+    const correction = "$review-guide Preserve the patch and use the available search tool";
+    expect(await call({ action: "follow-up", sessionId: helper.sessionId, content: correction }))
+      .toMatchObject({ accepted: true, sessionId: helper.sessionId });
+    expect(manager.status()).toHaveLength(2);
+    holdReplies = false;
+    requests[1].reply();
+    expect(await manager.waitFor(helper.sessionId)).toMatchObject({ status: "done" });
+    expect(requests).toHaveLength(3);
+    expect(requests[2].prompt).toContain(correction);
+    expect(requests[2].prompt).not.toContain(skill.content);
+    expect(JSON.stringify(manager.progress(helper.sessionId))).toContain(correction);
+    const closed = await call({ action: "follow-up", sessionId: helper.sessionId, content: "Too late" });
+    expect(closed.error).toContain("live helper");
+    expect(requests).toHaveLength(3);
+  });
+
   it("keeps an active execution's model and instructions when the registered definition changes", async () => {
     holdReplies = true;
     const oldSession = manager.run("worker", "First assignment");

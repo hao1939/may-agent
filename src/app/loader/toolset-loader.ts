@@ -1,6 +1,7 @@
 import type { FileWritePolicy } from "../../lib/tools/file-write-policy.js";
 import { createRuntimeAppRead } from "../core/reads/app-read.js";
 import { getLoadedAppInputContract } from "../core/tasks/app-task-runtime.js";
+import type { AppRegistry } from "../core/apps/registry.js";
 import { readMetricView } from "../adapters/reporting/metric-read.js";
 import type { WorkflowEvent } from "../../lib/workflow.js";
 import { resolve } from "node:path";
@@ -24,12 +25,12 @@ import type { EventBus } from "../core/events/bus.js";
 import type { HostMaintenance } from "../adapters/maintenance/runtime.js";
 import { createMaintenanceTool } from "../adapters/maintenance/tool.js";
 import type { AgentConfig } from "./agent-config.js";
-import { listConfiguredAgentNames } from "./agent-discovery.js";
 import { loadAgentLocalTools } from "./agent-local-tools.js";
 import { createAppTaskReadTool } from "../app-task-read-tool.js";
 import { assertUniqueToolNames } from "../../lib/tool-name-audit.js";
 
 export interface ToolsetLoaderOptions {
+  appRegistry?: AppRegistry;
   fileWritePolicy?: FileWritePolicy;
   agentsRoot: string;
   sharedRoot: string;
@@ -45,14 +46,6 @@ export interface ToolsetLoaderOptions {
   getAgentMaintenance: () => Map<string, HostMaintenance>;
   addCleanup: (agentName: string, fn: () => void) => void;
   agentDir?: string;
-  /**
-   * The top-level agents/ directory, used by the message tool to discover
-   * all system agents for allowedTargets. When a project-scoped agent is
-   * loaded, `agentsRoot` points to the project-local agents/ dir, so the
-   * message tool would only see project-local agents. This field ensures
-   * the message tool always resolves all configured agent names system-wide.
-   */
-  globalAgentsRoot?: string;
 }
 
 export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions): Promise<AgentTool[]> {
@@ -91,28 +84,17 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
       }
 
       case "message": {
-        // Use globalAgentsRoot (top-level agents/) when available so
-        // App-scoped agents can message other installed agents.
-        const messageAgentsRoot = opts.globalAgentsRoot ?? opts.agentsRoot;
-        // Lazy evaluation: agents loaded after this tool is created are still
-        // visible. Prevents stale allowedTargets when App-local agents are
-        // registered before global agents finish loading.
-        const lazyAllowedTargets = () =>
-          listConfiguredAgentNames(
-            messageAgentsRoot,
-            opts.projectsRoot,
-            opts.canonicalProjectsRoot,
-            opts.appDirectories,
-          );
         tools.push(
           createMessageTool({
             agentName: config.name,
             persistDir,
-            allowedTargets: lazyAllowedTargets,
+            // Read the published registry at invocation, even without Task
+            // scheduling or when this worker executes only one App.
+            allowedTargets: () => opts.appRegistry?.messageTargets() ?? [],
             emit: (event: { type: string; [key: string]: unknown }) => bus.emit(event as any),
-            getCallerSessionId: () => opts.getAgentSessionId(config.name),
+            getCallerSessionId: () => currentAgentSessionId(config.name) ?? opts.getAgentSessionId(config.name),
             getCallerTrace: () => {
-              const sid = opts.getAgentSessionId(config.name);
+              const sid = currentAgentSessionId(config.name) ?? opts.getAgentSessionId(config.name);
               return sid ? manager.activeSessions.get(sid)?.trace : undefined;
             },
           }),
