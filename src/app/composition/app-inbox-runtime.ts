@@ -447,6 +447,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   });
   observerRuntime.replace(loaded);
   const scheduleProducer = createAppScheduleProducer({
+    db: options.db,
     bus: options.bus,
     now,
     enabled: options.schedulesEnabled !== false,

@@ -54,7 +54,7 @@ describe("independent metric passes", () => {
         events.push(event.type);
     });
     let clock = 0;
-    const schedule = createAppScheduleProducer({ bus, now: () => clock });
+    const schedule = createAppScheduleProducer({ db, bus, now: () => clock });
     schedule.replace([
       {
         appDir: persistDir,

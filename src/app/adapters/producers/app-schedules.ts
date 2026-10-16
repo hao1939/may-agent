@@ -1,9 +1,11 @@
 import type { LoadedAppDefinition } from "../../core/apps/registry.js";
 import { EVENT_RECORD_ONLY, type AgentEvent, type EventBus } from "../../core/events/bus.js";
 import { OwnedTimer } from "../../core/scheduling/timer.js";
+import type { SqliteDb } from "../../../lib/db.js";
+import type { AppInput } from "@may-agent/sdk";
 
 /** Schedule slots publish normal events. They do not own requests or Tasks. */
-export function createAppScheduleProducer(options: { bus: EventBus; now?: () => number; enabled?: boolean }) {
+export function createAppScheduleProducer(options: { db: SqliteDb; bus: EventBus; now?: () => number; enabled?: boolean }) {
   const now = options.now ?? Date.now;
   let loaded: readonly Readonly<LoadedAppDefinition>[] = [];
   let closed = false;
@@ -52,6 +54,32 @@ export function createAppScheduleProducer(options: { bus: EventBus; now?: () => 
       console.error(
         `[app-schedule:${identity}] publication failed: ${error instanceof Error ? error.message : String(error)}`,
       );
+      return false;
+    }
+  };
+
+  const publishScheduledInput = (appId: string, scheduleId: string, slot: number, input: AppInput): boolean => {
+    const source = `app:${appId}:schedule:${scheduleId}`;
+    const owner = `app:${appId}`;
+    const key = `schedule:${appId}:${scheduleId}:${slot}`;
+    try {
+      // Publication consumes the slot; downstream admission owns delivery recovery.
+      // A changed declaration must not replace the original input after reload or restart.
+      const published = options.db.prepare(`SELECT id FROM events
+        WHERE event_type = 'app.input.requested' AND ingress_source = ? AND idempotency_scope = ?
+          AND idempotency_key = ? AND idempotency_key != ''`).get(source, owner, key);
+      if (published) return true;
+      return publishScheduledEvent({
+        type: "app.input.requested", source, owner,
+        data: {
+          appId, input,
+          source: { kind: "system", id: `schedule:${appId}:${scheduleId}` },
+          idempotencyKey: key,
+        },
+      }, `${appId}/${scheduleId}`);
+    } catch (error) {
+      // An unavailable journal is not evidence that the slot was published.
+      console.error(`[app-schedule:${appId}/${scheduleId}] publication lookup failed: ${String(error)}`);
       return false;
     }
   };
@@ -118,20 +146,7 @@ export function createAppScheduleProducer(options: { bus: EventBus; now?: () => 
             activation.lastSlot = slot;
             continue;
           }
-          const published = publishScheduledEvent(
-            {
-              type: "app.input.requested",
-              source: `app:${definition.id}:schedule:${configuredSchedule.id}`,
-              owner: `app:${definition.id}`,
-              data: {
-                appId: definition.id,
-                input: configuredSchedule.input,
-                source: { kind: "system", id: `schedule:${definition.id}:${configuredSchedule.id}` },
-                idempotencyKey: `schedule:${definition.id}:${configuredSchedule.id}:${slot}`,
-              },
-            },
-            `${definition.id}/${configuredSchedule.id}`,
-          );
+          const published = publishScheduledInput(definition.id, configuredSchedule.id, slot, configuredSchedule.input);
           if (published) activation.lastSlot = slot;
         }
       }

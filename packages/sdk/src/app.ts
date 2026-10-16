@@ -382,7 +382,9 @@ export type AppSchedule = AppScheduleBase &
     | {
         input: AppInput;
         event?: never;
-        /** `latest` admits at most the newest missed inbox slot after downtime. */
+        /** `latest` publishes the newest missed inbox slot after downtime (default).
+         * A retained slot publication keeps its original input across reload/restart;
+         * changed instructions apply to the next unpublished slot. Delivery may repeat. */
         catchUp?: "none" | "latest";
       }
     | {
