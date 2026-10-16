@@ -3889,10 +3889,122 @@ describe("App task reconciler state", () => {
     const reclaimed = declareAndClaimTask(config, { ...request, recoverPreviousSession: (attempt) => {
       expect(config.resourceStore.readTask(first.taskId)?.status.currentAttemptId).toBe(first.attemptId);
       recovered.push(attempt);
+      return true;
     } });
     expect(reclaimed.kind).toBe("claimed");
     expect(recovered).toMatchObject([{ sessionId: "session-old", taskId: first.taskId,
       taskGeneration: first.generation, metadata: { id: first.attemptId } }]);
+  });
+
+  it("preserves a previous-runtime claim when session recovery is not confirmed", () => {
+    const { config } = fixture();
+    const first = declareAndClaimTask(config, {
+      intent: intent(),
+      appAgent: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (first.kind !== "claimed") throw new Error("expected claim");
+    expect(recordAppTaskAttemptSession(config, first, "session-old")).toBe(true);
+    mutateAttemptFixture(config, first.taskId, first.attemptId, (attempt) => {
+      attempt.runtimeId = "previous-runtime";
+    });
+
+    expect(() => claimObservedAppTask(config, {
+      taskId: first.taskId,
+      appAgent: "app-owner",
+      handler: "workflow:known-workflow",
+      reason: `attempt-recovery:${first.taskId}`,
+      recoverPreviousSession: () => false,
+    })).toThrow("Task session recovery was not confirmed");
+
+    expect(config.resourceStore.readTask(first.taskId)).toMatchObject({
+      status: { phase: "running", currentAttemptId: first.attemptId },
+    });
+    expect(config.resourceStore.readAttempt(first.attemptId)).toMatchObject({
+      state: "running",
+      sessionId: "session-old",
+    });
+  });
+
+  it("does not clear a retained claim on admission failure until session recovery is confirmed", () => {
+    const { config } = fixture();
+    const first = declareAndClaimTask(config, {
+      intent: intent(),
+      appAgent: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (first.kind !== "claimed") throw new Error("expected claim");
+    expect(recordAppTaskAttemptSession(config, first, "session-old")).toBe(true);
+    mutateAttemptFixture(config, first.taskId, first.attemptId, (attempt) => {
+      attempt.runtimeId = "previous-runtime";
+    });
+    const recovery = {
+      taskId: first.taskId,
+      appAgent: "app-owner",
+      handler: "workflow:known-workflow",
+      reason: `attempt-recovery:${first.taskId}`,
+      isAgentRunnable: () => false,
+    };
+
+    expect(() => claimObservedAppTask(config, {
+      ...recovery,
+      recoverPreviousSession: () => false,
+    })).toThrow("Task session recovery was not confirmed");
+    expect(config.resourceStore.readTask(first.taskId)?.status.currentAttemptId).toBe(first.attemptId);
+    expect(config.resourceStore.readAttempt(first.attemptId)?.state).toBe("running");
+
+    expect(claimObservedAppTask(config, {
+      ...recovery,
+      recoverPreviousSession: () => true,
+    })).toMatchObject({ kind: "attention", taskId: first.taskId });
+    expect(config.resourceStore.readTask(first.taskId)?.status.phase).toBe("pending");
+    expect(config.resourceStore.readTask(first.taskId)?.status.currentAttemptId).toBeUndefined();
+    expect(config.resourceStore.readAttempt(first.attemptId)).toMatchObject({
+      state: "interrupted",
+      failureReason: "previous-runtime-attempt-requeued",
+    });
+  });
+
+  it("rejects a cross-Task current attempt before session recovery side effects", () => {
+    const { config } = fixture();
+    const first = declareAndClaimTask(config, {
+      intent: intent(),
+      appAgent: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    const siblingIntent = { ...intent(), id: "evaluate:sibling" };
+    const sibling = declareAndClaimTask(config, {
+      intent: siblingIntent,
+      appAgent: "app-owner",
+      handler: "workflow:known-workflow",
+    });
+    if (first.kind !== "claimed" || sibling.kind !== "claimed") throw new Error("expected claims");
+    expect(recordAppTaskAttemptSession(config, sibling, "sibling-session")).toBe(true);
+    mutateAttemptFixture(config, sibling.taskId, sibling.attemptId, (attempt) => {
+      attempt.runtimeId = "previous-runtime";
+    });
+    mutateTaskResourceFixture(config, first.taskId, (resource) => {
+      resource.status.phase = "running";
+      resource.status.currentAttemptId = sibling.attemptId;
+    });
+    let recoveries = 0;
+
+    expect(() => claimObservedAppTask(config, {
+      taskId: first.taskId,
+      appAgent: "app-owner",
+      handler: "workflow:known-workflow",
+      reason: `attempt-recovery:${first.taskId}`,
+      recoverPreviousSession: () => {
+        recoveries += 1;
+        return true;
+      },
+    })).toThrow(`belongs to ${sibling.taskId}; refusing cross-Task recovery`);
+
+    expect(recoveries).toBe(0);
+    expect(config.resourceStore.readAttempt(sibling.attemptId)).toMatchObject({
+      state: "running",
+      sessionId: "sibling-session",
+    });
   });
 
   it("associates workflow sessions with the current attempt and rejects stale generations", () => {
@@ -4323,6 +4435,7 @@ describe("App task reconciler state", () => {
       recoverPreviousSession: (attempt) => {
         expect(attempt.metadata.id).toBe(running.attemptId);
         expect(attempt.sessionId).toBe("interrupted-session");
+        return true;
       },
     });
     expect(replacement.kind).toBe("claimed");

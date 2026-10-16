@@ -10876,7 +10876,7 @@ describe("canonical App task runtime", () => {
       expect(f.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
     }
 
-    it.each(["appId", "taskId", "generation", "attemptId", "array-status"] as const)(
+    it.each(["appId", "taskId", "generation", "attemptId", "array-status", "missing-meta"] as const)(
       "controller recovery preserves the original claim when session %s is invalid",
       async (field) => {
         const f = setup();
@@ -10896,17 +10896,26 @@ describe("canonical App task runtime", () => {
         const path = join(f.base.persistDir, "sessions", "session-owner", "meta.json");
         const meta = JSON.parse(readFileSync(path, "utf8"));
         if (field === "array-status") meta.status = ["running"];
-        else meta.taskBinding[field] = field === "generation" ? claim.generation + 1 : "another-owner";
+        else if (field !== "missing-meta")
+          meta.taskBinding[field] = field === "generation" ? claim.generation + 1 : "another-owner";
         const bytes = JSON.stringify(meta);
-        writeFileSync(path, bytes);
+        if (field === "missing-meta") rmSync(path);
+        else writeFileSync(path, bytes);
         const before = readTaskSnapshot(f.config);
-        await expect(f.run("owner")).rejects.toThrow(field === "array-status" ? "invalid session metadata" : "session Task binding");
+        await expect(f.run("owner")).rejects.toThrow(
+          field === "array-status"
+            ? "invalid session metadata"
+            : field === "missing-meta"
+              ? "session recovery was not confirmed"
+              : "session Task binding",
+        );
         expect(readTaskSnapshot(f.config)).toEqual(before);
         expect(f.config.resourceStore.readTask("owner")?.status.currentAttemptId).toBe(claim.attemptId);
         expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("running");
-        expect(touched).toEqual([]);
+        expect(touched).toEqual(field === "missing-meta" ? ["cancel", "drain"] : []);
         expect(f.agentCalls()).toBe(0);
-        expect(readFileSync(path, "utf8")).toBe(bytes);
+        if (field === "missing-meta") expect(existsSync(path)).toBe(false);
+        else expect(readFileSync(path, "utf8")).toBe(bytes);
       },
     );
 
