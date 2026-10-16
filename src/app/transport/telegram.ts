@@ -1030,20 +1030,26 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       }),
       bindToCompleteDelivery: Boolean(displayedApproval || displayedHumanCondition || displayedAction?.signature.exact),
     });
-    if (delivered && running)
-      recordConversationMessage({
-        conversationId: sharedConversationId,
-        text: rendered,
-        command: "/watch update",
-        messageId: delivered,
-        chatId: watched.chatId,
-        topicId: watched.topicId,
-        taskRefs: [{ appId: task.appId, taskId: task.taskId }],
-        conversationTopicId,
-      });
-    // A send already in flight cannot be recalled. Its late result must not
-    // change a newer selection, including a new watch of the same Task.
+    // Telegram cannot recall an in-flight send, but its late acknowledgement
+    // must not commit stale progress to the Conversation or suppress the fresh
+    // terminal presentation. Re-read after provider I/O even when no wake was
+    // observed; a provider call is not a Task-state fence.
     if (!delivered || !running || watchedTasks.get(surface) !== watched) return;
+    const currentTask = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
+    if (!currentTask || taskPresentationRevision(currentTask) !== revision) {
+      watchRefresh.queue(surface);
+      return;
+    }
+    recordConversationMessage({
+      conversationId: sharedConversationId,
+      text: rendered,
+      command: "/watch update",
+      messageId: delivered,
+      chatId: watched.chatId,
+      topicId: watched.topicId,
+      taskRefs: [{ appId: task.appId, taskId: task.taskId }],
+      conversationTopicId,
+    });
     shownWatchRevisions.set(surface, revision);
     if (displayedAction) {
       const current = shownTodoActions.get(surface);

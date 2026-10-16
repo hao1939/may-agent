@@ -265,6 +265,40 @@ describe("Telegram refresh lifecycle", () => {
     }
   });
 
+  it("rechecks a watched Task after a stalled send and commits only its fresh terminal state", async () => {
+    const f = fixture();
+    try {
+      await f.command("/watch first");
+      f.tasks.get("first")!.summary = "Stale progress";
+      const held = f.hold((send) => !send.reply_parameters && send.text.includes("Stale progress"));
+      f.wake("first");
+      await waitFor(() => held.started);
+
+      Object.assign(f.tasks.get("first")!, {
+        terminal: true,
+        status: "done",
+        summary: "Fresh terminal result",
+        resourceVersion: 2,
+      });
+      // Force the queue-dirty interleaving while provider I/O is still pending.
+      f.wake("first");
+      held.release();
+
+      await waitFor(() => f.sent.some((send) => send.text.includes("Fresh terminal result")));
+      const watchRecords = f.published.filter(
+        (event) =>
+          event.type === "conversation.message.created" &&
+          (event.data?.metadata as { command?: string } | undefined)?.command === "/watch update",
+      );
+      expect(watchRecords.map((event) => event.data?.text)).toEqual([expect.stringContaining("Fresh terminal result")]);
+      expect(f.sent.filter((send) => send.text.includes("Fresh terminal result"))).toHaveLength(1);
+      await f.command("/watch");
+      expect(f.sent.at(-1)?.text).toContain("No Task is watched");
+    } finally {
+      await f.close();
+    }
+  });
+
   it("does not run a dirty watch refresh after close", async () => {
     const f = fixture();
     try {
@@ -303,11 +337,12 @@ describe("Telegram refresh lifecycle", () => {
       f.tasks.get("second")!.summary = "Independent chat";
       f.wake("second");
       await waitFor(() => f.sent.some((send) => send.chat_id === "456" && send.text.includes("Independent chat")));
-      expect(f.reads).toHaveLength(baseline + 2);
+      // Each completed provider send now has a post-I/O canonical Task read.
+      expect(f.reads).toHaveLength(baseline + 3);
       held.release();
       await waitFor(() => f.sent.some((send) => send.text.includes("Latest refresh")));
       await Bun.sleep(25);
-      expect(f.reads).toHaveLength(baseline + 3);
+      expect(f.reads).toHaveLength(baseline + 6);
       expect(f.sent.filter((send) => send.text.includes("Latest refresh"))).toHaveLength(1);
       f.wake("first", 20);
       await Bun.sleep(25);
