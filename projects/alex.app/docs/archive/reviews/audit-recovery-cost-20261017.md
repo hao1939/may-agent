@@ -65,8 +65,7 @@ unchanged findings remain saved without a request.
 The retained audit workspace was at source `650753398d`, so a canonical reference
 document edit alone would not establish that the next attempt reads it. The key
 rules are also in Evaluator's installed instructions, which take precedence over
-an older workspace reference. Source verification and activation are distinct;
-the activation record below will identify the loaded revision.
+an older workspace reference. Their verified activation is recorded below.
 
 ## Connected verification
 
@@ -94,3 +93,20 @@ useful dispositions. Do not create extra production reviews to fill that gap.
 Private evidence is retained under
 `/home/hao/workspace-worktrees/may-token-review-20261016/` with `audit-*` prefixes:
 cohort replay, public usage/transcript reads, routing evidence and check logs.
+
+## Verified local activation
+
+App source `7e50a70b599160540e2715f480ca36ea293d7c20` was integrated locally and
+activated at **2026-10-17 01:24:49 Asia/Shanghai**. Normal reload request event
+`6676296` links to successful completion `6676297`, which names that exact source.
+The active release manifest matches it. Read-back verified that installed
+Evaluator instructions and the audit reference document exactly match the
+committed bytes; the App definition and evaluator configuration are unchanged
+from the previous release. All three Apps remain registered and readiness is
+true. Host remains `v5.5.0 (e982e753)`.
+
+The reload also includes already-integrated design/manual changes since the
+previous App release. No executable App workflow, schedule, model or budget
+changed. Design-integrity checks passed with the existing unclassified-root
+`reports` warning. This establishes installed guidance, not yet a model-backed
+audit using it; the natural observation requirement remains open.
