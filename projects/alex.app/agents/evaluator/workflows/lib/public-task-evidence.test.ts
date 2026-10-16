@@ -543,6 +543,31 @@ describe("public Task evidence", () => {
   });
 });
 
+test("truncated linked-task byte diagnostics do not change semantic identity", () => {
+  const identity = (link: Record<string, unknown>) =>
+    taskEvidenceHash("sample", "goal/one", {
+      appTask,
+      detail: taskDetail,
+      readBack: { links: [link], artifacts: [], gaps: [] },
+    });
+  const truncated = {
+    appId: "sample",
+    taskId: "helper",
+    status: "truncated",
+    bytes: 33_000,
+  };
+  const original = identity(truncated);
+  expect(identity({ ...truncated, bytes: 61_000 })).toBe(original);
+  expect(identity({ ...truncated, taskId: "other" })).not.toBe(original);
+  expect(identity({ ...truncated, status: "unavailable" })).not.toBe(original);
+  expect(identity({ ...truncated, status: "read", detail: taskDetail })).not.toBe(
+    original,
+  );
+  expect(
+    identity({ ...truncated, integrity: { sha256: "a".repeat(64) } }),
+  ).not.toBe(original);
+});
+
 test("routine checks preserve review identity while real failures, Conditions and authored evidence invalidate it", () => {
   const snapshot = { appTask, detail: taskDetail, readBack: { links: [
     { appId: "sample", taskId: "helper", detail: { ...taskDetail } },

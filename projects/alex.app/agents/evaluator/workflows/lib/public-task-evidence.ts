@@ -156,6 +156,22 @@ function stable(value: unknown): string {
   return JSON.stringify(value) ?? "null";
 }
 
+function meaningfulLinkedTask(link: unknown): Record<string, unknown> {
+  const value = object(link);
+  // `bytes` describes content that was not supplied to the reviewer. Keep the
+  // diagnostic in the retained packet, but do not let omitted-payload growth
+  // change semantic review identity. Identity and availability remain hashed.
+  const semantic =
+    value.status === "truncated"
+      ? Object.fromEntries(
+          Object.entries(value).filter(([key]) => key !== "bytes"),
+        )
+      : value;
+  return semantic.detail
+    ? { ...semantic, detail: meaningfulTaskDetail(object(semantic.detail)) }
+    : semantic;
+}
+
 export function taskEvidenceHash(
   appId: string,
   taskId: string,
@@ -170,12 +186,13 @@ export function taskEvidenceHash(
         detail: meaningfulTaskDetail(object(task.detail)),
         readBack: task.readBack && {
           ...object(task.readBack),
-          ...(Array.isArray(object(task.readBack).links) ? {
-            links: (object(task.readBack).links as unknown[]).map((link) => {
-              const value = object(link);
-              return value.detail ? { ...value, detail: meaningfulTaskDetail(object(value.detail)) } : value;
-            }),
-          } : {}),
+          ...(Array.isArray(object(task.readBack).links)
+            ? {
+                links: (object(task.readBack).links as unknown[]).map(
+                  meaningfulLinkedTask,
+                ),
+              }
+            : {}),
         },
         ...(task.population ? { population: task.population } : {}),
       }),

@@ -863,6 +863,80 @@ describe("Task outcome review", () => {
     expect(factsOf(second)).toEqual(factsOf(first));
   });
 
+  test("reuses an accepted report when only omitted linked-Task bytes change", async () => {
+    const root = mkdtempSync(join(tmpdir(), "task-review-truncated-link-"));
+    let linkedPadding = "x".repeat(33_000);
+    let modelCalls = 0;
+    let accepted: unknown;
+    const linkedAppTask = {
+      ...appTask,
+      id: "linked",
+      result: { padding: linkedPadding },
+    };
+    const linkedDetail = {
+      ...detail,
+      taskId: "linked",
+      outcome: "Large linked evidence",
+      acceptance: ["Retain identity while omitted"],
+      facts: [linkedPadding],
+    };
+    const command: PublicCommand = async (request) => {
+      if (request.type === "apps.list")
+        return { type: "ok", command: "apps.list", apps: [{ id: appId, owner: "worker" }] };
+      if (request.type === "app.tasks.list")
+        return { type: "ok", command: "app.tasks.list", appId, tasks: [{ id: taskId }] };
+      if (request.type === "app.task.get") {
+        const linked = request.taskId === "linked";
+        return {
+          type: "ok",
+          command: "app.task.get",
+          appId,
+          taskId: request.taskId,
+          task: linked
+            ? { ...linkedAppTask, result: { padding: linkedPadding } }
+            : { ...appTask, dependsOn: ["linked"] },
+        };
+      }
+      const linked = request.taskId === "linked";
+      return {
+        type: "ok",
+        command: "task.get",
+        task: linked
+          ? { ...linkedDetail, facts: [linkedPadding] }
+          : detail,
+      };
+    };
+    const read = createTestAppRead({
+      tasks: { get: async () => accepted },
+    });
+    const ctx = createTestAppWorkflowContext({
+      input: { appId, taskId },
+      reconciliation: reconciliation(),
+      read,
+      callAgent: async () => {
+        modelCalls += 1;
+        return {
+          id: "s_linked_size",
+          kind: "agent",
+          status: "done",
+          summary: "done",
+          output: judgment,
+        };
+      },
+    });
+
+    const first = await reviewTaskOutcome(ctx, command, root);
+    accepted = { id: "review/sample-goal-one", result: first.output };
+    linkedPadding = "y".repeat(61_000);
+    const second = await reviewTaskOutcome(ctx, command, root);
+
+    expect(modelCalls).toBe(1);
+    expect(second.summary).toBe(
+      "Reused accepted evaluation for unchanged sample/goal/one.",
+    );
+    expect(factsOf(second)).toEqual(factsOf(first));
+  });
+
   test("presentation churn reuses immutable staged report instead of colliding or paying for another judgment", async () => {
     const root = mkdtempSync(join(tmpdir(), "task-review-presentation-"));
     let calls = 0;
