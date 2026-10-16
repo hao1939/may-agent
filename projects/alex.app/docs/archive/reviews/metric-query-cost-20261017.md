@@ -156,7 +156,7 @@ thread or allows Host to choose a mitigation.
 
 ### Source candidate and portable evidence
 
-Host [PR #377](https://github.com/hao1939/may-agent/pull/377), candidate [`092b968768`](https://github.com/hao1939/may-agent/commit/092b9687680ec3b8dce8ca20719814633807a74e),
+Host [PR #377](https://github.com/hao1939/may-agent/pull/377), candidate [`3089c4371a`](https://github.com/hao1939/may-agent/commit/3089c4371aeb00bacf8e2845aa49c60a9f3b11db),
 based on `68bc5c7cf`. Companion App code is in `may.app/reliability-metrics.ts`
 and `may.app/scripts/daemon-sql-latency.ts`; owning policy is
 [SQL cost review](../../../../may.app/design/metric-condition-follow-through.md#sql-cost-review).
@@ -180,12 +180,20 @@ fell into the evaluator's below-threshold branch and breached at 99 ms. The
 candidate adds inclusive operators to the shared SDK declaration and aligns
 Host evaluation/readers and served UI comparisons, with boundary regressions.
 
+The first hosted Quality run failed an existing Conversation browser fixture:
+clearing the input did not mean its previous send had finished refreshing the
+Conversation. A controlled delayed-refresh trial reproduced the ignored next
+click. The fixture now waits for send completion; no Conversation runtime change
+or automatic test retry was added. Its 11 owning HTTP/browser tests pass.
+
 Validation uses disposable databases and synthetic timing/plan fixtures:
 
 - Host focused collector/profiler/metric/report tests: 99 passed.
 - Served HTTP/browser health tests, including boundary labels: 8 passed.
 - Full Host `bun run ci`: 3,800 passed, three installation-only tests skipped,
   zero failures. Final Host/SDK types, App boundary and ESLint: passed.
+- GitHub [Quality and Container](https://github.com/hao1939/may-agent/actions/runs/38961424576)
+  both passed on `3089c4371a`; PR #377 is ready for review, not merged or deployed.
 - Companion `may.app/reliability-metrics.test.ts`: 20 passed.
 - `check:may-design` in the isolated source worktree: zero errors; existing
   unclassified `reports` warning. The integrated shared checkout passes document
