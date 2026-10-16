@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { AppEvent, TaskIntent } from "@may-agent/sdk";
 import { normalizeAppAgent, type HostAppDefinition } from "../../app-agent-selection.js";
 import { assertValidAppDefinition } from "./definition-validation.js";
+import { appInputRoute } from "./input-routing.js";
 
 /**
  * Discovery supplies declarations, not validated registrations or live resources.
@@ -58,6 +59,14 @@ export class AppRegistry {
 
   snapshot(): AppRegistrySnapshot {
     return this.current;
+  }
+
+  /** Available message addresses, independent of which Task runtimes run here. */
+  messageTargets(): string[] {
+    return [...new Set(this.current.entries
+      .filter(({ definition }) => appInputRoute(definition, "message") !== null)
+      .map(({ definition }) => definition.agent.replace(/^agent:/, ""))
+      .filter(Boolean))].sort();
   }
 
   resolveInstalledTask(

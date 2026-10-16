@@ -70,7 +70,7 @@ import type { SessionKind, PersistedSession, TaskBinding } from "./persistence.j
 import type { ToolPolicy } from "./session-policy.js";
 import { log } from "./log.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
-import { validateSessionControl } from "../app/adapters/executors/session-control.js";
+import { ownsBoundedHelper, validateSessionControl } from "../app/adapters/executors/session-control.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import { invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
 import { createFinishTool } from "./tools/lifecycle.js";
@@ -908,6 +908,23 @@ export class SubagentManager {
         session.agent.followUp(msg as any);
       }
     }
+  }
+
+  /** Correct owned live work without creating or reviving another execution. */
+  followUpHelper(sessionId: string, text: string, callerSessionId?: string): void {
+    if (!text.trim()) throw new Error("Helper follow-up requires non-empty content");
+    if (!ownsBoundedHelper(this, callerSessionId, sessionId)) {
+      throw new Error("Follow-up requires a live helper owned by this caller; use its returned sessionId");
+    }
+    const caller = this._sessions.get(callerSessionId!)!;
+    const helper = this._sessions.get(sessionId)!;
+    if (caller.status !== "running" || helper.status !== "running") {
+      throw new Error("Caller and helper must still be running; inspect the helper result before deciding the next step");
+    }
+    caller.executionScope?.workSignal.throwIfAborted();
+    helper.executionScope?.workSignal.throwIfAborted();
+    // Literal caller input, not a skill command or a new Task requirement.
+    helper.agent.steer({ role: "user", content: [{ type: "text", text }] } as AgentMessage);
   }
 
   followUp(sessionId: string, text: string): void {
