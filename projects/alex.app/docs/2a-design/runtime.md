@@ -426,6 +426,12 @@ Missing optional history may reduce context; it must not become an accidental
 execution gate. Missing authoritative identity requires an actual check or
 repair. Recovery does not select a different App procedure.
 
+When automatic recovery cannot resolve the problem, reconcile the record with
+confirmed facts, retain uncertainty and return usable failure evidence through
+the existing caller or operational route. The responsible agent decides how to
+deal with it; Host executes the authorized decision and records the outcome.
+See [retry and recovery ownership](system-boundary.md#retry-and-recovery-ownership).
+
 The private session-recovery result currently mixes projection reconciliation
 with ownership confirmation across callers. Clarifying that result and testing
 startup/controller/backend parity remains an implementation gap in the

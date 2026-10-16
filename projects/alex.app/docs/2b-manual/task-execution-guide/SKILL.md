@@ -307,6 +307,14 @@ Keep the same Task and reuse accepted work. A successful recovery remains useful
 work; record its evidence and cost for later audit rather than opening a new
 investigation for every correction.
 
+If automatic recovery failed, you decide how to handle the unresolved work.
+Use the Host's confirmed facts and explicit unknowns to choose repair, another
+approach, waiting or escalation. A failed stop request does not prove the old
+worker stopped. Ask for an authorized action through the owning capability and
+inspect its result; a requested repair is not yet a confirmed repair. If the
+affected Task cannot run, its existing caller or declared operational owner must
+handle the feedback. See [recovery ownership](../../2a-design/system-boundary.md#retry-and-recovery-ownership).
+
 When code cannot read older content, interpret the original evidence and meet
 the same contribution requirements as the code path. Keep the original record
 and cite it; produce current structured output where required, or explain what

@@ -407,8 +407,11 @@ timeout evidence and eventual admission through the existing recovery path.
 **Contracts:** [Task lifecycle](../2a-design/task-resource-engine.md),
 [Runtime](../2a-design/runtime.md), [Task attempts](../2a-design/task-attempts.md).
 
-**Proposed rule: Host restores the ability to execute the same durable Task;
-the App chooses useful recovery work.**
+**Rule: Host keeps records faithful to execution reality and performs supported
+automatic recovery. When that fails, the responsible agent decides what to do.**
+The [recovery ownership contract](../2a-design/system-boundary.md#retry-and-recovery-ownership)
+owns this boundary. The internal recovery result must expose what Host established;
+it must not substitute a bookkeeping result for an agent's recovery decision.
 
 The current private recovery boolean describes reconciliation of a session
 projection. Some callers also use it as permission to release old ownership.
@@ -435,8 +438,12 @@ Separate information by the authority it provides:
 Keep recovery on the ordinary Task retry path and use existing handoff/context
 for evidence. Do not add a second lifecycle, a public recovery registry, or App
 instructions to inspect Host session files. If ownership cannot be established,
-retain a specific failure reason and use the existing bounded retry/attention
-path. The Task stays accountable after automatic retries stop.
+record that uncertainty and the failed recovery operation accurately. After
+supported automatic recovery fails, deliver the evidence to the responsible agent
+through existing feedback or its declared operational route, even if the original
+execution cannot resume. The agent chooses repair, another method, waiting or
+escalation. Host executes the authorized choice and records the observed outcome.
+The Task and accepted work stay accountable after automatic retries stop.
 
 **Trial before settling the internal API:** exercise startup, controller claim
 replacement and terminal-session retry with missing optional history, missing
@@ -444,6 +451,10 @@ authority, failed drain, confirmed cleanup and mismatched Task references. Run
 the same contract with another supported backend whose artifacts differ. A test
 adapter can first isolate semantics, but does not prove real-backend integration.
 Safe recovery must enable progress; unestablished ownership must not release it.
+Also exhaust automatic recovery: verify that the records retain confirmed facts
+and unknowns, usable evidence reaches the existing owner, and an authorized agent
+decision can be executed and its result recorded. Saving an error alone does not
+prove this route works; a missing recipient must remain visibly undelivered.
 Choose the smallest internal return/error shape that passes these cases, then
 update every caller together. Do not export backend mechanics to Apps.
 

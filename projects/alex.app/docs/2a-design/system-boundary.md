@@ -614,6 +614,17 @@ model or switch the Task's executor because an error occurred. If the procedure
 cannot run at all, its existing caller or declared operational route receives
 the failure; merely saving a diagnostic is not a completed handoff.
 
+After supported automatic retry/recovery fails, **Host owns truthful records and
+usable feedback; the responsible agent owns the next decision.** Reconcile records
+with confirmed execution facts, and retain unknowns explicitly: a failed stop
+request does not prove a worker stopped; a lost receipt does not prove an effect
+failed. Report what was tried, what succeeded, what failed and what remains
+unresolved. Automatic recovery exhaustion is neither Task fulfillment nor an
+agent decision to abandon it. The agent chooses repair, another approach, waiting
+or escalation; Host executes the authorized choice and records its actual outcome.
+If the affected execution cannot safely resume, deliver that evidence through its
+existing caller or declared operational route so an agent can still decide.
+
 Keep unfamiliar content available as evidence for interpretation. App input
 policy can admit it through an ordinary message/goal rather than a narrow
 domain operation. Host still validates routing, identity, authority and effects.
