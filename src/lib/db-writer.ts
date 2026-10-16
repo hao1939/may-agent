@@ -476,7 +476,6 @@ function pairCorrelationColumn(
 export class DbWriter {
   private db: SqliteDb;
   private persistDir: string;
-  private deliveryTrackingStartedAt = Date.now();
   private reconciledUnhandledAdmissionPlans = false;
   private lastHousekeepingAt = Date.now();
   private housekeepingIntervalMs: number;
@@ -1209,6 +1208,9 @@ export class DbWriter {
     try {
       // Acceptance is recorded by delivery, never inferred from a terminal
       // payload: even a completed session can have a failed required consumer.
+      // Every prospective Event has an admission marker (1 pending, 0 inspected).
+      // Its presence, or a saved pending plan, establishes tracked delivery even
+      // after restart. Null legacy rows without a plan retain their uncertainty.
       const newlyUnhandled = this.db.run(
         `UPDATE events
          SET delivery_status = 'unhandled',
@@ -1216,13 +1218,13 @@ export class DbWriter {
          WHERE delivery_status = 'pending'
            AND timestamp + COALESCE(ttl_ms, ?) < ?
            AND (
-             timestamp >= ?
+             app_admission_pending IS NOT NULL
              OR EXISTS (
                SELECT 1 FROM app_event_admission_plans plan
                WHERE plan.event_id = events.id AND plan.status = 'pending'
              )
            )`,
-        [DEFAULT_UNACCEPTED_TTL_MS, now, this.deliveryTrackingStartedAt],
+        [DEFAULT_UNACCEPTED_TTL_MS, now],
       );
 
       // An unavailable exact target never accepted the requested update and can
