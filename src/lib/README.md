@@ -62,6 +62,14 @@ Conversation Requests. New internal callers use the corresponding `db/` module.
 `index.ts` is a broad compatibility export and also re-exports the App loader;
 internal code imports the owning module directly to avoid loader cycles.
 
+Event receipt expiry uses the saved status, publication time and TTL. Every
+new publication has an App-admission marker; either marker value, or an existing
+pending admission plan, establishes tracked delivery across process restart.
+Legacy rows with neither retain their unknown delivery obligation. Housekeeping
+marks overdue pending receipts without replaying subscribers, erasing accepted
+receipts or clearing independent App admission. Existing exact-target plan expiry
+and broad App admission recovery keep their respective responsibilities.
+
 Detailed tests live beside their source. Cross-component execution and process
 coverage is described in the [test guide](../../test/README.md). External direct-execution consumers use the documented adapter in the
 [script guide](../../scripts/README.md#external-execution-consumers); review
