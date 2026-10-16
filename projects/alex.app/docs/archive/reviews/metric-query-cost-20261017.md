@@ -266,3 +266,8 @@ both `1792183200000` (`2026-10-16T20:40:00Z`). This proves sampling, threshold
 evaluation, routing and durable deferral; it does not yet establish a completed
 assessment or mitigation. The metric remains breached and no query repair is
 claimed.
+
+At `2026-10-16T20:40:03Z`, the same review Task was observed `running`, after
+its saved budget deadline. No manual wake, new Task or budget override was used.
+Its previous accepted summary still describes deferral; running is evidence of
+resumption, not a completed judgment or query repair.
