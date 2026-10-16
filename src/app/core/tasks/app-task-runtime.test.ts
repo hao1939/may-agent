@@ -6912,7 +6912,10 @@ describe("canonical App task runtime", () => {
       attempt.lease.runtimeId = "previous-runtime";
       attempt.lease.expiresAt = new Date(Date.now() - 1_000).toISOString();
     });
-    execFileSync("git", ["init", "-b", "main", f.root], { stdio: "ignore" });
+    await promisify(execFile)("git", ["init", "-b", "main", f.root], {
+      stdio: "ignore",
+      timeout: 10_000,
+    });
     let replacementCalls = 0;
 
     await installAppTaskRuntimes({
