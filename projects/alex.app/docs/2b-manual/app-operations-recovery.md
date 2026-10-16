@@ -396,3 +396,38 @@ for integration order, the dated adoption record and limitations. Check the
 current installation's receipt before deciding another rollout is needed.
 Renaming an App does not rename saved
 Tasks, Requests, return links or historical result databases.
+
+
+## Retiring App obligations
+
+Removing an App must leave each original ask with an honest disposition. This
+supports [useful completed work](../1-principles/purpose.md) and follows
+[agent judgment, infrastructure execution](../1-principles/core-principles.md):
+the owner decides what remains worth doing; recovery records and returns the
+result. Apply the [retained-return contract](../2a-design/task-resource-engine.md).
+
+1. Inventory open input admissions, exact Task versions, accepted outcomes,
+   Conditions and saved caller relationships. Check existing migration decisions
+   and current owner Tasks before creating replacement work.
+2. Preserve useful unfinished requirements under their existing current owner.
+   Settle fulfilled inputs only from their exact accepted evidence. Explicitly
+   withdraw obsolete promises as unfulfilled; App removal and Task convergence
+   alone do not establish fulfillment.
+3. Retain a reviewed plan with exact identities, version fences, reasons and
+   before-state evidence. Apply ordinary cancellation with stable control keys;
+   publish the normal post-commit fact. After an uncertain response, read the
+   saved cancellation and reuse its identity.
+4. Verify that normal input-result recovery returns each exact answer or
+   unfulfilled closure, preserves the original links, and stops scanning settled
+   inputs. Check remaining pending inputs separately. Preserve historical
+   Conditions in the before-state record; cancellation removes their live waits
+   without claiming those Conditions became true.
+
+The socket cancellation command currently requires a loaded App runtime.
+For an already removed App, an authorized operator can use the same canonical
+resource store and fenced cancellation function against existing authority,
+then publish its ordinary cancellation fact. Keep this installation repair
+reviewable and replayable; do not re-enable the App, mutate rows directly, or
+invent an accepted agent result. This is an operator capability gap, not a
+reason for agents to run bookkeeping. Trial the plan against a database copy
+before applying a large historical repair.

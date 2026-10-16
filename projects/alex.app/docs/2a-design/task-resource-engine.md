@@ -521,6 +521,15 @@ Completion uses the same compare-and-set and stable return identity as live
 notification, so repeat recovery does not create another return. Operators do
 not need to re-enable a retired App or ask an agent to perform bookkeeping.
 
+App retirement must also disposition its outstanding inputs. The owner judges
+which asks still matter, which have exact accepted evidence, and which are
+withdrawn unfulfilled; infrastructure applies those decisions through the
+existing admission and cancellation authorities. Disabling execution alone
+leaves pending return obligations in recovery. Preserve original input identities,
+caller relationships and partial results when recording a current owner or
+withdrawing obsolete work. An empty recovery queue is not evidence of fulfilled
+requirements. See [retiring App obligations](../2b-manual/app-operations-recovery.md#retiring-app-obligations).
+
 Delivery identity survives claim, settlement and late relay; receipt is not outcome acceptance.
 See [duplicate handling](execution-feedback.md#duplicate-delivery-and-safe-reconsideration) for Host/App duties and Host #175.
 
