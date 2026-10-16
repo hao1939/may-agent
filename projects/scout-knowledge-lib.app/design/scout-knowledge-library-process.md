@@ -141,7 +141,12 @@ needed assignment/access-contract decision. Existing requests and independent
 obligations are reused. A genuine external wait may remain quiet when no useful
 authorized step remains; artifacts, repeated probes and duplicate escalation
 are not required. Source identity, publication evidence and four-hour Reddit
-wakes are unchanged. See the
+wakes are unchanged. Reddit discovery preserves the raw Atom response with its
+SHA-256, supplies the researcher only a bounded metadata index, and exposes
+selected stable-ID body detail separately with explicit truncation coverage.
+This prevents an entire response from entering model context while retaining
+reviewable source bytes; deterministic extractor checks establish behavior, not
+runtime token savings or ordinary-permalink recovery. See the
 [October 17 progress change](../../alex.app/docs/archive/reviews/progress-after-wake-20261017.md)
 for the evidence review, verification boundaries and natural acceptance criteria.
 

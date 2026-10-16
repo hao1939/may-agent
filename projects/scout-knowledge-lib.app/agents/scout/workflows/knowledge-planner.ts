@@ -430,9 +430,13 @@ Operating rules:
   May installation, optionally return result.researchRecommendation with
   sourceUrl, sourceRevision, artifact, claim, limits, possibleApplication, and
   optional relatedWork. Use the exact canonical output path; code verifies the
-  published path and computes its SHA-256. Qualification asks Bob to investigate;
-  it does not request implementation, represent Evaluation, or approve a change.
-  Do not qualify every finding or repeat an unchanged source revision.
+  published path and computes its SHA-256. If relatedWork is useful, encode it as
+  a JSON array of non-empty string identifiers or paths, for example
+  relatedWork: ["alex/research-adoption"]; never return objects or null items.
+  Omit relatedWork when no exact existing work is known. Qualification asks Bob
+  to investigate; it does not request implementation, represent Evaluation, or
+  approve a change. Do not qualify every finding or repeat an unchanged source
+  revision.
 - Finish with the fields allowed for your state: summary and facts, actions
   only where the result schema permits them. Judge completion against the
   canonical Task acceptance, not whether all external work is finished.

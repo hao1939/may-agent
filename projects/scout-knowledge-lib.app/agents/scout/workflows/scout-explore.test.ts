@@ -694,9 +694,13 @@ describe("scout-explore workflow prompt", () => {
     expect(task).toContain("stable `t3_...` post IDs");
     expect(task).toContain("metadata, not support for body-level claims");
     expect(task).toContain("Never post, comment, vote, save, follow, message");
-    expect(task).toContain("descriptive User-Agent");
-    expect(task).toContain("`--connect-timeout`");
-    expect(task).toContain("`--max-time`");
+    expect(task).toContain("reddit-atom.py\" fetch --query");
+    expect(task).toContain("preserves the raw response by SHA-256");
+    expect(task).toContain("bounded entry index");
+    expect(task).toContain("inspect --raw");
+    expect(task).toContain("Do not print or read the full Atom file");
+    expect(task).toContain("one bounded request with a descriptive User-Agent");
+    expect(task).toContain("bounded index is discovery coverage");
     expect(task).toContain("network-security");
     expect(task).toContain("exact HTTP status or retrieval error");
     expect(task).toContain("outputs: []");

@@ -244,7 +244,8 @@ GitHub execution contract:
 Reddit execution contract:
 - Access Reddit observationally through read-only public endpoints only. Never post, comment, vote, save, follow, message, log in, or otherwise change account or content state.
 - Start topic-led discovery with the public Atom feed at \`https://www.reddit.com/search.rss\`; preserve stable \`t3_...\` post IDs. Treat feed titles and timestamps as metadata, not support for body-level claims, unless the post itself is readable.
-- Every request must use a descriptive User-Agent, a bounded connection timeout, and a bounded total timeout. For curl, supply \`--connect-timeout\` and \`--max-time\`.
+- Use \`python3 "${paths.appDir}/agents/scout/tools/reddit-atom.py" fetch --query "BOUNDED_TOPIC_QUERY"\`. It preserves the raw response by SHA-256 and prints only a bounded entry index. Select a promising stable ID, then use \`python3 "${paths.appDir}/agents/scout/tools/reddit-atom.py" inspect --raw "RAW_EVIDENCE_PATH" --id "t3_STABLE_ID"\` for its bounded body detail. Do not print or read the full Atom file into model context.
+- The extractor makes one bounded request with a descriptive User-Agent and reports the exact saved bytes, hash, entry coverage, endpoint and HTTP status. Preserve those fields in the assessment; a bounded index is discovery coverage, not body-level evidence for every entry.
 - If Reddit returns an authentication, network-security, rate-limit, or retrieval boundary, do not bypass it or substitute another source. Return an evidence-backed no-op with outputs: [], naming the attempted endpoint and exact HTTP status or retrieval error.
 `
             : "";
@@ -265,8 +266,12 @@ Result contract:
   exact keys sourceUrl, sourceRevision, artifact, claim, limits,
   possibleApplication, and optional relatedWork. sourceRevision must pin the
   source version you inspected, and artifact must be one exact
-  path in outputs. Qualification asks May to investigate; it is not an
-  implementation request. Omit it for ordinary notes or uncertain relevance.
+  path in outputs. If relatedWork is useful, encode it as a JSON array of
+  non-empty string identifiers or paths, for example
+  relatedWork: ["alex/research-adoption"]; never return objects or null items.
+  Qualification asks May to investigate; it is not an implementation request.
+  Omit relatedWork when no exact existing work is known, and omit the whole
+  recommendation for ordinary notes or uncertain relevance.
 `;
 
   return `${task}${sourceContract}

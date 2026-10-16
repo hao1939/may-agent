@@ -4,6 +4,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  emitQualifiedResearchHandoff,
   qualifiedResearchHandoff,
   researchHandoffKey,
 } from "./research-adoption-handoff";
@@ -74,5 +75,51 @@ describe("qualified Scout research handoff", () => {
         [first.artifact],
       ),
     ).toThrow("requires sourceRevision");
+  });
+
+  test("delivers valid related work to Alex with a replay-stable identity", async () => {
+    const first = fixture();
+    const events: Record<string, unknown>[] = [];
+    const emit = async (event: Record<string, unknown>) => {
+      events.push(event);
+      return { accepted: true };
+    };
+    expect(
+      await emitQualifiedResearchHandoff(
+        emit as never,
+        first.result,
+        [first.artifact],
+      ),
+    ).toBeTrue();
+    expect(
+      await emitQualifiedResearchHandoff(
+        emit as never,
+        first.result,
+        [first.artifact],
+      ),
+    ).toBeTrue();
+    expect(events).toHaveLength(2);
+    expect(events[0]).toMatchObject({
+      type: "scout.research.qualified",
+      target: { appId: "alex", project: "alex" },
+      data: {
+        producerAppId: "scout-knowledge-lib",
+        relatedWork: ["may/research-adoption"],
+      },
+    });
+    expect(events[1]).toMatchObject({ localKey: events[0].localKey });
+  });
+
+  test("preserves strict validation for malformed related work", () => {
+    const first = fixture();
+    const malformed = {
+      researchRecommendation: {
+        ...first.recommendation,
+        relatedWork: [{ taskId: "invented" }],
+      },
+    };
+    expect(() => qualifiedResearchHandoff(malformed, [first.artifact])).toThrow(
+      "relatedWork must contain non-empty strings",
+    );
   });
 });
