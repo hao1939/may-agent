@@ -24,6 +24,7 @@ import { readTaskOutcomes } from "../../adapters/reporting/task-outcomes.js";
 import { EventBus, EVENT_RECORD_ONLY, EVENT_ROW_ID, type AgentEvent } from "../../core/events/bus.js";
 import { HostCapacity } from "../../core/scheduling/host-capacity.js";
 import { isBundled } from "../../bundle-mode.js";
+import { taskAttemptEnvironment } from "../../../lib/process-environment.js";
 import type { ModelRegistry } from "../../model-registry.js";
 
 const WORKER_FRAME_LIMIT = 8 * 1024 * 1024;
@@ -153,8 +154,7 @@ function spawnPrivateWorker(args: string[]): ChildProcess {
   const invocation = workerInvocation();
   return spawn(invocation.command, [...invocation.prefix, ...args], {
     cwd: process.cwd(),
-    // Retire the inherited marker before this worker can launch ordinary commands.
-    env: { ...process.env, MAY_TASK_ATTEMPT_CHILD: undefined },
+    env: taskAttemptEnvironment(),
     // Runtime-owned IPC has one descriptor owner. Wrapping an extra raw pipe
     // lets Bun's collected ChildProcess close a descriptor reused by a later
     // worker. IPC also carries parent lifetime without a second input pipe.

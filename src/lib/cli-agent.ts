@@ -17,6 +17,7 @@ import { StringDecoder } from "node:string_decoder";
 import type { EventTrace } from "../app/core/events/bus.js";
 import { addSessionBashProcessGroup, removeSessionBashProcessGroup } from "./persistence.js";
 import { BASH_PROCESS_GROUP_KILL_GRACE_MS, drainBashProcessGroup } from "./tools/bash.js";
+import { nativeCliEnvironment } from "./process-environment.js";
 
 type CliTool = "codex" | "claude";
 export type CliAgentProgress = { tool: CliTool; event: string };
@@ -117,7 +118,7 @@ function cliEnvironment(): NodeJS.ProcessEnv {
   // Preserve the existing trusted-container endpoint and native config.
   const key = process.env.MODEL_API_KEY || "not-needed";
   const env: NodeJS.ProcessEnv = {
-    ...process.env,
+    ...nativeCliEnvironment(),
     MODEL_API_KEY: key,
     ANTHROPIC_API_KEY: key,
     ANTHROPIC_BASE_URL: process.env.MODEL_BASE_URL || "http://localhost:4000",
