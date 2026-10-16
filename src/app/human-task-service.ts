@@ -62,6 +62,8 @@ export type HumanTaskRecurrence = {
 };
 
 export type HumanTaskView = {
+  /** Retained automatic execution limit, independent of unresolved work. */
+  retryExhausted?: AppTaskResource["status"]["retryExhausted"];
   appId: string;
   taskId: string;
   ref: string;
@@ -645,6 +647,7 @@ function projectTask(
       resource.status.observedGeneration === resource.metadata.generation &&
       resource.status.observedAttemptId === resource.status.currentAttemptId);
   const view: HumanTaskView = {
+    ...(resource.status.retryExhausted ? { retryExhausted: structuredClone(resource.status.retryExhausted) } : {}),
     appId,
     taskId,
     ref,

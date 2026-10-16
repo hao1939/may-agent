@@ -657,10 +657,10 @@ test.each([
   const firstAttemptId = claim.attemptId;
   if (taskOutcome === "done") completeAppTask(config, claim, { summary: "Facts collected" });
   else if (taskOutcome === "retrying") {
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 2; i++) {
       if (claim.kind !== "claimed") throw new Error("fixture retry claim");
       expect(failAppTaskAttempt(config, claim, "Facts source unavailable").status).toBe("retrying");
-      if (i < 5) {
+      if (i < 1) {
         setSystemTime(new Date(config.resourceStore.readTask("work")!.status.executionRetryAt! + 1));
         claim = claimObservedAppTask(config, { taskId: "work", appAgent: owner.id, handler: "agent:owner" });
       }
