@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Companion to agent-runtime-effect-integrity.md for unattended execution integrity: lifecycle-bound resume identity, cadence and failure accounting, infrastructure trust boundaries, clone identity hygiene, local durability versus external settlement, site-action reconciliation, revision-bound approval, accountable agent writes, and desktop effect authorization."
-triggers: ["unattended execution", "session resume", "lifecycle generation", "Daintree", "heartbeat", "failure backoff", "Talon", "Docker Sandboxes", "sandbox trust boundary", "clone identity", "LingCage", "effect settlement", "LetItLoop", "Kevlar", "ATR", "approval revision", "AIS", "orphan recovery", "Rebuno", "approval resume", "AgenticOS", "diagnostic attention", "site action ledger", "uncertain effect", "identity drift", "rules drift", "Runpin", "effect deduplication", "agent identity", "Sensefold", "desktop authorization", "macOS Harness"]
-last_updated: "2026-10-01"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-21 oversized-note review, then extended with pinned implementation evidence for lifecycle-bound session resume, unattended cadence and failure accounting, plus explicitly limited Reddit practitioner reports about diagnostic attention and site-action reconciliation. Replay-specific Chronicle, Mutagen, Ovo, and OrcaReplay sections moved intact to agent-runtime-replay-evidence-and-boundaries.md during the 2026-09-24 oversized-note review. AgentRun, Hotpath, Kiso, and LoopX sections moved intact to agent-runtime-workflow-and-control-plane-recovery.md during the 2026-10-01 oversized-note review. Each retained section preserves stable source links, reproduced checks where performed, and explicit evidence limitations."
+triggers: ["unattended execution", "session resume", "lifecycle generation", "Daintree", "heartbeat", "failure backoff", "Talon", "Docker Sandboxes", "sandbox trust boundary", "clone identity", "LingCage", "effect settlement", "LetItLoop", "Kevlar", "ATR", "approval revision", "AIS", "orphan recovery", "Rebuno", "approval resume", "AgenticOS", "diagnostic attention", "site action ledger", "uncertain effect", "anti-replay checkpoint", "identity drift", "rules drift", "Runpin", "effect deduplication", "agent identity", "Sensefold", "desktop authorization", "macOS Harness"]
+last_updated: "2026-10-16"
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-21 oversized-note review, then extended with pinned implementation evidence for lifecycle-bound session resume, unattended cadence and failure accounting, plus explicitly limited Reddit practitioner reports about diagnostic attention, site-action reconciliation, and anti-replay checkpoints after context reset. Replay-specific Chronicle, Mutagen, Ovo, and OrcaReplay sections moved intact to agent-runtime-replay-evidence-and-boundaries.md during the 2026-09-24 oversized-note review. AgentRun, Hotpath, Kiso, and LoopX sections moved intact to agent-runtime-workflow-and-control-plane-recovery.md during the 2026-10-01 oversized-note review. Each retained section preserves stable source links, reproduced checks where performed, and explicit evidence limitations."
 </ai_context>
 
 # Agent Runtime Unattended Execution and Replay
@@ -528,6 +528,36 @@ a lagging history view is not a failure receipt.
 - **Stable post ID:** `t3_1wqtvos`
 - **Evidence level:** full post body observed in Reddit's public Atom search feed;
   pseudonymous promotional self-report, not independently validated
+
+## A Resume Checkpoint Needs Negative Commitments — Reddit Practitioner Prompt (October 2026)
+
+A current practitioner prompt about context resets names a useful asymmetry in
+resume state. Recording `status`, `last action`, and `next step` tells a fresh agent
+what progress looks like, but does not necessarily tell it which apparently
+unfinished actions must **not** be repeated. The author paraphrases an earlier
+operator's `DO_NOT_REDO` list and distinguishes `draft saved`, `approved`, and
+`send requested, outcome unknown` as states that require different recovery paths.
+The prompt also asks whether a new run checks the live target rather than trusting
+its own checkpoint—a compact statement of the anti-replay boundary already exposed
+by the stronger implementation evidence in this note.
+
+This is a pseudonymous discussion prompt, not an incident report or implementation.
+Its examples are attributed to unnamed replies in another thread, and Scout did not
+inspect that thread, a checkpoint schema, traces, code, or an actual duplicate send,
+deploy, or migration. It therefore supports a vocabulary and current practitioner
+concern, not the claimed prevalence or effectiveness of any memory product.
+
+**Runtime rule:** persist negative commitments and effect uncertainty alongside
+progress: actions known complete, actions explicitly forbidden to repeat, actions
+safe to retry, and actions requiring target-system reconciliation. On resume, check
+that durable record against the authoritative target before converting an
+apparently unfinished step into new effect authority.
+
+- **Source:** https://www.reddit.com/r/ContextEngineering/comments/1x7pq87/after_a_context_reset_has_your_agent_ever_redone/
+- **Stable post ID:** `t3_1x7pq87`
+- **Discovery feed:** https://www.reddit.com/search.rss?q=%22AI%20agents%22&sort=new&t=week
+- **Evidence level:** complete post body observed in Reddit's public Atom search
+  feed; secondary, pseudonymous discussion prompt with no inspected implementation
 
 ## Durable Queue State Is Not Downstream Effect Deduplication — Runpin (GitHub, September 2026)
 
