@@ -121,9 +121,9 @@ function summarizeInterruptedAgentRecovery(input: {
   taskId?: string;
 }): { summary: string; taskId: string | null; facts: string[] } {
   const taskId = input.taskId?.trim() || appTaskSessionBinding(input.meta.taskBinding)?.taskId || null;
-  const summary = taskId
-    ? `Agent session for ${taskId} was interrupted by runtime recovery before finish() persisted; the original app task was requeued and should be decided by the replacement attempt, not this recovery wrapper.`
-    : "Agent session was interrupted by runtime recovery before finish() persisted; the original app task was requeued and should be decided by the replacement attempt, not this recovery wrapper.";
+  const summary =
+    `Runtime recovery interrupted agent session${taskId ? ` for ${taskId}` : ""}. ` +
+    "No committed finish result was available. Consult the Task's current state for accepted work and any remaining obligation.";
   const checkpoint = input.checkpoint;
   const facts = [
     ...(taskId ? [`task:${taskId}`] : []),
@@ -191,7 +191,11 @@ function interruptSupersededAgentSession(
     );
   }
 
-  if (!meta) return false;
+  if (!meta) {
+    throw new Error(
+      `Cannot recover session ${cleanSessionId}: session metadata is missing; lifecycle and ownership remain unconfirmed`,
+    );
+  }
 
   if (meta.status !== "running" && meta.status !== "idle") {
     if (!opts.persistDir) return false;
@@ -247,7 +251,7 @@ function interruptSupersededAgentSession(
     ...(recoveredStatus === "interrupted"
       ? {
           recovery: {
-            disposition: "requeued",
+            disposition: "interrupted",
             summary: interruptedRecovery.summary,
             facts: interruptedRecovery.facts,
           },

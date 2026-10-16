@@ -1149,13 +1149,13 @@ export function settleTerminalAppTaskSessions(
     // A current manager session or process-instance marker remains live even
     // when the Task attempt has already settled; its shutdown is not inferred.
     if (hasLiveAppTaskSession(opts, candidate.sessionId)) continue;
-    const reconciled = interruptSupersededAgentSession(
+    interruptSupersededAgentSession(
       opts,
       candidate.sessionId,
       `Task ${candidate.taskId} attempt ${candidate.attemptId} is already terminal; reconciling its stale session projection`,
       candidate.taskId,
     );
-    if (reconciled) settled.push(candidate.sessionId);
+    settled.push(candidate.sessionId);
   }
   return settled;
 }
@@ -1178,7 +1178,7 @@ function recoverInterruptedAppTasks(
     const waitingRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["waiting"], 512);
     const releaseRecovery = (recovery: AppTaskAttemptRecovery, reason?: string) => {
       if (recovery.sessionId) {
-        const recovered = interruptSupersededAgentSession(
+        interruptSupersededAgentSession(
           opts,
           recovery.sessionId,
           `Recovered task ${recovery.taskId} interrupted an orphaned agent session from a previous runtime`,
@@ -1190,7 +1190,6 @@ function recoverInterruptedAppTasks(
             attemptId: recovery.attemptId,
           },
         );
-        if (!recovered) return;
       }
       const released = releaseInterruptedAppTaskAttempt(
         config,
