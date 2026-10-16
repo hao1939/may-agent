@@ -15,7 +15,9 @@ import {
 } from "../../../src/app/core/tasks/app-task-reconciler.js";
 import { admitTaskInput } from "../../../src/app/core/state/inbox.js";
 import { attachEventPersistence } from "../../../src/app/daemon-events.js";
-import { EventBus } from "../../../src/app/core/events/bus.js";
+import { EventBus, EVENT_ROW_ID, type AgentEvent } from "../../../src/app/core/events/bus.js";
+import { DbWriter } from "../../../src/lib/db-writer.js";
+import { UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY } from "../../../src/app/metric-source-measurement.js";
 import { AppRegistry } from "../../../src/app/core/apps/registry.js";
 import { discoverAppDefinitions } from "../../../src/app/adapters/discovery/app-definitions.js";
 import { installAppTaskRuntimes, closeInstalledAppTaskRuntimes } from "../../../src/app/core/tasks/app-task-runtime.js";
@@ -214,6 +216,54 @@ function acceptedAttempt(f: ReturnType<typeof fixture>) {
   return attempt!;
 }
 
+async function observationDelivery(consumer: "none" | "accept" | "fail") {
+  const f = fixture("owner");
+  const writer = new DbWriter(f.persistDir, { housekeepingIntervalMs: 0 });
+  const types = ["project.task.reconcile.started", "project.task.reconciled"];
+  const observed: Array<{ event: AgentEvent; id: number; status: unknown }> = [];
+  const stop = f.bus.subscribeDurableRoute((event) => {
+    if (!types.includes(event.type)) return;
+    const id = (event as AgentEvent & { [EVENT_ROW_ID]: number })[EVENT_ROW_ID];
+    observed.push({
+      event, id,
+      status: f.db.prepare("SELECT delivery_status FROM events WHERE id = ?").get(id)?.delivery_status,
+    });
+    if (consumer === "fail") throw new Error("Parent consumer admission unavailable");
+    if (consumer === "accept") return { accepted: true, by: "fixture:parent-consumer", route: "direct" };
+  });
+  await run(f);
+  const accepted = acceptedAttempt(f);
+  assert.deepEqual(observed.map(({ event }) => event.type), types);
+  assert.deepEqual(
+    observed.map(({ status }) => status), ["pending", "pending"],
+    "The worker must leave delivery to the parent",
+  );
+  const receipts = () => f.db.prepare(`SELECT id, delivery_status, accepted_by FROM events
+    WHERE event_type IN ('project.task.reconcile.started', 'project.task.reconciled') ORDER BY id`).all();
+  assert.deepEqual(receipts(), observed.map(({ id }) => ({
+    id,
+    delivery_status: consumer === "fail" ? "pending" : "accepted",
+    accepted_by: consumer === "fail" ? null : consumer === "accept" ? "fixture:parent-consumer" : "event-interface:record",
+  })));
+  writer.runHousekeeping(Date.now() + 120_001);
+  const expired = receipts();
+  assert.deepEqual(
+    expired.map((row) => row.delivery_status),
+    consumer === "fail" ? ["unhandled", "unhandled"] : ["accepted", "accepted"],
+  );
+  // Reopening storage preserves both the delivery result and the accepted work.
+  closeDb(f.persistDir);
+  f.db = getDb(f.persistDir);
+  f.store = AppTaskResourceStore.fromDb(f.db, "sample");
+  assert.deepEqual(receipts(), expired);
+  assert.deepEqual(
+    f.db.prepare(UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY).get(),
+    { value: consumer === "fail" ? 2 : 0 },
+  );
+  assert.deepEqual(acceptedAttempt(f), accepted);
+  stop();
+}
+
 function serveFinish(answer: Record<string, unknown>, onPrompt: (prompt: string) => void) {
   return Bun.serve({
     hostname: "127.0.0.1",
@@ -283,6 +333,9 @@ async function retryWhenDue(f: ReturnType<typeof fixture>, agent: string) {
 }
 
 const scenarios: Record<string, () => Promise<void>> = {
+  observationWithoutConsumer: () => observationDelivery("none"),
+  observationAccepted: () => observationDelivery("accept"),
+  observationFailed: () => observationDelivery("fail"),
   async appLocalHelper() {
     const f = fixture("owner");
     const helperDir = join(f.appDir, "agents", "reviewer-folder");

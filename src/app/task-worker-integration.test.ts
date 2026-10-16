@@ -20,6 +20,9 @@ describe("real Task worker boundary", () => {
   ])("%s: %s", (scenario) => runTaskWorkerProbe("./task-interaction-scenario.ts", scenario), 20_000);
 
   it.each([
+    ["observationWithoutConsumer", "accepts worker observations after parent routing without another journal row"],
+    ["observationAccepted", "records the parent consumer's acceptance of worker observations"],
+    ["observationFailed", "keeps failed parent delivery visible after restart without losing the accepted Task result"],
     ["parentLoss", "stops with its parent and recovers the same unfinished Task"],
     ["redoAfterParentLoss", "retains input and inspects an existing effect after the old worker exits"],
     ["restoredHandler", "retries the declared workflow in a due attempt without a repair pass"],
