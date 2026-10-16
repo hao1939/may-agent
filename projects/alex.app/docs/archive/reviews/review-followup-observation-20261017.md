@@ -133,3 +133,24 @@ Private read-only evidence is retained under
 records, `post-audit-observation-20261017.json`,
 `post-audit-report-integrity-20261017.json`, and `followup-explanation-*` cases and
 check logs. Original transcripts and published reports remain untouched.
+
+## Verified local activation
+
+App source `64f475cba79824cd804b0c921ab72a22edb8b600` was integrated into local
+main and activated at **2026-10-17 03:50:06 Asia/Shanghai**. Normal reload request
+`6676985` links to successful completion `6676989`, which names that exact
+source. The active manifest matches it. Read-back verified the installed shared
+schema, renderer, review workflows, evaluator instructions and audit reference
+against committed bytes; DeepSeek receives the same evaluator instructions.
+
+Readiness is true and the same three Apps remain registered: Alex, May and Scout
+knowledge library. The App definition and both evaluator configurations match
+the previous release, preserving schedules, models and budgets. Host remains
+`v5.5.0 (e982e753)`. The release also includes the already-integrated design and
+Scout publication updates since the previous release; it changes no other
+executable App behavior. Existing unrelated untracked files were preserved.
+
+The activation receipt and `followup-explanation-loaded-verification.json`
+establish installation. They do not establish live savings or first-finish
+acceptance after this activation. The ten-review observation above remains the
+fixed baseline; subsequent natural observations must use this rollout boundary.
