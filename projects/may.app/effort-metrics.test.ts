@@ -238,6 +238,7 @@ test("effort review publishes evidence and reaches an accepted May decision with
           status: "done",
           summary: "Reviewed",
           output: {
+            followUp: { kind: "request", message: "Check whether the retained implementation justifies this effort and record the owner disposition." },
             disposition: "assessed",
             summary:
               "The effort produced a useful implementation; no change recommended.",
@@ -253,7 +254,8 @@ test("effort review publishes evidence and reaches an accepted May decision with
         published.push(event);
       },
     });
-    await reviewMetric(ctx, evidence, root);
+    const reviewed = await reviewMetric(ctx, evidence, root);
+    expect(reviewed.output).toMatchObject({ state: "converged" });
     expect(published).toHaveLength(1);
     expect(evaluationTaskReportInput(published[0])?.kind).toBe("goal");
     const intake = await intakeEvaluationReport(

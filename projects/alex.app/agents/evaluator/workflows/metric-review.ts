@@ -13,7 +13,7 @@ import {
   metricEvidenceHash,
   type MetricReader,
 } from "./lib/metric-evidence.js";
-import { metricReviewNextReviewAt } from "./lib/metric-selection.js";
+import { metricReviewedThrough } from "./lib/metric-selection.js";
 import {
   configuredTaskReportRoot,
   metricReportPaths,
@@ -35,7 +35,7 @@ type Input = {
   end: number;
   reviewer?: Reviewer;
   automatic?: boolean;
-  /** A breach or recovery requests review independently of routine cadence. */
+  /** Automatic reviews identify a recorded breach or recovery. */
   alertId?: number;
 };
 
@@ -57,37 +57,35 @@ export async function reviewMetric(
     return ctx.blocked(
       "Metric review requires an exact metric and observation cut",
     );
-  if (ctx.input.automatic && requestedAlertId === undefined) {
-    let nextReviewAt: number;
-    try {
-      nextReviewAt = await metricReviewNextReviewAt(
-        ctx,
-        metricId,
-        profile.reviewer,
-      );
-    } catch (error) {
-      const summary = `Metric review deadline unavailable: ${error instanceof Error ? error.message : String(error)}`;
-      return ctx.done(summary, {
-        state: "incomplete",
-        report: true,
-        summary,
-        facts: [
-          `metric:${metricId}`,
-          "review-disposition:deadline-unavailable",
-        ],
-      });
-    }
-    if (nextReviewAt > Date.now()) {
-      const summary = `Metric ${metricId} is not due for another review.`;
-      return ctx.done(summary, {
-        state: "converged",
-        summary,
-        result: { disposition: "not-due", metricId, nextReviewAt },
-        facts: [`metric:${metricId}`, `metric-review:not-due:${nextReviewAt}`],
-        actions: [],
-      });
-    }
+  let reviewedThrough: number;
+  try {
+    reviewedThrough = await metricReviewedThrough(
+      ctx,
+      metricId,
+      profile.reviewer,
+    );
+  } catch (error) {
+    const summary = `Metric review history unavailable: ${error instanceof Error ? error.message : String(error)}`;
+    return ctx.done(summary, {
+      state: "incomplete",
+      report: true,
+      summary,
+      facts: [`metric:${metricId}`, "review-disposition:history-unavailable"],
+    });
   }
+  const quiet =
+    ctx.input.automatic &&
+    (requestedAlertId === undefined || end <= reviewedThrough);
+  const noNewTransition = () => {
+    const summary = `Metric ${metricId} has no new automatic transition to review; no assessment was performed.`;
+    return ctx.done(summary, {
+      state: "converged",
+      summary,
+      result: { disposition: "no-new-transition", metricId, reviewedThrough },
+      facts: [`metric:${metricId}`, "metric-review:no-new-transition"],
+      actions: [],
+    });
+  };
   // The request pins source bytes before assessment. A changed definition,
   // attribution or retained history must not turn publication recovery into a
   // second judgment of the same requested observation.
@@ -105,6 +103,7 @@ export async function reviewMetric(
     reportRoot,
     `metric-observations/requests/${requestKey}.json`,
   );
+  if (quiet && !existsSync(evidencePath)) return noNewTransition();
   let evidence;
   try {
     evidence = existsSync(evidencePath)
@@ -117,6 +116,7 @@ export async function reviewMetric(
       report: true,
       summary,
       facts: [`metric:${metricId}`, "review-disposition:evidence-unavailable"],
+      result: { reviewedThrough },
     });
   }
   if (
@@ -167,6 +167,9 @@ export async function reviewMetric(
     }
   }
   if (!payload) {
+    // An old automatic sample request can settle quietly. If it already has a
+    // judgment, finish publishing those exact bytes before settling it instead.
+    if (quiet) return noNewTransition();
     const criteria = sharedCriteria(ctx.workspace?.appRoot);
     const allowance = claimSemanticAllowance(
       reportRoot,
@@ -187,6 +190,7 @@ export async function reviewMetric(
           metricId,
           end,
           nextEligibleAt: allowance.nextEligibleAt,
+          reviewedThrough,
         },
         facts: [
           `metric:${metricId}`,
@@ -214,7 +218,9 @@ export async function reviewMetric(
       { schema: resultSchema },
     );
     const judgment =
-      execution.status === "done" ? parsedJudgment(execution.output, true) : null;
+      execution.status === "done"
+        ? parsedJudgment(execution.output, true)
+        : null;
     if (!judgment) {
       const summary =
         "Metric reviewer did not return a valid judgment; review remains unfinished.";
@@ -227,6 +233,7 @@ export async function reviewMetric(
           `execution:${execution.id}`,
           "review-disposition:evaluator-failed",
         ],
+        result: { reviewedThrough },
       });
     }
     payload = {
@@ -284,11 +291,11 @@ export async function reviewMetric(
   return ctx.done(payload.judgment.summary, {
     state: "converged",
     summary: payload.judgment.summary,
-    // The immutable judgment time starts the next interval. Publication replay
-    // cannot silently postpone a review, so a long delay can leave it due now.
+    // Completion advances observation coverage; it never schedules another
+    // review. Late delivery cannot move this boundary backwards.
     result: {
       publication,
-      nextReviewAt: payload.createdAt + profile.metricReviewIntervalMs,
+      reviewedThrough: Math.max(reviewedThrough, end),
     },
     facts: [
       `metric:${metricId}`,

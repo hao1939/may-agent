@@ -40,6 +40,12 @@ choice and capacity separation. A timeout means missing evidence, not an empty
 population or permission to substitute a different reviewer. A deferred Sol
 review does not block DeepSeek's independent allowance.
 
+Automatic metric review follows a recorded breach or recovery. The periodic
+scan repairs missed transitions; sample changes and an alert remaining open do
+not commission repeated assessment. Reconsider an ongoing concern through an
+explicit review request or the investigation's Conditions. See the
+[metric review contract](../../docs/evaluation/metric-pattern-review.md#ownership-and-flow).
+
 When asked to help diagnose it, read the exact failure and current selector
 Task. Use ordinary scoped tools and return concrete evidence to Alex. The Host
 retries the declared workflow; do not manually recreate its scan or request a

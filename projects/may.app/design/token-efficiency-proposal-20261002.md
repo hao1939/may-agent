@@ -12,7 +12,7 @@
 | Slice | Source status and remaining evidence |
 | --- | --- |
 | Terminal helper completion | Host [#281](https://github.com/hao1939/may-agent/pull/281) is merged. Retain the acceptance cases below as regression requirements; do not reimplement the original defect. |
-| Review clock | Apps `95e142b3d0` and current `metric-review.ts` use the immutable report completion time (`payload.createdAt`) plus the interval. Reused publication keeps that time. No new `reviewedAt` field is needed. A long publication delay can legitimately leave the next review due. |
+| Review clock | Apps `95e142b3d0` fixed the old review clock. The October 16 [transition-only review refinement](../../alex.app/docs/evaluation/metric-pattern-review.md#ownership-and-flow) removes automatic per-metric renewal: completed observation coverage suppresses repeat scans, while new transitions and explicit requests remain eligible. Candidate source is tested, not yet activated. |
 | Meaningful reconsideration | Conditions and retained investigation identity exist. Better choice of wake predicates and measured review eligibility remain App policy and trial work. |
 | Context size | Host [#288](https://github.com/hao1939/may-agent/pull/288) fixes a separate full-history Codex resume cost. It does not prove that optional Conversation reference enrichment is bounded or cheaper. Assess that path separately. |
 | Continuing detection | The [October 3 inventory and October 4 implementation](metric-coverage-audit-20261003.md#october-4-implementation) supply catalog cleanup and two effort observations using existing invocation usage. Source verification covers report publication and accepted owner judgment. Effort alerts remain disabled for calibration; activation and a runtime comparison are pending. |
@@ -168,6 +168,10 @@ Five local reproduction cases already demonstrate the plain/helper difference an
 
 ## 2. Separate evidence time from review time
 
+This is the retained October 2 correction. Current source policy and activation
+status are linked in the disposition above; a completed review no longer starts
+a per-metric renewal timer.
+
 Today `nextReviewAt` is computed from the observation cutoff. An hourly cutoff plus a five-minute interval can be in the past before the reviewer starts.
 
 Keep the existing evidence cutoff and immutable evidence hashes. Use the retained immutable report completion time (already `payload.createdAt` in current source) and derive:
@@ -283,7 +287,8 @@ The non-Evaluation signal uses Evaluation's existing metric-review subscription.
 Declare the Evaluation signal with explicit responsibility and add it to May's
 existing direct operational route; it must not depend on Evaluation assessing
 itself. A breach supplies the existing `metricId`, `alertId` and observation cut.
-Repeated samples stay quiet. Routine metric reconsideration remains daily.
+Repeated samples stay quiet. Later judgment follows a new transition or an
+explicit review request; the periodic scan repairs missed transition delivery.
 
 The review starts with the bounded effort summary and exact Task references,
 then reads current requirements, accepted results and linked evidence as needed.

@@ -9,8 +9,6 @@ export type ReviewerProfile = {
   agent: Reviewer;
   configuredModel: string;
   allowanceIntervalMs: number;
-  /** Routine reconsideration of one metric, independent of capacity for other work. */
-  metricReviewIntervalMs: number;
   allowanceNamespace: string;
 };
 
@@ -20,7 +18,6 @@ const profiles: Record<Reviewer, ReviewerProfile> = {
     agent: "evaluator",
     configuredModel: evaluatorConfig.model,
     allowanceIntervalMs: 86_400_000,
-    metricReviewIntervalMs: 86_400_000,
     allowanceNamespace: "",
   },
   "evaluator-deepseek": {
@@ -28,7 +25,6 @@ const profiles: Record<Reviewer, ReviewerProfile> = {
     agent: "evaluator-deepseek",
     configuredModel: deepseekConfig.model,
     allowanceIntervalMs: 300_000,
-    metricReviewIntervalMs: 86_400_000,
     allowanceNamespace: "evaluator-deepseek",
   },
 };

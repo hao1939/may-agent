@@ -7,6 +7,11 @@ Evaluation Task; its completed report reached May and was handed to the existing
 investigation. Sustained repair verification remains separate; see the
 [live verification](../proposals/responsive-host-recovery-20261002.md#october-3-merged-host-and-metric-loop-rollout).
 
+**October 16 refinement:** Transition-only automatic selection is implemented in
+the candidate Apps source and tested locally, but has not been activated. Earlier
+source also selected ordinary changes and reconsidered open alerts daily. The
+contract below describes the correction; deployment must be verified separately.
+
 Persistent failures should receive investigation and an accountable response while
 Host retries continue with backoff. This extends the existing
 [systemic review](systemic-pattern-review-20260927.md) to observations that do not
@@ -40,41 +45,51 @@ attention and do not cap retries or choose a repair.
 Evaluation subscribes to metric breach and recovery transitions. Samples update
 metric values and retained evidence; changed values within an open alert, stall
 observations and individual collection failures do not commission another review.
-The existing stale-metric alert and routine review retain visibility into missing
-samples and collector failures. Legacy breach events marked `repeat:true` are
-ignored by this subscriber.
+A declared stale-metric alert retains visibility into missing samples and
+collector failures. Legacy breach events marked `repeat:true` are ignored by
+this subscriber.
 
 A transition carrying `metricId`, `alertId` and `measuredAt` routes directly to the
 stable per-metric/reviewer Task. It pins the exact alert and the end-exclusive
-evidence cut at `measuredAt + 1`, including the triggering sample. Breach and
-recovery bypass the routine metric cadence but still respect shared reviewer
-capacity. If capacity is occupied, the same Task retains its requested observation
-and an ordinary timed wait. Canonical events do not expose the private envelope
-timestamp; signals without an explicit observation time use the existing bounded
-selector. No target queue or new timer is added.
+evidence cut at `measuredAt + 1`, including the triggering observation. It still
+respects shared reviewer capacity. If capacity is occupied, the same Task retains
+its requested observation and an ordinary timed wait. Signals without an explicit
+observation time use the existing bounded selector. No target queue or new timer
+is added.
 
-The selector alternates metric and Task opportunities, visits a bounded number
-of active metrics, and retains its cursor in its ordinary Task result. It can
-select open alerts, changed observations, missing/stale samples or collection
-failures. An event is a prompt to reread current evidence, not a request for a
-new model call for every retry. Metrics with only an owner, or with
+The selector alternates metric and Task opportunities, visits up to three active
+metrics per opportunity, and retains its cursor in its ordinary Task result. It
+looks for the latest recorded breach or resolution, using `createdAt` or
+`resolvedAt` plus one as the exact observation cut. It selects that transition
+only when it is newer than this reviewer's completed observation. This repairs a
+missed notification without turning later samples or an unchanged open alert into
+new model work. Numerical change, freshness and collection errors remain evidence;
+attention requires a declared alert transition or an explicit review request.
+An event is a prompt to read evidence, not a demand for another model call.
+Metrics with only an owner, or with
 unresolved attribution, remain visible. Declared owners resolve against the
 installed App catalog (an exact App identity, or an unambiguous worker owner).
 A project label is a fallback only when no owner was declared and it resolves to
 an installed App. Unknown/ambiguous/unavailable responsibility remains explicit;
 Evaluation-owned observations are excluded from semantic self-review.
 
-One stable Evaluation Task per metric/reviewer retains the requested cut, shared
-review allowance and next review point. The evidence cut identifies the report;
-the immutable judgment time starts the next routine review interval. Publication
-replay reuses the same judgment and cannot silently postpone its deadline, so a
-long-delayed publication can leave the metric immediately due. Both reviewer
-profiles routinely reconsider the same metric at most once a day. DeepSeek's
-separate five-minute capacity allowance permits reviewing different work; it is
-not a per-metric review schedule. Breach and recovery request prompt review without
-waiting for tomorrow. This is App selection policy, not a Host retry limit or an
-obstacle to explicitly requested review. Existing waits still react to observed
-facts.
+One stable review Task per metric/reviewer retains the requested cut, shared
+review allowance and `reviewedThrough` in its accepted result. That boundary
+advances after the report publishes; it does not claim that the metric is healthy
+or that the finding is resolved. Quiet completion, capacity waits and failed
+assessment retain the previous boundary. A late older report cannot move it
+backwards. Neither elapsed time nor continuing breach schedules another review.
+Agents can explicitly request reassessment or retain a relevant Condition on the
+investigation Task. Reviewer capacity remains separate from this admission rule.
+
+The fallback observes the latest transition in bounded active-metric history; it
+is not an exhaustive replay of historical episodes. Truncation and unavailable
+history remain explicit. Old results without `reviewedThrough` can receive one
+ordinary transition assessment; no migration registry is needed. At-least-once
+consideration is acceptable. Existing automatic requests without an alert settle
+without a new assessment. If such a request already staged a judgment, publication
+recovery finishes that exact report instead of discarding it. Explicit requests
+can still review any valid observation, including metrics without alerts.
 Pending review work takes precedence over
 routine sampling. Budget exhaustion retains a timed wait; failed reads/reviewer
 execution remain incomplete and report through the existing owner path. Ordinary
@@ -84,14 +99,14 @@ assessment. Retries read those bytes before consulting mutable sources, then reu
 the immutable assessment. Task and metric reports share publication/marker handling.
 Definition edits, later ownership changes and source-read failures cannot redirect
 publication recovery to a second judgment of the same requested observation.
-Completed reports suppress duplicate publication; later due observations can
-reconsider an unchanged concern.
+Completed reports suppress duplicate publication; later transitions or explicit
+requests can reconsider an ongoing concern.
 
 Metric reports use the existing judgment schema, immutable report storage,
 publication marker, bounded reader and May intake. Their subject is
 `{metricId, alertId?}` under `metric-observation-v1`; responsibility is separate
 evidence, not part of metric identity. The optional alert ID identifies the triggering episode for a transition review,
-or the latest recorded episode for a routine review; other episodes remain evidence, not
+or the latest recorded episode for an explicitly requested observation; other episodes remain evidence, not
 an assertion of shared cause. Existing Task subjects and historical report paths
 remain readable. No placeholder Task is used as evidence. The metric report hash
 binds its captured observations; altered report bytes or mixed subject/rubric
@@ -181,8 +196,8 @@ observation does not leave its requests running until separate timeouts.
 
 The source checks cover pre-admission evidence without an execution Task, recurring
 failed attempts after later success, coherent denominators, stale observations,
-publication failure/replay, integrity rejection, review allowance waits, periodic
-reconsideration and stable review identity. HTTP tests exercise the shared read and
+publication failure/replay, integrity rejection, review allowance waits, missed
+transition recovery, quiet repeated scans and stable review identity. HTTP tests exercise the shared read and
 reject mutation/invalid windows.
 
 This mechanism supplies evidence and a recurring opportunity for judgment. It does
@@ -207,5 +222,5 @@ calculation rule and its value at the pinned cut alongside raw samples, so a
 reviewer can distinguish a spike from the smoothed basis of an alert.
 
 The first baseline review can be assigned explicitly through `metric-review`.
-Daily selection and any later calibrated breach/recovery route reuse the same
+Later explicit requests and calibrated breach/recovery routes reuse the same
 workflow and retained dispositions. The Host has no default skip-rate threshold.

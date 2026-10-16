@@ -59,6 +59,7 @@ function evidence(metricId = "sample.failures", cut = end): MetricEvidence {
       project: "sample",
     },
     collectionFailures: [],
+    alerts: [],
   };
 }
 const judgment = {
@@ -220,7 +221,7 @@ test("pre-Task evidence uses the existing report, publication reader and May int
   );
 });
 
-test("delayed publication reuses judgment, starts a future review interval and retains exhausted allowance work", async () => {
+test("delayed publication reuses judgment, retains its observation boundary and preserves exhausted allowance work", async () => {
   const root = mkdtempSync(join(tmpdir(), "metric-replay-"));
   roots.push(root);
   let calls = 0;
@@ -251,7 +252,7 @@ test("delayed publication reuses judgment, starts a future review interval and r
   setSystemTime(now + 60_000);
   const recovered = await reviewMetric(ctx, async () => evidence(), root);
   expect(recovered.output).toMatchObject({
-    result: { nextReviewAt: now + 86_400_000 },
+    result: { reviewedThrough: end },
   });
   expect(calls).toBe(1);
   const selector = context({
@@ -265,16 +266,14 @@ test("delayed publication reuses judgment, starts a future review interval and r
     selector,
     "",
     "evaluator-deepseek",
-    async () => {
-      throw new Error("Not yet due; keep capacity for other work");
-    },
+    async (id, cut) => ({ ...evidence(id, cut), alerts: [{ alertId: 1, createdAt: end - 1, resolvedAt: null }] }),
     async () => ({
       metrics: [{ id: "sample.failures", status: "active", alertOpen: true }],
     }),
     now + 2 * 60_000,
   );
   expect(selected.candidate).toBeNull();
-  expect(selected.facts).toEqual([]);
+  expect(selected.facts.join("\n")).toContain("metric-observed");
   const changed = context({
     input: { metricId: "other.metric", end, reviewer: "evaluator-deepseek" },
     callAgent: async () => {
@@ -293,7 +292,7 @@ test("delayed publication reuses judgment, starts a future review interval and r
 });
 
 test.each([null, end + 10_000])(
-  "a metric transition (resolvedAt=%s) bypasses daily cadence while routine review and shared capacity remain bounded",
+  "a metric transition (resolvedAt=%s) requests review while legacy sample requests stay quiet and shared capacity remains bounded",
   async (resolvedAt) => {
     const root = mkdtempSync(join(tmpdir(), "metric-signal-"));
     roots.push(root);
@@ -391,9 +390,9 @@ test.each([null, end + 10_000])(
     expect(notDue.output).toMatchObject({
       state: "converged",
       result: {
-        disposition: "not-due",
+        disposition: "no-new-transition",
         metricId: "sample.other",
-        nextReviewAt: now + 60_000,
+        reviewedThrough: 0,
       },
     });
 
@@ -422,11 +421,11 @@ test.each([null, end + 10_000])(
   },
 );
 
-test("periodic selection revisits persistent metrics, honors the prior review boundary and exposes unavailable coverage", async () => {
-  let nextReviewAt = end + 3_600_000;
+test("periodic selection repairs missed transitions, honors completed observations and exposes unavailable coverage", async () => {
+  let reviewedThrough = end;
   const ctx = context({
     read: createTestAppRead({
-      tasks: { get: async () => ({ result: { nextReviewAt } }) as any },
+      tasks: { get: async () => ({ result: { reviewedThrough } }) as any },
     }),
   });
   const list = async () => ({
@@ -446,26 +445,30 @@ test("periodic selection revisits persistent metrics, honors the prior review bo
       },
     ],
   });
+  const read = async (id: string, cut: number) => ({
+    ...evidence(id, cut),
+    alerts: [{ alertId: 7, createdAt: end - 1, resolvedAt: null }],
+  });
   expect(
     (
       await selectMetricCandidate(
         ctx,
         "",
         "evaluator",
-        async (id, cut) => evidence(id, cut),
+        read,
         list,
         end,
       )
     ).candidate,
   ).toBeNull();
-  nextReviewAt = end - 1;
+  reviewedThrough = end - 1;
   const selected = await selectMetricCandidate(
     ctx,
     "",
     "evaluator",
     async (id, cut) => {
       expect(id).not.toBe("aaa.retired");
-      return evidence(id, cut);
+      return read(id, cut);
     },
     list,
     end,
@@ -514,7 +517,7 @@ test("periodic selection revisits persistent metrics, honors the prior review bo
     }),
     end,
   );
-  expect(stale.candidate?.metricId).toBe("sample.failures");
+  expect(stale.candidate).toBeNull();
 });
 
 test("owner-only and unattributed metrics remain reviewable without treating project labels as App identity", async () => {
@@ -541,6 +544,7 @@ test("owner-only and unattributed metrics remain reviewable without treating pro
     async (id, cut) => ({
       ...evidence(id, cut),
       metric: { id, owner: "operator", status: "active" },
+      alerts: [{ alertId: 1, createdAt: cut - 1, resolvedAt: null }],
     }),
     async () => ({
       metrics: [

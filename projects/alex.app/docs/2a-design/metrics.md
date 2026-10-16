@@ -51,6 +51,23 @@ one opening transition, followed by one recovery when the condition clears.
 Manual alerts and administrative closure are explicit operations, described
 below, rather than samples disguised as state changes.
 
+### Automatic review follows transitions
+
+The App owns the attention policy. Alex's automatic metric review responds to a
+recorded breach or recovery, or repairs a missed notification by finding that
+transition in retained alert history. Ordinary numerical changes, missing/stale
+samples and collection failures are evidence, not independent review requests.
+A measurement problem can itself breach a declared metric rule.
+
+Completing a review records how far it observed; it does not start a timer for
+another review of the same alert. Agents can explicitly request reassessment,
+continue an investigation or declare a Condition for a relevant change. Shared
+reviewer capacity limits when requested work runs, not whether unchanged samples
+deserve more judgment. This keeps attention on useful decisions while reusing
+ordinary Tasks, alert identities and accepted results. See the
+[App review contract](../evaluation/metric-pattern-review.md#ownership-and-flow)
+for fallback selection, retries and source/deployment status.
+
 ### Routine checks are sampled activity
 
 The question is **how often Task routing returns without claiming an attempt**.

@@ -217,7 +217,7 @@ export function taskInputForEvent(event: AppEvent<Record<string, unknown>>): App
     return metricId && Number.isSafeInteger(measuredAt) && measuredAt > 0
       ? { kind: "review-metric", data: {
           metricId, end: measuredAt + 1, reviewer: automatic.reviewer ?? "evaluator", automatic: true,
-          // A transition is a new assessment boundary, independent of routine cadence.
+          // Pin the same transition identity used by the periodic fallback scan.
           ...(Number.isSafeInteger(Number(data.alertId)) && Number(data.alertId) > 0 ? { alertId: Number(data.alertId) } : {}),
         } } as AppInput
       : { kind: "automatic-review", data: { reason: event.type } } as AppInput;

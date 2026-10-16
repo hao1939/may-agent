@@ -17,6 +17,14 @@ measurement -> metric rule -> breach or recovery fact
 No route means the fact remains observable. The Host must not guess an owner,
 create a Task, or fall back to May.
 
+For Alex's automatic reviews, a new breach or recovery requests judgment. A
+periodic scan can recover a missed transition; a changed sample or an unchanged
+open alert does not request another assessment. To reconsider an ongoing concern,
+ask for a review explicitly or retain the relevant Condition on the investigation
+Task. Do not create repeated sample-driven requests to imitate a reminder.
+See [metric review](../evaluation/metric-pattern-review.md#ownership-and-flow)
+for the source implementation and activation status.
+
 ## 1. Verify the observation
 
 Read the metric definition, current value, threshold, priority, source,
