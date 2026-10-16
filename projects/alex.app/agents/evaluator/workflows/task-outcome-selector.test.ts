@@ -1663,6 +1663,99 @@ describe("automatic task outcome selector", () => {
     expect(hashReport(join(root, paths.jsonPath))).toBe(reportBefore);
   });
 
+  test("reuses a historical report through selector navigation when only truncated linked bytes grow", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-truncated-link-"));
+    let linkedTaskId = "goal/linked";
+    let padding = "x".repeat(33_000);
+    const listed = task("may", "goal/subject");
+    const base = catalogCommand({ may: [listed] });
+    const command: PublicCommand = async (request) => {
+      if (request.type === "app.task.get" && request.taskId === "goal/subject")
+        return {
+          type: "ok",
+          command: "app.task.get",
+          appId: "may",
+          taskId: request.taskId,
+          task: {
+            id: request.taskId,
+            generation: 1,
+            creator: { appId: "may" },
+            agent: "worker",
+            outcome: "Review linked evidence",
+            dependsOn: [linkedTaskId],
+          },
+        };
+      if (request.type === "app.task.get" && request.taskId === linkedTaskId)
+        return {
+          type: "ok",
+          command: "app.task.get",
+          appId: "may",
+          taskId: request.taskId,
+          task: {
+            id: request.taskId,
+            generation: 1,
+            creator: { appId: "may" },
+            result: { padding },
+          },
+        };
+      if (request.type === "task.get" && request.taskId === linkedTaskId)
+        return {
+          type: "ok",
+          command: "task.get",
+          task: {
+            appId: "may",
+            taskId: request.taskId,
+            generation: 1,
+            outcome: "Large linked evidence",
+            facts: [padding],
+          },
+        };
+      return base(request);
+    };
+    try {
+      const first = await readSubjectTask(
+        { appId: "may", taskId: "goal/subject" },
+        command,
+      );
+      expect(first.disposition).toBe("eligible");
+      expect(first.task?.readBack?.links).toMatchObject([
+        { appId: "may", taskId: "goal/linked", status: "truncated" },
+      ]);
+      publishReport(root, "may", "goal/subject", first.evidenceHash!, NOW - DAY);
+      const historicalPath = taskReportPaths(
+        "may",
+        "goal/subject",
+        first.evidenceHash!,
+      ).jsonPath;
+      const historicalProvenance = hashReport(join(root, historicalPath));
+
+      padding = "y".repeat(61_000);
+      const grown = await readSubjectTask(
+        { appId: "may", taskId: "goal/subject" },
+        command,
+      );
+      expect(grown.evidenceHash).toBe(first.evidenceHash);
+      expect(
+        (await selectFairCandidate(command, config, root, undefined, NOW))
+          .candidate,
+      ).toBeNull();
+      expect(hashReport(join(root, historicalPath))).toBe(
+        historicalProvenance,
+      );
+
+      linkedTaskId = "goal/replacement";
+      expect(
+        (await selectFairCandidate(command, config, root, undefined, NOW))
+          .candidate,
+      ).toEqual({ appId: "may", taskId: "goal/subject" });
+      expect(hashReport(join(root, historicalPath))).toBe(
+        historicalProvenance,
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("does not deduplicate a different full hash at the same shortened report path", async () => {
     const root = mkdtempSync(join(tmpdir(), "selector-hash-collision-"));
     const command = catalogCommand({ may: [task("may", "goal/one")] });
