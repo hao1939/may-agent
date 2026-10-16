@@ -202,7 +202,8 @@ CREATE TABLE IF NOT EXISTS events (
   idempotency_hash TEXT,
   ingress_source TEXT NOT NULL DEFAULT '',
   app_admission_pending INTEGER,
-  app_admission_attempts INTEGER NOT NULL DEFAULT 0
+  app_admission_attempts INTEGER NOT NULL DEFAULT 0,
+  app_admission_error TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_events_owner ON events(owner, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type, timestamp);
@@ -833,6 +834,7 @@ const EVENT_COLUMNS: Array<[string, string]> = [
   ["idempotency_hash", "TEXT"],
   ["ingress_source", "TEXT NOT NULL DEFAULT ''"],
   ["app_admission_attempts", "INTEGER NOT NULL DEFAULT 0"],
+  ["app_admission_error", "TEXT"],
 ];
 
 const TASK_BINDING_COLUMNS: Array<[string, string]> = [

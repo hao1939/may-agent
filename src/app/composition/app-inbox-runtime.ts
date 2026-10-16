@@ -191,25 +191,29 @@ function recordUnroutableAddressAttempt(
   diagnostic: string,
 ): { attempts: number; terminal: boolean } {
   return withSqliteBusyRetry(`record unroutable addressed message attempt for event ${eventId}`, () => {
+    // App admission and another route's receipt are independent. Keep the
+    // terminal diagnostic on the App obligation even if another route already
+    // accepted the Event, or accepts it later. Record-only/noop is not delivery.
     const row = db
       .prepare(
         `UPDATE events
        SET app_admission_attempts = app_admission_attempts + 1,
-           delivery_status = CASE WHEN app_admission_attempts + 1 >= ? THEN 'unhandled' ELSE delivery_status END,
-           delivery_note = CASE WHEN app_admission_attempts + 1 >= ?
-             THEN 'terminal App admission after ' || (app_admission_attempts + 1) || ' unroutable address attempts: ' || ?
+           app_admission_error = CASE WHEN app_admission_attempts + 1 >= ?1
+             THEN 'terminal App admission after ' || (app_admission_attempts + 1) || ' unroutable address attempts: ' || ?2
+             ELSE app_admission_error END,
+           delivery_status = CASE WHEN app_admission_attempts + 1 >= ?1
+             AND NOT (delivery_status = 'accepted' AND delivery_route IS NOT 'noop')
+             THEN 'unhandled' ELSE delivery_status END,
+           delivery_note = CASE WHEN app_admission_attempts + 1 >= ?1
+             AND NOT (delivery_status = 'accepted' AND delivery_route IS NOT 'noop')
+             THEN 'terminal App admission after ' || (app_admission_attempts + 1) || ' unroutable address attempts: ' || ?2
              ELSE delivery_note END,
-           app_admission_pending = CASE WHEN app_admission_attempts + 1 >= ? THEN 0 ELSE app_admission_pending END
-       WHERE id = ? AND app_admission_pending = 1
+           app_admission_pending = CASE WHEN app_admission_attempts + 1 >= ?1 THEN 0 ELSE app_admission_pending END
+       WHERE id = ?3 AND app_admission_pending = 1
        RETURNING app_admission_attempts, app_admission_pending`,
       )
-      .get(
-        UNROUTABLE_ADDRESS_MAX_ATTEMPTS,
-        UNROUTABLE_ADDRESS_MAX_ATTEMPTS,
-        diagnostic,
-        UNROUTABLE_ADDRESS_MAX_ATTEMPTS,
-        eventId,
-      ) as { app_admission_attempts?: unknown; app_admission_pending?: unknown } | undefined;
+      .get(UNROUTABLE_ADDRESS_MAX_ATTEMPTS, diagnostic, eventId) as
+        { app_admission_attempts?: unknown; app_admission_pending?: unknown } | undefined;
     const current =
       row ??
       (db.prepare("SELECT app_admission_attempts, app_admission_pending FROM events WHERE id = ?").get(eventId) as
@@ -907,8 +911,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           exhausted?.app_admission_pending === 0
         ) {
           // An Event-interface publication may carry record-only fallback
-          // acceptance. Terminal App settlement must remain unhandled instead
-          // of letting that generic fallback replace its audit evidence.
+          // acceptance. A generic fallback cannot replace rejection; a real
+          // independent route may still accept and retain its own receipt.
           Object.defineProperty(event, EVENT_RECORD_ONLY, { value: false, configurable: true });
           return;
         }
@@ -933,22 +937,21 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             note: "addressed agent message admitted to App inbox",
           };
         }
-      const diagnostic =
+        const diagnostic =
           candidates.length === 0
             ? `Addressed agent message ${message.identity} names no canonical App owned by ${message.targetOwner}`
-          : `Addressed agent message ${message.identity} is ambiguous across Apps owned by ${message.targetOwner}`;
-      if (candidates.length === 0 && eventId) {
-        const attempt = recordUnroutableAddressAttempt(options.db, eventId, diagnostic);
-        // Terminal settlement is an auditable no-work disposition, not
-        // successful delivery. Disable Event-interface record-only fallback so
-        // returning no receipt preserves `unhandled`; the cleared marker also
-        // prevents another recovery attempt.
-        if (attempt.terminal) {
-          Object.defineProperty(event, EVENT_RECORD_ONLY, { value: false, configurable: true });
-          return;
+            : `Addressed agent message ${message.identity} is ambiguous across Apps owned by ${message.targetOwner}`;
+        if (candidates.length === 0 && eventId) {
+          const attempt = recordUnroutableAddressAttempt(options.db, eventId, diagnostic);
+          // Terminal settlement stops App recovery and records its failure
+          // without changing another route's acceptance. Record-only fallback
+          // must not turn this failed admission into apparent delivery.
+          if (attempt.terminal) {
+            Object.defineProperty(event, EVENT_RECORD_ONLY, { value: false, configurable: true });
+            return;
+          }
         }
-      }
-      throw new Error(diagnostic);
+        throw new Error(diagnostic);
       }
       if (event.type === "conversation.message.created") {
         const appId = typeof data.appId === "string" ? data.appId.trim() : "";
