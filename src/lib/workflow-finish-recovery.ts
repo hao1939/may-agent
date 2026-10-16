@@ -99,8 +99,8 @@ function capturedAbortedFinish(messages: any[], reason: string | undefined): Too
 
 /**
  * Commit a complete finish call captured by the exact Responses aborted-terminal
- * failure. Validation deliberately uses Pi's normal schema validator followed by
- * the real workflow finish tool, whose execute path performs semantic checks.
+ * failure. Use the same argument preparation and schema validation as the model
+ * loop, followed by the real finish tool's semantic checks.
  */
 export async function recoverCapturedWorkflowFinish(options: {
   sessionId: string;
@@ -122,7 +122,10 @@ export async function recoverCapturedWorkflowFinish(options: {
     if (!finish) return { disposition: "rejected", toolCallId: call.id, error: "finish tool unavailable" };
     let result: Awaited<ReturnType<AgentTool["execute"]>>;
     try {
-      const params = validateToolArguments(finish, call);
+      const preparedCall = finish.prepareArguments
+        ? { ...call, arguments: finish.prepareArguments(call.arguments) as ToolCall["arguments"] }
+        : call;
+      const params = validateToolArguments(finish, preparedCall);
       result = await finish.execute(call.id, params);
     } catch (cause) {
       const error = `Captured finish recovery validation failed: ${cause instanceof Error ? cause.message : String(cause)}`;

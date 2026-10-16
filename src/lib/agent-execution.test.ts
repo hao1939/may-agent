@@ -761,7 +761,7 @@ describe("direct structured judgment execution", () => {
     });
   }
 
-  function finishStream(args: Record<string, unknown>) {
+  function finishStream(args: Record<string, unknown>, id = "judgment-finish") {
     const stream = createAssistantMessageEventStream();
     stream.push({
       type: "done",
@@ -769,7 +769,7 @@ describe("direct structured judgment execution", () => {
       message: {
         ...assistantMessage("stop"),
         stopReason: "toolUse",
-        content: [{ type: "toolCall", id: "judgment-finish", name: "finish", arguments: args }],
+        content: [{ type: "toolCall", id, name: "finish", arguments: args }],
       },
     });
     return stream;
@@ -795,6 +795,65 @@ describe("direct structured judgment execution", () => {
       output: judgment,
       status: status === "success" ? "done" : status === "failure" ? "error" : "blocked",
     });
+  });
+
+  test.each([
+    { ...finishArgs, result: { ...judgment, summary: 42 } },
+    { ...finishArgs, result: { ...judgment, summary: false } },
+    { ...finishArgs, result: { ...judgment, summary: null } },
+    { ...finishArgs, result: { state: "incomplete" } },
+    { ...finishArgs, summary: 42 },
+    { ...finishArgs, verification_facts: [false] },
+    { ...finishArgs, verification_facts: null },
+  ])("corrects original report types before acceptance without losing the rejected report %#", async (invalid) => {
+    const prepared = prepare();
+    let calls = 0;
+    let correctionContext: TranscriptContext | undefined;
+    prepared.runner.streamFn = (_model, context) => {
+      if (++calls === 1) return finishStream(invalid, "invalid-report");
+      correctionContext = context;
+      return finishStream(finishArgs, "corrected-report");
+    };
+
+    const result = await executePreparedAgent(prepared);
+
+    expect(result.status).toBe("done");
+    expect(calls).toBe(2);
+    expect(result.structuredResult).toEqual(judgment);
+    const rejection = correctionContext!.messages.find((message) =>
+      message.role === "toolResult" && message.toolCallId === "invalid-report",
+    );
+    expect(rejection).toMatchObject({ isError: true, content: [{ type: "text", text: expect.stringContaining("supplied schema") }] });
+    expect(JSON.stringify(rejection)).not.toContain("Received arguments");
+    expect(result.messages).toContainEqual(expect.objectContaining({
+      role: "assistant", content: [{ type: "toolCall", id: "invalid-report", name: "finish", arguments: invalid }],
+    }));
+  });
+
+  test("bounds schema feedback for a large rejected report while retaining the original", async () => {
+    const prepared = prepare();
+    const invalid = {
+      ...finishArgs,
+      summary: "retained-large-report:" + "x".repeat(100_000),
+      verification_facts: Array.from({ length: 1000 }, () => ({ unexpected: "report" })),
+    };
+    let calls = 0;
+    prepared.runner.streamFn = () => ++calls === 1
+      ? finishStream(invalid, "large-report")
+      : finishStream(finishArgs, "corrected-report");
+    const result = await executePreparedAgent(prepared);
+    expect(calls).toBe(2);
+    expect(result.status).toBe("done");
+    const rejection = result.messages.find((message) => message.role === "toolResult" && message.toolCallId === "large-report");
+    const feedback = JSON.stringify(rejection);
+    expect(feedback.length).toBeLessThan(4000);
+    expect(feedback).toContain("/verification_facts/0");
+    expect(feedback).toContain("must be string");
+    expect(feedback).toContain("up to 8 errors shown");
+    expect(feedback).not.toContain("retained-large-report");
+    expect(result.messages).toContainEqual(expect.objectContaining({
+      role: "assistant", content: [{ type: "toolCall", id: "large-report", name: "finish", arguments: invalid }],
+    }));
   });
 
   test.each([false, true])("restores history with current instructions and tools (saved system messages: %s)", async (withSystem) => {
