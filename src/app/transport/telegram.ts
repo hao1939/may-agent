@@ -1611,7 +1611,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const deliverCommandView = (
       rendered: string,
       taskRefs: Array<{ appId: string; taskId: string }> = [],
-      onDelivered?: () => void,
+      prepareRecord?: () => false | void | (() => void),
       followTask?: { appId: string; taskId: string },
       approvalTask?: HumanTaskView,
       parseMode?: string,
@@ -1637,6 +1637,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           replyMarkup: taskButtons(followTask ? [followTask] : taskRefs),
         });
         if (!deliveredMessageId || !running) return;
+        const afterRecord = prepareRecord?.();
+        if (afterRecord === false) return;
         recordConversationMessage({
           conversationId,
           text: rendered,
@@ -1648,7 +1650,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           followTask,
           conversationTopicId,
         });
-        onDelivered?.();
+        afterRecord?.();
       });
     };
 
@@ -1853,7 +1855,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             task ? representedTaskIdentities(task) : [],
             () => {
               if (task && watchedTasks.get(surface) === watched)
-                shownWatchRevisions.set(surface, taskPresentationRevision(task));
+                return () => shownWatchRevisions.set(surface, taskPresentationRevision(task));
             },
             task ? { appId: task.appId, taskId: task.taskId } : undefined,
             task ?? undefined,
@@ -1895,7 +1897,21 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           `${renderTelegramTaskUpdate(task)}\n\nFollowing updates. Reply here to discuss this work. Other Tasks continue unchanged.`,
           [{ appId: task.appId, taskId: task.taskId }],
           () => {
-            if (watchedTasks.get(surface) === watched) shownWatchRevisions.set(surface, taskPresentationRevision(task));
+            if (!watched || watchedTasks.get(surface) !== watched) {
+              if (watchedTasks.has(surface)) {
+                shownWatchRevisions.delete(surface);
+                watchRefresh.queue(surface);
+              }
+              return false;
+            }
+            const revision = taskPresentationRevision(task);
+            const currentTask = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
+            if (!currentTask || taskPresentationRevision(currentTask) !== revision) {
+              shownWatchRevisions.delete(surface);
+              watchRefresh.queue(surface);
+              return false;
+            }
+            return () => shownWatchRevisions.set(surface, revision);
           },
           { appId: task.appId, taskId: task.taskId },
           task,

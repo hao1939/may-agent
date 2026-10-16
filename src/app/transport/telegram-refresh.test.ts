@@ -202,18 +202,19 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
       holds.push(hold);
       return hold;
     },
-    async command(text: string, chat = 123) {
+    async command(text: string, chat = 123, waitForRecord = true) {
       await waitFor(() => receive !== undefined);
       const deliver = receive!;
       receive = undefined;
       const id = ++nextUpdate;
       const priorViews = published.length;
       deliver([{ update_id: id, message: { message_id: id, chat: { id: chat }, text } }]);
-      await waitFor(() =>
-        published
-          .slice(priorViews)
-          .some((event) => (event.data?.metadata as { command?: string } | undefined)?.command === text),
-      );
+      if (waitForRecord)
+        await waitFor(() =>
+          published
+            .slice(priorViews)
+            .some((event) => (event.data?.metadata as { command?: string } | undefined)?.command === text),
+        );
     },
     wake(id: string, count = 1) {
       for (let i = 0; i < count; i++) {
@@ -262,6 +263,35 @@ describe("Telegram refresh lifecycle", () => {
       await waitFor(() => old.finished);
       await waitFor(() => f.sent.filter((send) => send.text.includes(restoredText)).length === 2);
       expect(f.sent.at(-1)?.text).toContain(restoredText);
+    } finally {
+      await f.close();
+    }
+  });
+
+  it("rechecks a stalled watch command before recording or caching its presentation", async () => {
+    const f = fixture();
+    try {
+      const held = f.hold((send) => Boolean(send.reply_parameters) && send.text.includes("Working on first"));
+      await f.command("/watch first", 123, false);
+      await waitFor(() => held.started);
+
+      Object.assign(f.tasks.get("first")!, {
+        terminal: true,
+        status: "done",
+        summary: "Terminal during watch command",
+        resourceVersion: 2,
+      });
+      held.release();
+
+      await waitFor(() => f.sent.some((send) => send.text.includes("Terminal during watch command")));
+      const watchRecords = f.published.filter(
+        (event) =>
+          event.type === "conversation.message.created" &&
+          (event.data?.metadata as { command?: string } | undefined)?.command === "/watch update",
+      );
+      expect(watchRecords.map((event) => event.data?.text)).toEqual([
+        expect.stringContaining("Terminal during watch command"),
+      ]);
     } finally {
       await f.close();
     }
@@ -316,7 +346,6 @@ describe("Telegram refresh lifecycle", () => {
       // Return to the cached presentation while B is in flight. The stale B
       // acknowledgement must invalidate A's cache so the refresh restores A.
       f.tasks.get("first")!.summary = "Presentation A";
-      f.wake("first");
       held.release();
 
       await waitFor(() => f.sent.filter((send) => send.text.includes("Presentation A")).length === 2);
