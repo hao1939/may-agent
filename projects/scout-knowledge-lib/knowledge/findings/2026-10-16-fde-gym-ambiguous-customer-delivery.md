@@ -1,5 +1,5 @@
 <ai_context>
-This finding records FDE-Gym's abstract-level evidence that agent performance on customer delivery remains weak when requirements are ambiguous and constraints must be discovered. Scout inspected the complete arXiv v1 abstract and feed metadata only; the paper, benchmark tasks, code, data, grader, per-model results, and customer simulations were not inspected or reproduced.
+This finding records FDE-Gym's abstract-level evidence that agent performance on customer delivery remains weak when requirements are ambiguous and constraints must be discovered. Scout rechecked the complete arXiv v1 abstract and feed metadata in the current newest-20 cs.AI packet; the paper, benchmark tasks, code, data, grader, per-model results, and customer simulations were not inspected or reproduced.
 </ai_context>
 
 # Agent delivery benchmarks need discovery and business-outcome layers
@@ -56,7 +56,7 @@ The workflow made the cycle's single canonical request:
 
 - **Endpoint:** `https://export.arxiv.org/api/query?search_query=cat%3Acs.AI&start=0&max_results=20&sortBy=submittedDate&sortOrder=descending`
 - **HTTP status:** `200`
-- **Latency:** `273 ms`
+- **Latency:** `414 ms`
 - **Request count:** `1`
 - **Retry-After:** not present (`null`)
 
