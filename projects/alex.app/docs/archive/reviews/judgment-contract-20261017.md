@@ -1,8 +1,7 @@
 # Evaluation judgment contract and Host rollout — October 17
 
-The Host deployment is verified. The first Proposal B App slice aligns new
-Task/metric judgments with one schema and admission helper; source checks pass.
-App activation is recorded separately below once confirmed.
+The Host deployment and first Proposal B App activation are verified locally.
+New Task/metric judgments use one schema and admission helper; source checks pass.
 
 ## Host deployment
 
@@ -84,3 +83,21 @@ an aggregate before/after change solely to A.
 
 Private rollout receipts, paired-runner probes and check logs are retained under
 `/home/hao/workspace-worktrees/may-token-review-20261016/`.
+
+
+## Confirmed App activation
+
+Source `1f11af385afabd18f581d2d4c3d3e107f7c56923` was integrated into Apps main
+and activated at 2026-10-17 00:41:54 Asia/Shanghai. Reload request `6676075`
+linked to successful completion `6676081`, which reports the exact source commit.
+The active release manifest and admission worker match it. The loaded schema,
+follow-up reader, both workflows and evaluator guidance match the reviewed bytes.
+HTTP readiness remained true and the Host still reported `b86592b0` afterward.
+The later documentation-only commit recording these facts needs no App reload.
+
+The reload retained three active Apps and their existing schedules/model routes.
+It also captured already-merged documentation/manual/example changes since A.
+No Task control or synthetic review input was submitted. Naturally occurring
+work was already present: Alex reported one running Task immediately before
+reload and two at completion, so this is not a claim that all Tasks were stopped.
+Unrelated untracked shared-checkout files were preserved.
