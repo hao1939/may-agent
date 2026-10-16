@@ -35,8 +35,8 @@ export function createWorkflowFinishTool(
   const validator = Compile(parameters);
   const validateReport = (params: unknown) => {
     if (!validator.Check(params)) {
-      // Report types are part of the caller's contract. Check the original
-      // arguments before Pi's ordinary tool coercion, using the visible schema.
+      // The schema declares accepted representations, including inputs to the
+      // App's normalization. Check it before Pi's independent tool coercion.
       // Keep the report in its tool call rather than echoing it in the error.
       const problems = validator.Errors(params).slice(0, 8).map((error) =>
         `  - ${(error.instancePath || "/").slice(0, 200)}: ${error.message.slice(0, 200)}`,

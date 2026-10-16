@@ -637,8 +637,10 @@ export type WorkflowContext<TInput = unknown> = {
     /** Schema for the contribution report, including incomplete work. Make
      * unavailable information optional; a valid report does not imply Task
      * fulfillment. Missing optional fields do not require a correction turn.
-     * Reports must match the declared types as supplied; finish does not repair
-     * wrong types by coercion. Code producing reports should use the same schema. */
+     * Declare every representation the App accepts, including inputs to its
+     * normalization (e.g. a string-or-number identifier). Use one App admission
+     * helper for code and agent reports. Host checks this accepted shape without
+     * silently broadening it; the App owns normalization and usefulness. */
     call<S extends TSchema>(
       agent: string,
       task: string,

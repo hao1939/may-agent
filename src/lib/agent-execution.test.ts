@@ -10,7 +10,9 @@ import {
   type TranscriptContext,
   type Model,
   type StreamFunction,
+  type TSchema,
 } from "@earendil-works/pi-ai";
+import { Value } from "typebox/value";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -741,7 +743,10 @@ describe("direct structured judgment execution", () => {
     result: judgment,
   };
 
-  function prepare(structured = true) {
+  function prepare(
+    structured = true,
+    schema: TSchema = Type.Object({ state: Type.Literal("incomplete"), summary: Type.String() }),
+  ) {
     const root = mkdtempSync(join(tmpdir(), "agent-judgment-"));
     roots.push(root);
     return prepareAgentExecution({
@@ -757,7 +762,7 @@ describe("direct structured judgment execution", () => {
       sessionId: "judgment-fixture",
       task: "Decide whether recovery is worthwhile.",
       requireFinish: true,
-      ...(structured ? { outputSchema: Type.Object({ state: Type.Literal("incomplete"), summary: Type.String() }) } : {}),
+      ...(structured ? { outputSchema: schema } : {}),
     });
   }
 
@@ -828,6 +833,38 @@ describe("direct structured judgment execution", () => {
     expect(result.messages).toContainEqual(expect.objectContaining({
       role: "assistant", content: [{ type: "toolCall", id: "invalid-report", name: "finish", arguments: invalid }],
     }));
+  });
+
+  test.each([
+    { summary: "  Draft available; review remains  ", expectedSummary: "Draft available; review remains" },
+    { summary: 42, expectedSummary: "42" },
+  ])("allows declared normalization through one App admission helper without a correction turn %#", async ({ summary, expectedSummary }) => {
+    // This App accepts either representation and uses one helper for reports
+    // from code and agents. Shape acceptance does not judge the report's value.
+    const schema = Type.Object({
+      reference: Type.Union([Type.String({ minLength: 1 }), Type.Integer({ minimum: 0 })]),
+      summary: Type.Union([Type.String(), Type.Number()]),
+    });
+    const admit = (report: unknown) => {
+      if (!Value.Check(schema, report)) throw new Error("Invalid App report");
+      return { ...report, reference: String(report.reference), summary: String(report.summary).trim() };
+    };
+    const raw = { reference: 42, summary };
+    const fromCode = admit(raw);
+    const prepared = prepare(true, schema);
+    let calls = 0;
+    prepared.runner.streamFn = () => {
+      calls++;
+      return finishStream({ status: "partial", summary: "Draft report", result: raw });
+    };
+
+    const execution = await executePreparedAgent(prepared);
+    expect(execution.status).toBe("done");
+    expect(execution.finishResult?.status).toBe("partial");
+    expect(calls).toBe(1);
+    expect(execution.structuredResult).toEqual(raw);
+    expect(admit(execution.structuredResult)).toEqual(fromCode);
+    expect(fromCode).toEqual({ reference: "42", summary: expectedSummary });
   });
 
   test("bounds schema feedback for a large rejected report while retaining the original", async () => {
