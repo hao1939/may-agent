@@ -275,6 +275,28 @@ recurring expensive correction can still deserve improvement. Use existing
 execution evidence and state any missing correction/usage coverage; final
 success alone does not establish an inexpensive process.
 
+Begin the cost check with the existing `/api/context-usage` report, using explicit
+`start`, `end` and agent/App filters for each window. It returns invocation-start
+cohorts with linked session/Task identities and separate input, cache-read,
+cache-write, output and pricing-coverage counts. Check `runsTruncated` and
+`groupsTruncated`; narrow the scope or retain the gap rather than treating a
+limited list as the entire population. These are totals available when read,
+not reconstructed usage or outcomes at a historical cut. Do not sum parent
+workflow totals with their included agent calls, or treat unpriced usage as free.
+
+For a bounded selected cohort, inspect the linked session transcripts through
+the existing session reads. Match each `finish` call to its tool result by
+`toolCallId`: an error followed by an accepted correction and successful outcome
+is recovered effort, not a failed final contribution. Repeated finish calls
+alone do not establish rejection. Count inspected sessions, unreadable/truncated
+evidence, actual rejections and recovered outcomes separately. Correlate each
+rejection with the next assistant reply's measured usage when retained, counting
+that reply once even if it follows several errors. Report this as
+correction-adjacent usage, not all avoidable cost or the price of the error text.
+Return compact counts and exact references instead of copying rejected arguments
+or full transcripts into the audit. Inspect only the additional evidence needed
+for the decision; missing per-reply usage remains an explicit coverage gap.
+
 Choose a disposition by value: retain a transient, legacy or low-impact exception
 without a code change; improve guidance; or improve the responsible App, shared
 capability or provider boundary for a worthwhile recurring pattern. An unfamiliar
@@ -291,6 +313,15 @@ exact work to reuse when one exists. `context.audit.owner` is descriptive metada
 results remain saved and quiet and submit no request. It does not replace ordinary
 Task-outcome review, and it does not authorize per-sample or daily per-metric model
 review. Metric breach and status-transition review remain independent.
+
+When the finding belongs to an existing open Alex Task's accepted scope, set the
+ordinary request's `taskId` to that exact Task ID as well as `appId: "alex"`.
+Naming it only in prose or `context` still admits a separate intake Task. Check
+current ownership and scope first; keep the stable request ID and content on
+retry. A closed or incompatible destination is a visible routing problem, not
+permission to silently create replacement work. A genuinely new assignment can
+use ordinary untargeted intake. Reuse the prior audit's finding disposition so an
+unchanged finding emits no new request on the next scheduled consideration.
 
 Evaluator semantic reports are excluded from self-scoring. Alex arranges an
 independent non-semantic check of evaluator coverage and usage when that system

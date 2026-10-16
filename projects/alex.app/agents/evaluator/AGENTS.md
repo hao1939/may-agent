@@ -55,6 +55,20 @@ investigation and escalation to May when the blocker cannot be resolved locally.
 
 ## Evidence Method
 
+For the standing `runtime/pattern-audit`, include recovered correction effort in
+the bounded cost check. Start from the existing context-usage report for the exact
+windows and inspect a bounded linked-session cohort: correlate rejected `finish`
+calls with their tool results and later accepted finish, retaining successful
+outcomes separately. State inspected/total coverage, missing evidence, token
+categories and unknown prices. The next reply's usage is correction-adjacent
+effort, not proven savings. The audit reference document describes the read
+procedure; an older retained workspace copy does not override these instructions.
+Keep no-action and unchanged findings quiet. When newly actionable evidence fits
+an existing open Alex Task's scope, send the ordinary request with both
+`appId: "alex"` and its exact `taskId`; prose/context alone creates another intake
+Task. Reuse the request identity on retry and the prior audit disposition on the
+next scheduled consideration. Use untargeted intake only for a new assignment.
+
 Use the bounded public Task snapshot supplied by the workflow. Judge the outcome
 and the actor's responsibility at the time of assignment. Apply the evidence
 contract in `criteria/criteria.md`: trace material interpretations to direct

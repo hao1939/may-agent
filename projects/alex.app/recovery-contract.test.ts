@@ -35,7 +35,7 @@ import type { TaskAgentRunner } from "../may-agent/src/app/core/tasks/execution.
 import { makeTaskRetryDue } from "../may-agent/src/app/core/tasks/app-task-test-support.ts";
 import { startAppInboxRuntime } from "../may-agent/src/app/composition/app-inbox-runtime.ts";
 import { fakeModel } from "../may-agent/test/fixtures/model.ts";
-import alex from "./app.ts";
+import alex, { RUNTIME_PATTERN_AUDIT_TASK_ID } from "./app.ts";
 import {
   evaluationJudgmentSchema,
   readNewJudgment,
@@ -678,6 +678,98 @@ test("pending old input prevents an incompatible schema replacement; its stable 
     expect(() => f.inbox.host.replaceApps([alex])).not.toThrow();
     expect(() => f.inbox.host.assertAcceptsInput("alex", input)).not.toThrow();
     expect(getAppEventAdmissionPlan(f.db, saved.eventId)).toEqual(saved);
+  } finally {
+    await f.close();
+  }
+});
+
+test("standing audit retains dispositions and targets existing repair work without replaying requests", async () => {
+  const schedule = alex.schedules!.find(({ id }) => id === "runtime-pattern-audit-six-hourly")!;
+  const input = schedule.input;
+  if (!input) throw new Error("Standing audit input is missing");
+  let auditCalls = 0;
+  let ownerCalls = 0;
+  let ownerTask = "";
+  const considered: unknown[] = [];
+  const f = await runtime(async ({ attempt }) => {
+    if (attempt.task.id === ownerTask) {
+      ownerCalls++;
+      considered.push(structuredClone(attempt.events));
+      return {
+        runId: attempt.attemptId,
+        handlerResult: {
+          state: "converged",
+          summary: "Existing repair owner considered the supplied evidence.",
+          facts: [], actions: [],
+        },
+      };
+    }
+    expect(attempt.task.id).toBe(RUNTIME_PATTERN_AUDIT_TASK_ID);
+    auditCalls++;
+    expect(auditCalls).toBeLessThanOrEqual(3);
+    if (auditCalls > 1) {
+      expect(attempt.previousAttempt?.acceptedResult?.result).toMatchObject({
+        cut: auditCalls - 1,
+        disposition: auditCalls === 2 ? "transient-no-change" : "existing-owner-requested",
+      });
+    }
+    // Scripted policy choices; the real runtime owns their retention and delivery.
+    const newlyActionable = auditCalls === 2;
+    return {
+      runId: attempt.attemptId,
+      handlerResult: {
+        state: "converged",
+        summary: newlyActionable ? "Repeated corrections merit existing-owner attention." : "Retain the finding without another request.",
+        facts: ["The corrected contribution remains successful."],
+        actions: [],
+        result: {
+          cut: auditCalls,
+          disposition: auditCalls === 1 ? "transient-no-change" : newlyActionable ? "existing-owner-requested" : "unchanged-no-request",
+          correctionCount: auditCalls === 1 ? 1 : 4,
+          outcome: "success",
+          existingOwner: ownerTask,
+        },
+        ...(newlyActionable ? { requests: [{
+          id: "recurring-correction-evidence",
+          appId: "alex",
+          taskId: ownerTask,
+          input: { kind: "message", data: {
+            message: "Consider recurring-correction evidence within this existing repair.",
+            context: { recovered: true, correctionCount: 4 },
+          } },
+        }] } : {}),
+      },
+    };
+  });
+  try {
+    ownerTask = f.admit("existing-repair", {
+      kind: "message", data: { message: "Own the demonstrated correction repair." },
+    }).waitingOn!.id;
+    await f.run(ownerTask);
+    for (let slot = 1; slot <= 3; slot++) {
+      const item = f.admit(`audit-slot-${slot}`, input);
+      expect(item.waitingOn?.id).toBe(RUNTIME_PATTERN_AUDIT_TASK_ID);
+      await f.run(RUNTIME_PATTERN_AUDIT_TASK_ID);
+      expect(f.store.readTask(RUNTIME_PATTERN_AUDIT_TASK_ID)?.status.phase).toBe("converged");
+      if (slot === 2) {
+        await f.run(ownerTask);
+        expect(ownerCalls).toBe(2);
+        expect(JSON.stringify(considered[1])).toContain("recurring-correction evidence");
+        await f.inbox.host.refreshTaskResults("alex", ownerTask);
+      }
+      await f.restart();
+    }
+    f.admit("audit-slot-3", input);
+    await f.run(RUNTIME_PATTERN_AUDIT_TASK_ID);
+    expect(auditCalls).toBe(3);
+    expect(ownerCalls).toBe(2);
+    expect(f.store.readTask(RUNTIME_PATTERN_AUDIT_TASK_ID)?.status.result).toMatchObject({
+      cut: 3, disposition: "unchanged-no-request", outcome: "success",
+    });
+    expect(f.db.prepare("SELECT task_id FROM app_tasks WHERE app_id='alex' ORDER BY task_id").all())
+      .toEqual([{ task_id: ownerTask }, { task_id: RUNTIME_PATTERN_AUDIT_TASK_ID }]);
+    expect(f.db.prepare("SELECT count(*) AS n FROM app_inbox_items WHERE app_id='alex' AND target_task_id=?").get(ownerTask))
+      .toEqual({ n: 1 });
   } finally {
     await f.close();
   }
