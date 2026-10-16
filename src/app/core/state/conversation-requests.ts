@@ -126,6 +126,8 @@ type ConversationRequestUpdatesInput = {
   appId: string;
   conversationId: string;
   topicId?: string;
+  /** True when the input has an explicit Topic decision, including explicit none. */
+  topicSelected?: boolean;
   updates: AppConversationRequestUpdate[];
   updateKey: string;
   messageId?: string;
@@ -187,7 +189,7 @@ export function prepareConversationRequestUpdates(db: SqliteDb, input: Conversat
           `Request ${update.id} closure changes scope; save the authorized correction as open first, then close the returned revision without changing scope`,
         );
     }
-    const topicId = input.topicId ?? current?.topicId;
+    const topicId = input.topicSelected ? input.topicId : (input.topicId ?? current?.topicId);
     const request: AppConversationRequest = {
       id: update.id,
       revision: update.expectedRevision + 1,

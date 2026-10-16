@@ -644,6 +644,19 @@ export function readConversationMessageTopicId(
   }
 }
 
+/** Whether an accepted decision explicitly selected a Topic or selected no Topic. */
+export function hasConversationInputTopicSelection(db: SqliteDb, item: AppInboxItem): boolean {
+  if (!item.conversationId) return false;
+  return Boolean(
+    db
+      .prepare(
+        `SELECT 1 FROM conversation_input_topic_selections
+         WHERE app_id = ? AND conversation_id = ? AND input_id = ?`,
+      )
+      .get(item.appId, item.conversationId, item.id),
+  );
+}
+
 /** Retain explicit Conversation context without asking the agent to repeat its identity. */
 export function readConversationInputTopicId(db: SqliteDb, item: AppInboxItem): string | undefined {
   if (!item.conversationId) return undefined;
@@ -657,7 +670,23 @@ export function readConversationInputTopicId(db: SqliteDb, item: AppInboxItem): 
   const replied = item.replyToSourceId
     ? readConversationMessageTopicId(db, item.appId, item.conversationId, item.replyToSourceId)
     : undefined;
-  for (const candidate of [item.topicId, replied, hint]) {
+  const selected = db
+    .prepare(
+      `SELECT topic_id FROM conversation_input_topic_selections
+       WHERE app_id = ? AND conversation_id = ? AND input_id = ?`,
+    )
+    .get(item.appId, item.conversationId, item.id) as { topic_id?: unknown } | undefined;
+  // A saved explicit selection supersedes the input's initial reply anchor.
+  // An explicit `none` is represented by a durable selection row plus a null
+  // inbox Topic, so it must also suppress reply and adapter fallbacks.
+  if (selected) {
+    if (typeof selected.topic_id !== "string" || !selected.topic_id.trim()) return undefined;
+    return readConversationTopic(db, item.appId, item.conversationId, selected.topic_id)?.id;
+  }
+  // Before an explicit decision, a reply anchors the initial discussion. The
+  // inbox Topic is only its committed input correlation, and adapter context
+  // remains the final fallback.
+  for (const candidate of [replied, item.topicId, hint]) {
     if (typeof candidate !== "string" || !candidate.trim()) continue;
     const topic = readConversationTopic(db, item.appId, item.conversationId, candidate);
     if (topic) return topic.id;
