@@ -200,7 +200,7 @@ test.each([
 test("plan capture respects the slow threshold, tracking capacity and window limits", () => {
   let now = 0;
   let elapsed = 0;
-  let duration = 1_000;
+  let duration = 999;
   let captures = 0;
   const profile = new SqlPerformance(1, () => now, () => (elapsed += duration));
   const value = { value: "private result" };
@@ -213,8 +213,8 @@ test("plan capture respects the slow threshold, tracking capacity and window lim
   });
   const read = () => measure("get", () => value, ["private parameter"]);
   expect(read()).toBe(value);
-  expect(captures).toBe(0); // Exactly 1000 ms does not qualify.
-  duration = 1_001;
+  expect(captures).toBe(0); // 999 ms is below the inclusive threshold.
+  duration = 1_000;
   const failure = new Error("private read failure");
   expect(() => measure("get", () => { throw failure; })).toThrow(failure);
   expect(captures).toBe(0); // A failed read must not consume a later successful read's opportunity.

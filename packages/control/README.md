@@ -168,7 +168,7 @@ rows, database paths and error messages are omitted; SQL literals and comments
 are masked. SQL structure remains operator diagnostic data. Lock waits count as
 elapsed SQL time; sleeps outside SQLite do not.
 
-After a successful individual `get` or `all` call exceeds 1000 ms, its tracked
+After a successful individual `get` or `all` call reaches 1000 ms, its tracked
 operation/shape row may also contain one `plan`. The Host classifies the full
 SQL shape only on this slow path and captures `EXPLAIN QUERY PLAN` for recognized
 SELECTs, including CTE reads. Writes and uncertain shapes are skipped; `prepare`,
