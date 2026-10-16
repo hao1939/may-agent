@@ -6885,6 +6885,65 @@ describe("canonical App task runtime", () => {
     }
   });
 
+  it("keeps startup recovery fenced when the retained session metadata is missing", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, ".state");
+    const config = loadedTaskConfig(f, persistDir);
+    const intent = {
+      id: "work/missing-session-meta",
+      parentId: "operations",
+      outcome: "Do not replace a retained session without lifecycle evidence",
+      acceptance: ["Recovery keeps the original claim until session ownership is confirmed"],
+      agent: "sample-owner",
+    };
+    observeAppTaskIntent(config, { intent, appAgent: "sample-owner" });
+    const claim = claimObservedAppTask(config, {
+      taskId: intent.id,
+      appAgent: "sample-owner",
+      handler: "agent:sample-owner",
+      reason: "test",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected retained agent claim");
+    expect(recordAppTaskAttemptSession(config, claim, "owner-missing-meta")).toBe(true);
+    mutateRuntimeAttemptFixture(config, claim.taskId, claim.attemptId, (attempt) => {
+      if (!attempt.lease) throw new Error("expected leased retained attempt");
+      attempt.runtimeId = "previous-runtime";
+      attempt.lease.runtimeId = "previous-runtime";
+      attempt.lease.expiresAt = new Date(Date.now() - 1_000).toISOString();
+    });
+    execFileSync("git", ["init", "-b", "main", f.root], { stdio: "ignore" });
+    let replacementCalls = 0;
+
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      persistDir,
+      manager: {
+        hasAgent: () => true,
+        hasActiveSession: () => false,
+        cancel: () => undefined,
+        async callAgent() {
+          replacementCalls += 1;
+          throw new Error("replacement must remain fenced");
+        },
+      } as never,
+      appRegistrySnapshot: {
+        id: "boot:missing-session-meta",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+
+    expect(replacementCalls).toBe(0);
+    expect(readSessionMeta(persistDir, "owner-missing-meta")).toBeNull();
+    const afterRecovery = readTaskSnapshot(config);
+    expect(afterRecovery.resources?.[intent.id]?.status).toMatchObject({
+      phase: "running",
+      currentAttemptId: claim.attemptId,
+    });
+    expect(afterRecovery.receipts?.[intent.id]).toBeUndefined();
+  });
+
   it("fails startup recovery closed when a durable owner process group cannot be confirmed drained", async () => {
     const f = fixture();
     const bus = eventBus();
