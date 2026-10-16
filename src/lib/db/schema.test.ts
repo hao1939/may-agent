@@ -180,6 +180,10 @@ describe("canonical database schema", () => {
         envelope_json: null,
         data: '{"appId":"subject"}',
       });
+      expect(db.prepare("SELECT app_admission_attempts, app_admission_error FROM events WHERE id = 1").get()).toEqual({
+        app_admission_attempts: 0,
+        app_admission_error: null,
+      });
       expect(columns.some(({ name }) => name === "workflow_run_id")).toBe(true);
       expect(columns.some(({ name }) => name === "delivery_status")).toBe(true);
       expect(columns.some(({ name }) => name === "idempotency_scope")).toBe(true);
