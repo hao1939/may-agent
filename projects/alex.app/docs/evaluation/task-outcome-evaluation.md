@@ -352,6 +352,12 @@ Each successful review stages an immutable Markdown report and JSON facts sideca
 
 ## Follow-up is an evaluator decision
 
+Evaluator independently reviews the Apps' work and decides whether its findings
+need Alex's attention. Alex is the leader for system improvement: Alex checks
+current relevance, prioritizes the work, and owns fixes through verification,
+using specialists or the responsible App when useful. The evaluator's attention
+decision does not transfer leadership or repair ownership to the reviewer.
+
 **Implemented contract; activation depends on the installation.** Task and metric reviewers return
 `followUp` alongside their assessment:
 

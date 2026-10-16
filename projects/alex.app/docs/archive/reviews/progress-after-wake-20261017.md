@@ -35,6 +35,25 @@ included. Historical reports remain historical judgments. Existing Task input
 and acceptance update through the ordinary next admitted source event, not a
 manual Task rewrite.
 
+## Review and improvement ownership
+
+Evaluator reviews the Apps' work, including delivered outcomes, meaningful
+progress and evidence of waste. Alex is the leader who prioritizes and owns
+improvements and fixes through verification. Scout owns research execution and
+publication. A review can ask for Alex's attention; it does not make Evaluator
+the repair owner or reassign Scout's original research obligation.
+
+The existing routing follows this model: `review-task-outcome` selects an
+evaluator worker, while a published `followUp: request` admits ordinary Alex
+work with the report references. `followUp: none` keeps the report available
+without an Alex wake; Alex can still inspect it during an explicit audit.
+This clarification changes documentation only and requires no runtime reload.
+
+For this trial, Evaluator assessed Scout's delivery. The remaining recurring-cost
+question, oversized source reads and five optional research-handoff failures
+below are improvement candidates for Alex to prioritize. This record does not
+claim that Alex has received a new request or completed those repairs.
+
 ## Bounded offline evidence review
 
 All six retained source results in
@@ -91,8 +110,9 @@ useful diagnosis/recovery, or a necessary decision with an owner and return path
 If a genuine external wait remains, establish why no useful authorized step is
 available and whether existing owner work already covers it. Repetition remains
 visible as cost and lack of progress; a successful finish alone is insufficient.
-Alex must distinguish assignment strategy from worker obedience and preserve
-valid waits. Token savings and improved model behavior remain unmeasured until
+Evaluator must distinguish assignment strategy from worker obedience and preserve
+valid waits; Alex owns resulting strategy changes or repairs. Token savings and
+improved model behavior remain unmeasured until
 those natural observations exist.
 
 ## Activation
