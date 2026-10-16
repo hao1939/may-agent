@@ -7,8 +7,9 @@
 **Design status:** Accepted.
 **Implementation status:** SQLite authority, fenced attempts, Conditions,
 exact input dependencies, accepted outcomes and indexed recovery are implemented.
-Task activation is independent of optional schedules. Attempts are bounded;
-unfinished work retries with backoff until progress or authorized owner closure.
+Task activation is independent of optional schedules. Attempts and automatic
+retry are bounded by default; exhaustion retains unfinished work for another
+authorized decision.
 Explicit result scope is [merged in Host #269](../archive/reviews/explicit-task-input-consideration-20260930.md); source and deployment evidence remain separate.
 
 This page owns the durable Task contract. Historical `achieve`/`maintain` mode
@@ -31,8 +32,10 @@ For execution input, live actions, result fields and acceptance, read [Task atte
 One Task lifecycle serves ordinary work, maintenance and Conversation.
 
 A Task remains open after an outcome: the worker chooses how to proceed; its owner
-decides whether to retain, revise or close the assignment. Unfinished failure keeps
-reconciling with backoff, without a fixed failure-count stop. Attempts stay bounded.
+decides whether to retain, revise or close the assignment. Unfinished failure
+retries with backoff within the declared policy. Automatic exhaustion stops
+attempts without closing the assignment; the default and explicit overrides are
+defined under [Pause, reload, and recovery](#pause-reload-and-recovery).
 Older resources may retain mode data; new `TaskIntent` has no mode. Timers are
 optional input; quiet Tasks consume no worker or recurring model call.
 
@@ -76,7 +79,9 @@ or consume unrelated waits, inputs or work.
 
 A requirement input naming a closed/missing exact target, or an invalid revision, is a deterministic rejection: `handling.phase=failed` and a readable correction result.
 Its `status=done` means input processing ended, not that a human Request was fulfilled; it is not retried as Task work. Unknown storage/mapper
-failures keep exponential backoff (250 ms to one hour, subject to scan cadence). Backoff paces recovery; it does not repair deterministic errors.
+failures keep admission backoff (250 ms to one hour, subject to scan cadence).
+This is input admission, before Task execution; it is separate from the bounded
+Task-attempt retry policy. Backoff paces recovery; it does not repair deterministic errors.
 Runtime returns blockers through the typed App caller link. Without an accountable route, `app.input.admission.failed` addresses the owning App
 with input ID, target Task, disposition and fingerprint. May's subscription admits May failures to Conversation review: inspect evidence, correct
 what is authorized, and request the specific missing human decision. The failure grants no reopening permission. Other Apps need their own subscription.
@@ -725,13 +730,16 @@ instruction. Other attention reasons retain their existing handling. The
 removes the obsolete fallback that followed this repair; old notification
 metadata needs no migration.
 
-The former fixed retry limit in #107 was superseded by #158. Persisted execution
-failures back off from 250 ms to a maximum one-hour interval, without abandoning
-the assignment after a count. Fresh human input permits one earlier attempt;
-ordinary wakes do not waive backoff. Dispatch errors before failure persistence
-use the controller's local 250 ms–30 second pacing instead. These are different
-boundaries, not competing Task lifecycles. Backoff limits frequency, not total
-spending; owners can revise, pause or close work under the [shared recovery rule](system-boundary.md#recovery-uses-evidence-before-repetition).
+Automatic execution defaults to three consecutive unsuccessful attempts, with
+30- and 60-second backoff before the second and third attempts. App policy can
+explicitly select unlimited retries. Exhaustion retains the Task, input,
+Conditions and failure evidence; it stops automatic execution without abandoning
+the assignment. An authorized owner can retry or revise work through the existing
+controls. Ordinary wakes, restart and unchanged observations must not reset the
+same exhausted retry series. New requirements remain distinct from retrying it.
+Dispatch errors before failure persistence use separate controller pacing;
+they are a different boundary, not another Task lifecycle. See the
+[shared recovery rule](system-boundary.md#recovery-uses-evidence-before-repetition).
 
 Metrics and watchdogs may reveal a stuck task, but they never create a
 replacement lifecycle or change desired state.

@@ -37,6 +37,20 @@ contracts; Tier-2 design governs when wording conflicts.
 - [Agent judgment and code paths — 2026-10-16](reviews/agent-judgment-and-code-paths-20261016.md)
   — schema/reader mismatch reproduction, completion responsibilities, unfamiliar
   input handling and reuse of the existing recovery and audit paths.
+- [Event receipt expiry: implementation trial — 2026-10-16](reviews/event-receipt-expiry-20261016.md)
+  — durable deadlines across restart, preserved historical uncertainty and independent admission recovery.
+
+- [Observer delivery intent: implementation trial — 2026-10-16](reviews/observer-delivery-intent-20261016.md)
+  — ordinary facts, persisted publication intent and independent receipt evidence.
+- [Serving database contention: implementation trial — 2026-10-16](reviews/host-contention-fix-20261016.md)
+  — serving waits and recovery batches yield; real lock/identity checks, caller
+  audit and full-CI findings. Local source candidate, not deployment evidence.
+- [Two weeks of Host changes: design lessons — 2026-10-16](reviews/host-two-week-design-review-20261016.md)
+  — 89 Host commit subjects and selected Host/App diffs; recurring boundary
+  mistakes, good corrections and coverage in the refined improvement proposal.
+- [Host contract review — 2026-10-16](reviews/host-contract-review-20261016.md)
+  — source and isolated-trial evidence for responsiveness, observation accounting,
+  receipt expiry and recovery; no deployment or token-savings claim.
 - [Unfinished-input context experiment — 2026-10-03](reviews/unfinished-input-context-20261003.md)
   — previous-result coverage, readable continuing work, and the limits of a deterministic context repair.
 - [Burst-input progress experiment — 2026-10-03](reviews/burst-input-progress-20261003.md)
