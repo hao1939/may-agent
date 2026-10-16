@@ -50,9 +50,10 @@ without an Alex wake; Alex can still inspect it during an explicit audit.
 This clarification changes documentation only and requires no runtime reload.
 
 For this trial, Evaluator assessed Scout's delivery. The remaining recurring-cost
-question, oversized source reads and five optional research-handoff failures
-below are improvement candidates for Alex to prioritize. This record does not
-claim that Alex has received a new request or completed those repairs.
+question, oversized source reads and six optional research-handoff failures
+below are improvement candidates for Alex to prioritize. At the initial review
+cut, no new request had been sent to Alex and those repairs were not completed.
+The later approved follow-up and admission receipt are recorded below.
 
 ## Bounded offline evidence review
 
@@ -205,14 +206,48 @@ read back. They are not independent validation of every external source claim.
 | Source | Recent work | Latest inspected result | Remaining limitation |
 | --- | --- | --- | --- |
 | Xiaohongshu | Six reconciliations: four new findings and two no-change results after reading already-covered material | WorkRover, 18 discovery items, no login wall, complete readable post body; publication `43ea4f2297` | Secondary explainer; paper, code, figures and benchmark results were not inspected. |
-| GitHub | 16 reconciliations: 12 research results, two disk-capacity waits and two late recovery notices correctly handled without repeating completed scans | Neatroots, HTTP 200, 13 search results, pinned source and project-authored tests inspected; publication `c9a6a8b268` | Static review, no execution. Four results report invalid optional research handoffs. |
+| GitHub | 16 reconciliations: 12 research results, two disk-capacity waits and two late recovery notices correctly handled without repeating completed scans | Neatroots, HTTP 200, 13 search results, pinned source and project-authored tests inspected; publication `c9a6a8b268` | Static review, no execution. Five results report invalid optional research handoffs. |
 | Hacker News | 16 reconciliations: 12 research results and four disk-capacity waits, with later recovery | ASPIRE October release, existing coverage updated at pinned revision; publication `d1e2ab0718` | HN had one point/no comments; no independent benchmark reproduction. One result reports an invalid optional research handoff. |
 
 These sources demonstrate research and recovery rather than the old Reddit
-unchanged-block loop. Their five reported optional handoff failures share the
+unchanged-block loop. Their six reported optional handoff failures share the
 `relatedWork` list-of-non-empty-strings contract. Publication survived, but the
 attempted downstream research/adoption handoff did not. This is a separate App
 candidate to inspect before claiming the discovery-to-adoption path is healthy.
 The source review itself did not trigger more discovery runs or fix that contract.
 Evidence is retained in `scout-source-status-20261017.json` and
 `scout-three-source-window-20261017.json` alongside the trial evidence.
+
+The owner-handoff preparation rechecked each retained event and corrected the
+initial count of five failures. GitHub events `6667250`, `6668642`, `6672293`,
+`6675202` and `6677098`, and HN event `6677079`, each explicitly report a rejected
+optional handoff. The same fact repeated in `acceptanceBasis` is not counted
+twice. This correction uses the retained window, not additional source runs.
+
+## Approved Alex follow-up
+
+The user approved routing the concrete improvement work to Alex. One addressed
+message was admitted as event `6677219`, request
+`app_9370d1db-2c22-4009-93b2-84fc9592759e`, with idempotency key
+`operator:scout-progress-efficiency:20261017:alex-owner:1`. It targets existing
+Alex Task `input/app_244ac7a5-a932-4bab-a0a0-ac098ba6bd10` (ref `f77d78e6`),
+which already owns evidence-backed fixes and later verification. No new owner
+Task or review schedule was created by this admission.
+
+The assignment prioritizes correcting the six invalid handoffs, then reducing
+unnecessary source context while preserving evidence and research quality. It
+requires meaningful regression checks, valid delivery and duplicate/replay
+verification, appropriate candidate review, committed and merged App changes,
+and explicit separation of source, activation and observed behavior. Deployment
+must identify the exact reviewed source and avoid unrelated pending changes.
+Existing source schedules, models, budgets, Task controls and access restrictions
+remain. Evaluator assesses post-change progress and total usage, including review
+overhead; Alex owns the decisions and repairs. Specialists are used when useful,
+without requiring a full team handoff for every change.
+
+Read-back found the same Task running as Alex, generation 1, resource version 78,
+attempt `r_1_9b74674b-6b25-4f94-ab56-15c81d13fd72`, started at
+**2026-10-17 04:25:31 Asia/Shanghai**. This proves admission and execution start,
+not implementation, delivery or token savings. Intent, admission receipt and
+read-back are retained as `scout-improvement-owner-*-20261017.json` in the private
+evidence directory above.
