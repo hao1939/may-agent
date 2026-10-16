@@ -111,3 +111,88 @@ Receipts, file hashes and readiness are retained as
 `progress-after-wake-reload-completion.json` and
 `progress-after-wake-installed-verification.json` in the private evidence
 directory. Prior rollout and audit observations retain their separate scopes.
+
+## User-requested immediate trial
+
+The user subsequently requested an immediate run instead of waiting. One
+`explore-now` action was admitted as event `6677159`, request
+`app_a64f01e0-cc08-4e1f-ab30-c535687964d3`. This is **operator-triggered evidence**,
+not a scheduled-wake test: the action supplies an explicit bounded-recheck
+opportunity and uses the manual assignment. It retained `explore-reddit`, advanced
+it to generation 4 and ran the deployed progress-focused instructions.
+
+Attempt `r_4_8a69dee4-7db0-4bbf-8adf-441ff560c52c` ran from 04:13:41 to
+04:15:54 Shanghai time and completed as event `6677182`. Scout invoked
+`scout-explore`, retrieved a public Reddit Atom feed, and integrated stable post
+`t3_1x7pq87` into the existing unattended-execution note. The section explains
+negative commitments and uncertain effects after context reset while explicitly
+limiting the source to a pseudonymous practitioner discussion, without inspected
+implementation or incident evidence.
+
+Independent read-back verified HTTP 200 in the retained response headers,
+22 parsed entries, exactly one matching post ID, its readable body, and SHA-256
+`5110518544ce8aad35a4327e65ecccf404dbedc2d7a6026afade5ffd459ab3ff` against the
+recorded source fingerprint. Publication `4f9964e07dc40d794de6ac64b09649db9d487de5`
+is on `main`; the current knowledge file matches its committed bytes. The daily
+digest is a working artifact, separate from that Git publication.
+
+The two Scout model executions (owner and researcher) used 54 uncached input,
+220,064 cache-read, 543,344 cache-write and 7,608 output tokens, with a combined
+recorded estimate of **$2.9571**. This excludes evaluation and is not a measured
+saving. The source reader printed the whole Atom response, encountered output
+truncation, then read and parsed it again; narrower source extraction is a
+concrete efficiency candidate. A useful result alone does not prove low cost.
+
+The public feed success does not establish recovery of ordinary permalink
+access. The automatic assignment still has its distinct access restriction, so
+the next natural scheduled decision remains required evidence. It should judge
+the newly available feed-body evidence and any needed access-contract decision,
+not infer that all Reddit endpoints have recovered.
+
+One review of this generation was admitted through Alex's declared
+`review-task-outcome` input as event `6677185`. The internal
+`evaluation.task.review.requested` event was first rejected by the operator
+interface before admission; no review was created by that rejected call.
+The supported App input retains the normal reviewer and semantic allowance.
+Raw source bytes, usage, read-back and admission receipts are retained as
+`progress-after-wake-trigger-*`, `progress-after-wake-reddit-source.atom` and
+`progress-after-wake-review-*` under the private evidence directory.
+
+The review completed and published event `6677195`, report
+`task-outcomes/evaluator-deepseek/scout-knowledge-lib/task-outcome-v2/explore-reddit-88b0d891270fed2a.json`.
+Report hashes/read-back verified. It assessed the new delivery as supported,
+attributed the old instruction to the App owner, and selected `followUp: none`.
+Its named trigger-provenance gap is resolved by the operator admission event
+`6677159` retained above; its queries looked for a source event rather than the
+actual `app.input.requested` action route. No second review was requested to
+correct that bounded lookup gap.
+
+This does **not** close the recurring-efficiency concern. The review describes
+the old no-ops as short (under about 25 seconds) and justified by the owner
+instruction, but does not establish their token cost or the usefulness of that
+recurring App strategy. Current delivery verification and historical worker
+compliance are supported; strategy/cost acceptance remains open. The reviewer
+used 61,462 input, 285,184 cache-read and 8,194 output tokens across seven replies;
+its price is unknown, so the recorded zero estimate is not a free execution.
+
+## Xiaohongshu, GitHub and Hacker News check
+
+The user also asked whether the other discovery sources work. The retained
+24-hour reconciliation window ends at 2026-10-17 04:16:42 Shanghai time. Counts
+below describe accepted Task results; the latest publication for each source was
+read back. They are not independent validation of every external source claim.
+
+| Source | Recent work | Latest inspected result | Remaining limitation |
+| --- | --- | --- | --- |
+| Xiaohongshu | Six reconciliations: four new findings and two no-change results after reading already-covered material | WorkRover, 18 discovery items, no login wall, complete readable post body; publication `43ea4f2297` | Secondary explainer; paper, code, figures and benchmark results were not inspected. |
+| GitHub | 16 reconciliations: 12 research results, two disk-capacity waits and two late recovery notices correctly handled without repeating completed scans | Neatroots, HTTP 200, 13 search results, pinned source and project-authored tests inspected; publication `c9a6a8b268` | Static review, no execution. Four results report invalid optional research handoffs. |
+| Hacker News | 16 reconciliations: 12 research results and four disk-capacity waits, with later recovery | ASPIRE October release, existing coverage updated at pinned revision; publication `d1e2ab0718` | HN had one point/no comments; no independent benchmark reproduction. One result reports an invalid optional research handoff. |
+
+These sources demonstrate research and recovery rather than the old Reddit
+unchanged-block loop. Their five reported optional handoff failures share the
+`relatedWork` list-of-non-empty-strings contract. Publication survived, but the
+attempted downstream research/adoption handoff did not. This is a separate App
+candidate to inspect before claiming the discovery-to-adoption path is healthy.
+The source review itself did not trigger more discovery runs or fix that contract.
+Evidence is retained in `scout-source-status-20261017.json` and
+`scout-three-source-window-20261017.json` alongside the trial evidence.
