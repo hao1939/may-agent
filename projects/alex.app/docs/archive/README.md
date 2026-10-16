@@ -34,6 +34,9 @@ contracts; Tier-2 design governs when wording conflicts.
 
 ## Reviews
 
+- [Agent judgment and code paths — 2026-10-16](reviews/agent-judgment-and-code-paths-20261016.md)
+  — schema/reader mismatch reproduction, completion responsibilities, unfamiliar
+  input handling and reuse of the existing recovery and audit paths.
 - [Unfinished-input context experiment — 2026-10-03](reviews/unfinished-input-context-20261003.md)
   — previous-result coverage, readable continuing work, and the limits of a deterministic context repair.
 - [Burst-input progress experiment — 2026-10-03](reviews/burst-input-progress-20261003.md)
