@@ -187,7 +187,11 @@ Validation uses disposable databases and synthetic timing/plan fixtures:
 - Full Host `bun run ci`: 3,800 passed, three installation-only tests skipped,
   zero failures. Final Host/SDK types, App boundary and ESLint: passed.
 - Companion `may.app/reliability-metrics.test.ts`: 20 passed.
-- `check:may-design`: zero errors; existing unclassified `reports` warning.
+- `check:may-design` in the isolated source worktree: zero errors; existing
+  unclassified `reports` warning. The integrated shared checkout passes document
+  integrity and examples but its canonical-App check reports three pre-existing,
+  untracked disabled App directories without `app.ts` (`evaluation.app`,
+  `gym.app`, `may-agent.app`). This change did not alter those directories.
 
 These are source-contract tests, not a measured performance improvement or proof
 that Alex has mitigated a live incident. Plans still require an existing slow-read
