@@ -467,7 +467,8 @@ function isPersistedSession(value: unknown): value is PersistedSession {
   return (
     typeof value.agent === "string" &&
     typeof value.task === "string" &&
-    ["running", "done", "error", "interrupted", "idle"].includes(String(value.status)) &&
+    typeof value.status === "string" &&
+    ["running", "done", "error", "interrupted", "idle"].includes(value.status) &&
     typeof value.startedAt === "number" &&
     Number.isFinite(value.startedAt) &&
     (value.taskBinding === undefined || isTaskBinding(value.taskBinding))

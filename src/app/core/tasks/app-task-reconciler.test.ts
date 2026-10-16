@@ -665,6 +665,7 @@ function declareAndClaimTask(
     reason?: string;
     trigger?: Record<string, unknown>;
     isAgentRunnable?: (agent: string) => boolean;
+    recoverPreviousSession?: Parameters<typeof claimObservedAppTask>[1]["recoverPreviousSession"];
     recoverSessionHandoff?: Parameters<typeof claimObservedAppTask>[1]["recoverSessionHandoff"];
     creator?: Parameters<typeof observeAppTaskIntent>[1]["creator"];
   },
@@ -682,6 +683,7 @@ function declareAndClaimTask(
     handler: input.handler,
     reason: input.reason,
     isAgentRunnable: input.isAgentRunnable,
+    recoverPreviousSession: input.recoverPreviousSession,
     recoverSessionHandoff: input.recoverSessionHandoff,
   });
 }
@@ -3860,7 +3862,7 @@ describe("App task reconciler state", () => {
     });
   });
 
-  it("returns superseded agent-session ids when reclaiming a previous-runtime attempt", () => {
+  it("requires session recovery before replacing a previous-runtime claim", () => {
     const state = fixture();
     const { config } = state;
     const first = declareAndClaimTask(config, {
@@ -3875,16 +3877,22 @@ describe("App task reconciler state", () => {
       attempt.runtimeId = "previous-runtime";
     });
 
-    const reclaimed = declareAndClaimTask(config, {
+    const request = {
       intent: intent(),
       appAgent: "app-owner",
       handler: "workflow:known-workflow",
       reason: `attempt-recovery:${first.taskId}`,
-    });
-    expect(reclaimed).toMatchObject({
-      kind: "claimed",
-      supersededSessionIds: ["session-old"],
-    });
+    };
+    expect(() => declareAndClaimTask(config, request)).toThrow("Task session recovery is unavailable");
+    expect(config.resourceStore.readTask(first.taskId)?.status.currentAttemptId).toBe(first.attemptId);
+    const recovered: AppTaskAttempt[] = [];
+    const reclaimed = declareAndClaimTask(config, { ...request, recoverPreviousSession: (attempt) => {
+      expect(config.resourceStore.readTask(first.taskId)?.status.currentAttemptId).toBe(first.attemptId);
+      recovered.push(attempt);
+    } });
+    expect(reclaimed.kind).toBe("claimed");
+    expect(recovered).toMatchObject([{ sessionId: "session-old", taskId: first.taskId,
+      taskGeneration: first.generation, metadata: { id: first.attemptId } }]);
   });
 
   it("associates workflow sessions with the current attempt and rejects stale generations", () => {
@@ -4312,6 +4320,10 @@ describe("App task reconciler state", () => {
       taskId: first.taskId,
       appAgent: "app-owner",
       handler: "agent:app-owner",
+      recoverPreviousSession: (attempt) => {
+        expect(attempt.metadata.id).toBe(running.attemptId);
+        expect(attempt.sessionId).toBe("interrupted-session");
+      },
     });
     expect(replacement.kind).toBe("claimed");
     if (replacement.kind !== "claimed") throw new Error("expected replacement claim");

@@ -10876,6 +10876,78 @@ describe("canonical App task runtime", () => {
       expect(f.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
     }
 
+    it.each(["appId", "taskId", "generation", "attemptId", "array-status"] as const)(
+      "controller recovery preserves the original claim when session %s is invalid",
+      async (field) => {
+        const f = setup();
+        const touched: string[] = [];
+        await installCoreTaskRuntimes({ ...f.base, sessions: createTaskSessionRecovery({
+          persistDir: f.base.persistDir, bus: f.base.bus,
+          manager: { hasActiveSession: () => true, cancel: () => touched.push("cancel") } as never,
+          drainPersistedBashProcessGroups: () => { touched.push("drain"); return true; },
+        }) });
+        f.observe("owner");
+        recordAppTaskTrigger(f.config, "owner", { type: "sample.changed", data: { instruction: "Continue work" } });
+        const claim = f.saveTerminalSession("owner");
+        mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+          attempt.runtimeId = "previous-runtime";
+          attempt.lease!.runtimeId = "previous-runtime";
+        });
+        const path = join(f.base.persistDir, "sessions", "session-owner", "meta.json");
+        const meta = JSON.parse(readFileSync(path, "utf8"));
+        if (field === "array-status") meta.status = ["running"];
+        else meta.taskBinding[field] = field === "generation" ? claim.generation + 1 : "another-owner";
+        const bytes = JSON.stringify(meta);
+        writeFileSync(path, bytes);
+        const before = readTaskSnapshot(f.config);
+        await expect(f.run("owner")).rejects.toThrow(field === "array-status" ? "invalid session metadata" : "session Task binding");
+        expect(readTaskSnapshot(f.config)).toEqual(before);
+        expect(f.config.resourceStore.readTask("owner")?.status.currentAttemptId).toBe(claim.attemptId);
+        expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("running");
+        expect(touched).toEqual([]);
+        expect(f.agentCalls()).toBe(0);
+        expect(readFileSync(path, "utf8")).toBe(bytes);
+      },
+    );
+
+    it("controller recovery drains the original generation before replacing its claim and passes incomplete history", async () => {
+      const f = setup();
+      let drained = false;
+      let original: { taskId: string; attemptId: string };
+      await installCoreTaskRuntimes({ ...f.base, sessions: createTaskSessionRecovery({
+        persistDir: f.base.persistDir, bus: f.base.bus,
+        manager: { hasActiveSession: () => false } as never,
+        drainPersistedBashProcessGroups: () => {
+          expect(f.config.resourceStore.readTask(original.taskId)?.status.currentAttemptId).toBe(original.attemptId);
+          return drained;
+        },
+      }) });
+      f.observe("owner");
+      recordAppTaskTrigger(f.config, "owner", { type: "sample.changed", data: { instruction: "Continue work" } });
+      const claim = f.saveTerminalSession("owner");
+      original = claim;
+      mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+        attempt.runtimeId = "previous-runtime";
+        attempt.lease!.runtimeId = "previous-runtime";
+      });
+      const resource = f.config.resourceStore.readTask("owner")!;
+      observeAppTaskIntent(f.config, { appAgent: "sample-owner", intent: {
+        ...resource.spec, id: "owner", outcome: "Produce the revised decision",
+      } });
+      expect(f.config.resourceStore.readTask("owner")!.metadata.generation).toBe(claim.generation + 1);
+      writeFileSync(join(f.base.persistDir, "sessions", "session-owner", "session.jsonl"), '{"role":"user","content":"Known progress"}\n{"damaged":');
+      await expect(f.run("owner")).rejects.toThrow("did not exit");
+      expect(f.config.resourceStore.readTask("owner")?.status.currentAttemptId).toBe(claim.attemptId);
+      expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("running");
+      expect(f.agentCalls()).toBe(0);
+      drained = true;
+      await f.run("owner");
+      expect(f.agentCalls()).toBe(1);
+      expect(f.recoveryContext()).toContain("Recovery history incomplete");
+      expect(f.recoveryContext()).toContain("Known progress");
+      expect(readAcceptedRuntimeAttempt(f.config, "owner")?.taskGeneration).toBe(claim.generation + 1);
+    });
+
     it.each(["converged", "continuing"] as const)(
       "runs new work after accepted %s results despite damaged old history",
       async (outcome) => {

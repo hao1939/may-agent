@@ -88,6 +88,18 @@ export async function runTaskAttempt(input: {
       appAgent: descriptor.agent,
       handler: "auto",
       reason: input.reason ?? "task-controller",
+      recoverPreviousSession: (attempt) => interruptSupersededAgentSession(
+        opts,
+        attempt.sessionId!,
+        `Task ${attempt.taskId} is recovering an orphaned agent session`,
+        attempt.taskId,
+        {
+          appId: descriptor.id,
+          taskId: attempt.taskId,
+          generation: attempt.taskGeneration,
+          attemptId: attempt.metadata.id,
+        },
+      ),
       recoverSessionHandoff: (attempt) => opts.sessions?.handoff(attempt),
     });
     recordTaskCheck(opts.bus, claim.kind, { appId: descriptor.id, taskId: input.taskId });
@@ -180,14 +192,6 @@ async function runClaimedTask(
   let workspaceFinalized = false;
   try {
     executionPaths = appTaskExecutionPaths(descriptor.appDir, descriptor.projectDir);
-    for (const sessionId of claim.supersededSessionIds ?? []) {
-      interruptSupersededAgentSession(
-        opts,
-        sessionId,
-        `Task ${claim.taskId} superseded an orphaned agent session while recovering the current generation`,
-        claim.taskId,
-      );
-    }
     const conversation = isConversationTask(config, claim.taskId);
     const childContext = readAppTaskChildContext(config, claim.taskId);
     const taskSnapshot = readAppTaskLiveSnapshot(config, claim.taskId);

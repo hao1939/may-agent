@@ -261,6 +261,24 @@ it.each(["absent", "mismatched"] as const)("preserves the ownership fence for %s
   expect(existsSync(f.result)).toBe(false);
 });
 
+it("rejects array-valued session status before cancellation or drain", () => {
+  const f = recoveryFixture();
+  const meta = JSON.parse(readFileSync(f.metadata, "utf8"));
+  meta.status = ["running"];
+  const bytes = JSON.stringify(meta);
+  writeFileSync(f.metadata, bytes);
+  const touched: string[] = [];
+  const recovery = createTaskSessionRecovery({
+    persistDir: f.root, bus: new EventBus(),
+    manager: { hasActiveSession: () => true, cancel: () => touched.push("cancel") } as never,
+    drainPersistedBashProcessGroups: () => { touched.push("drain"); return true; },
+  });
+  expect(() => recovery.interrupt(f.sessionId, "Previous worker exited", "work", f.binding)).toThrow("invalid session metadata");
+  expect(touched).toEqual([]);
+  expect(readFileSync(f.metadata, "utf8")).toBe(bytes);
+  expect(existsSync(f.result)).toBe(false);
+});
+
 it.each(["absent", "terminal"] as const)("honors the live process marker when metadata is %s", (kind) => {
   const f = recoveryFixture("done");
   if (kind === "absent") rmSync(f.metadata);
