@@ -1,7 +1,13 @@
 import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
 import { isRecord, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
-import { childEventTrace, EVENT_ROW_ID, type DeliveryResult, type EventBus } from "./core/events/bus.js";
+import {
+  childEventTrace,
+  EVENT_RECORD_ONLY,
+  EVENT_ROW_ID,
+  type DeliveryResult,
+  type EventBus,
+} from "./core/events/bus.js";
 import type { RuntimeReloadResult } from "./daemon-lifecycle.js";
 import { validateSessionControl } from "./adapters/executors/session-control.js";
 export { validateSessionControl } from "./adapters/executors/session-control.js";
@@ -81,6 +87,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
           ...(nonEmptyString(result.sourceCommit) ? { sourceCommit: nonEmptyString(result.sourceCommit) } : {}),
         },
         trace: childEventTrace(event),
+        [EVENT_RECORD_ONLY]: true,
       } as any);
     };
     const expectedSourceCommit = nonEmptyString(request.expectedSourceCommit);
