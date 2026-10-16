@@ -151,6 +151,20 @@ Results: +77% on LIBERO-Pro, +72% on Robosuite bimanual, +32% on BEHAVIOR-1K. Ze
 
 Source: https://arxiv.org/abs/2607.00272
 
+#### October 16 recheck: the v1 release makes promotion evidence concrete
+
+A current HN submission points to ASPIRE's October v1 repository release. At pinned commit [`fa00f0ef2bc1d91d594b9aa502c22133c9f538f7`](https://github.com/NVlabs/ASPIRE/commit/fa00f0ef2bc1d91d594b9aa502c22133c9f538f7), the implementation sharpens the earlier paper-level lifecycle claim: the durable artifact is a repository of sensorimotor skills, but a proposed skill is promoted only after a separate verifier can re-solve the same task from the skill library and proposal, without the proposer's program, within two attempts. The packaged campaign separates development seeds, a once-used unseen-check band, and coordinator-run held-out evaluation; its clean-slate procedure says that reusing the unseen band spends the available generalization evidence rather than creating another independent check.
+
+The release also distinguishes several evidence layers that should not be collapsed. Run artifacts record program status, benchmark success, aggregate outcomes, typed parent-linked traces, and termination reasons separately. The documentation explicitly says operational success is not benchmark task success. Generated programs are denied native simulator state, rewards, success predicates, and credentials, while imported model traces are redacted before persistence. These are useful controls around skill refinement, but they do not independently validate the README's self-reported 99% success claim.
+
+**Scout interpretation:** ASPIRE's reusable pattern is not simply “agents write skills.” It is **failure-derived proposal → partitioned evaluation → clean-slate reproduction by another role → promotion**, with run receipts kept distinct from task verdicts. That pattern is directly relevant to software-agent procedural memory: repeated success by the author is weaker evidence than reproducibility from the candidate skill alone. The repository also shows the operational cost of this standard—GPU and gated-model setup, services, seed accounting, and campaign artifacts—so adopting the promotion shape does not imply adopting its robotics stack.
+
+**Coverage and limitations:** Scout read the HN item (1 point, no comments), the pinned repository README, iterative-debugging skill, clean-slate instructions, run-artifact contract, validation configuration, and real-robot `AGENTS.md`. Scout did not run ASPIRE, its tests, simulations, models, benchmarks, or a robot; did not inspect the full paper during this recheck; and did not independently reproduce the reported results. The HN post is discovery evidence, not community validation.
+
+- HN: https://news.ycombinator.com/item?id=50123746
+- Repo: https://github.com/NVlabs/ASPIRE
+- Reviewed revision: https://github.com/NVlabs/ASPIRE/commit/fa00f0ef2bc1d91d594b9aa502c22133c9f538f7
+
 ### Paper 4: MCP Server Architecture Patterns (2606.30317)
 
 **Tool accumulation degrades selection accuracy.** Five MCP patterns catalogued across 15 production/public servers: Resource Gateway, Tool Orchestrator, Stateful Session Server, Proxy Aggregator, Domain-Specific Adapter. Plus four anti-patterns. Key quantitative finding:
