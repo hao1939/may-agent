@@ -45,10 +45,20 @@ name is attribution, not authenticated human identity.
 
 `/todo` lists requests for attention. Open `/task <ref>` to read the full
 proposal and any other pending human actions, then reply to that detail.
+Automatic Telegram cards label the Task purpose and exact requested action; the
+full current state and evidence stay behind **Details**. Apps remain responsible
+for putting the plain-language reason, supported reply values, meaningful choices
+and consequences, recommendation and material uncertainty in `requestedAction`
+when those are needed for a decision.
+The transport preserves and labels that content; it does not invent a rationale
+or choose on the App's behalf.
+
 An incomplete proposal binding leaves the message as conversation and records
 no approval. For feedback, use the same reply gesture with ordinary text, for example
 `/reply <ref> Please simplify this before I approve.` Feedback remains
-conversation for the App to interpret.
+conversation for the App to interpret. A qualified or ambiguous reply is likewise
+feedback rather than approval; exact supported decisions keep their displayed
+Task, generation, Condition and proposal correlation.
 
 The Host recognizes exact decisions, preserves the input and proposal, then
 publishes the existing decision event from its durable Conversation route. Its
@@ -96,6 +106,17 @@ receive their scoped publishing capability through the SDK.
 | `conversation.updated` | Exact Conversation wake; read messages since the last known sequence |
 | `getEvent` / HTTP `GET /api/events/:id` | Trusted operator diagnostics, including internal types; linked route state is not Task state |
 | Explicit raw event/session subscription | Best-effort diagnostic stream; payloads outside documented integrations may change |
+
+App admission and another route's delivery receipt are independent. A durable
+addressed message with no matching App gets three admission attempts, including
+the first; recovery uses the existing scan. Exhaustion stops that App route and
+retains its diagnostic as a failed `delivery` link in `getEvent`. It cannot undo
+another route's acceptance or cause that accepted route to run again on a keyed
+producer retry. Without an independent delivery, the Event remains `unhandled`;
+record-only acceptance does not count as delivery. A later real acceptance keeps
+the App failure link. Restart, registry reload and retrying the same publication
+do not renew the exhausted allowance. A deliberately new publication uses a new
+identity, after the caller has considered any effects already accepted.
 
 `PublicEvent` names the transport shape, not a promise that every bus type is a
 supported domain API. The Host's `PUBLIC_EVENT_TYPES` is an **ingress allowlist**,

@@ -217,6 +217,7 @@ function resourceTaskView(
     generation: resource.metadata.generation,
     outcome: resource.spec.outcome,
     summary: resource.status.summary,
+    ...(resource.status.retryExhausted ? { retryExhausted: structuredClone(resource.status.retryExhausted) } : {}),
     response: resource.status.response,
     result: resource.status.result ? structuredClone(resource.status.result) : undefined,
     facts: resource.status.facts ? [...resource.status.facts] : undefined,

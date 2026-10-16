@@ -110,6 +110,8 @@ export type TaskCurrentObligations =
     };
 
 export type TaskView = {
+  /** Automatic execution stopped; unfinished work and owner recovery remain live. */
+  retryExhausted?: { generation: number; attemptId: string; failures: number; limit: number; exhaustedAt: string };
   id: string;
   /** Owner ended execution; a prior accepted result alone does not close the Task. */
   closed?: boolean;

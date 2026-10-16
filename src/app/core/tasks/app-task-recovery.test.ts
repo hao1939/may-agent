@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, spyOn } from "bun:test";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import type { IndexedTaskCandidate, IndexedTaskRecoveryCursor } from "../state/app-task-resource-store.js";
 
@@ -87,6 +87,75 @@ describe("AppTaskRecoveryScheduler", () => {
       }
     } finally {
       scheduler.close();
+    }
+  });
+
+  it("re-arms when the clock crosses a persisted deadline after the recovery query", async () => {
+    let now = 100;
+    const dueAt = 102;
+    let recoveryCalls = 0;
+    const queued = Promise.withResolvers<void>();
+    const scheduler = new AppTaskRecoveryScheduler({
+      source: {
+        listRecoveryCandidates(queryAt = now) {
+          recoveryCalls++;
+          if (recoveryCalls === 2) now = 101; // First timer callback is early.
+          return {
+            items:
+              queryAt >= dueAt
+                ? [
+                    {
+                      taskId: "due-task",
+                      lane: "normal" as const,
+                      ready: false,
+                      changed: false,
+                      nextCheckAt: dueAt,
+                      leaseUntil: null,
+                    },
+                  ]
+                : [],
+            nextCursor: null,
+          };
+        },
+        nextDueAt() {
+          if (recoveryCalls === 2) now = dueAt; // Cross after the early query.
+          return dueAt;
+        },
+      },
+      enqueue: () => queued.resolve(),
+      safetyIntervalMs: 10_000,
+      now: () => now,
+    });
+    try {
+      scheduler.start();
+      await Promise.race([
+        queued.promise,
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("deadline was not re-armed")), 100)),
+      ]);
+      expect(recoveryCalls).toBeGreaterThanOrEqual(3);
+    } finally {
+      scheduler.close();
+    }
+  });
+
+  it("caps distant deadline timers at Node's supported delay", () => {
+    const timers = spyOn(globalThis, "setTimeout");
+    const now = 100;
+    const scheduler = new AppTaskRecoveryScheduler({
+      source: {
+        listRecoveryCandidates: () => ({ items: [], nextCursor: null }),
+        nextDueAt: () => now + 2_147_483_647 + 1_000,
+      },
+      enqueue: () => {},
+      safetyIntervalMs: 10_000,
+      now: () => now,
+    });
+    try {
+      scheduler.start();
+      expect(timers.mock.calls.some(([, delay]) => delay === 2_147_483_647)).toBe(true);
+    } finally {
+      scheduler.close();
+      timers.mockRestore();
     }
   });
 

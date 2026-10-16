@@ -2,7 +2,12 @@ import { afterEach, expect, it, setSystemTime, spyOn } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { defineApp, Type } from "@may-agent/sdk";
+import { EventBus } from "../events/bus.js";
+import { runTaskAttempt } from "./attempt-runner.js";
+import { matchingAppTaskConditionTaskIds, trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
+import { readRuntimeTaskView } from "../reads/app-read.js";
 import { admitTaskInput } from "../state/inbox.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";
 import { AppTaskController } from "./controller.js";
@@ -10,6 +15,7 @@ import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { appTaskTestContext } from "./app-task-test-support.js";
 import {
   appTaskContext,
+  recordAppTaskAttemptSession,
   claimObservedAppTask,
   cancelAppTask,
   completeAppTask,
@@ -20,6 +26,7 @@ import {
   recordAppTaskTrigger,
   retryFailedAppTask,
   reportAppTaskFailure,
+  releaseStaleAppTaskResult,
   stopAppTaskAttempt,
   listRunnableAppTaskIds,
 } from "./app-task-reconciler.js";
@@ -30,11 +37,12 @@ afterEach(() => {
   for (const dispose of cleanup.splice(0).reverse()) dispose();
 });
 
-function fixture() {
+function fixture(maxConsecutiveFailures?: number | "unlimited") {
   const root = mkdtempSync(join(tmpdir(), "may-durable-retry-"));
   const databasePath = join(root, "host.sqlite");
   let config = appTaskTestContext({ appDir: root, agent: "owner", databasePath,
     tree: { root_task_id: "root", groups: { root: { id: "root", parent_id: null, owner: "owner" } } } });
+  config.maxConsecutiveFailures = maxConsecutiveFailures;
   cleanup.push(() => { config.resourceStore.close(); rmSync(root, { recursive: true, force: true }); });
   const intent = { id: "work", parentId: "root", outcome: "Read the measurement", acceptance: ["Return observed value"] };
   observeAppTaskIntent(config, { intent, appAgent: "owner" });
@@ -51,10 +59,127 @@ function fixture() {
     reopen() {
       config.resourceStore.close();
       config = appTaskContext({ appDir: root, projectDir: root, agent: "owner",
+        maxConsecutiveFailures,
         resourceStore: AppTaskResourceStore.openStandalone(databasePath, "sample") });
     },
   };
 }
+
+function retainLegacyFailureCounter(f: ReturnType<typeof fixture>, count: number) {
+  f.config.resourceStore.db.prepare(`UPDATE app_tasks SET resource_json = json_set(
+    json_remove(resource_json, '$.status.executionFailureAttemptId', '$.status.admissionFailures'),
+    '$.status.executionFailures', ?) WHERE app_id = 'sample' AND task_id = 'work'`).run(count);
+  f.reopen();
+}
+
+function rejectAdmission(f: ReturnType<typeof fixture>, times: number) {
+  for (let index = 0; index < times; index++) {
+    expect(claimObservedAppTask(f.config, {
+      taskId: "work", appAgent: "owner", handler: "agent", isAgentRunnable: () => false,
+    })).toMatchObject({ kind: "attention", summary: "Resolved agent owner is not a runnable agent" });
+    setSystemTime(f.config.resourceStore.readTask("work")!.status.executionRetryAt!);
+  }
+}
+
+function runWithoutExecution(f: ReturnType<typeof fixture>) {
+  const root = f.config.appDir;
+  return runTaskAttempt({
+    taskId: "work",
+    descriptor: { id: "sample", appDir: root, projectDir: root, agent: "owner", reconciliationPaused: false,
+      resourceStore: f.config.resourceStore,
+      app: defineApp({ id: "sample", version: 1, agent: "owner", inputSchema: Type.Object({}),
+        tasks: { maxConsecutiveFailures: f.config.maxConsecutiveFailures } }) },
+    opts: { projectsRoot: root, projectRoot: root, persistDir: root, bus: new EventBus(), hostCapacity: new HostCapacity(1) },
+    dispatch: { enqueuedAt: Date.now(), startedAt: Date.now(), readyWaitMs: 0, lane: "normal" },
+    reportTiming: () => { throw new Error("Recovery must not start another attempt"); },
+  });
+}
+
+it.each([false, true])("exhausts the current caller after success and clock rollback (legacy=%s)", (legacy) => {
+  setSystemTime(new Date("2026-10-15T00:00:00Z"));
+  const f = fixture("unlimited");
+  const old = f.claim();
+  failAppTaskAttempt(f.config, old, "Old failure");
+  setSystemTime(f.config.resourceStore.nextDueAt()!);
+  const success = f.claim();
+  completeAppTask(f.config, success, { summary: "First ask answered", result: { value: 17 } });
+  setSystemTime(new Date("2026-10-14T00:00:00Z"));
+  admitTaskInput(f.config, { appId: "sample", attachment: { kind: "existing", taskId: "work" },
+    idempotencyKey: "ask:new", inputContext: { id: "new", source: { kind: "app", id: "second-caller" },
+      input: { kind: "measure", data: { sample: "two" } } } });
+  let last;
+  for (let index = 0; index < 3; index++) {
+    last = f.claim();
+    failAppTaskAttempt(f.config, last, "Current failure");
+    setSystemTime(f.config.resourceStore.nextDueAt()!);
+  }
+  if (legacy) retainLegacyFailureCounter(f, 3);
+  else f.reopen();
+  f.config.maxConsecutiveFailures = 2;
+  expect(() => f.claim()).toThrow("attention");
+  expect(f.config.resourceStore.readTask("work")!.status).toMatchObject({
+    executionFailures: 3, executionFailureAttemptId: last!.attemptId,
+    retryExhausted: { attemptId: last!.attemptId, failures: 3, limit: 2 },
+  });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:new", "failure"))
+    .toMatchObject({ attemptId: last!.attemptId });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:new", "failure")!.summary).toContain("Automatic retries exhausted");
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")?.attemptId).toBe(success.attemptId);
+  expect(f.config.resourceStore.readAttempt(old.attemptId)?.retryExhausted).toBeUndefined();
+});
+
+it.each([false, true])("does not charge legacy admission checks as failed attempts (older successful episode=%s)", (oldEpisode) => {
+  const f = fixture();
+  if (oldEpisode) {
+    failAppTaskAttempt(f.config, f.claim(), "Old failure");
+    setSystemTime(f.config.resourceStore.nextDueAt()!);
+    deferAppTask(f.config, f.claim(), { disposition: "waiting", continue: true, summary: "Useful progress accepted", facts: [] });
+  }
+  rejectAdmission(f, 3);
+  retainLegacyFailureCounter(f, 3);
+  const first = f.claim();
+  expect(f.config.resourceStore.readTask("work")!.status.executionFailures).toBeUndefined();
+  expect(failAppTaskAttempt(f.config, first, "First real failure").status).toBe("retrying");
+  expect(f.config.resourceStore.readTask("work")!.status).toMatchObject({
+    executionFailures: 1, executionFailureAttemptId: first.attemptId,
+  });
+  for (let failures = 2; failures <= 3; failures++) {
+    setSystemTime(f.config.resourceStore.nextDueAt()!);
+    expect(failAppTaskAttempt(f.config, f.claim(), "Still failing").status).toBe(failures === 3 ? "exhausted" : "retrying");
+  }
+});
+
+it("preserves real legacy failures while subtracting admission checks", () => {
+  const f = fixture("unlimited");
+  for (let index = 0; index < 2; index++) {
+    failAppTaskAttempt(f.config, f.claim(), "Real failure");
+    setSystemTime(f.config.resourceStore.nextDueAt()!);
+  }
+  rejectAdmission(f, 3);
+  retainLegacyFailureCounter(f, 5);
+  f.config.maxConsecutiveFailures = undefined;
+  const third = f.claim();
+  expect(f.config.resourceStore.readTask("work")!.status.executionFailures).toBe(2);
+  expect(failAppTaskAttempt(f.config, third, "Third real failure").status).toBe("exhausted");
+  expect(f.config.resourceStore.readTask("work")!.status.retryExhausted?.failures).toBe(3);
+});
+
+it.each([false, true])("preserves a legacy explicit reset (later admission checks=%s)", (admissionChecks) => {
+  const f = fixture("unlimited");
+  for (let index = 0; index < 3; index++) {
+    failAppTaskAttempt(f.config, f.claim(), "Real failure");
+    setSystemTime(f.config.resourceStore.nextDueAt()!);
+  }
+  const task = f.config.resourceStore.readTask("work")!;
+  retryFailedAppTask(f.config, { appId: "sample", taskId: "work", expectedGeneration: task.metadata.generation,
+    expectedResourceVersion: task.metadata.resourceVersion, ...(admissionChecks ? { controlKey: "reviewed-reset" } : {}) });
+  if (admissionChecks) rejectAdmission(f, 3);
+  retainLegacyFailureCounter(f, admissionChecks ? 3 : 0);
+  f.config.maxConsecutiveFailures = undefined;
+  const first = f.claim();
+  expect(failAppTaskAttempt(f.config, first, "First failure after reset").status).toBe("retrying");
+  expect(f.config.resourceStore.readTask("work")!.status.executionFailures).toBe(1);
+});
 
 it("reads legacy progress independently and retains it when the first failure is selected", () => {
   const f = fixture();
@@ -86,8 +211,8 @@ it("reads legacy progress independently and retains it when the first failure is
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toBeNull();
 });
 
-it("continues hourly after prolonged failure, preserving its deadline and input across reopen", () => {
-  const f = fixture();
+it("explicit unlimited policy continues hourly, preserving its deadline and input across reopen", () => {
+  const f = fixture("unlimited");
   let now = Date.now();
   let previousDelay = 0;
   for (let failures = 1; failures <= 20; failures++) {
@@ -100,7 +225,7 @@ it("continues hourly after prolonged failure, preserving its deadline and input 
     const delay = due - now;
     expect(delay).toBeGreaterThanOrEqual(previousDelay);
     expect(delay).toBeLessThanOrEqual(60 * 60_000);
-    if (failures >= 15) expect(delay).toBe(60 * 60_000);
+    if (failures >= 8) expect(delay).toBe(60 * 60_000);
     if (failures === 15) {
       recordAppTaskTrigger(f.config, "work", { type: "sample.source.changed", eventId: 99 });
       f.reopen();
@@ -123,6 +248,24 @@ it("continues hourly after prolonged failure, preserving its deadline and input 
   expect(f.config.resourceStore.readTask("work")?.status.executionRetryAt).toBeUndefined();
 });
 
+it("honors a larger explicit allowance and restores the default when the override is omitted", () => {
+  setSystemTime(new Date("2026-09-11T00:00:00Z"));
+  const f = fixture(5);
+  for (let failures = 1; failures <= 3; failures++) {
+    expect(failAppTaskAttempt(f.config, f.claim(), "Source unavailable").status).toBe("retrying");
+    const task = f.config.resourceStore.readTask("work")!;
+    expect(task.status.retryExhausted).toBeUndefined();
+    expect(task.status.executionRetryAt! - Date.now()).toBe(30_000 * 2 ** (failures - 1));
+    setSystemTime(task.status.executionRetryAt!);
+    f.reopen();
+  }
+  // A default is selected by omission; reload does not erase spent attempts.
+  f.config.maxConsecutiveFailures = undefined;
+  expect(() => f.claim()).toThrow("attention");
+  expect(f.config.resourceStore.readTask("work")!.status.retryExhausted)
+    .toMatchObject({ failures: 3, limit: 3 });
+});
+
 it("uses the real due timer after restart, preserves cooldown under early wakes, and releases capacity", async () => {
   const f = fixture();
   const capacity = new HostCapacity(1);
@@ -140,6 +283,8 @@ it("uses the real due timer after restart, preserves cooldown under early wakes,
   const createController = () => new AppTaskController({ maxConcurrent: 1, capacity,
     onError: (_id, error) => reject(error),
     async reconcile() {
+      // Simulate restart near the end of a real 30-second cooldown.
+      if (attempts === 0) setSystemTime(Date.now() - 29_000);
       const claim = claimObservedAppTask(f.config, { taskId: "work", appAgent: "owner", handler: "agent" });
       if (claim.kind === "waiting") { earlyWakes++; return; }
       if (claim.kind !== "claimed") throw new Error(`Unexpected ${claim.kind}`);
@@ -147,6 +292,8 @@ it("uses the real due timer after restart, preserves cooldown under early wakes,
       if (attempts === 1) {
         expect(failAppTaskAttempt(f.config, claim, "Provider unavailable").status).toBe("retrying");
         retryAt = f.config.resourceStore.readTask("work")!.status.executionRetryAt!;
+        // Restore the real clock so the scheduler waits for the remaining second.
+        setSystemTime();
         scheduler.stateChanged();
         failure();
         return;
@@ -257,7 +404,7 @@ it("a new human admission waives one cooldown across reopen without resetting fa
   const f = fixture();
   const first = f.claim();
   failAppTaskAttempt(f.config, first, "Source unavailable");
-  expect(f.config.resourceStore.nextDueAt()).toBe(Date.now() + 250);
+  expect(f.config.resourceStore.nextDueAt()).toBe(Date.now() + 30_000);
   admitHuman(f);
   f.reopen();
   expect(f.config.resourceStore.readTask("work")?.status.executionFailures).toBe(1);
@@ -266,7 +413,7 @@ it("a new human admission waives one cooldown across reopen without resetting fa
   expect(next.events.map(({ event }) => event.idempotencyKey)).toEqual(["ask:measure", "human:correction"]);
   expect(next.previousAttempt?.attemptId).toBe(first.attemptId);
   failAppTaskAttempt(f.config, next, "Still unavailable");
-  const due = Date.now() + 500;
+  const due = Date.now() + 60_000;
   expect(f.config.resourceStore.nextDueAt()).toBe(due);
   expect(f.config.resourceStore.readTask("work")?.status.executionFailures).toBe(2);
   admitHuman(f); // Durable replay must not buy another early attempt.
@@ -310,11 +457,11 @@ it.each(["executor failure", "rejected result"])("human input arriving during %s
   expect(next.previousAttempt?.attemptId).toBe(first.attemptId);
   expect(f.config.resourceStore.readTask("work")?.status.executionFailures).toBe(1);
   admitHuman(f); // Replay while running is not a new human message either.
-  expect(failAppTaskAttempt(f.config, next, "Still unavailable").retryAt).toBe(Date.now() + 500);
+  expect(failAppTaskAttempt(f.config, next, "Still unavailable").retryAt).toBe(Date.now() + 60_000);
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "report")).toEqual(report);
   expect(readAppTaskAdmissionOutcome(f.config, "work", "human:correction", "report"))
     .toMatchObject({ attemptId: next.attemptId, state: "error", reportRevision: 1 });
-  expect(f.config.resourceStore.nextDueAt()).toBe(Date.now() + 500);
+  expect(f.config.resourceStore.nextDueAt()).toBe(Date.now() + 60_000);
   expect(() => f.claim()).toThrow("waiting");
 });
 
@@ -453,12 +600,12 @@ it("failed capability admission consumes the human opportunity without an unpace
     isAgentRunnable: () => false,
   });
   expect(claim.kind).toBe("attention");
-  expect(f.config.resourceStore.nextDueAt()).toBe(Date.now() + 500);
+  expect(f.config.resourceStore.nextDueAt()).toBe(Date.now() + 250);
   admitHuman(f);
   expect(() => f.claim()).toThrow("waiting");
   setSystemTime(new Date(f.config.resourceStore.nextDueAt()!));
   failAppTaskAttempt(f.config, f.claim(), "Source still unavailable");
-  expect(f.config.resourceStore.nextDueAt()).toBe(Date.now() + 1_000);
+  expect(f.config.resourceStore.nextDueAt()).toBe(Date.now() + 60_000);
 });
 
 it("a rejected human admission cannot clear durable cooldown", () => {
@@ -638,7 +785,7 @@ it("rolls failure, input restoration and deadline back together, and guards inde
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "report"))
     .toMatchObject({ attemptId: claim.attemptId, state: "error", reportRevision: 1 });
   const due = f.config.resourceStore.nextDueAt();
-  expect(due).toBe(Date.now() + 250);
+  expect(due).toBe(Date.now() + 30_000);
   f.config.resourceStore.setRecoveryState("work", { ready: true, changed: true, nextCheckAt: null });
   expect(f.config.resourceStore.nextDueAt()).toBe(due);
   expect(f.config.resourceStore.listRecoveryCandidates().items).toEqual([]);
@@ -673,4 +820,415 @@ it("applies owner revision during cooldown and fences retry plus late failure on
   expect(recordAppTaskTrigger(f.config, "work", { type: "project.task.tick" }).kind).not.toBe("recorded");
   expect(claimObservedAppTask(f.config, { taskId: "work", appAgent: "owner", handler: "agent" }).kind).toBe("completed");
   expect(f.config.resourceStore.listRecoveryCandidates().items).toEqual([]);
+});
+
+it.each(["error", "incomplete"] as const)("bounds %s attempts by default and returns exhaustion without answering the input", (kind) => {
+  setSystemTime(new Date("2026-09-11T00:00:00Z"));
+  const f = fixture();
+  const progress = f.claim();
+  deferAppTask(f.config, progress, { disposition: "waiting", continue: true, report: true,
+    summary: "Saved one measurement", facts: ["sample:one"] });
+  let last;
+  for (let failures = 1; failures <= 3; failures++) {
+    last = f.claim();
+    if (kind === "error") {
+      expect(failAppTaskAttempt(f.config, last, "Source unavailable").status)
+        .toBe(failures === 3 ? "exhausted" : "retrying");
+    } else reportAppTaskFailure(f.config, last, { summary: "Measurement partial; source unavailable", facts: ["sample:one"] });
+    const state = f.config.resourceStore.readTask("work")!.status;
+    expect(state.executionFailures).toBe(failures);
+    expect(state.phase).toBe(failures === 3 ? "attention" : "pending");
+    if (failures < 3) {
+      expect(state.executionRetryAt! - Date.now()).toBe(failures === 1 ? 30_000 : 60_000);
+      setSystemTime(state.executionRetryAt!);
+    }
+    f.reopen();
+  }
+  const exhausted = f.config.resourceStore.readAttempt(last!.attemptId)!;
+  expect(exhausted.retryExhausted).toMatchObject({ attemptId: last!.attemptId, failures: 3, limit: 3 });
+  expect(readRuntimeTaskView({ taskStateConfig: f.config }, "work"))
+    .toMatchObject({ status: "attention", retryExhausted: exhausted.retryExhausted });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "progress"))
+    .toMatchObject({ attemptId: progress.attemptId, reportRevision: 1 });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "failure"))
+    .toMatchObject({ attemptId: last!.attemptId, reportRevision: 3, summary: expect.stringContaining("Automatic retries exhausted") });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toBeNull();
+  expect(failAppTaskAttempt(f.config, last!, "Duplicate failure").status).toBe("superseded");
+  // Even selecting unlimited policy, saving requirements and forcing ready hints cannot renew exhaustion.
+  f.config.maxConsecutiveFailures = "unlimited";
+  observeAppTaskIntent(f.config, { appAgent: "owner", intent: { ...f.intent, outcome: "Use the replacement source" } });
+  recordAppTaskTrigger(f.config, "work", { type: "source.changed", eventId: 99 });
+  f.config.resourceStore.setRecoveryState("work", { ready: true, changed: true });
+  expect(f.config.resourceStore.listRecoveryCandidates(Date.now()).items).toEqual([]);
+  expect(listRunnableAppTaskIds(f.config)).toEqual([]);
+  expect(f.config.resourceStore.nextDueAt()).toBeNull();
+  expect(() => f.claim()).toThrow("attention");
+  const task = f.config.resourceStore.readTask("work")!;
+  const input = { appId: "sample", taskId: "work", expectedGeneration: task.metadata.generation,
+    expectedResourceVersion: task.metadata.resourceVersion, controlKey: "reviewed-retry" };
+  const receipt = retryFailedAppTask(f.config, input);
+  expect(retryFailedAppTask(f.config, input)).toEqual(receipt);
+  f.reopen();
+  const repaired = f.claim();
+  completeAppTask(f.config, repaired, { summary: "Verified replacement measurement", result: { value: 17 } });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure"))
+    .toMatchObject({ attemptId: repaired.attemptId, result: { value: 17 } });
+  expect(f.config.resourceStore.readTask("work")!.status.retryExhausted).toBeUndefined();
+  expect(f.config.resourceStore.readAttempt(last!.attemptId)).toEqual(exhausted);
+});
+
+it("lets a fresh human ask run once on an exhausted Task without renewing it through replay", () => {
+  const f = fixture(1);
+  failAppTaskAttempt(f.config, f.claim(), "Source unavailable");
+  admitHuman(f);
+  f.reopen();
+  const next = f.claim();
+  expect(next.events.some(({ event }) => JSON.stringify(event).includes("correction"))).toBe(true);
+  reportAppTaskFailure(f.config, next, { summary: "Still unavailable", facts: ["source:down"] });
+  admitHuman(f);
+  f.reopen();
+  expect(f.config.resourceStore.readTask("work")!.status.executionFailures).toBe(2);
+  expect(() => f.claim()).toThrow("attention");
+  admitHuman(f, "use-working-source");
+  completeAppTask(f.config, f.claim(), { summary: "Recovered and answered both asks" });
+  expect(f.config.resourceStore.readTask("work")!.status.retryExhausted).toBeUndefined();
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).not.toBeNull();
+});
+
+it("keeps Condition checks paced while exhaustion blocks attempts and duplicate Condition wakes", () => {
+  setSystemTime(new Date("2026-10-16T00:00:00Z"));
+  const f = fixture(1);
+  deferAppTask(f.config, f.claim(), { disposition: "waiting", continue: true, summary: "Review pending",
+    conditions: [{ id: "review", type: "review.updated", subject: "review:one", expected: true, owner: "app:reviewer" }] });
+  failAppTaskAttempt(f.config, f.claim(), "Another operation failed");
+  f.reopen();
+  expect(f.config.resourceStore.readTaskConditions("work")).toHaveLength(1);
+  const due = f.config.resourceStore.nextDueAt()!;
+  expect(due).toBe(Date.now() + 300_000);
+  setSystemTime(due);
+  recordAppTaskTrigger(f.config, "work", { type: "review.updated", eventId: 2 });
+  expect(() => f.claim()).toThrow("attention");
+  expect(f.config.resourceStore.nextDueAt()).toBe(Date.now() + 300_000);
+  expect(listRunnableAppTaskIds(f.config)).toEqual([]);
+});
+
+it.each(["exhausted", "other-attention", "cancelled"] as const)(
+  "retains live Condition facts for exhausted Tasks without allowing execution (%s)", async (state) => {
+    const f = fixture(1);
+    deferAppTask(f.config, f.claim(), { disposition: "waiting", continue: true, summary: "Review pending",
+      conditions: [{ id: "review", type: "review.updated", subject: "id:one",
+        expected: { field: "status", equals: "approved" }, owner: "app:reviewer" }] });
+    if (state === "other-attention") {
+      f.config.resourceStore.db.prepare(`UPDATE app_tasks SET phase = 'attention',
+        resource_json = json_set(resource_json, '$.status.phase', 'attention') WHERE task_id = 'work'`).run();
+    } else {
+      failAppTaskAttempt(f.config, f.claim(), "Another operation failed");
+      if (state === "cancelled") {
+        const task = f.config.resourceStore.readTask("work")!;
+        cancelAppTask(f.config, { appId: "sample", taskId: "work", reason: "Owner withdrew work",
+          expectedGeneration: task.metadata.generation, expectedResourceVersion: task.metadata.resourceVersion });
+      }
+    }
+    f.reopen();
+    const before = f.config.resourceStore.readTask("work")!;
+    const attempts = f.config.resourceStore.db.prepare("SELECT count(*) AS n FROM app_task_attempts").get();
+    const event = { type: "review.updated", eventId: 9001, data: { id: "one", status: "approved" } };
+    const eligible = state === "exhausted" ? ["work"] : [];
+    expect(f.config.resourceStore.readConditionRoutes(event.type).flatMap((route) => route.taskIds)).toEqual(eligible);
+    expect(f.config.resourceStore.readConditionRoutes(event.type, ["work"]).flatMap((route) => route.taskIds)).toEqual(eligible);
+    expect(f.config.resourceStore.readConditionRoutesForAllApps(event.type, ["id:one"]).flatMap((route) => route.taskIds))
+      .toEqual(eligible);
+    expect(matchingAppTaskConditionTaskIds(f.config, event)).toEqual(eligible);
+    const wakes = trackAppTaskConditionEventForTasks(f.config, event, ["work"]);
+    expect(wakes).toEqual(state === "exhausted" ? [{ conditionId: "review", taskId: "work" }] : []);
+    if (state !== "exhausted") return;
+    expect(f.config.resourceStore.readTaskConditions("work")[0]?.status)
+      .toMatchObject({ state: "true", observed: { eventType: "review.updated", state: "approved" } });
+    await runWithoutExecution(f);
+    f.reopen(); // Observation survives even when the original event is unavailable for replay.
+    expect(f.config.resourceStore.readTaskConditions("work")[0]?.status.state).toBe("true");
+    expect(f.config.resourceStore.readTask("work")?.status).toMatchObject({
+      phase: "attention", retryExhausted: before.status.retryExhausted,
+    });
+    expect(() => f.claim()).toThrow("attention");
+    expect(listRunnableAppTaskIds(f.config)).toEqual([]);
+    expect(f.config.resourceStore.db.prepare("SELECT count(*) AS n FROM app_task_attempts").get()).toEqual(attempts);
+  },
+);
+
+it("does not charge unavailable-agent checks to the execution allowance", () => {
+  const f = fixture(1);
+  for (let checks = 1; checks <= 5; checks++) {
+    expect(claimObservedAppTask(f.config, { taskId: "work", appAgent: "owner", handler: "agent", isAgentRunnable: () => false }).kind)
+      .toBe("attention");
+    expect(f.config.resourceStore.readTask("work")!.status).toMatchObject({ admissionFailures: checks });
+    expect(f.config.resourceStore.readTask("work")!.status.executionFailures).toBeUndefined();
+    setSystemTime(f.config.resourceStore.nextDueAt()!);
+    f.reopen();
+  }
+  failAppTaskAttempt(f.config, f.claim(), "Real attempt failed");
+  expect(f.config.resourceStore.readTask("work")!.status).toMatchObject({ executionFailures: 1, phase: "attention" });
+});
+
+it("rolls back exhaustion and its caller report together on a failed commit", () => {
+  const f = fixture(1);
+  const claim = f.claim();
+  const commit = spyOn(f.config.resourceStore, "commit").mockImplementationOnce(() => { throw new Error("Storage unavailable"); });
+  expect(() => failAppTaskAttempt(f.config, claim, "Source unavailable")).toThrow("Storage unavailable");
+  commit.mockRestore();
+  f.reopen();
+  expect(f.config.resourceStore.readTask("work")!.status.retryExhausted).toBeUndefined();
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "failure")).toBeNull();
+  expect(failAppTaskAttempt(f.config, claim, "Source unavailable").status).toBe("exhausted");
+});
+
+it("returns an interrupted human claim to exhausted attention and preserves cancellation fences", () => {
+  const f = fixture(1);
+  const original = f.claim();
+  failAppTaskAttempt(f.config, original, "Source unavailable");
+  for (let index = 0; index < 18; index++) {
+    admitHuman(f, `interrupted-${index}`);
+    const interrupted = f.claim();
+    expect(releaseStaleAppTaskResult(f.config, interrupted).status).toBe("released");
+  }
+  f.reopen();
+  expect(f.config.resourceStore.readTaskContext({ taskIds: ["work"] }).attempts?.[original.attemptId]).toBeUndefined();
+  expect(f.config.resourceStore.readAttempt(original.attemptId)?.state).toBe("failed");
+  const task = f.config.resourceStore.readTask("work")!;
+  expect(task.status).toMatchObject({ phase: "attention", executionFailures: 1 });
+  expect(() => f.claim()).toThrow("attention");
+  retryFailedAppTask(f.config, { appId: "sample", taskId: "work", expectedGeneration: task.metadata.generation,
+    expectedResourceVersion: task.metadata.resourceVersion });
+  const next = f.claim();
+  failAppTaskAttempt(f.config, next, "Still unavailable");
+  const failed = f.config.resourceStore.readTask("work")!;
+  cancelAppTask(f.config, { appId: "sample", taskId: "work", expectedGeneration: failed.metadata.generation,
+    expectedResourceVersion: failed.metadata.resourceVersion, reason: "Stop recovery" });
+  const closed = f.config.resourceStore.readTask("work")!;
+  expect(() => retryFailedAppTask(f.config, { appId: "sample", taskId: "work", expectedGeneration: closed.metadata.generation,
+    expectedResourceVersion: closed.metadata.resourceVersion })).toThrow("cancelled");
+  expect(failAppTaskAttempt(f.config, next, "Late callback").status).toBe("superseded");
+});
+
+it("includes the latest human correction in the single allowed claim despite an older failed human backlog", () => {
+  const f = fixture(1);
+  for (let index = 0; index < 40; index++) admitHuman(f, `old-${index}`);
+  failAppTaskAttempt(f.config, f.claim(), "Source unavailable");
+  admitHuman(f, "latest-correction");
+  const fresh = f.claim();
+  expect(fresh.events).toHaveLength(32);
+  expect(fresh.events.some(({ event }) => event.data?.request?.source?.id === "latest-correction")).toBe(true);
+  expect(fresh.eventsTruncated).toBe(true);
+  failAppTaskAttempt(f.config, fresh, "Still unavailable");
+  expect(f.config.resourceStore.readTrigger("work")!.events!.filter(({ event }) => event.type === "app.task.requested"))
+    .toHaveLength(42);
+});
+
+
+it.each(["error", "incomplete", "legacy-incomplete"] as const)("adopts a lower allowance atomically from retained %s evidence without another attempt", (kind) => {
+  setSystemTime(new Date("2026-09-11T00:00:00Z"));
+  const f = fixture("unlimited");
+  let last;
+  for (let index = 0; index < 3; index++) {
+    last = f.claim();
+    if (kind === "error") failAppTaskAttempt(f.config, last, "Source unavailable");
+    else reportAppTaskFailure(f.config, last, { summary: "Partial measurement", facts: ["sample:one"] });
+    if (kind === "legacy-incomplete") f.config.resourceStore.db.prepare(
+      "UPDATE app_task_attempts SET attempt_json = json_set(attempt_json, '$.acceptedResult.state', 'stopped') WHERE app_id = ? AND attempt_id = ?",
+    ).run("sample", last.attemptId);
+    setSystemTime(f.config.resourceStore.nextDueAt()!);
+  }
+  f.config.maxConsecutiveFailures = 2;
+  const before = f.config.resourceStore.readTask("work")!;
+  const report = readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "failure");
+  const commit = spyOn(f.config.resourceStore, "commit").mockImplementationOnce(() => { throw new Error("Storage unavailable"); });
+  expect(() => f.claim()).toThrow("Storage unavailable");
+  commit.mockRestore();
+  expect(f.config.resourceStore.readTask("work")).toEqual(before);
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "failure")).toEqual(report);
+  expect(() => f.claim()).toThrow("attention");
+  expect(f.config.resourceStore.readTask("work")!.status)
+    .toMatchObject({ executionFailures: 3, retryExhausted: { attemptId: last!.attemptId, limit: 2, failures: 3 } });
+  const exhausted = readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "failure")!;
+  expect(exhausted.reportRevision).toBe(report!.reportRevision! + 1);
+  expect(exhausted.summary).toContain("Automatic retries exhausted");
+  expect(() => f.claim()).toThrow("attention");
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "failure")).toEqual(exhausted);
+  f.reopen(); // Returning to unlimited cannot reopen the retained episode.
+  expect(() => f.claim()).toThrow("attention");
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toBeNull();
+  admitHuman(f);
+  expect(f.claim().events.some(({ event }) => event.idempotencyKey === "human:correction")).toBe(true);
+});
+
+it.each([false, true])("reports a lowered allowance to the accepted live-input scope (includes original=%s)", (includeOriginal) => {
+  const worker = fixture("unlimited");
+  const caller = fixture();
+  const claim = worker.claim();
+  const admit = (id: string) => admitTaskInput(worker.config, {
+    appId: "sample", attachment: { kind: "existing", taskId: "work" }, idempotencyKey: `ask:${id}`,
+    inputContext: { id, source: { kind: "app", id: "caller" }, input: { kind: "measure", data: { sample: id } } },
+  });
+  admit("live");
+  const inputKeys = includeOriginal ? ["ask:measure", "ask:live"] : ["ask:live"];
+  reportAppTaskFailure(worker.config, claim, { summary: "Both sources inspected; measurements remain incomplete",
+    facts: ["live-input:inspected"], inputKeys });
+  const accepted = worker.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult;
+  expect(accepted?.inputKeys).toEqual(inputKeys);
+  admit("unconsidered");
+  const condition = { id: "app-request:live", type: "app.dependency.updated", subject: "id:live",
+    expected: { field: "status", equals: "done" }, owner: "app:sample" };
+  deferAppTask(caller.config, caller.claim(), { disposition: "waiting", summary: "Wait for measurement", conditions: [condition] });
+  const feedback = () => {
+    const report = readAppTaskAdmissionOutcome(worker.config, "work", "ask:live", "failure")!;
+    return { type: "app.dependency.updated", data: {
+      id: "live", kind: "app", status: "blocked", reportKind: "failure",
+      reportAttemptId: report.attemptId, reportRevision: report.reportRevision, summary: report.summary,
+    } };
+  };
+  const prior = feedback();
+  expect(trackAppTaskConditionEventForTasks(caller.config, prior, ["work"]))
+    .toEqual([{ taskId: "work", conditionId: condition.id }]);
+  deferAppTask(caller.config, caller.claim(), { disposition: "waiting", summary: "Failure considered; await recovery" });
+  expect(trackAppTaskConditionEventForTasks(caller.config, prior, ["work"])).toEqual([]);
+  worker.reopen();
+  worker.config.maxConsecutiveFailures = 1;
+  expect(() => worker.claim()).toThrow("attention");
+  const exhausted = feedback();
+  expect(exhausted.data.reportRevision).toBe(prior.data.reportRevision! + 1);
+  expect(exhausted.data.summary).toContain("Automatic retries exhausted");
+  expect(trackAppTaskConditionEventForTasks(caller.config, exhausted, ["work"]))
+    .toEqual([{ taskId: "work", conditionId: condition.id }]);
+  expect(caller.config.resourceStore.readTaskConditions("work")[0]?.status).toMatchObject({
+    state: "false", reports: { failure: { reportRevision: exhausted.data.reportRevision } },
+  });
+  expect(worker.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toEqual(accepted);
+  expect(readAppTaskAdmissionOutcome(worker.config, "work", "ask:measure", "failure")?.reportRevision ?? null)
+    .toBe(includeOriginal ? exhausted.data.reportRevision! : null);
+  expect(readAppTaskAdmissionOutcome(worker.config, "work", "ask:unconsidered", "failure")).toBeNull();
+  expect(readAppTaskAdmissionOutcome(worker.config, "work", "ask:live")).toBeNull();
+  worker.reopen();
+  expect(() => worker.claim()).toThrow("attention");
+  expect(feedback()).toEqual(exhausted);
+});
+
+it("records exhaustion before a fresh human claim without spending its recovery opportunity", () => {
+  const f = fixture("unlimited");
+  const failed = f.claim();
+  failAppTaskAttempt(f.config, failed, "Source unavailable");
+  f.config.maxConsecutiveFailures = 1;
+  admitHuman(f);
+  const recovery = f.claim();
+  expect(recovery.events.some(({ event }) => event.idempotencyKey === "human:correction")).toBe(true);
+  expect(f.config.resourceStore.readTask("work")!.status)
+    .toMatchObject({ executionFailures: 1, retryExhausted: { attemptId: failed.attemptId, limit: 1 } });
+  expect(failAppTaskAttempt(f.config, recovery, "Still unavailable").status).toBe("exhausted");
+  expect(() => f.claim()).toThrow("attention");
+});
+
+it.each(["agent", "workflow:repair", "executor:script"])(
+  "recovers a dead %s worker without a session while preserving exhaustion", async (handler) => {
+    const f = fixture(1);
+    const failed = f.claim();
+    failAppTaskAttempt(f.config, failed, "Source unavailable");
+    admitHuman(f);
+    const claim = f.claim(handler);
+    const active = f.config.resourceStore.readAttempt(claim.attemptId)!;
+    const run = () => runWithoutExecution(f);
+    setSystemTime(Date.parse(active.lease!.expiresAt) + 1);
+    expect(await run()).toEqual([]); // This runtime still owns the attempt.
+    active.runtimeId = "dead-worker";
+    active.lease!.runtimeId = "dead-worker";
+    f.config.resourceStore.commit({
+      fences: [{ taskId: "work", resourceVersion: f.config.resourceStore.readTask("work")!.metadata.resourceVersion }],
+      attempts: [active],
+    });
+    f.reopen();
+    setSystemTime(Date.parse(active.lease!.expiresAt) - 1);
+    expect(await run()).toEqual([]); // A different runtime cannot steal a fresh lease.
+    expect(f.config.resourceStore.readTask("work")!.status.currentAttemptId).toBe(claim.attemptId);
+    setSystemTime(Date.parse(active.lease!.expiresAt) + 1);
+    expect(await run()).toContain("work");
+    const task = f.config.resourceStore.readTask("work")!;
+    expect(task.status).toMatchObject({ phase: "attention", executionFailures: 1, retryExhausted: { attemptId: failed.attemptId } });
+    expect(task.status.currentAttemptId).toBeUndefined();
+    expect(f.config.resourceStore.readAttempt(claim.attemptId)).toMatchObject({
+      state: "interrupted", failureReason: "previous-runtime-attempt-requeued",
+    });
+    expect(f.config.resourceStore.readAttempt(claim.attemptId)?.summary).toContain("automatic retries remain exhausted");
+    expect(f.config.resourceStore.readTrigger("work")!.events!.some(({ event }) => event.idempotencyKey === "human:correction")).toBe(true);
+    expect(await run()).toEqual([]);
+    expect(() => f.claim()).toThrow("attention");
+    retryFailedAppTask(f.config, { appId: "sample", taskId: "work", expectedGeneration: task.metadata.generation,
+      expectedResourceVersion: task.metadata.resourceVersion });
+    expect(f.claim().taskId).toBe("work");
+  },
+);
+
+it("leaves a concurrently attached session to the existing session recovery checks", async () => {
+  const f = fixture(1);
+  failAppTaskAttempt(f.config, f.claim(), "Source unavailable");
+  admitHuman(f);
+  const claim = f.claim();
+  const active = f.config.resourceStore.readAttempt(claim.attemptId)!;
+  active.runtimeId = "previous-worker";
+  active.lease!.runtimeId = "previous-worker";
+  f.config.resourceStore.commit({
+    fences: [{ taskId: "work", resourceVersion: f.config.resourceStore.readTask("work")!.metadata.resourceVersion }],
+    attempts: [active],
+  });
+  setSystemTime(Date.parse(active.lease!.expiresAt) + 1);
+  const read = f.config.resourceStore.readAttempt.bind(f.config.resourceStore);
+  const attach = spyOn(f.config.resourceStore, "readAttempt").mockImplementationOnce((id) => {
+    const before = read(id);
+    active.metadata.resourceVersion++;
+    active.sessionId = active.lease!.sessionId = "concurrent-session";
+    f.config.resourceStore.commit({
+      fences: [{ taskId: "work", resourceVersion: f.config.resourceStore.readTask("work")!.metadata.resourceVersion }],
+      attempts: [active],
+    });
+    return before;
+  });
+  try {
+    expect(await runWithoutExecution(f)).toEqual([]);
+  } finally {
+    attach.mockRestore();
+  }
+  expect(f.config.resourceStore.readTask("work")!.status.currentAttemptId).toBe(claim.attemptId);
+  expect(read(claim.attemptId)).toMatchObject({ state: "running", sessionId: "concurrent-session" });
+});
+
+it("recovers an expired terminal session from a running human-authorized claim without renewing exhaustion", async () => {
+  const f = fixture(1);
+  failAppTaskAttempt(f.config, f.claim(), "Source unavailable");
+  admitHuman(f);
+  const claim = f.claim();
+  recordAppTaskAttemptSession(f.config, claim, "human-recovery-session");
+  const attempt = f.config.resourceStore.readAttempt(claim.attemptId)!;
+  setSystemTime(Date.parse(attempt.lease!.expiresAt) + 1);
+  expect(claimObservedAppTask(f.config, { taskId: "work", appAgent: "owner", handler: "agent" }))
+    .toMatchObject({ kind: "busy", attemptId: claim.attemptId });
+  const interrupted: string[] = [];
+  const root = f.config.appDir;
+  const recovered = await runTaskAttempt({
+    taskId: "work",
+    descriptor: { id: "sample", appDir: root, projectDir: root, agent: "owner", reconciliationPaused: false,
+      resourceStore: f.config.resourceStore,
+      app: defineApp({ id: "sample", version: 1, agent: "owner", inputSchema: Type.Object({}), tasks: { maxConsecutiveFailures: 1 } }) },
+    opts: { projectsRoot: root, projectRoot: root, persistDir: root, bus: new EventBus(), hostCapacity: new HostCapacity(1),
+      sessions: { handoff: () => undefined, read: () => ({ status: "done" }), isLive: () => false,
+        lastActivityAt: () => null, workflowInterrupted: () => false,
+        interrupt: (id) => { interrupted.push(id); return true; } } },
+    dispatch: { enqueuedAt: Date.now(), startedAt: Date.now(), readyWaitMs: 0, lane: "normal" },
+    reportTiming: () => { throw new Error("Recovery must not start another attempt"); },
+  });
+  expect(recovered).toContain("work");
+  expect(interrupted).toEqual(["human-recovery-session"]);
+  expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
+  const task = f.config.resourceStore.readTask("work")!;
+  expect(task.status).toMatchObject({ phase: "attention", executionFailures: 1 });
+  expect(task.status.currentAttemptId).toBeUndefined();
+  retryFailedAppTask(f.config, { appId: "sample", taskId: "work", expectedGeneration: task.metadata.generation,
+    expectedResourceVersion: task.metadata.resourceVersion });
+  expect(f.claim().taskId).toBe("work");
 });
