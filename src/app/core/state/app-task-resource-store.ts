@@ -810,7 +810,8 @@ export class AppTaskResourceStore {
          WHERE c.app_id = ? AND json_extract(c.condition_json, '$.spec.type') = ?
            ${ids ? `AND linked.task_id IN (${ids.map(() => "?").join(", ")})` : ""}
            AND c.state <> 'true'
-           AND task.phase IN ('waiting', 'running', 'pending')
+           AND (task.phase IN ('waiting', 'running', 'pending')
+             OR (task.phase = 'attention' AND json_extract(task.resource_json, '$.status.retryExhausted') IS NOT NULL))
          ORDER BY c.condition_id, linked.task_id`,
       )
       .all(this.appId, eventType, ...(ids ?? [])) as Array<{
@@ -853,7 +854,8 @@ export class AppTaskResourceStore {
                : ""
            }
            AND c.state <> 'true'
-           AND task.phase IN ('waiting', 'running', 'pending')
+           AND (task.phase IN ('waiting', 'running', 'pending')
+             OR (task.phase = 'attention' AND json_extract(task.resource_json, '$.status.retryExhausted') IS NOT NULL))
          ORDER BY c.app_id, c.condition_id, linked.task_id`,
       )
       .all(eventType, ...(exactSubjects ?? [])) as Array<{

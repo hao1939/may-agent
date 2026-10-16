@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { defineApp, Type } from "@may-agent/sdk";
 import { EventBus } from "../events/bus.js";
 import { runTaskAttempt } from "./attempt-runner.js";
+import { matchingAppTaskConditionTaskIds, trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { readRuntimeTaskView } from "../reads/app-read.js";
 import { admitTaskInput } from "../state/inbox.js";
@@ -911,6 +912,50 @@ it("keeps Condition checks paced while exhaustion blocks attempts and duplicate 
   expect(listRunnableAppTaskIds(f.config)).toEqual([]);
 });
 
+it.each(["exhausted", "other-attention", "cancelled"] as const)(
+  "retains live Condition facts for exhausted Tasks without allowing execution (%s)", async (state) => {
+    const f = fixture(1);
+    deferAppTask(f.config, f.claim(), { disposition: "waiting", continue: true, summary: "Review pending",
+      conditions: [{ id: "review", type: "review.updated", subject: "id:one",
+        expected: { field: "status", equals: "approved" }, owner: "app:reviewer" }] });
+    if (state === "other-attention") {
+      f.config.resourceStore.db.prepare(`UPDATE app_tasks SET phase = 'attention',
+        resource_json = json_set(resource_json, '$.status.phase', 'attention') WHERE task_id = 'work'`).run();
+    } else {
+      failAppTaskAttempt(f.config, f.claim(), "Another operation failed");
+      if (state === "cancelled") {
+        const task = f.config.resourceStore.readTask("work")!;
+        cancelAppTask(f.config, { appId: "sample", taskId: "work", reason: "Owner withdrew work",
+          expectedGeneration: task.metadata.generation, expectedResourceVersion: task.metadata.resourceVersion });
+      }
+    }
+    f.reopen();
+    const before = f.config.resourceStore.readTask("work")!;
+    const attempts = f.config.resourceStore.db.prepare("SELECT count(*) AS n FROM app_task_attempts").get();
+    const event = { type: "review.updated", eventId: 9001, data: { id: "one", status: "approved" } };
+    const eligible = state === "exhausted" ? ["work"] : [];
+    expect(f.config.resourceStore.readConditionRoutes(event.type).flatMap((route) => route.taskIds)).toEqual(eligible);
+    expect(f.config.resourceStore.readConditionRoutes(event.type, ["work"]).flatMap((route) => route.taskIds)).toEqual(eligible);
+    expect(f.config.resourceStore.readConditionRoutesForAllApps(event.type, ["id:one"]).flatMap((route) => route.taskIds))
+      .toEqual(eligible);
+    expect(matchingAppTaskConditionTaskIds(f.config, event)).toEqual(eligible);
+    const wakes = trackAppTaskConditionEventForTasks(f.config, event, ["work"]);
+    expect(wakes).toEqual(state === "exhausted" ? [{ conditionId: "review", taskId: "work" }] : []);
+    if (state !== "exhausted") return;
+    expect(f.config.resourceStore.readTaskConditions("work")[0]?.status)
+      .toMatchObject({ state: "true", observed: { eventType: "review.updated", state: "approved" } });
+    await runWithoutExecution(f);
+    f.reopen(); // Observation survives even when the original event is unavailable for replay.
+    expect(f.config.resourceStore.readTaskConditions("work")[0]?.status.state).toBe("true");
+    expect(f.config.resourceStore.readTask("work")?.status).toMatchObject({
+      phase: "attention", retryExhausted: before.status.retryExhausted,
+    });
+    expect(() => f.claim()).toThrow("attention");
+    expect(listRunnableAppTaskIds(f.config)).toEqual([]);
+    expect(f.config.resourceStore.db.prepare("SELECT count(*) AS n FROM app_task_attempts").get()).toEqual(attempts);
+  },
+);
+
 it("does not charge unavailable-agent checks to the execution allowance", () => {
   const f = fixture(1);
   for (let checks = 1; checks <= 5; checks++) {
@@ -1014,6 +1059,57 @@ it.each(["error", "incomplete", "legacy-incomplete"] as const)("adopts a lower a
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toBeNull();
   admitHuman(f);
   expect(f.claim().events.some(({ event }) => event.idempotencyKey === "human:correction")).toBe(true);
+});
+
+it.each([false, true])("reports a lowered allowance to the accepted live-input scope (includes original=%s)", (includeOriginal) => {
+  const worker = fixture("unlimited");
+  const caller = fixture();
+  const claim = worker.claim();
+  const admit = (id: string) => admitTaskInput(worker.config, {
+    appId: "sample", attachment: { kind: "existing", taskId: "work" }, idempotencyKey: `ask:${id}`,
+    inputContext: { id, source: { kind: "app", id: "caller" }, input: { kind: "measure", data: { sample: id } } },
+  });
+  admit("live");
+  const inputKeys = includeOriginal ? ["ask:measure", "ask:live"] : ["ask:live"];
+  reportAppTaskFailure(worker.config, claim, { summary: "Both sources inspected; measurements remain incomplete",
+    facts: ["live-input:inspected"], inputKeys });
+  const accepted = worker.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult;
+  expect(accepted?.inputKeys).toEqual(inputKeys);
+  admit("unconsidered");
+  const condition = { id: "app-request:live", type: "app.dependency.updated", subject: "id:live",
+    expected: { field: "status", equals: "done" }, owner: "app:sample" };
+  deferAppTask(caller.config, caller.claim(), { disposition: "waiting", summary: "Wait for measurement", conditions: [condition] });
+  const feedback = () => {
+    const report = readAppTaskAdmissionOutcome(worker.config, "work", "ask:live", "failure")!;
+    return { type: "app.dependency.updated", data: {
+      id: "live", kind: "app", status: "blocked", reportKind: "failure",
+      reportAttemptId: report.attemptId, reportRevision: report.reportRevision, summary: report.summary,
+    } };
+  };
+  const prior = feedback();
+  expect(trackAppTaskConditionEventForTasks(caller.config, prior, ["work"]))
+    .toEqual([{ taskId: "work", conditionId: condition.id }]);
+  deferAppTask(caller.config, caller.claim(), { disposition: "waiting", summary: "Failure considered; await recovery" });
+  expect(trackAppTaskConditionEventForTasks(caller.config, prior, ["work"])).toEqual([]);
+  worker.reopen();
+  worker.config.maxConsecutiveFailures = 1;
+  expect(() => worker.claim()).toThrow("attention");
+  const exhausted = feedback();
+  expect(exhausted.data.reportRevision).toBe(prior.data.reportRevision! + 1);
+  expect(exhausted.data.summary).toContain("Automatic retries exhausted");
+  expect(trackAppTaskConditionEventForTasks(caller.config, exhausted, ["work"]))
+    .toEqual([{ taskId: "work", conditionId: condition.id }]);
+  expect(caller.config.resourceStore.readTaskConditions("work")[0]?.status).toMatchObject({
+    state: "false", reports: { failure: { reportRevision: exhausted.data.reportRevision } },
+  });
+  expect(worker.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toEqual(accepted);
+  expect(readAppTaskAdmissionOutcome(worker.config, "work", "ask:measure", "failure")?.reportRevision ?? null)
+    .toBe(includeOriginal ? exhausted.data.reportRevision! : null);
+  expect(readAppTaskAdmissionOutcome(worker.config, "work", "ask:unconsidered", "failure")).toBeNull();
+  expect(readAppTaskAdmissionOutcome(worker.config, "work", "ask:live")).toBeNull();
+  worker.reopen();
+  expect(() => worker.claim()).toThrow("attention");
+  expect(feedback()).toEqual(exhausted);
 });
 
 it("records exhaustion before a fresh human claim without spending its recovery opportunity", () => {

@@ -2582,9 +2582,10 @@ function exhaustRetainedFailures(config: AppTaskContext, tree: TaskTree, resourc
     failures, limit, exhaustedAt: new Date().toISOString(),
   };
   attempt.metadata.resourceVersion += 1;
+  // Inputs may have joined after the claim; preserve the accepted result's scope.
   const admissions = inputOutcomeAdmissions(config, tree, {
     taskId: resource.metadata.id, attemptId: attempt.metadata.id, generation: attempt.taskGeneration,
-  }, { report: true }, "failure").writes;
+  }, { report: true, inputKeys: attempt.acceptedResult?.inputKeys }, "failure").writes;
   touchResource(resource, {
     ...normalized,
     phase: "attention",
