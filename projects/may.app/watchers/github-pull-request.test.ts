@@ -214,20 +214,82 @@ describe("May GitHub pull-request resource ownership", () => {
     expect(
       (await read("2026-09-21T05:00:00Z")).events[0]!.data.idempotencyKey,
     ).not.toBe(laterRevision.data.idempotencyKey);
-    const retained = await read("2026-09-21T05:00:00Z");
-    tasks
-      .get("goal/linked-pr")!
-      .conditions.push({ ...condition, reviewAfterMs: undefined });
-    const demand = await observe(
-      context(tasks, retained.nextObservation),
-      provider(pulls),
-    );
-    expect(demand.events).toHaveLength(1);
-    expect(demand.events[0]!.data.idempotencyKey).not.toBe(
-      retained.events[0]!.data.idempotencyKey,
-    );
     Reflect.deleteProperty(pulls.get(215)!, "updated_at");
     expect((await read("2026-09-21T06:00:00Z")).events).toEqual([]);
+  });
+
+  test("keeps live publication quiet across unchanged wait addition and rearming, then emits provider changes", async () => {
+    const linkedTask = task("goal/linked-pr");
+    const tasks = new Map([["goal/linked-pr", linkedTask]]);
+    const pulls = new Map([[215, pullPayload(215, ownerBody())]]);
+    let reviews: unknown[] = [];
+    const baseProvider = provider(pulls);
+    const fetcher = (async (input, init) =>
+      String(input).includes("/reviews")
+        ? response(reviews)
+        : baseProvider(input, init)) as typeof fetch;
+
+    const first = await observe(context(tasks), fetcher);
+    expect(first.events).toHaveLength(1);
+    const fingerprint = String(first.events[0]!.data.fingerprint);
+
+    const unchanged = await observe(
+      context(tasks, first.nextObservation),
+      fetcher,
+    );
+    expect(unchanged.events).toHaveLength(0);
+
+    const wait = {
+      ...condition,
+      reviewAfterMs: undefined,
+      expected: { ...condition.expected, notEquals: fingerprint },
+      observation: { generation: 1 },
+    } as Condition;
+    linkedTask.conditions.push(wait);
+    const added = await observe(
+      context(tasks, unchanged.nextObservation),
+      fetcher,
+    );
+    expect(added.events).toHaveLength(0);
+
+    (wait.observation as { generation: number }).generation = 2;
+    const rearmed = await observe(
+      context(tasks, added.nextObservation),
+      fetcher,
+    );
+    expect(rearmed.events).toHaveLength(0);
+
+    pulls.get(215)!.head.sha = "changed-head-215";
+    const headChanged = await observe(
+      context(tasks, rearmed.nextObservation),
+      fetcher,
+    );
+    expect(headChanged.events).toHaveLength(1);
+    expect(headChanged.events[0]!.data.headSha).toBe("changed-head-215");
+
+    reviews = [
+      {
+        id: 1,
+        state: "APPROVED",
+        commit_id: "changed-head-215",
+        submitted_at: "2026-09-21T02:00:00Z",
+        user: { login: "reviewer" },
+      },
+    ];
+    const reviewChanged = await observe(
+      context(tasks, headChanged.nextObservation),
+      fetcher,
+    );
+    expect(reviewChanged.events).toHaveLength(1);
+    expect(reviewChanged.events[0]!.data.reviews).toEqual([
+      {
+        id: 1,
+        state: "approved",
+        commitId: "changed-head-215",
+        submittedAt: "2026-09-21T02:00:00Z",
+        reviewer: "reviewer",
+      },
+    ]);
   });
   test("parses one exact visible metadata block and rejects ambiguity", () => {
     expect(parseMayTaskOwner(ownerBody())).toEqual({

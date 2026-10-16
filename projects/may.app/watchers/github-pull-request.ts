@@ -613,29 +613,6 @@ function marker(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }
 
-// A new/redeclared wait needs a fresh observation even if the provider did not
-// change. Include specification identity, never mutable observation timestamps
-// or resourceVersion (which change when the same wait is merely checked).
-function requestScope(
-  task: TaskDetail,
-  fact: GitHubPullRequestFact,
-): unknown[] {
-  return task.conditions
-    .filter(
-      (condition) =>
-        condition.type === GITHUB_PULL_REQUEST_EVENT &&
-        (condition.subject ===
-          `${GITHUB_PULL_REQUEST_PREFIX}${fact.repository}#${fact.number}` ||
-          condition.subject === `resource:${fact.pullRequestId}`),
-    )
-    .map((condition) => [
-      condition.id,
-      condition.observation?.generation ?? 0,
-      condition.expected,
-    ])
-    .sort((left, right) => String(left[0]).localeCompare(String(right[0])));
-}
-
 function publication(
   fact: GitHubPullRequestFact,
   owner: Owner,
@@ -651,7 +628,6 @@ function publication(
         owner.taskId,
         task.generation ?? 0,
         fact.pullRequestId,
-        requestScope(task, fact),
         fact.providerUpdatedAt,
         fact.fingerprint,
         fact.reviewError ?? null,
@@ -782,13 +758,16 @@ export async function observeGitHubPullRequests(
         advanced++;
         continue;
       }
+      // Live publication follows provider and owner changes only. Newly added or
+      // rearmed resource demand is served by the dedicated Condition observer.
+      // Legacy snapshots use a different key and can emit one migration event;
+      // after that, this stable key preserves normal missed-change recovery.
       const key = marker(
         JSON.stringify([
           owned.owner.appId,
           owned.owner.taskId,
           task!.generation,
           owned.fact.pullRequestId,
-          requestScope(task!, owned.fact),
         ]),
       );
       const success = marker(owned.fact.fingerprint);
