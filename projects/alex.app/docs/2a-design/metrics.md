@@ -372,6 +372,24 @@ state that affects the next metric. SQLite preparation executes the first
 statement and ignores any SQL tail, so this is capability enforcement for the
 executed statement, not a parser-based single-statement guarantee.
 
+Read-only access protects stored data; it does not bound execution time. Direct
+SQL sources currently execute synchronously on the Host's serving thread. The
+collector yields between sources, but one slow query can still delay control
+traffic. An `async` function around synchronous SQLite does not change this.
+Command sources already run in a separate process; the Host awaits their result.
+Both paths retain the same sample/failure meaning. Separate processes still share
+CPU and disk resources, and their work is outside Host-process SQL counters.
+
+The accepted current choice is to keep direct SQL on the main thread and monitor
+cost. Metric queries should aim for **under 100 ms**. This is a performance target
+for investigation, not an implemented execution timeout. Existing all-SQL cost
+metrics do not separately monitor that per-metric target. Apps own query meaning,
+thresholds and review; Host owns truthful execution evidence and responsiveness.
+If execution moves to a worker later, the same query declaration should continue
+to work without App-managed process wiring. See the
+[measurement and remaining gap](../proposals/host-contract-improvements-20261016.md#5-measure-metric-query-cost-before-adding-isolation)
+and the [operator guide](../2b-manual/metric-alerts.md#investigating-query-cost).
+
 A command may also return
 `{"samples":{"example.count":{"value":7,"sampleSize":10}}}`. Metrics using
 that producer declare the **same exact** `sourceCommand`; the collector runs it

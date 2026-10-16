@@ -1,7 +1,9 @@
 # Host recovery confirmation and evidence — October 17, 2026
 
-**Status:** [Host #376](https://github.com/hao1939/may-agent/pull/376), revision
-`7ef21a660`, verified and awaiting independent review; not merged or deployed.
+**Status:** [Host #376](https://github.com/hao1939/may-agent/pull/376) merged at
+`68bc5c7cf688c6563ca61681cd20a881865ac23b` on 2026-10-16 19:41 UTC.
+Verification below applies to candidate `7ef21a660`. Deployment was not established
+by this review.
 
 **Supports:** [Purpose and value](../../1-principles/purpose.md): keep useful work
 accountable through failures without requiring people to reconstruct what happened.
@@ -103,6 +105,6 @@ backed off, capped at a 30-second delay, with no new exhaustion policy. The
 App's existing operational routing or audit decides when to investigate. A
 passing scripted trial is not proof of live delivery or reduced cost.
 
-Review and rollout are still required. The change is internal to Host and can
-land independently of App policy; current guidance already states that Host
+Source review and merge are complete; rollout verification remains separate.
+The change is internal to Host and independent of App policy; current guidance states that Host
 records facts and the agent chooses how to handle unresolved work.

@@ -107,6 +107,42 @@ Manual alert resolution is appropriate only for a proven duplicate, invalid
 row, retired definition, or explicitly accepted exception. Preserve the reason
 and evidence through the supported metric capability.
 
+## Investigating query cost
+
+Read retained samples before running diagnostic queries against the live database.
+The installation already declares two complementary observations:
+
+- `may.daemon-sql-time-percent`: aggregate time spent in the Host's SQLite adapter.
+- `may.daemon-sql-recent-worst-call-ms`: worst completed call in recent diagnostic
+  windows, with bounded query identities, shapes and timing in the saved note.
+
+Use both: many cheap calls and one long call affect responsiveness differently.
+Neither is a complete per-query history. Workers and raw drivers are outside
+these counters; moving a query to another process can lower the Host gauge
+without reducing total work. Consult the
+[App policy](../../../may.app/design/metric-condition-follow-through.md#sql-cost-review)
+for definitions, alert rules and collection limits.
+
+The metric-query target is under 100 ms. The current worst-call alert covers all
+Host SQL at a different threshold; it does not separately enforce that target.
+Keep healthy collection quiet and route declared breaches through ordinary Alex
+review. A sample or alert alone is not evidence of an applied mitigation.
+
+Match the slow query's retained fingerprint, window and source before selecting
+an investigation. Use `status` with `diagnostics: true` for recent timing and any
+captured plan. The current App sample retains timing and query shape but omits
+Host query-plan details, which can expire from live diagnostics before review.
+Missing retained plans therefore remain unknown. Reuse a matching investigation;
+do not commission another Task merely because the next sample reports it again.
+
+Profile a consistent copy and compare equivalent result cohorts before proposing
+a query/index change. A fast copied query cannot explain away a prior live stall:
+cache state, I/O and concurrent work differ. Establish whether a repair changed
+execution cost, only added evidence, or was merely merged without deployed proof.
+The [October 17 review](../archive/reviews/metric-query-cost-20261017.md) demonstrates
+this distinction. Direct SQL remains on the main thread under the current choice;
+revisit isolation when evidence justifies its cost.
+
 ## Audit checklist
 
 - Did current source evidence confirm the breach?

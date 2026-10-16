@@ -437,7 +437,7 @@ reconciliation. Unconfirmed recovery must report a failure and retain the old
 attempt's ownership. Its session record describes only the established session
 facts; Task release and requeue are separate transitions recorded by the Task runtime.
 
-**Implementation status:** pending [Host #376](https://github.com/hao1939/may-agent/pull/376) applies this meaning consistently
+**Implementation status:** merged [Host #376](https://github.com/hao1939/may-agent/pull/376) applies this meaning consistently
 to startup, controller claims and terminal-session retry. The
 [recovery evidence trial](../archive/reviews/host-recovery-evidence-20261017.md)
 also proves failure delivery through a declared App route into ordinary agent work.

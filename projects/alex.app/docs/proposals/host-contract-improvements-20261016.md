@@ -75,7 +75,7 @@ labels below organize review; they are not new APIs, stored states or registries
 | C2 — Facts and attention | Distinguish retained observation, required delivery and eligibility to execute; preserve separate progress/failure facts and the caller's declared interest | Choose relevant facts, immediate or deferred progress, explicit help requests and investigation policy | [Execution feedback](../2a-design/execution-feedback.md), [Events](../2a-design/events.md); #351 established attention separation, ordinary-observer accounting is merged in #371 |
 | C3 — Acceptance and replay | Let each operation owner record its own acceptance; recover unfinished delivery using saved identity, scope and timing; do not substitute a global receipt for pending App admission | Reuse results, revise authorized work or choose a different recovery operation | [Events](../2a-design/events.md), [Storage](../2a-design/storage.md); retain #336/#364/#366/#367; restart-independent expiry merged in #372 |
 | C4 — Execution and recovery | Restore safe execution of the same Task, preserve accepted effects and diagnostic evidence, retain the declared procedure and expose unresolved ownership or exhaustion | Compose workflow/agent calls, choose repair or escalation, decide useful recovery work | [Host/App boundary](../2a-design/system-boundary.md), [Task lifecycle](../2a-design/task-resource-engine.md); preserve #344/#360, clarify private recovery confirmation |
-| C5 — Responsiveness and finishing | Bound synchronous work and nested allowances; make knowable result errors correctable before exit, revalidate at fenced commit, retain partial evidence and cancel owned work correctly | Allocate useful work within supported budgets and choose what partial result to submit | [Runtime](../2a-design/runtime.md), [Task attempts](../2a-design/task-attempts.md); retain #289/#308/#335; contention fixed in merged #370; query profiling still open |
+| C5 — Responsiveness and finishing | Bound synchronous work and nested allowances; make knowable result errors correctable before exit, revalidate at fenced commit, retain partial evidence and cancel owned work correctly | Allocate useful work within supported budgets and choose what partial result to submit | [Runtime](../2a-design/runtime.md), [Task attempts](../2a-design/task-attempts.md); retain #289/#308/#335; contention fixed in merged #370; query profiling complete, isolation deferred |
 | C6 — Extension and failure visibility | Preserve promised facts across relays, recovery and supported adapters; contain absent capabilities; expose failures without requiring an improvement App to keep Host operating | Rename/move Apps, evolve schemas and procedures, select reviewers and act on evidence | [Host/App boundary](../2a-design/system-boundary.md), [Metrics](../2a-design/metrics.md); no universal extension registry or Host diagnosis policy |
 
 An ordinary example ties these together. An agent publishes a partial report,
@@ -103,8 +103,8 @@ Preserve already-fixed behavior and keep runtime changes independently reviewabl
 | 2 | Apply observation semantics through ordinary producers and relays (C2/C6) | Merged #371; earlier local verification and merge revision are distinguished above |
 | 3 | Expire delivery receipts from durable status/timing (C3) | Merged #372 uses the existing durable admission marker and saved timing; rollout not established |
 | Next | Return unresolved work to agent judgment (C1/C4/C5/C6) | App adoption plus focused Host completion feedback, as specified below; does not wait for query profiling or private recovery cleanup |
-| 4 — Host #376; review pending | One private recovery success meaning across callers (C4/C6) | Unconfirmed recovery retains ownership and reports failure; session evidence does not claim Task requeue. Backend and live adoption limits are recorded in the [trial](../archive/reviews/host-recovery-evidence-20261017.md) |
-| 5 | Profile metric queries; optimize or contain demonstrated cost (C5) | Synthetic blocking shown; installed query impact remains unmeasured |
+| 4 — Host #376 merged | One private recovery success meaning across callers (C4/C6) | Unconfirmed recovery retains ownership and reports failure; session evidence does not claim Task requeue. Backend and live adoption limits are recorded in the [trial](../archive/reviews/host-recovery-evidence-20261017.md) |
+| 5 — profiling complete; isolation deferred | Observe metric-query cost and investigate worsening performance (C5) | [October 17 evidence](../archive/reviews/metric-query-cost-20261017.md) compares copied data, retained live observations and asynchronous execution. Keep direct SQL on the main thread for now; the accepted metric-query target is under 100 ms, which the existing all-SQL alert does not separately monitor |
 
 The [original evidence](../archive/reviews/host-contract-review-20261016.md)
 pins the tests and probes. The [commit review](../archive/reviews/host-two-week-design-review-20261016.md)
@@ -413,7 +413,7 @@ The [recovery ownership contract](../2a-design/system-boundary.md#retry-and-reco
 owns this boundary. The internal recovery result must expose what Host established;
 it must not substitute a bookkeeping result for an agent's recovery decision.
 
-**Source finding and [candidate #376](https://github.com/hao1939/may-agent/pull/376):** startup silently skipped a `false` recovery
+**Source finding and [merged #376](https://github.com/hao1939/may-agent/pull/376):** startup silently skipped a `false` recovery
 result; terminal-session retry could ignore it and release the old attempt.
 Controller claim replacement already rejected it. The session artifact also
 claimed the Task was requeued before that separate transition had happened.
@@ -423,8 +423,8 @@ shared caller boundary reject unconfirmed recovery, and records only established
 session facts, including a committed finish whose optional summary is absent.
 Missing authoritative metadata reports its specific failure;
 optional damaged history still permits otherwise safe recovery. This is source
-regression evidence, not an observed live overlapping-worker incident. Review and
-deployment remain separate.
+regression evidence, not an observed live overlapping-worker incident. Source
+review and merge are complete; deployment verification remains separate.
 
 The recovery operation should establish the exact retained attempt and that old
 execution cannot interfere, perform the required durable transition, and leave
@@ -476,21 +476,48 @@ durable. This keeps recovery simple and allows Apps to change their procedure.
 **Owners:** App for query meaning and query repair; Host for execution containment.
 **Contract:** [Metrics](../2a-design/metrics.md).
 
+**Current decision:** keep direct metric SQL on the Host's main thread for now,
+retain cost observations and revisit execution isolation if performance worsens.
+The accepted target is **under 100 ms per metric query**. It is an investigation
+budget, not a hard timeout, guarantee or automatic instruction to change code.
+The existing one-second all-SQL alert remains separate and has not been changed.
+
+The [October 17 trial](../archive/reviews/metric-query-cost-20261017.md) measured
+17 installed queries on a consistent database copy. Most took 1–8 ms, with the
+slowest at 78–85 ms. Recent live diagnostics recorded the same query at 105 ms;
+it already warrants comparison against the new target. Retained history also
+contains a 7.3-second execution of that query. A healthy copy or current window
+cannot establish that the earlier problem is fixed.
+
+Existing metrics retain aggregate SQL time and recent worst-call evidence, and
+Alex has received and acted on breaches. They do not provide separate coverage
+for every metric query. The next monitoring refinement should expose metric-query
+cost as cheap execution evidence, preserve source identity and timing, and let
+App policy flag durations at or above 100 ms through ordinary metric transitions. Reuse
+existing measurements where possible; do not execute the query again merely to
+measure it. Healthy samples stay quiet. Query-plan evidence captured in live
+Host diagnostics also needs an App retention path if later review relies on it;
+the current App sample does not preserve the plan.
+
 A read-only connection protects data but a synchronous query still blocks the
-serving process. Yielding between queries cannot interrupt a single slow query.
-First collect current durations and plans through existing diagnostics. Optimize
-a demonstrated query or justified index at its owner, then measure again.
+serving process. Yielding between queries cannot interrupt a single slow query,
+and adding `async` or `await` does not move synchronous SQLite off that thread.
+The isolated trial used the existing command-source path: control responses fell
+from 433–519 ms to about 3 ms during a synthetic expensive query, at the cost of
+process startup and longer collection. Moving work also moves it outside current
+Host-process SQL counters; lower counters alone would not prove less total work.
 
-If supported queries still violate the serving budget, reuse an existing worker
-execution pattern with bounded concurrency and execution time. Keep scheduling,
-metric state and breach policy at their current owners. A timeout must actually
-stop or isolate the expensive work; a timer around synchronous SQL cannot do so.
+If isolation is later selected, Host should own it transparently behind the same
+App query declaration and sample contract. Reuse a bounded worker execution
+pattern; keep scheduling, metric state and breach policy at their current owners.
+Do not require Apps to manage worker lifetimes or convert every query to a script.
+A timeout must actually stop or isolate expensive work; a timer around synchronous
+SQL cannot do so. No worker or new metric daemon is introduced by this decision.
 
-**Trial:** combine a deliberately expensive query with concurrent control requests,
-then test cancellation, worker failure and the next scheduled sample. Late or
-failed collection is acceptable and must be reported honestly. Missing data must
-not become an invented zero or a false recovery. Measure worker/connection costs
-before adopting isolation; no new metric daemon is proposed.
+**Remaining adoption trial:** cancellation, worker failure and the next scheduled
+sample must be tested before adopting isolation. Late or failed collection remains
+an explicit failure, never an invented zero or false recovery. The completed
+comparison proves responsiveness only; it does not prove those lifecycle guarantees.
 
 ### Defaults, compatibility and smaller follow-ups
 
