@@ -72,6 +72,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ### 2026-10-16
 
+- [Persona prompts can outweigh explicit objectives in a constrained multi-agent benchmark](./findings/2026-10-16-persona-objective-multi-agent-benchmark.md) — LoomBench's author-released records separate persona, objective, peer message, knowledge, and environment-cap effects; its strongest persona result comes from small cells in one synthetic resource game and was not independently rerun.
 - [Successful agent trajectories can supervise more than their terminal reward](./findings/2026-10-16-coevolving-acting-forecasting-agent-training.md) — an arXiv abstract reports that action-suffix forecasting from successful on-policy trajectories improves sample efficiency without inference overhead; the full paper, code, detailed controls, and results were not inspected or reproduced.
 
 ### 2026-10-15
