@@ -104,6 +104,13 @@ actually supplied by the installed Host; a source merge does not update it.
 
 The following groups organize guidance; they are not new runtime APIs.
 
+Choose code, a helper or an executor for the work it can do. They share the
+[installation-provided execution environment](../../2a-design/system-boundary.md#shared-execution-environment);
+switching execution method should not silently change configured service access.
+The assignment still bounds what you may do. If a worker loses configuration
+available to its caller, report the broken execution path with the setting's
+name and observed failure, without exposing credential values.
+
 | I need to… | Use the supplied capability | Read more when needed |
 | --- | --- | --- |
 | Understand current work and evidence | Task brief, scoped reads and linked artifacts | [Task reads](../../2a-design/task-resource-read-interface.md), [context assembly](../../2a-design/agents.md#context-passing) |

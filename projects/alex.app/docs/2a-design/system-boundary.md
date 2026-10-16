@@ -75,6 +75,36 @@ observed activity; App policy decides whether absent activity needs action.
 recorded adoption evidence, enforcement limits and remaining obligations.
 Installed revision and current behavior require their own deployment receipt.
 
+## Shared execution environment
+
+Changing how work executes must preserve the installation-provided environment
+and authorized capabilities. An agent, App workflow, executor or private worker
+should not lose a service endpoint, credential, proxy, certificate setting or
+tool path merely because the Host runs it in another process. This supports
+[useful action within authority](system-model.md#enable-useful-action-within-authority)
+and [extension by convention](../1-principles/core-principles.md#convention-over-configuration):
+adding an App service or setting must not require a Host source edit.
+
+The installation supplies the environment. Host execution preserves it through
+ordinary inheritance, including variable names the Host does not recognize.
+Adapters may apply explicit execution-specific settings such as identity,
+working directory and native executor configuration. Private protocol markers
+must not accidentally change the role of ordinary child commands. A process
+boundary is not an implicit permission boundary, and selecting code or an agent
+does not select a different set of service grants.
+
+The Task still defines the authority for an action. Environment inheritance is
+not a security sandbox or permission to publish credentials. Keep values out of
+prompts, logs and diagnostic reports. Any deliberately restricted environment
+belongs to explicit installation/executor policy; the Host must not infer it
+from an agent name, App name or process role. No new credential registry or
+per-process allowlist is required for the current trusted installation.
+
+**Source status:** main already inherits the execution environment. Revised
+[Host #369](https://github.com/hao1939/may-agent/pull/369) protects that behavior
+with real process-boundary regressions and removes its unmerged allowlist
+proposal. It adds no runtime access-control mechanism.
+
 ## The boundary in one flow
 
 ```text

@@ -234,6 +234,11 @@ enforces it. Existing name-based exceptions remain an
 [implementation gap](../proposals/app-policy-and-host-boundary-cleanup.md), not
 a reason to weaken current safeguards before their replacement is verified.
 
+Changing execution method must preserve the installation-provided environment
+and authorized capabilities. A worker boundary must not silently remove an App
+setting or service access. Keep execution-specific identity and explicit policy
+separate; see the [shared execution environment](../2a-design/system-boundary.md#shared-execution-environment).
+
 ## Event-driven integration
 
 Use meaningful events to connect independent producers and consumers. React
