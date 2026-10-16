@@ -35,6 +35,34 @@ goal when human priorities or evidence change, and explain the change.
 
 May's concrete goal and measures of useful progress live in [Purpose and value](purpose.md).
 
+## Agents handle variety; code makes known work efficient
+
+Agents interpret intent, adapt to unfamiliar situations and judge what is useful.
+Code and the execution harness make understood work faster, cheaper and more
+reliable, including its storage, delivery and recovery. Contracts explain how
+these responsibilities cooperate. Code and agents handling the same assignment
+follow the same contract: purpose, authority, accepted results and effect rules
+stay the same; the method differs. A coded procedure does not define the limit
+of what the system can try to accomplish.
+
+Use code where it fits and let infra retry failures that safe repetition can
+resolve. When that path cannot resolve the problem, return the evidence to the
+responsible agent to repair, choose another method or escalate. A schema mismatch
+can need judgment immediately; repeating unchanged input need not come first.
+Agents remain subject to authority and execution bounds, and may be unable to
+complete the work. Record what happened and its outcome. Later audit decides
+whether an exception warrants better code or can remain agent-handled.
+
+Prefer interpretation when needed over migrating history for each content/schema
+change. Keep the original evidence; an agent can understand older content and
+produce a current contribution under that same contract. Add a coded conversion
+only when its value justifies its cost. The
+[contract evolution rule](../2a-design/execution-contributions.md#same-contract-as-content-evolves)
+defines the boundary with storage and execution protocol changes.
+
+This supports useful outcomes without coding every rare case in advance. Apply
+it through the [shared recovery contract](../2a-design/system-boundary.md#retry-and-recovery-ownership).
+
 ## Value and cost
 
 **Value is what a choice contributes to the project goal:** better outcomes,

@@ -18,6 +18,7 @@ contracts and guides. [Proposals](proposals/README.md) contain remaining choices
 | How do Task state, Conditions and recovery work? | [Task lifecycle](2a-design/task-resource-engine.md) |
 | What does an attempt receive and return? | [Task attempts](2a-design/task-attempts.md) |
 | How do agents and workflows call each other? | [Contributions](2a-design/execution-contributions.md) |
+| What must code and agents both honor? | [Common contribution contract](2a-design/execution-contributions.md#common-contract-for-code-and-agents) |
 | When is a human ask fulfilled? | [Message lifecycle](2a-design/message-lifecycle.md) |
 | How is a Conversation turn executed or stopped? | [Conversation execution](2a-design/conversation-execution.md) |
 | How do input and changed facts reach their owner? | [Events](2a-design/events.md), [execution feedback](2a-design/execution-feedback.md) |

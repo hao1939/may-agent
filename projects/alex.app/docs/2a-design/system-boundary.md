@@ -6,8 +6,9 @@
 
 **Design status:** Accepted.
 **Implementation status:** The shared Task boundary is implemented for current
-Apps. Named-agent permissions, deployment policy and private maintenance still
-contain [domain-policy gaps](../proposals/app-policy-and-host-boundary-cleanup.md).
+Apps. Installation declarations replaced named-agent policy in Host #326;
+remaining [domain-policy follow-up](../proposals/app-policy-and-host-boundary-cleanup.md)
+must be checked against current source rather than old candidate labels.
 Task runtimes and test fixtures use resource authority; the legacy JSON
 store and completed offline cutover path have been removed. The retired inbox
 delivery table is retained only as historical schema evidence. Incident-shaped public
@@ -40,7 +41,7 @@ lifecycle. An App address selects scope, policy and context. Installation
 configuration chooses destinations and operational grants; Host validates and
 executes them. This lets ordinary Apps evolve without hidden privileged names.
 
-The October 4 candidate in Host #326 uses the existing environment for human
+Host #326 uses the existing environment for human
 interface wiring and one captured file-tool policy declaration. Agent identity,
 Conversation App and retained Conversation ID are independent. The agent asks
 for a message or reply; adapters handle these coordinates. Without a destination,
@@ -69,9 +70,10 @@ subscriptions and input schemas. Host never derives agent ownership from a
 metric label or invents a domain request merely from an App ID. Reports describe
 observed activity; App policy decides whether absent activity needs action.
 
-**Source/adoption status:** candidate, not deployed. See the
+**Source status:** merged in Host #326. See the
 [boundary cleanup](../proposals/app-policy-and-host-boundary-cleanup.md) for
-integration order, enforcement limits and remaining obligations.
+recorded adoption evidence, enforcement limits and remaining obligations.
+Installed revision and current behavior require their own deployment receipt.
 
 ## The boundary in one flow
 
@@ -563,6 +565,15 @@ unfinished stored request or task
 ```
 
 Mechanical recovery cannot invent a new task, owner, strategy, or completion claim.
+
+The Host restores safe execution of the same Task; its App chooses useful
+recovery work. Workflows compose judgment through ordinary agent calls, keeping
+their declared procedure for later attempts. Result fields do not ask Host to
+switch strategy. Backend-specific ownership checks stay inside execution
+adapters; Apps do not inspect Host session artifacts to administer recovery.
+See [Runtime recovery](runtime.md#recovery) for the remaining private recovery
+confirmation gap and the distinction between ownership and optional history.
+
 Apps with paused task reconciliation continue to store new work but do not
 start task attempts.
 
@@ -573,6 +584,42 @@ it earns its complexity. See the
 [redo-versus-resume rule](../1-principles/core-principles.md#prefer-redo-when-it-is-simpler-and-affordable).
 
 ### Retry and recovery ownership
+
+The default flow is:
+
+```text
+code handles known work
+  -> success: continue
+  -> safe repetition can help: infra retries within the operation's policy
+  -> unresolved: responsible agent receives the problem and chooses the next step
+```
+
+A schema mismatch or other known nonretryable failure can go directly to
+judgment. Do not replay it unchanged merely to spend a retry count. If there is
+no suitable code path, the agent can handle the assignment directly. Existing
+operation budgets apply; this convention adds no retry layer or universal count.
+
+Both methods obey the [common contribution contract](execution-contributions.md#common-contract-for-code-and-agents).
+Host preserves the declared schema's admission behavior across adapters; the App
+owns domain requirements and any explicit normalization. A schema mismatch may
+need interpretation, while denied authority still needs an authorized decision.
+Neither changes merely because an agent receives the problem.
+
+Host returns the original operation/input reference, specific failure, useful
+partial evidence and known or uncertain effects through the existing call or
+Task feedback. It records acceptance separately from a proposed result. An agent
+already running handles that feedback in its invocation. An App workflow owns
+the ordinary agent call when its code cannot proceed. Host does not choose a
+model or switch the Task's executor because an error occurred. If the procedure
+cannot run at all, its existing caller or declared operational route receives
+the failure; merely saving a diagnostic is not a completed handoff.
+
+Keep unfamiliar content available as evidence for interpretation. App input
+policy can admit it through an ordinary message/goal rather than a narrow
+domain operation. Host still validates routing, identity, authority and effects.
+Rejected admission does not create destination responsibility or authorize an
+automatic replacement Task. The existing caller can correct the request or
+choose another supported route.
 
 Following the [safe-retry principle](../1-principles/core-principles.md#safe-retry-by-default-explicit-exceptions),
 infra owns routine retries of the same operation: identity, timing, backoff,
@@ -603,6 +650,14 @@ attempts. Return known input or authority errors for correction; mechanical
 retry does not invent new input or permissions. Retain progress and correlated
 failures in existing context, metrics and declared review routes. Recurring
 retries must remain observable without making an agent administer each one.
+
+**Coverage:** same-invocation tool feedback, workflow agent calls, retained prior
+attempts and owner feedback already support this flow. Some App readers reject
+results only after their agent has finished; caller-specific completion feedback
+and concise validation diagnostics still have gaps. The
+[implementation proposal](../proposals/host-contract-improvements-20261016.md#return-unresolved-work-to-agent-judgment)
+tracks these gaps. This contract does not promise that every installed procedure
+already returns control correctly.
 
 ### Safe retry and declared exceptions
 

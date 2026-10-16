@@ -13,6 +13,53 @@ settlement stays with [the attempt contract](task-attempts.md); workflow module
 shape and discovery stay with [Workflows](workflows.md). Use the
 [workflow manual](../2b-manual/workflow-authoring.md) for authoring examples.
 
+## Common contract for code and agents
+
+**Same assignment, authority, acceptance requirements and effect rules; the
+method may differ.** Code handles understood work efficiently. An agent can
+handle cases the code cannot resolve, without losing the assignment or gaining
+different permissions. This lets Apps improve their methods while callers keep
+one meaning for accepted work.
+
+This file owns the shared behavior. The App/caller owns the particular outcome,
+meaning and required evidence. Keep its structured schema and pure admission
+checks in one App-owned module used by both producers' acceptance paths; expose
+that schema to the agent through the existing tool/call. Explain meaning and
+recovery in the linked guide. A prompt, later reader or executor adapter must not
+invent a second acceptance policy. This requires no universal domain schema,
+contract registry or new invocation API.
+
+The shared rule applies to alternative implementations of the same contribution.
+A helper's review judgment and its caller's Task settlement can have different
+schemas and responsibilities. The Host keeps the execution rules common; the
+App owns each domain contract. Do not force every operation into one payload.
+
+| Concern | Rule for either implementation |
+| --- | --- |
+| Assignment and input | Use the requested outcome, original input/evidence and current scope. Unfamiliar content remains available for interpretation; a rejected admission remains the caller's responsibility. |
+| Acceptance | Apply the same App-owned checks to newly proposed structured results from code and agents. Evidence requirements belong to that contribution contract and apply to both methods. Shape validation supports code consumption; it does not prove semantic correctness. |
+| Partial work and inability | Keep execution status, returned contribution and remaining work independent. Preserve useful output from every status for caller assessment. Missing output cannot imply fulfillment; inability must be reportable without fabricating it. |
+| Actions and replay | Use the same authority, cancellation, settlement and effect protections. Preserve accepted work and operation identities when changing method. Repeated consideration is allowed; it does not authorize repeating a committed effect. |
+| Correction and recovery | Return the original reference, specific failure, useful results and known effect status. Correct while the producer can still act; otherwise use the existing caller/Task recovery path. Infra owns supported mechanical retry; the App/agent owns another method or escalation within existing bounds. |
+
+For example, a workflow can produce a review directly or ask an agent to read
+the supplied evidence. Both submit the same kind of judgment to the same App
+checks. A malformed judgment receives correction feedback. A useful draft with
+an unresolved question remains available without closing that question or the
+whole Task. Publishing it and later retrying must preserve the publication.
+
+Older content follows [contract evolution](#same-contract-as-content-evolves):
+interpret when needed, preserving history. Keep recovery effort observable
+through [existing feedback and audit](system-boundary.md#retry-and-recovery-ownership);
+successful recovery remains success. Agent judgment is trusted within its scope,
+not guaranteed correct.
+
+**Coverage:** the shared execution scope, result vocabulary and Task admission
+already exist. Current App reader drift, agent-only completion requirements and
+status-dependent Task adapters still need alignment. The
+[implementation proposal](../proposals/host-contract-improvements-20261016.md#return-unresolved-work-to-agent-judgment)
+owns that work and the comparison trials; these rules do not establish rollout.
+
 ## Invocation and ownership
 
 A workflow orchestrates agent operations. Wrapping operations in a workflow
@@ -50,6 +97,7 @@ input or Task trigger. Publishing a fact does not directly launch a workflow.
 Agent-to-agent, agent-to-workflow, workflow-to-agent and workflow-to-workflow
 calls delegate a bounded contribution under the caller's execution scope. The
 receiver's implementation does not change context, responsibility or acceptance.
+Apply the [common contract](#common-contract-for-code-and-agents).
 Keep the existing agent tools and SDK calls as scoped entrypoints; a universal
 invocation tool, extra queue or handoff lifecycle is unnecessary.
 
@@ -93,6 +141,25 @@ the caller substituted for a child that did not start.
 
 The [Task context proposal](../archive/reviews/task-context-discovery-20260917.md#uniform-handoff-refinement)
 records the current implementation slice and remaining gaps.
+
+### When input or setup fails
+
+Before destination admission, the existing caller retains responsibility. Return
+the original input/reference and the specific rejection through that call so its
+agent or workflow can correct the request or choose a supported route. Do not
+pretend the destination accepted work or create another Task automatically.
+After admission, failure belongs to the same Task. If its procedure cannot start,
+use the existing caller or declared operational route, preserving the original
+work and cause. A saved diagnostic alone does not establish delivered feedback;
+an unavailable recipient must remain visible as unresolved delivery.
+
+An App that relies on agent interpretation must test this route before its narrow
+reader or workflow can run, as well as the ordinary in-workflow agent call.
+Malformed content is evidence, not authority to bypass input or action checks.
+Where content must remain open to interpretation, use an existing stable
+message/goal envelope with original content as evidence. Its routing and authority
+fields still validate before dispatch. A catch inside the destination workflow
+cannot recover a request that never reached it.
 
 
 ## Awaited execution and durable waiting
@@ -386,6 +453,40 @@ this workflow cannot safely produce its contract; it does not create a durable
 wait, escalation, agent handoff, or new request automatically.
 
 
+## Same contract as content evolves
+
+For content and result-schema changes, the default is no history migration and
+no required reader for every old version. Code handles the formats it understands.
+Otherwise the owning workflow or agent uses the
+[ordinary recovery flow](system-boundary.md#retry-and-recovery-ownership) to
+interpret the retained input and continue under the current contribution contract.
+Preserve the original record and reference it from the new contribution.
+
+For example, an older review can remain stored in its original format. If the
+current reader cannot consume it, an agent reads it as evidence and supplies
+the judgment the caller now needs. The current checks apply to newly proposed
+structured output and actions from either code or agent. Missing evidence remains
+missing; interpretation must not invent a field's meaning, rewrite a recorded
+acceptance or replay an already published result. If the current requirement
+cannot be met, return useful partial work or the blocker through the same contract.
+
+This relies on readable original evidence and a working route to the responsible
+agent. It does not replace a storage conversion needed to read records, repair
+lost identity/effect guarantees, or install a capability the running Host lacks.
+Such changes need their own concrete conversion or rollout plan. Routine semantic
+format evolution needs neither a version registry nor a bulk rewrite. Repeated
+interpretation cost can later justify a code path through the existing audit.
+
+**Coverage:** ordinary agent calls and retained evidence support this approach;
+individual App readers still need to route unresolved content through it. This
+is a design rule, not a claim that every historical format is currently handled.
+Input-schema evolution has an additional boundary: the current Host can reject
+reload for incompatible pending inbox admission commands and rechecks saved
+inbox input before Task attachment. Keep that protection until a trial preserves
+those exact pending identities and reaches a valid interpretation route. Keeping
+the message/goal envelope stable lets its content evolve without that change;
+an incompatible envelope needs a specific rollout decision, not a blind bypass.
+
 ## Result admission
 
 Terminal agent and workflow contributions use:
@@ -429,11 +530,58 @@ The Task adapter retains that reference while preserving `state: error` and the
 existing recovery path. Evidence preservation must not turn failure into an
 accepted result or require a new Task lifecycle.
 
-When later workflow code requires structured agent output, the workflow owns a
-TypeBox or equivalent schema and validates `result.output` before use. A prose
-response or invalid payload cannot become trusted domain data. A rejected
-completion can be corrected within the same invocation and its existing execution
-allowance; validation does not start a separate invocation.
+When a caller requires structured output, the App owns a TypeBox or equivalent
+schema and pure checks for admission. Use those same checks for newly proposed
+results from code and agents, including the reader that consumes `result.output`.
+The model-facing schema comes from that definition; guidance explains its meaning.
+Do not silently fill missing required data or discard invalid fields to make a
+new proposal pass. This does not revalidate accepted historical records as new
+proposals. Schema success enables that code path; the caller still judges the contribution's
+meaning. Unfamiliar or invalid content remains evidence that an agent can
+interpret, but cannot directly drive effects that require validated data.
+
+**Normalization is part of acceptance.** New structured contributions are checked
+without implicit type conversion by default. If an App needs normalization, make
+that meaning-preserving rule explicit and shared by both methods, retaining the
+original evidence. A model tool adapter must not quietly turn a number into a
+string when the code path would reject it. Test the actual model tool validator,
+the App reader and the supported relay representation; schema equality alone
+does not establish equivalent acceptance. Ordinary tool arguments can keep their
+own declared normalization rules.
+
+Return correctable failures while the contributing agent can still act, sharing
+the App's new-output checks with its consumer. A rejected completion can be
+corrected within the same invocation and its existing allowance. If the method
+does not fit, the responsible agent may use another supported method or report
+the blocker. It need not keep formatting the same proposal forever. Final commit
+still checks current authority and state; a concurrent change can reject a
+previously valid proposal and must leave evidence for the next permitted attempt.
+
+Completion of an invocation and availability of a domain result are independent.
+An inability report must not require fabricating the expected result. An App
+defines the evidence its contribution needs; supplied observations can support
+judgment without another tool call. Host must not impose an extra mandatory
+evidence field only on agents. Existing outer diagnostic fields can remain
+optional; required evidence belongs to the caller's contribution contract.
+Host records execution and enforces that contract.
+
+Consumers must preserve supplied output and facts even when execution is blocked,
+failed or interrupted. Assess the contribution under normal admission rather
+than discard it solely because its status is not `done`. Retention does not
+commit its actions: cancellation, lost authority, failed persistence and settlement
+fences still apply. Previously accepted effects remain accepted independently.
+
+**Implementation gap:** caller schemas currently require `finish.result` even
+for blocked/partial/failed finishes, and the generic finish tool requires separate
+`verification_facts` for agent success. Task adapters select output using execution
+status even though the common result can retain it on other statuses. App readers
+can differ from their advertised schema in both directions. Public workflow agent
+calls expose a schema but not the direct Task agent's pure completion callback.
+The pinned model tool validator can coerce values before App checks run, so even
+one schema currently does not assure the same admission behavior. The
+[implementation proposal](../proposals/host-contract-improvements-20261016.md#return-unresolved-work-to-agent-judgment)
+specifies the coordinated changes; callers must use installed contracts until
+then. Existing App schemas can already express meaningful unavailable outcomes.
 
 For a direct Task agent, Host supplies the App's pure action/Condition admission
 checks to `finish` alongside the shared result schema. A correctable shape or

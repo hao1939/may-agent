@@ -150,6 +150,19 @@ authorize replaying the body. A single atomic append can retry the rejected
 statement. Exhaustion remains observable. Existing admission-plan recovery covers
 saved plans. Failure before a plan or inbox entry is saved requires a durable
 Event admission obligation; a contention retry alone does not close that gap.
+
+The serving path's total lock wait includes SQLite's busy handler and any outer
+retry. It must yield after a short bounded turn. Before persistence, return a
+retryable failure without acknowledging input; after persistence, leave the
+original obligation for its existing recovery owner. A lost reply after commit
+requires receipt/delivery recovery, never blind replay of the committed body.
+Recovery batches yield between items; several short waits must not accumulate
+into one long blocking callback. Startup and isolated workers may have different
+budgets. The [October 16 source candidate and trial](../archive/reviews/host-contention-fix-20261016.md)
+remove extra serving sleeps while preserving those separate budgets; review and
+rollout remain outstanding. The [Host improvement plan](../proposals/host-contract-improvements-20261016.md)
+tracks the other gaps.
+
 [App admission recovery](events.md#recovering-app-admission) describes Host PR
 #336's merged implementation: a pending marker and the existing recovery scan.
 Installed adoption requires separate evidence. It introduces no new queue and
@@ -199,9 +212,10 @@ input evidence, accepted answers or feedback remain ambiguous and unlinked.
 Selecting an equivalent alias preserves the historical rows and never reopens
 the work or manufactures an accepted answer.
 
-Unsuccessful Task attempts retain input and use persisted backoff. There is no
-fixed failure-count stop. New input does not erase older waits or accepted
-results; an authorized owner decides whether to revise or close the Task.
+Unsuccessful Task attempts retain input and use persisted backoff within their
+retry policy. Automatic exhaustion retains the assignment and its evidence.
+New input does not erase older waits or accepted results; an authorized owner
+decides whether to retry, revise or close the Task.
 Input-result projection uses exact accepted evidence and can recover separately
 from execution. See [failure and retry](task-resource-engine.md#one-lifecycle-baseline).
 

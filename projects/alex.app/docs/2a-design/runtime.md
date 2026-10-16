@@ -419,6 +419,18 @@ responsiveness budget while workers are active.
 
 ## Recovery
 
+Host restores the ability to execute the same durable Task; the App chooses
+useful recovery work. Establish exact execution ownership and stop or fence old
+execution before replacing it. Preserve accepted results and effect identities.
+Missing optional history may reduce context; it must not become an accidental
+execution gate. Missing authoritative identity requires an actual check or
+repair. Recovery does not select a different App procedure.
+
+The private session-recovery result currently mixes projection reconciliation
+with ownership confirmation across callers. Clarifying that result and testing
+startup/controller/backend parity remains an implementation gap in the
+[Host improvement plan](../proposals/host-contract-improvements-20261016.md).
+
 After opening its interfaces, the Host starts an isolated recovery worker that:
 
 - releases or repairs stale claims and leases;

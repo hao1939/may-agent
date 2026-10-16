@@ -119,6 +119,11 @@ Use `reviewAt` for deliberate reconsideration, and rearm a satisfied interest on
 when later changes still matter. A resource owner label provides live routing but
 cannot replace this recovery interest. See [live changes and missed facts](../../2a-design/agent-app.md#live-changes-and-missed-facts).
 
+An observer reporting a fact does not itself ask for an agent turn. Save a
+Condition when your Task needs the fact; an App subscription may instead admit
+new work. The Host retains unconsumed observations and reports failed required
+delivery. Agents need no extra acceptance or polling step for those facts.
+
 Use the description and schema of the capability exposed in this attempt. Check
 what it returns: a completed result, accepted work with a reference, or failure.
 Do not infer that acceptance means the requested work is finished. Use logical
@@ -257,6 +262,14 @@ result object. App-specific preflight requires the Host revision described in
 [execution contributions](../../2a-design/execution-contributions.md); final
 settlement still checks whether the result remains current.
 
+When recovering, start with the Task's pending input and retained accepted work.
+An empty new-event batch does not make earlier unanswered input historical.
+Report missing evidence precisely and use the existing reads to fill the gap.
+Host handles mechanical retry and ownership; choose another approach or request
+help when needed. Automatic retry exhaustion retains the assignment for that
+decision. When the execution asks you to finish, submit confirmed partial work
+and remaining uncertainty within its allowance.
+
 The [Conversation feedback change](../../2a-design/conversation-execution.md#correct-a-proposed-result-before-ending-the-turn)
 extends this to Topic and Request checks when its Host revision is installed.
 An unavailable Topic needs a valid selection or scoped lookup. A stale Request
@@ -266,6 +279,27 @@ disposition. A successful finish check is still a proposal: wait for the Host's
 accepted result before treating follow-up work or Request closure as committed.
 
 ## Recover and return problems to the owner
+
+Follow the [same contribution contract as code](../../2a-design/execution-contributions.md#common-contract-for-code-and-agents).
+Read the assignment and supplied schema; satisfy its evidence requirements.
+Keep a useful result separate from whether execution stopped or the whole Task
+is fulfilled. Use installed completion tools as exposed: the proposal to remove
+agent-only finish requirements is not yet an installed capability.
+
+Let code handle known work and infra perform its supported retries. When a
+failure returns to you, read the original input, specific error, useful results
+and effect status, then choose the next useful action. Correct a malformed
+proposal, interpret unfamiliar content, try another authorized method, or ask
+your owner for help. A known shape error does not benefit from identical replay.
+Keep the same Task and reuse accepted work. A successful recovery remains useful
+work; record its evidence and cost for later audit rather than opening a new
+investigation for every correction.
+
+When code cannot read older content, interpret the original evidence and meet
+the same contribution requirements as the code path. Keep the original record
+and cite it; produce current structured output where required, or explain what
+is missing. A schema change alone does not require rewriting history. See
+[contract evolution](../../2a-design/execution-contributions.md#same-contract-as-content-evolves).
 
 Repair within this attempt when authorized work can progress and allowance
 remains. Infra owns routine retry and delivery recovery under existing policy.
@@ -332,8 +366,9 @@ Repeated failure and growing cost should be observable through existing
 An alert or delivered report does not prove that an evaluator or human acted.
 Do not claim escalation succeeded merely because a record was written.
 
-Retries use bounded attempts and backoff; there is no universal failure-count
-stop. Where an operation cannot make repeat delivery safe, its contract must
+Retries use the operation's own budget and backoff. The [Task policy](../../2a-design/task-resource-engine.md#pause-reload-and-recovery)
+bounds automatic attempts by default; exhaustion retains the work for another
+authorized decision. Where an operation cannot make repeat delivery safe, its contract must
 expose that exception. Follow its reconciliation path and preserve uncertainty
 until acceptance is known. See [retry ownership](../../2a-design/system-boundary.md#retry-and-recovery-ownership).
 

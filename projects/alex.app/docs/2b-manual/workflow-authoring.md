@@ -347,6 +347,39 @@ Do not let metric code mutate tasks or dispatch sessions directly.
 
 ## Pure Functions And Retry
 
+Start from the [common contribution contract](../2a-design/execution-contributions.md#common-contract-for-code-and-agents).
+Keep the App's schema and pure admission checks in one module. Use them for
+code-produced results and consumer validation, and pass that schema to agent
+calls. Link the agent's guidance to the same requirements; do not duplicate a
+different schema in prose. Include wrong-type fixtures through the actual model
+tool validator: implicit adapter conversion can differ from the App's checks even
+with the same schema. The strict shared-admission behavior is an implementation
+gap until that boundary is aligned; a check after conversion cannot recover the
+original type. Read returned output and facts separately from status:
+a blocked or failed call may contain useful work to assess, without authorizing
+its effects or fulfilling the whole assignment.
+
+Follow the [common recovery flow](../2a-design/system-boundary.md#retry-and-recovery-ownership):
+run the known code path, let the owning capability handle safe mechanical retry,
+and use `ctx.agents.call` when the unresolved problem needs judgment. If an agent
+is already producing the result, return knowable validation errors before its
+invocation ends. Share the new-output schema/checks with the consumer. Code and
+agents must meet the same contribution requirements. Keep historical evidence
+readable; when current code cannot consume it, let the agent interpret it and
+propose a current result. Do not require a migration or a coded reader for every
+old format. Preserve original references and accepted effects, following
+[contract evolution](../2a-design/execution-contributions.md#same-contract-as-content-evolves).
+
+Give the agent the assignment, original input or its readable reference, exact
+failure, useful partial work and known effect status. Ask it to resolve the work,
+not just make an object parse. Use current `ctx.reconciliation.previousAttempt`
+when recovery crosses attempts, so the same known failure does not restart the
+identical procedure without reconsideration. Cancellation and lost authority
+still stop execution. If allowance is exhausted or the workflow cannot start,
+preserve the problem for the existing Task/caller recovery route. Test that route
+when input or setup fails before this workflow can call an agent; see
+[input/setup failure](../2a-design/execution-contributions.md#when-input-or-setup-fails).
+
 Call pure deterministic functions normally. Routine delivery retry, backoff and
 replay belong to the owning infra capability; workflow authors need no wrapper
 loop for them. A workflow may choose retry, repair or failover as a domain

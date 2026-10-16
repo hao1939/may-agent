@@ -179,7 +179,11 @@ Keep the execution contract common; let each owning App evolve its procedure.
 The May development workflow is one application of this contract, not a template
 that every workflow must copy. A research assessment, a code review and a Gym
 experiment can have different graphs and evidence while using the same execution
-mechanisms. A simple procedure may need no specialist call at all.
+mechanisms. A simple procedure may need no specialist call at all. Code and agents
+are alternative implementations of the same contribution contract; changing
+method does not change the assignment, acceptance or effect rules. For older
+content the code cannot handle, prefer ordinary agent interpretation over a
+required migration, following [contract evolution](execution-contributions.md#same-contract-as-content-evolves).
 
 ### What every implementation must preserve
 

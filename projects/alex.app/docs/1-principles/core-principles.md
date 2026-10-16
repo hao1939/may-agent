@@ -89,7 +89,9 @@ rules; the App's worker judges uncertain causes and how to proceed. The
 assigning owner judges scope and whether more work is worthwhile. A worker
 can report failure honestly; abandoning the assignment belongs to its owner.
 The [Task lifecycle](../2a-design/task-resource-engine.md#one-lifecycle-baseline)
-uses backoff to pace unfinished work without a fixed failure-count stop.
+uses bounded automatic retries by default, with backoff and an explicit App
+override. Exhaustion stops automatic attempts while retaining the assignment,
+accepted work and failure evidence for another authorized decision.
 Its [deeper PoC review](../archive/reviews/controller-poc-deeper-review.md)
 examines continuing-retry cost and owner decisions in use.
 
@@ -123,6 +125,17 @@ See the [agent-first test](code-vs-data.md#before-adding-runtime-behavior) and
 
 ### Code executes and brings back evidence; agents judge
 
+Use code for known work. Infra retries failures that safe repetition can resolve;
+unresolved situations return to the responsible agent. If an agent already owns
+the invocation, give it feedback there. A workflow uses an ordinary agent call
+when judgment is needed. This is one work loop with the same ownership and bounds.
+Code and agents handling the same contribution follow the
+[same contract](../2a-design/execution-contributions.md#common-contract-for-code-and-agents).
+Changing the method must not change acceptance, evidence requirements or effects.
+See [agents and code](design-philosophy.md#agents-handle-variety-code-makes-known-work-efficient)
+for its value and the [recovery contract](../2a-design/system-boundary.md#retry-and-recovery-ownership)
+for responsibility at each boundary.
+
 Execution includes the feedback loop, not just starting an action. Code collects
 information, responses and signals; tracks operations and their reported
 progress; preserves outputs and failures; and makes relevant evidence available
@@ -154,6 +167,10 @@ all useful work to wait. Infra may derive bookkeeping and scheduling from the
 explicit contract. A semantic connection between these facts needs an agent
 judgment or declared App policy, rather than an implicit global rule. See
 [accept work and continue what remains](../2a-design/task-attempts.md#accept-work-and-continue-what-remains).
+
+For each new gate, identify the particular action's authority or correctness
+requirement and the useful work it would prevent. Trust a scoped agent judgment
+by default; retaining its scope and evidence does not guarantee semantic truth.
 
 These are two responsibilities in one work loop, not two new subsystems or a
 ban on direct agent tool use. Executors and observers provide capabilities;
@@ -249,6 +266,13 @@ acceptance. Event-driven design does not require an event-sourcing rewrite.
 See [events.md](../2a-design/events.md).
 
 ## One authority for each resource
+
+Only the owner of a fact can acknowledge it. Publication does not establish
+delivery, and a terminal execution does not establish consumer acceptance.
+Use durable facts to recover the same obligation; process birth, caches and
+presentation are hints. Accept at-least-once consideration and eventual
+consistency. Spend complexity on preventing persistent loops, lost accepted
+work and unsafe repeated effects, rather than eliminating every duplicate read.
 
 A conversational Request is an accepted ask that May must close the loop on.
 Host input-handling rows track input handling and caller correlation;
@@ -391,6 +415,11 @@ owning App to interpret, not automatic proof of failure or permission to
 mutate work. Pair activity measures with outcome evidence where useful, and
 retire metrics whose meaning is weak.
 
+Successful agent recovery and recurring recovery cost are independent facts.
+Retain both for periodic or breach-driven audit. An isolated transient or legacy
+case may justify no code change; a costly recurring pattern may justify one.
+Collecting each failure does not require judging it with another model call.
+
 See [metrics.md](../2a-design/metrics.md).
 
 ## Interfaces present shared state
@@ -446,6 +475,12 @@ capability, trust or lifecycle need.
 
 ## Fix the layer that failed
 
+Before adding recovery policy, check whether the agent received current input,
+could read earlier work, could execute the capability, and could correct and
+submit its result. Host provides that usable mechanical path; Apps select domain
+context and judge the evidence. A consistently broken path is not repaired by
+asking the model to try harder or handing the same problem to another agent.
+
 When behavior is wrong, inspect the complete causal path:
 
 1. the request and context the model saw;
@@ -464,6 +499,17 @@ before they block work. Do not add broad restrictions or more prompt rules to
 hide a failure in another layer. See [Mechanism Selection](code-vs-data.md).
 
 ## Review rule
+
+A shared promise must survive its alternate paths: live and recovered delivery,
+local and worker execution, reload and supported adapters. Review the other
+callers and exercise the nearest contrasting path when changing that promise.
+Remove unnecessary paths before adding compatibility machinery. Tests may reuse
+the same invariant while preserving meaningful backend differences.
+
+Assess the whole operation's cost: bounded output can hide a full-history scan,
+and a short inner timeout can accumulate blocking retries. Include child work,
+finishing and cleanup in the owning allowance; use different numeric budgets
+where costs differ, with consistent meanings for acceptance and exhaustion.
 
 Use the philosophy when a decision can change the work, its scope, or its cost.
 Existing features and contracts face the same comparison as new ones.
