@@ -154,3 +154,39 @@ The activation receipt and `followup-explanation-loaded-verification.json`
 establish installation. They do not establish live savings or first-finish
 acceptance after this activation. The ten-review observation above remains the
 fixed baseline; subsequent natural observations must use this rollout boundary.
+
+## First natural review after activation
+
+The **2026-10-17 03:53:41 Asia/Shanghai** checkpoint has 13 completed reviews in
+the original 50-review cohort: eight first-finish acceptances and five corrected
+reviews. The two additional pre-activation completions are Reddit event `6676944`
+(first finish) and XHS event `6676975` (one extra empty-message correction under
+the old schema). Keep them out of the new-fix denominator.
+
+One review started after activation, session
+`s_1792180213402_1b2cd337-385e-4062-b771-bca62fcd4edd`. Its captured schema exactly
+matches the installed App schema. It returned a nonempty explanation with
+`followUp.kind: "none"` in its only model reply and finished successfully on the
+first call. Publication `6677003` preserves the original judgment in JSON and
+the explanation in Markdown. Its admitted delivery explicitly says **App
+selected no work**, and no Alex inbox item was created. This is live evidence
+for acceptance, retention and quiet routing of the formerly rejected shape.
+
+The review used 49,553 input, 2,816 cache-read, zero cache-write and 3,987 output
+tokens. Its arXiv publication conclusion cites retained git/file reads, while
+the original source request remains attributed to a workflow child excluded
+from the supplied process window. It discloses that limit and abstract-only
+claim support; this check does not independently verify the paper or missing
+child request. All 13 published report pairs pass the production integrity
+reader and current judgment schema. A natural `insufficient-evidence` case is
+still absent, and one post-fix review cannot establish a savings rate.
+
+The next six-hour audit has not run since this activation. Runtime readiness
+remains true. This checkpoint used only retained evidence and read-only control
+queries; no model call or scheduled input was generated.
+
+Evidence: `followup-live-observation-20261017-0355.json` (the exact cut is stored
+inside), `followup-live-report-integrity-20261017-0355.json`, and
+`followup-first-live-verification-20261017.json` in the private evidence directory.
+The [review-only cost observation](review-only-cost-observation-20261017.md)
+identifies the next App policy candidate separately from this deployed fix.
