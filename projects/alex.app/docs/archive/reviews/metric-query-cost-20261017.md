@@ -156,7 +156,7 @@ thread or allows Host to choose a mitigation.
 
 ### Source candidate and portable evidence
 
-Host candidate: [`092b968768`](https://github.com/hao1939/may-agent/commit/092b9687680ec3b8dce8ca20719814633807a74e),
+Host [PR #377](https://github.com/hao1939/may-agent/pull/377), candidate [`092b968768`](https://github.com/hao1939/may-agent/commit/092b9687680ec3b8dce8ca20719814633807a74e),
 based on `68bc5c7cf`. Companion App code is in `may.app/reliability-metrics.ts`
 and `may.app/scripts/daemon-sql-latency.ts`; owning policy is
 [SQL cost review](../../../../may.app/design/metric-condition-follow-through.md#sql-cost-review).
@@ -184,7 +184,8 @@ Validation uses disposable databases and synthetic timing/plan fixtures:
 
 - Host focused collector/profiler/metric/report tests: 99 passed.
 - Served HTTP/browser health tests, including boundary labels: 8 passed.
-- Host/SDK types, App boundary and ESLint: passed.
+- Full Host `bun run ci`: 3,800 passed, three installation-only tests skipped,
+  zero failures. Final Host/SDK types, App boundary and ESLint: passed.
 - Companion `may.app/reliability-metrics.test.ts`: 20 passed.
 - `check:may-design`: zero errors; existing unclassified `reports` warning.
 
