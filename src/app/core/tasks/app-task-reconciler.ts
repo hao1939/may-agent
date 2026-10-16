@@ -148,7 +148,10 @@ export type AppTaskAttemptRecovery = {
   eventsTruncated?: boolean;
   trigger?: Record<string, unknown>;
   sessionId?: string;
+  /** Current requirement revision used to fence the Task release. */
   taskGeneration: number;
+  /** Retained execution revision used to validate its session identity. */
+  attemptGeneration: number;
   taskResourceVersion: number;
   attemptId: string;
   attemptResourceVersion: number;
@@ -1006,6 +1009,7 @@ export function recoverableAppTaskAttempts(
         ...(trigger ? { trigger: structuredClone(trigger) } : {}),
         ...(attempt.sessionId ? { sessionId: attempt.sessionId } : {}),
         taskGeneration: resource.metadata.generation,
+        attemptGeneration: attempt.taskGeneration,
         taskResourceVersion: resource.metadata.resourceVersion,
         attemptId: attempt.metadata.id,
         attemptResourceVersion: attempt.metadata.resourceVersion,
@@ -1046,6 +1050,7 @@ export function expiredAgentSessionAppTaskAttempt(
     ...(trigger ? { trigger: structuredClone(trigger) } : {}),
     sessionId: attempt.sessionId,
     taskGeneration: resource.metadata.generation,
+    attemptGeneration: attempt.taskGeneration,
     taskResourceVersion: resource.metadata.resourceVersion,
     attemptId: attempt.metadata.id,
     attemptResourceVersion: attempt.metadata.resourceVersion,
@@ -2762,7 +2767,6 @@ export function claimObservedAppTask(
     reason?: string;
     isAgentRunnable?: (agent: string) => boolean;
     recoverSessionHandoff?: (attempt: AppTaskAttempt | undefined) => AppTaskClaim["handoff"];
-    validatePreviousSession?: (attempt: AppTaskAttempt) => boolean | void;
   },
 ): AppTaskClaimResult {
   const snapshotRevision = config.resourceStore.revision();
@@ -2862,19 +2866,7 @@ export function claimObservedAppTask(
         ? managedAgentHandler(agent)
         : input.handler;
   const priorFacts = latestAttempt ?? latestTaskAttempt(tree, resource.metadata.id);
-  if (
-    latestAttempt?.sessionId &&
-    (latestAttempt.runtimeId !== reconcilerRuntimeId ||
-      latestAttempt.failureReason === "previous-runtime-attempt-requeued")
-  ) {
-    const validated = input.validatePreviousSession?.(latestAttempt);
-    if (validated === false) {
-      throw new Error(
-        `Cannot replace Task ${input.taskId} ownership: retained session ${latestAttempt.sessionId} could not be validated for replay`,
-      );
-    }
-  }
-  const recoveredSessionHandoff = input.recoverSessionHandoff?.(latestAttempt);
+  const recoveredSessionHandoff = input.recoverSessionHandoff?.(priorFacts);
   const previousAttempt = currentResourceAttempt(tree, resource);
   if (resource.status.phase === "running" && !previousAttempt) {
     const now = new Date().toISOString();

@@ -366,7 +366,7 @@ function isRecoveryAgentMessage(value: unknown): value is AgentMessage {
   if (value.role === "toolResult") {
     return (
       typeof value.toolCallId === "string" &&
-      typeof value.toolName === "string" &&
+      (value.toolName === undefined || typeof value.toolName === "string") &&
       Array.isArray(value.content) &&
       value.content.every(isRecoveryContentBlock) &&
       typeof value.isError === "boolean"
@@ -496,8 +496,11 @@ export function readSessionMetaRecoveryEvidence(
 
 /** Read a session's meta.json. Returns null if not found or corrupted. */
 export function readSessionMeta(persistDir: string, sessionId: string): PersistedSession | null {
-  const evidence = readSessionMetaRecoveryEvidence(persistDir, sessionId);
-  return evidence.state === "valid" ? evidence.meta : null;
+  try {
+    return JSON.parse(readFileSync(sessionMetaPath(persistDir, sessionId), "utf-8")) as PersistedSession;
+  } catch {
+    return null;
+  }
 }
 
 /** Write a session's meta.json atomically. Creates the session dir if needed. */

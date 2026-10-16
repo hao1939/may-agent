@@ -3496,7 +3496,8 @@ describe("App task reconciler state", () => {
             },
           ],
         },
-        { role: "toolResult", toolCallId: "checkpoint-transcript", toolName: "checkpoint", isError: false },
+        { role: "toolResult", toolCallId: "checkpoint-transcript", toolName: "checkpoint", isError: false,
+          content: [{ type: "text", text: "Recorded" }], timestamp: 2 },
       ],
       fileCheckpoint,
     );
@@ -3546,7 +3547,8 @@ describe("App task reconciler state", () => {
               },
             ],
           },
-          { role: "toolResult", toolCallId: "checkpoint-error", toolName: "checkpoint", isError: true },
+          { role: "toolResult", toolCallId: "checkpoint-error", toolName: "checkpoint", isError: true,
+            content: [{ type: "text", text: "Failed" }], timestamp: 2 },
         ],
       ],
     ] as const) {
@@ -4153,31 +4155,6 @@ describe("App task reconciler state", () => {
       attempt.runtimeId = "previous-runtime";
     });
     const interruptedResourceConfig = state.config;
-    let validationCalls = 0;
-    const validatePreviousSession = () => {
-      validationCalls++;
-      return false;
-    };
-    const replayClaim = () =>
-      claimObservedAppTask(interruptedResourceConfig, {
-        taskId: claim.taskId,
-        appAgent: "app-owner",
-        handler: "workflow:known-workflow",
-        reason: `attempt-recovery:${claim.taskId}`,
-        validatePreviousSession,
-      });
-    expect(replayClaim).toThrow("retained session retained-session could not be validated for replay");
-    expect(replayClaim).toThrow("retained session retained-session could not be validated for replay");
-    expect(validationCalls).toBe(2);
-    expect(interruptedResourceConfig.resourceStore.readTask(claim.taskId)?.status.currentAttemptId).toBe(
-      claim.attemptId,
-    );
-    expect(interruptedResourceConfig.resourceStore.readAttempt(claim.attemptId)).toMatchObject({
-      state: "running",
-      sessionId: "retained-session",
-      runtimeId: "previous-runtime",
-    });
-
     const [recovery] = recoverableAppTaskAttempts(interruptedResourceConfig, Date.now(), false, [claim.taskId]);
     expect(recovery).toMatchObject({
       taskId: claim.taskId,

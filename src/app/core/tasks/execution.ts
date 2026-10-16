@@ -140,7 +140,6 @@ export type TaskSessionRecovery = {
     sessionId: string,
     reason: string,
     taskId?: string,
-    beforeReplay?: boolean,
     expectedBinding?: TaskBinding,
   ): boolean;
   workflowInterrupted(workflowRunId: string | null): boolean;

@@ -2153,7 +2153,7 @@ function mutateRuntimeAttemptFixture(
           taskId,
           resourceVersion: resource.metadata.resourceVersion,
           generation: resource.metadata.generation,
-          currentAttemptId: attemptId,
+          currentAttemptId: resource.status.currentAttemptId ?? null,
         },
       ],
       attempts: [attempt],
@@ -6870,6 +6870,7 @@ describe("canonical App task runtime", () => {
       projectId: "sample",
       recoveryOwner: "app-task-reconciler",
       kind: "call",
+      taskBinding: { appId: "sample", taskId: claim.taskId, generation: claim.generation, attemptId: claim.attemptId },
     });
     addSessionBashProcessGroup(persistDir, "owner-undrained", 424_242);
     execFileSync("git", ["init", "-b", "main", f.root], { stdio: "ignore" });
@@ -10740,6 +10741,7 @@ describe("canonical App task runtime", () => {
         actions: [],
       };
       let agentCalls = 0;
+      let recoveryContext: string | undefined;
       const agents: TaskAgentRunner = {
         available: () => true,
         prepare: async () => true,
@@ -10747,6 +10749,7 @@ describe("canonical App task runtime", () => {
         role: (agent) => ({ agent, instructions: "Fixture" }),
         async execute(input) {
           agentCalls++;
+          recoveryContext = input.fallbackReason;
           beforeResult?.(input.attempt.task.id);
           return { handlerResult: structuredClone(terminalResult), runId: null };
         },
@@ -10846,6 +10849,7 @@ describe("canonical App task runtime", () => {
         saveTerminalSession,
         writeTerminalSession,
         agentCalls: () => agentCalls,
+        recoveryContext: () => recoveryContext,
       };
     }
 
@@ -10871,6 +10875,86 @@ describe("canonical App task runtime", () => {
       expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
       expect(f.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
     }
+
+    it.each(["converged", "continuing"] as const)(
+      "runs new work after accepted %s results despite damaged old history",
+      async (outcome) => {
+        const f = setup();
+        await installCoreTaskRuntimes(f.base);
+        f.observe("accepted");
+        const claim = f.saveTerminalSession("accepted");
+        if (outcome === "converged") {
+          expect(completeAppTask(f.config, claim, { summary: "Accepted measurement", result: { value: 17 } }).status).toBe("applied");
+          admitTaskInput(f.config, {
+            appId: "sample", attachment: { kind: "existing", taskId: "accepted" }, idempotencyKey: "new-human-requirement",
+            inputContext: { id: "new-human-requirement", source: { kind: "human", id: "human" },
+              input: { kind: "message", data: { message: "Measure the second sample" } } },
+          });
+        } else {
+          expect(deferAppTask(f.config, claim, { disposition: "waiting", continue: true,
+            summary: "First measurement accepted; continue the second", facts: ["value:17"] }).status).toBe("applied");
+        }
+        const accepted = f.config.resourceStore.readAttempt(claim.attemptId)!.acceptedResult;
+        expect(accepted).toBeDefined();
+        mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+          attempt.runtimeId = "previous-runtime";
+        });
+        writeFileSync(join(f.base.persistDir, "sessions", "session-accepted", "session.jsonl"), '{"damaged":');
+        await closeInstalledAppTaskRuntimes(f.base.bus);
+        closeDb(f.base.persistDir);
+        await installCoreTaskRuntimes(f.base);
+        await f.run("accepted");
+        expect(f.agentCalls()).toBe(1);
+        const reopened = AppTaskResourceStore.activeFromDb(getDb(f.base.persistDir), "sample")!;
+        expect(reopened.readTask("accepted")?.status.observedAttemptId).not.toBe(claim.attemptId);
+        expect(reopened.readAttempt(claim.attemptId)?.acceptedResult).toEqual(accepted);
+      },
+    );
+
+    it.each(["startup", "busy"] as const)(
+      "passes incomplete history to the replacement agent through %s recovery",
+      async (route) => {
+        const f = setup();
+        await installCoreTaskRuntimes(f.base);
+        f.observe("damaged");
+        const claim = f.saveTerminalSession("damaged");
+        const transcript = join(f.base.persistDir, "sessions", "session-damaged", "session.jsonl");
+        const bytes = '{"role":"user","content":"Known progress"}\n{"damaged":';
+        writeFileSync(transcript, bytes);
+        await requeueSavedAttempt(f, claim, route);
+        await f.run("damaged");
+        expect(f.agentCalls()).toBe(1);
+        expect(f.recoveryContext()).toContain("Recovery history incomplete");
+        expect(f.recoveryContext()).toContain("Known progress");
+        expect(readAcceptedRuntimeAttempt(f.config, "damaged")?.metadata.id).not.toBe(claim.attemptId);
+        expect(readFileSync(transcript, "utf8")).toBe(bytes);
+      },
+    );
+
+    it.each(["startup", "busy"] as const)(
+      "recovers the old execution after a requirement revision through %s",
+      async (route) => {
+        const f = setup();
+        await installCoreTaskRuntimes(f.base);
+        f.observe("revised");
+        const claim = f.saveTerminalSession("revised");
+        observeAppTaskIntent(f.config, {
+          appAgent: "sample-owner",
+          intent: { id: "revised", parentId: "operations", outcome: "Produce the revised decision",
+            acceptance: ["Decision includes the new requirement"] },
+        });
+        expect(f.config.resourceStore.readTask("revised")?.metadata.generation).toBe(2);
+        expect(f.config.resourceStore.readAttempt(claim.attemptId)?.taskGeneration).toBe(1);
+        writeFileSync(join(f.base.persistDir, "sessions", "session-revised", "session.jsonl"), '{"damaged":');
+        await requeueSavedAttempt(f, claim, route);
+        await f.run("revised");
+        expect(f.agentCalls()).toBe(1);
+        expect(f.recoveryContext()).toContain("Recovery history incomplete");
+        expect(readAcceptedRuntimeAttempt(f.config, "revised")?.taskGeneration).toBe(2);
+        await f.run("revised");
+        expect(f.agentCalls()).toBe(1);
+      },
+    );
 
     it.each(["startup", "busy"] as const)(
       "retries uncommitted session output through %s before accepting effects",

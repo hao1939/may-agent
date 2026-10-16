@@ -88,22 +88,6 @@ export async function runTaskAttempt(input: {
       appAgent: descriptor.agent,
       handler: "auto",
       reason: input.reason ?? "task-controller",
-      validatePreviousSession: (attempt) => {
-        if (!attempt.sessionId) return;
-        return interruptSupersededAgentSession(
-          opts,
-          attempt.sessionId,
-          `Validating retained recovery evidence before replacing Task ${input.taskId} ownership`,
-          input.taskId,
-          true,
-          {
-            appId: descriptor.id,
-            taskId: attempt.taskId,
-            generation: attempt.taskGeneration,
-            attemptId: attempt.metadata.id,
-          },
-        );
-      },
       recoverSessionHandoff: (attempt) => opts.sessions?.handoff(attempt),
     });
     recordTaskCheck(opts.bus, claim.kind, { appId: descriptor.id, taskId: input.taskId });
@@ -145,11 +129,10 @@ export async function runTaskAttempt(input: {
             sessionId,
             "Retrying an uncommitted Task attempt",
             input.taskId,
-            true,
             {
               appId: descriptor.id,
               taskId: expired.taskId,
-              generation: expired.taskGeneration,
+              generation: expired.attemptGeneration,
               attemptId: expired.attemptId,
             },
           );

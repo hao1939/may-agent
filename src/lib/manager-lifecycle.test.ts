@@ -8,8 +8,9 @@ import { createAgentRun, type AgentRunnerConfig } from "./agent-runner.js";
 import { EventBus } from "../app/core/events/bus.js";
 import { DbWriter } from "./db-writer.js";
 import { closeDb, getDb } from "./db/connection.js";
+import { createTaskSessionRecovery } from "../app/adapters/executors/session-recovery.js";
 import { SubagentManager } from "./manager.js";
-import { appendSessionMessage } from "./persistence.js";
+import { appendSessionMessage, readSessionMeta, readSessionRecoveryEvidence, writeSessionMeta } from "./persistence.js";
 
 function definition(version: string) {
   return {
@@ -266,6 +267,31 @@ describe("manager session lifecycle", () => {
     expect(requests[1].prompt).toContain("Original work");
     expect(requests[1].prompt).toContain("Reply from old");
     expect(requests[1].prompt).toContain("Continue the work");
+  });
+
+  it("retains Host-authored interrupted tool results through resume and recovery", async () => {
+    const sessionId = "resume-pending-tool";
+    writeSessionMeta(persistDir, sessionId, {
+      agent: "worker", agentRelativeDir: null, task: "Original work", status: "interrupted", startedAt: 1, kind: "job",
+    });
+    appendSessionMessage(persistDir, sessionId, {
+      role: "assistant", content: [{ type: "toolCall", id: "pending-call", name: "bash", arguments: {} }],
+    } as never);
+    started = Promise.withResolvers<void>();
+    manager.resumeSession(sessionId, "Inspect the interrupted work");
+    await started.promise;
+    await manager.waitFor(sessionId);
+    const evidence = readSessionRecoveryEvidence(persistDir, sessionId);
+    expect(evidence.state).toBe("valid");
+    expect(evidence.entries).toEqual(expect.arrayContaining([
+      expect.objectContaining({ role: "toolResult", toolCallId: "pending-call", isError: true }),
+    ]));
+    // Simulate a later runtime recovering the resumed session's saved history.
+    writeSessionMeta(persistDir, sessionId, { ...readSessionMeta(persistDir, sessionId)!, status: "running" });
+    const recovery = createTaskSessionRecovery({ persistDir, bus, manager: new SubagentManager({ persistDir }) });
+    expect(recovery.interrupt(sessionId, "Previous worker exited")).toBe(true);
+    expect(readSessionMeta(persistDir, sessionId)?.status).toBe("interrupted");
+    expect(readSessionRecoveryEvidence(persistDir, sessionId).state).toBe("valid");
   });
 
   it("records persistent chat replies without recounting retained history on resume", async () => {

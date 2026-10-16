@@ -102,6 +102,14 @@ for meaningful inputs/changes and independent observers. App-owned prompts,
 workflows, observers, schedules and acceptance stay in the owning App.
 A new implementation does not require a universal adapter, manifest or lifecycle.
 
+Recovery preserves accepted Task results and passes retained execution evidence
+through the existing attempt context. A damaged transcript or checkpoint is
+reported as incomplete, with readable entries retained; it does not prohibit a
+replacement attempt. The App decides whether to inspect effects, redo work or
+seek help. Session ownership, live processes and authoritative lifecycle state
+remain Host checks. Starting a replacement attempt does not authorize replay of
+an arbitrary external effect; idempotency belongs at the operation boundary.
+
 ## Contract references
 
 Keep behavioral detail and change status with their owners:
