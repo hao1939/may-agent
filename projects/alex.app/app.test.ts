@@ -215,6 +215,9 @@ test("ordinary Evaluation reports are consumed only by Alex with immutable ident
 
 test("six-hour runtime audit preserves one standing Evaluator Task across deliveries", () => {
   const schedule = app.schedules?.find(({ id }) => id === "runtime-pattern-audit-six-hourly");
+  expect(runtimePatternAuditAcceptance).toContain(
+    "For a newly actionable finding, submit one ordinary request to the Alex App in the Task result, naming the exact existing Task or PR to reuse when one exists; context.audit.owner is descriptive and followUp prose alone is not delivery. For no-action or unchanged findings, submit no request.",
+  );
   expect(schedule).toMatchObject({
     intervalMs: 21600000,
     catchUp: "latest",

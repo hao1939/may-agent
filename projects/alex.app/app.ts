@@ -34,6 +34,7 @@ export const runtimePatternAuditAcceptance = [
   "Assess repeated failures, no-progress attempts, review or handoff loops, model usage versus delivered progress, recovered failures, and useful behavior worth keeping.",
   "Return exact evidence, uncertainty, evaluator coverage and model usage, and at most three prioritized actionable patterns; do not score evaluator semantic outputs.",
   "Read the previous accepted audit when present; retain the exact compared windows and prior finding dispositions in the Task result, and request owner attention only for newly actionable change.",
+  "For a newly actionable finding, submit one ordinary request to the Alex App in the Task result, naming the exact existing Task or PR to reuse when one exists; context.audit.owner is descriptive and followUp prose alone is not delivery. For no-action or unchanged findings, submit no request.",
   "Apply the standing audit contract in projects/alex.app/docs/evaluation/systemic-pattern-review-20260927.md under Six-hour cross-Task operational audit.",
   "Link unresolved findings to existing exact owner Tasks or PRs where possible; unchanged findings must not commission duplicate repairs or full-work-review handoffs.",
   "Keep ordinary metric movement quiet; breach and status-transition review remain independent.",

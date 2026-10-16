@@ -270,10 +270,13 @@ judges and reports.
 The audit covers recurring failure, no-progress and handoff loops, model usage
 versus delivered progress, recovered failures, useful behavior, and its own
 coverage/cost. It returns at most three prioritized patterns and links existing
-owner Tasks or PRs. Unchanged and healthy results remain saved and quiet. It does
-not replace ordinary Task-outcome review, and it does not authorize per-sample or
-daily per-metric model review. Metric breach and status-transition review remain
-independent.
+owner Tasks or PRs. When a finding becomes newly actionable, the direct Evaluator
+Task submits one ordinary request to the Alex App in its Task result, naming the
+exact work to reuse when one exists. `context.audit.owner` is descriptive metadata and report
+`followUp` prose alone is not delivery on this direct route. Unchanged and healthy
+results remain saved and quiet and submit no request. It does not replace ordinary
+Task-outcome review, and it does not authorize per-sample or daily per-metric model
+review. Metric breach and status-transition review remain independent.
 
 Evaluator semantic reports are excluded from self-scoring. Alex arranges an
 independent non-semantic check of evaluator coverage and usage when that system
