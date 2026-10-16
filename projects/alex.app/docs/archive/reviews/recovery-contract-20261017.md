@@ -9,8 +9,10 @@ report reader, or a production model call.
 The App schema/admission fix remains the independently activated
 `1f11af385afabd18f581d2d4c3d3e107f7c56923`, recorded in the
 [judgment-contract rollout](judgment-contract-20261017.md). These trials build on
-Apps `1aef62625f` and were finally checked with Host `234a027a3d6105b37c51ddd4a8849e3760cdde26`.
-The latter includes the separately deployed #375; this trial did not deploy it.
+Apps `1aef62625f`; the tests were committed in Apps
+`06e7c28e3bae8affbb2b89ef73818e5bc20035c9`. Baseline checks used Host
+`234a027a3d6105b37c51ddd4a8849e3760cdde26`, including the separately deployed
+#375. Paired checks and the subsequent authorized #374 rollout are recorded below.
 
 ## Connected checks
 
@@ -68,13 +70,33 @@ finish acceptance/concise feedback change. It permits declared string-or-number
 representations and shared App normalization; it does not impose strict types
 where the App explicitly accepts multiple representations.
 
-Quality and Container passed on `5a63451f16aa794c2b25769ddf94c326f02c18a6`
-(run `38935366841`). After #375 advanced main, the PR was updated through GitHub
-with an expected-head guard to `56676e9b81567a9b579f6130e0f2b6e31b4fb404`.
-Run `38937306468` checks that updated revision. The required approving review
-remains a merge gate; automated review reported no findings but did not approve.
-Auto-merge is disabled by repository configuration. No administrative bypass or
-#374 deployment was performed. The observed local binary/SDK are `234a027a3`.
+Quality and Container passed in run `38937306468` on the approved PR head
+`56676e9b81567a9b579f6130e0f2b6e31b4fb404`. Merged main
+`e982e7537712e58e06e0a3733152964b5689a0ec` has the identical Git tree
+`9eac0244596bde0baa8e99022cee39e5e692457a` and retains #375. The seven connected
+recovery trials (91 assertions) passed against that PR head. Paired App/SDK
+artifact compatibility passed for all four source Apps; the sample remains
+inactive. The checked SDK tree hash was
+`adf4d68427a108679458864c1e3a5de676e3aa197caac44649ca3e24c1e3ca67`.
+
+The authorized local deployment used the ordinary standalone deploy command from
+an external immutable checkout of merged main. Its 68 deployment transport tests
+passed, and its exact receipt is:
+
+`/app/projects/may-agent/.state/deploy-receipts/host-report-contract-e982e753-20261017.json`
+
+It settled `succeeded` at **2026-10-17 01:15:40 Asia/Shanghai**, with
+`health: healthy`, `duplicateDeploy: false` and matching requested/loaded SHA-256
+`7ca4a876e0cd861a06c84476e68b2be61568943621172b89eb434e40a7752d76`.
+Independent reads confirmed binary `v5.5.0 (e982e753)`, the installed artifact
+hash, matching SDK/UI releases, three running Host services, HTTP readiness and
+the control-socket registry's three active Apps. Active App definitions remain
+`1f11af385afabd18f581d2d4c3d3e107f7c56923-definitions-v5`.
+
+At the post-deployment observation cut, **01:15:59 Asia/Shanghai**, the natural
+sample remained 2/50, with 2/10 reports inspected and zero reviews started after
+#374 activation. The earlier sample below therefore establishes no live outcome
+or token savings for #374. Keep subsequent samples segmented by rollout time.
 
 This tests/documentation-only App change needs no runtime reload. Live Task
 controls, schedules, models and budgets were not changed by this work. The
@@ -120,4 +142,4 @@ generate reviews to fill the sample.
 Private logs, strict-check configuration and the one-shot observation script and
 snapshot are retained under
 `/home/hao/workspace-worktrees/may-token-review-20261016/` with the
-`proposal-b-recovery-*` and `proposal-b-live-*` prefixes.
+`proposal-b-recovery-*`, `proposal-b-live-*` and `host-report-contract-*` prefixes.

@@ -106,5 +106,6 @@ Unrelated untracked shared-checkout files were preserved.
 
 The [connected recovery record](recovery-contract-20261017.md) now covers ordinary
 interpretation, executable pre-admission/setup feedback, retained-input guards and
-restart behavior. It also records #374's remaining merge/deploy gate and the first
-two naturally due reviews. No additional App runtime change was demonstrated.
+restart behavior. It also records the verified local deployment of merged #374
+at `e982e7537` and the first two naturally due reviews, both preceding that Host
+deployment. No additional App runtime change was demonstrated.
