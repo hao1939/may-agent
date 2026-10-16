@@ -1854,8 +1854,24 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             task ? renderTelegramTask(task) : `Task ${watched.ref} was not found; watch ended.`,
             task ? representedTaskIdentities(task) : [],
             () => {
-              if (task && watchedTasks.get(surface) === watched)
-                return () => shownWatchRevisions.set(surface, taskPresentationRevision(task));
+              // Missing and already-terminal snapshots intentionally end the watch
+              // before delivery; their direct command reply is still canonical.
+              if (!task || task.terminal) return;
+              if (watchedTasks.get(surface) !== watched) {
+                if (watchedTasks.has(surface)) {
+                  shownWatchRevisions.delete(surface);
+                  watchRefresh.queue(surface);
+                }
+                return false;
+              }
+              const revision = taskPresentationRevision(task);
+              const currentTask = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
+              if (!currentTask || taskPresentationRevision(currentTask) !== revision) {
+                shownWatchRevisions.delete(surface);
+                watchRefresh.queue(surface);
+                return false;
+              }
+              return () => shownWatchRevisions.set(surface, revision);
             },
             task ? { appId: task.appId, taskId: task.taskId } : undefined,
             task ?? undefined,

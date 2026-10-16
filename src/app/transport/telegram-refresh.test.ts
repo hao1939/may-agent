@@ -297,6 +297,44 @@ describe("Telegram refresh lifecycle", () => {
     }
   });
 
+  it.each([false, true])(
+    "rechecks a stalled bare watch command and commits terminal state (wake=%s)",
+    async (wakeWhileStalled) => {
+      const f = fixture();
+      try {
+        await f.command("/watch first");
+        const held = f.hold((send) => Boolean(send.reply_parameters) && send.text.includes("Working on first"));
+        await f.command("/watch", 123, false);
+        await waitFor(() => held.started);
+
+        Object.assign(f.tasks.get("first")!, {
+          terminal: true,
+          status: "done",
+          summary: "Terminal during bare watch command",
+          resourceVersion: 2,
+        });
+        if (wakeWhileStalled) f.wake("first");
+        held.release();
+
+        await waitFor(() => f.sent.some((send) => send.text.includes("Terminal during bare watch command")));
+        const records = f.published.filter((event) => event.type === "conversation.message.created");
+        expect(
+          records.filter((event) => (event.data?.metadata as { command?: string } | undefined)?.command === "/watch"),
+        ).toHaveLength(0);
+        expect(
+          records
+            .filter(
+              (event) =>
+                (event.data?.metadata as { command?: string } | undefined)?.command === "/watch update",
+            )
+            .map((event) => event.data?.text),
+        ).toEqual([expect.stringContaining("Terminal during bare watch command")]);
+      } finally {
+        await f.close();
+      }
+    },
+  );
+
   it("rechecks a watched Task after a stalled send and commits only its fresh terminal state", async () => {
     const f = fixture();
     try {
