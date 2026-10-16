@@ -168,6 +168,27 @@ rows, database paths and error messages are omitted; SQL literals and comments
 are masked. SQL structure remains operator diagnostic data. Lock waits count as
 elapsed SQL time; sleeps outside SQLite do not.
 
+After a successful individual `get` or `all` call exceeds 1000 ms, its tracked
+operation/shape row may also contain one `plan`. The Host classifies the full
+SQL shape only on this slow path and captures `EXPLAIN QUERY PLAN` for recognized
+SELECTs, including CTE reads. Writes and uncertain shapes are skipped; `prepare`,
+`run`, and `exec` never trigger planning. The existing 512-row tracking limit
+also bounds capture attempts, with at most one attempt per operation/shape in
+each five-minute window. Failed capture does not keep retrying within that window.
+
+The plan uses the original bindings without retaining them and does not rerun
+the read. It repeats the masked `fingerprint` and `shape`, records `capturedAt`,
+and retains at most 20 plan rows (`id`, `parent`, and a detail string bounded to
+500 characters). `rowsTruncated` indicates omitted rows. Plan details contain
+schema/index names and are operator diagnostics. Capture errors are omitted and
+cannot replace the original read result or error.
+
+This is one planning snapshot after a qualifying read, not proof of its cause
+or the plan for every later parameter set. Planning adds synchronous work; the
+original read timing excludes that work. Process restart discards these
+diagnostics, and they retain only the current and previous windows. Apps use
+this evidence alongside timing and workload context to judge useful repairs.
+
 Compact cumulative counters also accompany the existing minute
 `runtime.daemon.heartbeat` observation. A consumer can compare samples from the
 same PID and `sql.since`, resetting across restarts. This adds no per-query writes
