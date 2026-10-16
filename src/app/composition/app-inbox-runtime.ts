@@ -2,7 +2,11 @@ import { validateIntent } from "../core/tasks/app-task-reconciler.js";
 import { deliverConversationApproval, taskControlAction } from "../core/events/interface.js";
 import { readTaskEventTarget, readEventTaskTarget } from "../core/events/task-target.js";
 import { appInputFeedbackEvent, appInputAdmissionFailureEvent } from "../core/inbox/input-result.js";
-import { conversationTaskId, listPendingConversationTaskChanges, type ConversationTaskChangeRef } from "../core/state/conversation-task-turns.js";
+import {
+  conversationTaskId,
+  listPendingConversationTaskChanges,
+  type ConversationTaskChangeRef,
+} from "../core/state/conversation-task-turns.js";
 import type { AppTaskCapability } from "../core/tasks/app-task-capability.js";
 import { createAppScheduleProducer } from "../adapters/producers/app-schedules.js";
 import { OwnedTimer } from "../core/scheduling/timer.js";
@@ -85,6 +89,9 @@ const ADMISSION_RECOVERY_BATCH_SIZE = 16;
 const APP_ADMISSION_RECOVERY_SCAN_SIZE = 64;
 const APP_ADMISSION_RECOVERY_BATCH_SIZE = 16;
 const ADMISSION_COMMAND_TURN_GAP_MS = 2;
+// Durable addressed messages get a small recovery window for App registry reloads.
+// The Event row owns this count so process restart cannot reset it.
+const UNROUTABLE_ADDRESS_MAX_ATTEMPTS = 3;
 
 export type StartAppInboxRuntimeOptions = {
   registry: AppRegistry;
@@ -104,10 +111,7 @@ export type StartAppInboxRuntimeOptions = {
   }) => DeliveryResult | undefined;
   /** Persistent process boundary for canonical Task mutation after routing. */
   createTaskAdmissionWorker?: () => {
-    dispatch(
-      command: AppEventAdmissionCommand,
-      event: AgentEvent,
-    ): Promise<{ taskIds: string[] }>;
+    dispatch(command: AppEventAdmissionCommand, event: AgentEvent): Promise<{ taskIds: string[] }>;
     close(): void;
   };
   wakeAdmittedTasks?: (input: { appId: string; taskIds: string[] }) => void;
@@ -181,6 +185,47 @@ function eventIdentity(event: AgentEvent): string | undefined {
   return eventId ? `event:${eventId}` : undefined;
 }
 
+function recordUnroutableAddressAttempt(
+  db: SqliteDb,
+  eventId: number,
+  diagnostic: string,
+): { attempts: number; terminal: boolean } {
+  return withSqliteBusyRetry(`record unroutable addressed message attempt for event ${eventId}`, () => {
+    // App admission and another route's receipt are independent. Keep the
+    // terminal diagnostic on the App obligation even if another route already
+    // accepted the Event, or accepts it later. Record-only/noop is not delivery.
+    const row = db
+      .prepare(
+        `UPDATE events
+       SET app_admission_attempts = app_admission_attempts + 1,
+           app_admission_error = CASE WHEN app_admission_attempts + 1 >= ?1
+             THEN 'terminal App admission after ' || (app_admission_attempts + 1) || ' unroutable address attempts: ' || ?2
+             ELSE app_admission_error END,
+           delivery_status = CASE WHEN app_admission_attempts + 1 >= ?1
+             AND NOT (delivery_status = 'accepted' AND delivery_route IS NOT 'noop')
+             THEN 'unhandled' ELSE delivery_status END,
+           delivery_note = CASE WHEN app_admission_attempts + 1 >= ?1
+             AND NOT (delivery_status = 'accepted' AND delivery_route IS NOT 'noop')
+             THEN 'terminal App admission after ' || (app_admission_attempts + 1) || ' unroutable address attempts: ' || ?2
+             ELSE delivery_note END,
+           app_admission_pending = CASE WHEN app_admission_attempts + 1 >= ?1 THEN 0 ELSE app_admission_pending END
+       WHERE id = ?3 AND app_admission_pending = 1
+       RETURNING app_admission_attempts, app_admission_pending`,
+      )
+      .get(UNROUTABLE_ADDRESS_MAX_ATTEMPTS, diagnostic, eventId) as
+        { app_admission_attempts?: unknown; app_admission_pending?: unknown } | undefined;
+    const current =
+      row ??
+      (db.prepare("SELECT app_admission_attempts, app_admission_pending FROM events WHERE id = ?").get(eventId) as
+        { app_admission_attempts?: unknown; app_admission_pending?: unknown } | undefined);
+    const attempts = Number(current?.app_admission_attempts ?? 0);
+    return {
+      attempts,
+      terminal: attempts >= UNROUTABLE_ADDRESS_MAX_ATTEMPTS && current?.app_admission_pending === 0,
+    };
+  });
+}
+
 function exactTaskTarget(event: AppEvent<Record<string, unknown>>): { appId?: string; taskId: string } | null {
   // Exact-task routing authority is entirely in the canonical envelope target.
   // App/project identities in data remain correlation and lifecycle facts.
@@ -246,7 +291,6 @@ function addressedAgentMessage(event: AgentEvent):
     identity,
   };
 }
-
 
 export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions): Promise<AppInboxRuntime> {
   let taskAdmissionWorker = options.createTaskAdmissionWorker?.();
@@ -318,12 +362,22 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       const { appId, conversationId, taskAppId, taskId, attemptId, closedGeneration } = change;
       if (taskAppId === appId && taskId === conversationTaskId(appId, conversationId)) continue;
       if (!attemptId && closedGeneration === undefined) continue;
-      const identity = JSON.stringify([appId, conversationId, taskAppId, taskId, attemptId ?? null, closedGeneration ?? null]);
+      const identity = JSON.stringify([
+        appId,
+        conversationId,
+        taskAppId,
+        taskId,
+        attemptId ?? null,
+        closedGeneration ?? null,
+      ]);
       if (seen.has(identity)) continue;
       seen.add(identity);
       try {
         const admitted = options.admitConversationChange?.({
-          appId, conversationId, taskAppId, taskId,
+          appId,
+          conversationId,
+          taskAppId,
+          taskId,
           ...(attemptId !== undefined ? { attemptId } : { closedGeneration: closedGeneration! }),
         });
         if (!admitted) throw new Error("Conversation Task change has no available execution owner");
@@ -331,7 +385,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         // Saved links/outcomes remain due for the existing recovery scan.
         // One unavailable Conversation must not prevent another from receiving work.
         reportFailure({
-          appId, conversationId, stage: "conversation-change", disposition: "recovery-pending",
+          appId,
+          conversationId,
+          stage: "conversation-change",
+          disposition: "recovery-pending",
           error: `Task ${taskAppId}/${taskId}, outcome ${attemptId ?? `closed:${closedGeneration}`}: ${String(error)}`,
         });
       }
@@ -361,7 +418,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       const review = appInputAdmissionFailureEvent(item, result, status);
       if (!review) return false;
       const delivered = options.bus.emit(review)[EVENT_DELIVERY_RESULT];
-      return delivered?.accepted === true && delivered.route === "direct" && delivered.by.startsWith("app-runtime:events:");
+      return (
+        delivered?.accepted === true && delivered.route === "direct" && delivered.by.startsWith("app-runtime:events:")
+      );
     },
   });
   let closed = false;
@@ -435,13 +494,22 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         // markers wait for the next cycle instead of indefinitely postponing an
         // older failing row behind the cursor.
         if (inputRecoveryCycleMaxId === 0) {
-          inputRecoveryCycleMaxId = Number(options.db.prepare(`SELECT COALESCE(MAX(id), 0) AS id
+          inputRecoveryCycleMaxId = Number(
+            options.db
+              .prepare(
+                `SELECT COALESCE(MAX(id), 0) AS id
             FROM events INDEXED BY idx_events_app_admission_pending
-            WHERE app_admission_pending = 1`).get()?.id ?? 0);
+            WHERE app_admission_pending = 1`,
+              )
+              .get()?.id ?? 0,
+          );
         }
-        const rows = options.db.prepare(`SELECT id
+        const rows = options.db
+          .prepare(
+            `SELECT id
           FROM events INDEXED BY idx_events_app_admission_pending
-          WHERE app_admission_pending = 1 AND id > ? AND id <= ? ORDER BY id LIMIT ?`)
+          WHERE app_admission_pending = 1 AND id > ? AND id <= ? ORDER BY id LIMIT ?`,
+          )
           .all(inputRecoveryCursor, inputRecoveryCycleMaxId, APP_ADMISSION_RECOVERY_SCAN_SIZE);
         if (!rows.length) {
           inputRecoveryCursor = 0;
@@ -562,7 +630,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           originEventId: plan.eventId,
           idempotencyKey: `subscription:${command.appId}:${command.routeId}:${identity}`,
         });
-
       }
       if (command.kind === "task" || command.kind === "exact-task" || command.conditionTaskIds.length > 0) {
         if (!entry.definition.tasks) {
@@ -637,7 +704,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         resolveAdmissionCommand(plan, command, event);
       } catch (error) {
         recordAppEventAdmissionCommandFailure(options.db, {
-          eventId: plan.eventId, appId: command.appId, error, now: now(),
+          eventId: plan.eventId,
+          appId: command.appId,
+          error,
+          now: now(),
         });
       }
     }
@@ -781,12 +851,19 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       const data = eventData(event);
       // These facts signal state already committed by the Task runtime. They
       // must not become new input through generic exact-target admission.
-      if (event.type === "app.task.ready" || event.type === "app.task.attempt.stopped" || event.type === "app.task.reopened")
+    if (
+      event.type === "app.task.ready" ||
+      event.type === "app.task.attempt.stopped" ||
+      event.type === "app.task.reopened"
+    )
         return { accepted: true, by: "task-runtime-notification", route: "direct" };
       if (String(event.type) === "project.task.reconcile.started" || String(event.type) === "project.task.reconciled") {
-        const rows = options.db.prepare(`SELECT DISTINCT conversation_id FROM app_inbox_items
+      const rows = options.db
+        .prepare(
+          `SELECT DISTINCT conversation_id FROM app_inbox_items
           WHERE app_id = ? AND conversation_id IS NOT NULL AND
-            (execution_task_id = ? OR (waiting_on_kind = 'task' AND waiting_on_id = ?))`)
+            (execution_task_id = ? OR (waiting_on_kind = 'task' AND waiting_on_id = ?))`,
+        )
           .all(String(data.project ?? ""), String(data.taskId ?? ""), String(data.taskId ?? ""));
         for (const row of rows) notifyConversationUpdated(String(data.project), String(row.conversation_id));
       }
@@ -820,6 +897,25 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             note: "addressed agent message already admitted to App inbox",
           };
         }
+        // A keyed producer retry can redeliver an already-settled unhandled
+        // Event even after its admission marker is cleared. Keep terminal
+        // settlement absorbing before registry selection so a later App install
+        // cannot resurrect the original publication or replace its audit note.
+        const exhausted = eventId
+          ? (options.db
+              .prepare("SELECT app_admission_attempts, app_admission_pending FROM events WHERE id = ?")
+              .get(eventId) as { app_admission_attempts?: unknown; app_admission_pending?: unknown } | undefined)
+          : undefined;
+        if (
+          Number(exhausted?.app_admission_attempts ?? 0) >= UNROUTABLE_ADDRESS_MAX_ATTEMPTS &&
+          exhausted?.app_admission_pending === 0
+        ) {
+          // An Event-interface publication may carry record-only fallback
+          // acceptance. A generic fallback cannot replace rejection; a real
+          // independent route may still accept and retain its own receipt.
+          Object.defineProperty(event, EVENT_RECORD_ONLY, { value: false, configurable: true });
+          return;
+        }
         const candidates = host.matchingAppIds(message.targetOwner, message.input);
         if (candidates.length === 1) {
           const admitted = host.admit({
@@ -841,11 +937,21 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             note: "addressed agent message admitted to App inbox",
           };
         }
-        throw new Error(
+        const diagnostic =
           candidates.length === 0
             ? `Addressed agent message ${message.identity} names no canonical App owned by ${message.targetOwner}`
-            : `Addressed agent message ${message.identity} is ambiguous across Apps owned by ${message.targetOwner}`,
-        );
+            : `Addressed agent message ${message.identity} is ambiguous across Apps owned by ${message.targetOwner}`;
+        if (candidates.length === 0 && eventId) {
+          const attempt = recordUnroutableAddressAttempt(options.db, eventId, diagnostic);
+          // Terminal settlement stops App recovery and records its failure
+          // without changing another route's acceptance. Record-only fallback
+          // must not turn this failed admission into apparent delivery.
+          if (attempt.terminal) {
+            Object.defineProperty(event, EVENT_RECORD_ONLY, { value: false, configurable: true });
+            return;
+          }
+        }
+        throw new Error(diagnostic);
       }
       if (event.type === "conversation.message.created") {
         const appId = typeof data.appId === "string" ? data.appId.trim() : "";
@@ -884,9 +990,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
             typeof focusedTask.appId === "string" ? focusedTask.appId.trim().replace(/\.app$/, "") : "";
           const focusedTaskId = typeof focusedTask.taskId === "string" ? focusedTask.taskId.trim() : "";
           const focusedConversationTask = Boolean(
-            focusedAppId === appId &&
-              focusedTaskId &&
-              hasConversationExecutionTask(options.db, appId, focusedTaskId),
+          focusedAppId === appId && focusedTaskId && hasConversationExecutionTask(options.db, appId, focusedTaskId),
           );
           const admitted = host.admit({
             appId,
@@ -1000,9 +1104,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           channelMessageId: typeof data.channelMessageId === "number" ? data.channelMessageId : undefined,
           replyToSourceId: typeof data.replyToSourceId === "string" ? data.replyToSourceId : undefined,
           idempotencyKey:
-            typeof data.idempotencyKey === "string" && data.idempotencyKey.trim()
-              ? data.idempotencyKey.trim()
-              : identity,
+          typeof data.idempotencyKey === "string" && data.idempotencyKey.trim() ? data.idempotencyKey.trim() : identity,
         });
 
         return {
@@ -1027,7 +1129,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           if (closed || typeof data.attemptId === "string")
             admitConversationTaskChanges(
               listConversationTaskLinks(options.db, appId, taskId).map((link) => ({
-                ...link, taskAppId: appId, taskId,
+              ...link,
+              taskAppId: appId,
+              taskId,
                 ...(closed ? { closedGeneration: Number(data.generation) } : { attemptId: String(data.attemptId) }),
               })),
             );

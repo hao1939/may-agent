@@ -380,15 +380,15 @@ function applyConditionEvent(
     const observed = { ...observation(event), ...(kind === "progress" ? { state: "progress" } : {}) };
     const waitingResources = Object.values(tree.resources ?? {}).filter(
       (resource) =>
-        ["waiting", "running", "pending"].includes(resource.status.phase) &&
+        (["waiting", "running", "pending"].includes(resource.status.phase) ||
+          (resource.status.phase === "attention" && Boolean(resource.status.retryExhausted))) &&
         resource.status.conditionIds?.includes(id) &&
         !taskEventPredatesReopening(resource, event) &&
         (!allowedTaskIds || allowedTaskIds.has(resource.metadata.id)) &&
         approvalTargetsTask(tree.project ?? "", resource.metadata.id, resource.metadata.generation, condition, event),
     );
-    // Conditions are task-local wait state, not a second event journal. Once
-    // no live waiting/running task owns one, replaying facts into it has no
-    // semantic value and would require an unsafe ownerless write.
+    // Exhaustion stops automatic execution, not observation of retained waits.
+    // Only a Task that still owns the Condition can admit its evidence.
     if (waitingResources.length === 0) continue;
     if (condition.status.state !== "true") {
       condition.metadata.resourceVersion += 1;

@@ -1,3 +1,4 @@
+import { makeTaskRetryDue } from "./app-task-test-support.js";
 import type { TaskAgentInput, TaskConversationRunner } from "./execution.js";
 import { expect, test, setSystemTime } from "bun:test";
 import { appTaskContext, observeAppTaskIntent } from "./app-task-reconciler.js";
@@ -236,7 +237,8 @@ test("a malformed Conversation procedure retains failure and original obligation
     expect(agentCalls).toBe(0);
     expect(conversationCalls).toBe(3);
     expect(f.store.readAttempt(failedId)).toEqual(failure);
-    expect(f.store.readTask(taskId)).toMatchObject({ metadata: { generation }, status: { phase: "pending" } });
+    expect(f.store.readTask(taskId)).toMatchObject({ metadata: { generation },
+      status: { phase: "attention", retryExhausted: { failures: 3, limit: 3 } } });
     const admissions = f.store.readTaskContext({ taskIds: [], admissionIds: [
       "conversation-input:ask", "conversation-follow-up:sample:ask",
     ] }).appTaskAdmissions!;
@@ -329,12 +331,9 @@ test("ordinary Task publishes before failure, reuses the publication after resta
         .map(({ text }) => text),
     ).toEqual([progress.message!]);
     await f.reopen();
-    // The existing recovery timer retries the failed assignment after reopening.
-    const deadline = Date.now() + 4000;
-    while (calls < 2 || f.store.readTask("work")?.status.phase === "running") {
-      if (Date.now() > deadline) throw new Error("Recovery did not settle");
-      await Bun.sleep(5);
-    }
+    // A due retry after reopening reuses the already committed publication.
+    makeTaskRetryDue(f.store, "work");
+    await f.run();
     expect(calls).toBe(2);
     expect(f.store.readTask("work")?.status.phase).toBe("waiting");
     expect(readConversationRequest(f.db, "sample", "discussion", "requested-work")?.status).toBe("open");
@@ -1230,7 +1229,9 @@ test("maximal Request scopes retain message history, reply links and exact recei
     expect(f.store.readTask("work")?.status.summary).toContain("Interrupted after large publication");
     expect(topicId).toMatch(/^task-topic:/);
     await f.reopen();
-    await until(() => f.store.readTask("work")?.status.phase === "waiting");
+    makeTaskRetryDue(f.store, "work");
+    await f.run();
+    expect(f.store.readTask("work")?.status.phase).toBe("waiting");
     expect(calls).toBe(2);
     const messages = listAppConversationMessages(f.db, "sample", "discussion").filter(
       ({ author }) => author.kind === "agent",

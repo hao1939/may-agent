@@ -98,7 +98,7 @@ function advanceToRetry(config: ReturnType<typeof openState>, taskId = "work/one
 function repeatFailures(config: ReturnType<typeof openState>, count: number) {
   for (let failure = 0; failure < count; failure++) {
     if (failure) advanceToRetry(config);
-    expect(failTask(config).status).toBe("retrying");
+    expect(failTask(config).status).toBe(failure === 2 ? "exhausted" : "retrying");
     expect(config.resourceStore.readTask("work/one")?.status.executionFailures).toBe(failure + 1);
   }
 }
@@ -366,7 +366,7 @@ describe("request-to-Task state operation", () => {
     expect(getAppInboxItem(db, input.inputContext.id)?.result).toEqual(result);
   });
 
-  it("preserves retry pacing and unfinished input across processes beyond the old failure limit", async () => {
+  it("preserves retry pacing and unfinished input across processes within the default allowance", async () => {
     setSystemTime(new Date());
     const { db, path, config, input } = fixture();
     admitTaskInput(config, input);
@@ -378,7 +378,7 @@ describe("request-to-Task state operation", () => {
     });
     const other = claimAppInboxItem(db, "other-request", "other-handler", 60_000)!;
     waitAppInboxClaim(db, other, { kind: "task", id: "work/one" });
-    repeatFailures(config, 5);
+    repeatFailures(config, 2);
     const deadline = config.resourceStore.readTask("work/one")!.status.executionRetryAt!;
     // A fresh process observes the saved deadline, with no EventBus or in-memory timer.
     expect(await worker(path, "expect-backoff")).toEqual({ exitCode: 0, stderr: "" });
@@ -386,12 +386,12 @@ describe("request-to-Task state operation", () => {
     connections.push(restarted.resourceStore.db);
     expect(restarted.resourceStore.readTask("work/one")?.status).toMatchObject({
       phase: "pending",
-      executionFailures: 5,
+      executionFailures: 2,
       executionRetryAt: deadline,
     });
     expect(getAppInboxItem(db, input.inputContext.id)?.availableAt).toBeUndefined();
     const tree = restarted.resourceStore.readTaskContext({ taskIds: ["work/one"] });
-    expect(Object.values(tree.attempts ?? {})).toHaveLength(5);
+    expect(Object.values(tree.attempts ?? {})).toHaveLength(2);
     expect(tree.taskTriggers?.["work/one"]?.events).toHaveLength(1);
     advanceToRetry(restarted);
     finishTask(restarted);
@@ -404,10 +404,10 @@ describe("request-to-Task state operation", () => {
   it("a newly attached human input permits progress without erasing prior failure cost", () => {
     const { db, config, input } = fixture();
     admitTaskInput(config, { ...input, inboxInputId: undefined, idempotencyKey: "earlier-request" });
-    repeatFailures(config, 4);
+    repeatFailures(config, 3);
     admitTaskInput(config, { ...input, attachment: { kind: "existing", taskId: "work/one" } });
     expect(getAppInboxItem(db, input.inputContext.id)?.availableAt).toBeUndefined();
-    expect(config.resourceStore.readTask("work/one")?.status.executionFailures).toBe(4);
+    expect(config.resourceStore.readTask("work/one")?.status.executionFailures).toBe(3);
     expect(
       config.resourceStore.readTaskContext({ taskIds: ["work/one"] }).taskTriggers?.["work/one"]?.events,
     ).toHaveLength(2);
@@ -419,7 +419,7 @@ describe("request-to-Task state operation", () => {
   it.each(["retry", "revise"])("waits for an exact answer after an authorized %s", (operation) => {
     const { db, config, input } = fixture();
     admitTaskInput(config, { ...input, inboxInputId: undefined, idempotencyKey: "earlier-request" });
-    repeatFailures(config, 4);
+    repeatFailures(config, 3);
     const task = config.resourceStore.readTask("work/one")!;
     if (operation === "retry") {
       retryFailedAppTask(config, {
@@ -445,7 +445,7 @@ describe("request-to-Task state operation", () => {
   it("rolls back failure facts and pacing together when retry persistence fails", () => {
     const { db, config, input } = fixture();
     admitTaskInput(config, input);
-    repeatFailures(config, 3);
+    repeatFailures(config, 2);
     advanceToRetry(config);
     const claim = claimObservedAppTask(config, {
       taskId: "work/one",
@@ -455,17 +455,19 @@ describe("request-to-Task state operation", () => {
     if (claim.kind !== "claimed") throw new Error("expected claim");
     const before = readTaskSnapshot(config);
     db.exec(
-      "CREATE TRIGGER fail_retry BEFORE UPDATE OF resource_json ON app_tasks WHEN NEW.app_id = 'example' AND NEW.task_id = 'work/one' AND json_extract(NEW.resource_json, '$.status.executionFailures') = 4 BEGIN SELECT RAISE(ABORT, 'retry write failure'); END",
+      "CREATE TRIGGER fail_retry BEFORE UPDATE OF resource_json ON app_tasks WHEN NEW.app_id = 'example' AND NEW.task_id = 'work/one' AND json_extract(NEW.resource_json, '$.status.executionFailures') = 3 BEGIN SELECT RAISE(ABORT, 'retry write failure'); END",
     );
     expect(() => failAppTaskAttempt(config, claim, "Fixture execution failure")).toThrow("retry write failure");
     expect(readTaskSnapshot(config)).toEqual(before);
     expect(getAppInboxItem(db, input.inputContext.id)?.availableAt).toBeUndefined();
     db.exec("DROP TRIGGER fail_retry");
-    expect(failAppTaskAttempt(config, claim, "Fixture execution failure").status).toBe("retrying");
-    expect(config.resourceStore.readTask("work/one")?.status.executionFailures).toBe(4);
+    expect(failAppTaskAttempt(config, claim, "Fixture execution failure").status).toBe("exhausted");
+    expect(config.resourceStore.readTask("work/one")?.status.executionFailures).toBe(3);
     expect(config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("failed");
     expect(getAppInboxItem(db, input.inputContext.id)?.availableAt).toBeUndefined();
-    advanceToRetry(config);
+    const exhausted = config.resourceStore.readTask("work/one")!;
+    retryFailedAppTask(config, { appId: "example", taskId: "work/one",
+      expectedGeneration: exhausted.metadata.generation, expectedResourceVersion: exhausted.metadata.resourceVersion });
     finishTask(config);
     expect(readAppTaskAdmissionOutcome(config, "work/one", input.idempotencyKey) || config.resourceStore.isCancelled("work/one")).toBeTruthy();
   });

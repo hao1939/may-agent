@@ -1,3 +1,4 @@
+import { makeTaskRetryDue } from "../../../src/app/core/tasks/app-task-test-support.js";
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
@@ -254,8 +255,7 @@ function serveFinish(answer: Record<string, unknown>, onPrompt: (prompt: string)
 }
 
 async function retryWhenDue(f: ReturnType<typeof fixture>, agent: string) {
-  const due = f.store.readTask("work/one")!.status.executionRetryAt!;
-  assert(Number.isFinite(due), "Failure must retain a durable retry deadline");
+  const due = makeTaskRetryDue(f.store, "work/one");
   const summary = `completed by ${agent} after recovery`;
   let calls = 0;
   const server = serveFinish(
@@ -271,7 +271,6 @@ async function retryWhenDue(f: ReturnType<typeof fixture>, agent: string) {
   );
   f.modelBaseUrl = server.url.origin;
   try {
-    await new Promise((resolve) => setTimeout(resolve, Math.max(0, due - Date.now())));
     await run(f);
     const accepted = acceptedAttempt(f);
     assert(Date.parse(accepted.startedAt) >= due, "A fresh worker must obey persisted pacing");

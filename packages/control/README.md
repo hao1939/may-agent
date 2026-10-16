@@ -97,6 +97,17 @@ receive their scoped publishing capability through the SDK.
 | `getEvent` / HTTP `GET /api/events/:id` | Trusted operator diagnostics, including internal types; linked route state is not Task state |
 | Explicit raw event/session subscription | Best-effort diagnostic stream; payloads outside documented integrations may change |
 
+App admission and another route's delivery receipt are independent. A durable
+addressed message with no matching App gets three admission attempts, including
+the first; recovery uses the existing scan. Exhaustion stops that App route and
+retains its diagnostic as a failed `delivery` link in `getEvent`. It cannot undo
+another route's acceptance or cause that accepted route to run again on a keyed
+producer retry. Without an independent delivery, the Event remains `unhandled`;
+record-only acceptance does not count as delivery. A later real acceptance keeps
+the App failure link. Restart, registry reload and retrying the same publication
+do not renew the exhausted allowance. A deliberately new publication uses a new
+identity, after the caller has considered any effects already accepted.
+
 `PublicEvent` names the transport shape, not a promise that every bus type is a
 supported domain API. The Host's `PUBLIC_EVENT_TYPES` is an **ingress allowlist**,
 not an outbound filter. Seeing a diagnostic does not authorize publishing it.
