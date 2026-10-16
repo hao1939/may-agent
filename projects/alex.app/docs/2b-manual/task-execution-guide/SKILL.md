@@ -119,6 +119,11 @@ Use `reviewAt` for deliberate reconsideration, and rearm a satisfied interest on
 when later changes still matter. A resource owner label provides live routing but
 cannot replace this recovery interest. See [live changes and missed facts](../../2a-design/agent-app.md#live-changes-and-missed-facts).
 
+An observer reporting a fact does not itself ask for an agent turn. Save a
+Condition when your Task needs the fact; an App subscription may instead admit
+new work. The Host retains unconsumed observations and reports failed required
+delivery. Agents need no extra acceptance or polling step for those facts.
+
 Use the description and schema of the capability exposed in this attempt. Check
 what it returns: a completed result, accepted work with a reference, or failure.
 Do not infer that acceptance means the requested work is finished. Use logical

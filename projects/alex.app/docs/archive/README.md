@@ -34,6 +34,8 @@ contracts; Tier-2 design governs when wording conflicts.
 
 ## Reviews
 
+- [Observer delivery intent: implementation trial — 2026-10-16](reviews/observer-delivery-intent-20261016.md)
+  — ordinary facts, persisted publication intent and independent receipt evidence.
 - [Serving database contention: implementation trial — 2026-10-16](reviews/host-contention-fix-20261016.md)
   — serving waits and recovery batches yield; real lock/identity checks, caller
   audit and full-CI findings. Local source candidate, not deployment evidence.

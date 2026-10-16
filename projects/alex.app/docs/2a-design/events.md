@@ -486,11 +486,21 @@ Mark producer intent rather than adding names to a metric exclusion list.
 
 This convention also applies to facts returned by ordinary App observers.
 Publishing a successful unconsumed observation must not create an unhandled-work
-failure. Producer intent survives worker relay, persistence and replay; only the delivery owner can
-acknowledge its consumers. Receipt expiry uses durable status and timing, so
-restart cannot hide overdue delivery. Independent App admission remains pending
-until its own owner settles it. Ordinary-observer publication, restored publication
-intent and restart-based expiry still have [implementation gaps](../proposals/host-contract-improvements-20261016.md).
+failure. The Host supplies this convention from the observer contract; the App
+does not declare the same returned fact again in `observations`.
+
+Producer intent survives worker relay, persistence and replay. The original
+Event owns that intent: a keyed retry cannot replace it with today's producer
+declaration. Old Events with no saved intent retain their previous classification;
+do not infer intent from their names. Only the delivery owner can acknowledge its
+consumers. Storage-only acceptance cannot overwrite a failed receipt or another
+consumer's acceptance. App admission may still acknowledge its independent
+inspection in the same transaction.
+
+The [observer implementation trial](../archive/reviews/observer-delivery-intent-20261016.md)
+records the source candidate and verification; deployment is separate. Receipt
+expiry must use durable status and timing so restart cannot hide overdue delivery.
+That expiry correction remains an [implementation gap](../proposals/host-contract-improvements-20261016.md).
 
 Routine checks that find no new work update bounded activity counters. The
 existing sampler retains totals, reasons and the observation window in metric

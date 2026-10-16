@@ -2,7 +2,8 @@
 
 **Status:** Direction accepted, implementation in progress, 2026-10-16.
 Principles and contract refinements are integrated into their owning documents.
-The first source candidate addresses database contention in [Host PR #370](https://github.com/hao1939/may-agent/pull/370); later steps remain open.
+Database contention is fixed in merged [Host PR #370](https://github.com/hao1939/may-agent/pull/370).
+The observer-accounting source candidate is in verification; later steps remain open.
 No deployment is established by this document.
 
 **Parent:** [Keep the Host boring and let Apps change](host-stability-and-app-extensibility-20261005.md).
@@ -87,8 +88,8 @@ Preserve already-fixed behavior and make separate runtime changes in this order:
 
 | Step | Change and contract | Value / evidence |
 | --- | --- | --- |
-| 1 | Bound serving-path SQL waits; preserve operation-owned retry (C3/C5) | Source candidate and failure/recovery trials complete; review and rollout remain |
-| 2 | Apply observation semantics through ordinary producers and relays (C2/C6) | Remove reproduced false failures while retaining required-consumer errors |
+| 1 | Bound serving-path SQL waits; preserve operation-owned retry (C3/C5) | Merged #370; source verification complete, rollout not established |
+| 2 | Apply observation semantics through ordinary producers and relays (C2/C6) | Source candidate retains original intent and independent receipts; verification in progress |
 | 3 | Expire delivery receipts from durable status/timing (C3) | Restart must not hide overdue delivery; permanent loss was not demonstrated |
 | 4 | Trial one private recovery success meaning across callers/backends (C4/C6) | Consistent safe retry without adding optional-artifact gates |
 | 5 | Profile metric queries; optimize or contain demonstrated cost (C5) | Synthetic blocking shown; installed query impact remains unmeasured |
@@ -114,7 +115,7 @@ The [implementation trial](../archive/reviews/host-contention-fix-20261016.md)
 records the caller audit, real two-connection failure/recovery test and full
 verification result. It also states the limits: no live control-latency or
 throughput comparison, no claim of a 50 ms end-to-end bound, and no token-savings
-measurement. Review and rollout of this candidate remain outstanding.
+measurement. #370 is merged; rollout has not been established here.
 
 This implements a focused part of
 [responsive recovery](responsive-host-recovery-20261002.md); that proposal still
@@ -135,18 +136,18 @@ consumer is required, failure to deliver remains a failure. Use the existing
 producer contract to express this distinction; Apps should not maintain a second
 list of harmless event names, and metrics should not guess from names.
 
-The October 16 follow-up found that the private `EVENT_RECORD_ONLY` Symbol is
-carried by worker relay but is not serialized by `DbWriter` or restored by
-`loadPersistedEvent()`. Merely tagging observer output would fix live publication
-while leaving restart different. Preserve the original publication intent with
-its durable Event and restore it on both producer retry and journal recovery.
-This intent permits unconsumed history; it cannot acknowledge a failed required
-consumer. Do not infer old intent from an event name or rewrite terminal receipts.
-The storage representation still needs a focused implementation and trial.
+The source candidate saves the private `EVENT_RECORD_ONLY` intent in the Event
+row, restores it on producer retry and journal recovery, and marks ordinary
+observer output at its producer boundary. A storage-only receipt cannot replace
+a failed delivery or an independent consumer's acceptance. App admission still
+acknowledges its own inspection. Old rows default to no declaration; historical
+failures are not rewritten. The [implementation trial](../archive/reviews/observer-delivery-intent-20261016.md)
+records the changes, failed probes, verification and limits.
 
-Audit remaining metric event-name exclusions after fixing their producers.
-Remove an exclusion only when its real required-consumer failures remain visible.
-An arbitrary input or control operation must not inherit passive-fact semantics.
+The candidate also removes the two metric-failure name exclusions whose producers
+already declare record-only intent. Remaining legacy exclusions still need their
+producer review. An arbitrary input or control operation must not inherit
+passive-fact semantics.
 
 **Trial:** publish unconsumed facts from two different App observers, route a
 fact to actionable work, fail a required consumer, then exercise worker delivery

@@ -1,6 +1,6 @@
 # Serving database contention: first implementation trial — 2026-10-16
 
-**Status:** Published as [Host PR #370](https://github.com/hao1939/may-agent/pull/370); current-head local CI and GitHub Quality/Container passed. Not merged or deployed.
+**Status:** Merged as [Host PR #370](https://github.com/hao1939/may-agent/pull/370) at `a0b153b45`; current-head local CI and GitHub Quality/Container passed. Deployment not established.
 **Supports:** [Responsive storage](../../2a-design/storage.md) and the
 [Host improvement plan](../../proposals/host-contract-improvements-20261016.md).
 

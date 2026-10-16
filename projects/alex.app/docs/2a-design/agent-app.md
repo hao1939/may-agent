@@ -486,6 +486,13 @@ Neither launches agents, accesses inbox or task storage, or mutates runtime stat
 observers, workflow inputs, or explicit offline maintenance according to their
 actual responsibility.
 
+Returned observations, including observer-failure diagnostics, are valid retained
+facts even without an interested consumer. No extra `observations` entry is
+needed for an observer's own output. Subscriptions, exact targets and Conditions
+still select work, and failed required delivery remains visible. Publication
+intent is saved with the Event, so retries and restart preserve this boundary;
+see [admission state](events.md#admission-state) and its linked trial.
+
 For unsolicited targeted observations, disposable suppression memory is an
 optimization, not durable delivery identity. Producers should use the existing
 event `data.idempotencyKey` with stable semantic payload bytes. The key identifies
