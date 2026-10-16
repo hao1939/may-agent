@@ -62,12 +62,19 @@ test("observation fallback cannot erase failed delivery or replace an independen
       .get(failed[EVENT_ROW_ID]!);
     const pending = receipt();
     expect(pending).toMatchObject({ delivery_status: "pending", delivery_route: "direct", accepted_by: null });
-    stop();
-    bus.redeliverPersisted(loadPersistedEvent(db, failed[EVENT_ROW_ID]!, root)!, failed[EVENT_ROW_ID]!);
+    // Recovery inspects only the App route; the failed required route remains
+    // installed, but is not retried by this narrower acknowledgement.
+    bus.subscribeDurableRoute((event) => event.type === "fixture.observed"
+      ? { accepted: true, by: "app-inbox-route", route: "noop", appAdmission: true } : undefined,
+      { label: "app-inbox-route" });
+    bus.redeliverPersisted(loadPersistedEvent(db, failed[EVENT_ROW_ID]!, root)!, failed[EVENT_ROW_ID]!, "app-inbox-route");
     expect(receipt()).toEqual(pending);
+    expect(db.prepare("SELECT app_admission_pending FROM events WHERE id = ?").get(failed[EVENT_ROW_ID]!))
+      .toEqual({ app_admission_pending: 0 });
     writer.runHousekeeping(Date.now() + 120_001);
     const terminal = receipt();
     expect(terminal?.delivery_status).toBe("unhandled");
+    stop();
     bus.redeliverPersisted(loadPersistedEvent(db, failed[EVENT_ROW_ID]!, root)!, failed[EVENT_ROW_ID]!);
     expect(receipt()).toEqual(terminal);
 
