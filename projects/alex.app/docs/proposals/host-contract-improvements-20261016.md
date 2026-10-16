@@ -126,17 +126,34 @@ contract; switching method preserves acceptance and effect rules. Content/schema
 evolution should use interpretation when needed, without routinely migrating
 history or adding version-specific readers. See
 [contract evolution](../2a-design/execution-contributions.md#same-contract-as-content-evolves).
-This work has two implementation pieces, under one flow.
+The [common contribution contract](../2a-design/execution-contributions.md#common-contract-for-code-and-agents)
+is the normative rule for both methods. This proposal tracks its implementation,
+not a second contract. Start with one App result boundary, then align generic
+Host completion and prove the recovery route.
+
+**First slice — prove one shared acceptance boundary.** Use the evaluator judgment
+as the concrete case. Its schema and current-result reader disagree in both
+directions: blank text passes the schema but fails the reader; missing/non-array
+verification and unknown fields fail the schema but pass the reader. Factor one
+App-owned schema/admission helper used by task review, metric review and any code
+producing a new judgment. Supply that same schema to the agent. Feed identical
+valid and invalid fixtures through both paths, including correction, before
+changing broader recovery behavior. Keep historical evidence and report reuse
+separate from admitting a newly generated judgment. This slice needs no Host
+policy change, registry or bulk migration.
 
 **App adoption — Alex owns meaning and the next action.**
 
-1. Use one App-owned definition for newly generated judgments. Reuse it in
-   `task-outcome-review.ts`, `metric-review.ts` and their new-output reader.
+1. Use one App-owned definition and admission helper for newly generated judgments.
+   Reuse it in `task-outcome-review.ts`, `metric-review.ts` and their new-output
+   reader; code-produced judgments go through it too.
    Express known structural requirements, including nonblank text, in the schema
    seen by the model. Preserve original historical reports; route formats the
    current reader cannot handle through ordinary agent interpretation. A migration
    or separate legacy reader is not required. A reader must not add a hidden
-   structural hurdle after finish.
+   structural hurdle after finish or silently coerce invalid new data into success.
+   Keep the agent's instructions linked to the contract and pass the shared schema
+   through the existing call rather than maintaining another schema in the prompt.
 2. In the existing workflow, call the responsible agent when a reader or operation
    cannot handle the case after its supported mechanical recovery. Supply the
    assignment, original input/reference, exact failure, useful work and effect
@@ -150,10 +167,16 @@ This work has two implementation pieces, under one flow.
    caller/operational route. Do not add a recovery Task per error, an App retry
    controller, or a field asking Host to switch executors.
 
-The first App trial uses a valid ordinary `message`/`goal` envelope carrying
-unfamiliar content as evidence. It does not weaken Host admission or silently
-convert a denied typed action into work. Retained report publication and explicit
-follow-up decisions keep their existing effect protection.
+The interpretation trial uses a valid ordinary `message`/`goal` envelope carrying
+unfamiliar content as evidence. Also test incompatible input rejected before
+destination admission and a procedure that fails before its workflow runs. The
+first returns the original reference and rejection to its existing caller; the
+second preserves the admitted Task and reaches its caller/declared operational
+owner. Verify the feedback is usable for the next authorized action, not merely
+logged. A missing recipient remains an unresolved delivery; Host does not invent
+an agent. These trials do not weaken admission or silently convert a denied typed
+action into work. Retained publication and follow-up decisions keep their effect
+protection.
 
 **Host completion feedback — generic support for any App.**
 
@@ -167,10 +190,17 @@ follow-up decisions keep their existing effect protection.
    keeping an absent domain result incomplete rather than treating a terminated
    invocation as Task convergence. Schema admission callbacks run on supplied
    proposals, not on an absent inability-report payload.
-2. Correct the generic finish guidance so supplied evidence is a valid source;
-   success does not necessarily require another tool call. Keep the current outer
-   fields initially. Removing redundant fields is a later simplification only
-   if it eliminates real cost without losing information needed by a consumer.
+   Audit both `managed-agent.ts` and the workflow Task adapter: preserve output
+   from every status for the caller's assessment. Status normalization must not
+   discard useful partial work. Evidence retention does not authorize settlement
+   after cancellation or turn an unaccepted proposal into an executed action.
+2. Remove the generic agent-only requirement for nonempty `verification_facts`.
+   Keep the field available as optional diagnostics. Required evidence is defined
+   and checked by the caller's contribution contract for both code and agents;
+   update affected App guidance with that source of truth. Supplied evidence can
+   suffice without another tool call. A wording-only change would leave the
+   inconsistent runtime gate in place. Preserve declared deliverable checks and
+   other requirements that actually belong to the assignment.
 3. Return concise validation failures and retain original evidence by reference.
    Use the existing tool-error and execution-record boundaries for rejection and
    correction facts. The pinned Pi validator rejects before ordinary tool hooks
@@ -217,8 +247,12 @@ authorized bounded environment or naturally due work.
 | Retryable operation recovers | Same operation identity; no recovery-model call or duplicate effect |
 | Schema/check rejects a proposal | Exact feedback reaches the active agent; correction is accepted without repeating completed work |
 | Code and agent handle equivalent contributions | Same acceptance, authority and effect checks apply to both; malformed output from either remains correctable evidence |
+| Shared judgment fixtures include blank/missing/wrong-type/unknown fields | New-output schema and reader agree for both producers, with no silent field repair or extra post-finish hurdle |
+| Contribution satisfies its declared evidence requirements | Code and agent can complete without an additional agent-only evidence field or gratuitous tool call |
 | Current code cannot interpret a legacy input | Ordinary agent interpretation can satisfy the current contract or report missing evidence; original history and accepted effects remain unchanged, with no bulk migration or new Task |
+| Input rejected before admission; procedure fails before it runs | Original input/failure reaches the existing caller or operational owner; no invented destination acceptance, replacement Task or success from logging alone |
 | Agent cannot produce the domain result | Honest existing blocked/error result reaches caller without fabricated output or Task convergence |
+| Valid partial output accompanies blocked/failed execution | Both agent and workflow paths retain the contribution for caller judgment; unfinished obligations and cancellation/settlement fences remain intact |
 | Publication succeeded before later failure | Retry reuses the publication and retains any independent unfinished obligation |
 | Deadline, cancellation, denied authority or unavailable owner | Existing fences/bounds apply; unresolved work and undelivered feedback remain visible |
 | Audit sees recovered exceptions | Can retain no-change disposition or reuse an existing improvement Task; no per-sample review loop |

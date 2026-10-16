@@ -280,6 +280,12 @@ accepted result before treating follow-up work or Request closure as committed.
 
 ## Recover and return problems to the owner
 
+Follow the [same contribution contract as code](../../2a-design/execution-contributions.md#common-contract-for-code-and-agents).
+Read the assignment and supplied schema; satisfy its evidence requirements.
+Keep a useful result separate from whether execution stopped or the whole Task
+is fulfilled. Use installed completion tools as exposed: the proposal to remove
+agent-only finish requirements is not yet an installed capability.
+
 Let code handle known work and infra perform its supported retries. When a
 failure returns to you, read the original input, specific error, useful results
 and effect status, then choose the next useful action. Correct a malformed

@@ -347,6 +347,14 @@ Do not let metric code mutate tasks or dispatch sessions directly.
 
 ## Pure Functions And Retry
 
+Start from the [common contribution contract](../2a-design/execution-contributions.md#common-contract-for-code-and-agents).
+Keep the App's schema and pure admission checks in one module. Use them for
+code-produced results and consumer validation, and pass that schema to agent
+calls. Link the agent's guidance to the same requirements; do not duplicate a
+different schema in prose. Read returned output and facts separately from status:
+a blocked or failed call may contain useful work to assess, without authorizing
+its effects or fulfilling the whole assignment.
+
 Follow the [common recovery flow](../2a-design/system-boundary.md#retry-and-recovery-ownership):
 run the known code path, let the owning capability handle safe mechanical retry,
 and use `ctx.agents.call` when the unresolved problem needs judgment. If an agent
@@ -364,7 +372,9 @@ not just make an object parse. Use current `ctx.reconciliation.previousAttempt`
 when recovery crosses attempts, so the same known failure does not restart the
 identical procedure without reconsideration. Cancellation and lost authority
 still stop execution. If allowance is exhausted or the workflow cannot start,
-preserve the problem for the existing Task/caller recovery route.
+preserve the problem for the existing Task/caller recovery route. Test that route
+when input or setup fails before this workflow can call an agent; see
+[input/setup failure](../2a-design/execution-contributions.md#when-input-or-setup-fails).
 
 Call pure deterministic functions normally. Routine delivery retry, backoff and
 replay belong to the owning infra capability; workflow authors need no wrapper

@@ -46,6 +46,37 @@ an attribution of current production cost to every finding.
 
 ## Findings and smallest useful corrections
 
+### Follow-up: compare both implementations against one contract
+
+The follow-up review used Apps `9d94b5a42a` and Host `21abd7b9b` without runtime
+changes. A local synthetic probe called TypeBox `Value.Check(resultSchema, value)`
+and the real current-result reader `parsedJudgment(value, true)`:
+
+| New proposal | Schema accepts | Reader accepts |
+| --- | --- | --- |
+| Valid judgment | yes | yes |
+| Missing verification | no | yes |
+| Verification is a string | no | yes |
+| Unknown extra property | no | yes |
+| Blank summary | yes | no |
+
+This confirms disagreement in both directions. It does not establish that a live
+code producer bypassed validation: agent completion currently applies the schema
+first, while the reader is also used for history. The new-result path should use
+one shared admission helper; historical interpretation remains a separate use.
+
+Source inspection found two further alignment risks. `tools/lifecycle.ts` still
+requires nonempty `verification_facts` for agent success; workflow completion has
+no equivalent gate. Changing its wording alone cannot establish the same evidence
+contract. The Task adapters `executors/managed-agent.ts` and `executors/workflow.ts`
+select output using execution status. A status-normalization change must preserve
+partial evidence and existing settlement fences rather than drop the output or
+automatically execute it. These are source findings and required trials, not a
+measured production-loss claim. The
+[common contract](../../2a-design/execution-contributions.md#common-contract-for-code-and-agents)
+and [implementation plan](../../proposals/host-contract-improvements-20261016.md#return-unresolved-work-to-agent-judgment)
+own the resulting requirements.
+
 ### 1. A second validator can reject work after its author has finished
 
 **Owner: Alex App first; optional shared completion feedback belongs to Host.**
