@@ -15,6 +15,7 @@ type RankedQuery = {
   totalMs?: unknown;
   averageMs?: unknown;
   maxMs?: unknown;
+  plan?: unknown;
 };
 type QueryWindow = {
   since?: unknown;
@@ -36,6 +37,14 @@ type RetainedQuery = {
   averageMs: number;
   worstMs: number;
   window: { since: number; until: number };
+  plan?: {
+    fingerprint: string;
+    capturedAt: number;
+    rows: Array<{ id: number; parent: number; detail: string }>;
+    rowsTruncated: boolean;
+    textTruncated: boolean;
+  };
+  planUnavailable?: boolean;
 };
 
 function record(value: unknown): Record<string, unknown> {
@@ -60,6 +69,28 @@ function rankedRows(window: QueryWindow): RankedQuery[] {
     .filter((row): row is RankedQuery =>
       Boolean(row && typeof row === "object"),
     );
+}
+
+function retainedPlan(row: RankedQuery, since: number, until: number): RetainedQuery["plan"] {
+  const plan = record(row.plan);
+  const capturedAt = finite(plan.capturedAt);
+  if (plan.fingerprint !== row.id || plan.shape !== row.sql || capturedAt === null ||
+      capturedAt < since || capturedAt > until || !Array.isArray(plan.rows)) return undefined;
+  const rows: NonNullable<RetainedQuery["plan"]>["rows"] = [];
+  let textTruncated = false;
+  for (const raw of plan.rows.slice(0, 6)) {
+    const value = record(raw);
+    const id = finite(value.id);
+    const parent = finite(value.parent);
+    if (id === null || parent === null || typeof value.detail !== "string") return undefined;
+    textTruncated ||= value.detail.length > 200;
+    rows.push({ id, parent, detail: value.detail.slice(0, 200) });
+  }
+  return {
+    fingerprint: String(plan.fingerprint).slice(0, 80), capturedAt, rows,
+    rowsTruncated: plan.rowsTruncated === true || plan.rows.length > rows.length,
+    textTruncated,
+  };
 }
 
 /** Convert one existing diagnostic status response into one bounded public sample. */
@@ -125,6 +156,7 @@ export function sqlLatencySample(
         worstMs === null
       )
         throw new Error(`SQL ${name} ranking contains malformed data`);
+      const plan = retainedPlan(row, since, until);
       candidates.push({
         fingerprint: row.id.slice(0, 80),
         operation: row.operation.slice(0, 32),
@@ -135,6 +167,7 @@ export function sqlLatencySample(
         averageMs,
         worstMs,
         window: { since, until },
+        ...(plan ? { plan } : row.plan === undefined ? {} : { planUnavailable: true }),
       });
     }
   }
@@ -182,6 +215,12 @@ export function sqlLatencySample(
     noteValue.queries.pop();
     noteValue.coverage.retainedQueries = selected.length;
     noteValue.coverage.selectedRowsTruncated = true;
+    note = JSON.stringify(noteValue);
+  }
+  const witness = noteValue.queries[0]!;
+  while (note.length > SQL_DIAGNOSTIC_NOTE_MAX_CHARS && witness.plan?.rows.length) {
+    witness.plan.rows.pop();
+    witness.plan.rowsTruncated = true;
     note = JSON.stringify(noteValue);
   }
   if (note.length > SQL_DIAGNOSTIC_NOTE_MAX_CHARS)

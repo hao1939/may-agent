@@ -381,13 +381,36 @@ Both paths retain the same sample/failure meaning. Separate processes still shar
 CPU and disk resources, and their work is outside Host-process SQL counters.
 
 The accepted current choice is to keep direct SQL on the main thread and monitor
-cost. Metric queries should aim for **under 100 ms**. This is a performance target
-for investigation, not an implemented execution timeout. Existing all-SQL cost
-metrics do not separately monitor that per-metric target. Apps own query meaning,
-thresholds and review; Host owns truthful execution evidence and responsiveness.
-If execution moves to a worker later, the same query declaration should continue
-to work without App-managed process wiring. See the
-[measurement and remaining gap](../proposals/host-contract-improvements-20261016.md#5-measure-metric-query-cost-before-adding-isolation)
+cost. Apps own query meaning, thresholds and review; Host owns truthful execution
+evidence and responsiveness. The October 17 source candidate adds the passive
+`metric.source-query-worst-ms` gauge. Host registers it without an alert rule and
+preserves an existing App calibration or retirement. The installation's App sets
+its performance target to **under 100 ms**, alerting at `>= 100`; this requests
+investigation, not a timeout or automatic mitigation.
+
+Each collection pass records one sample: the maximum elapsed duration among the
+direct SQL sources actually attempted, including failed sources. Timing covers
+connection, preparation, read, parsing and close; command sources, sample writes
+and between-source yields are excluded. `sampleSize` counts attempted queries.
+The bounded note retains pass times, total time, failure count and up to three
+slowest source references, with available masked query identities and diagnostic
+plans. No query is rerun or explained just to produce this observation. Notes are
+limited to 4,000 characters and mark omitted examples or truncated evidence.
+Existing plan capture still requires a successful read of at least 1,000 ms;
+plans are timestamped evidence for a query shape, not proof of the cause of this
+particular execution. A 100 ms breach can have no plan.
+
+A pass with no SQL records no cost sample; missing collection never becomes
+zero or recovery. A faster later pass describes only its attempted sources and
+does not prove that an earlier slow source was repaired or even ran again.
+Source failures remain separate facts. Collection creates no attention event;
+the existing evaluator applies the App rule and emits breach/recovery transitions.
+There is no per-source metric registry or additional schedule.
+
+**Activation:** this candidate requires Host support before the App definition;
+portable tests are not live rollout evidence. If execution moves to a worker
+later, the same query declaration should continue to work without App-managed
+process wiring. See the [measurement and remaining work](../proposals/host-contract-improvements-20261016.md#5-measure-metric-query-cost-before-adding-isolation)
 and the [operator guide](../2b-manual/metric-alerts.md#investigating-query-cost).
 
 A command may also return
@@ -467,9 +490,11 @@ describe intent and select some alert behavior; `record(id, value, options)`
 stores a scalar observation. It does not enforce monotonic counters, handle
 resets or store histograms. `health` and `derived` are May classifications,
 not additional Prometheus numeric types.
-Threshold evaluation is below (`<`) or above (`>`). More specialized rate,
-stall, sustained, or consecutive-failure behavior belongs in the definition's
-typed configuration and is evaluated by the same service.
+Threshold evaluation defaults to below (`<`); `above` and `below` are strict
+aliases for `>` and `<`. The October 17 source candidate also supports `>=` and
+`<=`, with the same equality boundary in evaluation, reporting and UI labels.
+More specialized rate, stall, sustained, or consecutive-failure behavior belongs
+in the definition's typed configuration and is evaluated by the same service.
 
 A change in meaning requires a new metric ID or an explicit cutover. Retiring
 a metric preserves its history, stops new measurement, and resolves or

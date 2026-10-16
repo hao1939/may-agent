@@ -28,9 +28,24 @@ export const EVALUATION_OPERATION_METRIC =
   "may.evaluation-unsuccessful-task-attempts-6h";
 export const SQL_TIME_METRIC = "may.daemon-sql-time-percent";
 export const SQL_LATENCY_METRIC = "may.daemon-sql-recent-worst-call-ms";
+export const METRIC_QUERY_DURATION_METRIC = "metric.source-query-worst-ms";
 const sqlLatencySourceCommand = `bun ${JSON.stringify(join(import.meta.dir, "scripts/daemon-sql-latency.ts"))}`;
 // App attention policy; Host samples existing facts and never stops retries from these rules.
 export const reliabilityMetrics: NonNullable<AppDefinition["metrics"]> = [
+  {
+    id: METRIC_QUERY_DURATION_METRIC,
+    name: "Slowest metric source query in a collection pass",
+    owner: "may",
+    project: "may",
+    type: "gauge",
+    unit: "milliseconds",
+    measureInterval: 300_000,
+    threshold: 100,
+    alertOp: ">=",
+    priority: "P2",
+    description:
+      "Host records the maximum direct SQL source duration per collection pass, including failed queries. Under 100 ms is the performance target; a breach requests investigation, not cancellation or a restart. Notes retain bounded source references and available query plans. No collection means unknown, not zero. Command sources and sample writes are excluded.",
+  },
   {
     id: "event.pair-orphan-count",
     name: "Open orphaned event pairs",

@@ -123,17 +123,25 @@ without reducing total work. Consult the
 [App policy](../../../may.app/design/metric-condition-follow-through.md#sql-cost-review)
 for definitions, alert rules and collection limits.
 
-The metric-query target is under 100 ms. The current worst-call alert covers all
-Host SQL at a different threshold; it does not separately enforce that target.
-Keep healthy collection quiet and route declared breaches through ordinary Alex
-review. A sample or alert alone is not evidence of an applied mitigation.
+The October 17 source candidate adds `metric.source-query-worst-ms`: the slowest
+direct metric SQL source attempted in a collection pass. The App alerts at
+`>= 100 ms`, keeping healthy collection quiet and using ordinary Alex review.
+Activate Host support before this App definition. The existing all-SQL one-second
+alert remains separate. A sample or alert is not an applied mitigation.
 
-Match the slow query's retained fingerprint, window and source before selecting
-an investigation. Use `status` with `diagnostics: true` for recent timing and any
-captured plan. The current App sample retains timing and query shape but omits
-Host query-plan details, which can expire from live diagnostics before review.
-Missing retained plans therefore remain unknown. Reuse a matching investigation;
-do not commission another Task merely because the next sample reports it again.
+Read the cost sample's source metric IDs, failed flags, pass times and available
+query evidence before selecting an investigation. No-query passes leave the old
+sample untouched; check freshness. A lower later sample covers only that pass's
+attempted sources. Confirm the previously slow source ran again before claiming
+its repair, and check collection failures separately.
+
+The App candidate also preserves optional plans from the existing all-SQL
+ranking. It checks the fingerprint, shape and capture window and bounds retained
+rows/text. An invalid optional plan does not discard valid latency evidence.
+Host plan capture remains at least 1,000 ms, so a 100 ms alert can have no plan;
+a retained plan is representative evidence, not a diagnosis. Use `status` with
+`diagnostics: true` if more recent evidence is needed. Reuse a matching
+investigation; another sample alone does not commission a new Task.
 
 Profile a consistent copy and compare equivalent result cohorts before proposing
 a query/index change. A fast copied query cannot explain away a prior live stall:

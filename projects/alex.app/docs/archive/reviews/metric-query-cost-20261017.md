@@ -1,9 +1,11 @@
 # Metric-query cost and asynchronous execution — October 17, 2026
 
 **Status:** profiling complete; direct SQL stays on the main thread for now by
-user decision. The accepted metric-query target is under 100 ms. Separate
-per-metric cost alerting and asynchronous SQL execution remain unimplemented.
-No Host source, installed metric, production state or deployment was changed.
+user decision. The accepted metric-query target is under 100 ms. A Host/App
+source candidate now covers metric-query cost and retained plans; activation
+remains pending. Asynchronous SQL execution remains deferred.
+The initial profiling changed no source or installation state. The later source
+candidate has not changed installed metrics, production state or deployment.
 
 **Supports:** [Purpose and value](../../1-principles/purpose.md): keep work
 responsive and steerable while avoiding unnecessary machinery and model calls.
@@ -99,12 +101,12 @@ This was more than an unconsumed alert:
   not establish later installation of either change. The result is a diagnostic
   improvement, not verified reduction of these queries' runtime.
 
-There is still an App evidence gap: `scripts/daemon-sql-latency.ts` retains
-fingerprints, shapes and timings but does not copy the Host ranking's optional
-query plan into the saved sample. The evaluator's normal metric-evidence read
-therefore does not automatically recover that ephemeral plan. The App should
-retain bounded plan evidence if its later investigation depends on it. Do not
-claim the merged Host capture alone completes that evidence path.
+The initial inspection also found an App evidence gap:
+`scripts/daemon-sql-latency.ts` retained fingerprints, shapes and timings but
+omitted the Host ranking's optional plan. The evaluator's ordinary evidence read
+could not recover a plan after it expired from diagnostics. The source candidate
+below adds bounded plan retention; the merged Host capture alone did not complete
+that evidence path.
 
 ## Asynchronous comparison
 
@@ -147,16 +149,51 @@ resource usage. CPU, memory and disk remain shared resources.
 Keep direct SQL on the main thread for now, as requested. Do not introduce a
 worker, change collection policy, or pretend the historical spikes disappeared.
 The target is **under 100 ms for each metric query**, separate from the existing
-all-SQL one-second alert. That new target is documented but not yet covered by
-a dedicated automatic metric.
+all-SQL one-second alert. The source candidate now records actual query cost,
+keeps routine samples quiet and routes App-declared breaches through Alex. It
+also retains available captured plans. None of this changes the execution
+thread or allows Host to choose a mitigation.
 
-The next useful monitoring change is to retain metric-query duration and source
-identity from the actual execution, then let App policy flag durations at or
-above 100 ms.
-Reuse existing observations where possible, keep routine samples quiet, and
-send declared breaches through the existing Alex review path. Preserve captured
-plans needed for later diagnosis. None of this requires changing the execution
-thread or allowing Host to choose a mitigation.
+### Source candidate and portable evidence
+
+Host candidate: [`092b968768`](https://github.com/hao1939/may-agent/commit/092b9687680ec3b8dce8ca20719814633807a74e),
+based on `68bc5c7cf`. Companion App code is in `may.app/reliability-metrics.ts`
+and `may.app/scripts/daemon-sql-latency.ts`; owning policy is
+[SQL cost review](../../../../may.app/design/metric-condition-follow-through.md#sql-cost-review).
+
+The Host adds `metric.source-query-worst-ms`, one maximum-duration sample per
+collection pass, with bounded slow-source references, attempted/failure counts
+and available plan evidence. It has no default threshold. The App sets `>= 100`.
+No additional SQL execution or EXPLAIN is performed to collect the cost sample.
+The all-SQL App adapter now retains matching plans from its existing status read.
+
+The paired fixture runs production SQLite collection, App definitions, metric
+evaluation and Alex's event mapping. A controlled monotonic clock proves that
+99 ms stays healthy, 100 ms creates one breach, repeated 100 ms stays in that
+episode, a no-query pass creates no sample or recovery, and 80 ms recovers the
+gauge. It verifies the original query result remains unchanged. Host fixtures
+also cover failed sources, preserved App calibration/retirement, optional plans,
+bounded notes and a slow source followed by many fast sources.
+
+The first paired run exposed unsupported inclusive operators: an unknown `>=`
+fell into the evaluator's below-threshold branch and breached at 99 ms. The
+candidate adds inclusive operators to the shared SDK declaration and aligns
+Host evaluation/readers and served UI comparisons, with boundary regressions.
+
+Validation uses disposable databases and synthetic timing/plan fixtures:
+
+- Host focused collector/profiler/metric/report tests: 99 passed.
+- Served HTTP/browser health tests, including boundary labels: 8 passed.
+- Host/SDK types, App boundary and ESLint: passed.
+- Companion `may.app/reliability-metrics.test.ts`: 20 passed.
+- `check:may-design`: zero errors; existing unclassified `reports` warning.
+
+These are source-contract tests, not a measured performance improvement or proof
+that Alex has mitigated a live incident. Plans still require an existing slow-read
+capture at 1,000 ms. The metric covers attempted SQL sources in each pass, so a
+later lower maximum alone does not establish that the same slow query reran.
+Install Host support before activating the App policy, then verify real samples
+and investigation follow-through through the ordinary rollout process.
 
 If evidence later warrants isolation, Host should execute the same declared
 query off-thread without requiring Apps to manage workers. Measure overhead,

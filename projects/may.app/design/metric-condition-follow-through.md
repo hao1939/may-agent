@@ -168,6 +168,31 @@ Task `reviewAt`; missed delivery recovery does not require an agent checkpoint.
 
 ## SQL cost review
 
+The October 17 candidate sets the metric-query target to **under 100 ms** through
+`metric.source-query-worst-ms`, the Host's passive maximum duration for SQL sources
+actually attempted in one collection pass. May supplies `threshold: 100` and
+`alertOp: ">="`; Host supplies the execution observation without an alert default.
+The existing metric-breach route asks Alex to review one alert episode. Collection
+alone stays quiet. No cancellation, restart, extra schedule or per-query metric
+registry is added.
+
+Install the corresponding Host collector and inclusive comparison support before
+activating this definition. The paired portable trial uses actual source collection,
+App definitions and Alex's event route: 99 ms is healthy; 100 ms breaches once;
+repeated 100 ms and no-query passes do not create another transition; 80 ms
+recovers the gauge. These timings are controlled fixture inputs, not a live
+performance benchmark. The later pass can contain different sources, so recovery
+does not establish that the previous slow source ran again or was repaired.
+Missing collection never becomes a zero; source failures remain separate facts.
+
+Both the new cost note and the existing all-SQL sample retain available bounded
+query-plan evidence. The all-SQL adapter checks plan identity, shape and capture
+window; invalid optional evidence does not discard the timing sample. Existing
+Host plan capture still starts at 1,000 ms, so 100 ms breaches can lack a plan.
+See the [Host contract](../../alex.app/docs/2a-design/metrics.md) and
+[October 17 evidence](../../alex.app/docs/archive/reviews/metric-query-cost-20261017.md).
+This candidate has not been activated or shown to reduce live query cost.
+
 The October 2 source candidate adds `may.daemon-sql-time-percent` to May's
 existing five-minute metric collection. It compares retained daemon heartbeat
 counters over ten minutes, separating process lifetimes so a restart cannot look

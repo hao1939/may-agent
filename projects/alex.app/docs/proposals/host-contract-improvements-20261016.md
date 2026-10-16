@@ -489,15 +489,22 @@ it already warrants comparison against the new target. Retained history also
 contains a 7.3-second execution of that query. A healthy copy or current window
 cannot establish that the earlier problem is fixed.
 
-Existing metrics retain aggregate SQL time and recent worst-call evidence, and
-Alex has received and acted on breaches. They do not provide separate coverage
-for every metric query. The next monitoring refinement should expose metric-query
-cost as cheap execution evidence, preserve source identity and timing, and let
-App policy flag durations at or above 100 ms through ordinary metric transitions. Reuse
-existing measurements where possible; do not execute the query again merely to
-measure it. Healthy samples stay quiet. Query-plan evidence captured in live
-Host diagnostics also needs an App retention path if later review relies on it;
-the current App sample does not preserve the plan.
+**Source candidate:** Host now records one passive cost gauge per collection
+pass, without a default alert. It times the actual SQL source executions and
+retains the maximum, attempted/failure counts and bounded source/plan evidence.
+The App supplies the `>= 100 ms` rule and preserves optional plans in its existing
+all-SQL sample. No extra query execution, per-query registry or schedule is needed.
+The enduring contract is in [Metrics](../2a-design/metrics.md); the
+[operator guide](../2b-manual/metric-alerts.md#investigating-query-cost) explains
+coverage and investigation. Plans remain optional, captured at 1,000 ms by the
+existing profiler. A healthy later pass is not proof that a previous slow source
+ran again or was repaired.
+
+Portable trials cover the 99/100 ms boundary, quiet repeated breaches, ordinary
+Alex routing, recovery, no-query passes, failed sources and bounded plan retention.
+**Remaining:** review and install the Host support before activating the App
+policy, then verify a fresh sample and the actual investigation path. No deployment
+or performance mitigation is claimed by these source tests.
 
 A read-only connection protects data but a synchronous query still blocks the
 serving process. Yielding between queries cannot interrupt a single slow query,
