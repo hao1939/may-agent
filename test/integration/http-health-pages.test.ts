@@ -556,6 +556,27 @@ describe("served workflow and metric health pages", () => {
         });
         await page.setViewport({ width: 1280, height: 900 });
         await page.goto(base, { waitUntil: "domcontentloaded" });
+        // Served client fallback comparisons and labels must match Host evaluation,
+        // including equality. Normal metric pages use the Host's thresholdBreached.
+        const boundaries = await page.evaluate(() => {
+          const ui = window as unknown as {
+            metricBreached(metric: Record<string, unknown>): boolean;
+            metricHealthyOperator(metric: Record<string, unknown>): string;
+          };
+          return [">", "above", ">=", "<", "below", "<=", undefined].map(alert_op => ({
+            breached: [99, 100, 101].map(current => ui.metricBreached({ current, threshold: 100, alert_op })),
+            healthy: ui.metricHealthyOperator({ alert_op }),
+          }));
+        });
+        expect(boundaries).toEqual([
+          { breached: [false, false, true], healthy: "≤" },
+          { breached: [false, false, true], healthy: "≤" },
+          { breached: [false, true, true], healthy: "<" },
+          { breached: [true, false, false], healthy: "≥" },
+          { breached: [true, false, false], healthy: "≥" },
+          { breached: [true, true, false], healthy: ">" },
+          { breached: [true, false, false], healthy: "≥" },
+        ]);
         await page.waitForSelector("#workflow-overview [data-workflow-outcomes]");
         expect(await page.$eval("#workflow-overview", (el) => el.textContent)).toContain("60.0% successful execution");
         await page.waitForFunction(() =>

@@ -296,7 +296,6 @@ async function loadAgentOverview(name) {
       // Sort: breached first (red), then by priority.
       for (const m of sortedForSpark) {
         const isBr = breached.includes(m);
-        const above = m.alert_op === 'above' || m.alert_op === '>';
         const series = histById[m.id] || [];
         const sparkColor = isBr ? 'var(--red)' : (m.priority === 'P0' ? 'var(--orange,#e8a44c)' : 'var(--accent)');
         html += `<div onclick="showMetricHistory('${esc(m.id)}')" title="Click for full chart" style="display:grid;grid-template-columns:minmax(0,1fr) 130px 90px;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer;${isBr ? 'background:rgba(255,80,80,0.06)' : ''}" onmouseover="this.style.background='var(--bg3,#222)'" onmouseout="this.style.background='${isBr ? 'rgba(255,80,80,0.06)' : ''}'">`;
@@ -305,7 +304,7 @@ async function loadAgentOverview(name) {
         // Sparkline.
         html += `<div>${series.length > 1 ? sparkline(series, {threshold: m.threshold, color: sparkColor, width:130, height:28}) : `<span style="color:var(--fg2);font-size:10px">no history</span>`}</div>`;
         // Current value vs target.
-        html += `<div style="text-align:right;font-size:12px"><span style="font-weight:600;${isBr ? 'color:var(--red)' : ''}">${m.current ?? '—'}${m.unit||''}</span>${m.threshold != null ? `<div style="font-size:10px;color:var(--fg2)">${above ? '≤' : '≥'} ${m.threshold}${m.unit||''}</div>` : ''}</div>`;
+        html += `<div style="text-align:right;font-size:12px"><span style="font-weight:600;${isBr ? 'color:var(--red)' : ''}">${m.current ?? '—'}${m.unit||''}</span>${m.threshold != null ? `<div style="font-size:10px;color:var(--fg2)">${esc(metricHealthyOperator(m))} ${m.threshold}${m.unit||''}</div>` : ''}</div>`;
         html += `</div>`;
       }
       html += `</div>`;

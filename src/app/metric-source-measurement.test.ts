@@ -10,6 +10,9 @@ import { attachEventPersistence } from "./daemon-events.js";
 import { EventBus, EVENT_ROW_ID, EVENT_RECORD_ONLY } from "./core/events/bus.js";
 import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.js";
 import { TASK_FAILOVER_METRIC } from "./adapters/reporting/task-failover-metrics.js";
+import { METRIC_QUERY_DURATION_METRIC } from "./adapters/reporting/metric-query-metrics.js";
+import * as database from "../lib/db.js";
+import { profileDatabase } from "../lib/db/query-performance.js";
 import { TASK_SKIPPED_CHECK_METRIC } from "./adapters/reporting/task-check-metrics.js";
 import { readTaskChecks, recordTaskCheck, resetTaskChecks } from "./core/tasks/task-check-observations.js";
 import {
@@ -48,6 +51,59 @@ describe("source-query metric measurement", () => {
     rmSync(persistDir, { recursive: true, force: true });
     if (originalAppRoot === undefined) delete process.env.APP_ROOT;
     else process.env.APP_ROOT = originalAppRoot;
+  });
+
+  it("retains actual query cost and plans quietly, including failed sources, and does not fabricate idle recovery", async () => {
+    const db = getDb(persistDir);
+    const metrics = createMetricService({ getDb: () => db });
+    db.exec("CREATE TABLE metric_cost_witness (value INTEGER)");
+    metrics.define({ id: "a-cost-slow", type: "gauge", sourceQuery: "SELECT COUNT(*) AS value FROM metric_cost_witness" });
+    metrics.define({ id: "b-cost-invalid", type: "gauge", sourceQuery: "SELECT 'not a number' AS value" });
+    metrics.define({ id: "c-cost-fast", type: "gauge", sourceQuery: "SELECT 42 AS value" });
+    const events: string[] = [];
+    bus.subscribe(event => events.push(event.type));
+    let elapsed = 0;
+    const clock = spyOn(performance, "now").mockImplementation(() => elapsed);
+    const open = database.openReadOnlyDatabase;
+    const read = spyOn(database, "openReadOnlyDatabase").mockImplementation(path => {
+      const actual = open(path);
+      return profileDatabase({ ...actual, prepare(sql) {
+        const statement = actual.prepare(sql);
+        return { ...statement, get(...params) {
+          const result = statement.get(...params);
+          elapsed += sql.includes("metric_cost_witness") ? 1_500 : 1;
+          return result;
+        } };
+      } });
+    });
+    try {
+      const result = await measureSourceMetrics({ bus, persistDir, isDue: row => row.id.includes("-cost-") });
+      expect(result.measured).toEqual(["a-cost-slow", "c-cost-fast"]);
+      expect(result.failures).toEqual([{ id: "b-cost-invalid", reason: "Source returned no finite numeric sample" }]);
+      const observation = metrics.get(METRIC_QUERY_DURATION_METRIC.id)!.observation!;
+      expect(observation).toMatchObject({ value: 1_500, sampleSize: 3 });
+      const note = JSON.parse(observation.note!);
+      expect(note).toMatchObject({ queries: 3, failures: 1, totalMs: 1_502 });
+      expect(note.examples[0]).toMatchObject({ metricId: "a-cost-slow", durationMs: 1_500,
+        query: { plan: { rows: expect.arrayContaining([expect.objectContaining({ detail: expect.stringContaining("metric_cost_witness") })]) } } });
+      expect(metrics.get("c-cost-fast")!.observation!.value).toBe(42);
+      expect(metrics.get("b-cost-invalid")!.observation).toBeNull();
+      expect(events).toEqual(["metric.measurement.failed"]);
+      await evaluateMetrics({ bus, persistDir });
+      expect(events).not.toContain("metric.breach"); // Host records facts without a default judgment.
+      await measureSourceMetrics({ bus, persistDir, isDue: () => false });
+      expect(metrics.get(METRIC_QUERY_DURATION_METRIC.id)!.observation).toEqual(observation);
+      const preserved = { ...METRIC_QUERY_DURATION_METRIC, threshold: 17, alertOp: ">=" as const };
+      metrics.define(preserved);
+      attachMetricSourceMeasurement({ bus: new EventBus(), persistDir });
+      expect(metrics.get(preserved.id)!.threshold).toBe(17);
+      metrics.define({ ...preserved, status: "retired" });
+      await measureSourceMetrics({ bus, persistDir, isDue: row => row.id === "c-cost-fast" });
+      expect(metrics.get(preserved.id)!.observation).toEqual(observation);
+    } finally {
+      read.mockRestore();
+      clock.mockRestore();
+    }
   });
 
   it("samples check rates quietly with bounded exact Task references", async () => {

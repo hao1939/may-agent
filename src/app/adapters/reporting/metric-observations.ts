@@ -1,4 +1,5 @@
 import type { SqliteDb } from "../../../lib/db.js";
+import { metricThresholdBreached } from "../../../lib/metrics.js";
 import { WORKFLOW_OUTCOME_METRICS, WORKFLOW_OUTCOMES, WORKFLOW_OUTCOME_WINDOW_MS } from "./workflow-metrics.js";
 
 export const METRIC_LIST_LIMIT = 500;
@@ -78,9 +79,7 @@ export function readMetricObservations(db: SqliteDb, now = Date.now(), ids?: str
           : "fresh";
     const thresholdBreached =
       observed && row.threshold !== null
-        ? row.alert_op === ">" || row.alert_op === "above"
-          ? row.value! > row.threshold
-          : row.value! < row.threshold
+        ? metricThresholdBreached({ current: row.value!, threshold: row.threshold, alert_op: row.alert_op })
         : null;
     // Only the supplied, unchanged workflow query has a known cohort contract.
     // Arbitrary metric names/SQL do not imply a run selection or a root cause.

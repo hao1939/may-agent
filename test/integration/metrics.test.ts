@@ -3,7 +3,8 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { closeDb, getDb } from "../../src/lib/requests.js";
-import { createMetricService } from "../../src/lib/metrics.js";
+import { createMetricService, type MetricAlertOp } from "../../src/lib/metrics.js";
+import { readMetricObservations } from "../../src/app/adapters/reporting/metric-observations.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
 import { openDatabase } from "../../src/lib/db.js";
 import { EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
@@ -40,6 +41,32 @@ describe("MetricService", () => {
     expect(service.get("reviewer.queue")?.owner).toBe("system:host");
     service.define({ id: "arbitrary.label", owner: "reviewer" });
     expect(service.get("arbitrary.label")?.owner).toBe("reviewer");
+  });
+
+  it.each([
+    [">", [false, false, true]],
+    ["above", [false, false, true]],
+    [">=", [false, true, true]],
+    ["<", [true, false, false]],
+    ["below", [true, false, false]],
+    ["<=", [true, true, false]],
+    [undefined, [true, false, false]],
+  ] as Array<[MetricAlertOp | undefined, boolean[]]>)("shares %s boundaries between evaluation and reporting", (alertOp, expected) => {
+    const { service, db, emitted } = harness();
+    service.define({ id: "sample.cost", threshold: 100, alertOp });
+    for (const [index, value] of [99, 100, 101].entries()) {
+      service.record("sample.cost", value);
+      const result = service.evaluate("sample.cost")[0];
+      expect(result.status === "breached").toBe(expected[index]);
+      expect(readMetricObservations(db, 10_000).metrics[0].thresholdBreached).toBe(expected[index]);
+      if (value === 100 && (alertOp === ">=" || alertOp === "<=")) {
+        expect(result.message).toContain(alertOp === ">=" ? "at or above" : "at or below");
+      }
+    }
+    expect(emitted.filter(event => event.type === "metric.breach")).toHaveLength(1);
+    service.record("sample.cost", alertOp === ">" || alertOp === "above" || alertOp === ">=" ? 99 : 101);
+    service.evaluate("sample.cost");
+    expect(emitted.filter(event => event.type === "metric.recovered")).toHaveLength(1);
   });
 
   it("retires definitions and open alerts atomically without claiming recovery or deleting observations", () => {
