@@ -3,7 +3,7 @@
 **Status:** Direction accepted, implementation in progress, 2026-10-16.
 Principles and contract refinements are integrated into their owning documents.
 Database contention is fixed in merged [Host PR #370](https://github.com/hao1939/may-agent/pull/370).
-The observer-accounting source candidate is in verification; later steps remain open.
+The observer-accounting change is published in [Host PR #371](https://github.com/hao1939/may-agent/pull/371); local CI and GitHub checks passed, and review remains pending. Later steps remain open.
 No deployment is established by this document.
 
 **Parent:** [Keep the Host boring and let Apps change](host-stability-and-app-extensibility-20261005.md).
@@ -61,10 +61,10 @@ labels below organize review; they are not new APIs, stored states or registries
 | Contract | Host must provide | App/agent remains free to choose | Existing owner and status |
 | --- | --- | --- | --- |
 | C1 — Work and usable context | Retain exact admitted input, covered contributions and independent Conditions; expose current scope, pending work and readable evidence with honest missing/truncated states | Interpret intent, gather domain context, accept scoped results, continue or wait | [Task attempts](../2a-design/task-attempts.md); recent context/partial-result fixes to preserve and verify across supported workers |
-| C2 — Facts and attention | Distinguish retained observation, required delivery and eligibility to execute; preserve separate progress/failure facts and the caller's declared interest | Choose relevant facts, immediate or deferred progress, explicit help requests and investigation policy | [Execution feedback](../2a-design/execution-feedback.md), [Events](../2a-design/events.md); #351 established attention separation, ordinary-observer accounting remains open |
+| C2 — Facts and attention | Distinguish retained observation, required delivery and eligibility to execute; preserve separate progress/failure facts and the caller's declared interest | Choose relevant facts, immediate or deferred progress, explicit help requests and investigation policy | [Execution feedback](../2a-design/execution-feedback.md), [Events](../2a-design/events.md); #351 established attention separation, ordinary-observer accounting is verified in #371, awaiting review |
 | C3 — Acceptance and replay | Let each operation owner record its own acceptance; recover unfinished delivery using saved identity, scope and timing; do not substitute a global receipt for pending App admission | Reuse results, revise authorized work or choose a different recovery operation | [Events](../2a-design/events.md), [Storage](../2a-design/storage.md); retain #336/#364/#366/#367 and correct restart-dependent expiry |
 | C4 — Execution and recovery | Restore safe execution of the same Task, preserve accepted effects and diagnostic evidence, retain the declared procedure and expose unresolved ownership or exhaustion | Compose workflow/agent calls, choose repair or escalation, decide useful recovery work | [Host/App boundary](../2a-design/system-boundary.md), [Task lifecycle](../2a-design/task-resource-engine.md); preserve #344/#360, clarify private recovery confirmation |
-| C5 — Responsiveness and finishing | Bound synchronous work and nested allowances; make knowable result errors correctable before exit, revalidate at fenced commit, retain partial evidence and cancel owned work correctly | Allocate useful work within supported budgets and choose what partial result to submit | [Runtime](../2a-design/runtime.md), [Task attempts](../2a-design/task-attempts.md); retain #289/#308/#335; contention source candidate, query profiling still open |
+| C5 — Responsiveness and finishing | Bound synchronous work and nested allowances; make knowable result errors correctable before exit, revalidate at fenced commit, retain partial evidence and cancel owned work correctly | Allocate useful work within supported budgets and choose what partial result to submit | [Runtime](../2a-design/runtime.md), [Task attempts](../2a-design/task-attempts.md); retain #289/#308/#335; contention fixed in merged #370; query profiling still open |
 | C6 — Extension and failure visibility | Preserve promised facts across relays, recovery and supported adapters; contain absent capabilities; expose failures without requiring an improvement App to keep Host operating | Rename/move Apps, evolve schemas and procedures, select reviewers and act on evidence | [Host/App boundary](../2a-design/system-boundary.md), [Metrics](../2a-design/metrics.md); no universal extension registry or Host diagnosis policy |
 
 An ordinary example ties these together. An agent publishes a partial report,
@@ -89,7 +89,7 @@ Preserve already-fixed behavior and make separate runtime changes in this order:
 | Step | Change and contract | Value / evidence |
 | --- | --- | --- |
 | 1 | Bound serving-path SQL waits; preserve operation-owned retry (C3/C5) | Merged #370; source verification complete, rollout not established |
-| 2 | Apply observation semantics through ordinary producers and relays (C2/C6) | Source candidate retains original intent and independent receipts; verification in progress |
+| 2 | Apply observation semantics through ordinary producers and relays (C2/C6) | PR #371 retains original intent and independent receipts; local/GitHub checks passed, awaiting review |
 | 3 | Expire delivery receipts from durable status/timing (C3) | Restart must not hide overdue delivery; permanent loss was not demonstrated |
 | 4 | Trial one private recovery success meaning across callers/backends (C4/C6) | Consistent safe retry without adding optional-artifact gates |
 | 5 | Profile metric queries; optimize or contain demonstrated cost (C5) | Synthetic blocking shown; installed query impact remains unmeasured |

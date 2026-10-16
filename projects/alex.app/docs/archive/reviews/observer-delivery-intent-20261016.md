@@ -1,6 +1,6 @@
 # Observer delivery intent: implementation trial — 2026-10-16
 
-**Status:** Source candidate; full CI in progress. Not deployed.
+**Status:** Published as [Host PR #371](https://github.com/hao1939/may-agent/pull/371); local CI and GitHub Quality/Container checks passed; awaiting review. Not deployed.
 **Supports:** [Event admission](../../2a-design/events.md#admission-state) and
 [Host contract improvements](../../proposals/host-contract-improvements-20261016.md).
 
@@ -74,9 +74,11 @@ bun run ci
 ```
 
 The 19 persistence/schema tests passed, as did all 19 existing real worker
-boundary cases. The three final observer integration cases passed. Full CI is
-running on the candidate. `bun run check:may-design` passed with zero errors and
-the existing unclassified `reports` warning; 310 local links/heading targets passed.
+boundary cases. The three final observer integration cases passed. Full
+`bun run ci` passed at the candidate: 3,754 passed, three installation-dependent
+skips, zero failures; 21,495 assertions across 338 files in 263.95 seconds. The
+browser ran. `bun run check:may-design` passed with zero errors and the existing
+unclassified `reports` warning; 310 local links/heading targets passed.
 
 ## Limits and remaining work
 
