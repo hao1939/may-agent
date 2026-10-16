@@ -1,10 +1,18 @@
 # Repeated review-only cost — October 17
 
 The first natural review confirms the deployed no-action explanation fix. A
-separate read-only investigation found that recurring review-only work remains
-expensive even when its decisions are correct. The next candidate belongs to
-**App execution and review policy**, not Host result validation or deduplication.
-No new production change is included in this observation.
+separate read-only investigation found recurring review-only work that consumes
+tokens while making no progress on the assigned research outcome. Its individual
+decisions comply with the installed policy; that does not establish useful work.
+The next candidate belongs to **App strategy and agent judgment**, not Host
+result validation or deduplication. No new production change is included in this
+observation.
+
+**User clarification:** scheduled wakes intentionally give the agent an
+opportunity to do its job. The defect to address is repeated lack of progress
+after waking. Preserve that opportunity and improve what the agent does with it.
+The earlier suggestion to suppress no-work invocations or prioritize review
+selection is superseded by this clarification.
 
 ## Measured cohort
 
@@ -56,28 +64,51 @@ real obligations, including important human or failure input, and is not a valid
 fix. The selector currently selects open/pending work for ongoing review; the
 observed repeated calls are consistent with that App policy.
 
-## Next implementation target
+## Corrected implementation target: useful work after waking
 
-Start with Alex's review selection: distinguish a routine newly queued schedule
-opportunity from a changed result, failure, unresolved wait, or overdue
-obligation that warrants another semantic assessment. Preserve the ability to
-notice starved queued work and to honor explicit review requests. Reuse the
-existing Task/report identities and periodic audit; do not add a Host suppression
-rule or silently remove pending evidence from snapshots.
+Start with Scout's assignment and recovery strategy. The declared outcome is to
+research useful source-grounded signals, but the installed automatic-wake
+acceptance makes honoring the blocked-source policy and finishing review-only a
+sufficient local result. Repeated compliance can therefore leave the real
+outcome unresolved. Returning the same no-op more cheaply would not repair that
+failure to make progress.
 
-Before rollout, replay these exact pairs alongside contrasting cases: a changed
-human request, failed attempt, material result, deadline crossing, and a queued
-Task that remains unserved. The candidate must reduce the redundant routine
-queue-phase reviews while retaining each contrasting case's review route.
-Report reused assessments honestly; a retained earlier report is not a fresh
-assessment of new input. No change to schedule cadence, model or budget is
-required to test this selection policy.
+Keep the scheduled agent opportunity. At a wake, the agent should use retained
+evidence to choose useful work toward the assignment: advance the research,
+investigate or repair a blocker through an authorized method, change an
+ineffective approach, or resolve an outstanding owner decision. When external
+help is necessary, make the concrete request through the existing owner route,
+then preserve the genuine wait without duplicating requests. Existing source
+access and evidence contracts still apply. Unrelated activity, repeated failing
+probes and manufactured output do not count as progress.
 
-Scout's repeated known no-op is a second candidate for a cheap workflow decision.
-It must preserve all three exit triggers, independent pending obligations and
-fallback to the agent when the source state or input is ambiguous. The current
-policy's prose and recorded decisions are evidence for designing that boundary,
-not sufficient grounds for a generic hardcoded skip of Reddit work.
+Alex's evaluation should distinguish compliance with the last instruction from
+progress toward the original outcome. A successful finish or authorized no-op
+cannot by itself establish that a recurring strategy is useful. Inspect whether
+the blocker is being resolved, whether available recovery work is being ignored,
+and whether an obsolete or ineffective instruction needs an owner decision.
+Keep the existing Task and accountable owner when follow-up is warranted.
+
+A genuine external wait can still justify no action on a particular wake. The
+evaluation must establish that useful authorized work is exhausted and the
+dependency has an owner and return path; it must not demand progress that the
+agent cannot make. Repeated unchanged narration remains visible as cost and
+lack of progress, rather than being praised as productive work.
+
+Before rollout, replay the six retained no-ops and contrasting cases: an
+actionable recoverable blocker, a changed access fact, an explicit bounded
+recheck request, a genuinely external wait already escalated, and useful
+independent work within the assignment. Verify that the agent has a usable
+progress/recovery path and the evaluator can distinguish a stalled strategy
+from a justified wait. Then observe natural executions for verified progress or
+an actionable resolved blocker; lower invocation counts alone do not establish
+success. Schedule cadence, wake behavior, model and budget stay unchanged.
+
+Review-selection efficiency remains a secondary question after this progress
+failure is addressed. Preserve changed pending input in evidence and retain
+coverage for failures, overdue obligations, starved queued work and explicit
+review requests. Do not hide the observed stagnation by suppressing the agent
+or its evaluator.
 
 No schedule, Task control, source access, model route or runtime setting was
 changed. No new owner request was sent. The next natural audit still needs to

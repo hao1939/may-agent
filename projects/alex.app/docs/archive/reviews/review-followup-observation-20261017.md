@@ -189,4 +189,6 @@ Evidence: `followup-live-observation-20261017-0355.json` (the exact cut is store
 inside), `followup-live-report-integrity-20261017-0355.json`, and
 `followup-first-live-verification-20261017.json` in the private evidence directory.
 The [review-only cost observation](review-only-cost-observation-20261017.md)
-identifies the next App policy candidate separately from this deployed fix.
+records the next App strategy candidate and the user's clarification: preserve
+scheduled wakes and address the agent's lack of progress after waking. This is
+separate from the deployed result-format fix.
