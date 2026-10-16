@@ -154,3 +154,17 @@ publication keeps its own delivery status. Observer failure notifications track
 changes within the current runtime; repeated failures refresh readable health,
 success clears the episode, and failed publication retries on the normal cadence.
 Resource observers also deliver unchanged values to new exact Conditions.
+
+Metric collection records `metric.source-query-worst-ms`, the maximum elapsed
+duration of direct SQL sources actually attempted in a pass. It includes failed
+sources and connection/preparation/read/close time, excluding command sources,
+sample writes and between-source yields. One sample retains attempted/failure
+counts and up to three slow source references in a 4,000-character note. Available
+masked query identities and timestamped plans come from existing diagnostics;
+collection does not run another query or EXPLAIN. Plan capture still starts at
+1,000 ms and is optional. No SQL means no sample, not zero. A lower later pass
+does not prove an earlier slow source ran again or was repaired.
+The Host supplies no alert rule and preserves App calibration or retirement.
+Apps select thresholds through ordinary metric definitions and receive existing
+breach/recovery transitions. SDK comparisons include `<`, `>`, `<=` and `>=`;
+`above`/`below` remain strict aliases and omission defaults to `<`.

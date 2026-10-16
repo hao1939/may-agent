@@ -278,7 +278,8 @@ export type MetricDefinition = {
   sourceQuery?: string;
   sourceCommand?: string;
   measureInterval?: number;
-  alertOp?: "<" | ">" | "above" | "below";
+  /** Breach comparison; defaults to <. above/below are strict aliases. */
+  alertOp?: "<" | ">" | "<=" | ">=" | "above" | "below";
   speed?: string;
   description?: string;
   config?: Record<string, unknown> & { calculation?: MetricCalculationOptions };

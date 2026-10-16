@@ -93,7 +93,7 @@ function metricObservationLabel(metric) {
 function metricRuleLabel(metric) {
   if (metric.alertsDisabled) return 'Alerts disabled';
   if (metric.threshold === null) return 'No threshold rule';
-  return `${metric.thresholdBreached === null ? 'Not evaluated' : metric.thresholdBreached ? 'Last value outside threshold' : 'Last value within threshold'} (${metric.alert_op === '>' || metric.alert_op === 'above' ? 'max' : 'min'} ${metric.threshold} ${metric.unit || ''})`;
+  return `${metric.thresholdBreached === null ? 'Not evaluated' : metric.thresholdBreached ? 'Last value outside threshold' : 'Last value within threshold'} (${metricHealthyOperator(metric)} ${metric.threshold} ${metric.unit || ''})`;
 }
 
 function renderObservationList(data) {

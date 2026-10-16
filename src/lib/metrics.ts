@@ -1,12 +1,12 @@
 import type { SqliteDb } from "./db.js";
 import { stateTransaction } from "./db/transaction.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
-import type { MetricCalculation, MetricCalculationOptions } from "@may-agent/sdk";
+import type { MetricCalculation, MetricCalculationOptions, MetricDefinition as SdkMetricDefinition } from "@may-agent/sdk";
 import { calculateMetric, metricCalculationOptions, metricMaxAgeMs } from "./metric-calculation.js";
 
 export type MetricType = "gauge" | "counter" | "health" | "derived";
 export type MetricPriority = "P0" | "P1" | "P2" | "P3";
-export type MetricAlertOp = "<" | ">" | "above" | "below";
+export type MetricAlertOp = NonNullable<SdkMetricDefinition["alertOp"]>;
 
 export interface MetricDefinition {
   id: string;
@@ -172,10 +172,15 @@ function toDbDefinition(def: MetricDefinition, owner: string, now: number): Reco
   };
 }
 
-function evaluateThreshold(metric: { current: number; threshold: number; alert_op?: string | null }): boolean {
-  return metric.alert_op === ">" || metric.alert_op === "above"
-    ? metric.current > metric.threshold
-    : metric.current < metric.threshold;
+/** Shared by evaluation and read projections; absent operators retain the < default. */
+export function metricThresholdBreached(metric: { current: number; threshold: number; alert_op?: string | null }): boolean {
+  switch (metric.alert_op) {
+    case ">":
+    case "above": return metric.current > metric.threshold;
+    case ">=": return metric.current >= metric.threshold;
+    case "<=": return metric.current <= metric.threshold;
+    default: return metric.current < metric.threshold;
+  }
 }
 
 function recentTrend(db: SqliteDb, metricId: string): Array<{ value: number; measuredAt: number }> {
@@ -347,7 +352,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
       });
       const metricType = row.type || "gauge";
       let breached = false;
-      const thresholdBreached = current !== null && evaluateThreshold({ current, threshold, alert_op: row.alert_op });
+      const thresholdBreached = current !== null && metricThresholdBreached({ current, threshold, alert_op: row.alert_op });
       let rateBreached = false;
       let ratePer: number | null = null;
       let rateLimit: number | null = null;
@@ -367,7 +372,7 @@ const configuredCount = alertConfig.count ?? alertConfig.consecutive;
           results.push({ metricId: row.id, status: "unknown", calculation, message: "Insufficient samples for consecutive rule" });
           return;
         }
-        breached = thresholdBreached && snapshots.every((s) => evaluateThreshold({ current: s.value, threshold, alert_op: row.alert_op }));
+        breached = thresholdBreached && snapshots.every((s) => metricThresholdBreached({ current: s.value, threshold, alert_op: row.alert_op }));
         if (breached) alertKind = alertConfig.mode;
       } else if (metricType === "counter" && alertConfig?.mode === "rate") {
         const lastTwo = db
@@ -438,7 +443,9 @@ const configuredCount = alertConfig.count ?? alertConfig.consecutive;
       }
 
       if (breached) {
-        const thresholdDirection = row.alert_op === ">" || row.alert_op === "above" ? "above" : "below";
+        const thresholdDirection = row.alert_op === ">=" ? "at or above"
+          : row.alert_op === "<=" ? "at or below"
+          : row.alert_op === ">" || row.alert_op === "above" ? "above" : "below";
         const rateUnit = alertConfig?.per === "day" ? "day" : "hour";
         const alertType = alertKind;
         const message =

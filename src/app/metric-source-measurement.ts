@@ -1,6 +1,7 @@
 import { execFile, type ExecFileOptionsWithStringEncoding } from "node:child_process";
 import { join } from "node:path";
 import { openReadOnlyDatabase } from "../lib/db.js";
+import { readSqlQueryEvidence } from "../lib/db/query-performance.js";
 import { createMetricService } from "../lib/metrics.js";
 import { log } from "../lib/log.js";
 import { EVENT_RECORD_ONLY, EVENT_ROW_ID, eventData, type AgentEvent, type EventBus } from "./core/events/bus.js";
@@ -11,6 +12,7 @@ import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.
 import { TASK_FAILOVER_METRIC } from "./adapters/reporting/task-failover-metrics.js";
 import { TASK_SKIPPED_CHECK_METRIC } from "./adapters/reporting/task-check-metrics.js";
 import { readTaskChecks, resetTaskChecks } from "./core/tasks/task-check-observations.js";
+import { METRIC_QUERY_DURATION_METRIC, MetricQueryObservations } from "./adapters/reporting/metric-query-metrics.js";
 import { redactTranscriptSecrets } from "../lib/persistence.js";
 
 export const METRIC_SOURCE_MEASUREMENT_EVENT = "trigger.metrics-snapshot";
@@ -211,6 +213,8 @@ export async function measureSourceMetrics(options: {
   // metric that consumes it. Query-backed or not-due definitions must not
   // trigger producer side effects.
   const commandOutputs = new Map<string, Promise<{ output: string; completedAt: number }>>();
+  const queryObservations = db.prepare("SELECT id FROM metrics WHERE id = ? AND status = 'active'")
+    .get(METRIC_QUERY_DURATION_METRIC.id) ? new MetricQueryObservations() : undefined;
 
   for (const row of dueRows) {
     options.onAttempt?.(row);
@@ -242,11 +246,27 @@ export async function measureSourceMetrics(options: {
         // is not a parser-based single-statement guarantee. Give every query its
         // own read-only connection and close it before the writer records or
         // evaluates the sample, so query transaction state cannot leak forward.
-        const sourceDb = openReadOnlyDatabase(join(options.persistDir, "may.db"));
+        const started = performance.now();
+        let failed = true;
         try {
-          sample = sourceQuerySample(sourceDb.prepare(row.source_query).get() as Record<string, unknown> | null);
+          const sourceDb = openReadOnlyDatabase(join(options.persistDir, "may.db"));
+          try {
+            sample = sourceQuerySample(sourceDb.prepare(row.source_query).get() as Record<string, unknown> | null);
+          } finally {
+            sourceDb.close();
+          }
+          failed = sample === null;
         } finally {
-          sourceDb.close();
+          const durationMs = performance.now() - started;
+          if (queryObservations) {
+            let evidence;
+            try {
+              evidence = readSqlQueryEvidence(row.source_query);
+            } catch {
+              // Optional diagnostics must not change the source's result or timing.
+            }
+            queryObservations.record(row.id, durationMs, failed, evidence);
+          }
         }
         completedAt = Date.now();
       } else if (row.source_command) {
@@ -285,6 +305,16 @@ export async function measureSourceMetrics(options: {
     }
   }
 
+  const querySample = queryObservations?.sample();
+  if (querySample) {
+    try {
+      metrics.record(METRIC_QUERY_DURATION_METRIC.id, querySample.value, {
+        ...querySample, measuredBy: "runtime:metric-source-query-cost",
+      });
+    } catch (error) {
+      failed(METRIC_QUERY_DURATION_METRIC.id, measurementError(error));
+    }
+  }
   return { measured, skipped, failures };
 }
 
@@ -310,6 +340,9 @@ export function attachMetricSourceMeasurement(options: {
     }
     if (!db.prepare("SELECT id FROM metrics WHERE id = ?").get(TASK_SKIPPED_CHECK_METRIC.id)) {
       metricService.define(TASK_SKIPPED_CHECK_METRIC);
+    }
+    if (!db.prepare("SELECT id FROM metrics WHERE id = ?").get(METRIC_QUERY_DURATION_METRIC.id)) {
+      metricService.define(METRIC_QUERY_DURATION_METRIC);
     }
     const subscriberFailureSource = {
       source: "rolling one-hour subscriber.failed event count",

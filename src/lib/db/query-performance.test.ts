@@ -173,6 +173,13 @@ test.each(["get", "all"] as const)("SQL diagnostics retain one parameterized pla
     expect(explainParams).toEqual([["private parameter"]]);
     expect(JSON.stringify(profile.snapshot())).not.toContain("private parameter");
 
+    const evidence = profile.queryEvidence("SELECT value FROM sample WHERE value = ?", operation)!;
+    expect(evidence.plan).toEqual(profile.snapshot().queries.topByWorstTime.find(row => row.id === evidence.id)?.plan);
+    expect(JSON.stringify(evidence)).not.toContain("private parameter");
+    expect(explainCalls).toBe(1); // Retention reuses the captured plan without another SQL read.
+    evidence.plan!.rows.length = 0;
+    expect(profile.queryEvidence("SELECT value FROM sample WHERE value = ?", operation)!.plan!.rows.length).toBeGreaterThan(0);
+
     for (let i = 0; i < 25; i++) read[operation]("private parameter");
     expect(explainCalls).toBe(1);
   } finally {
