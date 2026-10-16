@@ -20,9 +20,15 @@ afterEach(() => {
   }
 });
 
-it.each(["success", "failure", "blocked", "partial"])(
-  "retains structured session facts with finish status %s exactly once",
-  (finishStatus) => {
+it.each([
+  { finishStatus: "success", hasSummary: true },
+  { finishStatus: "failure", hasSummary: true },
+  { finishStatus: "blocked", hasSummary: true },
+  { finishStatus: "partial", hasSummary: true },
+  { finishStatus: "success", hasSummary: false },
+])(
+  "retains structured session facts exactly once ($finishStatus, summary: $hasSummary)",
+  ({ finishStatus, hasSummary }) => {
     const root = mkdtempSync(join(tmpdir(), "may-recovered-judgment-"));
     roots.push(root);
     const sessionId = "judge-session";
@@ -44,7 +50,7 @@ it.each(["success", "failure", "blocked", "partial"])(
           name: "finish",
           arguments: {
             status: finishStatus,
-            summary: judgment.summary,
+            ...(hasSummary ? { summary: judgment.summary } : {}),
             result: judgment,
           },
         },
@@ -70,7 +76,13 @@ it.each(["success", "failure", "blocked", "partial"])(
       JSON.parse(readFileSync(join(root, "sessions", sessionId, "result.json"), "utf8")).finishParams.result,
     ).toEqual(judgment);
     expect(events.filter((event) => event.type === "session.end")).toMatchObject([
-      { data: { status: "done", finishParams: { status: finishStatus, result: judgment } } },
+      { data: {
+        status: "done",
+        finishParams: { status: finishStatus, result: judgment },
+        summary: hasSummary
+          ? judgment.summary
+          : "Runtime recovery restored a committed finish result. Consult the Task's current state for acceptance.",
+      } },
     ]);
 
     closeDb(root);
@@ -198,6 +210,10 @@ it.each(["transcript", "checkpoint"] as const)("retains partial %s evidence and 
   expect(facts).toContain("Known progress");
   expect(facts).not.toContain("explicit reconciliation is required");
   expect(JSON.parse(readFileSync(f.result, "utf8")).recovery.facts.join("\n")).toContain("Recovery history incomplete");
+  expect(JSON.parse(readFileSync(f.result, "utf8")).recovery).toMatchObject({
+    disposition: "interrupted",
+    summary: expect.stringContaining("Consult the Task's current state"),
+  });
   expect(f.events.filter((event) => event.type === "session.end")).toMatchObject([
     { data: { status: "interrupted", recoveryFacts: [expect.stringContaining("Recovery history incomplete")] } },
   ]);
@@ -230,7 +246,8 @@ it("keeps incomplete history readable when session metadata is absent", () => {
   const f = recoveryFixture();
   rmSync(f.metadata);
   writeFileSync(f.transcript, '{"unfinished":');
-  expect(f.recovery.interrupt(f.sessionId, "Previous worker exited", "work", f.binding)).toBe(false);
+  expect(() => f.recovery.interrupt(f.sessionId, "Previous worker exited", "work", f.binding))
+    .toThrow("session metadata is missing");
   expect(existsSync(f.result)).toBe(false);
   expect(f.handoff()!.facts.join("\n")).toContain("Recovery history incomplete");
 });

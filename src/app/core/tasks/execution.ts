@@ -135,7 +135,9 @@ export type TaskSessionRecovery = {
   read(sessionId: string): { status: string; taskBinding?: unknown; workflowRunId?: string } | null;
   isLive(sessionId: string): boolean;
   lastActivityAt(sessionId: string): number | null;
-  /** Returns true only after the durable session projection was reconciled. */
+  /** Confirms the required shutdown and durable reconciliation for this session.
+   * False or an error leaves recovery unconfirmed;
+   * callers must retain ownership. This does not release or requeue the Task. */
   interrupt(
     sessionId: string,
     reason: string,
