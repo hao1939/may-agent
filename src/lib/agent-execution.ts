@@ -52,6 +52,7 @@ import type { ToolPolicy } from "./session-policy.js";
 import { ExecutionScope } from "./execution-scope.js";
 import { createExecutionUsage, type ExecutionUsage, type PreparationMeasurement } from "./execution-usage.js";
 import executionInstructions from "./execution-instructions.md" with { type: "text" };
+import { assertUniqueToolNames } from "./tool-name-audit.js";
 
 const CHAT_TOOL_DENYLIST = new Set([
   "bash",
@@ -382,7 +383,13 @@ function resolveTools(options: AgentPreparationOptions, requireFinish: boolean):
   ) {
     tools = tools.filter((tool) => !APP_OWNER_TOOL_DENYLIST.has(tool.name));
   }
-  if (!requireFinish) return applyToolExecutionPolicy(tools);
+  if (!requireFinish) {
+    assertUniqueToolNames(
+      tools.map((tool) => ({ tool, source: `registered definition for "${definition.name}"` })),
+      definition.name,
+    );
+    return applyToolExecutionPolicy(tools);
+  }
 
   const scopedFinish = options.executionRoot ? options.createFinish?.() : undefined;
   const baseFinish =
@@ -395,9 +402,18 @@ function resolveTools(options: AgentPreparationOptions, requireFinish: boolean):
   }
   const finish = createWorkflowFinishTool(baseFinish, options.outputSchema, options.validateOutput);
   const index = tools.findIndex((tool) => tool.name === "finish");
-  return applyToolExecutionPolicy(
-    index < 0 ? [...tools, finish] : tools.map((tool, offset) => (offset === index ? finish : tool)),
+  const finalTools = index < 0 ? [...tools, finish] : tools.map((tool, offset) => (offset === index ? finish : tool));
+  assertUniqueToolNames(
+    finalTools.map((tool, offset) => ({
+      tool,
+      source:
+        index < 0 && offset === finalTools.length - 1
+          ? "required finish construction"
+          : `registered definition for "${definition.name}"`,
+    })),
+    definition.name,
   );
+  return applyToolExecutionPolicy(finalTools);
 }
 
 function applyToolExecutionPolicy(tools: AgentTool[]): AgentTool[] {

@@ -450,7 +450,6 @@ export async function runRegisteredTaskExecutor(
         result,
         { type: "done", summary: `${input.name} executor completed`, runId },
         {
-          allowNeedsAgent: true,
           validateAction: input.descriptor.app.tasks?.validateAction,
           validateCondition: input.descriptor.app.tasks?.validateCondition,
         },

@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildTools, type ToolsetLoaderOptions } from "./toolset-loader.js";
@@ -9,6 +9,47 @@ import { EventBus } from "../core/events/bus.js";
 const roots: string[] = [];
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+});
+
+function fixtureOptions(root: string): ToolsetLoaderOptions {
+  return {
+    agentsRoot: root,
+    sharedRoot: root,
+    projectsRoot: root,
+    projectRoot: root,
+    persistDir: root,
+    manager: { activeSessions: new Map() },
+    bus: new EventBus(),
+    cronEnabled: false,
+    getAgentSessionId: () => undefined,
+  } as unknown as ToolsetLoaderOptions;
+}
+
+test("rejects duplicate concrete names from overlapping presets with both sources", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-tool-overlap-"));
+  roots.push(root);
+  await expect(
+    buildTools(
+      { name: "worker", tools: ["coding", "read-only"] } as unknown as AgentConfig,
+      fixtureOptions(root),
+    ),
+  ).rejects.toThrow(
+    'Agent worker has duplicate model-visible tool name "read" from preset "coding" and preset "read-only"',
+  );
+});
+
+test("rejects an agent-local tool that collides with the built-in Task tool", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-tool-local-"));
+  roots.push(root);
+  const toolsDir = join(root, "worker", "tools");
+  mkdirSync(toolsDir, { recursive: true });
+  writeFileSync(join(toolsDir, "tasks.ts"), 'export default () => ({ name: "tasks" });');
+
+  await expect(
+    buildTools({ name: "worker", tools: [] } as unknown as AgentConfig, fixtureOptions(root)),
+  ).rejects.toThrow(
+    'Agent worker has duplicate model-visible tool name "tasks" from agent-local tools for "worker" and built-in "tasks"',
+  );
 });
 
 test("Task-bound workflow tools use their exact binding; unbound workflows get no Task scope", async () => {

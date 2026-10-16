@@ -192,7 +192,6 @@ async function executeTaskWorkflow(
         runId,
       },
       {
-        allowNeedsAgent: true,
         validateAction: input.descriptor.app.tasks?.validateAction,
         validateCondition: input.descriptor.app.tasks?.validateCondition,
       },

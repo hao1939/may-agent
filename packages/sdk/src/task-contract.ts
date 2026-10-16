@@ -59,6 +59,10 @@ export const taskActionSchema = Type.Union([
   ),
 ]);
 
+const progressInterestSchema = Type.Union([Type.Literal("immediate"), Type.Literal("next-wake")], {
+  description: "When to consider intermediate progress: immediately or at the next wake. New request waits default to next-wake; omission preserves existing interest. Completion and failures still wake promptly. Use reviewAt if consideration has a deadline.",
+});
+
 export const conditionSchema = Type.Object(
   {
     id: nonEmptyStringSchema,
@@ -70,6 +74,7 @@ export const conditionSchema = Type.Object(
     }),
     subject: typedConditionSubjectSchema,
     expected: Type.Unknown(),
+    progress: Type.Optional(progressInterestSchema),
     requestedAction: Type.Optional(
       Type.String({ minLength: 1, description: "Needed action; use a delivery capability to contact its owner." }),
     ),
@@ -139,7 +144,7 @@ const resultFields = {
       Type.Union([
         conditionSchema,
         Type.Object(
-          { requestId: nonEmptyStringSchema },
+          { requestId: nonEmptyStringSchema, progress: Type.Optional(progressInterestSchema) },
           {
             additionalProperties: false,
             description:
@@ -204,7 +209,7 @@ export const taskAgentResultSchema = Type.Union(
         ...resultFields,
         report: Type.Literal(true, {
           description:
-            "Return new caller-relevant progress or a blocker with facts. Existing independent waits remain; omit for an unchanged quiet wait.",
+            "Share informative progress: changes, checks, uncertainty, remaining work and evidence. The caller chooses when to consider it. Ask for guidance or approval through requests; reporting progress alone does not ask for action. Existing independent waits remain.",
         }),
         continue: Type.Optional(
           Type.Literal(true, {
@@ -240,25 +245,12 @@ export const taskAgentResultSchema = Type.Union(
   {
     $id: TASK_AGENT_RESULT_SCHEMA_ID,
     description:
-      "Report one Task attempt against its goal and acceptance. Put supported progress, limitations and exact evidence links in facts; partial output may be retained in result. Existing independent obligations survive omitted fields. Supported observations settle Conditions; authorized decisions supply approval. Feedback is evidence to assess. The Host persists and delivers results; the App judges outcomes. Waiting may set reviewAt (Unix milliseconds) for deliberate agent reconsideration. Conditions recover missed observations in code without periodic agent calls. Requests submit independently owned work: reuse stable id and exact taskId when applicable. The receiver handles the request independently. To wait for its result, return conditions:[{requestId: id}] and state waiting; Host resolves the reference into an ordinary Condition. continue:true permits independent work. Requests without Conditions may accompany convergence. Omission never retires an existing wait; use retire-condition for that decision. Host publishes and correlates; blocked retains the wait, done returns an answer or owner closure. Parent links organize work; dependsOn gates execution. Use ordinary helper calls for bounded contributions.",
+      "Report one Task attempt against its goal and acceptance. Put supported progress, limitations and exact evidence links in facts; partial output may be retained in result. Existing independent obligations survive omitted fields. Supported observations settle Conditions; authorized decisions supply approval. Feedback is evidence to assess. The Host persists and delivers results; the App judges outcomes. Waiting may set reviewAt (Unix milliseconds) for deliberate agent reconsideration. Conditions recover missed observations in code without periodic agent calls. Requests submit independently owned work: reuse stable id and exact taskId when applicable. The receiver handles the request independently. To wait for its result, return conditions:[{requestId: id}] and state waiting; Host resolves the reference into an ordinary Condition. continue:true permits independent work. Requests without Conditions may accompany convergence. Omission never retires an existing wait; use retire-condition for that decision. Host publishes and correlates independent progress, failure (blocked), and answer/owner closure (done) facts. New request Conditions default to progress: next-wake; choose immediate for eager progress or a separate Condition for a needed partial fact. Failure and completion still wake promptly. Omission preserves saved interest. Progress does not erase failure or ask for help. Parent links organize work; dependsOn gates execution. Use ordinary helper calls for bounded contributions.",
   },
 );
 
-/** Model-output schema for a workflow, including its explicit agent handoff. */
-export const taskReconcileResultSchema = Type.Union(
-  [
-    taskAgentResultSchema,
-    Type.Object(
-      {
-        state: Type.Literal("needs-agent"),
-        summary: nonEmptyStringSchema,
-        facts: Type.Array(nonEmptyStringSchema, { maxItems: 32 }),
-      },
-      { additionalProperties: false },
-    ),
-  ],
-  { $id: TASK_RECONCILE_RESULT_SCHEMA_ID },
-);
+/** Workflows and agents share one Task result contract. Keep the schema ID for saved sessions. */
+export const taskReconcileResultSchema = { ...taskAgentResultSchema, $id: TASK_RECONCILE_RESULT_SCHEMA_ID };
 
 const changeFields = {
   communication: resultFields.communication,
@@ -290,10 +282,6 @@ export const taskVerificationResultSchema = Type.Object(
 );
 
 export type TaskReconcileAdmission = { ok: true; result: TaskReconcileResult } | { ok: false; error: string };
-
-export type TaskReconcileAdmissionOptions = {
-  allowNeedsAgent: boolean;
-};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -395,6 +383,11 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
   if (!conditionOwnerPattern.test(owner)) {
     return `conditions[${index}].owner must be a canonical kind:identity`;
   }
+  if (value.progress !== undefined &&
+      (type !== "app.dependency.updated" || !id.startsWith("app-request:") ||
+       (value.progress !== "immediate" && value.progress !== "next-wake"))) {
+    return `conditions[${index}].progress requires an App request Condition and immediate or next-wake`;
+  }
   const reviewAfterMs = value.reviewAfterMs;
   if (
     reviewAfterMs !== undefined &&
@@ -410,14 +403,12 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
     ...(requestedAction.value ? { requestedAction: requestedAction.value } : {}),
     owner,
     ...(reviewAfterMs === undefined ? {} : { reviewAfterMs: Number(reviewAfterMs) }),
+    ...(value.progress === undefined ? {} : { progress: value.progress as "immediate" | "next-wake" }),
   };
 }
 
 /** The single production admission and normalization boundary for task handlers. */
-export function admitTaskReconcileResult(
-  output: unknown,
-  options: TaskReconcileAdmissionOptions,
-): TaskReconcileAdmission {
+export function admitTaskReconcileResult(output: unknown): TaskReconcileAdmission {
   if (!isRecord(output)) return { ok: false, error: "expected an object" };
   if (output.dependencies !== undefined) {
     if (output.requests !== undefined) return { ok: false, error: "use requests or legacy dependencies, not both" };
@@ -431,7 +422,8 @@ export function admitTaskReconcileResult(
       requests: dependencies,
       conditions: [
         ...(Array.isArray(rest.conditions) ? rest.conditions : []),
-        ...dependencies.map((dependency) => ({ requestId: isRecord(dependency) ? dependency.id : undefined })),
+        // Legacy callers requested every intermediate report; retain that choice.
+        ...dependencies.map((dependency) => ({ requestId: isRecord(dependency) ? dependency.id : undefined, progress: "immediate" })),
       ],
     };
   }
@@ -441,32 +433,8 @@ export function admitTaskReconcileResult(
   if (!facts) return { ok: false, error: "facts must be a string array" };
   if (facts.length > 32) return { ok: false, error: "facts exceeds the 32-entry limit" };
 
-  if (output.state === "needs-agent" || output.state === "needs-owner") {
-    if (!options.allowNeedsAgent) return { ok: false, error: "a resolved agent cannot return needs-agent" };
-    if (
-      output.response !== undefined ||
-      output.result !== undefined ||
-      output.actions !== undefined ||
-      output.conditions !== undefined ||
-      output.requests !== undefined
-    ) {
-      return { ok: false, error: "needs-agent cannot include response, result, actions, Conditions, or requests" };
-    }
-    const canonicalOutput = output.state === "needs-owner" ? { ...output, state: "needs-agent" } : output;
-    if (!Check(taskReconcileResultSchema, canonicalOutput)) {
-      const first = [...Errors(taskReconcileResultSchema, canonicalOutput)][0];
-      return {
-        ok: false,
-        error: `handler result schema rejected ${first?.instancePath || "result"}: ${first?.message ?? "invalid value"}`,
-      };
-    }
-    return {
-      ok: true,
-      result: { state: "needs-agent", summary: output.summary.trim(), facts },
-    };
-  }
   if (output.state !== "converged" && output.state !== "waiting" && output.state !== "incomplete") {
-    return { ok: false, error: "state must be converged, waiting, incomplete, or needs-agent" };
+    return { ok: false, error: "state must be converged, waiting, or incomplete" };
   }
   if (
     output.report !== undefined &&
@@ -521,7 +489,9 @@ export function admitTaskReconcileResult(
     if (isRecord(declaration) && "requestId" in declaration) {
       const requestId = normalizedString(declaration.requestId);
       if (!requestId) return { ok: false, error: `conditions[${index}].requestId must be a non-empty string` };
-      conditions.push({ requestId });
+      if (declaration.progress !== undefined && declaration.progress !== "immediate" && declaration.progress !== "next-wake")
+        return { ok: false, error: `conditions[${index}].progress must be immediate or next-wake` };
+      conditions.push({ requestId, ...(declaration.progress === undefined ? {} : { progress: declaration.progress }) });
       continue;
     }
     const normalized = normalizeCondition(declaration, index);
@@ -622,7 +592,6 @@ export function admitTaskChanges(output: unknown): { ok: true; changes: TaskChan
     };
   const admitted = admitTaskReconcileResult(
     { state: "waiting", summary: "Apply Task changes", facts: [], ...(output as TaskChanges) },
-    { allowNeedsAgent: false },
   );
   if (!admitted.ok) return admitted;
   const { requests, conditions, actions, inputKeys, facts, communication } = admitted.result;
@@ -648,11 +617,8 @@ export function admitTaskChanges(output: unknown): { ok: true; changes: TaskChan
  */
 export function admitTaskResultForSchema(schema: TSchema | undefined, output: unknown): TaskReconcileAdmission | null {
   const id = (schema as (TSchema & { $id?: unknown }) | undefined)?.$id;
-  if (id === TASK_AGENT_RESULT_SCHEMA_ID) {
-    return admitTaskReconcileResult(output, { allowNeedsAgent: false });
-  }
-  if (id === TASK_RECONCILE_RESULT_SCHEMA_ID) {
-    return admitTaskReconcileResult(output, { allowNeedsAgent: true });
+  if (id === TASK_AGENT_RESULT_SCHEMA_ID || id === TASK_RECONCILE_RESULT_SCHEMA_ID) {
+    return admitTaskReconcileResult(output);
   }
   return null;
 }

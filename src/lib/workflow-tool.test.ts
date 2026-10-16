@@ -856,7 +856,7 @@ export async function execute(ctx) {
     expect(logged).toEqual([expect.stringMatching(/^\[workflow:wr_[^\]]+\] \[info\] bounded move complete$/)]);
   });
 
-  it("passes the owning Task context through an authored workflow to its managed helper", async () => {
+  it("composes recovery inside the declared workflow with the owning Task context", async () => {
     const root = workflowRoot("app-workflow-task-context-");
     const workflowDir = join(root, "workflows");
     mkdirSync(workflowDir);
@@ -864,7 +864,12 @@ export async function execute(ctx) {
 export const name = "task-context";
 export const description = "Inherited Task context boundary test";
 export async function execute(ctx) {
-  return ctx.agents.call("worker", "Use the Host-supplied Task entry; do not copy reconciliation into this prompt.");
+  if (!ctx.input.failed) return ctx.done("Procedure succeeded");
+  try {
+    throw new Error("Synthetic read failure");
+  } catch {
+    return ctx.agents.call("worker", "Use the Host-supplied Task entry; do not copy reconciliation into this prompt.");
+  }
 }
 `);
     const correction = "Supervisor correction: retain the accepted result and continue the bounded proof.";
@@ -937,11 +942,14 @@ export async function execute(ctx) {
       details: { task, declaredOutputs: [] },
       taskRead: { get: async () => structuredClone(task) },
     } as any;
+    let helperCalls = 0;
+    const workflowInput = { failed: true };
     let inherited: unknown;
     let helperPrompt = "";
     const runner = createWorkflowRunner({
       manager: {
         callAgent: async (_agent: string, task: string, options: { taskContext?: unknown }) => {
+          helperCalls++;
           helperPrompt = task;
           inherited = options.taskContext;
           return {
@@ -959,6 +967,7 @@ export async function execute(ctx) {
       agentName: "owner",
       persistDir: root,
       taskContext,
+      workflowInput,
     });
 
     const result = await runner.run("task-context", "fixture");
@@ -981,6 +990,10 @@ export async function execute(ctx) {
         waits: { open: [{ conditionId: "approval-independent" }] },
       },
     });
+    workflowInput.failed = false;
+    const recovered = await runner.run("task-context", "next attempt");
+    expect(recovered).toMatchObject({ type: "done", summary: "Procedure succeeded" });
+    expect(helperCalls).toBe(1);
   });
 
   it("rejects invalid operation allowances before provider execution", async () => {

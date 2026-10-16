@@ -163,18 +163,23 @@ describe("validateAgentConfig", () => {
     const root = mkdtempSync(join(tmpdir(), "agent-loader-presets-"));
     try {
       const agentsRoot = join(root, "agents");
-      const agentDir = join(agentsRoot, "all-presets");
-      mkdirSync(agentDir, { recursive: true });
-      writeFileSync(
-        join(agentDir, "agent.json"),
-        JSON.stringify({
-          name: "all-presets",
-          description: "All preset smoke test",
-          domain: "test",
-          model: "claude-opus-4-6",
-          tools: [...VALID_TOOL_PRESETS],
-        }),
-      );
+      const expectedAgents: string[] = [];
+      for (const [index, preset] of [...VALID_TOOL_PRESETS].entries()) {
+        const name = `preset-${index}`;
+        const agentDir = join(agentsRoot, name);
+        mkdirSync(agentDir, { recursive: true });
+        writeFileSync(
+          join(agentDir, "agent.json"),
+          JSON.stringify({
+            name,
+            description: `Smoke test for ${preset}`,
+            domain: "test",
+            model: "claude-opus-4-6",
+            tools: [preset],
+          }),
+        );
+        expectedAgents.push(name);
+      }
 
       const messages: string[] = [];
       const registered: string[] = [];
@@ -208,7 +213,7 @@ describe("validateAgentConfig", () => {
         cronEnabled: false,
       });
 
-      expect(registered).toEqual(["all-presets"]);
+      expect(registered.sort()).toEqual(expectedAgents.sort());
       expect(messages.filter((message) => message.includes("Unknown tool preset"))).toEqual([]);
     } finally {
       rmSync(root, { recursive: true, force: true });

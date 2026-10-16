@@ -7,6 +7,7 @@ import { createEditTool } from "./edit.js";
 import { createWriteTool } from "./write.js";
 
 export interface CodingToolsOptions {
+  /** Enforced by the write and edit tools only; bash remains an unmediated command effect path. */
   fileWritePolicy?: FileWritePolicy;
   /** Working directory for all tools */
   cwd?: string;

@@ -1569,7 +1569,7 @@ describe("App task reconciler state", () => {
     ).toThrow("cannot configure both workflow and executor");
   });
 
-  it("prioritizes retained handoff input while unavailable workflows wait for backoff", () => {
+  it("resumes retained legacy workflow input while unavailable workflows wait for backoff", () => {
     const state = fixture();
     const { config } = state;
     const attentionIntent = {
@@ -1603,6 +1603,11 @@ describe("App task reconciler state", () => {
     });
     if (attentionClaim.kind !== "claimed") throw new Error("expected attention claim");
     failAppTaskAttempt(config, attentionClaim, "owner must decide", { facts: [], reason: "needs-agent" });
+    // Saved state from a release that supported workflow-to-agent handoff.
+    mutateTaskResourceFixture(config, attentionIntent.id, (resource) => {
+      resource.status.phase = "attention";
+      resource.status.executionRetryAt = undefined;
+    });
 
     observeAppTaskIntent(config, { intent: unavailableIntent, appAgent: "app-owner" });
     const unavailableClaim = claimObservedAppTask(config, {
@@ -4853,7 +4858,7 @@ describe("App task reconciler state", () => {
     expect(tree.resources?.[childIntent.id]?.spec.parentId).toBe("operations");
   });
 
-  it("rejects stale results after a fallback attempt takes ownership", () => {
+  it("rejects stale results after a replacement workflow attempt takes ownership", () => {
     const state = fixture();
     const { config } = state;
     const primary = declareAndClaimTask(config, {
@@ -4863,14 +4868,15 @@ describe("App task reconciler state", () => {
     });
     if (primary.kind !== "claimed") throw new Error("expected primary claim");
     expect(
-      failAppTaskAttempt(config, primary, "workflow could not classify the task", { facts: [], reason: "needs-agent" }),
-    ).toMatchObject({ status: "handoff" });
+      failAppTaskAttempt(config, primary, "workflow failed", { facts: [], reason: "HandlerExecutionFailed" }),
+    ).toMatchObject({ status: "retrying" });
 
+    setSystemTime(config.resourceStore.readTask(primary.taskId)!.status.executionRetryAt!);
     const fallback = declareAndClaimTask(config, {
       intent: intent(),
       appAgent: "app-owner",
-      handler: "agent:branch-owner",
-      reason: "workflow-fallback",
+      handler: "workflow:known-workflow",
+      reason: "task-controller",
     });
     if (fallback.kind !== "claimed") throw new Error("expected fallback claim");
     expect(

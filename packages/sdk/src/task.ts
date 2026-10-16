@@ -29,6 +29,7 @@ export type TaskIntent = {
   agent?: string;
   /** @deprecated Use `agent`. Retained temporarily for source compatibility. */
   owner?: string;
+  /** App procedure for each eligible attempt; nested agent calls do not replace it. */
   workflow?: string;
   /** Registered bounded executor adapter. Omit or use `agent` for the managed agent. */
   executor?: TaskExecutorName;
@@ -51,6 +52,8 @@ export type Condition = {
   owner?: string;
   /** @deprecated Retained for compatibility; use Task reviewAt to request agent reconsideration. */
   reviewAfterMs?: number;
+  /** Caller interest in intermediate progress on an App request. Completion and failures still wake. */
+  progress?: "immediate" | "next-wake";
 };
 
 /**
@@ -58,7 +61,7 @@ export type Condition = {
  * the Task open. `incomplete` reports an unsuccessful attempt; unfinished work retries
  * with backoff until progress or owner closure.
  */
-export type TaskReconcileState = "converged" | "waiting" | "needs-agent" | "incomplete";
+export type TaskReconcileState = "converged" | "waiting" | "incomplete";
 
 /** Work submitted to another App, independent of whether the caller waits. */
 export type TaskAppRequest = {
@@ -71,7 +74,13 @@ export type TaskAppRequest = {
 };
 
 /** Caller wait on a new or already admitted request in this Task generation. */
-export type TaskRequestCondition = { requestId: string };
+export type TaskRequestCondition = {
+  requestId: string;
+  /** New waits default to next-wake. Omit on an existing wait to retain its choice.
+   * Immediate considers each new progress report; next-wake retains it as context.
+   * Neither delays completion, failures, explicit requests or other Conditions. */
+  progress?: "immediate" | "next-wake";
+};
 export type TaskCondition = Condition | TaskRequestCondition;
 
 /** @deprecated Return requests and caller Conditions instead. */
@@ -154,7 +163,8 @@ export type TaskReconcileResult = {
     } & (
       | { report?: never }
       | {
-          /** Return a new caller-relevant update without answering the input. */
+          /** Share informative progress without answering the input. The caller chooses when to consider it.
+           * Ask for guidance or approval through an ordinary request; a progress report is not an ask. */
           report: true;
           facts: [string, ...string[]];
         }
@@ -167,17 +177,6 @@ export type TaskReconcileResult = {
       facts: [string, ...string[]];
       response?: string;
       result?: Record<string, unknown>;
-      actions?: never;
-      conditions?: never;
-      dependencies?: never;
-      requests?: never;
-      communication?: never;
-    }
-  | {
-      state: "needs-agent";
-      inputKeys?: never;
-      response?: never;
-      result?: never;
       actions?: never;
       conditions?: never;
       dependencies?: never;
@@ -249,4 +248,4 @@ export {
   taskReconcileResultSchema,
   taskVerificationResultSchema,
 } from "./task-contract.js";
-export type { TaskReconcileAdmission, TaskReconcileAdmissionOptions } from "./task-contract.js";
+export type { TaskReconcileAdmission } from "./task-contract.js";

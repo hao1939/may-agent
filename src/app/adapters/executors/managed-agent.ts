@@ -122,7 +122,6 @@ async function executeTaskAgent(
 
   const taskContext = taskExecutionContext(input, definitions);
   const admissionOptions = {
-    allowNeedsAgent: false,
     validateAction: input.descriptor.app.tasks?.validateAction,
     validateCondition: input.descriptor.app.tasks?.validateCondition,
   };
