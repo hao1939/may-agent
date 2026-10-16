@@ -50,6 +50,9 @@ input or Task trigger. Publishing a fact does not directly launch a workflow.
 Agent-to-agent, agent-to-workflow, workflow-to-agent and workflow-to-workflow
 calls delegate a bounded contribution under the caller's execution scope. The
 receiver's implementation does not change context, responsibility or acceptance.
+Code and agents implement the same contribution contract. Both preserve the
+assignment's meaning, authority, required evidence and effect rules. An agent
+handling an unfamiliar case does not receive weaker acceptance requirements.
 Keep the existing agent tools and SDK calls as scoped entrypoints; a universal
 invocation tool, extra queue or handoff lifecycle is unnecessary.
 
@@ -385,6 +388,34 @@ mean the enclosing App request, task, or project completed. `ctx.blocked` means
 this workflow cannot safely produce its contract; it does not create a durable
 wait, escalation, agent handoff, or new request automatically.
 
+
+## Same contract as content evolves
+
+For content and result-schema changes, the default is no history migration and
+no required reader for every old version. Code handles the formats it understands.
+Otherwise the owning workflow or agent uses the
+[ordinary recovery flow](system-boundary.md#retry-and-recovery-ownership) to
+interpret the retained input and continue under the current contribution contract.
+Preserve the original record and reference it from the new contribution.
+
+For example, an older review can remain stored in its original format. If the
+current reader cannot consume it, an agent reads it as evidence and supplies
+the judgment the caller now needs. The current checks apply to newly proposed
+structured output and actions from either code or agent. Missing evidence remains
+missing; interpretation must not invent a field's meaning, rewrite a recorded
+acceptance or replay an already published result. If the current requirement
+cannot be met, return useful partial work or the blocker through the same contract.
+
+This relies on readable original evidence and a working route to the responsible
+agent. It does not replace a storage conversion needed to read records, repair
+lost identity/effect guarantees, or install a capability the running Host lacks.
+Such changes need their own concrete conversion or rollout plan. Routine semantic
+format evolution needs neither a version registry nor a bulk rewrite. Repeated
+interpretation cost can later justify a code path through the existing audit.
+
+**Coverage:** ordinary agent calls and retained evidence support this approach;
+individual App readers still need to route unresolved content through it. This
+is a design rule, not a claim that every historical format is currently handled.
 
 ## Result admission
 

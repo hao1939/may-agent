@@ -351,8 +351,12 @@ Follow the [common recovery flow](../2a-design/system-boundary.md#retry-and-reco
 run the known code path, let the owning capability handle safe mechanical retry,
 and use `ctx.agents.call` when the unresolved problem needs judgment. If an agent
 is already producing the result, return knowable validation errors before its
-invocation ends. Share the new-output schema/checks with the consumer; keep
-historical compatibility reading separate.
+invocation ends. Share the new-output schema/checks with the consumer. Code and
+agents must meet the same contribution requirements. Keep historical evidence
+readable; when current code cannot consume it, let the agent interpret it and
+propose a current result. Do not require a migration or a coded reader for every
+old format. Preserve original references and accepted effects, following
+[contract evolution](../2a-design/execution-contributions.md#same-contract-as-content-evolves).
 
 Give the agent the assignment, original input or its readable reference, exact
 failure, useful partial work and known effect status. Ask it to resolve the work,

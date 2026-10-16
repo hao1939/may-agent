@@ -289,6 +289,12 @@ Keep the same Task and reuse accepted work. A successful recovery remains useful
 work; record its evidence and cost for later audit rather than opening a new
 investigation for every correction.
 
+When code cannot read older content, interpret the original evidence and meet
+the same contribution requirements as the code path. Keep the original record
+and cite it; produce current structured output where required, or explain what
+is missing. A schema change alone does not require rewriting history. See
+[contract evolution](../../2a-design/execution-contributions.md#same-contract-as-content-evolves).
+
 Repair within this attempt when authorized work can progress and allowance
 remains. Infra owns routine retry and delivery recovery under existing policy.
 An agent can choose a different repair, retry or failover when judgment is needed.

@@ -121,22 +121,29 @@ guidance and evidence reuse; it does not close all of these boundaries.
 
 **Value:** finish useful work without another human intervention or full restart
 for every unfamiliar format. Accept occasional agent recovery; add automation
-when repeated cost justifies it. This work has two implementation pieces, under
-one flow.
+when repeated cost justifies it. Code and agents satisfy the same contribution
+contract; switching method preserves acceptance and effect rules. Content/schema
+evolution should use interpretation when needed, without routinely migrating
+history or adding version-specific readers. See
+[contract evolution](../2a-design/execution-contributions.md#same-contract-as-content-evolves).
+This work has two implementation pieces, under one flow.
 
 **App adoption — Alex owns meaning and the next action.**
 
 1. Use one App-owned definition for newly generated judgments. Reuse it in
    `task-outcome-review.ts`, `metric-review.ts` and their new-output reader.
    Express known structural requirements, including nonblank text, in the schema
-   seen by the model. Keep legacy report reading separate so history remains
-   readable. A reader must not add a hidden structural hurdle after finish.
+   seen by the model. Preserve original historical reports; route formats the
+   current reader cannot handle through ordinary agent interpretation. A migration
+   or separate legacy reader is not required. A reader must not add a hidden
+   structural hurdle after finish.
 2. In the existing workflow, call the responsible agent when a reader or operation
    cannot handle the case after its supported mechanical recovery. Supply the
    assignment, original input/reference, exact failure, useful work and effect
-   status. The agent may interpret a legacy report or choose another method;
-   producing the original schema is only necessary when that code consumer will
-   use the result. Already-running agents receive ordinary tool feedback.
+   status. The agent may interpret a legacy report or choose another method.
+   Both paths meet the caller's current contribution contract; use its declared
+   schema where structured output is required, and supported evidence or inability
+   reports otherwise. Already-running agents receive ordinary tool feedback.
 3. Keep this within the current invocation/attempt while allowance remains.
    Across attempts, inspect existing `previousAttempt` and accepted work before
    repeating the procedure. If the procedure cannot start, use its declared
@@ -193,8 +200,12 @@ finish admission, check direct agents, managed workflow calls, captured-finish
 recovery and every consumer that treats `done` as an available domain result.
 Update their behavior together; an optional field change alone is insufficient.
 Keep the new inability-report behavior inactive in Apps until the compatible
-Host is installed. No retained Task, original input or report requires rewriting.
-Changes to caller schemas stay App-owned and need no new Host policy branch.
+Host is installed: interpretation cannot add a missing runtime capability.
+This protocol rollout is separate from content/schema evolution, which needs no
+retained Task, original input or report rewriting. Changes to caller schemas stay
+App-owned; interpretation uses the same acceptance boundary and needs no new Host
+policy branch. Keep existing useful readers, but do not require a new compatibility
+adapter for every schema change.
 
 **Decisive trials:** use the real runner/validator with synthetic model responses
 for mechanics; reserve any real-model interpretation trial for a separately
@@ -205,13 +216,14 @@ authorized bounded environment or naturally due work.
 | Known code path succeeds | No recovery-model call |
 | Retryable operation recovers | Same operation identity; no recovery-model call or duplicate effect |
 | Schema/check rejects a proposal | Exact feedback reaches the active agent; correction is accepted without repeating completed work |
-| Code cannot interpret a legacy input | One ordinary agent invocation can interpret or escalate it with original evidence; no new Task is required |
+| Code and agent handle equivalent contributions | Same acceptance, authority and effect checks apply to both; malformed output from either remains correctable evidence |
+| Current code cannot interpret a legacy input | Ordinary agent interpretation can satisfy the current contract or report missing evidence; original history and accepted effects remain unchanged, with no bulk migration or new Task |
 | Agent cannot produce the domain result | Honest existing blocked/error result reaches caller without fabricated output or Task convergence |
 | Publication succeeded before later failure | Retry reuses the publication and retains any independent unfinished obligation |
 | Deadline, cancellation, denied authority or unavailable owner | Existing fences/bounds apply; unresolved work and undelivered feedback remain visible |
 | Audit sees recovered exceptions | Can retain no-change disposition or reuse an existing improvement Task; no per-sample review loop |
 
-No universal maximum number of agent judgments follows from the single-call
+No universal maximum number of agent judgments follows from the
 legacy-input trial. Each decision remains subject to the existing attempt bound,
 Task retry policy and a useful next step. Completion quality, cost per delivered
 result and owner intervention decide improvement; first-format validity is only
