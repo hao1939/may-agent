@@ -26,6 +26,16 @@ const standingResearchOutcome =
 const standingResearchAcceptance = [
   "Return a current-first Bob recommendation or a supported no-change, negative, or visible deferral outcome; retain source limits, linked evidence, owner and next action without applying a candidate.",
 ];
+export const RUNTIME_PATTERN_AUDIT_TASK_ID = "runtime/pattern-audit";
+export const runtimePatternAuditOutcome =
+  "Periodically audit recurring cross-Task runtime failures and wasted effort, and return bounded evidence for Alex to judge and repair.";
+export const runtimePatternAuditAcceptance = [
+  "Compare the latest fixed three-hour window with the preceding window and check current affected Tasks before judgment.",
+  "Assess repeated failures, no-progress attempts, review or handoff loops, model usage versus delivered progress, recovered failures, and useful behavior worth keeping.",
+  "Return exact evidence, uncertainty, evaluator coverage and model usage, and at most three prioritized actionable patterns; do not score evaluator semantic outputs.",
+  "Link unresolved findings to existing exact owner Tasks or PRs where possible; unchanged findings must not commission duplicate repairs or full-work-review handoffs.",
+  "Keep ordinary metric movement quiet; breach and status-transition review remain independent.",
+];
 
 const comparisonData = Type.Object({
   requestId: Type.String({ minLength: 1 }),
@@ -279,6 +289,25 @@ export function taskForInput(admitted: Readonly<AppTaskInput>) {
       priority: "P1" as const,
     }};
   }
+  const audit = record(context.audit);
+  if (admitted.input.kind === "goal" && audit.mode === "standing" && audit.identity === RUNTIME_PATTERN_AUDIT_TASK_ID) {
+    const acceptance = Array.isArray(data.acceptance) ? data.acceptance : [];
+    const exactAcceptance = acceptance.length === runtimePatternAuditAcceptance.length &&
+      acceptance.every((item, index) => item === runtimePatternAuditAcceptance[index]);
+    const assignment = record(data.assignment);
+    if (data.outcome !== runtimePatternAuditOutcome || !exactAcceptance || assignment.agent !== "evaluator") {
+      throw new Error("Standing runtime pattern audit requires its exact fixed outcome, acceptance, and Evaluator assignment; use an ordinary targeted goal for changed requirements");
+    }
+    return { kind: "desired" as const, intent: {
+      id: RUNTIME_PATTERN_AUDIT_TASK_ID,
+      parentId: "root",
+      agent: "evaluator",
+      outcome: runtimePatternAuditOutcome,
+      acceptance: runtimePatternAuditAcceptance,
+      input: admitted.input,
+      priority: "P2" as const,
+    }};
+  }
   const research = record(context.research);
   if (admitted.input.kind === "goal" && research.mode === "standing" && research.adoption === STANDING_RESEARCH_TASK_ID) {
     const acceptance = Array.isArray(data.acceptance) ? data.acceptance : [];
@@ -447,6 +476,26 @@ export default defineApp({
       input: { kind: "automatic-review" as const, data: { reason: "scheduled" } },
       catchUp: "latest" as const,
     }] : []),
+    {
+      id: "runtime-pattern-audit-six-hourly",
+      intervalMs: 6 * 60 * 60 * 1000,
+      catchUp: "latest" as const,
+      input: {
+        kind: "goal" as const,
+        data: {
+          outcome: runtimePatternAuditOutcome,
+          acceptance: runtimePatternAuditAcceptance,
+          assignment: { agent: "evaluator" as const },
+          context: { audit: {
+            identity: RUNTIME_PATTERN_AUDIT_TASK_ID,
+            mode: "standing",
+            latestWindowMs: 3 * 60 * 60 * 1000,
+            compareWindowMs: 3 * 60 * 60 * 1000,
+            owner: "alex",
+          } },
+        },
+      },
+    },
     {
       id: "research-adoption-archive-review",
       intervalMs: 7 * 24 * 60 * 60 * 1000,

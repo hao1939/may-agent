@@ -1,5 +1,12 @@
 import { expect, test } from "bun:test";
-import app, { evaluationReportInput, taskForInput, taskInputForEvent } from "./app.ts";
+import app, {
+  evaluationReportInput,
+  RUNTIME_PATTERN_AUDIT_TASK_ID,
+  runtimePatternAuditAcceptance,
+  runtimePatternAuditOutcome,
+  taskForInput,
+  taskInputForEvent,
+} from "./app.ts";
 import { assertValidAppDefinition } from "../may-agent/src/app/core/apps/definition-validation.ts";
 
 test("Alex bootstrap uses ordinary durable Task admission", () => {
@@ -204,6 +211,46 @@ test("ordinary Evaluation reports are consumed only by Alex with immutable ident
   }
   expect(app.subscriptions?.filter(({ id }) => id === "evaluation-task-report" || id === "evaluation-metric-report")).toHaveLength(2);
   expect(() => evaluationReportInput({ ...taskEvent, data: { ...taskEvent.data, jsonHash: "bad" } } as never)).toThrow("SHA-256 jsonHash");
+});
+
+test("six-hour runtime audit preserves one standing Evaluator Task across deliveries", () => {
+  const schedule = app.schedules?.find(({ id }) => id === "runtime-pattern-audit-six-hourly");
+  expect(schedule).toMatchObject({
+    intervalMs: 21600000,
+    catchUp: "latest",
+    input: {
+      kind: "goal",
+      data: {
+        outcome: runtimePatternAuditOutcome,
+        acceptance: runtimePatternAuditAcceptance,
+        assignment: { agent: "evaluator" },
+        context: { audit: {
+          identity: RUNTIME_PATTERN_AUDIT_TASK_ID,
+          mode: "standing",
+          latestWindowMs: 10800000,
+          compareWindowMs: 10800000,
+          owner: "alex",
+        } },
+      },
+    },
+  });
+  const first = taskForInput({ id: "audit-slot-1", input: (schedule as any).input } as never);
+  const second = taskForInput({ id: "audit-slot-2", input: (schedule as any).input } as never);
+  expect(first.intent).toMatchObject({
+    id: RUNTIME_PATTERN_AUDIT_TASK_ID,
+    agent: "evaluator",
+    parentId: "root",
+    priority: "P2",
+  });
+  expect(second.intent).toEqual(first.intent);
+
+  const changed = structuredClone((schedule as any).input);
+  changed.data.acceptance = ["Silently broaden the standing audit"];
+  expect(() => taskForInput({ id: "audit-slot-3", input: changed } as never)).toThrow("exact fixed outcome");
+
+  const targeted = structuredClone((schedule as any).input);
+  delete targeted.data.context.audit.mode;
+  expect(taskForInput({ id: "targeted-audit", input: targeted } as never).intent.id).toBe("input/targeted-audit");
 });
 
 test("weekly research preserves one standing Alex Bob Task across deliveries", () => {

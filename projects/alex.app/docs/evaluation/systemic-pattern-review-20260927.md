@@ -256,6 +256,36 @@ The [trial record](../../archive/retired-apps/evaluation/experiments/systemic-pa
 what ran, design refinements and untested boundaries. Common rules belong in May's
 metrics design; App-specific selection, context and review policy belongs here.
 
+## Six-hour cross-Task operational audit
+
+The standing App schedule `runtime-pattern-audit-six-hourly` supplies one
+`catchUp: latest` input every six hours to stable Evaluator Task
+`runtime/pattern-audit`. The Task compares a fixed latest three-hour window with
+the preceding three hours, checks current affected Tasks, and retains the last
+reviewed window in its ordinary Task result. A missed slot therefore produces at
+most one latest consideration rather than a catch-up stack. Alex owns disposition,
+repair reuse, delivery, and later comparable-window verification; Evaluator only
+judges and reports.
+
+The audit covers recurring failure, no-progress and handoff loops, model usage
+versus delivered progress, recovered failures, useful behavior, and its own
+coverage/cost. It returns at most three prioritized patterns and links existing
+owner Tasks or PRs. Unchanged and healthy results remain saved and quiet. It does
+not replace ordinary Task-outcome review, and it does not authorize per-sample or
+daily per-metric model review. Metric breach and status-transition review remain
+independent.
+
+Evaluator semantic reports are excluded from self-scoring. Alex arranges an
+independent non-semantic check of evaluator coverage and usage when that system
+itself is implicated. Source-ready, integrated, activated, and observed repair
+remain separate facts; a schedule declaration is not proof that a due runtime
+slot executed.
+
+The initial bounded audit is retained at
+[`generated/runtime-audits/2026-10-16T083016Z.md`](../../generated/runtime-audits/2026-10-16T083016Z.md).
+It used cut `2026-10-16T08:30:16.252Z`, identified three bounded patterns, and
+reused existing repair ownership rather than commissioning duplicate work.
+
 ## Useful retained lessons
 
 Scout's [observability-cost synthesis](../../../scout-knowledge-lib/knowledge/the-observability-trap.md)
