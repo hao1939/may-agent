@@ -131,6 +131,20 @@ workflow registry, wake classifier, or domain strategy in the generic
 reconciler. A selected but missing workflow remains an execution failure; the
 runtime does not guess from task prose or silently substitute another method.
 
+A scheduled source wake is an opportunity to advance its research outcome.
+The owner chooses research, useful authorized blocker diagnosis/recovery, or an
+exact necessary owner decision using current facts and bounded prior results.
+Repeated confirmation of an unchanged block does not establish progress. The
+Reddit ordinary-permalink restriction still forbids identical blocked scans
+until a documented trigger; it does not prohibit useful diagnosis or seeking a
+needed assignment/access-contract decision. Existing requests and independent
+obligations are reused. A genuine external wait may remain quiet when no useful
+authorized step remains; artifacts, repeated probes and duplicate escalation
+are not required. Source identity, publication evidence and four-hour Reddit
+wakes are unchanged. See the
+[October 17 progress change](../../alex.app/docs/archive/reviews/progress-after-wake-20261017.md)
+for the evidence review, verification boundaries and natural acceptance criteria.
+
 The boundary is validated with isolated managed-agent trials using the production
 agent loader, workflow tool, Task reads, reconciler, and settlement path. Trials
 cover review-only reconciliation, fresh input beside existing waits, and a real

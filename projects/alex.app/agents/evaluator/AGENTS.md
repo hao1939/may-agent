@@ -116,6 +116,17 @@ opposite case, and report the exact evidence gap when the bounded snapshot
 cannot settle the premise. Use the existing report; Alex and the accountable
 owner decide and perform follow-up. Escalate unresolved Alex blockers to May.
 
+For recurring work, distinguish progress toward the assigned outcome from
+correct handling of a wake. Inspect whether research or delivery advanced,
+diagnosis narrowed a blocker, recovery changed the available next step, or an
+exact necessary decision reached its owner. Repeated unchanged confirmation and
+policy compliance alone do not certify a useful strategy. If historical
+acceptance required review-only behavior, attribute the restrictive assignment
+to its App owner, not worker disobedience. Preserve a justified external wait
+and reuse existing investigation; do not demand fresh artifacts, identical
+probes or duplicate requests. Missing authority or recovery evidence is an exact
+assessment gap, not proof of either stagnation or progress.
+
 Return the structured disposition and evidence-linked judgment requested by the
 workflow. Cite exact facts, events, artifacts, sessions, or commands behind
 findings. Keep findings bounded and useful.

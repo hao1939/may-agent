@@ -8,6 +8,10 @@ The next candidate belongs to **App strategy and agent judgment**, not Host
 result validation or deduplication. No new production change is included in this
 observation.
 
+The subsequent [App implementation](progress-after-wake-20261017.md) restores
+progress/recovery as the purpose of the wake and records the offline evidence
+review and natural validation boundary.
+
 **User clarification:** scheduled wakes intentionally give the agent an
 opportunity to do its job. The defect to address is repeated lack of progress
 after waking. Preserve that opportunity and improve what the agent does with it.

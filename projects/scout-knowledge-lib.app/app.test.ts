@@ -209,7 +209,7 @@ describe("Scout task reconciliation", () => {
     });
   });
 
-  it("routes automatic Reddit wakes review-only without weakening explicit rechecks", () => {
+  it("keeps automatic Reddit work on its source Task with access limits and an explicit recheck route", () => {
     const automatic = resolveScoutTask({
       type: "scout.explore",
       source: "app:scout-knowledge-lib:schedule:scout-explore-reddit",
@@ -217,13 +217,14 @@ describe("Scout task reconciliation", () => {
     });
     expect(automatic).toMatchObject({
       id: "explore-reddit",
-      input: {
-        source: "reddit",
-        reconciliation: "review-only",
-        decision:
-          "/app/projects/scout-knowledge-lib/reports/operations/reddit-source-contract-review-2026-09-24.md",
-      },
+      parentId: "ongoing-research",
     });
+    expect(automatic?.input).toEqual({
+      source: "reddit",
+      decision:
+        "/app/projects/scout-knowledge-lib/reports/operations/reddit-source-contract-review-2026-09-24.md",
+    });
+    expect(automatic?.workflow).toBeUndefined();
     expect(automatic?.acceptance.join(" ")).toContain(
       "without a Reddit HTTP scan",
     );

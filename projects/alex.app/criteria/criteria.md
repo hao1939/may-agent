@@ -110,6 +110,31 @@ source context; May can request focused owner investigation. A consistent wait
 is not automatically justified, and repetition alone is not automatically a
 failure. Retain this judgment in the existing findings and verification fields.
 
+For recurring work, assess progress toward the assigned outcome separately from
+handling a wake correctly. Useful progress includes delivered work, evidence
+that narrows a blocker and changes the next action, verified recovery, or an
+exact necessary owner decision requested through the existing route. Repeated
+confirmation of the same state, a successful finish, or compliance with a
+review-only instruction does not by itself establish an effective strategy.
+Use bounded prior attempts to identify what advanced and what remains blocked.
+
+Judge the authority the agent actually had. If the historical acceptance limited
+the agent to review-only work, attribute an ineffective assignment to its App
+owner; do not fault the worker for obeying it or apply newer instructions
+retroactively. Identify a useful authorized alternative only when the evidence
+supports it. A genuine external wait remains valid when no useful authorized
+step remains and the needed contribution has an owner, return path and review
+boundary. Do not demand another probe, duplicate request or artificial output.
+When that necessity cannot be established from the bounded evidence, state the
+exact gap instead of certifying progress or assuming agent failure.
+
+For a supported stalled strategy, state the smallest recovery or assignment
+decision needed and the accountable owner. Use `followUp.kind: request` when
+Alex needs to act now; name existing owned work to reuse when visible. When a
+live investigation or justified wait already covers the need, retain the finding
+without a duplicate request unless new evidence requires intervention. Schedule
+frequency and invocation counts alone do not decide whether the work is useful.
+
 ## Historical responsibility contract
 
 Use the Task's original input, outcome, acceptance, creator, generation, and

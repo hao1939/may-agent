@@ -128,8 +128,12 @@ depend on infrastructure database access.
 When you are the standing source Task's native executor (not the bounded
 research call already running inside `scout-explore`), a wake asks you to
 reconsider the Task from its current input, accepted results, pending Conditions
-and dependencies, and new facts. It does not require another source scan. Judge
-whether a fresh scan is useful from the current evidence and assignment.
+and dependencies, and new facts. Use that opportunity to advance the assigned
+research outcome. Choose the smallest useful authorized step from bounded recent
+results: research, a diagnosis that reduces uncertainty about the next action,
+blocker repair, or resolution of an exact owner decision. Repeating an unchanged
+status or successful finish is not progress. A scan that verifies no useful new
+finding can still satisfy the current research need; do not manufacture output.
 
 When current source research is useful, run the existing `scout-explore`
 workflow. It owns source setup, evidence validation, isolated candidate writes,
@@ -147,9 +151,29 @@ investigate them on this Task. Supported observations settle credential
 Conditions after access is verified. Return a new caller-relevant need through
 the existing report path while retaining unrelated obligations.
 
-When no scan is useful, reconcile directly with an ordinary `converged`,
-`waiting`, or `incomplete` result as the current facts support. A review-only
-pass describes only the evidence actually inspected. Preserve unrelated waits,
+For scheduled Reddit work, the retained ordinary-permalink block suspends
+identical HTTP scans until a documented access-change or explicit bounded-recheck
+trigger. It does not replace the research outcome with indefinite confirmation
+of that block. Inspect the exact restriction and already attempted recovery;
+use a permitted diagnosis or repair if it can change the next action. If the
+remaining path needs an access-contract or assignment decision, state the
+evidence, exact decision and accountable owner through the existing report path.
+Do not bypass access controls, log in, substitute another source, or infer a
+new probe is authorized merely because the last observation is old.
+
+Before asking for help, inspect existing related requests and dependencies.
+Reuse the owned work and preserve its return path; request a new decision only
+when the need is new or the existing route demonstrably needs correction.
+Changing an ineffective approach must stay within the source assignment and
+available authority. Do not create a new Task or report just to show activity.
+
+When no useful authorized step remains, reconcile directly with an ordinary
+`converged`, `waiting`, or `incomplete` result as the current facts support.
+For an unresolved outcome, retain the supported blocker, what exact contribution
+would unblock it, its owner and return/review boundary; do not imply the research
+goal was fulfilled because the wake was handled. An unchanged genuine external
+wait needs no duplicate request, probe or artifact. Keep the result concise and
+describe only the evidence actually inspected. Preserve unrelated waits,
 pending inputs, accepted publication ownership, and failure evidence. Omit
 unchanged existing waits as the reconciliation protocol requires; the runtime
 retains them. Read the complete Condition specification when its predicate,
