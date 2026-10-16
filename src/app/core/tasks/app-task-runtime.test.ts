@@ -109,7 +109,7 @@ import { closeDb, getDb } from "../../../lib/requests.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { migrateTaskCompletionReceipts } from "../state/task-receipt-cutover.js";
-import { appTaskTestContext as createTaskContext } from "./app-task-test-support.js";
+import { appTaskTestContext as createTaskContext, makeTaskRetryDue } from "./app-task-test-support.js";
 import { projectRuntimePaths } from "./app-task-runtime-state.js";
 import { HumanTaskService } from "../../human-task-service.js";
 import {
@@ -1353,6 +1353,8 @@ describe("caller feedback PoC", () => {
       const reportSummary = "Please restore access; the worker is waiting for the access event.";
       const app = defineApp({
         ...definition(),
+        // This feedback-ordering trial includes three failures before repair.
+        tasks: { ...definition().tasks, maxConsecutiveFailures: 4 },
         task: ({ input }) => ({ kind: "desired", intent: {
           id: input.kind === "review" ? "work/caller" : "work/collector",
           parentId: "operations", outcome: "Return the requested sample",
@@ -5091,6 +5093,8 @@ describe("canonical App task runtime", () => {
       const inputs: Parameters<TaskExecutor>[0]["events"][] = [];
       const app = defineApp({
         ...definition(),
+        // This feedback-ordering trial includes three failures before repair.
+        tasks: { ...definition().tasks, maxConsecutiveFailures: 4 },
         task: ({ input }) => ({ kind: "desired", intent: {
           id: input.kind === "review" ? "work/caller" : "work/collector",
           parentId: "operations", outcome: "Complete the assigned work",
@@ -8078,9 +8082,10 @@ describe("canonical App task runtime", () => {
     attach("work/independent", "other");
     await until(() => accepted("work/independent")?.state === "converged");
     expect(calls).not.toContain("work/missing");
-    // The controller may already have claimed another retry while the
-    // independent Task ran. Its current status need not retain the deadline.
+    expect(Date.now()).toBeLessThan(retryAt);
     await install(true);
+    retryAt = makeTaskRetryDue(store, "work/missing");
+    await recoverInstalledAppTasks(bus);
     await until(() => accepted("work/missing")?.state === "converged");
     expect(startedAt.get("work/missing")).toBeGreaterThanOrEqual(retryAt);
     expect(store.readAttempt(failure.metadata.id)).toEqual(failure);
@@ -8848,7 +8853,8 @@ describe("canonical App task runtime", () => {
     setSystemTime(config.resourceStore.readTask(taskId)!.status.executionRetryAt! + 1);
     await run();
     const invalid = config.resourceStore.readTask(taskId)!;
-    expect(invalid.status.phase).toBe("pending");
+    expect(invalid.status.phase).toBe("attention");
+    expect(invalid.status.retryExhausted).toMatchObject({ failures: 3, limit: 3 });
     expect(invalid.status.summary).toContain("Handler result was rejected");
     const attempts = Object.values(config.resourceStore.readTaskContext({ taskIds: [taskId] }).attempts ?? {}).filter(
       (attempt) => attempt.taskGeneration === invalid.metadata.generation,
@@ -9864,6 +9870,8 @@ describe("canonical App task runtime", () => {
       }),
     );
     expect(config.resourceStore.readTask("work/invalid-result")?.status.executionRetryAt).toBeGreaterThan(Date.now());
+    makeTaskRetryDue(config.resourceStore, "work/invalid-result");
+    await recoverInstalledAppTasks(bus);
     const correctedDeadline = performance.now() + 1500;
     while (!readAcceptedRuntimeAttempt(config, "work/invalid-result")?.acceptedResult && performance.now() < correctedDeadline)
       await Bun.sleep(5);
@@ -9872,7 +9880,7 @@ describe("canonical App task runtime", () => {
     expect(config.resourceStore.isCancelled("work/invalid-result")).toBe(false);
   });
 
-  it("paces controller retries beyond the old limit while unrelated work progresses", async () => {
+  it("bounds controller retries by default while unrelated work progresses", async () => {
     const f = fixture();
     const bus = eventBus();
     let calls = 0;
@@ -9920,13 +9928,21 @@ describe("canonical App task runtime", () => {
       });
     await attach("broken");
     const deadline = performance.now() + 6_000;
-    while ((config.resourceStore.readTask("work/broken")?.status.executionFailures ?? 0) < 5 && performance.now() < deadline) {
-      await Bun.sleep(5);
+    for (let failures = 1; failures <= 3; failures++) {
+      while ((config.resourceStore.readTask("work/broken")?.status.executionFailures ?? 0) < failures && performance.now() < deadline)
+        await Bun.sleep(5);
+      expect(config.resourceStore.readTask("work/broken")?.status.executionFailures).toBe(failures);
+      if (failures < 3) {
+        expect(config.resourceStore.readTask("work/broken")?.status.executionRetryAt).toBeGreaterThan(Date.now());
+        makeTaskRetryDue(config.resourceStore, "work/broken");
+        await recoverInstalledAppTasks(bus);
+      }
     }
-    expect(calls, JSON.stringify(config.resourceStore.readTaskContext({ taskIds: ["work/broken"] }).attempts)).toBe(5);
+    expect(calls, JSON.stringify(config.resourceStore.readTaskContext({ taskIds: ["work/broken"] }).attempts)).toBe(3);
     expect(config.resourceStore.readTask("work/broken")?.status).toMatchObject({
-      phase: "pending",
-      executionFailures: 5,
+      phase: "attention",
+      executionFailures: 3,
+      retryExhausted: { failures: 3, limit: 3 },
     });
     for (let index = 0; index < 3; index += 1) await recoverInstalledAppTasks(bus);
     await attach("healthy");
@@ -9936,8 +9952,8 @@ describe("canonical App task runtime", () => {
     expect(readAcceptedRuntimeAttempt(config, "work/healthy")?.acceptedResult?.summary).toBe(
       "Verified independent work",
     );
-    expect(calls).toBe(5);
-    expect(config.resourceStore.readTask("work/broken")?.status.executionRetryAt).toBeGreaterThan(Date.now());
+    expect(calls).toBe(3);
+    expect(config.resourceStore.readTask("work/broken")?.status.executionRetryAt).toBeUndefined();
     expect(config.resourceStore.isCancelled("work/broken")).toBe(false);
     expect(config.resourceStore.listRecoveryCandidates().items.map((item) => item.taskId)).not.toContain("work/broken");
   });
@@ -10165,7 +10181,7 @@ describe("canonical App task runtime", () => {
       return commit.call(this, mutation);
     };
     try {
-      for (let index = 0; index < 4; index++) {
+      for (let index = 0; index < 3; index++) {
         if (index) advanceRuntimeTaskRetry(config, taskId);
         await reconcileLoadedAppTaskOnce({
           bus,
@@ -10178,17 +10194,17 @@ describe("canonical App task runtime", () => {
       AppTaskResourceStore.prototype.commit = commit;
       db.close();
     }
-    expect(calls).toBe(4);
-    expect(racedAttempts.size).toBe(4);
-    expect(saves).toBe(8); // Each failed transaction is retried, not the executor.
-    expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({ phase: "pending", executionFailures: 4 });
+    expect(calls).toBe(3);
+    expect(racedAttempts.size).toBe(3);
+    expect(saves).toBe(6); // Each failed transaction is retried, not the executor.
+    expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({ phase: "attention", executionFailures: 3 });
     const tree = readTaskSnapshot(config);
-    expect(Object.values(tree.attempts ?? {})).toHaveLength(4);
+    expect(Object.values(tree.attempts ?? {})).toHaveLength(3);
     for (const attempt of Object.values(tree.attempts ?? {})) {
       expect(attempt).toMatchObject({ state: "failed", failureReason: "HandlerExecutionFailed" });
     }
     expect(tree.taskTriggers?.[taskId]?.events?.map((entry) => entry.event.eventId).sort()).toEqual([
-      100, 101, 102, 103, 104,
+      100, 101, 102, 103,
     ]);
   });
 
@@ -10236,14 +10252,14 @@ describe("canonical App task runtime", () => {
         dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
       });
     // Each call is an independent wake, not a controller's own retry timer.
-    for (let index = 0; index < 5; index += 1) {
+    for (let index = 0; index < 2; index += 1) {
       if (index) advanceRuntimeTaskRetry(config, taskId);
       await run().catch(() => {});
       const failureCount = calls;
       await run();
       expect(calls).toBe(failureCount);
     }
-    expect(calls).toBe(5);
+    expect(calls).toBe(2);
     const cooling = config.resourceStore.readTask(taskId)!;
     expect(cooling.status.phase).toBe("pending");
     expect(reports.at(-1)).toMatchObject({ disposition: "retrying", retryAt: cooling.status.executionRetryAt });
@@ -10251,7 +10267,7 @@ describe("canonical App task runtime", () => {
     expect(readTaskSnapshot(config).taskTriggers?.[taskId]?.events).toEqual([
       expect.objectContaining({ event: expect.objectContaining({ eventId: 100 }) }),
     ]);
-    expect(Object.values(readTaskSnapshot(config).attempts ?? {})).toHaveLength(5);
+    expect(Object.values(readTaskSnapshot(config).attempts ?? {})).toHaveLength(2);
 
     // A new diagnostic/event ID cannot shorten the persisted cooldown.
     recordAppTaskTrigger(config, taskId, { type: "sample.diagnostic", eventId: 101, data: {} });
@@ -10261,7 +10277,7 @@ describe("canonical App task runtime", () => {
         .taskTriggers?.[taskId]?.events?.map((entry) => entry.event.eventId),
     ).toEqual([100, 101]);
     await run();
-    expect(calls).toBe(5);
+    expect(calls).toBe(2);
     const coolingVersion = config.resourceStore.readTask(taskId)!.metadata.resourceVersion;
     await run();
     expect(
@@ -10292,7 +10308,7 @@ describe("canonical App task runtime", () => {
       ],
       { timeout: 10_000 },
     );
-    expect(JSON.parse(stdout)).toEqual({ kind: "waiting", attempts: 5 });
+    expect(JSON.parse(stdout)).toEqual({ kind: "waiting", attempts: 2 });
 
     const restarted = loadedTaskConfig(f);
     expect(
@@ -10366,6 +10382,11 @@ describe("canonical App task runtime", () => {
     });
 
     const config = loadedTaskConfig(f);
+    const failedDeadline = performance.now() + 1_000;
+    while (!config.resourceStore.readTask("work/resume-codex-goal")?.status.executionRetryAt && performance.now() < failedDeadline)
+      await Bun.sleep(5);
+    makeTaskRetryDue(config.resourceStore, "work/resume-codex-goal");
+    await recoverInstalledAppTasks(bus);
     const deadline = performance.now() + 3_000;
     while (!readAcceptedRuntimeAttempt(config, "work/resume-codex-goal")?.acceptedResult && performance.now() < deadline) {
       await Bun.sleep(5);

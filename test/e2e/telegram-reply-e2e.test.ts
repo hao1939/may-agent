@@ -276,7 +276,7 @@ describe("telegram reply e2e", () => {
         data: { project: "may", appId: "may", taskId, attemptId: `attempt-${taskId}` },
       } as any);
     const notifications = () =>
-      sentMessages.filter((message) => String(message.text).startsWith("Needs your action:"));
+      sentMessages.filter((message) => String(message.text).startsWith("Needs your action"));
     const savedNotification = (messageId: number) => {
       const row = db
         .prepare("SELECT data FROM notification_messages WHERE chat_id = '12345' AND telegram_msg_id = ?")
@@ -291,8 +291,8 @@ describe("telegram reply e2e", () => {
       notify("answer");
       await waitFor(() => expect(notifications()).toHaveLength(1));
       expect(notifications()[0]!.text).toContain("Reply with blue or green.");
-      expect(notifications()[0]!.text).toContain("Reply here to discuss this work or report completion.");
-      expect(notifications()[0]!.text).not.toContain("Reply here with your decision.");
+      expect(notifications()[0]!.text).toContain("How to respond");
+      expect(notifications()[0]!.text).not.toContain("not a completed decision");
       const answerMessageId = 100 + sentMessages.indexOf(notifications()[0]!) + 1;
       await waitFor(() =>
         expect(savedNotification(answerMessageId)).toMatchObject({

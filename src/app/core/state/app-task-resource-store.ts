@@ -10,7 +10,7 @@ import {
   ensureTaskResourceSchema,
 } from "../../../lib/db/task-resource-schema.js";
 import { indexTaskReference } from "./task-reference-index.js";
-import { CONDITION_RECOVERY_INTERVAL_MS, pendingTaskExecutionRetryAt } from "../tasks/app-task-state.js";
+import { CONDITION_RECOVERY_INTERVAL_MS, pendingTaskExecutionRetryAt, taskExecutionRetryExhausted } from "../tasks/app-task-state.js";
 import type {
   AppTaskAttempt,
   AppTaskCancellation,
@@ -259,6 +259,7 @@ export class AppTaskResourceStore {
   ): void {
     // Retain pending input without a ready hint that bypasses its cooldown.
     const retryAt = pendingTaskExecutionRetryAt(resource);
+    const exhausted = taskExecutionRetryExhausted(resource);
     const activeAttempt = resource.status.currentAttemptId;
     const leaseUntil = activeAttempt
       ? ((
@@ -289,8 +290,8 @@ export class AppTaskResourceStore {
         resource.status.observedGeneration,
         resource.status.phase,
         resource.status.lane ?? "normal",
-        !retryAt && taskChanged(resource, trigger) ? 1 : 0,
-        !retryAt && ready ? 1 : 0,
+        !retryAt && !exhausted && taskChanged(resource, trigger) ? 1 : 0,
+        !retryAt && !exhausted && ready ? 1 : 0,
         retryAt ?? nextCheckAt,
         leaseUntil,
         resource.status.currentAttemptId ?? null,
@@ -608,6 +609,40 @@ export class AppTaskResourceStore {
     return row?.attempt_json ? parseTaskAttempt(row.attempt_json) : null;
   }
 
+  /** Upgrade the old mixed counter once, outside the prompt's bounded history. */
+  readLegacyExecutionFailureSequence(taskId: string, maximum: number): {
+    executionFailures?: number; executionFailureAttemptId: string | null;
+  } {
+    if (maximum <= 0) return { executionFailureAttemptId: null };
+    const retry = this.db.prepare(`
+      SELECT json_extract(receipt_json, '$.result.previousAttemptId') AS attempt_id
+      FROM app_task_control_receipts WHERE app_id = ? AND task_id = ? AND action = 'retry'
+      ORDER BY applied_resource_version DESC LIMIT 1
+    `).get(this.appId, taskId) as { attempt_id: string | null } | null;
+    // Claims append rows; settlement updates them in place. Use that retained
+    // insertion order only for legacy adoption, never wall-clock order. New
+    // sequences retain their exact reference directly on the Task.
+    const rows = this.db.prepare(`
+      SELECT attempt_json FROM app_task_attempts
+      WHERE app_id = ? AND task_id = ? AND
+        (state IN ('failed', 'completed') OR json_extract(attempt_json, '$.failureReason') = 'owner-stopped')
+      ORDER BY rowid DESC LIMIT ?
+    `).all(this.appId, taskId, maximum) as { attempt_json: string }[];
+    let failures = 0;
+    let attemptId: string | null = null;
+    for (const row of rows) {
+      const attempt = parseTaskAttempt(row.attempt_json);
+      if (attempt.metadata.id === retry?.attempt_id ||
+        !(attempt.state === "failed" || (attempt.state === "completed" && attempt.acceptedResult?.state === "incomplete")))
+        break;
+      failures++;
+      attemptId ??= attempt.metadata.id;
+    }
+    // The old counter is an upper bound, including any explicit reset to zero.
+    // Admission-only increments cannot manufacture failed execution evidence.
+    return { executionFailures: failures || undefined, executionFailureAttemptId: attemptId };
+  }
+
   /** Workspace ownership survives bounded context, non-workspace attempts and clock changes. */
   readTaskWorkspace(taskId: string, generation: number): AppTaskWorkspace | undefined {
     const reference = this.readTask(taskId)?.status.workspaceAttemptId;
@@ -775,7 +810,8 @@ export class AppTaskResourceStore {
          WHERE c.app_id = ? AND json_extract(c.condition_json, '$.spec.type') = ?
            ${ids ? `AND linked.task_id IN (${ids.map(() => "?").join(", ")})` : ""}
            AND c.state <> 'true'
-           AND task.phase IN ('waiting', 'running', 'pending')
+           AND (task.phase IN ('waiting', 'running', 'pending')
+             OR (task.phase = 'attention' AND json_extract(task.resource_json, '$.status.retryExhausted') IS NOT NULL))
          ORDER BY c.condition_id, linked.task_id`,
       )
       .all(this.appId, eventType, ...(ids ?? [])) as Array<{
@@ -818,7 +854,8 @@ export class AppTaskResourceStore {
                : ""
            }
            AND c.state <> 'true'
-           AND task.phase IN ('waiting', 'running', 'pending')
+           AND (task.phase IN ('waiting', 'running', 'pending')
+             OR (task.phase = 'attention' AND json_extract(task.resource_json, '$.status.retryExhausted') IS NOT NULL))
          ORDER BY c.app_id, c.condition_id, linked.task_id`,
       )
       .all(eventType, ...(exactSubjects ?? [])) as Array<{
@@ -1642,6 +1679,7 @@ export class AppTaskResourceStore {
       const resource = this.readTask(taskId);
       const retryAt = resource && pendingTaskExecutionRetryAt(resource);
       if (retryAt) input = { ...input, ready: false, changed: false, nextCheckAt: retryAt };
+      if (resource && taskExecutionRetryExhausted(resource)) input = { ...input, ready: false, changed: false };
       const assignments: string[] = [];
       const assignmentValues: unknown[] = [];
       const changedPredicates: string[] = [];

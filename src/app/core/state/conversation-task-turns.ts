@@ -34,7 +34,12 @@ import {
   type CreateAppInboxItem,
   type AppTurnTarget,
 } from "./app-inbox-store.js";
-import { createConversationTopic, readConversationTopic, readConversationInputTopicId } from "./conversations.js";
+import {
+  createConversationTopic,
+  hasConversationInputTopicSelection,
+  readConversationTopic,
+  readConversationInputTopicId,
+} from "./conversations.js";
 import { admissionReportIdsSql, conversationTaskLinksSql, listConversationTaskLinks } from "./conversation-task-links.js";
 function stableTopicId(appId: string, conversationId: string, originMessageId: string): string {
   return `topic_${createHash("sha256").update([appId, conversationId, originMessageId].join("\0")).digest("hex").slice(0, 24)}`;
@@ -208,6 +213,7 @@ export function validateConversationTaskProposal(
   const requests = prepareConversationRequestUpdates(config.resourceStore.db, {
     actor: { appId: item.appId, taskId: claim.taskId },
     appId: item.appId, conversationId: item.conversationId!, topicId,
+    topicSelected: Boolean(decision.topic) || hasConversationInputTopicSelection(config.resourceStore.db, item),
     updates: decision.requestUpdates ?? [], updateKey: `attempt:${claim.attemptId}`, messageId: `result:${item.id}`,
   });
   for (const update of decision.requestUpdates ?? []) requestInputIds(config, items, update);
@@ -564,6 +570,7 @@ export function completeConversationTaskTurn(
       appId: item.appId,
       conversationId,
       topicId,
+      topicSelected: Boolean(decision.topic) || hasConversationInputTopicSelection(db, item),
       updates: decision.requestUpdates ?? [],
       updateKey: `attempt:${claim.attemptId}`,
       messageId: `result:${item.id}`,
