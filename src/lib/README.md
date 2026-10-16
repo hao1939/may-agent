@@ -48,9 +48,11 @@ allowance. Session/workflow artifacts remain evidence if a SQL projection fails.
 Observer facts need no consumer unless a declared route uses them. Their trusted
 record-only intent is saved with the Event and restored on keyed retry and journal
 recovery; it is not an App routing option or proof of delivery. Missing historical
-intent stays unclassified. Storage-only acceptance cannot erase a failed receipt
-or replace another consumer's acceptance. App admission acknowledges its own
-inspection independently, in the same transaction. See the observer-delivery,
+intent stays unclassified. A failed required route is recorded as a direct-delivery
+attempt, without acceptance; storage-only fallback cannot settle it or replace
+another consumer's acceptance. A timeout before any recorded required attempt can
+still settle as no-work when the saved observation is inspected. App admission
+acknowledges its own inspection independently, in the same transaction. See the observer-delivery,
 persisted-event and worker-boundary regressions for these failure paths.
 
 `session-subscribers.ts` contains the digest and last-session writers registered

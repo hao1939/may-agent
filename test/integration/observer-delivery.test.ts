@@ -20,7 +20,7 @@ async function until(predicate: () => boolean) {
   }
 }
 
-test.each(["live", "restart"] as const)("ordinary observer facts stay quiet through %s admission", async (mode) => {
+test.each(["live", "restart", "restart-after-expiry"] as const)("ordinary observer facts stay quiet through %s admission", async (mode) => {
   const root = mkdtempSync(join(tmpdir(), "may-observer-delivery-"));
   let runtime: AppInboxRuntime | undefined;
   let observers: ReturnType<typeof createAppObserverRuntime> | undefined;
@@ -48,7 +48,11 @@ test.each(["live", "restart"] as const)("ordinary observer facts stay quiet thro
     await until(() => entries.every(({ definition }) => observers!.health(definition.id).every((h) => h.lastCompletedAt)));
     expect(observers.health("second").find((h) => h.id === "broken")?.lastError).toBe("Source unavailable");
     observers.close();
-    if (mode === "restart") closeDb(root);
+    if (mode === "restart-after-expiry") {
+      writer.runHousekeeping(Date.now() + 120_001);
+      expect(getDb(root).prepare("SELECT COUNT(*) AS n FROM events WHERE delivery_status = 'unhandled'").get()?.n).toBe(3);
+    }
+    if (mode !== "live") closeDb(root);
 
     const db = getDb(root);
     const bus = new EventBus();

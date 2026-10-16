@@ -57,13 +57,17 @@ test("observation fallback cannot erase failed delivery or replace an independen
     });
     const failed = bus.emit({ type: "fixture.observed", source: "fixture", owner: "app:producer",
       data: {}, [EVENT_RECORD_ONLY]: true });
-    writer.runHousekeeping(Date.now() + 120_001);
     const db = getDb(root);
-    const receipt = () => db.prepare("SELECT delivery_status, delivery_note, accepted_by FROM events WHERE id = ?")
+    const receipt = () => db.prepare("SELECT delivery_status, delivery_route, delivery_note, accepted_by FROM events WHERE id = ?")
       .get(failed[EVENT_ROW_ID]!);
+    const pending = receipt();
+    expect(pending).toMatchObject({ delivery_status: "pending", delivery_route: "direct", accepted_by: null });
+    stop();
+    bus.redeliverPersisted(loadPersistedEvent(db, failed[EVENT_ROW_ID]!, root)!, failed[EVENT_ROW_ID]!);
+    expect(receipt()).toEqual(pending);
+    writer.runHousekeeping(Date.now() + 120_001);
     const terminal = receipt();
     expect(terminal?.delivery_status).toBe("unhandled");
-    stop();
     bus.redeliverPersisted(loadPersistedEvent(db, failed[EVENT_ROW_ID]!, root)!, failed[EVENT_ROW_ID]!);
     expect(receipt()).toEqual(terminal);
 

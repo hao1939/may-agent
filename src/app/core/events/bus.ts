@@ -1074,7 +1074,9 @@ type PersistenceSubscriber = (event: AgentEvent) => SubscriberResult | DeferredE
 export type SubscribeOptions = { priority?: "first" | "normal"; label?: string };
 export type EventListener = (event: AgentEvent) => void | Promise<void>;
 export type ListenOptions = { label?: string; types?: readonly string[] };
-export type DeliveryRecorder = (event: AgentEvent, result: DeliveryResult) => void;
+/** A failed required route is evidence, not an acceptance receipt. */
+export type DeliveryOutcome = DeliveryResult | { accepted: false; note: string };
+export type DeliveryRecorder = (event: AgentEvent, result: DeliveryOutcome) => void;
 
 type EventListenerState = {
   listener: EventListener;
@@ -1364,7 +1366,12 @@ export class EventBus {
           }
         }
       }
-      if (!durableRouteFailed) {
+      if (durableRouteFailed) {
+        this.deliveryRecorder?.(event, {
+          accepted: false,
+          note: "A required durable route failed; see linked subscriber.failed evidence",
+        });
+      } else {
         delivery ??= pairTrackerFallback(event);
         if (!delivery && (event as AgentEvent & { [EVENT_RECORD_ONLY]?: boolean })[EVENT_RECORD_ONLY]) {
           delivery = {

@@ -20,7 +20,7 @@ import {
   EVENT_TASK_EMISSION_FENCE,
   type EventTaskEmissionFence,
   type AgentEvent,
-  type DeliveryResult,
+  type DeliveryOutcome,
   type DeferredEventDelivery,
 } from "../app/core/events/bus.js";
 import { getDb } from "./db/connection.js";
@@ -642,13 +642,24 @@ export class DbWriter {
     }
   };
 
-  recordDelivery = (event: AgentEvent, result: DeliveryResult): void => {
+  recordDelivery = (event: AgentEvent, result: DeliveryOutcome): void => {
     const rowId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
     if (typeof rowId !== "number" || !Number.isFinite(rowId)) return;
     try {
-      withSqliteBusyRetry(`record delivery acceptance for event ${rowId}`, () => {
+      withSqliteBusyRetry(`record delivery outcome for event ${rowId}`, () => {
         const now = Date.now();
         stateTransaction(this.db, () => {
+          if (!result.accepted) {
+            // Record the failed required route without acknowledging App admission
+            // or replacing an independently accepted receipt. A later no-work
+            // inspection cannot stand in for this missing required acceptance.
+            this.db.run(
+              `UPDATE events SET delivery_route = 'direct', delivery_note = ?
+               WHERE id = ? AND delivery_status IN ('pending', 'unhandled')`,
+              [result.note, rowId],
+            );
+            return;
+          }
           this.db.run(
             `UPDATE events
              SET delivery_status = 'accepted',
@@ -656,8 +667,11 @@ export class DbWriter {
                  accepted_at = ?,
                  delivery_route = ?,
                  delivery_note = ?
-             WHERE id = ? AND (? != 'noop' OR delivery_status = 'pending'
-               OR (delivery_status = 'accepted' AND delivery_route = 'noop'))`,
+             WHERE id = ? AND (? != 'noop'
+               OR (delivery_status = 'pending' AND delivery_route IS NOT 'direct')
+               OR (delivery_status = 'accepted' AND delivery_route = 'noop')
+               OR (delivery_status = 'unhandled' AND delivery_route IS NULL
+                 AND record_only = 1))`,
             [
               result.by,
               now,
@@ -678,7 +692,7 @@ export class DbWriter {
     } catch (error) {
       log(
         "warn",
-        `[event-delivery] failed to record acceptance for event ${rowId}: ${error instanceof Error ? error.message : String(error)}`,
+        `[event-delivery] failed to record outcome for event ${rowId}: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   };
