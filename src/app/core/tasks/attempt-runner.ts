@@ -88,18 +88,25 @@ export async function runTaskAttempt(input: {
       appAgent: descriptor.agent,
       handler: "auto",
       reason: input.reason ?? "task-controller",
-      recoverPreviousSession: (attempt) => interruptSupersededAgentSession(
-        opts,
-        attempt.sessionId!,
-        `Task ${attempt.taskId} is recovering an orphaned agent session`,
-        attempt.taskId,
-        {
-          appId: descriptor.id,
-          taskId: attempt.taskId,
-          generation: attempt.taskGeneration,
-          attemptId: attempt.metadata.id,
-        },
-      ),
+      recoverPreviousSession: (attempt) => {
+        if (attempt.taskId !== input.taskId) {
+          throw new Error(
+            `Task ${input.taskId} retained attempt ${attempt.metadata.id} belongs to ${attempt.taskId}; refusing cross-Task recovery`,
+          );
+        }
+        return interruptSupersededAgentSession(
+          opts,
+          attempt.sessionId!,
+          `Task ${input.taskId} is recovering an orphaned agent session`,
+          input.taskId,
+          {
+            appId: descriptor.id,
+            taskId: input.taskId,
+            generation: attempt.taskGeneration,
+            attemptId: attempt.metadata.id,
+          },
+        );
+      },
       recoverSessionHandoff: (attempt) => opts.sessions?.handoff(attempt),
     });
     recordTaskCheck(opts.bus, claim.kind, { appId: descriptor.id, taskId: input.taskId });

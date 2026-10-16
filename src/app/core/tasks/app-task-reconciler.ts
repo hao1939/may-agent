@@ -501,6 +501,11 @@ function currentResourceAttempt(tree: TaskTree, resource: AppTaskResource): AppT
   const attemptId = resource.status.currentAttemptId;
   if (!attemptId) return null;
   const attempt = tree.attempts?.[attemptId];
+  if (attempt && attempt.taskId !== resource.metadata.id) {
+    throw new Error(
+      `Task ${resource.metadata.id} current attempt ${attemptId} belongs to ${attempt.taskId}; refusing cross-Task recovery`,
+    );
+  }
   return attempt?.state === "running" ? attempt : null;
 }
 
@@ -2766,7 +2771,7 @@ export function claimObservedAppTask(
     reason?: string;
     isAgentRunnable?: (agent: string) => boolean;
     /** Validate and drain the retained session before replacement ownership commits. */
-    recoverPreviousSession?: (attempt: AppTaskAttempt) => void;
+    recoverPreviousSession?: (attempt: AppTaskAttempt) => boolean;
     recoverSessionHandoff?: (attempt: AppTaskAttempt | undefined) => AppTaskClaim["handoff"];
   },
 ): AppTaskClaimResult {
@@ -2786,6 +2791,14 @@ export function claimObservedAppTask(
       taskId: input.taskId,
       generation: 0,
     };
+  }
+  const persistedCurrentAttempt = resource.status.currentAttemptId
+    ? config.resourceStore.readAttempt(resource.status.currentAttemptId)
+    : null;
+  if (persistedCurrentAttempt && persistedCurrentAttempt.taskId !== input.taskId) {
+    throw new Error(
+      `Task ${input.taskId} current attempt ${persistedCurrentAttempt.metadata.id} belongs to ${persistedCurrentAttempt.taskId}; refusing cross-Task recovery`,
+    );
   }
   if (!config.resourceStore.allowsTaskExecution(input.taskId)) {
     return { kind: "waiting", taskId: input.taskId, conditionIds: [] };
@@ -2828,33 +2841,6 @@ export function claimObservedAppTask(
     (input.isAgentRunnable && !input.isAgentRunnable(agent)
       ? `Resolved agent ${agent} is not a runnable agent`
       : undefined);
-  if (admissionError) {
-    const summary = admissionError;
-    if (resource.status.currentAttemptId) {
-      finishAttempt(tree, resource, "interrupted", summary, new Date().toISOString());
-    }
-    // Capability/admission failure does not withdraw the assignment. Recheck
-    // current state after backoff; an owner revision may repair it sooner.
-    const failures = (resource.status.admissionFailures ?? 0) + 1;
-    touchResource(resource, {
-      phase: "pending",
-      admissionFailures: failures,
-      executionRetryAt: Date.now() + taskAdmissionRetryDelay(failures),
-      freshHumanInput: undefined,
-      observedGeneration: resource.metadata.generation,
-      currentAttemptId: undefined,
-      summary,
-    });
-    commitTaskMutation(config, tree, {
-      resourceMutation: finishResourceMutationScope(mutationScope, tree),
-    });
-    return {
-      kind: "attention",
-      taskId: input.taskId,
-      generation: resource.metadata.generation,
-      summary,
-    };
-  }
   const latestAttempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
   const handler =
     input.handler === "auto"
@@ -2893,6 +2879,44 @@ export function claimObservedAppTask(
     previousAttempt.runtimeId !== reconcilerRuntimeId &&
     (input.reason === `attempt-recovery:${input.taskId}` || attemptTrigger(previousAttempt)),
   );
+  if (admissionError) {
+    const summary = admissionError;
+    if (previousAttempt) {
+      if (!canRecoverPreviousRuntime) {
+        return { kind: "busy", taskId: input.taskId, attemptId: previousAttempt.metadata.id };
+      }
+      if (previousAttempt.sessionId) {
+        if (!input.recoverPreviousSession)
+          throw new Error("Task session recovery is unavailable; retained session ownership cannot be replaced safely");
+        if (!input.recoverPreviousSession(structuredClone(previousAttempt)))
+          throw new Error("Task session recovery was not confirmed; retained session ownership cannot be replaced safely");
+      }
+      finishAttempt(tree, resource, "interrupted", summary, new Date().toISOString());
+      previousAttempt.failureReason = "previous-runtime-attempt-requeued";
+      changedAttempts.add(previousAttempt);
+    }
+    // Capability/admission failure does not withdraw the assignment. Recheck
+    // current state after backoff; an owner revision may repair it sooner.
+    const failures = (resource.status.admissionFailures ?? 0) + 1;
+    touchResource(resource, {
+      phase: "pending",
+      admissionFailures: failures,
+      executionRetryAt: Date.now() + taskAdmissionRetryDelay(failures),
+      freshHumanInput: undefined,
+      observedGeneration: resource.metadata.generation,
+      currentAttemptId: undefined,
+      summary,
+    });
+    commitTaskMutation(config, tree, {
+      resourceMutation: finishResourceMutationScope(mutationScope, tree),
+    });
+    return {
+      kind: "attention",
+      taskId: input.taskId,
+      generation: resource.metadata.generation,
+      summary,
+    };
+  }
   const pendingTrigger = tree.taskTriggers?.[input.taskId];
   const previousUnacceptedEvents =
     previousAttempt && previousAttempt.state !== "completed" && previousAttempt.failureReason !== "owner-stopped"
@@ -3011,7 +3035,8 @@ export function claimObservedAppTask(
     if (previousAttempt.sessionId) {
       if (!input.recoverPreviousSession)
         throw new Error("Task session recovery is unavailable; retained session ownership cannot be replaced safely");
-      input.recoverPreviousSession(structuredClone(previousAttempt));
+      if (!input.recoverPreviousSession(structuredClone(previousAttempt)))
+        throw new Error("Task session recovery was not confirmed; retained session ownership cannot be replaced safely");
     }
     finishAttempt(tree, resource, "interrupted", "Previous runtime attempt was superseded during recovery", now);
     previousAttempt.failureReason = "previous-runtime-attempt-requeued";
