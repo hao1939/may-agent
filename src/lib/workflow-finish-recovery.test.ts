@@ -156,6 +156,40 @@ describe("workflow finish recovery", () => {
     expect((messages.at(-1) as any).content[0].text).toContain("Captured finish recovery validation failed");
   });
 
+  it.each([false, true])("checks raw captured reports before coercion and keeps correction bounded (JSON arguments: %s)", async (serialized) => {
+    let executions = 0;
+    const schema = JSON.parse(JSON.stringify(Type.Object({
+      summary: Type.String(),
+      evidence: Type.Optional(Type.Array(Type.String())),
+    })));
+    const tool = createWorkflowFinishTool(finishTool(async () => {
+      executions++;
+      return { content: [{ type: "text", text: "Accepted" }] };
+    }), schema);
+    const invalid = {
+      status: "success", summary: "retained-report:" + "x".repeat(100_000),
+      result: { summary: 42, evidence: Array.from({ length: 100 }, () => false) },
+    };
+    const messages = [abortedFinish(serialized ? JSON.stringify(invalid) : invalid)];
+    const original = structuredClone(messages[0]);
+    const options = { sessionId: "captured-types", messages, tools: [tool], reason: RESPONSES_STREAM_TERMINAL_ERROR };
+    const rejected = await recoverCapturedWorkflowFinish(options);
+    expect(rejected.disposition).toBe("rejected");
+    expect(executions).toBe(0);
+    expect(rejected.error).toContain("/result/summary: must be string");
+    expect(rejected.error!.length).toBeLessThan(4000);
+    expect(rejected.error).not.toContain("retained-report");
+    expect(messages[0]).toEqual(original);
+    expect(messages.at(-1)).toMatchObject({ toolCallId: "finish-captured", isError: true });
+    expect((await recoverCapturedWorkflowFinish(options)).disposition).toBe("already-committed");
+
+    messages.push(abortedFinish({
+      status: "success", summary: "Corrected report", result: { summary: "Evidence unavailable" },
+    }, "finish-corrected"));
+    expect((await recoverCapturedWorkflowFinish(options)).disposition).toBe("recovered");
+    expect(executions).toBe(1);
+  });
+
   it("preserves semantic rejection from the normal finish execute path", async () => {
     const messages = [
       abortedFinish({

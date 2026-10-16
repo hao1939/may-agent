@@ -154,7 +154,9 @@ test("direct execution interrupts work, rejects further effects, and admits a co
     ),
   ).toHaveLength(1);
   expect(JSON.stringify(contexts[2])).toContain("Execution work allowance ended");
-  expect(JSON.stringify(contexts[3].messages)).toContain("Validation failed for tool");
+  const rejection = contexts[3].messages.find((message) => message.role === "toolResult" && message.toolCallId === "invalid");
+  expect(rejection).toMatchObject({ isError: true });
+  expect(JSON.stringify(rejection)).toContain("/result/continue");
 });
 
 test("a stalled finalization still reaches the original hard stop without an invented result", async () => {
