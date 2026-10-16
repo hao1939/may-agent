@@ -114,11 +114,14 @@ read them separately when required for a delivery decision.
 
 The fingerprint excludes fetch time. Live facts include the same `resource` and
 source as direct observation, so either path can satisfy a new-style Condition.
-Live publication uses the event journal's idempotency key, including recipient,
-Task generation, Condition specification, provider revision and fingerprint.
-Payload version `github-pr:v2` adds resource correlation without reusing an old
-key for different bytes. A rollout can cause one fresh consideration. It is not
-a guarantee of exactly-once judgment. Fetch time remains diagnostic metadata.
+Live publication follows meaningful provider and owner changes; adding or
+rearming resource demand is served by the dedicated Condition check and does not
+reset live suppression. The event journal idempotency key includes recipient,
+Task generation, provider revision and fingerprint. Payload version
+`github-pr:v2` adds resource correlation without reusing an old key for different
+bytes. Existing wait-scoped snapshots remain readable and can cause one bounded
+migration consideration before the stable live key is retained. This is not a
+guarantee of exactly-once judgment. Fetch time remains diagnostic metadata.
 
 The live pass shares eleven HTTP requests across discovery, PR reads and at most
 four review pages per PR. Its 64-candidate capacity reserves 32 places for

@@ -291,6 +291,26 @@ describe("May GitHub pull-request resource ownership", () => {
       },
     ]);
   });
+
+  test("migrates a legacy wait-scoped snapshot with at most one duplicate", async () => {
+    const tasks = new Map([["goal/linked-pr", task("goal/linked-pr")]]);
+    const fetcher = provider(new Map([[215, pullPayload(215)]]));
+    const first = await observe(context(tasks), fetcher);
+    const snapshot = structuredClone(first.nextObservation) as {
+      states: Record<string, unknown>;
+    };
+    const [state] = Object.values(snapshot.states);
+    snapshot.states = { "legacy-wait-scoped-key": state };
+
+    const migrated = await observe(context(tasks, snapshot), fetcher);
+    expect(migrated.events).toHaveLength(1);
+    const quiet = await observe(
+      context(tasks, migrated.nextObservation),
+      fetcher,
+    );
+    expect(quiet.events).toHaveLength(0);
+  });
+
   test("parses one exact visible metadata block and rejects ambiguity", () => {
     expect(parseMayTaskOwner(ownerBody())).toEqual({
       appId: "may",
