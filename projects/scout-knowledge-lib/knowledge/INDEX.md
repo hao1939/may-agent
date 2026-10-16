@@ -1284,3 +1284,7 @@ Known consolidation clusters:
 ## Historical provenance checks: cycles 414–419
 
 The [reconstruction audit](../reports/review/scout-provenance-reconstruction-cycle414-2026-09-05.md) and [retrieval audit](../reports/review/scout-provenance-retrieval-cycle415-2026-09-05.md) retain their frozen fixtures and executable checks in the sibling App's `scripts/` directory. The [prompt-overlap audit](../reports/review/scout-provenance-prompt-overlap-cycle419-2026-09-05.md) limits their interpretation: producer-authored prompts are tuning controls, not independent retrieval evidence. These historical results do not change the current review cursor or authorize a production rollout.
+
+## Recent GUI-agent verification findings
+
+- [GlassPane: GUI-agent verification needs an effect record, not another screenshot](findings/2026-10-16-glasspane-macos-gui-verification.md) — A pinned implementation combines accessibility state, local pixel deltas, and contamination-aware attribution, but Scout did not execute its macOS runtime or tests.
