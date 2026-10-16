@@ -299,6 +299,37 @@ describe("Telegram refresh lifecycle", () => {
     }
   });
 
+  it("resends an already-shown presentation after a stalled send becomes stale", async () => {
+    const f = fixture();
+    try {
+      f.tasks.get("first")!.summary = "Presentation A";
+      await f.command("/watch first");
+      expect(f.sent.filter((send) => send.text.includes("Presentation A"))).toHaveLength(1);
+
+      f.tasks.get("first")!.summary = "Presentation B";
+      const held = f.hold((send) => !send.reply_parameters && send.text.includes("Presentation B"));
+      f.wake("first");
+      await waitFor(() => held.started);
+
+      // Return to the cached presentation while B is in flight. The stale B
+      // acknowledgement must invalidate A's cache so the refresh restores A.
+      f.tasks.get("first")!.summary = "Presentation A";
+      f.wake("first");
+      held.release();
+
+      await waitFor(() => f.sent.filter((send) => send.text.includes("Presentation A")).length === 2);
+      const watchRecords = f.published.filter(
+        (event) =>
+          event.type === "conversation.message.created" &&
+          (event.data?.metadata as { command?: string } | undefined)?.command === "/watch update",
+      );
+      expect(watchRecords.map((event) => event.data?.text)).toEqual([expect.stringContaining("Presentation A")]);
+      expect(watchRecords.some((event) => String(event.data?.text).includes("Presentation B"))).toBe(false);
+    } finally {
+      await f.close();
+    }
+  });
+
   it("does not run a dirty watch refresh after close", async () => {
     const f = fixture();
     try {

@@ -1037,6 +1037,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     if (!delivered || !running || watchedTasks.get(surface) !== watched) return;
     const currentTask = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
     if (!currentTask || taskPresentationRevision(currentTask) !== revision) {
+      // The replacement may return to a presentation shown before this send.
+      // Invalidate that cache so the queued refresh still restores the latest
+      // canonical state after this stale message reached Telegram.
+      shownWatchRevisions.delete(surface);
       watchRefresh.queue(surface);
       return;
     }
