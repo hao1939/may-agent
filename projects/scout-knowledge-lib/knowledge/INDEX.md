@@ -1301,3 +1301,7 @@ The [reconstruction audit](../reports/review/scout-provenance-reconstruction-cyc
 ## Recent GUI-agent verification findings
 
 - [GlassPane: GUI-agent verification needs an effect record, not another screenshot](findings/2026-10-16-glasspane-macos-gui-verification.md) — A pinned implementation combines accessibility state, local pixel deltas, and contamination-aware attribution, but Scout did not execute its macOS runtime or tests.
+
+## Recent agent-credential findings
+
+- [Heldkeys: credential inventory should run from the agent's authority context](findings/2026-10-16-heldkeys-agent-credential-inventory.md) — Pinned documentation maps credentials, helper paths, sockets, mounts, and CI authority visible to an agent process, but Scout did not run the scanner or tests and the inventory is neither enforcement nor proof of complete coverage.
