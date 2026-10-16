@@ -9,7 +9,7 @@ import { join } from "node:path";
 import { log } from "../../../lib/log.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import type { EventEnvelope } from "../events/bus.js";
-import { childEventTrace, type AgentEvent, type EventBus } from "../events/bus.js";
+import { childEventTrace, EVENT_RECORD_ONLY, type AgentEvent, type EventBus } from "../events/bus.js";
 import { completeConversationTaskTurn, isConversationTask } from "../state/conversation-task-turns.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace, type AppTaskExecutionPaths } from "./app-task-output-paths.js";
 import {
@@ -827,6 +827,9 @@ function emitTaskReconciliationEvent(
         }
       : childEventTrace(event);
   opts.bus.emit({
+    // The attempt already owns this work. These Events report its decisions;
+    // any declared durable consumer still owns its independent delivery.
+    [EVENT_RECORD_ONLY]: true,
     type,
     source: `app-task:${descriptor.id}:task-reconciler`,
     owner: `agent:${descriptor.agent}`,

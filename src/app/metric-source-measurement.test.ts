@@ -320,7 +320,7 @@ describe("source-query metric measurement", () => {
     });
   });
 
-  it("excludes declared Host lifecycle observations but counts unconsumed actionable signals", () => {
+  it("counts unhandled reconciliation delivery while retaining other legacy exemptions", () => {
     const db = getDb(persistDir);
     const insert = db.prepare(
       `INSERT INTO events
@@ -330,9 +330,12 @@ describe("source-query metric measurement", () => {
     for (const type of INTENTIONAL_OBSERVATION_EVENT_TYPES) insert.run(type, Date.now());
     insert.run("message.created", Date.now());
     insert.run("session.recovery.requested", Date.now());
-    insert.run("project.task.reconciled", Date.now() - 3_600_001);
+    insert.run("project.task.reconcile.started", Date.now());
+    insert.run("project.task.reconciled", Date.now());
+    // SQLite's window clock is rounded to seconds.
+    insert.run("project.task.reconciled", Date.now() - 3_610_000);
 
-    expect(db.prepare(UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY).get()).toEqual({ value: 2 });
+    expect(db.prepare(UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY).get()).toEqual({ value: 4 });
   });
 
   it("records optional observations as accepted facts while preserving real subscriber acceptance", () => {
