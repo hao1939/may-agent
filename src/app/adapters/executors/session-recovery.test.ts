@@ -20,9 +20,15 @@ afterEach(() => {
   }
 });
 
-it.each(["success", "failure", "blocked", "partial"])(
-  "retains structured session facts with finish status %s exactly once",
-  (finishStatus) => {
+it.each([
+  { finishStatus: "success", hasSummary: true },
+  { finishStatus: "failure", hasSummary: true },
+  { finishStatus: "blocked", hasSummary: true },
+  { finishStatus: "partial", hasSummary: true },
+  { finishStatus: "success", hasSummary: false },
+])(
+  "retains structured session facts exactly once ($finishStatus, summary: $hasSummary)",
+  ({ finishStatus, hasSummary }) => {
     const root = mkdtempSync(join(tmpdir(), "may-recovered-judgment-"));
     roots.push(root);
     const sessionId = "judge-session";
@@ -44,7 +50,7 @@ it.each(["success", "failure", "blocked", "partial"])(
           name: "finish",
           arguments: {
             status: finishStatus,
-            summary: judgment.summary,
+            ...(hasSummary ? { summary: judgment.summary } : {}),
             result: judgment,
           },
         },
@@ -70,7 +76,13 @@ it.each(["success", "failure", "blocked", "partial"])(
       JSON.parse(readFileSync(join(root, "sessions", sessionId, "result.json"), "utf8")).finishParams.result,
     ).toEqual(judgment);
     expect(events.filter((event) => event.type === "session.end")).toMatchObject([
-      { data: { status: "done", finishParams: { status: finishStatus, result: judgment } } },
+      { data: {
+        status: "done",
+        finishParams: { status: finishStatus, result: judgment },
+        summary: hasSummary
+          ? judgment.summary
+          : "Runtime recovery restored a committed finish result. Consult the Task's current state for acceptance.",
+      } },
     ]);
 
     closeDb(root);

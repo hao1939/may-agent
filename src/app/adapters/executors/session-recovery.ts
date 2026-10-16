@@ -240,7 +240,9 @@ function interruptSupersededAgentSession(
       ? "error"
       : "done"
     : "interrupted";
-  const recoveredSummary = persistedFinish?.summary ?? interruptedRecovery.summary;
+  const recoveredSummary = persistedFinish
+    ? persistedFinish.summary ?? "Runtime recovery restored a committed finish result. Consult the Task's current state for acceptance."
+    : interruptedRecovery.summary;
   const endedAt = Date.now();
   const resultArtifact = writeSessionResult(opts.persistDir!, cleanSessionId, {
     status: recoveredStatus,
