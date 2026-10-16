@@ -609,16 +609,38 @@ export class AppTaskResourceStore {
     return row?.attempt_json ? parseTaskAttempt(row.attempt_json) : null;
   }
 
-  /** Recovery must not depend on the bounded attempt history loaded for a prompt. */
-  readLatestUnsuccessfulTaskAttempt(taskId: string): AppTaskAttempt | null {
-    const row = this.db.prepare(`
+  /** Upgrade the old mixed counter once, outside the prompt's bounded history. */
+  readLegacyExecutionFailureSequence(taskId: string, maximum: number): {
+    executionFailures?: number; executionFailureAttemptId: string | null;
+  } {
+    if (maximum <= 0) return { executionFailureAttemptId: null };
+    const retry = this.db.prepare(`
+      SELECT json_extract(receipt_json, '$.result.previousAttemptId') AS attempt_id
+      FROM app_task_control_receipts WHERE app_id = ? AND task_id = ? AND action = 'retry'
+      ORDER BY applied_resource_version DESC LIMIT 1
+    `).get(this.appId, taskId) as { attempt_id: string | null } | null;
+    // Claims append rows; settlement updates them in place. Use that retained
+    // insertion order only for legacy adoption, never wall-clock order. New
+    // sequences retain their exact reference directly on the Task.
+    const rows = this.db.prepare(`
       SELECT attempt_json FROM app_task_attempts
-      WHERE app_id = ? AND task_id = ? AND (
-        state = 'failed' OR (state = 'completed' AND json_extract(attempt_json, '$.acceptedResult.state') IN ('incomplete', 'stopped'))
-      )
-      ORDER BY started_at DESC, attempt_id DESC LIMIT 1
-    `).get(this.appId, taskId) as { attempt_json: string } | null;
-    return row ? parseTaskAttempt(row.attempt_json) : null;
+      WHERE app_id = ? AND task_id = ? AND
+        (state IN ('failed', 'completed') OR json_extract(attempt_json, '$.failureReason') = 'owner-stopped')
+      ORDER BY rowid DESC LIMIT ?
+    `).all(this.appId, taskId, maximum) as { attempt_json: string }[];
+    let failures = 0;
+    let attemptId: string | null = null;
+    for (const row of rows) {
+      const attempt = parseTaskAttempt(row.attempt_json);
+      if (attempt.metadata.id === retry?.attempt_id ||
+        !(attempt.state === "failed" || (attempt.state === "completed" && attempt.acceptedResult?.state === "incomplete")))
+        break;
+      failures++;
+      attemptId ??= attempt.metadata.id;
+    }
+    // The old counter is an upper bound, including any explicit reset to zero.
+    // Admission-only increments cannot manufacture failed execution evidence.
+    return { executionFailures: failures || undefined, executionFailureAttemptId: attemptId };
   }
 
   /** Workspace ownership survives bounded context, non-workspace attempts and clock changes. */

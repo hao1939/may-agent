@@ -85,6 +85,8 @@ export type AppTaskResource = {
     workspaceAttemptId?: string;
     /** Consecutive unsuccessful attempts; accepted incomplete results still count. */
     executionFailures?: number;
+    /** Exact last failure in this sequence; null records an empty/reset sequence, absent means legacy. */
+    executionFailureAttemptId?: string | null;
     /** Cheap pre-claim checks have their own backoff and do not spend an attempt. */
     admissionFailures?: number;
     /** Stops automatic execution, independently of unfinished input and Conditions. */

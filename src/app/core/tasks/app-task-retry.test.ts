@@ -64,6 +64,122 @@ function fixture(maxConsecutiveFailures?: number | "unlimited") {
   };
 }
 
+function retainLegacyFailureCounter(f: ReturnType<typeof fixture>, count: number) {
+  f.config.resourceStore.db.prepare(`UPDATE app_tasks SET resource_json = json_set(
+    json_remove(resource_json, '$.status.executionFailureAttemptId', '$.status.admissionFailures'),
+    '$.status.executionFailures', ?) WHERE app_id = 'sample' AND task_id = 'work'`).run(count);
+  f.reopen();
+}
+
+function rejectAdmission(f: ReturnType<typeof fixture>, times: number) {
+  for (let index = 0; index < times; index++) {
+    expect(claimObservedAppTask(f.config, {
+      taskId: "work", appAgent: "owner", handler: "agent", isAgentRunnable: () => false,
+    })).toMatchObject({ kind: "attention", summary: "Resolved agent owner is not a runnable agent" });
+    setSystemTime(f.config.resourceStore.readTask("work")!.status.executionRetryAt!);
+  }
+}
+
+function runWithoutExecution(f: ReturnType<typeof fixture>) {
+  const root = f.config.appDir;
+  return runTaskAttempt({
+    taskId: "work",
+    descriptor: { id: "sample", appDir: root, projectDir: root, agent: "owner", reconciliationPaused: false,
+      resourceStore: f.config.resourceStore,
+      app: defineApp({ id: "sample", version: 1, agent: "owner", inputSchema: Type.Object({}),
+        tasks: { maxConsecutiveFailures: f.config.maxConsecutiveFailures } }) },
+    opts: { projectsRoot: root, projectRoot: root, persistDir: root, bus: new EventBus(), hostCapacity: new HostCapacity(1) },
+    dispatch: { enqueuedAt: Date.now(), startedAt: Date.now(), readyWaitMs: 0, lane: "normal" },
+    reportTiming: () => { throw new Error("Recovery must not start another attempt"); },
+  });
+}
+
+it.each([false, true])("exhausts the current caller after success and clock rollback (legacy=%s)", (legacy) => {
+  setSystemTime(new Date("2026-10-15T00:00:00Z"));
+  const f = fixture("unlimited");
+  const old = f.claim();
+  failAppTaskAttempt(f.config, old, "Old failure");
+  setSystemTime(f.config.resourceStore.nextDueAt()!);
+  const success = f.claim();
+  completeAppTask(f.config, success, { summary: "First ask answered", result: { value: 17 } });
+  setSystemTime(new Date("2026-10-14T00:00:00Z"));
+  admitTaskInput(f.config, { appId: "sample", attachment: { kind: "existing", taskId: "work" },
+    idempotencyKey: "ask:new", inputContext: { id: "new", source: { kind: "app", id: "second-caller" },
+      input: { kind: "measure", data: { sample: "two" } } } });
+  let last;
+  for (let index = 0; index < 3; index++) {
+    last = f.claim();
+    failAppTaskAttempt(f.config, last, "Current failure");
+    setSystemTime(f.config.resourceStore.nextDueAt()!);
+  }
+  if (legacy) retainLegacyFailureCounter(f, 3);
+  else f.reopen();
+  f.config.maxConsecutiveFailures = 2;
+  expect(() => f.claim()).toThrow("attention");
+  expect(f.config.resourceStore.readTask("work")!.status).toMatchObject({
+    executionFailures: 3, executionFailureAttemptId: last!.attemptId,
+    retryExhausted: { attemptId: last!.attemptId, failures: 3, limit: 2 },
+  });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:new", "failure"))
+    .toMatchObject({ attemptId: last!.attemptId });
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:new", "failure")!.summary).toContain("Automatic retries exhausted");
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")?.attemptId).toBe(success.attemptId);
+  expect(f.config.resourceStore.readAttempt(old.attemptId)?.retryExhausted).toBeUndefined();
+});
+
+it.each([false, true])("does not charge legacy admission checks as failed attempts (older successful episode=%s)", (oldEpisode) => {
+  const f = fixture();
+  if (oldEpisode) {
+    failAppTaskAttempt(f.config, f.claim(), "Old failure");
+    setSystemTime(f.config.resourceStore.nextDueAt()!);
+    deferAppTask(f.config, f.claim(), { disposition: "waiting", continue: true, summary: "Useful progress accepted", facts: [] });
+  }
+  rejectAdmission(f, 3);
+  retainLegacyFailureCounter(f, 3);
+  const first = f.claim();
+  expect(f.config.resourceStore.readTask("work")!.status.executionFailures).toBeUndefined();
+  expect(failAppTaskAttempt(f.config, first, "First real failure").status).toBe("retrying");
+  expect(f.config.resourceStore.readTask("work")!.status).toMatchObject({
+    executionFailures: 1, executionFailureAttemptId: first.attemptId,
+  });
+  for (let failures = 2; failures <= 3; failures++) {
+    setSystemTime(f.config.resourceStore.nextDueAt()!);
+    expect(failAppTaskAttempt(f.config, f.claim(), "Still failing").status).toBe(failures === 3 ? "exhausted" : "retrying");
+  }
+});
+
+it("preserves real legacy failures while subtracting admission checks", () => {
+  const f = fixture("unlimited");
+  for (let index = 0; index < 2; index++) {
+    failAppTaskAttempt(f.config, f.claim(), "Real failure");
+    setSystemTime(f.config.resourceStore.nextDueAt()!);
+  }
+  rejectAdmission(f, 3);
+  retainLegacyFailureCounter(f, 5);
+  f.config.maxConsecutiveFailures = undefined;
+  const third = f.claim();
+  expect(f.config.resourceStore.readTask("work")!.status.executionFailures).toBe(2);
+  expect(failAppTaskAttempt(f.config, third, "Third real failure").status).toBe("exhausted");
+  expect(f.config.resourceStore.readTask("work")!.status.retryExhausted?.failures).toBe(3);
+});
+
+it.each([false, true])("preserves a legacy explicit reset (later admission checks=%s)", (admissionChecks) => {
+  const f = fixture("unlimited");
+  for (let index = 0; index < 3; index++) {
+    failAppTaskAttempt(f.config, f.claim(), "Real failure");
+    setSystemTime(f.config.resourceStore.nextDueAt()!);
+  }
+  const task = f.config.resourceStore.readTask("work")!;
+  retryFailedAppTask(f.config, { appId: "sample", taskId: "work", expectedGeneration: task.metadata.generation,
+    expectedResourceVersion: task.metadata.resourceVersion, ...(admissionChecks ? { controlKey: "reviewed-reset" } : {}) });
+  if (admissionChecks) rejectAdmission(f, 3);
+  retainLegacyFailureCounter(f, admissionChecks ? 3 : 0);
+  f.config.maxConsecutiveFailures = undefined;
+  const first = f.claim();
+  expect(failAppTaskAttempt(f.config, first, "First failure after reset").status).toBe("retrying");
+  expect(f.config.resourceStore.readTask("work")!.status.executionFailures).toBe(1);
+});
+
 it("reads legacy progress independently and retains it when the first failure is selected", () => {
   const f = fixture();
   const progress = f.claim();
@@ -912,6 +1028,78 @@ it("records exhaustion before a fresh human claim without spending its recovery 
     .toMatchObject({ executionFailures: 1, retryExhausted: { attemptId: failed.attemptId, limit: 1 } });
   expect(failAppTaskAttempt(f.config, recovery, "Still unavailable").status).toBe("exhausted");
   expect(() => f.claim()).toThrow("attention");
+});
+
+it.each(["agent", "workflow:repair", "executor:script"])(
+  "recovers a dead %s worker without a session while preserving exhaustion", async (handler) => {
+    const f = fixture(1);
+    const failed = f.claim();
+    failAppTaskAttempt(f.config, failed, "Source unavailable");
+    admitHuman(f);
+    const claim = f.claim(handler);
+    const active = f.config.resourceStore.readAttempt(claim.attemptId)!;
+    const run = () => runWithoutExecution(f);
+    setSystemTime(Date.parse(active.lease!.expiresAt) + 1);
+    expect(await run()).toEqual([]); // This runtime still owns the attempt.
+    active.runtimeId = "dead-worker";
+    active.lease!.runtimeId = "dead-worker";
+    f.config.resourceStore.commit({
+      fences: [{ taskId: "work", resourceVersion: f.config.resourceStore.readTask("work")!.metadata.resourceVersion }],
+      attempts: [active],
+    });
+    f.reopen();
+    setSystemTime(Date.parse(active.lease!.expiresAt) - 1);
+    expect(await run()).toEqual([]); // A different runtime cannot steal a fresh lease.
+    expect(f.config.resourceStore.readTask("work")!.status.currentAttemptId).toBe(claim.attemptId);
+    setSystemTime(Date.parse(active.lease!.expiresAt) + 1);
+    expect(await run()).toContain("work");
+    const task = f.config.resourceStore.readTask("work")!;
+    expect(task.status).toMatchObject({ phase: "attention", executionFailures: 1, retryExhausted: { attemptId: failed.attemptId } });
+    expect(task.status.currentAttemptId).toBeUndefined();
+    expect(f.config.resourceStore.readAttempt(claim.attemptId)).toMatchObject({
+      state: "interrupted", failureReason: "previous-runtime-attempt-requeued",
+    });
+    expect(f.config.resourceStore.readAttempt(claim.attemptId)?.summary).toContain("automatic retries remain exhausted");
+    expect(f.config.resourceStore.readTrigger("work")!.events!.some(({ event }) => event.idempotencyKey === "human:correction")).toBe(true);
+    expect(await run()).toEqual([]);
+    expect(() => f.claim()).toThrow("attention");
+    retryFailedAppTask(f.config, { appId: "sample", taskId: "work", expectedGeneration: task.metadata.generation,
+      expectedResourceVersion: task.metadata.resourceVersion });
+    expect(f.claim().taskId).toBe("work");
+  },
+);
+
+it("leaves a concurrently attached session to the existing session recovery checks", async () => {
+  const f = fixture(1);
+  failAppTaskAttempt(f.config, f.claim(), "Source unavailable");
+  admitHuman(f);
+  const claim = f.claim();
+  const active = f.config.resourceStore.readAttempt(claim.attemptId)!;
+  active.runtimeId = "previous-worker";
+  active.lease!.runtimeId = "previous-worker";
+  f.config.resourceStore.commit({
+    fences: [{ taskId: "work", resourceVersion: f.config.resourceStore.readTask("work")!.metadata.resourceVersion }],
+    attempts: [active],
+  });
+  setSystemTime(Date.parse(active.lease!.expiresAt) + 1);
+  const read = f.config.resourceStore.readAttempt.bind(f.config.resourceStore);
+  const attach = spyOn(f.config.resourceStore, "readAttempt").mockImplementationOnce((id) => {
+    const before = read(id);
+    active.metadata.resourceVersion++;
+    active.sessionId = active.lease!.sessionId = "concurrent-session";
+    f.config.resourceStore.commit({
+      fences: [{ taskId: "work", resourceVersion: f.config.resourceStore.readTask("work")!.metadata.resourceVersion }],
+      attempts: [active],
+    });
+    return before;
+  });
+  try {
+    expect(await runWithoutExecution(f)).toEqual([]);
+  } finally {
+    attach.mockRestore();
+  }
+  expect(f.config.resourceStore.readTask("work")!.status.currentAttemptId).toBe(claim.attemptId);
+  expect(read(claim.attemptId)).toMatchObject({ state: "running", sessionId: "concurrent-session" });
 });
 
 it("recovers an expired terminal session from a running human-authorized claim without renewing exhaustion", async () => {

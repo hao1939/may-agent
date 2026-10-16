@@ -578,6 +578,7 @@ function finishAttempt(
     if (state === "completed") {
       if (attempt.acceptedResult) delete attempt.unacceptedResult;
       resource.status.executionFailures = undefined;
+      resource.status.executionFailureAttemptId = null;
       resource.status.executionRetryAt = undefined;
       resource.status.retryExhausted = undefined;
     }
@@ -1079,7 +1080,9 @@ export function releaseInterruptedAppTaskAttempt(
     return { released: false, sessionIds: [] };
   const mutationScope = beginResourceMutationScopeForTasks(tree, [taskId]);
   const now = new Date().toISOString();
-  const recoveredSummary = `${summary}; retrying from current task facts`;
+  const recoveredSummary = `${summary}; ${taskExecutionRetryExhausted(resource)
+    ? "automatic retries remain exhausted; owner repair or explicit retry required"
+    : "retrying from current task facts"}`;
   const sessionIds = attempt.sessionId ? [attempt.sessionId] : [];
   restoreAttemptEvents(tree, taskId, resource, attempt, now);
   finishAttempt(tree, resource, "interrupted", recoveredSummary, now);
@@ -1499,6 +1502,7 @@ export function observeAppTaskIntent(
       } : {
         observedGeneration: 0,
         phase: "pending",
+        executionFailureAttemptId: null,
         ...(requestedLane === "human" ? { lane: "human" as const } : {}),
         updatedAt: now,
       },
@@ -2202,6 +2206,7 @@ export function retryFailedAppTask(
   touchResource(resource, {
     phase: "pending",
     executionFailures: undefined,
+    executionFailureAttemptId: null,
     executionRetryAt: undefined,
     retryExhausted: undefined,
     observedGeneration: Math.max(0, resource.metadata.generation - 1),
@@ -2321,6 +2326,7 @@ export function reopenAppTask(
     resource.metadata.reopenedAfterEventId = eventRow.id ?? 0;
     resource.status = {
       phase: "pending",
+      executionFailureAttemptId: null,
       observedGeneration: input.expectedGeneration,
       lane: "human",
       summary: `Reopened at the user's request: ${input.reason.trim()}`,
@@ -2508,6 +2514,22 @@ function closeTask(
   });
 }
 
+function executionFailureSequence(config: AppTaskContext, resource: AppTaskResource):
+  Pick<AppTaskResource["status"], "executionFailures" | "executionFailureAttemptId"> {
+  if (resource.status.executionFailureAttemptId !== undefined) return {
+    executionFailures: resource.status.executionFailures,
+    executionFailureAttemptId: resource.status.executionFailureAttemptId,
+  };
+  // A retained exhaustion marker already names the exact episode and survives upgrade.
+  if (resource.status.retryExhausted) return {
+    executionFailures: resource.status.retryExhausted.failures,
+    executionFailureAttemptId: resource.status.retryExhausted.attemptId,
+  };
+  return config.resourceStore.readLegacyExecutionFailureSequence(
+    resource.metadata.id, resource.status.executionFailures ?? 0,
+  );
+}
+
 /** One failed execution spends one allowance; transport retries and checks do not. */
 function failedExecutionState(
   config: AppTaskContext,
@@ -2516,7 +2538,7 @@ function failedExecutionState(
   now: string,
 ): Partial<AppTaskResource["status"]> {
   // Spec changes are not evidence that the failed operation recovered.
-  const failures = (resource.status.executionFailures ?? 0) + 1;
+  const failures = (executionFailureSequence(config, resource).executionFailures ?? 0) + 1;
   const limit = resource.status.retryExhausted?.limit ?? config.maxConsecutiveFailures ?? DEFAULT_MAX_CONSECUTIVE_FAILURES;
   const exhausted = limit !== "unlimited" && failures >= limit;
   if (exhausted) attempt.retryExhausted = {
@@ -2526,6 +2548,7 @@ function failedExecutionState(
   return {
     phase: exhausted ? "attention" : "pending",
     executionFailures: failures,
+    executionFailureAttemptId: attempt.metadata.id,
     retryExhausted: attempt.retryExhausted,
     executionRetryAt: exhausted || resource.status.freshHumanInput
       ? undefined : Date.parse(now) + taskExecutionRetryDelay(failures),
@@ -2533,13 +2556,24 @@ function failedExecutionState(
 }
 
 /** Adopt a lowered/default allowance before another execution, without charging a new failure. */
-function exhaustRetainedFailures(config: AppTaskContext, tree: TaskTree, resource: AppTaskResource): void {
-  const failures = resource.status.executionFailures ?? 0;
+function exhaustRetainedFailures(config: AppTaskContext, tree: TaskTree, resource: AppTaskResource): boolean {
+  const normalized = executionFailureSequence(config, resource);
+  const failures = normalized.executionFailures ?? 0;
   const limit = config.maxConsecutiveFailures ?? DEFAULT_MAX_CONSECUTIVE_FAILURES;
-  if (resource.status.retryExhausted || resource.status.currentAttemptId || limit === "unlimited" || failures < limit) return;
-  const attempt = config.resourceStore.readLatestUnsuccessfulTaskAttempt(resource.metadata.id);
-  // Older admission-only counters do not establish an unsuccessful execution.
-  if (!attempt) return;
+  if (resource.status.retryExhausted || resource.status.currentAttemptId || limit === "unlimited" || failures < limit) {
+    if (resource.status.executionFailureAttemptId === undefined) {
+      const scope = beginResourceMutationScopeForTasks(tree, [resource.metadata.id]);
+      touchResource(resource, normalized);
+      commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(scope, tree) });
+      return true;
+    }
+    return false;
+  }
+  const attempt = normalized.executionFailureAttemptId
+    ? config.resourceStore.readAttempt(normalized.executionFailureAttemptId) : null;
+  if (!attempt || attempt.taskId !== resource.metadata.id ||
+    !(attempt.state === "failed" || (attempt.state === "completed" && attempt.acceptedResult?.state === "incomplete")))
+    throw new Error(`Task ${resource.metadata.id} has an invalid execution failure reference`);
   tree.attempts ??= {};
   tree.attempts[attempt.metadata.id] = attempt;
   const scope = beginResourceMutationScopeForTasks(tree, [resource.metadata.id]);
@@ -2552,6 +2586,7 @@ function exhaustRetainedFailures(config: AppTaskContext, tree: TaskTree, resourc
     taskId: resource.metadata.id, attemptId: attempt.metadata.id, generation: attempt.taskGeneration,
   }, { report: true }, "failure").writes;
   touchResource(resource, {
+    ...normalized,
     phase: "attention",
     retryExhausted: attempt.retryExhausted,
     executionRetryAt: undefined,
@@ -2560,6 +2595,7 @@ function exhaustRetainedFailures(config: AppTaskContext, tree: TaskTree, resourc
   commitTaskMutation(config, tree, {
     resourceMutation: { ...finishResourceMutationScope(scope, tree), admissions },
   });
+  return true;
 }
 
 /** Retain an honest failure report and the unfinished assignment for a later attempt. */
@@ -2747,7 +2783,9 @@ export function claimObservedAppTask(
   if (!config.resourceStore.allowsTaskExecution(input.taskId)) {
     return { kind: "waiting", taskId: input.taskId, conditionIds: [] };
   }
-  exhaustRetainedFailures(config, tree, resource);
+  // Adoption writes once. Reread its result and current wakes before claiming or
+  // acknowledging a wait; the earlier store revision no longer describes them.
+  if (exhaustRetainedFailures(config, tree, resource)) return claimObservedAppTask(config, input);
   if (taskExecutionRetryExhausted(resource)) {
     const active = currentResourceAttempt(tree, resource);
     if (active) return { kind: "busy", taskId: input.taskId, attemptId: active.metadata.id };
@@ -3223,6 +3261,7 @@ export function stopAppTaskAttempt(
     currentAttemptId: undefined,
     executionRetryAt: undefined,
     executionFailures: resource.status.retryExhausted ? resource.status.executionFailures : undefined,
+    executionFailureAttemptId: resource.status.retryExhausted ? resource.status.executionFailureAttemptId : null,
     summary: input.reason,
   });
   commitTaskMutation(config, tree, { resourceMutation: finishResourceMutationScope(scope, tree) });
@@ -3589,6 +3628,7 @@ function applyTaskActions(
     touchResource(resource, {
       phase: "pending",
       executionFailures: undefined,
+      executionFailureAttemptId: null,
       executionRetryAt: undefined,
       retryExhausted: undefined,
       observedGeneration: Math.max(0, resource.metadata.generation - 1),

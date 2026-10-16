@@ -207,10 +207,15 @@ test("old Condition waits retain their facts and review deadline, then continue 
 test("old exhausted work keeps its input and failure count, respects pause, then requires explicit recovery under the default allowance", () => {
   const f = fixture();
   f.ask("measurement");
-  failAppTaskAttempt(f.config, f.claim(), "Provider unavailable");
+  f.config.maxConsecutiveFailures = "unlimited";
+  for (let index = 0; index < 6; index++) {
+    failAppTaskAttempt(f.config, f.claim(), "Provider unavailable");
+    f.advance();
+  }
+  f.config.maxConsecutiveFailures = undefined;
   f.legacy((tree) => {
     tree.resources!.work!.status.phase = "attention";
-    tree.resources!.work!.status.executionFailures = 6;
+    delete tree.resources!.work!.status.executionFailureAttemptId;
     delete tree.resources!.work!.status.executionRetryAt;
     delete tree.taskTriggers!.work;
   });
@@ -245,6 +250,7 @@ test("offline interruption fences the old attempt and retains the original ask f
   recordAppTaskTrigger(f.config, "work", { type: "sample.after", eventId: 21, data: { corrected: 23 } });
   f.legacy();
   expect(f.migrate().continued).toBe(1);
+  expect(f.store.readTask("work")!.status.executionFailures).toBeUndefined();
   expect(completeAppTask(f.config, obsolete, { summary: "Late result" }).status).toBe("stale");
   expect(f.store.readAttempt(obsolete.attemptId)).toMatchObject({
     state: "interrupted",

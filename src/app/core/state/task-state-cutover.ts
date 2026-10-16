@@ -138,8 +138,7 @@ export function migrateOpenTaskState(config: AppTaskContext, input: { oldRuntime
         }
         resource.status.phase = "pending";
         resource.status.currentAttemptId = undefined;
-        resource.status.executionFailures = Math.max(1, resource.status.executionFailures ?? 0);
-        resource.status.executionRetryAt ??= now + taskExecutionRetryDelay(resource.status.executionFailures);
+        resource.status.executionRetryAt ??= now + taskExecutionRetryDelay(resource.status.executionFailures ?? 1);
         continued++;
       }
 

@@ -24,8 +24,10 @@ import {
   readAppTaskChildContext,
   readAppTaskLiveSnapshot,
   readPendingAppTaskTrigger,
+  recoverableAppTaskAttempts,
   recordAppTaskAttemptWorkspace,
   recordReleasedAppTaskWorkspace,
+  releaseInterruptedAppTaskAttempt,
   releaseStaleAppTaskResult,
   releaseTerminalSessionExpiredAppTaskAttempt,
   reportAppTaskFailure,
@@ -93,6 +95,18 @@ export async function runTaskAttempt(input: {
       if (claim.kind === "busy") {
         const active = claim.attemptId ? config.resourceStore.readAttempt(claim.attemptId) : null;
         const leaseCheckAt = Date.now();
+        // Worker death before a session starts (including workflows/executors)
+        // still needs fenced claim recovery when execution retries are exhausted.
+        if (active && !active.sessionId) {
+          const orphan = recoverableAppTaskAttempts(config, leaseCheckAt, false, [input.taskId])[0];
+          if (orphan && !orphan.sessionId &&
+            releaseInterruptedAppTaskAttempt(config, orphan, "Previous worker's attempt lease expired").released) {
+            emitTaskReconciliationEvent(opts, descriptor, undefined, "project.task.recovery.requeued", input.taskId, {
+              route: "task-controller", reason: "previous-runtime-expired-lease", attemptId: orphan.attemptId,
+            });
+            return [...new Set([...recoveredTaskIds, input.taskId])];
+          }
+        }
         const sessionActivity =
           active?.sessionId && opts.persistDir
             ? {
