@@ -26,7 +26,7 @@ import {
   type TaskTree,
 } from "./app-task-store.js";
 import { resolveAppTaskOutputPaths } from "./app-task-output-paths.js";
-import { pendingTaskExecutionRetryAt, taskExecutionRetryDelay, taskExecutionRetryExhausted } from "./app-task-state.js";
+import { pendingTaskExecutionRetryAt, taskAdmissionRetryDelay, taskExecutionRetryDelay, taskExecutionRetryExhausted } from "./app-task-state.js";
 import type {
   AppTaskCondition as AppTaskCondition,
   AppTaskAttempt as AppTaskAttempt,
@@ -43,6 +43,7 @@ import { assertResourceCreator } from "../state/resource-creator.js";
 import { AppTaskAdmissionError } from "../state/task-admission-error.js";
 
 const MAX_TASK_EVENTS_PER_ATTEMPT = 32;
+const DEFAULT_MAX_CONSECUTIVE_FAILURES = 3;
 
 function managedAgentHandler(agent: string): string {
   return `agent:${agent}`;
@@ -632,7 +633,7 @@ function acceptedAttemptResult(
 function resultInputKeys(
   config: AppTaskContext,
   tree: TaskTree,
-  claim: AppTaskClaim,
+  claim: Pick<AppTaskClaim, "taskId" | "attemptId" | "generation">,
   input: { acceptedLiveEventIds?: number[]; inputKeys?: string[] } = {},
 ) {
   const attempt = tree.attempts?.[claim.attemptId];
@@ -676,7 +677,7 @@ function admissionFeedback(config: Pick<AppTaskContext, "resourceStore">, admiss
 function inputOutcomeAdmissions(
   config: AppTaskContext,
   tree: TaskTree,
-  claim: AppTaskClaim,
+  claim: Pick<AppTaskClaim, "taskId" | "attemptId" | "generation">,
   input: { acceptedLiveEventIds?: number[]; inputKeys?: string[]; report?: true } = {},
   kind: "answer" | "progress" | "failure" | "retain" = "answer",
 ) {
@@ -773,16 +774,16 @@ type AppTaskContextInput = {
   projectDir: string;
   agent: string;
   maxConcurrent: number;
-  maxConsecutiveFailures?: number;
+  maxConsecutiveFailures?: AppTaskContext["maxConsecutiveFailures"];
   resourceStore: AppTaskResourceStore;
 };
 
 export function appTaskContext(input: AppTaskContextInput): AppTaskContext {
   const agent = input.agent.trim();
   if (!agent) throw new Error("Task reconciliation requires a default agent");
-  if (input.maxConsecutiveFailures !== undefined &&
+  if (input.maxConsecutiveFailures !== undefined && input.maxConsecutiveFailures !== "unlimited" &&
     (!Number.isSafeInteger(input.maxConsecutiveFailures) || input.maxConsecutiveFailures <= 0)) {
-    throw new Error("Task maxConsecutiveFailures must be a positive safe integer");
+    throw new Error("Task maxConsecutiveFailures must be a positive safe integer or unlimited");
   }
   return {
     appDir: input.appDir,
@@ -2184,7 +2185,7 @@ export function retryFailedAppTask(
     );
   }
   const attempt = resource.status.retryExhausted
-    ? tree.attempts?.[resource.status.retryExhausted.attemptId]
+    ? config.resourceStore.readAttempt(resource.status.retryExhausted.attemptId)
     : latestTaskAttempt(tree, input.taskId, input.expectedGeneration);
   const unsuccessful = attempt?.state === "failed" ||
     (attempt?.state === "completed" && attempt.acceptedResult?.state === "incomplete");
@@ -2516,8 +2517,8 @@ function failedExecutionState(
 ): Partial<AppTaskResource["status"]> {
   // Spec changes are not evidence that the failed operation recovered.
   const failures = (resource.status.executionFailures ?? 0) + 1;
-  const limit = resource.status.retryExhausted?.limit ?? config.maxConsecutiveFailures;
-  const exhausted = limit !== undefined && failures >= limit;
+  const limit = resource.status.retryExhausted?.limit ?? config.maxConsecutiveFailures ?? DEFAULT_MAX_CONSECUTIVE_FAILURES;
+  const exhausted = limit !== "unlimited" && failures >= limit;
   if (exhausted) attempt.retryExhausted = {
     generation: attempt.taskGeneration, attemptId: attempt.metadata.id,
     failures, limit, exhaustedAt: now,
@@ -2529,6 +2530,36 @@ function failedExecutionState(
     executionRetryAt: exhausted || resource.status.freshHumanInput
       ? undefined : Date.parse(now) + taskExecutionRetryDelay(failures),
   };
+}
+
+/** Adopt a lowered/default allowance before another execution, without charging a new failure. */
+function exhaustRetainedFailures(config: AppTaskContext, tree: TaskTree, resource: AppTaskResource): void {
+  const failures = resource.status.executionFailures ?? 0;
+  const limit = config.maxConsecutiveFailures ?? DEFAULT_MAX_CONSECUTIVE_FAILURES;
+  if (resource.status.retryExhausted || resource.status.currentAttemptId || limit === "unlimited" || failures < limit) return;
+  const attempt = config.resourceStore.readLatestUnsuccessfulTaskAttempt(resource.metadata.id);
+  // Older admission-only counters do not establish an unsuccessful execution.
+  if (!attempt) return;
+  tree.attempts ??= {};
+  tree.attempts[attempt.metadata.id] = attempt;
+  const scope = beginResourceMutationScopeForTasks(tree, [resource.metadata.id]);
+  attempt.retryExhausted = {
+    generation: attempt.taskGeneration, attemptId: attempt.metadata.id,
+    failures, limit, exhaustedAt: new Date().toISOString(),
+  };
+  attempt.metadata.resourceVersion += 1;
+  const admissions = inputOutcomeAdmissions(config, tree, {
+    taskId: resource.metadata.id, attemptId: attempt.metadata.id, generation: attempt.taskGeneration,
+  }, { report: true }, "failure").writes;
+  touchResource(resource, {
+    phase: "attention",
+    retryExhausted: attempt.retryExhausted,
+    executionRetryAt: undefined,
+    summary: `Automatic retries exhausted under current policy; owner repair or explicit retry required. ${attempt.summary ?? ""}`,
+  });
+  commitTaskMutation(config, tree, {
+    resourceMutation: { ...finishResourceMutationScope(scope, tree), admissions },
+  });
 }
 
 /** Retain an honest failure report and the unfinished assignment for a later attempt. */
@@ -2716,7 +2747,10 @@ export function claimObservedAppTask(
   if (!config.resourceStore.allowsTaskExecution(input.taskId)) {
     return { kind: "waiting", taskId: input.taskId, conditionIds: [] };
   }
+  exhaustRetainedFailures(config, tree, resource);
   if (taskExecutionRetryExhausted(resource)) {
+    const active = currentResourceAttempt(tree, resource);
+    if (active) return { kind: "busy", taskId: input.taskId, attemptId: active.metadata.id };
     acknowledgeIndexedRecoveryWait(config, input.taskId, snapshotRevision, nextTaskCheckAt(tree, resource));
     return { kind: "attention", taskId: input.taskId, generation: resource.metadata.generation,
       summary: resource.status.summary ?? "Automatic retries exhausted; owner repair or explicit retry required" };
@@ -2760,7 +2794,7 @@ export function claimObservedAppTask(
     touchResource(resource, {
       phase: "pending",
       admissionFailures: failures,
-      executionRetryAt: Date.now() + taskExecutionRetryDelay(failures),
+      executionRetryAt: Date.now() + taskAdmissionRetryDelay(failures),
       freshHumanInput: undefined,
       observedGeneration: resource.metadata.generation,
       currentAttemptId: undefined,

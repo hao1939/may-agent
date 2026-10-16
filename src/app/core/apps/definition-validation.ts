@@ -229,8 +229,8 @@ export function validateAppDefinition(definition: unknown): string[] {
       if (tasks.maxConcurrent !== undefined && !positiveInteger(tasks.maxConcurrent)) {
         errors.push(`App ${appId} task maxConcurrent must be a positive safe integer`);
       }
-      if (tasks.maxConsecutiveFailures !== undefined && !positiveInteger(tasks.maxConsecutiveFailures)) {
-        errors.push(`App ${appId} task maxConsecutiveFailures must be a positive safe integer`);
+      if (tasks.maxConsecutiveFailures !== undefined && tasks.maxConsecutiveFailures !== "unlimited" && !positiveInteger(tasks.maxConsecutiveFailures)) {
+        errors.push(`App ${appId} task maxConsecutiveFailures must be a positive safe integer or unlimited`);
       }
       if (tasks.subscriptions !== undefined) {
         if (!Array.isArray(tasks.subscriptions) || tasks.subscriptions.some((entry) => !validSelector(entry))) {

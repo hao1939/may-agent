@@ -55,7 +55,7 @@ if (import.meta.main) {
       if (
         claim.kind !== "waiting" ||
         claim.retryAt !== task.status.executionRetryAt ||
-        (task.status.executionFailures ?? 0) < 5 ||
+        (task.status.executionFailures ?? 0) !== 2 ||
         config.resourceStore.isCancelled(taskId)
       )
         throw new Error("Fresh process did not preserve the continuing Task's retry deadline");

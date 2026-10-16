@@ -112,9 +112,14 @@ export function taskExecutionRetryExhausted(resource: AppTaskResource): boolean 
   return Boolean(resource.status.retryExhausted) && !resource.status.freshHumanInput;
 }
 
-/** Quick transient retry, then up to one hour between failures within the allowance. */
-export function taskExecutionRetryDelay(failures: number): number {
+/** Cheap admission and delivery recovery retains its quick transient retry. */
+export function taskAdmissionRetryDelay(failures: number): number {
   return Math.min(60 * 60_000, 250 * 2 ** Math.min(14, Math.max(0, failures - 1)));
+}
+
+/** Expensive attempts wait 30s, 60s, then double up to one hour within the allowance. */
+export function taskExecutionRetryDelay(failures: number): number {
+  return Math.min(60 * 60_000, 30_000 * 2 ** Math.min(7, Math.max(0, failures - 1)));
 }
 
 export function pendingTaskExecutionRetryAt(resource: AppTaskResource, now = Date.now()): number | undefined {

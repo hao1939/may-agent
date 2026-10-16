@@ -85,7 +85,7 @@ describe("durable execution backoff", () => {
     return { config, intent, claim };
   }
 
-  it("counts execution failure once, preserves its cost through stale fencing, and keeps retrying", () => {
+  it("counts execution failure once and exhausts the default despite stale fencing", () => {
     const { config, intent, claim } = setup();
     const first = claim();
     expect(failAppTaskAttempt(config, first, "Execution failed").status).toBe("retrying");
@@ -95,13 +95,13 @@ describe("durable execution backoff", () => {
     for (let index = 0; index < 18; index += 1)
       expect(releaseStaleAppTaskResult(config, claim()).status).toBe("released");
     expect(config.resourceStore.readTask(intent.id)!.status.executionFailures).toBe(1);
-    for (let index = 0; index < 5; index += 1) {
-      failAppTaskAttempt(config, claim(), "Still fails");
-      advanceToTaskRetry(config, intent.id);
-    }
-    expect(config.resourceStore.readTask(intent.id)!.status).toMatchObject({ phase: "pending", executionFailures: 6 });
+    failAppTaskAttempt(config, claim(), "Still fails");
+    advanceToTaskRetry(config, intent.id);
+    expect(failAppTaskAttempt(config, claim(), "Still fails").status).toBe("exhausted");
+    expect(config.resourceStore.readTask(intent.id)!.status)
+      .toMatchObject({ phase: "attention", executionFailures: 3, retryExhausted: { limit: 3, generation: first.generation } });
     expect(config.resourceStore.readCancellation(intent.id)).toBeNull();
-    expect(claim().generation).toBe(first.generation);
+    expect(claimObservedAppTask(config, { taskId: intent.id, appAgent: "app-owner", handler: "agent" }).kind).toBe("attention");
   });
 
   it("preserves newer input and accepts execution facts across revisions, but fences cancellation", () => {
@@ -128,8 +128,9 @@ describe("durable execution backoff", () => {
     expect(failAppTaskAttempt(config, revised, "Failure after cancel").status).toBe("superseded");
   });
 
-  it("retains all input through repeated failure and becomes eligible when backoff expires", () => {
+  it("retains all input through a larger declared allowance and becomes eligible when backoff expires", () => {
     const { config, intent, claim } = setup();
+    config.maxConsecutiveFailures = 8;
     for (let index = 0; index < 6; index += 1) {
       if (index) advanceToTaskRetry(config, intent.id);
       const current = claim();
@@ -177,32 +178,31 @@ describe("durable execution backoff", () => {
     });
     expect(config.resourceStore.readTask(intent.id)!.status.executionFailures ?? 0).toBe(0);
     observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, input: { revision: 2 } } });
-    for (let index = 0; index < 4; index += 1) {
+    for (let index = 0; index < 2; index += 1) {
       if (index) advanceToTaskRetry(config, intent.id);
       failAppTaskAttempt(config, claim(), "Repeated failure");
     }
     observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, input: { revision: 3 } } });
-    expect(config.resourceStore.readTask(intent.id)!.status.executionFailures).toBe(4);
+    expect(config.resourceStore.readTask(intent.id)!.status.executionFailures).toBe(2);
     advanceToTaskRetry(config, intent.id);
     expect(claim().generation).toBe(3);
   });
 
-  it("retries independently without notifying the structural parent", () => {
+  it("retries and exhausts independently without notifying the structural parent", () => {
     const { config, intent, claim } = setup();
     observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, id: "parent" } });
     observeAppTaskIntent(config, { appAgent: "app-owner", intent: { ...intent, parentId: "parent" } });
-    for (let index = 0; index < 4; index += 1) {
+    for (let index = 0; index < 3; index += 1) {
       if (index) advanceToTaskRetry(config, intent.id);
       expect(failAppTaskAttempt(config, claim(), `Failure ${index + 1}`)).toMatchObject({
-        status: "retrying",
+        status: index === 2 ? "exhausted" : "retrying",
       });
     }
     const parent = claimObservedAppTask(config, { taskId: "parent", appAgent: "app-owner", handler: "agent" });
     if (parent.kind !== "claimed") throw new Error("expected parent review");
-    expect(parent.events.some((entry) => JSON.stringify(entry.event).includes("Failure 4"))).toBe(false);
+    expect(parent.events.some((entry) => JSON.stringify(entry.event).includes("Failure 3"))).toBe(false);
     completeAppTask(config, parent, { summary: "Reported the source problem", facts: ["test:source-offline"] });
-    advanceToTaskRetry(config, intent.id);
-    expect(claim().generation).toBe(1);
+    expect(claimObservedAppTask(config, { taskId: intent.id, appAgent: "app-owner", handler: "agent" }).kind).toBe("attention");
     expect(config.resourceStore.readCancellation(intent.id)).toBeNull();
   });
 });
@@ -277,9 +277,9 @@ describe("worker failure facts and owner closure", () => {
   it("rejects retry after a failed Task is cancelled without relabelling its terminal state", () => {
     const { config, intent, claim } = setup();
     let attempt = claim;
-    for (let index = 0; index < 4; index += 1) {
+    for (let index = 0; index < 3; index += 1) {
       failAppTaskAttempt(config, attempt, "Repeated execution failure");
-      if (index < 3) {
+      if (index < 2) {
         advanceToTaskRetry(config, intent.id);
         const next = claimObservedAppTask(config, { taskId: intent.id, appAgent: "app-owner", handler: "agent" });
         if (next.kind !== "claimed") throw new Error("expected bounded retry");
@@ -287,7 +287,7 @@ describe("worker failure facts and owner closure", () => {
       }
     }
     const failed = config.resourceStore.readTask(intent.id)!;
-    expect(failed.status.executionFailures).toBe(4);
+    expect(failed.status.executionFailures).toBe(3);
     cancelAppTask(config, {
       appId: "sample",
       taskId: intent.id,

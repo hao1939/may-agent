@@ -609,6 +609,18 @@ export class AppTaskResourceStore {
     return row?.attempt_json ? parseTaskAttempt(row.attempt_json) : null;
   }
 
+  /** Recovery must not depend on the bounded attempt history loaded for a prompt. */
+  readLatestUnsuccessfulTaskAttempt(taskId: string): AppTaskAttempt | null {
+    const row = this.db.prepare(`
+      SELECT attempt_json FROM app_task_attempts
+      WHERE app_id = ? AND task_id = ? AND (
+        state = 'failed' OR (state = 'completed' AND json_extract(attempt_json, '$.acceptedResult.state') IN ('incomplete', 'stopped'))
+      )
+      ORDER BY started_at DESC, attempt_id DESC LIMIT 1
+    `).get(this.appId, taskId) as { attempt_json: string } | null;
+    return row ? parseTaskAttempt(row.attempt_json) : null;
+  }
+
   /** Workspace ownership survives bounded context, non-workspace attempts and clock changes. */
   readTaskWorkspace(taskId: string, generation: number): AppTaskWorkspace | undefined {
     const reference = this.readTask(taskId)?.status.workspaceAttemptId;

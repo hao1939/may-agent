@@ -10,7 +10,7 @@ import type {
   ResourceCreator,
 } from "@may-agent/sdk";
 import type { SqliteDb } from "../../../lib/db.js";
-import { taskExecutionRetryDelay, type AppTaskAttempt } from "../tasks/app-task-state.js";
+import { taskAdmissionRetryDelay, type AppTaskAttempt } from "../tasks/app-task-state.js";
 import { taskInputAdmissionKeys } from "../tasks/app-task-inputs.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 
@@ -272,7 +272,7 @@ export function recordAppInboxRecoveryFailure(
     if (!item) throw new Error(`App inbox item ${inputId} is missing`);
     const prior = item.recovery?.[stage];
     const failures = prior && prior.recoveredAt === undefined ? prior.failures + 1 : 1;
-    const retryAt = now + taskExecutionRetryDelay(failures);
+    const retryAt = now + taskAdmissionRetryDelay(failures);
     const boundedError = error.slice(0, MAX_RECOVERY_ERROR_LENGTH);
     const fingerprint = createHash("sha256").update(`${stage}\0${boundedError}`).digest("hex");
     const failure: AppInboxRecoveryFailure = {

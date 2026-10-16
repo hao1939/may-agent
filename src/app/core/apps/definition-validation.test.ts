@@ -342,8 +342,10 @@ describe("canonical App definition validation", () => {
 it("validates the optional automatic attempt allowance at the App boundary", () => {
   const app = defineApp({ id: "sample", version: 1, agent: "owner", inputSchema, tasks: { maxConsecutiveFailures: 3 } });
   expect(validateAppDefinition(app)).toEqual([]);
-  for (const invalid of [0, -1, 1.5, Infinity, Number.MAX_SAFE_INTEGER + 1, "3"]) {
+  expect(validateAppDefinition({ ...app, tasks: undefined })).toEqual([]);
+  expect(validateAppDefinition({ ...app, tasks: { maxConsecutiveFailures: "unlimited" } })).toEqual([]);
+  for (const invalid of [0, -1, 1.5, Infinity, Number.MAX_SAFE_INTEGER + 1, "3", null, false]) {
     expect(validateAppDefinition({ ...app, tasks: { maxConsecutiveFailures: invalid } }))
-      .toContain("App sample task maxConsecutiveFailures must be a positive safe integer");
+      .toContain("App sample task maxConsecutiveFailures must be a positive safe integer or unlimited");
   }
 });

@@ -442,10 +442,13 @@ export type AppTaskPolicy = {
   /** Background attempt limit; one human Conversation turn may also run within the Host limit. */
   maxConcurrent?: number;
   /** Total consecutive unsuccessful attempts before owner attention (initial attempt included).
-   * Omit to retain paced unlimited retries. Cheap admission checks do not count.
+   * Defaults to 3 (initial attempt + 2 retries), spaced 30s then 60s.
+   * Higher allowances keep doubling the delay up to one hour.
+   * Use "unlimited" explicitly for paced retries without a count limit.
+   * Cheap admission checks do not count.
    * Explicit owner retry renews the allowance; ordinary Events and spec saves do not.
    */
-  maxConsecutiveFailures?: number;
+  maxConsecutiveFailures?: number | "unlimited";
 };
 
 /** Conversation input executes through one stable Task per Conversation. */

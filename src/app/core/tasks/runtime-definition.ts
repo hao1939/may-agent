@@ -106,8 +106,8 @@ function validatePreparedAppTaskRuntime(descriptor: AppTaskRuntimeDescriptor): v
     throw new Error(`App ${id} task maxConcurrent must be a positive integer`);
   }
   const limit = app.tasks?.maxConsecutiveFailures;
-  if (limit !== undefined && (!Number.isSafeInteger(limit) || limit <= 0)) {
-    throw new Error(`App ${id} task maxConsecutiveFailures must be a positive safe integer`);
+  if (limit !== undefined && limit !== "unlimited" && (!Number.isSafeInteger(limit) || limit <= 0)) {
+    throw new Error(`App ${id} task maxConsecutiveFailures must be a positive safe integer or unlimited`);
   }
   descriptor.resourceStore.assertCompletionReceiptsImported();
 }

@@ -16,7 +16,7 @@ test("runtime preparation requires offline receipt conversion before admission o
     version: 1,
     agent: "worker",
     inputSchema: Type.Object({}),
-    tasks: { maxConsecutiveFailures: 3 },
+    tasks: { maxConsecutiveFailures: 5 },
   });
   try {
     const store = AppTaskResourceStore.fromDb(getDb(root), app.id);
@@ -69,7 +69,7 @@ test("runtime preparation requires offline receipt conversion before admission o
     expect(migrateTaskCompletionReceipts(config, { oldRuntimeStopped: true }).imported).toBe(1);
     const prepared = await prepare();
     expect(prepared).toHaveLength(1);
-    expect(appTaskConfig(prepared[0]!).maxConsecutiveFailures).toBe(3);
+    expect(appTaskConfig(prepared[0]!).maxConsecutiveFailures).toBe(5);
     expect(standaloneAppTaskAdmissionDescriptors(options).size).toBe(1);
     expect(store.readReceipt(assignment.id)).toEqual(receipt);
     expect(store.readTask(assignment.id)?.status.result).toEqual({ value: 17 });

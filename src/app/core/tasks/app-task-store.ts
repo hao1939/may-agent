@@ -8,7 +8,7 @@ import type {
   AppTaskWorkspace as AppTaskWorkspace,
 } from "./app-task-state.js";
 import type { AppTaskResourceMutation, AppTaskResourceStore } from "../state/app-task-resource-store.js";
-import type { TaskExecutorName } from "@may-agent/sdk";
+import type { AppTaskPolicy, TaskExecutorName } from "@may-agent/sdk";
 import { inStateTransaction } from "../../../lib/db/transaction.js";
 
 /** A structural container. It never carries executable Task lifecycle state. */
@@ -174,7 +174,7 @@ export type AppTaskContext = {
   projectDir: string;
   agent: string;
   maxConcurrent: number;
-  maxConsecutiveFailures?: number;
+  maxConsecutiveFailures?: AppTaskPolicy["maxConsecutiveFailures"];
   resourceStore: AppTaskResourceStore;
 };
 

@@ -8,7 +8,7 @@ import { readAppTaskLiveEvent, readAppTaskReconciliationEvents } from "./app-tas
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { admitTaskInput, type TaskInputAdmission } from "../state/inbox.js";
 import { readRuntimeTaskView } from "../reads/app-read.js";
-import { appTaskTestContext } from "./app-task-test-support.js";
+import { appTaskTestContext, makeTaskRetryDue } from "./app-task-test-support.js";
 import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
 import {
   appTaskContext,
@@ -35,7 +35,7 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
-function fixture() {
+function fixture(maxConsecutiveFailures?: number | "unlimited") {
   const root = mkdtempSync(join(tmpdir(), "may-common-lifecycle-"));
   roots.push(root);
   const databasePath = join(root, "host.sqlite");
@@ -46,6 +46,7 @@ function fixture() {
     databasePath,
     tree: { root_task_id: "root", groups: { root: { id: "root", parent_id: null, owner: "owner" } } },
   });
+  config.maxConsecutiveFailures = maxConsecutiveFailures;
   stores.add(config.resourceStore);
   const intent = {
     id: "conversation",
@@ -68,7 +69,7 @@ function fixture() {
     stores.delete(config.resourceStore);
     const store = AppTaskResourceStore.openStandalone(databasePath, "sample");
     stores.add(store);
-    config = appTaskContext({ appDir: root, projectDir: root, agent: "owner", maxConcurrent: 3, resourceStore: store });
+    config = appTaskContext({ appDir: root, projectDir: root, agent: "owner", maxConcurrent: 3, maxConsecutiveFailures, resourceStore: store });
   };
   return {
     get config() {
@@ -445,8 +446,10 @@ describe("common Task lifecycle", () => {
         counts.set(taskId, (counts.get(taskId) ?? 0) + 1);
         if (counts.get(taskId) === 1) {
           expect(failAppTaskAttempt(f.config, claim, "Temporary provider unavailable").status).toBe("retrying");
+          expect(claimObservedAppTask(f.config, { taskId, appAgent: "owner", handler: "agent" }).kind).toBe("waiting");
+          makeTaskRetryDue(f.config.resourceStore, taskId);
           recovery.stateChanged();
-          controller.enqueue(taskId); // An ordinary early wake must not bypass persisted pacing.
+          controller.enqueue(taskId);
           return;
         }
         expect(completeAppTask(f.config, claim, { summary: "Read succeeded", result: { value: 7 } }).status).toBe(
@@ -472,8 +475,8 @@ describe("common Task lifecycle", () => {
     expect(f.config.resourceStore.listRecoveryCandidates().items).toEqual([]);
   });
 
-  it("keeps retrying beyond four failures, with durable pacing across restart and duplicate wakes", () => {
-    const f = fixture();
+  it("explicit unlimited retries preserve pacing across restart and duplicate wakes", () => {
+    const f = fixture("unlimited");
     const original = f.claim();
     let claim = original;
     for (let index = 0; index < 7; index++) {
