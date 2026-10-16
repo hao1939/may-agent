@@ -3,7 +3,7 @@
 **Status:** Direction accepted, implementation in progress; reviewed 2026-10-17.
 Principles and contract refinements are integrated into their owning documents.
 Database contention is fixed in merged [Host PR #370](https://github.com/hao1939/may-agent/pull/370).
-The observer-accounting change remains open in [Host PR #371](https://github.com/hao1939/may-agent/pull/371), now at `151098f6bc`; earlier verification here applies to `21abd7b9b`, not that later head. Receipt expiry is merged in [Host PR #372](https://github.com/hao1939/may-agent/pull/372). The common code/retry/agent flow is accepted below; its implementation gaps and order are recorded in [Remaining gaps and fix order](#remaining-gaps-and-fix-order). Other later steps remain open.
+The observer-accounting change is merged in [Host PR #371](https://github.com/hao1939/may-agent/pull/371) at `0fa9a8a12`; earlier local verification applies to `21abd7b9b`. Receipt expiry is merged in [Host PR #372](https://github.com/hao1939/may-agent/pull/372). The common code/retry/agent flow is accepted below; its implementation gaps and order are recorded in [Remaining gaps and fix order](#remaining-gaps-and-fix-order). Other later steps remain open.
 No deployment is established by this document.
 
 **Parent:** [Keep the Host boring and let Apps change](host-stability-and-app-extensibility-20261005.md).
@@ -71,7 +71,7 @@ labels below organize review; they are not new APIs, stored states or registries
 | Contract | Host must provide | App/agent remains free to choose | Existing owner and status |
 | --- | --- | --- | --- |
 | C1 — Work and usable context | Retain exact admitted input, covered contributions and independent Conditions; expose current scope, pending work and readable evidence with honest missing/truncated states | Interpret intent, gather domain context, accept scoped results, continue or wait | [Task attempts](../2a-design/task-attempts.md); recent context/partial-result fixes to preserve and verify across supported workers |
-| C2 — Facts and attention | Distinguish retained observation, required delivery and eligibility to execute; preserve separate progress/failure facts and the caller's declared interest | Choose relevant facts, immediate or deferred progress, explicit help requests and investigation policy | [Execution feedback](../2a-design/execution-feedback.md), [Events](../2a-design/events.md); #351 established attention separation, ordinary-observer accounting is verified in #371, awaiting review |
+| C2 — Facts and attention | Distinguish retained observation, required delivery and eligibility to execute; preserve separate progress/failure facts and the caller's declared interest | Choose relevant facts, immediate or deferred progress, explicit help requests and investigation policy | [Execution feedback](../2a-design/execution-feedback.md), [Events](../2a-design/events.md); #351 established attention separation, ordinary-observer accounting is merged in #371 |
 | C3 — Acceptance and replay | Let each operation owner record its own acceptance; recover unfinished delivery using saved identity, scope and timing; do not substitute a global receipt for pending App admission | Reuse results, revise authorized work or choose a different recovery operation | [Events](../2a-design/events.md), [Storage](../2a-design/storage.md); retain #336/#364/#366/#367; restart-independent expiry merged in #372 |
 | C4 — Execution and recovery | Restore safe execution of the same Task, preserve accepted effects and diagnostic evidence, retain the declared procedure and expose unresolved ownership or exhaustion | Compose workflow/agent calls, choose repair or escalation, decide useful recovery work | [Host/App boundary](../2a-design/system-boundary.md), [Task lifecycle](../2a-design/task-resource-engine.md); preserve #344/#360, clarify private recovery confirmation |
 | C5 — Responsiveness and finishing | Bound synchronous work and nested allowances; make knowable result errors correctable before exit, revalidate at fenced commit, retain partial evidence and cancel owned work correctly | Allocate useful work within supported budgets and choose what partial result to submit | [Runtime](../2a-design/runtime.md), [Task attempts](../2a-design/task-attempts.md); retain #289/#308/#335; contention fixed in merged #370; query profiling still open |
@@ -99,7 +99,7 @@ Preserve already-fixed behavior and keep runtime changes independently reviewabl
 | Step | Change and contract | Value / evidence |
 | --- | --- | --- |
 | 1 | Bound serving-path SQL waits; preserve operation-owned retry (C3/C5) | Merged #370; source verification complete, rollout not established |
-| 2 | Apply observation semantics through ordinary producers and relays (C2/C6) | PR #371 remains open; earlier verified source and later PR head are distinguished above |
+| 2 | Apply observation semantics through ordinary producers and relays (C2/C6) | Merged #371; earlier local verification and merge revision are distinguished above |
 | 3 | Expire delivery receipts from durable status/timing (C3) | Merged #372 uses the existing durable admission marker and saved timing; rollout not established |
 | Next | Return unresolved work to agent judgment (C1/C4/C5/C6) | App adoption plus focused Host completion feedback, as specified below; does not wait for query profiling or private recovery cleanup |
 | 4 | Trial one private recovery success meaning across callers/backends (C4/C6) | Consistent safe retry without adding optional-artifact gates |
@@ -112,11 +112,14 @@ specify the intended corrections and their trials.
 
 ### Return unresolved work to agent judgment
 
-**Status:** Accepted flow; implementation proposed. The
+**Status:** Accepted flow; optional-report Host fix is
+[Host `791abcc11`](https://github.com/hao1939/may-agent/commit/791abcc11), based on
+Host main `0fa9a8a12`. No deployment is established. The
 [source review](../archive/reviews/agent-judgment-and-code-paths-20261016.md)
-reproduced late App-reader rejection and inability reports requiring a normal
-domain payload. Existing same-invocation correction and workflow agent calls
-already provide most of the mechanism. Alex's candidate `cc24d7290a` improves
+reproduced late App-reader rejection and hidden requirements on optional
+finish diagnostics. Requiring a report is useful; requiring complete findings
+in every report is the schema-design mistake. Existing same-invocation correction
+and workflow agent calls already provide most of the mechanism. Alex's candidate `cc24d7290a` improves
 guidance and evidence reuse; it does not close all of these boundaries.
 
 **Value:** finish useful work without another human intervention or full restart
@@ -146,23 +149,23 @@ Do not claim end-to-end equivalence from a strict reader alone.
 
 #### Remaining gaps and fix order
 
-Reviewed Apps main `9d94b5a42a`, the earlier Alex candidate evidence, and Host
-`21abd7b9b`; the relevant completion/Task adapters are unchanged from local Host
-main `ff3449013`. These are source findings, not deployment or incidence claims.
-The [dated follow-up](../archive/reviews/agent-judgment-and-code-paths-20261016.md#october-17-contract-and-gap-review)
-records the new probes and limits. Work through the following slices; the first
-is independently useful, while slices 2 and 3 complete the shared Host boundary.
+The earlier review covered Apps main `9d94b5a42a` and Host `21abd7b9b`.
+The optional-report follow-up uses Host main `0fa9a8a12`. These are source findings,
+not deployment or incidence claims. The [dated follow-up](../archive/reviews/agent-judgment-and-code-paths-20261016.md#october-17-optional-report-refinement)
+records the smaller fix and its trials. App adoption can proceed independently;
+for Host work, remove hidden finish requirements before changing validator
+normalization. A stricter validator alone does not make incomplete work usable.
 
 | Order / owner | Gap and impact | Smallest fix | Evidence needed to finish |
 | --- | --- | --- | --- |
 | 1 — Alex App | Schema and reader disagree, causing late rejection or silently changed data | One new-judgment schema/admission helper; use it in both reviews and expose that schema to agents. Preserve historical reads/publication reuse | Identical valid, blank, missing, wrong-type and extra-field fixtures agree through the App schema and reader; valid correction needs no reassessment |
-| 2 — Host/model validator | The tool path converts types before validation and echoes full rejected arguments; code checks can disagree and correction costs grow | Validate caller-declared contribution payloads with the declared normalization policy before implicit conversion. Keep concise failures plus retained original evidence. Use one supported validator integration for both corrections | Real model-tool validation and App checks agree on original inputs, including relay serialization; required errors stay correctable and diagnostics stay bounded |
-| 3 — Host/completion consumers | Agent-only evidence gate and mandatory domain payload obstruct honest completion; status-based readers can hide partial work | Make evidence requirements caller-owned, permit explicit inability without fabricated output, and preserve all returned contributions for normal caller assessment | Agent/workflow success, inability and partial cases pass; cancellation still prevents effects; publication then failure/retry neither duplicates effects nor loses obligations |
+| 2 — Host/finish; source candidate | Optional fields become mandatory in hidden runtime checks, causing unnecessary correction turns | Remove hidden `verification_facts` and `blockers` requirements. Keep one declared report schema, allow its optional information to be absent, and preserve the caller's Task decision through existing paths | Scripted agent reports finish in one reply for all statuses; Task receives useful work with waiting/continuation intact; missing required or malformed fields remain correctable |
+| 3 — Host/model validator | The tool path converts types before validation and echoes full rejected arguments; code checks can disagree and correction costs grow | Validate caller-declared contribution payloads with the declared normalization policy before implicit conversion. Keep concise failures plus retained original evidence. Use one supported validator integration for both corrections | Real model-tool validation and App checks agree on original inputs, including relay serialization; required errors stay correctable and diagnostics stay bounded |
 | 4 — App recovery, Host only for a demonstrated delivery gap | A late rejection can end the workflow; early failure/reload can prevent its agent call entirely | Use existing owner calls/feedback and `previousAttempt`; prove pre-admission, setup and retained-input paths. Keep stable envelopes and existing reload protection until a safe interpretation route is proven | Original request reaches an executable responsible owner or remains visibly undelivered; same identities/effects survive restart and schema evolution; no repeated unchanged repair loop |
 | 5 — Alex audit; verification first | Existing audit policy covers recovered failures, but guidance alone does not prove readable correction/cost evidence or useful follow-up | Exercise the current periodic/breach-driven audit using retained execution/usage records; add instrumentation only for a demonstrated missing observation | One recovered costly pattern is visible separately from its successful outcome; a transient can receive no-change disposition; no review per sample or duplicate investigation |
 
 The strict new-contribution default does not require removing every tool's useful
-argument normalization. Scope slice 2 to the declared result contract and test
+argument normalization. Scope slice 3 to the declared result contract and test
 original values; validating already-converted values cannot recover their types.
 An explicit App normalization rule must apply equally to code and agents.
 
@@ -172,8 +175,12 @@ An explicit App normalization rule must apply equally to code and agents.
    Reuse it in `task-outcome-review.ts`, `metric-review.ts` and their new-output
    reader; code-produced judgments go through it too.
    Express known structural requirements, including nonblank text, in the schema
-   seen by the model. Preserve original historical reports; route formats the
-   current reader cannot handle through ordinary agent interpretation. A migration
+   seen by the model. Require only what every report must contain; make
+   potentially unavailable findings/evidence optional and keep completion judgment
+   separate. Do not warn or retry for every optional omission. The reader must
+   handle the same optional fields; an App can add a useful advisory in existing
+   summary/facts when requested information is missing. Preserve original historical
+   reports; route formats the current reader cannot handle through ordinary agent interpretation. A migration
    or separate legacy reader is not required. A reader must not add a hidden
    structural hurdle after finish or silently coerce invalid new data into success.
    Keep the agent's instructions linked to the contract and pass the shared schema
@@ -212,27 +219,23 @@ envelope while changing only its content.
 
 **Host completion feedback — generic support for any App.**
 
-1. In `workflow-finish.ts`, `agent-execution.ts` and `workflow-tool.ts`, make
-   the expected domain payload mandatory for successful contribution, while
-   allowing an explicit blocked/partial/failed finish to explain inability
-   without that payload. Any supplied typed payload must still validate.
-   Preserve other useful evidence through existing `facts`/execution references.
-   Reuse `ExecutionResult` and `execution-handoff.ts` status projection; add no
-   result state. Direct Task execution must also interpret those statuses,
-   keeping an absent domain result incomplete rather than treating a terminated
-   invocation as Task convergence. Schema admission callbacks run on supplied
-   proposals, not on an absent inability-report payload.
-   Audit both `managed-agent.ts` and the workflow Task adapter: preserve output
-   from every status for the caller's assessment. Status normalization must not
-   discard useful partial work. Evidence retention does not authorize settlement
-   after cancellation or turn an unaccepted proposal into an executed action.
-2. Remove the generic agent-only requirement for nonempty `verification_facts`.
-   Keep the field available as optional diagnostics. Required evidence is defined
-   and checked by the caller's contribution contract for both code and agents;
-   update affected App guidance with that source of truth. Supplied evidence can
-   suffice without another tool call. A wording-only change would leave the
-   inconsistent runtime gate in place. Preserve declared deliverable checks and
-   other requirements that actually belong to the assignment.
+1. Honor the existing declared report schema. The report remains required when
+   requested; fields that can be unavailable are optional in that schema for both
+   code and agents. Do not add status-specific exceptions or make every caller's
+   fields optional in Host. Missing optional information is ordinary reporting;
+   the App judges fulfillment and may include an advisory in existing facts.
+   Remove the hidden generic requirements for `verification_facts` on success and
+   `blockers` on failure/blocked. Keep both fields available, update their model
+   descriptions, and preserve checks on supplied deliverable paths. Express the
+   existing nonblank-summary requirement in the visible schema.
+2. Prove the existing return path before changing adapters. A valid structured
+   agent report already completes its invocation even if its outer finish status
+   says partial/blocked/failure. Task reports can retain useful work with
+   `state: waiting` and `continue: true`; no new partial state or adapter branch is
+   needed. Common helper results retain output/facts on all authored statuses.
+   Actual execution failure or cancellation remains distinct: retain evidence
+   through existing references without automatically admitting its proposed
+   actions. Do not remove those fences to make a failed run look accepted.
 3. Align the real caller-result validator with the App's admission semantics,
    including strict types by default and shared explicit normalization if declared.
    The pinned validator currently converts values before ordinary tool callbacks;

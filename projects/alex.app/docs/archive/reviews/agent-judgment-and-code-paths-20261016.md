@@ -272,6 +272,53 @@ uses its existing independent operational feedback route.
 Sources: Host `src/app/core/inbox/app-inbox-host.ts`, Alex `app.ts`,
 [recovery ownership](../../2a-design/system-boundary.md#recovery-uses-evidence-before-repetition).
 
+## October 17 optional-report refinement
+
+The follow-up uses Host main `0fa9a8a12` (merged #371); the implementation is
+[Host `791abcc11`](https://github.com/hao1939/may-agent/commit/791abcc11). It changes the proposed
+fix: use one report schema with optional unavailable information, rather than
+Host exceptions that waive the result for selected finish statuses. The owning
+[report contract](../../2a-design/execution-contributions.md#a-valid-report-can-describe-incomplete-work)
+explains why report validity and fulfillment are independent.
+
+Source inspection and executable trials distinguish two cases:
+
+- A schema-valid report may describe incomplete work. Existing agent execution
+  already returns it without a transport failure; a direct Task agent can retain
+  useful work with `waiting` and `continue: true`. No adapter change is required
+  for this case. Code workflows likewise return an ordinary report; common
+  handoffs retain output/facts on all authored statuses.
+- Actual failed or cancelled execution retains evidence and run references.
+  That does not authorize applying a proposed action or claiming the Task done.
+  The earlier concern about status-based adapters is not a reason to automatically
+  accept output from a failed execution.
+
+The Host candidate removes hidden mandatory checks on optional
+`verification_facts` and `blockers`, updates their model-facing descriptions,
+and expresses the existing nonblank-summary requirement in the schema. It keeps
+caller-declared required fields and checks on supplied deliverable paths. No
+warning subsystem, new result state, migration, or automatic schema weakening
+is added. The checked manual example now permits absent verdict/references and
+returns the available report for caller assessment.
+
+Portable trials use the real tool validator and finish implementation, scripted
+model replies through `executePreparedAgent`, and the managed Task adapter:
+all four finish statuses return the report in one reply without optional outer
+diagnostics. The Task keeps supplied patch information and its waiting/continuation
+decision. Missing declared required fields and malformed supplied values remain
+rejectable. Existing cancellation, committed-finish, workflow handoff and Task
+settlement tests remain the owners of their respective protections.
+
+The focused tests passed: 77 completion/agent/Task checks and 33 correction/
+handoff checks. `check:may-design` passed in the isolated Apps worktree with
+one existing root-layout warning. A direct trial of the manual example retained
+the same incomplete report for both done and blocked helper outcomes, without
+inventing a verdict. Full Host CI is recorded with the source PR.
+
+These trials do not establish live model behavior or token savings. App schema/
+reader alignment and the pinned tool validator's implicit conversion remain
+separate gaps. Source verification and deployment must be reported separately.
+
 ## Design refinement and implementation order
 
 Put the system-wide rule in philosophy/core principles, summarize ownership in
