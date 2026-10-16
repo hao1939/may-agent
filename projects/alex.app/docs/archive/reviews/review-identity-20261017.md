@@ -1,8 +1,8 @@
 # Truncated linked-Task review identity — independent review
 
-Status: source review complete; no A-specific correctness finding. Not integrated
-into Apps main or activated. Broader repository type checking has the same two
-SDK errors on the unchanged baseline and the candidate.
+Status: source review complete; no A-specific correctness finding. Focused tests,
+design checks and the root TypeScript check pass. Source integration and local
+App activation are separate operations; this record establishes source readiness.
 
 ## Scope
 
@@ -10,8 +10,9 @@ Reviewed `f67d832008d0321f657440452e2e02a9fe19e805` and the selector regression
 from `e80f3ae20b62090c8404b1fcc2a08d43a802014a`, isolated on Apps main
 `0c0bd5f49d018692470d1b49cdac96ddb427c87e`.
 
-The review branch is `review/alex-review-identity-20261017`. It contains only
-proposal A and its connected selector regression; the completion-guidance work
+The review branch is `review/alex-review-identity-20261017`. It contains
+proposal A, its connected selector regression and a separate root TypeScript
+configuration correction described below. The completion-guidance implementation
 on the author's original branch is excluded from this review.
 
 ## Conclusion
@@ -45,11 +46,14 @@ boundary. It does not claim that the omitted content is unchanged or reviewed.
   checks. The pre-existing unclassified `reports` warning remains. The first
   attempt lacked a paired Host documentation path in the isolated checkout;
   providing the paired checkout resolved that setup failure.
-- `bun run typecheck` reports two errors in the paired SDK's `task-contract.ts`
-  at lines 494 and 596: `progress` narrowing and a reconcile-admission return type.
-  Running it on unchanged Apps main produced identical diagnostics. This review
-  does not claim a passing whole-repository type check or repair those separate
-  baseline issues.
+- The original root `bun run typecheck` reported two errors in the paired SDK's
+  `task-contract.ts` at lines 494 and 596: `progress` narrowing and a
+  reconcile-admission return type. Unchanged Apps main produced identical
+  diagnostics. Enabling `strictNullChecks` restores the SDK's required union
+  narrowing; both the command-line experiment and the ordinary root check after
+  the configuration change pass. This separate tooling correction changes no SDK
+  source or runtime behavior. The root check covers its configured shared-code
+  entrypoints, not every App workflow; the optional final-runtime gate was not run.
 
 The focused command is:
 
