@@ -2,7 +2,7 @@
 
 **Status:** Direction accepted, implementation in progress, 2026-10-16.
 Principles and contract refinements are integrated into their owning documents.
-The first source candidate addresses database contention; later steps remain open.
+The first source candidate addresses database contention in [Host PR #370](https://github.com/hao1939/may-agent/pull/370); later steps remain open.
 No deployment is established by this document.
 
 **Parent:** [Keep the Host boring and let Apps change](host-stability-and-app-extensibility-20261005.md).
@@ -191,7 +191,8 @@ the App chooses useful recovery work.**
 The current private recovery boolean describes reconciliation of a session
 projection. Some callers also use it as permission to release old ownership.
 Those meanings need a defined relationship. Merged #363 improved claim handling;
-other callers still treat the result differently. Failed process drain and known
+startup now also requires a positive result after #368. Terminal-session retry
+still treats the result differently. Failed process drain and known
 unsafe ownership already throw. This is not evidence of a demonstrated overlapping
 worker incident, and adding a blanket `false` gate could strand recoverable work.
 

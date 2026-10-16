@@ -1,6 +1,6 @@
 # Serving database contention: first implementation trial — 2026-10-16
 
-**Status:** Local source candidate, full CI passed; not published or deployed.
+**Status:** Published as [Host PR #370](https://github.com/hao1939/may-agent/pull/370); current-head local CI and GitHub Quality/Container passed. Not merged or deployed.
 **Supports:** [Responsive storage](../../2a-design/storage.md) and the
 [Host improvement plan](../../proposals/host-contract-improvements-20261016.md).
 
@@ -156,3 +156,20 @@ The observer follow-up also found a missing persistence boundary: the private
 by the journal. Preserve that intent with the Event when fixing ordinary
 observers; tagging only their live output would leave restart behavior different.
 No source fix for those later items is claimed here.
+
+## PR publication
+
+Published on October 16 as [Host PR #370](https://github.com/hao1939/may-agent/pull/370).
+The branch was rebased onto `da5814457119ed47afded8eeef326c6d183b8fc4` (#368),
+yielding `c8a49d8d244db1b3653f41fe4971aef1da408cf9`. The measured and tested
+pre-rebase revisions above remain historical evidence; current-head CI is a
+separate check. #368 changes startup recovery confirmation, not this patch's
+serving-write implementation.
+
+Current-head `bun run ci` passed: 3,745 tests passed, three installation-dependent
+tests skipped, zero failures; 21,452 assertions across 337 files in 255.66 seconds.
+GitHub Quality and Container both passed on that revision. Publication design
+checks passed with zero errors and the existing unclassified `reports` warning.
+No App runtime rollout or data migration is required by this change. The
+canonical design remains in the local Apps repository, which has a backup remote
+but no configured GitHub remote.
