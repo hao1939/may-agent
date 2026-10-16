@@ -772,14 +772,18 @@ const APP_INBOX_COLUMNS: Array<[string, string]> = [
 
 function ensureExistingAppInboxTableColumns(db: SqliteDb): void {
   if (!tableExists(db, "app_inbox_items")) return;
+  const columns = db.prepare("PRAGMA table_info(app_inbox_items)").all() as Array<{ name?: unknown }>;
+  const needsChangedAtBackfill = !columns.some((column) => column.name === "changed_at");
   for (const [column, definition] of APP_INBOX_COLUMNS) {
     ensureColumn(db, "app_inbox_items", column, definition);
   }
-  db.exec(`
-    UPDATE app_inbox_items
-    SET changed_at = COALESCE(completed_at, created_at)
-    WHERE changed_at IS NULL
-  `);
+  if (needsChangedAtBackfill) {
+    db.exec(`
+      UPDATE app_inbox_items
+      SET changed_at = COALESCE(completed_at, created_at)
+      WHERE changed_at IS NULL
+    `);
+  }
 }
 
 function ensureExistingAppEventAdmissionColumns(db: SqliteDb): void {

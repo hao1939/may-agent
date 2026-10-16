@@ -4,6 +4,40 @@ import { TASK_RESOURCE_SCHEMA, ensureTaskResourceSchema } from "./task-resource-
 import { applyDbSchema } from "./schema.js";
 
 describe("canonical database schema", () => {
+  it("backfills changed_at only when adding the column to a legacy App inbox", () => {
+    const underlying = openDatabase(":memory:");
+    const executedSql: string[] = [];
+    const db = {
+      exec(sql: string) {
+        executedSql.push(sql);
+        return underlying.exec(sql);
+      },
+      prepare: (sql: string) => underlying.prepare(sql),
+      run: (sql: string, params?: unknown[]) => underlying.run(sql, params),
+      close: () => underlying.close(),
+    };
+    try {
+      applyDbSchema(db);
+      underlying.exec("ALTER TABLE app_inbox_items DROP COLUMN changed_at");
+      underlying.exec(`INSERT INTO app_inbox_items (
+        id, app_id, source_kind, source_id, input_kind, input_data, created_at, updated_at, completed_at
+      ) VALUES ('legacy', 'sample', 'app', 'source', 'message', '{}', 100, 200, 300)`);
+      executedSql.length = 0;
+
+      applyDbSchema(db);
+      expect(underlying.prepare("SELECT changed_at FROM app_inbox_items WHERE id = 'legacy'").get()).toEqual({
+        changed_at: 300,
+      });
+      expect(executedSql.filter((sql) => sql.includes("UPDATE app_inbox_items\n      SET changed_at"))).toHaveLength(1);
+
+      executedSql.length = 0;
+      applyDbSchema(db);
+      expect(executedSql.some((sql) => sql.includes("SET changed_at = COALESCE"))).toBe(false);
+    } finally {
+      db.close();
+    }
+  });
+
   it("adds observation intent without guessing historical intent or changing delivery evidence", () => {
     const db = openDatabase(":memory:");
     try {
