@@ -70,6 +70,12 @@ CREATE INDEX IF NOT EXISTS idx_app_inbox_origin_event
   ON app_inbox_items(origin_event_id);
 CREATE INDEX IF NOT EXISTS idx_app_inbox_conversation
   ON app_inbox_items(app_id, conversation_id, conversation_seq);
+-- Recent pages use creation order, independently of admission sequence.
+CREATE INDEX IF NOT EXISTS idx_app_inbox_conversation_recent
+  ON app_inbox_items(app_id, conversation_id, created_at DESC, id DESC);
+CREATE INDEX IF NOT EXISTS idx_app_inbox_topic_recent
+  ON app_inbox_items(app_id, conversation_id, topic_id, created_at DESC, id DESC)
+  WHERE topic_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_app_inbox_execution_task
   ON app_inbox_items(app_id, execution_task_id) WHERE execution_task_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_app_inbox_task_admission

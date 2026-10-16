@@ -1880,63 +1880,54 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("accepts reconciled terminal session.end lifecycle facts as terminal no-ops", async () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-      const db = getDb(root);
-
-      const insert = db.prepare(
-        `INSERT INTO events
-         (event_type, source, owner, data, timestamp, ttl_ms)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-      );
-      for (const status of ["done", "error", "interrupted"]) {
-        insert.run(
-          "session.end",
-          null,
-          null,
-          JSON.stringify({
-            sessionId: `s_${status}`,
-            agent: "evaluator",
-            status,
-            reconciled: true,
-          }),
-          Date.now(),
-          1,
-        );
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 5));
-      bus.emit({
-        type: "handler.completed",
-        source: "cron",
-        owner: "agent:may",
-        data: { handler: "sample", agent: "may", durationMs: 5 },
-      } as any);
-
-      const rows = db
-        .prepare(
-          `SELECT delivery_status, accepted_by, delivery_route
-         FROM events
-         WHERE event_type = 'session.end'
-         ORDER BY id`,
-        )
-        .all() as Record<string, unknown>[];
-      expect(rows).toHaveLength(3);
-      for (const row of rows) {
-        expect(row).toMatchObject({
-          delivery_status: "accepted",
-          accepted_by: "terminal-noop",
-          delivery_route: "noop",
+  it.each(["ordinary", "legacy", "failed-consumer"] as const)(
+    "keeps lifecycle acceptance with its delivery owner across housekeeping: %s",
+    (scenario) => {
+      const root = tempRoot();
+      try {
+        const bus = new EventBus();
+        const writer = new DbWriter(root, { housekeepingIntervalMs: 0 });
+        bus.setPersistenceSubscriber(writer.handler);
+        bus.setDeliveryRecorder(writer.recordDelivery);
+        bus.subscribeDurableRoute((event) => {
+          if (scenario === "failed-consumer" && event.type === "session.end") {
+            throw new Error("Required consumer did not accept completion");
+          }
         });
+        for (const status of ["done", "error", "interrupted"]) {
+          bus.emit({
+            type: "session.end", source: "runtime", owner: "agent:worker", ttl_ms: 1,
+            data: {
+              sessionId: `s_${status}`, agent: "worker", status,
+              ...(scenario !== "ordinary" ? { reconciled: true } : {}),
+            },
+          } as any);
+        }
+        const rows = () => getDb(root).prepare(`SELECT id, delivery_status, accepted_by, delivery_route
+          FROM events WHERE event_type = 'session.end' ORDER BY id`).all();
+        expect(rows()).toHaveLength(3);
+        for (const row of rows()) {
+          expect(row).toMatchObject(scenario === "failed-consumer"
+            ? { delivery_status: "pending", accepted_by: null }
+            : { delivery_status: "accepted", accepted_by: "event-pair-tracker", delivery_route: "direct" });
+        }
+        writer.runHousekeeping(Date.now() + 10);
+        for (const row of rows()) {
+          expect(row).toMatchObject(scenario === "failed-consumer"
+            ? { delivery_status: "unhandled", accepted_by: null }
+            : { delivery_status: "accepted", accepted_by: "event-pair-tracker", delivery_route: "direct" });
+        }
+        const retained = rows();
+        closeDb(root);
+        const restarted = new DbWriter(root, { housekeepingIntervalMs: 0 });
+        for (let pass = 0; pass < 3; pass++) restarted.runHousekeeping(Date.now() + 20 + pass);
+        expect(rows()).toEqual(retained);
+      } finally {
+        closeDb(root);
+        rmSync(root, { recursive: true, force: true });
       }
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
+    },
+  );
 
   it("does not create a semantic lifecycle pair for an unaccepted message", async () => {
     const root = tempRoot();

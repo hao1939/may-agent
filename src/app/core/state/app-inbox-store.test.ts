@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
 import { readAppConversationResource } from "./conversations.js";
-import { createAppInboxItem, getAppInboxItem, listAppInboxHealth, listAppInboxItems, listAppInboxTaskDependencyKeys } from "./app-inbox-store.js";
+import { createAppInboxItem, getAppInboxItem, listAppInboxConversationItems, listAppInboxHealth, listAppInboxItems, listAppInboxTaskDependencyKeys } from "./app-inbox-store.js";
 import { associateAppInboxClaimSession, claimAppInboxItem, completeAppInboxClaim, waitAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
 
 describe("App inbox store", () => {
@@ -24,6 +24,61 @@ describe("App inbox store", () => {
       ...options,
     }).item;
   }
+
+  it("indexes recent conversation and Topic pages when upgrading populated history", () => {
+    // Model an existing installation before the page indexes are installed.
+    db.exec("DROP INDEX IF EXISTS idx_app_inbox_conversation_recent");
+    db.exec("DROP INDEX IF EXISTS idx_app_inbox_topic_recent");
+    let sequence = 100;
+    for (const [id, appId, conversationId, topicId, now] of [
+      ["old", "reader", "primary", "selected", 100],
+      ["tie-a", "reader", "primary", "selected", 200],
+      ["tie-z", "reader", "primary", "selected", 200],
+      ["new", "reader", "primary", "other", 300],
+      ["no-topic", "reader", "primary", undefined, 400],
+      ["other-conversation", "reader", "elsewhere", "selected", 500],
+      ["other-app", "elsewhere", "primary", "selected", 500],
+    ] as const) {
+      createAppInboxItem(db, {
+        id, appId, conversationId, topicId, now,
+        conversationSequence: sequence--,
+        source: { kind: "human", id },
+        input: { kind: "message", data: { text: id } },
+      });
+    }
+    const pages = [
+      { topicId: undefined, ids: ["no-topic", "new", "tie-z"] },
+      { topicId: "selected", ids: ["tie-z", "tie-a", "old"] },
+    ];
+    const before = pages.map(({ topicId }) => listAppInboxConversationItems(db, "reader", "primary", 3, topicId));
+    applyDbSchema(db);
+    applyDbSchema(db);
+
+    // Explain the SQL and bindings actually issued by the production reader.
+    const plans: string[][] = [];
+    const observedDb: SqliteDb = {
+      ...db,
+      prepare(sql) {
+        const statement = db.prepare(sql);
+        return {
+          ...statement,
+          all(...params) {
+            plans.push(db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...params).map((row) => String(row.detail)));
+            return statement.all(...params);
+          },
+        };
+      },
+    };
+    for (const [i, { topicId, ids }] of pages.entries()) {
+      const after = listAppInboxConversationItems(observedDb, "reader", "primary", 3, topicId);
+      expect(after).toEqual(before[i]);
+      expect(after.map((item) => item.id)).toEqual(ids);
+    }
+    expect(plans).toHaveLength(2);
+    expect(plans[0]?.some((step) => step.includes("idx_app_inbox_conversation_recent"))).toBe(true);
+    expect(plans[1]?.some((step) => step.includes("idx_app_inbox_topic_recent"))).toBe(true);
+    expect(plans.flat().some((step) => step.includes("TEMP B-TREE") || step.startsWith("SCAN app_inbox_items"))).toBe(false);
+  });
 
   it("creates identical input idempotently within an App", () => {
     const first = createAppInboxItem(db, {

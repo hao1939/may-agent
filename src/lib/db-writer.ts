@@ -384,18 +384,6 @@ function normalizePersistedEscalationPayload(
   };
 }
 
-const RECONCILED_TERMINAL_SESSION_STATUSES = new Set(["done", "error", "interrupted"]);
-
-function isTerminalNoopEvent(eventType: unknown, data: Record<string, unknown> | null): boolean {
-  if (eventType !== "session.end" || !data) return false;
-  return (
-    data.reconciled === true &&
-    typeof data.sessionId === "string" &&
-    typeof data.agent === "string" &&
-    RECONCILED_TERMINAL_SESSION_STATUSES.has(String(data.status))
-  );
-}
-
 function keyPart(value: unknown): string | undefined {
   if (typeof value === "string" && value.trim()) return value.trim();
   if (typeof value === "number" && Number.isFinite(value)) return String(value);
@@ -1189,33 +1177,8 @@ export class DbWriter {
 
   private sweepUnacceptedEvents(now: number): void {
     try {
-      const terminalRows = this.db
-        .prepare(
-          `SELECT id, event_type, data
-           FROM events
-           WHERE delivery_status IN ('pending', 'unhandled')
-             AND timestamp >= ?
-             AND timestamp + COALESCE(ttl_ms, ?) < ?
-           LIMIT 500`,
-        )
-        .all(this.deliveryTrackingStartedAt, DEFAULT_UNACCEPTED_TTL_MS, now);
-      for (const row of terminalRows) {
-        if (!isTerminalNoopEvent(row.event_type, parseStoredEventData(row.data))) {
-          continue;
-        }
-        this.db.run(
-          `UPDATE events
-           SET delivery_status = 'accepted',
-               accepted_by = COALESCE(accepted_by, 'terminal-noop'),
-               accepted_at = COALESCE(accepted_at, ?),
-               delivery_route = COALESCE(delivery_route, 'noop'),
-               delivery_note = COALESCE(delivery_note, 'terminal lifecycle fact accepted as no-op')
-           WHERE id = ?
-             AND delivery_status IN ('pending', 'unhandled')`,
-          [now, row.id],
-        );
-      }
-
+      // Acceptance is recorded by delivery, never inferred from a terminal
+      // payload: even a completed session can have a failed required consumer.
       const newlyUnhandled = this.db.run(
         `UPDATE events
          SET delivery_status = 'unhandled',
