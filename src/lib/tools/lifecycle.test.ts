@@ -81,26 +81,16 @@ describe("createFinishTool", () => {
     expect(text).toContain("missing");
   });
 
-  it("requires blockers for blocked status", async () => {
+  it.each(["blocked", "failure"])("accepts a %s summary without optional blocker details", async (status) => {
     const tool = createTool();
     const text = await callFinish(tool, {
-      status: "blocked",
-      summary: "Can't proceed.",
+      status,
+      summary: "Test environment is unavailable.",
     });
 
-    expect(text).toContain("error");
-    expect(text).toContain("blockers");
-  });
-
-  it("requires blockers for failure status", async () => {
-    const tool = createTool();
-    const text = await callFinish(tool, {
-      status: "failure",
-      summary: "Failed.",
-    });
-
-    expect(text).toContain("error");
-    expect(text).toContain("blockers");
+    expect(text).not.toContain("finish() error");
+    expect(text).toContain(status.toUpperCase());
+    expect(text).toContain("Test environment is unavailable.");
   });
 
   it("returns blocked output with blockers", async () => {
@@ -169,7 +159,7 @@ describe("createFinishTool", () => {
     expect(text).toContain("SUCCESS");
   });
 
-  it("rejects success without verification_facts", async () => {
+  it("accepts success without optional verification_facts", async () => {
     const tool = createTool();
     const text = await callFinish(tool, {
       status: "success",
@@ -177,8 +167,9 @@ describe("createFinishTool", () => {
       deliverables: [{ path: "src/lib/feature.ts", description: "Feature" }],
     });
 
-    expect(text).toContain("error");
-    expect(text).toContain("verification_facts");
+    expect(text).not.toContain("finish() error");
+    expect(text).toContain("SUCCESS");
+    expect(text).not.toContain("Verification facts");
   });
 
   it("includes verification facts in output", async () => {

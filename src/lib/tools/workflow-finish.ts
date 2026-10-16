@@ -35,7 +35,7 @@ export function createWorkflowFinishTool(
   return {
     ...baseFinish,
     description: outputSchema
-      ? `${baseFinish.description} Complete this invocation with a result payload matching the supplied schema. This reports to the caller; the caller judges whether the contribution fulfills its work.`
+      ? `${baseFinish.description} Return a report matching the supplied result schema, including its required fields. Omit unavailable optional information instead of inventing it. A valid report may describe incomplete work or a blocker; the caller judges fulfillment and the next action.`
       : `${baseFinish.description} Complete this invocation through this tool.`,
     parameters,
     execute: async (toolCallId, params, signal, onUpdate) => {

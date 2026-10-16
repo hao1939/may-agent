@@ -634,6 +634,9 @@ export type WorkflowContext<TInput = unknown> = {
   readCommunication?: TaskAttempt["read"]["communication"];
   read: AppRead;
   agents: {
+    /** Schema for the contribution report, including incomplete work. Make
+     * unavailable information optional; a valid report does not imply Task
+     * fulfillment. Missing optional fields do not require a correction turn. */
     call<S extends TSchema>(
       agent: string,
       task: string,

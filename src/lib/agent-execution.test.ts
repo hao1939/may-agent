@@ -22,6 +22,7 @@ import {
 import { readFileWritePolicy } from "./tools/file-write-policy.js";
 import { currentAgentSessionId } from "./agent-session-context.js";
 import { createFinishTool } from "./tools/lifecycle.js";
+import { agentExecutionResult } from "./execution-handoff.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace } from "../app/core/tasks/app-task-output-paths.js";
@@ -774,6 +775,28 @@ describe("direct structured judgment execution", () => {
     return stream;
   }
 
+  test.each(["success", "partial", "blocked", "failure"])("returns a valid %s report in one reply without optional diagnostics", async (status) => {
+    const prepared = prepare();
+    let calls = 0;
+    prepared.runner.streamFn = () => {
+      calls++;
+      return finishStream({ status, summary: judgment.summary, result: judgment });
+    };
+
+    const result = await executePreparedAgent(prepared);
+
+    expect(calls).toBe(1);
+    expect(result.status).toBe("done");
+    expect(result.error).toBeUndefined();
+    expect(result.finishResult?.status).toBe(status);
+    // The invocation returned; its report still says the assignment is incomplete.
+    expect(result.structuredResult).toEqual(judgment);
+    expect(agentExecutionResult({ ...result, sessionId: prepared.sessionId, duration: "0s", outputDir: "" })).toMatchObject({
+      output: judgment,
+      status: status === "success" ? "done" : status === "failure" ? "error" : "blocked",
+    });
+  });
+
   test.each([false, true])("restores history with current instructions and tools (saved system messages: %s)", async (withSystem) => {
     const prepared = prepare(true);
     const history = [{ role: "user" as const, content: "Earlier evidence", timestamp: 1 }];
@@ -840,7 +863,6 @@ describe("direct structured judgment execution", () => {
   test.each([
     { ...finishArgs, result: { state: "unsupported" } },
     { ...finishArgs, result: undefined },
-    { ...finishArgs, blockers: [] },
   ])("rejects an invalid or uncommitted judgment %#", async (args) => {
     const prepared = prepare();
     let calls = 0;
