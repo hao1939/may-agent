@@ -37,7 +37,7 @@ App owns each domain contract. Do not force every operation into one payload.
 | Concern | Rule for either implementation |
 | --- | --- |
 | Assignment and input | Use the requested outcome, original input/evidence and current scope. Unfamiliar content remains available for interpretation; a rejected admission remains the caller's responsibility. |
-| Acceptance | Apply the same App-owned checks to newly proposed structured results from code and agents. Evidence requirements belong to that contribution contract and apply to both methods. Shape validation supports code consumption; it does not prove semantic correctness. |
+| Acceptance | Apply the same App-owned report checks to code and agents. Required fields must be available in every report; fields that can be unavailable are optional. A valid report enables code consumption, not a claim of fulfillment. |
 | Partial work and inability | Keep execution status, returned contribution and remaining work independent. Preserve useful output from every status for caller assessment. Missing output cannot imply fulfillment; inability must be reportable without fabricating it. |
 | Actions and replay | Use the same authority, cancellation, settlement and effect protections. Preserve accepted work and operation identities when changing method. Repeated consideration is allowed; it does not authorize repeating a committed effect. |
 | Correction and recovery | Return the original reference, specific failure, useful results and known effect status. Correct while the producer can still act; otherwise use the existing caller/Task recovery path. Infra owns supported mechanical retry; the App/agent owns another method or escalation within existing bounds. |
@@ -55,10 +55,39 @@ successful recovery remains success. Agent judgment is trusted within its scope,
 not guaranteed correct.
 
 **Coverage:** the shared execution scope, result vocabulary and Task admission
-already exist. Current App reader drift, agent-only completion requirements and
-status-dependent Task adapters still need alignment. The
+already carry valid incomplete reports. The October 17 Host candidate removes
+hidden requirements for optional finish diagnostics; it is not deployed. App
+reader drift and implicit validator conversion still need alignment. The
 [implementation proposal](../proposals/host-contract-improvements-20261016.md#return-unresolved-work-to-agent-judgment)
 owns that work and the comparison trials; these rules do not establish rollout.
+
+### A valid report can describe incomplete work
+
+The schema describes what the contributor can report, not everything that must
+eventually be accomplished. Require only fields needed to understand and handle
+every report. Make findings, test results and other information optional when
+they can legitimately be unavailable. The caller judges whether the reported
+work meets its acceptance criteria and what should happen next.
+
+For example, a report can contain a summary and changed files while omitting
+optional test results: "Patch written; test environment unavailable." Code and
+agents can both return that same report. Accepting it preserves the patch without
+claiming tests passed. Missing information stays missing; do not fabricate an
+empty successful result or invoke the model again just to fill an optional field.
+
+An App may attach an advisory observation such as "requested verification was
+not supplied" using its existing summary or facts. The Host cannot infer those
+expectations from an optional field. There is no warning for every omission,
+mandatory warning schema, or retry caused solely by a missing optional field.
+A supplied malformed value still needs correction or interpretation before code
+uses it as validated data. Retain the original evidence for that judgment.
+
+Keep one schema for ordinary reports, including incomplete reports; do not add
+status-specific required-field exceptions in the Host. When a caller requests
+`finish.result`, the report itself remains required and its declared required
+fields still apply. The Host does not silently weaken the caller's schema.
+Task reports separately carry the owner's `waiting`, `converged` or `incomplete`
+decision. This needs no new partial-result state or Task lifecycle.
 
 ## Invocation and ownership
 
@@ -557,13 +586,14 @@ the blocker. It need not keep formatting the same proposal forever. Final commit
 still checks current authority and state; a concurrent change can reject a
 previously valid proposal and must leave evidence for the next permitted attempt.
 
-Completion of an invocation and availability of a domain result are independent.
-An inability report must not require fabricating the expected result. An App
-defines the evidence its contribution needs; supplied observations can support
-judgment without another tool call. Host must not impose an extra mandatory
-evidence field only on agents. Existing outer diagnostic fields can remain
-optional; required evidence belongs to the caller's contribution contract.
-Host records execution and enforces that contract.
+Completion of an invocation and fulfillment of the assignment are independent.
+Use the [ordinary report schema](#a-valid-report-can-describe-incomplete-work)
+to express missing information. An App defines the evidence needed to judge
+fulfillment; requiring it in every report would prevent honest inability reports.
+Supplied observations can support judgment without another tool call. Host must
+not impose an extra mandatory evidence field only on agents or require optional
+blocker details already explained in the summary. Host records execution and
+enforces the declared report contract.
 
 Consumers must preserve supplied output and facts even when execution is blocked,
 failed or interrupted. Assess the contribution under normal admission rather
@@ -571,17 +601,23 @@ than discard it solely because its status is not `done`. Retention does not
 commit its actions: cancellation, lost authority, failed persistence and settlement
 fences still apply. Previously accepted effects remain accepted independently.
 
-**Implementation gap:** caller schemas currently require `finish.result` even
-for blocked/partial/failed finishes, and the generic finish tool requires separate
-`verification_facts` for agent success. Task adapters select output using execution
-status even though the common result can retain it on other statuses. App readers
-can differ from their advertised schema in both directions. Public workflow agent
+**Implementation coverage:** schema-valid incomplete reports already return
+through the ordinary agent and workflow paths. Direct Task agents can return
+`state: waiting` with useful work and `continue: true` independently of their
+outer finish status. The October 17 Host candidate removes the hidden
+`verification_facts` and `blockers` requirements and teaches optional information
+as optional; declared deliverable-path checks remain. Actual execution failure
+still preserves evidence through run references rather than automatically
+settling a Task proposal. No status-specific schema bypass is introduced.
+
+**Remaining gaps:** App readers can differ from their advertised schema in both
+directions. Public workflow agent
 calls expose a schema but not the direct Task agent's pure completion callback.
 The pinned model tool validator can coerce values before App checks run, so even
 one schema currently does not assure the same admission behavior. The
 [implementation proposal](../proposals/host-contract-improvements-20261016.md#return-unresolved-work-to-agent-judgment)
-specifies the coordinated changes; callers must use installed contracts until
-then. Existing App schemas can already express meaningful unavailable outcomes.
+specifies the remaining changes; callers must use installed contracts until
+activation. Optional report fields are already supported by the schema surface.
 
 For a direct Task agent, Host supplies the App's pure action/Condition admission
 checks to `finish` alongside the shared result schema. A correctable shape or

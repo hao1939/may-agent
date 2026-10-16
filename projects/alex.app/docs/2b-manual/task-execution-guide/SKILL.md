@@ -165,6 +165,14 @@ remains. When some inputs are fully fulfilled, use `converged` with their exact
 `inputKeys`; other requirements remain outstanding. Several related inputs can
 be fulfilled together. These use the supplied schema, not a new partial state.
 
+A valid report may describe incomplete work. Provide the required report fields
+and omit optional information you do not have; explain a relevant gap in the
+summary or facts. Do not invent test results or repeat work only to fill an
+optional field. As a caller, retain the useful contribution and judge what still
+needs doing. An absent field alone does not require another model call. See
+[ordinary reports](../../2a-design/execution-contributions.md#a-valid-report-can-describe-incomplete-work)
+for the shared rule and current Host coverage.
+
 When Host asks you to wrap up, use the facts already gathered and call `finish()`.
 State what is confirmed, what remains, and any uncertain effects from interrupted
 tools or helpers. If a patch is ready but its review was interrupted, record the

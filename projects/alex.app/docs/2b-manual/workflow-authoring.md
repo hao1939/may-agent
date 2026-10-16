@@ -44,8 +44,8 @@ agents/<name>/workflows/<workflow>.ts  # standalone/system agent only
 
 Use a flat `.ts` module exporting `name`, a nonempty `description`, and
 `execute(ctx)`. Start from the [checked review example](../examples/review-change.ts).
-It validates its input, requests structured review output, retains incomplete
-work, and returns a completed review even when the verdict asks for changes.
+It validates its input, requests structured review output, and returns usable
+reports even when findings are incomplete or the verdict asks for changes.
 Its `reviewer` is an example team capability, not a universal role or an installed
 agent guaranteed by the Host. Its description states the promised result and scope.
 
@@ -98,6 +98,18 @@ fabricate an execution identity. A system failure may carry its result on
 `done` means this bounded workflow completed. It does not by itself complete an
 App request or task. The calling App/task boundary validates and admits the
 output.
+
+Design the output schema for reports that can honestly describe incomplete work.
+For example, require a summary and make `changes` and `testResults` optional if
+they may be unavailable. Use the same definition for code and agent output.
+Missing optional test results do not invalidate the report or mean tests passed.
+Retain the patch and let the caller decide how to obtain the remaining evidence.
+If useful, record "requested verification is missing" in ordinary facts or the
+summary; do not retry merely because an optional field is absent. See
+[report validity and fulfillment](../2a-design/execution-contributions.md#a-valid-report-can-describe-incomplete-work).
+An actual invalid supplied value still needs correction or agent interpretation.
+Host support for removing hidden finish requirements is a source candidate;
+check the linked contract's implementation status before relying on activation.
 
 Use `id`, `kind`, `status`, `summary`, `output` and `facts` consistently for agent
 and workflow contributions. The execution adapter maps explicit partial agent work to
