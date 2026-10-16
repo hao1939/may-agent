@@ -599,6 +599,12 @@ judgment. Do not replay it unchanged merely to spend a retry count. If there is
 no suitable code path, the agent can handle the assignment directly. Existing
 operation budgets apply; this convention adds no retry layer or universal count.
 
+Both methods obey the [common contribution contract](execution-contributions.md#common-contract-for-code-and-agents).
+Host preserves the declared schema's admission behavior across adapters; the App
+owns domain requirements and any explicit normalization. A schema mismatch may
+need interpretation, while denied authority still needs an authorized decision.
+Neither changes merely because an agent receives the problem.
+
 Host returns the original operation/input reference, specific failure, useful
 partial evidence and known or uncertain effects through the existing call or
 Task feedback. It records acceptance separately from a proposed result. An agent

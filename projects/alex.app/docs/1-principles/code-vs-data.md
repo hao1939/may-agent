@@ -41,6 +41,11 @@ Keep agents responsible for meaning, tradeoffs and sufficiency. A fresh judgment
 must be able to change the approach, reuse sound work or conclude that no edit
 is needed, within the current requirement and authority.
 
+Choosing code or an agent changes the method, not the contribution's contract.
+Keep one owned definition of acceptance, including any allowed normalization,
+and test it through both real execution paths. See the
+[common contract](../2a-design/execution-contributions.md#common-contract-for-code-and-agents).
+
 When reviewing a tool or workflow, ask:
 
 - Does it give the agent a useful capability or remove repeated mechanical work?

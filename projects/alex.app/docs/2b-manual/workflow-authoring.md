@@ -351,7 +351,11 @@ Start from the [common contribution contract](../2a-design/execution-contributio
 Keep the App's schema and pure admission checks in one module. Use them for
 code-produced results and consumer validation, and pass that schema to agent
 calls. Link the agent's guidance to the same requirements; do not duplicate a
-different schema in prose. Read returned output and facts separately from status:
+different schema in prose. Include wrong-type fixtures through the actual model
+tool validator: implicit adapter conversion can differ from the App's checks even
+with the same schema. The strict shared-admission behavior is an implementation
+gap until that boundary is aligned; a check after conversion cannot recover the
+original type. Read returned output and facts separately from status:
 a blocked or failed call may contain useful work to assess, without authorizing
 its effects or fulfilling the whole assignment.
 

@@ -1,9 +1,9 @@
 # Strengthen Host contracts while keeping Apps free to evolve
 
-**Status:** Direction accepted, implementation in progress, 2026-10-16.
+**Status:** Direction accepted, implementation in progress; reviewed 2026-10-17.
 Principles and contract refinements are integrated into their owning documents.
 Database contention is fixed in merged [Host PR #370](https://github.com/hao1939/may-agent/pull/370).
-The observer-accounting change is ready for review in [Host PR #371](https://github.com/hao1939/may-agent/pull/371); revised local CI and current-head hosted checks passed. Receipt expiry is ready for review in [Host PR #372](https://github.com/hao1939/may-agent/pull/372); local CI and hosted checks passed. The common code/retry/agent flow is accepted below; its completion-feedback implementation remains proposed. Other later steps remain open.
+The observer-accounting change remains open in [Host PR #371](https://github.com/hao1939/may-agent/pull/371), now at `151098f6bc`; earlier verification here applies to `21abd7b9b`, not that later head. Receipt expiry is merged in [Host PR #372](https://github.com/hao1939/may-agent/pull/372). The common code/retry/agent flow is accepted below; its implementation gaps and order are recorded in [Remaining gaps and fix order](#remaining-gaps-and-fix-order). Other later steps remain open.
 No deployment is established by this document.
 
 **Parent:** [Keep the Host boring and let Apps change](host-stability-and-app-extensibility-20261005.md).
@@ -72,7 +72,7 @@ labels below organize review; they are not new APIs, stored states or registries
 | --- | --- | --- | --- |
 | C1 — Work and usable context | Retain exact admitted input, covered contributions and independent Conditions; expose current scope, pending work and readable evidence with honest missing/truncated states | Interpret intent, gather domain context, accept scoped results, continue or wait | [Task attempts](../2a-design/task-attempts.md); recent context/partial-result fixes to preserve and verify across supported workers |
 | C2 — Facts and attention | Distinguish retained observation, required delivery and eligibility to execute; preserve separate progress/failure facts and the caller's declared interest | Choose relevant facts, immediate or deferred progress, explicit help requests and investigation policy | [Execution feedback](../2a-design/execution-feedback.md), [Events](../2a-design/events.md); #351 established attention separation, ordinary-observer accounting is verified in #371, awaiting review |
-| C3 — Acceptance and replay | Let each operation owner record its own acceptance; recover unfinished delivery using saved identity, scope and timing; do not substitute a global receipt for pending App admission | Reuse results, revise authorized work or choose a different recovery operation | [Events](../2a-design/events.md), [Storage](../2a-design/storage.md); retain #336/#364/#366/#367; restart-independent expiry candidate in verification |
+| C3 — Acceptance and replay | Let each operation owner record its own acceptance; recover unfinished delivery using saved identity, scope and timing; do not substitute a global receipt for pending App admission | Reuse results, revise authorized work or choose a different recovery operation | [Events](../2a-design/events.md), [Storage](../2a-design/storage.md); retain #336/#364/#366/#367; restart-independent expiry merged in #372 |
 | C4 — Execution and recovery | Restore safe execution of the same Task, preserve accepted effects and diagnostic evidence, retain the declared procedure and expose unresolved ownership or exhaustion | Compose workflow/agent calls, choose repair or escalation, decide useful recovery work | [Host/App boundary](../2a-design/system-boundary.md), [Task lifecycle](../2a-design/task-resource-engine.md); preserve #344/#360, clarify private recovery confirmation |
 | C5 — Responsiveness and finishing | Bound synchronous work and nested allowances; make knowable result errors correctable before exit, revalidate at fenced commit, retain partial evidence and cancel owned work correctly | Allocate useful work within supported budgets and choose what partial result to submit | [Runtime](../2a-design/runtime.md), [Task attempts](../2a-design/task-attempts.md); retain #289/#308/#335; contention fixed in merged #370; query profiling still open |
 | C6 — Extension and failure visibility | Preserve promised facts across relays, recovery and supported adapters; contain absent capabilities; expose failures without requiring an improvement App to keep Host operating | Rename/move Apps, evolve schemas and procedures, select reviewers and act on evidence | [Host/App boundary](../2a-design/system-boundary.md), [Metrics](../2a-design/metrics.md); no universal extension registry or Host diagnosis policy |
@@ -99,8 +99,8 @@ Preserve already-fixed behavior and keep runtime changes independently reviewabl
 | Step | Change and contract | Value / evidence |
 | --- | --- | --- |
 | 1 | Bound serving-path SQL waits; preserve operation-owned retry (C3/C5) | Merged #370; source verification complete, rollout not established |
-| 2 | Apply observation semantics through ordinary producers and relays (C2/C6) | PR #371 retains original intent and independent receipts; revised local CI and current-head hosted checks passed; ready for review |
-| 3 | Expire delivery receipts from durable status/timing (C3) | PR #372 uses the existing durable admission marker and saved timing; local/hosted checks passed; ready for review |
+| 2 | Apply observation semantics through ordinary producers and relays (C2/C6) | PR #371 remains open; earlier verified source and later PR head are distinguished above |
+| 3 | Expire delivery receipts from durable status/timing (C3) | Merged #372 uses the existing durable admission marker and saved timing; rollout not established |
 | Next | Return unresolved work to agent judgment (C1/C4/C5/C6) | App adoption plus focused Host completion feedback, as specified below; does not wait for query profiling or private recovery cleanup |
 | 4 | Trial one private recovery success meaning across callers/backends (C4/C6) | Consistent safe retry without adding optional-artifact gates |
 | 5 | Profile metric queries; optimize or contain demonstrated cost (C5) | Synthetic blocking shown; installed query impact remains unmeasured |
@@ -139,8 +139,32 @@ App-owned schema/admission helper used by task review, metric review and any cod
 producing a new judgment. Supply that same schema to the agent. Feed identical
 valid and invalid fixtures through both paths, including correction, before
 changing broader recovery behavior. Keep historical evidence and report reuse
-separate from admitting a newly generated judgment. This slice needs no Host
-policy change, registry or bulk migration.
+separate from admitting a newly generated judgment. This App slice can improve
+schema/reader alignment independently. Full parity also needs the actual tool
+validator: the October 17 probe found implicit conversion before App checks.
+Do not claim end-to-end equivalence from a strict reader alone.
+
+#### Remaining gaps and fix order
+
+Reviewed Apps main `9d94b5a42a`, the earlier Alex candidate evidence, and Host
+`21abd7b9b`; the relevant completion/Task adapters are unchanged from local Host
+main `ff3449013`. These are source findings, not deployment or incidence claims.
+The [dated follow-up](../archive/reviews/agent-judgment-and-code-paths-20261016.md#october-17-contract-and-gap-review)
+records the new probes and limits. Work through the following slices; the first
+is independently useful, while slices 2 and 3 complete the shared Host boundary.
+
+| Order / owner | Gap and impact | Smallest fix | Evidence needed to finish |
+| --- | --- | --- | --- |
+| 1 — Alex App | Schema and reader disagree, causing late rejection or silently changed data | One new-judgment schema/admission helper; use it in both reviews and expose that schema to agents. Preserve historical reads/publication reuse | Identical valid, blank, missing, wrong-type and extra-field fixtures agree through the App schema and reader; valid correction needs no reassessment |
+| 2 — Host/model validator | The tool path converts types before validation and echoes full rejected arguments; code checks can disagree and correction costs grow | Validate caller-declared contribution payloads with the declared normalization policy before implicit conversion. Keep concise failures plus retained original evidence. Use one supported validator integration for both corrections | Real model-tool validation and App checks agree on original inputs, including relay serialization; required errors stay correctable and diagnostics stay bounded |
+| 3 — Host/completion consumers | Agent-only evidence gate and mandatory domain payload obstruct honest completion; status-based readers can hide partial work | Make evidence requirements caller-owned, permit explicit inability without fabricated output, and preserve all returned contributions for normal caller assessment | Agent/workflow success, inability and partial cases pass; cancellation still prevents effects; publication then failure/retry neither duplicates effects nor loses obligations |
+| 4 — App recovery, Host only for a demonstrated delivery gap | A late rejection can end the workflow; early failure/reload can prevent its agent call entirely | Use existing owner calls/feedback and `previousAttempt`; prove pre-admission, setup and retained-input paths. Keep stable envelopes and existing reload protection until a safe interpretation route is proven | Original request reaches an executable responsible owner or remains visibly undelivered; same identities/effects survive restart and schema evolution; no repeated unchanged repair loop |
+| 5 — Alex audit; verification first | Existing audit policy covers recovered failures, but guidance alone does not prove readable correction/cost evidence or useful follow-up | Exercise the current periodic/breach-driven audit using retained execution/usage records; add instrumentation only for a demonstrated missing observation | One recovered costly pattern is visible separately from its successful outcome; a transient can receive no-change disposition; no review per sample or duplicate investigation |
+
+The strict new-contribution default does not require removing every tool's useful
+argument normalization. Scope slice 2 to the declared result contract and test
+original values; validating already-converted values cannot recover their types.
+An explicit App normalization rule must apply equally to code and agents.
 
 **App adoption — Alex owns meaning and the next action.**
 
@@ -178,6 +202,14 @@ an agent. These trials do not weaken admission or silently convert a denied type
 action into work. Retained publication and follow-up decisions keep their effect
 protection.
 
+Some early recovery already works: Alex routes selector load/execution failures
+to ordinary owned work, and Host retains failure outcomes. Preserve that path.
+For schema evolution, include a pending inbox admission whose old content fails
+the new schema. Current reload/admission checks can stop it before an interpreter
+runs. Do not remove those checks merely because the design permits interpretation;
+prove preserved identity, authority and delivery first, or retain a compatible
+envelope while changing only its content.
+
 **Host completion feedback — generic support for any App.**
 
 1. In `workflow-finish.ts`, `agent-execution.ts` and `workflow-tool.ts`, make
@@ -201,7 +233,12 @@ protection.
    suffice without another tool call. A wording-only change would leave the
    inconsistent runtime gate in place. Preserve declared deliverable checks and
    other requirements that actually belong to the assignment.
-3. Return concise validation failures and retain original evidence by reference.
+3. Align the real caller-result validator with the App's admission semantics,
+   including strict types by default and shared explicit normalization if declared.
+   The pinned validator currently converts values before ordinary tool callbacks;
+   a post-conversion App check cannot establish equivalence. Integrate at the
+   supported validator boundary, preserving original evidence.
+   Return concise validation failures and retain original evidence by reference.
    Use the existing tool-error and execution-record boundaries for rejection and
    correction facts. The pinned Pi validator rejects before ordinary tool hooks
    and echoes full arguments: choose a supported library/adapter integration,
@@ -247,10 +284,11 @@ authorized bounded environment or naturally due work.
 | Retryable operation recovers | Same operation identity; no recovery-model call or duplicate effect |
 | Schema/check rejects a proposal | Exact feedback reaches the active agent; correction is accepted without repeating completed work |
 | Code and agent handle equivalent contributions | Same acceptance, authority and effect checks apply to both; malformed output from either remains correctable evidence |
-| Shared judgment fixtures include blank/missing/wrong-type/unknown fields | New-output schema and reader agree for both producers, with no silent field repair or extra post-finish hurdle |
+| Shared judgment fixtures include blank/missing/wrong-type/unknown fields | Original values pass or fail identically through the actual model tool and App reader, including relayed schemas; no implicit type repair or extra post-finish hurdle |
 | Contribution satisfies its declared evidence requirements | Code and agent can complete without an additional agent-only evidence field or gratuitous tool call |
 | Current code cannot interpret a legacy input | Ordinary agent interpretation can satisfy the current contract or report missing evidence; original history and accepted effects remain unchanged, with no bulk migration or new Task |
 | Input rejected before admission; procedure fails before it runs | Original input/failure reaches the existing caller or operational owner; no invented destination acceptance, replacement Task or success from logging alone |
+| New content schema encounters a pending older input during reload/replay | Stable envelope permits interpretation with original identity/effects intact, or rollout remains explicitly blocked; no dropped pending work or blind guard removal |
 | Agent cannot produce the domain result | Honest existing blocked/error result reaches caller without fabricated output or Task convergence |
 | Valid partial output accompanies blocked/failed execution | Both agent and workflow paths retain the contribution for caller judgment; unfinished obligations and cancellation/settlement fences remain intact |
 | Publication succeeded before later failure | Retry reuses the publication and retains any independent unfinished obligation |

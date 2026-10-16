@@ -129,6 +129,9 @@ Use code for known work. Infra retries failures that safe repetition can resolve
 unresolved situations return to the responsible agent. If an agent already owns
 the invocation, give it feedback there. A workflow uses an ordinary agent call
 when judgment is needed. This is one work loop with the same ownership and bounds.
+Code and agents handling the same contribution follow the
+[same contract](../2a-design/execution-contributions.md#common-contract-for-code-and-agents).
+Changing the method must not change acceptance, evidence requirements or effects.
 See [agents and code](design-philosophy.md#agents-handle-variety-code-makes-known-work-efficient)
 for its value and the [recovery contract](../2a-design/system-boundary.md#retry-and-recovery-ownership)
 for responsibility at each boundary.

@@ -29,6 +29,11 @@ recovery in the linked guide. A prompt, later reader or executor adapter must no
 invent a second acceptance policy. This requires no universal domain schema,
 contract registry or new invocation API.
 
+The shared rule applies to alternative implementations of the same contribution.
+A helper's review judgment and its caller's Task settlement can have different
+schemas and responsibilities. The Host keeps the execution rules common; the
+App owns each domain contract. Do not force every operation into one payload.
+
 | Concern | Rule for either implementation |
 | --- | --- |
 | Assignment and input | Use the requested outcome, original input/evidence and current scope. Unfamiliar content remains available for interpretation; a rejected admission remains the caller's responsibility. |
@@ -151,6 +156,10 @@ an unavailable recipient must remain visible as unresolved delivery.
 An App that relies on agent interpretation must test this route before its narrow
 reader or workflow can run, as well as the ordinary in-workflow agent call.
 Malformed content is evidence, not authority to bypass input or action checks.
+Where content must remain open to interpretation, use an existing stable
+message/goal envelope with original content as evidence. Its routing and authority
+fields still validate before dispatch. A catch inside the destination workflow
+cannot recover a request that never reached it.
 
 
 ## Awaited execution and durable waiting
@@ -471,6 +480,12 @@ interpretation cost can later justify a code path through the existing audit.
 **Coverage:** ordinary agent calls and retained evidence support this approach;
 individual App readers still need to route unresolved content through it. This
 is a design rule, not a claim that every historical format is currently handled.
+Input-schema evolution has an additional boundary: the current Host can reject
+reload for incompatible pending inbox admission commands and rechecks saved
+inbox input before Task attachment. Keep that protection until a trial preserves
+those exact pending identities and reaches a valid interpretation route. Keeping
+the message/goal envelope stable lets its content evolve without that change;
+an incompatible envelope needs a specific rollout decision, not a blind bypass.
 
 ## Result admission
 
@@ -525,6 +540,15 @@ proposals. Schema success enables that code path; the caller still judges the co
 meaning. Unfamiliar or invalid content remains evidence that an agent can
 interpret, but cannot directly drive effects that require validated data.
 
+**Normalization is part of acceptance.** New structured contributions are checked
+without implicit type conversion by default. If an App needs normalization, make
+that meaning-preserving rule explicit and shared by both methods, retaining the
+original evidence. A model tool adapter must not quietly turn a number into a
+string when the code path would reject it. Test the actual model tool validator,
+the App reader and the supported relay representation; schema equality alone
+does not establish equivalent acceptance. Ordinary tool arguments can keep their
+own declared normalization rules.
+
 Return correctable failures while the contributing agent can still act, sharing
 the App's new-output checks with its consumer. A rejected completion can be
 corrected within the same invocation and its existing allowance. If the method
@@ -552,7 +576,9 @@ for blocked/partial/failed finishes, and the generic finish tool requires separa
 `verification_facts` for agent success. Task adapters select output using execution
 status even though the common result can retain it on other statuses. App readers
 can differ from their advertised schema in both directions. Public workflow agent
-calls expose a schema but not the direct Task agent's pure completion callback. The
+calls expose a schema but not the direct Task agent's pure completion callback.
+The pinned model tool validator can coerce values before App checks run, so even
+one schema currently does not assure the same admission behavior. The
 [implementation proposal](../proposals/host-contract-improvements-20261016.md#return-unresolved-work-to-agent-judgment)
 specifies the coordinated changes; callers must use installed contracts until
 then. Existing App schemas can already express meaningful unavailable outcomes.

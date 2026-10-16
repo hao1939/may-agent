@@ -1,6 +1,6 @@
 # Agent judgment and code paths — October 16, 2026
 
-**Status:** Source review and recommended refinements; no runtime change or activation.
+**Status:** Source review and recommended refinements, with an October 17 follow-up; no runtime change or activation.
 
 **Supports:** [Purpose and value](../../1-principles/purpose.md): useful outcomes
 with less supervision and acceptable total cost.
@@ -45,6 +45,62 @@ This is a focused boundary review, not proof of coverage across every App or
 an attribution of current production cost to every finding.
 
 ## Findings and smallest useful corrections
+
+### October 17 contract and gap review
+
+Rechecked Apps main `9d94b5a42a` and Host `21abd7b9b`; the inspected finish,
+execution and Task adapter files have no diff from local Host main `ff3449013`.
+The previous gaps remain. This review used source and synthetic values, not live
+Tasks or model calls. The current PR #371 head has advanced to `151098f6bc`;
+GitHub reports it open, with changed files outside these completion paths.
+PR #372 is merged (`mergedAt: 2026-10-16T15:51:54Z`); deployment was not inspected.
+
+**Additional admission difference.** The installed Pi
+`dist/utils/validation.js::validateToolArguments` normalizes arguments before
+checking them. The real function was called with a `finish` tool whose schema
+was `Type.Object({ result: resultSchema })`, using the App's exported schema.
+The same original judgment was checked with `Value.Check(resultSchema, value)`
+and `parsedJudgment(value, true)`.
+
+| Fixture difference from a valid judgment | Strict schema | Tool accepts | Reader after tool conversion |
+| --- | --- | --- | --- |
+| None | yes | yes | yes |
+| `summary: 42` | no | yes, becomes `"42"` | yes |
+| `verification: [false]` | no | yes, becomes `["false"]` | yes |
+| Missing verification | no | no | not reached |
+| Blank summary | yes | yes | no |
+
+This is an actual validator probe, not a model-adherence test. It proves that
+sharing a schema does not by itself share admission semantics. The App-only reader
+fix is useful but insufficient for full parity: a check after conversion no longer
+sees the original type. Use a supported validator integration for caller-declared
+contributions; preserve ordinary tools' separately declared normalization. The
+same boundary currently echoes complete rejected arguments and runs before
+`beforeToolCall`, so error size and admission can be fixed together without a
+second feedback hook or edits to installed dependencies.
+
+**Recovery reachability and evolution.** `AppInboxHost.replaceApps` rejects
+incompatible pending `inbox` admission commands; saved inbox input is checked
+again before Task attachment. These guards protect pending work. They also mean
+that an agent call inside a workflow cannot by itself provide compatibility for
+every input-schema change. Keep a stable existing message/goal envelope where
+content needs interpretation; retain the guards until a connected reload/replay
+trial proves preserved identity and executable delivery. This source constraint
+does not prove a current production migration incident.
+
+**Useful behavior already present.** `attempt-runner.ts` retains failures and
+emits `project.task.reconciled`; Alex's `taskInputForEvent` explicitly routes
+selector failure, including load failure, into ordinary Alex work. The workflow
+and common execution artifacts retain diagnostic references; consumers still
+need to assess partial contributions correctly. Alex declares its existing
+six-hour `runtime/pattern-audit`, including recovered failures, usage versus
+progress, prior dispositions and quiet unchanged findings. Preserve these
+mechanisms. Reachability beyond the demonstrated selector case and actual audit
+coverage need connected verification; neither justifies a new Host model router
+or another audit scheduler.
+
+The [ordered gap plan](../../proposals/host-contract-improvements-20261016.md#remaining-gaps-and-fix-order)
+separates confirmed implementation differences from those verification gaps.
 
 ### Follow-up: compare both implementations against one contract
 
