@@ -49,7 +49,6 @@ WHERE json_extract(data, '$.version') = 1
     OR (json_type(data, '$.alertId') = 'integer' AND json_extract(data, '$.alertId') > 0))
   AND timestamp IS NOT NULL`;
 
-
 /** Canonical runtime schema. Historical schemas are not supported. */
 export const SCHEMA = `
 CREATE TABLE IF NOT EXISTS execution_usage (
@@ -202,7 +201,9 @@ CREATE TABLE IF NOT EXISTS events (
   idempotency_scope TEXT NOT NULL DEFAULT '',
   idempotency_hash TEXT,
   ingress_source TEXT NOT NULL DEFAULT '',
-  app_admission_pending INTEGER
+  app_admission_pending INTEGER,
+  app_admission_attempts INTEGER NOT NULL DEFAULT 0,
+  app_admission_error TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_events_owner ON events(owner, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type, timestamp);
@@ -533,8 +534,6 @@ CREATE INDEX IF NOT EXISTS idx_wfr_project_started ON workflow_runs(projectId, s
 CREATE INDEX IF NOT EXISTS idx_wfr_task_binding ON workflow_runs(app_id, task_id, task_generation, attempt_id);
 `;
 
-
-
 export function applyDbSchema(db: SqliteDb): void {
   // The daemon, web server, and maintenance process can open the same database
   // together after a restart. Serialize the complete shape upgrade so another
@@ -570,7 +569,8 @@ export function applyDbSchema(db: SqliteDb): void {
     db.exec(`CREATE INDEX IF NOT EXISTS idx_app_inbox_origin_event
       ON app_inbox_items(origin_event_id) WHERE origin_event_id IS NOT NULL`);
     db.exec(METRIC_DISPOSITION_SCHEMA);
-    const metricView = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'view' AND name = 'metric_dispositions'")
+    const metricView = db
+      .prepare("SELECT sql FROM sqlite_master WHERE type = 'view' AND name = 'metric_dispositions'")
       .get() as { sql: string } | null;
     if (metricView?.sql !== METRIC_DISPOSITION_VIEW) {
       db.exec("DROP VIEW IF EXISTS metric_dispositions");
@@ -604,7 +604,8 @@ function ensureSingleOpenMetricAlert(db: SqliteDb): void {
   if (db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = 'idx_ma_one_open_metric'").get()) return;
   // Keep the earliest inserted open ID: historical Events may already refer to
   // it. Administrative closure of duplicates is not a measured recovery.
-  db.prepare(`
+  db.prepare(
+    `
     WITH episodes AS (
       SELECT metric_id, MIN(id) AS episode_id FROM metric_alerts
       WHERE resolved_at IS NULL GROUP BY metric_id HAVING COUNT(*) > 1
@@ -616,7 +617,8 @@ function ensureSingleOpenMetricAlert(db: SqliteDb): void {
     WHERE resolved_at IS NULL AND id > (
       SELECT episode_id FROM episodes WHERE metric_id = a.metric_id
     )
-  `).run(Date.now());
+  `,
+  ).run(Date.now());
   db.exec(`CREATE UNIQUE INDEX idx_ma_one_open_metric
     ON metric_alerts(metric_id) WHERE resolved_at IS NULL`);
 }
@@ -777,7 +779,9 @@ function ensureExistingAppEventAdmissionColumns(db: SqliteDb): void {
   if (tableExists(db, "app_event_admission_commands")) {
     ensureColumn(db, "app_event_admission_commands", "payload_version", "INTEGER NOT NULL DEFAULT 1");
     ensureColumn(db, "app_event_admission_commands", "resolved_snapshot_id", "TEXT");
-    const schema = String(db.prepare("SELECT sql FROM sqlite_master WHERE name = 'app_event_admission_commands'").get()?.sql);
+    const schema = String(
+      db.prepare("SELECT sql FROM sqlite_master WHERE name = 'app_event_admission_commands'").get()?.sql,
+    );
     if (!schema.includes("'unresolved'")) {
       // The journal keeps the same identity and rows; only its route CHECK expands.
       db.exec(`
@@ -829,6 +833,8 @@ const EVENT_COLUMNS: Array<[string, string]> = [
   ["idempotency_scope", "TEXT NOT NULL DEFAULT ''"],
   ["idempotency_hash", "TEXT"],
   ["ingress_source", "TEXT NOT NULL DEFAULT ''"],
+  ["app_admission_attempts", "INTEGER NOT NULL DEFAULT 0"],
+  ["app_admission_error", "TEXT"],
 ];
 
 const TASK_BINDING_COLUMNS: Array<[string, string]> = [
