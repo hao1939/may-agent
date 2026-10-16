@@ -90,7 +90,7 @@ test("SQL diagnostics bound distinct shapes and expose omitted work instead of c
   }
 });
 
-test("SQL diagnostics retain one bounded parameterized plan only for a slow successful read", () => {
+test.each(["get", "all"] as const)("SQL diagnostics retain one parameterized plan for a slow %s read", (operation) => {
   let duration = 0;
   let start = true;
   const elapsedNow = () => {
@@ -159,8 +159,9 @@ test("SQL diagnostics retain one bounded parameterized plan only for a slow succ
 
     const read = db.prepare("SELECT value FROM sample WHERE value = ?");
     duration = 3_000;
-    expect(read.get("private parameter")).toEqual({ value: "private parameter" });
-    const slow = profile.snapshot().queries.topByWorstTime.find((row) => row.operation === "get" && row.plan);
+    const expected = operation === "get" ? { value: "private parameter" } : [{ value: "private parameter" }];
+    expect(read[operation]("private parameter")).toEqual(expected);
+    const slow = profile.snapshot().queries.topByWorstTime.find((row) => row.operation === operation && row.plan);
     expect(slow?.plan).toMatchObject({
       fingerprint: slow?.id,
       shape: "SELECT value FROM sample WHERE value = ?",
@@ -172,18 +173,83 @@ test("SQL diagnostics retain one bounded parameterized plan only for a slow succ
     expect(explainParams).toEqual([["private parameter"]]);
     expect(JSON.stringify(profile.snapshot())).not.toContain("private parameter");
 
-    for (let i = 0; i < 25; i++) read.get("private parameter");
+    for (let i = 0; i < 25; i++) read[operation]("private parameter");
     expect(explainCalls).toBe(1);
   } finally {
     db.close();
   }
 });
 
+test.each([
+  "WITH input(value) AS (SELECT ?) SELECT value FROM input",
+  "WITH RECURSIVE input(value) AS (SELECT ? UNION ALL SELECT value + 1 FROM input WHERE value < 2) SELECT value FROM input",
+])("SQL diagnostics capture plans for successful CTE reads: %s", (sql) => {
+  let elapsed = 0;
+  const profile = new SqlPerformance(512, () => 0, () => (elapsed += 1_001));
+  const db = profileDatabase(openDatabase(":memory:"), profile);
+  try {
+    expect(db.prepare(sql).get(2)).toEqual({ value: 2 });
+    const row = profile.snapshot().queries.topByWorstTime.find((row) => row.operation === "get");
+    expect(row?.plan?.rows.length).toBeGreaterThan(0);
+    expect(row?.plan?.shape).not.toContain("< 2");
+  } finally {
+    db.close();
+  }
+});
+
+test("plan capture respects the slow threshold, tracking capacity and window limits", () => {
+  let now = 0;
+  let elapsed = 0;
+  let duration = 1_000;
+  let captures = 0;
+  const profile = new SqlPerformance(1, () => now, () => (elapsed += duration));
+  const value = { value: "private result" };
+  const measure = profile.statement("SELECT ? AS value", (params) => {
+    expect(params).toEqual(["private parameter"]);
+    captures++;
+    return Array.from({ length: 30 }, (_, id) => ({
+      id, parent: 0, detail: "SCAN sample ".repeat(60), ignored: "private extra field",
+    }));
+  });
+  const read = () => measure("get", () => value, ["private parameter"]);
+  expect(read()).toBe(value);
+  expect(captures).toBe(0); // Exactly 1000 ms does not qualify.
+  duration = 1_001;
+  const failure = new Error("private read failure");
+  expect(() => measure("get", () => { throw failure; })).toThrow(failure);
+  expect(captures).toBe(0); // A failed read must not consume a later successful read's opportunity.
+  expect(read()).toBe(value);
+  expect(captures).toBe(1);
+  const first = profile.snapshot().queries.topByWorstTime[0]!.plan!;
+  expect(first.capturedAt).toBe(0);
+  expect(first.rows).toHaveLength(20);
+  expect(first.rowsTruncated).toBe(true);
+  expect(first.rows.every((row) => row.detail.length === 500)).toBe(true);
+  expect(JSON.stringify(profile.snapshot())).not.toContain("private");
+
+  let untrackedCaptures = 0;
+  const untracked = profile.statement("SELECT ? AS other", () => { untrackedCaptures++; return []; });
+  expect(untracked("get", () => value)).toBe(value);
+  expect(untrackedCaptures).toBe(0);
+  expect(profile.snapshot().untracked.calls).toBe(1);
+  now = 299_999;
+  expect(read()).toBe(value);
+  expect(captures).toBe(1);
+  now = 300_000;
+  expect(read()).toBe(value);
+  expect(captures).toBe(2);
+  const rotated = profile.snapshot();
+  expect(rotated.queries.topByWorstTime[0]?.plan?.capturedAt).toBe(now);
+  expect(rotated.previousQueries?.topByWorstTime[0]?.plan).toEqual(first);
+  expect(first.capturedAt).toBe(0);
+});
+
 test("a failed plan capture cannot change a successful slow read", () => {
   let start = true;
+  let now = 123_456;
   const profile = new SqlPerformance(
     512,
-    () => 123_456,
+    () => now,
     () => {
       start = !start;
       return start ? 1_001 : 0;
@@ -211,6 +277,9 @@ test("a failed plan capture cannot change a successful slow read", () => {
     for (let i = 0; i < 25; i++) expect(read.get("still returned")).toEqual({ value: "still returned" });
     expect(planAttempts).toBe(1);
     expect(profile.snapshot().queries.topByWorstTime.find((row) => row.operation === "get")?.plan).toBeUndefined();
+    now += 300_000;
+    expect(read.get("still returned")).toEqual({ value: "still returned" });
+    expect(planAttempts).toBe(2);
   } finally {
     db.close();
   }

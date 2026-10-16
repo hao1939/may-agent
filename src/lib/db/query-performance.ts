@@ -60,7 +60,7 @@ export class SqlPerformance {
   private total = emptyTiming();
   private untracked = emptyTiming();
   private queries = new Map<string, QueryTiming>();
-  private shapes = new Map<string, { shape: string; hash: string; read: boolean }>();
+  private shapes = new Map<string, { shape: string; hash: string }>();
   private planAttempts = new Set<string>();
   private previousQueries: ReturnType<SqlPerformance["querySnapshot"]> | undefined;
 
@@ -91,11 +91,10 @@ export class SqlPerformance {
       identity = {
         shape: fullShape.slice(0, 800),
         hash: createHash("sha256").update(fullShape).digest("hex").slice(0, 16),
-        read: isReadShape(fullShape),
       };
       if (sql.length <= 16_384 && this.shapes.size < this.limit) this.shapes.set(sql, identity);
     }
-    const { shape, hash, read } = identity;
+    const { shape, hash } = identity;
     return <T>(operation: string, work: () => T, params: readonly unknown[] = []): T => {
       const id = `${operation}:${hash}`;
       const started = this.elapsedNow();
@@ -122,25 +121,28 @@ export class SqlPerformance {
           !failed &&
           elapsed > slowReadThresholdMs &&
           (operation === "get" || operation === "all") &&
-          read &&
           query &&
           !this.planAttempts.has(id) &&
           explain
         ) {
           this.planAttempts.add(id);
           try {
-            const rows = explain(params);
-            query.plan = {
-              fingerprint: id,
-              shape: query.sql,
-              capturedAt: this.now(),
-              rows: rows.slice(0, planRowLimit).map((row) => ({
-                id: Number(row.id),
-                parent: Number(row.parent),
-                detail: String(row.detail ?? "").slice(0, planDetailLimit),
-              })),
-              rowsTruncated: rows.length > planRowLimit,
-            };
+            // Classification and planning belong only to the slow-read path.
+            // Inspect the complete masked shape, not the truncated display.
+            if (isReadShape(queryShape(sql))) {
+              const rows = explain(params);
+              query.plan = {
+                fingerprint: id,
+                shape: query.sql,
+                capturedAt: this.now(),
+                rows: rows.slice(0, planRowLimit).map((row) => ({
+                  id: Number(row.id),
+                  parent: Number(row.parent),
+                  detail: String(row.detail ?? "").slice(0, planDetailLimit),
+                })),
+                rowsTruncated: rows.length > planRowLimit,
+              };
+            }
           } catch {
             // Diagnostics must never change the successful read's result or failure semantics.
           }
