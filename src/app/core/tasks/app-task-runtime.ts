@@ -1178,7 +1178,7 @@ function recoverInterruptedAppTasks(
     const waitingRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["waiting"], 512);
     const releaseRecovery = (recovery: AppTaskAttemptRecovery, reason?: string) => {
       if (recovery.sessionId) {
-        interruptSupersededAgentSession(
+        const recovered = interruptSupersededAgentSession(
           opts,
           recovery.sessionId,
           `Recovered task ${recovery.taskId} interrupted an orphaned agent session from a previous runtime`,
@@ -1190,6 +1190,7 @@ function recoverInterruptedAppTasks(
             attemptId: recovery.attemptId,
           },
         );
+        if (!recovered) return;
       }
       const released = releaseInterruptedAppTaskAttempt(
         config,
