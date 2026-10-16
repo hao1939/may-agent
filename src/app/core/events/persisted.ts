@@ -1,7 +1,7 @@
 import type { SqliteDb } from "../../../lib/db.js";
 import { describeText, readJsonArtifactWithDescriptor } from "../../../lib/artifacts.js";
 import { readEventTraceMetadata } from "../../../lib/db/event-traces.js";
-import { EVENT_ROW_ID, type AgentEvent } from "./bus.js";
+import { EVENT_RECORD_ONLY, EVENT_ROW_ID, type AgentEvent } from "./bus.js";
 
 function parseStoredEventData(value: unknown): Record<string, unknown> | null {
   if (typeof value !== "string" || !value.trim()) return null;
@@ -58,7 +58,7 @@ export function loadPersistedEvent(db: SqliteDb, eventId: number, persistDir?: s
   const row = db
     .prepare(
       `SELECT event_type, source, owner, data, envelope_json, body_ref, body_sha256, body_bytes,
-              timestamp, urgency, ttl_ms
+              timestamp, urgency, ttl_ms, record_only
        FROM events
        WHERE id = ?`,
     )
@@ -109,5 +109,6 @@ export function loadPersistedEvent(db: SqliteDb, eventId: number, persistDir?: s
     ...readEventTraceMetadata(db, eventId),
   } as AgentEvent;
   Object.defineProperty(event, EVENT_ROW_ID, { value: eventId, configurable: true });
+  Object.defineProperty(event, EVENT_RECORD_ONLY, { value: row.record_only === 1, configurable: true });
   return event;
 }

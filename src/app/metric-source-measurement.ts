@@ -22,13 +22,12 @@ WHERE event_type = 'subscriber.failed'
   AND timestamp >= (strftime('%s','now') * 1000 - 3600000)`;
 export const UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID = "event.unhandled-signal-count-1h";
 // Remaining legacy producers require a separate declaration review. Reconciliation
-// facts now declare record-only intent, so their failed consumers must count.
+// and metric-failure facts declare durable record-only intent, so their failed
+// consumers must count.
 export const INTENTIONAL_OBSERVATION_EVENT_TYPES = [
   "project.task.executor.progress",
   "handler.routed",
   "metric.breach",
-  "metric.measurement.failed",
-  "metric.evaluation.failed",
   "conversation.updated",
   "project.approval.resolved",
 ] as const;

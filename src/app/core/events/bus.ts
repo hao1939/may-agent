@@ -1074,7 +1074,9 @@ type PersistenceSubscriber = (event: AgentEvent) => SubscriberResult | DeferredE
 export type SubscribeOptions = { priority?: "first" | "normal"; label?: string };
 export type EventListener = (event: AgentEvent) => void | Promise<void>;
 export type ListenOptions = { label?: string; types?: readonly string[] };
-export type DeliveryRecorder = (event: AgentEvent, result: DeliveryResult) => void;
+/** A failed required route is evidence, not an acceptance receipt. */
+export type DeliveryOutcome = DeliveryResult | { accepted: false; note: string };
+export type DeliveryRecorder = (event: AgentEvent, result: DeliveryOutcome) => void;
 
 type EventListenerState = {
   listener: EventListener;
@@ -1102,6 +1104,8 @@ export const EVENT_INGRESS_SOURCE = Symbol.for("may-agent.eventIngressSource");
 export const EVENT_DELIVERY_RESULT = Symbol.for("may-agent.eventDeliveryResult");
 /** Marks events admitted through the semantic EventInput boundary. */
 export const EVENT_INTERFACE_INPUT = Symbol.for("may-agent.eventInterfaceInput");
+/** Trusted publication intent: storage suffices when no durable route needs the
+ * fact. DbWriter preserves it across retry/restart; it cannot excuse a failed route. */
 export const EVENT_RECORD_ONLY = Symbol.for("may-agent.eventRecordOnly");
 /** Trusted, non-serializable source-attempt fence consumed by DbWriter. */
 export const EVENT_TASK_EMISSION_FENCE = Symbol.for("may-agent.eventTaskEmissionFence");
@@ -1362,7 +1366,12 @@ export class EventBus {
           }
         }
       }
-      if (!durableRouteFailed) {
+      if (durableRouteFailed) {
+        this.deliveryRecorder?.(event, {
+          accepted: false,
+          note: "A required durable route failed; see linked subscriber.failed evidence",
+        });
+      } else {
         delivery ??= pairTrackerFallback(event);
         if (!delivery && (event as AgentEvent & { [EVENT_RECORD_ONLY]?: boolean })[EVENT_RECORD_ONLY]) {
           delivery = {

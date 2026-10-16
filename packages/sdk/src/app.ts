@@ -410,7 +410,8 @@ export type AppObserverResult = {
 export type AppObserver = {
   id: string;
   intervalMs: number;
-  /** Return observed facts; the host publishes them after the run succeeds. */
+  /** Return observed facts; the Host persists them even when no consumer needs
+   * work. Declared subscriptions and Conditions still own their delivery. */
   run(context: ObserverContext): Promise<AppEvent[] | AppObserverResult>;
 };
 

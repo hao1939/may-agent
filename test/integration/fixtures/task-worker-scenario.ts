@@ -15,7 +15,8 @@ import {
 } from "../../../src/app/core/tasks/app-task-reconciler.js";
 import { admitTaskInput } from "../../../src/app/core/state/inbox.js";
 import { attachEventPersistence } from "../../../src/app/daemon-events.js";
-import { EventBus, EVENT_ROW_ID, type AgentEvent } from "../../../src/app/core/events/bus.js";
+import { EventBus, EVENT_RECORD_ONLY, EVENT_ROW_ID, type AgentEvent } from "../../../src/app/core/events/bus.js";
+import { loadPersistedEvent } from "../../../src/app/core/events/persisted.js";
 import { DbWriter } from "../../../src/lib/db-writer.js";
 import { UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY } from "../../../src/app/metric-source-measurement.js";
 import { AppRegistry } from "../../../src/app/core/apps/registry.js";
@@ -256,6 +257,10 @@ async function observationDelivery(consumer: "none" | "accept" | "fail") {
   f.db = getDb(f.persistDir);
   f.store = AppTaskResourceStore.fromDb(f.db, "sample");
   assert.deepEqual(receipts(), expired);
+  for (const { id } of observed) {
+    const restored = loadPersistedEvent(f.db, id, f.persistDir) as AgentEvent & { [EVENT_RECORD_ONLY]?: boolean };
+    assert.equal(restored[EVENT_RECORD_ONLY], true, "Worker publication intent must survive journal recovery");
+  }
   // This worker/parent boundary owns these two receipts. A concurrent receipt
   // write for the subscriber-failure diagnostic can also fail under contention;
   // the global metric must retain that additional failure, not hide it to make
