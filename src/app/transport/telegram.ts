@@ -1035,20 +1035,40 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       }),
       bindToCompleteDelivery: Boolean(displayedApproval || displayedHumanCondition || displayedAction?.signature.exact),
     });
-    if (delivered && running)
-      recordConversationMessage({
-        conversationId: sharedConversationId,
-        text: rendered,
-        command: "/watch update",
-        messageId: delivered,
-        chatId: watched.chatId,
-        topicId: watched.topicId,
-        taskRefs: [{ appId: task.appId, taskId: task.taskId }],
-        conversationTopicId,
-      });
-    // A send already in flight cannot be recalled. Its late result must not
-    // change a newer selection, including a new watch of the same Task.
-    if (!delivered || !running || watchedTasks.get(surface) !== watched) return;
+    // Telegram cannot recall an in-flight send, but its late acknowledgement
+    // must not commit stale progress to the Conversation or suppress the fresh
+    // terminal presentation. Re-read after provider I/O even when no wake was
+    // observed; a provider call is not a Task-state fence.
+    if (!delivered || !running) return;
+    if (watchedTasks.get(surface) !== watched) {
+      // A replacement watch can be displayed while this provider send is
+      // stalled. Restore it after the older send lands and becomes Telegram's
+      // latest message; an ended watch has nothing to restore.
+      if (watchedTasks.has(surface)) {
+        shownWatchRevisions.delete(surface);
+        watchRefresh.queue(surface);
+      }
+      return;
+    }
+    const currentTask = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
+    if (!currentTask || taskPresentationRevision(currentTask) !== revision) {
+      // The replacement may return to a presentation shown before this send.
+      // Invalidate that cache so the queued refresh still restores the latest
+      // canonical state after this stale message reached Telegram.
+      shownWatchRevisions.delete(surface);
+      watchRefresh.queue(surface);
+      return;
+    }
+    recordConversationMessage({
+      conversationId: sharedConversationId,
+      text: rendered,
+      command: "/watch update",
+      messageId: delivered,
+      chatId: watched.chatId,
+      topicId: watched.topicId,
+      taskRefs: [{ appId: task.appId, taskId: task.taskId }],
+      conversationTopicId,
+    });
     shownWatchRevisions.set(surface, revision);
     if (displayedAction) {
       const current = shownTodoActions.get(surface);
@@ -1601,7 +1621,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const deliverCommandView = (
       rendered: string,
       taskRefs: Array<{ appId: string; taskId: string }> = [],
-      onDelivered?: () => void,
+      prepareRecord?: () => false | void | (() => void),
       followTask?: { appId: string; taskId: string },
       approvalTask?: HumanTaskView,
       parseMode?: string,
@@ -1627,6 +1647,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           replyMarkup: taskButtons(followTask ? [followTask] : taskRefs),
         });
         if (!deliveredMessageId || !running) return;
+        const afterRecord = prepareRecord?.();
+        if (afterRecord === false) return;
         recordConversationMessage({
           conversationId,
           text: rendered,
@@ -1638,7 +1660,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           followTask,
           conversationTopicId,
         });
-        onDelivered?.();
+        afterRecord?.();
       });
     };
 
@@ -1842,8 +1864,24 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             task ? renderTelegramTask(task) : `Task ${watched.ref} was not found; watch ended.`,
             task ? representedTaskIdentities(task) : [],
             () => {
-              if (task && watchedTasks.get(surface) === watched)
-                shownWatchRevisions.set(surface, taskPresentationRevision(task));
+              // Missing and already-terminal snapshots intentionally end the watch
+              // before delivery; their direct command reply is still canonical.
+              if (!task || task.terminal) return;
+              if (watchedTasks.get(surface) !== watched) {
+                if (watchedTasks.has(surface)) {
+                  shownWatchRevisions.delete(surface);
+                  watchRefresh.queue(surface);
+                }
+                return false;
+              }
+              const revision = taskPresentationRevision(task);
+              const currentTask = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
+              if (!currentTask || taskPresentationRevision(currentTask) !== revision) {
+                shownWatchRevisions.delete(surface);
+                watchRefresh.queue(surface);
+                return false;
+              }
+              return () => shownWatchRevisions.set(surface, revision);
             },
             task ? { appId: task.appId, taskId: task.taskId } : undefined,
             task ?? undefined,
@@ -1885,7 +1923,21 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           `${renderTelegramTaskUpdate(task)}\n\nFollowing updates. Reply here to discuss this work. Other Tasks continue unchanged.`,
           [{ appId: task.appId, taskId: task.taskId }],
           () => {
-            if (watchedTasks.get(surface) === watched) shownWatchRevisions.set(surface, taskPresentationRevision(task));
+            if (!watched || watchedTasks.get(surface) !== watched) {
+              if (watchedTasks.has(surface)) {
+                shownWatchRevisions.delete(surface);
+                watchRefresh.queue(surface);
+              }
+              return false;
+            }
+            const revision = taskPresentationRevision(task);
+            const currentTask = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
+            if (!currentTask || taskPresentationRevision(currentTask) !== revision) {
+              shownWatchRevisions.delete(surface);
+              watchRefresh.queue(surface);
+              return false;
+            }
+            return () => shownWatchRevisions.set(surface, revision);
           },
           { appId: task.appId, taskId: task.taskId },
           task,

@@ -202,18 +202,19 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
       holds.push(hold);
       return hold;
     },
-    async command(text: string, chat = 123) {
+    async command(text: string, chat = 123, waitForRecord = true) {
       await waitFor(() => receive !== undefined);
       const deliver = receive!;
       receive = undefined;
       const id = ++nextUpdate;
       const priorViews = published.length;
       deliver([{ update_id: id, message: { message_id: id, chat: { id: chat }, text } }]);
-      await waitFor(() =>
-        published
-          .slice(priorViews)
-          .some((event) => (event.data?.metadata as { command?: string } | undefined)?.command === text),
-      );
+      if (waitForRecord)
+        await waitFor(() =>
+          published
+            .slice(priorViews)
+            .some((event) => (event.data?.metadata as { command?: string } | undefined)?.command === text),
+        );
     },
     wake(id: string, count = 1) {
       for (let i = 0; i < count; i++) {
@@ -243,7 +244,7 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
 }
 
 describe("Telegram refresh lifecycle", () => {
-  it.each(["second", "first"])("keeps the new %s watch when an old terminal send finishes", async (next) => {
+  it.each(["second", "first"])("restores the new %s watch after an old terminal send finishes", async (next) => {
     const f = fixture();
     try {
       await f.command("/watch first");
@@ -254,12 +255,145 @@ describe("Telegram refresh lifecycle", () => {
 
       // Re-watching the same Task is a new selection too, even if its identity matches.
       Object.assign(f.tasks.get("first")!, { terminal: false, status: "running", summary: "New generation" });
+      const restoredText = next === "first" ? "New generation" : "Working on second";
       await f.command(`/watch ${next}`);
+      expect(f.sent.filter((send) => send.text.includes(restoredText))).toHaveLength(1);
+
       old.release();
       await waitFor(() => old.finished);
-      await Bun.sleep(20);
+      await waitFor(() => f.sent.filter((send) => send.text.includes(restoredText)).length === 2);
+      expect(f.sent.at(-1)?.text).toContain(restoredText);
+    } finally {
+      await f.close();
+    }
+  });
+
+  it("rechecks a stalled watch command before recording or caching its presentation", async () => {
+    const f = fixture();
+    try {
+      const held = f.hold((send) => Boolean(send.reply_parameters) && send.text.includes("Working on first"));
+      await f.command("/watch first", 123, false);
+      await waitFor(() => held.started);
+
+      Object.assign(f.tasks.get("first")!, {
+        terminal: true,
+        status: "done",
+        summary: "Terminal during watch command",
+        resourceVersion: 2,
+      });
+      held.release();
+
+      await waitFor(() => f.sent.some((send) => send.text.includes("Terminal during watch command")));
+      const watchRecords = f.published.filter(
+        (event) =>
+          event.type === "conversation.message.created" &&
+          (event.data?.metadata as { command?: string } | undefined)?.command === "/watch update",
+      );
+      expect(watchRecords.map((event) => event.data?.text)).toEqual([
+        expect.stringContaining("Terminal during watch command"),
+      ]);
+    } finally {
+      await f.close();
+    }
+  });
+
+  it.each([false, true])(
+    "rechecks a stalled bare watch command and commits terminal state (wake=%s)",
+    async (wakeWhileStalled) => {
+      const f = fixture();
+      try {
+        await f.command("/watch first");
+        const held = f.hold((send) => Boolean(send.reply_parameters) && send.text.includes("Working on first"));
+        await f.command("/watch", 123, false);
+        await waitFor(() => held.started);
+
+        Object.assign(f.tasks.get("first")!, {
+          terminal: true,
+          status: "done",
+          summary: "Terminal during bare watch command",
+          resourceVersion: 2,
+        });
+        if (wakeWhileStalled) f.wake("first");
+        held.release();
+
+        await waitFor(() => f.sent.some((send) => send.text.includes("Terminal during bare watch command")));
+        const records = f.published.filter((event) => event.type === "conversation.message.created");
+        expect(
+          records.filter((event) => (event.data?.metadata as { command?: string } | undefined)?.command === "/watch"),
+        ).toHaveLength(0);
+        expect(
+          records
+            .filter(
+              (event) =>
+                (event.data?.metadata as { command?: string } | undefined)?.command === "/watch update",
+            )
+            .map((event) => event.data?.text),
+        ).toEqual([expect.stringContaining("Terminal during bare watch command")]);
+      } finally {
+        await f.close();
+      }
+    },
+  );
+
+  it("rechecks a watched Task after a stalled send and commits only its fresh terminal state", async () => {
+    const f = fixture();
+    try {
+      await f.command("/watch first");
+      f.tasks.get("first")!.summary = "Stale progress";
+      const held = f.hold((send) => !send.reply_parameters && send.text.includes("Stale progress"));
+      f.wake("first");
+      await waitFor(() => held.started);
+
+      Object.assign(f.tasks.get("first")!, {
+        terminal: true,
+        status: "done",
+        summary: "Fresh terminal result",
+        resourceVersion: 2,
+      });
+      // Force the queue-dirty interleaving while provider I/O is still pending.
+      f.wake("first");
+      held.release();
+
+      await waitFor(() => f.sent.some((send) => send.text.includes("Fresh terminal result")));
+      const watchRecords = f.published.filter(
+        (event) =>
+          event.type === "conversation.message.created" &&
+          (event.data?.metadata as { command?: string } | undefined)?.command === "/watch update",
+      );
+      expect(watchRecords.map((event) => event.data?.text)).toEqual([expect.stringContaining("Fresh terminal result")]);
+      expect(f.sent.filter((send) => send.text.includes("Fresh terminal result"))).toHaveLength(1);
       await f.command("/watch");
-      expect(f.sent.at(-1)?.text).toContain(`Task ${next}`);
+      expect(f.sent.at(-1)?.text).toContain("No Task is watched");
+    } finally {
+      await f.close();
+    }
+  });
+
+  it("resends an already-shown presentation after a stalled send becomes stale", async () => {
+    const f = fixture();
+    try {
+      f.tasks.get("first")!.summary = "Presentation A";
+      await f.command("/watch first");
+      expect(f.sent.filter((send) => send.text.includes("Presentation A"))).toHaveLength(1);
+
+      f.tasks.get("first")!.summary = "Presentation B";
+      const held = f.hold((send) => !send.reply_parameters && send.text.includes("Presentation B"));
+      f.wake("first");
+      await waitFor(() => held.started);
+
+      // Return to the cached presentation while B is in flight. The stale B
+      // acknowledgement must invalidate A's cache so the refresh restores A.
+      f.tasks.get("first")!.summary = "Presentation A";
+      held.release();
+
+      await waitFor(() => f.sent.filter((send) => send.text.includes("Presentation A")).length === 2);
+      const watchRecords = f.published.filter(
+        (event) =>
+          event.type === "conversation.message.created" &&
+          (event.data?.metadata as { command?: string } | undefined)?.command === "/watch update",
+      );
+      expect(watchRecords.map((event) => event.data?.text)).toEqual([expect.stringContaining("Presentation A")]);
+      expect(watchRecords.some((event) => String(event.data?.text).includes("Presentation B"))).toBe(false);
     } finally {
       await f.close();
     }
@@ -303,11 +437,12 @@ describe("Telegram refresh lifecycle", () => {
       f.tasks.get("second")!.summary = "Independent chat";
       f.wake("second");
       await waitFor(() => f.sent.some((send) => send.chat_id === "456" && send.text.includes("Independent chat")));
-      expect(f.reads).toHaveLength(baseline + 2);
+      // Each completed provider send now has a post-I/O canonical Task read.
+      expect(f.reads).toHaveLength(baseline + 3);
       held.release();
       await waitFor(() => f.sent.some((send) => send.text.includes("Latest refresh")));
       await Bun.sleep(25);
-      expect(f.reads).toHaveLength(baseline + 3);
+      expect(f.reads).toHaveLength(baseline + 6);
       expect(f.sent.filter((send) => send.text.includes("Latest refresh"))).toHaveLength(1);
       f.wake("first", 20);
       await Bun.sleep(25);

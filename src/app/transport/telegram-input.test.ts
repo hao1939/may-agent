@@ -755,8 +755,11 @@ describe("Telegram durable input and natural follow-up", () => {
         owner: "app:may", data: { appId: "may", taskId: "first" } });
       wake();
       await waitFor(() => sendStarted);
-      f.message(102, "/topic bbbbbbbb", { message_thread_id: 7 });
-      await waitFor(() => f.published.some((e) => e.data.metadata?.command === "/topic bbbbbbbb"));
+      // Re-selecting a Topic linked to the watched Task preserves the watch;
+      // selecting an unrelated Topic intentionally ends it and suppresses the
+      // stale in-flight acknowledgement.
+      f.message(102, "/topic aaaaaaaa", { message_thread_id: 7 });
+      await waitFor(() => f.published.filter((e) => e.data.metadata?.command === "/topic aaaaaaaa").length === 2);
       held.resolve();
       await waitFor(() => f.published.some((e) => e.data.metadata?.command === "/watch update"));
       const progress = f.published.find((e) => e.data.metadata?.command === "/watch update")!;
@@ -773,22 +776,24 @@ describe("Telegram durable input and natural follow-up", () => {
       expect(f.inputs()[0].data).toMatchObject({ metadata: { topicId: "topic_aaaaaaaa" },
         context: { focusedTask: { appId: "may", taskId: "first" } } });
 
+      f.message(104, "/topic bbbbbbbb", { message_thread_id: 7 });
+      await waitFor(() => f.published.some((e) => e.data.metadata?.command === "/topic bbbbbbbb"));
       // Re-following this Task clears the unrelated Topic, including on later updates.
-      f.message(104, "/watch first", { message_thread_id: 7 });
+      f.message(105, "/watch first", { message_thread_id: 7 });
       await waitFor(() => f.published.filter((e) => e.data.metadata?.command === "/watch first").length === 2);
       f.tasks.get("first")!.summary = "Progress without a matching Topic";
       wake();
       await waitFor(() => f.published.filter((e) => e.data.metadata?.command === "/watch update").length === 2);
       expect(f.published.filter((e) => e.data.metadata?.command === "/watch update")[1].data.metadata.topicId)
         .toBeUndefined();
-      for (const [id, action, command] of [[105, "details", "/task linked"], [106, "follow", "/watch linked"]] as const) {
+      for (const [id, action, command] of [[106, "details", "/task linked"], [107, "follow", "/watch linked"]] as const) {
         f.send([{ update_id: id, callback_query: { id: action, data: `task:${action}`,
           message: { message_id: messageId, chat: { id: 123 }, message_thread_id: 7 } } }]);
         await waitFor(() => f.published.some((e) => e.data.metadata?.command === command));
         expect(f.published.find((e) => e.data.metadata?.command === command)!.data.metadata.topicId)
           .toBe("topic_aaaaaaaa");
       }
-      f.message(107, "What's next?", { message_thread_id: 7 });
+      f.message(108, "What's next?", { message_thread_id: 7 });
       await waitFor(() => f.inputs().length === 2);
       expect(f.inputs()[1].data.metadata.topicId).toBe("topic_aaaaaaaa");
     } finally { held.resolve(); await f.close(); }
