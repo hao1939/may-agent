@@ -251,3 +251,12 @@ attempt `r_1_9b74674b-6b25-4f94-ab56-15c81d13fd72`, started at
 not implementation, delivery or token savings. Intent, admission receipt and
 read-back are retained as `scout-improvement-owner-*-20261017.json` in the private
 evidence directory above.
+
+Bob's first review of the follow-up found that the private evidence directory
+is not mounted in the runtime. The source window, original Reddit Atom response,
+trial verification/usage and evaluator usage were therefore copied unchanged to
+`/app/.state/scout-improvement-evidence-20261017/`. Its `manifest.json` records
+sizes and hashes; read-back inside the running `may-agent` container verified
+all four files. An evidence-only update reached the same Alex Task as event
+`6677244`, request `app_72f9bb0e-44cb-4d50-951e-d0619d2728fe`. No source scan,
+model trial or duplicate repair Task was created to recover those bytes.
