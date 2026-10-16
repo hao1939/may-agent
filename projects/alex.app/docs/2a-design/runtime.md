@@ -432,10 +432,18 @@ the existing caller or operational route. The responsible agent decides how to
 deal with it; Host executes the authorized decision and records the outcome.
 See [retry and recovery ownership](system-boundary.md#retry-and-recovery-ownership).
 
-The private session-recovery result currently mixes projection reconciliation
-with ownership confirmation across callers. Clarifying that result and testing
-startup/controller/backend parity remains an implementation gap in the
-[Host improvement plan](../proposals/host-contract-improvements-20261016.md).
+Session recovery confirms the adapter's required shutdown and durable session
+reconciliation. Unconfirmed recovery must report a failure and retain the old
+attempt's ownership. Its session record describes only the established session
+facts; Task release and requeue are separate transitions recorded by the Task runtime.
+
+**Implementation status:** pending [Host #376](https://github.com/hao1939/may-agent/pull/376) applies this meaning consistently
+to startup, controller claims and terminal-session retry. The
+[recovery evidence trial](../archive/reviews/host-recovery-evidence-20261017.md)
+also proves failure delivery through a declared App route into ordinary agent work.
+This does not install an App investigation policy or prove live agent judgment;
+see the remaining coverage in the
+[Host improvement plan](../proposals/host-contract-improvements-20261016.md#4-give-execution-recovery-one-mechanical-meaning).
 
 After opening its interfaces, the Host starts an isolated recovery worker that:
 

@@ -103,7 +103,7 @@ Preserve already-fixed behavior and keep runtime changes independently reviewabl
 | 2 | Apply observation semantics through ordinary producers and relays (C2/C6) | Merged #371; earlier local verification and merge revision are distinguished above |
 | 3 | Expire delivery receipts from durable status/timing (C3) | Merged #372 uses the existing durable admission marker and saved timing; rollout not established |
 | Next | Return unresolved work to agent judgment (C1/C4/C5/C6) | App adoption plus focused Host completion feedback, as specified below; does not wait for query profiling or private recovery cleanup |
-| 4 | Trial one private recovery success meaning across callers/backends (C4/C6) | Consistent safe retry without adding optional-artifact gates |
+| 4 — Host #376; review pending | One private recovery success meaning across callers (C4/C6) | Unconfirmed recovery retains ownership and reports failure; session evidence does not claim Task requeue. Backend and live adoption limits are recorded in the [trial](../archive/reviews/host-recovery-evidence-20261017.md) |
 | 5 | Profile metric queries; optimize or contain demonstrated cost (C5) | Synthetic blocking shown; installed query impact remains unmeasured |
 
 The [original evidence](../archive/reviews/host-contract-review-20261016.md)
@@ -413,13 +413,18 @@ The [recovery ownership contract](../2a-design/system-boundary.md#retry-and-reco
 owns this boundary. The internal recovery result must expose what Host established;
 it must not substitute a bookkeeping result for an agent's recovery decision.
 
-The current private recovery boolean describes reconciliation of a session
-projection. Some callers also use it as permission to release old ownership.
-Those meanings need a defined relationship. Merged #363 improved claim handling;
-startup now also requires a positive result after #368. Terminal-session retry
-still treats the result differently. Failed process drain and known
-unsafe ownership already throw. This is not evidence of a demonstrated overlapping
-worker incident, and adding a blanket `false` gate could strand recoverable work.
+**Source finding and [candidate #376](https://github.com/hao1939/may-agent/pull/376):** startup silently skipped a `false` recovery
+result; terminal-session retry could ignore it and release the old attempt.
+Controller claim replacement already rejected it. The session artifact also
+claimed the Task was requeued before that separate transition had happened.
+The [October 17 trial](../archive/reviews/host-recovery-evidence-20261017.md)
+reproduces these differences. The candidate keeps the private boolean, makes the
+shared caller boundary reject unconfirmed recovery, and records only established
+session facts, including a committed finish whose optional summary is absent.
+Missing authoritative metadata reports its specific failure;
+optional damaged history still permits otherwise safe recovery. This is source
+regression evidence, not an observed live overlapping-worker incident. Review and
+deployment remain separate.
 
 The recovery operation should establish the exact retained attempt and that old
 execution cannot interfere, perform the required durable transition, and leave
@@ -445,18 +450,22 @@ execution cannot resume. The agent chooses repair, another method, waiting or
 escalation. Host executes the authorized choice and records the observed outcome.
 The Task and accepted work stay accountable after automatic retries stop.
 
-**Trial before settling the internal API:** exercise startup, controller claim
-replacement and terminal-session retry with missing optional history, missing
-authority, failed drain, confirmed cleanup and mismatched Task references. Run
-the same contract with another supported backend whose artifacts differ. A test
-adapter can first isolate semantics, but does not prove real-backend integration.
-Safe recovery must enable progress; unestablished ownership must not release it.
-Also exhaust automatic recovery: verify that the records retain confirmed facts
-and unknowns, usable evidence reaches the existing owner, and an authorized agent
-decision can be executed and its result recorded. Saving an error alone does not
-prove this route works; a missing recipient must remain visibly undelivered.
-Choose the smallest internal return/error shape that passes these cases, then
-update every caller together. Do not export backend mechanics to Apps.
+**Trial coverage:** startup, controller claim replacement and terminal-session
+retry now share positive-confirmation behavior. Existing and extended tests cover
+missing optional history, missing authority, failed drain, later confirmed cleanup
+and mismatched Task references. A connected trial takes an injected unconfirmed
+drain result through persisted `handler.failed`, declared App admission and a scripted
+agent's accepted waiting decision. Original ownership remains intact until cleanup
+is confirmed. No new result type or public recovery API was needed.
+
+**Remaining evidence:** these tests exercise the shared session adapter and a
+controlled adapter response, not a different live executor's process behavior or
+model judgment. The trial injects failure of the bounded process drain; the controller's
+separate dispatch retry loop still uses its existing capped backoff and is not
+exhausted or redesigned here. App policy determines which failures deserve
+investigation and when. A missing recipient must remain visibly undelivered;
+saving an error alone does not establish a completed handoff. Preserve that
+distinction when verifying adoption, and avoid exporting backend mechanics to Apps.
 
 The accepted tradeoff is repeating affordable uncommitted work. Preserving every
 execution step is optional; accepted contributions and protected effects remain
