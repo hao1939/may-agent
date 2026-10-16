@@ -15,6 +15,7 @@ import {
   type TaskExecutorName,
 } from "@may-agent/sdk";
 import { getDb } from "../../../lib/db/connection.js";
+import type { TaskBinding } from "../../../lib/persistence.js";
 import { appDependencyCatalog } from "../../app-dependency-catalog.js";
 import type { EventEnvelope } from "../events/bus.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent } from "../events/bus.js";
@@ -80,10 +81,11 @@ export function interruptSupersededAgentSession(
   sessionId: string,
   reason: string,
   taskId?: string,
+  expectedBinding?: TaskBinding,
 ): boolean {
   if (!opts.sessions)
     throw new Error("Task session recovery is unavailable; retained session ownership cannot be replaced safely");
-  return opts.sessions.interrupt(sessionId, reason, taskId);
+  return opts.sessions.interrupt(sessionId, reason, taskId, expectedBinding);
 }
 
 export async function runTaskWorkflow(

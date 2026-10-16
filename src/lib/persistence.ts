@@ -130,6 +130,39 @@ function toPersistedConfig(def: SubagentDefinition): PersistedAgentConfig {
 
 // ── Shared JSONL parser ─────────────────────────────────────────────────
 
+export type JsonlRecoveryEvidence<T> =
+  | { state: "absent"; entries: T[]; corruptLineNumbers: [] }
+  | { state: "valid"; entries: T[]; corruptLineNumbers: [] }
+  | { state: "corrupt"; entries: T[]; corruptLineNumbers: number[] };
+
+/**
+ * Read JSONL for an effect-sensitive recovery decision without collapsing
+ * malformed records into ordinary absence. Valid entries remain available so
+ * a committed terminal receipt can still win over unrelated earlier damage.
+ */
+export function readJsonlRecoveryEvidence<T>(
+  filePath: string,
+  validate: (value: unknown) => value is T,
+): JsonlRecoveryEvidence<T> {
+  if (!existsSync(filePath)) return { state: "absent", entries: [], corruptLineNumbers: [] };
+  const raw = readFileSync(filePath, "utf-8");
+  const entries: T[] = [];
+  const corruptLineNumbers: number[] = [];
+  for (const [index, line] of raw.split("\n").entries()) {
+    if (!line.trim()) continue;
+    try {
+      const parsed: unknown = JSON.parse(line);
+      if (validate(parsed)) entries.push(parsed);
+      else corruptLineNumbers.push(index + 1);
+    } catch {
+      corruptLineNumbers.push(index + 1);
+    }
+  }
+  return corruptLineNumbers.length > 0
+    ? { state: "corrupt", entries, corruptLineNumbers }
+    : { state: "valid", entries, corruptLineNumbers: [] };
+}
+
 /** Read all JSON lines from a file, skipping corrupted lines. Returns [] if not found or empty. */
 function readJsonlFile<T>(filePath: string): T[] {
   if (!existsSync(filePath)) return [];
@@ -302,6 +335,54 @@ export function readSessionMessages(persistDir: string, sessionId: string): Agen
   return readJsonlFile<AgentMessage>(sessionJsonlPath(persistDir, sessionId));
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function isRecoveryContentBlock(value: unknown): boolean {
+  if (!isRecord(value) || typeof value.type !== "string") return false;
+  if (value.type === "text") return typeof value.text === "string";
+  if (value.type === "thinking") return typeof value.thinking === "string";
+  if (value.type === "image") return typeof value.data === "string" && typeof value.mimeType === "string";
+  if (value.type === "toolCall") {
+    return typeof value.id === "string" && typeof value.name === "string" && isRecord(value.arguments);
+  }
+  return false;
+}
+
+/** Validate only the persisted message structure recovery actually trusts. */
+function isRecoveryAgentMessage(value: unknown): value is AgentMessage {
+  if (!isRecord(value) || typeof value.role !== "string") return false;
+  if (value.role === "assistant") {
+    return Array.isArray(value.content) && value.content.every(isRecoveryContentBlock);
+  }
+  if (value.role === "user") {
+    return (
+      typeof value.content === "string" ||
+      (Array.isArray(value.content) && value.content.every(isRecoveryContentBlock))
+    );
+  }
+  if (value.role === "system") return typeof value.content === "string" || isRecord(value.sections);
+  if (value.role === "toolResult") {
+    return (
+      typeof value.toolCallId === "string" &&
+      (value.toolName === undefined || typeof value.toolName === "string") &&
+      Array.isArray(value.content) &&
+      value.content.every(isRecoveryContentBlock) &&
+      typeof value.isError === "boolean"
+    );
+  }
+  return false;
+}
+
+/** Inspect a complete transcript for effect-sensitive recovery decisions. */
+export function readSessionRecoveryEvidence(
+  persistDir: string,
+  sessionId: string,
+): JsonlRecoveryEvidence<AgentMessage> {
+  return readJsonlRecoveryEvidence<AgentMessage>(sessionJsonlPath(persistDir, sessionId), isRecoveryAgentMessage);
+}
+
 /**
  * Read a bounded tail of a session transcript without loading the whole JSONL
  * file. A partial first line is discarded; corrupted complete lines are
@@ -369,6 +450,49 @@ export function readSessionMessagesTail(
 /** Path to a session's meta.json. Session paths never change with lifecycle state. */
 export function sessionMetaPath(persistDir: string, sessionId: string): string {
   return join(sessionDir(persistDir, sessionId), "meta.json");
+}
+
+function isTaskBinding(value: unknown): value is TaskBinding {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.appId === "string" &&
+    typeof value.taskId === "string" &&
+    Number.isSafeInteger(value.generation) &&
+    typeof value.attemptId === "string"
+  );
+}
+
+function isPersistedSession(value: unknown): value is PersistedSession {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.agent === "string" &&
+    typeof value.task === "string" &&
+    typeof value.status === "string" &&
+    ["running", "done", "error", "interrupted", "idle"].includes(value.status) &&
+    typeof value.startedAt === "number" &&
+    Number.isFinite(value.startedAt) &&
+    (value.taskBinding === undefined || isTaskBinding(value.taskBinding))
+  );
+}
+
+export type SessionMetaRecoveryEvidence =
+  | { state: "absent" }
+  | { state: "valid"; meta: PersistedSession }
+  | { state: "corrupt" };
+
+/** Read and structurally validate metadata used to authorize recovery replay. */
+export function readSessionMetaRecoveryEvidence(
+  persistDir: string,
+  sessionId: string,
+): SessionMetaRecoveryEvidence {
+  const filePath = sessionMetaPath(persistDir, sessionId);
+  if (!existsSync(filePath)) return { state: "absent" };
+  try {
+    const parsed: unknown = JSON.parse(readFileSync(filePath, "utf-8"));
+    return isPersistedSession(parsed) ? { state: "valid", meta: parsed } : { state: "corrupt" };
+  } catch {
+    return { state: "corrupt" };
+  }
 }
 
 /** Read a session's meta.json. Returns null if not found or corrupted. */

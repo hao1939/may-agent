@@ -74,7 +74,6 @@ export type AppTaskClaim = {
   /** Compatibility projection of the most relevant event in events. */
   trigger?: Record<string, unknown>;
   declaredOutputPaths: string[];
-  supersededSessionIds?: string[];
   handoff?: {
     reason: "recovered-session";
     summary: string;
@@ -148,7 +147,10 @@ export type AppTaskAttemptRecovery = {
   eventsTruncated?: boolean;
   trigger?: Record<string, unknown>;
   sessionId?: string;
+  /** Current requirement revision used to fence the Task release. */
   taskGeneration: number;
+  /** Retained execution revision used to validate its session identity. */
+  attemptGeneration: number;
   taskResourceVersion: number;
   attemptId: string;
   attemptResourceVersion: number;
@@ -1006,6 +1008,7 @@ export function recoverableAppTaskAttempts(
         ...(trigger ? { trigger: structuredClone(trigger) } : {}),
         ...(attempt.sessionId ? { sessionId: attempt.sessionId } : {}),
         taskGeneration: resource.metadata.generation,
+        attemptGeneration: attempt.taskGeneration,
         taskResourceVersion: resource.metadata.resourceVersion,
         attemptId: attempt.metadata.id,
         attemptResourceVersion: attempt.metadata.resourceVersion,
@@ -1046,6 +1049,7 @@ export function expiredAgentSessionAppTaskAttempt(
     ...(trigger ? { trigger: structuredClone(trigger) } : {}),
     sessionId: attempt.sessionId,
     taskGeneration: resource.metadata.generation,
+    attemptGeneration: attempt.taskGeneration,
     taskResourceVersion: resource.metadata.resourceVersion,
     attemptId: attempt.metadata.id,
     attemptResourceVersion: attempt.metadata.resourceVersion,
@@ -2761,6 +2765,8 @@ export function claimObservedAppTask(
     handler: string;
     reason?: string;
     isAgentRunnable?: (agent: string) => boolean;
+    /** Validate and drain the retained session before replacement ownership commits. */
+    recoverPreviousSession?: (attempt: AppTaskAttempt) => void;
     recoverSessionHandoff?: (attempt: AppTaskAttempt | undefined) => AppTaskClaim["handoff"];
   },
 ): AppTaskClaimResult {
@@ -2861,7 +2867,6 @@ export function claimObservedAppTask(
         ? managedAgentHandler(agent)
         : input.handler;
   const priorFacts = latestAttempt ?? latestTaskAttempt(tree, resource.metadata.id);
-  const recoveredSessionHandoff = input.recoverSessionHandoff?.(latestAttempt);
   const previousAttempt = currentResourceAttempt(tree, resource);
   if (resource.status.phase === "running" && !previousAttempt) {
     const now = new Date().toISOString();
@@ -2888,7 +2893,6 @@ export function claimObservedAppTask(
     previousAttempt.runtimeId !== reconcilerRuntimeId &&
     (input.reason === `attempt-recovery:${input.taskId}` || attemptTrigger(previousAttempt)),
   );
-  const supersededSessionIds = new Set<string>();
   const pendingTrigger = tree.taskTriggers?.[input.taskId];
   const previousUnacceptedEvents =
     previousAttempt && previousAttempt.state !== "completed" && previousAttempt.failureReason !== "owner-stopped"
@@ -2927,7 +2931,6 @@ export function claimObservedAppTask(
   if (canRecoverPreviousRuntime && previousAttempt && !hasTrigger) {
     const now = new Date().toISOString();
     const summary = "Previous runtime attempt had no persisted trigger; retrying from current task facts";
-    if (previousAttempt.sessionId) supersededSessionIds.add(previousAttempt.sessionId);
     finishAttempt(tree, resource, "interrupted", summary, now);
     previousAttempt.metadata.resourceVersion += 1;
     previousAttempt.failureReason = "previous-runtime-attempt-requeued";
@@ -3005,10 +3008,18 @@ export function claimObservedAppTask(
   const attemptId = `r_${generation}_${randomUUID()}`;
   const now = new Date().toISOString();
   if (canRecoverPreviousRuntime && previousAttempt) {
-    if (previousAttempt.sessionId) supersededSessionIds.add(previousAttempt.sessionId);
+    if (previousAttempt.sessionId) {
+      if (!input.recoverPreviousSession)
+        throw new Error("Task session recovery is unavailable; retained session ownership cannot be replaced safely");
+      input.recoverPreviousSession(structuredClone(previousAttempt));
+    }
     finishAttempt(tree, resource, "interrupted", "Previous runtime attempt was superseded during recovery", now);
+    previousAttempt.failureReason = "previous-runtime-attempt-requeued";
     changedAttempts.add(previousAttempt);
   }
+  const recoveredSessionHandoff = input.recoverSessionHandoff?.(
+    canRecoverPreviousRuntime ? previousAttempt ?? undefined : priorFacts,
+  );
   const trigger =
     (claimedEvents.length > 0 ? preferredTriggerFromEvents(claimedEvents, agent) : undefined) ??
     (previousAttempt ? attemptTrigger(previousAttempt) : undefined) ??
@@ -3109,7 +3120,6 @@ export function claimObservedAppTask(
     ...(priorFacts ? { previousAttempt: previousAttemptFacts(priorFacts) } : {}),
     ...(trigger ? { trigger: structuredClone(trigger) } : {}),
     declaredOutputPaths,
-    ...(supersededSessionIds.size > 0 ? { supersededSessionIds: [...supersededSessionIds] } : {}),
     ...(recoveredSessionHandoff ? { handoff: recoveredSessionHandoff } : {}),
   };
 }

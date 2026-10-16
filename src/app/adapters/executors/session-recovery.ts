@@ -10,18 +10,23 @@ import {
   markSessionInactive,
   readActiveSessionProcessId,
   readSessionMeta,
-  readSessionMessages,
+  readSessionMetaRecoveryEvidence,
+  readSessionRecoveryEvidence,
   writeSessionMeta,
   sessionDir,
 } from "../../../lib/persistence.js";
 import { extractFinishParams } from "../../../lib/agent-result.js";
-import { readLatestCheckpoint, type CheckpointEntry } from "../../../lib/tools/checkpoint.js";
+import {
+  readCheckpointRecoveryEvidence,
+  type CheckpointEntry,
+} from "../../../lib/tools/checkpoint.js";
 import { drainPersistedSessionBashProcessGroups } from "../../../lib/tools/bash.js";
 import { STATE_CHANGING_TOOLS } from "../../../lib/manager-utils.js";
 import { writeSessionResult } from "../../../lib/artifacts.js";
 import type { AgentEvent, EventBus } from "../../core/events/bus.js";
 import { appTaskSessionBinding } from "../../core/tasks/session-binding.js";
 import type { TaskSessionRecovery } from "../../core/tasks/execution.js";
+import type { JsonlRecoveryEvidence, TaskBinding } from "../../../lib/persistence.js";
 
 type TaskSessionAdapterOptions = {
   manager: SubagentManager;
@@ -35,7 +40,8 @@ export function createTaskSessionRecovery(opts: TaskSessionAdapterOptions): Task
     read: (id) => (opts.persistDir ? readSessionMeta(opts.persistDir, id) : null),
     isLive: (id) => hasLiveAppTaskSession(opts, id),
     lastActivityAt: (id) => (opts.persistDir ? readSessionLastActivityAt(opts.persistDir, id) : null),
-    interrupt: (id, reason, taskId) => interruptSupersededAgentSession(opts, id, reason, taskId),
+    interrupt: (id, reason, taskId, expectedBinding) =>
+      interruptSupersededAgentSession(opts, id, reason, taskId, expectedBinding),
     handoff: (attempt) => buildRecoveredSessionHandoff(opts.persistDir, attempt),
     workflowInterrupted: (id) => workflowWasInterruptedByRestart(opts.persistDir, id),
   };
@@ -64,17 +70,16 @@ function hasLiveAppTaskSession(opts: TaskSessionAdapterOptions, sessionId: strin
   if (!cleanSessionId) return false;
   if (opts.manager.hasActiveSession(cleanSessionId)) return true;
   if (!opts.persistDir) return false;
+  const leasePid = readActiveSessionProcessId(opts.persistDir, cleanSessionId);
+  if (leasePid && isProcessAlive(leasePid)) return true;
   const meta = readSessionMeta(opts.persistDir, cleanSessionId);
   if (!meta || (meta.status !== "running" && meta.status !== "idle")) return false;
 
   if (meta.detached && isProcessAlive(meta.pid)) return true;
-  const leasePid = readActiveSessionProcessId(opts.persistDir, cleanSessionId);
-  if (leasePid && isProcessAlive(leasePid)) return true;
   return false;
 }
 
-function recoverPendingToolResultsFromTranscript(persistDir: string, sessionId: string): string[] {
-  const messages = readSessionMessages(persistDir, sessionId) as any[];
+function recoverPendingToolResultsFromTranscript(persistDir: string, sessionId: string, messages: any[]): string[] {
   const last = messages[messages.length - 1] as any;
   if (last?.role !== "assistant" || !Array.isArray(last.content)) return [];
 
@@ -111,13 +116,15 @@ function summarizeInterruptedAgentRecovery(input: {
   sessionId: string;
   reason: string;
   repairedPendingTools: string[];
+  checkpoint: CheckpointEntry | null;
+  evidenceFacts: string[];
   taskId?: string;
 }): { summary: string; taskId: string | null; facts: string[] } {
   const taskId = input.taskId?.trim() || appTaskSessionBinding(input.meta.taskBinding)?.taskId || null;
   const summary = taskId
     ? `Agent session for ${taskId} was interrupted by runtime recovery before finish() persisted; the original app task was requeued and should be decided by the replacement attempt, not this recovery wrapper.`
     : "Agent session was interrupted by runtime recovery before finish() persisted; the original app task was requeued and should be decided by the replacement attempt, not this recovery wrapper.";
-  const checkpoint = readLatestCheckpoint(input.persistDir, input.sessionId);
+  const checkpoint = input.checkpoint;
   const facts = [
     ...(taskId ? [`task:${taskId}`] : []),
     `session:${input.sessionId}`,
@@ -125,7 +132,8 @@ function summarizeInterruptedAgentRecovery(input: {
     `transcript:sessions/${input.sessionId}/session.jsonl`,
     checkpoint
       ? `checkpoint:checkpoints/${input.sessionId}.jsonl#step-${checkpoint.step}:${checkpoint.summary}`
-      : `checkpoint:absent:${input.sessionId}`,
+      : `checkpoint:${input.evidenceFacts.length ? "unavailable" : "absent"}:${input.sessionId}`,
+    ...input.evidenceFacts,
     `recovery-reason:${input.reason}`,
     ...(input.repairedPendingTools.length > 0
       ? [`recovered-pending-tools:${input.repairedPendingTools.join(",")}`]
@@ -139,16 +147,34 @@ function interruptSupersededAgentSession(
   sessionId: string,
   reason: string,
   taskId?: string,
+  expectedBinding?: TaskBinding,
 ): boolean {
   const cleanSessionId = sessionId.trim();
   if (!cleanSessionId) return false;
+  const metaEvidence = opts.persistDir
+    ? readSessionMetaRecoveryEvidence(opts.persistDir, cleanSessionId)
+    : ({ state: "absent" } as const);
+  const meta = metaEvidence.state === "valid" ? metaEvidence.meta : null;
+
+  // Session identity and lifecycle are Host facts. Incomplete work history is
+  // passed to the next attempt; it does not determine Task eligibility.
+  if (metaEvidence.state === "corrupt") {
+    throw new Error(`Cannot recover session ${cleanSessionId}: invalid session metadata; lifecycle and ownership need repair`);
+  }
+  if (expectedBinding && meta &&
+    (!meta.taskBinding ||
+      meta.taskBinding.appId !== expectedBinding.appId ||
+      meta.taskBinding.taskId !== expectedBinding.taskId ||
+      meta.taskBinding.generation !== expectedBinding.generation ||
+      meta.taskBinding.attemptId !== expectedBinding.attemptId)) {
+    throw new Error(`Cannot recover session ${cleanSessionId}: session Task binding does not match the retained attempt`);
+  }
+
   if (opts.manager.hasActiveSession(cleanSessionId)) {
     opts.manager.cancel(cleanSessionId);
   } else if (hasLiveAppTaskSession(opts, cleanSessionId)) {
     throw new Error(`Cannot supersede session ${cleanSessionId}: its external owner is still live`);
   }
-
-  const meta = opts.persistDir ? readSessionMeta(opts.persistDir, cleanSessionId) : null;
 
   // Replacement ownership cannot begin while the superseded exact session's
   // shell descendants remain live. Drain durable groups even when session meta
@@ -164,7 +190,9 @@ function interruptSupersededAgentSession(
       `Cannot recover session ${cleanSessionId}: one or more durable bash process groups did not exit after bounded SIGTERM/SIGKILL drain`,
     );
   }
+
   if (!meta) return false;
+
   if (meta.status !== "running" && meta.status !== "idle") {
     if (!opts.persistDir) return false;
     // meta.json is authoritative. Repair only its known terminal lifecycle
@@ -179,21 +207,26 @@ function interruptSupersededAgentSession(
     return true;
   }
 
-  // Capture a completed finish call before repairing genuinely pending tool
-  // calls: finish() may be the final transcript entry, and synthesizing an
-  // interruption result for it would hide the valid terminal decision.
-  const recoveredFinish = opts.persistDir
-    ? extractFinishParams(readSessionMessages(opts.persistDir, cleanSessionId) as any[])
-    : null;
-  const repairedPendingTools = opts.persistDir
-    ? recoverPendingToolResultsFromTranscript(opts.persistDir, cleanSessionId)
+  const transcriptEvidence = readSessionRecoveryEvidence(opts.persistDir!, cleanSessionId);
+  const checkpointEvidence = readCheckpointRecoveryEvidence(opts.persistDir!, cleanSessionId);
+  const recoveredFinish = extractFinishParams(transcriptEvidence.entries as any[]);
+  // Do not append synthetic tool results to damaged history: they could hide
+  // valid partial evidence or merge with an unterminated corrupt line.
+  const repairedPendingTools = transcriptEvidence.state === "valid"
+    ? recoverPendingToolResultsFromTranscript(opts.persistDir!, cleanSessionId, transcriptEvidence.entries as any[])
     : [];
+  const evidenceFacts = incompleteRecoveryFacts(
+    join(sessionDir(opts.persistDir!, cleanSessionId), "session.jsonl"), transcriptEvidence,
+    join(opts.persistDir!, "checkpoints", `${cleanSessionId}.jsonl`), checkpointEvidence,
+  );
   const interruptedRecovery = summarizeInterruptedAgentRecovery({
     meta,
     persistDir: opts.persistDir!,
     sessionId: cleanSessionId,
     reason,
     repairedPendingTools,
+    checkpoint: checkpointEvidence.entries.at(-1) ?? null,
+    evidenceFacts,
     taskId,
   });
   const persistedFinish = recoveredFinish;
@@ -260,6 +293,7 @@ function interruptSupersededAgentSession(
       requestId: meta.requestId,
       stepLabel: meta.stepLabel,
       opCount: meta.opCount,
+      ...(evidenceFacts.length > 0 ? { recoveryFacts: evidenceFacts } : {}),
       ...(repairedPendingTools.length > 0 ? { recoveredPendingTools: repairedPendingTools } : {}),
     },
   } as AgentEvent);
@@ -331,19 +365,37 @@ function latestReceiptedTranscriptCheckpoint(messages: unknown[]): Pick<Checkpoi
   return latest;
 }
 
+function incompleteRecoveryFacts(
+  transcriptPath: string,
+  transcript: JsonlRecoveryEvidence<unknown>,
+  checkpointPath: string,
+  checkpoint: JsonlRecoveryEvidence<unknown>,
+): string[] {
+  return [
+    ...(transcript.state === "corrupt"
+      ? [`Recovery history incomplete: malformed transcript ${transcriptPath} lines ${transcript.corruptLineNumbers.join(",")}; retained entries cannot establish all prior effects`]
+      : []),
+    ...(checkpoint.state === "corrupt"
+      ? [`Recovery history incomplete: malformed checkpoint JSONL ${checkpointPath} lines ${checkpoint.corruptLineNumbers.join(",")}; retained entries may omit later progress`]
+      : []),
+  ];
+}
+
 function checkpointRecoveryFacts(
   checkpointPath: string,
   transcriptPath: string,
   checkpoint: CheckpointEntry | null,
   transcriptCheckpoint: Pick<CheckpointEntry, "summary" | "data"> | null,
   sessionId: string,
+  incomplete: boolean,
 ): string {
   if (checkpoint) {
-    return `Recovered latest durable checkpoint: ${checkpointPath} step=${checkpoint.step} summary=${checkpoint.summary} data=${JSON.stringify(stableValue(checkpoint.data))}`;
+    return `Recovered latest ${incomplete ? "readable" : "durable"} checkpoint: ${checkpointPath} step=${checkpoint.step} summary=${checkpoint.summary} data=${JSON.stringify(stableValue(checkpoint.data))}`;
   }
   if (transcriptCheckpoint) {
     return `Recovered latest receipted transcript checkpoint: ${transcriptPath} summary=${transcriptCheckpoint.summary} data=${JSON.stringify(stableValue(transcriptCheckpoint.data))}`;
   }
+  if (incomplete) return `Recovery checkpoint unavailable in incomplete history for session ${sessionId}; this does not establish that no checkpoint was saved`;
   return `Recovered durable checkpoint: absent for session ${sessionId}; no matching successful checkpoint receipt in ${transcriptPath}`;
 }
 
@@ -351,7 +403,9 @@ export function buildRecoveredSessionHandoff(
   persistDir: string | undefined,
   attempt: AppTaskAttempt | undefined,
 ): AppTaskClaim["handoff"] | undefined {
-  if (!persistDir || !attempt?.sessionId || attempt.failureReason !== "previous-runtime-attempt-requeued") {
+  if (!persistDir || !attempt?.sessionId ||
+    (attempt.failureReason !== "previous-runtime-attempt-requeued" &&
+      attempt.failureReason !== "terminal-agent-session-expired-lease-requeued")) {
     return undefined;
   }
   const interruptedSessionPath = sessionDir(persistDir, attempt.sessionId);
@@ -364,15 +418,21 @@ export function buildRecoveredSessionHandoff(
       ? "agent session"
       : `${attempt.handler} session`;
   const checkpointPath = join(persistDir, "checkpoints", `${attempt.sessionId}.jsonl`);
-  const checkpoint = readLatestCheckpoint(persistDir, attempt.sessionId);
-  const transcriptMessages = existsSync(transcriptPath) ? readSessionMessages(persistDir, attempt.sessionId) : [];
+  const checkpointEvidence = readCheckpointRecoveryEvidence(persistDir, attempt.sessionId);
+  const checkpoint = checkpointEvidence.entries.at(-1) ?? null;
+  const transcriptEvidence = existsSync(transcriptPath)
+    ? readSessionRecoveryEvidence(persistDir, attempt.sessionId)
+    : { state: "absent" as const, entries: [], corruptLineNumbers: [] as [] };
+  const transcriptMessages = transcriptEvidence.entries;
   const transcriptCheckpoint = checkpoint ? null : latestReceiptedTranscriptCheckpoint(transcriptMessages);
   const facts = [
     `Recovered interrupted ${sessionLabel} path: ${interruptedSessionPath}`,
     `Recovered interrupted ${sessionLabel} metadata: ${metaPath}`,
     `Recovered interrupted ${sessionLabel} artifact: ${resultPath}`,
     `Recovered interrupted ${sessionLabel} transcript: ${transcriptPath}`,
-    checkpointRecoveryFacts(checkpointPath, transcriptPath, checkpoint, transcriptCheckpoint, attempt.sessionId),
+    ...incompleteRecoveryFacts(transcriptPath, transcriptEvidence, checkpointPath, checkpointEvidence),
+    checkpointRecoveryFacts(checkpointPath, transcriptPath, checkpoint, transcriptCheckpoint, attempt.sessionId,
+      checkpointEvidence.state === "corrupt" || transcriptEvidence.state === "corrupt"),
   ];
   if (transcriptMessages.length > 0) {
     for (const snippet of transcriptMessages
