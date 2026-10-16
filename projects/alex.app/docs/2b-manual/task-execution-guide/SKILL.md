@@ -257,6 +257,14 @@ result object. App-specific preflight requires the Host revision described in
 [execution contributions](../../2a-design/execution-contributions.md); final
 settlement still checks whether the result remains current.
 
+When recovering, start with the Task's pending input and retained accepted work.
+An empty new-event batch does not make earlier unanswered input historical.
+Report missing evidence precisely and use the existing reads to fill the gap.
+Host handles mechanical retry and ownership; choose another approach or request
+help when needed. Automatic retry exhaustion retains the assignment for that
+decision. When the execution asks you to finish, submit confirmed partial work
+and remaining uncertainty within its allowance.
+
 The [Conversation feedback change](../../2a-design/conversation-execution.md#correct-a-proposed-result-before-ending-the-turn)
 extends this to Topic and Request checks when its Host revision is installed.
 An unavailable Topic needs a valid selection or scoped lookup. A stale Request
@@ -332,8 +340,9 @@ Repeated failure and growing cost should be observable through existing
 An alert or delivered report does not prove that an evaluator or human acted.
 Do not claim escalation succeeded merely because a record was written.
 
-Retries use bounded attempts and backoff; there is no universal failure-count
-stop. Where an operation cannot make repeat delivery safe, its contract must
+Retries use the operation's own budget and backoff. The [Task policy](../../2a-design/task-resource-engine.md#pause-reload-and-recovery)
+bounds automatic attempts by default; exhaustion retains the work for another
+authorized decision. Where an operation cannot make repeat delivery safe, its contract must
 expose that exception. Follow its reconciliation path and preserve uncertainty
 until acceptance is known. See [retry ownership](../../2a-design/system-boundary.md#retry-and-recovery-ownership).
 

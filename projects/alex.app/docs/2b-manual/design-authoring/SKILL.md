@@ -164,6 +164,12 @@ For a substantive finding, name the affected behavior, its consequence and the
 smallest useful correction. Link evidence. Do not replace reasoning with a
 scorecard, mandatory independent review or a blanket proof requirement.
 
+Follow a shared contract through its other callers and one contrasting path:
+worker relay, recovery, reload or a supported backend as relevant. Check the
+actual context, correction and result path before recommending another recovery
+policy. Bound the operation's total cost, not only its returned page or inner
+timeout. Use existing validators and fixtures at the disputed boundary.
+
 From the workspace root, run `bun run check:may-design` after changing contracts,
 examples or navigation. Inspect moved links and heading targets as well as the
 ordinary example and one relevant failure path. These checks establish structure

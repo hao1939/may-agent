@@ -6,8 +6,9 @@
 
 **Design status:** Accepted.
 **Implementation status:** The shared Task boundary is implemented for current
-Apps. Named-agent permissions, deployment policy and private maintenance still
-contain [domain-policy gaps](../proposals/app-policy-and-host-boundary-cleanup.md).
+Apps. Installation declarations replaced named-agent policy in Host #326;
+remaining [domain-policy follow-up](../proposals/app-policy-and-host-boundary-cleanup.md)
+must be checked against current source rather than old candidate labels.
 Task runtimes and test fixtures use resource authority; the legacy JSON
 store and completed offline cutover path have been removed. The retired inbox
 delivery table is retained only as historical schema evidence. Incident-shaped public
@@ -40,7 +41,7 @@ lifecycle. An App address selects scope, policy and context. Installation
 configuration chooses destinations and operational grants; Host validates and
 executes them. This lets ordinary Apps evolve without hidden privileged names.
 
-The October 4 candidate in Host #326 uses the existing environment for human
+Host #326 uses the existing environment for human
 interface wiring and one captured file-tool policy declaration. Agent identity,
 Conversation App and retained Conversation ID are independent. The agent asks
 for a message or reply; adapters handle these coordinates. Without a destination,
@@ -69,9 +70,10 @@ subscriptions and input schemas. Host never derives agent ownership from a
 metric label or invents a domain request merely from an App ID. Reports describe
 observed activity; App policy decides whether absent activity needs action.
 
-**Source/adoption status:** candidate, not deployed. See the
+**Source status:** merged in Host #326. See the
 [boundary cleanup](../proposals/app-policy-and-host-boundary-cleanup.md) for
-integration order, enforcement limits and remaining obligations.
+recorded adoption evidence, enforcement limits and remaining obligations.
+Installed revision and current behavior require their own deployment receipt.
 
 ## The boundary in one flow
 
@@ -563,6 +565,15 @@ unfinished stored request or task
 ```
 
 Mechanical recovery cannot invent a new task, owner, strategy, or completion claim.
+
+The Host restores safe execution of the same Task; its App chooses useful
+recovery work. Workflows compose judgment through ordinary agent calls, keeping
+their declared procedure for later attempts. Result fields do not ask Host to
+switch strategy. Backend-specific ownership checks stay inside execution
+adapters; Apps do not inspect Host session artifacts to administer recovery.
+See [Runtime recovery](runtime.md#recovery) for the remaining private recovery
+confirmation gap and the distinction between ownership and optional history.
+
 Apps with paused task reconciliation continue to store new work but do not
 start task attempts.
 

@@ -484,6 +484,14 @@ diagnostic does not settle the originating publication: the original required
 event remains accountable, and subscriber failure metrics still count the diagnostic.
 Mark producer intent rather than adding names to a metric exclusion list.
 
+This convention also applies to facts returned by ordinary App observers.
+Publishing a successful unconsumed observation must not create an unhandled-work
+failure. Producer intent survives worker relay, persistence and replay; only the delivery owner can
+acknowledge its consumers. Receipt expiry uses durable status and timing, so
+restart cannot hide overdue delivery. Independent App admission remains pending
+until its own owner settles it. Ordinary-observer publication, restored publication
+intent and restart-based expiry still have [implementation gaps](../proposals/host-contract-improvements-20261016.md).
+
 Routine checks that find no new work update bounded activity counters. The
 existing sampler retains totals, reasons and the observation window in metric
 samples; a check does not create a Task event. Metric calculation and

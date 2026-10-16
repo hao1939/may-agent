@@ -31,6 +31,7 @@ before acting on an old checklist.
 
 | Proposal | Owning need or contract | Remaining review scope |
 | --- | --- | --- |
+| [Strengthen Host contracts while keeping Apps free to evolve](host-contract-improvements-20261016.md) | [Host stability and App extensibility](host-stability-and-app-extensibility-20261005.md) | Accepted rules integrated into owning contracts; contention source candidate tested. Review/rollout, observer publication, durable expiry, recovery semantics and query profiling remain. |
 | [Reliable recovery and independent oversight](reliable-recovery-and-independent-oversight-20261002.md) | [Host/App Boundary](../2a-design/system-boundary.md) | Independent oversight and connected recovery of the original requirement remain to be demonstrated. |
 | [Keep recovery from blocking ordinary Host requests](responsive-host-recovery-20261002.md) | [Host Runtime](../2a-design/runtime.md) | Remaining recovery isolation and responsiveness proof; merged query fixes are dated evidence. |
 | [Recover current work from execution evidence](recovery-from-execution-evidence-20260922.md) | [Host And App Boundary](../2a-design/system-boundary.md) | Adoption and behavioral verification of recovery using retained evidence. |

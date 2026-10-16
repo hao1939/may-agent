@@ -4,6 +4,10 @@
 
 **Status:** Review proposal; no runtime change is authorized by this document.
 
+**October 16 follow-up:** [Strengthen Host contracts while keeping Apps free to evolve](host-contract-improvements-20261016.md)
+adds the later review's focused mechanism fixes and recovery trials. This page
+retains the release-boundary recommendations and dated October 5 evidence.
+
 **Task:** `alex/input/app_34f89d39-e936-4bec-bff0-6fe0c3537c12`
 
 ## Recommendation
