@@ -360,6 +360,9 @@ Each successful review stages an immutable Markdown report and JSON facts sideca
 ```
 
 This keeps a routine report available without starting another Alex model call.
+An optional string `message` (at most 2,000 characters) retains an explanation;
+an empty string is also accepted. Only `kind` requests attention, so explanatory
+text on `none` never creates an owner request. Its original value is retained.
 When a finding needs intervention, the reviewer instead returns:
 
 ```json
@@ -402,7 +405,8 @@ rejected without filtering, truncation or type coercion. Schema acceptance does
 not prove substantive correctness or that missing evidence was verified.
 
 Cite supplied evidence as supplied evidence, or actual reads. The `none` decision
-contains only `kind`; omit `message` instead of sending an empty string. A format
+may omit `message` or supply an empty or explanatory string; `request` still
+requires nonblank bounded message text. A format
 error should be corrected within the same execution from the existing evidence.
 Historical reports retain their bytes and existing interpretation/publication
 reuse; the new-output schema is not applied retroactively. Strict handling of

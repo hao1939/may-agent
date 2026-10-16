@@ -89,6 +89,8 @@ function context(options: any = {}) {
 
 test.each([
   { kind: "none" as const },
+  { kind: "none" as const, message: "" },
+  { kind: "none" as const, message: "Existing repair already owns this concern." },
   { kind: "request" as const, message: "Reuse the investigation to check whether this new failure is covered." },
 ])("metric reports retain the evaluator's follow-up decision across publication retry: %j", async (followUp) => {
   const root = mkdtempSync(join(tmpdir(), "metric-followup-"));
@@ -125,6 +127,9 @@ test.each([
   const retained = readPublishedEvaluationReport(events[1].data, root);
   expect(retained.status).toBe("valid");
   if (retained.status === "valid") expect((retained.facts.judgment as any).followUp).toEqual(followUp);
+  if (followUp.kind === "none" && followUp.message) {
+    expect(readFileSync(join(root, events[1].data.report), "utf8")).toContain(followUp.message);
+  }
   const input = evaluationReportInput(events[1]);
   if (followUp.kind === "none") expect(input).toBeNull();
   else expect((input!.data as any).message).toContain(followUp.message);

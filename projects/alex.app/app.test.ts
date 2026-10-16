@@ -184,13 +184,13 @@ test("ordinary Evaluation reports are consumed only by Alex with immutable ident
       executionId: "s_eval_1", report: "report.md", facts: "facts.json",
       jsonHash: hash("b"), markdownHash: hash("c"), reviewer: "evaluator-deepseek",
     },
-  } as never;
+  } satisfies Parameters<typeof evaluationReportInput>[0];
   const metricEvent = {
     ...taskEvent,
     type: "evaluation.metric_report_published",
     localKey: "metric-report-1",
     data: { ...taskEvent.data, appId: "alex", metricId: "tasks.failed", alertId: 42 },
-  } as never;
+  } satisfies Parameters<typeof evaluationReportInput>[0];
   for (const event of [taskEvent, metricEvent]) {
     const input = evaluationReportInput(event)!;
     expect(input.kind).toBe("message");
@@ -205,7 +205,11 @@ test("ordinary Evaluation reports are consumed only by Alex with immutable ident
     } } as never)!;
     expect((request.data as any).message).toContain("Reuse repair/one to check the new recurrence.");
     expect((request.data as any).context.publication).toEqual((input.data as any).context.publication);
-    for (const followUp of [null, false, { kind: "quiet" }, { kind: "none", message: "hidden request" }, { kind: "request", message: " " }]) {
+    for (const message of ["", "Existing work covers this concern.", "Please investigate this concern."]) {
+      // Prose cannot override the explicit no-request decision.
+      expect(evaluationReportInput({ ...event, data: { ...event.data, followUp: { kind: "none", message } } } as never)).toBeNull();
+    }
+    for (const followUp of [null, false, { kind: "quiet" }, { kind: "none", message: 42 }, { kind: "request", message: " " }]) {
       expect(() => evaluationReportInput({ ...event, data: { ...event.data, followUp } } as never)).toThrow("Invalid evaluation followUp");
     }
   }

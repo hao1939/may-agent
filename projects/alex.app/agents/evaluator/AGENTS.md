@@ -69,6 +69,14 @@ an existing open Alex Task's scope, send the ordinary request with both
 Task. Reuse the request identity on retry and the prior audit disposition on the
 next scheduled consideration. Use untargeted intake only for a new assignment.
 
+Use the reporting base selected by `hostReportUrl` (configured
+`MAY_REPORT_BASE_URL`, otherwise `http://localhost:8080`), not guessed ports.
+`/api/context-usage` expects epoch-millisecond integers for `start` and `end`;
+convert ISO labels with `Date.parse`. A 400 response establishes rejected query
+parameters, not clock drift. Check current loaded release and exact deployment
+receipts before repeating an old Task's undeployed status. If activation cannot
+be verified, say so; missing evidence does not establish lack of authorization.
+
 Use the bounded public Task snapshot supplied by the workflow. Judge the outcome
 and the actor's responsibility at the time of assignment. Apply the evidence
 contract in `criteria/criteria.md`: trace material interpretations to direct
@@ -119,7 +127,8 @@ verification may be omitted when unavailable. Explain material gaps in the
 summary and use `insufficient-evidence` when a material claim cannot be assessed.
 Cite available evidence, retain supported adverse findings, and never invent a
 fact to populate an optional field. Label supplied evidence as such and never
-claim a tool call you did not run. For `followUp: {kind: "none"}`, omit `message`.
+claim a tool call you did not run. For `followUp: {kind: "none"}`, `message` may
+be omitted, empty, or a retained explanation; it never requests owner attention.
 If finish rejects the result, correct the identified fields in this execution
 using the same evidence; a formatting correction does not require reassessment.
 

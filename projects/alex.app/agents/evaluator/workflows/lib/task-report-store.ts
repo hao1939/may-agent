@@ -312,7 +312,7 @@ export function renderTaskReportMarkdown(payload: unknown): string | null {
     return null;
   }
   const followUpMarkdown = followUp === undefined ? "" :
-    `\n## Follow-up\n\n${followUp.kind === "none" ? "Retain this report; no Alex follow-up requested." : `Alex requested: ${followUp.message}`}\n`;
+    `\n## Follow-up\n\n${followUp.kind === "none" ? `Retain this report; no Alex follow-up requested.${followUp.message ? `\n\nExplanation: ${followUp.message}` : ""}` : `Alex requested: ${followUp.message}`}\n`;
   const findings = strings(judgment.findings).slice(0, 12);
   const verification = strings(judgment.verification).slice(0, 12);
   if (metricId) {

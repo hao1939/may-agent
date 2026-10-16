@@ -284,6 +284,21 @@ limited list as the entire population. These are totals available when read,
 not reconstructed usage or outcomes at a historical cut. Do not sum parent
 workflow totals with their included agent calls, or treat unpriced usage as free.
 
+Use the same reporting base as the existing `hostReportUrl` helper:
+`MAY_REPORT_BASE_URL`, otherwise `http://localhost:8080`. The `start` and `end`
+parameters are epoch-millisecond integers (convert ISO labels with `Date.parse`),
+not ISO strings. A rejected query is not evidence of clock drift. For example,
+`?start=1792152039691&end=1792162839691&agent=evaluator-deepseek` selects a fixed
+historical invocation cohort. Keep returned data bounded and check truncation;
+do not discover an endpoint by trying unrelated ports or dump whole old sessions.
+
+Before attributing a pattern to an undeployed fix, check the current loaded
+revision and exact deployment/reload receipt, then segment observations by their
+activation times. A Task's saved result can describe an earlier source-only
+stage. If current activation cannot be established, report it as unverified;
+that gap does not establish that authorization was absent. A verified earlier
+rollout does not authorize another deployment.
+
 For a bounded selected cohort, inspect the linked session transcripts through
 the existing session reads. Match each `finish` call to its tool result by
 `toolCallId`: an error followed by an accepted correction and successful outcome

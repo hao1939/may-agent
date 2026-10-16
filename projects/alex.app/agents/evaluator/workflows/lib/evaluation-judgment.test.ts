@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { Check } from "typebox/value";
-import { evaluationJudgmentSchema, readNewJudgment } from "./evaluation-judgment.js";
+import { evaluationJudgmentSchema, readNewJudgment, type EvaluationJudgment } from "./evaluation-judgment.js";
 import { readReportFollowUp } from "./report-follow-up.js";
 
-const report = {
+const report: EvaluationJudgment = {
   disposition: "insufficient-evidence",
   summary: "The supplied evidence does not establish recovery.",
   responsibility: "The subject owner owns recovery.",
@@ -12,13 +12,16 @@ const report = {
 };
 
 describe("new evaluation judgment admission", () => {
-  test.each([
+  const valid: EvaluationJudgment[] = [
     report,
+    { ...report, followUp: { kind: "none", message: "" } },
+    { ...report, followUp: { kind: "none", message: "The existing owner is handling this concern." } },
     { ...report, disposition: "assessed", findings: [], verification: [] },
     { ...report, findings: ["A supported adverse finding"], verification: ["event:42"] },
     { ...report, summary: "  Preserve the supplied text.\n", followUp: { kind: "request", message: " Inspect the retained failure. " } },
     { ...report, followUp: { kind: "request", message: "🔎".repeat(1500) } },
-  ])("admits available evidence without manufacturing optional information: %j", (value) => {
+  ];
+  test.each(valid)("admits available evidence without manufacturing optional information: %j", (value) => {
     expect(Check(evaluationJudgmentSchema, value)).toBe(true);
     expect(Check(JSON.parse(JSON.stringify(evaluationJudgmentSchema)), value)).toBe(true);
     expect(readNewJudgment(value)).toBe(value);
@@ -32,7 +35,9 @@ describe("new evaluation judgment admission", () => {
     ["extra property", { ...report, invented: "field" }],
     ["unknown disposition", { ...report, disposition: "healthy" }],
     ["missing decision", { ...report, followUp: undefined }],
-    ["none with message", { ...report, followUp: { kind: "none", message: "" } }],
+    ["none with wrong-type message", { ...report, followUp: { kind: "none", message: 42 } }],
+    ["none with null message", { ...report, followUp: { kind: "none", message: null } }],
+    ["none with oversized message", { ...report, followUp: { kind: "none", message: "x".repeat(2001) } }],
     ["blank request", { ...report, followUp: { kind: "request", message: " \n\t" } }],
     ["oversized request", { ...report, followUp: { kind: "request", message: "x".repeat(2001) } }],
   ];

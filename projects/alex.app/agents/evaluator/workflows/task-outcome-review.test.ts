@@ -1221,6 +1221,8 @@ describe("Task outcome review", () => {
 
   test.each([
     { kind: "none" as const },
+    { kind: "none" as const, message: "" },
+    { kind: "none" as const, message: "Existing repair already owns this concern." },
     { kind: "request" as const, message: "Investigate the repeated checkout failure using the existing repair Task." },
   ])("retains follow-up through failed publication and retry: %j", async (followUp) => {
     const reportRoot = mkdtempSync(join(tmpdir(), "task-review-publish-"));

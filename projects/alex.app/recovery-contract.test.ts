@@ -220,6 +220,55 @@ function retainedReport(root: string) {
   return { publication, json, markdown };
 }
 
+test.each(["", "The existing repair already owns this concern."])(
+  "the real finish validator accepts a no-action explanation in one reply: %j",
+  async (message) => {
+    const root = mkdtempSync(join(tmpdir(), "alex-no-action-"));
+    const judgment = {
+      disposition: "assessed" as const,
+      summary: "The recovered outcome is supported by the supplied evidence.",
+      responsibility: "The existing owner retains the repair.",
+      delivery: "Assessment returned without another owner request.",
+      followUp: { kind: "none" as const, message },
+    };
+    let replies = 0;
+    try {
+      const prepared = prepareAgentExecution({
+        definition: {
+          name: "evaluator", description: "Offline report acceptance trial", domain: "tests",
+          systemPrompt: "Assess the supplied evidence.", model: fakeModel(),
+          tools: [createFinishTool({ agentName: "evaluator", projectRoot: root, persistDir: root })],
+        },
+        projectRoot: root, sessionId: "no-action-explanation", task: "Return the assessment.",
+        requireFinish: true, outputSchema: JSON.parse(JSON.stringify(evaluationJudgmentSchema)),
+      });
+      prepared.runner.streamFn = () => {
+        replies++;
+        expect(replies).toBe(1);
+        const stream = createAssistantMessageEventStream();
+        stream.push({
+          type: "done", reason: "toolUse", message: {
+            role: "assistant", content: [{ type: "toolCall", id: "finish-one", name: "finish",
+              arguments: { status: "success", summary: "Assessment returned.", result: judgment } }],
+            api: "openai-responses", provider: "synthetic", model: "fixture",
+            usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0,
+              cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+            stopReason: "toolUse", timestamp: Date.now(),
+          },
+        });
+        return stream;
+      };
+      const result = await executePreparedAgent(prepared, { timeoutMs: 10_000 });
+      expect(result.status).toBe("done");
+      expect(replies).toBe(1);
+      expect(result.structuredResult).toEqual(judgment);
+      expect(readNewJudgment(result.structuredResult)).toEqual(judgment);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  },
+);
+
 test.each(["readable", "unfamiliar", "unreadable"] as const)(
   "%s retained evidence reaches the existing owner through the real workflow/agent loop",
   async (mode) => {
