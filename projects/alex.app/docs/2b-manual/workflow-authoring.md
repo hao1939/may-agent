@@ -108,8 +108,8 @@ If useful, record "requested verification is missing" in ordinary facts or the
 summary; do not retry merely because an optional field is absent. See
 [report validity and fulfillment](../2a-design/execution-contributions.md#a-valid-report-can-describe-incomplete-work).
 An actual invalid supplied value still needs correction or agent interpretation.
-Host support for removing hidden finish requirements is a source candidate;
-check the linked contract's implementation status before relying on activation.
+Host #373 removed hidden finish requirements; the linked contract records its
+activation and the separate validation follow-up still under review.
 
 Use `id`, `kind`, `status`, `summary`, `output` and `facts` consistently for agent
 and workflow contributions. The execution adapter maps explicit partial agent work to
@@ -364,10 +364,18 @@ Keep the App's schema and pure admission checks in one module. Use them for
 code-produced results and consumer validation, and pass that schema to agent
 calls. Link the agent's guidance to the same requirements; do not duplicate a
 different schema in prose. Include wrong-type fixtures through the actual model
-tool validator: implicit adapter conversion can differ from the App's checks even
-with the same schema. The strict shared-admission behavior is an implementation
-gap until that boundary is aligned; a check after conversion cannot recover the
-original type. Read returned output and facts separately from status:
+tool validator: a check after conversion cannot recover the original type.
+If your App intends to accept multiple representations, include them in that
+schema and normalize them through one App helper used by both code and agent
+reports. For example, `Type.Union([Type.String(), Type.Integer()])` can describe
+an identifier the helper stores with `String(value)`. Host can return either
+accepted form without a correction turn. This is an App rule, not permission
+for arbitrary conversions, and format acceptance does not establish usefulness.
+The Host validation candidate checks structured finish reports before conversion,
+including JSON-serialized schemas and captured-finish recovery. Follow the
+[implementation status](../2a-design/execution-contributions.md#result-admission)
+before relying on installed behavior. Omit unavailable optional fields; use null
+only where the schema permits it. Read output and facts separately from status:
 a blocked or failed call may contain useful work to assess, without authorizing
 its effects or fulfilling the whole assignment.
 

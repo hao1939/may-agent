@@ -265,7 +265,11 @@ The [Conversation contract](../../2a-design/conversation-execution.md) records
 the prompt's selection aid and its limits.
 
 If `finish` returns a validation error, correct the named fields within the
-current invocation. Do not repeat already completed actions just to repair the
+current invocation. Use any representation the schema accepts; the App's shared
+normalizer handles its declared conversions. Omit an unavailable optional
+field rather than supplying null unless its schema permits null. Refer to the
+original tool call when feedback shows only a bounded set of errors.
+Do not repeat already completed actions just to repair the
 result object. App-specific preflight requires the Host revision described in
 [execution contributions](../../2a-design/execution-contributions.md); final
 settlement still checks whether the result remains current.
@@ -291,8 +295,8 @@ accepted result before treating follow-up work or Request closure as committed.
 Follow the [same contribution contract as code](../../2a-design/execution-contributions.md#common-contract-for-code-and-agents).
 Read the assignment and supplied schema; satisfy its evidence requirements.
 Keep a useful result separate from whether execution stopped or the whole Task
-is fulfilled. Use installed completion tools as exposed: the proposal to remove
-agent-only finish requirements is not yet an installed capability.
+is fulfilled. Use installed completion tools as exposed; the linked contract
+records Host #373's activation and the validation follow-up still under review.
 
 Let code handle known work and infra perform its supported retries. When a
 failure returns to you, read the original input, specific error, useful results

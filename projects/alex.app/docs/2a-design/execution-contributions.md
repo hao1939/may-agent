@@ -37,7 +37,7 @@ App owns each domain contract. Do not force every operation into one payload.
 | Concern | Rule for either implementation |
 | --- | --- |
 | Assignment and input | Use the requested outcome, original input/evidence and current scope. Unfamiliar content remains available for interpretation; a rejected admission remains the caller's responsibility. |
-| Acceptance | Apply the same App-owned report checks to code and agents. Required fields must be available in every report; fields that can be unavailable are optional. A valid report enables code consumption, not a claim of fulfillment. |
+| Acceptance | Apply the same App-owned normalization and report checks to code and agents. Allow intended meaning-preserving conversions. Required fields must be available in every report; fields that can be unavailable are optional. A valid report enables code consumption, not a claim of usefulness or fulfillment. |
 | Partial work and inability | Keep execution status, returned contribution and remaining work independent. Preserve useful output from every status for caller assessment. Missing output cannot imply fulfillment; inability must be reportable without fabricating it. |
 | Actions and replay | Use the same authority, cancellation, settlement and effect protections. Preserve accepted work and operation identities when changing method. Repeated consideration is allowed; it does not authorize repeating a committed effect. |
 | Correction and recovery | Return the original reference, specific failure, useful results and known effect status. Correct while the producer can still act; otherwise use the existing caller/Task recovery path. Infra owns supported mechanical retry; the App/agent owns another method or escalation within existing bounds. |
@@ -55,9 +55,11 @@ successful recovery remains success. Agent judgment is trusted within its scope,
 not guaranteed correct.
 
 **Coverage:** the shared execution scope, result vocabulary and Task admission
-already carry valid incomplete reports. The October 17 Host candidate removes
-hidden requirements for optional finish diagnostics; it is not deployed. App
-reader drift and implicit validator conversion still need alignment. The
+already carry valid incomplete reports. Host #373 removed hidden requirements
+for optional finish diagnostics. Its deployment and Alex's shared judgment
+schema activation are recorded in the [October 17 rollout](../archive/reviews/judgment-contract-20261017.md).
+[Host #374](https://github.com/hao1939/may-agent/pull/374) checks original reports before conversion.
+That follow-up is not deployed; broader App adoption remains App-owned. The
 [implementation proposal](../proposals/host-contract-improvements-20261016.md#return-unresolved-work-to-agent-judgment)
 owns that work and the comparison trials; these rules do not establish rollout.
 
@@ -569,14 +571,46 @@ proposals. Schema success enables that code path; the caller still judges the co
 meaning. Unfamiliar or invalid content remains evidence that an agent can
 interpret, but cannot directly drive effects that require validated data.
 
-**Normalization is part of acceptance.** New structured contributions are checked
-without implicit type conversion by default. If an App needs normalization, make
-that meaning-preserving rule explicit and shared by both methods, retaining the
-original evidence. A model tool adapter must not quietly turn a number into a
-string when the code path would reject it. Test the actual model tool validator,
-the App reader and the supported relay representation; schema equality alone
-does not establish equivalent acceptance. Ordinary tool arguments can keep their
-own declared normalization rules.
+**Normalization is part of acceptance.** Use the same declared normalization
+and validation for code and agents. Allow intended meaning-preserving conversions;
+stricter types are not a goal by themselves. For example, an App may accept an
+identifier as text or a number and store it as text through one shared admission
+helper. Neither producer needs a model correction just to perform that conversion.
+Retain original evidence alongside the accepted interpretation.
+
+With the existing workflow API, the supplied schema describes the representations
+the App accepts before canonicalization. If an identifier can be text or a number,
+declare that union and use the same App helper to normalize and validate reports
+from code and from `ctx.agents.call`. Host checks that accepted shape and returns
+it unchanged; the App helper produces the canonical value for its consumers.
+Do not publish a string-only schema while the App helper intentionally accepts
+numbers, or rely on the tool library's independent conversions to bridge that
+disagreement. This needs no Host normalization flag or callback registry.
+
+Test the actual model tool validator, the shared App helper and the supported
+relay representation. Schema equality alone does not establish equivalent
+acceptance. Ordinary tool arguments retain their own declared behavior. If a
+future App needs normalization that cannot be described by this accepted shape
+and shared helper, review that concrete requirement before adding another API.
+
+For structured `finish`, Host declares the outer report fields and the caller
+declares `result`. Honor each declaration as supplied. Omit an unavailable
+optional field; a supplied `null` is a value and must be permitted by the schema.
+The supported pre-validation hook checks the model-visible schema before tool
+coercion. Direct finish execution and captured-finish recovery use that same
+check. This is a source candidate;
+see the [validation trial](../archive/reviews/agent-judgment-and-code-paths-20261016.md#october-17-report-validation).
+
+Correction feedback names the failing paths and expected shapes, with bounded
+detail. Keep the original arguments in the existing tool call; do not copy the
+whole report into the error. Use that call and its matching error as audit
+evidence. A successful correction remains a success, with its effort observable
+through the existing transcript and usage records.
+
+Representation and usefulness remain separate. Converting `summary: 42` to
+`"42"` does not make it informative, and rejecting the number does not improve
+the work by itself. The App's acceptance judgment determines whether the summary
+is useful; structural validation should not be presented as that judgment.
 
 Return correctable failures while the contributing agent can still act, sharing
 the App's new-output checks with its consumer. A rejected completion can be
@@ -604,17 +638,19 @@ fences still apply. Previously accepted effects remain accepted independently.
 **Implementation coverage:** schema-valid incomplete reports already return
 through the ordinary agent and workflow paths. Direct Task agents can return
 `state: waiting` with useful work and `continue: true` independently of their
-outer finish status. The October 17 Host candidate removes the hidden
+outer finish status. Merged Host #373 removes the hidden
 `verification_facts` and `blockers` requirements and teaches optional information
 as optional; declared deliverable-path checks remain. Actual execution failure
 still preserves evidence through run references rather than automatically
 settling a Task proposal. No status-specific schema bypass is introduced.
 
-**Remaining gaps:** App readers can differ from their advertised schema in both
-directions. Public workflow agent
+**Remaining gaps:** Alex's new Task/metric judgment reader now shares its schema
+with code and agent output; other App readers still need their own alignment.
+Public workflow agent
 calls expose a schema but not the direct Task agent's pure completion callback.
-The pinned model tool validator can coerce values before App checks run, so even
-one schema currently does not assure the same admission behavior. The
+The pinned model tool validator can coerce values before ordinary App checks
+run. The follow-up Host candidate uses its supported pre-validation hook for
+structured finish reports; source verification does not establish activation. The
 [implementation proposal](../proposals/host-contract-improvements-20261016.md#return-unresolved-work-to-agent-judgment)
 specifies the remaining changes; callers must use installed contracts until
 activation. Optional report fields are already supported by the schema surface.

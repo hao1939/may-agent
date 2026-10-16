@@ -135,18 +135,15 @@ is the normative rule for both methods. This proposal tracks its implementation,
 not a second contract. Start with one App result boundary, then align generic
 Host completion and prove the recovery route.
 
-**First slice — prove one shared acceptance boundary.** Use the evaluator judgment
-as the concrete case. Its schema and current-result reader disagree in both
-directions: blank text passes the schema but fails the reader; missing/non-array
-verification and unknown fields fail the schema but pass the reader. Factor one
-App-owned schema/admission helper used by task review, metric review and any code
-producing a new judgment. Supply that same schema to the agent. Feed identical
-valid and invalid fixtures through both paths, including correction, before
-changing broader recovery behavior. Keep historical evidence and report reuse
-separate from admitting a newly generated judgment. This App slice can improve
-schema/reader alignment independently. Full parity also needs the actual tool
-validator: the October 17 probe found implicit conversion before App checks.
-Do not claim end-to-end equivalence from a strict reader alone.
+**First slice — shared App acceptance is activated.** The evaluator judgment was
+the concrete case: its schema accepted blank text that the reader rejected, while
+the reader accepted missing/non-array verification and unknown fields that the
+schema rejected. One App-owned schema/admission helper now serves both review
+workflows and code-produced judgments; historical evidence and report reuse
+remain separate from new admission. See the [activation record](../archive/reviews/judgment-contract-20261017.md).
+Full parity also needs the actual tool validator: the October 17 probe found
+implicit conversion before App checks. Do not claim end-to-end equivalence from
+a shared reader alone.
 
 #### Remaining gaps and fix order
 
@@ -159,16 +156,21 @@ normalization. A stricter validator alone does not make incomplete work usable.
 
 | Order / owner | Gap and impact | Smallest fix | Evidence needed to finish |
 | --- | --- | --- | --- |
-| 1 — Alex App | Schema and reader disagree, causing late rejection or silently changed data | One new-judgment schema/admission helper; use it in both reviews and expose that schema to agents. Preserve historical reads/publication reuse | Identical valid, blank, missing, wrong-type and extra-field fixtures agree through the App schema and reader; valid correction needs no reassessment |
-| 2 — Host/finish; source candidate | Optional fields become mandatory in hidden runtime checks, causing unnecessary correction turns | Remove hidden `verification_facts` and `blockers` requirements. Keep one declared report schema, allow its optional information to be absent, and preserve the caller's Task decision through existing paths | Scripted agent reports finish in one reply for all statuses; Task receives useful work with waiting/continuation intact; missing required or malformed fields remain correctable |
-| 3 — Host/model validator | The tool path converts types before validation and echoes full rejected arguments; code checks can disagree and correction costs grow | Validate caller-declared contribution payloads with the declared normalization policy before implicit conversion. Keep concise failures plus retained original evidence. Use one supported validator integration for both corrections | Real model-tool validation and App checks agree on original inputs, including relay serialization; required errors stay correctable and diagnostics stay bounded |
+| 1 — Alex App; activated | Schema and reader disagreed, causing late rejection or silently changed data | One new-judgment schema/admission helper now serves both reviews and code-produced judgments; historical reads/publication reuse remain | Paired schema/reader checks and source/activation evidence are recorded in the [October 17 rollout](../archive/reviews/judgment-contract-20261017.md); real-validator parity is slice 3 |
+| 2 — Host/finish; merged #373 and deployed | Optional fields became mandatory in hidden runtime checks, causing unnecessary correction turns | Removed hidden `verification_facts` and `blockers` requirements. Kept one declared report schema and the existing Task decision paths | Scripted reports finish in one reply for all statuses; waiting/continuation survives. Full source CI passed; the [rollout record](../archive/reviews/judgment-contract-20261017.md) identifies the installation |
+| 3 — Host/model validator; source candidate | The tool path converts types before validation and echoes full rejected arguments; code checks can disagree and correction costs grow | Check the visible structured finish schema in Pi's supported `prepareArguments` hook before conversion. Reuse that check for direct execution and captured-finish recovery. Return concise failures with original arguments retained | Real model-tool validation and code checks agree on original values and JSON-serialized schemas; rejected reports remain correctable. See the [trial](../archive/reviews/agent-judgment-and-code-paths-20261016.md#october-17-report-validation) for checks and limits |
 | 4 — App recovery, Host only for a demonstrated delivery gap | A late rejection can end the workflow; early failure/reload can prevent its agent call entirely | Use existing owner calls/feedback and `previousAttempt`; prove pre-admission, setup and retained-input paths. Keep stable envelopes and existing reload protection until a safe interpretation route is proven | Original request reaches an executable responsible owner or remains visibly undelivered; same identities/effects survive restart and schema evolution; no repeated unchanged repair loop |
 | 5 — Alex audit; verification first | Existing audit policy covers recovered failures, but guidance alone does not prove readable correction/cost evidence or useful follow-up | Exercise the current periodic/breach-driven audit using retained execution/usage records; add instrumentation only for a demonstrated missing observation | One recovered costly pattern is visible separately from its successful outcome; a transient can receive no-change disposition; no review per sample or duplicate investigation |
 
-The strict new-contribution default does not require removing every tool's useful
-argument normalization. Scope slice 3 to the declared result contract and test
-original values; validating already-converted values cannot recover their types.
-An explicit App normalization rule must apply equally to code and agents.
+The goal is consistent acceptance with low correction cost, not stricter types.
+Use one App-owned normalization/admission helper for both producers. With the
+existing API, expose all accepted representations in the supplied schema, then
+canonicalize through that helper. A text-or-number identifier can become text
+without a model correction; a text-only declaration must not acquire an unrelated
+Host conversion policy. Scope slice 3 to structured finish reports and test both
+rejection outside the declared shape and intended normalization within it.
+Report usefulness remains an App judgment: a converted `"42"` summary is not
+automatically useful. Broader tool normalization remains outside this slice.
 
 **App adoption — Alex owns meaning and the next action.**
 
@@ -237,17 +239,21 @@ envelope while changing only its content.
    Actual execution failure or cancellation remains distinct: retain evidence
    through existing references without automatically admitting its proposed
    actions. Do not remove those fences to make a failed run look accepted.
-3. Align the real caller-result validator with the App's admission semantics,
-   including strict types by default and shared explicit normalization if declared.
-   The pinned validator currently converts values before ordinary tool callbacks;
-   a post-conversion App check cannot establish equivalence. Integrate at the
-   supported validator boundary, preserving original evidence.
+3. Align the real caller-result validator with the App's declared accepted shapes,
+   including inputs to its shared normalization. Demonstrate that intended
+   normalization finishes without another model reply, as well as that an
+   undeclared conversion cannot produce different acceptance for code and agents.
+   The pinned validator converts values before ordinary tool callbacks;
+   a post-conversion App check cannot establish equivalence. Its supported
+   `prepareArguments` hook runs before conversion: validate the model-visible
+   report schema there and return the original values. Captured-finish recovery
+   must use the same preparation before its existing schema/semantic checks.
    Return concise validation failures and retain original evidence by reference.
    Use the existing tool-error and execution-record boundaries for rejection and
-   correction facts. The pinned Pi validator rejects before ordinary tool hooks
-   and echoes full arguments: choose a supported library/adapter integration,
-   not an `afterToolCall` patch that never receives the error. Do not edit installed
-   dependencies or parse arbitrary error prose into routing policy.
+   correction facts. Bound the number and size of error details and keep the
+   original arguments in their tool call. Ordinary non-finish tools keep their
+   existing normalization. No dependency edit, diagnostic parser, new warning
+   system or retry policy is needed.
 
 Prefer schemas for deterministic shape checks. If an App needs a demonstrated
 pure semantic admission check, extend the existing internal `validateOutput`

@@ -132,6 +132,11 @@ when judgment is needed. This is one work loop with the same ownership and bound
 Code and agents handling the same contribution follow the
 [same contract](../2a-design/execution-contributions.md#common-contract-for-code-and-agents).
 Changing the method must not change acceptance, evidence requirements or effects.
+Acceptance includes any declared normalization: use the same rule for code and
+agents, allowing meaning-preserving conversions where the owner intends them.
+Strict types are not a goal by themselves, and a valid shape does not establish
+usefulness. Avoid a model correction merely to perform normalization that the
+shared contract already permits.
 See [agents and code](design-philosophy.md#agents-handle-variety-code-makes-known-work-efficient)
 for its value and the [recovery contract](../2a-design/system-boundary.md#retry-and-recovery-ownership)
 for responsibility at each boundary.

@@ -322,6 +322,82 @@ These trials do not establish live model behavior or token savings. App schema/
 reader alignment and the pinned tool validator's implicit conversion remain
 separate gaps. Source verification and deployment must be reported separately.
 
+## October 17 report validation
+
+Host #373 merged as `b86592b08`; this follow-up starts there. The implementation
+is [Host `5a63451f1`](https://github.com/hao1939/may-agent/commit/5a63451f1),
+under review in [PR #374](https://github.com/hao1939/may-agent/pull/374). It implements the
+[normalization contract](../../2a-design/execution-contributions.md#result-admission)
+at the existing structured finish boundary. #374 is not deployed. During this
+work, the [separate rollout record](judgment-contract-20261017.md) confirmed
+Host #373 and Alex's new-judgment schema/admission activation; those changes are
+preserved in the integrated design. This follow-up does not deploy either repo.
+
+The pinned Pi runtime has a supported `prepareArguments` hook before
+`validateToolArguments`. The latter clones and converts arguments before
+validation; `beforeToolCall` runs afterward and cannot prevent acceptance of
+the changed types. Finish extraction later reads the original transcript, so
+conversion can also make the executed report and returned report disagree.
+
+The candidate compiles the existing model-visible finish schema and checks
+original arguments in `prepareArguments`, returning them unchanged on success.
+It uses that same check for direct finish execution. Captured-finish recovery
+now invokes preparation before its existing validator and semantic execution.
+The scope is structured finish, including its outer fields and caller-defined
+result. Other tool argument behavior is unchanged. Optional missing information
+remains valid; an explicit null must be permitted by the schema. There is no
+new schema, retry controller, history migration or dependency patch.
+
+Shape errors use the existing tool-error path, showing at most eight details,
+with paths and messages limited to 200 characters each. The original report
+stays in its tool call. A synthetic report with a 100,000-character summary and
+1,000 invalid evidence items produced 142,458 characters of feedback through
+the prior validator and 493 through the candidate. This compares diagnostic
+size, not processed-token savings or model success rate.
+
+Portable trials cover:
+
+- Code `Value.Check` and the actual tool preparation/validator agree on valid,
+  missing, blank, wrong-type, extra-field and nullable values, including a
+  JSON-serialized schema. Valid union values retain their types.
+- A shared App admission helper accepts a text-or-number identifier and summary,
+  normalizes them to text and trims whitespace for both code and agent reports.
+  Scripted replies through the real agent loop return these declared forms in
+  one reply, with original values retained. `summary: 42` becoming `"42"` proves
+  representation parity only; the contribution stays partial and its usefulness
+  remains an App judgment. This uses the existing schema and caller helper,
+  without a new Host normalization API.
+- Scripted replies through the real agent loop reject an undeclared wrong type, receive
+  concise feedback, and successfully correct it in the same invocation. The
+  first report remains in the transcript. Valid incomplete reports still
+  return in one reply for all four finish statuses.
+- Direct execution cannot bypass report validation. Captured aborted-finish
+  recovery rejects coercible bad values, keeps its receipt and original report,
+  and accepts a corrected call once. Both parsed objects and JSON argument
+  strings are covered.
+- A large rejected report retains its original content while feedback stays
+  bounded. Existing deadline, cancellation, Task semantic admission and effect
+  checks remain their respective test owners.
+
+The initial focused gate passed 99 checks. The first full run passed 3,783 checks,
+skipped three installation-only checks and failed the old graceful-finish
+assertion tied to the previous diagnostic prefix. The test now checks the
+rejected call's error flag and failing result field; its focused rerun passed.
+The corrected full gate on `b6e22f290` passed 3,784 tests with three
+installation-only skips. After adding the declared-normalization trials,
+`bun run ci` on `5a63451f1` passed 3,786 tests with those same three skips and
+zero failures across 339 files. Browser tests executed. GitHub Quality and
+Container both passed on that revision. `check:may-design` passed, including
+executable examples, with one existing unclassified `reports` root-layout warning.
+
+This verifies synthetic execution and serialized schema behavior, not live
+provider behavior or deployment. Rejecting a conversion is not automatically
+valuable: the goal is shared acceptance and useful work with fewer correction
+turns. Apps should expose every representation their shared helper intends to
+accept and keep unavailable information optional. A value outside that declaration
+can still require correction. No total token-saving or semantic-quality claim
+follows from these trials.
+
 ## Design refinement and implementation order
 
 Put the system-wide rule in philosophy/core principles, summarize ownership in
