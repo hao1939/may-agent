@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { interfaceBinding } from "../../packages/control/src/interface-binding.js";
 import {
   agentShellEnvironment,
   nativeCliEnvironment,
@@ -9,6 +10,11 @@ import {
 const source: NodeJS.ProcessEnv = {
   PATH: "/usr/bin",
   HOME: "/home/agent",
+  DISPLAY: ":99",
+  AGENT: "helper",
+  DAEMON_AGENT: "legacy",
+  CLAUDE_CONFIG_DIR: "/state/custom-claude",
+  MAY_CODEX_GOAL_COMMAND: "/opt/may/bin/codex-goal",
   STATE_DIR: "/state",
   MODEL_API_KEY: "model-secret",
   MODEL_BASE_URL: "https://models.example.test",
@@ -29,7 +35,14 @@ function keys(environment: NodeJS.ProcessEnv): string[] {
 describe("process credential boundaries", () => {
   it("gives Task admission only portable runtime configuration", () => {
     const environment = taskAdmissionEnvironment(source);
-    expect(environment).toEqual({ HOME: "/home/agent", PATH: "/usr/bin", STATE_DIR: "/state" });
+    expect(environment).toEqual({
+      AGENT: "helper",
+      DAEMON_AGENT: "legacy",
+      DISPLAY: ":99",
+      HOME: "/home/agent",
+      PATH: "/usr/bin",
+      STATE_DIR: "/state",
+    });
   });
 
   it("gives Task attempts model and GitHub credentials but no transport or unknown ambient credentials", () => {
@@ -50,6 +63,23 @@ describe("process credential boundaries", () => {
     expect(environment.GH_TOKEN).toBe("github-secret");
     expect(environment.TELEGRAM_BOT_TOKEN).toBeUndefined();
     expect(environment.AWS_SECRET_ACCESS_KEY).toBeUndefined();
+  });
+
+
+  it("preserves desktop and agent identity through the attempt-to-shell boundary", () => {
+    const shell = agentShellEnvironment(taskAttemptEnvironment(source));
+    expect(shell.DISPLAY).toBe(":99");
+    expect(shell.AGENT).toBe("helper");
+    expect(shell.DAEMON_AGENT).toBe("legacy");
+    expect(interfaceBinding(shell).agent).toBe("helper");
+    expect(interfaceBinding({ ...shell, AGENT: undefined }).agent).toBe("legacy");
+  });
+
+  it("preserves configured executor and Claude state through the attempt-to-CLI boundary", () => {
+    const attempt = taskAttemptEnvironment(source);
+    const cli = nativeCliEnvironment(attempt);
+    expect(attempt.MAY_CODEX_GOAL_COMMAND).toBe("/opt/may/bin/codex-goal");
+    expect(cli.CLAUDE_CONFIG_DIR).toBe("/state/custom-claude");
   });
 
   it("gives agent bash GitHub access and runtime paths without any model or transport credential", () => {
