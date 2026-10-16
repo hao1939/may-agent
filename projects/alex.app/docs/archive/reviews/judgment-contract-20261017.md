@@ -101,3 +101,10 @@ No Task control or synthetic review input was submitted. Naturally occurring
 work was already present: Alex reported one running Task immediately before
 reload and two at completion, so this is not a claim that all Tasks were stopped.
 Unrelated untracked shared-checkout files were preserved.
+
+## Recovery follow-up
+
+The [connected recovery record](recovery-contract-20261017.md) now covers ordinary
+interpretation, executable pre-admission/setup feedback, retained-input guards and
+restart behavior. It also records #374's remaining merge/deploy gate and the first
+two naturally due reviews. No additional App runtime change was demonstrated.
