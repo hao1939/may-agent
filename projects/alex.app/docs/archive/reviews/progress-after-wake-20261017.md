@@ -94,3 +94,20 @@ visible as cost and lack of progress; a successful finish alone is insufficient.
 Alex must distinguish assignment strategy from worker obedience and preserve
 valid waits. Token savings and improved model behavior remain unmeasured until
 those natural observations exist.
+
+## Activation
+
+Activated App source `2a1871c3fa2c92ff60809d576c0f3b47c862c977` through the
+ordinary reload route at **2026-10-17 04:10:43 Asia/Shanghai**. Request event
+`6677144` links to successful completion `6677149` with that exact source.
+The active release manifest agrees, and all five changed runtime source files
+match their committed bytes. Alex, May and Scout remain registered; readiness
+is healthy. Host remains `may-agent v5.5.0 (e982e753)`.
+
+At the 04:11 verification cut, post-activation natural source behavior and
+corresponding evaluation are still pending. No synthetic wake was sent. This
+activation record is documentation only and does not need another reload.
+Receipts, file hashes and readiness are retained as
+`progress-after-wake-reload-completion.json` and
+`progress-after-wake-installed-verification.json` in the private evidence
+directory. Prior rollout and audit observations retain their separate scopes.
