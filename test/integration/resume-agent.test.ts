@@ -657,6 +657,7 @@ describe("SubagentManager.resumeStaleSessions()", () => {
         metadata: { id: taskBinding.attemptId },
         taskId: taskBinding.taskId,
         taskGeneration: taskBinding.generation,
+        sessionId,
         state: "completed",
         acceptedResult: { state: "converged", summary: "historical answer" },
       });
@@ -703,7 +704,7 @@ describe("SubagentManager.resumeStaleSessions()", () => {
         ...authoritativeMeta,
         taskBinding: { ...taskBinding, attemptId: "authoritative-other-attempt" },
       });
-      expect(settleTerminalAppTaskSessions(runtimeOpts, { id: "sample" })).toEqual([]);
+      expect(() => settleTerminalAppTaskSessions(runtimeOpts, { id: "sample" })).toThrow("session Task binding");
       expect(
         getDb(persistDir)
           .prepare("SELECT status, endedAt, outcome FROM sessions WHERE sessionId = ?")
