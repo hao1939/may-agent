@@ -707,11 +707,31 @@ async function runClaimedTask(
   }
 
   function emit(type: string, data: Record<string, unknown>) {
+    // Project the committed attempt, not retry labels or the proposed result.
+    // All settlement paths publish the same facts; App policy decides their use.
+    let outcome: Record<string, unknown> = {};
+    if (type === "project.task.reconciled") {
+      try {
+        const saved = config.resourceStore.readAttempt(claim.attemptId);
+        if (saved?.taskId === claim.taskId && saved.taskGeneration === claim.generation) {
+          outcome = {
+            attemptState: saved.state,
+            ...(saved.acceptedResult ? { resultState: saved.acceptedResult.state } : {}),
+            ...(saved.failureReason ? { failureReason: saved.failureReason } : {}),
+            ...(saved.retryExhausted ? { retryExhausted: saved.retryExhausted } : {}),
+          };
+        }
+      } catch (error) {
+        // A missing observation must not reject already accepted work.
+        log("warn", `[app-task:${descriptor.id}] ${claim.attemptId} observation unavailable: ${String(error)}`);
+      }
+    }
     emitTaskReconciliationEvent(opts, descriptor, event, type, claim.taskId, {
       generation: claim.generation,
       attemptId: claim.attemptId,
       handler: claim.handler,
       ...data,
+      ...outcome,
     });
   }
 }

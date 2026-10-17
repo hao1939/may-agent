@@ -47,6 +47,23 @@ which failures need investigation or escalation, including failures before
 workflow code runs. No Host-invented diagnosis Task or App-specific policy is
 needed. Calling an agent and accepting progress do not establish repair.
 
+Reconciliation events carry a small projection of the exact committed attempt:
+`attemptState` is its stored execution state; optional `resultState` is the
+accepted result's state. `failureReason` and `retryExhausted`, when present, come
+from that same attempt. These facts are independent of the existing scheduling
+`disposition`: a failed execution remains `failed` whether retrying or exhausted;
+an accepted `incomplete` report belongs to a `completed` execution and retains
+its unfinished outcome. Accepted waiting/progress is not an execution failure.
+New retry policies and diagnostic reasons need no new failure classification.
+
+The common publisher performs one indexed attempt read after settlement, without
+copying result bodies or session history. Missing/unreadable records leave these
+fields absent; a read error is logged and cannot reject committed work. Old events
+remain immutable. Consumers can inspect the exact saved Task/attempt when facts
+are missing or stale; an event is a hint, not proof of current failure or recovery.
+Periodic audits use the same stored evidence and can also assess broader issues.
+Host supplies facts; Apps choose attention, repair and escalation policy.
+
 Workflows and registered executors return the same result contract as agents.
 `needs-agent` and `needs-owner` outputs are rejected visibly through ordinary
 paced failure recovery. Code that needs judgment calls the agent directly;
