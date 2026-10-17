@@ -271,6 +271,62 @@ bun test src/app/core/tasks/app-task-runtime.test.ts --test-name-pattern 'startu
 bun test test/integration/crash-recovery.test.ts test/integration/resume-agent.test.ts
 ```
 
+## #381 recovery identity review
+
+Two further comments exposed fallback evidence overriding an established
+boundary. With no SQL session projection, a copied binding naming another real
+retained attempt could authorize startup cleanup. Separately, an exited
+process marker was reduced to a null PID, allowing detached metadata's reused
+PID to make the old owner appear live again.
+
+Host commit `2a4cb4e703cfa08abb07da87928330b25bc13e59` tightens the existing
+lookups and process check. A file copy must resolve to the attempt's exact
+session. Helpers and prior workflow steps can use their independent SQL session
+association; losing that association delays cleanup until repair instead of
+triggering a historical scan. The marker reader now retains exited process
+evidence, and the same PID cannot override a rejected instance. Legacy metadata
+uses the existing process-start check when its timing survives. Missing usable
+identity or timing remains conservative; this change does not reconstruct it.
+
+Five new regression cases failed before the change: one real-attempt conflict,
+two direct reused-PID cases, and two full-startup cases. The initial additional
+attempt fixture omitted a required Task fence; that fixture was corrected
+before collecting these failures. The actual startup tests hold Task recovery
+until after the generic scan, then verify ordinary continuation without replacing
+saved result or damaged metadata bytes. Contrasting cases keep live detached
+workers protected with missing/unreadable markers and independent PIDs. Helpers
+and prior workflow steps recover after their SQL association is restored.
+
+The six affected suites pass **359 tests, zero failures and 3,816 assertions**
+in 48.49 seconds. Design integrity, examples and App audit pass in the isolated
+docs worktree, with the existing root `reports` warning.
+
+The first full local CI run stopped at a Bun 1.3.14 native segmentation fault
+reported while running `workflow-guards-integration.test.ts`. The runner counted
+3,555 passes, three skips and 20 failures/aborted suites; this is not a passing
+run. The isolated owning suite then passed nine tests and 45 assertions without
+source changes. The native crash did not reproduce there, and its underlying
+engine cause has not been established. A second complete `bun run ci` passes
+without source changes: **3,877 tests, three installation-specific skips,
+zero failures and 22,495 assertions** in 326.07 seconds. Host/SDK types, boundary
+checks and lint pass. There are no automatic retries or skipped regressions.
+The initial failure, isolated check and final run are retained as
+`pr381-identity-ci.log`, `pr381-identity-crash-repro.log` and
+`pr381-identity-ci-second.log` in the archive named below, alongside the focused
+checks and `pr381-identity-sha256.json`.
+
+[GitHub Quality and Container](https://github.com/hao1939/may-agent/actions/runs/39029465861)
+both pass on `2a4cb4e703`. These are portable process and scripted Task tests,
+not an installed recovery-worker bootstrap or live deployment. The PR remains
+unmerged and undeployed.
+
+From the Host checkout:
+
+```sh
+bun test src/app/core/tasks/app-task-runtime.test.ts src/app/adapters/executors/session-recovery.test.ts --test-name-pattern 'startup leaves conflicting|reused detached PID|PID rejected|honors a live detached|independent SQL association'
+bun run ci
+```
+
 ## Live recovery example
 
 A read-only follow-up checked the actual agent transcripts, durable Tasks,

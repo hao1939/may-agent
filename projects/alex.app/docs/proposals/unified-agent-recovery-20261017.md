@@ -282,8 +282,10 @@ migration or new repair result schema is required.
 writers and startup assumptions; the correction consolidates cleanup under the
 owning runtime contract. That shared boundary must include ownership admission
 and validated lifecycle reads, so another caller cannot bypass them by invoking
-only the process drain. Source revisions, reproduced failures and validation
-belong in the [trial evidence](../archive/reviews/hierarchical-recovery-trial-20261017.md#381-startup-admission-and-validation).
+only the process drain. Fallback evidence must not supply its own proof or
+reverse an established identity conflict. Missing evidence and evidence that
+an execution exited are different facts. Source revisions, reproduced failures and validation
+belong in the [trial evidence](../archive/reviews/hierarchical-recovery-trial-20261017.md#381-recovery-identity-review).
 
 ## Decisive trials
 
@@ -293,8 +295,9 @@ belong in the [trial evidence](../archive/reviews/hierarchical-recovery-trial-20
 | Incomplete-history recovery (#381) | Missing, unreadable or partially recorded metadata use the same retained Task authority and cleanup checks. Startup and claim recovery reach an accepted result with gaps disclosed and surviving bytes preserved. |
 | Surviving result and repeated startup (#381) | Running metadata with a saved result and missing transcript retains the result and its descriptor, including through normal event persistence. A later startup with persisted SQL and damaged metadata settles stopped execution without inventing an outcome or blocking useful continuation. |
 | Readable ownership conflict in damaged metadata (#381) | Recovery rejects the conflicting identity before cancellation or drain; unrelated metadata damage does not conceal it. |
-| Startup admission and lifecycle validation (#381) | Actual startup preserves conflicting terminal-session descendants and markers, with or without the SQL projection. Object-valued optional lifecycle fields cannot crash startup or enter SQL. Original work continues with damaged history and saved results preserved; inherited helper scope does not substitute for ownership. |
+| Startup admission and lifecycle validation (#381) | Actual startup preserves conflicting terminal-session descendants and markers, with or without the SQL projection, including a copied binding naming another real retained attempt. Verified helpers and prior workflow steps still clean up without taking ownership of the Task. Object-valued optional lifecycle fields cannot crash startup or enter SQL. Original work continues with damaged history and saved results preserved; inherited helper scope does not substitute for ownership. |
 | Live execution or helper cleanup pending (#381) | Run the real startup entry point with delayed Task recovery and a live owner process. Preserve its claim and markers despite missing or terminal history. After the owner exits and retained descendants drain, ordinary recovery continues without replacing saved results. |
+| Reused detached PID (#381) | An exited process marker is not overridden by its saved PID. With surviving legacy timing, startup and later Task recovery both continue after marker removal. Missing/unreadable markers still preserve genuinely live detached workers. |
 | Owner cannot start because Git setup or workflow loading fails | A declared escalation recipient receives the original reference/error, starts through real runner/workspace setup, performs a repair, and the original Task resumes to a useful result. |
 | No usable caller; help begins from a failure event | The declared route admits executable work and retains an explicit return to the original Task/input. Repair evidence reaches that work; no assumed caller link or duplicate parallel repair. |
 | Original admission fails before Task creation | Retain the original input and route failure, deliver actionable help through a usable declared route, then retry admission and finish the original ask. No fabricated destination Task. |
