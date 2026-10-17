@@ -4,7 +4,7 @@
 
 **Choice basis:** [Agent decisions and mechanical execution](../1-principles/code-vs-data.md); [safe retry and recovery ownership](../2a-design/system-boundary.md#retry-and-recovery-ownership); [evidence before expansion](../1-principles/evidence-first.md).
 
-**Design status:** Dated implementation and trial record. The [October 17 unified recovery proposal](unified-agent-recovery-20261017.md) owns the next recovery mechanism: one owner loop and shared limits across failure stages, with no mandatory oversight handoff per error. Retain the evidence below; do not treat its earlier ordering as the current implementation plan.
+**Design status:** Dated implementation and trial record. The [October 17 hierarchical recovery proposal](unified-agent-recovery-20261017.md) owns the next work: owner recovery followed by declared escalation, using existing execution limits and return relationships. Retain the evidence below; do not treat its earlier ordering as the current implementation plan.
 **Implementation status (2026-10-03):** Host `14491241d07346c7993c99bd6a709e29797d2883` and Apps release `1e97bd70e1e9beb9dd20b33f0b696c5f4122bfd6-definitions-v4` are the observed installed baseline. PRs #284 and #288 integrated the fresh-context, backlog and executor-policy repairs. The original `evaluation/runtime/compat/owner-review` Task then resumed on the same Codex thread and settled its 133 retained inputs in three accepted attempts. This bounded supervised outcome does not prove universal autonomous recovery.
 
 Current ownership and decisive evidence:

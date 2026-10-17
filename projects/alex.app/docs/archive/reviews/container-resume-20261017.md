@@ -244,6 +244,10 @@ for this follow-up.
 
 ## Proposed mechanism: agent-led recovery under a bounded Host
 
+The paragraphs below retain the earlier October 17 review. The later hierarchy
+refinement replaces its independent execution requirement for every owner and
+shared recovery allowance with declared escalation and existing controls.
+
 The [unified recovery proposal](../../proposals/unified-agent-recovery-20261017.md)
 now owns this direction. Its [current-mechanism review](recovery-mechanism-20261017.md)
 records what works, the remaining owner-delivery/setup gaps, and the limits of

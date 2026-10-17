@@ -57,18 +57,18 @@ cannot proceed. Use bounded automatic retries and the existing owner/return
 path. Repeated failure should produce an actionable reason and next step, not
 an invisible loop, repeated status confirmation, or a new coordination system.
 
-Prefer one agent-led recovery mechanism over separate repair paths for each
-error. The Host detects execution failure, retains ownership and execution
-limits, and makes a bounded owner attempt available independently of the broken
-Task setup. The agent diagnoses and repairs using its authorized tools; retrying
-the ordinary work path establishes whether recovery helped. Repeated unsuccessful
-repair must not obtain a fresh allowance by creating another repair Task.
+Follow the existing recovery and escalation hierarchy across failures. The Host
+retains work, execution facts and limits; the owner repairs within its capability
+or asks the next responsible agent for help. Not every App needs system-repair
+expertise. If the owner cannot start, a declared route must reach a recipient
+that can run. Normal work resuming establishes whether repair helped; a repair
+report alone does not. Escalation must not silently renew exhausted retries.
 
 Apply this rule across setup, dispatch and execution failures. A bounded code
 check for restored availability can continue without repeatedly invoking an
 agent; repeating full setup or execution is work and needs a bounded allowance.
-The [unified recovery proposal](../proposals/unified-agent-recovery-20261017.md)
-records the current delivery/setup gaps and proposed limits. This direction is
+The [hierarchical recovery proposal](../proposals/unified-agent-recovery-20261017.md)
+records the delivery/setup gaps and trials using existing controls. This direction is
 not a claim that the complete mechanism is implemented.
 
 Preserve useful existing safeguards. A small atomic write or duplicate check
