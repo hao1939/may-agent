@@ -2,13 +2,22 @@ import type { WorkflowContext } from "@may-agent/sdk";
 import {
   metricReviewResult,
   metricReviewSchema,
+  readMetricReview,
 } from "../../../metric-follow-through.js";
+import {
+  readMetricEvidence,
+  type MetricEvidence,
+  type MetricReader,
+} from "../../../../alex.app/agents/evaluator/workflows/lib/metric-evidence.js";
 
 export const name = "metric-follow-through";
 export const description =
   "Own an ordinary metric follow-through Task. Keep the handed-off decision as context and ask May to judge current evidence. Host Conditions and dependencies carry observation and delivery.";
 
-export async function execute(ctx: WorkflowContext) {
+export async function execute(
+  ctx: WorkflowContext,
+  reader: MetricReader = readMetricEvidence,
+) {
   const rec = ctx.reconciliation;
   if (!rec)
     return ctx.blocked(
@@ -24,6 +33,7 @@ export async function execute(ctx: WorkflowContext) {
         "Review this metric follow-through Task against its full current outcome and acceptance.",
         "The handed-off review is context for the requested investigation, not this Task's execution decision. Choose the current work and result yourself. If previousAttempt records a rejection or failure, read that feedback and correct the plan; do not replay the rejected result or repeat already accepted effects.",
         "Read metric-response and current evidence for the relevant breach episodes before judging them. New samples update evidence; they do not trigger investigation. Reuse the existing investigation for an open breach. Select useful authorized work; requests commission independent work. Resume it for repair results, human decisions, an exact metric.recovered status change, new requirements or a deliberate checkpoint for actual outstanding work.",
+        "Optional decisions.reuseScope declares observable applicability and reconsiderWhen predicates for reusing your decision before future automatic assessments. Read the metric scope contract before using it. Code checks current evidence and binds the definition, responsibility and source. Choose bounds and source/coverage checks from evidence; do not invent numeric substitutes for prose revisitWhen criteria. Omit scope when material facts are unavailable. Existing Conditions and Task deadlines still own your follow-through.",
         "Return {task: ordinary Task result, decisions: metric judgments}. Put current judgments in decisions; code generates their metric-disposition facts and fills linkedTask from this attempt. Perform useful authorized work now. For another bounded internal pass, return waiting with continue:true. When an external fact is needed, retain or declare its real Condition or request return. A one-time reviewAt is appropriate for deliberate reconsideration of actual outstanding work, including post-backoff verification; it is not a periodic sample-reading timer. A legitimate retained future review remains useful when omitted from the next result. A nextAction sentence, metric disposition, or request declaration alone is not a wake route. Return converged only when the addressed requirements are fulfilled, or incomplete with the concrete gap when this attempt cannot complete them. Use no-change and finish the review when only passive metric collection remains. Use investigate for actual work or waits. Do not create may.metric.state Conditions or periodic checkpoints merely to reread samples. Retire every obsolete retained may.metric.state Condition with a retire-condition action, including already satisfied sample waits. An older handed-off observe plan needs your current judgment, not replay. Preserve independent requirements, repair requests, approvals, and unchanged useful waits. Metric recovery alone never fulfills original work. Account for current assigned input rather than replaying the original plan.",
         JSON.stringify(rec),
       ].join("\n"),
@@ -34,7 +44,16 @@ export async function execute(ctx: WorkflowContext) {
         executionId: response.id,
         facts: response.facts,
       });
-    const result = metricReviewResult(rec, response.output);
+    const review = readMetricReview(response.output);
+    const observations = new Map<string, MetricEvidence>();
+    for (const decision of review.decisions) {
+      if (decision.reuseScope && !observations.has(decision.metricId))
+        observations.set(
+          decision.metricId,
+          await reader(decision.metricId, Date.now(), decision.alertId ?? undefined),
+        );
+    }
+    const result = metricReviewResult(rec, review, observations);
     return ctx.done(result.summary, result);
   } catch (error) {
     const summary = error instanceof Error ? error.message : String(error);

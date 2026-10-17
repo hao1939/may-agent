@@ -9,6 +9,11 @@ import {
   type Condition,
 } from "@may-agent/sdk";
 import { Check } from "typebox/value";
+import {
+  bindMetricReuseScope,
+  metricReuseScopeSchema,
+} from "./metric-decision-reuse.js";
+import type { MetricEvidence } from "../alex.app/agents/evaluator/workflows/lib/metric-evidence.js";
 
 const text = Type.String({ minLength: 1 });
 export const metricReviewSchema = Type.Object(
@@ -31,6 +36,7 @@ export const metricReviewSchema = Type.Object(
           reason: text,
           evidence: Type.Array(text, { minItems: 1, maxItems: 16 }),
           nextAction: Type.Optional(text),
+          reuseScope: Type.Optional(metricReuseScopeSchema),
         },
         { additionalProperties: false },
       ),
@@ -87,16 +93,18 @@ export function readMetricReview(
 export function metricReviewResult(
   owner: Pick<TaskReconciliationContext, "appId" | "taskId" | "task" | "waits">,
   value: unknown,
+  observations: ReadonlyMap<string, MetricEvidence> = new Map(),
 ): TaskReconcileResult {
   const review = readMetricReview(value);
   const result = review.task;
   assertInvestigationWaits(result, owner.task.conditions);
-  return composeMetricReview(review, owner);
+  return composeMetricReview(review, owner, observations);
 }
 
 function composeMetricReview(
   review: MetricReview & { task: TaskReconcileResult },
   owner?: { appId: string; taskId: string },
+  observations: ReadonlyMap<string, MetricEvidence> = new Map(),
 ): TaskReconcileResult {
   const result = review.task;
   const seen = new Set<string>();
@@ -124,9 +132,18 @@ function composeMetricReview(
     }
     // Host settlement validates actual work/waits. The legacy "observe"
     // spelling stays readable, but cannot install a metric-sample wake.
+    const observation = observations.get(decision.metricId);
+    if (decision.reuseScope && (!observation || observation.metricId !== decision.metricId))
+      throw new Error(
+        "Prepare reuseScope through metric-response with current metric evidence",
+      );
+    const reuseScope = decision.reuseScope
+      ? bindMetricReuseScope(decision.reuseScope, observation!)
+      : undefined;
     const fact = `metric-disposition:${JSON.stringify({
       version: 1,
       ...decision,
+      ...(reuseScope ? { reuseScope } : {}),
       ...(owner
         ? { linkedTask: { appId: owner.appId, taskId: owner.taskId } }
         : {}),
@@ -172,6 +189,7 @@ export type MetricConversation = Pick<
 export function metricReviewHandoff(
   value: unknown,
   conversation: MetricConversation,
+  observations: ReadonlyMap<string, MetricEvidence> = new Map(),
 ): ConversationTurnResult {
   const review = readMetricReview(value);
   assertInvestigationWaits(review.task);
@@ -202,7 +220,7 @@ export function metricReviewHandoff(
     const response = conversation.response ?? review.task.response;
     return {
       summary: review.task.summary,
-      facts: composeMetricReview(review).facts,
+      facts: composeMetricReview(review, undefined, observations).facts,
       ...(response ? { response } : {}),
       topic: conversation.topic,
       requestUpdates: conversation.requestUpdates,
@@ -212,6 +230,15 @@ export function metricReviewHandoff(
     throw new Error(
       "A metric handoff requires a waiting decision; input scope comes from admission",
     );
+  for (const decision of review.decisions) {
+    if (!decision.reuseScope) continue;
+    const evidence = observations.get(decision.metricId);
+    if (!evidence || evidence.metricId !== decision.metricId)
+      throw new Error(
+        "Prepare reuseScope through metric-response with current metric evidence",
+      );
+    bindMetricReuseScope(decision.reuseScope, evidence);
+  }
   if (conversation.task && conversation.task.appId !== "may")
     throw new Error(
       "Use the owning App's input contract for another App's investigation",

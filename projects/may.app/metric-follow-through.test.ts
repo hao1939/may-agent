@@ -14,6 +14,7 @@ import app, { taskForMayInput } from "./app.js";
 import { createMetricEvidenceObserver } from "./watchers/metric-evidence.js";
 import { respondToMetric } from "./agents/may/workflows/metric-response.js";
 import { execute } from "./agents/may/workflows/metric-follow-through.js";
+import type { MetricEvidence } from "../alex.app/agents/evaluator/workflows/lib/metric-evidence.js";
 
 const decision = {
   metricId: "test.metric",
@@ -90,6 +91,129 @@ function reconciliation(): TaskReconciliationContext {
     events: { items: [], truncated: false },
   };
 }
+
+test("owner composition binds optional scope to fresh evidence through both helper and Task workflow", async () => {
+  const observation: MetricEvidence = {
+    available: true,
+    metricId: decision.metricId,
+    end: Date.now(),
+    windowMs: 1000,
+    metric: { id: decision.metricId, status: "active" },
+    responsibility: {
+      appId: "may",
+      status: "resolved",
+      declaredOwner: "may",
+      project: null,
+    },
+    freshness: "fresh",
+    latest: { value: 5, measuredBy: "fixture-source" },
+    alerts: [],
+    dispositions: [],
+  };
+  const plan: MetricReview = {
+    task: {
+      state: "converged",
+      summary: "Bounded no-change decision",
+      facts: [],
+    },
+    decisions: [
+      {
+        ...decision,
+        disposition: "no-change",
+        reuseScope: {
+          concern: "Fixture value range",
+          applicability: [{ field: "latest.value", lte: 10 }],
+          reconsiderWhen: [],
+        },
+      },
+    ],
+  };
+  expect(() => metricReviewResult(reconciliation(), plan)).toThrow(
+    "current metric evidence",
+  );
+  const direct = await respondToMetric(
+    createTestAppWorkflowContext({
+      input: { review: plan },
+      reconciliation: reconciliation(),
+    }),
+    async () => observation,
+  );
+  const fact = (direct.output as any).facts.find((f: string) =>
+    f.startsWith("metric-disposition:"),
+  );
+  const parsed = JSON.parse(fact.slice("metric-disposition:".length));
+  expect(parsed).toMatchObject({
+    version: 1,
+    linkedTask: { appId: "may", taskId: "investigation" },
+    reuseScope: {
+      concern: "Fixture value range",
+      basis: { end: observation.end, measuredBy: "fixture-source" },
+    },
+  });
+  expect(parsed.reuseScope.basis.evidenceHash).toHaveLength(64);
+  const repeated = metricReviewResult(
+    reconciliation(),
+    { ...plan, task: direct.output },
+    new Map([[decision.metricId, observation]]),
+  );
+  expect(repeated.facts.filter((f) => f === fact)).toHaveLength(1);
+  const workflow = await execute(
+    createTestAppWorkflowContext({
+      reconciliation: reconciliation(),
+      callAgent: async () => ({
+        id: "owner",
+        kind: "agent",
+        status: "done",
+        summary: "decided",
+        output: plan,
+      }),
+    }),
+    async () => observation,
+  );
+  expect((workflow.output as any).facts).toContain(fact);
+  const conversation = await respondToMetric(
+    createTestAppWorkflowContext({ input: { review: plan, conversation: {} } }),
+    async () => observation,
+  );
+  expect((conversation.output as any).followUp).toBeUndefined();
+  expect((conversation.output as any).facts[0]).toContain('"reuseScope"');
+  const invalid = await respondToMetric(
+    createTestAppWorkflowContext({
+      input: { review: plan },
+      reconciliation: reconciliation(),
+    }),
+    async () => ({
+      ...observation,
+      latest: { value: 11, measuredBy: "fixture-source" },
+    }),
+  );
+  expect(invalid.output).toMatchObject({ state: "incomplete" });
+  expect(
+    (invalid.output as any).facts.some((f: string) =>
+      f.startsWith("metric-disposition:"),
+    ),
+  ).toBe(false);
+  const forged = structuredClone(plan) as any;
+  forged.decisions[0].reuseScope.basis = parsed.reuseScope.basis;
+  expect(() =>
+    metricReviewResult(
+      reconciliation(),
+      forged,
+      new Map([[decision.metricId, observation]]),
+    ),
+  ).toThrow();
+  const waiting = { ...plan, task: review().task };
+  expect(() => metricReviewHandoff(waiting, {})).toThrow(
+    "current metric evidence",
+  );
+  expect(
+    metricReviewHandoff(
+      waiting,
+      {},
+      new Map([[decision.metricId, observation]]),
+    ).followUp,
+  ).toBeDefined();
+});
 
 test("completed Conversation metric review retains the judgment without commissioning work", async () => {
   for (const disposition of ["no-change", "recovered"] as const) {

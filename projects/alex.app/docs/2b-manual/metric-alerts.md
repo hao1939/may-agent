@@ -83,6 +83,20 @@ the same outcome should wake or update that Task rather than create siblings.
 
 ## 4. Apply changes through normal boundaries
 
+For repeated transitions already covered by an owner decision, the source
+contract supports optional `reuseScope` in `metric-response`'s
+`review.decisions`. Declare observable applicability and reconsideration facts
+after reading their actual source and coverage; let code bind the inspected
+evidence. See the [scope contract and example](../evaluation/metric-pattern-review.md#reusing-an-accepted-owner-decision).
+The October 17 implementation is not yet activated or adopted by a live owner.
+Do not infer scope from old prose or copy the example's bounds as policy.
+
+`decision-reused` means a prior accepted decision covers this observation; it
+is not a new evaluation or proof of health. Explicit review remains available.
+Keep repair returns, meaningful waits and deliberate deadlines on the original
+Task. If the necessary fact cannot be observed completely, retain normal review
+or commission the missing measurement through existing owner work.
+
 - App/workflow code uses `ctx.metrics` for definitions, samples, evaluation,
   and explicit alert resolution.
 - Task changes return through the normal reconciliation result.

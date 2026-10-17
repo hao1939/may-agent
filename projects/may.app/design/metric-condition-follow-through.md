@@ -27,6 +27,13 @@ evidence and nextAction when unresolved. App code validates the response and
 adds the metric facts with the actual owning Task identity. It returns one
 ordinary result. Host accepts that result and its Conditions together.
 
+The October 17 optional `reuseScope` extends that same fact. Preparation checks
+current evidence and binds its source and definition; accepted scope can avoid
+a later automatic assessment when both historical and fresh observations fit.
+Existing owner waits and return paths remain unchanged. This source extension
+is not yet activated or adopted by a live owner; old decisions gain no inferred
+scope. See the [owning contract](../../alex.app/docs/evaluation/metric-pattern-review.md#reusing-an-accepted-owner-decision).
+
 ## Samples are evidence; status changes request attention
 
 The existing metric service collects samples and evaluates the declared alert

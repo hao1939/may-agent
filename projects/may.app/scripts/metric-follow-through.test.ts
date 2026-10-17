@@ -8,6 +8,10 @@ import {
 } from "./metric-follow-through.fixture.js";
 import { metricReviewHandoff, type MetricReview } from "../metric-follow-through.js";
 import { inspectMetricResponse } from "../agents/may/workflows/metric-response.js";
+import { checkMetricDecisionReuse } from "../../alex.app/agents/evaluator/workflows/lib/metric-decision-reuse.js";
+import { resolveMetricResponsibility, type MetricReader } from "../../alex.app/agents/evaluator/workflows/lib/metric-evidence.js";
+import { readMetricEvidence } from "../../may-agent/src/app/adapters/reporting/metric-evidence.js";
+import { createMetricService } from "../../may-agent/src/lib/metrics.js";
 
 const fixtures: Awaited<ReturnType<typeof fixture>>[] = [];
 afterEach(async () => {
@@ -113,6 +117,74 @@ test("a completed Conversation review persists its metric decision without a wor
   await f.restart();
   expect(f.decisions()).toHaveLength(1);
   expect(f.attempts).toEqual([]);
+});
+
+test("Host acceptance retains optional scope and current Task reads permit reuse across restart", async () => {
+  const f = await fixture(async () => {
+    throw new Error("completed review creates no work");
+  });
+  fixtures.push(f);
+  const reader: MetricReader = async (id, end, alertId) => {
+    const evidence = readMetricEvidence(f.db, id, {
+      end,
+      windowMs: 3_600_000,
+      alertId,
+    }) as any;
+    evidence.responsibility = resolveMetricResponsibility(evidence.metric, [
+      { id: "may" },
+    ]);
+    return evidence;
+  };
+  createMetricService({ getDb: () => f.db }).record(f.subject.metricId, 3, {
+    measuredBy: "fixture-source",
+    measuredAt: Date.now() - 1,
+    sampleSize: 3,
+  });
+  const observed = await reader(f.subject.metricId, Date.now());
+  const decision = metricReviewHandoff(
+    {
+      task: {
+        state: "converged",
+        summary: "The fixture population is covered",
+        facts: [],
+      },
+      decisions: [
+        {
+          ...f.subject,
+          disposition: "no-change",
+          reason: "Fixture scope",
+          evidence: ["fixture:sample"],
+          reuseScope: {
+            concern: "Inspected fixture range",
+            applicability: [{ field: "latest.value", lte: 5 }],
+            reconsiderWhen: [],
+          },
+        },
+      ],
+    },
+    { response: "The inspected fixture range needs no new intervention." },
+    new Map([[f.subject.metricId, observed]]),
+  );
+  await f.handoff(decision);
+  await until(() => f.decisions().length === 1, "scope accepted by Host");
+  expect(f.decisions()[0].decision.reuseScope.basis.measuredBy).toBe(
+    "fixture-source",
+  );
+  const readTask = async (appId: string, taskId: string) => ({
+    ...f.get(taskId),
+    appId,
+  });
+  expect(
+    await checkMetricDecisionReuse(observed, reader, readTask),
+  ).toMatchObject({
+    reusable: true,
+    decision: { appId: "may", attemptId: f.decisions()[0].attempt_id },
+  });
+  await f.restart();
+  expect(
+    await checkMetricDecisionReuse(observed, reader, readTask),
+  ).toMatchObject({ reusable: true });
+  expect(f.attempts).toHaveLength(0);
 });
 
 test("the receiving owner accepts one breach plan; samples stay quiet and the repair result returns to its Request", async () => {

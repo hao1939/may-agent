@@ -16,6 +16,11 @@ const decision = {
   nextAction: "Verify the admission fix",
   nextReviewAt: Date.now() + 86_400_000,
 };
+
+test("legacy fact-only preparation cannot silently discard requested reuse scope", () => {
+  expect(() => metricDecisionFact("admission.failures", null, { ...decision, disposition: "no-change", reuseScope: {} } as any))
+    .toThrow("review.decisions");
+});
 function evidence(): MetricEvidence {
   return {
     available: true,

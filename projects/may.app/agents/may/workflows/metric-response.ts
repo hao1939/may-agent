@@ -139,6 +139,8 @@ export function metricDecisionFact(
   alertId: number | null,
   decision: Input["decision"],
 ): string {
+  if (decision && "reuseScope" in decision)
+    throw new Error("Supply reuseScope in review.decisions so code can bind current evidence");
   if (
     !decision ||
     !["investigate", "observe", "no-change", "recovered"].includes(
@@ -189,6 +191,7 @@ export async function respondToMetric(
   try {
     if (ctx.input.review) {
       const review = readMetricReview(ctx.input.review);
+      const observations = new Map<string, MetricEvidence>();
       for (const decision of review.decisions) {
         const evidence = await reader(
           decision.metricId,
@@ -196,9 +199,10 @@ export async function respondToMetric(
           decision.alertId ?? undefined,
         );
         await inspectMetricResponse(evidence, decision.alertId, readTask);
+        observations.set(decision.metricId, evidence);
       }
       if (ctx.input.conversation) {
-        const result = metricReviewHandoff(review, ctx.input.conversation);
+        const result = metricReviewHandoff(review, ctx.input.conversation, observations);
         return ctx.done(result.summary, result);
       }
       if (
@@ -208,7 +212,7 @@ export async function respondToMetric(
         throw new Error(
           "Supply conversation context for handoff or run inside the owning Task",
         );
-      const result = metricReviewResult(ctx.reconciliation, review);
+      const result = metricReviewResult(ctx.reconciliation, review, observations);
       return ctx.done(result.summary, result);
     }
     const { metricId, decision } = ctx.input;

@@ -29,6 +29,11 @@ import {
 import { publishRetainedReport } from "./lib/report-publication.js";
 import { reportFollowUpGuidance } from "./lib/report-follow-up.js";
 import { taskEmissionKey } from "./lib/task-emission.js";
+import {
+  checkMetricDecisionReuse,
+  readMetricOwnerTask,
+  type MetricOwnerTaskReader,
+} from "./lib/metric-decision-reuse.js";
 
 export const name = "metric-review";
 export const description =
@@ -46,6 +51,7 @@ export async function reviewMetric(
   ctx: WorkflowContext<Input>,
   reader: MetricReader = readMetricEvidence,
   reportRoot = configuredTaskReportRoot(),
+  readOwnerTask: MetricOwnerTaskReader = readMetricOwnerTask,
 ): Promise<ExecutionResult> {
   const { metricId, alertId: requestedAlertId } = ctx.input;
   const end = Number(ctx.input.end);
@@ -148,6 +154,7 @@ export async function reviewMetric(
   const jsonPath = resolveTaskReportPath(reportRoot, paths.jsonPath);
   const markdownPath = resolveTaskReportPath(reportRoot, paths.markdownPath);
   let payload: Record<string, any> | undefined;
+  let reuseEligibility: string | undefined;
   // Retry publication of the same immutable bytes without spending another model call.
   if (existsSync(jsonPath)) {
     try {
@@ -173,6 +180,36 @@ export async function reviewMetric(
     // An old automatic sample request can settle quietly. If it already has a
     // judgment, finish publishing those exact bytes before settling it instead.
     if (quiet) return noNewTransition();
+    if (ctx.input.automatic) {
+      const reuse = await checkMetricDecisionReuse(
+        evidence,
+        reader,
+        readOwnerTask,
+      );
+      if (reuse.reusable === true) {
+        const summary = `Metric ${metricId}: accepted owner decision reused for this observation; no assessment was performed.`;
+        return ctx.done(summary, {
+          state: "converged",
+          summary,
+          result: {
+            disposition: "decision-reused",
+            metricId,
+            end,
+            alertId,
+            evidenceHash,
+            reviewedThrough: Math.max(reviewedThrough, end),
+            reuse,
+          },
+          facts: [
+            `metric:${metricId}`,
+            `metric-review-cut:${end}`,
+            "metric-review:decision-reused",
+          ],
+          actions: [],
+        });
+      }
+      reuseEligibility = reuse.reason;
+    }
     const criteria = sharedCriteria(ctx.workspace?.appRoot);
     const allowance = claimSemanticAllowance(
       reportRoot,
@@ -194,6 +231,7 @@ export async function reviewMetric(
           end,
           nextEligibleAt: allowance.nextEligibleAt,
           reviewedThrough,
+          reuseEligibility,
         },
         facts: [
           `metric:${metricId}`,
@@ -237,7 +275,7 @@ export async function reviewMetric(
           `execution:${execution.id}`,
           "review-disposition:evaluator-failed",
         ],
-        result: { reviewedThrough },
+        result: { reviewedThrough, reuseEligibility },
       });
     }
     payload = {
@@ -249,6 +287,7 @@ export async function reviewMetric(
       disposition: judgment.disposition,
       subject: { metricId, evidenceHash, ...(alertId ? { alertId } : {}) },
       evidence,
+      ...(reuseEligibility ? { reuseEligibility } : {}),
       evaluator: {
         reviewer: profile.reviewer,
         configuredModel: profile.configuredModel,

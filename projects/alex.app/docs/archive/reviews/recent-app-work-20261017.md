@@ -297,7 +297,42 @@ those facts. It reports a worst duration and bounded query examples; a repeated
 query fingerprint or another crossing of 100 ms cannot prove that the owner's
 decision still covers the situation. The next mechanism is scoped in the
 existing [App reconsideration proposal](../../../../may.app/design/token-efficiency-proposal-20261002.md#c--reuse-an-owner-decision-with-explicit-scope).
-It remains a proposed App contract, not implemented suppression or a live fix.
+The follow-up below implements that optional App contract. It is not a live fix
+or an accepted scope for this query-cost decision.
+
+## Optional owner-decision reuse implementation
+
+The App change adds `reuseScope` to existing metric decisions and validates its
+observable applicability/reconsideration predicates against fresh evidence at
+composition. Automatic review checks the latest accepted owner decision, the
+requested and fresh observations, and current source/linked Task obligations
+before claiming semantic allowance. Matching scope settles as `decision-reused`;
+changed/missing evidence, newer unscoped decisions, current work or due boundaries
+leave bounded review eligible. Explicit reviews bypass scope, while staged
+reports retain publication precedence. There is no Host lifecycle/schema change
+or additional decision registry.
+
+The [contract](../../evaluation/metric-pattern-review.md#reusing-an-accepted-owner-decision)
+and [manual](../../2b-manual/metric-alerts.md) describe the exact optional shape
+and its conservative coverage limits. Source checks cover both reviewers and
+direct/selector entry, strict value identity, source/definition/responsibility
+changes, missing/truncated scope, latest-decision supersession, current Task
+boundaries, monotonic coverage and publication retry. A real Host fixture also
+accepts the scoped fact, retains its provenance and reuses it after restart.
+
+Validation: 48 focused tests pass, and `check:may-design` passes with the existing
+unclassified `reports` directory warning. The real Host follow-through suite has
+15 passing cases and one pre-existing retry timeout; that timeout also reproduces
+on untouched `main` at `8ec26cb1bb`. The broader final-Runtime gate still reports
+the previously documented 15 baseline type errors, with no new diagnostic from
+this change. These failing gates are not claimed as passing. Logs are retained at
+`/home/hao/workspace-archive/may-metric-decision-reuse-20261017/`.
+
+This extension has not been activated. No existing prose decision was migrated,
+no owner-agent review was commissioned, and no production token saving is
+claimed. Next adoption requires activation and one explicit owner decision
+whose necessary facts are actually observable. The query-cost feed still cannot
+prove the earlier owners' prose criteria by itself.
 
 ## Evidence and review limits
 

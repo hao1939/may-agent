@@ -4,11 +4,12 @@ import {
   createTestAppRead,
   createTestAppWorkflowContext,
 } from "@may-agent/sdk/testing";
-import { mkdtempSync, rmSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { reviewMetric } from "./metric-review.js";
+import { bindMetricReuseScope } from "../../../../may.app/metric-decision-reuse.js";
 import { publishRetainedReport } from "./lib/report-publication.js";
 import { readPublishedEvaluationReport } from "./evaluation-report-reader.js";
 import {
@@ -86,6 +87,257 @@ function context(options: any = {}) {
     ...options,
   });
 }
+
+function reusableEvidence() {
+  const initial = evidence();
+  initial.latest = {
+    ...(initial.latest as object),
+    measuredBy: "fixture-reader",
+  };
+  const scope = bindMetricReuseScope(
+    {
+      concern: "Fixture value remains within the inspected workload range",
+      applicability: [{ field: "latest.value", lte: 20 }],
+      reconsiderWhen: [],
+    },
+    initial,
+  );
+  initial.dispositions = [
+    {
+      appId: "sample",
+      taskId: "owner",
+      attemptId: "owner-accepted",
+      timestamp: end + 10,
+      decision: {
+        version: 1,
+        metricId: initial.metricId,
+        alertId: 1,
+        disposition: "no-change",
+        reason: "Fixture scope still covers this concern",
+        evidence: ["sample:fixture"],
+        reuseScope: scope,
+      },
+    },
+  ];
+  const task = {
+    appId: "sample",
+    id: "owner",
+    generation: 1,
+    resourceVersion: 2,
+    status: "done",
+    currentObligations: {
+      available: true,
+      inputWaits: { items: [], truncated: false },
+    },
+    pendingEvents: { items: [], truncated: false },
+    conditions: [],
+  };
+  return { initial, task };
+}
+
+test.each(["evaluator", "evaluator-deepseek"] as const)(
+  "%s: direct transitions and selector work reuse one decision without model, publication or allowance spend",
+  async (reviewer) => {
+    const root = mkdtempSync(join(tmpdir(), "metric-reuse-"));
+    roots.push(root);
+    setSystemTime(end + 100_000);
+    const { initial, task } = reusableEvidence();
+    let reviewedThrough = 0;
+    let modelCalls = 0;
+    const events: any[] = [];
+    const read = createTestAppRead({
+      tasks: { get: async () => ({ result: { reviewedThrough } }) as any },
+    });
+    const reader = async (id: string, cut: number) => ({
+      ...initial,
+      metricId: id,
+      end: cut,
+      alerts: [
+        { alertId: 2, createdAt: end + 1000 },
+        { alertId: 3, createdAt: end + 2000 },
+      ],
+    });
+    const makeContext = (cut: number, automatic = true) =>
+      context({
+        input: {
+          metricId: initial.metricId,
+          end: cut,
+          alertId: 2,
+          automatic,
+          reviewer,
+        },
+        read,
+        callAgent: async () => {
+          modelCalls++;
+          return {
+            id: "new-review",
+            kind: "agent",
+            status: "done",
+            summary: "reviewed",
+            output: judgment,
+          };
+        },
+        emit: async (event: any) => {
+          events.push(event);
+        },
+      });
+    const direct = await reviewMetric(
+      makeContext(end + 1001),
+      reader,
+      root,
+      async () => task,
+    );
+    expect(direct.output).toMatchObject({
+      state: "converged",
+      result: {
+        disposition: "decision-reused",
+        reviewedThrough: end + 1001,
+        reuse: { decision: { attemptId: "owner-accepted" } },
+      },
+      actions: [],
+    });
+    reviewedThrough = (direct.output as any).result.reviewedThrough;
+    const selection = await selectMetricCandidate(
+      makeContext(end + 2001),
+      "",
+      reviewer,
+      async (id, cut) => ({
+        ...(await reader(id, cut)),
+        alerts: [{ alertId: 3, createdAt: end + 2000 }],
+      }),
+      async () => ({ metrics: [{ id: initial.metricId, status: "active" }] }),
+      end + 3000,
+    );
+    expect(selection.candidate).toMatchObject({
+      metricId: initial.metricId,
+      end: end + 2001,
+      alertId: 3,
+    });
+    const selected = await reviewMetric(
+      context({
+        input: { ...selection.candidate!, automatic: true },
+        read,
+        callAgent: async () => {
+          throw new Error("must not call a model");
+        },
+        emit: async (event: any) => {
+          events.push(event);
+        },
+      }),
+      reader,
+      root,
+      async () => task,
+    );
+    expect(selected.output).toMatchObject({
+      result: { disposition: "decision-reused", reviewedThrough: end + 2001 },
+    });
+    reviewedThrough = (selected.output as any).result.reviewedThrough;
+    // Retry/restart uses the accepted boundary; late delivery cannot roll it back.
+    const late = await reviewMetric(
+      makeContext(end + 1001),
+      async () => {
+        throw new Error("pinned evidence exists");
+      },
+      root,
+      async () => task,
+    );
+    expect(late.output).toMatchObject({
+      result: { disposition: "no-new-transition", reviewedThrough },
+    });
+    expect(modelCalls).toBe(0);
+    expect(events).toHaveLength(0);
+    expect(existsSync(join(root, ".assessment-allowance"))).toBe(false);
+    // An explicitly requested assessment bypasses reuse, even at an already covered cut.
+    const explicit = await reviewMetric(
+      makeContext(end + 2001, false),
+      reader,
+      root,
+      async () => {
+        throw new Error("explicit review bypasses owner scope");
+      },
+    );
+    expect(explicit.output).toMatchObject({
+      result: { publication: { metricId: initial.metricId } },
+    });
+    expect(modelCalls).toBe(1);
+  },
+);
+
+test.each(["value", "revocation", "due", "unavailable"])(
+  "reuse failure (%s) keeps bounded review eligible and staged publication wins on retry",
+  async (change) => {
+    const root = mkdtempSync(join(tmpdir(), "metric-reconsider-"));
+    roots.push(root);
+    setSystemTime(end + 100_000);
+    const { initial, task } = reusableEvidence();
+    let calls = 0;
+    let emitted = 0;
+    const reader = async (id: string, cut: number) => {
+      const current = structuredClone(initial);
+      current.end = cut;
+      current.alerts = [{ alertId: 2 }];
+      if (cut === Date.now()) {
+        if (change === "unavailable") throw new Error("unavailable");
+        if (change === "value") (current.latest as any).value = 21;
+        if (change === "revocation")
+          delete (current.dispositions as any)[0].decision.reuseScope;
+      }
+      return current;
+    };
+    const ctx = context({
+      input: {
+        metricId: initial.metricId,
+        end: end + 1001,
+        alertId: 2,
+        automatic: true,
+      },
+      callAgent: async () => {
+        calls++;
+        return {
+          id: "changed-review",
+          kind: "agent",
+          status: "done",
+          summary: "reviewed",
+          output: judgment,
+        };
+      },
+      emit: async () => {
+        emitted++;
+        if (emitted === 1) throw new Error("publish failed");
+      },
+    });
+    await expect(
+      reviewMetric(ctx, reader, root, async () =>
+        change === "due"
+          ? {
+              ...task,
+              currentObligations: {
+                ...task.currentObligations,
+                reviewAt: Date.now(),
+              },
+            }
+          : task,
+      ),
+    ).rejects.toThrow("publish failed");
+    expect(calls).toBe(1);
+    // A scope accepted after staging must not discard the paid-for judgment.
+    const replay = await reviewMetric(
+      ctx,
+      async () => {
+        throw new Error("staged publication must not consult mutable scope");
+      },
+      root,
+      async () => {
+        throw new Error("no owner read for publication recovery");
+      },
+    );
+    expect(replay.output).toMatchObject({
+      result: { publication: { executionId: "changed-review" } },
+    });
+    expect(calls).toBe(1);
+    expect(emitted).toBe(2);
+  },
+);
 
 test.each([
   { kind: "none" as const },
@@ -304,7 +556,7 @@ test.each([null, end + 10_000])(
     roots.push(root);
     const now = end + 10_000;
     setSystemTime(now);
-    let read: { metricId: string; cut: number; alertId?: number } | undefined;
+    const reads: { metricId: string; cut: number; alertId?: number }[] = [];
     const previousEnabled = process.env.EVALUATION_AUTO_REVIEW_ENABLED;
     process.env.EVALUATION_AUTO_REVIEW_ENABLED = "true";
     let admitted;
@@ -345,7 +597,7 @@ test.each([null, end + 10_000])(
     const reviewed = await reviewMetric(
       ctx,
       async (metricId, cut, alertId) => {
-        read = { metricId, cut, alertId };
+        reads.push({ metricId, cut, alertId });
         return {
           ...evidence(metricId, cut),
           alerts: [{ alertId: 7, createdAt: now - 1000, resolvedAt }],
@@ -353,11 +605,12 @@ test.each([null, end + 10_000])(
       },
       root,
     );
-    expect(read).toEqual({
+    expect(reads[0]).toEqual({
       metricId: "may.daemon-sql-time-percent",
       cut: now + 1,
       alertId: 7,
     });
+    expect(reads[1]).toEqual({ metricId: "may.daemon-sql-time-percent", cut: now, alertId: undefined });
     expect(reviewed.output).toMatchObject({
       state: "converged",
       result: {

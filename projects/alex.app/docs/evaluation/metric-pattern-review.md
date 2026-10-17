@@ -144,7 +144,7 @@ configuration changes can also close an alert, so closure is not recovery proof.
 Direct operational handling and May's report intake use the same `metric-response`
 workflow. It reads accepted decisions by metric/alert, checks the exact linked App
 and Task, and returns their current contents for scope judgment. A missing linked
-Task leaves evidence unavailable; it does not authorize replacement work. Later
+Task leaves evidence unavailable; it does not authorize replacement work. Published
 reports still require review even when they join the same investigation. A new
 episode can point to the same investigation after owner judgment; no automatic
 reopening or one-Task-per-sample behavior is introduced.
@@ -187,6 +187,95 @@ not to Evaluation for semantic self-assessment. Changed-value repeats do not cre
 another May message every sample. May owns continuing follow-up using its existing
 Task controls and review boundaries. The age threshold is an attention policy, not
 a promised response deadline. Zero queued reviews does not prove review coverage.
+
+## Reusing an accepted owner decision
+
+**October 17 source implementation; not yet activated or adopted by a live owner.**
+This optional App contract addresses repeated real transitions. It does not
+change the Host's metric collection, alert rule, Task recovery or event delivery.
+The existing transition-only filter and emission-provenance fix remain separate.
+
+An owner can supply `reuseScope` on a decision in May's existing
+`metric-response` input `review.decisions`. The shape is:
+
+```json
+{
+  "concern": "The inspected fixture workload remains within these bounds",
+  "applicability": [
+    { "field": "source.workloadId", "equals": "fixture-42" },
+    { "field": "source.coverage", "equals": "complete" },
+    { "field": "latest.value", "lte": 120 }
+  ],
+  "reconsiderWhen": [
+    { "field": "source.failures", "gt": 0 }
+  ]
+}
+```
+
+These are illustrative fields and bounds, not new measurements or a policy for
+query latency. The owner judges what scope covers the concern and supplies the
+necessary source/cohort identity and coverage checks. A query ID alone does not
+establish equivalent workload, absence of contention, or complete evidence.
+
+Each predicate uses `field` and exactly one of `equals`, `notEquals`, `anyOf`,
+`gt`, `gte`, `lt`, `lte`. Equality is scalar and type-strict; ordering is numeric
+without coercion. Applicability requires every predicate to match. Reuse ends
+if any reconsideration predicate matches; an unavailable operand also prevents
+reuse. An empty reconsideration list adds no boundary beyond applicability and
+the current Task obligations. There is no executable expression language.
+
+Fields use exact dot paths under `latest`, `calculation`, `current`, `previous`,
+`comparison`, or `freshness`. `source` decodes the latest sample's JSON note;
+it requires an explicitly untruncated note and refuses declared truncation
+anywhere in that note. Plain note strings, missing values, object comparisons
+and prototype paths cannot establish scope. Historical example-list truncation
+does not invalidate independent complete scalar observations; those examples
+are not an eligible predicate source. The scope has at most 12 applicability
+and 8 reconsideration predicates, and the existing 4000-byte fact limit remains.
+
+Code checks fresh evidence during result preparation and binds `basis` to the
+inspected cut/hash, the measurement's `measuredBy`, and a hash of the complete
+exposed metric definition, alert/calculation rules and resolved responsibility.
+The owner supplies no `basis`. A completed Conversation can accept the fact
+without creating a Task; a waiting handoff carries the proposed scope for the
+receiving owner to judge again. The ordinary Task workflow also validates fresh
+evidence before composing a scoped fact. Preparation is never acceptance.
+
+Before spending semantic allowance, automatic `metric-review` reads current
+unfiltered accepted dispositions across episodes. The newest decision by May or
+the current accountable App supersedes the older scope, including a new decision
+with no scope. Missing provenance, tied latest decisions or an uncertain bounded
+history edge prevent reuse. Earlier omitted history is harmless only when it
+cannot tie the newest owner decision. The existing projection supplies source
+App, Task, accepted attempt and timestamp; no additional decision store exists.
+
+Both the pinned requested observation and a fresh observation must satisfy that
+scope and its definition/responsibility/source binding. Code then reads the
+source Task and exact structured `linkedTask`, if distinct, using public
+`app.task.get`. Each must supply current obligations, untruncated pending input,
+and complete Condition observations. Running/pending/attention work, pending
+input, due Task/input/Condition review boundaries, or unknown/newly satisfied
+Conditions prevent reuse. False Conditions must be observed at their current
+generation. An older Host that omits these reads leaves reuse unavailable.
+Reads are bounded snapshots, not a cross-service transaction; owner events and
+normal recovery remain responsible for changes arriving afterward.
+
+A matching decision yields `disposition: "decision-reused"` on the existing
+review Task, with owner provenance, declared scope, requested and current
+observation hashes/cuts, and inspected Task revisions. It advances
+`reviewedThrough` monotonically, without a model call, allowance claim, evaluator
+report or owner request. This records reuse, not assessment or health. A failed
+check leaves the existing bounded evaluation path eligible and records its
+reason. Explicit review bypasses reuse; already-staged reports finish publication
+first, even if newer scope would allow skipping a fresh assessment.
+
+Conditions and request returns still wake the original owner directly. Deadlines
+stay on that Task. Reuse creates no wait, scheduler, repair or escalation path.
+Old decisions and prose `revisitWhen` gain no automatic scope. In particular,
+`metric.source-query-worst-ms` currently lacks an accepted observable scope;
+its truncated examples do not establish the owners' uncontended/equivalent-trial
+criteria. Runtime adoption needs a new explicit owner decision, not migration of
+that prose. See [Proposal C](../../../may.app/design/token-efficiency-proposal-20261002.md#c--reuse-an-owner-decision-with-explicit-scope).
 
 ## Verification and limits
 

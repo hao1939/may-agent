@@ -370,7 +370,8 @@ Rollback restores the prior code/policy revision without deleting Tasks, inputs 
 
 ### C — Reuse an owner decision with explicit scope
 
-**Status, October 17:** Proposed App contract; not implemented. The existing
+**Status, October 17:** Optional App contract implemented with focused regression
+coverage; not yet activated or adopted by a live owner. The existing
 sample filter and evidence-provenance fixes are active. This remaining change
 addresses repeated real metric transitions, not their delivery or the Host's
 retry mechanism. Evidence and activation limits are in the
@@ -383,9 +384,9 @@ Evaluator continues to assess work. A new alert ID records another episode but
 does not, by itself, establish a new decision. The scope must not assume that
 every incident sharing a metric has one cause.
 
-The current retained `metric-disposition` fact has identity, a reason, evidence
+Before this extension, the retained `metric-disposition` fact had identity, a reason, evidence
 and optional linked work. `metric-response` reads it and the source Task, but
-`metric-review` only deduplicates completed observation cuts. The inspected
+the deployed `metric-review` only deduplicates completed observation cuts. The inspected
 owner Tasks contain natural-language `revisitWhen` statements, not executable
 conditions. No existing API turns that prose into a reusable eligibility rule.
 Consequently, changing only the reviewer prompt would still pay for the same
@@ -407,15 +408,15 @@ store or another work lifecycle. The optional reuse scope needs three parts:
    references. A proposed response, evaluator report or unaccepted result does
    not establish an owner decision.
 
-These are requirements for the proposed optional App field, not a callable new
-SDK shape. Use the existing Condition comparison vocabulary and public evidence;
+The [implemented optional App field](../../alex.app/docs/evaluation/metric-pattern-review.md#reusing-an-accepted-owner-decision)
+is `reuseScope` in `review.decisions`, not a new SDK lifecycle. It uses the existing Condition comparison vocabulary and public evidence;
 do not add arbitrary executable predicates, a second scheduler or a general rule
 language. Where the required fact is not observable, automatic reuse is not yet
 available. The owner can choose a supported bounded proxy with an explicit limit,
 or commission the missing measurement as ordinary work. Code must not silently
 translate “uncontended”, “sustained” or “equivalent” into numbers.
 
-The implementation path is:
+The implemented path is:
 
 - Extend May's `metricReviewSchema` and complete-result composition to accept
   the optional scope, check it against the inspected evidence, and retain it in
@@ -481,4 +482,7 @@ The [recovery and independent oversight proposal](../../alex.app/docs/proposals/
 3. Do the replay/trial criteria cover both avoided repeated work and the new information that must still reach the owner?
 4. Is the proposed order appropriate: fix completion and the review clock, then improve reconsideration/context and install continuing detection?
 
-Review disposition: retain A/B as integrated-source regression requirements. C–E remain proposed follow-up; prioritize them using measured outcome, review cost and coverage evidence.
+Review disposition: retain A/B as integrated-source regression requirements.
+C's optional App mechanism is implemented; activation and explicit owner adoption
+remain pending. D–E remain proposed follow-up; prioritize them using measured
+outcome, review cost and coverage evidence.

@@ -46,6 +46,13 @@ not commission repeated assessment. Reconsider an ongoing concern through an
 explicit review request or the investigation's Conditions. See the
 [metric review contract](../../docs/evaluation/metric-pattern-review.md#ownership-and-flow).
 
+Automatic review can also reuse an accepted owner's explicit observable scope
+before making a model call. `decision-reused` records that scope and current
+evidence, not a new assessment or a healthy verdict. Changed or unavailable
+scope stays eligible for ordinary bounded review. Explicit requests and staged
+report publication retain precedence. The owner still receives its Conditions
+and request returns directly; Evaluation does not take over the repair.
+
 When asked to help diagnose it, read the exact failure and current selector
 Task. Use ordinary scoped tools and return concrete evidence to Alex. The Host
 retries the declared workflow; do not manually recreate its scan or request a

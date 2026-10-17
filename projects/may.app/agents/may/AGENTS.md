@@ -255,6 +255,17 @@ evidence references, and nextAction for unresolved concerns. Return the complete
 output through `finish().result`; do not extract only its facts. App code binds
 the actual owning Task and keeps the decision with its follow-through.
 
+The source contract permits optional `reuseScope` in `review.decisions` when
+you can state observable bounds for reusing that decision. Read the
+[scope contract](../../../alex.app/docs/evaluation/metric-pattern-review.md#reusing-an-accepted-owner-decision)
+before using it. Choose applicability and reconsideration predicates from
+actual complete evidence, including source/cohort coverage when material.
+Code binds the inspected evidence; acceptance makes the scope usable. Never
+translate prose such as “uncontended” or “equivalent” into invented thresholds.
+Omit scope when the required facts are unavailable. Keep real waits and
+deliberate deadlines on this Task. Published reports still need judgment;
+reuse only avoids commissioning another assessment within an accepted scope.
+
 Metric collection runs without an agent. A new breach episode invites investigation;
 new samples and repeat breach notifications only update evidence. Reuse the
 existing investigation for that episode. A recovery status event can update
