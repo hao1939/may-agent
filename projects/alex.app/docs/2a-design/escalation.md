@@ -55,6 +55,20 @@ original outcome. Runtime request records correlate the dependency and result.
 The responsible agent decides when local recovery is insufficient and asks the next
 owner in this chain. The Host does not make that judgment.
 
+Owner first means first opportunity within its capability and authority, not a
+required number of failed repairs. Every owner must handle its blocker, but it
+need not have system-repair expertise or permissions. Skip a role already held
+by the same agent. Escalating a prerequisite preserves the original assignment;
+the helper owes its contribution and the original owner still judges its outcome.
+
+If the owner cannot start, Host delivers the failure through the existing caller
+or a declared operational route. That executes configured policy without choosing
+a repair strategy or changing the Task's executor. A usable recipient must be
+able to run despite the failed setup. This is a requirement with incomplete
+installed coverage, not a promise that every failure already escalates. The
+[hierarchical recovery proposal](../proposals/unified-agent-recovery-20261017.md)
+owns the remaining route/execution trials; a missing route stays a visible gap.
+
 The agent judges whether recovery can make progress and what help is missing.
 Infra admits and delivers the request, preserves its exact return route and
 retains the original work. Neither a retry timer nor delegation to a worker with

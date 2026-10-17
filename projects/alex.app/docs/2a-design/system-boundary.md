@@ -656,6 +656,14 @@ or escalation; Host executes the authorized choice and records its actual outcom
 If the affected execution cannot safely resume, deliver that evidence through its
 existing caller or declared operational route so an agent can still decide.
 
+Follow the [escalation hierarchy](escalation.md): the owner handles what it can
+and requests the next responsible agent's help when needed. Not every App needs
+system-repair capability. If its owner cannot start, Host executes the already
+declared failure route; it does not invent an owner or switch the Task executor.
+The [recovery proposal](../proposals/unified-agent-recovery-20261017.md) tracks
+unproven delivery and recipient-startup boundaries. Escalation preserves the
+original obligation and does not itself renew exhausted automatic retries.
+
 Keep unfamiliar content available as evidence for interpretation. App input
 policy can admit it through an ordinary message/goal rather than a narrow
 domain operation. Host still validates routing, identity, authority and effects.

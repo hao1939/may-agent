@@ -1,211 +1,177 @@
-# One recovery rule: restore useful work within a bounded allowance
+# Hierarchical recovery: restore useful work through the responsible owner
 
-**Supports:** [Task recovery](../2a-design/task-resource-engine.md#pause-reload-and-recovery). Keeps unfinished work recoverable without repeated manual rescue or uncontrolled model cost.
+**Supports:** [Task recovery](../2a-design/task-resource-engine.md#pause-reload-and-recovery). Lets unfinished work resume with less human rescue and acceptable cost.
 
-**Choice basis:** [Understandable recovery](../1-principles/work-model.md#prefer-understandable-recovery) and [simple first](../1-principles/core-principles.md#simple-first): preserve the goal, let the agent judge, and reuse the execution and Task mechanisms that already work.
+**Choice basis:** [Understandable recovery](../1-principles/work-model.md#prefer-understandable-recovery), [simple first](../1-principles/core-principles.md#simple-first), and [recovery ownership](../2a-design/system-boundary.md#retry-and-recovery-ownership): agents judge; infra executes their decisions and records what happened.
 
-**Design status:** Proposed for review, 2026-10-17.
-**Implementation status:** The existing mechanisms provide parts of this loop. The shared allowance and an owner execution path independent of broken Task setup are not established. This document changes no runtime behavior.
+**Design status:** Hierarchical ownership agreed in review, 2026-10-17; implementation gaps and trials below remain proposed.
+**Implementation status:** Mechanical recovery, caller feedback and addressed escalation exist. Universal failure delivery and a runnable escalation recipient when ordinary setup fails are not established. This document changes no runtime behavior.
 
 ## Recommendation
 
-Apply one rule wherever failure prevents useful work: **retain the obligation,
-give the responsible agent the evidence and a usable execution path, let it
-repair or choose a real wait, then verify that ordinary work advances. Bound
-unsuccessful repetition across the whole loop.**
+**Every Task needs a usable recovery and escalation path. Give its owner the
+opportunity to recover within its capabilities and bounds; when it cannot,
+deliver the blocker to the next responsible agent. Preserve the original work
+so it can resume.**
 
-Controller errors, workspace setup, workflow loading and failures during agent
-execution follow this rule. Their location determines how evidence is captured;
-it does not justify an unlimited retry policy. No catalogue of error types is
-needed for the agent to investigate unfamiliar failures.
+Follow the existing [escalation contract](../2a-design/escalation.md). Every App
+does not need system-repair tools, permissions or expertise. The Task owner
+still handles its blocker: repairing locally, choosing another approach or
+asking for help are all valid decisions. Owner first means first opportunity,
+not mandatory unsuccessful attempts.
 
-An ordinary tool error should first return to the agent already doing the work.
-It can diagnose and continue within that invocation. Host recovery is needed
-when that execution cannot continue or never started. A valid external wait or
-a quiet worker within its execution deadline is not a failure.
+For example, Scout cannot prepare its Git workspace. Infra performs supported
+mechanical recovery. If Scout cannot start, the declared operational route
+delivers the failure to its next responsible agent. May can repair the setup or
+request engineering help from Alex. Repair evidence returns to the original
+work, which resumes through ordinary execution. Scout still owes the research;
+restoring the workspace does not fulfill that assignment.
 
-For example, a Task cannot create its Git worktree. The Host retains that Task
-and gives its owner the error in a small working directory that does not require
-that Git setup. The owner inspects the repository, repairs what it is authorized
-to repair, and requests continuation. The Host retries normal workspace setup;
-the original Task continues its assignment. If the repair fails, the same
-recovery allowance applies. Creating another repair Task buys no extra retries.
+## One rule through the existing mechanisms
 
-## What we learned from the current mechanism
+1. **Code handles known work.** Infra retries safe repetition within the
+   operation's existing policy. Record the first failure without requiring a
+   model call. Known errors that unchanged retries cannot fix go directly to
+   judgment; do not spend a retry allowance replaying invalid input.
+2. **The owner decides.** Give a running agent feedback in its current
+   invocation. Supply the original operation/input, error, useful partial
+   evidence, known or uncertain effects, and previous actions. The App workflow
+   owns its ordinary agent call when code cannot proceed.
+3. **Escalate when local recovery cannot help.** Use the declared responsibility
+   relationship and ordinary addressed requests/returns. A helper returns to its
+   caller; a Task owner can ask its App owner, then May, then the human where
+   needed. Skip a role already held by the same agent. Each handoff should add
+   capability, authority or judgment; Alex or a reviewer is not a mandatory hop.
+4. **Return help and continue the original assignment.** A repair contribution
+   follows the same acceptance and effect rules as ordinary work. The original
+   owner judges how it changes the assignment and continues, waits or requests
+   further help. Independent work and Conditions can coexist. A repair report,
+   valid JSON result or admitted request alone does not prove recovery.
+5. **Keep unsuccessful repetition bounded and visible.** Use existing execution
+   deadlines, retry controls, request identities, Conditions and metrics. Retain
+   the blocker and needed decision when automatic recovery is exhausted. Passing
+   the failure upward does not silently renew the original operation's retries.
+
+The Host supplies execution and delivery. It does not diagnose a failure,
+choose a model or silently replace an App's declared executor. A running agent
+chooses escalation; when execution never starts, delivery follows an already
+declared caller/operational route. Before destination admission, responsibility
+remains with the existing caller. Rejected input does not create a destination
+Task or authorize Host to invent one.
+
+## What works and what needs proof
 
 The [source and runtime review](../archive/reviews/recovery-mechanism-20261017.md)
-separates demonstrated behavior from remaining gaps.
+distinguishes existing behavior, synthetic cases and dated live observations.
 
-| Finding | Design consequence |
+| Finding | Smallest useful next step |
 | --- | --- |
-| Restart recovery preserved Tasks and produced useful work. Feedback also lets an active agent correct errors in the same invocation. | Retain these paths and their ownership; start recovery with surviving intent and current facts. |
-| Controller failures emit `handler.failed`, but the installed Alex, May and Scout definitions have no subscription to that event. Selected failure routes exist. | Logging and a Task in attention are insufficient. Make owner delivery part of the common recovery path. |
-| A normal repair Task can require the same Git preparation and App bootstrap that failed. | Reuse the bounded runner with a smaller prerequisite set; demonstrate that the owner really starts. |
-| Execution failures default to three consecutive failures; controller dispatch and admission can retry indefinitely with capped delays. | Apply one bounded work-recovery policy across these boundaries. Backoff alone does not establish progress. |
-| Existing connected tests prove failure consideration, but their owner does not actually repair and resume the failed work. | Require an end-to-end repair and original-work result. A delivered report is intermediate evidence. |
-| Extra review and correction loops have incurred material token cost. | Deliver concise evidence to the existing owner; do not automatically start a reviewer and a new repair Task for every error. |
+| Restart recovery and feedback inside an invocation already produce useful continuation. | Preserve these paths; avoid a second recovery lifecycle. |
+| Admitted Task failures and exhaustion already return through saved caller relationships, including after delivery failure/restart. | Reuse them. Missing `handler.failed` subscriptions do not imply all failure feedback is absent. |
+| Controller failure emits `handler.failed`; installed Alex, May and Scout have selected routes but no subscription for this event. | Exercise the uncovered controller path with an explicit App-owned route; inspect both admission and executable handling. |
+| A normal repair Task may require the same Git preparation or App bootstrap that failed. | Test the designated recipient's prerequisites with real workspace configuration; do not require every owner to have a separate repair environment. |
+| Execution failures default to three consecutive failures; controller/admission retries use capped delays without a count limit. | Measure actual repeated work and model cost. Extend the owning retry policy only where needed; do not add a competing controller. |
+| Existing connected tests demonstrate failure consideration, not autonomous repair followed by original-work completion. | Have the fixture agent perform the repair and verify the original result; separately test real judgment. |
 
-The earlier #381 patch addressed a synthetic missing-history case before we
-proved this general path. It remains draft and is not the implementation plan.
-The lesson is to test the recovery mechanism across failures, rather than build
-a separate branch of repair logic for each failure we can reproduce.
+The runtime review did not establish a current live recovery stall. The benefit
+of each Host change must come from the contract and a reproduced gap, not from
+assuming every failure boundary needs replacement.
 
-## The recovery loop
-
-1. **Retain work and explain the failure.** Keep the existing Task or pending
-   input, its owner, and whatever evidence survives. Deliver the failing
-   operation, exact error, current execution/cleanup facts, evidence references
-   and remaining allowance. Keep long logs available on demand.
-2. **Make one owner execution possible.** Use the current invocation if it can
-   continue. Otherwise use the existing bounded runner without depending on the
-   failed Task's workflow, Git worktree preparation or old session metadata.
-   Keep the same tools, authority and installation restrictions.
-3. **Let the agent act.** It may repair, reconstruct disposable state, choose
-   another approach, wait for an external fact, or identify a specific decision
-   it needs. An unfamiliar error is ordinary investigation input.
-4. **Resume and verify.** Retry the affected ordinary operation and continue
-   the original assignment. The owner judges goal progress using concrete
-   output, tests or other task-relevant evidence. A successful repair report,
-   accepted JSON response or newly created Task alone does not prove recovery.
-5. **Contain unsuccessful repetition.** Keep one recovery in flight for the
-   affected work. When its allowance is exhausted, retain the obligation in
-   attention with the attempted actions, blocker and next decision. Ordinary
-   scheduling ticks do not renew that allowance.
-
-These steps describe behavior in the existing Task lifecycle, not a second
-scheduler or a new durable repair workflow. The Host cannot infer semantic
-progress from logs alone; it enforces limits and exposes execution evidence.
-Agent judgment remains fallible and can be assessed through existing evaluation.
-
-## One policy, including setup and controller failures
-
-Use a **recovery cycle** to mean one bounded owner repair attempt, if needed,
-followed by at most one retry of the affected ordinary work. A direct automatic
-work retry also consumes a cycle. Failure to start the owner consumes a cycle
-as well; changing where an error occurs must not evade the limit.
-
-Proposed starting policy for review:
-
-- Allow at most **three unsuccessful cycles** for the same stalled work,
-  taking the existing three-failure default as the starting point. The owner
-  receives the first failure; do not spend all three on blind setup retries.
-- Apply finite execution deadlines and model/tool limits to every invocation.
-  Repair, helpers and ordinary retry draw from the same configured recovery
-  cost ceiling. Three cycles is an outer bound, not permission to spend beyond
-  that ceiling. Reuse existing budget controls; report the effective limits
-  when validating an implementation rather than inventing a universal token
-  number for all Apps.
-- Preserve the allowance on the existing Task or pending input across restart,
-  new attempts and delegated repair. An error message change, new report,
-  generation bump or new repair Task is not proof of progress and does not
-  reset it. Share that original reference with separately owned contributions.
-- A real wait names a prerequisite and a supported return path. A changed fact
-  permits reconsideration within the remaining allowance. Exhaustion requires
-  an explicit owner/operator decision to renew it; an automatic timer cannot
-  make that decision, and a recovery result cannot grant itself fresh credit.
-  Successfully restored operation plus accepted evidence of useful work ends
-  the stalled period.
-
-The shared rule distinguishes **work attempts from availability checks**, not
-controller failures from agent failures. A paced code check may continue to
-observe a waiting prerequisite without a model call. Each check must have a
-bounded timeout and resource cost, and unchanged results must not trigger a new
-agent turn. Reuse existing observation/backoff scheduling. Re-running a worker,
-full App bootstrap or Git setup is a work retry, not a free availability check.
-
-This retains eventual detection when a dependency returns without spending
-tokens confirming the same outage. A hard cap can leave genuinely unresolved
-work awaiting a decision; that is preferable to an invisible costly loop. A
-known outage should become a wait early, preserving allowance for recovery.
-
-## Host and App responsibilities
-
-**Both need changes, for different responsibilities.** Fixing App subscriptions
-alone cannot recover an owner blocked by Host setup. Host plumbing alone cannot
-choose a useful repair or decide whether the result meets the assignment.
+## Responsibility and execution availability
 
 | Host owns | App and agents own |
 | --- | --- |
-| Failure capture and delivery tied to the existing Task/input and configured owner | Meaning of the failure, investigation, repair or alternative approach |
-| A bounded owner invocation that bypasses failed optional Task setup | Which evidence establishes useful progress toward the original goal |
-| Capacity, execution deadlines, shared recovery limits, and cleanup before conflicting replacement | A real external wait, a specific help request, or a justified request to renew allowance |
-| Retained scheduling and cheap checks that wake work when relevant facts change | Authorized source fixes, tests and follow-through |
-| Factual display of last failure, attempts/cost, owner, and why work is waiting | Alex leads system improvement and assigns teammates when useful; Evaluator assesses outcomes |
+| Failure facts and delivery through retained caller or declared operational routes | Meaning, local repair, alternative method and escalation decisions |
+| The normal runner, tools, authority checks, capacity and cleanup | Recovery expertise, permitted procedures and selection of useful help |
+| Existing retry/deadline controls and quiet observation | A meaningful wait, a justified bounded recovery action or request for more authority |
+| Exact request/return relationships and truthful records | Acceptance of repair evidence and progress toward the original assignment |
 
-The Task owner should keep in-scope repair. When a fix needs system-improvement
-ownership, use the existing addressed contribution to Alex and return evidence
-to the original Task. Alex chooses whether Bob, Tech Lead, Gym or another
-teammate is useful. Evaluator is not a mandatory relay or the repair owner.
+The escalation contract owns the hierarchy; installation/App declarations name
+its recipients. Host source contains no named May/Alex behavior or per-error
+agent selector. If delivery has no usable route, expose that gap rather than
+claiming escalation happened. A missing recipient must not create unowned work.
 
-## Minimum execution path and failure boundary
+At least one recipient on the configured path must be able to execute despite
+the failed optional setup. First try the ordinary runner with its existing
+workspace options. If App bootstrap or workflow loading prevents that, separate
+the unnecessary startup dependency at its owning boundary. Use an accepted
+agent definition and the same execution/authority contract. Add only a missing
+primitive demonstrated by the trial, not another agent service or Host strategy
+switch. Independent startup for every App is not required.
 
-The implementation must demonstrate a direct invocation of the configured owner
-using the existing runner and an already accepted agent definition, with a
-disposable working directory. It must not first import the broken workflow,
-prepare the failed Task worktree or resume the unusable session. The current
-worker's whole-App registry bootstrap needs review at this boundary; simply
-creating an ordinary Alex Task does not provide this independence.
+If essential storage, the runner or all usable model access is unavailable,
+external supervision or an operator may be necessary. Do not create a second
+database or recursively invoke more agents to simulate availability. No
+conflicting replacement starts before old execution and helper cleanup are
+confirmed; requesting cancellation is not confirmation.
 
-This is a smaller entry into the existing runner, not another agent service.
-Select the owner from retained trusted configuration, not from an error string.
-If no accepted owner configuration can be loaded, the runner/model is down, or
-essential storage cannot be used, expose that execution is unavailable. Reuse
-the external supervisor/operator and bounded availability observations until
-minimum capability is restored. An agent cannot repair anything while it cannot
-execute. Do not create a second database to simulate normal operation.
+## Cost and recovery limits
 
-Preserve the current execution fences and wait for actual helper/process cleanup
-before a conflicting replacement starts. A cancellation request is not proof
-that cleanup finished. Diagnostics must not hold the failed worker's capacity.
+Keep the operation's existing bounded retries and each invocation's deadline.
+Helpers in that invocation share its existing scope. Separate durable repair
+work has its own explicit bounded assignment and returns to the original Task;
+preserve the original failure reference, prior actions and available cost
+evidence. A new Task, report, generation or restart is not proof of progress and
+must not mechanically renew the failed operation's allowance.
 
-Use the existing store when it works. Losing some recent history, accounting or
-repeating bounded work after a crash is acceptable; reconstruct from current
-facts and disclose unknowns. This proposal does not require exact-once repair
-or perfect crash accounting. Repeated bootstrap failure must still be paced and
-visible to the external supervisor, rather than resetting an internal hot loop.
+The responsible agent can choose a different bounded repair or request explicit
+retry through existing authorized controls. The worker's repair result alone
+does not grant new authority or change the assigning owner's allowance. Keep
+unchanged escalation requests rather than commissioning the same repair again.
+The meaning of a hard budget and its renewal stays with its owning contract.
 
-## Delivery and acceptance
+A known outage can become a wait early. Paced availability checks may continue
+without model calls; changed facts return through the existing observation and
+request paths. Exhausted work needs an authorized decision before another work
+attempt. Ordinary ticks and unchanged observations cannot supply that decision.
 
-Implement one connected path after design review: common Host failure/owner
-delivery, the smaller runner entry, shared limits, and App owner handling.
-Exercise it with the same fixtures across the boundaries below. Add only the
-minimum missing primitives needed by this path. Existing event-specific routes
-should be folded into it where they duplicate recovery, preserving useful
-domain feedback. No automatic evaluator fan-out is part of this change.
+This version introduces no universal three-cycle counter or distributed cost
+ledger across the hierarchy. Measure total repair/resumption usage through
+existing evidence first. If a reproduced loop evades current controls, extend
+the owning policy and test that loop. At-least-once consideration, affordable
+redo and lost recent history/accounting after a crash are acceptable. Exact
+crash accounting and eliminating every duplicate handoff are not requirements.
 
-| Acceptance case | Required evidence |
+## Implementation sequence and #381
+
+1. Clarify the hierarchy at the owning escalation/boundary contract and manual.
+   Keep installed coverage separate from intended behavior.
+2. Finish Host #381 as a small mechanical recovery improvement: missing optional
+   session metadata can be tolerated when the retained Task establishes identity
+   and execution cleanup is confirmed. Fix the cancellation/cleanup review
+   finding for both present and absent metadata. Preserve unsafe-replacement
+   failure feedback; do not make #381 implement hierarchical recovery.
+3. Run the independent escalation trial below using existing App declarations,
+   runner and return paths. Fix only the missing delivery or execution primitive
+   it exposes, in a separately reviewable change. Keep App policy in Apps.
+4. Update implementation status and retain exact evidence. Source checks, PR
+   review, merge and installation adoption establish different facts.
+
+#381 addresses a synthetic missing-metadata case, not a demonstrated live
+outage. Its value is allowing affordable reconstruction with surviving intent.
+If that requires substantial new machinery, reconsider the tradeoff. No storage
+migration or new repair result schema is required.
+
+## Decisive trials
+
+| Case | Required evidence |
 | --- | --- |
-| Tool error inside a usable agent invocation | The current owner receives it and continues; no duplicate recovery invocation. |
-| Broken workflow loading or Git setup before owner execution | With real App workspace configuration enabled, the owner starts through the smaller runner path, performs a repair, and the original normal path produces a useful result. |
-| Missing optional session history after restart | The owner can reconstruct from surviving intent and current facts; missing evidence is explicit and existing cleanup rules hold. |
-| Shared prerequisite temporarily unavailable | Bounded code checks remain quiet; restored availability permits the retained work to proceed within its allowance. |
-| Unsuccessful repair, recurring failure, or failure of the recovery invocation itself | One retained obligation and shared allowance; exhaustion stops work retries and exposes the next decision. Duplicate events and ordinary restarts do not grant fresh credit. |
-| Old execution still cleaning up | No conflicting replacement starts until cleanup is confirmed; inability to confirm becomes a visible blocker. |
+| Ordinary tool error | The active owner handles feedback without a duplicate recovery invocation. |
+| Safe missing-history recovery (#381) | Sufficient Task context survives; old execution is stopped; ordinary startup/claim recovery reaches an accepted result and reports the missing history. |
+| Cancellation or helper cleanup pending (#381) | The old claim and live markers remain; no replacement or fabricated completion. After actual cleanup, ordinary recovery can proceed. |
+| Owner cannot start because Git setup or workflow loading fails | A declared escalation recipient receives the original reference/error, starts through real runner/workspace setup, performs a repair, and the original Task resumes to a useful result. |
+| Owner lacks repair capability | It asks the next responsible agent without spending mandatory failed attempts; the return reaches the original assignment. |
+| Recipient cannot help or failure repeats | Existing bounds and escalation leave a visible blocker and needed decision; unchanged notices do not repeatedly commission repair. |
+| Shared prerequisite returns | Quiet checks/returns make retained work eligible under its existing policy; original owners verify their own outcomes. |
 
-Portable tests must have the fixture owner actually perform the repair, rather
-than have the test quietly restore the environment after a notification. Use
-the real runner setup at the independence boundary; scripted model responses can
-prove mechanics but cannot establish autonomous diagnosis. A bounded trial with
-a real agent in a disposable environment is needed before claiming that judgment
-works. None is run by this documentation change.
+Use disposable environments for injected failures. A scripted agent can prove
+delivery, repair effects and resumption mechanics; it cannot prove autonomous
+diagnosis. The fixture must perform the repair through the actual agent/tool
+path, not silently restore the prerequisite after a notification. A bounded
+real-model trial is needed before claiming judgment works. State that separately
+from portable checks and from a full worker/bootstrap trial.
 
-Record time to useful progress, original/repair invocation counts, total model
-usage including helpers, and duplicate/no-progress wakes for both a successful
-repair and an unrepaired failure. Apply failure injection only to the disposable
-trial. A quiet state, delivery acknowledgement or an accepted report is not the
-success metric. Retain the successful restart, wait and cleanup regressions.
-
-After implementation, update the owning [Task contract](../2a-design/task-resource-engine.md),
-[execution feedback](../2a-design/execution-feedback.md), [runtime contract](../2a-design/runtime.md)
-and [operations guide](../2b-manual/app-operations-recovery.md) together. Review,
-merge and installation adoption remain separate evidence. #381 stays draft.
-
-## Decisions to review
-
-The recommended direction is one rule across all failure stages, an owner path
-independent of optional Task setup, and one finite allowance for repair and
-resumption. The three-cycle default is a proposed operating choice, not a
-measured optimum. Check the acceptable cost and delay against actual configured
-runner budgets during implementation review. The key design tradeoff is allowing
-bounded reconstruction and repetition while keeping failure understandable and
-recoverable.
+Record original/repair invocations, available total usage, time to useful
+progress, repeated wakes and human intervention for successful and unresolved
+cases. Keep successful restart, wait and cleanup regressions. Quiet queues or
+accepted diagnostic reports alone are not the success criterion.

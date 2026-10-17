@@ -412,6 +412,14 @@ until acceptance is known. See [retry ownership](../../2a-design/system-boundary
 
 **Helper → Task owner agent → App owner agent, when applicable → May → Hao.**
 
+Take the first useful action within your capability and authority. You need not
+attempt a repair you cannot perform before asking for help. Keep the original
+Task reference, previous actions and exact missing help in the request; another
+handoff must add capability or judgment rather than restart the same failed loop.
+If your execution cannot start, the existing caller/declared operational route
+must receive that failure; installed coverage is incomplete, so verify receipt
+and a usable recipient before claiming that escalation worked.
+
 1. **Bounded helper cannot proceed:** return evidence through the supplied
    caller-feedback/result contract. A workflow's `ctx.blocked(...)` returns
    evidence to the Task boundary; it does not contact another owner itself.
