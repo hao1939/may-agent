@@ -115,8 +115,10 @@ Startup and Task recovery use `../lib/session-cleanup.ts` to admit cleanup,
 confirm execution exit and drain descendants before changing markers or releasing
 work. Scanners discover candidates; missing or terminal history does not prove exit.
 Startup resolves SQL or readable file scope through the retained attempt using
-indexed lookups; unresolved scope leaves cleanup pending. The shared admission
-checks readable binding conflicts and returns only validated lifecycle metadata.
+indexed lookups. A file copy must resolve to the attempt's exact session;
+helpers and prior workflow steps additionally need their independent SQL session
+association. Without it, startup leaves cleanup pending instead of treating a
+copy as ownership. The shared admission checks readable binding conflicts and returns only validated lifecycle metadata.
 Inherited helper scope does not own the Task attempt: a helper still needs valid
 metadata for its own cleanup. Missing standalone history likewise stays pending
 until there is an ownership source. No cleanup path writes unchecked history to SQL.
@@ -148,7 +150,11 @@ path may retry after cleanup finishes; this uses no additional polling loop.
 
 Cleanup must succeed before the replacement claim commits. Readable detached
 process references and active markers remain liveness evidence even if a
-lifecycle label is terminal or unreadable. Ownership conflicts, live external
+lifecycle label is terminal or unreadable. Keep exited process evidence distinct
+from missing evidence: a PID-only fallback cannot override an instance mismatch
+for the same PID. Legacy detached records use the existing process-start check
+with their session start time; a reused PID does not establish a live owner.
+Without usable identity or timing, legacy PID evidence remains conservative. Ownership conflicts, live external
 execution and failed drain leave the old claim in place. Use the
 original attempt generation for session ownership even when the Task requirement
 has changed. Rebuild the recovery context after cleanup so the replacement

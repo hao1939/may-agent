@@ -4,6 +4,7 @@ import { Type } from "@earendil-works/pi-ai";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { markStaleSession } from "../../../../test/fixtures/stale-session.js";
 import { SubagentManager } from "../../../lib/manager.js";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { getDb } from "../../../lib/db/connection.js";
@@ -421,17 +422,40 @@ it("rejects a retained binding for another Task before cancellation or drain", (
   expect(existsSync(f.result)).toBe(false);
 });
 
-it.each(["damaged", "terminal"])("honors a live detached process in %s metadata", (kind) => {
+it.each((["damaged", "terminal"] as const).flatMap((kind) =>
+  (["absent", "unreadable", "other-pid"] as const).map((marker) => ({ kind, marker })),
+))("honors a live detached process in $kind metadata with $marker marker", ({ kind, marker }) => {
   const f = recoveryFixture("done");
   const meta = JSON.parse(readFileSync(f.metadata, "utf8"));
   if (kind === "damaged") meta.status = ["running"];
   meta.detached = true;
   meta.pid = process.pid;
+  meta.startedAt = Date.now();
   writeFileSync(f.metadata, JSON.stringify(meta));
+  if (marker !== "absent") writeFileSync(join(f.root, "sessions", f.sessionId, "[ACTIVE]"),
+    marker === "unreadable" ? "legacy timestamp" : JSON.stringify({ pid: 2147483647 }));
   expect(f.recovery.isLive(f.sessionId)).toBe(true);
   expect(() => f.recovery.interrupt(f.sessionId, "Recover", "work", f.binding)).toThrow("external owner is still live");
   expect(readFileSync(f.metadata, "utf8")).toBe(JSON.stringify(meta));
   expect(f.events).toEqual([]);
+});
+
+it.each(["damaged", "terminal"])("does not reuse a PID rejected by the session process marker in %s metadata", (kind) => {
+  const f = recoveryFixture("done");
+  const meta = JSON.parse(readFileSync(f.metadata, "utf8"));
+  if (kind === "damaged") meta.status = ["running"];
+  meta.detached = true;
+  meta.pid = process.pid;
+  // Recent history alone cannot establish PID reuse; the explicit process
+  // identity mismatch must take precedence even without an old timestamp.
+  meta.startedAt = Date.now();
+  const bytes = JSON.stringify(meta);
+  writeFileSync(f.metadata, bytes);
+  markStaleSession(f.root, f.sessionId);
+  expect(f.recovery.isLive(f.sessionId)).toBe(false);
+  expect(f.recovery.interrupt(f.sessionId, "Recover", "work", f.binding)).toBe(true);
+  expect(readFileSync(f.metadata, "utf8")).toBe(bytes);
+  expect(existsSync(f.result)).toBe(false);
 });
 
 it.each(["absent", "terminal"] as const)("honors the live process marker when metadata is %s", (kind) => {

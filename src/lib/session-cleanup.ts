@@ -1,5 +1,6 @@
 import type { SubagentManager } from "./manager.js";
-import { readActiveSessionProcessId, readSessionMetaRecoveryEvidence, type PersistedSession, type TaskBinding } from "./persistence.js";
+import { readSessionProcessOwner, readSessionMetaRecoveryEvidence, type PersistedSession, type TaskBinding } from "./persistence.js";
+import { isProcessInstanceAlive } from "./process-identity.js";
 import { drainPersistedSessionBashProcessGroups } from "./tools/bash.js";
 
 type SessionCleanupOptions = {
@@ -36,19 +37,21 @@ export function readSessionCleanupMeta(
 /** Execution ownership is independent of whether its history is readable or terminal. */
 export function hasLiveSessionExecution(opts: SessionCleanupOptions, sessionId: string): boolean {
   if (opts.manager.hasActiveSession(sessionId)) return true;
-  if (readActiveSessionProcessId(opts.persistDir, sessionId) !== null) return true;
+  const owner = readSessionProcessOwner(opts.persistDir, sessionId);
+  if (owner && isProcessInstanceAlive(owner)) return true;
   const evidence = readSessionMetaRecoveryEvidence(opts.persistDir, sessionId);
   const meta = evidence.state === "absent" ? undefined : evidence.meta;
-  // Older detached workers may have only their metadata PID. Preserve that
-  // evidence too; unrelated damage cannot establish that the worker stopped.
   if (meta?.detached !== true || typeof meta.pid !== "number" || !Number.isSafeInteger(meta.pid) || meta.pid < 1)
     return false;
-  try {
-    process.kill(meta.pid, 0);
-    return true;
-  } catch (error) {
-    return (error as NodeJS.ErrnoException).code === "EPERM";
-  }
+  // A rejected instance cannot become live again through its reusable PID.
+  // A different detached PID remains independent evidence of execution.
+  if (owner?.pid === meta.pid) return false;
+  // Legacy workers may have no marker. Use the existing process-instance check
+  // with their start time, including after startup removes an exited marker.
+  return isProcessInstanceAlive({
+    pid: meta.pid,
+    ...(typeof meta.startedAt === "number" && Number.isFinite(meta.startedAt) ? { recordedAt: meta.startedAt } : {}),
+  });
 }
 
 /**

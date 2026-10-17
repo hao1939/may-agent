@@ -209,9 +209,8 @@ export function readSessionTaskAttempt(
     `SELECT app_id AS appId, task_id AS taskId, task_generation AS generation, attempt_id AS attemptId
      FROM sessions WHERE sessionId = ?`,
   ).get(sessionId) as Record<string, unknown> | undefined;
-  const binding = projected && Object.values(projected).some((value) => value !== null)
-    ? projected
-    : copiedBinding;
+  const hasProjection = projected && Object.values(projected).some((value) => value !== null);
+  const binding = hasProjection ? projected : copiedBinding;
   if (binding === undefined || binding === null) return null;
   if (typeof binding !== "object" || Array.isArray(binding)) {
     throw new Error(`Cannot recover session ${sessionId}: unreadable Task binding`);
@@ -231,6 +230,12 @@ export function readSessionTaskAttempt(
       (key) => scope[key] !== undefined && scope[key] !== retained[key],
     )) {
     throw new Error(`Cannot recover session ${sessionId}: Task scope does not identify a retained attempt/session`);
+  }
+  // A file copy may locate an attempt, but cannot prove that another session
+  // belongs to it. An independent SQL association can also identify helpers or
+  // earlier workflow steps; without it, require the attempt's exact session.
+  if (!hasProjection && retained.sessionId !== sessionId) {
+    throw new Error(`Cannot recover session ${sessionId}: copied Task scope does not establish its session relationship`);
   }
   return { ...retained, sessionId: retained.sessionId };
 }

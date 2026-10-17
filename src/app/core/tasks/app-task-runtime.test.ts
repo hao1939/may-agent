@@ -11089,7 +11089,9 @@ describe("canonical App task runtime", () => {
       },
     );
 
-    it.each(["present", "missing"] as const)("startup leaves conflicting terminal ownership untouched with %s SQL projection", async (projection) => {
+    it.each((["present", "missing"] as const).flatMap((projection) =>
+      (["absent", "retained"] as const).map((conflict) => ({ projection, conflict })),
+    ))("startup leaves conflicting $conflict attempt untouched with $projection SQL projection", async ({ projection, conflict }) => {
       const f = setup();
       const recoveryBus = eventBus();
       const gate = Promise.withResolvers<void>();
@@ -11114,6 +11116,19 @@ describe("canonical App task runtime", () => {
       if (projection === "present") upsertSession(f.base.persistDir, {
         sessionId, agent: "sample-owner", task: "work", status: "running", startedAt: 1, taskBinding: meta.taskBinding,
       });
+      if (conflict === "retained") {
+        const other = structuredClone(f.config.resourceStore.readAttempt(claim.attemptId)!);
+        other.metadata = { id: "another-attempt", resourceVersion: 1 };
+        other.sessionId = "another-session";
+        other.state = "interrupted";
+        delete other.lease;
+        const resource = f.config.resourceStore.readTask(claim.taskId)!;
+        expect(f.config.resourceStore.commit({
+          fences: [{ taskId: claim.taskId, resourceVersion: resource.metadata.resourceVersion,
+            generation: resource.metadata.generation, currentAttemptId: claim.attemptId }],
+          attempts: [other],
+        })).toBe(true);
+      }
       const bytes = JSON.stringify({ ...meta, taskBinding: { ...meta.taskBinding, attemptId: "another-attempt" } });
       writeFileSync(path, bytes);
       markStaleSession(f.base.persistDir, sessionId);
@@ -11211,7 +11226,60 @@ describe("canonical App task runtime", () => {
       }
     });
 
-    it("startup cleans a readable helper without treating its copied scope as Task ownership", () => {
+    it.each(["terminal", "damaged"] as const)("startup and Task recovery ignore a reused detached PID with %s metadata", async (kind) => {
+      const f = setup();
+      const recoveryBus = eventBus();
+      const gate = Promise.withResolvers<void>();
+      const settled = Promise.withResolvers<void>();
+      await installCoreTaskRuntimes({ ...f.base, bus: recoveryBus });
+      await installCoreTaskRuntimes({ ...f.base, executeRecovery: async () => {
+        await gate.promise;
+        await recoverInstalledAppTasks(recoveryBus);
+      } });
+      f.observe("owner");
+      const claim = f.saveTerminalSession("owner");
+      mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+        attempt.runtimeId = "previous-runtime";
+        attempt.lease!.runtimeId = "previous-runtime";
+      });
+      const sessionId = "session-owner";
+      const directory = join(f.base.persistDir, "sessions", sessionId);
+      const path = join(directory, "meta.json");
+      const meta = JSON.parse(readFileSync(path, "utf8"));
+      meta.detached = true;
+      meta.pid = process.pid;
+      meta.startedAt = 1;
+      if (kind === "damaged") meta.error = { invalid: true };
+      const bytes = JSON.stringify(meta);
+      writeFileSync(path, bytes);
+      upsertSession(f.base.persistDir, {
+        sessionId, agent: "sample-owner", task: "work", status: "running", startedAt: 1, taskBinding: meta.taskBinding,
+      });
+      markStaleSession(f.base.persistDir, sessionId);
+      writeFileSync(join(directory, "[STARTED]"), "started");
+      const result = readFileSync(join(directory, "result.json"), "utf8");
+      try {
+        startBackgroundRuntime({
+          manager: new SubagentManager({ persistDir: f.base.persistDir }), bus: f.base.bus, persistDir: f.base.persistDir,
+          onTaskRecoverySettled: () => settled.resolve(),
+        });
+        // The scanner removes the marker before Task recovery runs. The
+        // detached PID in retained history must not resurrect the old owner.
+        expect(existsSync(join(directory, "[ACTIVE]"))).toBe(false);
+      } finally {
+        gate.resolve();
+        await settled.promise;
+      }
+      await f.run("owner");
+      await recoverInstalledAppTasks(f.base.bus);
+      expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
+      expect(readAcceptedRuntimeAttempt(f.config, "owner")?.acceptedResult?.result).toEqual(f.payload);
+      expect(readFileSync(path, "utf8")).toBe(bytes);
+      expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(result);
+      expect(existsSync(join(directory, "[STARTED]"))).toBe(false);
+    });
+
+    it.each(["helper", "prior-workflow-step"] as const)("startup uses the independent SQL association for a readable %s", (kind) => {
       const f = setup();
       f.observe("owner");
       f.saveTerminalSession("owner");
@@ -11221,10 +11289,11 @@ describe("canonical App task runtime", () => {
       const result = readFileSync(join(ownerDirectory, "result.json"), "utf8");
       const sessionId = "helper-session";
       const directory = join(f.base.persistDir, "sessions", sessionId);
-      const meta = { ...ownerMeta, parentSessionId: "session-owner" };
-      upsertSession(f.base.persistDir, {
+      const meta = { ...ownerMeta, ...(kind === "helper" ? { parentSessionId: "session-owner" } : {}) };
+      const projectSession = () => upsertSession(f.base.persistDir, {
         sessionId, agent: "helper", task: "contribute", status: "running", startedAt: 1, taskBinding: meta.taskBinding,
       });
+      projectSession();
       markStaleSession(f.base.persistDir, sessionId);
       const path = join(directory, "meta.json");
       const damaged = JSON.stringify({ ...meta, error: { invalid: true } });
@@ -11239,6 +11308,13 @@ describe("canonical App task runtime", () => {
         .toEqual({ status: "running" });
 
       writeFileSync(path, JSON.stringify(meta));
+      getDb(f.base.persistDir).prepare("DELETE FROM sessions WHERE sessionId = ?").run(sessionId);
+      manager.resumeStaleSessions();
+      // A readable copy alone cannot verify a non-owner session. Restoration
+      // of the independent association admits ordinary session cleanup.
+      expect(existsSync(join(directory, "[ACTIVE]"))).toBe(true);
+      expect(readTaskSnapshot(f.config)).toEqual(before);
+      projectSession();
       manager.resumeStaleSessions();
       expect(existsSync(join(directory, "[ACTIVE]"))).toBe(false);
       expect(getDb(f.base.persistDir).prepare("SELECT status FROM sessions WHERE sessionId = ?").get(sessionId))
