@@ -13,6 +13,38 @@ import { resolveMetricResponsibility, type MetricReader } from "../../alex.app/a
 import { readMetricEvidence } from "../../may-agent/src/app/adapters/reporting/metric-evidence.js";
 import { createMetricService } from "../../may-agent/src/lib/metrics.js";
 
+test("direct custom metric facts are rejected before accepted evidence", async () => {
+  const f = await fixture(async () => ({ state: "converged", summary: "Proposed threshold", facts: [
+    `metric-disposition:${JSON.stringify({ version: 1, metricId: "test.metric", disposition: "recalibrate-threshold", newThresholdMs: 250, configurationApplied: false })}`,
+  ] }));
+  fixtures.push(f);
+  await f.attach("goal/custom-fact");
+  await until(() => f.get("goal/custom-fact")?.summary?.includes("Metric decision rejected") === true, "App policy rejection");
+  expect(f.get("goal/custom-fact")?.acceptedAttempt).toBeUndefined();
+  expect(f.decisions()).toEqual([]);
+});
+
+test("a supported decision-only result reaches public metric readback and survives restart", async () => {
+  const f = await fixture(attempt => executeReview(attempt, async () => ({
+    task: { state: "converged", summary: "Recorded recommendation; configuration unchanged", facts: ["report:reviewed"],
+      result: { proposedThresholdMs: 250, configurationApplied: false } },
+    decisions: [{ ...f.subject, disposition: "no-change", reason: "Decision only; no configuration applied", evidence: ["report:reviewed"] }],
+  })));
+  fixtures.push(f);
+  await f.attach("goal/decision-only");
+  await until(() => f.get("goal/decision-only")?.status === "done", "accepted decision");
+  const task = f.get("goal/decision-only")!;
+  expect(task.result).toMatchObject({ proposedThresholdMs: 250, configurationApplied: false });
+  const rows = (f.evidence() as any).dispositions;
+  expect(rows).toHaveLength(1);
+  expect(rows[0]).toMatchObject({ appId: "may", taskId: task.id, attemptId: task.acceptedAttempt!.id,
+    decision: { ...f.subject, disposition: "no-change", linkedTask: { appId: "may", taskId: task.id } } });
+  const definition = f.evidence().metric;
+  await f.restart();
+  expect((f.evidence() as any).dispositions).toEqual(rows);
+  expect(f.evidence().metric).toEqual(definition);
+});
+
 const fixtures: Awaited<ReturnType<typeof fixture>>[] = [];
 afterEach(async () => {
   for (const f of fixtures.splice(0)) await f.close();

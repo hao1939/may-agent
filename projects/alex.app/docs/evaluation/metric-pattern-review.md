@@ -168,6 +168,38 @@ nextReviewAt remains historical, even if no Task wait exists. A report, prepared
 handoff or workflow return alone is not accepted handling. No incident registry
 or additional decision store exists.
 
+### Result admission and decision-only work
+
+The October 17 readback defect was a direct-agent bypass: the typed helper
+already rejected unsupported dispositions, but a plain Task could finish with
+`disposition:"recalibrate-threshold"` and no `alertId` or `reason`. Host accepted
+that string as an ordinary fact; the metric projection correctly omitted it.
+Later reviewers therefore continued to see the earlier supported decision.
+
+The correction uses optional generic Host `tasks.validateResult` admission,
+with May's reserved-fact rules in `metric-disposition.ts`. Host invokes App
+policy at direct finish and before settlement across agent, workflow, registered
+executor and Conversation paths. It adds no metric policy or disposition values
+to Host. Rejection uses the existing Task correction/retry path. App validation
+checks the supported shape, explicit episode identity, evidence references,
+size, duplicate decisions and unresolved owning-Task link. It does not certify
+the judgment, the truth of evidence or adoption of a proposed change.
+
+**Integration order:** merge and deploy the Host hook before activating this App
+policy. Older Hosts do not enforce the new hook. This source change does not
+repair retained decisions or prove live activation. Correct an old decision by
+returning the complete helper result through its existing Task; never rewrite
+accepted history. Verify the subsequent accepted attempt in public metric
+readback, keeping the original evidence and caller links.
+The paired Host candidate is
+[`4d67ab4a53`](https://github.com/hao1939/may-agent/commit/4d67ab4a5349c780a51a1e9b73b4a838744c2acc).
+
+Recommendation details and `configurationApplied:false` belong in ordinary
+`task.result`. A decision-only assignment can complete without changing config;
+an implementation assignment remains unfinished until its acceptance is proved.
+The proposed 250 ms threshold is not applied by this correction. No automatic
+mapping of that proposal to a supported disposition or reuse scope is allowed.
+
 The evidence endpoint, dashboard and daily digest read that projection. They
 retain the source App, Task and accepted attempt, plus the linked investigation.
 Historical `metric.alert_judged` observations remain readable for old consumers;

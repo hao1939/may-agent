@@ -173,7 +173,7 @@ export async function fixture(execute: TaskExecutor) {
       version: 1,
       agent: "may",
       inputSchema: mayApp.inputSchema,
-      tasks: { maxConcurrent: 1 },
+      tasks: { ...mayApp.tasks, maxConcurrent: 1 },
       conversation: {
         mode: "agent",
         inputKinds: ["message"],

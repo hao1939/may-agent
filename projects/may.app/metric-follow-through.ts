@@ -9,39 +9,14 @@ import {
   type Condition,
 } from "@may-agent/sdk";
 import { Check } from "typebox/value";
-import {
-  bindMetricReuseScope,
-  metricReuseScopeSchema,
-} from "./metric-decision-reuse.js";
+import { bindMetricReuseScope } from "./metric-decision-reuse.js";
+import { metricDecisionSchema } from "./metric-disposition.js";
 import type { MetricEvidence } from "../alex.app/agents/evaluator/workflows/lib/metric-evidence.js";
 
-const text = Type.String({ minLength: 1 });
 export const metricReviewSchema = Type.Object(
   {
     task: taskAgentResultSchema,
-    decisions: Type.Array(
-      Type.Object(
-        {
-          metricId: text,
-          alertId: Type.Union([Type.Integer({ minimum: 1 }), Type.Null()]),
-          disposition: Type.Union([
-            Type.Literal("observe", {
-              description:
-                "Legacy disposition. Use no-change for passive collection; sample Conditions cannot trigger investigation.",
-            }),
-            Type.Literal("investigate"),
-            Type.Literal("no-change"),
-            Type.Literal("recovered"),
-          ]),
-          reason: text,
-          evidence: Type.Array(text, { minItems: 1, maxItems: 16 }),
-          nextAction: Type.Optional(text),
-          reuseScope: Type.Optional(metricReuseScopeSchema),
-        },
-        { additionalProperties: false },
-      ),
-      { maxItems: 8 },
-    ),
+    decisions: Type.Array(metricDecisionSchema, { maxItems: 8 }),
   },
   { additionalProperties: false },
 );

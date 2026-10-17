@@ -43,6 +43,14 @@ See the manual's [repair feedback guidance](../../docs/2b-manual/task-execution-
 
 ## Source and guidance
 
+When requesting or receiving May's metric judgment, use the established
+`metric-response` review contract and verify the accepted decision through the
+metric evidence readback. A custom `metric-disposition:` string in Task facts
+does not prove that metric readers can consume it. Keep recommendations and
+actual implementation status distinct. Completing a decision-only request does
+not implement its recommendation; continue any requested implementation on its
+existing owning Task, with the original return relationship.
+
 - `/app/projects/alex.app/docs/proposals/alex-improvement-app.md` records the
   agreed migration, including breaking changes and replacement Task IDs.
 - `/app/projects/alex.app/docs/1-principles/purpose.md` and the neighboring

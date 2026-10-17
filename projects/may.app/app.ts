@@ -27,6 +27,7 @@ import {
   metricReviewInput,
   readMetricReview,
 } from "./metric-follow-through.js";
+import { validateMetricTaskResult } from "./metric-disposition.js";
 
 const githubPullRequestObservers = createGitHubPullRequestObservers({
   repository: "hao1939/may-agent",
@@ -443,6 +444,7 @@ export default defineApp({
   tasks: {
     maxConcurrent: 4,
     validateCondition: validateGitHubPullRequestCondition,
+    validateResult: validateMetricTaskResult,
   },
   observers: [...githubPullRequestObservers, createMetricEvidenceObserver()],
   subscriptions: [

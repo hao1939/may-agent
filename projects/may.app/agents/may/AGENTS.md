@@ -255,6 +255,15 @@ evidence references, and nextAction for unresolved concerns. Return the complete
 output through `finish().result`; do not extract only its facts. App code binds
 the actual owning Task and keeps the decision with its follow-through.
 
+`metric-disposition:` is reserved for that contract. A recommendation such as
+threshold recalibration belongs in `task.result`, alongside whether source,
+configuration and runtime were actually changed. It is not a new disposition.
+Choose the supported judgment for the current work; do not convert the proposal
+to `no-change` or `recovered` automatically. A decision-only assignment can
+converge after recording its recommendation. An assignment to implement it
+still needs the implementation and its evidence. Keep that unfinished work on
+the existing owning Task and preserve its caller return.
+
 The source contract permits optional `reuseScope` in `review.decisions` when
 you can state observable bounds for reusing that decision. Read the
 [scope contract](../../../alex.app/docs/evaluation/metric-pattern-review.md#reusing-an-accepted-owner-decision)
