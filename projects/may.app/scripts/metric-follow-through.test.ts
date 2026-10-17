@@ -13,14 +13,18 @@ import { resolveMetricResponsibility, type MetricReader } from "../../alex.app/a
 import { readMetricEvidence } from "../../may-agent/src/app/adapters/reporting/metric-evidence.js";
 import { createMetricService } from "../../may-agent/src/lib/metrics.js";
 
-test("direct custom metric facts are rejected before accepted evidence", async () => {
+test("direct custom metric facts remain available in accepted Task evidence", async () => {
+  const fact = `metric-disposition:${JSON.stringify({ version: 1, metricId: "test.metric", disposition: "recalibrate-threshold", newThresholdMs: 250, configurationApplied: false })}`;
   const f = await fixture(async () => ({ state: "converged", summary: "Proposed threshold", facts: [
-    `metric-disposition:${JSON.stringify({ version: 1, metricId: "test.metric", disposition: "recalibrate-threshold", newThresholdMs: 250, configurationApplied: false })}`,
+    fact,
   ] }));
   fixtures.push(f);
   await f.attach("goal/custom-fact");
-  await until(() => f.get("goal/custom-fact")?.summary?.includes("Metric decision rejected") === true, "App policy rejection");
-  expect(f.get("goal/custom-fact")?.acceptedAttempt).toBeUndefined();
+  await until(() => f.get("goal/custom-fact")?.status === "done", "accepted original result");
+  expect(f.get("goal/custom-fact")?.acceptedAttempt).toBeDefined();
+  expect(f.get("goal/custom-fact")?.facts).toContain(fact);
+  // The reader still recognizes only supported dispositions. Its limitation
+  // does not discard the original result or cause another Task attempt.
   expect(f.decisions()).toEqual([]);
 });
 
