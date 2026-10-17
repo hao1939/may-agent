@@ -99,8 +99,9 @@ including a conflict in otherwise damaged metadata. A readable detached process
 reference still establishes liveness even if the status field is unusable.
 
 Metadata validation now preserves readable fields for those checks. It does not
-coerce damaged lifecycle state or manufacture an old completion. Existing result
-bytes survive; ordinary startup and claim paths give the replacement the retained
+coerce damaged lifecycle state or manufacture an old completion. The fixtures at this revision retained results with terminal or unreadable
+metadata; later review exposed the running-metadata gap below. Ordinary startup
+and claim paths give the replacement the retained
 Task and readable history with gaps disclosed. The manager's existing cleanup
 check applies to all these cases. No recovery scheduler, executor switch, App
 route or SDK contract was added.
@@ -140,6 +141,35 @@ directory's `unified-history/` subdirectory. Earlier full/affected runs apply to
 preceding revisions; they are retained without claiming final-revision coverage.
 This remains synthetic incomplete-history evidence, not a live #381 deployment.
 The PR is unmerged; independent review and rollout remain separate.
+
+## #381 result preservation and repeated startup
+
+Two further review comments exposed gaps in the common recovery rule. Running
+or idle metadata with a saved result and missing transcript could overwrite the
+result; the normal `session.end` persistence subscriber was a second writer.
+Separately, incomplete metadata could leave SQL marked running, then the next
+startup sweep dropped the retained Task binding and rejected recovery.
+
+Source `e77b882c494908821198c90f5050a5d9c236abb9` fixes those paths. Cleanup
+preserves saved result bytes, descriptors and outcome evidence without emitting
+a new completion event. Confirmed shutdown can settle a stale running SQL row;
+an existing terminal row is left intact, and damaged metadata is preserved.
+Terminal sweeps obtain the exact session from the retained attempt and use the
+same adapter conflict checks. Copied helper context does not establish ownership.
+No schema migration, additional recovery loop or App policy is introduced.
+
+All 12 initial review regressions failed before the fix. Final focused checks
+pass **14 tests with 111 assertions**, including the production event writer,
+runtime close/reinstallation over persisted SQL, ownership conflicts and helper
+scope. Full CI status is recorded with the published revision's
+[Quality and Container checks](https://github.com/hao1939/may-agent/actions/runs/39024285902).
+These are portable fixtures; the PR remains unmerged and undeployed.
+
+The proposal review also replaced an absolute no-extra-model-call trial with a
+persistent-loop criterion. Occasional at-least-once reconsideration is acceptable
+when work returns to quiet waiting or useful progress. The original-owner startup
+failure and connected human return still require their own trials; #381 does
+not implement those App routes.
 
 ## Live recovery example
 

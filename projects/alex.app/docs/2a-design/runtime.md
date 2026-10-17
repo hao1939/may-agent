@@ -440,6 +440,15 @@ The owner decides whether to inspect current effects, repeat work or seek help.
 This trades perfect history reconstruction for understandable continuation;
 effect identities and execution ownership still follow their existing contracts.
 
+Cleanup and outcome are independent facts. Once shutdown is confirmed, a stale
+running SQL projection can record interruption at the confirmation time without
+reconstructing the old outcome. Preserve retained terminal facts, result bytes
+and their descriptors; a cleanup notification must not overwrite them through
+another writer. Later startup sweeps use the same retained attempt/session
+relationship and conflict checks, so damaged history cannot make stopped work
+appear running forever. A helper's copied Task context alone does not establish
+that it owns the Task attempt.
+
 When automatic recovery cannot resolve the problem, reconcile the record with
 confirmed facts, retain uncertainty and return usable failure evidence through
 the existing caller or operational route. The responsible agent decides how to

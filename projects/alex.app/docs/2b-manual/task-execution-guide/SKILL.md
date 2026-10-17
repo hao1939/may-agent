@@ -375,6 +375,9 @@ On a recovered attempt, use the current Task and supplied execution evidence.
 Missing history means that part is unknown; it does not mean the earlier work
 failed or its effects never happened. Inspect current effects where needed,
 reuse verified results, and continue the original assignment or ask for help.
+An interrupted execution record can coexist with a saved contribution. Read the
+retained result and current Task state before deciding what remains; cleanup
+alone does not invalidate that contribution or establish its acceptance.
 Infra owns recovery eligibility and old-process cleanup; you do not reconstruct
 session files to authorize your own execution. See the
 [recovery contract](../../2a-design/runtime.md#recovery) for implementation coverage.

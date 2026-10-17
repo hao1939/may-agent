@@ -215,6 +215,13 @@ error report or fresh request ID alone cannot. The first useful escalation and
 an exhaustion decision must remain deliverable; quiet waiting must not swallow
 them or suppress independent work.
 
+This is a requirement to stop persistent loops, not an exactly-once judgment
+guarantee. At-least-once delivery or missing recent history can cause an
+occasional duplicate consideration. Accept that cost when the work returns to
+quiet waiting or useful progress; do not add a second receipt system to prevent
+every duplicate. The workflow decides whether evidence changes the work; infra
+applies the declared wake and retry policy without diagnosing its meaning.
+
 After restart, reread retained work, asks, replies and Conditions before acting.
 Continue an open repair or apply its saved result rather than issuing the same
 ask again. When history is missing, disclose the gap and reconstruct enough
@@ -240,7 +247,10 @@ repair handlers.
    Missing/damaged history and a missing copied binding use that same rule.
    Readable ownership conflicts, live execution and pending helper cleanup
    still prevent replacement. Disclose history gaps and preserve surviving
-   evidence. Complete independent review before merge and normal deployment.
+   evidence, including when metadata still says running but a result survives.
+   Record confirmed cleanup separately from the old outcome. Subsequent startup
+   sweeps must retain the same Task authority and settle stale SQL projections.
+   Complete independent review before merge and normal deployment.
 2. **Connect failure to capable help and back.** Use saved caller feedback
    first. Complete declared operational routes for work without a usable
    caller, including failures before admission/execution. Retain original
@@ -271,12 +281,12 @@ outage. Its value is allowing affordable reconstruction with surviving intent.
 If that requires substantial new machinery, reconsider the tradeoff. No storage
 migration or new repair result schema is required.
 
-**Review status:** #381's common-rule refinement is published at `e4513ce7e`.
-Final focused/isolated-design checks, complete local CI and GitHub Quality/Container
-checks pass on that revision. The initial cleanup review thread remains resolved,
-but the refinement still needs independent review. The PR is unmerged and
-undeployed. See
-the [trial and validation evidence](../archive/reviews/hierarchical-recovery-trial-20261017.md).
+**Review status:** Further review found two gaps in #381: cleanup could overwrite
+a surviving result, and later sweeps could lose retained Task authority when
+metadata was damaged. They are implementation gaps in the common rule, not
+reasons for another recovery policy. Keep source validation, independent review
+and deployment distinct; the PR is unmerged and undeployed. Exact revisions and
+checks belong in the [trial and validation evidence](../archive/reviews/hierarchical-recovery-trial-20261017.md).
 
 ## Decisive trials
 
@@ -284,6 +294,7 @@ the [trial and validation evidence](../archive/reviews/hierarchical-recovery-tri
 | --- | --- |
 | Ordinary tool error | The active owner handles feedback without a duplicate recovery invocation. |
 | Incomplete-history recovery (#381) | Missing, unreadable or partially recorded metadata use the same retained Task authority and cleanup checks. Startup and claim recovery reach an accepted result with gaps disclosed and surviving bytes preserved. |
+| Surviving result and repeated startup (#381) | Running metadata with a saved result and missing transcript retains the result and its descriptor, including through normal event persistence. A later startup with persisted SQL and damaged metadata settles stopped execution without inventing an outcome or blocking useful continuation. |
 | Readable ownership conflict in damaged metadata (#381) | Recovery rejects the conflicting identity before cancellation or drain; unrelated metadata damage does not conceal it. |
 | Cancellation or helper cleanup pending (#381) | The old claim and live markers remain; no replacement or fabricated completion. After actual cleanup, ordinary recovery can proceed. |
 | Owner cannot start because Git setup or workflow loading fails | A declared escalation recipient receives the original reference/error, starts through real runner/workspace setup, performs a repair, and the original Task resumes to a useful result. |
@@ -293,7 +304,7 @@ the [trial and validation evidence](../archive/reviews/hierarchical-recovery-tri
 | Recipient cannot help or failure repeats | Existing bounds and escalation leave a visible blocker and needed decision; unchanged notices do not repeatedly commission repair. |
 | Human action is required | An actionable ask is presented through the real human adapter; its reply reaches the exact Condition, returns through May and resumes the source work. May explains the outcome and updates the associated Conversation Request. |
 | Restart during admission, pending help or after repair return | Retained input/request/result identifies the same original work. Recovery reuses open help or applies its saved result; it discloses missing history, respects cleanup and does not silently renew exhausted retries. |
-| Duplicate notices and an unchanged blocker | Measure model invocations while replaying notices and running ordinary recovery ticks. After the justified judgment, unchanged state causes no additional model calls; a changed fact or human answer still reaches its exact owner. |
+| Duplicate notices and an unchanged blocker | Measure model invocations while replaying notices and running ordinary recovery ticks, including restart. Occasional duplicate consideration is acceptable; unchanged state must settle into quiet waiting instead of sustaining model calls. A changed fact or human answer still reaches its exact owner. |
 | Shared prerequisite returns | Quiet checks/returns make retained work eligible under its existing policy; original owners verify their own outcomes. |
 
 Use disposable environments for injected failures. A scripted agent can prove
