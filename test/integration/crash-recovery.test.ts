@@ -210,8 +210,8 @@ describe("Crash Recovery: Sentinel-Driven Crash Detection", () => {
     await manager.waitFor("s_crashed");
   });
 
-  it("resumeStaleSessions() cleans up orphan sentinel with no registry entry", () => {
-    // Sentinel exists but no corresponding registry entry — should be cleaned up
+  it("resumeStaleSessions() retains an orphan sentinel until ownership evidence is available", () => {
+    // A sentinel alone cannot authorize cleanup of an unknown execution.
     writeSentinel(persistDir, "s_orphan");
 
     const manager = new SubagentManager({ persistDir });
@@ -220,7 +220,11 @@ describe("Crash Recovery: Sentinel-Driven Crash Detection", () => {
     expect(resumed).toHaveLength(0);
     expect(interrupted).toHaveLength(0);
 
-    // Sentinel should be cleaned up
+    expect(sentinelExists(persistDir, "s_orphan")).toBe(true);
+    writeRegistryState(persistDir, {
+      s_orphan: { agent: "worker", task: "Retained work", status: "done", startedAt: 1, endedAt: 2 },
+    });
+    manager.resumeStaleSessions();
     expect(sentinelExists(persistDir, "s_orphan")).toBe(false);
   });
 
