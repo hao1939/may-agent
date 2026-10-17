@@ -105,3 +105,70 @@ full canonical layout check remains blocked by pre-existing legacy App symlinks.
 Receipts, before/after Task snapshots, focused test output and metric evidence
 are retained under
 `/home/hao/workspace-archive/alex-follow-through-activation-20261017`.
+
+## Subsequent audit: current decisions and repeated asks
+
+A follow-up audit at approximately 15:50 UTC found material intervening evidence
+that the activation review had missed by reading only the original linked Tasks.
+Before rollout, two additional normal Evaluation follow-ups had reached Alex and
+May. May explicitly **declined** the 250 ms proposal in both. These were completed
+no-change decisions, not evidence of failed implementation:
+
+| Time (UTC) | Existing work | Result |
+| --- | --- | --- |
+| 14:50:59 | Evaluation event `6681327` → Alex `input/app_8de2b8d1-2951-4b3c-92e7-945beb699736` | Requested an apply-or-decline decision |
+| 14:53:25 | May `goal/appdep_61b1233597a0e3b9a14f12ae` | Declined 250 ms; retained 100 ms and accepted short episodes as the cost of early sensitivity |
+| 15:38:06 | Evaluation event `6681565` → Alex `input/app_b759552c-18b2-4c6d-9a33-d22ed8a90ec0` | Again called the proposal pending and requested apply-or-decline |
+| 15:40:37 | May `goal/appdep_11f0b4fab763512d29a234bd` | Again declined; cited preserving the 100 ms signal without a separate sustained-median guard |
+| 15:45:31 | Reload completion `6681629` | Activated 250 ms through the explicit user-authorized continuation documented above |
+
+Both Alex follow-ups accepted and returned those declines. Thus the earlier live
+trial establishes execution of the user's corrective instruction, not autonomous
+adoption of May's most recent choice or proof that ownership guidance alone fixed
+the normal loop. The original missed implementation remains historical evidence;
+it must not be generalized to these later legitimate no-change outcomes.
+
+The later decline results are ordinary Task facts/results. They contain no
+`metric-disposition:` fact, so the current metric decision projection still shows
+the older alert-5003 recommendation, not either decline or the later deployment.
+The 15:38 evaluator's transcript reads a previous review result and metric samples
+but does not read the completed Alex/May follow-up. Public event `6681327` already
+links request `app_8de2b8d1-2951-4b3c-92e7-945beb699736` with state `done`; its
+original answer is recoverable without new storage or Host completion enforcement.
+The evidence supports a missed result in the review context, not a lost delivery.
+
+The 56.86 minutes immediately before guidance activation contained ten model
+invocations, all on this metric's review/decision chain: four Evaluator, four Alex
+and two May. They recorded 479,939 input, 1,889,856 cache-read and 42,832 output
+tokens (2,412,627 total). The second Alex→May consultation and return alone used
+three invocations and 730,788 recorded tokens. It repeated a question already
+settled by the first decline. Separate alert transitions are real changed evidence;
+that does not make repeating a settled owner question useful.
+
+The successful implementation invocation recorded 169,670 input, 2,272,768
+cache-read and 5,694 output tokens across 26 replies. Its useful outcome does not
+make that effort negligible. Broad activation discovery and repeated context
+exposure remain efficiency concerns. These counts sum provider usage across
+replies, including cached input; they are neither unique context sizes nor billing
+amounts. DeepSeek price estimates are absent, not zero cost. Usage cohorts were
+untruncated.
+
+At the 15:50:23 UTC usage cut, 4.86 minutes after threshold activation, no new
+model invocation had started. The scheduled selector then completed at 15:50:33
+without a model, reporting no eligible candidate within its bounds. This is a
+healthy quiet selection, not proof of reduced long-term cost or normal owner
+follow-through. The latest observed 1514.38 ms sample still predates deployment;
+there is no post-change latency evidence in this short window.
+
+The next improvement should close the existing App feedback path: before asking
+again, follow the prior report's request to its completed Task and read current
+configuration. Alex should make the final decision and actual implementation
+state discoverable from the original concern; the existing metric helper can
+support that readback. Evaluator judges whether changed evidence warrants a new
+question, while Alex owns any resulting work. Keep the returned Task evidence as
+the fallback rather than requiring a new whole-Task schema gate. This audit did
+not change routing, guidance, thresholds or budgets, or commission model work.
+
+The fixed-window usage, four exact owner Task reads, publication/request links,
+metric readbacks and quiet selector receipts are retained under
+`/home/hao/workspace-archive/alex-natural-follow-through-20261017T1548`.
