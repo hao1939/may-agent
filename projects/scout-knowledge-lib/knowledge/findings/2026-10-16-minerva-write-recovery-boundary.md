@@ -1,17 +1,18 @@
 <ai_context>
-This finding examines Minerva's pinned recovery design as evidence that an agent runtime must treat uncertain external writes differently from replayable reads and rollback-capable local file changes. Scout inspected first-party documentation and the write-ledger implementation but did not deploy the hosted product, run its tests, inspect every connector, or reproduce a crash.
+This finding examines Minerva's pinned recovery and authorization design as evidence that an agent runtime must treat uncertain external writes differently from replayable reads and rollback-capable local file changes, and must keep temporal revocation separate from a static permission decision. Scout inspected first-party documentation, policy and executor source, and project-authored tests but did not deploy the hosted product, run its tests, inspect every connector, reproduce a crash, or exercise revocation against a live provider.
 </ai_context>
 
 # Agent recovery must preserve uncertainty across unlike effects
 
 **Date:** 2026-10-16  
+**Last checked:** 2026-10-17  
 **Repo:** <https://github.com/minervacomputing/harness>  
-**Pinned revision inspected:** [`46738514da2c7cd5322a95722b8b0aa4c2181431`](https://github.com/minervacomputing/harness/tree/46738514da2c7cd5322a95722b8b0aa4c2181431)  
-**Disposition:** New knowledge
+**Pinned revisions inspected:** [`46738514da2c7cd5322a95722b8b0aa4c2181431`](https://github.com/minervacomputing/harness/tree/46738514da2c7cd5322a95722b8b0aa4c2181431) (recovery), [`45bad482bc6709f8cce4a6640cadc286b459f344`](https://github.com/minervacomputing/harness/tree/45bad482bc6709f8cce4a6640cadc286b459f344) (authorization and revocation update)  
+**Disposition:** Updated knowledge
 
 ## Question
 
-How should an agent runtime recover after its worker dies when model progress, local files, reads, and external writes have different replay and rollback properties?
+How should an agent runtime recover after its worker dies when model progress, local files, reads, and external writes have different replay and rollback properties? As a follow-up, how should that runtime keep a valid resource-level permission decision from outliving the run or attempt that made it?
 
 ## Finding
 
@@ -45,6 +46,18 @@ The architecture requires asynchronous operations to carry run and attempt ident
 
 That distinction generalizes: a superseded worker should lose authority to initiate or overwrite state, while a delayed, trustworthy observation about an effect it already initiated may still close uncertainty.
 
+## Update 2026-10-17: authorization has both spatial and temporal dimensions
+
+A newer pinned revision makes a complementary boundary inspectable in code. `cloudflare/src/gateway/policy.ts` represents authority as the intersection of ceiling, user, and agent layers. Lower layers can only narrow higher ones, any matching deny wins, action prerequisites are checked on the same resource, and malformed persisted snapshots fail closed rather than becoming unrestricted. For hierarchical resources, incomplete ancestry is also treated conservatively: an unknown ancestor never supplies an allow and may carry an existing exact deny.
+
+The executor does not stop at exposing only tools for which some permitted resource may exist. After a connector's `prepare()` resolves symbolic input into concrete resource requirements, `#authorize()` checks those requirements against the declared operation needs and the pinned policy. A mutating operation must name a concrete destination. This separates coarse tool visibility from effect admission: showing “read folder” does not authorize every folder, and a connector cannot silently add a resource/action pair it did not declare.
+
+But that policy decision is only the spatial half of authority. The call can span credential leasing, preparation, and multiple provider requests, during which its run or attempt may be revoked or replaced. The executor therefore checks attempt currency before and after credential leasing, checks again after policy authorization, and gives the provider client an `admits` predicate tied to the current run. The project-authored revocation tests model two-request and prepare-then-execute operations: after revocation during the first request or lookup, the expected second request is absent; revocation immediately after a credential lease results in no provider request; replacing an attempt after a lookup suppresses even a result that would require no further request.
+
+The reusable addition is: **least privilege must be evaluated as `(resource, action, time, attempt)`, not only `(resource, action)`.** A correct preflight decision can become stale before the next side effect. For a multi-request tool call, “authorized once” is weaker than complete mediation unless each request remains gated by live run authority. Conversely, revocation cannot unsend a request already in flight, so the write ledger's uncertainty and settlement rules remain necessary; temporal admission and effect recovery solve different parts of the race.
+
+This update also sharpens two limitations. First, the policy is a run snapshot: the inspected path relies on revoking the run to stop stale authority rather than dynamically rebuilding its resource grants inside the executor. Second, the tests are project-authored simulations with injected provider behavior. Scout read them but did not run them or verify the same timing properties against Cloudflare, Laravel, or a live connector.
+
 ## Reusable implications
 
 1. **Classify effects before choosing replay.** Reads, local reversible writes, idempotent provider operations, and non-idempotent external mutations need distinct rules.
@@ -56,7 +69,7 @@ That distinction generalizes: a superseded worker should lose authority to initi
 
 ## Limitations
 
-- Scout inspected the README, `ARCHITECTURE.md`, and `cloudflare/src/gateway/ledger.ts` at the pinned revision. It did not run Minerva, its fault tests, a connector, or a crash-recovery scenario.
+- Scout inspected the README, `ARCHITECTURE.md`, and `cloudflare/src/gateway/ledger.ts` at the recovery revision, then the README, policy, grant construction, executor, and project-authored policy/revocation tests at the update revision. It did not run Minerva, its tests, a connector, a crash-recovery scenario, or a live revocation race.
 - The architecture reports project-authored fault tests and deployed-platform measurements; these were not independently reproduced, and the hosted product is not self-hostable from this repository.
 - Only the write-ledger implementation was inspected directly. Checkpoint, restart-gate, connector, and attempt-fencing behavior is described here from first-party architecture documentation rather than a complete code-path audit.
 - Minerva's own trust model places the agent loop and dependencies in the Worker trust base, which can address workspace objects and credentials. The recovery protocol does not prove isolation from a compromised trusted runtime.
@@ -70,6 +83,13 @@ That distinction generalizes: a superseded worker should lose authority to initi
 - [Architecture](https://github.com/minervacomputing/harness/blob/46738514da2c7cd5322a95722b8b0aa4c2181431/ARCHITECTURE.md)
 - [Write ledger implementation](https://github.com/minervacomputing/harness/blob/46738514da2c7cd5322a95722b8b0aa4c2181431/cloudflare/src/gateway/ledger.ts)
 - [Engine/product separation plan](https://github.com/minervacomputing/harness/blob/46738514da2c7cd5322a95722b8b0aa4c2181431/docs/plans/product-and-engine.md)
+- Update discovery query: GitHub Repository Search API, `"AI agent" (approval OR sandbox OR durable) pushed:>=2026-10-10 stars:>20`, sorted by updated; `total_count: 2053`, `incomplete_results: false`
+- [Update revision](https://github.com/minervacomputing/harness/tree/45bad482bc6709f8cce4a6640cadc286b459f344)
+- [Policy evaluator](https://github.com/minervacomputing/harness/blob/45bad482bc6709f8cce4a6640cadc286b459f344/cloudflare/src/gateway/policy.ts)
+- [Grant-to-policy construction](https://github.com/minervacomputing/harness/blob/45bad482bc6709f8cce4a6640cadc286b459f344/cloudflare/src/gateway/grants.ts)
+- [Executor](https://github.com/minervacomputing/harness/blob/45bad482bc6709f8cce4a6640cadc286b459f344/cloudflare/src/gateway/executor.ts)
+- [Policy tests](https://github.com/minervacomputing/harness/blob/45bad482bc6709f8cce4a6640cadc286b459f344/cloudflare/test/unit/policy.test.ts)
+- [Revocation tests](https://github.com/minervacomputing/harness/blob/45bad482bc6709f8cce4a6640cadc286b459f344/cloudflare/test/unit/executor-revocation.test.ts)
 
 ## Related Scout knowledge
 
