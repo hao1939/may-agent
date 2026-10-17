@@ -187,8 +187,8 @@ not make source queries faster.
 
 Install the corresponding Host collector and inclusive comparison support before
 activating this definition. The paired portable trial uses actual source collection,
-App definitions and Alex's event route: 99 ms is healthy; 100 ms breaches once;
-repeated 100 ms and no-query passes do not create another transition; 80 ms
+App definitions and Alex's event route: 249 ms is healthy; 250 ms breaches once;
+repeated 250 ms and no-query passes do not create another transition; 200 ms
 recovers the gauge. These timings are controlled fixture inputs, not a live
 performance benchmark. The later pass can contain different sources, so recovery
 does not establish that the previous slow source ran again or was repaired.
@@ -197,7 +197,7 @@ Missing collection never becomes a zero; source failures remain separate facts.
 Both the new cost note and the existing all-SQL sample retain available bounded
 query-plan evidence. The all-SQL adapter checks plan identity, shape and capture
 window; invalid optional evidence does not discard the timing sample. Existing
-Host plan capture still starts at 1,000 ms, so 100 ms breaches can lack a plan.
+Host plan capture still starts at 1,000 ms, so 250 ms breaches can lack a plan.
 See the [Host contract](../../alex.app/docs/2a-design/metrics.md) and
 [October 17 evidence](../../alex.app/docs/archive/reviews/metric-query-cost-20261017.md).
 Host #377 and this policy were activated on October 17; the linked rollout
