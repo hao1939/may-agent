@@ -118,6 +118,11 @@ attempt using the Task's current state. It reports the missing history in the
 attempt context without reconstructing metadata or inventing an old result.
 Standalone recovery without a retained Task binding still requires metadata.
 
+Cancellation only signals a managed invocation. While the manager retains that
+invocation or its joined helper cleanup, recovery leaves the live marker and
+old Task claim intact and reports the pending cleanup. The existing recovery
+path may retry after cleanup finishes; this uses no additional polling loop.
+
 Cleanup must succeed before the replacement claim commits; invalid or
 conflicting metadata and failed drain leave the old claim in place. Use the
 original attempt generation for session ownership even when the Task requirement

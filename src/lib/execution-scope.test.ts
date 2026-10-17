@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SubagentManager } from "./manager.js";
@@ -9,6 +9,7 @@ import { fakeModel } from "../../test/fixtures/model.js";
 import { runOneshotMode } from "../app/modes/oneshot.js";
 import { fileURLToPath } from "node:url";
 import { EventBus } from "../app/core/events/bus.js";
+import { createTaskSessionRecovery } from "../app/adapters/executors/session-recovery.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -161,6 +162,61 @@ describe("shared execution scope", () => {
     expect((await parentResult).status).toBe("done");
     expect((await manager.waitFor(childId)).status).toBe("interrupted");
     expect(manager.status()).toEqual([]);
+  });
+
+  it.each(["present", "absent"])("recovery waits for managed helper cleanup with %s metadata", async (metadata) => {
+    const childStarted = Promise.withResolvers<void>();
+    const childStopped = Promise.withResolvers<void>();
+    const releaseCleanup = Promise.withResolvers<void>();
+    const bus = new EventBus();
+    const ended: string[] = [];
+    bus.subscribe((event) => {
+      if (event.type === "session.end") ended.push(String(event.data.sessionId));
+    });
+    const manager = fixture(async (text, stopped) => {
+      if (text.startsWith("child")) childStarted.resolve();
+      await stopped;
+      if (text.startsWith("child")) {
+        childStopped.resolve();
+        await releaseCleanup.promise;
+      }
+      return "Partial work retained";
+    }, bus);
+    const root = roots.at(-1)!;
+    const binding = { appId: "sample", taskId: "work", generation: 1, attemptId: "old-attempt" };
+    const parent = manager.run("worker", "parent", { timeoutMs: 5_000, taskBinding: binding });
+    const child = manager.runAgent("worker", "child", { parentSessionId: parent });
+    const recovery = createTaskSessionRecovery({ manager, persistDir: root, bus });
+    const directory = join(root, "sessions", parent);
+    try {
+      await childStarted.promise;
+      if (metadata === "absent") rmSync(join(directory, "meta.json"));
+      expect(() => recovery.interrupt(parent, "Recover work", "work", binding))
+        .toThrow("managed execution cleanup is still pending");
+      await childStopped.promise;
+      // The model has stopped, but its joined helper can still have effects.
+      expect(manager.hasActiveSession(parent)).toBe(true);
+      expect(manager.hasActiveSession(child)).toBe(true);
+      expect(existsSync(join(directory, "[ACTIVE]"))).toBe(true);
+      expect(existsSync(join(directory, "result.json"))).toBe(false);
+      expect(ended).toEqual([]);
+      expect(() => recovery.interrupt(parent, "Retry recovery", "work", binding))
+        .toThrow("managed execution cleanup is still pending");
+      releaseCleanup.resolve();
+      await manager.waitFor(parent);
+      expect(manager.hasActiveSession(parent)).toBe(false);
+      expect(manager.hasActiveSession(child)).toBe(false);
+      const result = manager.result(parent);
+      const completions = [...ended];
+      expect(recovery.interrupt(parent, "Recover after cleanup", "work", binding)).toBe(true);
+      expect(manager.result(parent)).toEqual(result);
+      expect(existsSync(join(directory, "result.json"))).toBe(false);
+      expect(ended).toEqual(completions);
+    } finally {
+      releaseCleanup.resolve();
+      manager.cancel(parent);
+      await manager.waitFor(parent);
+    }
   });
 
   it("generic call forwards tool cancellation and rejects a missing caller", async () => {

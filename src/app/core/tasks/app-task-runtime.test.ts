@@ -10996,6 +10996,52 @@ describe("canonical App task runtime", () => {
       },
     );
 
+    it.each(["startup", "claim"] as const)(
+      "preserves the retained Task through %s recovery until managed cancellation finishes",
+      async (route) => {
+        const f = setup();
+        let active = true;
+        let cancellations = 0;
+        await installCoreTaskRuntimes({ ...f.base, sessions: createTaskSessionRecovery({
+          persistDir: f.base.persistDir, bus: f.base.bus,
+          manager: {
+            hasActiveSession: () => active,
+            cancel: () => { cancellations++; },
+          } as never,
+        }) });
+        f.observe("owner");
+        recordAppTaskTrigger(f.config, "owner", { type: "sample.changed", data: { instruction: "Continue work" } });
+        const claim = f.saveTerminalSession("owner");
+        mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+          attempt.runtimeId = "previous-runtime";
+          attempt.lease!.runtimeId = "previous-runtime";
+        });
+        const directory = join(f.base.persistDir, "sessions", "session-owner");
+        rmSync(join(directory, "meta.json"));
+        const result = readFileSync(join(directory, "result.json"), "utf8");
+        const before = readTaskSnapshot(f.config);
+        const recover = () => route === "startup" ? recoverInstalledAppTasks(f.base.bus) : f.run("owner");
+
+        // Startup already leaves a live session alone. Claim recovery requests
+        // cancellation, but must retain ownership until that request completes.
+        if (route === "startup") await recover();
+        else await expect(recover()).rejects.toThrow("managed execution cleanup is still pending");
+        expect(cancellations).toBe(route === "startup" ? 0 : 1);
+        expect(readTaskSnapshot(f.config)).toEqual(before);
+        expect(f.agentCalls()).toBe(0);
+        expect(existsSync(join(directory, "meta.json"))).toBe(false);
+        expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(result);
+
+        active = false;
+        await recover();
+        if (route === "startup") await f.run("owner");
+        expect(f.agentCalls()).toBe(1);
+        expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
+        expect(readAcceptedRuntimeAttempt(f.config, "owner")?.acceptedResult?.result).toEqual(f.payload);
+        expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(result);
+      },
+    );
+
     it("controller recovery drains the original generation before replacing its claim and passes incomplete history", async () => {
       const f = setup();
       let drained = false;

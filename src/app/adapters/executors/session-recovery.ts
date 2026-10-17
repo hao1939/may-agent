@@ -172,6 +172,12 @@ function interruptSupersededAgentSession(
 
   if (opts.manager.hasActiveSession(cleanSessionId)) {
     opts.manager.cancel(cleanSessionId);
+    // cancel() signals a running invocation; the manager retains it until
+    // execution and joined helper cleanup finish. Let ordinary recovery retry
+    // after that fact changes, without releasing its claim or live marker.
+    if (opts.manager.hasActiveSession(cleanSessionId)) {
+      throw new Error(`Cannot recover session ${cleanSessionId}: managed execution cleanup is still pending`);
+    }
   } else if (hasLiveAppTaskSession(opts, cleanSessionId)) {
     throw new Error(`Cannot supersede session ${cleanSessionId}: its external owner is still live`);
   }
