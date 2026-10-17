@@ -20,7 +20,7 @@ import {
   type CheckpointEntry,
 } from "../../../lib/tools/checkpoint.js";
 import type { drainPersistedSessionBashProcessGroups } from "../../../lib/tools/bash.js";
-import { confirmSessionExecutionStopped, hasLiveSessionExecution } from "../../../lib/session-cleanup.js";
+import { confirmSessionExecutionStopped, hasLiveSessionExecution, readSessionCleanupMeta } from "../../../lib/session-cleanup.js";
 import { STATE_CHANGING_TOOLS } from "../../../lib/manager-utils.js";
 import { writeSessionResult } from "../../../lib/artifacts.js";
 import type { AgentEvent, EventBus } from "../../core/events/bus.js";
@@ -134,25 +134,11 @@ function interruptSupersededAgentSession(
 ): boolean {
   const cleanSessionId = sessionId.trim();
   if (!cleanSessionId || !opts.persistDir) return false;
-  const metaEvidence = readSessionMetaRecoveryEvidence(opts.persistDir, cleanSessionId);
-  const meta = metaEvidence.state === "valid" ? metaEvidence.meta : null;
-  const fields = metaEvidence.state === "absent" ? undefined : metaEvidence.meta;
-
-  // The retained Task authorizes recovery. Session history can be incomplete,
-  // but readable ownership conflicts must be checked before touching execution.
-  if (expectedBinding) {
-    if (expectedBinding.taskId !== taskId) {
-      throw new Error(`Cannot recover session ${cleanSessionId}: retained Task binding does not match the requested Task`);
-    }
-    const recordedBinding = fields?.taskBinding;
-    if (isRecord(recordedBinding) && Object.entries(expectedBinding).some(
-      ([key, value]) => recordedBinding[key] !== undefined && recordedBinding[key] !== value,
-    )) {
-      throw new Error(`Cannot recover session ${cleanSessionId}: session Task binding does not match the retained attempt`);
-    }
-  } else if (!meta) {
-    throw new Error(`Cannot recover session ${cleanSessionId}: no retained Task binding and no valid session metadata`);
+  if (expectedBinding && expectedBinding.taskId !== taskId) {
+    throw new Error(`Cannot recover session ${cleanSessionId}: retained Task binding does not match the requested Task`);
   }
+  const retainedAttempt = expectedBinding ? { ...expectedBinding, sessionId: cleanSessionId } : undefined;
+  readSessionCleanupMeta(opts.persistDir, cleanSessionId, retainedAttempt);
 
   if (opts.manager.hasActiveSession(cleanSessionId)) {
     opts.manager.cancel(cleanSessionId);
@@ -163,7 +149,7 @@ function interruptSupersededAgentSession(
       throw new Error(`Cannot recover session ${cleanSessionId}: managed execution cleanup is still pending`);
     }
   }
-  confirmSessionExecutionStopped({ ...opts, persistDir: opts.persistDir }, cleanSessionId);
+  const meta = confirmSessionExecutionStopped({ ...opts, persistDir: opts.persistDir }, cleanSessionId, retainedAttempt);
 
   if (meta && meta.status !== "running" && meta.status !== "idle") {
     // meta.json is authoritative. Repair only its known terminal lifecycle

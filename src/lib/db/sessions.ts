@@ -194,6 +194,47 @@ export type TerminalTaskSessionBinding = {
   attemptId: string;
 };
 
+/**
+ * Resolve a session's copied scope against one retained attempt. The returned
+ * sessionId is the attempt owner; helpers may inherit scope but never own it.
+ * Both lookups use primary keys, without scanning historical attempt JSON.
+ */
+export function readSessionTaskAttempt(
+  persistDir: string,
+  sessionId: string,
+  copiedBinding?: unknown,
+): (TaskBinding & { sessionId: string }) | null {
+  const db = getDb(persistDir);
+  const projected = db.prepare(
+    `SELECT app_id AS appId, task_id AS taskId, task_generation AS generation, attempt_id AS attemptId
+     FROM sessions WHERE sessionId = ?`,
+  ).get(sessionId) as Record<string, unknown> | undefined;
+  const binding = projected && Object.values(projected).some((value) => value !== null)
+    ? projected
+    : copiedBinding;
+  if (binding === undefined || binding === null) return null;
+  if (typeof binding !== "object" || Array.isArray(binding)) {
+    throw new Error(`Cannot recover session ${sessionId}: unreadable Task binding`);
+  }
+  const scope = binding as Record<string, unknown>;
+  const retained = typeof scope.appId === "string" && typeof scope.attemptId === "string"
+    ? db.prepare(
+      `SELECT app_id AS appId, task_id AS taskId, task_generation AS generation, attempt_id AS attemptId,
+              json_extract(attempt_json, '$.sessionId') AS sessionId
+       FROM app_task_attempts WHERE app_id = ? AND attempt_id = ?`,
+    ).get(scope.appId, scope.attemptId) as {
+      appId: string; taskId: string; generation: number; attemptId: string; sessionId: unknown;
+    } | null
+    : undefined;
+  if (!retained || typeof retained.sessionId !== "string" || !retained.sessionId ||
+    (["appId", "taskId", "generation", "attemptId"] as const).some(
+      (key) => scope[key] !== undefined && scope[key] !== retained[key],
+    )) {
+    throw new Error(`Cannot recover session ${sessionId}: Task scope does not identify a retained attempt/session`);
+  }
+  return { ...retained, sessionId: retained.sessionId };
+}
+
 export function listTerminalTaskSessionBindings(
   persistDir: string,
   appId: string,

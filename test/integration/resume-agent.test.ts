@@ -93,7 +93,7 @@ describe("SubagentManager.resumeStaleSessions()", () => {
     rmSync(persistDir, { recursive: true, force: true });
   });
 
-  it.each(["missing", "done"] as const)("drains retained descendants before clearing markers with %s metadata", async (metadata) => {
+  it.each(["missing", "done"] as const)("requires ownership evidence before draining descendants with %s metadata", async (metadata) => {
     const sessionId = "orphaned-execution";
     markStaleSession(persistDir, sessionId);
     const directory = join(persistDir, "sessions", sessionId);
@@ -111,6 +111,18 @@ describe("SubagentManager.resumeStaleSessions()", () => {
       addSessionBashProcessGroup(persistDir, sessionId, child.pid!);
       const manager = new SubagentManager({ persistDir });
       expect(manager.resumeStaleSessions()).toEqual({ resumed: [], interrupted: [] });
+      if (metadata === "missing") {
+        // A marker supplies liveness, not Task authority. With no retained
+        // attempt either, keep descendants until execution evidence is restored.
+        expect(readSessionBashProcessGroups(persistDir, sessionId)).toEqual([child.pid!]);
+        expect(process.kill(child.pid!, 0)).toBe(true);
+        expect(existsSync(join(directory, "[ACTIVE]"))).toBe(true);
+        expect(existsSync(join(directory, "[STARTED]"))).toBe(true);
+        writeSessionMeta(persistDir, sessionId, {
+          agent: "worker", task: "Retain work", status: "done", startedAt: 1, endedAt: 2,
+        });
+        manager.resumeStaleSessions();
+      }
       expect(readSessionBashProcessGroups(persistDir, sessionId)).toEqual([]);
       await exited;
       expect(existsSync(join(directory, "[ACTIVE]"))).toBe(false);

@@ -1,5 +1,5 @@
 import type { SubagentManager } from "./manager.js";
-import { readActiveSessionProcessId, readSessionMetaRecoveryEvidence } from "./persistence.js";
+import { readActiveSessionProcessId, readSessionMetaRecoveryEvidence, type PersistedSession, type TaskBinding } from "./persistence.js";
 import { drainPersistedSessionBashProcessGroups } from "./tools/bash.js";
 
 type SessionCleanupOptions = {
@@ -7,6 +7,31 @@ type SessionCleanupOptions = {
   persistDir: string;
   drainPersistedBashProcessGroups?: typeof drainPersistedSessionBashProcessGroups;
 };
+
+/** Admit cleanup before cancellation, descendant drain, or persistence writes. */
+export function readSessionCleanupMeta(
+  persistDir: string,
+  sessionId: string,
+  retainedAttempt?: TaskBinding & { sessionId: string },
+): PersistedSession | null {
+  const evidence = readSessionMetaRecoveryEvidence(persistDir, sessionId);
+  const fields = evidence.state === "absent" ? undefined : evidence.meta;
+  const copied = fields?.taskBinding;
+  if (retainedAttempt && copied && typeof copied === "object" && !Array.isArray(copied)) {
+    const { sessionId: _ownerSessionId, ...binding } = retainedAttempt;
+    if (Object.entries(binding).some(
+      ([key, value]) => (copied as Record<string, unknown>)[key] !== undefined &&
+        (copied as Record<string, unknown>)[key] !== value,
+    )) {
+      throw new Error(`Cannot recover session ${sessionId}: session Task binding does not match the retained attempt`);
+    }
+  }
+  if (evidence.state === "valid") return evidence.meta;
+  // Missing history is recoverable for the exact Task execution, but a copied
+  // helper scope cannot substitute for the helper's own execution evidence.
+  if (retainedAttempt?.sessionId === sessionId) return null;
+  throw new Error(`Cannot recover session ${sessionId}: no retained Task binding and no valid session metadata`);
+}
 
 /** Execution ownership is independent of whether its history is readable or terminal. */
 export function hasLiveSessionExecution(opts: SessionCleanupOptions, sessionId: string): boolean {
@@ -31,7 +56,12 @@ export function hasLiveSessionExecution(opts: SessionCleanupOptions, sessionId: 
  * markers, results and claims until this returns. Cancellation is a separate
  * request; this operation only confirms exit and drains retained descendants.
  */
-export function confirmSessionExecutionStopped(opts: SessionCleanupOptions, sessionId: string): void {
+export function confirmSessionExecutionStopped(
+  opts: SessionCleanupOptions,
+  sessionId: string,
+  retainedAttempt?: TaskBinding & { sessionId: string },
+): PersistedSession | null {
+  const meta = readSessionCleanupMeta(opts.persistDir, sessionId, retainedAttempt);
   if (hasLiveSessionExecution(opts, sessionId))
     throw new Error(`Cannot supersede session ${sessionId}: its external owner is still live`);
   if (!(opts.drainPersistedBashProcessGroups ?? drainPersistedSessionBashProcessGroups)(opts.persistDir, sessionId)) {
@@ -39,4 +69,5 @@ export function confirmSessionExecutionStopped(opts: SessionCleanupOptions, sess
       `Cannot recover session ${sessionId}: one or more durable bash process groups did not exit after bounded SIGTERM/SIGKILL drain`,
     );
   }
+  return meta;
 }

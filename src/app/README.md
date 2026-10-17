@@ -111,9 +111,15 @@ block cancellation and cleanup, even when other metadata fields are damaged.
 Standalone session recovery needs valid metadata when no retained Task supplies
 that authority.
 
-Startup and Task recovery use `../lib/session-cleanup.ts` to confirm execution
-exit and drain retained descendants before changing markers or releasing work.
-Scanners discover candidates; missing or terminal history does not prove exit.
+Startup and Task recovery use `../lib/session-cleanup.ts` to admit cleanup,
+confirm execution exit and drain descendants before changing markers or releasing
+work. Scanners discover candidates; missing or terminal history does not prove exit.
+Startup resolves SQL or readable file scope through the retained attempt using
+indexed lookups; unresolved scope leaves cleanup pending. The shared admission
+checks readable binding conflicts and returns only validated lifecycle metadata.
+Inherited helper scope does not own the Task attempt: a helper still needs valid
+metadata for its own cleanup. Missing standalone history likewise stays pending
+until there is an ownership source. No cleanup path writes unchecked history to SQL.
 Startup may overlap its recovery worker. It preserves a live owner's markers
 and defers aggregate orphan cleanup while any execution cleanup remains pending.
 This may delay stale projections; it avoids inventing a second ownership rule.

@@ -47,7 +47,7 @@ import {
   readCompactedMessages,
   saveCompactedMessages,
   rewriteSessionMessages,
-  loadActiveSessionMetas,
+  readSessionMetaRecoveryEvidence,
   listActiveSessionIds,
   markSessionActive,
   readActiveSessionProcessId,
@@ -55,7 +55,7 @@ import {
   RegistryStore,
   sessionDir,
 } from "./persistence.js";
-import { updateSessionDb, updateSessionProgress } from "./db/sessions.js";
+import { readSessionTaskAttempt, updateSessionDb, updateSessionProgress } from "./db/sessions.js";
 import {
   getWorkflowRun,
   getWorkflowStepSessions,
@@ -1163,7 +1163,7 @@ export class SubagentManager {
     resumed: SessionInfo[];
     interrupted: SessionInfo[];
   } {
-    const activeSessions = loadActiveSessionMetas(this._persistDir);
+    const activeSessions: Record<string, PersistedSession> = {};
     const kindFilter = opts?.kinds ? new Set(opts.kinds) : null;
     const stale = new Map<string, (typeof activeSessions)[string]>();
     const cleanup = { manager: this, persistDir: this._persistDir };
@@ -1184,30 +1184,37 @@ export class SubagentManager {
         hasPendingCleanup = true;
         continue;
       }
-      const persisted = activeSessions[sessionId];
-      if (persisted && kindFilter && !kindFilter.has(persisted.kind ?? "job")) continue;
+      const evidence = readSessionMetaRecoveryEvidence(this._persistDir, sessionId);
+      const fields = evidence.state !== "absent" ? evidence.meta : undefined;
+      const kind = fields?.kind ?? "job";
+      if (typeof kind === "string" && kindFilter && !kindFilter.has(kind as SessionKind)) continue;
       try {
-        confirmSessionExecutionStopped(cleanup, sessionId);
+        // Discovery supplies the retained record; copied scope alone does not
+        // authorize cleanup of an incomplete Task execution.
+        const retained = readSessionTaskAttempt(this._persistDir, sessionId, fields?.taskBinding);
+        const persisted = confirmSessionExecutionStopped(cleanup, sessionId, retained ?? undefined);
+        if (!persisted) {
+          // The retained Task can finish lifecycle reconciliation without
+          // rewriting damaged history. No unchecked fields reach SQL here.
+          markSessionInactive(this._persistDir, sessionId);
+          continue;
+        }
+        activeSessions[sessionId] = persisted;
+        if (persisted.status === "done" || persisted.status === "error" || persisted.status === "interrupted") {
+          recoverUsage(sessionId, persisted.status);
+          updateSessionDb(this._persistDir, sessionId, {
+            status: persisted.status,
+            ...(persisted.endedAt !== undefined ? { endedAt: persisted.endedAt } : {}),
+            error: persisted.error,
+          });
+          markSessionInactive(this._persistDir, sessionId);
+        } else {
+          stale.set(sessionId, persisted);
+        }
       } catch (error) {
         hasPendingCleanup = true;
         log("error", `[manager] Refusing startup recovery for ${sessionId}: ${String(error)}`);
         continue;
-      }
-      if (!persisted) {
-        markSessionInactive(this._persistDir, sessionId);
-        continue;
-      }
-      // Reconcile known lifecycle fields only after execution has stopped.
-      if (persisted.status === "done" || persisted.status === "error" || persisted.status === "interrupted") {
-        recoverUsage(sessionId, persisted.status);
-        updateSessionDb(this._persistDir, sessionId, {
-          status: persisted.status,
-          endedAt: persisted.endedAt ?? Date.now(),
-          error: persisted.error,
-        });
-        markSessionInactive(this._persistDir, sessionId);
-      } else if (persisted.status === "running" || persisted.status === "idle") {
-        stale.set(sessionId, persisted);
       }
     }
 

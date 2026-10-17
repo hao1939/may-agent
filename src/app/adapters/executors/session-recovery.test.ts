@@ -314,6 +314,15 @@ it("uses the retained binding when the session has no copied Task binding", () =
   expect(f.events).toEqual([]);
 });
 
+it("can interrupt a rejected session from its valid metadata without giving it a retained Task attempt", () => {
+  const f = recoveryFixture();
+  // The session-start handler also uses this adapter to stop rejected/stale
+  // execution. Such execution was never admitted as the Task's owned attempt.
+  expect(f.recovery.interrupt(f.sessionId, "Session start was rejected", "work")).toBe(true);
+  expect(readSessionMeta(f.root, f.sessionId)?.status).toBe("interrupted");
+  expect(getDb(f.root).prepare("SELECT count(*) AS count FROM app_task_attempts").get()).toEqual({ count: 0 });
+});
+
 it.each((["running", "idle"] as const).flatMap((status) =>
   [true, false].map((copiedBinding) => ({ status, copiedBinding })),
 ))("preserves a surviving result during $status cleanup (copied binding: $copiedBinding)", ({ status, copiedBinding }) => {
