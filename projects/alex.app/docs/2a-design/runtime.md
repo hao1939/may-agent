@@ -489,10 +489,10 @@ facts; Task release and requeue are separate transitions recorded by the Task ru
 
 **Implementation status:** merged [Host #376](https://github.com/hao1939/may-agent/pull/376) applies this meaning consistently
 to startup, controller claims and terminal-session retry.
-[Host #381](https://github.com/hao1939/may-agent/pull/381) refines that shared path
-to tolerate unavailable session history under retained Task authority and wait
-for confirmed cleanup shared with the startup scanner. It remains unmerged and
-undeployed; see [current validation](../archive/reviews/hierarchical-recovery-trial-20261017.md#381-recovery-identity-review).
+Merged [Host #381](https://github.com/hao1939/may-agent/pull/381) refines that shared
+path to tolerate unavailable session history under retained Task authority and
+wait for confirmed cleanup shared with the startup scanner. Deployment has not
+been verified by this source review; see the [merge record and validation](../archive/reviews/hierarchical-recovery-trial-20261017.md#381-merge-record).
 The [recovery evidence trial](../archive/reviews/host-recovery-evidence-20261017.md)
 also proves failure delivery through a declared App route into ordinary agent work.
 This does not install an App investigation policy or prove live agent judgment;
