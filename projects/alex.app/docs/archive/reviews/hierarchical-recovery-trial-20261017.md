@@ -3,7 +3,9 @@
 **Supports:** [Hierarchical recovery](../../proposals/unified-agent-recovery-20261017.md). Checks whether existing caller feedback, execution and retry can restore original work before adding Host machinery.
 
 **Current source status:** #381 merged; see the [merge record](#381-merge-record).
-Earlier review entries retain the status at the time of each check.
+The [real-worker follow-up](#real-worker-workspace-trial) passed both repair and
+unresolved cases without a Host change. Earlier review entries retain the
+status at the time of each check.
 
 ## Result
 
@@ -380,6 +382,92 @@ the whole decline. This incident exercised successful owner startup, not failure
 before the owner can run or delivery and response through the human interface.
 The readback sent no agent messages and performed no runtime changes.
 
+## Real-worker workspace trial
+
+The follow-up uses Host merge `b25344cc6c8e73da90596e8aed83a964c0c8a330`
+without runtime changes. Harness commit
+`6003dade4e2cca7caa4acc95d194d322680a3cd0` is retained on linked experimental
+branch `experiment/worker-recovery-20261017`, in
+`test/integration/worker-recovery-trial.test.ts`. It is not a production change
+or a proposed permanent CI suite.
+
+Both Apps and agent profiles are loaded from files. Every Task dispatch starts
+a real subprocess through `createTaskAttemptProcessExecutor` and
+`runTaskAttemptWorker`, with production registry loading, workspace preparation,
+agent tools, IPC relay, durable admission and result projection. The test spawn
+hook supplies isolated roots and a local scripted HTTP provider; it does not
+exercise the packaged binary's CLI entry point or installed configuration.
+Each provider call verifies that the active session's process marker identifies
+the actual child, not the test process.
+
+The worker's bare Git remote lacks its declared `ready` branch. Its first
+attempt fails before any provider request. The saved caller receives that
+failure through `app.dependency.updated`; its separate ordinary Git workspace
+starts successfully. In the repair case, its agent executes an actual `bash`
+command to publish the missing branch and receives Git's successful output.
+The harness performs no repair after injection. The caller returns `waiting`,
+retaining the sample obligation. Default retry later reads `sample.txt` through
+the worker's real tool and returns `{ sample: 42 }` through the original request.
+
+| Case | Caller / worker agent invocations | Provider requests | Result |
+| --- | --- | --- | --- |
+| Repair available | 3 / 1 | 6 | Both original Tasks converge; the original input receives sample 42. |
+| Repair unavailable | 3 / 0 | 3 | Worker reaches `attention` after two failed setup attempts; caller waits on an operator Condition. Both asks remain unfulfilled. |
+
+The fixture explicitly sets `maxConsecutiveFailures: 2`; it preserves the
+ordinary 30-second first retry delay and never forces a retry or advances a
+clock. Each case starts five Task worker processes, including setup-only
+failures. Assertions preserve the same Task IDs and generation, caller creator,
+request receipt, exact durable input admission and request identity across
+failure and success. The unresolved case requires that no successful answer
+was published. Neither case creates a second repair Task.
+
+The initial success and unresolved runs both passed. Tightening the identity
+checks then exposed a fixture mistake: it expected `executionTaskId` on an
+ordinary input. That field is not this path's saved link. Both strengthened
+cases failed this assertion after the underlying recovery behavior completed.
+The corrected fixture reads `taskAdmissionKey` and its retained Task admission;
+no Host code changed. An explicit harness type check also initially failed on
+Bun-only fixture globals, the compiler's ES2022 library and the broad Event
+union. The fixture now uses Node subprocess/timer APIs, typed payload access
+and an ES2024 library override for the experimental check. These are harness
+corrections, not reproduced Host defects.
+
+Final validation passes **two tests, zero failures and 40 `expect` assertions**
+in **70.93 seconds**; additional Node assertions check the real provider/tool
+boundary. Repair takes **35.36 seconds**, and the unresolved case **35.05
+seconds**. The first retry starts **31.91 / 31.88 seconds** after failure
+feedback, including scheduler delay. The explicit trial/Host/SDK type check and
+targeted ESLint pass. Design integrity, examples and App audit pass in the
+isolated docs checkout, with one existing root `reports` warning. Node is
+24.20.0 and Bun is 1.3.14.
+
+Logs are retained under the archive named below: `worker-trial-first.log`,
+`worker-trial-unresolved-first.log`, `worker-trial-identity-fixture-error.log`,
+`worker-trial-final.log`, the initial/final type logs, lint and design-check logs,
+and the exact `worker-trial-tsconfig.json`. `worker-trial-sha256.json` records
+checksums and both source revisions. Reproduce behavior from the harness
+checkout with:
+
+```sh
+bun test test/integration/worker-recovery-trial.test.ts
+bunx --no-install eslint test/integration/worker-recovery-trial.test.ts
+```
+
+The source type check extends the Host tsconfig, includes this trial alongside
+ordinary Host/SDK source, retains source-test exclusions, and sets
+`compilerOptions.lib` to `["ES2024", "DOM"]`. The exact config and logs are
+retained in the evidence archive. Full CI was not rerun for this experimental
+harness; the merged Host foundation's full CI is recorded above.
+
+This closes the real-process gap for an independent caller repairing failed
+Git preparation. It does not establish autonomous diagnosis, live adoption,
+model-token savings, long-duration quiet waiting, human presentation/response,
+or recovery after retry exhaustion is later repaired. Both App modules load
+successfully in this fixture; isolation from a broken App/module bootstrap and
+work without a usable caller remain separate boundaries. Keep the established
+caller path and test those gaps before adding Host recovery machinery.
+
 ## Remaining boundaries and next change
 
 Keep existing caller failure returns. This trial supports hierarchical recovery
@@ -387,13 +475,13 @@ without requiring every App to acquire system-repair expertise. It does not
 justify a new Host recovery scheduler, universal cross-Task budget, or executor
 switch.
 
-The runner was in process and agent definitions were registered by the fixture.
-The trial does not establish that a real worker subprocess can load a healthy
-recipient while another App's workflow/registry bootstrap is broken. It also
-does not install a fallback route for production Tasks without a caller. Those
-remain explicit proposal gaps. First exercise the declared App/operational route
-and the real worker startup boundary; change Host only if that exposes missing
-generic execution or delivery support.
+The initial runner was in process; the follow-up above now proves ordinary
+worker startup when the failure is a worker's Git prerequisite. Neither trial
+breaks App/workflow module loading or installs a fallback route for production
+Tasks without a usable caller. Those remain explicit proposal gaps. Next
+exercise the declared App/operational route and its explicit return to original
+work, then isolate module-bootstrap failures. Change Host only if that exposes
+missing generic execution or delivery support.
 
 A bounded real-model trial is still needed for recovery when the original owner
 cannot start. The live incident above supports judgment in an already usable

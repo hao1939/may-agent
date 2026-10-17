@@ -5,7 +5,7 @@
 **Choice basis:** [Understandable recovery](../1-principles/work-model.md#prefer-understandable-recovery), [simple first](../1-principles/core-principles.md#simple-first), and [recovery ownership](../2a-design/system-boundary.md#retry-and-recovery-ownership): agents judge; infra executes their decisions and records what happened.
 
 **Design status:** Hierarchical ownership agreed in review, 2026-10-17; implementation gaps and trials below remain proposed.
-**Implementation status:** Mechanical recovery, caller feedback and addressed escalation exist. A live incident demonstrates agent correction, Alex-to-May repair, restart continuation and result return. A scripted trial separately demonstrates repair of a worker's Git setup through its saved caller. Failure delivery without a caller, usable bootstrap when the owner cannot start, and the complete human escalation loop remain unproven. This document changes no runtime behavior.
+**Implementation status:** Mechanical recovery, caller feedback and addressed escalation exist. A live incident demonstrates agent correction, Alex-to-May repair, restart continuation and result return. A scripted trial now demonstrates repair of a worker's Git setup through its saved caller with real worker subprocesses, ordinary App loading and agent tools. Failure delivery without a usable caller, isolation from broken App/module bootstrap, autonomous diagnosis of a startup failure, and the complete human escalation loop remain unproven. This document changes no runtime behavior.
 
 **Host foundation:** [#381](https://github.com/hao1939/may-agent/pull/381) merged
 on 2026-10-17, supplying recovery with incomplete execution history. Deployment
@@ -130,9 +130,9 @@ distinguishes existing behavior, synthetic cases and dated live observations.
 | Live alert 4987 followed Evaluator → Alex → May → Alex, including a repair PR, deployment interruption and fresh verification. | Preserve this ordinary request/Condition loop; do not present all agent repair judgment as unproven. It does not test an owner unable to start. |
 | Admitted Task failures and exhaustion already return through saved caller relationships, including after delivery failure/restart. | Reuse them. Missing `handler.failed` subscriptions do not imply all failure feedback is absent. |
 | Controller failure emits `handler.failed`; installed Alex, May and Scout have selected routes but no subscription for this event. | Exercise the uncovered controller path with an explicit App-owned route; inspect both admission and executable handling. |
-| A normal repair Task may require the same Git preparation or App bootstrap that failed. | Test the designated recipient's prerequisites with real workspace configuration; do not require every owner to have a separate repair environment. |
+| Real worker subprocesses load the saved caller and repair a missing worker Git branch through ordinary tools. | Keep ordinary execution with independently usable prerequisites. Separately test whether a broken App/module bootstrap blocks other recipients. |
 | Execution failures default to three consecutive failures; controller/admission retries use capped delays without a count limit. | Measure actual repeated work and model cost. Extend the owning retry policy only where needed; do not add a competing controller. |
-| The scripted Git-setup trial demonstrates repair and original-work completion; the live incident demonstrates repair judgment after successful startup. | Test real judgment and recipient startup when the original owner cannot start. |
+| The scripted Git-setup trial demonstrates recipient startup, repair and original-work completion; the live incident demonstrates repair judgment after successful startup. | Test real judgment when the original owner cannot start; scripted provider choices do not prove diagnosis. |
 
 The runtime review did not establish a current live recovery stall. The benefit
 of each Host change must come from the contract and a reproduced gap, not from
@@ -142,13 +142,17 @@ The subsequent [hierarchical trial](../archive/reviews/hierarchical-recovery-tri
 demonstrates the saved caller path, actual tool-driven repair and automatic
 original-work continuation without a Host change. Its negative cases retain
 exhausted work and show that no caller/declared route means no agent receives
-the blocker. These are scripted in-process fixtures; full worker bootstrap and
-real-agent diagnosis of that setup failure remain separate proof requirements.
+the blocker. The [subprocess follow-up](../archive/reviews/hierarchical-recovery-trial-20261017.md#real-worker-workspace-trial)
+closes the process/loading gap for this Git failure: ordinary workers load
+on-disk definitions, the caller repairs through its actual tool, and the same
+worker Task completes after the default retry delay. The unresolved contrast
+retains both asks and an operator Condition. App/module bootstrap failure and
+real-agent diagnosis of the setup failure remain separate proof requirements.
 
 The [live incident readback](../archive/reviews/hierarchical-recovery-trial-20261017.md#live-recovery-example)
 independently supports real-agent diagnosis and return through the existing
-hierarchy. Its successful owner startup does not close the prerequisite-failure
-gap exercised only by the scripted fixture.
+hierarchy. It starts with a usable owner; diagnosis when that owner cannot
+start remains scripted, even in the subprocess trial.
 
 ## Responsibility and execution availability
 
@@ -251,10 +255,10 @@ repair handlers.
    first. Complete declared operational routes for work without a usable
    caller, including failures before admission/execution. Retain original
    references and demonstrate the explicit return for event-originated help.
-   Use the real worker process and installed App loading/workspace options to
-   show that a designated recipient starts despite the failed prerequisite.
-   Remove a blocking shared startup dependency at its owning boundary if
-   necessary; keep judgment and engineering ownership in Apps.
+   The real-worker Git trial establishes the saved-caller path with ordinary
+   App loading and workspace options. Next exercise work without a usable
+   caller and failure in App/module bootstrap. Remove a blocking shared startup
+   dependency only if reproduced; keep judgment and engineering ownership in Apps.
 3. **Complete quiet waiting and human follow-through.** Reuse an open ask and
    its Conditions, suppress unchanged model work, apply repair/human replies
    to the original assignment and retain exhausted work for an authorized

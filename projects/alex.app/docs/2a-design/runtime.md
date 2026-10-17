@@ -495,6 +495,12 @@ wait for confirmed cleanup shared with the startup scanner. Deployment has not
 been verified by this source review; see the [merge record and validation](../archive/reviews/hierarchical-recovery-trial-20261017.md#381-merge-record).
 The [recovery evidence trial](../archive/reviews/host-recovery-evidence-20261017.md)
 also proves failure delivery through a declared App route into ordinary agent work.
+A [real-worker workspace trial](../archive/reviews/hierarchical-recovery-trial-20261017.md#real-worker-workspace-trial)
+proves the saved-caller path with on-disk App loading and actual agent tools:
+the caller repairs a missing Git branch, ordinary retry completes the same
+worker Task, and its original input receives the result. The provider's repair
+decision is scripted; this does not prove autonomous diagnosis or isolation
+from a broken shared App/module bootstrap.
 This does not install an App investigation policy or prove live agent judgment;
 see the remaining coverage in the
 [Host improvement plan](../proposals/host-contract-improvements-20261016.md#4-give-execution-recovery-one-mechanical-meaning).
