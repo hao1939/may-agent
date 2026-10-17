@@ -368,6 +368,106 @@ Retained old Conditions will not change merely because new guidance is installed
 
 Rollback restores the prior code/policy revision without deleting Tasks, inputs or evidence. Added accounting/result fields must tolerate older readers. App policy reversals use ordinary reconciliation to restore affected waits.
 
+### C — Reuse an owner decision with explicit scope
+
+**Status, October 17:** Proposed App contract; not implemented. The existing
+sample filter and evidence-provenance fixes are active. This remaining change
+addresses repeated real metric transitions, not their delivery or the Host's
+retry mechanism. Evidence and activation limits are in the
+[recent App review](../../alex.app/docs/archive/reviews/recent-app-work-20261017.md#activation-and-live-readback).
+
+An owner should be able to say: **this decision still covers these observations;
+reconsider it when these facts change**. Code can check that declared scope
+before another evaluator call. The owner judges scope and owns any repair;
+Evaluator continues to assess work. A new alert ID records another episode but
+does not, by itself, establish a new decision. The scope must not assume that
+every incident sharing a metric has one cause.
+
+The current retained `metric-disposition` fact has identity, a reason, evidence
+and optional linked work. `metric-response` reads it and the source Task, but
+`metric-review` only deduplicates completed observation cuts. The inspected
+owner Tasks contain natural-language `revisitWhen` statements, not executable
+conditions. No existing API turns that prose into a reusable eligibility rule.
+Consequently, changing only the reviewer prompt would still pay for the same
+judgment on every crossing.
+
+Extend the **existing accepted owner decision**, rather than create a decision
+store or another work lifecycle. The optional reuse scope needs three parts:
+
+1. **Applicability:** the exact metric definition/responsibility and observable
+   concern that the owner says this decision covers. Bind it to the inspected
+   evidence. Include source identity and coverage requirements where a metric
+   can aggregate different causes. Do not equate the same metric or query
+   fingerprint with unchanged circumstances.
+2. **Reconsideration:** observable changes that end reuse. Express actionable
+   waits through the existing Task Conditions and exact return paths; retain
+   an intentionally chosen review deadline on that Task. Never infer a new
+   timer from a prose `nextAction` or copy deadlines into another ledger.
+3. **Provenance:** the existing source App, Task, accepted attempt and evidence
+   references. A proposed response, evaluator report or unaccepted result does
+   not establish an owner decision.
+
+These are requirements for the proposed optional App field, not a callable new
+SDK shape. Use the existing Condition comparison vocabulary and public evidence;
+do not add arbitrary executable predicates, a second scheduler or a general rule
+language. Where the required fact is not observable, automatic reuse is not yet
+available. The owner can choose a supported bounded proxy with an explicit limit,
+or commission the missing measurement as ordinary work. Code must not silently
+translate “uncontended”, “sustained” or “equivalent” into numbers.
+
+The implementation path is:
+
+- Extend May's `metricReviewSchema` and complete-result composition to accept
+  the optional scope, check it against the inspected evidence, and retain it in
+  the same accepted disposition fact. Old facts continue to mean “no automatic
+  reuse scope supplied.” The existing Host projection retains the JSON fact;
+  no database migration or Host lifecycle change is needed.
+- Put the eligibility check before semantic allowance consumption in
+  `metric-review`, shared by direct event and selector-driven requests. Read
+  the latest accepted owner decision, then the exact current scope evidence and
+  any referenced Task obligations. An old pinned observation does not certify
+  that the current scope or owner's decision is unchanged.
+- If applicability is established and no reconsideration boundary changed,
+  accept a quiet result on the existing review Task. Retain the decision's
+  source reference and this observation cut, advancing `reviewedThrough`
+  monotonically. Label it **decision reused**, not “new assessment” or “healthy”.
+  Do not publish a fabricated evaluator report or send another owner request.
+- If scope is changed, unreadable, incomplete or absent, use the existing
+  bounded review path. A newer owner decision supersedes the older scope;
+  an explicit review request bypasses reuse. Finish any already-staged report
+  publication before applying a later reuse decision, preserving paid-for work.
+- Relevant Conditions and replies still wake the original owning Task through
+  the existing event mechanism. The owner reads the new fact and continues
+  the work; it may request a new assessment when useful. No evaluator becomes
+  the mandatory intermediary for repair or escalation.
+
+For `metric.source-query-worst-ms`, the accepted decision is narrower than
+“ignore values near 100 ms.” It asks for ordinary uncontended latency evidence
+or a controlled, equivalent query/index trial, and another disposition asks for
+complete SQL/parameters/plans or supported lock-owner/WAL evidence. The feed's
+worst duration and truncated query examples do not establish those prerequisites.
+Do not auto-migrate this prose into a suppression rule. The next owner decision
+must choose an observable scope or the smallest missing measurement; preserve
+the current threshold and measurements in the meantime.
+
+Verify the rule using retained traces plus contrasting fixtures:
+
+| Case | Required behavior |
+| --- | --- |
+| New breach/recovery IDs, same proven scope, no due boundary | Quiet accepted reuse; zero model calls and no new owner Task. |
+| Changed covered source, responsibility, definition or a matched reconsideration fact | Normal review remains eligible. |
+| Required evidence missing/truncated, a missing linked Task or ambiguous scope | No silent reuse; normal evidence-gap/review handling remains visible. |
+| Explicit user/owner review or due deliberate boundary | Reuse does not block the requested consideration. |
+| Delayed transition or retry after restart | Reuse the accepted source decision and keep coverage monotonic. |
+| Report already staged when publication failed | Publish its exact retained bytes without another model call. |
+
+First test the optional contract without installing a blanket runtime exception.
+Then have the accountable owner accept one explicit scope through its existing
+Task, and measure both avoided model work and preserved useful response. Retain
+legacy decisions and reports. If the required scoped observation cannot be made
+reliable with a small change, keep automatic reuse unavailable for that case;
+do not hide unknown coverage behind a broad no-change rule.
+
 ## Related recovery and independent oversight proposal
 
 The later October 2 investigation confirmed the container Codex sandbox failure and reproduced two additional defects: stale context after resume and an immediate stale-result loop with a bounded event backlog. It also identified gaps in owner escalation and independent coverage of Evaluation's own operational work.

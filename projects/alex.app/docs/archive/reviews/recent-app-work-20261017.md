@@ -249,11 +249,55 @@ both cases, so these are reconstructed hashes rather than the original report
 hashes. Its script/output are `replay-emission-provenance.ts` and
 `replay-emission-provenance.json` in the external evidence archive below.
 
-This change is source-verified and awaits App activation. It needs no Host patch.
+At implementation, this change was source-verified and awaited App activation.
+The activation below completes that deployment step. It needs no Host patch.
 It may cause one baseline reassessment as affected evidence identities change;
 saved reports are not rewritten. No runtime Task was triggered, deployment
 changed, or live savings measured. Metric reconsideration, Reddit strategy and
 duplicate PR admission remain separate unresolved work, not claimed fixes.
+
+## Activation and live readback
+
+On October 17 at **10:42:52.698 UTC / 18:42:52.698 China time**, reload request
+`6679301` completed as event `6679303`, `runtime.reload.finished`, with `ok: true`
+and source commit `1472efcbc34200aa087fff172fafdd15faf56fae`.
+The active release manifest names that commit. The canonical and loaded
+`pinned-task-evidence.ts` both hash to
+`174748e395d6a97c01bbcac0e719563c00c653564c49a53b64b5d919d87ce2d2`.
+The reader is the only executable App change since the previous release;
+already-merged documentation accompanied it. No Host binary upgrade or container
+restart was performed. Existing attempts retain their selected definitions.
+
+Replay against the **loaded release module** produces the same corrected hash
+for both historical snapshots, retaining both real May dependencies. A fresh
+public read of the live Alex subject also follows those two dependencies and
+does not fetch `scout-knowledge-lib/explore-github` through emission provenance.
+Its current hash is `c7ccd01224c5e745b79020a610360ac2350ec3a318437749a7ba27b73c848086`;
+this live snapshot is distinct from the reconstructed historical replay.
+
+The first 4.33 minutes after activation contained zero newly started model
+invocations. All three Apps remained available, with zero attention Tasks;
+Alex and May retained their six and nine waiting Tasks. This is a short health
+readback, not a measured token reduction or evidence of a naturally occurring
+producer-change opportunity. No extra model review was commissioned for the
+trial. A new baseline review can still occur under the normal allowance.
+
+Activation receipts, exact source hashes, loaded-module replay, current Task
+reads and the bounded usage read are retained under
+`/home/hao/workspace-archive/may-emission-activation-20261017/`.
+Observe ordinary review reuse and changed-dependency coverage over the next
+24 hours from activation, separating baseline reviews from avoidable repeats.
+
+The metric follow-up reread the accepted owner Tasks
+`may/goal/appdep_04ee71d790343cff3107a3e0` and
+`may/goal/appdep_8106e125148535483a34ec10`. Their `revisitWhen` fields are prose
+about uncontended query latency, controlled equivalent index trials and
+lock-owner/WAL diagnostics. The current metric observation does not establish
+those facts. It reports a worst duration and bounded query examples; a repeated
+query fingerprint or another crossing of 100 ms cannot prove that the owner's
+decision still covers the situation. The next mechanism is scoped in the
+existing [App reconsideration proposal](../../../../may.app/design/token-efficiency-proposal-20261002.md#c--reuse-an-owner-decision-with-explicit-scope).
+It remains a proposed App contract, not implemented suppression or a live fix.
 
 ## Evidence and review limits
 

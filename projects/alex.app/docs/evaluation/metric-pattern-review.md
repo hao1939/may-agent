@@ -7,10 +7,13 @@ Evaluation Task; its completed report reached May and was handed to the existing
 investigation. Sustained repair verification remains separate; see the
 [live verification](../proposals/responsive-host-recovery-20261002.md#october-3-merged-host-and-metric-loop-rollout).
 
-**October 16 refinement:** Transition-only automatic selection is implemented in
-the candidate Apps source and tested locally, but has not been activated. Earlier
-source also selected ordinary changes and reconsidered open alerts daily. The
-contract below describes the correction; deployment must be verified separately.
+**October 16 refinement, verified October 17:** Transition-only automatic
+selection is active. The source and loaded release were compared in the
+[recent App review](../archive/reviews/recent-app-work-20261017.md#follow-up-existing-fixes-and-remaining-work).
+Earlier source also selected ordinary sample changes and reconsidered open alerts
+daily. Repeated actual breach/recovery crossings remain a separate issue;
+the [owner-decision reuse proposal](../../../may.app/design/token-efficiency-proposal-20261002.md#c--reuse-an-owner-decision-with-explicit-scope)
+is not yet implemented.
 
 Persistent failures should receive investigation and an accountable response while
 Host retries continue with backoff. This extends the existing

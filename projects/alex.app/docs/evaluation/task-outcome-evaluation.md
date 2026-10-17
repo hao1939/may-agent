@@ -232,8 +232,8 @@ immutable reports and legacy reads remain unchanged. This costs bounded
 file/public reads even when an unchanged report is reused; that is simpler than
 a second evidence cache and detects replaced/missing bytes.
 
-The emission extension is source-verified, awaiting App activation; see the
-[October 17 follow-up and replay](../archive/reviews/recent-app-work-20261017.md#follow-up-existing-fixes-and-remaining-work).
+The emission extension was activated from `1472efcbc3` on October 17; see the
+[activation receipt and loaded replay](../archive/reviews/recent-app-work-20261017.md#activation-and-live-readback).
 Its changed evidence boundary can require one new baseline review for an
 affected Task. Existing reports are retained, not rewritten.
 
