@@ -7,8 +7,9 @@
 **Design status:** Hierarchical ownership agreed in review, 2026-10-17; implementation gaps and trials below remain proposed.
 **Implementation status:** Mechanical recovery, caller feedback and addressed escalation exist. A live incident demonstrates agent correction, Alex-to-May repair, restart continuation and result return. A scripted trial separately demonstrates repair of a worker's Git setup through its saved caller. Failure delivery without a caller, usable bootstrap when the owner cannot start, and the complete human escalation loop remain unproven. This document changes no runtime behavior.
 
-**Refinement:** [#381](https://github.com/hao1939/may-agent/pull/381) supplies
-recovery with incomplete execution history. The remaining work connects failure
+**Host foundation:** [#381](https://github.com/hao1939/may-agent/pull/381) merged
+on 2026-10-17, supplying recovery with incomplete execution history. Deployment
+is not established by the [merge record](../archive/reviews/hierarchical-recovery-trial-20261017.md#381-merge-record). The remaining work connects failure
 delivery, an executable recipient and the return to the original assignment.
 Evaluate these together as one recovery mechanism.
 
@@ -241,13 +242,11 @@ Deliver the common rule across these boundaries. The trials exercise varied
 failures against that rule; they are not a list of independent error-specific
 repair handlers.
 
-1. **Finish the Host recovery foundation in #381.** Follow the
-   [common recovery rule](../2a-design/runtime.md#recovery): retained Task
-   ownership, confirmed execution cleanup, then ordinary continuation with
-   available evidence. Startup and Task recovery share cleanup; result
-   persistence and Task decisions keep their own responsibilities. Prove the
-   actual startup ordering with a live owner, as well as continuation after it
-   exits. Complete independent review before merge and normal deployment.
+1. **Host recovery foundation merged in #381.** The
+   [common recovery rule](../2a-design/runtime.md#recovery) now has source and
+   portable startup coverage: retained Task ownership, confirmed cleanup, then
+   ordinary continuation with available evidence. Verify the installed revision
+   and behavior during an authorized rollout; merging is not deployment proof.
 2. **Connect failure to capable help and back.** Use saved caller feedback
    first. Complete declared operational routes for work without a usable
    caller, including failures before admission/execution. Retain original
@@ -267,7 +266,7 @@ repair handlers.
    escalation, Task recovery and Conversation contracts/manual only for
    behavior established by implementation; retain remaining gaps explicitly.
 
-#381 can be reviewed and merged independently. Its checks establish the
+#381 merged independently of the remaining work. Its checks establish the
 incomplete-history/cleanup boundary, not failure routing, recipient startup,
 human delivery or original-work completion through the hierarchy. The connected
 trial can use existing recovery meanwhile; final adoption must check the Host
@@ -278,14 +277,10 @@ outage. Its value is allowing affordable reconstruction with surviving intent.
 If that requires substantial new machinery, reconsider the tradeoff. No storage
 migration or new repair result schema is required.
 
-**Review status:** #381 remains unmerged and undeployed. Review found conflicting
-writers and startup assumptions; the correction consolidates cleanup under the
-owning runtime contract. That shared boundary must include ownership admission
-and validated lifecycle reads, so another caller cannot bypass them by invoking
-only the process drain. Fallback evidence must not supply its own proof or
-reverse an established identity conflict. Missing evidence and evidence that
-an execution exited are different facts. Source revisions, reproduced failures and validation
-belong in the [trial evidence](../archive/reviews/hierarchical-recovery-trial-20261017.md#381-recovery-identity-review).
+**Source status:** #381 is merged; deployment remains unverified by this review.
+The enduring rules belong to the [runtime recovery contract](../2a-design/runtime.md#recovery).
+Review findings, reproduced failures, exact source revision and validation are
+retained in the [trial evidence](../archive/reviews/hierarchical-recovery-trial-20261017.md#381-merge-record).
 
 ## Decisive trials
 

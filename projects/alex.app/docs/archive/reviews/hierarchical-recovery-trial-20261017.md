@@ -2,6 +2,9 @@
 
 **Supports:** [Hierarchical recovery](../../proposals/unified-agent-recovery-20261017.md). Checks whether existing caller feedback, execution and retry can restore original work before adding Host machinery.
 
+**Current source status:** #381 merged; see the [merge record](#381-merge-record).
+Earlier review entries retain the status at the time of each check.
+
 ## Result
 
 The saved caller path can recover a worker that cannot prepare its workspace.
@@ -326,6 +329,20 @@ From the Host checkout:
 bun test src/app/core/tasks/app-task-runtime.test.ts src/app/adapters/executors/session-recovery.test.ts --test-name-pattern 'startup leaves conflicting|reused detached PID|PID rejected|honors a live detached|independent SQL association'
 bun run ci
 ```
+
+## #381 merge record
+
+GitHub confirms [#381](https://github.com/hao1939/may-agent/pull/381) merged into
+Host `main` at **2026-10-17 14:06:04 UTC**, as
+`b25344cc6c8e73da90596e8aed83a964c0c8a330`. The reviewed head was
+`2a4cb4e703cfa08abb07da87928330b25bc13e59`; its checks and limitations are recorded
+above. The merge check fetched Host `main` and verified the commit. It did not
+deploy or inspect the running installation, so deployed adoption is unverified.
+
+The incomplete-history foundation is complete in source. The remaining proposal
+work is to prove failure delivery, a usable recipient through real worker
+startup, and return to the original assignment. Those are separate from the
+portable cleanup regressions already passed.
 
 ## Live recovery example
 
