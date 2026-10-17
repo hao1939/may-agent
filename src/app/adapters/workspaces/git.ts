@@ -112,6 +112,47 @@ async function headAt(path: string): Promise<string> {
   return (await git(path, ["rev-parse", "HEAD"])).stdout;
 }
 
+async function restoreTaskBranchRegistration(
+  repoDir: string,
+  path: string,
+  branch: string,
+  registered: { path: string; branch?: string; head?: string },
+): Promise<void> {
+  const branchRef = `refs/heads/${branch}`;
+  if (registered.branch === branchRef) return;
+  // A worker may publish through a conventional fix branch, but the Host owns
+  // the durable Task-worktree identity. Normalize that handoff without
+  // deleting the published branch or rewriting divergent Task history.
+  if (!registered.branch?.startsWith("refs/heads/fix/")) {
+    throw new Error(
+      `Task workspace ${path} is registered to ${registered.branch ?? "detached HEAD"}, expected ${branch}`,
+    );
+  }
+  const currentHead = registered.head ?? await headAt(path);
+  if (await refExists(repoDir, branchRef)) {
+    const expectedHead = (await git(repoDir, ["rev-parse", branchRef])).stdout;
+    if ((await git(repoDir, ["merge-base", "--is-ancestor", expectedHead, currentHead], true)).status !== 0) {
+      throw new Error(
+        `Task workspace ${path} is registered to ${registered.branch}, expected ${branch}; ` +
+        "the branches diverged and require owner reconciliation",
+      );
+    }
+    await git(repoDir, ["update-ref", branchRef, currentHead, expectedHead]);
+    // Preserve the published fix branch as an alias while returning this exact
+    // checkout to its deterministic Task branch. This changes no index/files.
+    await git(path, ["symbolic-ref", "HEAD", branchRef]);
+  } else {
+    // `git branch -m fix/...` moves the Task branch rather than creating an
+    // alias. Rename it back; the remote publication remains independently
+    // addressable and the checkout/index are unchanged.
+    await git(path, ["branch", "-m", branch]);
+  }
+  const restored = (await worktreeEntries(repoDir)).find((entry) => entry.path === path);
+  if (restored?.branch !== branchRef) {
+    throw new Error(`Task workspace ${path} could not be restored to ${branch}`);
+  }
+}
+
 async function interruptedOperationBranch(path: string): Promise<string | undefined> {
   for (const marker of ["rebase-merge/head-name", "rebase-apply/head-name"]) {
     const markerPath = resolve(path, (await git(path, ["rev-parse", "--git-path", marker])).stdout);
@@ -239,9 +280,9 @@ export async function prepareAppTaskWorkspace(
       if (registered) {
         const interruptedBranch = registered.branch ? undefined : await interruptedOperationBranch(path);
         if (registered.branch !== branchRef && interruptedBranch !== branchRef) {
-          throw new Error(
-            `Task workspace ${path} is registered to ${registered.branch ?? "detached HEAD"}, expected ${branch}`,
-          );
+          await restoreTaskBranchRegistration(repoDir, path, branch, registered);
+          entries = await worktreeEntries(repoDir);
+          registered = entries.find((entry) => entry.path === path);
         }
       } else {
         if (existsSync(path)) {
@@ -340,6 +381,13 @@ async function inspectWorkspace(
     metadata.headCommit = (await git(repoDir, ["rev-parse", `refs/heads/${metadata.branch}`])).stdout;
     metadata.disposition = "branch-retained";
     return { ok: true, metadata, removable: checkIntegration && await isIntegrated(repoDir, metadata) };
+  }
+  const registered = (await worktreeEntries(repoDir)).find((entry) => entry.path === resolve(metadata.path));
+  if (!registered) throw new Error(`Task workspace path is not a registered Git worktree: ${metadata.path}`);
+  const branchRef = `refs/heads/${metadata.branch}`;
+  const interruptedBranch = registered.branch ? undefined : await interruptedOperationBranch(metadata.path);
+  if (registered.branch !== branchRef && interruptedBranch !== branchRef) {
+    await restoreTaskBranchRegistration(repoDir, metadata.path, metadata.branch, registered);
   }
   metadata.headCommit = await headAt(metadata.path);
   const dirty = (await git(metadata.path, ["status", "--porcelain=v1", "--untracked-files=all"])).stdout;
