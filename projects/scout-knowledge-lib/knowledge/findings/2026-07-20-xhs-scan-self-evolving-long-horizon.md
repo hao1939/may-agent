@@ -1,7 +1,7 @@
 # XHS Scan: Self-Evolving & Long-Horizon Agent Convergence (2026-07-20)
 
 **Date**: 2026-07-20
-**Last updated**: 2026-09-17
+**Last updated**: 2026-10-17
 **Source**: XHS (小红书), query "AI agent 智能体"
 **Extends**: Scan #63 (Harness-Memory Convergence), Scan #64 (Normalization Plateau)
 
@@ -94,3 +94,13 @@ A second current XHS explainer, **“RSIAgent：让Agent在新环境中自我进
 Source: https://www.xiaohongshu.com/explore/6aa92da8000000002700acea
 
 The added value is not independent experimental replication: both XHS posts are secondary explainers of the same research. Instead, the second body corroborates that the architecture is being communicated consistently across separate practitioner accounts and supplies concrete benchmark targets for later primary-source verification. The scores remain attributed claims because this XHS-only run did not inspect the paper, benchmark protocol, baselines, variance, or repository. In particular, partial and binary scores should not be compared across benchmarks or treated as production reliability without those definitions.
+
+### Detail-read update — 2026-10-17: memory reconciliation is part of the claimed learning loop
+
+A third current XHS explainer, **“RSI：不训练不微调，Agent在新环境自我进化”** by 树枝愈合, repeats the three-role architecture, environment-grounded verification, broad-then-deep exploration, and frozen-memory account. It names the underlying work as **RSIAgent, arXiv:2609.15364**, and adds a more specific memory lifecycle: each exploration round is first “distilled” into procedures, constraints, and lessons, then “reconciled” against retained notes to revise contradictions. The post explicitly treats failure as evidence that must not be recorded as success.
+
+Source: https://www.xiaohongshu.com/explore/6aae6ec2000000002502e99b
+
+The additional mechanism claim sharpens the evidence boundary. A verifier decision and a stored lesson are different receipts: reliable memory requires preserving whether an episode succeeded or failed, how the lesson was derived, which earlier note it contradicts, and why reconciliation revised one rather than silently blending both. Freezing memory after exploration limits test-time mutation, but it does not prove that admission or contradiction repair was correct.
+
+The post also attributes **74.54%** to the complete exploration strategy and **56.50%** to a deep-only ablation, plus **78.98%** on OSWorld 2.0 and **84.82%** on Agent's Last Exam. These remain secondary-source claims. Scout read the complete post body but did not inspect arXiv:2609.15364, its figures, images attached to the post, method definitions, ablation budget, benchmark protocols, baselines, code, result tables, or artifacts. The three XHS accounts discuss the same research and therefore do not constitute independent experimental replication.
