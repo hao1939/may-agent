@@ -1,6 +1,9 @@
 import { normalizeTaskHandlerResult } from "./result.js";
 import { afterEach, describe, expect, it, setSystemTime, spyOn } from "bun:test";
 import { execFile, execFileSync, spawn } from "node:child_process";
+import { once } from "node:events";
+import { spawnFixtureProcess } from "../../../../test/fixtures/owned-process.js";
+import { markStaleSession } from "../../../../test/fixtures/stale-session.js";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -18,11 +21,14 @@ import { addLogSubscriber } from "../../../lib/log.js";
 import { readTaskChecks } from "./task-check-observations.js";
 import { UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY } from "../../metric-source-measurement.js";
 import { DbWriter } from "../../../lib/db-writer.js";
+import { listTerminalTaskSessionBindings, upsertSession } from "../../../lib/db/sessions.js";
 import { openDatabase } from "../../../lib/db.js";
 import { EVENT_DELIVERY_RESULT, EVENT_ROW_ID, EventBus, type AgentEvent } from "../events/bus.js";
 import { loadPersistedEvent } from "../events/persisted.js";
 import { createEventInterface } from "../events/interface.js";
 import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
+import { startBackgroundRuntime } from "../../composition/background-startup.js";
+import { SubagentManager } from "../../../lib/manager.js";
 import { appInputFeedbackEvent } from "../inbox/input-result.js";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
 import { admitTaskInput } from "../state/inbox.js";
@@ -48,6 +54,7 @@ import {
   readLoadedAppTaskInputResult,
   reconcileLoadedAppTaskOnce,
   recoverInstalledAppTasks,
+  settleTerminalAppTaskSessions,
   retryLoadedFailedAppTask,
   reopenLoadedAppTask,
 } from "./app-task-runtime.js";
@@ -6885,68 +6892,6 @@ describe("canonical App task runtime", () => {
     }
   });
 
-  it("keeps startup recovery fenced when the retained session metadata is missing", async () => {
-    const f = fixture();
-    const bus = eventBus();
-    const persistDir = join(f.root, ".state");
-    const config = loadedTaskConfig(f, persistDir);
-    const intent = {
-      id: "work/missing-session-meta",
-      parentId: "operations",
-      outcome: "Do not replace a retained session without lifecycle evidence",
-      acceptance: ["Recovery keeps the original claim until session ownership is confirmed"],
-      agent: "sample-owner",
-    };
-    observeAppTaskIntent(config, { intent, appAgent: "sample-owner" });
-    const claim = claimObservedAppTask(config, {
-      taskId: intent.id,
-      appAgent: "sample-owner",
-      handler: "agent:sample-owner",
-      reason: "test",
-    });
-    if (claim.kind !== "claimed") throw new Error("expected retained agent claim");
-    expect(recordAppTaskAttemptSession(config, claim, "owner-missing-meta")).toBe(true);
-    mutateRuntimeAttemptFixture(config, claim.taskId, claim.attemptId, (attempt) => {
-      if (!attempt.lease) throw new Error("expected leased retained attempt");
-      attempt.runtimeId = "previous-runtime";
-      attempt.lease.runtimeId = "previous-runtime";
-      attempt.lease.expiresAt = new Date(Date.now() - 1_000).toISOString();
-    });
-    await promisify(execFile)("git", ["init", "-b", "main", f.root], {
-      stdio: "ignore",
-      timeout: 10_000,
-    });
-    let replacementCalls = 0;
-
-    await expect(installAppTaskRuntimes({
-      ...options(f, bus),
-      persistDir,
-      manager: {
-        hasAgent: () => true,
-        hasActiveSession: () => false,
-        cancel: () => undefined,
-        async callAgent() {
-          replacementCalls += 1;
-          throw new Error("replacement must remain fenced");
-        },
-      } as never,
-      appRegistrySnapshot: {
-        id: "boot:missing-session-meta",
-        generation: 1,
-        entries: [{ appDir: f.appDir, definition: definition() }],
-      },
-    })).rejects.toThrow("session metadata is missing; lifecycle and ownership remain unconfirmed");
-
-    expect(replacementCalls).toBe(0);
-    expect(readSessionMeta(persistDir, "owner-missing-meta")).toBeNull();
-    const afterRecovery = readTaskSnapshot(config);
-    expect(afterRecovery.resources?.[intent.id]?.status).toMatchObject({
-      phase: "running",
-      currentAttemptId: claim.attemptId,
-    });
-    expect(afterRecovery.receipts?.[intent.id]).toBeUndefined();
-  });
-
   it("fails startup recovery closed when a durable owner process group cannot be confirmed drained", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -10989,7 +10934,7 @@ describe("canonical App task runtime", () => {
       expect(f.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
     }
 
-    it.each(["appId", "taskId", "generation", "attemptId", "array-status", "missing-meta"] as const)(
+    it.each(["appId", "taskId", "generation", "attemptId", "damaged-status"] as const)(
       "controller recovery preserves the original claim when session %s is invalid",
       async (field) => {
         const f = setup();
@@ -11008,27 +10953,501 @@ describe("canonical App task runtime", () => {
         });
         const path = join(f.base.persistDir, "sessions", "session-owner", "meta.json");
         const meta = JSON.parse(readFileSync(path, "utf8"));
-        if (field === "array-status") meta.status = ["running"];
-        else if (field !== "missing-meta")
+        if (field === "damaged-status") {
+          meta.status = ["running"];
+          meta.taskBinding.attemptId = "another-owner";
+        } else
           meta.taskBinding[field] = field === "generation" ? claim.generation + 1 : "another-owner";
         const bytes = JSON.stringify(meta);
-        if (field === "missing-meta") rmSync(path);
-        else writeFileSync(path, bytes);
+        writeFileSync(path, bytes);
         const before = readTaskSnapshot(f.config);
-        await expect(f.run("owner")).rejects.toThrow(
-          field === "array-status"
-            ? "invalid session metadata"
-            : field === "missing-meta"
-              ? "session metadata is missing"
-              : "session Task binding",
-        );
+        await expect(f.run("owner")).rejects.toThrow("session Task binding");
         expect(readTaskSnapshot(f.config)).toEqual(before);
         expect(f.config.resourceStore.readTask("owner")?.status.currentAttemptId).toBe(claim.attemptId);
         expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("running");
-        expect(touched).toEqual(field === "missing-meta" ? ["cancel", "drain"] : []);
+        expect(touched).toEqual([]);
         expect(f.agentCalls()).toBe(0);
-        if (field === "missing-meta") expect(existsSync(path)).toBe(false);
-        else expect(readFileSync(path, "utf8")).toBe(bytes);
+        expect(readFileSync(path, "utf8")).toBe(bytes);
+      },
+    );
+
+    it.each((["startup", "claim"] as const).flatMap((route) =>
+      (["missing", "unreadable", "invalid-status", "no-binding"] as const).map((metadata) => ({ route, metadata })),
+    ))(
+      "continues the retained Task through $route recovery with $metadata metadata",
+      async ({ route, metadata }) => {
+        const f = setup();
+        await installCoreTaskRuntimes(f.base);
+        f.observe("owner");
+        recordAppTaskTrigger(f.config, "owner", { type: "sample.changed", data: { instruction: "Continue work" } });
+        const claim = f.saveTerminalSession("owner");
+        mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+          attempt.runtimeId = "previous-runtime";
+          attempt.lease!.runtimeId = "previous-runtime";
+        });
+        const directory = join(f.base.persistDir, "sessions", "session-owner");
+        const result = readFileSync(join(directory, "result.json"), "utf8");
+        const metadataPath = join(directory, "meta.json");
+        const meta = JSON.parse(readFileSync(metadataPath, "utf8"));
+        if (metadata === "invalid-status") meta.status = ["running"];
+        if (metadata === "no-binding") delete meta.taskBinding;
+        const bytes = metadata === "unreadable" ? '{"status":"running"' : JSON.stringify(meta);
+        if (metadata === "missing") rmSync(metadataPath);
+        else writeFileSync(metadataPath, bytes);
+        writeFileSync(join(directory, "session.jsonl"), '{"role":"user","content":"First sample collected"}\n');
+
+        if (route === "startup") await recoverInstalledAppTasks(f.base.bus);
+        await f.run("owner");
+
+        expect(f.agentCalls()).toBe(1);
+        expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
+        expect(readAcceptedRuntimeAttempt(f.config, "owner")?.acceptedResult?.result).toEqual(f.payload);
+        if (metadata !== "no-binding")
+          expect(f.recoveryContext()).toContain(`session metadata is ${metadata === "missing" ? "missing" : "unreadable"}`);
+        expect(f.recoveryContext()).toContain("First sample collected");
+        if (metadata === "missing") expect(existsSync(metadataPath)).toBe(false);
+        else expect(readFileSync(metadataPath, "utf8")).toBe(bytes);
+        expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(result);
+      },
+    );
+
+    it.each(["missing", "unreadable", "running", "done"] as const)(
+      "startup preserves a live worker and its Task claim with %s metadata until the worker exits",
+      async (metadata) => {
+        const f = setup();
+        const recoveryBus = eventBus();
+        const gate = Promise.withResolvers<void>();
+        const settled = Promise.withResolvers<void>();
+        // Use the production startup entry point. Hold its asynchronous worker
+        // recovery until the generic session scan has completed.
+        await installCoreTaskRuntimes({ ...f.base, bus: recoveryBus });
+        await installCoreTaskRuntimes({ ...f.base, executeRecovery: async () => {
+          await gate.promise;
+          await recoverInstalledAppTasks(recoveryBus);
+        } });
+        f.observe("owner");
+        const claim = f.saveTerminalSession("owner");
+        mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+          attempt.runtimeId = "previous-runtime";
+          attempt.lease!.runtimeId = "previous-runtime";
+        });
+        const sessionId = "session-owner";
+        const directory = join(f.base.persistDir, "sessions", sessionId);
+        const path = join(directory, "meta.json");
+        const meta = JSON.parse(readFileSync(path, "utf8"));
+        upsertSession(f.base.persistDir, {
+          sessionId, agent: "sample-owner", task: "work", status: "running", startedAt: 1, taskBinding: meta.taskBinding,
+        });
+        if (metadata === "missing") rmSync(path);
+        else writeFileSync(path, metadata === "unreadable" ? '{"status":' : JSON.stringify({ ...meta, status: metadata }));
+        const result = readFileSync(join(directory, "result.json"), "utf8");
+        const before = readTaskSnapshot(f.config);
+        const worker = spawnFixtureProcess(["--eval", `
+          import { markSessionActive } from ${JSON.stringify(fileURLToPath(new URL("../../../lib/persistence.ts", import.meta.url)))};
+          import { writeFileSync } from "node:fs";
+          markSessionActive(${JSON.stringify(f.base.persistDir)}, ${JSON.stringify(sessionId)});
+          writeFileSync(${JSON.stringify(join(directory, "[STARTED]"))}, "started");
+          console.log("ready");
+          setInterval(() => {}, 1000);
+        `]);
+        const exited = once(worker, "exit");
+        try {
+          const ready = await Promise.race([
+            once(worker.stdout, "data").then(([chunk]) => String(chunk)),
+            exited.then(() => { throw new Error("Session owner exited before startup"); }),
+          ]);
+          expect(ready.trim()).toBe("ready");
+          const active = readFileSync(join(directory, "[ACTIVE]"), "utf8");
+          const manager = new SubagentManager({ persistDir: f.base.persistDir });
+          startBackgroundRuntime({
+            manager, bus: f.base.bus, persistDir: f.base.persistDir,
+            onTaskRecoverySettled: () => settled.resolve(),
+          });
+          gate.resolve();
+          await settled.promise;
+
+          expect(readTaskSnapshot(f.config)).toEqual(before);
+          expect(readFileSync(join(directory, "[ACTIVE]"), "utf8")).toBe(active);
+          expect(existsSync(join(directory, "[STARTED]"))).toBe(true);
+          expect(f.agentCalls()).toBe(0);
+          expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(result);
+
+          worker.kill("SIGTERM");
+          await exited;
+          await recoverInstalledAppTasks(f.base.bus);
+          await f.run("owner");
+          expect(f.agentCalls()).toBe(1);
+          expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
+          expect(readAcceptedRuntimeAttempt(f.config, "owner")?.acceptedResult?.result).toEqual(f.payload);
+          expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(result);
+          expect(existsSync(join(directory, "[ACTIVE]"))).toBe(false);
+        } finally {
+          gate.resolve();
+          worker.kill("SIGTERM");
+          await exited;
+        }
+      },
+    );
+
+    it.each((["present", "missing"] as const).flatMap((projection) =>
+      (["absent", "retained"] as const).map((conflict) => ({ projection, conflict })),
+    ))("startup leaves conflicting $conflict attempt untouched with $projection SQL projection", async ({ projection, conflict }) => {
+      const f = setup();
+      const recoveryBus = eventBus();
+      const gate = Promise.withResolvers<void>();
+      const settled = Promise.withResolvers<void>();
+      const failures: string[] = [];
+      await installCoreTaskRuntimes({ ...f.base, bus: recoveryBus });
+      await installCoreTaskRuntimes({ ...f.base, executeRecovery: async () => {
+        await gate.promise;
+        await recoverInstalledAppTasks(recoveryBus);
+      } });
+      f.base.bus.subscribe((event) => { if (event.type === "info") failures.push(JSON.stringify(event)); });
+      f.observe("owner");
+      const claim = f.saveTerminalSession("owner");
+      mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+        attempt.runtimeId = "previous-runtime";
+        attempt.lease!.runtimeId = "previous-runtime";
+      });
+      const sessionId = "session-owner";
+      const directory = join(f.base.persistDir, "sessions", sessionId);
+      const path = join(directory, "meta.json");
+      const meta = JSON.parse(readFileSync(path, "utf8"));
+      if (projection === "present") upsertSession(f.base.persistDir, {
+        sessionId, agent: "sample-owner", task: "work", status: "running", startedAt: 1, taskBinding: meta.taskBinding,
+      });
+      if (conflict === "retained") {
+        const other = structuredClone(f.config.resourceStore.readAttempt(claim.attemptId)!);
+        other.metadata = { id: "another-attempt", resourceVersion: 1 };
+        other.sessionId = "another-session";
+        other.state = "interrupted";
+        delete other.lease;
+        const resource = f.config.resourceStore.readTask(claim.taskId)!;
+        expect(f.config.resourceStore.commit({
+          fences: [{ taskId: claim.taskId, resourceVersion: resource.metadata.resourceVersion,
+            generation: resource.metadata.generation, currentAttemptId: claim.attemptId }],
+          attempts: [other],
+        })).toBe(true);
+      }
+      const bytes = JSON.stringify({ ...meta, taskBinding: { ...meta.taskBinding, attemptId: "another-attempt" } });
+      writeFileSync(path, bytes);
+      markStaleSession(f.base.persistDir, sessionId);
+      writeFileSync(join(directory, "[STARTED]"), "started");
+      const active = readFileSync(join(directory, "[ACTIVE]"), "utf8");
+      const result = readFileSync(join(directory, "result.json"), "utf8");
+      const before = readTaskSnapshot(f.config);
+      const child = spawnFixtureProcess(["--eval", 'console.log("ready"); setInterval(() => {}, 1000);'], { detached: true });
+      const exited = once(child, "exit");
+      try {
+        await Promise.race([
+          once(child.stdout, "data"),
+          exited.then(() => { throw new Error("Descendant exited before recovery"); }),
+        ]);
+        addSessionBashProcessGroup(f.base.persistDir, sessionId, child.pid!);
+        const manager = new SubagentManager({ persistDir: f.base.persistDir });
+        startBackgroundRuntime({ manager, bus: f.base.bus, persistDir: f.base.persistDir,
+          onTaskRecoverySettled: () => settled.resolve() });
+        gate.resolve();
+        await settled.promise;
+        expect(failures.join("\n")).toContain("session Task binding");
+        expect(readTaskSnapshot(f.config)).toEqual(before);
+        expect(readSessionBashProcessGroups(f.base.persistDir, sessionId)).toEqual([child.pid!]);
+        expect(process.kill(child.pid!, 0)).toBe(true);
+        expect(readFileSync(join(directory, "[ACTIVE]"), "utf8")).toBe(active);
+        expect(existsSync(join(directory, "[STARTED]"))).toBe(true);
+        expect(readFileSync(path, "utf8")).toBe(bytes);
+        expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(result);
+        expect(f.agentCalls()).toBe(0);
+
+        writeFileSync(path, JSON.stringify(meta));
+        await recoverInstalledAppTasks(f.base.bus);
+        await exited;
+        await f.run("owner");
+        expect(readSessionBashProcessGroups(f.base.persistDir, sessionId)).toEqual([]);
+        expect(readAcceptedRuntimeAttempt(f.config, "owner")?.acceptedResult?.result).toEqual(f.payload);
+      } finally {
+        gate.resolve();
+        child.kill("SIGKILL");
+        await exited;
+      }
+    });
+
+    it.each((["endedAt", "error"] as const).flatMap((field) =>
+      (["present", "missing"] as const).map((projection) => ({ field, projection })),
+    ))("startup recovers damaged optional $field with $projection SQL projection", async ({ field, projection }) => {
+      const f = setup();
+      const recoveryBus = eventBus();
+      const gate = Promise.withResolvers<void>();
+      const settled = Promise.withResolvers<void>();
+      await installCoreTaskRuntimes({ ...f.base, bus: recoveryBus });
+      await installCoreTaskRuntimes({ ...f.base, executeRecovery: async () => {
+        await gate.promise;
+        await recoverInstalledAppTasks(recoveryBus);
+      } });
+      f.observe("owner");
+      const claim = f.saveTerminalSession("owner");
+      mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+        attempt.runtimeId = "previous-runtime";
+        attempt.lease!.runtimeId = "previous-runtime";
+      });
+      const sessionId = "session-owner";
+      const directory = join(f.base.persistDir, "sessions", sessionId);
+      const path = join(directory, "meta.json");
+      const meta = JSON.parse(readFileSync(path, "utf8"));
+      if (projection === "present") upsertSession(f.base.persistDir, {
+        sessionId, agent: "sample-owner", task: "work", status: "running", startedAt: 1, taskBinding: meta.taskBinding,
+      });
+      const bytes = JSON.stringify({ ...meta, [field]: { invalid: true } });
+      writeFileSync(path, bytes);
+      markStaleSession(f.base.persistDir, sessionId);
+      const result = readFileSync(join(directory, "result.json"), "utf8");
+      try {
+        expect(() => startBackgroundRuntime({
+          manager: new SubagentManager({ persistDir: f.base.persistDir }), bus: f.base.bus, persistDir: f.base.persistDir,
+          onTaskRecoverySettled: () => settled.resolve(),
+        })).not.toThrow();
+      } finally {
+        gate.resolve();
+        await settled.promise;
+      }
+      await f.run("owner");
+      expect(readAcceptedRuntimeAttempt(f.config, "owner")?.acceptedResult?.result).toEqual(f.payload);
+      expect(readFileSync(path, "utf8")).toBe(bytes);
+      expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(result);
+      expect(existsSync(join(directory, "[ACTIVE]"))).toBe(false);
+      const row = getDb(f.base.persistDir).prepare("SELECT status, endedAt, error FROM sessions WHERE sessionId = ?")
+        .get(sessionId) as { status: string; endedAt: number | null; error: string | null } | undefined;
+      if (projection === "present") {
+        expect(row?.status).toBe("interrupted");
+        expect(typeof row?.endedAt).toBe("number");
+        expect(row?.error).toBeNull();
+      } else {
+        expect(row).toBeNull();
+      }
+    });
+
+    it.each(["terminal", "damaged"] as const)("startup and Task recovery ignore a reused detached PID with %s metadata", async (kind) => {
+      const f = setup();
+      const recoveryBus = eventBus();
+      const gate = Promise.withResolvers<void>();
+      const settled = Promise.withResolvers<void>();
+      await installCoreTaskRuntimes({ ...f.base, bus: recoveryBus });
+      await installCoreTaskRuntimes({ ...f.base, executeRecovery: async () => {
+        await gate.promise;
+        await recoverInstalledAppTasks(recoveryBus);
+      } });
+      f.observe("owner");
+      const claim = f.saveTerminalSession("owner");
+      mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+        attempt.runtimeId = "previous-runtime";
+        attempt.lease!.runtimeId = "previous-runtime";
+      });
+      const sessionId = "session-owner";
+      const directory = join(f.base.persistDir, "sessions", sessionId);
+      const path = join(directory, "meta.json");
+      const meta = JSON.parse(readFileSync(path, "utf8"));
+      meta.detached = true;
+      meta.pid = process.pid;
+      meta.startedAt = 1;
+      if (kind === "damaged") meta.error = { invalid: true };
+      const bytes = JSON.stringify(meta);
+      writeFileSync(path, bytes);
+      upsertSession(f.base.persistDir, {
+        sessionId, agent: "sample-owner", task: "work", status: "running", startedAt: 1, taskBinding: meta.taskBinding,
+      });
+      markStaleSession(f.base.persistDir, sessionId);
+      writeFileSync(join(directory, "[STARTED]"), "started");
+      const result = readFileSync(join(directory, "result.json"), "utf8");
+      try {
+        startBackgroundRuntime({
+          manager: new SubagentManager({ persistDir: f.base.persistDir }), bus: f.base.bus, persistDir: f.base.persistDir,
+          onTaskRecoverySettled: () => settled.resolve(),
+        });
+        // The scanner removes the marker before Task recovery runs. The
+        // detached PID in retained history must not resurrect the old owner.
+        expect(existsSync(join(directory, "[ACTIVE]"))).toBe(false);
+      } finally {
+        gate.resolve();
+        await settled.promise;
+      }
+      await f.run("owner");
+      await recoverInstalledAppTasks(f.base.bus);
+      expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
+      expect(readAcceptedRuntimeAttempt(f.config, "owner")?.acceptedResult?.result).toEqual(f.payload);
+      expect(readFileSync(path, "utf8")).toBe(bytes);
+      expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(result);
+      expect(existsSync(join(directory, "[STARTED]"))).toBe(false);
+    });
+
+    it.each(["helper", "prior-workflow-step"] as const)("startup uses the independent SQL association for a readable %s", (kind) => {
+      const f = setup();
+      f.observe("owner");
+      f.saveTerminalSession("owner");
+      const ownerDirectory = join(f.base.persistDir, "sessions", "session-owner");
+      const ownerMeta = JSON.parse(readFileSync(join(ownerDirectory, "meta.json"), "utf8"));
+      const before = readTaskSnapshot(f.config);
+      const result = readFileSync(join(ownerDirectory, "result.json"), "utf8");
+      const sessionId = "helper-session";
+      const directory = join(f.base.persistDir, "sessions", sessionId);
+      const meta = { ...ownerMeta, ...(kind === "helper" ? { parentSessionId: "session-owner" } : {}) };
+      const projectSession = () => upsertSession(f.base.persistDir, {
+        sessionId, agent: "helper", task: "contribute", status: "running", startedAt: 1, taskBinding: meta.taskBinding,
+      });
+      projectSession();
+      markStaleSession(f.base.persistDir, sessionId);
+      const path = join(directory, "meta.json");
+      const damaged = JSON.stringify({ ...meta, error: { invalid: true } });
+      writeFileSync(path, damaged);
+      const manager = new SubagentManager({ persistDir: f.base.persistDir });
+      manager.resumeStaleSessions();
+      // The attempt belongs to the owner session. It cannot authorize cleanup
+      // of a damaged helper just because the helper inherited its binding.
+      expect(existsSync(join(directory, "[ACTIVE]"))).toBe(true);
+      expect(readFileSync(path, "utf8")).toBe(damaged);
+      expect(getDb(f.base.persistDir).prepare("SELECT status FROM sessions WHERE sessionId = ?").get(sessionId))
+        .toEqual({ status: "running" });
+
+      writeFileSync(path, JSON.stringify(meta));
+      getDb(f.base.persistDir).prepare("DELETE FROM sessions WHERE sessionId = ?").run(sessionId);
+      manager.resumeStaleSessions();
+      // A readable copy alone cannot verify a non-owner session. Restoration
+      // of the independent association admits ordinary session cleanup.
+      expect(existsSync(join(directory, "[ACTIVE]"))).toBe(true);
+      expect(readTaskSnapshot(f.config)).toEqual(before);
+      projectSession();
+      manager.resumeStaleSessions();
+      expect(existsSync(join(directory, "[ACTIVE]"))).toBe(false);
+      expect(getDb(f.base.persistDir).prepare("SELECT status FROM sessions WHERE sessionId = ?").get(sessionId))
+        .toEqual({ status: "done" });
+      expect(readTaskSnapshot(f.config)).toEqual(before);
+      expect(readFileSync(join(ownerDirectory, "result.json"), "utf8")).toBe(result);
+    });
+
+    it.each(["missing", "unreadable", "invalid-status", "no-binding"] as const)(
+      "recovers persisted SQL session history across repeated startup with %s metadata",
+      async (metadata) => {
+        const f = setup();
+        await installCoreTaskRuntimes(f.base);
+        f.observe("owner");
+        const claim = f.saveTerminalSession("owner");
+        mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+          attempt.runtimeId = "previous-runtime";
+          attempt.lease!.runtimeId = "previous-runtime";
+        });
+        const sessionId = "session-owner";
+        const directory = join(f.base.persistDir, "sessions", sessionId);
+        const path = join(directory, "meta.json");
+        const meta = JSON.parse(readFileSync(path, "utf8"));
+        const binding = meta.taskBinding;
+        upsertSession(f.base.persistDir, {
+          sessionId, agent: "sample-owner", task: "work", status: "running", startedAt: 1, taskBinding: binding,
+        });
+        meta.status = metadata === "invalid-status" ? ["running"] : "running";
+        delete meta.endedAt;
+        if (metadata === "no-binding") delete meta.taskBinding;
+        const bytes = metadata === "unreadable" ? '{"status":' : JSON.stringify(meta);
+        if (metadata === "missing") rmSync(path);
+        else writeFileSync(path, bytes);
+        const result = readFileSync(join(directory, "result.json"), "utf8");
+
+        await recoverInstalledAppTasks(f.base.bus);
+        expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
+        await closeInstalledAppTaskRuntimes(f.base.bus);
+        await installCoreTaskRuntimes(f.base);
+        await recoverInstalledAppTasks(f.base.bus);
+        expect(listTerminalTaskSessionBindings(f.base.persistDir, "sample")).toEqual([]);
+        await f.run("owner");
+        expect(f.agentCalls()).toBe(1);
+        expect(readAcceptedRuntimeAttempt(f.config, "owner")?.acceptedResult?.result).toEqual(f.payload);
+        expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(result);
+        if (metadata === "missing") expect(existsSync(path)).toBe(false);
+        else if (metadata !== "no-binding") expect(readFileSync(path, "utf8")).toBe(bytes);
+      },
+    );
+
+    it.each(["missing", "damaged", "conflict", "helper"] as const)(
+      "uses retained terminal-attempt ownership when sweeping %s session evidence",
+      async (kind) => {
+        const f = setup();
+        await installCoreTaskRuntimes(f.base);
+        f.observe("owner");
+        const claim = f.saveTerminalSession("owner");
+        const sessionId = "session-owner";
+        const path = join(f.base.persistDir, "sessions", sessionId, "meta.json");
+        const meta = JSON.parse(readFileSync(path, "utf8"));
+        upsertSession(f.base.persistDir, {
+          sessionId, agent: "sample-owner", task: "work", status: "running", startedAt: 1, taskBinding: meta.taskBinding,
+        });
+        mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+          attempt.state = "interrupted";
+          if (kind === "helper") attempt.sessionId = "another-session";
+        });
+        meta.status = ["running"];
+        if (kind === "conflict") meta.taskBinding.attemptId = "another-attempt";
+        if (kind === "missing") rmSync(path);
+        else writeFileSync(path, JSON.stringify(meta));
+        const before = readTaskSnapshot(f.config);
+        const cleanup: string[] = [];
+        const opts = { ...f.base, sessions: createTaskSessionRecovery({
+          persistDir: f.base.persistDir, bus: f.base.bus,
+          manager: { hasActiveSession: () => false } as never,
+          drainPersistedBashProcessGroups: (_root, id) => { cleanup.push(id); return true; },
+        }) };
+        const sweep = () => settleTerminalAppTaskSessions(opts, { id: "sample" });
+        if (kind === "conflict") expect(sweep).toThrow("session Task binding");
+        else expect(sweep()).toEqual(kind === "helper" ? [] : [sessionId]);
+        expect(cleanup).toEqual(kind === "helper" || kind === "conflict" ? [] : [sessionId]);
+        expect(readTaskSnapshot(f.config)).toEqual(before);
+        expect(f.agentCalls()).toBe(0);
+        if (kind === "missing") expect(existsSync(path)).toBe(false);
+        else expect(readFileSync(path, "utf8")).toBe(JSON.stringify(meta));
+        if (kind !== "helper" && kind !== "conflict") expect(sweep()).toEqual([]);
+      },
+    );
+
+    it.each(["startup", "claim"] as const)(
+      "preserves the retained Task through %s recovery until managed cancellation finishes",
+      async (route) => {
+        const f = setup();
+        let active = true;
+        let cancellations = 0;
+        await installCoreTaskRuntimes({ ...f.base, sessions: createTaskSessionRecovery({
+          persistDir: f.base.persistDir, bus: f.base.bus,
+          manager: {
+            hasActiveSession: () => active,
+            cancel: () => { cancellations++; },
+          } as never,
+        }) });
+        f.observe("owner");
+        recordAppTaskTrigger(f.config, "owner", { type: "sample.changed", data: { instruction: "Continue work" } });
+        const claim = f.saveTerminalSession("owner");
+        mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+          attempt.runtimeId = "previous-runtime";
+          attempt.lease!.runtimeId = "previous-runtime";
+        });
+        const directory = join(f.base.persistDir, "sessions", "session-owner");
+        rmSync(join(directory, "meta.json"));
+        const result = readFileSync(join(directory, "result.json"), "utf8");
+        const before = readTaskSnapshot(f.config);
+        const recover = () => route === "startup" ? recoverInstalledAppTasks(f.base.bus) : f.run("owner");
+
+        // Startup already leaves a live session alone. Claim recovery requests
+        // cancellation, but must retain ownership until that request completes.
+        if (route === "startup") await recover();
+        else await expect(recover()).rejects.toThrow("managed execution cleanup is still pending");
+        expect(cancellations).toBe(route === "startup" ? 0 : 1);
+        expect(readTaskSnapshot(f.config)).toEqual(before);
+        expect(f.agentCalls()).toBe(0);
+        expect(existsSync(join(directory, "meta.json"))).toBe(false);
+        expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(result);
+
+        active = false;
+        await recover();
+        if (route === "startup") await f.run("owner");
+        expect(f.agentCalls()).toBe(1);
+        expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
+        expect(readAcceptedRuntimeAttempt(f.config, "owner")?.acceptedResult?.result).toEqual(f.payload);
+        expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(result);
       },
     );
 

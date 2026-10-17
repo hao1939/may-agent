@@ -47,7 +47,7 @@ import {
   readCompactedMessages,
   saveCompactedMessages,
   rewriteSessionMessages,
-  loadActiveSessionMetas,
+  readSessionMetaRecoveryEvidence,
   listActiveSessionIds,
   markSessionActive,
   readActiveSessionProcessId,
@@ -55,7 +55,7 @@ import {
   RegistryStore,
   sessionDir,
 } from "./persistence.js";
-import { updateSessionDb, updateSessionProgress } from "./db/sessions.js";
+import { readSessionTaskAttempt, updateSessionDb, updateSessionProgress } from "./db/sessions.js";
 import {
   getWorkflowRun,
   getWorkflowStepSessions,
@@ -75,7 +75,7 @@ import { normalizeEventOwner } from "../../packages/control/src/event-envelope.j
 import { invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
 import { createFinishTool } from "./tools/lifecycle.js";
 import { createCheckpointTool } from "./tools/checkpoint.js";
-import { drainPersistedSessionBashProcessGroups } from "./tools/bash.js";
+import { confirmSessionExecutionStopped, hasLiveSessionExecution } from "./session-cleanup.js";
 
 // Re-export utilities that other modules import from manager
 export {
@@ -295,16 +295,6 @@ export interface SubagentManagerOptions {
 const MAX_COMPLETED_RESULTS_IN_MEMORY = 16;
 const MAX_RESULT_MESSAGES = 1_000;
 const MAX_TRANSCRIPT_TAIL_BYTES = 8 * 1024 * 1024;
-
-function isProcessAlive(pid: number | undefined): boolean {
-  if (!pid) return false;
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 // ── SubagentManager (v2 implementation) ──────────────────────────────
 
@@ -1173,9 +1163,11 @@ export class SubagentManager {
     resumed: SessionInfo[];
     interrupted: SessionInfo[];
   } {
-    const activeSessions = loadActiveSessionMetas(this._persistDir);
+    const activeSessions: Record<string, PersistedSession> = {};
     const kindFilter = opts?.kinds ? new Set(opts.kinds) : null;
     const stale = new Map<string, (typeof activeSessions)[string]>();
+    const cleanup = { manager: this, persistDir: this._persistDir };
+    let hasPendingCleanup = false;
     const recoverUsage = (sessionId: string, outcome: UsageOutcome) => {
       try {
         recoverExecutionUsage(getDb(this._persistDir), sessionId, outcome);
@@ -1184,76 +1176,51 @@ export class SubagentManager {
       }
     };
 
-    // meta.json is the session source of truth. Reconcile SQL rows on boot so
-    // cancelled/interrupted sessions do not remain visible as running after a
-    // process restart or older cancel path.
-    for (const [sessionId, persisted] of Object.entries(activeSessions)) {
-      if (persisted.status === "done" || persisted.status === "error" || persisted.status === "interrupted") {
-        recoverUsage(sessionId, persisted.status);
-        updateSessionDb(this._persistDir, sessionId, {
-          status: persisted.status,
-          endedAt: persisted.endedAt ?? Date.now(),
-          error: persisted.error,
-        });
-        markSessionInactive(this._persistDir, sessionId);
+    // Discover candidates once. Every mutation, including removal of a marker
+    // with missing metadata, follows the same execution cleanup as Task recovery.
+    // Startup may overlap the Task recovery worker and externally owned work.
+    for (const sessionId of listActiveSessionIds(this._persistDir)) {
+      if (hasLiveSessionExecution(cleanup, sessionId)) {
+        hasPendingCleanup = true;
+        continue;
       }
-    }
-
-    try {
-      for (const dirName of listActiveSessionIds(this._persistDir)) {
-        // App installation may start controller work before startup
-        // recovery scans the durable session directory. A session already in
-        // this manager is current work, never a stale session from a prior
-        // process.
-        if (this._sessions.has(dirName)) continue;
-        const sentinelPath = join(sessionDir(this._persistDir, dirName), "[STARTED]");
-        if (!existsSync(sentinelPath)) continue;
-        const persisted = activeSessions[dirName];
+      const evidence = readSessionMetaRecoveryEvidence(this._persistDir, sessionId);
+      const fields = evidence.state !== "absent" ? evidence.meta : undefined;
+      const kind = fields?.kind ?? "job";
+      if (typeof kind === "string" && kindFilter && !kindFilter.has(kind as SessionKind)) continue;
+      try {
+        // Discovery supplies the retained record; copied scope alone does not
+        // authorize cleanup of an incomplete Task execution.
+        const retained = readSessionTaskAttempt(this._persistDir, sessionId, fields?.taskBinding);
+        const persisted = confirmSessionExecutionStopped(cleanup, sessionId, retained ?? undefined);
         if (!persisted) {
-          markSessionInactive(this._persistDir, dirName);
+          // The retained Task can finish lifecycle reconciliation without
+          // rewriting damaged history. No unchecked fields reach SQL here.
+          markSessionInactive(this._persistDir, sessionId);
           continue;
         }
-        const kind = persisted.kind ?? "job";
-        if (kindFilter && !kindFilter.has(kind)) continue;
-        if (persisted.status === "running" || persisted.status === "idle") {
-          stale.set(dirName, persisted);
+        activeSessions[sessionId] = persisted;
+        if (persisted.status === "done" || persisted.status === "error" || persisted.status === "interrupted") {
+          recoverUsage(sessionId, persisted.status);
+          updateSessionDb(this._persistDir, sessionId, {
+            status: persisted.status,
+            ...(persisted.endedAt !== undefined ? { endedAt: persisted.endedAt } : {}),
+            error: persisted.error,
+          });
+          markSessionInactive(this._persistDir, sessionId);
+        } else {
+          stale.set(sessionId, persisted);
         }
-        try {
-          unlinkSync(sentinelPath);
-        } catch {}
+      } catch (error) {
+        hasPendingCleanup = true;
+        log("error", `[manager] Refusing startup recovery for ${sessionId}: ${String(error)}`);
+        continue;
       }
-    } catch (err) {
-      log("warn", `[manager] Error scanning stale sentinels: ${err instanceof Error ? err.message : String(err)}`);
-    }
-
-    for (const [sessionId, persisted] of Object.entries(activeSessions)) {
-      if (stale.has(sessionId)) continue;
-      if (this._sessions.has(sessionId)) continue;
-      if (persisted.status !== "running" && persisted.status !== "idle") continue;
-      const kind = persisted.kind ?? "job";
-      if (kindFilter && !kindFilter.has(kind)) continue;
-      if (persisted.detached && isProcessAlive(persisted.pid)) continue;
-      stale.set(sessionId, persisted);
     }
 
     const resumed: SessionInfo[] = [];
     const interrupted: SessionInfo[] = [];
-    let hasUndrainedProcessGroups = false;
-
     for (const [sessionId, persisted] of stale) {
-      // A resumed or terminal stale session must never overlap descendants from
-      // its previous process. Drain only groups persisted by this exact session.
-      // Preserve every durable record and skip all terminal/release/resume work
-      // when exit cannot be confirmed after the bounded signal phases.
-      if (!drainPersistedSessionBashProcessGroups(this._persistDir, sessionId)) {
-        hasUndrainedProcessGroups = true;
-        log(
-          "error",
-          `[manager] Refusing startup recovery for ${sessionId}: durable bash process group remained live after bounded SIGTERM/SIGKILL drain`,
-        );
-        continue;
-      }
-
       if (isHeartbeatSession(persisted) && releaseStaleHeartbeatDispatchLease(this._persistDir, persisted.agent)) {
         log("info", `[manager] Released stale heartbeat dispatch lease for ${persisted.agent} from ${sessionId}`);
       }
@@ -1314,8 +1281,8 @@ export class SubagentManager {
       }
     }
 
-    if (!hasUndrainedProcessGroups) this.cleanupStaleWorkflowRuns();
-    const releasedOrphanLeases = hasUndrainedProcessGroups
+    if (!hasPendingCleanup) this.cleanupStaleWorkflowRuns();
+    const releasedOrphanLeases = hasPendingCleanup
       ? []
       : releaseOrphanedHeartbeatDispatchLeases(this._persistDir, activeSessions);
     for (const agent of releasedOrphanLeases) {

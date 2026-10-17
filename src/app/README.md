@@ -102,20 +102,63 @@ for meaningful inputs/changes and independent observers. App-owned prompts,
 workflows, observers, schedules and acceptance stay in the owning App.
 A new implementation does not require a universal adapter, manifest or lifecycle.
 
-Recovery preserves accepted Task results and passes retained execution evidence
-through the existing attempt context. A damaged transcript or checkpoint is
-reported as incomplete, with readable entries retained; it does not prohibit a
-replacement attempt. The App decides whether to inspect effects, redo work or
-seek help. Session ownership, live processes and authoritative lifecycle state
-remain Host checks. Starting a replacement attempt does not authorize replay of
-an arbitrary external effect; idempotency belongs at the operation boundary.
+Recovery uses one rule: establish the Task's ownership, finish old execution
+cleanup, and continue through an ordinary attempt with the available evidence.
+The durable Task's exact attempt/session relationship authorizes its recovery.
+A missing copied binding or missing/unreadable metadata, transcript or checkpoint
+does not create a different recovery policy. Readable ownership conflicts still
+block cancellation and cleanup, even when other metadata fields are damaged.
+Standalone session recovery needs valid metadata when no retained Task supplies
+that authority.
 
-Every recovery route validates session metadata and the retained attempt's exact
-binding before cancellation or process cleanup. Cleanup must succeed before the
-replacement claim commits; failed validation or drain leaves the old claim in
-place. Use the original attempt generation for session ownership even when the
-Task requirement has changed. Rebuild the recovery context after cleanup so the
-replacement receives the same retained evidence on startup and controller paths.
+Startup and Task recovery use `../lib/session-cleanup.ts` to admit cleanup,
+confirm execution exit and drain descendants before changing markers or releasing
+work. Scanners discover candidates; missing or terminal history does not prove exit.
+Startup resolves SQL or readable file scope through the retained attempt using
+indexed lookups. A file copy must resolve to the attempt's exact session;
+helpers and prior workflow steps additionally need their independent SQL session
+association. Without it, startup leaves cleanup pending instead of treating a
+copy as ownership. The shared admission checks readable binding conflicts and returns only validated lifecycle metadata.
+Inherited helper scope does not own the Task attempt: a helper still needs valid
+metadata for its own cleanup. Missing standalone history likewise stays pending
+until there is an ownership source. No cleanup path writes unchecked history to SQL.
+Startup may overlap its recovery worker. It preserves a live owner's markers
+and defers aggregate orphan cleanup while any execution cleanup remains pending.
+This may delay stale projections; it avoids inventing a second ownership rule.
+Cancellation remains a request to the manager, followed by the same cleanup
+confirmation. Cleanup itself writes no result and makes no Task decision.
+
+The Host preserves accepted Task results and surviving history, and discloses
+missing or damaged evidence in the existing attempt context. It reconciles valid
+session lifecycle fields; it leaves unreadable metadata and retained results
+untouched rather than inventing an old completion. The App decides whether to
+inspect effects, redo work or seek help. Starting an attempt does not authorize
+replay of an arbitrary external effect; idempotency belongs at its operation.
+
+Confirmed cleanup can settle a stale running SQL session projection even when
+its metadata is unreadable. Its end time records that confirmation, not a
+reconstructed historical finish; retained terminal facts, outcomes and result
+descriptors remain intact. A surviving result must not be replaced by a
+synthetic outcome or a new completion event. Later startup sweeps use the same
+retained attempt/session authority and conflict checks, so preserving damaged
+history does not repeatedly select the stopped execution as running.
+
+Cancellation only signals a managed invocation. While the manager retains that
+invocation or its joined helper cleanup, recovery leaves the live marker and
+old Task claim intact and reports the pending cleanup. The existing recovery
+path may retry after cleanup finishes; this uses no additional polling loop.
+
+Cleanup must succeed before the replacement claim commits. Readable detached
+process references and active markers remain liveness evidence even if a
+lifecycle label is terminal or unreadable. Keep exited process evidence distinct
+from missing evidence: a PID-only fallback cannot override an instance mismatch
+for the same PID. Legacy detached records use the existing process-start check
+with their session start time; a reused PID does not establish a live owner.
+Without usable identity or timing, legacy PID evidence remains conservative. Ownership conflicts, live external
+execution and failed drain leave the old claim in place. Use the
+original attempt generation for session ownership even when the Task requirement
+has changed. Rebuild the recovery context after cleanup so the replacement
+receives the same retained evidence on startup and controller paths.
 
 ## Contract references
 

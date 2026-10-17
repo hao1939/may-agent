@@ -51,6 +51,7 @@ values and keep private worker-role checks separate.
 | Change | Start here |
 | --- | --- |
 | Session start, resume, stop and hosted result access | `manager.ts`; `manager-agents-tool.ts` exposes its agent tool |
+| Execution exit and descendant cleanup before recovery | `session-cleanup.ts`, shared by startup and Task recovery; `tools/bash.ts` owns process-group draining |
 | Model execution and tool binding | `agent-execution.ts`, then `agent-runner.ts` |
 | Task context supplied to the model | `task-decision-context.ts`; `task-workspace-context.ts` writes the discovery entry |
 | Context compaction | `compaction.ts`; preparation connects the transform in `agent-execution.ts` |

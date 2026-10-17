@@ -17,7 +17,7 @@ import { join } from "node:path";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { SubagentDefinition } from "./types.js";
 import type { TSchema } from "@earendil-works/pi-ai";
-import { currentProcessInstance, isProcessInstanceAlive } from "./process-identity.js";
+import { currentProcessInstance, isProcessInstanceAlive, type PersistedProcessInstance } from "./process-identity.js";
 // DB writes removed from RegistryStore — handled by DbWriter subscriber via EventBus.
 import { log } from "./log.js";
 import type { ToolPolicy } from "./session-policy.js";
@@ -471,6 +471,8 @@ function isPersistedSession(value: unknown): value is PersistedSession {
     ["running", "done", "error", "interrupted", "idle"].includes(value.status) &&
     typeof value.startedAt === "number" &&
     Number.isFinite(value.startedAt) &&
+    (value.endedAt === undefined || (typeof value.endedAt === "number" && Number.isFinite(value.endedAt))) &&
+    (value.error === undefined || typeof value.error === "string") &&
     (value.taskBinding === undefined || isTaskBinding(value.taskBinding))
   );
 }
@@ -478,9 +480,9 @@ function isPersistedSession(value: unknown): value is PersistedSession {
 export type SessionMetaRecoveryEvidence =
   | { state: "absent" }
   | { state: "valid"; meta: PersistedSession }
-  | { state: "corrupt" };
+  | { state: "corrupt"; meta?: Record<string, unknown> };
 
-/** Read and structurally validate metadata used to authorize recovery replay. */
+/** Validate lifecycle evidence while retaining readable ownership/process facts. */
 export function readSessionMetaRecoveryEvidence(
   persistDir: string,
   sessionId: string,
@@ -489,7 +491,8 @@ export function readSessionMetaRecoveryEvidence(
   if (!existsSync(filePath)) return { state: "absent" };
   try {
     const parsed: unknown = JSON.parse(readFileSync(filePath, "utf-8"));
-    return isPersistedSession(parsed) ? { state: "valid", meta: parsed } : { state: "corrupt" };
+    if (isPersistedSession(parsed)) return { state: "valid", meta: parsed };
+    return { state: "corrupt", ...(isRecord(parsed) ? { meta: parsed } : {}) };
   } catch {
     return { state: "corrupt" };
   }
@@ -606,8 +609,8 @@ export function markSessionActive(persistDir: string, sessionId: string): void {
   }
 }
 
-/** Return the live process instance that owns a session lease. */
-export function readActiveSessionProcessId(persistDir: string, sessionId: string): number | null {
+/** Read process evidence without collapsing an exited owner into missing history. */
+export function readSessionProcessOwner(persistDir: string, sessionId: string): PersistedProcessInstance | null {
   try {
     const raw = readFileSync(join(sessionDir(persistDir, sessionId), ACTIVE_MARKER), "utf-8");
     const parsed = JSON.parse(raw) as {
@@ -616,12 +619,19 @@ export function readActiveSessionProcessId(persistDir: string, sessionId: string
       processStartedAt?: unknown;
       activatedAt?: unknown;
     };
-    return isProcessInstanceAlive({ ...parsed, recordedAt: parsed.activatedAt }) ? Number(parsed.pid) : null;
+    if (typeof parsed?.pid !== "number" || !Number.isSafeInteger(parsed.pid) || parsed.pid < 1) return null;
+    return { ...parsed, recordedAt: parsed.activatedAt };
   } catch {
-    // Legacy timestamp-only markers remain discoverable for ordinary startup
-    // recovery, but cannot prove that a process still owns the session.
+    // Legacy timestamp-only markers remain discoverable for startup recovery,
+    // but do not identify a process instance.
     return null;
   }
+}
+
+/** Return the live process instance that owns a session lease. */
+export function readActiveSessionProcessId(persistDir: string, sessionId: string): number | null {
+  const owner = readSessionProcessOwner(persistDir, sessionId);
+  return owner && isProcessInstanceAlive(owner) ? Number(owner.pid) : null;
 }
 
 /** Mark a session terminal. Artifacts remain in their original directory. */
