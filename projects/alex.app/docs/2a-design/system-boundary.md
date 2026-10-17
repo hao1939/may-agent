@@ -100,10 +100,11 @@ belongs to explicit installation/executor policy; the Host must not infer it
 from an agent name, App name or process role. No new credential registry or
 per-process allowlist is required for the current trusted installation.
 
-**Source status:** main already inherits the execution environment. Revised
-[Host #369](https://github.com/hao1939/may-agent/pull/369) protects that behavior
-with real process-boundary regressions and removes its unmerged allowlist
-proposal. It adds no runtime access-control mechanism.
+**Source status:** [Host #369](https://github.com/hao1939/may-agent/pull/369)
+merged on 2026-10-17. It protects main's existing environment inheritance with
+real process-boundary regression tests and documentation. The proposed allowlist
+was removed before merge. This PR changes no runtime behavior and needs no
+runtime rollout.
 
 ## The boundary in one flow
 
