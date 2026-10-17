@@ -202,8 +202,10 @@ scripted attempt complete the retained Task and preserve its saved result.
 This uses a real owner subprocess and production startup entry point; the
 recovery hook runs an in-process runtime, not the installed recovery worker.
 
-Two further process tests prove that startup drains retained descendants before
-clearing markers with missing or terminal metadata. Existing stale-session
+Two further process tests at that revision exercised draining retained descendants
+before clearing markers with missing or terminal metadata. The missing-history
+case did not establish an ownership source; the next review corrects that gap.
+Existing stale-session
 fixtures now represent an exited process incarnation instead of marking the
 still-live test process as the owner. The affected eight-file suite passes 152
 tests/768 assertions before the two descendant cases. Final local `bun run ci`
@@ -217,6 +219,57 @@ The process lesson is to trace all writers and startup ordering before changing
 a state rule. More local guards and passing isolated tests did not establish
 the common boundary. The proposal keeps the rule at its contract and retains
 the detailed incident evidence here.
+
+## #381 startup admission and validation
+
+Review of `765705cff25d8cd92c98cac974d805c10122ccba` found that sharing a process
+drain was insufficient. Startup still bypassed the Task adapter's identity check
+and trusted an unchecked metadata cast. Terminal metadata with a conflicting
+binding allowed startup to kill retained descendants and clear markers before
+Task recovery rejected the conflict. Object-valued `endedAt` or `error` fields
+caused invalid SQLite parameters and failed startup.
+
+Three production-startup regressions reproduced these failures before the fix.
+Commit `663c6a1a44c042cc2e7eca7474e18ca47b13cd31` gives cleanup admission one
+owner in `session-cleanup.ts`: it cross-checks
+readable scope and returns validated lifecycle metadata before cancellation or
+drain. Startup resolves its SQL/file scope through the retained attempt with
+primary-key lookups; it does not scan historical attempt JSON or require a new
+index. Task recovery already supplies the exact retained attempt/session.
+Unresolved startup scope stays pending. A helper's inherited binding is checked
+but does not authorize missing-history recovery of that helper. Valid helper
+metadata still supports cleanup without changing the parent Task.
+
+The standalone missing-history fixtures previously allowed cleanup with neither
+a retained Task nor valid metadata, contradicting the contract. They now verify
+that descendants and markers survive until valid evidence is restored, then
+cleanup succeeds. Full CI first reported **3,865 passed, three skipped and one
+failure**: an older sentinel-only fixture expected unconditional marker removal.
+Commit `db56e87ea4b111b0536f5772d1103fdef918c16a` corrects that expectation and
+verifies cleanup after evidence returns; its 16-test crash-recovery suite passes.
+The normal adapter can still stop a rejected session from
+valid metadata even though that session was never admitted as a Task attempt.
+
+The expanded startup cases cover absent SQL projections, conflicting bindings,
+damaged optional fields and original-Task completion without rewriting saved
+results. They call the production startup entry point with the existing recovery
+hook held until after the generic scan; they do not exercise the installed
+worker bootstrap or a live deployment.
+
+Final head `db56e87ea4b111b0536f5772d1103fdef918c16a` passes local `bun run ci`:
+**3,866 passed, three installation-specific skips, zero failures and 22,408
+assertions**, with the test run taking 338.25 seconds. Host/SDK types, boundary
+checks and lint pass. Node is 24.20.0 and Bun is 1.3.14.
+[GitHub Quality and Container](https://github.com/hao1939/may-agent/actions/runs/39028001797)
+both pass on that head. The isolated design check passes with the existing
+root `reports` warning. The PR remains unmerged and undeployed.
+
+From the Host checkout, the new startup cases can be run with:
+
+```sh
+bun test src/app/core/tasks/app-task-runtime.test.ts --test-name-pattern 'startup leaves conflicting|startup recovers damaged optional|startup cleans a readable helper'
+bun test test/integration/crash-recovery.test.ts test/integration/resume-agent.test.ts
+```
 
 ## Live recovery example
 

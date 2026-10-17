@@ -433,12 +433,16 @@ even if other fields are damaged. Active markers and readable live-process
 references still matter. Without a retained Task, standalone session recovery
 must obtain its authority from valid session metadata.
 
-Startup and Task recovery share one execution-cleanup operation. Scanners find
-candidates; that operation checks live ownership and drains retained descendants
-before callers change execution markers or release work. Cancellation requests
-shutdown; it does not confirm shutdown. A missing or terminal history record
-does not establish that its process stopped. Startup can overlap a recovery
-worker without either path erasing the other's live-execution evidence.
+Startup and Task recovery share cleanup admission as well as execution checks.
+Scanners find candidates and resolve copied Task scope through the retained
+attempt; unresolved scope leaves cleanup pending for Task recovery or repair.
+The common operation checks readable binding conflicts, confirms process exit
+and drains descendants before callers change markers or release work. It returns
+validated lifecycle metadata for persistence; damaged optional fields never
+become SQL parameters. Cancellation requests shutdown; it does not confirm it.
+Startup can overlap a recovery worker without either path erasing the other's
+ownership evidence. A helper's copied scope cannot authorize missing-history
+recovery of that helper; its own valid metadata can still support cleanup.
 
 Cleanup changes no result and makes no Task decision. Persistence owns saved
 evidence; the Task runtime owns release and continuation; the agent judges the
@@ -477,7 +481,7 @@ to startup, controller claims and terminal-session retry.
 [Host #381](https://github.com/hao1939/may-agent/pull/381) refines that shared path
 to tolerate unavailable session history under retained Task authority and wait
 for confirmed cleanup shared with the startup scanner. It remains unmerged and
-undeployed; see [current validation](../archive/reviews/hierarchical-recovery-trial-20261017.md#381-startup-cleanup-ownership).
+undeployed; see [current validation](../archive/reviews/hierarchical-recovery-trial-20261017.md#381-startup-admission-and-validation).
 The [recovery evidence trial](../archive/reviews/host-recovery-evidence-20261017.md)
 also proves failure delivery through a declared App route into ordinary agent work.
 This does not install an App investigation policy or prove live agent judgment;
