@@ -56,7 +56,7 @@ function workflowWasInterruptedByRestart(persistDir: string | undefined, workflo
 }
 
 function isProcessAlive(pid: number | undefined): boolean {
-  if (!pid) return false;
+  if (!pid || !Number.isSafeInteger(pid) || pid < 1) return false;
   try {
     process.kill(pid, 0);
     return true;
@@ -72,11 +72,10 @@ function hasLiveAppTaskSession(opts: TaskSessionAdapterOptions, sessionId: strin
   if (!opts.persistDir) return false;
   const leasePid = readActiveSessionProcessId(opts.persistDir, cleanSessionId);
   if (leasePid && isProcessAlive(leasePid)) return true;
-  const meta = readSessionMeta(opts.persistDir, cleanSessionId);
-  if (!meta || (meta.status !== "running" && meta.status !== "idle")) return false;
-
-  if (meta.detached && isProcessAlive(meta.pid)) return true;
-  return false;
+  const evidence = readSessionMetaRecoveryEvidence(opts.persistDir, cleanSessionId);
+  const meta = evidence.state === "absent" ? undefined : evidence.meta;
+  // A lifecycle label or damage to other fields cannot disprove a live owner.
+  return meta?.detached === true && typeof meta.pid === "number" && isProcessAlive(meta.pid);
 }
 
 function recoverPendingToolResultsFromTranscript(persistDir: string, sessionId: string, messages: any[]): string[] {
@@ -150,24 +149,25 @@ function interruptSupersededAgentSession(
   expectedBinding?: TaskBinding,
 ): boolean {
   const cleanSessionId = sessionId.trim();
-  if (!cleanSessionId) return false;
-  const metaEvidence = opts.persistDir
-    ? readSessionMetaRecoveryEvidence(opts.persistDir, cleanSessionId)
-    : ({ state: "absent" } as const);
+  if (!cleanSessionId || !opts.persistDir) return false;
+  const metaEvidence = readSessionMetaRecoveryEvidence(opts.persistDir, cleanSessionId);
   const meta = metaEvidence.state === "valid" ? metaEvidence.meta : null;
+  const fields = metaEvidence.state === "absent" ? undefined : metaEvidence.meta;
 
-  // Session identity and lifecycle are Host facts. Incomplete work history is
-  // passed to the next attempt; it does not determine Task eligibility.
-  if (metaEvidence.state === "corrupt") {
-    throw new Error(`Cannot recover session ${cleanSessionId}: invalid session metadata; lifecycle and ownership need repair`);
-  }
-  if (expectedBinding && meta &&
-    (!meta.taskBinding ||
-      meta.taskBinding.appId !== expectedBinding.appId ||
-      meta.taskBinding.taskId !== expectedBinding.taskId ||
-      meta.taskBinding.generation !== expectedBinding.generation ||
-      meta.taskBinding.attemptId !== expectedBinding.attemptId)) {
-    throw new Error(`Cannot recover session ${cleanSessionId}: session Task binding does not match the retained attempt`);
+  // The retained Task authorizes recovery. Session history can be incomplete,
+  // but readable ownership conflicts must be checked before touching execution.
+  if (expectedBinding) {
+    if (expectedBinding.taskId !== taskId) {
+      throw new Error(`Cannot recover session ${cleanSessionId}: retained Task binding does not match the requested Task`);
+    }
+    const recordedBinding = fields?.taskBinding;
+    if (isRecord(recordedBinding) && Object.entries(expectedBinding).some(
+      ([key, value]) => recordedBinding[key] !== undefined && recordedBinding[key] !== value,
+    )) {
+      throw new Error(`Cannot recover session ${cleanSessionId}: session Task binding does not match the retained attempt`);
+    }
+  } else if (!meta) {
+    throw new Error(`Cannot recover session ${cleanSessionId}: no retained Task binding and no valid session metadata`);
   }
 
   if (opts.manager.hasActiveSession(cleanSessionId)) {
@@ -188,9 +188,9 @@ function interruptSupersededAgentSession(
   // An unconfirmed drain preserves the durable session and PGID records and
   // stops recovery before terminal artifacts, session.end, attempt release,
   // requeue, or replacement execution.
-  const confirmedDrained = opts.persistDir
-    ? (opts.drainPersistedBashProcessGroups ?? drainPersistedSessionBashProcessGroups)(opts.persistDir, cleanSessionId)
-    : true;
+  const confirmedDrained = (opts.drainPersistedBashProcessGroups ?? drainPersistedSessionBashProcessGroups)(
+    opts.persistDir, cleanSessionId,
+  );
   if (!confirmedDrained) {
     throw new Error(
       `Cannot recover session ${cleanSessionId}: one or more durable bash process groups did not exit after bounded SIGTERM/SIGKILL drain`,
@@ -198,21 +198,13 @@ function interruptSupersededAgentSession(
   }
 
   if (!meta) {
-    // The caller's retained Task attempt owns replacement, even if its session
-    // file was lost. Once the old execution is no longer live and its shell
-    // groups are drained, missing history must not strand that Task. Do not
-    // invent session metadata, a completion event, or a successful old result.
-    if (opts.persistDir && expectedBinding && expectedBinding.taskId === taskId) {
-      markSessionInactive(opts.persistDir, cleanSessionId);
-      return true;
-    }
-    throw new Error(
-      `Cannot recover session ${cleanSessionId}: session metadata is missing; lifecycle and ownership remain unconfirmed`,
-    );
+    // Ownership and shutdown are confirmed. Preserve incomplete history for
+    // the owner instead of inventing lifecycle fields or an old completion.
+    markSessionInactive(opts.persistDir, cleanSessionId);
+    return true;
   }
 
   if (meta.status !== "running" && meta.status !== "idle") {
-    if (!opts.persistDir) return false;
     // meta.json is authoritative. Repair only its known terminal lifecycle
     // fields in SQL; do not invent historical timing or rewrite retained
     // outcome/result evidence that may describe an accepted result.
@@ -451,8 +443,8 @@ export function buildRecoveredSessionHandoff(
     `Recovered interrupted ${sessionLabel} metadata: ${metaPath}`,
     `Recovered interrupted ${sessionLabel} artifact: ${resultPath}`,
     `Recovered interrupted ${sessionLabel} transcript: ${transcriptPath}`,
-    ...(metaEvidence.state === "absent"
-      ? [`Recovery history incomplete: session metadata is missing at ${metaPath}; continue from retained Task state and check current effects before repeating work`]
+    ...(metaEvidence.state !== "valid"
+      ? [`Recovery history incomplete: session metadata is ${metaEvidence.state === "absent" ? "missing" : "unreadable"} at ${metaPath}; continue from retained Task state and check current effects before repeating work`]
       : []),
     ...incompleteRecoveryFacts(transcriptPath, transcriptEvidence, checkpointPath, checkpointEvidence),
     checkpointRecoveryFacts(checkpointPath, transcriptPath, checkpoint, transcriptCheckpoint, attempt.sessionId,
@@ -469,7 +461,7 @@ export function buildRecoveredSessionHandoff(
   return {
     reason: "recovered-session",
     summary:
-      meta?.error?.trim() ||
+      (typeof meta?.error === "string" ? meta.error.trim() : "") ||
       `Previous runtime ${sessionLabel} ${attempt.sessionId} was interrupted during recovery before a task decision was persisted`,
     facts,
   };

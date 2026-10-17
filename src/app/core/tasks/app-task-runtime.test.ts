@@ -10927,7 +10927,7 @@ describe("canonical App task runtime", () => {
       expect(f.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
     }
 
-    it.each(["appId", "taskId", "generation", "attemptId", "array-status"] as const)(
+    it.each(["appId", "taskId", "generation", "attemptId", "damaged-status"] as const)(
       "controller recovery preserves the original claim when session %s is invalid",
       async (field) => {
         const f = setup();
@@ -10946,17 +10946,15 @@ describe("canonical App task runtime", () => {
         });
         const path = join(f.base.persistDir, "sessions", "session-owner", "meta.json");
         const meta = JSON.parse(readFileSync(path, "utf8"));
-        if (field === "array-status") meta.status = ["running"];
-        else
+        if (field === "damaged-status") {
+          meta.status = ["running"];
+          meta.taskBinding.attemptId = "another-owner";
+        } else
           meta.taskBinding[field] = field === "generation" ? claim.generation + 1 : "another-owner";
         const bytes = JSON.stringify(meta);
         writeFileSync(path, bytes);
         const before = readTaskSnapshot(f.config);
-        await expect(f.run("owner")).rejects.toThrow(
-          field === "array-status"
-            ? "invalid session metadata"
-            : "session Task binding",
-        );
+        await expect(f.run("owner")).rejects.toThrow("session Task binding");
         expect(readTaskSnapshot(f.config)).toEqual(before);
         expect(f.config.resourceStore.readTask("owner")?.status.currentAttemptId).toBe(claim.attemptId);
         expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("running");
@@ -10966,9 +10964,11 @@ describe("canonical App task runtime", () => {
       },
     );
 
-    it.each(["startup", "claim"] as const)(
-      "continues the retained Task through %s recovery when session metadata is missing",
-      async (route) => {
+    it.each((["startup", "claim"] as const).flatMap((route) =>
+      (["missing", "unreadable", "invalid-status", "no-binding"] as const).map((metadata) => ({ route, metadata })),
+    ))(
+      "continues the retained Task through $route recovery with $metadata metadata",
+      async ({ route, metadata }) => {
         const f = setup();
         await installCoreTaskRuntimes(f.base);
         f.observe("owner");
@@ -10980,7 +10980,13 @@ describe("canonical App task runtime", () => {
         });
         const directory = join(f.base.persistDir, "sessions", "session-owner");
         const result = readFileSync(join(directory, "result.json"), "utf8");
-        rmSync(join(directory, "meta.json"));
+        const metadataPath = join(directory, "meta.json");
+        const meta = JSON.parse(readFileSync(metadataPath, "utf8"));
+        if (metadata === "invalid-status") meta.status = ["running"];
+        if (metadata === "no-binding") delete meta.taskBinding;
+        const bytes = metadata === "unreadable" ? '{"status":"running"' : JSON.stringify(meta);
+        if (metadata === "missing") rmSync(metadataPath);
+        else writeFileSync(metadataPath, bytes);
         writeFileSync(join(directory, "session.jsonl"), '{"role":"user","content":"First sample collected"}\n');
 
         if (route === "startup") await recoverInstalledAppTasks(f.base.bus);
@@ -10989,9 +10995,11 @@ describe("canonical App task runtime", () => {
         expect(f.agentCalls()).toBe(1);
         expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
         expect(readAcceptedRuntimeAttempt(f.config, "owner")?.acceptedResult?.result).toEqual(f.payload);
-        expect(f.recoveryContext()).toContain("session metadata is missing");
+        if (metadata !== "no-binding")
+          expect(f.recoveryContext()).toContain(`session metadata is ${metadata === "missing" ? "missing" : "unreadable"}`);
         expect(f.recoveryContext()).toContain("First sample collected");
-        expect(existsSync(join(directory, "meta.json"))).toBe(false);
+        if (metadata === "missing") expect(existsSync(metadataPath)).toBe(false);
+        else expect(readFileSync(metadataPath, "utf8")).toBe(bytes);
         expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(result);
       },
     );

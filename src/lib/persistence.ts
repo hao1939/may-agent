@@ -478,9 +478,9 @@ function isPersistedSession(value: unknown): value is PersistedSession {
 export type SessionMetaRecoveryEvidence =
   | { state: "absent" }
   | { state: "valid"; meta: PersistedSession }
-  | { state: "corrupt" };
+  | { state: "corrupt"; meta?: Record<string, unknown> };
 
-/** Read and structurally validate metadata used to authorize recovery replay. */
+/** Validate lifecycle evidence while retaining readable ownership/process facts. */
 export function readSessionMetaRecoveryEvidence(
   persistDir: string,
   sessionId: string,
@@ -489,7 +489,8 @@ export function readSessionMetaRecoveryEvidence(
   if (!existsSync(filePath)) return { state: "absent" };
   try {
     const parsed: unknown = JSON.parse(readFileSync(filePath, "utf-8"));
-    return isPersistedSession(parsed) ? { state: "valid", meta: parsed } : { state: "corrupt" };
+    if (isPersistedSession(parsed)) return { state: "valid", meta: parsed };
+    return { state: "corrupt", ...(isRecord(parsed) ? { meta: parsed } : {}) };
   } catch {
     return { state: "corrupt" };
   }

@@ -242,15 +242,24 @@ it.each([
   expect(facts).not.toContain("checkpoint: absent");
 });
 
-it("allows Task recovery with missing session metadata and reports the incomplete history", () => {
+it.each([
+  { name: "missing", bytes: null },
+  { name: "unreadable JSON", bytes: '{"status":"running"' },
+  { name: "unreadable fields", bytes: '{"status":["running"]}' },
+  { name: "partial binding", bytes: '{"taskBinding":{"appId":"sample"}}' },
+])("uses retained Task ownership with $name metadata and preserves its evidence", ({ name, bytes }) => {
   const f = recoveryFixture();
-  rmSync(f.metadata);
+  if (bytes === null) rmSync(f.metadata);
+  else writeFileSync(f.metadata, bytes);
+  const result = '{"summary":"Earlier work may already have effects"}';
+  writeFileSync(f.result, result);
   writeFileSync(f.transcript, '{"unfinished":');
   expect(f.recovery.interrupt(f.sessionId, "Previous worker exited", "work", f.binding)).toBe(true);
-  expect(existsSync(f.metadata)).toBe(false);
-  expect(existsSync(f.result)).toBe(false);
+  if (bytes === null) expect(existsSync(f.metadata)).toBe(false);
+  else expect(readFileSync(f.metadata, "utf8")).toBe(bytes);
+  expect(readFileSync(f.result, "utf8")).toBe(result);
   expect(f.events).toEqual([]);
-  expect(f.handoff()!.facts.join("\n")).toContain("session metadata is missing");
+  expect(f.handoff()!.facts.join("\n")).toContain(`session metadata is ${name === "missing" ? "missing" : "unreadable"}`);
   expect(f.handoff()!.facts.join("\n")).toContain("Recovery history incomplete");
 });
 
@@ -274,26 +283,49 @@ it("still requires the old process to exit when session metadata is missing", ()
   expect(existsSync(f.metadata)).toBe(false);
 });
 
-it("does not recover missing session metadata without a retained Task binding", () => {
+it.each([null, '{"status":"running"', '{"status":"bogus"}'])("requires an ownership source before cleanup with metadata %s", (bytes) => {
   const f = recoveryFixture();
-  rmSync(f.metadata);
-  expect(() => f.recovery.interrupt(f.sessionId, "Recover")).toThrow("session metadata is missing");
+  if (bytes === null) rmSync(f.metadata);
+  else writeFileSync(f.metadata, bytes);
+  const touched: string[] = [];
+  const recovery = createTaskSessionRecovery({
+    persistDir: f.root, bus: new EventBus(),
+    manager: { hasActiveSession: () => true, cancel: () => touched.push("cancel") } as never,
+    drainPersistedBashProcessGroups: () => { touched.push("drain"); return true; },
+  });
+  expect(() => recovery.interrupt(f.sessionId, "Recover")).toThrow("no retained Task binding and no valid session metadata");
+  expect(touched).toEqual([]);
+  if (bytes !== null) expect(readFileSync(f.metadata, "utf8")).toBe(bytes);
   expect(existsSync(f.result)).toBe(false);
 });
 
-it.each(['{"status":"running"', '{"status":"bogus"}'])("does not invent lifecycle state from invalid metadata %s", (bytes) => {
-  const f = recoveryFixture();
+it("uses the retained binding when the session has no copied Task binding", () => {
+  const f = recoveryFixture("done");
+  const meta = JSON.parse(readFileSync(f.metadata, "utf8"));
+  delete meta.taskBinding;
+  const bytes = JSON.stringify(meta);
   writeFileSync(f.metadata, bytes);
-  expect(() => f.recovery.interrupt(f.sessionId, "Previous worker exited", "work", f.binding)).toThrow("invalid session metadata");
+  expect(f.recovery.interrupt(f.sessionId, "Recover", "work", f.binding)).toBe(true);
   expect(readFileSync(f.metadata, "utf8")).toBe(bytes);
-  expect(existsSync(f.result)).toBe(false);
+  expect(f.events).toEqual([]);
 });
 
-it.each(["absent", "mismatched"] as const)("preserves the ownership fence for %s Task binding", (status) => {
+it("builds usable recovery context when the optional session error is not text", () => {
+  const f = recoveryFixture("done");
+  const meta = JSON.parse(readFileSync(f.metadata, "utf8"));
+  meta.error = 42;
+  writeFileSync(f.metadata, JSON.stringify(meta));
+  expect(f.recovery.interrupt(f.sessionId, "Recover", "work", f.binding)).toBe(true);
+  expect(f.handoff()?.reason).toBe("recovered-session");
+  expect(f.handoff()?.facts).toContain(`Recovered interrupted agent session metadata: ${f.metadata}`);
+});
+
+it.each(["valid", "damaged", "partial"] as const)("preserves readable ownership conflicts in %s metadata", (status) => {
   const f = recoveryFixture();
   const meta = JSON.parse(readFileSync(f.metadata, "utf8"));
-  if (status === "absent") delete meta.taskBinding;
-  else meta.taskBinding.attemptId = "another-attempt";
+  meta.taskBinding.attemptId = "another-attempt";
+  if (status === "damaged") meta.status = ["running"];
+  if (status === "partial") meta.taskBinding = { attemptId: "another-attempt" };
   writeFileSync(f.metadata, JSON.stringify(meta));
   const touched: string[] = [];
   const recovery = createTaskSessionRecovery({
@@ -303,26 +335,35 @@ it.each(["absent", "mismatched"] as const)("preserves the ownership fence for %s
   });
   expect(() => recovery.interrupt(f.sessionId, "Previous worker exited", "work", f.binding)).toThrow("session Task binding");
   expect(touched).toEqual([]);
-  expect(readSessionMeta(f.root, f.sessionId)?.status).toBe("running");
+  expect(readFileSync(f.metadata, "utf8")).toBe(JSON.stringify(meta));
   expect(existsSync(f.result)).toBe(false);
 });
 
-it("rejects array-valued session status before cancellation or drain", () => {
+it("rejects a retained binding for another Task before cancellation or drain", () => {
   const f = recoveryFixture();
-  const meta = JSON.parse(readFileSync(f.metadata, "utf8"));
-  meta.status = ["running"];
-  const bytes = JSON.stringify(meta);
-  writeFileSync(f.metadata, bytes);
+  rmSync(f.metadata);
   const touched: string[] = [];
   const recovery = createTaskSessionRecovery({
     persistDir: f.root, bus: new EventBus(),
     manager: { hasActiveSession: () => true, cancel: () => touched.push("cancel") } as never,
     drainPersistedBashProcessGroups: () => { touched.push("drain"); return true; },
   });
-  expect(() => recovery.interrupt(f.sessionId, "Previous worker exited", "work", f.binding)).toThrow("invalid session metadata");
+  expect(() => recovery.interrupt(f.sessionId, "Previous worker exited", "another-task", f.binding)).toThrow("retained Task binding");
   expect(touched).toEqual([]);
-  expect(readFileSync(f.metadata, "utf8")).toBe(bytes);
   expect(existsSync(f.result)).toBe(false);
+});
+
+it.each(["damaged", "terminal"])("honors a live detached process in %s metadata", (kind) => {
+  const f = recoveryFixture("done");
+  const meta = JSON.parse(readFileSync(f.metadata, "utf8"));
+  if (kind === "damaged") meta.status = ["running"];
+  meta.detached = true;
+  meta.pid = process.pid;
+  writeFileSync(f.metadata, JSON.stringify(meta));
+  expect(f.recovery.isLive(f.sessionId)).toBe(true);
+  expect(() => f.recovery.interrupt(f.sessionId, "Recover", "work", f.binding)).toThrow("external owner is still live");
+  expect(readFileSync(f.metadata, "utf8")).toBe(JSON.stringify(meta));
+  expect(f.events).toEqual([]);
 });
 
 it.each(["absent", "terminal"] as const)("honors the live process marker when metadata is %s", (kind) => {

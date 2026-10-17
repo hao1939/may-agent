@@ -102,29 +102,31 @@ for meaningful inputs/changes and independent observers. App-owned prompts,
 workflows, observers, schedules and acceptance stay in the owning App.
 A new implementation does not require a universal adapter, manifest or lifecycle.
 
-Recovery preserves accepted Task results and passes retained execution evidence
-through the existing attempt context. A damaged transcript or checkpoint is
-reported as incomplete, with readable entries retained; it does not prohibit a
-replacement attempt. The App decides whether to inspect effects, redo work or
-seek help. Session ownership, live processes and authoritative lifecycle state
-remain Host checks. Starting a replacement attempt does not authorize replay of
-an arbitrary external effect; idempotency belongs at the operation boundary.
+Recovery uses one rule: establish the Task's ownership, finish old execution
+cleanup, and continue through an ordinary attempt with the available evidence.
+The durable Task's exact attempt/session relationship authorizes its recovery.
+A missing copied binding or missing/unreadable metadata, transcript or checkpoint
+does not create a different recovery policy. Readable ownership conflicts still
+block cancellation and cleanup, even when other metadata fields are damaged.
+Standalone session recovery needs valid metadata when no retained Task supplies
+that authority.
 
-When session metadata exists, recovery validates it and the retained attempt's
-exact binding before cancellation or process cleanup. A missing metadata file
-does not prevent recovery driven by that retained Task attempt: the Host checks
-for a live session owner and drains its shell processes, then permits a new
-attempt using the Task's current state. It reports the missing history in the
-attempt context without reconstructing metadata or inventing an old result.
-Standalone recovery without a retained Task binding still requires metadata.
+The Host preserves accepted Task results and surviving history, and discloses
+missing or damaged evidence in the existing attempt context. It reconciles valid
+session lifecycle fields; it leaves unreadable metadata and retained results
+untouched rather than inventing an old completion. The App decides whether to
+inspect effects, redo work or seek help. Starting an attempt does not authorize
+replay of an arbitrary external effect; idempotency belongs at its operation.
 
 Cancellation only signals a managed invocation. While the manager retains that
 invocation or its joined helper cleanup, recovery leaves the live marker and
 old Task claim intact and reports the pending cleanup. The existing recovery
 path may retry after cleanup finishes; this uses no additional polling loop.
 
-Cleanup must succeed before the replacement claim commits; invalid or
-conflicting metadata and failed drain leave the old claim in place. Use the
+Cleanup must succeed before the replacement claim commits. Readable detached
+process references and active markers remain liveness evidence even if a
+lifecycle label is terminal or unreadable. Ownership conflicts, live external
+execution and failed drain leave the old claim in place. Use the
 original attempt generation for session ownership even when the Task requirement
 has changed. Rebuild the recovery context after cleanup so the replacement
 receives the same retained evidence on startup and controller paths.

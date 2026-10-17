@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SubagentManager } from "./manager.js";
@@ -164,7 +164,7 @@ describe("shared execution scope", () => {
     expect(manager.status()).toEqual([]);
   });
 
-  it.each(["present", "absent"])("recovery waits for managed helper cleanup with %s metadata", async (metadata) => {
+  it.each(["present", "absent", "unreadable"])("recovery waits for managed helper cleanup with %s metadata", async (metadata) => {
     const childStarted = Promise.withResolvers<void>();
     const childStopped = Promise.withResolvers<void>();
     const releaseCleanup = Promise.withResolvers<void>();
@@ -191,6 +191,7 @@ describe("shared execution scope", () => {
     try {
       await childStarted.promise;
       if (metadata === "absent") rmSync(join(directory, "meta.json"));
+      if (metadata === "unreadable") writeFileSync(join(directory, "meta.json"), '{"status":"running"');
       expect(() => recovery.interrupt(parent, "Recover work", "work", binding))
         .toThrow("managed execution cleanup is still pending");
       await childStopped.promise;
