@@ -71,6 +71,17 @@ their bounded retry schedule. Repeatable schema/metric-definition installation
 uses the separate initialization retry helper; it is not an ordinary delivery
 allowance. Session/workflow artifacts remain evidence if a SQL projection fails.
 
+Opening a database never replaces existing state with a backup. Lock contention
+uses the bounded initialization retry; damaged state fails visibly and remains
+available for explicit recovery. Only an absent database without SQLite recovery
+sidecars may bootstrap from a self-contained backup. A complete staged copy is
+published without replacing a concurrent opener's file. If sidecars appear during
+bootstrap, recheck the main file before treating them as orphaned recovery evidence.
+Schema-only consumers, including maintenance and Task workers, require an existing
+Host database; they never create its file or restore a backup. Restoring older
+state over existing data requires offline maintenance that preserves the original
+files and artifacts.
+
 Observer facts need no consumer unless a declared route uses them. Their trusted
 record-only intent is saved with the Event and restored on keyed retry and journal
 recovery; it is not an App routing option or proof of delivery. Missing historical

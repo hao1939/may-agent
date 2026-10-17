@@ -89,7 +89,7 @@ describe("Task worker process role", () => {
   it("refuses missing schema and selects worker retry pacing after entry", async () => {
     const result = await runProbe("worker-missing", true);
     expect(result.worker).toBe(true);
-    expect(result.dbError).toBe("Task worker requires an initialized Host database");
+    expect(result.dbError).toBe("Schema-only connection requires an initialized Host database");
     expect(result.tableNames).toEqual([]);
     expect(result.waits).toEqual([250, 500, 1_000, 2_000]);
     expect(result.retryAttempts).toBe(5);
