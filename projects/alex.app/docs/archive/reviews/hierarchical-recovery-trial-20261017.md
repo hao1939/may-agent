@@ -121,7 +121,18 @@ the same incomplete-history path. There is no field-specific recovery branch.
   passed on the same final revision. Hosted tests also report 3,839 passed,
   three skips and zero failures. The existing cleanup thread remains resolved;
   the refinement still needs independent review.
-- Design checks pass with the existing root `reports` warning.
+- Isolated design checks pass with the existing root `reports` warning.
+
+After integration into shared `/app`, Markdown integrity and executable design
+examples passed, but the canonical App audit reported three missing `app.ts`
+files. Its existing ignored compatibility symlinks `projects/evaluation.app`,
+`projects/gym.app` and `projects/may-agent.app` point into retired App local
+directories. They date from October 4 and are unchanged by this documentation
+commit; the audit script also matches its preceding revision byte for byte.
+The shared-root check therefore has three environment/layout errors, plus
+`features` and `reports` layout warnings. Do not claim that complete shared-root
+check passed. The isolated source check and Host CI are separate successful
+results; this change does not remove the compatibility paths or alter App policy.
 
 A missing test import was corrected before the retained red run; that harness
 mistake is excluded from the reproduction. Logs are under the existing evidence

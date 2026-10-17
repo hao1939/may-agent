@@ -167,7 +167,7 @@ If that requires substantial new machinery, reconsider the tradeoff. No storage
 migration or new repair result schema is required.
 
 **Review status:** #381's common-rule refinement is published at `e4513ce7e`.
-Final focused/design checks, complete local CI and GitHub Quality/Container
+Final focused/isolated-design checks, complete local CI and GitHub Quality/Container
 checks pass on that revision. The initial cleanup review thread remains resolved,
 but the refinement still needs independent review. The PR is unmerged and
 undeployed. See
