@@ -4,7 +4,10 @@ import { resolve } from "node:path";
 export const SQL_LATENCY_METRIC_ID = "may.daemon-sql-recent-worst-call-ms";
 export const SQL_DIAGNOSTIC_MAX_AGE_MS = 10 * 60_000;
 export const SQL_DIAGNOSTIC_NOTE_MAX_CHARS = 4_000;
+export const SQL_DIAGNOSTIC_ENRICHMENT_THRESHOLD_MS = 1_000;
 const MAX_RANKED_QUERIES = 6;
+const MAX_PLAN_ROWS = 6;
+const MAX_PLAN_DETAIL_CHARS = 200;
 const MAX_SHAPE_CHARS = 300;
 
 type RankedQuery = {
@@ -26,6 +29,22 @@ type QueryWindow = {
 };
 
 type StatusResponse = Record<string, unknown>;
+
+type DiagnosticField = {
+  status: "available" | "unavailable" | "unsupported" | "error";
+  observable?: boolean;
+  ownerPid?: number;
+  ownerKind?: string;
+  journalMode?: string;
+  walBytes?: number;
+  frames?: number;
+  busy?: boolean;
+  mode?: string;
+  logFrames?: number;
+  checkpointedFrames?: number;
+  lastAt?: number;
+  reason?: "diagnostic read failed";
+};
 
 type RetainedQuery = {
   fingerprint: string;
@@ -63,6 +82,90 @@ function nonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+function boundedString(value: unknown, limit = 160): string | undefined {
+  return nonEmptyString(value) ? value.slice(0, limit) : undefined;
+}
+
+function diagnosticField(
+  value: unknown,
+  allowed: readonly string[],
+): DiagnosticField {
+  if (value === undefined) return { status: "unsupported" };
+  if (value === null) return { status: "unavailable" };
+  const source = record(value);
+  const suppliedStatus = source.status;
+  const recognizedStatus =
+    suppliedStatus === "available" ||
+    suppliedStatus === "unavailable" ||
+    suppliedStatus === "unsupported" ||
+    suppliedStatus === "error"
+      ? suppliedStatus
+      : undefined;
+  const hasRecognizedValue = allowed.some((key) => source[key] !== undefined);
+  const status =
+    recognizedStatus ??
+    (source.error !== undefined
+      ? "error"
+      : hasRecognizedValue
+        ? "available"
+        : "unavailable");
+  const result: DiagnosticField = { status };
+  for (const key of allowed) {
+    const raw = source[key];
+    if (key === "observable" || key === "busy") {
+      if (typeof raw === "boolean")
+        (result as Record<string, unknown>)[key] = raw;
+    } else if (
+      [
+        "ownerPid",
+        "walBytes",
+        "frames",
+        "logFrames",
+        "checkpointedFrames",
+        "lastAt",
+      ].includes(key)
+    ) {
+      const number = finite(raw);
+      if (number !== null) (result as Record<string, unknown>)[key] = number;
+    } else {
+      const text = boundedString(raw);
+      if (text !== undefined) (result as Record<string, unknown>)[key] = text;
+    }
+  }
+  if (status === "error") result.reason = "diagnostic read failed";
+  return result;
+}
+
+function preferredDiagnostic(primary: unknown, fallback: unknown): unknown {
+  return primary === undefined ? fallback : primary;
+}
+
+function diagnosticSnapshot(
+  diagnostics: Record<string, unknown>,
+  measuredAt: number,
+) {
+  const sql = record(diagnostics.sql);
+  const sqlite = record(diagnostics.sqlite);
+  return {
+    capturedAt: measuredAt,
+    source: "daemon-status",
+    lockOwner: diagnosticField(
+      preferredDiagnostic(sql.lockOwner, sqlite.lockOwner),
+      ["observable", "ownerPid", "ownerKind"],
+    ),
+    wal: diagnosticField(preferredDiagnostic(sql.wal, sqlite.wal), [
+      "journalMode",
+      "walBytes",
+      "frames",
+      "busy",
+    ]),
+    checkpoint: diagnosticField(
+      preferredDiagnostic(sql.checkpoint, sqlite.checkpoint),
+      ["mode", "busy", "logFrames", "checkpointedFrames", "lastAt"],
+    ),
+  };
+}
+
 function rankedRows(window: QueryWindow): RankedQuery[] {
   return [window.topByTotalTime, window.topByWorstTime]
     .flatMap((rows) => (Array.isArray(rows) ? rows : []))
@@ -71,25 +174,54 @@ function rankedRows(window: QueryWindow): RankedQuery[] {
     );
 }
 
-function retainedPlan(row: RankedQuery, since: number, until: number): RetainedQuery["plan"] {
+function retainedPlan(
+  row: RankedQuery,
+  since: number,
+  until: number,
+): RetainedQuery["plan"] {
   const plan = record(row.plan);
   const capturedAt = finite(plan.capturedAt);
-  if (plan.fingerprint !== row.id || plan.shape !== row.sql || capturedAt === null ||
-      capturedAt < since || capturedAt > until || !Array.isArray(plan.rows)) return undefined;
+  if (
+    plan.fingerprint !== row.id ||
+    plan.shape !== row.sql ||
+    capturedAt === null ||
+    capturedAt < since ||
+    capturedAt > until ||
+    !Array.isArray(plan.rows)
+  )
+    return undefined;
   const rows: NonNullable<RetainedQuery["plan"]>["rows"] = [];
-  let textTruncated = false;
-  for (const raw of plan.rows.slice(0, 6)) {
+  for (const raw of plan.rows) {
     const value = record(raw);
     const id = finite(value.id);
     const parent = finite(value.parent);
-    if (id === null || parent === null || typeof value.detail !== "string") return undefined;
-    textTruncated ||= value.detail.length > 200;
-    rows.push({ id, parent, detail: value.detail.slice(0, 200) });
+    if (id === null || parent === null || typeof value.detail !== "string")
+      return undefined;
+    rows.push({ id, parent, detail: value.detail });
   }
   return {
-    fingerprint: String(plan.fingerprint).slice(0, 80), capturedAt, rows,
-    rowsTruncated: plan.rowsTruncated === true || plan.rows.length > rows.length,
-    textTruncated,
+    fingerprint: String(plan.fingerprint).slice(0, 80),
+    capturedAt,
+    rows,
+    rowsTruncated: plan.rowsTruncated === true,
+    textTruncated: false,
+  };
+}
+
+function boundedPlan(
+  plan: NonNullable<RetainedQuery["plan"]>,
+): NonNullable<RetainedQuery["plan"]> {
+  const rows = plan.rows.slice(0, MAX_PLAN_ROWS).map((row) => ({
+    ...row,
+    detail: row.detail.slice(0, MAX_PLAN_DETAIL_CHARS),
+  }));
+  return {
+    ...plan,
+    rows,
+    rowsTruncated: plan.rowsTruncated || plan.rows.length > rows.length,
+    textTruncated: plan.rows.some(
+      (row) => row.detail.length > MAX_PLAN_DETAIL_CHARS,
+    ),
   };
 }
 
@@ -167,7 +299,11 @@ export function sqlLatencySample(
         averageMs,
         worstMs,
         window: { since, until },
-        ...(plan ? { plan } : row.plan === undefined ? {} : { planUnavailable: true }),
+        ...(plan
+          ? { plan }
+          : row.plan === undefined
+            ? {}
+            : { planUnavailable: true }),
       });
     }
   }
@@ -188,6 +324,7 @@ export function sqlLatencySample(
     if (selected.length === MAX_RANKED_QUERIES) break;
   }
   const value = worst.worstMs;
+  const enriched = value >= SQL_DIAGNOSTIC_ENRICHMENT_THRESHOLD_MS;
   const noteValue = {
     scope:
       "Completed calls in the daemon shared SQLite adapter; workers, raw drivers and sleeps outside SQLite are excluded",
@@ -205,9 +342,23 @@ export function sqlLatencySample(
       selectedRowsTruncated: rows.length > selected.length,
       shapeTextTruncated: rows.some((row) => row.shapeTruncated),
     },
-    queries: selected.map(
-      ({ shapeTruncated: _shapeTruncated, ...query }) => query,
-    ),
+    ...(enriched
+      ? { diagnosticSnapshot: diagnosticSnapshot(diagnostics, measuredAt) }
+      : {}),
+    queries: selected.map((query) => {
+      const { shapeTruncated: _shapeTruncated, ...retained } = query;
+      return {
+        ...retained,
+        ...(query.plan
+          ? {
+              plan:
+                enriched && query === worst
+                  ? query.plan
+                  : boundedPlan(query.plan),
+            }
+          : {}),
+      };
+    }),
   };
   let note = JSON.stringify(noteValue);
   while (note.length > SQL_DIAGNOSTIC_NOTE_MAX_CHARS && selected.length > 1) {
@@ -218,15 +369,20 @@ export function sqlLatencySample(
     note = JSON.stringify(noteValue);
   }
   const witness = noteValue.queries[0]!;
-  while (note.length > SQL_DIAGNOSTIC_NOTE_MAX_CHARS && witness.plan?.rows.length) {
-    witness.plan.rows.pop();
-    witness.plan.rowsTruncated = true;
-    note = JSON.stringify(noteValue);
+  if (!enriched) {
+    while (
+      note.length > SQL_DIAGNOSTIC_NOTE_MAX_CHARS &&
+      witness.plan?.rows.length
+    ) {
+      witness.plan.rows.pop();
+      witness.plan.rowsTruncated = true;
+      note = JSON.stringify(noteValue);
+    }
+    if (note.length > SQL_DIAGNOSTIC_NOTE_MAX_CHARS)
+      throw new Error(
+        "Bounded SQL diagnostic evidence exceeds the public note limit",
+      );
   }
-  if (note.length > SQL_DIAGNOSTIC_NOTE_MAX_CHARS)
-    throw new Error(
-      "Bounded SQL diagnostic evidence exceeds the public note limit",
-    );
   return { value, sampleSize: rows.length, measuredAt, note };
 }
 

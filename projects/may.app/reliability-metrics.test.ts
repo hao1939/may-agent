@@ -53,29 +53,47 @@ test("actual metric-query timing breaches at 100 ms, stays quiet within an episo
   const reporting = createAppReporting(() => store);
   reporting.syncDefinitions([{ definition: app }]);
   const metrics = createMetricService({ getDb: () => store });
-  metrics.define({ id: "trial-query", type: "gauge", sourceQuery: "SELECT 7 AS value" });
+  metrics.define({
+    id: "trial-query",
+    type: "gauge",
+    sourceQuery: "SELECT 7 AS value",
+  });
   const bus = new EventBus();
   const transitions: any[] = [];
-  bus.subscribe(event => {
-    if (event.type === "metric.breach" || event.type === "metric.recovered") transitions.push(event);
+  bus.subscribe((event) => {
+    if (event.type === "metric.breach" || event.type === "metric.recovered")
+      transitions.push(event);
   });
   let elapsed = 0;
   let duration = 99;
   const clock = spyOn(performance, "now").mockImplementation(() => elapsed);
   const open = database.openReadOnlyDatabase;
-  const read = spyOn(database, "openReadOnlyDatabase").mockImplementation(path => {
-    const actual = open(path);
-    return profileDatabase({ ...actual, prepare(sql) {
-      const statement = actual.prepare(sql);
-      return { ...statement, get(...params) {
-        const result = statement.get(...params);
-        elapsed += duration;
-        return result;
-      } };
-    } });
-  });
+  const read = spyOn(database, "openReadOnlyDatabase").mockImplementation(
+    (path) => {
+      const actual = open(path);
+      return profileDatabase({
+        ...actual,
+        prepare(sql) {
+          const statement = actual.prepare(sql);
+          return {
+            ...statement,
+            get(...params) {
+              const result = statement.get(...params);
+              elapsed += duration;
+              return result;
+            },
+          };
+        },
+      });
+    },
+  );
   try {
-    const collect = () => measureSourceMetrics({ bus, persistDir: root, isDue: row => row.id === "trial-query" });
+    const collect = () =>
+      measureSourceMetrics({
+        bus,
+        persistDir: root,
+        isDue: (row) => row.id === "trial-query",
+      });
     await collect();
     await evaluateMetrics({ bus, persistDir: root });
     expect(transitions).toEqual([]);
@@ -84,13 +102,23 @@ test("actual metric-query timing breaches at 100 ms, stays quiet within an episo
     expect(transitions).toEqual([]); // Collection itself never requests model work.
     await evaluateMetrics({ bus, persistDir: root });
     expect(transitions).toHaveLength(1);
-    expect(transitions[0]).toMatchObject({ type: "metric.breach", data: { metricId: METRIC_QUERY_DURATION_METRIC, current: 100 } });
-    expect(taskInputForEvent(transitions[0])).toMatchObject({ kind: "review-metric", data: {
-      metricId: METRIC_QUERY_DURATION_METRIC, alertId: expect.any(Number), automatic: true,
-    } });
+    expect(transitions[0]).toMatchObject({
+      type: "metric.breach",
+      data: { metricId: METRIC_QUERY_DURATION_METRIC, current: 100 },
+    });
+    expect(taskInputForEvent(transitions[0])).toMatchObject({
+      kind: "review-metric",
+      data: {
+        metricId: METRIC_QUERY_DURATION_METRIC,
+        alertId: expect.any(Number),
+        automatic: true,
+      },
+    });
     const retained = await reporting.readMetric(METRIC_QUERY_DURATION_METRIC);
     expect(retained).toMatchObject({ value: 100, sampleSize: 1 });
-    expect(JSON.parse(retained!.note!)).toMatchObject({ examples: [{ metricId: "trial-query", durationMs: 100 }] });
+    expect(JSON.parse(retained!.note!)).toMatchObject({
+      examples: [{ metricId: "trial-query", durationMs: 100 }],
+    });
     await collect();
     await evaluateMetrics({ bus, persistDir: root });
     expect(transitions).toHaveLength(1);
@@ -100,12 +128,16 @@ test("actual metric-query timing breaches at 100 ms, stays quiet within an episo
     duration = 80;
     await collect();
     await evaluateMetrics({ bus, persistDir: root });
-    expect(transitions.map(event => event.type)).toEqual(["metric.breach", "metric.recovered"]);
+    expect(transitions.map((event) => event.type)).toEqual([
+      "metric.breach",
+      "metric.recovered",
+    ]);
     expect(metrics.get("trial-query")!.observation!.value).toBe(7);
   } finally {
     read.mockRestore();
     clock.mockRestore();
-    if (previousAutomatic === undefined) delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+    if (previousAutomatic === undefined)
+      delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;
     else process.env.EVALUATION_AUTO_REVIEW_ENABLED = previousAutomatic;
     closeDb(root);
     rmSync(root, { recursive: true, force: true });
@@ -187,7 +219,13 @@ test("recent SQL call latency retains a slow call under low aggregate load with 
       fingerprint: "all:6ea5fa410384c38f",
       shape: "SELECT * FROM report_links WHERE task_id = ? AND secret = ?",
       capturedAt: now - 1_000,
-      rows: [{ id: 1, parent: 0, detail: "SEARCH report_links USING INDEX idx_report_task (task_id=?)" }],
+      rows: [
+        {
+          id: 1,
+          parent: 0,
+          detail: "SEARCH report_links USING INDEX idx_report_task (task_id=?)",
+        },
+      ],
       rowsTruncated: false,
     },
   };
@@ -222,19 +260,35 @@ test("recent SQL call latency retains a slow call under low aggregate load with 
     SQL_DIAGNOSTIC_NOTE_MAX_CHARS,
   );
   expect(JSON.parse(observed.note).queries[0].plan).toMatchObject({
-    fingerprint: slow.id, capturedAt: now - 1_000, rows: slow.plan.rows,
-    rowsTruncated: false, textTruncated: false,
+    fingerprint: slow.id,
+    capturedAt: now - 1_000,
+    rows: slow.plan.rows,
+    rowsTruncated: false,
+    textTruncated: false,
   });
   slow.plan.fingerprint = "different-query";
   const mismatched = sqlLatencySample(status, now);
   expect(mismatched.value).toBe(observed.value);
-  expect(JSON.parse(mismatched.note).queries[0]).toMatchObject({ planUnavailable: true });
+  expect(JSON.parse(mismatched.note).queries[0]).toMatchObject({
+    planUnavailable: true,
+  });
   expect(JSON.parse(mismatched.note).queries[0].plan).toBeUndefined();
   slow.plan.fingerprint = slow.id;
-  slow.plan.rows = Array.from({ length: 20 }, (_, id) => ({ id, parent: 0, detail: "\"\n".repeat(250) }));
+  slow.plan.rows = Array.from({ length: 20 }, (_, id) => ({
+    id,
+    parent: 0,
+    detail: '"\n'.repeat(250),
+  }));
+  slow.maxMs = slow.totalMs = slow.averageMs = 999;
   const boundedPlan = sqlLatencySample(status, now);
-  expect(boundedPlan.note.length).toBeLessThanOrEqual(SQL_DIAGNOSTIC_NOTE_MAX_CHARS);
-  expect(JSON.parse(boundedPlan.note).queries[0].plan).toMatchObject({ rowsTruncated: true, textTruncated: true });
+  expect(boundedPlan.note.length).toBeLessThanOrEqual(
+    SQL_DIAGNOSTIC_NOTE_MAX_CHARS,
+  );
+  expect(JSON.parse(boundedPlan.note).queries[0].plan).toMatchObject({
+    rowsTruncated: true,
+    textTruncated: true,
+  });
+  expect(JSON.parse(boundedPlan.note).diagnosticSnapshot).toBeUndefined();
   expect(JSON.parse(observed.note)).toMatchObject({
     pid: 22,
     sqlSince: now - 300_000,
@@ -256,6 +310,129 @@ test("recent SQL call latency retains a slow call under low aggregate load with 
       },
     ],
   });
+});
+
+test("threshold SQL latency keeps the complete worst plan and one aligned explicit state snapshot", () => {
+  const now = Date.now();
+  const planRows = Array.from({ length: 20 }, (_, id) => ({
+    id,
+    parent: Math.max(0, id - 1),
+    detail: `STEP ${id} ${"masked_detail ".repeat(35)}`,
+  }));
+  const ranked = (id: string, maxMs: number, rows = planRows) => ({
+    id,
+    operation: "all",
+    sql: `SELECT masked FROM ${id === "worst" ? "worst" : "other"} WHERE id = ?`,
+    calls: 1,
+    totalMs: maxMs,
+    averageMs: maxMs,
+    maxMs,
+    plan: {
+      fingerprint: id,
+      shape: `SELECT masked FROM ${id === "worst" ? "worst" : "other"} WHERE id = ?`,
+      capturedAt: now - 5,
+      rows,
+      rowsTruncated: false,
+    },
+  });
+  const worst = ranked("worst", 1_000);
+  const other = ranked("other", 900);
+  const status = {
+    diagnostics: {
+      pid: 77,
+      sqlite: {
+        lockOwner: { status: "unavailable", observable: true },
+        wal: {
+          status: "error",
+          error: "read-only state probe failed",
+          databasePath: "/private/may.db",
+        },
+        checkpoint: null,
+      },
+      sql: {
+        since: now - 300_000,
+        measuredAt: now,
+        queries: {
+          since: now - 300_000,
+          until: now,
+          trackedQueries: 2,
+          topByTotalTime: [worst, other],
+          topByWorstTime: [worst, other],
+        },
+      },
+    },
+  };
+
+  const observed = sqlLatencySample(status, now);
+  const note = JSON.parse(observed.note);
+  expect(observed.value).toBe(1_000);
+  expect(observed.note.length).toBeGreaterThan(SQL_DIAGNOSTIC_NOTE_MAX_CHARS);
+  expect(note.queries[0].plan.rows).toEqual(planRows);
+  expect(note.queries[0].plan).toMatchObject({
+    rowsTruncated: false,
+    textTruncated: false,
+  });
+  expect(note.diagnosticSnapshot).toEqual({
+    capturedAt: now,
+    source: "daemon-status",
+    lockOwner: { status: "unavailable", observable: true },
+    wal: { status: "error", reason: "diagnostic read failed" },
+    checkpoint: { status: "unavailable" },
+  });
+  expect(observed.note).not.toContain("/private/may.db");
+  expect(observed.note).not.toContain("read-only state probe failed");
+
+  const explicitSqlState = structuredClone(status) as any;
+  explicitSqlState.diagnostics.sql.lockOwner = null;
+  explicitSqlState.diagnostics.sql.wal = {
+    error: "EACCES: open /private/customer-secret/may.db-wal",
+  };
+  explicitSqlState.diagnostics.sql.checkpoint = {};
+  expect(
+    JSON.parse(sqlLatencySample(explicitSqlState, now).note).diagnosticSnapshot,
+  ).toMatchObject({
+    lockOwner: { status: "unavailable" },
+    wal: { status: "error", reason: "diagnostic read failed" },
+    checkpoint: { status: "unavailable" },
+  });
+  expect(sqlLatencySample(explicitSqlState, now).note).not.toContain(
+    "customer-secret",
+  );
+
+  const unrelated = structuredClone(status) as any;
+  unrelated.diagnostics.sql.queries.topByTotalTime[0].plan.rows =
+    planRows.slice(0, 2);
+  unrelated.diagnostics.sql.queries.topByWorstTime[0].plan.rows =
+    planRows.slice(0, 2);
+  const unrelatedNote = JSON.parse(sqlLatencySample(unrelated, now).note);
+  expect(
+    unrelatedNote.queries.find((query: any) => query.fingerprint === "other")
+      ?.plan,
+  ).toMatchObject({
+    rowsTruncated: true,
+    textTruncated: true,
+  });
+  expect(
+    unrelatedNote.queries.find((query: any) => query.fingerprint === "other")
+      ?.plan.rows,
+  ).toHaveLength(6);
+
+  const legacy = structuredClone(status) as any;
+  delete legacy.diagnostics.sqlite;
+  const legacyNote = JSON.parse(sqlLatencySample(legacy, now).note);
+  expect(legacyNote.diagnosticSnapshot).toEqual({
+    capturedAt: now,
+    source: "daemon-status",
+    lockOwner: { status: "unsupported" },
+    wal: { status: "unsupported" },
+    checkpoint: { status: "unsupported" },
+  });
+
+  worst.plan.rowsTruncated = true;
+  expect(
+    JSON.parse(sqlLatencySample(status, now).note).queries[0].plan
+      .rowsTruncated,
+  ).toBe(true);
 });
 
 test("recent SQL call latency rejects missing or expired rankings and bounds ranked evidence", () => {
@@ -705,9 +882,16 @@ test("Host source collection retains diagnostic evidence and opens one metric br
 test("May schedules recurring metric collection and evaluation independently without a Task input", () => {
   let now = 0;
   const bus = new EventBus();
-  const observed: Array<{ type: string; source?: string; data: Record<string, unknown> }> = [];
+  const observed: Array<{
+    type: string;
+    source?: string;
+    data: Record<string, unknown>;
+  }> = [];
   bus.subscribe((event) => {
-    if (event.type === "trigger.metrics-snapshot" || event.type === "trigger.metrics-evaluate") {
+    if (
+      event.type === "trigger.metrics-snapshot" ||
+      event.type === "trigger.metrics-evaluate"
+    ) {
       observed.push(event as (typeof observed)[number]);
     }
   });
@@ -730,19 +914,27 @@ test("May schedules recurring metric collection and evaluation independently wit
 
     now = 300_000;
     producer.scanNow();
-    expect(observed.filter((event) => event.type === "trigger.metrics-snapshot")).toEqual([
+    expect(
+      observed.filter((event) => event.type === "trigger.metrics-snapshot"),
+    ).toEqual([
       expect.objectContaining({
         type: "trigger.metrics-snapshot",
         source: "app:may:schedule:metric-source-collection",
         data: { idempotencyKey: "schedule:may:metric-source-collection:1" },
       }),
     ]);
-    expect(observed.filter((event) => event.type === "trigger.metrics-evaluate")).toHaveLength(2);
+    expect(
+      observed.filter((event) => event.type === "trigger.metrics-evaluate"),
+    ).toHaveLength(2);
 
     now = 360_000;
     producer.scanNow();
-    expect(observed.filter((event) => event.type === "trigger.metrics-snapshot")).toHaveLength(1);
-    expect(observed.filter((event) => event.type === "trigger.metrics-evaluate")).toHaveLength(3);
+    expect(
+      observed.filter((event) => event.type === "trigger.metrics-snapshot"),
+    ).toHaveLength(1);
+    expect(
+      observed.filter((event) => event.type === "trigger.metrics-evaluate"),
+    ).toHaveLength(3);
   } finally {
     producer.close();
   }
@@ -785,7 +977,11 @@ test("declared reliability metrics collect through the Host and retain a real br
     expect(collected.skipped).toEqual([SQL_LATENCY_METRIC]);
     expect(collected.measured.sort()).toEqual(
       [...reliabilityMetrics, ...effortMetrics]
-        .filter((metric) => metric.id !== SQL_LATENCY_METRIC && (metric.sourceQuery || metric.sourceCommand))
+        .filter(
+          (metric) =>
+            metric.id !== SQL_LATENCY_METRIC &&
+            (metric.sourceQuery || metric.sourceCommand),
+        )
         .map((metric) => metric.id)
         .sort(),
     );
@@ -1065,9 +1261,18 @@ test("input metrics include old unadmitted work after feedback and exclude recov
     stage: "input-admission",
     failures: 1,
   });
-  for (const id of ["may.unresolved-input-recovery-count", "may.oldest-input-recovery-age-seconds"]) {
-    const plan = db.prepare(`EXPLAIN QUERY PLAN ${reliabilityMetrics.find((metric) => metric.id === id)!.sourceQuery}`).all();
-    expect(plan.filter((step) => String(step.detail) === "MATERIALIZE recoveries")).toHaveLength(1);
+  for (const id of [
+    "may.unresolved-input-recovery-count",
+    "may.oldest-input-recovery-age-seconds",
+  ]) {
+    const plan = db
+      .prepare(
+        `EXPLAIN QUERY PLAN ${reliabilityMetrics.find((metric) => metric.id === id)!.sourceQuery}`,
+      )
+      .all();
+    expect(
+      plan.filter((step) => String(step.detail) === "MATERIALIZE recoveries"),
+    ).toHaveLength(1);
   }
   resolveAppInboxRecovery(db, "input", "input-admission", Date.now());
   expect(sample("may.unresolved-input-recovery-count").value).toBe(0);
@@ -1097,8 +1302,14 @@ test("retains failed attempts after later success and calculates the rate from t
       }),
     );
   }
-  const plan = db.prepare(`EXPLAIN QUERY PLAN ${reliabilityMetrics.find((metric) => metric.id === "may.failed-task-attempts-24h")!.sourceQuery}`).all();
-  expect(plan.filter((step) => String(step.detail) === "MATERIALIZE cohort")).toHaveLength(1);
+  const plan = db
+    .prepare(
+      `EXPLAIN QUERY PLAN ${reliabilityMetrics.find((metric) => metric.id === "may.failed-task-attempts-24h")!.sourceQuery}`,
+    )
+    .all();
+  expect(
+    plan.filter((step) => String(step.detail) === "MATERIALIZE cohort"),
+  ).toHaveLength(1);
   const observed = sample("may.failed-task-attempts-24h");
   expect(observed.value).toBe(1);
   expect(observed.sampleSize).toBe(3);
