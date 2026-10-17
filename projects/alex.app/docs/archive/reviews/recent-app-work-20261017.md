@@ -7,6 +7,10 @@ has a decision to make. This is a read-only runtime review, not a rollout.
 
 ## Conclusion
 
+See the [post-rollout review](post-rollout-work-20261017.md) for work through
+11:37 UTC: stable normalized waiting evidence, continued metric review cost,
+and a separate accepted owner recommendation missing from the metric reader.
+
 The active Apps produce real research, repairs and verified continuation.
 Their effectiveness is uneven: repeated evaluation of unchanged obligations,
 metric threshold oscillation and Reddit's recurring access review still consume
