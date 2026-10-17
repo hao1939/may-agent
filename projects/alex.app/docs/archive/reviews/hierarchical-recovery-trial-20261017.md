@@ -161,8 +161,14 @@ No schema migration, additional recovery loop or App policy is introduced.
 All 12 initial review regressions failed before the fix. Final focused checks
 pass **14 tests with 111 assertions**, including the production event writer,
 runtime close/reinstallation over persisted SQL, ownership conflicts and helper
-scope. Full CI status is recorded with the published revision's
-[Quality and Container checks](https://github.com/hao1939/may-agent/actions/runs/39024285902).
+scope. The first complete CI run had 3,850 passes, three skips and two failures:
+older restart fixtures omitted the retained session and expected conflicts to be
+silently skipped. Commit `b5db6bbf9db7ed9a78b522ab05eb7db4c0035b34` supplies
+the actual attempt/session relationship and asserts the shared adapter's
+conflict error while retaining the untouched-state assertions. The integration
+suite then passed 23 tests/130 assertions. Runtime source is unchanged from
+`e77b882c49`. Full final-head CI status is recorded in the
+[Quality and Container checks](https://github.com/hao1939/may-agent/actions/runs/39024528693).
 These are portable fixtures; the PR remains unmerged and undeployed.
 
 The proposal review also replaced an absolute no-extra-model-call trial with a
