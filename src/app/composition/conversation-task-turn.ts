@@ -1,4 +1,5 @@
 import type { AppDefinition, ConversationTurnResult } from "@may-agent/sdk";
+import { appTaskResultProblem, conversationTaskHandlerResult } from "../core/tasks/result.js";
 import type { AppTaskContext } from "../core/tasks/app-task-store.js";
 import { recordAppTaskAttemptSession, type AppTaskClaim } from "../core/tasks/app-task-reconciler.js";
 import {
@@ -47,7 +48,11 @@ export async function prepareConversationTaskTurn(input: {
         try {
           signal.throwIfAborted();
           validateConversationTaskProposal(config, claim, result as ConversationTurnResult, input.getTaskApp);
-          return null;
+          return appTaskResultProblem(app, {
+            taskId: claim.taskId,
+            generation: claim.generation,
+            conversation: true,
+          }, conversationTaskHandlerResult(result as ConversationTurnResult));
         } catch (error) {
           return error instanceof Error ? error.message : String(error);
         }

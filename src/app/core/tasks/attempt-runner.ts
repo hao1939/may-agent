@@ -47,7 +47,7 @@ import { type AppTaskDispatch } from "./controller.js";
 import { recoverTaskConditions } from "./dependency-admission.js";
 import { settleTaskCommunicationInputs, taskResultCommunication } from "./task-communication.js";
 import { applyTaskChanges } from "./task-changes.js";
-import { type TaskCapabilityRun } from "./result.js";
+import { appTaskResultProblem, conversationTaskHandlerResult, type TaskCapabilityRun } from "./result.js";
 import {
   appTaskConfig,
   standaloneAppTaskAdmissionDescriptors,
@@ -292,6 +292,22 @@ async function runClaimedTask(
       emit("project.task.handler.unavailable", {
         condition: "HandlerUnavailable",
         reason: result.summary,
+      });
+    }
+    if (result.state !== "error") {
+      const problem = appTaskResultProblem(descriptor.app, {
+        taskId: claim.taskId,
+        generation: claim.generation,
+        conversation,
+      }, result as AppTaskHandlerResult);
+      if (problem) return await finishUnsuccessfulAttempt({
+        ...report,
+        handlerResult: {
+          ...result,
+          state: "error",
+          resultRejected: true,
+          summary: `Handler result was rejected: ${problem}`,
+        },
       });
     }
     if (result.state === "incomplete") {
@@ -773,14 +789,7 @@ async function executeTaskHandler(input: TaskHandlerInput & { conversation: bool
       getTaskApp: (appId) => conversationTaskApp(opts, descriptor, appId, false),
     });
     return {
-      handlerResult: {
-        state: "converged",
-        summary: proposal.decision.summary,
-        response: proposal.decision.response,
-        result: { conversation: proposal.decision },
-        facts: proposal.decision.facts ?? [],
-        actions: [],
-      },
+      handlerResult: conversationTaskHandlerResult(proposal.decision),
       runId: claim.attemptId,
       conversation: proposal,
     };
