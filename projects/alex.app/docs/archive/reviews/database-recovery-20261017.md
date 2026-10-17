@@ -1,8 +1,8 @@
 # Database startup and recovery — October 17, 2026
 
 **Status:** defect reproduced on merged Host `980f2cda3`; focused correction in
-[Host #379](https://github.com/hao1939/may-agent/pull/379), source `13652b61c`, passed
-local verification and is under review. The recovery correction is not deployed.
+[Host #379](https://github.com/hao1939/may-agent/pull/379), source `e9339abe4`, is
+under review. Verification is recorded below. The recovery correction is not deployed.
 
 **Supports:** [dependable continuation](../../1-principles/purpose.md) through
 preserved accepted work. The [storage contract](../../2a-design/storage.md#opening-a-database-is-not-permission-to-roll-work-back)
@@ -44,7 +44,8 @@ recovery service, migration framework or App-specific policy.
 
 Checks cover a locked database and retry after release, an empty existing
 database, a damaged catalog, retained WAL work, orphaned recovery files, backup
-sidecars, concurrent Host processes and worker/schema settings. Verification:
+sidecars, concurrent Host processes and worker/schema settings. Initial source
+`13652b61c` verification:
 
 - 25 focused storage/schema/retry checks passed.
 - Full `bun run ci`: 3,811 passed, three installation-only skips, zero failures;
@@ -57,6 +58,33 @@ src/lib/db/schema.test.ts src/lib/db/busy-retry.test.ts`. Fixtures use real
 temporary files, locks and child processes. This does not simulate power loss,
 certify arbitrary backup contents or exercise an actual production restoration.
 Changing recovery point remains explicit maintenance with original evidence kept.
+
+## Review corrections
+
+Review of #379 found two more violations of the same ownership contract.
+A maintenance/schema-only opener could create an empty main file, fail its schema
+check, and prevent the later Host from bootstrapping the retained backup. It now
+rejects a missing database before opening it. A maintenance-first regression
+checks that no file is created and the Host subsequently restores the saved work.
+
+Both bootstrap checks could observe no main file, then observe a concurrent
+opener's WAL and incorrectly report orphaned recovery files. One shared check now
+rereads main-file existence after detecting sidecars. Controlled interleavings
+at both checks use real SQLite databases and prove the other opener's committed
+work survives. A separate staged-copy trial proves genuinely orphaned recovery
+files still prevent bootstrap and that temporary staging is cleaned up.
+
+The maintenance-first case, both concurrent-opener interleavings, and a stronger
+worker file-preservation assertion fail against the original PR head `13652b61c`.
+At revised source `e9339abe4`, connection, schema, retry and worker checks pass:
+34 tests. Full `bun run ci` passes with 3,815 tests passed, three installation-only
+skips and zero failures across 340 files. Host/SDK types, canonical boundary and
+lint pass. Apps design integrity, examples and canonical App checks also pass,
+with the existing unclassified `reports` directory warning.
+
+These changes retain the same bootstrap and retry mechanisms; no migration or
+new recovery policy is introduced. Verification uses disposable databases, not
+the live installation.
 
 ## Separate #378 rollout
 

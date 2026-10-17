@@ -143,7 +143,11 @@ When the database is absent and no SQLite recovery files remain, Host may
 bootstrap from a self-contained backup. Publish a complete copy without replacing
 a database created by another opener. A missing main file with a WAL, shared-memory
 or journal sidecar requires explicit recovery; those files may contain newer
-state. Task workers do not perform bootstrap or choose backups.
+state. Recheck the main file after observing sidecars: a concurrent opener may
+have created a healthy database in between. Schema-only consumers, including
+maintenance and Task workers, require the Host database to exist; they neither
+create an empty file nor bootstrap from a backup. Startup order must not let a
+consumer suppress the Host's backup bootstrap.
 
 Explicit restoration stops all database users, preserves the original database,
 recovery files and referenced artifacts, and installs the chosen recovery point
