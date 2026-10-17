@@ -5,13 +5,14 @@
 **Choice basis:** [Understandable recovery](../1-principles/work-model.md#prefer-understandable-recovery), [simple first](../1-principles/core-principles.md#simple-first), and [recovery ownership](../2a-design/system-boundary.md#retry-and-recovery-ownership): agents judge; infra executes their decisions and records what happened.
 
 **Design status:** Hierarchical ownership agreed in review, 2026-10-17; implementation gaps and trials below remain proposed.
-**Implementation status:** Mechanical recovery, caller feedback and addressed escalation exist. A live incident demonstrates agent correction, Alex-to-May repair, restart continuation and result return. A scripted trial now demonstrates repair of a worker's Git setup through its saved caller with real worker subprocesses, ordinary App loading and agent tools. Failure delivery without a usable caller, isolation from broken App/module bootstrap, autonomous diagnosis of a startup failure, and the complete human escalation loop remain unproven. This document changes no runtime behavior.
+**Implementation status:** Mechanical recovery, caller feedback and addressed escalation exist. A live incident demonstrates agent correction, Alex-to-May repair, restart continuation and result return. A scripted trial now demonstrates repair of a worker's Git setup through its saved caller with real worker subprocesses, ordinary App loading and agent tools. A second subprocess trial demonstrates a declared operational route without a caller, addressed repair return and explicit retry after exhaustion. Installed route coverage, isolation from broken App/module bootstrap, autonomous diagnosis of a startup failure, and the complete human escalation loop remain unproven. This document changes no runtime behavior.
 
 **Host foundation:** [#381](https://github.com/hao1939/may-agent/pull/381) merged
 on 2026-10-17, supplying recovery with incomplete execution history. Deployment
-is not established by the [merge record](../archive/reviews/hierarchical-recovery-trial-20261017.md#381-merge-record). The remaining work connects failure
-delivery, an executable recipient and the return to the original assignment.
-Evaluate these together as one recovery mechanism.
+is not established by the [merge record](../archive/reviews/hierarchical-recovery-trial-20261017.md#381-merge-record). The connected caller and operational-route trials now demonstrate failure
+delivery, executable help and return to the original assignment for failed Git
+setup. Remaining work tests other startup failures and adopts the declared App
+routes. Evaluate these together as one recovery mechanism.
 
 ## Recommendation
 
@@ -129,7 +130,7 @@ distinguishes existing behavior, synthetic cases and dated live observations.
 | Restart recovery and feedback inside an invocation already produce useful continuation. | Preserve these paths; avoid a second recovery lifecycle. |
 | Live alert 4987 followed Evaluator → Alex → May → Alex, including a repair PR, deployment interruption and fresh verification. | Preserve this ordinary request/Condition loop; do not present all agent repair judgment as unproven. It does not test an owner unable to start. |
 | Admitted Task failures and exhaustion already return through saved caller relationships, including after delivery failure/restart. | Reuse them. Missing `handler.failed` subscriptions do not imply all failure feedback is absent. |
-| Controller failure emits `handler.failed`; installed Alex, May and Scout have selected routes but no subscription for this event. | Exercise the uncovered controller path with an explicit App-owned route; inspect both admission and executable handling. |
+| The reviewed installation has no selected `handler.failed` subscription. A subprocess fixture now routes exhausted workspace failures into an ordinary repair Task. | App owners must declare and adopt the relevant routes; the fixture does not install them or prove pre-admission/controller failure recovery. |
 | Real worker subprocesses load the saved caller and repair a missing worker Git branch through ordinary tools. | Keep ordinary execution with independently usable prerequisites. Separately test whether a broken App/module bootstrap blocks other recipients. |
 | Execution failures default to three consecutive failures; controller/admission retries use capped delays without a count limit. | Measure actual repeated work and model cost. Extend the owning retry policy only where needed; do not add a competing controller. |
 | The scripted Git-setup trial demonstrates recipient startup, repair and original-work completion; the live incident demonstrates repair judgment after successful startup. | Test real judgment when the original owner cannot start; scripted provider choices do not prove diagnosis. |
@@ -148,6 +149,15 @@ on-disk definitions, the caller repairs through its actual tool, and the same
 worker Task completes after the default retry delay. The unresolved contrast
 retains both asks and an operator Condition. App/module bootstrap failure and
 real-agent diagnosis of the setup failure remain separate proof requirements.
+
+The [operational-route follow-up](../archive/reviews/hierarchical-recovery-trial-20261017.md#operational-route-without-a-caller)
+starts the worker directly, waits for exhaustion, and admits a repair Task
+through a declared subscription. Its agent repairs setup, submits addressed
+input to the original Task and requests explicit retry through the existing
+control command. The original result returns through that new request; original
+work retains its identity and assignment. Without repair, both asks remain open
+with an operator Condition. This establishes the connected mechanical path, not
+installed coverage or autonomous diagnosis.
 
 The [live incident readback](../archive/reviews/hierarchical-recovery-trial-20261017.md#live-recovery-example)
 independently supports real-agent diagnosis and return through the existing
@@ -255,10 +265,11 @@ repair handlers.
    first. Complete declared operational routes for work without a usable
    caller, including failures before admission/execution. Retain original
    references and demonstrate the explicit return for event-originated help.
-   The real-worker Git trial establishes the saved-caller path with ordinary
-   App loading and workspace options. Next exercise work without a usable
-   caller and failure in App/module bootstrap. Remove a blocking shared startup
-   dependency only if reproduced; keep judgment and engineering ownership in Apps.
+   The real-worker Git trials establish both the saved-caller path and a
+   declared operational route with explicit return and retry after exhaustion.
+   Next review/adopt the App routes and test pre-admission/controller failure
+   and App/module bootstrap. Remove a blocking shared startup dependency only
+   if reproduced; keep judgment and engineering ownership in Apps.
 3. **Complete quiet waiting and human follow-through.** Reuse an open ask and
    its Conditions, suppress unchanged model work, apply repair/human replies
    to the original assignment and retain exhausted work for an authorized

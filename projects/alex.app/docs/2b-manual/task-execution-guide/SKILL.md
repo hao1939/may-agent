@@ -296,6 +296,21 @@ help when needed. Automatic retry exhaustion retains the assignment for that
 decision. When the execution asks you to finish, submit confirmed partial work
 and remaining uncertainty within its allowance.
 
+For repair work received from an operational event, send the repair evidence
+to the original Task with an addressed request; the event itself gives you no
+caller return link. Wait on that request only when verifying original-work
+continuation is part of your assignment. A repaired prerequisite does not
+complete the original ask or reset an exhausted retry allowance.
+
+Use an available authorized retry capability and check its acceptance result.
+An App with control authority can expose the existing `app.task.retry` command
+through an App-local tool. That command obtains the current resource revision
+and checks admission; the agent supplies the exact Task and expected generation.
+Keep transport wiring in the tool. Raw event publication only proving that an
+event was recorded is insufficient evidence of accepted retry. The
+[operational trial](../../archive/reviews/hierarchical-recovery-trial-20261017.md#operational-route-without-a-caller)
+uses such a wrapper; its tool name is not a standard Host-provided capability.
+
 The [Conversation feedback change](../../2a-design/conversation-execution.md#correct-a-proposed-result-before-ending-the-turn)
 extends this to Topic and Request checks when its Host revision is installed.
 An unavailable Topic needs a valid selection or scoped lookup. A stale Request

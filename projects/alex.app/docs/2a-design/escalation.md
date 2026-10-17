@@ -69,6 +69,15 @@ installed coverage, not a promise that every failure already escalates. The
 [hierarchical recovery proposal](../proposals/unified-agent-recovery-20261017.md)
 owns the remaining route/execution trials; a missing route stays a visible gap.
 
+Work admitted from a failure event has no implicit caller relationship. Carry
+its original Task/input reference, and return repair evidence through an ordinary
+addressed input to that Task. Add a request Condition if the repair assignment
+includes verifying its continuation. When automatic retries are exhausted,
+repair evidence alone does not renew the allowance: an authorized agent must
+explicitly request retry. The original Task still owns its assignment and
+accepts its own outcome. A [subprocess trial](../archive/reviews/hierarchical-recovery-trial-20261017.md#operational-route-without-a-caller)
+exercises this path; installed routing and human follow-through remain separate.
+
 The agent judges whether recovery can make progress and what help is missing.
 Infra admits and delivers the request, preserves its exact return route and
 retains the original work. Neither a retry timer nor delegation to a worker with

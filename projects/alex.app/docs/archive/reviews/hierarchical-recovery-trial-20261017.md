@@ -3,8 +3,9 @@
 **Supports:** [Hierarchical recovery](../../proposals/unified-agent-recovery-20261017.md). Checks whether existing caller feedback, execution and retry can restore original work before adding Host machinery.
 
 **Current source status:** #381 merged; see the [merge record](#381-merge-record).
-The [real-worker follow-up](#real-worker-workspace-trial) passed both repair and
-unresolved cases without a Host change. Earlier review entries retain the
+The [real-worker follow-up](#real-worker-workspace-trial) and
+[operational-route trial](#operational-route-without-a-caller) each passed repair
+and unresolved cases without a Host change. Earlier review entries retain the
 status at the time of each check.
 
 ## Result
@@ -468,6 +469,110 @@ successfully in this fixture; isolation from a broken App/module bootstrap and
 work without a usable caller remain separate boundaries. Keep the established
 caller path and test those gaps before adding Host recovery machinery.
 
+## Operational route without a caller
+
+Host remains at merge `b25344cc6c8e73da90596e8aed83a964c0c8a330`, with no
+runtime changes. Harness commit `32f6e063fe08c3565dad4b051f57c833d86bea19`
+on linked branch `experiment/operational-recovery-20261017` adds
+`test/integration/operational-recovery-trial.test.ts`. The preceding caller
+trial is retained separately on that branch. These are active experimental
+fixtures, not new production procedures or permanent CI requirements.
+
+This trial admits the original input directly to the worker, with no caller or
+repair Task. Missing Git `ready` causes two real setup failures, separated by
+the normal first retry delay. An App-declared `project.task.reconciled`
+subscription selects exhaustion and translates its original Task, generation,
+attempt and error into an ordinary repair input. Routing does no diagnosis or
+repair. It produces one durable operational input and one repair Task.
+
+The repair agent starts in its independent Git workspace. It receives the
+original failure reference and repairs the branch through its actual `bash`
+tool. It then uses `tasks.apply` to send `repair-ready` input to the exact
+original Task and retain a Condition for that request. That establishes a
+return link; the failure event had none. The original Task is still exhausted
+after input admission. A fresh Task read precedes the agent's explicit retry
+request. The agent gets an accepted control receipt, then waits. The worker
+checks its repaired workspace, reads sample 42, and answers both the original
+input and the repair agent's request. Only then does the repair Task converge.
+Original Task identity, generation, assignment and the exhausted attempt's
+saved bytes remain intact.
+
+The fixture App exposes a small `retry_task` tool using the existing control
+client's `app.task.retry` command. The tool takes Task identity and expected
+generation; the command reads the current resource version and requires
+accepted delivery through the production control route. The actual socket,
+Task read, retry capability and event admission run in the parent process;
+the agent tool runs in its worker subprocess. The fixture grants that control
+authority explicitly. This is an App tool wrapping an existing capability, not
+a new Host tool, retry policy or hidden fixture-side repair.
+
+| Case | Repair / original agent invocations | Provider requests | Outcome |
+| --- | --- | --- | --- |
+| Repair available | 2 / 1 | 8 | One repair command and one accepted explicit retry; original input and repair input finish. 35.98 s. |
+| Repair unavailable | 1 / 0 | 1 | Original remains in `attention`; repair Task retains an operator Condition and both inputs stay open. 34.02 s. |
+
+The successful run starts five Task workers; the unresolved run starts three.
+Setup-only failures never contact the provider. The fixture chooses a two-failure
+allowance without changing retry delays. Its success criterion requires the
+original input's accepted result and the repair request's return, not just a
+quiet queue, repaired Git branch or completed diagnostic report.
+
+### What the first pass taught us
+
+The exploratory first pass used raw `tasks.publish` with a resource version
+from an earlier read. Ordinary processing of the addressed input advanced the
+Task from version 6 to 7 before the retry event arrived. The existing control
+route rejected the stale version. Publication returned an event ID, and the
+scripted agent incorrectly treated recorded publication as accepted retry. The
+branch was repaired, but the original Task remained exhausted and the trial
+timed out. An extra setup-only dispatch occurred without a provider call.
+
+This is not evidence that the Host should remove its version check or renew
+exhausted work from any input. The existing retry command provides the needed
+read/admission boundary and reports rejection to its caller. Switching the
+App tool to that command completed the loop without a Host change. It can
+still return a real concurrent-update error; acceptance must be checked.
+The lesson is to expose the intent-level capability and keep its delivery
+mechanics in code. A recorded event, accepted control and finished work remain
+different observations.
+
+A separate initial fixture assertion ran too late: it expected no repair Task
+inside the exhaustion listener, after event admission had already created one.
+The corrected assertion checks before original-work admission. The explicit
+harness type check also required narrowing the control adapter's optional Task
+address before calling the exact Task read. Neither correction changed Host
+behavior. The first failed run is retained; there were no automatic test retries.
+
+### Verification and remaining limits
+
+Final behavior passes **two tests, zero failures and 55 `expect` assertions**
+in **72.37 seconds**, plus Node assertions at the provider/tool boundary.
+The explicit Host/SDK/trial type check and targeted ESLint pass. The isolated
+docs checkout passes `bun run check:may-design`: no integrity or App errors,
+executable examples pass, and the existing root `reports` warning remains.
+From the experimental checkout:
+
+```sh
+bun test test/integration/operational-recovery-trial.test.ts
+bunx --no-install eslint test/integration/operational-recovery-trial.test.ts
+```
+
+The type check uses the same configuration pattern as the caller trial, selecting
+this file. Logs, exact type config and checksums are retained in the archive
+below as `operational-trial-*`; the failed exploration is
+`operational-trial-first.log`, the first control-command success is
+`operational-trial-control.log`, and the final paired run is
+`operational-trial-final.log`. Host and harness revisions accompany the hashes.
+Full CI was not rerun for this experimental harness. The merged Host's earlier
+full CI remains the source validation; this trial changes no runtime source.
+
+Both Apps load successfully. The trial does not prove recovery from broken
+App/module bootstrap, pre-admission failures, human presentation/response,
+long-duration quiet waiting or autonomous diagnosis. Decisions use a local
+scripted provider, not external models; request counts are not token savings.
+No route, App-local tool or Host binary was deployed. The declared operational
+path is now mechanically demonstrated; installation adoption remains App work.
+
 ## Remaining boundaries and next change
 
 Keep existing caller failure returns. This trial supports hierarchical recovery
@@ -475,13 +580,12 @@ without requiring every App to acquire system-repair expertise. It does not
 justify a new Host recovery scheduler, universal cross-Task budget, or executor
 switch.
 
-The initial runner was in process; the follow-up above now proves ordinary
-worker startup when the failure is a worker's Git prerequisite. Neither trial
-breaks App/workflow module loading or installs a fallback route for production
-Tasks without a usable caller. Those remain explicit proposal gaps. Next
-exercise the declared App/operational route and its explicit return to original
-work, then isolate module-bootstrap failures. Change Host only if that exposes
-missing generic execution or delivery support.
+The subprocess trials now prove both the saved-caller route and declared
+operational admission with explicit return and retry after exhaustion. They do
+not install production routing or break App/workflow module loading. Next review
+and adopt the App-owned operational routes and retry capability; separately
+isolate module-bootstrap and pre-admission failures. Change Host only if those
+trials expose missing generic execution or delivery support.
 
 A bounded real-model trial is still needed for recovery when the original owner
 cannot start. The live incident above supports judgment in an already usable
