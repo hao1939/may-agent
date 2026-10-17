@@ -64,6 +64,13 @@ Task setup. The agent diagnoses and repairs using its authorized tools; retrying
 the ordinary work path establishes whether recovery helped. Repeated unsuccessful
 repair must not obtain a fresh allowance by creating another repair Task.
 
+Apply this rule across setup, dispatch and execution failures. A bounded code
+check for restored availability can continue without repeatedly invoking an
+agent; repeating full setup or execution is work and needs a bounded allowance.
+The [unified recovery proposal](../proposals/unified-agent-recovery-20261017.md)
+records the current delivery/setup gaps and proposed limits. This direction is
+not a claim that the complete mechanism is implemented.
+
 Preserve useful existing safeguards. A small atomic write or duplicate check
 can be worthwhile, but it must address a demonstrated recovery problem; it is
 not the acceptance criterion by itself. Judge a change by whether failure leaves

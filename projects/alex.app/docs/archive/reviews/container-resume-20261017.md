@@ -244,66 +244,17 @@ for this follow-up.
 
 ## Proposed mechanism: agent-led recovery under a bounded Host
 
-The operator's direction supersedes the plan to enumerate individual defects
-and patch them one by one. Use one recovery mechanism that handles unfamiliar
-failures through agent judgment while the Host remains capable of running work.
-Failure cases are acceptance examples for that mechanism, not separate repair
-workflows or a prerequisite catalogue of every possible error.
+The [unified recovery proposal](../../proposals/unified-agent-recovery-20261017.md)
+now owns this direction. Its [current-mechanism review](recovery-mechanism-20261017.md)
+records what works, the remaining owner-delivery/setup gaps, and the limits of
+existing tests. These supersede the earlier implementation ordering here.
 
-The rule is: **the Host keeps execution available and bounded; the responsible
-agent judges how to restore useful work.** Preserve the current goal and whatever
-evidence survives. Some reconstruction, lost history and repeated work are
-acceptable. The recovery attempt may repair, rebuild disposable state, choose a
-different approach, or report that it needs help.
-
-Use a single loop:
-
-1. **Notice failure.** The Host observes an execution error, worker exit or
-   expired execution deadline. Ordinary external waits and a quiet live worker
-   are not failures. Reuse the existing failure events and execution limits.
-2. **Give the owner a runnable recovery attempt.** Supply the original goal,
-   compact failure evidence, current attempt/ownership facts and surviving
-   context. The recovery execution must not require the broken Task's workspace
-   preparation or session resume to succeed. Reuse the existing bounded agent
-   runner; implementation must verify this independence.
-3. **Let the agent judge and act.** It inspects current reality, uses its existing
-   authorized tools to repair or work around the problem, and decides whether
-   ordinary work can continue. Do not make Host code recognize every missing
-   file, tool failure or repair technique. The App's configured owner owns this
-   judgment; Alex owns follow-through in this installation and Evaluator assesses
-   outcomes. No mandatory team handoff is needed.
-4. **Try the ordinary work path again.** Observe whether the previously failing
-   operation now succeeds and whether work advances. A repair report alone is
-   not success. Continue the existing Task with current facts.
-5. **Bound repeated failure.** Keep one active recovery for the affected work.
-   Charge recovery and retry to the same bounded allowance instead of creating
-   fresh repair Tasks that reset it. An unchanged recurring failure cannot
-   automatically start an endless new episode. Preserve the reason and wait
-   for new evidence, changed conditions or an owner/operator decision.
-
-The Host retains a few mechanical responsibilities: execution deadlines,
-ownership, confirmed cleanup before conflicting replacement, and budget
-enforcement. The agent owns diagnosis and repair choice. If the Host cannot run
-even the recovery agent, an external supervisor/operator must restore that
-minimum capability. An in-process agent cannot repair itself while no execution
-path is available.
-
-Before implementation, trace the existing `handler.failed` owner route and
-bounded runner against this loop. Reuse them wherever possible. A portable
-runtime test already demonstrates delivering a failed recovery to separately
-declared agent work while retaining the unresolved original attempt; that is a
-useful starting point, not proof that a generic owner route is installed or that
-all broken setup can be bypassed. Establish those two facts before adding
-machinery. No new scheduler, recovery database or per-error repair engine is
-proposed.
-
-Validate the same mechanism with representative failures: missing history,
-broken workspace preparation, a transient tool/storage failure after access is
-restored, pending cancellation, and a repair that does not help. Acceptance is
-that the recovery agent can actually run, useful work resumes when repair works,
-and unsuccessful repair stops with an understandable next step and bounded
-cost. Portable fixtures prove the execution mechanics; any claim about agent
-repair judgment needs a separately authorized bounded model trial.
+Use one rule across controller, setup and execution failure: retain the work,
+give its owner evidence and a usable bounded execution path, let the agent act,
+and verify useful work resumes. Repair and ordinary retry share an allowance;
+paced availability observations may continue without repeated model calls.
+Reuse the existing Task, runner, scheduling and cleanup mechanisms. #381 stays
+draft; no individual patch work or runtime changes are part of this review.
 
 ## Retained evidence and source pointers
 
