@@ -13,6 +13,7 @@ import {
   type AppDefinition,
   type AppInputContext,
   type TaskExecutor,
+  type TaskReconcileResult,
 } from "@may-agent/sdk";
 import { addLogSubscriber } from "../../../lib/log.js";
 import { readTaskChecks } from "./task-check-observations.js";
@@ -211,6 +212,60 @@ function options(f: ReturnType<typeof fixture>, bus: EventBus) {
     hostCapacity: new HostCapacity(2),
   };
 }
+
+it.each([
+  ["agent", "converged"], ["workflow", "converged"], ["executor", "converged"],
+  ["executor", "waiting"], ["executor", "incomplete"],
+] as const)("App result policy rejects %s %s output and recovers the same Task", async (handler, state) => {
+  const f = fixture();
+  const bus = eventBus();
+  const taskId = "work/policy";
+  let corrected = false;
+  const candidate = (): TaskReconcileResult => ({
+    state: corrected ? "converged" : state, summary: "Reviewed", facts: [corrected ? "decision:valid" : "decision:unsupported"],
+    ...(!corrected && state === "waiting" ? { continue: true as const } : {}),
+  });
+  const app = definition();
+  app.tasks!.validateResult = (result, context) => {
+    expect(context).toEqual({ appId: "sample", taskId, generation: 1, conversation: false });
+    return result.facts.includes("decision:unsupported") ? "Use the supported decision contract" : null;
+  };
+  await installCoreTaskRuntimes({
+    ...options(f, bus), installControllers: false,
+    agents: {
+      prepare: async () => true, available: () => true,
+      role: () => ({ agent: "sample-owner", instructions: "Review" }),
+      snapshot() { return this; },
+      execute: async (input) => {
+        expect(input.validateResult?.(candidate())).toBe(corrected ? null : "Use the supported decision contract");
+        // Even an adapter that ignores the finish rejection cannot bypass settlement.
+        return { handlerResult: { ...candidate(), actions: [] }, runId: "scripted-agent" };
+      },
+    },
+    workflows: {
+      inspect: async () => ({ available: true, error: null, workspace: "shared" }),
+      execute: async () => ({ handlerResult: { ...candidate(), actions: [] }, runId: "scripted-workflow" }),
+    },
+    executors: { fixture: async () => candidate() },
+    appRegistrySnapshot: { id: "result-policy", generation: 1, entries: [{ appDir: f.appDir, definition: app }] },
+  });
+  const config = loadedTaskConfig(f);
+  observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+    id: taskId, parentId: "operations", outcome: "Review", acceptance: ["Supported decision"], agent: "sample-owner",
+    ...(handler === "executor" ? { executor: "fixture" } : handler === "workflow" ? { workflow: "review" } : {}),
+  } });
+  const run = () => reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+    dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+  await run();
+  expect(acceptedTaskAttempt(config, taskId)?.acceptedResult).toBeUndefined();
+  expect(config.resourceStore.readTask(taskId)?.status.summary).toContain("Use the supported decision contract");
+  expect(config.resourceStore.readTask(taskId)?.status.executionRetryAt).toBeGreaterThan(Date.now());
+  corrected = true;
+  makeTaskRetryDue(config.resourceStore, taskId);
+  await run();
+  expect(acceptedTaskAttempt(config, taskId)?.acceptedResult).toMatchObject({ state: "converged", facts: ["decision:valid"] });
+  expect(config.resourceStore.readTask(taskId)?.metadata.generation).toBe(1);
+});
 
 it.each(["none", "accept", "fail"] as const)("records attempt facts independently of their consumer: %s", async (consumer) => {
   const f = fixture();

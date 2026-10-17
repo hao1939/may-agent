@@ -44,7 +44,8 @@ import {
 } from "./app-task-reconciler.js";
 import { ResourceTaskMutationStaleError } from "./app-task-store.js";
 import type { WorkflowCapability } from "./execution.js";
-import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "./result.js";
+import { appTaskResultProblem, normalizeTaskHandlerResult, type TaskCapabilityRun } from "./result.js";
+import { isConversationTask } from "../state/conversation-task-turns.js";
 import { appTaskConfig, configuredRegistryEntries, type AppTaskRuntimeDescriptor } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
 
@@ -429,6 +430,12 @@ export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabil
     validateResult(result) {
       try {
         const config = appTaskConfig(descriptor);
+        const problem = appTaskResultProblem(descriptor.app, {
+          taskId: claim.taskId,
+          generation: claim.generation,
+          conversation: isConversationTask(config, claim.taskId),
+        }, result);
+        if (problem) return problem;
         if (result.inputKeys !== undefined) readTaskChangeInputKeys(config, claim, result.inputKeys);
         if (result.state !== "converged" && result.state !== "waiting") return null;
         const changes = taskResultCommunication(config, claim, result);

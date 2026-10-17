@@ -1,6 +1,22 @@
 import { describe, expect, it } from "bun:test";
 import { mergeTaskConditions } from "./dependency-admission.js";
-import { normalizeTaskHandlerResult } from "./result.js";
+import { appTaskResultProblem, normalizeTaskHandlerResult } from "./result.js";
+import { defineApp, Type } from "@may-agent/sdk";
+
+it("App result admission isolates mutation and reports broken validators", () => {
+  const context = { taskId: "work", generation: 1, conversation: false };
+  const result = { state: "converged" as const, summary: "Done", facts: ["original"] };
+  const app = defineApp({ id: "sample", version: 1, agent: "worker", inputSchema: Type.Unknown(), tasks: {
+    validateResult(value, identity) { value.facts.push("mutated"); (identity as { taskId: string }).taskId = "other"; return null; },
+  } });
+  expect(appTaskResultProblem(app, context, result)).toBeNull();
+  expect(result.facts).toEqual(["original"]);
+  expect(context.taskId).toBe("work");
+  app.tasks!.validateResult = () => { throw new Error("broken policy"); };
+  expect(appTaskResultProblem(app, context, result)).toContain("broken policy");
+  app.tasks!.validateResult = (async () => { throw new Error("async policy"); }) as never;
+  expect(appTaskResultProblem(app, context, result)).toContain("synchronously");
+});
 
 describe("App Task Condition admission", () => {
   it("lets an App reject Conditions it cannot meaningfully observe", () => {

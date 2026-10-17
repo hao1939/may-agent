@@ -6,8 +6,44 @@ import {
   type TaskCondition,
   type TaskCommunication,
   type TaskVerifier as AppTaskVerifier,
+  type AppDefinition,
+  type ConversationTurnResult,
+  type TaskReconcileResult,
 } from "@may-agent/sdk";
 import type { ConversationTaskProposal } from "../state/conversation-task-turns.js";
+
+/** The same Conversation projection is checked at finish and settlement. */
+export function conversationTaskHandlerResult(
+  decision: ConversationTurnResult,
+): Extract<TaskReconcileResult, { state: "converged" }> & { actions: AppTaskAction[] } {
+  return {
+    state: "converged",
+    summary: decision.summary,
+    response: decision.response,
+    result: { conversation: decision },
+    facts: decision.facts ?? [],
+    actions: [],
+  };
+}
+
+/** App policy sees copies; it cannot rewrite an admitted result or its identity. */
+export function appTaskResultProblem(
+  app: Readonly<AppDefinition>,
+  context: { taskId: string; generation: number; conversation: boolean },
+  result: Readonly<TaskReconcileResult>,
+): string | null {
+  if (!app.tasks?.validateResult) return null;
+  try {
+    const problem: unknown = app.tasks.validateResult(structuredClone(result), { ...context, appId: app.id });
+    if (problem === null) return null;
+    if (typeof problem === "string" && problem.trim()) return problem;
+    // A mistakenly async validator must neither admit the result nor leak a rejection.
+    void Promise.resolve(problem).catch(() => {});
+    return "App result validator must return null or a non-empty error synchronously";
+  } catch (error) {
+    return `App result validator failed: ${error instanceof Error ? error.message : String(error)}`;
+  }
+}
 
 export type TaskCapabilityRun = {
   handlerResult: NormalizedTaskHandlerResult;
