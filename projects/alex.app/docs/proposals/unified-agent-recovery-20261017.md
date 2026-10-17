@@ -5,7 +5,7 @@
 **Choice basis:** [Understandable recovery](../1-principles/work-model.md#prefer-understandable-recovery), [simple first](../1-principles/core-principles.md#simple-first), and [recovery ownership](../2a-design/system-boundary.md#retry-and-recovery-ownership): agents judge; infra executes their decisions and records what happened.
 
 **Design status:** Hierarchical ownership agreed in review, 2026-10-17; implementation gaps and trials below remain proposed.
-**Implementation status:** Mechanical recovery, caller feedback and addressed escalation exist. Universal failure delivery and a runnable escalation recipient when ordinary setup fails are not established. This document changes no runtime behavior.
+**Implementation status:** Mechanical recovery, caller feedback and addressed escalation exist. A scripted trial now demonstrates repair through a saved caller with real Git workspaces. Universal failure delivery, independent worker bootstrap and autonomous repair judgment remain unproven. This document changes no runtime behavior.
 
 ## Recommendation
 
@@ -76,6 +76,13 @@ distinguishes existing behavior, synthetic cases and dated live observations.
 The runtime review did not establish a current live recovery stall. The benefit
 of each Host change must come from the contract and a reproduced gap, not from
 assuming every failure boundary needs replacement.
+
+The subsequent [hierarchical trial](../archive/reviews/hierarchical-recovery-trial-20261017.md)
+demonstrates the saved caller path, actual tool-driven repair and automatic
+original-work continuation without a Host change. Its negative cases retain
+exhausted work and show that no caller/declared route means no agent receives
+the blocker. These are scripted in-process fixtures; full worker bootstrap and
+autonomous diagnosis remain separate proof requirements.
 
 ## Responsibility and execution availability
 
@@ -151,6 +158,11 @@ crash accounting and eliminating every duplicate handoff are not requirements.
 outage. Its value is allowing affordable reconstruction with surviving intent.
 If that requires substantial new machinery, reconsider the tradeoff. No storage
 migration or new repair result schema is required.
+
+**Review status:** #381's cleanup fix is published at `a9cc67ef6`; local CI and
+GitHub Quality/Container passed and its cleanup review thread is resolved. It
+is ready for independent review, unmerged and undeployed at this record. See
+the [trial and validation evidence](../archive/reviews/hierarchical-recovery-trial-20261017.md).
 
 ## Decisive trials
 

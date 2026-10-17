@@ -434,10 +434,10 @@ and a usable recipient before claiming that escalation worked.
    `Condition.requestedAction`. May does not need another May Task to ask Hao.
 
 These are responsibilities, not required extra Tasks or model calls. Skip any
-step already filled by the same agent. For example, Bob's independent Task in
-the May App can ask May through the ordinary `goal` input without a specialist
-assignment. May handles the need in her current Task, acting or asking Hao;
-she does not request another May Task merely to repeat the same blocker.
+step already filled by the same agent. For example, Bob can ask Alex as his App
+owner; Alex can request May's help if the need exceeds that scope. May handles
+the need in her current Task, acting or asking Hao; she does not request another
+May Task merely to repeat the same blocker.
 
 Each handoff says **what is blocked, what work is ready, and what help is needed**,
 with useful evidence references. An unknown cause can require diagnostic help;
