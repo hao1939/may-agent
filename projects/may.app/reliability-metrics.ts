@@ -40,11 +40,11 @@ export const reliabilityMetrics: NonNullable<AppDefinition["metrics"]> = [
     type: "gauge",
     unit: "milliseconds",
     measureInterval: 300_000,
-    threshold: 100,
+    threshold: 250,
     alertOp: ">=",
     priority: "P2",
     description:
-      "Host records the maximum direct SQL source duration per collection pass, including failed queries. Under 100 ms is the performance target; a breach requests investigation, not cancellation or a restart. Notes retain bounded source references and available query plans. No collection means unknown, not zero. Command sources and sample writes are excluded.",
+      "Host records the maximum direct SQL source duration per collection pass, including failed queries. Under 250 ms is the alert target; a breach requests investigation, not cancellation or a restart. Reconsider this boundary if the median sustains above 100 ms or a worst pass again exceeds approximately 1 second. Notes retain bounded source references and available query plans. No collection means unknown, not zero. Command sources and sample writes are excluded.",
   },
   {
     id: "event.pair-orphan-count",

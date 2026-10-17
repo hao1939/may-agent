@@ -45,7 +45,7 @@ beforeEach(() => {
 });
 afterEach(() => db.close());
 
-test("actual metric-query timing breaches at 100 ms, stays quiet within an episode and reaches Alex", async () => {
+test("actual metric-query timing breaches at 250 ms, stays quiet within an episode and reaches Alex", async () => {
   const root = mkdtempSync(join(tmpdir(), "metric-query-budget-"));
   const previousAutomatic = process.env.EVALUATION_AUTO_REVIEW_ENABLED;
   process.env.EVALUATION_AUTO_REVIEW_ENABLED = "true";
@@ -65,7 +65,7 @@ test("actual metric-query timing breaches at 100 ms, stays quiet within an episo
       transitions.push(event);
   });
   let elapsed = 0;
-  let duration = 99;
+  let duration = 249;
   const clock = spyOn(performance, "now").mockImplementation(() => elapsed);
   const open = database.openReadOnlyDatabase;
   const read = spyOn(database, "openReadOnlyDatabase").mockImplementation(
@@ -97,14 +97,14 @@ test("actual metric-query timing breaches at 100 ms, stays quiet within an episo
     await collect();
     await evaluateMetrics({ bus, persistDir: root });
     expect(transitions).toEqual([]);
-    duration = 100;
+    duration = 250;
     await collect();
     expect(transitions).toEqual([]); // Collection itself never requests model work.
     await evaluateMetrics({ bus, persistDir: root });
     expect(transitions).toHaveLength(1);
     expect(transitions[0]).toMatchObject({
       type: "metric.breach",
-      data: { metricId: METRIC_QUERY_DURATION_METRIC, current: 100 },
+      data: { metricId: METRIC_QUERY_DURATION_METRIC, current: 250 },
     });
     expect(taskInputForEvent(transitions[0])).toMatchObject({
       kind: "review-metric",
@@ -115,9 +115,9 @@ test("actual metric-query timing breaches at 100 ms, stays quiet within an episo
       },
     });
     const retained = await reporting.readMetric(METRIC_QUERY_DURATION_METRIC);
-    expect(retained).toMatchObject({ value: 100, sampleSize: 1 });
+    expect(retained).toMatchObject({ value: 250, sampleSize: 1 });
     expect(JSON.parse(retained!.note!)).toMatchObject({
-      examples: [{ metricId: "trial-query", durationMs: 100 }],
+      examples: [{ metricId: "trial-query", durationMs: 250 }],
     });
     await collect();
     await evaluateMetrics({ bus, persistDir: root });
@@ -125,7 +125,7 @@ test("actual metric-query timing breaches at 100 ms, stays quiet within an episo
     await measureSourceMetrics({ bus, persistDir: root, isDue: () => false });
     await evaluateMetrics({ bus, persistDir: root });
     expect(transitions).toHaveLength(1); // No work cannot manufacture recovery.
-    duration = 80;
+    duration = 200;
     await collect();
     await evaluateMetrics({ bus, persistDir: root });
     expect(transitions.map((event) => event.type)).toEqual([

@@ -175,13 +175,15 @@ Task `reviewAt`; missed delivery recovery does not require an agent checkpoint.
 
 ## SQL cost review
 
-The App sets the metric-query target to **under 100 ms** through
+The App sets the metric-query alert target to **under 250 ms** through
 `metric.source-query-worst-ms`, the Host's passive maximum duration for SQL sources
-actually attempted in one collection pass. May supplies `threshold: 100` and
+actually attempted in one collection pass. May supplies `threshold: 250` and
 `alertOp: ">="`; Host supplies the execution observation without an alert default.
 The existing metric-breach route asks Alex to review one alert episode. Collection
 alone stays quiet. No cancellation, restart, extra schedule or per-query metric
-registry is added.
+registry is added. Reconsider the boundary if the median sustains above 100 ms or
+a worst pass again exceeds approximately 1 second; raising the alert boundary does
+not make source queries faster.
 
 Install the corresponding Host collector and inclusive comparison support before
 activating this definition. The paired portable trial uses actual source collection,
