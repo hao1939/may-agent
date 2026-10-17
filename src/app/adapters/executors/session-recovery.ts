@@ -8,7 +8,6 @@ import { readSessionLastActivityAt, updateSessionDb } from "../../../lib/db/sess
 import {
   appendSessionMessage,
   markSessionInactive,
-  readActiveSessionProcessId,
   readSessionMeta,
   readSessionMetaRecoveryEvidence,
   readSessionRecoveryEvidence,
@@ -20,7 +19,8 @@ import {
   readCheckpointRecoveryEvidence,
   type CheckpointEntry,
 } from "../../../lib/tools/checkpoint.js";
-import { drainPersistedSessionBashProcessGroups } from "../../../lib/tools/bash.js";
+import type { drainPersistedSessionBashProcessGroups } from "../../../lib/tools/bash.js";
+import { confirmSessionExecutionStopped, hasLiveSessionExecution } from "../../../lib/session-cleanup.js";
 import { STATE_CHANGING_TOOLS } from "../../../lib/manager-utils.js";
 import { writeSessionResult } from "../../../lib/artifacts.js";
 import type { AgentEvent, EventBus } from "../../core/events/bus.js";
@@ -55,27 +55,11 @@ function workflowWasInterruptedByRestart(persistDir: string | undefined, workflo
   return row?.status === "interrupted" && row.result_reason === "Process restarted";
 }
 
-function isProcessAlive(pid: number | undefined): boolean {
-  if (!pid || !Number.isSafeInteger(pid) || pid < 1) return false;
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function hasLiveAppTaskSession(opts: TaskSessionAdapterOptions, sessionId: string): boolean {
   const cleanSessionId = sessionId.trim();
   if (!cleanSessionId) return false;
-  if (opts.manager.hasActiveSession(cleanSessionId)) return true;
-  if (!opts.persistDir) return false;
-  const leasePid = readActiveSessionProcessId(opts.persistDir, cleanSessionId);
-  if (leasePid && isProcessAlive(leasePid)) return true;
-  const evidence = readSessionMetaRecoveryEvidence(opts.persistDir, cleanSessionId);
-  const meta = evidence.state === "absent" ? undefined : evidence.meta;
-  // A lifecycle label or damage to other fields cannot disprove a live owner.
-  return meta?.detached === true && typeof meta.pid === "number" && isProcessAlive(meta.pid);
+  if (!opts.persistDir) return opts.manager.hasActiveSession(cleanSessionId);
+  return hasLiveSessionExecution({ ...opts, persistDir: opts.persistDir }, cleanSessionId);
 }
 
 function recoverPendingToolResultsFromTranscript(persistDir: string, sessionId: string, messages: any[]): string[] {
@@ -178,24 +162,8 @@ function interruptSupersededAgentSession(
     if (opts.manager.hasActiveSession(cleanSessionId)) {
       throw new Error(`Cannot recover session ${cleanSessionId}: managed execution cleanup is still pending`);
     }
-  } else if (hasLiveAppTaskSession(opts, cleanSessionId)) {
-    throw new Error(`Cannot supersede session ${cleanSessionId}: its external owner is still live`);
   }
-
-  // Replacement ownership cannot begin while the superseded exact session's
-  // shell descendants remain live. Drain durable groups even when session meta
-  // is already terminal: a terminal marker cannot prove descendant exit.
-  // An unconfirmed drain preserves the durable session and PGID records and
-  // stops recovery before terminal artifacts, session.end, attempt release,
-  // requeue, or replacement execution.
-  const confirmedDrained = (opts.drainPersistedBashProcessGroups ?? drainPersistedSessionBashProcessGroups)(
-    opts.persistDir, cleanSessionId,
-  );
-  if (!confirmedDrained) {
-    throw new Error(
-      `Cannot recover session ${cleanSessionId}: one or more durable bash process groups did not exit after bounded SIGTERM/SIGKILL drain`,
-    );
-  }
+  confirmSessionExecutionStopped({ ...opts, persistDir: opts.persistDir }, cleanSessionId);
 
   if (meta && meta.status !== "running" && meta.status !== "idle") {
     // meta.json is authoritative. Repair only its known terminal lifecycle

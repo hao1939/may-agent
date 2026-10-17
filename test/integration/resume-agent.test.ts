@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdtempSync, rmSync, mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { execFile } from "node:child_process";
+import { once } from "node:events";
 import { promisify } from "node:util";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -15,11 +16,14 @@ import {
   sessionOutputDir,
   writeSessionMeta,
   readSessionMeta,
-  markSessionActive,
+  addSessionBashProcessGroup,
+  readSessionBashProcessGroups,
 } from "../../src/lib/persistence.js";
 import type { PersistedSession } from "../../src/lib/persistence.js";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import { fakeModel } from "../fixtures/model.js";
+import { markStaleSession } from "../fixtures/stale-session.js";
+import { spawnFixtureProcess } from "../fixtures/owned-process.js";
 import { createAgentRun } from "../../src/lib/agent-runner.js";
 import { createLastSessionWriter } from "../../src/lib/session-subscribers.js";
 import { buildAgentDefinition } from "../../src/app/loader/agent-definition.js";
@@ -54,7 +58,7 @@ function writeRegistryState(persistDir: string, sessions: Record<string, Persist
 
 function setupSession(persistDir: string, sessionId: string, messages?: AgentMessage[]): void {
   ensureSessionDir(persistDir, sessionId);
-  markSessionActive(persistDir, sessionId);
+  markStaleSession(persistDir, sessionId);
   mkdirSync(sessionOutputDir(persistDir, sessionId), { recursive: true });
   if (messages) {
     for (const msg of messages) {
@@ -87,6 +91,34 @@ describe("SubagentManager.resumeStaleSessions()", () => {
   afterEach(() => {
     closeDb(persistDir);
     rmSync(persistDir, { recursive: true, force: true });
+  });
+
+  it.each(["missing", "done"] as const)("drains retained descendants before clearing markers with %s metadata", async (metadata) => {
+    const sessionId = "orphaned-execution";
+    markStaleSession(persistDir, sessionId);
+    const directory = join(persistDir, "sessions", sessionId);
+    writeFileSync(join(directory, "[STARTED]"), "started");
+    if (metadata === "done") writeSessionMeta(persistDir, sessionId, {
+      agent: "worker", task: "Retain work", status: "done", startedAt: 1, endedAt: 2,
+    });
+    const child = spawnFixtureProcess(["--eval", 'console.log("ready"); setInterval(() => {}, 1000);'], { detached: true });
+    const exited = once(child, "exit");
+    try {
+      await Promise.race([
+        once(child.stdout, "data"),
+        exited.then(() => { throw new Error("Descendant exited before cleanup"); }),
+      ]);
+      addSessionBashProcessGroup(persistDir, sessionId, child.pid!);
+      const manager = new SubagentManager({ persistDir });
+      expect(manager.resumeStaleSessions()).toEqual({ resumed: [], interrupted: [] });
+      expect(readSessionBashProcessGroups(persistDir, sessionId)).toEqual([]);
+      await exited;
+      expect(existsSync(join(directory, "[ACTIVE]"))).toBe(false);
+      expect(existsSync(join(directory, "[STARTED]"))).toBe(false);
+    } finally {
+      child.kill("SIGKILL");
+      await exited;
+    }
   });
 
   it.each(["job", "call"] as const)("refuses cross-folder %s recovery after a real process exit", async (kind) => {

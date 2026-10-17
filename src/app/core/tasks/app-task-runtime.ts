@@ -1247,9 +1247,9 @@ function recoverInterruptedAppTasks(
 
 /**
  * Run the canonical App task recovery path for the descriptors and task
- * controllers already installed on this event bus. Startup calls this before
- * generic stale-session resumption so task-owned sessions are reconciled by
- * their durable task state first.
+ * controllers already installed on this event bus. Startup may run this in a
+ * worker alongside generic session cleanup; neither path may infer execution
+ * exit from missing or terminal history.
  */
 export async function recoverInstalledAppTasks(
   bus: EventBus,

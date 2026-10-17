@@ -17,6 +17,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mkdtempSync, rmSync, mkdirSync } from "node:fs";
 import { fakeModel } from "../fixtures/model.js";
+import { markStaleSession } from "../fixtures/stale-session.js";
 
 function baseDef(name: string): SubagentDefinition {
   return {
@@ -32,7 +33,7 @@ function baseDef(name: string): SubagentDefinition {
 
 function setupSessionDir(persistDir: string, sessionId: string): void {
   ensureSessionDir(persistDir, sessionId);
-  markSessionActive(persistDir, sessionId);
+  markStaleSession(persistDir, sessionId);
   mkdirSync(sessionOutputDir(persistDir, sessionId), { recursive: true });
 }
 

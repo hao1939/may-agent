@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createAssistantMessageEventStream, getCurrentSystemPrompt, type AssistantMessage } from "@earendil-works/pi-ai";
 import { fakeModel } from "../../test/fixtures/model.js";
+import { markStaleSession } from "../../test/fixtures/stale-session.js";
 import { createAgentRun, type AgentRunnerConfig } from "./agent-runner.js";
 import { EventBus } from "../app/core/events/bus.js";
 import { DbWriter } from "./db-writer.js";
@@ -363,7 +364,9 @@ describe("manager session lifecycle", () => {
     expect(manager.resumeStaleSessions({ abort: true, kinds: ["chat"] }).interrupted).toHaveLength(0);
     expect(rows()).toEqual(before);
 
-    // A new manager has no in-memory usage observer from the previous process.
+    // Model the previous owner's exit, not just another manager in the same
+    // still-live process. Real process lifetime is covered by startup recovery.
+    markStaleSession(persistDir, sessionId);
     closeDb(persistDir);
     const recovered = new SubagentManager({ persistDir });
     expect(recovered.resumeStaleSessions({ abort: true, kinds: ["chat"] }).interrupted).toHaveLength(1);

@@ -26,11 +26,11 @@ import {
   sessionOutputDir,
   writeSessionMeta,
   readSessionMeta,
-  markSessionActive,
 } from "../../src/lib/persistence.js";
 import type { PersistedSession } from "../../src/lib/persistence.js";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import { fakeModel } from "../fixtures/model.js";
+import { markStaleSession } from "../fixtures/stale-session.js";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -95,7 +95,7 @@ function writeRegistryState(persistDir: string, sessions: Record<string, Persist
   mkdirSync(persistDir, { recursive: true });
   for (const [sid, meta] of Object.entries(sessions)) {
     writeSessionMeta(persistDir, sid, meta);
-    if (meta.status === "running" || meta.status === "idle") markSessionActive(persistDir, sid);
+    if (meta.status === "running" || meta.status === "idle") markStaleSession(persistDir, sid);
   }
 }
 

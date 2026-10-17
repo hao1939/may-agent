@@ -1,6 +1,8 @@
 import { normalizeTaskHandlerResult } from "./result.js";
 import { afterEach, describe, expect, it, setSystemTime, spyOn } from "bun:test";
 import { execFile, execFileSync, spawn } from "node:child_process";
+import { once } from "node:events";
+import { spawnFixtureProcess } from "../../../../test/fixtures/owned-process.js";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -24,6 +26,8 @@ import { EVENT_DELIVERY_RESULT, EVENT_ROW_ID, EventBus, type AgentEvent } from "
 import { loadPersistedEvent } from "../events/persisted.js";
 import { createEventInterface } from "../events/interface.js";
 import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
+import { startBackgroundRuntime } from "../../composition/background-startup.js";
+import { SubagentManager } from "../../../lib/manager.js";
 import { appInputFeedbackEvent } from "../inbox/input-result.js";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
 import { admitTaskInput } from "../state/inbox.js";
@@ -11003,6 +11007,84 @@ describe("canonical App task runtime", () => {
         if (metadata === "missing") expect(existsSync(metadataPath)).toBe(false);
         else expect(readFileSync(metadataPath, "utf8")).toBe(bytes);
         expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(result);
+      },
+    );
+
+    it.each(["missing", "unreadable", "running", "done"] as const)(
+      "startup preserves a live worker and its Task claim with %s metadata until the worker exits",
+      async (metadata) => {
+        const f = setup();
+        const recoveryBus = eventBus();
+        const gate = Promise.withResolvers<void>();
+        const settled = Promise.withResolvers<void>();
+        // Use the production startup entry point. Hold its asynchronous worker
+        // recovery until the generic session scan has completed.
+        await installCoreTaskRuntimes({ ...f.base, bus: recoveryBus });
+        await installCoreTaskRuntimes({ ...f.base, executeRecovery: async () => {
+          await gate.promise;
+          await recoverInstalledAppTasks(recoveryBus);
+        } });
+        f.observe("owner");
+        const claim = f.saveTerminalSession("owner");
+        mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+          attempt.runtimeId = "previous-runtime";
+          attempt.lease!.runtimeId = "previous-runtime";
+        });
+        const sessionId = "session-owner";
+        const directory = join(f.base.persistDir, "sessions", sessionId);
+        const path = join(directory, "meta.json");
+        const meta = JSON.parse(readFileSync(path, "utf8"));
+        upsertSession(f.base.persistDir, {
+          sessionId, agent: "sample-owner", task: "work", status: "running", startedAt: 1, taskBinding: meta.taskBinding,
+        });
+        if (metadata === "missing") rmSync(path);
+        else writeFileSync(path, metadata === "unreadable" ? '{"status":' : JSON.stringify({ ...meta, status: metadata }));
+        const result = readFileSync(join(directory, "result.json"), "utf8");
+        const before = readTaskSnapshot(f.config);
+        const worker = spawnFixtureProcess(["--eval", `
+          import { markSessionActive } from ${JSON.stringify(fileURLToPath(new URL("../../../lib/persistence.ts", import.meta.url)))};
+          import { writeFileSync } from "node:fs";
+          markSessionActive(${JSON.stringify(f.base.persistDir)}, ${JSON.stringify(sessionId)});
+          writeFileSync(${JSON.stringify(join(directory, "[STARTED]"))}, "started");
+          console.log("ready");
+          setInterval(() => {}, 1000);
+        `]);
+        const exited = once(worker, "exit");
+        try {
+          const ready = await Promise.race([
+            once(worker.stdout, "data").then(([chunk]) => String(chunk)),
+            exited.then(() => { throw new Error("Session owner exited before startup"); }),
+          ]);
+          expect(ready.trim()).toBe("ready");
+          const active = readFileSync(join(directory, "[ACTIVE]"), "utf8");
+          const manager = new SubagentManager({ persistDir: f.base.persistDir });
+          startBackgroundRuntime({
+            manager, bus: f.base.bus, persistDir: f.base.persistDir,
+            onTaskRecoverySettled: () => settled.resolve(),
+          });
+          gate.resolve();
+          await settled.promise;
+
+          expect(readTaskSnapshot(f.config)).toEqual(before);
+          expect(readFileSync(join(directory, "[ACTIVE]"), "utf8")).toBe(active);
+          expect(existsSync(join(directory, "[STARTED]"))).toBe(true);
+          expect(f.agentCalls()).toBe(0);
+          expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(result);
+
+          worker.kill("SIGTERM");
+          await exited;
+          await recoverInstalledAppTasks(f.base.bus);
+          await f.run("owner");
+          expect(f.agentCalls()).toBe(1);
+          expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
+          expect(readAcceptedRuntimeAttempt(f.config, "owner")?.acceptedResult?.result).toEqual(f.payload);
+          expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(result);
+          expect(existsSync(join(directory, "[ACTIVE]"))).toBe(false);
+        } finally {
+          gate.resolve();
+          worker.kill("SIGTERM");
+          await exited;
+        }
       },
     );
 

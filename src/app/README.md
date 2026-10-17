@@ -111,6 +111,15 @@ block cancellation and cleanup, even when other metadata fields are damaged.
 Standalone session recovery needs valid metadata when no retained Task supplies
 that authority.
 
+Startup and Task recovery use `../lib/session-cleanup.ts` to confirm execution
+exit and drain retained descendants before changing markers or releasing work.
+Scanners discover candidates; missing or terminal history does not prove exit.
+Startup may overlap its recovery worker. It preserves a live owner's markers
+and defers aggregate orphan cleanup while any execution cleanup remains pending.
+This may delay stale projections; it avoids inventing a second ownership rule.
+Cancellation remains a request to the manager, followed by the same cleanup
+confirmation. Cleanup itself writes no result and makes no Task decision.
+
 The Host preserves accepted Task results and surviving history, and discloses
 missing or damaged evidence in the existing attempt context. It reconciles valid
 session lifecycle fields; it leaves unreadable metadata and retained results
