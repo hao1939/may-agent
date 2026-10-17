@@ -24,8 +24,11 @@ Host safeguards when removing installation-specific assumptions.
 - Prefer the smallest demonstrated fix. Preserve exact identity, accepted
   state, and restart behavior; add a regression test for the broken contract.
 - Preserve unrelated edits and use an isolated branch when the checkout is
-  shared. Do not deploy, operate a live installation, publish an image, or
-  alter App state just to test a source change.
+  shared. A Host-supplied Task worktree already has its durable local branch:
+  never switch or rename that branch merely to publish a pull request. Push the
+  current branch directly, or push `HEAD` to a separately named remote ref.
+  Do not deploy, operate a live installation, publish an image, or alter App
+  state just to test a source change.
 - Use committed fixtures and temporary directories. Never require the
   developer's `/app`, credentials, or running services for portable tests.
 - Explain changes and limitations plainly. Report what actually ran, failed,

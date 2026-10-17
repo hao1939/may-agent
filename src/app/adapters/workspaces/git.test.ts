@@ -255,114 +255,37 @@ describe("project task workspace", () => {
     expect((await finalizeAppTaskWorkspace(retry, "failed")).metadata.disposition).toBe("retained-for-recovery");
   });
 
-  it("restores the deterministic Task branch after a worker checks out a fix branch", async () => {
+  it("publishes HEAD without changing the Host-supplied Task branch", async () => {
     const f = await fixture();
+    const remote = join(f.root, "remote.git");
+    await git(f.root, "init", "--bare", remote);
+    await git(f.repo, "remote", "add", "origin", remote);
+    await git(f.repo, "push", "-u", "origin", "dev");
     const input = {
       repoDir: f.repo,
       workspaceRoot: f.worktrees,
-      taskId: "published-fix-handoff",
+      taskId: "published-without-local-rename",
       generation: 1,
       baseBranch: "dev",
       refreshRemote: false,
     };
     const prepared = await prepareAppTaskWorkspace(input);
-    await git(prepared.metadata.path, "checkout", "-B", "fix/published-handoff");
     writeFileSync(join(prepared.metadata.path, "fix.txt"), "published work\n");
     await git(prepared.metadata.path, "add", "fix.txt");
     await git(prepared.metadata.path, "commit", "-m", "publish fix");
-    const publishedHead = await git(prepared.metadata.path, "rev-parse", "HEAD");
+    const head = await git(prepared.metadata.path, "rev-parse", "HEAD");
 
-    // Finalization is the first Host boundary after the worker mutation. It
-    // must preserve the published alias and return the checkout to its durable
-    // Task identity before another attempt tries to reuse it.
-    const finalized = await finalizeAppTaskWorkspace(prepared, "waiting");
+    await git(prepared.metadata.path, "push", "origin", "HEAD:refs/heads/fix/published-handoff");
     expect(await git(prepared.metadata.path, "symbolic-ref", "HEAD")).toBe(
       `refs/heads/${prepared.metadata.branch}`,
     );
-    expect(await git(f.repo, "rev-parse", prepared.metadata.branch)).toBe(publishedHead);
-    expect(await git(f.repo, "rev-parse", "fix/published-handoff")).toBe(publishedHead);
-    expect(readFileSync(join(prepared.metadata.path, "fix.txt"), "utf8")).toBe("published work\n");
-
-    // Also force the crash/reuse path: a second branch mutation occurs after
-    // finalization, before the next preparation can receive fresh metadata.
-    await git(prepared.metadata.path, "checkout", "fix/published-handoff");
-    const retried = await prepareAppTaskWorkspace({ ...input, previous: finalized.metadata });
-    expect(retried.metadata.branch).toBe(prepared.metadata.branch);
-    expect(await git(retried.metadata.path, "symbolic-ref", "HEAD")).toBe(
-      `refs/heads/${prepared.metadata.branch}`,
-    );
-    expect(retried.metadata.headCommit).toBe(publishedHead);
-  });
-
-  it("does not rewrite another worktree when finalizing a published fix handoff", async () => {
-    const f = await fixture();
-    const prepared = await prepareAppTaskWorkspace({
-      repoDir: f.repo,
-      workspaceRoot: f.worktrees,
-      taskId: "competing-worktree",
-      generation: 1,
-      baseBranch: "dev",
-      refreshRemote: false,
-    });
-    await git(prepared.metadata.path, "checkout", "-B", "fix/competing-handoff");
-    writeFileSync(join(prepared.metadata.path, "fix.txt"), "published work\n");
-    await git(prepared.metadata.path, "add", "fix.txt");
-    await git(prepared.metadata.path, "commit", "-m", "publish fix");
-    const publishedHead = await git(prepared.metadata.path, "rev-parse", "HEAD");
-
-    const otherPath = join(f.worktrees, "other-checkout");
-    await git(f.repo, "worktree", "add", otherPath, prepared.metadata.branch);
-    writeFileSync(join(otherPath, "staged.txt"), "preserve staged content\n");
-    await git(otherPath, "add", "staged.txt");
-    writeFileSync(join(otherPath, "unstaged.txt"), "preserve unstaged content\n");
-    const otherHead = await git(otherPath, "rev-parse", "HEAD");
-    const otherIndex = await git(otherPath, "write-tree");
-
-    await expect(finalizeAppTaskWorkspace(prepared, "waiting")).rejects.toThrow(
-      `Task branch ${prepared.metadata.branch} is already checked out at ${otherPath}`,
-    );
-    expect(await git(otherPath, "rev-parse", "HEAD")).toBe(otherHead);
-    expect(await git(otherPath, "write-tree")).toBe(otherIndex);
-    expect(readFileSync(join(otherPath, "staged.txt"), "utf8")).toBe("preserve staged content\n");
-    expect(readFileSync(join(otherPath, "unstaged.txt"), "utf8")).toBe("preserve unstaged content\n");
-    expect(await git(f.repo, "rev-parse", "fix/competing-handoff")).toBe(publishedHead);
-    expect(await git(prepared.metadata.path, "symbolic-ref", "HEAD")).toBe("refs/heads/fix/competing-handoff");
-  });
-
-  it("restores the deterministic Task branch after a worker renames it to a fix branch", async () => {
-    const f = await fixture();
-    const input = {
-      repoDir: f.repo,
-      workspaceRoot: f.worktrees,
-      taskId: "renamed-fix-handoff",
-      generation: 1,
-      baseBranch: "dev",
-      refreshRemote: false,
-    };
-    const prepared = await prepareAppTaskWorkspace(input);
-    writeFileSync(join(prepared.metadata.path, "fix.txt"), "renamed work\n");
-    await git(prepared.metadata.path, "add", "fix.txt");
-    await git(prepared.metadata.path, "commit", "-m", "prepare renamed fix");
-    const publishedHead = await git(prepared.metadata.path, "rev-parse", "HEAD");
-    await git(prepared.metadata.path, "branch", "-m", "fix/renamed-handoff");
-    expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
-
-    // Inspection runs before fenced result admission and must not erase the
-    // worker's branch name if admission is rejected after these Git reads.
-    expect(await inspectAppTaskWorkspace(prepared)).toMatchObject({ ok: true, metadata: { headCommit: publishedHead } });
-    expect(await git(f.repo, "branch", "--list", "fix/renamed-handoff")).not.toBe("");
-    expect(await git(prepared.metadata.path, "symbolic-ref", "HEAD")).toBe("refs/heads/fix/renamed-handoff");
-    expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
+    expect(await git(f.root, "--git-dir", remote, "rev-parse", "refs/heads/fix/published-handoff")).toBe(head);
 
     const finalized = await finalizeAppTaskWorkspace(prepared, "waiting");
-    expect(finalized.metadata.headCommit).toBe(publishedHead);
-    expect(await git(prepared.metadata.path, "symbolic-ref", "HEAD")).toBe(
+    const resumed = await prepareAppTaskWorkspace({ ...input, previous: finalized.metadata });
+    expect(resumed.metadata.headCommit).toBe(head);
+    expect(await git(resumed.metadata.path, "symbolic-ref", "HEAD")).toBe(
       `refs/heads/${prepared.metadata.branch}`,
-    );
-    expect(await git(f.repo, "branch", "--list", "fix/renamed-handoff")).toBe("");
-    expect(readFileSync(join(prepared.metadata.path, "fix.txt"), "utf8")).toBe("renamed work\n");
-    expect((await prepareAppTaskWorkspace({ ...input, previous: finalized.metadata })).metadata.headCommit).toBe(
-      publishedHead,
     );
   });
 
