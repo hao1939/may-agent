@@ -42,6 +42,27 @@ A Condition can remain outstanding during independent work. When only external
 facts remain, yield through the [attempt result](../2a-design/task-attempts.md)
 and let infra execute the return path. Do not build a polling loop in the model.
 
+## Prefer understandable recovery
+
+Design for useful work to recover after failure. Some lost execution history
+and repeated work are acceptable; perfect retention and universal exactly-once
+execution are not the goal. Use the retained intent and current facts to decide
+what can continue, what needs another attempt, and what needs an owner decision.
+Missing evidence stays unknown rather than becoming a claim of success.
+
+Keep the recovery path easy to follow: read the existing Task, check the current
+situation, continue or retry useful work, and expose a clear blocker when it
+cannot proceed. Use bounded automatic retries and the existing owner/return
+path. Repeated failure should produce an actionable reason and next step, not
+an invisible loop, repeated status confirmation, or a new coordination system.
+
+Preserve useful existing safeguards. A small atomic write or duplicate check
+can be worthwhile, but it must address a demonstrated recovery problem; it is
+not the acceptance criterion by itself. Judge a change by whether failure leaves
+the system able to return to useful progress, with behavior and cost the owner
+can understand. Optional summaries should not become another authority on
+whether the Task is complete or a prerequisite for continuing useful work.
+
 ## Keep views and evidence in their scope
 
 [Project posture](../2a-design/projects.md) expresses the domain's overall state.

@@ -73,12 +73,13 @@ established. A later `workflow.started` subscriber also hit a lock at 14:55:37
 (diagnostic event `6677671`); the corresponding selector still completed and
 settled. The current daemon heartbeat reports five SQL errors.
 
-This is a **Host reliability issue** to investigate with a bounded contention
-reproduction and an idempotent repair/retry design for affected records. Do not
+This is a **Host bookkeeping defect**. Its recovery priority depends on whether
+it prevents useful work from continuing or materially misleads its owner. Do not
 treat merely increasing a timeout or replaying arbitrary event side effects as
 an established solution. The event bus deliberately avoids repeating ordinary
 subscribers on durable redelivery; the digest writer currently logs and drops
-failed writes.
+failed writes. The operator's subsequent direction below accepts some history
+loss and prioritizes understandable recovery over perfect bookkeeping.
 
 Separately, `/app`'s backing filesystem is **98% full**, with approximately
 **7.1 GB available** (`df -h`). Capacity remains an operational concern after
@@ -152,23 +153,49 @@ disable wakes or claim measured savings before comparable runs exist.
 
 ## Recommended order and ownership
 
-1. **Host reliability:** establish the SQLite writer/transaction conflict and
-   recoverable completion bookkeeping. Verify contention recovery without
-   duplicate Task effects or silently stale history.
-2. **Installation operations:** investigate remaining disk growth and retention
-   using the existing disk work; avoid duplicate cleanup projects.
-3. **App policy and efficiency:** Alex owns the explicit Scout resume behavior
+The operator clarified the goal after the initial review: failures are expected,
+some data loss and repeated work are acceptable, and the system should survive
+through a straightforward, robust recovery process. This supersedes the initial
+priority on preventing every missing digest or duplicate Task effect. The
+observations above retain their original scope; this is a design clarification,
+not evidence that the reported errors have been fixed.
+
+1. **Host recovery:** verify that interruption or a failed worker leads back to
+   useful work through the existing Task and owner. Check retained intent and
+   present reality, continue or retry with bounded effort, and return an exact
+   blocker if recovery needs a decision. Prioritize stuck recovery and lost
+   actionable follow-through over missing optional history. Keep the path simple
+   enough to explain without reconstructing a chain of internal events.
+2. **Host presentation:** show what resumed, what completed, what is waiting and
+   the next meaningful step. Explain Task recovery separately from session
+   restart and make retained versus running Task counts unambiguous.
+3. **Installation operations:** investigate remaining disk growth and retention
+   using the existing disk work; verify that useful work can continue after
+   capacity is restored rather than promising storage can never fill.
+4. **App policy and efficiency:** Alex owns the explicit Scout resume behavior
    and bounded coverage/report reuse. Evaluator assesses delivered App work and
    cost; Scout performs research. Bob reviews design and Tech-lead implements
    when those specialties are useful, without mandatory handoffs for every item.
-4. **Host presentation:** explain Task recovery separately from session restart,
-   expose next scheduled work and make Task counts unambiguous.
 
-Acceptance is useful existing work resumed once, honest wait/coverage reporting,
-no missing completion record under the reproduced contention, and measurable
-reduction in repeated context work without reducing research quality. Natural
-post-repair Scout behavior and token savings remain unverified in this startup
-window. No new repair request was sent as part of this review.
+Acceptance is recovered useful progress, bounded repeated effort and honest,
+understandable reporting of remaining uncertainty. An interrupted attempt may
+restart from available facts. A missing digest alone must not strand its Task.
+A repeatedly failing worker must return a usable reason and next step through
+its existing owner route. A valid external wait must remain clear without
+repeated model confirmation. Check these outcomes with portable failure/restart
+fixtures; transaction count and perfect history are not the success measures.
+
+An isolated three-case digest experiment reproduced the separation between
+event persistence and optional digest writes against Host `980f2cda39` (0 pass,
+3 fail under the proposed stricter contract). No implementation was written.
+After this clarification, the experiment was archived externally instead of
+promoting its stronger atomicity requirement into the production test suite.
+The archive records the exact base, reproduction and disposition. This does
+not preclude a small later bookkeeping fix if it earns its complexity.
+
+Natural post-repair Scout behavior and token savings were unverified in the
+original startup window. No new agent repair request or runtime change was made
+for this review or the design clarification.
 
 ## Retained evidence and source pointers
 
