@@ -120,6 +120,12 @@ async function restoreTaskBranchRegistration(
 ): Promise<void> {
   const branchRef = `refs/heads/${branch}`;
   if (registered.branch === branchRef) return;
+  const branchOwner = (await worktreeEntries(repoDir)).find(
+    (entry) => entry.branch === branchRef && entry.path !== resolve(path),
+  );
+  if (branchOwner) {
+    throw new Error(`Task branch ${branch} is already checked out at ${branchOwner.path}`);
+  }
   // A worker may publish through a conventional fix branch, but the Host owns
   // the durable Task-worktree identity. Normalize that handoff without
   // deleting the published branch or rewriting divergent Task history.
@@ -369,6 +375,7 @@ export async function inspectAppTaskWorkspace(prepared: PreparedTaskWorkspace): 
 async function inspectWorkspace(
   prepared: PreparedTaskWorkspace,
   checkIntegration = true,
+  restoreBranchRegistration = false,
 ): Promise<InspectedTaskWorkspace> {
   const { repoDir } = prepared;
   const metadata = { ...prepared.metadata };
@@ -386,7 +393,7 @@ async function inspectWorkspace(
   if (!registered) throw new Error(`Task workspace path is not a registered Git worktree: ${metadata.path}`);
   const branchRef = `refs/heads/${metadata.branch}`;
   const interruptedBranch = registered.branch ? undefined : await interruptedOperationBranch(metadata.path);
-  if (registered.branch !== branchRef && interruptedBranch !== branchRef) {
+  if (restoreBranchRegistration && registered.branch !== branchRef && interruptedBranch !== branchRef) {
     await restoreTaskBranchRegistration(repoDir, metadata.path, metadata.branch, registered);
   }
   metadata.headCommit = await headAt(metadata.path);
@@ -416,7 +423,7 @@ export async function finalizeAppTaskWorkspace(
 ): Promise<FinalizedTaskWorkspace> {
   const { repoDir } = prepared;
   return withRepoOperation(repoDir, async () => {
-    const inspected = await inspectWorkspace(prepared, outcome === "accepted");
+    const inspected = await inspectWorkspace(prepared, outcome === "accepted", true);
     const { metadata } = inspected;
     if (outcome === "failed") {
       if (existsSync(metadata.path)) metadata.disposition = "retained-for-recovery";

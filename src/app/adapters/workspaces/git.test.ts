@@ -294,6 +294,41 @@ describe("project task workspace", () => {
     expect(retried.metadata.headCommit).toBe(publishedHead);
   });
 
+  it("does not rewrite another worktree when finalizing a published fix handoff", async () => {
+    const f = await fixture();
+    const prepared = await prepareAppTaskWorkspace({
+      repoDir: f.repo,
+      workspaceRoot: f.worktrees,
+      taskId: "competing-worktree",
+      generation: 1,
+      baseBranch: "dev",
+      refreshRemote: false,
+    });
+    await git(prepared.metadata.path, "checkout", "-B", "fix/competing-handoff");
+    writeFileSync(join(prepared.metadata.path, "fix.txt"), "published work\n");
+    await git(prepared.metadata.path, "add", "fix.txt");
+    await git(prepared.metadata.path, "commit", "-m", "publish fix");
+    const publishedHead = await git(prepared.metadata.path, "rev-parse", "HEAD");
+
+    const otherPath = join(f.worktrees, "other-checkout");
+    await git(f.repo, "worktree", "add", otherPath, prepared.metadata.branch);
+    writeFileSync(join(otherPath, "staged.txt"), "preserve staged content\n");
+    await git(otherPath, "add", "staged.txt");
+    writeFileSync(join(otherPath, "unstaged.txt"), "preserve unstaged content\n");
+    const otherHead = await git(otherPath, "rev-parse", "HEAD");
+    const otherIndex = await git(otherPath, "write-tree");
+
+    await expect(finalizeAppTaskWorkspace(prepared, "waiting")).rejects.toThrow(
+      `Task branch ${prepared.metadata.branch} is already checked out at ${otherPath}`,
+    );
+    expect(await git(otherPath, "rev-parse", "HEAD")).toBe(otherHead);
+    expect(await git(otherPath, "write-tree")).toBe(otherIndex);
+    expect(readFileSync(join(otherPath, "staged.txt"), "utf8")).toBe("preserve staged content\n");
+    expect(readFileSync(join(otherPath, "unstaged.txt"), "utf8")).toBe("preserve unstaged content\n");
+    expect(await git(f.repo, "rev-parse", "fix/competing-handoff")).toBe(publishedHead);
+    expect(await git(prepared.metadata.path, "symbolic-ref", "HEAD")).toBe("refs/heads/fix/competing-handoff");
+  });
+
   it("restores the deterministic Task branch after a worker renames it to a fix branch", async () => {
     const f = await fixture();
     const input = {
@@ -310,6 +345,13 @@ describe("project task workspace", () => {
     await git(prepared.metadata.path, "commit", "-m", "prepare renamed fix");
     const publishedHead = await git(prepared.metadata.path, "rev-parse", "HEAD");
     await git(prepared.metadata.path, "branch", "-m", "fix/renamed-handoff");
+    expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
+
+    // Inspection runs before fenced result admission and must not erase the
+    // worker's branch name if admission is rejected after these Git reads.
+    expect(await inspectAppTaskWorkspace(prepared)).toMatchObject({ ok: true, metadata: { headCommit: publishedHead } });
+    expect(await git(f.repo, "branch", "--list", "fix/renamed-handoff")).not.toBe("");
+    expect(await git(prepared.metadata.path, "symbolic-ref", "HEAD")).toBe("refs/heads/fix/renamed-handoff");
     expect(await git(f.repo, "branch", "--list", prepared.metadata.branch)).toBe("");
 
     const finalized = await finalizeAppTaskWorkspace(prepared, "waiting");
