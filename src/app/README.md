@@ -110,12 +110,19 @@ seek help. Session ownership, live processes and authoritative lifecycle state
 remain Host checks. Starting a replacement attempt does not authorize replay of
 an arbitrary external effect; idempotency belongs at the operation boundary.
 
-Every recovery route validates session metadata and the retained attempt's exact
-binding before cancellation or process cleanup. Cleanup must succeed before the
-replacement claim commits; failed validation or drain leaves the old claim in
-place. Use the original attempt generation for session ownership even when the
-Task requirement has changed. Rebuild the recovery context after cleanup so the
-replacement receives the same retained evidence on startup and controller paths.
+When session metadata exists, recovery validates it and the retained attempt's
+exact binding before cancellation or process cleanup. A missing metadata file
+does not prevent recovery driven by that retained Task attempt: the Host checks
+for a live session owner and drains its shell processes, then permits a new
+attempt using the Task's current state. It reports the missing history in the
+attempt context without reconstructing metadata or inventing an old result.
+Standalone recovery without a retained Task binding still requires metadata.
+
+Cleanup must succeed before the replacement claim commits; invalid or
+conflicting metadata and failed drain leave the old claim in place. Use the
+original attempt generation for session ownership even when the Task requirement
+has changed. Rebuild the recovery context after cleanup so the replacement
+receives the same retained evidence on startup and controller paths.
 
 ## Contract references
 

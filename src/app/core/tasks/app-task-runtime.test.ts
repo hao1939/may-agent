@@ -6885,68 +6885,6 @@ describe("canonical App task runtime", () => {
     }
   });
 
-  it("keeps startup recovery fenced when the retained session metadata is missing", async () => {
-    const f = fixture();
-    const bus = eventBus();
-    const persistDir = join(f.root, ".state");
-    const config = loadedTaskConfig(f, persistDir);
-    const intent = {
-      id: "work/missing-session-meta",
-      parentId: "operations",
-      outcome: "Do not replace a retained session without lifecycle evidence",
-      acceptance: ["Recovery keeps the original claim until session ownership is confirmed"],
-      agent: "sample-owner",
-    };
-    observeAppTaskIntent(config, { intent, appAgent: "sample-owner" });
-    const claim = claimObservedAppTask(config, {
-      taskId: intent.id,
-      appAgent: "sample-owner",
-      handler: "agent:sample-owner",
-      reason: "test",
-    });
-    if (claim.kind !== "claimed") throw new Error("expected retained agent claim");
-    expect(recordAppTaskAttemptSession(config, claim, "owner-missing-meta")).toBe(true);
-    mutateRuntimeAttemptFixture(config, claim.taskId, claim.attemptId, (attempt) => {
-      if (!attempt.lease) throw new Error("expected leased retained attempt");
-      attempt.runtimeId = "previous-runtime";
-      attempt.lease.runtimeId = "previous-runtime";
-      attempt.lease.expiresAt = new Date(Date.now() - 1_000).toISOString();
-    });
-    await promisify(execFile)("git", ["init", "-b", "main", f.root], {
-      stdio: "ignore",
-      timeout: 10_000,
-    });
-    let replacementCalls = 0;
-
-    await expect(installAppTaskRuntimes({
-      ...options(f, bus),
-      persistDir,
-      manager: {
-        hasAgent: () => true,
-        hasActiveSession: () => false,
-        cancel: () => undefined,
-        async callAgent() {
-          replacementCalls += 1;
-          throw new Error("replacement must remain fenced");
-        },
-      } as never,
-      appRegistrySnapshot: {
-        id: "boot:missing-session-meta",
-        generation: 1,
-        entries: [{ appDir: f.appDir, definition: definition() }],
-      },
-    })).rejects.toThrow("session metadata is missing; lifecycle and ownership remain unconfirmed");
-
-    expect(replacementCalls).toBe(0);
-    expect(readSessionMeta(persistDir, "owner-missing-meta")).toBeNull();
-    const afterRecovery = readTaskSnapshot(config);
-    expect(afterRecovery.resources?.[intent.id]?.status).toMatchObject({
-      phase: "running",
-      currentAttemptId: claim.attemptId,
-    });
-    expect(afterRecovery.receipts?.[intent.id]).toBeUndefined();
-  });
-
   it("fails startup recovery closed when a durable owner process group cannot be confirmed drained", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -10989,7 +10927,7 @@ describe("canonical App task runtime", () => {
       expect(f.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
     }
 
-    it.each(["appId", "taskId", "generation", "attemptId", "array-status", "missing-meta"] as const)(
+    it.each(["appId", "taskId", "generation", "attemptId", "array-status"] as const)(
       "controller recovery preserves the original claim when session %s is invalid",
       async (field) => {
         const f = setup();
@@ -11009,26 +10947,52 @@ describe("canonical App task runtime", () => {
         const path = join(f.base.persistDir, "sessions", "session-owner", "meta.json");
         const meta = JSON.parse(readFileSync(path, "utf8"));
         if (field === "array-status") meta.status = ["running"];
-        else if (field !== "missing-meta")
+        else
           meta.taskBinding[field] = field === "generation" ? claim.generation + 1 : "another-owner";
         const bytes = JSON.stringify(meta);
-        if (field === "missing-meta") rmSync(path);
-        else writeFileSync(path, bytes);
+        writeFileSync(path, bytes);
         const before = readTaskSnapshot(f.config);
         await expect(f.run("owner")).rejects.toThrow(
           field === "array-status"
             ? "invalid session metadata"
-            : field === "missing-meta"
-              ? "session metadata is missing"
-              : "session Task binding",
+            : "session Task binding",
         );
         expect(readTaskSnapshot(f.config)).toEqual(before);
         expect(f.config.resourceStore.readTask("owner")?.status.currentAttemptId).toBe(claim.attemptId);
         expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("running");
-        expect(touched).toEqual(field === "missing-meta" ? ["cancel", "drain"] : []);
+        expect(touched).toEqual([]);
         expect(f.agentCalls()).toBe(0);
-        if (field === "missing-meta") expect(existsSync(path)).toBe(false);
-        else expect(readFileSync(path, "utf8")).toBe(bytes);
+        expect(readFileSync(path, "utf8")).toBe(bytes);
+      },
+    );
+
+    it.each(["startup", "claim"] as const)(
+      "continues the retained Task through %s recovery when session metadata is missing",
+      async (route) => {
+        const f = setup();
+        await installCoreTaskRuntimes(f.base);
+        f.observe("owner");
+        recordAppTaskTrigger(f.config, "owner", { type: "sample.changed", data: { instruction: "Continue work" } });
+        const claim = f.saveTerminalSession("owner");
+        mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+          attempt.runtimeId = "previous-runtime";
+          attempt.lease!.runtimeId = "previous-runtime";
+        });
+        const directory = join(f.base.persistDir, "sessions", "session-owner");
+        const result = readFileSync(join(directory, "result.json"), "utf8");
+        rmSync(join(directory, "meta.json"));
+        writeFileSync(join(directory, "session.jsonl"), '{"role":"user","content":"First sample collected"}\n');
+
+        if (route === "startup") await recoverInstalledAppTasks(f.base.bus);
+        await f.run("owner");
+
+        expect(f.agentCalls()).toBe(1);
+        expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
+        expect(readAcceptedRuntimeAttempt(f.config, "owner")?.acceptedResult?.result).toEqual(f.payload);
+        expect(f.recoveryContext()).toContain("session metadata is missing");
+        expect(f.recoveryContext()).toContain("First sample collected");
+        expect(existsSync(join(directory, "meta.json"))).toBe(false);
+        expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(result);
       },
     );
 

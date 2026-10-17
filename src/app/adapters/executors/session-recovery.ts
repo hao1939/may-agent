@@ -192,6 +192,14 @@ function interruptSupersededAgentSession(
   }
 
   if (!meta) {
+    // The caller's retained Task attempt owns replacement, even if its session
+    // file was lost. Once the old execution is no longer live and its shell
+    // groups are drained, missing history must not strand that Task. Do not
+    // invent session metadata, a completion event, or a successful old result.
+    if (opts.persistDir && expectedBinding && expectedBinding.taskId === taskId) {
+      markSessionInactive(opts.persistDir, cleanSessionId);
+      return true;
+    }
     throw new Error(
       `Cannot recover session ${cleanSessionId}: session metadata is missing; lifecycle and ownership remain unconfirmed`,
     );
@@ -416,7 +424,8 @@ export function buildRecoveredSessionHandoff(
   }
   const interruptedSessionPath = sessionDir(persistDir, attempt.sessionId);
   const metaPath = join(interruptedSessionPath, "meta.json");
-  const meta = readSessionMeta(persistDir, attempt.sessionId);
+  const metaEvidence = readSessionMetaRecoveryEvidence(persistDir, attempt.sessionId);
+  const meta = metaEvidence.state === "valid" ? metaEvidence.meta : null;
   const resultPath = join(interruptedSessionPath, "result.json");
   const transcriptPath = join(interruptedSessionPath, "session.jsonl");
   const sessionLabel =
@@ -436,6 +445,9 @@ export function buildRecoveredSessionHandoff(
     `Recovered interrupted ${sessionLabel} metadata: ${metaPath}`,
     `Recovered interrupted ${sessionLabel} artifact: ${resultPath}`,
     `Recovered interrupted ${sessionLabel} transcript: ${transcriptPath}`,
+    ...(metaEvidence.state === "absent"
+      ? [`Recovery history incomplete: session metadata is missing at ${metaPath}; continue from retained Task state and check current effects before repeating work`]
+      : []),
     ...incompleteRecoveryFacts(transcriptPath, transcriptEvidence, checkpointPath, checkpointEvidence),
     checkpointRecoveryFacts(checkpointPath, transcriptPath, checkpoint, transcriptCheckpoint, attempt.sessionId,
       checkpointEvidence.state === "corrupt" || transcriptEvidence.state === "corrupt"),

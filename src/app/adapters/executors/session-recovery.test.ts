@@ -242,14 +242,43 @@ it.each([
   expect(facts).not.toContain("checkpoint: absent");
 });
 
-it("keeps incomplete history readable when session metadata is absent", () => {
+it("allows Task recovery with missing session metadata and reports the incomplete history", () => {
   const f = recoveryFixture();
   rmSync(f.metadata);
   writeFileSync(f.transcript, '{"unfinished":');
-  expect(() => f.recovery.interrupt(f.sessionId, "Previous worker exited", "work", f.binding))
-    .toThrow("session metadata is missing");
+  expect(f.recovery.interrupt(f.sessionId, "Previous worker exited", "work", f.binding)).toBe(true);
+  expect(existsSync(f.metadata)).toBe(false);
   expect(existsSync(f.result)).toBe(false);
+  expect(f.events).toEqual([]);
+  expect(f.handoff()!.facts.join("\n")).toContain("session metadata is missing");
   expect(f.handoff()!.facts.join("\n")).toContain("Recovery history incomplete");
+});
+
+it("still requires the old process to exit when session metadata is missing", () => {
+  const f = recoveryFixture();
+  rmSync(f.metadata);
+  let drained = false;
+  let drainCalls = 0;
+  const recovery = createTaskSessionRecovery({
+    persistDir: f.root, bus: new EventBus(),
+    manager: { hasActiveSession: () => false } as never,
+    drainPersistedBashProcessGroups: () => { drainCalls++; return drained; },
+  });
+  markSessionActive(f.root, f.sessionId);
+  expect(() => recovery.interrupt(f.sessionId, "Recover", "work", f.binding)).toThrow("external owner is still live");
+  expect(drainCalls).toBe(0);
+  rmSync(join(f.root, "sessions", f.sessionId, "[ACTIVE]"));
+  expect(() => recovery.interrupt(f.sessionId, "Recover", "work", f.binding)).toThrow("did not exit");
+  drained = true;
+  expect(recovery.interrupt(f.sessionId, "Recover", "work", f.binding)).toBe(true);
+  expect(existsSync(f.metadata)).toBe(false);
+});
+
+it("does not recover missing session metadata without a retained Task binding", () => {
+  const f = recoveryFixture();
+  rmSync(f.metadata);
+  expect(() => f.recovery.interrupt(f.sessionId, "Recover")).toThrow("session metadata is missing");
+  expect(existsSync(f.result)).toBe(false);
 });
 
 it.each(['{"status":"running"', '{"status":"bogus"}'])("does not invent lifecycle state from invalid metadata %s", (bytes) => {
