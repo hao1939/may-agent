@@ -183,7 +183,7 @@ export function updateSessionProgress(
 
 /**
  * Find Task-bound session rows whose exact recorded attempt is already terminal.
- * The caller must still exclude current/in-process sessions and verify artifacts;
+ * The caller must still exclude current/in-process sessions and check readable conflicts;
  * missing markers or inactivity are never sufficient evidence on their own.
  */
 export type TerminalTaskSessionBinding = {
@@ -210,6 +210,7 @@ export function listTerminalTaskSessionBindings(
         AND a.task_id = s.task_id
         AND a.task_generation = s.task_generation
         AND a.attempt_id = s.attempt_id
+        AND json_extract(a.attempt_json, '$.sessionId') = s.sessionId
        WHERE s.app_id = ?
          AND s.status IN ('running', 'idle')
          AND s.endedAt IS NULL

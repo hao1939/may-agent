@@ -62,18 +62,19 @@ describe("session DB progress", () => {
     const persistDir = mkdtempSync(join(tmpdir(), "may-session-db-"));
     try {
       const db = getDb(persistDir);
-      const addAttempt = (id: string, taskId: string, generation: number, state: string) =>
+      const addAttempt = (id: string, taskId: string, generation: number, state: string, sessionId?: string) =>
         db.run(
           `INSERT INTO app_task_attempts
              (app_id, attempt_id, task_id, task_generation, state, lease_until, started_at, attempt_json)
-           VALUES ('sample', ?, ?, ?, ?, NULL, 1, '{}')`,
-          [id, taskId, generation, state],
+           VALUES ('sample', ?, ?, ?, ?, NULL, 1, ?)`,
+          [id, taskId, generation, state, JSON.stringify({ sessionId })],
         );
-      addAttempt("terminal", "task-one", 2, "completed");
+      addAttempt("terminal", "task-one", 2, "completed", "eligible");
       addAttempt("live", "task-two", 1, "running");
       addAttempt("wrong-generation", "task-three", 3, "failed");
       for (const [sessionId, taskId, generation, attemptId] of [
         ["eligible", "task-one", 2, "terminal"],
+        ["inherited-helper", "task-one", 2, "terminal"],
         ["still-running", "task-two", 1, "live"],
         ["mismatched", "task-three", 2, "wrong-generation"],
         ["missing", "task-four", 1, "absent"],

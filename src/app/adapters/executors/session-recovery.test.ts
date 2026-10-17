@@ -5,6 +5,10 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SubagentManager } from "../../../lib/manager.js";
+import { DbWriter } from "../../../lib/db-writer.js";
+import { getDb } from "../../../lib/db/connection.js";
+import { upsertSession, updateSessionDb } from "../../../lib/db/sessions.js";
+import { describeText } from "../../../lib/artifacts.js";
 import { appendSessionMessage, markSessionActive, readSessionMeta, writeSessionMeta } from "../../../lib/persistence.js";
 import { closeDb } from "../../../lib/requests.js";
 import { createLastSessionWriter } from "../../../lib/session-subscribers.js";
@@ -167,7 +171,7 @@ it.each(["interrupted", "done", "error"] as const)(
 );
 
 
-function recoveryFixture(status: "running" | "done" | "error" | "interrupted" = "running") {
+function recoveryFixture(status: "running" | "idle" | "done" | "error" | "interrupted" = "running") {
   const root = mkdtempSync(join(tmpdir(), "may-recovery-evidence-"));
   roots.push(root);
   const sessionId = "retained-session";
@@ -310,6 +314,39 @@ it("uses the retained binding when the session has no copied Task binding", () =
   expect(f.events).toEqual([]);
 });
 
+it.each((["running", "idle"] as const).flatMap((status) =>
+  [true, false].map((copiedBinding) => ({ status, copiedBinding })),
+))("preserves a surviving result during $status cleanup (copied binding: $copiedBinding)", ({ status, copiedBinding }) => {
+  const f = recoveryFixture(status);
+  const meta = JSON.parse(readFileSync(f.metadata, "utf8"));
+  if (!copiedBinding) delete meta.taskBinding;
+  writeFileSync(f.metadata, JSON.stringify(meta));
+  const bytes = '{"status":"done","summary":"Previously saved contribution"}\n';
+  writeFileSync(f.result, bytes);
+  const artifact = describeText(`sessions/${f.sessionId}/result.json`, bytes);
+  upsertSession(f.root, { sessionId: f.sessionId, agent: "judge", task: "work", status, startedAt: 1, taskBinding: f.binding });
+  updateSessionDb(f.root, f.sessionId, { status, outcome: "Previously saved contribution", resultArtifact: artifact });
+  const bus = new EventBus();
+  const writer = new DbWriter(f.root);
+  bus.setPersistenceSubscriber(writer.handler);
+  bus.subscribe((event) => f.events.push(event));
+  const recovery = createTaskSessionRecovery({ persistDir: f.root, manager: new SubagentManager({ persistDir: f.root }), bus });
+
+  expect(existsSync(f.transcript)).toBe(false);
+  expect(recovery.interrupt(f.sessionId, "Previous worker exited", "work", f.binding)).toBe(true);
+  expect(readFileSync(f.result, "utf8")).toBe(bytes);
+  expect(getDb(f.root).prepare("SELECT status, endedAt, outcome, result_ref, result_sha256, result_bytes FROM sessions WHERE sessionId = ?").get(f.sessionId)).toEqual({
+    status: "interrupted", endedAt: expect.any(Number), outcome: "Previously saved contribution",
+    result_ref: artifact.ref, result_sha256: artifact.sha256, result_bytes: artifact.bytes,
+  });
+  expect(readSessionMeta(f.root, f.sessionId)?.status).toBe("interrupted");
+  expect(f.handoff()!.facts.join("\n")).toContain(f.result);
+  expect(f.events.filter((event) => event.type === "session.end")).toEqual([]);
+  closeDb(f.root);
+  expect(recovery.interrupt(f.sessionId, "Repeated recovery", "work", f.binding)).toBe(true);
+  expect(readFileSync(f.result, "utf8")).toBe(bytes);
+});
+
 it.each([
   { field: "error", value: 42 },
   { field: "error", value: { message: "unknown legacy format" } },
@@ -324,6 +361,21 @@ it.each([
   expect(f.handoff()?.reason).toBe("recovered-session");
   expect(f.handoff()?.facts.join("\n")).toContain("session metadata is unreadable");
   expect(readFileSync(f.metadata, "utf8")).toBe(bytes);
+  expect(f.events).toEqual([]);
+});
+
+it("preserves terminal SQL facts when metadata cannot describe the old outcome", () => {
+  const f = recoveryFixture("done");
+  upsertSession(f.root, {
+    sessionId: f.sessionId, agent: "judge", task: "work", status: "done", startedAt: 1,
+    endedAt: 2, outcome: "Retained decision", taskBinding: f.binding,
+  });
+  writeFileSync(f.metadata, '{"status":');
+  const before = getDb(f.root).prepare("SELECT * FROM sessions WHERE sessionId = ?").get(f.sessionId);
+  expect(f.recovery.interrupt(f.sessionId, "Recover", "work", f.binding)).toBe(true);
+  expect(getDb(f.root).prepare("SELECT * FROM sessions WHERE sessionId = ?").get(f.sessionId)).toEqual(before);
+  expect(readFileSync(f.metadata, "utf8")).toBe('{"status":');
+  expect(existsSync(f.result)).toBe(false);
   expect(f.events).toEqual([]);
 });
 

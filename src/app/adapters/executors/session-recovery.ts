@@ -197,14 +197,7 @@ function interruptSupersededAgentSession(
     );
   }
 
-  if (!meta) {
-    // Ownership and shutdown are confirmed. Preserve incomplete history for
-    // the owner instead of inventing lifecycle fields or an old completion.
-    markSessionInactive(opts.persistDir, cleanSessionId);
-    return true;
-  }
-
-  if (meta.status !== "running" && meta.status !== "idle") {
+  if (meta && meta.status !== "running" && meta.status !== "idle") {
     // meta.json is authoritative. Repair only its known terminal lifecycle
     // fields in SQL; do not invent historical timing or rewrite retained
     // outcome/result evidence that may describe an accepted result.
@@ -213,6 +206,28 @@ function interruptSupersededAgentSession(
       ...(meta.endedAt !== undefined ? { endedAt: meta.endedAt, lastActivityAt: meta.endedAt } : {}),
       ...(meta.error ? { error: meta.error } : {}),
     });
+    markSessionInactive(opts.persistDir, cleanSessionId);
+    return true;
+  }
+
+  if (!meta || existsSync(join(sessionDir(opts.persistDir, cleanSessionId), "result.json"))) {
+    // Cleanup is a current execution fact, not a new result. Preserve saved
+    // result bytes/descriptors and damaged metadata. In particular, do not emit
+    // session.end: its normal persistence subscriber writes a new result.
+    const confirmedAt = Date.now();
+    if (meta) {
+      writeSessionMeta(opts.persistDir, cleanSessionId, {
+        ...meta, status: "interrupted", endedAt: confirmedAt, error: reason,
+      });
+    }
+    const stale = getDb(opts.persistDir).prepare(
+      "SELECT endedAt FROM sessions WHERE sessionId = ? AND status IN ('running', 'idle')",
+    ).get(cleanSessionId) as { endedAt: number | null } | undefined;
+    if (stale) {
+      updateSessionDb(opts.persistDir, cleanSessionId, {
+        status: "interrupted", endedAt: stale.endedAt ?? confirmedAt, lastActivityAt: confirmedAt,
+      });
+    }
     markSessionInactive(opts.persistDir, cleanSessionId);
     return true;
   }

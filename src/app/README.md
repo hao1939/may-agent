@@ -118,6 +118,14 @@ untouched rather than inventing an old completion. The App decides whether to
 inspect effects, redo work or seek help. Starting an attempt does not authorize
 replay of an arbitrary external effect; idempotency belongs at its operation.
 
+Confirmed cleanup can settle a stale running SQL session projection even when
+its metadata is unreadable. Its end time records that confirmation, not a
+reconstructed historical finish; retained terminal facts, outcomes and result
+descriptors remain intact. A surviving result must not be replaced by a
+synthetic outcome or a new completion event. Later startup sweeps use the same
+retained attempt/session authority and conflict checks, so preserving damaged
+history does not repeatedly select the stopped execution as running.
+
 Cancellation only signals a managed invocation. While the manager retains that
 invocation or its joined helper cleanup, recovery leaves the live marker and
 old Task claim intact and reports the pending cleanup. The existing recovery

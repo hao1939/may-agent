@@ -20,7 +20,6 @@ import { freezeInputContext } from "../inbox/input-context.js";
 import { assertValidAppInput } from "../apps/definition-validation.js";
 import { getDb } from "../../../lib/db/connection.js";
 import { listTerminalTaskSessionBindings } from "../../../lib/db/sessions.js";
-import { readSessionMeta } from "../../../lib/persistence.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "../events/bus.js";
@@ -1133,19 +1132,10 @@ export function settleTerminalAppTaskSessions(
   if (!opts.persistDir || !opts.sessions) return [];
   const settled: string[] = [];
   for (const candidate of listTerminalTaskSessionBindings(opts.persistDir, descriptor.id)) {
-    const meta = readSessionMeta(opts.persistDir, candidate.sessionId);
-    const binding = meta ? appTaskSessionBinding(meta.taskBinding) : null;
-    // meta.json is authoritative for the session. The SQL projection may lag;
-    // require both durable identities to agree before terminalizing anything.
-    if (
-      !binding ||
-      binding.appId !== candidate.appId ||
-      binding.taskId !== candidate.taskId ||
-      binding.generation !== candidate.generation ||
-      binding.attemptId !== candidate.attemptId
-    ) {
-      continue;
-    }
+    // Discovery verifies the retained attempt's exact session. The shared
+    // adapter cross-checks any readable metadata before cleanup, just as it
+    // does when recovering a running Task. History is not a second authority.
+    const { sessionId: _sessionId, ...binding } = candidate;
     // A current manager session or process-instance marker remains live even
     // when the Task attempt has already settled; its shutdown is not inferred.
     if (hasLiveAppTaskSession(opts, candidate.sessionId)) continue;
@@ -1154,6 +1144,7 @@ export function settleTerminalAppTaskSessions(
       candidate.sessionId,
       `Task ${candidate.taskId} attempt ${candidate.attemptId} is already terminal; reconciling its stale session projection`,
       candidate.taskId,
+      binding,
     );
     settled.push(candidate.sessionId);
   }

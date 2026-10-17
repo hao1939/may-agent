@@ -18,6 +18,7 @@ import { addLogSubscriber } from "../../../lib/log.js";
 import { readTaskChecks } from "./task-check-observations.js";
 import { UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY } from "../../metric-source-measurement.js";
 import { DbWriter } from "../../../lib/db-writer.js";
+import { listTerminalTaskSessionBindings, upsertSession } from "../../../lib/db/sessions.js";
 import { openDatabase } from "../../../lib/db.js";
 import { EVENT_DELIVERY_RESULT, EVENT_ROW_ID, EventBus, type AgentEvent } from "../events/bus.js";
 import { loadPersistedEvent } from "../events/persisted.js";
@@ -48,6 +49,7 @@ import {
   readLoadedAppTaskInputResult,
   reconcileLoadedAppTaskOnce,
   recoverInstalledAppTasks,
+  settleTerminalAppTaskSessions,
   retryLoadedFailedAppTask,
   reopenLoadedAppTask,
 } from "./app-task-runtime.js";
@@ -11001,6 +11003,88 @@ describe("canonical App task runtime", () => {
         if (metadata === "missing") expect(existsSync(metadataPath)).toBe(false);
         else expect(readFileSync(metadataPath, "utf8")).toBe(bytes);
         expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(result);
+      },
+    );
+
+    it.each(["missing", "unreadable", "invalid-status", "no-binding"] as const)(
+      "recovers persisted SQL session history across repeated startup with %s metadata",
+      async (metadata) => {
+        const f = setup();
+        await installCoreTaskRuntimes(f.base);
+        f.observe("owner");
+        const claim = f.saveTerminalSession("owner");
+        mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+          attempt.runtimeId = "previous-runtime";
+          attempt.lease!.runtimeId = "previous-runtime";
+        });
+        const sessionId = "session-owner";
+        const directory = join(f.base.persistDir, "sessions", sessionId);
+        const path = join(directory, "meta.json");
+        const meta = JSON.parse(readFileSync(path, "utf8"));
+        const binding = meta.taskBinding;
+        upsertSession(f.base.persistDir, {
+          sessionId, agent: "sample-owner", task: "work", status: "running", startedAt: 1, taskBinding: binding,
+        });
+        meta.status = metadata === "invalid-status" ? ["running"] : "running";
+        delete meta.endedAt;
+        if (metadata === "no-binding") delete meta.taskBinding;
+        const bytes = metadata === "unreadable" ? '{"status":' : JSON.stringify(meta);
+        if (metadata === "missing") rmSync(path);
+        else writeFileSync(path, bytes);
+        const result = readFileSync(join(directory, "result.json"), "utf8");
+
+        await recoverInstalledAppTasks(f.base.bus);
+        expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
+        await closeInstalledAppTaskRuntimes(f.base.bus);
+        await installCoreTaskRuntimes(f.base);
+        await recoverInstalledAppTasks(f.base.bus);
+        expect(listTerminalTaskSessionBindings(f.base.persistDir, "sample")).toEqual([]);
+        await f.run("owner");
+        expect(f.agentCalls()).toBe(1);
+        expect(readAcceptedRuntimeAttempt(f.config, "owner")?.acceptedResult?.result).toEqual(f.payload);
+        expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(result);
+        if (metadata === "missing") expect(existsSync(path)).toBe(false);
+        else if (metadata !== "no-binding") expect(readFileSync(path, "utf8")).toBe(bytes);
+      },
+    );
+
+    it.each(["missing", "damaged", "conflict", "helper"] as const)(
+      "uses retained terminal-attempt ownership when sweeping %s session evidence",
+      async (kind) => {
+        const f = setup();
+        await installCoreTaskRuntimes(f.base);
+        f.observe("owner");
+        const claim = f.saveTerminalSession("owner");
+        const sessionId = "session-owner";
+        const path = join(f.base.persistDir, "sessions", sessionId, "meta.json");
+        const meta = JSON.parse(readFileSync(path, "utf8"));
+        upsertSession(f.base.persistDir, {
+          sessionId, agent: "sample-owner", task: "work", status: "running", startedAt: 1, taskBinding: meta.taskBinding,
+        });
+        mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
+          attempt.state = "interrupted";
+          if (kind === "helper") attempt.sessionId = "another-session";
+        });
+        meta.status = ["running"];
+        if (kind === "conflict") meta.taskBinding.attemptId = "another-attempt";
+        if (kind === "missing") rmSync(path);
+        else writeFileSync(path, JSON.stringify(meta));
+        const before = readTaskSnapshot(f.config);
+        const cleanup: string[] = [];
+        const opts = { ...f.base, sessions: createTaskSessionRecovery({
+          persistDir: f.base.persistDir, bus: f.base.bus,
+          manager: { hasActiveSession: () => false } as never,
+          drainPersistedBashProcessGroups: (_root, id) => { cleanup.push(id); return true; },
+        }) };
+        const sweep = () => settleTerminalAppTaskSessions(opts, { id: "sample" });
+        if (kind === "conflict") expect(sweep).toThrow("session Task binding");
+        else expect(sweep()).toEqual(kind === "helper" ? [] : [sessionId]);
+        expect(cleanup).toEqual(kind === "helper" || kind === "conflict" ? [] : [sessionId]);
+        expect(readTaskSnapshot(f.config)).toEqual(before);
+        expect(f.agentCalls()).toBe(0);
+        if (kind === "missing") expect(existsSync(path)).toBe(false);
+        else expect(readFileSync(path, "utf8")).toBe(JSON.stringify(meta));
+        if (kind !== "helper" && kind !== "conflict") expect(sweep()).toEqual([]);
       },
     );
 
