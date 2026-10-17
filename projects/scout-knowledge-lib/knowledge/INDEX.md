@@ -72,6 +72,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ### 2026-10-17
 
+- [Step-local agent sweeps need replay-fidelity and verdict checks](./findings/2026-10-17-agentfork-replay-sweep-evidence.md) — pinned Agentfork source implements cached-prefix forks, repeated variant sweeps, and parent/step lineage, but ordinary forks may reuse mismatched cached inputs and the built-in pass verdict is substring containment; Scout inspected source and project-authored tests but did not run the software, tests, models, example, or UI.
 - [Goal-drift control can separate when to intervene from how to intervene](./findings/2026-10-17-agent-goal-drift-steering.md) — an arXiv abstract proposes a cheap intervention trigger plus a costlier corrective path and reports transfer and efficiency gains; the full paper, drift labels, models, tasks, traces, code, and results were not inspected or reproduced.
 
 ### 2026-10-16
