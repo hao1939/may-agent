@@ -201,6 +201,60 @@ answer, required artifact or dependency result so quiet handling cannot strand
 real work. Measure model executions and verified progress together. These are
 mostly App improvements; #381 remains complementary Host recovery work.
 
+## Follow-up: existing fixes and remaining work
+
+Before implementation, source and the loaded App release were compared. The
+following fixes already exist; the findings above do not undo them:
+
+| Existing change | What remains |
+| --- | --- |
+| `28251c9eec` and `0fb09a189b`: omit truncated linked-payload size from identity and test reuse | Finding 1 concerns readable producer content changing, not omitted byte counts. |
+| `39a81a2afd`: review metric transitions, not ordinary sample changes | Finding 2 concerns actual repeated breach/recovery crossings. A historical no-change disposition does not by itself provide an executable rule covering every new episode. |
+| `2a1871c3fa`: meaningful progress after scheduled wakes | Finding 3 persists despite that guidance. The ordinary-permalink restriction and demonstrated Atom-feed success need an owner strategy/access-contract decision, not another copy of the prompt. |
+| Host #371: observer delivery intent | Finding 4 needs tracing through the exact Condition/admission route before attributing it to another Host defect. |
+
+Source and active-release bytes matched for the pinned/public evidence readers,
+metric review, Task selector and Scout App definition. The active App release
+remained `697cc6c655c8c9e2cc02c0a0194abe220e6aae73-definitions-v5` during this
+follow-up. Thus Finding 1 was not an unactivated version of the earlier fix.
+
+The implemented change addresses Finding 1 at the shared evidence reader:
+**a retained emission receipt is provenance, not a dependency on its producer's
+future work**. The reader recognizes the Host receipt envelope across Apps;
+it retains the receipt/content, follows other evidence and still follows that
+same producer if an independent dependency or helper reference requires it.
+Missing or mismatched receipt identity keeps the ordinary conservative linked
+read. This extends the existing creator-provenance rule without a new lifecycle,
+cache or Task-name exception. See the
+[owning evidence contract](../../evaluation/task-outcome-evaluation.md#mechanical-versus-semantic-work).
+
+Validation: the regression failed before the change. Afterward, 131 focused
+tests passed with 888 assertions, including connected selector/report reuse,
+zero extra model calls for producer-only changes with fresh allowance, changed
+human-helper evidence, an explicit dependency on the same producer, pinned
+artifact references, malformed envelopes and retained legacy receipt formats.
+`bun run check:may-design` passed with the existing unclassified `reports`
+directory warning. The additional paired-Host gate
+`check:canonical-apps:final-runtime` failed on 15 type errors outside the change;
+all 15 also reproduced on untouched `main` at `d6b38eb730`. Main additionally
+reported three missing manifests in local legacy App directories. No new
+diagnostic came from this change. Both gate logs are retained in the archive;
+the broad compatibility gate is not claimed as passing.
+
+An offline replay of the two recorded Finding 1 snapshots changes differing
+baseline hashes (`267ed988…` and `604b9a77…`) into the same hash (`9474700d…`).
+Both real May dependencies remain; the unrelated Scout producer read disappears.
+The replay uses recorded Task/link views and an empty accepted-history page in
+both cases, so these are reconstructed hashes rather than the original report
+hashes. Its script/output are `replay-emission-provenance.ts` and
+`replay-emission-provenance.json` in the external evidence archive below.
+
+This change is source-verified and awaits App activation. It needs no Host patch.
+It may cause one baseline reassessment as affected evidence identities change;
+saved reports are not rewritten. No runtime Task was triggered, deployment
+changed, or live savings measured. Metric reconsideration, Reddit strategy and
+duplicate PR admission remain separate unresolved work, not claimed fixes.
+
 ## Evidence and review limits
 
 Read-only collection and aggregates are retained at

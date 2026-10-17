@@ -211,16 +211,31 @@ Read statuses, bytes and decision-relevant linked results are retained in
 immutable JSON reports and participate in the evidence fingerprint, including
 the pre-publication recheck. Canonical creator identity and navigation remain in
 the subject `appTask`, but the reader does not recursively fetch that creator's
-mutable Task merely because it is provenance; unrelated creator work therefore
-does not redefine the subject's evidence or consume its linked-read budget.
+mutable Task merely because it is provenance. The same rule applies to the
+producer in a retained Host Task-emission receipt: publishing a fact does not
+make the producer's future work a dependency of its consumer. Both provenance
+and the published content remain evidence; unrelated producer work does not
+redefine the subject's evidence or consume its linked-read budget.
 Declared dependencies and exact helper/result references remain evidence links.
-If the creator Task is also cited by one of those independent references, it is
-followed normally; only the known Host provenance occurrence is skipped, not
-creator-named objects inside arbitrary domain results. Newly readable evidence
-can therefore be reviewed without changing the Task generation. Existing
+If a producer Task is also cited by one of those independent references, it is
+followed normally. Only the known Host creator occurrence and the exact
+`emission` reference in a Host-shaped publication envelope are skipped. An
+emission envelope must have typed `appId`, `taskId`, `generation`, and `localKey`
+matching its `idempotencyKey` (current tuple or retained legacy format).
+An arbitrary `creator` or `emission` field is not enough. This recognizes a
+reference's role, not the authenticity of a publication. Other fields and nested
+evidence are still traversed. The rule applies equally to retained input,
+accepted results and pinned JSON artifacts, without naming a particular App.
+Newly readable evidence can therefore be reviewed without changing the Task
+generation. Existing
 immutable reports and legacy reads remain unchanged. This costs bounded
 file/public reads even when an unchanged report is reused; that is simpler than
 a second evidence cache and detects replaced/missing bytes.
+
+The emission extension is source-verified, awaiting App activation; see the
+[October 17 follow-up and replay](../archive/reviews/recent-app-work-20261017.md#follow-up-existing-fixes-and-remaining-work).
+Its changed evidence boundary can require one new baseline review for an
+affected Task. Existing reports are retained, not rewritten.
 
 Evaluation-owned subjects are excluded. Matching public App/Task identities establish the owning App; optional creator provenance identifies who initiated work, not who owns it. Creator-less historical/recurring Tasks remain readable without inventing a creator. Their missing creator/delegation provenance is retained in `readBack.gaps` for semantic judgment: eligibility to read is not proof of independent initiation, success, or healthy coverage. A Task created by Evaluation in another App is conservatively inconclusive when public provenance cannot distinguish reviewer delegation from independently owned remediation. A later Task owned and created by the external App remains eligible even when an Evaluation finding motivated it.
 

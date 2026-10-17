@@ -1000,6 +1000,73 @@ describe("Task outcome review", () => {
     expect(factsOf(second)).toEqual(factsOf(first));
   });
 
+  test("reuses a research review after unrelated producer work, but reviews changed helper evidence", async () => {
+    const root = mkdtempSync(join(tmpdir(), "task-review-emission-"));
+    const emission = {
+      appId: "scout-knowledge-lib", taskId: "explore-github",
+      generation: 2, localKey: "research-pinned",
+    };
+    const handoffInput = taskInputForEvent({
+      type: "scout.research.qualified",
+      data: {
+        claim: "Investigate recovery", emission,
+        idempotencyKey: 'task-emission:["scout-knowledge-lib","explore-github",2,"research-pinned"]',
+      },
+    } as Parameters<typeof taskInputForEvent>[0]);
+    let producerFact = "Minerva research finished";
+    let helperFact = "Waiting for human review";
+    let modelCalls = 0;
+    let producerReads = 0;
+    let accepted: unknown;
+    const base = reader(
+      () => ({ ...detail, waitingOn: [{ appId: "may", taskId: "human-review" }] }),
+      () => ({ ...appTask, input: handoffInput }),
+    );
+    const command: PublicCommand = async (request) => {
+      if (request.taskId === emission.taskId || request.taskId === "human-review") {
+        const producer = request.taskId === emission.taskId;
+        if (producer) producerReads++;
+        return {
+          type: "ok", command: request.type,
+          appId: request.appId, taskId: request.taskId,
+          task: request.type === "app.task.get"
+            ? { id: request.taskId, generation: 1, result: { fact: producer ? producerFact : helperFact } }
+            : { appId: request.appId, taskId: request.taskId, generation: 1 },
+        };
+      }
+      return base(request);
+    };
+    const ctx = createTestAppWorkflowContext({
+      input: { appId, taskId },
+      reconciliation: reconciliation(),
+      read: createTestAppRead({ tasks: { get: async () => accepted } }),
+      callAgent: async () => {
+        modelCalls++;
+        return { id: `s_handoff_${modelCalls}`, kind: "agent", status: "done", summary: "done", output: judgment };
+      },
+    });
+    try {
+      const first = await reviewTaskOutcome(ctx, command, root);
+      accepted = { id: "review/sample-goal-one", result: first.output };
+      // A fresh allowance must not turn producer-only changes into paid work.
+      setSystemTime(new Date(Date.now() + 86_400_000));
+      producerFact = "Unrelated Memoria research finished";
+      const second = await reviewTaskOutcome(ctx, command, root);
+      expect(second.summary).toBe("Reused accepted evaluation for unchanged sample/goal/one.");
+      expect(factsOf(second)).toEqual(factsOf(first));
+      expect(modelCalls).toBe(1);
+      expect(producerReads).toBe(0);
+
+      helperFact = "Human approved the change";
+      const third = await reviewTaskOutcome(ctx, command, root);
+      expect(modelCalls).toBe(2);
+      expect(factsOf(third)).not.toEqual(factsOf(first));
+    } finally {
+      setSystemTime();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("presentation churn reuses immutable staged report instead of colliding or paying for another judgment", async () => {
     const root = mkdtempSync(join(tmpdir(), "task-review-presentation-"));
     let calls = 0;

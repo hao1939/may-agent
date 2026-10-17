@@ -13,6 +13,30 @@ function object(value: unknown): Record<string, unknown> {
     : {};
 }
 
+/** Recognize the Host's retained publication envelope, not arbitrary fields
+ * named `emission`. This classifies a reference; it does not authenticate it. */
+function hasTaskEmissionProvenance(envelope: Record<string, unknown>): boolean {
+  const { appId, taskId, generation, localKey } = object(envelope.emission);
+  if (
+    typeof appId !== "string" ||
+    !appId.trim() ||
+    typeof taskId !== "string" ||
+    !taskId.trim() ||
+    typeof generation !== "number" ||
+    !Number.isSafeInteger(generation) ||
+    generation < 1 ||
+    typeof localKey !== "string" ||
+    !localKey.trim()
+  ) return false;
+  // The Host preserves old publication receipts when replaying a retained fact.
+  return (
+    envelope.idempotencyKey ===
+      `task-emission:${JSON.stringify([appId, taskId, generation, localKey])}` ||
+    envelope.idempotencyKey ===
+      `task:${appId}:${taskId}:${generation}:emit:${localKey}`
+  );
+}
+
 /** Follow references, never directory scans, prose paths or unbounded transcripts.
  * Shared artifact references also cover development records, helper reports and
  * raw verification receipts. The bundle is evidence, not a recovery verdict. */
@@ -27,9 +51,12 @@ export async function readPinnedTaskEvidence(
   const gaps = new Set<string>();
   const files = new Set<string>();
   const tasks = new Set<string>([`${appId}\0${taskId}`]);
-  const queue: Array<{ value: unknown; source: string; depth: number }> = [
-    { value: task, source: "subject", depth: 0 },
-  ];
+  const queue: Array<{
+    value: unknown;
+    source: string;
+    depth: number;
+    provenance?: boolean;
+  }> = [{ value: task, source: "subject", depth: 0 }];
   const pendingTasks: Array<{ appId: string; taskId: string }> = [];
   let bytesRemaining = 65_536;
   let nodes = 0;
@@ -177,7 +204,7 @@ export async function readPinnedTaskEvidence(
       );
       break;
     }
-    const { value, source, depth } = queue[index]!;
+    const { value, source, depth, provenance } = queue[index]!;
     if (!value || typeof value !== "object") continue;
     if (depth > 12) {
       gaps.add(`reference depth limit: ${source}`);
@@ -222,24 +249,27 @@ export async function readPinnedTaskEvidence(
       } else gaps.add(`unpinned path not read: ${item.path}`);
     }
     // Exact structured cross-App helper references; no guesses from session IDs.
-    // The canonical creator object remains in the subject snapshot as provenance,
-    // but its mutable Task is not itself outcome evidence. Do not mark it visited:
+    // Creator and emission provenance remain in the snapshot, but a producer's
+    // mutable Task is not itself outcome evidence. Do not mark it visited:
     // the same identity must still be followed if a result/dependency cites it.
     const creatorProvenance =
       source === "subject.appTask.creator" ||
       source.startsWith("subject.appTask.creator.");
     if (
       !creatorProvenance &&
+      !provenance &&
       typeof item.appId === "string" &&
       typeof item.taskId === "string"
     )
       enqueueTask(item.appId, item.taskId);
+    const emissionProvenance = hasTaskEmissionProvenance(item);
     for (const [key, child] of Object.entries(value)) {
       if (child && typeof child === "object")
         queue.push({
           value: child,
           source: `${source}.${key}`,
           depth: depth + 1,
+          provenance: key === "emission" && emissionProvenance,
         });
     }
   }

@@ -1756,6 +1756,58 @@ describe("automatic task outcome selector", () => {
     }
   });
 
+  test("does not select an unchanged handoff after producer activity, but follows an explicit dependency to that producer", async () => {
+    const root = mkdtempSync(join(tmpdir(), "selector-emission-"));
+    let producerFact = "Minerva researched";
+    let dependsOn: string[] = [];
+    const base = catalogCommand({ may: [task("may", "goal/subject")] });
+    const command: PublicCommand = async (request) => {
+      const response = await base(request);
+      if (request.type === "app.task.get" && request.taskId === "goal/subject") {
+        response.task = {
+          ...(response.task as Record<string, unknown>), dependsOn,
+          input: { kind: "message", data: { context: { publishedFact: {
+            claim: "Review the pinned finding",
+            emission: { appId: "may", taskId: "producer", generation: 1, localKey: "finding" },
+            idempotencyKey: 'task-emission:["may","producer",1,"finding"]',
+          } } } },
+        };
+      }
+      if (request.taskId === "producer") {
+        if (request.type === "app.task.get")
+          return { type: "ok", command: request.type, appId: "may", taskId: "producer",
+            task: { id: "producer", generation: 1, result: { fact: producerFact } } };
+        return { type: "ok", command: request.type,
+          task: { appId: "may", taskId: "producer", generation: 1 } };
+      }
+      return response;
+    };
+    const read = () => readSubjectTask({ appId: "may", taskId: "goal/subject" }, command);
+    const select = async () => (await selectFairCandidate(command, config, root, undefined, NOW)).candidate;
+    try {
+      const first = await read();
+      expect(first.disposition).toBe("eligible");
+      publishReport(root, "may", "goal/subject", first.evidenceHash!, NOW - DAY);
+      const path = join(root, taskReportPaths("may", "goal/subject", first.evidenceHash!).jsonPath);
+      const original = hashReport(path);
+      producerFact = "Unrelated Memoria researched";
+      expect((await read()).evidenceHash).toBe(first.evidenceHash);
+      expect(await select()).toBeNull();
+      expect(hashReport(path)).toBe(original);
+
+      dependsOn = ["producer"];
+      expect(await select()).toEqual({ appId: "may", taskId: "goal/subject" });
+      const dependent = await read();
+      publishReport(root, "may", "goal/subject", dependent.evidenceHash!, NOW - DAY);
+      expect(await select()).toBeNull();
+      producerFact = "Required contribution changed";
+      expect(await select()).toEqual({ appId: "may", taskId: "goal/subject" });
+      expect(hashReport(path)).toBe(original);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("does not deduplicate a different full hash at the same shortened report path", async () => {
     const root = mkdtempSync(join(tmpdir(), "selector-hash-collision-"));
     const command = catalogCommand({ may: [task("may", "goal/one")] });

@@ -424,6 +424,78 @@ describe("pinned Task evidence read-back", () => {
     expect(changed.evidenceHash).not.toBe(first.evidenceHash);
   });
 
+  test.each(["current", "legacy", "missing", "mismatched"])(
+    "distinguishes %s emission provenance from an ordinary Task reference",
+    async (format) => {
+      const emission = {
+        appId: "scout-knowledge-lib", taskId: "explore-github",
+        generation: 2, localKey: "research-pinned",
+      };
+      const provenance = format === "current" || format === "legacy";
+      const handoff = {
+        claim: "Investigate recovery",
+        emission,
+        ...(format !== "missing" ? {
+          idempotencyKey: format === "current"
+            ? 'task-emission:["scout-knowledge-lib","explore-github",2,"research-pinned"]'
+            : format === "legacy"
+              ? "task:scout-knowledge-lib:explore-github:2:emit:research-pinned"
+              : 'task-emission:["scout-knowledge-lib","another-task",2,"research-pinned"]',
+        } : {}),
+      };
+      let producerFact = "Researched Minerva";
+      let producerReads = 0;
+      const base = publicReader({ waitingForHuman: true });
+      const command: PublicCommand = async (request) => {
+        const response = await base(request);
+        const task = response.task as Record<string, unknown>;
+        if (request.type === "app.task.get" && request.taskId === "goal/one")
+          task.input = { kind: "message", data: { context: { researchHandoff: handoff } } };
+        if (request.taskId === emission.taskId) {
+          producerReads++;
+          if (request.type === "app.task.get") task.facts = [producerFact];
+        }
+        return response;
+      };
+      const read = () => readSubjectTask({ appId: "may", taskId: "goal/one" }, command);
+      const first = await read();
+      producerFact = "Researched unrelated Memoria";
+      const second = await read();
+      expect(second.evidenceHash === first.evidenceHash).toBe(provenance);
+      expect(producerReads === 0).toBe(provenance);
+      expect((second.task!.appTask as any).input.data.context.researchHandoff).toEqual(handoff);
+      if (provenance) expect(second.task!.readBack!.links).toEqual([]);
+
+      // The retained handoff is still evidence, including the receipt itself.
+      handoff.claim = "Investigate a different failure";
+      expect((await read()).evidenceHash).not.toBe(second.evidenceHash);
+    },
+  );
+
+  test("follows a real helper even when that same Task emitted the pinned artifact", async () => {
+    const store = await archive();
+    const emission = { appId: "may", taskId: "helper/one", generation: 1, localKey: "report" };
+    const payload = {
+      emission,
+      idempotencyKey: 'task-emission:["may","helper/one",1,"report"]',
+      helper: { appId: "may", taskId: "helper/one" },
+    };
+    const artifact = await store.put(JSON.stringify(payload), "json");
+    let helperFact = "passed";
+    const command: PublicCommand = (request) =>
+      publicReader({ artifact }, { facts: [helperFact] })(request);
+    const first = await readSubjectTask({ appId: "may", taskId: "goal/one" }, command);
+    expect(first.task!.readBack!.links).toMatchObject([
+      { appId: "may", taskId: "helper/one", status: "read" },
+    ]);
+    expect(first.task!.readBack!.artifacts).toMatchObject([
+      { status: "read", reference: artifact },
+    ]);
+    helperFact = "failed";
+    const changed = await readSubjectTask({ appId: "may", taskId: "goal/one" }, command);
+    expect(changed.evidenceHash).not.toBe(first.evidenceHash);
+  });
+
   test("excludes Evaluation links and records exhausted reference navigation", async () => {
     let calls = 0;
     const bundle = await readPinnedTaskEvidence(
