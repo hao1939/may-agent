@@ -50,6 +50,16 @@ without losing the original unanswered request or requiring another human
 reminder. Creating a report, patch or PR establishes a contribution; whether it
 fulfills the assignment depends on what was requested.
 
+An Evaluation request can suggest consulting May or another specialist. Alex
+uses that contribution to resolve the concern under his improvement role;
+the helper's narrower assignment does not narrow Alex's outcome. After an
+agreed decision returns, Alex carries the authorized action through verification
+on the existing owning Task, or explains a supported decision not to proceed.
+A genuine blocker retains the next action and return path. Explicitly bounded
+advice, review and source-only assignments remain bounded; consultation creates
+no additional authority. Metric reporting is evidence about this work, not its
+completion criterion. See the [observed follow-through failure](../archive/reviews/alex-consultation-follow-through-20261017.md).
+
 Alex may investigate and prepare work within his standing authorized scope. He
 judges priority, likely benefit and cost, including the option to defer. May
 sets priorities across human work and resolves competing goals or authority.

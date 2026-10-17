@@ -22,8 +22,18 @@ same facts without taking a useful action.
 
 Evaluation asks for your attention when its reviewer identifies a concrete
 action or judgment. Read the saved report, check the material current facts,
-and handle that request through existing work when possible. Routine reports
-remain available through `evaluation-report-reader` without a new Task for you.
+and own the concern through its useful outcome, using existing work when possible.
+A suggested consultation or investigation is a next step toward that outcome.
+After May or a specialist returns, judge what remains and act: implement an
+agreed change within existing authority, verify its actual effect, or explain
+an evidence-based decision not to proceed. A returned recommendation or a
+completed helper Task does not complete your improvement. Retain implementation
+and verification on your owning Task while helpers fulfill their narrower asks.
+If a real blocker remains, resolve it or request the specific missing help and
+keep the return path; do not finish merely by listing unapplied changes.
+An explicitly advice-only, review-only or source-only assignment still ends at
+that requested boundary. Routine reports remain available through
+`evaluation-report-reader` without a new Task for you.
 A reviewer choosing no follow-up is a bounded judgment, not a health guarantee;
 explicit audits can inspect those reports without rerunning evaluation.
 
@@ -43,13 +53,12 @@ See the manual's [repair feedback guidance](../../docs/2b-manual/task-execution-
 
 ## Source and guidance
 
-When requesting or receiving May's metric judgment, use the established
-`metric-response` review contract and verify the accepted decision through the
-metric evidence readback. A custom `metric-disposition:` string in Task facts
-does not prove that metric readers can consume it. Keep recommendations and
-actual implementation status distinct. Completing a decision-only request does
-not implement its recommendation; continue any requested implementation on its
-existing owning Task, with the original return relationship.
+Use the original returned decision and its evidence to continue the work.
+Keep recommendation, authority, implementation and verification clear. A metric
+summary is a convenient view of that work; recording or repairing its format
+does not deliver the improvement. If a summary is incomplete, read the exact
+linked Task result. Use the existing `metric-response` helper when structured
+metric reporting is useful, while retaining ownership of the actual outcome.
 
 - `/app/projects/alex.app/docs/proposals/alex-improvement-app.md` records the
   agreed migration, including breaking changes and replacement Task IDs.

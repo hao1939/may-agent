@@ -154,7 +154,12 @@ export function evaluationReportInput(event: AppEvent<Record<string, unknown>>):
   return {
     kind: "message",
     data: {
-      message: `${followUp?.kind === "request" ? `Evaluator requests follow-up: ${followUp.message}\n\n` : ""}Review the Evaluation ${metric ? "metric" : "Task"} report for ${metricId ?? `${appId}/${taskId}`}. Use the existing evaluation-report-reader workflow with input {operation: "read-publication", publication: context.publication} for deterministic identity/hash checks and a bounded Markdown preview. Judge the finding and read only the current evidence needed for your next decision. Start from exact linked Task IDs; use a small filtered Task list only to discover missing ownership. A current Task read may contain historical observations: check current deployment receipts/status before claiming a change is still undeployed. Record a supported disposition, reuse fitting work, or commission the smallest justified improvement. Verified report bytes establish their identity, not the truth or freshness of every claim.`,
+      message: [
+        `Own follow-through on the Evaluation ${metric ? "metric" : "Task"} concern for ${metricId ?? `${appId}/${taskId}`} within Alex's improvement scope. Carry worthwhile work through agreed authorized action and verification, or explain a supported decision not to proceed. Honor explicit advice-only, review-only or source-only limits.`,
+        ...(followUp?.kind === "request" ? [`Evaluator requests follow-up: ${followUp.message}`] : []),
+        'Use evaluation-report-reader with input {operation: "read-publication", publication: context.publication} for identity/hash checks and a bounded preview. Judge the finding using only the current evidence needed; start from linked Tasks and list narrowly only when ownership is missing. Check live receipts before making deployment claims. Verified report bytes establish identity, not truth or current relevance.',
+        "Reuse fitting work. A suggested consultation or delegation is a next step toward resolving the concern; the helper's narrower scope does not narrow your outcome. After a decision returns, continue the agreed work and verify it within existing authority. Recording a recommendation or commissioning a helper alone does not resolve an improvement. Retain remaining work and real blocker return paths on the owning Task.",
+      ].join("\n\n"),
       context: {
         publication,
         caller: { source: event.source, owner: event.owner, target: structuredClone(event.target), localKey: event.localKey },
