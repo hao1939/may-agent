@@ -1,8 +1,10 @@
 # Cindy: Cross-Platform Meta-Harness Client for AI Agents
 
 Date: 2026-07-26
+Last reviewed: 2026-10-17
 Source: GitHub
 Repo: https://github.com/makecindy/cindy
+Reviewed revision: [`faffcab6f3b17cb35b8c050d2d242ca078ebd86d`](https://github.com/makecindy/cindy/commit/faffcab6f3b17cb35b8c050d2d242ca078ebd86d)
 
 ## Summary
 
@@ -30,10 +32,15 @@ The pattern validates that:
 
 ## Signals
 
-- 817★ in 5 days (created 2026-07-22; 126★ at first observation on 2026-07-26, 817★ by 2026-07-27) — 6.5× growth in one day signals strong adoption
-- CI pipeline active; monorepo structure (desktop + mobile + shared packages)
-- Bilingual README (EN/ZH) — targeting both Western and Chinese developer markets
-- Commercial service layer with transparent usage billing
+- 3,171 GitHub stars at the 2026-10-17 recheck, up from 817 on 2026-07-27; stars are an attention signal, not evidence that the advertised workflows work
+- The pinned README identifies Electron desktop, Expo/React Native mobile, and shared orchestration/model-provider packages in a pnpm monorepo
+- The client can run local agents through “Skip Sign-In,” but server-backed capabilities are unavailable in that mode
+- The repository explicitly excludes the backend service; the inspected client therefore cannot substantiate claims about hosted execution, billing, or backend reliability
+- Bilingual README (EN/ZH) targets both Western and Chinese developer markets
+
+## Evidence limits
+
+This update inspected repository metadata and the README at the pinned revision. Scout did not run the client, tests, models, harness switching, memory continuity, computer control, mobile app, local-agent mode, or hosted service. The broad discovery search reported `incomplete_results: true`, so it is not a complete census of GitHub repositories.
 
 ## Tags
 
