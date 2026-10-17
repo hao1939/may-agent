@@ -32,6 +32,13 @@ These owner fields require the [Host source update](../../2a-design/agents.md#cu
 older installed versions may omit them. Use the supplied capabilities and
 report missing context instead of guessing another owner.
 
+Use the [term clarification](../../2a-design/message-lifecycle.md#task-request-input-and-human-action)
+when working across Conversation and ordinary Tasks. Task `requests` submits App
+input; `requestUpdates` changes accepted promises to the human. Their IDs have
+different meanings. Declare a request Condition only when you need the returned
+answer, and a human-owned Condition when you need the human's action or decision.
+An automated escalation does not itself create a Conversation Request.
+
 ## A complete example
 
 You are asked to implement a change and obtain a review.

@@ -13,6 +13,7 @@ contracts and guides. [Proposals](proposals/README.md) contain remaining choices
 | What is May for? | [Purpose](1-principles/purpose.md) |
 | Why choose this design? | [Philosophy](1-principles/design-philosophy.md), [review and conflict rules](1-principles/core-principles.md#review-rule) |
 | How does work flow from an ask to an outcome? | [System Model](2a-design/system-model.md) |
+| How do Task, Conversation Request, App input and human action differ? | [Term clarification](2a-design/message-lifecycle.md#task-request-input-and-human-action) |
 | What does the agent decide and infra execute? | [Host/App boundary](2a-design/system-boundary.md) |
 | How should an agent work with current capabilities? | [Task execution guide](2b-manual/task-execution-guide/SKILL.md) |
 | How do Task state, Conditions and recovery work? | [Task lifecycle](2a-design/task-resource-engine.md) |

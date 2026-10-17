@@ -96,6 +96,57 @@ supervisor or independently executing inbox owner. Requests and Topic links
 preserve the obligation and context; input records preserve pending handling.
 The owning App keeps responsibility for Task execution and mechanical recovery stays with the Host.
 
+## Task, Request, input and human action
+
+**Tasks own work. Conversation Requests retain what May owes the human. Inputs
+carry asks and facts to work. Conditions retain facts that work needs.** Use
+"ask" as a verb; it does not introduce another resource or lifecycle.
+
+| Term in current contracts | Meaning and responsibility |
+| --- | --- |
+| Task | Scoped work owned by an agent. It retains requirements, context, accepted results and remaining work across attempts. |
+| Conversation Request | An accepted conversational promise to the human. May judges its scope and fulfillment through the Conversation's Task; the Request has no executor. It can span inputs and reference several Tasks. |
+| App input / App request | A submitted input plus admission and caller/result correlation. The receiving App selects or addresses a Task; pending admission can exist before that Task is known. It does not represent a new conversational promise by itself. |
+| Caller/result link | Connects a submitted ask to the result owed to its caller. Asking for help can establish this link between Tasks. A Task's structural parent link alone does not establish it. |
+| Condition | An exact fact the Task needs to observe. A caller declares a request Condition when it needs a submitted contribution's answer; submitting work and waiting for it are separate choices. |
+| Human-owned Condition | An answer, decision or action needed from the human. The agent still owns the Task. This is the opposite direction from a Conversation Request: the agent needs help from the human. |
+| Response | The actual answer or explanation. Sending progress does not by itself fulfill the accepted ask. |
+
+"Human-facing commitment" explains Conversation Request more precisely than
+"human-owned response": May owes the response; the human is its recipient.
+Use **Conversation Request** when discussing it beside App requests. The word
+"request" in a transport or tool field does not identify one universal object.
+
+The SDK currently uses these names; this clarification does not rename them:
+
+| API location | Refers to |
+| --- | --- |
+| `AppConversationRequest`, `requestUpdates`, `communication.requestUpdates`, `followUp.requestId` | The accepted human promise and its scope, associations or closure. |
+| `TaskAppRequest`, ordinary Task `requests`, `TaskChangeReceipt.requests[].requestId` | Work/input submitted to an App and its admission identity. |
+| `conditions: [{ requestId }]` | Interest in the result of an App submission, using its local or admitted identity under the caller-generation rules. |
+| `TaskInput.communication.requestIds` | Conversation Requests associated with that input, when communication context exists. |
+| `inputKeys` | The exact admitted Task inputs covered by a result; these are not Conversation Request IDs. |
+
+For example, "compare two approaches and explain the recommendation" becomes
+one Conversation Request. May can ask a benchmark Task for measurements through
+App input. If the benchmark needs the human to restore credentials, it retains
+a human-owned Condition. The human reply returns to that Task; the measurements
+return to May through the caller link; May explains the recommendation and
+closes the Conversation Request. Each record describes a distinct responsibility
+or fact, while Tasks perform all execution.
+
+A discussion-only answer can fulfill a Conversation Request in the existing
+Conversation Task. A correction can refine that same Request. Automated
+agent-to-agent escalation need not create any Conversation Request. If the
+human only asked to start work, confirmation of that narrower outcome can
+fulfill the Request while the delegated Task continues.
+
+The [Task attempt contract](task-attempts.md) owns submission/result fields;
+[Events](events.md#addressed-input-and-caller-requests) owns admission and caller
+correlation; [human control surfaces](human-control-surfaces.md) own rendering
+and returning human action. The [terminology review](../archive/reviews/task-request-terms-20261017.md)
+records naming recommendations and the limits of merging these records.
+
 ## Requests: acceptance and closure
 
 May follows this conversational pattern:

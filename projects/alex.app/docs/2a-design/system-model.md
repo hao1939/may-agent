@@ -17,6 +17,12 @@ executors and helpers perform contributions without taking over ownership.
 See [agent ownership and App scope](agents.md#task-ownership-and-app-scope),
 including the remaining gap for durable Tasks without an App.
 
+Use **Task** for owned work and **Conversation Request** for an accepted promise
+to the human. Asking another agent submits App input and can establish a
+caller/result link; a human-owned Condition records help needed from the human.
+The [term clarification](message-lifecycle.md#task-request-input-and-human-action)
+explains these directions and the existing API names.
+
 ## One example, from ask to outcome
 
 The intended complete flow is:
