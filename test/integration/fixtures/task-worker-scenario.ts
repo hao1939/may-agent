@@ -706,6 +706,15 @@ export async function execute(ctx) {
 
   async ordinaryCommands() {
     const f = fixture("owner");
+    // Unknown App settings and credentials must cross the same execution path.
+    // Only these synthetic values are read back; never dump the real environment.
+    const environment = {
+      EXAMPLE_APP_SETTING: "custom installation value",
+      EXAMPLE_SERVICE_TOKEN: "synthetic-service-key",
+      EXAMPLE_EMPTY_SETTING: "",
+    };
+    const readEnvironment = `Object.fromEntries(${JSON.stringify(Object.keys(environment))}.map(key => [key, process.env[key] ?? null]))`;
+    Object.assign(process.env, environment);
     const output = join(f.root, "ordinary-command-result.json");
     const childScript = join(f.root, "ordinary-command.ts");
     const dbConnectionUrl = pathToFileURL(resolve(process.cwd(), "src/lib/db/connection.ts")).href;
@@ -745,6 +754,7 @@ export async function execute(ctx) {
         console.log(JSON.stringify({
           initialized: !!db.prepare("SELECT name FROM sqlite_master WHERE name = 'events'").get(),
           legacyMarker: process.env.MAY_TASK_ATTEMPT_CHILD ?? null,
+          environment: ${readEnvironment},
         }));
       } finally {
         closeDb(root);
@@ -795,6 +805,7 @@ export async function execute(ctx) {
         if (helper.status !== "completed") throw new Error(helper.error ?? helper.summary);
         writeFileSync(${JSON.stringify(output)}, JSON.stringify({
           workerRefusedMissing,
+          environment: ${readEnvironment},
           bash: JSON.parse(bash.content[0].text.trim()),
           direct: JSON.parse(direct.trim()),
           helper: JSON.parse(readFileSync(${JSON.stringify(helperProbe)}, "utf8")),
@@ -811,11 +822,11 @@ export async function execute(ctx) {
         export const name = "probe";
         export const description = "Exercise an ordinary command from the bundled Task worker";
         export async function execute(ctx) {
-          const child = Bun.spawn(["bun", "-e", ${JSON.stringify(`import { Database } from "bun:sqlite"; import { mkdtempSync, rmSync } from "node:fs"; import { tmpdir } from "node:os"; import { join } from "node:path"; const root = mkdtempSync(join(tmpdir(), "may-compiled-ordinary-")); try { const db = new Database(join(root, "probe.db")); db.exec("CREATE TABLE proof (id INTEGER)"); console.log(JSON.stringify({ initialized: !!db.query("SELECT name FROM sqlite_master WHERE name = 'proof'").get(), legacyMarker: process.env.MAY_TASK_ATTEMPT_CHILD ?? null })); db.close(); } finally { rmSync(root, { recursive: true, force: true }); }`)}], { stdout: "pipe", stderr: "pipe" });
+          const child = Bun.spawn(["bun", "-e", ${JSON.stringify(`import { Database } from "bun:sqlite"; import { mkdtempSync, rmSync } from "node:fs"; import { tmpdir } from "node:os"; import { join } from "node:path"; const root = mkdtempSync(join(tmpdir(), "may-compiled-ordinary-")); try { const db = new Database(join(root, "probe.db")); db.exec("CREATE TABLE proof (id INTEGER)"); console.log(JSON.stringify({ initialized: !!db.query("SELECT name FROM sqlite_master WHERE name = 'proof'").get(), legacyMarker: process.env.MAY_TASK_ATTEMPT_CHILD ?? null, environment: ${readEnvironment} })); db.close(); } finally { rmSync(root, { recursive: true, force: true }); }`)}], { stdout: "pipe", stderr: "pipe" });
           const stdout = await new Response(child.stdout).text();
           const stderr = await new Response(child.stderr).text();
           if (await child.exited !== 0) throw new Error(stderr);
-          writeFileSync(${JSON.stringify(output)}, JSON.stringify({ compiled: JSON.parse(stdout.trim()) }));
+          writeFileSync(${JSON.stringify(output)}, JSON.stringify({ environment: ${readEnvironment}, compiled: JSON.parse(stdout.trim()) }));
           return ctx.done("done", { state: "converged", summary: "compiled ordinary command completed", facts: [] });
         }
         `,
@@ -838,13 +849,14 @@ export async function execute(ctx) {
       throw new Error(`ordinary command result missing: ${JSON.stringify(events)}`);
     }
     const result = JSON.parse(readFileSync(output, "utf8"));
+    assert.deepEqual(result.environment, environment);
     if (isBundled()) {
-      assert.deepEqual(result.compiled, { initialized: true, legacyMarker: null });
+      assert.deepEqual(result.compiled, { initialized: true, legacyMarker: null, environment });
     } else {
       assert.equal(result.workerRefusedMissing, true);
-      assert.deepEqual(result.bash, { initialized: true, legacyMarker: null });
-      assert.deepEqual(result.direct, { initialized: true, legacyMarker: null });
-      assert.deepEqual(result.helper, { initialized: true, legacyMarker: null });
+      assert.deepEqual(result.bash, { initialized: true, legacyMarker: null, environment });
+      assert.deepEqual(result.direct, { initialized: true, legacyMarker: null, environment });
+      assert.deepEqual(result.helper, { initialized: true, legacyMarker: null, environment });
     }
   },
 

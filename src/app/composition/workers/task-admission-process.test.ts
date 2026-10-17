@@ -13,6 +13,7 @@ for (const scenario of [
   "close",
   "error-then-healthy",
   "pinned-selection",
+  "environment",
 ]) {
   it(`bounds real Task admission process lifecycle: ${scenario}`, async () => {
     const { stdout } = await execute(process.execPath, [fixture, scenario], { timeout: 8_000 });
