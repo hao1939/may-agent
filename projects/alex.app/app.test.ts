@@ -56,7 +56,7 @@ test("independent review may assess Alex work without App-wide exclusion", () =>
   });
 });
 
-test("failed evaluator reconciliation does not review itself while ordinary work remains eligible", () => {
+test.each(["retrying", "incomplete", "exhausted"])("%s reconciliation does not review itself while ordinary work remains eligible", (disposition) => {
   const enabled = process.env.EVALUATION_AUTO_REVIEW_ENABLED;
   const reviewer = process.env.EVALUATION_AUTO_REVIEW_REVIEWER;
   process.env.EVALUATION_AUTO_REVIEW_ENABLED = "true";
@@ -69,12 +69,11 @@ test("failed evaluator reconciliation does not review itself while ordinary work
       generation: 1,
       attemptId: "attempt-example",
       handler: "workflow:task-outcome-review",
-      disposition: "incomplete",
+      disposition,
     };
     expect(taskInputForEvent({ type: "project.task.reconciled", data } as never)).toBeNull();
     expect(taskInputForEvent({ type: "project.task.reconciled", data: {
       ...data, taskId: "input/migration-repair", handler: "workflow:implementation-repair",
-      disposition: "retrying",
     } } as never)).toEqual({
       kind: "review-task-outcome",
       data: { appId: "alex", taskId: "input/migration-repair", assessmentPurpose: "ongoing",
@@ -320,11 +319,14 @@ test("selector failures reach one executable repair Task even when automatic sam
     } as never);
     const first = makeInput("failed-1")!;
     const next = makeInput("failed-2", "incomplete")!;
+    const exhausted = makeInput("failed-3", "exhausted")!;
     expect(first.kind).toBe("message");
     expect(first.data).toMatchObject({ context: { selectorFailure: { attemptId: "failed-1" } } });
     expect(next.data).toMatchObject({ context: { selectorFailure: { attemptId: "failed-2" } } });
+    expect(exhausted.data).toMatchObject({ context: { selectorFailure: { attemptId: "failed-3", disposition: "exhausted" } } });
     const task = taskForInput({ id: "notice-1", input: first } as never);
     expect(taskForInput({ id: "notice-2", input: next } as never)).toEqual(task);
+    expect(taskForInput({ id: "notice-3", input: exhausted } as never)).toEqual(task);
     expect(task.intent).toMatchObject({ id: "runtime/selector-recovery", agent: "alex" });
     expect(task.intent).not.toHaveProperty("workflow");
     expect(makeInput("recovered", "converged")).toBeNull();

@@ -14,6 +14,14 @@ delivery, executable help and return to the original assignment for failed Git
 setup. Remaining work tests other startup failures and adopts the declared App
 routes. Evaluate these together as one recovery mechanism.
 
+An [App-path check](../archive/reviews/hierarchical-recovery-trial-20261017.md#existing-alex-recovery-path)
+found a concrete omission in the existing Alex routes: they handled `retrying`
+and `incomplete` but dropped `exhausted`. The source correction sends that final
+fact through the same owner/review paths. A real-selector fixture also confirms
+that repairing before exhaustion lets Host resume automatically. This is a
+delivery correction, not a new escalation rule, mandatory manual retry or
+evidence that agents need more instructions. Live activation remains separate.
+
 ## Recommendation
 
 **Every Task needs a usable recovery and escalation path. Give its owner the
@@ -267,8 +275,11 @@ repair handlers.
    references and demonstrate the explicit return for event-originated help.
    The real-worker Git trials establish both the saved-caller path and a
    declared operational route with explicit return and retry after exhaustion.
-   Next review/adopt the App routes and test pre-admission/controller failure
-   and App/module bootstrap. Remove a blocking shared startup dependency only
+   The real-App check first repairs the dropped exhaustion notice in Alex's
+   existing routes; earlier repair already resumes through Host backoff. Continue
+   tracing the existing paths through pre-admission/controller failure and
+   App/module bootstrap before proposing additional routes or capabilities.
+   Remove a blocking shared startup dependency only
    if reproduced; keep judgment and engineering ownership in Apps.
 3. **Complete quiet waiting and human follow-through.** Reuse an open ask and
    its Conditions, suppress unchanged model work, apply repair/human replies

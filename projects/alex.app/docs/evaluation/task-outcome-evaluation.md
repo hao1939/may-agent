@@ -31,7 +31,7 @@ choice and capacity separation. Failure retains its original inputs and cursor;
 Host backoff retries that declared workflow. No failure-driven model invocation
 replaces routine selection on later wakes.
 
-Alex routes selector `retrying` and `incomplete` reconciliation reports to one
+Alex routes selector `retrying`, `incomplete` and `exhausted` reconciliation reports to one
 ordinary `runtime/selector-recovery` Task assigned to Alex. Repeated notices
 retain separate admissions and exact attempt evidence under the same stable
 assignment. This also covers errors before workflow code runs and remains active
@@ -39,12 +39,23 @@ when automatic semantic sampling is disabled. It does not create a semantic
 review of the evaluator's own selector. Alex reads current state, repairs or
 requests help, and escalates unresolved blockers to May through ordinary work.
 
-The original selector keeps retrying independently. A repair result does not
-settle its pending input, prove a successful selection or alter the configured
-reviewer. Verify a subsequent real workflow attempt before claiming recovery.
+The original selector retries independently while its automatic allowance
+remains. Repairing its prerequisite lets the next Host retry run normally; no
+manual retry command is required for that path. Exhaustion stops automatic
+repetition but must still reach the same owner with the final failure evidence.
+An authorized retry decision is needed after exhaustion. A repair result does
+not settle the original input, prove a successful selection or alter the
+configured reviewer. Verify a subsequent real workflow attempt before claiming recovery.
 The [Task execution contract](../2a-design/task-attempts.md#selecting-the-attempt-mechanism)
 is revised in Host PR #344; activate this App route before or with that change.
 Portable fixtures prove routing and retained obligations, not live cost savings.
+
+For other Tasks, the same unsuccessful-report selection feeds the existing
+ongoing review when automatic review is enabled. Its reviewer decides whether
+action is needed; exhaustion does not commission a separate repair or permit
+the evaluator to review itself. The periodic unresolved-Task scan remains the
+fallback for missed events. See the [App-path check](../archive/reviews/hierarchical-recovery-trial-20261017.md#existing-alex-recovery-path)
+for the missing exhaustion notice, correction and automatic-resumption trial.
 
 ## Boundary
 

@@ -13,6 +13,7 @@ import {
 } from "../may-agent/src/lib/agent-execution.ts";
 import { createFinishTool } from "../may-agent/src/lib/tools/lifecycle.ts";
 import { createWorkflowTool } from "../may-agent/src/lib/workflow-tool.ts";
+import { createWriteTool } from "../may-agent/src/lib/tools/write.ts";
 import { closeDb, getDb } from "../may-agent/src/lib/requests.ts";
 import { DbWriter } from "../may-agent/src/lib/db-writer.ts";
 import { AppRegistry } from "../may-agent/src/app/core/apps/registry.ts";
@@ -49,7 +50,8 @@ import {
   writeImmutable,
 } from "./agents/evaluator/workflows/lib/task-report-store.ts";
 
-// Real App routing/admission/settlement, manual dispatch and no external model calls.
+// Real App routing/admission/settlement; explicit start enables ordinary timers.
+// Agent decisions are scripted and no external models are called.
 async function runtime(execute: TaskAgentRunner["execute"]) {
   const root = mkdtempSync(join(tmpdir(), "alex-recovery-"));
   const appDir = join(root, "alex.app");
@@ -133,6 +135,9 @@ async function runtime(execute: TaskAgentRunner["execute"]) {
     },
     get db() {
       return db;
+    },
+    start() {
+      start.resolve();
     },
     admit(id: string, input: { kind: string; data: unknown }) {
       return inbox.host.admit({
@@ -458,7 +463,7 @@ test.each(["readable", "unfamiliar", "unreadable"] as const)(
   },
 );
 
-test("selector setup failure reaches one executable owner Task and preserves the failed Task across restart", async () => {
+test("selector failure and exhaustion reach the same owner Task across restart", async () => {
   const considered: unknown[] = [];
   const f = await runtime(async ({ attempt }) => {
     expect(attempt.task.id).toBe("runtime/selector-recovery");
@@ -552,6 +557,34 @@ test("selector setup failure reaches one executable owner Task and preserves the
         },
       ],
     });
+    // The third real setup failure exhausts Host retries. Its final fact must
+    // reach the same recovery assignment even if earlier failures were handled.
+    makeTaskRetryDue(f.store, taskId);
+    await f.run(taskId);
+    expect(f.store.readTask(taskId)?.status.phase).toBe("attention");
+    for (let i = 0; i < 100; i++) {
+      const count = f.db.prepare(
+        "SELECT count(*) AS n FROM app_task_admissions WHERE app_id = 'alex' AND json_extract(admission_json, '$.taskId') = 'runtime/selector-recovery'",
+      ).get() as { n: number };
+      if (count.n === 3) break;
+      await Bun.sleep(10);
+    }
+    expect(f.db.prepare(
+      "SELECT count(*) AS n FROM app_task_admissions WHERE app_id = 'alex' AND json_extract(admission_json, '$.taskId') = 'runtime/selector-recovery'",
+    ).get()).toEqual({ n: 3 });
+    await f.run("runtime/selector-recovery");
+    expect(considered).toHaveLength(3);
+    expect(considered[2]).toMatchObject({ items: [{ event: { data: { request: { input: {
+      data: { context: { selectorFailure: {
+        taskId, input, disposition: "exhausted",
+        summary: expect.stringContaining("Automatic retries exhausted"),
+      } } },
+    } } } } }] });
+    expect(f.store.readTask("runtime/selector-recovery")?.metadata.generation).toBe(1);
+    await f.restart();
+    await f.run(taskId);
+    expect(f.store.readTask(taskId)?.status.phase).toBe("attention");
+    expect(f.inbox.host.get(original.id)?.status).not.toBe("done");
     expect(f.inbox.host.get(original.id)?.input).toEqual(input);
     expect(f.inbox.host.get(original.id)?.waitingOn?.id).toBe(taskId);
     expect(
@@ -561,6 +594,72 @@ test("selector setup failure reaches one executable owner Task and preserves the
     await f.close();
   }
 });
+
+test("repair before exhaustion lets Host resume the real selector automatically", async () => {
+  const enabled = process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+  process.env.EVALUATION_AUTO_REVIEW_ENABLED = "false";
+  let calls = 0;
+  let repairedAt = 0;
+  const taskId = "runtime/task-outcome-selector";
+  const input = { kind: "automatic-review", data: { reason: "fixture" } };
+  const f = await runtime(async ({ attempt }) => {
+    expect(attempt.task.id).toBe("runtime/selector-recovery");
+    calls++;
+    if (calls === 1) {
+      expect(JSON.stringify(attempt.events)).toContain('Workflow \\"task-outcome-selector\\" not found');
+      expect(f.store.readTask(taskId)?.status.phase).toBe("pending");
+      const retryAt = f.store.readTask(taskId)?.status.executionRetryAt;
+      expect(retryAt).toBeGreaterThan(Date.now());
+      // The scripted owner invokes an actual tool to restore the real workflow.
+      // The harness never repairs it from outside the agent execution.
+      const source = join(import.meta.dir, "agents/evaluator/workflows/task-outcome-selector.ts");
+      const repaired = join(f.root, "agents/evaluator/workflows/task-outcome-selector.ts");
+      await createWriteTool(f.root).execute("restore-selector", {
+        path: repaired,
+        content: `export { name, description, execute } from ${JSON.stringify(source)};\n`,
+      }, attempt.signal);
+      expect(readFileSync(repaired, "utf8")).toContain(source);
+      repairedAt = Date.now();
+      expect(f.store.readTask(taskId)?.status.executionRetryAt).toBe(retryAt);
+      return { runId: attempt.attemptId, handlerResult: {
+        state: "waiting", summary: "Workflow restored; waiting for its actual result.", facts: [], actions: [],
+        requests: [{ id: "verify-selector", appId: "alex", taskId, input }],
+        conditions: [{ requestId: "verify-selector" }],
+      } };
+    }
+    expect(calls).toBe(2);
+    expect(f.store.readTask(taskId)?.status.phase).toBe("converged");
+    expect(f.store.readTask(taskId)?.status.summary).toContain("disabled");
+    return { runId: attempt.attemptId, handlerResult: {
+      state: "converged", summary: "Verified the declared selector runs and preserves the disabled sampling policy.",
+      facts: ["Original selector returned its own result"], actions: [],
+    } };
+  });
+  try {
+    const original = f.admit("selector-auto-resume", input);
+    expect(original.waitingOn?.id).toBe(taskId);
+    f.start();
+    const deadline = Date.now() + 65_000;
+    while (Date.now() < deadline && f.store.readTask("runtime/selector-recovery")?.status.phase !== "converged")
+      await Bun.sleep(50);
+    expect(calls).toBe(2);
+    expect(repairedAt).toBeGreaterThan(0);
+    expect(Date.now() - repairedAt).toBeGreaterThan(20_000);
+    await f.inbox.host.refreshTaskResults("alex", taskId);
+    await f.inbox.host.refreshTaskResults("alex", "runtime/selector-recovery");
+    expect(f.inbox.host.get(original.id)?.status).toBe("done");
+    expect(f.store.readTask(taskId)?.metadata.generation).toBe(1);
+    expect(f.store.readTask(taskId)?.status.summary).toContain("disabled");
+    expect(f.store.readTask("runtime/selector-recovery")?.status.phase).toBe("converged");
+    expect(f.db.prepare(
+      "SELECT count(*) AS n FROM events WHERE event_type = 'app.task.retry.requested'",
+    ).get()).toEqual({ n: 0 });
+  } finally {
+    await f.close();
+    if (enabled === undefined) delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+    else process.env.EVALUATION_AUTO_REVIEW_ENABLED = enabled;
+  }
+}, 75_000);
 
 test("a rejected typed request reaches its existing caller's next attempt with the original evidence", async () => {
   const invalid = {

@@ -573,6 +573,82 @@ scripted provider, not external models; request counts are not token savings.
 No route, App-local tool or Host binary was deployed. The declared operational
 path is now mechanically demonstrated; installation adoption remains App work.
 
+## Existing Alex recovery path
+
+This follow-up uses the Apps source at `e65c8794bc` and the same merged Host
+`b25344cc6c8e73da90596e8aed83a964c0c8a330` (available through experimental
+checkout `32f6e063fe`). It checks the declared Alex paths before proposing a
+new operational route or agent capability.
+
+The first demonstrated omission belongs to `projects/alex.app/app.ts`.
+Its existing Task-event selector recognized `retrying` and `incomplete` but
+returned no input for `exhausted`. The selector-owner route shared this omission.
+Three real missing-workflow failures therefore left the original selector in
+`attention` while its existing recovery Task received only the first two
+notices. A regression extending the existing restart test failed with two
+admissions where three were required; the ordinary-work and selector routing
+checks also failed on exhaustion. Twenty-four other checks passed.
+
+The correction selects all three unsuccessful dispositions once, then reuses
+the existing routing: selector failures reach Alex's stable recovery Task;
+other eligible work reaches ongoing evaluation when automatic review is enabled.
+No new subscription, Task kind, recovery queue, tool or Host code is introduced.
+Evaluation's self-review exclusion, disabled-review policy and periodic
+unresolved-work scan retain their existing meanings. This correction delivers
+the final fact; it does not prove a new notice always requires another model
+call or repair.
+
+The updated composition check verifies that the final exhaustion notice reaches
+the same owner Task/generation, carries the exact original input and failed
+Task, and remains unresolved across restart without renewing the retry allowance.
+This is stronger than checking a pure event mapper: real failure settlement,
+event delivery, durable admission and owner execution participate.
+
+A contrasting test loads the real Alex declaration and original selector
+workflow. The initial workflow file is absent. The scripted owner receives that
+failure, invokes the actual write tool to restore the workflow entry point, and
+creates an ordinary addressed verification request/Condition. Host's existing
+30-second retry runs the selector; its result answers the original and repair
+requests, and the repair Task then converges. No explicit retry control is
+published. The first standalone run passed in 32.72 seconds with 19 assertions.
+Automatic semantic sampling is deliberately disabled: the real selector returns
+its supported disabled-policy outcome. This proves restored execution and return
+without altering App policy, not a live catalog scan or semantic assessment.
+
+The in-process composition uses isolated SQLite, real App mappings, workflow
+loading, tools, retries and result delivery. Agent choices are scripted; there
+are no external model calls, production changes or claims about autonomous
+diagnosis. The exhaustion regression advances test cooldowns; the automatic
+repair contrast uses the normal scheduler and real backoff. The prior subprocess
+trials cover worker startup separately.
+
+The failed command setup, failing regression and passing checks are retained at
+`/home/hao/workspace-archive/app-recovery-path-20261017/`. The Apps branch is
+`fix/alex-exhaustion-feedback-20261017`; reproduction uses explicit paths because
+the root Bun test configuration scopes unqualified filters to `shared`:
+
+```sh
+bun test ./projects/alex.app/app.test.ts ./projects/alex.app/recovery-contract.test.ts
+```
+
+Final validation also includes `task-outcome-selector.test.ts` and
+`task-outcome-review.test.ts`: **108 tests pass, zero fail, 947 assertions in
+35.15 seconds**. The explicit TypeScript check includes the changed App and
+tests against the merged Host/SDK source. `bun run check:may-design` passes
+integrity, executable examples and the App audit, with the existing root
+`reports` warning. Logs and the type-check configuration are retained with the
+evidence. Initial command setup needed explicit `./` test paths; the type-check
+configuration also needed the Host's existing Markdown module declaration.
+Those setup failures are archived separately from the failing regression.
+
+The result supports fixing this App's existing interpretation of Host facts.
+It does not establish installation-wide recovery coverage. No direct
+`handler.failed` route was found in the reviewed May/Alex declarations; periodic
+review/metrics provide some independent coverage and must be traced before
+calling an otherwise unhandled controller failure unreachable. Broken App/module
+loading and real-agent response remain unproven. The written owner/escalation
+responsibility already exists; this trial supplies no reason to duplicate it.
+
 ## Remaining boundaries and next change
 
 Keep existing caller failure returns. This trial supports hierarchical recovery
@@ -582,9 +658,10 @@ switch.
 
 The subprocess trials now prove both the saved-caller route and declared
 operational admission with explicit return and retry after exhaustion. They do
-not install production routing or break App/workflow module loading. Next review
-and adopt the App-owned operational routes and retry capability; separately
-isolate module-bootstrap and pre-admission failures. Change Host only if those
+not install production routing or break App module loading. The real-App check
+above fixes a missing exhaustion notice and confirms automatic retry after
+earlier repair. Next trace module-bootstrap and pre-admission failures through
+existing caller, operational and audit paths. Change Host only if those
 trials expose missing generic execution or delivery support.
 
 A bounded real-model trial is still needed for recovery when the original owner

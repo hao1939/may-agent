@@ -231,14 +231,16 @@ export function taskInputForEvent(event: AppEvent<Record<string, unknown>>): App
       : { kind: "automatic-review", data: { reason: event.type } } as AppInput;
   }
   if (event.type === "project.task.reconciled") {
+    // Exhaustion ends automatic retries, not delivery of the failure to judgment.
+    // Use the same owner/review routes for every unsuccessful attempt report.
+    if (!["retrying", "incomplete", "exhausted"].includes(String(data.disposition))) return null;
     const automatic = automaticReviewConfig();
     const appId = String(data.project ?? data.appId ?? "").trim();
     const taskId = String(data.taskId ?? "").trim();
     // A broken selector is an operational problem for Alex, not a subject for
     // its own semantic reviewer. This also catches load failures and timeouts
     // before the workflow can produce a result. Keep exact attempt evidence.
-    if (appId === "alex" && taskId === "runtime/task-outcome-selector" &&
-        (data.disposition === "retrying" || data.disposition === "incomplete")) {
+    if (appId === "alex" && taskId === "runtime/task-outcome-selector") {
       return { kind: "message", data: {
         message: "Investigate the automatic selector failure. Read the exact affected Task and its current evidence before acting. Preserve its pending inputs, cursor and configured reviewer. Normal retries run the declared workflow; verify a successful workflow attempt before claiming recovery. Repair within Alex or escalate an unresolved blocker to May.",
         context: { selectorFailure: structuredClone(data) },
@@ -250,7 +252,7 @@ export function taskInputForEvent(event: AppEvent<Record<string, unknown>>): App
     const evaluationExecution =
       (taskId.startsWith("review/") || taskId.startsWith("runtime/task-outcome/")) &&
       data.handler === "workflow:task-outcome-review";
-    if (!automatic.enabled || !appId || !taskId || evaluationExecution || (data.disposition !== "incomplete" && data.disposition !== "retrying")) return null;
+    if (!automatic.enabled || !appId || !taskId || evaluationExecution) return null;
     return { kind: "review-task-outcome", data: { appId, taskId, assessmentPurpose: "ongoing", automatic: true, ...(automatic.reviewer === "evaluator-deepseek" ? { reviewer: automatic.reviewer } : {}) } } as AppInput;
   }
   if (event.type !== "evaluation.task.review.requested") return null;
