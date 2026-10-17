@@ -255,6 +255,40 @@ describe("project task workspace", () => {
     expect((await finalizeAppTaskWorkspace(retry, "failed")).metadata.disposition).toBe("retained-for-recovery");
   });
 
+  it("publishes HEAD without changing the Host-supplied Task branch", async () => {
+    const f = await fixture();
+    const remote = join(f.root, "remote.git");
+    await git(f.root, "init", "--bare", remote);
+    await git(f.repo, "remote", "add", "origin", remote);
+    await git(f.repo, "push", "-u", "origin", "dev");
+    const input = {
+      repoDir: f.repo,
+      workspaceRoot: f.worktrees,
+      taskId: "published-without-local-rename",
+      generation: 1,
+      baseBranch: "dev",
+      refreshRemote: false,
+    };
+    const prepared = await prepareAppTaskWorkspace(input);
+    writeFileSync(join(prepared.metadata.path, "fix.txt"), "published work\n");
+    await git(prepared.metadata.path, "add", "fix.txt");
+    await git(prepared.metadata.path, "commit", "-m", "publish fix");
+    const head = await git(prepared.metadata.path, "rev-parse", "HEAD");
+
+    await git(prepared.metadata.path, "push", "origin", "HEAD:refs/heads/fix/published-handoff");
+    expect(await git(prepared.metadata.path, "symbolic-ref", "HEAD")).toBe(
+      `refs/heads/${prepared.metadata.branch}`,
+    );
+    expect(await git(f.root, "--git-dir", remote, "rev-parse", "refs/heads/fix/published-handoff")).toBe(head);
+
+    const finalized = await finalizeAppTaskWorkspace(prepared, "waiting");
+    const resumed = await prepareAppTaskWorkspace({ ...input, previous: finalized.metadata });
+    expect(resumed.metadata.headCommit).toBe(head);
+    expect(await git(resumed.metadata.path, "symbolic-ref", "HEAD")).toBe(
+      `refs/heads/${prepared.metadata.branch}`,
+    );
+  });
+
   it("returns an interrupted rebase on the exact task branch to the same task", async () => {
     const f = await fixture();
     const prepared = await prepareAppTaskWorkspace({
