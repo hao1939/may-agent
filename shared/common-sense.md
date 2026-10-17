@@ -85,9 +85,11 @@ through the existing owner-feedback path instead of duplicating the Task.
   the repository to commit or push.
 - Work in the assigned isolated worktree. For direct coding without a Host-owned
   worktree, use ordinary Git to prepare a named branch/worktree and retain its
-  identity with the work. Do not change branches, stash, reset, or clean another
-  worker's checkout. Read-only investigation and declared runtime scratch do
-  not require a worktree.
+  identity with the work. A Host-supplied Task worktree already has its durable
+  local branch: do not switch or rename that branch merely to publish a pull
+  request. Push the current branch, or push `HEAD` to a separately named remote
+  ref. Do not change branches, stash, reset, or clean another worker's checkout.
+  Read-only investigation and declared runtime scratch do not require a worktree.
 - Keep one reviewable change focused. Test and review the exact diff in the
   checkout that was edited, then commit only owned files. Failed or skipped
   checks are not passes. Run project-required CI and live tests when authorized;

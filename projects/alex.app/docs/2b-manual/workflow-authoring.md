@@ -452,8 +452,10 @@ For a repository-changing workflow:
    owning Task. A project subdirectory is not necessarily a standalone repo.
 2. Use the Host's existing task-worktree allocation when available. Work inside
    `ctx.workspace.root`; `projectRoot` and `appRoot` identify canonical resources,
-   not permission to edit a shared checkout. Preserve the recorded worktree on
-   retries. Do not add another worktree manager in the App.
+   not permission to edit a shared checkout. Preserve the recorded worktree and
+   its local branch on retries and during publication; follow the canonical
+   [repository-change policy](../../../../shared/common-sense.md#repository-changes).
+   Do not add another worktree manager in the App.
 3. Give every implementing and reviewing call the same explicit checkout and
    scope. Run verification there too. Output admission must inspect those exact
    files, not old files at the installed canonical paths.

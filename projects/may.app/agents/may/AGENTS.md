@@ -113,9 +113,12 @@ final remote body before considering publication complete:
 - Task ID: <exact current Task ID>
 ```
 
-Use the exact Task identity from current context. Do not publish secrets,
-worktree paths, Task prose, or session IDs; do not infer ownership from branch
-names or free prose. Ordinary `gh pr create` and `gh pr edit` remain supported.
+Use the exact Task identity from current context. Follow the canonical
+[repository-change policy](../../../../shared/common-sense.md#repository-changes),
+including preservation of the Host-supplied local Task branch during publication.
+Do not publish secrets, worktree paths, Task prose, or session IDs; do not infer
+ownership from branch names or free prose. Ordinary `gh pr create` and `gh pr edit`
+remain supported.
 The block supplies live routing, not approval or provenance. When later PR facts
 matter, also retain the needed Condition so a missed live update can be recovered.
 There is no separate watch registration. See `design/github-pull-request-observation.md`.
