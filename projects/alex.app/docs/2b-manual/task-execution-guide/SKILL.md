@@ -371,6 +371,14 @@ result can preserve useful progress while independent Conditions remain open.
 For repair that needs a separate durable owner, use an ordinary request and
 Condition, preserving the original return relationship.
 
+On a recovered attempt, use the current Task and supplied execution evidence.
+Missing history means that part is unknown; it does not mean the earlier work
+failed or its effects never happened. Inspect current effects where needed,
+reuse verified results, and continue the original assignment or ask for help.
+Infra owns recovery eligibility and old-process cleanup; you do not reconstruct
+session files to authorize your own execution. See the
+[recovery contract](../../2a-design/runtime.md#recovery) for implementation coverage.
+
 An error before your procedure runs is still recorded and reported. Declare an
 App subscription or metric policy that reaches executable investigation; do not
 assume the Host invents a recovery agent. Check the affected Task's current

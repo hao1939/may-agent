@@ -5,7 +5,7 @@
 **Choice basis:** [Understandable recovery](../1-principles/work-model.md#prefer-understandable-recovery), [simple first](../1-principles/core-principles.md#simple-first), and [recovery ownership](../2a-design/system-boundary.md#retry-and-recovery-ownership): agents judge; infra executes their decisions and records what happened.
 
 **Design status:** Hierarchical ownership agreed in review, 2026-10-17; implementation gaps and trials below remain proposed.
-**Implementation status:** Mechanical recovery, caller feedback and addressed escalation exist. A scripted trial now demonstrates repair through a saved caller with real Git workspaces. Universal failure delivery, independent worker bootstrap and autonomous repair judgment remain unproven. This document changes no runtime behavior.
+**Implementation status:** Mechanical recovery, caller feedback and addressed escalation exist. A live incident demonstrates agent correction, Alex-to-May repair, restart continuation and result return. A scripted trial separately demonstrates repair of a worker's Git setup through its saved caller. Failure delivery without a caller, usable bootstrap when the owner cannot start, and the complete human escalation loop remain unproven. This document changes no runtime behavior.
 
 ## Recommendation
 
@@ -67,11 +67,12 @@ distinguishes existing behavior, synthetic cases and dated live observations.
 | Finding | Smallest useful next step |
 | --- | --- |
 | Restart recovery and feedback inside an invocation already produce useful continuation. | Preserve these paths; avoid a second recovery lifecycle. |
+| Live alert 4987 followed Evaluator → Alex → May → Alex, including a repair PR, deployment interruption and fresh verification. | Preserve this ordinary request/Condition loop; do not present all agent repair judgment as unproven. It does not test an owner unable to start. |
 | Admitted Task failures and exhaustion already return through saved caller relationships, including after delivery failure/restart. | Reuse them. Missing `handler.failed` subscriptions do not imply all failure feedback is absent. |
 | Controller failure emits `handler.failed`; installed Alex, May and Scout have selected routes but no subscription for this event. | Exercise the uncovered controller path with an explicit App-owned route; inspect both admission and executable handling. |
 | A normal repair Task may require the same Git preparation or App bootstrap that failed. | Test the designated recipient's prerequisites with real workspace configuration; do not require every owner to have a separate repair environment. |
 | Execution failures default to three consecutive failures; controller/admission retries use capped delays without a count limit. | Measure actual repeated work and model cost. Extend the owning retry policy only where needed; do not add a competing controller. |
-| Existing connected tests demonstrate failure consideration, not autonomous repair followed by original-work completion. | Have the fixture agent perform the repair and verify the original result; separately test real judgment. |
+| The scripted Git-setup trial demonstrates repair and original-work completion; the live incident demonstrates repair judgment after successful startup. | Test real judgment and recipient startup when the original owner cannot start. |
 
 The runtime review did not establish a current live recovery stall. The benefit
 of each Host change must come from the contract and a reproduced gap, not from
@@ -82,7 +83,12 @@ demonstrates the saved caller path, actual tool-driven repair and automatic
 original-work continuation without a Host change. Its negative cases retain
 exhausted work and show that no caller/declared route means no agent receives
 the blocker. These are scripted in-process fixtures; full worker bootstrap and
-autonomous diagnosis remain separate proof requirements.
+real-agent diagnosis of that setup failure remain separate proof requirements.
+
+The [live incident readback](../archive/reviews/hierarchical-recovery-trial-20261017.md#live-recovery-example)
+independently supports real-agent diagnosis and return through the existing
+hierarchy. Its successful owner startup does not close the prerequisite-failure
+gap exercised only by the scripted fixture.
 
 ## Responsibility and execution availability
 
@@ -143,25 +149,28 @@ crash accounting and eliminating every duplicate handoff are not requirements.
 
 1. Clarify the hierarchy at the owning escalation/boundary contract and manual.
    Keep installed coverage separate from intended behavior.
-2. Finish Host #381 as a small mechanical recovery improvement: missing optional
-   session metadata can be tolerated when the retained Task establishes identity
-   and execution cleanup is confirmed. Fix the cancellation/cleanup review
-   finding for both present and absent metadata. Preserve unsafe-replacement
-   failure feedback; do not make #381 implement hierarchical recovery.
+2. Finish Host #381 around the [common recovery rule](../2a-design/runtime.md#recovery):
+   retained Task ownership and completed execution cleanup permit an ordinary
+   attempt with available evidence. Missing and damaged session history follow
+   that rule, including a missing copied binding. Readable ownership conflicts
+   and live-process facts still block replacement. Preserve unsafe-replacement
+   feedback; #381 does not implement hierarchical recovery.
 3. Run the independent escalation trial below using existing App declarations,
    runner and return paths. Fix only the missing delivery or execution primitive
    it exposes, in a separately reviewable change. Keep App policy in Apps.
 4. Update implementation status and retain exact evidence. Source checks, PR
    review, merge and installation adoption establish different facts.
 
-#381 addresses a synthetic missing-metadata case, not a demonstrated live
+#381 addresses synthetic incomplete-history cases, not a demonstrated live
 outage. Its value is allowing affordable reconstruction with surviving intent.
 If that requires substantial new machinery, reconsider the tradeoff. No storage
 migration or new repair result schema is required.
 
-**Review status:** #381's cleanup fix is published at `a9cc67ef6`; local CI and
-GitHub Quality/Container passed and its cleanup review thread is resolved. It
-is ready for independent review, unmerged and undeployed at this record. See
+**Review status:** #381's common-rule refinement is published at `e4513ce7e`.
+Final focused/design checks, complete local CI and GitHub Quality/Container
+checks pass on that revision. The initial cleanup review thread remains resolved,
+but the refinement still needs independent review. The PR is unmerged and
+undeployed. See
 the [trial and validation evidence](../archive/reviews/hierarchical-recovery-trial-20261017.md).
 
 ## Decisive trials
@@ -169,7 +178,8 @@ the [trial and validation evidence](../archive/reviews/hierarchical-recovery-tri
 | Case | Required evidence |
 | --- | --- |
 | Ordinary tool error | The active owner handles feedback without a duplicate recovery invocation. |
-| Safe missing-history recovery (#381) | Sufficient Task context survives; old execution is stopped; ordinary startup/claim recovery reaches an accepted result and reports the missing history. |
+| Incomplete-history recovery (#381) | Missing, unreadable or partially recorded metadata use the same retained Task authority and cleanup checks. Startup and claim recovery reach an accepted result with gaps disclosed and surviving bytes preserved. |
+| Readable ownership conflict in damaged metadata (#381) | Recovery rejects the conflicting identity before cancellation or drain; unrelated metadata damage does not conceal it. |
 | Cancellation or helper cleanup pending (#381) | The old claim and live markers remain; no replacement or fabricated completion. After actual cleanup, ordinary recovery can proceed. |
 | Owner cannot start because Git setup or workflow loading fails | A declared escalation recipient receives the original reference/error, starts through real runner/workspace setup, performs a repair, and the original Task resumes to a useful result. |
 | Owner lacks repair capability | It asks the next responsible agent without spending mandatory failed attempts; the return reaches the original assignment. |
@@ -180,8 +190,9 @@ Use disposable environments for injected failures. A scripted agent can prove
 delivery, repair effects and resumption mechanics; it cannot prove autonomous
 diagnosis. The fixture must perform the repair through the actual agent/tool
 path, not silently restore the prerequisite after a notification. A bounded
-real-model trial is needed before claiming judgment works. State that separately
-from portable checks and from a full worker/bootstrap trial.
+real-model trial is still needed for diagnosis when the original owner's setup
+cannot start. Keep its evidence separate from the established live incident,
+portable checks and a full worker/bootstrap trial.
 
 Record original/repair invocations, available total usage, time to useful
 progress, repeated wakes and human intervention for successful and unresolved

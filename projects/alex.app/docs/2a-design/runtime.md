@@ -426,6 +426,20 @@ Missing optional history may reduce context; it must not become an accidental
 execution gate. Missing authoritative identity requires an actual check or
 repair. Recovery does not select a different App procedure.
 
+Use the same prerequisites whether execution history is complete, missing or
+unreadable. The durable Task's retained attempt/session relationship supplies
+recovery authority; session metadata provides a copy to cross-check. Check readable identity conflicts before cancellation or cleanup,
+even if other fields are damaged. Active markers and readable live-process
+references still matter. Without a retained Task, standalone session recovery
+must obtain its authority from valid session metadata.
+
+Preserve surviving evidence and report its gaps through ordinary attempt
+context. Reconcile lifecycle fields when they are valid; leave unreadable
+metadata and retained results intact rather than fabricate a previous outcome.
+The owner decides whether to inspect current effects, repeat work or seek help.
+This trades perfect history reconstruction for understandable continuation;
+effect identities and execution ownership still follow their existing contracts.
+
 When automatic recovery cannot resolve the problem, reconcile the record with
 confirmed facts, retain uncertainty and return usable failure evidence through
 the existing caller or operational route. The responsible agent decides how to
@@ -438,8 +452,12 @@ attempt's ownership. Its session record describes only the established session
 facts; Task release and requeue are separate transitions recorded by the Task runtime.
 
 **Implementation status:** merged [Host #376](https://github.com/hao1939/may-agent/pull/376) applies this meaning consistently
-to startup, controller claims and terminal-session retry. The
-[recovery evidence trial](../archive/reviews/host-recovery-evidence-20261017.md)
+to startup, controller claims and terminal-session retry.
+[Host #381](https://github.com/hao1939/may-agent/pull/381) refines that shared path
+to tolerate unavailable session history under retained Task authority and wait
+for actual managed cleanup. It remains unmerged and undeployed; see
+[current validation](../archive/reviews/hierarchical-recovery-trial-20261017.md#381-common-recovery-rule).
+The [recovery evidence trial](../archive/reviews/host-recovery-evidence-20261017.md)
 also proves failure delivery through a declared App route into ordinary agent work.
 This does not install an App investigation policy or prove live agent judgment;
 see the remaining coverage in the
