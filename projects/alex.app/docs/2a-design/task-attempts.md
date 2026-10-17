@@ -106,6 +106,10 @@ and [safe retry](../1-principles/core-principles.md#safe-retry-by-default-explic
 The agent judges its contribution. Infra owns workspace identity, retention and
 cleanup; none requires another agent decision or result field.
 
+The [publication and continuation trial](../archive/reviews/task-branch-publication-20261017.md)
+verifies an agent using the shared guidance to publish to a separate remote ref
+and continue in its retained local Task branch, without a Host runtime change.
+
 Inspect workspace acceptance prerequisites without removing artifacts, then
 admit the result and proposed actions against current authority and revisions.
 A Stop or Condition change during awaited Git checks must leave the workspace
