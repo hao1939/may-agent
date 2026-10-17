@@ -241,16 +241,13 @@ Deliver the common rule across these boundaries. The trials exercise varied
 failures against that rule; they are not a list of independent error-specific
 repair handlers.
 
-1. **Finish the Host recovery foundation in #381.** Retained Task ownership and
-   completed execution cleanup permit an ordinary attempt with available
-   evidence under the [common recovery rule](../2a-design/runtime.md#recovery).
-   Missing/damaged history and a missing copied binding use that same rule.
-   Readable ownership conflicts, live execution and pending helper cleanup
-   still prevent replacement. Disclose history gaps and preserve surviving
-   evidence, including when metadata still says running but a result survives.
-   Record confirmed cleanup separately from the old outcome. Subsequent startup
-   sweeps must retain the same Task authority and settle stale SQL projections.
-   Complete independent review before merge and normal deployment.
+1. **Finish the Host recovery foundation in #381.** Follow the
+   [common recovery rule](../2a-design/runtime.md#recovery): retained Task
+   ownership, confirmed execution cleanup, then ordinary continuation with
+   available evidence. Startup and Task recovery share cleanup; result
+   persistence and Task decisions keep their own responsibilities. Prove the
+   actual startup ordering with a live owner, as well as continuation after it
+   exits. Complete independent review before merge and normal deployment.
 2. **Connect failure to capable help and back.** Use saved caller feedback
    first. Complete declared operational routes for work without a usable
    caller, including failures before admission/execution. Retain original
@@ -281,12 +278,10 @@ outage. Its value is allowing affordable reconstruction with surviving intent.
 If that requires substantial new machinery, reconsider the tradeoff. No storage
 migration or new repair result schema is required.
 
-**Review status:** Further review found two gaps in #381: cleanup could overwrite
-a surviving result, and later sweeps could lose retained Task authority when
-metadata was damaged. They are implementation gaps in the common rule, not
-reasons for another recovery policy. Keep source validation, independent review
-and deployment distinct; the PR is unmerged and undeployed. Exact revisions and
-checks belong in the [trial and validation evidence](../archive/reviews/hierarchical-recovery-trial-20261017.md).
+**Review status:** #381 remains unmerged and undeployed. Review found conflicting
+writers and startup assumptions; the correction consolidates cleanup under the
+owning runtime contract. Source revisions, reproduced failures and validation
+belong in the [trial evidence](../archive/reviews/hierarchical-recovery-trial-20261017.md#381-startup-cleanup-ownership).
 
 ## Decisive trials
 
@@ -296,7 +291,7 @@ checks belong in the [trial and validation evidence](../archive/reviews/hierarch
 | Incomplete-history recovery (#381) | Missing, unreadable or partially recorded metadata use the same retained Task authority and cleanup checks. Startup and claim recovery reach an accepted result with gaps disclosed and surviving bytes preserved. |
 | Surviving result and repeated startup (#381) | Running metadata with a saved result and missing transcript retains the result and its descriptor, including through normal event persistence. A later startup with persisted SQL and damaged metadata settles stopped execution without inventing an outcome or blocking useful continuation. |
 | Readable ownership conflict in damaged metadata (#381) | Recovery rejects the conflicting identity before cancellation or drain; unrelated metadata damage does not conceal it. |
-| Cancellation or helper cleanup pending (#381) | The old claim and live markers remain; no replacement or fabricated completion. After actual cleanup, ordinary recovery can proceed. |
+| Live execution or helper cleanup pending (#381) | Run the real startup entry point with delayed Task recovery and a live owner process. Preserve its claim and markers despite missing or terminal history. After the owner exits and retained descendants drain, ordinary recovery continues without replacing saved results. |
 | Owner cannot start because Git setup or workflow loading fails | A declared escalation recipient receives the original reference/error, starts through real runner/workspace setup, performs a repair, and the original Task resumes to a useful result. |
 | No usable caller; help begins from a failure event | The declared route admits executable work and retains an explicit return to the original Task/input. Repair evidence reaches that work; no assumed caller link or duplicate parallel repair. |
 | Original admission fails before Task creation | Retain the original input and route failure, deliver actionable help through a usable declared route, then retry admission and finish the original ask. No fabricated destination Task. |

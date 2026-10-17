@@ -433,6 +433,18 @@ even if other fields are damaged. Active markers and readable live-process
 references still matter. Without a retained Task, standalone session recovery
 must obtain its authority from valid session metadata.
 
+Startup and Task recovery share one execution-cleanup operation. Scanners find
+candidates; that operation checks live ownership and drains retained descendants
+before callers change execution markers or release work. Cancellation requests
+shutdown; it does not confirm shutdown. A missing or terminal history record
+does not establish that its process stopped. Startup can overlap a recovery
+worker without either path erasing the other's live-execution evidence.
+
+Cleanup changes no result and makes no Task decision. Persistence owns saved
+evidence; the Task runtime owns release and continuation; the agent judges the
+remaining work. Aggregate orphan cleanup can wait while execution cleanup is
+pending. Delayed projections are an acceptable cost of this simple boundary.
+
 Preserve surviving evidence and report its gaps through ordinary attempt
 context. Reconcile lifecycle fields when they are valid; leave unreadable
 metadata and retained results intact rather than fabricate a previous outcome.
@@ -464,8 +476,8 @@ facts; Task release and requeue are separate transitions recorded by the Task ru
 to startup, controller claims and terminal-session retry.
 [Host #381](https://github.com/hao1939/may-agent/pull/381) refines that shared path
 to tolerate unavailable session history under retained Task authority and wait
-for actual managed cleanup. It remains unmerged and undeployed; see
-[current validation](../archive/reviews/hierarchical-recovery-trial-20261017.md#381-common-recovery-rule).
+for confirmed cleanup shared with the startup scanner. It remains unmerged and
+undeployed; see [current validation](../archive/reviews/hierarchical-recovery-trial-20261017.md#381-startup-cleanup-ownership).
 The [recovery evidence trial](../archive/reviews/host-recovery-evidence-20261017.md)
 also proves failure delivery through a declared App route into ordinary agent work.
 This does not install an App investigation policy or prove live agent judgment;

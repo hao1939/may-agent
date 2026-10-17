@@ -31,6 +31,11 @@ interpretations before adding a framework, protocol, configuration layer, or
 work lifecycle. A genuine missing primitive should be recorded separately from
 an implementation defect.
 
+When changing a state rule, trace every writer of that fact, including startup
+scans and event subscribers. Give the decision one implementation and test the
+real ordering between its callers. Several locally correct handlers can still
+contradict each other; another guard in one handler does not resolve ownership.
+
 When the established behavior is uncertain, inspect the owning source and
 current design, then consult relevant retained research or established external
 practice. State what that evidence does and does not establish; borrow the

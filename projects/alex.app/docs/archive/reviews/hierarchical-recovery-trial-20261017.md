@@ -177,6 +177,47 @@ when work returns to quiet waiting or useful progress. The original-owner startu
 failure and connected human return still require their own trials; #381 does
 not implement those App routes.
 
+## #381 startup cleanup ownership
+
+Review of `b5db6bbf9db7ed9a78b522ab05eb7db4c0035b34` found another gap:
+the generic startup scanner could remove an active process marker before Task
+recovery read it. Missing metadata therefore became false evidence of process
+exit. Terminal metadata had another early cleanup path with the same problem.
+The preceding revision's full local CI passed 3,852 tests with three skips and
+zero failures; it did not exercise this startup ordering.
+
+Commit `765705cff25d8cd92c98cac974d805c10122ccba` gives startup and Task recovery the same execution-owner check
+and descendant drain in `src/lib/session-cleanup.ts`. The scanner has one
+cleanup entry point instead of independent terminal, sentinel and stale-session
+paths. Cleanup does not write results or release Task claims. Aggregate orphan
+cleanup is deferred while session cleanup is pending; delayed projections are
+accepted instead of adding another ownership inference.
+
+Four regressions failed on the preceding source and pass after consolidation.
+They call `startBackgroundRuntime` with a real external owner process and delay
+the existing recovery hook until the generic scanner has run. Missing,
+unreadable, running and terminal metadata all retain the original claim and
+markers while that owner lives. After its actual exit, recovery and an ordinary
+scripted attempt complete the retained Task and preserve its saved result.
+This uses a real owner subprocess and production startup entry point; the
+recovery hook runs an in-process runtime, not the installed recovery worker.
+
+Two further process tests prove that startup drains retained descendants before
+clearing markers with missing or terminal metadata. Existing stale-session
+fixtures now represent an exited process incarnation instead of marking the
+still-live test process as the owner. The affected eight-file suite passes 152
+tests/768 assertions before the two descendant cases. Final local `bun run ci`
+passes **3,858 tests, three installation-specific skips, zero failures and
+22,323 assertions** in 271.82 seconds. Host/SDK types, boundary checks and lint
+also pass. [GitHub Quality and Container](https://github.com/hao1939/may-agent/actions/runs/39025821654)
+record the checks on this same source. This is portable failure injection, not
+a live deployment.
+
+The process lesson is to trace all writers and startup ordering before changing
+a state rule. More local guards and passing isolated tests did not establish
+the common boundary. The proposal keeps the rule at its contract and retains
+the detailed incident evidence here.
+
 ## Live recovery example
 
 A read-only follow-up checked the actual agent transcripts, durable Tasks,

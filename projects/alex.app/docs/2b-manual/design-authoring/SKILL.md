@@ -173,7 +173,9 @@ scorecard, mandatory independent review or a blanket proof requirement.
 
 Follow a shared contract through its other callers and one contrasting path:
 worker relay, recovery, reload or a supported backend as relevant. Check the
-actual context, correction and result path before recommending another recovery
+writers behind event subscribers and startup ordering when reviewing state
+changes; isolated handler tests cannot establish their combined behavior. Check
+the actual context, correction and result path before recommending another recovery
 policy. Bound the operation's total cost, not only its returned page or inner
 timeout. Use existing validators and fixtures at the disputed boundary.
 
