@@ -1323,3 +1323,7 @@ The [reconstruction audit](../reports/review/scout-provenance-reconstruction-cyc
 ## Recent agent-credential findings
 
 - [Heldkeys: credential inventory should run from the agent's authority context](findings/2026-10-16-heldkeys-agent-credential-inventory.md) — Pinned documentation maps credentials, helper paths, sockets, mounts, and CI authority visible to an agent process, but Scout did not run the scanner or tests and the inventory is neither enforcement nor proof of complete coverage.
+
+## Recent agent-supervision findings
+
+- [Multi-Forge: cross-runtime supervision needs attempt evidence, not only a verdict](findings/2026-10-17-cross-runtime-supervision-needs-attempt-evidence.md) — Pinned source distinguishes completed, unavailable, incomplete, and cached review attempts, while its block threshold accepts a supplied citation without requiring that citation to verify against the plan snapshot; Scout did not run the software, tests, runtimes, models, proxies, or providers.
