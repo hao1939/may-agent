@@ -160,6 +160,12 @@ Distinguish a contract conflict, source defect, missing evidence, historical
 statement and editorial preference; they need different remedies. Trust admitted
 agent judgment by default without presenting it as guaranteed correctness.
 
+Apply [agent first](../../1-principles/design-philosophy.md#agent-first-code-supports-effective-action):
+identify what capability or efficiency the code adds for the agent. Trace the
+root cause through the existing tools, feedback and result consumers before
+proposing another gate. Explain how the agent can correct the affected operation
+and retain useful work when the coded path cannot handle the case.
+
 Look for implicit assumptions that couple independent facts or decisions.
 For each restriction, identify the explicit contract or authority it enforces
 and the useful work it might prevent. Follow the

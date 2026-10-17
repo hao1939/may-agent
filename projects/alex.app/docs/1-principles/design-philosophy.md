@@ -41,15 +41,21 @@ goal when human priorities or evidence change, and explain the change.
 
 May's concrete goal and measures of useful progress live in [Purpose and value](purpose.md).
 
-## Agents handle variety; code makes known work efficient
+## Agent first; code supports effective action
 
-Agents interpret intent, adapt to unfamiliar situations and judge what is useful.
-Code and the execution harness make understood work faster, cheaper and more
-reliable, including its storage, delivery and recovery. Contracts explain how
-these responsibilities cooperate. Code and agents handling the same assignment
-follow the same contract: purpose, authority, accepted results and effect rules
-stay the same; the method differs. A coded procedure does not define the limit
-of what the system can try to accomplish.
+**Agents own the reasoning and choose how to accomplish the goal. Code gives
+them dependable capabilities and makes their work faster, cheaper and more
+reliable.** Agents can investigate, combine tools, write code and change methods
+as the work requires, within the assignment's scope and authority. Built-in
+procedures are useful paths, not the limit of what an agent can accomplish.
+
+Agents handle ordinary work as well as unfamiliar situations. Code supports
+them with efficient execution, useful observations, storage, delivery and
+recovery. Add automation when its benefit justifies its total cost; a missing
+predefined workflow alone is not a reason to block useful work. Contracts explain
+how these responsibilities cooperate. Code and agents handling the same
+assignment follow the same contract: purpose, authority, accepted results and
+effect rules stay the same; the method differs.
 
 Use code where it fits and let infra retry failures that safe repetition can
 resolve. When that path cannot resolve the problem, return the evidence to the

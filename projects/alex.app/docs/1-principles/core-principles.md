@@ -25,11 +25,13 @@ selection; they do not each demand the most elaborate possible implementation.
 
 First ask whether the proposed feature can be removed while still satisfying
 the outcome. Otherwise use the smallest sufficient mechanism. Before adding or
-changing a mechanism, trace the existing capability that should already cover
-the case and test its real boundary. Repair or delete conflicting wiring and
-interpretations before adding a framework, protocol, configuration layer, or
-work lifecycle. A genuine missing primitive should be recorded separately from
-an implementation defect.
+changing a mechanism, inspect the existing capability and test its real boundary.
+For a failure, trace the agent's intent through its tools and feedback to the
+result and its consumer. Identify the root cause; repair missing context, broken
+tools, feedback or interpretation at their owner. Remove conflicting wiring
+before adding a framework, global gate, configuration layer or work lifecycle.
+A genuine missing primitive should be recorded separately from an implementation
+defect.
 
 When changing a state rule, trace every writer of that fact, including startup
 scans and event subscribers. Give the decision one implementation and test the
@@ -133,7 +135,10 @@ See the [agent-first test](code-vs-data.md#before-adding-runtime-behavior) and
 
 ### Code executes and brings back evidence; agents judge
 
-Use code for known work. Infra retries failures that safe repetition can resolve;
+Start with the agent's ability to accomplish the goal. Tools and workflows
+provide efficient methods; agents can compose or change methods as needed within
+their scope and authority. Code supports this work and makes known operations
+dependable. Infra retries failures that safe repetition can resolve;
 unresolved situations return to the responsible agent. If an agent already owns
 the invocation, give it feedback there. A workflow uses an ordinary agent call
 when judgment is needed. This is one work loop with the same ownership and bounds.
@@ -145,7 +150,7 @@ agents, allowing meaning-preserving conversions where the owner intends them.
 Strict types are not a goal by themselves, and a valid shape does not establish
 usefulness. Avoid a model correction merely to perform normalization that the
 shared contract already permits.
-See [agents and code](design-philosophy.md#agents-handle-variety-code-makes-known-work-efficient)
+See [agent first](design-philosophy.md#agent-first-code-supports-effective-action)
 for its value and the [recovery contract](../2a-design/system-boundary.md#retry-and-recovery-ownership)
 for responsibility at each boundary.
 

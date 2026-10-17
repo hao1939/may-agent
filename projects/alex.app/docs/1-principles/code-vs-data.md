@@ -34,12 +34,13 @@ without imposing a numerical budget or another review gate.
 
 ## Code should help agents work
 
-Code exists to make agents more effective: reliable actions, useful observation,
-evidence retention, recovery and less repetitive bookkeeping. A procedure is
-valuable when it improves the outcome; following more steps is not progress.
-Keep agents responsible for meaning, tradeoffs and sufficiency. A fresh judgment
-must be able to change the approach, reuse sound work or conclude that no edit
-is needed, within the current requirement and authority.
+Apply [agent first](design-philosophy.md#agent-first-code-supports-effective-action):
+code provides capabilities and improves execution efficiency, performance and
+reliability. Agents remain responsible for meaning, tradeoffs and sufficiency.
+A procedure is valuable when it improves the outcome; following more steps is
+not progress. A fresh judgment must be able to change the approach, combine
+tools, reuse sound work or conclude that no edit is needed, within the current
+requirement and authority.
 
 Choosing code or an agent changes the method, not the contribution's contract.
 Keep one owned definition of acceptance, including any allowed normalization,
@@ -63,6 +64,15 @@ Revisit routing rules, history cutoffs and tool restrictions when they prevent
 useful judgment or investigation. A narrow workflow may deliberately serve one
 outcome; do not make all work adopt that process merely to access a shared
 capability such as saving evidence.
+
+For example, if completed analysis is missing from a metric view because its
+record cannot be interpreted, inspect the reporting tool and reader first.
+Provide a usable way to write the record and clear feedback when interpretation
+fails. Let the agent repair the affected record while retaining useful analysis.
+A view's format requirement alone does not justify rejecting the entire Task
+result or repeating the investigation. If that record is a required deliverable,
+keep the unmet requirement visible until repaired; preserving useful work does
+not claim the assignment is complete.
 
 ## Decision guide
 

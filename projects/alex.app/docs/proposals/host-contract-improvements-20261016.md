@@ -19,7 +19,7 @@ support those outcomes. Apps need room to improve their methods independently.
 
 **Choice basis:** [Simple first](../1-principles/core-principles.md#simple-first),
 [Host mechanics and App meaning](../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics),
-[agents handle variety; code makes known work efficient](../1-principles/design-philosophy.md#agents-handle-variety-code-makes-known-work-efficient),
+[agent first; code supports effective action](../1-principles/design-philosophy.md#agent-first-code-supports-effective-action),
 and [safe retry](../1-principles/core-principles.md#safe-retry-by-default-explicit-exceptions).
 Repair existing owners and remove duplicated bookkeeping. Accept delayed
 projections and occasional repeated consideration; protect accepted work,
