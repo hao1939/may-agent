@@ -44,11 +44,12 @@ and let infra execute the return path. Do not build a polling loop in the model.
 
 ## Prefer understandable recovery
 
-Design for useful work to recover after failure. Some lost execution history
-and repeated work are acceptable; perfect retention and universal exactly-once
-execution are not the goal. Use the retained intent and current facts to decide
-what can continue, what needs another attempt, and what needs an owner decision.
-Missing evidence stays unknown rather than becoming a claim of success.
+Apply [robustness for the goal](design-philosophy.md#robust-enough-for-the-goal):
+choose understandable recovery at an acceptable total cost. The owning contract
+sets what data loss, repetition or delay is acceptable. Use retained intent and
+current facts to decide what can continue, what can be reconstructed, and what
+needs an owner decision. Missing evidence stays unknown rather than becoming a
+claim of success.
 
 Keep the recovery path easy to follow: read the existing Task, check the current
 situation, continue or retry useful work, and expose a clear blocker when it

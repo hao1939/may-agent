@@ -41,6 +41,13 @@ State material limitations, supporting evidence and what would change the choice
 A short paragraph is sufficient for a small decision; no mandatory form or
 extra approval step is needed.
 
+For reliability choices, apply [robustness for the goal](../../1-principles/design-philosophy.md#robust-enough-for-the-goal):
+compare preventing loss or repeated work with recovering from it. Explain what
+may be lost, repeated or delayed, how useful work resumes, and why that total
+cost is acceptable. Question expensive existing guarantees as well as proposed
+mechanisms. Keep the chosen behavior in its owning contract; a philosophy change
+alone does not change the installed behavior. A small example is enough.
+
 Use one primary parent for navigation. Dependency links explain what a design
 uses; its parent explains why it exists. Shared mechanisms can support several
 abilities without being copied into every branch of the hierarchy.

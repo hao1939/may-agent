@@ -39,6 +39,9 @@ framework. Simplicity includes the decisions, handoffs, and recovery paths
 needed to operate the system, not only code size.
 
 Sufficient includes [robustness for the actual need](design-philosophy.md#robust-enough-for-the-goal).
+Accept data loss, repeated work or delayed consistency when the outcome and
+recovery cost are acceptable. Preservation and exactness are design choices
+whose benefit must justify their cost, including the complexity of recovery.
 Remove fragile dependencies and unnecessary state first. Add protection where
 the avoided disruption justifies its implementation, operating cost, and new
 failure paths. Extra compute or storage may keep the design simple and robust.
@@ -387,11 +390,16 @@ often interruption happens, the time and provider cost of redoing work, and the
 complexity and failure modes of resumption. Precise resume is an optimization,
 not a universal core requirement.
 
-Retain the state needed for correctness: accepted input, Task identity, accepted
-results, and evidence needed to handle committed effects safely. A retry may
-recompute a report or repeat a read. If an external action may already have
-happened, check its result or use its existing idempotency contract before
-repeating it. Cheap computation does not make duplicate effects acceptable.
+Choose retained state according to the outcome and recovery contract. The current
+Task contract preserves accepted input, Task identity, accepted results and
+effect evidence across ordinary retries and restarts. That is a specific promise,
+not a universal requirement for zero loss under every failure. A weaker contract
+may allow restoring older state, reconstruction or asking again when the practical
+cost is acceptable; revise the owning contract and affected consumers together.
+Keep missing information and uncertain effects explicit. A retry may recompute a
+report or repeat a read. If an external action may already have happened, check
+its result or follow the operation's retry contract; the consequences of repeating
+that action require their own judgment.
 
 See [Task Engine](../2a-design/task-resource-engine.md),
 [Runtime](../2a-design/runtime.md), and [Scheduling](../2a-design/cron.md).
@@ -539,7 +547,8 @@ For a meaningful tradeoff, answer the relevant questions:
 3. **Value and cost:** What do we gain and give up over likely lifetime and
    usage, including maintenance, execution, and human attention?
 4. **Risk:** What if we are wrong, who or what is affected, and how costly is
-   reversal? What protection or experiment is proportionate?
+   recovery? What loss, repetition or delay can we accept, and what protection
+   or experiment is proportionate?
 5. **Decision:** What is the smallest worthwhile next step, how will we verify
    it, and what evidence would make us finish, change course, or invest further?
 

@@ -6,6 +6,12 @@ The [project's purpose](purpose.md) gives work its value. Simplicity, robustness
 modularity, and learning help us reach that goal; each must justify its
 contribution.
 
+**Choose understandable, recoverable behavior at an acceptable total cost.**
+Accept imperfections when preventing them costs more than living with and
+recovering from them. Data loss, repeated work and delayed consistency can be
+reasonable choices when the resulting behavior still serves the goal. See
+[Robust enough for the goal](#robust-enough-for-the-goal).
+
 This page explains what we value and how to decide tradeoffs.
 [Core Principles](core-principles.md) applies that reasoning to architecture. The
 [history and source notes](../archive/reviews/design-philosophy-history-20260909.md)
@@ -220,16 +226,34 @@ Prefer the smallest end-to-end path that works under the revised contract.
 
 ## Robust enough for the goal
 
-Robustness means useful, predictable behavior under the failures and variations
-that matter to the project. Define what must keep working, what may degrade,
-and what interruption, redo, or human intervention is acceptable. That belongs
-in the sufficient outcome used to compare designs.
+Failures will happen. Robustness includes returning to useful work through a
+process we can understand, operate and afford. Define what must keep working,
+what may be lost or delayed, and how work can continue after failure. A system
+that stops safely but has no practical way to resume useful service still has
+a recovery gap.
+
+Lost data, repeated computation, duplicate consideration, eventual consistency
+and occasional human recovery can all be acceptable. This applies beyond
+intermediate execution history: preserving accepted records or exact progress
+must also justify its cost against the actual need. Choose the preservation
+guarantees and recovery method together. Restart, rebuild from current facts,
+restore a backup or ask again when that is sufficient. Additional machinery
+should earn its place through the loss or disruption it avoids.
+
+For example, restoring yesterday's backup and reconstructing today's work can
+be sufficient when the lost information and repeated effort are affordable.
+That choice must account for actions already performed outside the restored
+store. Describe what was restored, what is missing or uncertain, and how work
+will continue; a restored record alone does not establish that an external
+action needs repeating or that an obligation was fulfilled.
 
 Simplicity often improves robustness: fewer dependencies, mutable copies,
 handoffs, and special paths leave fewer ways to fail and make faults easier
 to understand. Start by removing fragility. A straightforward path that can
-be safely restarted can be more robust than elaborate partial recovery.
-Simplicity alone does not establish adequate failure behavior, however.
+be restarted can be more robust than elaborate partial recovery. Include the
+time, compute and human effort of recovery in the comparison. An occasional
+affordable retry may need no fix; persistent repetition without useful progress
+is a reason to reconsider the method.
 
 Add protection when it addresses a credible failure whose consequences justify
 the cost. A transaction can prevent partial state changes; a backup can make
@@ -245,8 +269,12 @@ design simple. Use the smallest measure that provides sufficient protection,
 and verify the failure behavior that matters. Accept an explicit limitation
 when stronger protection adds little practical value for its cost.
 
-The rule is to choose the simplest design robust enough for the goal, and pay
-for additional robustness when the avoided disruption is worth its total cost.
+This principle guides contract choices. State the accepted loss, delay or repeat
+behavior at the owning contract, and align its implementation and consumers.
+Existing contracts describe current promises until revised; their guarantees
+remain open to simplification. Agents judge the tradeoff within the assignment
+and authority; infra executes the chosen procedure and records what happened.
+This creates no new approval step or recovery mechanism.
 
 ## What this means for technical choices
 

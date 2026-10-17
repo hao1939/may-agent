@@ -9,6 +9,11 @@ An App extends its owner agent with a scoped address, shared context and knowled
 policy, capabilities and collaborating agents. The [ownership contract](2a-design/agents.md#task-ownership-and-app-scope)
 distinguishes this model from the current App requirement for durable admission.
 
+**Prefer understandable recovery at an acceptable total cost.** Accept data loss,
+repeated work or delay when preventing them costs more than recovering from them.
+The [recovery principle](1-principles/design-philosophy.md#robust-enough-for-the-goal)
+explains how to choose the guarantees each contract actually needs.
+
 Discuss and work in Conversation. A **Request** is an accepted ask to fulfill.
 A **Task** retains work across executions. An **attempt** is one bounded
 execution; it can take many actions. A pending **Condition** records a needed

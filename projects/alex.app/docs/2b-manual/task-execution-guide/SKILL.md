@@ -299,6 +299,15 @@ accepted result before treating follow-up work or Request closure as committed.
 
 ## Recover and return problems to the owner
 
+Aim to resume useful work at an acceptable total cost. Follow the
+[recovery principle](../../1-principles/design-philosophy.md#robust-enough-for-the-goal)
+when choosing between retry, reconstruction, repair or asking again. Within the
+assignment and its contract, accept affordable loss or redo rather than spending
+more to recreate a perfect history. For example, regenerate a lost report from
+current sources and disclose any coverage gap. If a required guarantee makes
+recovery disproportionate, propose a simpler contract to its owner. Report what
+is known and missing; repeated attempts without progress call for a new decision.
+
 Follow the [same contribution contract as code](../../2a-design/execution-contributions.md#common-contract-for-code-and-agents).
 Read the assignment and supplied schema; satisfy its evidence requirements.
 Keep a useful result separate from whether execution stopped or the whole Task
