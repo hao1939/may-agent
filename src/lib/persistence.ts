@@ -471,6 +471,8 @@ function isPersistedSession(value: unknown): value is PersistedSession {
     ["running", "done", "error", "interrupted", "idle"].includes(value.status) &&
     typeof value.startedAt === "number" &&
     Number.isFinite(value.startedAt) &&
+    (value.endedAt === undefined || (typeof value.endedAt === "number" && Number.isFinite(value.endedAt))) &&
+    (value.error === undefined || typeof value.error === "string") &&
     (value.taskBinding === undefined || isTaskBinding(value.taskBinding))
   );
 }

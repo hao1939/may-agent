@@ -461,7 +461,7 @@ export function buildRecoveredSessionHandoff(
   return {
     reason: "recovered-session",
     summary:
-      (typeof meta?.error === "string" ? meta.error.trim() : "") ||
+      meta?.error?.trim() ||
       `Previous runtime ${sessionLabel} ${attempt.sessionId} was interrupted during recovery before a task decision was persisted`,
     facts,
   };

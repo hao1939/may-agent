@@ -310,14 +310,21 @@ it("uses the retained binding when the session has no copied Task binding", () =
   expect(f.events).toEqual([]);
 });
 
-it("builds usable recovery context when the optional session error is not text", () => {
+it.each([
+  { field: "error", value: 42 },
+  { field: "error", value: { message: "unknown legacy format" } },
+  { field: "endedAt", value: { timestamp: 2 } },
+])("retains damaged optional $field evidence and builds usable recovery context", ({ field, value }) => {
   const f = recoveryFixture("done");
   const meta = JSON.parse(readFileSync(f.metadata, "utf8"));
-  meta.error = 42;
-  writeFileSync(f.metadata, JSON.stringify(meta));
+  meta[field] = value;
+  const bytes = JSON.stringify(meta);
+  writeFileSync(f.metadata, bytes);
   expect(f.recovery.interrupt(f.sessionId, "Recover", "work", f.binding)).toBe(true);
   expect(f.handoff()?.reason).toBe("recovered-session");
-  expect(f.handoff()?.facts).toContain(`Recovered interrupted agent session metadata: ${f.metadata}`);
+  expect(f.handoff()?.facts.join("\n")).toContain("session metadata is unreadable");
+  expect(readFileSync(f.metadata, "utf8")).toBe(bytes);
+  expect(f.events).toEqual([]);
 });
 
 it.each(["valid", "damaged", "partial"] as const)("preserves readable ownership conflicts in %s metadata", (status) => {
