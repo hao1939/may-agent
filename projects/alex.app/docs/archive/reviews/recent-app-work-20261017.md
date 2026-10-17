@@ -328,11 +328,72 @@ the previously documented 15 baseline type errors, with no new diagnostic from
 this change. These failing gates are not claimed as passing. Logs are retained at
 `/home/hao/workspace-archive/may-metric-decision-reuse-20261017/`.
 
-This extension has not been activated. No existing prose decision was migrated,
-no owner-agent review was commissioned, and no production token saving is
-claimed. Next adoption requires activation and one explicit owner decision
-whose necessary facts are actually observable. The query-cost feed still cannot
-prove the earlier owners' prose criteria by itself.
+At implementation completion this extension was not active and no owner-agent
+review had been commissioned. The following rollout records subsequent
+activation separately from an owner's adoption. No existing prose decision was
+migrated and no production token saving is claimed.
+
+## Owner-decision reuse activation
+
+On October 17 at 11:27:04 UTC, normal App reload completion event `6679582`
+confirmed source `03cfc3546f9a849f3f9c1333e19d2d2e47f1cab5`, including
+implementation `a57c0068133ea9a646eddac93d376631e5b04a60`. Request event
+`6679580` fenced the expected source commit. The current release manifest and
+all six changed executable-file hashes match the reviewed source. All three
+Apps remain available. This activation required no Host upgrade, restart,
+direct database edit, or schedule/budget change.
+
+The user-authorized scope request was admitted as event `6679592`, request
+`app_738654a9-73e9-4b19-b560-decc0f6b0e54`, on existing May Task
+`goal/appdep_04ee71d790343cff3107a3e0`. Its generation remains 1; no replacement
+investigation was created. The request asked May to
+choose a justified observable scope or name the exact missing measurement,
+preserving the original investigation constraints. May owns that decision;
+Alex owns any measurement improvement and Evaluator assesses work.
+
+May completed it at 11:28:46 UTC in accepted attempt
+`r_1_feaef4b5-0ef9-460c-a313-cfe04d15dfdc`, resource version 8. Both the
+request and Task read back as `done`, with no pending inputs or Conditions.
+The accepted result retained `no-change` without `reuseScope`. Sample `2227275`
+was 155.94 ms across 17 queries with zero failures, but declared
+`examplesTruncated=true` and `evidenceTruncated=true`; it could not establish
+equivalent workload, absence of shared contention or a controlled index trial.
+May rejected inventing a numeric proxy for those requirements.
+
+The exact Task/time-window usage read records one owner invocation lasting
+64.2 seconds, with 9 measured replies: 119,903 input tokens, 408,576 cache-read
+tokens and 3,709 output tokens. These are recorded accounting categories, not
+unique context or proof of billed cost. The one-time review resolved the scope
+question; repeating it without the missing measurement would add no evidence.
+
+May named the missing measurement: complete attempted-query cohort identity
+and coverage with pass-level evidence distinguishing shared contention, or a
+linked controlled equivalent before/after trial. No measurement-improvement
+request was created. Alex should scope that improvement and return evidence
+to this existing May Task. Collection evidence belongs to the Host; scope
+judgment and reuse belong to the App. The Host's query-note truncation is an
+intentional size bound; larger notes alone would not prove equivalence or
+absence of contention.
+
+Read-only checks importing the active release returned
+`latest-decision-has-no-valid-scope` before and after acceptance. The second
+check saw the new accepted attempt through the public metric projection,
+alongside later sample `2227295` at 81.67 ms. Recovery of the scalar did not
+manufacture scope. This proves the accepted decision is wired through the
+eligibility check; live token savings for this metric remain unproved.
+
+Checks against the loaded release passed: 5 eligibility cases (32 assertions)
+and 6 selected workflow cases (38 assertions). Matching fixtures reuse across
+episodes and selectors with zero model calls, publication or allowance spend;
+changed values, revoked scope, due obligations and unavailable evidence keep
+review eligible. Explicit review still assesses and staged reports still
+finish publication. These are controlled fixtures, not live accepted reuse or
+measured production savings. The earlier baseline gate failures remain as
+documented above.
+
+Rollout receipts, source hashes, live evidence and loaded-code test logs are
+retained under
+`/home/hao/workspace-archive/may-metric-reuse-activation-20261017/`.
 
 ## Evidence and review limits
 

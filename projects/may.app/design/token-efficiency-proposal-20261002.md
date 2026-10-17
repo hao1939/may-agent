@@ -370,12 +370,14 @@ Rollback restores the prior code/policy revision without deleting Tasks, inputs 
 
 ### C — Reuse an owner decision with explicit scope
 
-**Status, October 17:** Optional App contract implemented with focused regression
-coverage; not yet activated or adopted by a live owner. The existing
-sample filter and evidence-provenance fixes are active. This remaining change
+**Status, October 17:** Optional App contract activated locally at `03cfc3546f`
+(implementation `a57c006813`). May completed the query-cost scope review and
+retained an unscoped no-change decision because necessary workload/contention
+facts are missing; this metric has no demonstrated reuse saving yet. The existing
+sample filter and evidence-provenance fixes are active. This App extension
 addresses repeated real metric transitions, not their delivery or the Host's
 retry mechanism. Evidence and activation limits are in the
-[recent App review](../../alex.app/docs/archive/reviews/recent-app-work-20261017.md#activation-and-live-readback).
+[recent App review](../../alex.app/docs/archive/reviews/recent-app-work-20261017.md#owner-decision-reuse-activation).
 
 An owner should be able to say: **this decision still covers these observations;
 reconsider it when these facts change**. Code can check that declared scope
@@ -385,8 +387,8 @@ does not, by itself, establish a new decision. The scope must not assume that
 every incident sharing a metric has one cause.
 
 Before this extension, the retained `metric-disposition` fact had identity, a reason, evidence
-and optional linked work. `metric-response` reads it and the source Task, but
-the deployed `metric-review` only deduplicates completed observation cuts. The inspected
+and optional linked work. `metric-response` read it and the source Task, but
+`metric-review` only deduplicated completed observation cuts. The inspected
 owner Tasks contain natural-language `revisitWhen` statements, not executable
 conditions. No existing API turns that prose into a reusable eligibility rule.
 Consequently, changing only the reviewer prompt would still pay for the same
@@ -447,9 +449,15 @@ For `metric.source-query-worst-ms`, the accepted decision is narrower than
 or a controlled, equivalent query/index trial, and another disposition asks for
 complete SQL/parameters/plans or supported lock-owner/WAL evidence. The feed's
 worst duration and truncated query examples do not establish those prerequisites.
-Do not auto-migrate this prose into a suppression rule. The next owner decision
-must choose an observable scope or the smallest missing measurement; preserve
-the current threshold and measurements in the meantime.
+Do not auto-migrate this prose into a suppression rule. The authorized live
+owner review confirmed the gap and declined an unsupported numeric proxy.
+The next useful work is for Alex to scope the smallest measurement that can
+establish covered circumstances, then return it to this same May Task. The
+Host owns collection-pass evidence; the App owns scope judgment and reuse.
+Truncation is deliberate in the Host's bounded diagnostic note, so merely
+increasing note size would not establish uncontended or equivalent execution.
+No measurement-improvement request has been commissioned by this rollout;
+preserve current thresholds and measurements meanwhile.
 
 Verify the rule using retained traces plus contrasting fixtures:
 

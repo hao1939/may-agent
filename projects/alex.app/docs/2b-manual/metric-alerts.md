@@ -88,7 +88,8 @@ contract supports optional `reuseScope` in `metric-response`'s
 `review.decisions`. Declare observable applicability and reconsideration facts
 after reading their actual source and coverage; let code bind the inspected
 evidence. See the [scope contract and example](../evaluation/metric-pattern-review.md#reusing-an-accepted-owner-decision).
-The October 17 implementation is not yet activated or adopted by a live owner.
+The October 17 implementation is activated in the local App release `03cfc3546f`;
+the [existing query-cost owner declined scope until needed evidence is available](../archive/reviews/recent-app-work-20261017.md#owner-decision-reuse-activation).
 Do not infer scope from old prose or copy the example's bounds as policy.
 
 `decision-reused` means a prior accepted decision covers this observation; it

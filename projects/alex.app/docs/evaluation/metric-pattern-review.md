@@ -190,7 +190,12 @@ a promised response deadline. Zero queued reviews does not prove review coverage
 
 ## Reusing an accepted owner decision
 
-**October 17 source implementation; not yet activated or adopted by a live owner.**
+**October 17: activated locally; query-cost scope adoption needs measurement.** App release
+`03cfc3546f` includes implementation `a57c006813`; reload completion event
+`6679582` confirms activation. The existing query-cost owner Task completed
+the scope review and accepted an unscoped no-change decision: current evidence
+does not establish complete workload coverage or absence of contention;
+see the [rollout evidence](../archive/reviews/recent-app-work-20261017.md#owner-decision-reuse-activation).
 This optional App contract addresses repeated real transitions. It does not
 change the Host's metric collection, alert rule, Task recovery or event delivery.
 The existing transition-only filter and emission-provenance fix remain separate.
@@ -274,8 +279,10 @@ stay on that Task. Reuse creates no wait, scheduler, repair or escalation path.
 Old decisions and prose `revisitWhen` gain no automatic scope. In particular,
 `metric.source-query-worst-ms` currently lacks an accepted observable scope;
 its truncated examples do not establish the owners' uncontended/equivalent-trial
-criteria. Runtime adoption needs a new explicit owner decision, not migration of
-that prose. See [Proposal C](../../../may.app/design/token-efficiency-proposal-20261002.md#c--reuse-an-owner-decision-with-explicit-scope).
+criteria. May confirmed that gap in accepted attempt
+`r_1_feaef4b5-0ef9-460c-a313-cfe04d15dfdc`; no numeric proxy or automatic
+scope was adopted. Runtime adoption needs adequate measurement followed by a
+new explicit owner decision, not migration of that prose. See [Proposal C](../../../may.app/design/token-efficiency-proposal-20261002.md#c--reuse-an-owner-decision-with-explicit-scope).
 
 ## Verification and limits
 
