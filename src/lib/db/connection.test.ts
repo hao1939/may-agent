@@ -1,4 +1,5 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, spyOn } from "bun:test";
+import * as fs from "node:fs";
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -142,6 +143,88 @@ describe("database connection ownership", () => {
     }
   }, 15_000);
 
+  it.each([1, 2])("uses the concurrent opener when its WAL appears at bootstrap check %i", (check) => {
+    const root = mkdtempSync(join(tmpdir(), "may-bootstrap-race-"));
+    const path = join(root, "may.db");
+    const backup = openDatabase(path + ".backup");
+    try {
+      applyDbSchema(backup);
+      backup.run("INSERT INTO sessions (sessionId, agent, task, startedAt) VALUES ('old', 'sample', 'Inspect', 1000)");
+    } finally { backup.close(); }
+
+    const originalExists = fs.existsSync;
+    let checks = 0;
+    let winner: ReturnType<typeof openDatabase> | undefined;
+    // Complete another opener's real SQLite work after this opener observed
+    // no main file, but before it examines the resulting WAL/SHM files.
+    const exists = spyOn(fs, "existsSync").mockImplementation((file) => {
+      const present = originalExists(file);
+      if (file === path && ++checks === check && !present) {
+        winner = openDatabase(path);
+        winner.exec("PRAGMA journal_mode = WAL");
+        winner.exec("PRAGMA wal_autocheckpoint = 0");
+        applyDbSchema(winner);
+        winner.run("INSERT INTO sessions (sessionId, agent, task, startedAt) VALUES ('winner', 'sample', 'Inspect', 2000)");
+      }
+      return present;
+    });
+    try {
+      expect(getDb(root).prepare("SELECT sessionId FROM sessions").all()).toEqual([{ sessionId: "winner" }]);
+      expect(winner).toBeDefined();
+      expect(originalExists(path + "-wal")).toBe(true);
+      expect(readdirSync(root).some((name) => name.startsWith(".may-db-bootstrap-"))).toBe(false);
+    } finally {
+      exists.mockRestore();
+      closeDb(root);
+      winner?.close();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("leaves backup bootstrap to the Host when maintenance opens first", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-maintenance-first-"));
+    const path = join(root, "may.db");
+    const backup = openDatabase(path + ".backup");
+    try {
+      applyDbSchema(backup);
+      backup.run("INSERT INTO sessions (sessionId, agent, task, startedAt) VALUES ('retained', 'sample', 'Inspect', 1000)");
+    } finally { backup.close(); }
+    const before = readFileSync(path + ".backup");
+    try {
+      expect(() => getDb(root, { existingSchemaOnly: true })).toThrow("initialized Host database");
+      expect(existsSync(path)).toBe(false);
+      expect(readFileSync(path + ".backup").equals(before)).toBe(true);
+      expect(getDb(root).prepare("SELECT sessionId FROM sessions").all()).toEqual([{ sessionId: "retained" }]);
+    } finally {
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("preserves orphaned recovery files that appear while a backup is staged", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-staged-orphan-"));
+    const path = join(root, "may.db");
+    const backup = openDatabase(path + ".backup");
+    try { applyDbSchema(backup); } finally { backup.close(); }
+    const before = readFileSync(path + ".backup");
+    const originalCopy = fs.copyFileSync;
+    const copy = spyOn(fs, "copyFileSync").mockImplementation((source, destination, mode) => {
+      originalCopy(source, destination, mode);
+      if (source === path + ".backup") writeFileSync(path + "-wal", "retained recovery evidence");
+    });
+    try {
+      expect(() => getDb(root)).toThrow("explicit recovery");
+      expect(existsSync(path)).toBe(false);
+      expect(readFileSync(path + "-wal", "utf8")).toBe("retained recovery evidence");
+      expect(readFileSync(path + ".backup").equals(before)).toBe(true);
+      expect(readdirSync(root).some((name) => name.startsWith(".may-db-bootstrap-"))).toBe(false);
+    } finally {
+      copy.mockRestore();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("does not import old work into an existing empty database", () => {
     const root = mkdtempSync(join(tmpdir(), "may-empty-db-"));
     const backup = openDatabase(join(root, "may.db.backup"));
@@ -186,6 +269,7 @@ describe("database connection ownership", () => {
     const root = mkdtempSync(join(tmpdir(), "may-worker-db-"));
     try {
       expect(() => getDb(root, { existingSchemaOnly: true })).toThrow("initialized Host database");
+      expect(existsSync(join(root, "may.db"))).toBe(false);
       const db = openDatabase(join(root, "may.db"));
       try {
         expect(db.prepare("SELECT COUNT(*) AS count FROM sqlite_master WHERE type = 'table'").get()).toEqual({
