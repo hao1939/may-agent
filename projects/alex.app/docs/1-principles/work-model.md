@@ -57,6 +57,13 @@ cannot proceed. Use bounded automatic retries and the existing owner/return
 path. Repeated failure should produce an actionable reason and next step, not
 an invisible loop, repeated status confirmation, or a new coordination system.
 
+Prefer one agent-led recovery mechanism over separate repair paths for each
+error. The Host detects execution failure, retains ownership and execution
+limits, and makes a bounded owner attempt available independently of the broken
+Task setup. The agent diagnoses and repairs using its authorized tools; retrying
+the ordinary work path establishes whether recovery helped. Repeated unsuccessful
+repair must not obtain a fresh allowance by creating another repair Task.
+
 Preserve useful existing safeguards. A small atomic write or duplicate check
 can be worthwhile, but it must address a demonstrated recovery problem; it is
 not the acceptance criterion by itself. Judge a change by whether failure leaves

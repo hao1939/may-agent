@@ -197,6 +197,114 @@ Natural post-repair Scout behavior and token savings were unverified in the
 original startup window. No new agent repair request or runtime change was made
 for this review or the design clarification.
 
+## Recovery follow-up: missing session metadata
+
+A portable fixture exposed a concrete Host recovery gap: a retained Task and
+attempt could survive while `sessions/<id>/meta.json` was missing. Both startup
+recovery and a normal replacement claim rejected that condition, even after the
+existing liveness and process-drain checks. This could strand actionable work
+because execution history was incomplete.
+
+Host [PR #381](https://github.com/hao1939/may-agent/pull/381), commit `4e0a05ba0`
+(base `63301fcae`, PR #379), permits replacement from the retained Task binding
+after those checks. It passes readable surviving history and an explicit
+missing-metadata fact to the next attempt. It does not reconstruct metadata or
+overwrite the old result. Conflicting or corrupt metadata, a live external
+owner, and an unconfirmed process drain still block replacement. Standalone
+recovery without the retained Task binding still requires metadata.
+
+The new expectations failed against the base. After the change, the focused
+recovery tests passed: **10 tests, 83 assertions, zero failures**. Both startup
+and normal-claim cases verify an accepted result from the replacement executor,
+the surviving transcript in its context, the missing-history explanation and
+unchanged old result bytes. These use scripted executors: they prove the
+recovery mechanics, not real-agent judgment or live model quality. Full local
+`bun run ci` passed: Host/SDK types, the canonical App boundary and lint;
+**3,817 tests passed, three skipped, zero failed, 21,973 assertions**. The three
+skips are installation-specific agent/fleet configuration checks; browser tests
+executed. Those local results apply to `4e0a05ba0`. The branch was subsequently
+updated with merged #380 to `767a9c78b`; its Container check passed, but local
+and GitHub Quality validation were stopped after the operator redirected work.
+
+**Disposition: draft, unmerged, undeployed; stop individual patch work.** The
+operator explicitly requested a general, simple recovery mechanism using agent
+judgment. A review also identified that `manager.cancel()` requests cancellation
+without waiting for execution/helper cleanup; the proposed success path must not
+release ownership while that cleanup is pending. This is an unresolved review
+finding, not a completed fix. No implementation was added for it. Do not resume
+#381 merely because its initial portable tests passed.
+
+A separate read-only live check at **2026-10-17 08:21 UTC**, excluding closed and
+cancelled Tasks, found no pending or attention Tasks in Alex, May or Scout.
+Alex had one running and six waiting; May had nine waiting; Scout's retained
+Tasks were converged. The missing-metadata failure is a reproduced edge case,
+not an established cause of a current live stall. No runtime deployment,
+restart, live fault injection, model trial or agent repair message was performed
+for this follow-up.
+
+## Proposed mechanism: agent-led recovery under a bounded Host
+
+The operator's direction supersedes the plan to enumerate individual defects
+and patch them one by one. Use one recovery mechanism that handles unfamiliar
+failures through agent judgment while the Host remains capable of running work.
+Failure cases are acceptance examples for that mechanism, not separate repair
+workflows or a prerequisite catalogue of every possible error.
+
+The rule is: **the Host keeps execution available and bounded; the responsible
+agent judges how to restore useful work.** Preserve the current goal and whatever
+evidence survives. Some reconstruction, lost history and repeated work are
+acceptable. The recovery attempt may repair, rebuild disposable state, choose a
+different approach, or report that it needs help.
+
+Use a single loop:
+
+1. **Notice failure.** The Host observes an execution error, worker exit or
+   expired execution deadline. Ordinary external waits and a quiet live worker
+   are not failures. Reuse the existing failure events and execution limits.
+2. **Give the owner a runnable recovery attempt.** Supply the original goal,
+   compact failure evidence, current attempt/ownership facts and surviving
+   context. The recovery execution must not require the broken Task's workspace
+   preparation or session resume to succeed. Reuse the existing bounded agent
+   runner; implementation must verify this independence.
+3. **Let the agent judge and act.** It inspects current reality, uses its existing
+   authorized tools to repair or work around the problem, and decides whether
+   ordinary work can continue. Do not make Host code recognize every missing
+   file, tool failure or repair technique. The App's configured owner owns this
+   judgment; Alex owns follow-through in this installation and Evaluator assesses
+   outcomes. No mandatory team handoff is needed.
+4. **Try the ordinary work path again.** Observe whether the previously failing
+   operation now succeeds and whether work advances. A repair report alone is
+   not success. Continue the existing Task with current facts.
+5. **Bound repeated failure.** Keep one active recovery for the affected work.
+   Charge recovery and retry to the same bounded allowance instead of creating
+   fresh repair Tasks that reset it. An unchanged recurring failure cannot
+   automatically start an endless new episode. Preserve the reason and wait
+   for new evidence, changed conditions or an owner/operator decision.
+
+The Host retains a few mechanical responsibilities: execution deadlines,
+ownership, confirmed cleanup before conflicting replacement, and budget
+enforcement. The agent owns diagnosis and repair choice. If the Host cannot run
+even the recovery agent, an external supervisor/operator must restore that
+minimum capability. An in-process agent cannot repair itself while no execution
+path is available.
+
+Before implementation, trace the existing `handler.failed` owner route and
+bounded runner against this loop. Reuse them wherever possible. A portable
+runtime test already demonstrates delivering a failed recovery to separately
+declared agent work while retaining the unresolved original attempt; that is a
+useful starting point, not proof that a generic owner route is installed or that
+all broken setup can be bypassed. Establish those two facts before adding
+machinery. No new scheduler, recovery database or per-error repair engine is
+proposed.
+
+Validate the same mechanism with representative failures: missing history,
+broken workspace preparation, a transient tool/storage failure after access is
+restored, pending cancellation, and a repair that does not help. Acceptance is
+that the recovery agent can actually run, useful work resumes when repair works,
+and unsuccessful repair stops with an understandable next step and bounded
+cost. Portable fixtures prove the execution mechanics; any claim about agent
+repair judgment needs a separately authorized bounded model trial.
+
 ## Retained evidence and source pointers
 
 Private runtime evidence is under
@@ -212,7 +320,6 @@ Relevant Host source: `src/app/composition/background-startup.ts`,
 `src/app/human-task-service.ts`, `src/app/transport/telegram.ts`,
 `src/app/core/events/bus.ts`, `src/lib/session-digest.ts` and
 `src/lib/session-subscribers.ts` under `projects/may-agent`. Scout declarations
-are in `projects/scout-knowledge-lib.app/app.ts`. Existing source/tests were read;
-no model trial or application test run was needed for this documentation-only
-review. The PR validation above is retained execution evidence, not a fresh test
-run by this reviewer.
+are in `projects/scout-knowledge-lib.app/app.ts`. The initial review read existing
+source/tests and retained PR validation; it did not run fresh tests. The recovery
+follow-up above separately records the new source change and portable checks.
