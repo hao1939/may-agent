@@ -545,11 +545,14 @@ retry policy to match obsolete prose or copy another retry rule into every guide
 
 Two narrower follow-ups merit separate evidence:
 
-- **Backup restore:** test damaged/empty databases, WAL sidecars and concurrent
-  openers. Restoring older state over an existing database belongs to explicit
-  maintenance, with original files and recovery point preserved. Automatic
-  bootstrap of an absent database is a separate convention. Potential loss is
-  serious, but loss was not reproduced; a failing authority test raises priority.
+- **Backup restore — defect reproduced, focused correction under review in #379:**
+  the [October 17 trial](../archive/reviews/database-recovery-20261017.md) shows
+  that a temporary lock can cause an older backup to overwrite existing state.
+  Existing empty databases also import old work. The [storage contract](../2a-design/storage.md#opening-a-database-is-not-permission-to-roll-work-back)
+  separates ordinary opening from explicit restoration. Preserve existing files,
+  retain absent-database bootstrap without overwrite, and cover damaged catalogs,
+  WAL sidecars and concurrent openers. This is a Host defect; live data loss has
+  not been established. Rollout of #378 does not include this correction.
 - **Model fallback:** retain the narrow temporary adapter behavior. Document an
   intentional shipped default; add trusted configuration only for a concrete
   capability/cost requirement. No general model router is justified here.

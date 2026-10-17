@@ -128,6 +128,37 @@ not in the definition of authority.
 
 ## Write And Recovery Contract
 
+### Opening a database is not permission to roll work back
+
+Host startup preserves the existing database. WAL setup and schema initialization
+share the existing bounded startup retry: retry the same operation, without
+stacking a second allowance or selecting a different recovery method.
+An unreadable catalog fails visibly; an empty
+catalog does not authorize loading old work from a backup. Restoring older state
+can lose accepted work or repeat effects, so it requires an explicit recovery
+decision. This follows [safe retry](../1-principles/core-principles.md#safe-retry-by-default-explicit-exceptions):
+repeat an open operation without changing which history is authoritative.
+
+When the database is absent and no SQLite recovery files remain, Host may
+bootstrap from a self-contained backup. Publish a complete copy without replacing
+a database created by another opener. A missing main file with a WAL, shared-memory
+or journal sidecar requires explicit recovery; those files may contain newer
+state. Task workers do not perform bootstrap or choose backups.
+
+Explicit restoration stops all database users, preserves the original database,
+recovery files and referenced artifacts, and installs the chosen recovery point
+offline. Account for effects performed since that point before replaying work.
+The Host must expose failure even when the unavailable database prevents ordinary
+App admission; it must not claim that an agent was notified merely by saving an
+error. No new recovery queue or automatic rollback policy is required.
+
+**Adoption:** the [October 17 recovery trial](../archive/reviews/database-recovery-20261017.md)
+reproduces replacement during a temporary lock. The focused source correction is
+verified locally and under review in [Host #379](https://github.com/hao1939/may-agent/pull/379);
+the running installation still uses the pre-fix open path.
+
+### Durable writes and bounded contention
+
 Canonical Task transitions use a version- and attempt-fenced SQLite transaction
 that commits accepted state and its related records atomically. Requests and
 admission records have their own durable coordination boundaries; see
