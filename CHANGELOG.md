@@ -1,5 +1,50 @@
 # Changelog
 
+## [5.6.0](https://github.com/hao1939/may-agent/compare/v5.5.0...v5.6.0) (2026-10-27)
+
+
+### Features
+
+* **db:** retain bounded slow-read query plans ([#352](https://github.com/hao1939/may-agent/issues/352)) ([13206c5](https://github.com/hao1939/may-agent/commit/13206c5e5d7913bce2544ebf7355f6e5b4214250))
+* **metrics:** retain metric SQL cost for App review ([#377](https://github.com/hao1939/may-agent/issues/377)) ([8eabb85](https://github.com/hao1939/may-agent/commit/8eabb85d1b3af4c7e578359c61ff437d5b54282e))
+* **tasks:** bound automatic retries by default ([#360](https://github.com/hao1939/may-agent/issues/360)) ([abcf162](https://github.com/hao1939/may-agent/commit/abcf1623f796da6ee3828c00e8e5854729c18d6b))
+
+
+### Bug Fixes
+
+* **agents:** deliver corrections to owned running helpers ([#358](https://github.com/hao1939/may-agent/issues/358)) ([f6ac37c](https://github.com/hao1939/may-agent/commit/f6ac37ccaea8dc8fe15269171003ec340cdfc443))
+* **conversations:** prefer explicit reply Topic ([#355](https://github.com/hao1939/may-agent/issues/355)) ([bf16c02](https://github.com/hao1939/may-agent/commit/bf16c0209342985079ce3c54983f5a6681932297))
+* **db:** include 1000 ms reads in plan capture ([88259cb](https://github.com/hao1939/may-agent/commit/88259cb41befd419d0652f5c794fb88d873e2fa2))
+* **events:** bound unroutable address recovery ([#359](https://github.com/hao1939/may-agent/issues/359)) ([4a34b14](https://github.com/hao1939/may-agent/commit/4a34b14e82a038835bfe2f36975acf566df76715))
+* **events:** classify reload results as observations ([#375](https://github.com/hao1939/may-agent/issues/375)) ([234a027](https://github.com/hao1939/may-agent/commit/234a027a3d6105b37c51ddd4a8849e3760cdde26))
+* **events:** declare task attempt reports as observations ([#366](https://github.com/hao1939/may-agent/issues/366)) ([6c4f4e2](https://github.com/hao1939/may-agent/commit/6c4f4e23d0edc7ff292ad44fb24777b55c4bbe47))
+* **events:** keep receipt acceptance with delivery owners ([#367](https://github.com/hao1939/may-agent/issues/367)) ([73cc2fb](https://github.com/hao1939/may-agent/commit/73cc2fb7a093e8efcb4c8829af69b1239479d2b4))
+* **events:** keep receipt expiry independent of process restart ([#372](https://github.com/hao1939/may-agent/issues/372)) ([0563f12](https://github.com/hao1939/may-agent/commit/0563f12474d7148dc6f34b372aa5151047b5b991))
+* **events:** preserve observer intent through retry and restart ([#371](https://github.com/hao1939/may-agent/issues/371)) ([0fa9a8a](https://github.com/hao1939/may-agent/commit/0fa9a8a126cb9e9b91f5ccf919d8fb5f8698d7fb))
+* **execution:** honor declared report acceptance ([#374](https://github.com/hao1939/may-agent/issues/374)) ([e982e75](https://github.com/hao1939/may-agent/commit/e982e7537712e58e06e0a3733152964b5689a0ec))
+* **execution:** honor optional finish report fields ([#373](https://github.com/hao1939/may-agent/issues/373)) ([b86592b](https://github.com/hao1939/may-agent/commit/b86592b088a1183bb22c8619faaea6f6e7f9baaf))
+* **schedules:** retain published inputs across reloads ([#364](https://github.com/hao1939/may-agent/issues/364)) ([8a6393e](https://github.com/hao1939/may-agent/commit/8a6393eae62516a06ecdaf5fbb757f01b9071bcd))
+* **storage:** backfill inbox changed time once ([#378](https://github.com/hao1939/may-agent/issues/378)) ([980f2cd](https://github.com/hao1939/may-agent/commit/980f2cda391d36d2a6d10927f81ed02c6bf6b66e))
+* **storage:** keep SQLite contention from blocking serving work ([#370](https://github.com/hao1939/may-agent/issues/370)) ([a0b153b](https://github.com/hao1939/may-agent/commit/a0b153b455e6f94eeb520747eb1c61c9f62690ad))
+* **storage:** preserve existing databases during startup ([#379](https://github.com/hao1939/may-agent/issues/379)) ([63301fc](https://github.com/hao1939/may-agent/commit/63301fcae854e9ceae1ec2097087df11829ba2c1))
+* **tasks:** keep recovery inside the app execution procedure ([#344](https://github.com/hao1939/may-agent/issues/344)) ([cbd71af](https://github.com/hao1939/may-agent/commit/cbd71af0752df378e4faaac056d045a53ce85e4f))
+* **tasks:** preserve incomplete recovery evidence ([#354](https://github.com/hao1939/may-agent/issues/354)) ([e949e63](https://github.com/hao1939/may-agent/commit/e949e630825c39eac52619d1b28ad4b225f21c40))
+* **tasks:** preserve Task branches during PR publication ([#380](https://github.com/hao1939/may-agent/issues/380)) ([8646f77](https://github.com/hao1939/may-agent/commit/8646f7785c3b7d66bed2e2110c5cd43d10a38e15))
+* **tasks:** rearm early condition checkpoint timers ([#353](https://github.com/hao1939/may-agent/issues/353)) ([64bc72e](https://github.com/hao1939/may-agent/commit/64bc72e140d1c05dddff31882a07b933776e1ac3))
+* **tasks:** recover from incomplete session history ([#381](https://github.com/hao1939/may-agent/issues/381)) ([b25344c](https://github.com/hao1939/may-agent/commit/b25344cc6c8e73da90596e8aed83a964c0c8a330))
+* **tasks:** require confirmed claim recovery ([#363](https://github.com/hao1939/may-agent/issues/363)) ([ff34490](https://github.com/hao1939/may-agent/commit/ff3449013a77a9a79ca0c877e0a7c090f5d51228))
+* **tasks:** require confirmed recovery and preserve truthful evidence ([#376](https://github.com/hao1939/may-agent/issues/376)) ([68bc5c7](https://github.com/hao1939/may-agent/commit/68bc5c7cf688c6563ca61681cd20a881865ac23b))
+* **tasks:** require confirmed startup recovery ([#368](https://github.com/hao1939/may-agent/issues/368)) ([da58144](https://github.com/hao1939/may-agent/commit/da5814457119ed47afded8eeef326c6d183b8fc4))
+* **tasks:** separate progress feedback from caller attention ([#351](https://github.com/hao1939/may-agent/issues/351)) ([e61699a](https://github.com/hao1939/may-agent/commit/e61699a93dfe05585732b5e31c61e476eb51557c))
+* **telegram:** clarify human-action notifications ([#356](https://github.com/hao1939/may-agent/issues/356)) ([dd79e4e](https://github.com/hao1939/may-agent/commit/dd79e4eef00b7bde4f21cdb633f655c259caf664))
+* **telegram:** recheck task after watch send ([#361](https://github.com/hao1939/may-agent/issues/361)) ([21ab8c9](https://github.com/hao1939/may-agent/commit/21ab8c9062dbb96a64ff55650d8e0aea2be1e2e4))
+* **tools:** reject duplicate model tool names ([#357](https://github.com/hao1939/may-agent/issues/357)) ([8e54658](https://github.com/hao1939/may-agent/commit/8e546585682c674f3905be5e81cbf1de2d681834))
+
+
+### Performance Improvements
+
+* **storage:** index recent conversation input pages ([#365](https://github.com/hao1939/may-agent/issues/365)) ([f973ef9](https://github.com/hao1939/may-agent/commit/f973ef989dcbbd2f9e14b3d9387784bf01426bb8))
+
 ## [5.5.0](https://github.com/hao1939/may-agent/compare/v5.4.0...v5.5.0) (2026-10-05)
 
 
