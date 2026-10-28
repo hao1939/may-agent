@@ -182,6 +182,31 @@ function seedRetiredConversation(f: Awaited<ReturnType<typeof fixture>>) {
   expect(f.store.isCancelled(id)).toBe(true);
 }
 
+test("App result policy checks Conversation finish and settlement without answering rejected input", async () => {
+  let corrected = false;
+  const policyApp = defineApp({ ...app, tasks: { validateResult(result, context) {
+    expect(context).toMatchObject({ appId: app.id, conversation: true, generation: 1 });
+    expect(result.result?.conversation).toBeDefined();
+    return result.facts.includes("decision:unsupported") ? "Use the supported decision contract" : null;
+  } } });
+  const f = await fixture(async (_definition, _prompt, options) => {
+    const candidate = { ...answer, facts: [corrected ? "decision:valid" : "decision:unsupported"] };
+    expect(options.validateOutput?.(candidate)).toBe(corrected ? null : "Use the supported decision contract");
+    return { status: "done", structuredResult: candidate };
+  }, (_root, appDir) => ({ installControllers: false,
+    appRegistrySnapshot: { id: "result-policy", generation: 1, entries: [{ appDir, definition: policyApp }] },
+  }));
+  const admitted = f.admit();
+  await f.run(admitted.taskId);
+  expect(getAppInboxItem(f.db, "ask")?.status).not.toBe("done");
+  expect(readAppConversationResource(f.db, app.id, "primary").topics).toEqual([]);
+  expect(f.store.readTask(admitted.taskId)?.status.summary).toContain("Use the supported decision contract");
+  corrected = true;
+  makeTaskRetryDue(f.store, admitted.taskId);
+  await f.run(admitted.taskId);
+  expect(getAppInboxItem(f.db, "ask")?.result?.facts).toEqual(["decision:valid"]);
+});
+
 test.each(["throws", "invalid", "unavailable-topic"] as const)(
   "Task input survives %s and reaches an exact answer through paced retry",
   async (failure) => {

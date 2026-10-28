@@ -11,7 +11,7 @@ import type { ResourceObserver, ObservationContract } from "./observer.js";
 export { defineObserver, observationCondition } from "./observer.js";
 export type { ResourceObserver, ObservationContract, ObservationInterest, ObserverHealth } from "./observer.js";
 import type { AppEvent, EventSelector } from "./event.js";
-import type { Condition, TaskAction, TaskIntent } from "./task.js";
+import type { Condition, TaskAction, TaskIntent, TaskReconcileResult } from "./task.js";
 import type { MetricDefinition, ObserverContext, ObserverSnapshot, TaskAttempt, TaskDetail } from "./workflow.js";
 
 export { Type } from "typebox";
@@ -442,6 +442,16 @@ export type AppTaskPolicy = {
   validateAction?: (action: TaskAction) => string | null;
   /** Optional App-specific semantic admission for externally observable waits. */
   validateCondition?: (condition: Condition) => string | null;
+  /** Pure synchronous semantic admission for an otherwise valid result. Called
+   * at direct-agent finish and again before Task settlement for every executor.
+   * Conversation turns use the ordinary converged projection, with the full
+   * decision in result.conversation. Return null or a corrective error; do not
+   * perform effects. Rejection uses normal unsuccessful-attempt recovery and
+   * does not undo effects already performed during execution. */
+  validateResult?: (
+    result: Readonly<TaskReconcileResult>,
+    context: Readonly<{ appId: string; taskId: string; generation: number; conversation: boolean }>,
+  ) => string | null;
   /** Background attempt limit; one human Conversation turn may also run within the Host limit. */
   maxConcurrent?: number;
   /** Total consecutive unsuccessful attempts before owner attention (initial attempt included).

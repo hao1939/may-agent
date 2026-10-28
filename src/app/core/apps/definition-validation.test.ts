@@ -5,6 +5,11 @@ import { assertValidAppInput, validateAppDefinition } from "./definition-validat
 const inputSchema = Type.Object({ kind: Type.String(), data: Type.Unknown() });
 
 describe("App input validation", () => {
+  it("requires a callable optional result policy", () => {
+    const app = defineApp({ id: "sample", version: 1, agent: "worker", inputSchema });
+    expect(validateAppDefinition({ ...app, tasks: { validateResult: true } })).toContain("App sample task validateResult must be a function");
+    expect(validateAppDefinition({ ...app, tasks: { validateResult: () => null } })).toEqual([]);
+  });
   it("validates resource detectors at the installed App boundary", () => {
     const detector = {
       id: "build",

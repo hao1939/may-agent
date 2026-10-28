@@ -54,6 +54,18 @@ results do not select execution. Saved legacy workflow handoffs resume their
 declared procedure with retained inputs and evidence. Owner-stopped Tasks stay
 stopped. Historical `failoverFromAttemptId` records remain readable as evidence.
 
+Apps can supply pure synchronous `tasks.validateResult(result, context)` policy.
+The Host supplies ordinary results and exact App/Task/generation identity. A
+Conversation turn has its converged projection and `result.conversation`.
+Direct finish reports policy errors while the agent can still correct them;
+`attempt-runner.ts` checks again before accepting every executor's result,
+including waiting and incomplete reports. The callback receives copies and
+returns null or a corrective error. Exceptions and async returns reject the
+result through ordinary paced recovery. Effects already performed inside the
+attempt are not rolled back. The App owns semantic rules; Host neither repairs
+the result nor certifies the judgment. Deploy this Host capability before
+activating an App that relies on it; older Hosts do not enforce the hook.
+
 ## Trace one Task
 
 ```text
