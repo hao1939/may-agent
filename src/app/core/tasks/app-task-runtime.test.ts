@@ -269,6 +269,92 @@ it.each(["none", "accept", "fail"] as const)("records attempt facts independentl
   expect(db.prepare(UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY).get()).toEqual({ value: consumer === "fail" ? 2 : 0 });
 });
 
+it.each(["unavailable", "throws", "error", "incomplete", "waiting", "converged", "progress"] as const)(
+  "publishes saved attempt facts independently of retry disposition: %s", async (outcome) => {
+    const f = fixture();
+    const bus = eventBus();
+    const observed: AgentEvent[] = [];
+    bus.subscribe((event) => { if (event.type === "project.task.reconciled") observed.push(event); });
+    await installCoreTaskRuntimes({
+      ...options(f, bus), installControllers: false,
+      executors: outcome === "unavailable" ? {} : { fixture: async () => {
+        if (outcome === "throws") throw new Error("Backend unavailable");
+        if (outcome === "progress") return { state: "waiting", continue: true, report: true, summary: "Accepted part", facts: ["part:verified"] };
+        if (outcome === "waiting") return { state: "waiting", reviewAt: Date.now() + 60_000, summary: "Waiting for source", facts: ["source:pending"] };
+        return { state: outcome, summary: "Reported outcome", facts: ["source:observed"] };
+      } },
+      appRegistrySnapshot: {
+        id: "attempt-facts", generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    const taskId = "work/observation";
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: { id: taskId, parentId: "operations", outcome: "Verify", acceptance: ["Value verified"], agent: "sample-owner", executor: "fixture" },
+    });
+    const failed = outcome === "unavailable" || outcome === "throws" || outcome === "error";
+    const attempts = failed || outcome === "incomplete" ? 3 : 1;
+    for (let index = 0; index < attempts; index++) {
+      if (index) makeTaskRetryDue(config.resourceStore, taskId);
+      await reconcileLoadedAppTaskOnce({
+        bus, appId: "sample", taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+      expect(observed).toHaveLength(index + 1);
+      const data = observed[index]!.data;
+      expect(data.attemptState).toBe(failed ? "failed" : "completed");
+      expect(data.resultState).toBe(failed ? undefined : outcome === "progress" ? "waiting" : outcome);
+      const saved = config.resourceStore.readAttempt(String(data.attemptId))!;
+      expect(data.attemptState).toBe(saved.state);
+      expect(data.resultState).toBe(saved.acceptedResult?.state);
+      expect(data.failureReason).toBe(saved.failureReason);
+      expect(data.retryExhausted).toEqual(saved.retryExhausted);
+      if (index === 2) expect(data.retryExhausted).toMatchObject({ failures: 3, limit: 3 });
+    }
+  },
+);
+
+it("does not reject accepted work when reading notification facts fails", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  const observed: AgentEvent[] = [];
+  bus.subscribe((event) => { if (event.type === "project.task.reconciled") observed.push(event); });
+  await installCoreTaskRuntimes({
+    ...options(f, bus), installControllers: false,
+    executors: { fixture: async () => ({ state: "converged", summary: "Work completed", facts: [] }) },
+    appRegistrySnapshot: {
+      id: "unavailable-observation", generation: 1,
+      entries: [{ appDir: f.appDir, definition: definition() }],
+    },
+  });
+  const config = loadedTaskConfig(f);
+  const taskId = "work/observation";
+  observeAppTaskIntent(config, {
+    appAgent: "sample-owner",
+    intent: { id: taskId, parentId: "operations", outcome: "Verify", acceptance: ["Value verified"], agent: "sample-owner", executor: "fixture" },
+  });
+  const read = AppTaskResourceStore.prototype.readAttempt;
+  const unavailable = spyOn(AppTaskResourceStore.prototype, "readAttempt").mockImplementation(function (id) {
+    const attempt = read.call(this, id);
+    if (attempt?.state === "completed") throw new Error("Observation read unavailable");
+    return attempt;
+  });
+  try {
+    await reconcileLoadedAppTaskOnce({
+      bus, appId: "sample", taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+    });
+    expect(observed).toHaveLength(1);
+    expect(observed[0]!.data).toMatchObject({ disposition: "converged", summary: "Work completed" });
+    expect(observed[0]!.data).not.toHaveProperty("attemptState");
+    expect(config.resourceStore.readTask(taskId)?.status.phase).toBe("converged");
+  } finally {
+    unavailable.mockRestore();
+  }
+});
+
 it("publishes one reopening fact despite a lost publication and operator replay across restart", async () => {
   const f = fixture();
   const persistDir = join(f.root, "state");
