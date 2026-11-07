@@ -1,3 +1,49 @@
+# XHS post 6aee77c70000000002037f37 remains blocked by login
+
+Source identity: https://www.xiaohongshu.com/explore/6aee77c70000000002037f37
+
+## Assessment 2026-11-07T09:20:53.365Z
+
+Question: Perform a body-level review of XHS post 6aee77c70000000002037f37 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+The current retrieval confirms an access limitation rather than a substantive finding about the post. The requested URL for XHS identity `6aee77c70000000002037f37` resolved to a Rednote login URL whose redirect points back to that same explore identity. The only supplied text is “Log in - rednote - share, connect, love.” This supports the checked conclusion that the authorized retrieval route encountered an authentication gate at the recorded observation time.
+
+No author claims are available to summarize or test. The supplied material contains no post body, caption, author information, publication date, images, video, comments, or outbound-link contents. Accordingly, the post’s main contribution, supporting evidence, limitations, and relevance to AI-agent research remain unknown. The login page is evidence about source access only. Its redirect confirms that retrieval targeted the exact assigned identity, but it does not show whether the post remains published, has been deleted, or would become visible after authorized authentication. No search-card metadata was supplied, and such metadata would not substitute for the required body-level review in any case.
+
+For reconciliation into the finite 2026-11-07 XHS backfill, the defensible disposition is **access blocked — post body unavailable because Rednote/XHS login is required**. This identity should remain attached to the frozen inventory and should not be counted among body-level completed items, characterized as irrelevant, or replaced by any of the eleven later discoveries. This retrieval provides no evidence that changes the separate status of the nine identities awaiting recovery of the original untruncated receipt.
+
+The body-level research outcome remains incomplete. Completion requires authorized access that returns the actual post body, followed by inspection of any media or linked material necessary to evaluate its claims. Repeating the same unauthenticated route has produced the same gate, so the present evidence does not justify another substantive inference or any attempt to bypass access controls.
+
+Assessment incomplete. Retain this exact identity in the frozen backfill inventory with an access-blocked/authentication-required disposition. If authorized access later returns the post, inspect its body and any evidence-bearing media or links before assigning a substantive disposition; do not substitute a refreshed-search identity.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6aee77c70000000002037f37",
+  "identity": "https://www.xiaohongshu.com/explore/6aee77c70000000002037f37",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6aee77c70000000002037f37%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T09:20:43.364Z",
+  "sha256": "00e42381eceb30f2d18c7edc153d35b014204991cc68f4db0797a8faec3ba0e2",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
 # XHS post 6aee77c70000000002037f37 — body still inaccessible behind login
 
 Source identity: https://www.xiaohongshu.com/explore/6aee77c70000000002037f37
@@ -86,5 +132,7 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
