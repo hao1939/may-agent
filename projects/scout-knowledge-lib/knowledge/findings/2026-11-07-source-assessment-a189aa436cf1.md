@@ -1,0 +1,42 @@
+# XHS post 6aee77c70000000002037f37 — body inaccessible behind login
+
+Source identity: https://www.xiaohongshu.com/explore/6aee77c70000000002037f37
+
+## Assessment 2026-11-07T09:17:31.803Z
+
+Question: Perform a body-level review of XHS post 6aee77c70000000002037f37 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+The main finding is an access limitation rather than a substantive content finding. Retrieval of the exact assigned identity, XHS post `6aee77c70000000002037f37`, resolved to a Rednote login URL whose redirect parameter points back to the corresponding explore page. The only supplied page text is “Log in - rednote - share, connect, love.” This supports the checked conclusion that the authorized retrieval route encountered an authentication gate at the observation time. It does not expose the post body or establish anything about the post’s topic, claims, author, publication date, or evidentiary quality.
+
+No supporting evidence for the post’s underlying claims was available. In particular, the supplied material contains no body text, captions, comments, images, video, evidence-bearing media, or outbound-link contents. Therefore, none of those elements can be assessed, and there is no basis to infer a main contribution from search metadata or from another XHS post. The login page itself is retrieval evidence only; it is not evidence about the post’s substance. Likewise, the redirect’s inclusion of the exact identity confirms that the requested item was targeted, but it does not prove whether the post remains published, has been deleted, or would become visible after authorized authentication.
+
+For the finite 2026-11-07 backfill, the suitable reconciliation disposition is **access blocked — body unavailable because retrieval requires Rednote/XHS login**. This identity should not be counted as body-level completed. It should remain within the frozen inventory rather than being replaced by or conflated with any of the eleven later discoveries. The existing checkpoint counts should otherwise remain unchanged; this assessment supplies no evidence concerning the nine identities awaiting recovery of the original untruncated receipt.
+
+The requested body-level outcome remains incomplete. Completion requires authorized access that returns the actual post body and inspection of any media or links material to its claims. No bypass or unsupported substantive characterization is warranted from the supplied landing page.
+
+Assessment incomplete. See the assessment for missing evidence.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6aee77c70000000002037f37",
+  "identity": "https://www.xiaohongshu.com/explore/6aee77c70000000002037f37",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6aee77c70000000002037f37%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T09:17:19.318Z",
+  "sha256": "0296bc2b7199a6caed4ca58834d8b688b708204a61d2506ab3b9bc36abc11f40",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
