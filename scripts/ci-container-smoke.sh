@@ -34,7 +34,9 @@ grep -q 'Usage: may-agent' test-results/help.txt
 # ordinary PATH, exact manifest versions, flags, and permissions as the runtime
 # user from an unrelated working directory while a fresh mount masks /app.
 docker run --rm --network none --read-only --user mayagent \
-  --tmpfs /app --workdir /tmp --entrypoint /bin/sh \
+  --tmpfs /app --tmpfs /tmp:mode=1777 --workdir /tmp \
+  --env PI_CODING_AGENT_DIR=/tmp/may-ci-pi/agent \
+  --entrypoint /bin/sh \
   "$image_ref" -ec '
     manifest=/opt/may-agent-cli/package.json
     test "$(command -v claude)" = /usr/local/bin/claude
