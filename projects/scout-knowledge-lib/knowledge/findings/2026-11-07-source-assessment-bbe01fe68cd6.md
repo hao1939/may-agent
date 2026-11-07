@@ -2,6 +2,56 @@
 
 Source identity: https://www.xiaohongshu.com/explore/6961ace3000000000903b207
 
+## Assessment 2026-11-07T09:17:09.811Z
+
+Question: Perform a body-level review of XHS post 6961ace3000000000903b207 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the durable inventory.
+
+**Disposition: inaccessible.**
+
+Retrieval of the exact assigned identity, XHS post `6961ace3000000000903b207`, redirected to a Rednote login URL. The complete supplied page text is only “Log in - rednote - share, connect, love.” This establishes an authentication boundary, not body-level access to the requested post. It supplies no title, author caption, post body, publication date, comments, or other post-specific content.
+
+There is therefore no author contribution or supporting evidence available to summarize or evaluate. Scout’s checked conclusion is limited to access: this retrieval produced a generic login landing page rather than the post body. It does not establish whether the post remains available, what topic it addresses, what claims it makes, or whether it is relevant to the finite 2026-11-07 backfill. Those matters remain unknown and must not be interpreted as defects in the post.
+
+Any images or image-embedded text, video, audio, captions, comments, outbound links, and cited primary sources remain uninspected. The login page does not establish whether any of these materials exist. No media, linked evidence, or primary-source claim has therefore been verified.
+
+The exact blocker is authentication: retrieval reached a Rednote login screen instead of content for the assigned post identity. Recovery requires permitted access through an already authenticated XHS/Rednote browser session, or another authorized retrieval path that returns the exact post body. The body must then be inspected, together with any evidence-bearing media or links needed to assess its claims. Discovery metadata, a substitute post, or a login bypass would not satisfy the assignment.
+
+This read-only call did not create or publish an artifact. Accordingly, the acceptance requirement for a canonical durable assessment path and publication evidence also remains unmet and must be fulfilled by the owning workflow after it records this inaccessible disposition or after authorized source recovery permits substantive review.
+
+Assessment incomplete. Using a permitted authenticated XHS/Rednote session or another authorized retrieval mechanism, retrieve the exact post body and inspect it plus any evidence-bearing media or links. The owning workflow must then durably preserve the resulting assessment and return its canonical artifact path and publication evidence.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6961ace3000000000903b207",
+  "identity": "https://www.xiaohongshu.com/explore/6961ace3000000000903b207",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6961ace3000000000903b207%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T09:16:58.735Z",
+  "sha256": "e6b14c672c918e87a981d4269d1faecbee8ba3d4fd63a527faf72fb1fcbdb659",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
+# XHS post 6961ace3000000000903b207 — inaccessible
+
+Source identity: https://www.xiaohongshu.com/explore/6961ace3000000000903b207
+
 ## Assessment 2026-11-07T09:14:34.760Z
 
 Question: Perform a body-level review of XHS post 6961ace3000000000903b207 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the durable inventory.
@@ -94,5 +144,7 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
