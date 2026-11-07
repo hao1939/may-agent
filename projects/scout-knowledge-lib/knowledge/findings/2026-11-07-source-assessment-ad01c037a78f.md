@@ -2,6 +2,52 @@
 
 Source identity: https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7
 
+## Assessment 2026-11-07T18:17:22.598Z
+
+Question: Perform a body-level review of XHS post 6adeb34e00000000150130b7 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+**Supported disposition: inaccessible — redirected to Rednote login.** Retrieval targeted exactly XHS post `6adeb34e00000000150130b7` at `https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7`; no alternate post, refreshed search result, or later discovery was substituted. It resolved to `https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6adeb34e00000000150130b7%3FexSource%3Dnull`. The redirect preserves the exact target ID and points to a login route. Together with the sole supplied text, “Log in - rednote - share, connect, love,” this directly establishes an authentication gate.
+
+The supplied text is Rednote interface copy, not a claim by the post’s author. No title, body, author identity, images, video, captions, outbound links, argument, implementation details, or supporting material was exposed. Accordingly, the post’s main contribution and evidence cannot be identified, and there are no author claims available to evaluate. Its topic, limitations, and relevance to AI-agent research remain unknown. Inferring substance from the identifier, prior search-card metadata, later discoveries, or the missing frozen-run identities would be unsupported.
+
+The checked conclusion is deliberately narrow: authentication prevented inspection of the exact post’s body and any material media or links. This is sufficient evidence for reconciling the finite backfill with the disposition **inaccessible — redirected to Rednote login**. It is not evidence that the post or any linked material is defective, because neither was inspected. No login or access-control bypass was attempted.
+
+The requested body-level review remains incomplete. Completion requires authorized access exposing this exact post’s body and material media or links. Separately, this bounded call is read-only and has no verified publication read-back, canonical assessment path, or Git revision. The surrounding workflow must publish and verify the inaccessible record and return those publication facts before all acceptance criteria are satisfied.
+
+Assessment incomplete. See the assessment for missing evidence.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7",
+  "identity": "https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6adeb34e00000000150130b7%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T18:17:08.988Z",
+  "sha256": "9ea3905f809d80546ce45792fe4a03159bb3fea4a8c80d7d26184ad0570b719a",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
+# XHS post 6adeb34e00000000150130b7 — inaccessible behind Rednote login
+
+Source identity: https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7
+
 ## Assessment 2026-11-07T17:17:03.562Z
 
 Question: Perform a body-level review of XHS post 6adeb34e00000000150130b7 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
@@ -960,6 +1006,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
