@@ -2,6 +2,52 @@
 
 Source identity: https://www.xiaohongshu.com/explore/6aee77c70000000002037f37
 
+## Assessment 2026-11-07T12:13:29.965Z
+
+Question: Perform a body-level review of XHS post 6aee77c70000000002037f37 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+The useful result is an access disposition, not a substantive content assessment. Retrieval targeted the exact assigned identity, `6aee77c70000000002037f37`, and resolved to a Rednote login URL whose redirect preserves that same explore identity. The only supplied page text is “Log in - rednote - share, connect, love.” This supports a narrow checked conclusion: the authorized retrieval route encountered an authentication gate at the observation time. It does not expose the XHS post body.
+
+No post-level author claims are available to summarize or evaluate. The supplied evidence contains no caption, author details, publication date, images, video, comments, or evidence-bearing outbound links. Therefore, the post’s main contribution, supporting evidence, substantive limitations, and relevance to the research question remain unknown. This is an evidence gap, not an observed defect in the post. The preserved redirect supports identity continuity, but the login page does not establish whether the post remains published, was removed, has an additional visibility restriction, or would become accessible after authorized login. No search-card metadata was supplied; even if available, card metadata alone would not satisfy the requested body-level review.
+
+For reconciliation into the finite 2026-11-07 XHS backfill inventory, use the disposition **access blocked — exact post body unavailable because Rednote/XHS authentication is required**. Retain this identity in the frozen inventory. Do not count it among body-level completed posts, infer that its unseen content is irrelevant, substitute another post, or add any of the eleven later discoveries to the frozen set. This retrieval provides no evidence affecting the nine identities separately blocked on recovery of the original untruncated receipt.
+
+The requested substantive review remains incomplete. Completion requires authorized retrieval of this exact post and inspection of its caption plus any media or linked material necessary to understand and assess its claims. Repeating unauthenticated retrieval has again yielded only the login gate; bypassing authentication or inferring the post’s contents would be unsupported. Creation or update of the durable inaccessible assessment, and return of its canonical path and publication Git revision, remain workflow-owned steps and are not claimed by this read-only call.
+
+Assessment incomplete. See the assessment for missing evidence.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6aee77c70000000002037f37",
+  "identity": "https://www.xiaohongshu.com/explore/6aee77c70000000002037f37",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6aee77c70000000002037f37%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T12:13:19.699Z",
+  "sha256": "81053d3dabdac7bbd536f59325d0303cf39a02b2390f4d2887a0aa761b0c1ad6",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
+# XHS post 6aee77c70000000002037f37 remains authentication-blocked
+
+Source identity: https://www.xiaohongshu.com/explore/6aee77c70000000002037f37
+
 ## Assessment 2026-11-07T11:13:13.224Z
 
 Question: Perform a body-level review of XHS post 6aee77c70000000002037f37 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
@@ -684,6 +730,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
