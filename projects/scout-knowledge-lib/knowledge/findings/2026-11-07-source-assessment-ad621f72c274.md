@@ -2,6 +2,52 @@
 
 Source identity: https://www.xiaohongshu.com/explore/6ae8935000000000360101cd
 
+## Assessment 2026-11-07T09:30:29.222Z
+
+Question: Perform a body-level review of XHS post 6ae8935000000000360101cd for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+The useful conclusion is that this item remains **access blocked / body-level review incomplete**. Retrieval targeted the exact assigned identity, `https://www.xiaohongshu.com/explore/6ae8935000000000360101cd`, but resolved to `https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6ae8935000000000360101cd%3FexSource%3Dnull`. The entire supplied extraction says only “Log in - rednote - share, connect, love.” This establishes an authentication boundary; it is not evidence about the post’s subject, contribution, or quality.
+
+No substantive author claims were exposed. Therefore, there is no supporting evidence to evaluate and no content-level limitation that can responsibly be attributed to the author. The checked conclusion is narrower: this retrieval attempt reached a login landing page rather than the assigned post body. The post title, author, body text, images, video, comments, linked material, and underlying primary evidence remain unknown. Their absence from the extraction is not an observed defect in the post.
+
+For reconciliation into the finite XHS backfill inventory, the item does not presently warrant knowledge integration because no content was observed. It also cannot be marked **already covered**: that would require identifying the post’s claims and comparing them with existing library evidence. Nor can it be marked **out of scope**, because its topic and contribution are unknown. The repeated redirect is consistent with the earlier blocked assessments and adds no body-level evidence that would justify changing their disposition.
+
+Completion requires authorized access to enough substantive content from this exact identity to identify its main contribution, evidence, limitations, and relevance. Authentication must not be bypassed, and a search card, inferred metadata, another post, or an unrelated source would not satisfy the assignment. Until authorized retrieval succeeds, preserve the item as access blocked rather than inferring a content disposition.
+
+Assessment incomplete. Preserve the inventory disposition as access blocked / body-level review incomplete. Reassess only if the hosted retrieval process obtains substantive content from this exact post through authorized access; do not bypass authentication or substitute metadata or another source.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6ae8935000000000360101cd",
+  "identity": "https://www.xiaohongshu.com/explore/6ae8935000000000360101cd",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6ae8935000000000360101cd%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T09:30:20.552Z",
+  "sha256": "63467ecb23ccef9f2b92f752eaa772bb582256cd0a080e7688ba724ac645b552",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
+# XHS post 6ae8935000000000360101cd — body review blocked by login redirect
+
+Source identity: https://www.xiaohongshu.com/explore/6ae8935000000000360101cd
+
 ## Assessment 2026-11-07T09:26:36.355Z
 
 Question: Perform a body-level review of XHS post 6ae8935000000000360101cd for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
@@ -130,6 +176,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
