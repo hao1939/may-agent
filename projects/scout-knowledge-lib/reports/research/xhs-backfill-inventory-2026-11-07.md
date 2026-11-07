@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Checkpoint for the finite Xiaohongshu backfill requested after the 2026-11-07 `explore-xhs` run. It preserves every exact run ID still recoverable from workflow evidence, keeps later discoveries separate, records fourteen evidence-backed dispositions, and identifies the workflow's 20-item truncation as the exact gap preventing reconstruction of all 29 run identities."
+summary: "Checkpoint for the finite Xiaohongshu backfill requested after the 2026-11-07 `explore-xhs` run. It preserves every exact run ID still recoverable from workflow evidence, keeps later discoveries separate, records fifteen evidence-backed dispositions, and identifies the workflow's 20-item truncation as the exact gap preventing reconstruction of all 29 run identities."
 triggers: ["XHS backfill", "2026-11-07 explore-xhs", "wr_1794040651688_zrzq", "d66f10ca9325825c"]
 last_updated: "2026-11-07"
 </ai_context>
@@ -44,7 +44,7 @@ Evidence locations:
 | 12 | `6aab4f5f0000000028029fa8` | 智能体失控的事 国安部下场点名 | **Inaccessible.** Retrieval of the exact post identity redirected to a Rednote login URL with this post ID preserved in the redirect parameter and returned only the 39-character login-page text “Log in - rednote - share, connect, love.” No post body, caption, claims, examples, images, video, comments, OCR, transcript, or other substantive content was exposed. This supports only an authentication/body-access blocker, not a substantive characterization or body-level review; do not infer content from the search-card title. Recovery requires an authorized authenticated retrieval of this same post ID that exposes the available body plus materially relevant media text; do not bypass authentication or substitute another post. Durable assessment: [`2026-11-07-source-assessment-4a53f86f1f29.md`](../../knowledge/findings/2026-11-07-source-assessment-4a53f86f1f29.md). |
 | 13 | `6adc2057000000002c017530` | 背下来！你的AI Agent就会很牛 | **Inaccessible.** Retrieval through the authorized XHS browser route preserved the exact post ID but resolved to XHS error `300031` (“Sorry, This Page Isn't Available Right Now”) with only a generic app-scan prompt and site chrome. No post body, author data, comments, or post-specific media was exposed. This supports only an access diagnosis; it does not establish whether the post was deleted, private, region-limited, or temporarily unavailable, and no content is inferred from the search-card title. Recovery requires an authorized exact-source route that exposes the body and materially relevant media text, or authoritative evidence of the post's disposition. Durable assessment: [`2026-11-07-xhs-6adc2057-access-blocked.md`](../../knowledge/findings/2026-11-07-xhs-6adc2057-access-blocked.md). |
 | 14 | `6ae927e0000000000e00da4c` | 别再把AI当聊天搭子，尽早进入Agent时代 | **Inaccessible.** Retrieval through the authorized XHS browser route preserved the exact post ID in the redirect path but resolved to XHS error `300031` (“Sorry, This Page Isn't Available Right Now”) with only generic site chrome and an app-scan prompt. No post body, author data, comments, or post-specific media was exposed. This supports only an access diagnosis; it does not establish whether the post was deleted, private, region-limited, or temporarily unavailable, and no content is inferred from the search-card title. Recovery requires an authorized exact-source route that exposes the body and materially relevant media text, or authoritative evidence of the post's disposition. Durable assessment: [`2026-11-07-xhs-6ae927e0-access-blocked.md`](../../knowledge/findings/2026-11-07-xhs-6ae927e0-access-blocked.md). |
-| 15 | `6aed6919000000000901282b` | 国产智能体平台落地指南 | Pending body review |
+| 15 | `6aed6919000000000901282b` | 国产智能体平台落地指南 | **Inaccessible.** Retrieval through the authorized XHS browser route preserved the exact post ID in the redirect path but resolved to XHS error `300031` (“Sorry, This Page Isn't Available Right Now”) with only generic site chrome and an app-scan prompt. No post body, author data, comments, or post-specific media was exposed. This supports only an access diagnosis; it does not establish whether the post was deleted, private, region-limited, or temporarily unavailable, and no content is inferred from the search-card title. Recovery requires an authorized exact-source route that exposes the body and materially relevant media text, or authoritative evidence of the post's disposition. Durable assessment: [`2026-11-07-xhs-6aed6919-access-blocked.md`](../../knowledge/findings/2026-11-07-xhs-6aed6919-access-blocked.md). |
 | 16 | `6ad9eb15000000002c017145` | 2026 年，个人 Agent 走到了哪一步 | Pending body review |
 | 17 | `6abf9feb000000001403021a` | 10月Agent榜，Codex杀进前三 | Pending body review |
 | 18 | `6ac49125000000001a02bea6` | 当前各家个人Agent的记忆系统是如何构建的 | Pending body review |
@@ -77,16 +77,16 @@ No inference is made that any of these 11 are among the nine unretained IDs.
 
 - Frozen-run total reported by the source workflow: **29**
 - Exact frozen-run identities durably recovered: **20**
-- Evidence-backed dispositions among recovered identities: **14**
+- Evidence-backed dispositions among recovered identities: **15**
   - reviewed and integrated: **1**
   - out of scope with reason: **1**
-  - inaccessible with exact access blocker: **12**
-- Known recovered identities still eligible for body review: **6**
+  - inaccessible with exact access blocker: **13**
+- Known recovered identities still eligible for body review: **5**
 - Frozen-run identities blocked on exact identity recovery: **9**
 - Later discoveries kept separate: **11**
 
-Continue with the 6 known eligible IDs, starting with
-`6aed6919000000000901282b`, without rereading the fourteen dispositioned entries.
+Continue with the 5 known eligible IDs, starting with
+`6ad9eb15000000002c017145`, without rereading the fifteen dispositioned entries.
 In parallel, recover the original nine identities only from an untruncated
 historical receipt or archive for `wr_1794040651688_zrzq`; do not substitute or
 guess from a refreshed search population.
