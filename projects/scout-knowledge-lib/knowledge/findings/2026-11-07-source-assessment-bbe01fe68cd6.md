@@ -2,6 +2,56 @@
 
 Source identity: https://www.xiaohongshu.com/explore/6961ace3000000000903b207
 
+## Assessment 2026-11-07T09:51:41.087Z
+
+Question: Perform a body-level review of XHS post 6961ace3000000000903b207 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the durable inventory.
+
+**Disposition: inaccessible.**
+
+Retrieval of the exact assigned identity, XHS post `6961ace3000000000903b207`, redirected to a Rednote login URL and supplied only the generic text “Log in - rednote - share, connect, love.” This is evidence of an authentication boundary, not body-level evidence from the requested post. It provides no title, author caption, body text, publication date, comments, or other post-specific content.
+
+Consequently, no author contribution, claims, or supporting evidence are available to summarize or evaluate. Scout’s checked conclusion is limited to the retrieval behavior: the authorized procedure reached a generic login landing page rather than the requested post. This does not establish whether the post remains available, what subject it addresses, what claims it makes, or whether it contributes relevant information to the finite 2026-11-07 XHS backfill. Those matters remain unknown, not observed defects in the source.
+
+Any images or image-embedded text, video, audio, captions, comments, outbound links, and cited primary sources remain uninspected. The login page does not establish whether those materials exist, and no linked evidence or primary-source claim can be treated as verified.
+
+The exact blocker is authentication. Recovery requires permitted access through an already authenticated XHS/Rednote browser session, or another authorized retrieval mechanism that returns the body of this exact post. The post body must then be inspected, together with any evidence-bearing media or links necessary to assess its claims. Discovery metadata, a substitute post, or an authentication bypass would not satisfy the assignment.
+
+This bounded assessment is read-only and makes no claim that an artifact was saved or published. Durable preservation, the canonical artifact path, and publication evidence remain the owning workflow’s responsibility. The requested substantive body-level review remains incomplete until authorized retrieval exposes the exact post content.
+
+Assessment incomplete. Use permitted authenticated access, or another authorized retrieval mechanism, to retrieve the body of exact post 6961ace3000000000903b207; then inspect the post and any evidence-bearing media or links. The owning workflow must preserve the assessment and return canonical publication evidence.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6961ace3000000000903b207",
+  "identity": "https://www.xiaohongshu.com/explore/6961ace3000000000903b207",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6961ace3000000000903b207%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T09:51:33.602Z",
+  "sha256": "94075cb87333472dc909fdc598dfde58695c4f6dc136e0c6d4ef1f38020f8804",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
+# XHS post 6961ace3000000000903b207 — inaccessible
+
+Source identity: https://www.xiaohongshu.com/explore/6961ace3000000000903b207
+
 ## Assessment 2026-11-07T09:44:31.641Z
 
 Question: Perform a body-level review of XHS post 6961ace3000000000903b207 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the durable inventory.
@@ -492,6 +542,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
