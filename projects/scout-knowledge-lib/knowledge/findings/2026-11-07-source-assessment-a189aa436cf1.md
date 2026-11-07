@@ -1,3 +1,49 @@
+# XHS post 6aee77c70000000002037f37 — body still inaccessible behind login
+
+Source identity: https://www.xiaohongshu.com/explore/6aee77c70000000002037f37
+
+## Assessment 2026-11-07T09:17:56.692Z
+
+Question: Perform a body-level review of XHS post 6aee77c70000000002037f37 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+The useful finding is a confirmed access blocker, not a substantive finding about the post. Retrieval targeted the exact assigned identity, XHS post `6aee77c70000000002037f37`, but resolved to a Rednote login URL whose redirect points back to that explore identity. The only supplied page text is “Log in - rednote - share, connect, love.” This supports the checked conclusion that the authorized retrieval route encountered an authentication gate at the observation time.
+
+No author claims or body-level evidence are available to assess. The supplied material contains no post body, caption, author details, publication date, images, video, comments, or outbound-link contents. Consequently, the post’s main contribution, supporting evidence, limitations, and relevance to AI-agent research are unknown. The login page is evidence about retrieval status only. The identity embedded in its redirect confirms that the correct item was targeted, but it does not establish whether the post remains published, is deleted, or would be visible after authorized authentication. No search-card metadata was supplied, and none should be treated as a substitute for body-level review.
+
+For reconciliation into the finite 2026-11-07 backfill inventory, the appropriate disposition is **access blocked — post body unavailable because Rednote/XHS login is required**. This identity should not be counted among body-level completed items. It should remain associated with the frozen inventory and must not be replaced by, merged with, or inferred from any of the eleven later search discoveries. This retrieval also supplies no new evidence about the nine identities blocked on recovery of the original untruncated receipt, so that separate status should remain unchanged.
+
+The requested body-level outcome is incomplete. Completion requires authorized access that returns the actual post body, followed by inspection of any media or linked material necessary to evaluate its claims. The current evidence warrants neither an access-control bypass nor a substantive characterization of the post.
+
+Assessment incomplete. See the assessment for missing evidence.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6aee77c70000000002037f37",
+  "identity": "https://www.xiaohongshu.com/explore/6aee77c70000000002037f37",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6aee77c70000000002037f37%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T09:17:38.948Z",
+  "sha256": "48fe79fae02819a2b368483bd94cc0ca9deed3ba30c7fb2a8299a0dd7f0b5e1d",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
 # XHS post 6aee77c70000000002037f37 — body inaccessible behind login
 
 Source identity: https://www.xiaohongshu.com/explore/6aee77c70000000002037f37
@@ -40,3 +86,5 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
