@@ -1,3 +1,5 @@
+import type { AgentTool } from "@earendil-works/pi-agent-core";
+import { Type, type TSchema } from "typebox";
 /**
  * Read tool — adapted from pi-coding-agent.
  *
@@ -17,11 +19,11 @@ import {
   DEFAULT_MAX_LINES,
   formatSize,
   truncateHead,
-  type AgentTool,
+
   type TruncationResult,
-} from "@earendil-works/pi-agent-core";
-import { Type } from "@earendil-works/pi-ai";
-import type { TSchema } from "@earendil-works/pi-ai";
+} from "@earendil-works/pi-coding-agent";
+
+
 import { constants } from "fs";
 import { access as fsAccess, readFile as fsReadFile } from "fs/promises";
 import { resolveReadPath } from "./path-utils.js";

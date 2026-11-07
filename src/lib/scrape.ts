@@ -1,3 +1,4 @@
+import { Type, type TSchema } from "typebox";
 /**
  * scrape_webpage tool — robust web page fetcher for agents.
  *
@@ -9,8 +10,8 @@
  * No external dependencies — uses Node 20 built-in fetch + regex-based HTML stripping.
  */
 
-import { Type } from "@earendil-works/pi-ai";
-import type { TSchema } from "@earendil-works/pi-ai";
+
+
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 
 function textResult(text: string): AgentToolResult<string> {

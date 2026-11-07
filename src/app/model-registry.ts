@@ -1,3 +1,4 @@
+import { LEGACY_ENDPOINT_MODELS } from "./legacy-endpoint-models.js";
 import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
 import type { ModelWithApiKey } from "../lib/types.js";
 
@@ -55,13 +56,13 @@ export function createModelRegistry(env: NodeJS.ProcessEnv = process.env): Model
       apiKey,
     },
     "gpt-5.4": {
-      ...getBuiltinModel("github-copilot", "gpt-5.4"),
+      ...LEGACY_ENDPOINT_MODELS["gpt-5.4"],
       contextWindow: ENDPOINT_CONTEXT_WINDOWS["gpt-5.4"],
       baseUrl,
       apiKey,
     },
     "gpt-5.5": {
-      ...getBuiltinModel("github-copilot", "gpt-5.5"),
+      ...LEGACY_ENDPOINT_MODELS["gpt-5.5"],
       contextWindow: ENDPOINT_CONTEXT_WINDOWS["gpt-5.5"],
       baseUrl,
       apiKey,
@@ -105,7 +106,7 @@ export function createModelRegistry(env: NodeJS.ProcessEnv = process.env): Model
         }
       : {}),
     "claude-opus-4.7": {
-      ...getBuiltinModel("github-copilot", "claude-opus-4.7"),
+      ...LEGACY_ENDPOINT_MODELS["claude-opus-4.7"],
       contextWindow: ENDPOINT_CONTEXT_WINDOWS["claude-opus-4.7"],
       baseUrl,
       apiKey,

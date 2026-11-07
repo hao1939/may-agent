@@ -1,3 +1,4 @@
+import { Type } from "typebox";
 import { describe, it, expect, vi } from "bun:test";
 import {
   createCompactionTransform,
@@ -8,7 +9,7 @@ import {
 } from "./compaction.js";
 import type { CompactionInfo, KeyFacts } from "./compaction.js";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
-import { getCurrentSystemPrompt, getCurrentTools, Type, type Model } from "@earendil-works/pi-ai";
+import { getCurrentSystemPrompt, getCurrentTools, type Model } from "@earendil-works/pi-ai";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -128,6 +129,26 @@ describe("createCompactionTransform", () => {
     }
     expect(messages).toHaveLength(6);
     expect(messages[0]).toMatchObject({ toolsAdded: [read], sections: { scope: "Old scope" } });
+  });
+
+  it("counts custom output after the latest provider usage when deciding to compact", async () => {
+    const assistant = assistantMsg("Ready", 2);
+    if (assistant.role !== "assistant") throw new Error("Expected assistant fixture");
+    assistant.usage.input = 1_000;
+    assistant.usage.totalTokens = 1_000;
+    const messages: AgentMessage[] = [
+      userMsg("Inspect the output", 1),
+      assistant,
+      { role: "bashExecution", command: "read-output", output: "x".repeat(4_000), exitCode: 0,
+        cancelled: false, truncated: false, timestamp: 3 },
+      userMsg("Continue", 4),
+      assistantMsg("Continuing", 5),
+    ];
+    const onCompact = vi.fn();
+    const transform = createCompactionTransform(fakeModel(2_500), { threshold: 0.6, keepRatio: 0.2, onCompact });
+    await transform(messages);
+    expect(onCompact).toHaveBeenCalledTimes(1);
+    expect((onCompact.mock.calls[0][0] as CompactionInfo).tokensBefore).toBeGreaterThanOrEqual(2_000);
   });
 
   it("returns messages unchanged when under threshold", async () => {

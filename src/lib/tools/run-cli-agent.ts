@@ -1,4 +1,5 @@
-import { Type, type Static } from "@earendil-works/pi-ai";
+import { Type, type Static } from "typebox";
+
 import type { AgentMessage, AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { CliCallFacts } from "@may-agent/sdk";
 import type { EventTrace } from "../../app/core/events/bus.js";

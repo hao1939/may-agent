@@ -129,9 +129,14 @@ describe("model registry", () => {
       const result = await response.result();
       expect(result.stopReason).toBe("error");
       expect(result.errorMessage).toContain("payload-captured-no-network");
-      expect(payload).toMatchObject({
-        tools: [{ type: "function", name: "finish", strict: false, parameters }],
-      });
+      const request = payload as { tools?: unknown[]; input: Array<{ type?: string; tools?: unknown[] }> };
+      // Pi 1.5 declares tools in the transcript for models supporting dynamic
+      // additions; other endpoints retain the top-level tools field.
+      const tools =
+        model.compat?.supportsAdditionalTools && model.compat?.supportsMidConvoSystemMessages
+          ? request.input.filter((item) => item.type === "additional_tools").flatMap((item) => item.tools ?? [])
+          : request.tools;
+      expect(tools).toMatchObject([{ type: "function", name: "finish", strict: false, parameters }]);
       if (name === "deepseek-v4-flash") {
         expect(payload).toMatchObject({
           reasoning: { effort: "high", summary: "auto" },

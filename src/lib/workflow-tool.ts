@@ -1,11 +1,12 @@
+import { Type, type TSchema } from "typebox";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 import { prepareTaskWorkspaceContext } from "./task-workspace-context.js";
 import { ExecutionScope, executionTimeout } from "./execution-scope.js";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, realpathSync } from "node:fs";
 import { isAbsolute, join, relative } from "node:path";
-import { Type, StringEnum } from "@earendil-works/pi-ai";
-import type { TSchema } from "@earendil-works/pi-ai";
+import { StringEnum } from "@earendil-works/pi-ai";
+
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { SubagentManager } from "./manager.js";
 import type { SubagentDefinition, TaskResult } from "./types.js";

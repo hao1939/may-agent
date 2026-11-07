@@ -1,3 +1,4 @@
+import { Type } from "typebox";
 /**
  * Tests for session lifecycle bug fixes (Bug 3, 4, 8, 10).
  *
@@ -24,7 +25,7 @@ import {
   appendSessionMessage,
 } from "../../src/lib/persistence.js";
 import { EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
-import { Type } from "@earendil-works/pi-ai";
+
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import { RESPONSES_STREAM_TERMINAL_ERROR } from "../../src/lib/workflow-finish-recovery.js";
 import { fakeModel } from "../fixtures/model.js";

@@ -1,8 +1,9 @@
+import { Type } from "typebox";
 import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { Type, createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
+import { createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
 import { createAgentRun } from "../../src/lib/agent-runner.js";
 import { SubagentManager } from "../../src/lib/manager.js";
 import { currentAgentSessionId } from "../../src/lib/agent-session-context.js";

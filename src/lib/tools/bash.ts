@@ -1,3 +1,5 @@
+import type { AgentTool } from "@earendil-works/pi-agent-core";
+import { Type, type TSchema } from "typebox";
 import { randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
 import {
@@ -18,11 +20,11 @@ import {
 	DEFAULT_MAX_LINES,
 	formatSize,
 	truncateTail,
-	type AgentTool,
+
 	type TruncationResult,
-} from "@earendil-works/pi-agent-core";
-import { Type } from "@earendil-works/pi-ai";
-import type { TSchema } from "@earendil-works/pi-ai";
+} from "@earendil-works/pi-coding-agent";
+
+
 import {
 	addSessionBashProcessGroup,
 	readSessionBashProcessGroups,

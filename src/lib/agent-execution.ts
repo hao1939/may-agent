@@ -1,17 +1,10 @@
+import { type TSchema } from "typebox";
 import type {
   AgentMessage,
   AgentTool,
   BeforeToolCallContext as PiBeforeToolCallContext,
 } from "@earendil-works/pi-agent-core";
-import {
-  createAssistantMessageEventStream,
-  type Api,
-  type AssistantMessage,
-  type AssistantMessageEvent,
-  type StreamFunction,
-  type SimpleStreamOptions,
-  type TSchema,
-} from "@earendil-works/pi-ai";
+import { createAssistantMessageEventStream, type Api, type AssistantMessage, type AssistantMessageEvent, type StreamFunction, type SimpleStreamOptions } from "@earendil-works/pi-ai";
 import { streamSimple } from "@earendil-works/pi-ai/compat";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";

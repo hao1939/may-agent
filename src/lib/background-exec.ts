@@ -1,3 +1,4 @@
+import { Type, type TSchema } from "typebox";
 /**
  * Background exec tool — long-lived child process management.
  *
@@ -8,8 +9,8 @@
  * Used by the coach agent to spawn coachee may-agent processes.
  */
 
-import { Type, StringEnum } from "@earendil-works/pi-ai";
-import type { TSchema } from "@earendil-works/pi-ai";
+import { StringEnum } from "@earendil-works/pi-ai";
+
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import { spawn, type ChildProcess } from "node:child_process";
 import { isMetaRecursionCommand } from "./tools/may-utils.js";

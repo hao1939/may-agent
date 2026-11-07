@@ -1,6 +1,7 @@
+import { Type } from "typebox";
 import { afterEach, expect, it } from "bun:test";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
-import { Type } from "@earendil-works/pi-ai";
+
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

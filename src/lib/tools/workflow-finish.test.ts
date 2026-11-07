@@ -1,9 +1,10 @@
+import { Type } from "typebox";
 import { conversationTurnResultSchema } from "@may-agent/sdk";
 import { describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Type, validateToolArguments, type ToolCall } from "@earendil-works/pi-ai";
+import { validateToolArguments, type ToolCall } from "@earendil-works/pi-ai";
 import { Value } from "typebox/value";
 import { createFinishTool } from "./lifecycle.js";
 import { createWorkflowFinishTool } from "./workflow-finish.js";

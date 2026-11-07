@@ -1,6 +1,7 @@
+import { type TSchema } from "typebox";
 import { readFileWritePolicy, type FileWritePolicy } from "../lib/tools/file-write-policy.js";
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
-import type { TSchema } from "@earendil-works/pi-ai";
+
 import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import {

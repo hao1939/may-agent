@@ -11,15 +11,17 @@ export * from "./run-cli-agent.js";
 export {
   DEFAULT_MAX_BYTES,
   DEFAULT_MAX_LINES,
-  GREP_MAX_LINE_LENGTH,
   formatSize,
   truncateHead,
   truncateLine,
   truncateTail,
-} from "@earendil-works/pi-agent-core";
-export type { TruncationOptions, TruncationResult } from "@earendil-works/pi-agent-core";
+} from "@earendil-works/pi-coding-agent";
+export type { TruncationOptions, TruncationResult } from "@earendil-works/pi-coding-agent";
 export * from "./write.js";
 export * from "./system-status.js";
 export * from "./query-db.js";
 export * from "./lifecycle.js";
 export * from "./checkpoint.js";
+
+// Pi no longer exports this default, retained for the Host tool surface.
+export const GREP_MAX_LINE_LENGTH = 500;
