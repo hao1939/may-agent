@@ -63,6 +63,16 @@ or operator control; never infer authority from a parent link. Preserve exact
 caller answers and remaining obligations when consolidating duplicate wrappers.
 Do not bulk-close old records by phase or commission a new review Task for each.
 
+For a backlog, use `task-disposition-review` with `{appId, limit: 10, cursor?}`.
+It reads existing work without model calls or mutations. Save each returned page
+and its next cursor; retry explicit `retryTaskIds` with `{appId, taskIds}` rather
+than restarting the population scan. `owner-review` is a navigation result, not
+approval: inspect the full original assignment, accepted scope and caller promises
+before recording why the responsibility ends or remains. A finished report or
+snapshot assessment can close while its subject remains waiting, provided the
+review itself owes no follow-through. Preserve that subject's exact owner and
+return route. Check the installed capability before relying on source changes.
+
 ## Source and guidance
 
 Use the original returned decision and its evidence to continue the work.

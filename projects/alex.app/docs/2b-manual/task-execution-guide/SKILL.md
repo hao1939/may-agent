@@ -268,6 +268,19 @@ recurring work. The capability requires the paired Host/SDK source revision in t
 On an older installation, return a missing closure capability
 through the existing owner path, not a reason to create a repeating review job.
 
+For a large Alex backlog, use `task-disposition-review` with
+`{appId: "alex", limit: 10}` and continue with the returned `cursor`.
+Save each page before advancing; retry only `retryTaskIds` through
+`{appId: "alex", taskIds: [...]}`. Its previews and `owner-review` label are
+discovery aids. Read the full exact assignment, accepted scope, original inputs
+and caller expectations before deciding. Preserve standing work, real waits and
+unresolved delivery promises. A completed bounded review may end while its
+subject remains unresolved; close the review's scope, not the subject's outcome.
+Record an explicit reason and use fresh guarded controls through the recorded
+creator or trusted App/operator. Do not invent creator metadata for old work.
+The [backlog trial](../../archive/reviews/task-backlog-disposition-trial-20261107.md)
+shows the real population and an isolated closure trial without live cleanup.
+
 Read the exact accepted result when checking completion. The Task can still
 display `waiting` because another Condition remains open, even after accepting
 `converged` for the addressed input. Use the Task's `acceptedAttempt` reference
