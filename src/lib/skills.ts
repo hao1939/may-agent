@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
-import { dirname, isAbsolute, join, relative } from "node:path";
+import { basename, dirname, isAbsolute, join, relative } from "node:path";
 import { resolveSkillRoots } from "./skill-paths.js";
-import { formatSkillsForPrompt, loadSkillsFromDir } from "@earendil-works/pi-coding-agent";
+import { formatSkillsForPrompt, loadSkillsFromDir, stripFrontmatter } from "@earendil-works/pi-coding-agent";
 
 export type MaySkillScope = "app-agent" | "agent" | "shared";
 
@@ -80,6 +80,13 @@ export async function discoverAgentSkills(opts: {
   const grouped = new Map<string, MaySkill[]>();
 
   for (const item of loaded) {
+    const parentDirName = basename(dirname(item.skill.filePath));
+    if (item.skill.name !== parentDirName) {
+      diagnostics.push(
+        `${item.source.scope}:${item.skill.filePath}: name "${item.skill.name}" does not match parent directory "${parentDirName}"`,
+      );
+      continue;
+    }
     let canonicalPath: string;
     try {
       canonicalPath = realpathSync(item.skill.filePath);
@@ -101,9 +108,7 @@ export async function discoverAgentSkills(opts: {
     }
     const skill: MaySkill = {
       ...item.skill,
-      content: readFileSync(canonicalPath, "utf8")
-        .replace(/^\uFEFF?---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/, "")
-        .trim(),
+      content: stripFrontmatter(readFileSync(canonicalPath, "utf8")),
       filePath: canonicalPath,
       scope: item.source.scope,
       canonicalPath,
