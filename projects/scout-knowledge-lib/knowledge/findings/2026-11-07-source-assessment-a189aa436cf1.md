@@ -1,3 +1,49 @@
+# XHS post 6aee77c70000000002037f37 remains inaccessible behind authentication
+
+Source identity: https://www.xiaohongshu.com/explore/6aee77c70000000002037f37
+
+## Assessment 2026-11-07T09:27:09.935Z
+
+Question: Perform a body-level review of XHS post 6aee77c70000000002037f37 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+Retrieval reached the exact assigned identity, XHS post `6aee77c70000000002037f37`, but the authorized route resolved to a Rednote login URL whose redirect points back to that same explore page. The only supplied page text is “Log in - rednote - share, connect, love.” This supports a checked conclusion about access: authentication blocked body-level retrieval at the recorded observation time. It does not support any conclusion about the post’s subject or quality.
+
+No author claims are available to summarize or evaluate. The supplied material contains no post body, caption, author details, publication date, images, video, comments, or evidence-bearing outbound links. Consequently, the post’s main contribution, supporting evidence, substantive limitations, and relevance to AI-agent research remain unknown. The login page is evidence of an access gate only. Its redirect confirms that the correct identity was targeted, but it does not establish whether the post remains published, was deleted, has another visibility restriction, or would become available after authorized login. No search-card metadata was supplied; even if it had been, it would not satisfy the requested body-level review.
+
+For reconciliation into the finite 2026-11-07 XHS backfill, the defensible disposition is **access blocked — post body unavailable because Rednote/XHS authentication is required**. Retain this exact identity in the frozen inventory. Do not count it among body-level completed posts, label its content irrelevant, or replace it with any of the eleven later discoveries. This retrieval also supplies no evidence that changes the separate status of the nine identities awaiting recovery of the original untruncated receipt.
+
+The requested research outcome remains incomplete. Completion requires authorized retrieval of the actual post body, followed by inspection of its caption and any media or linked material needed to understand and assess its claims. Repeating the same unauthenticated route has again produced only the login gate, so no access-control bypass or unsupported substantive inference is warranted. This bounded call did not write or publish a durable assessment; the workflow must provide any canonical path and Git revision after handling the inaccessible disposition.
+
+Assessment incomplete. Obtain authorized access that returns the exact post body, then inspect its caption and any evidence-bearing images, video, or linked material. Preserve this identity in the frozen inventory and do not substitute a refreshed-search result.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6aee77c70000000002037f37",
+  "identity": "https://www.xiaohongshu.com/explore/6aee77c70000000002037f37",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6aee77c70000000002037f37%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T09:26:57.430Z",
+  "sha256": "57440239fc3903d01c41bfc8537bd7aff2680df27de1e3e3a8fa60b667ddaea5",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
 # XHS post 6aee77c70000000002037f37 remains inaccessible behind login
 
 Source identity: https://www.xiaohongshu.com/explore/6aee77c70000000002037f37
@@ -178,6 +224,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
