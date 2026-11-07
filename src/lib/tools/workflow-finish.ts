@@ -1,5 +1,6 @@
+import { type TSchema } from "typebox";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
-import type { TSchema } from "@earendil-works/pi-ai";
+
 import { admitTaskResultForSchema } from "@may-agent/sdk";
 import { Compile } from "typebox/compile";
 

@@ -1,3 +1,4 @@
+import { Type } from "typebox";
 import { expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -6,7 +7,7 @@ import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { TaskDetail } from "@may-agent/sdk";
 import { createTaskDecisionContext } from "./task-decision-context.js";
 import { prepareTaskWorkspaceContext } from "./task-workspace-context.js";
-import { Type, createAssistantMessageEventStream, getCurrentSystemPrompt, getCurrentTools, type TranscriptContext } from "@earendil-works/pi-ai";
+import { createAssistantMessageEventStream, getCurrentSystemPrompt, getCurrentTools, type TranscriptContext } from "@earendil-works/pi-ai";
 import { createFinishTool } from "./tools/lifecycle.js";
 import { createAgentRun, restoreAgentMessages } from "./agent-runner.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";

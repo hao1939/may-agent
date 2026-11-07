@@ -1,3 +1,4 @@
+import type { AssistantMessage } from "@earendil-works/pi-ai";
 import { describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -54,12 +55,20 @@ function userMessage(text: string): AgentMessage {
   } as AgentMessage;
 }
 
-function assistantMessage(text: string): AgentMessage {
+function assistantMessage(text: string): AssistantMessage {
   return {
     role: "assistant",
     content: [{ type: "text", text }],
+    api: "anthropic-messages",
+    provider: "anthropic",
+    model: "test-model",
+    stopReason: "stop",
+    usage: {
+      input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+    },
     timestamp: Date.now(),
-  } as AgentMessage;
+  };
 }
 
 describe("chat runtime policy", () => {

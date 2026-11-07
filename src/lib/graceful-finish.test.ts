@@ -1,6 +1,7 @@
+import { Type } from "typebox";
 import { afterEach, expect, test } from "bun:test";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
-import { createAssistantMessageEventStream, Type, type Context } from "@earendil-works/pi-ai";
+import { createAssistantMessageEventStream, type Context } from "@earendil-works/pi-ai";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

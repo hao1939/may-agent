@@ -1,5 +1,6 @@
+import { Type } from "typebox";
 import { describe, expect, it } from "bun:test";
-import { Type } from "@earendil-works/pi-ai";
+
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

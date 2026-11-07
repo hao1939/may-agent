@@ -1,3 +1,4 @@
+import { type TSchema } from "typebox";
 import { observeTaskFeedback, type TaskExecutionContext } from "./task-execution-context.js";
 import { prepareTaskWorkspaceContext, taskWorkspacePrompt } from "./task-workspace-context.js";
 /**
@@ -17,7 +18,7 @@ import { createAgentRun, restoreAgentMessages, type AgentRun } from "./agent-run
 import { bindToolsToExecutionScope, prepareAgentExecution } from "./agent-execution.js";
 import { observeExecutionUsage, recoverExecutionUsage, type UsageOutcome } from "./db/execution-usage.js";
 import { extractFinishParams } from "./agent-result.js";
-import type { TSchema } from "@earendil-works/pi-ai";
+
 import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import {

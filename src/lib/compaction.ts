@@ -6,12 +6,10 @@
  * the newest messages verbatim.
  */
 
-import {
-  estimateContextTokens,
-  estimateTokens as estimatePiMessageTokens,
-} from "@earendil-works/pi-agent-core";
+import { estimateContextTokens } from "@earendil-works/pi-ai/utils/estimate";
+import { estimateTokens as estimatePiMessageTokens } from "@earendil-works/pi-coding-agent";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
-import { getCurrentSystemMessage, type Model, type ToolResultMessage } from "@earendil-works/pi-ai";
+import { getCurrentSystemMessage, type Message, type Model, type ToolResultMessage } from "@earendil-works/pi-ai";
 
 const DEFAULT_THRESHOLD = 0.6;
 const DEFAULT_KEEP_RATIO = 0.35;
@@ -85,7 +83,18 @@ function estimateTranscriptTokens(messages: AgentMessage[]): number {
 }
 
 function estimateTokens(messages: AgentMessage[]): number {
-  return Math.max(estimateTranscriptTokens(messages), estimateContextTokens(messages).tokens);
+  const isModelMessage = (message: AgentMessage): message is Message =>
+    message.role === "system" || message.role === "user" || message.role === "assistant" || message.role === "toolResult";
+  const modelMessages = messages.filter(isModelMessage);
+  const estimate = estimateContextTokens(modelMessages);
+  // The provider estimate excludes coding-agent custom messages. Add those
+  // after its last usage record so they cannot disappear behind a larger billed prefix.
+  const usageMessage = estimate.lastUsageIndex === null ? undefined : modelMessages[estimate.lastUsageIndex];
+  const usageIndex = usageMessage ? messages.indexOf(usageMessage) : -1;
+  const customTrailingTokens = messages.slice(usageIndex + 1)
+    .filter((message) => !isModelMessage(message))
+    .reduce((sum, message) => sum + estimateMessageTokens(message), 0);
+  return Math.max(estimateTranscriptTokens(messages), estimate.tokens + customTrailingTokens);
 }
 
 function truncateWithEllipsis(text: string, maxLength: number): string {
@@ -262,14 +271,15 @@ function buildSummary(messages: AgentMessage[], previousSummary: string | null):
   const parts: string[] = ["COMPACTED CONTEXT"];
 
   const originalTask =
-    extractOriginalTask(messages) ??
-    (previousSummary ? extractOriginalTaskFromSummary(previousSummary) : null);
+    extractOriginalTask(messages) ?? (previousSummary ? extractOriginalTaskFromSummary(previousSummary) : null);
   if (originalTask) {
     parts.push(`[Original task]\n${previewWithEllipsis(originalTask, ORIGINAL_TASK_MAX_LENGTH)}`);
   }
 
   if (previousSummary) {
-    parts.push(`_(compacted previous context)_${COMPACTION_SEPARATOR}${trimAccumulatedSummary(previousSummary, MIN_SUMMARY_BUDGET_CHARS)}`);
+    parts.push(
+      `_(compacted previous context)_${COMPACTION_SEPARATOR}${trimAccumulatedSummary(previousSummary, MIN_SUMMARY_BUDGET_CHARS)}`,
+    );
   }
 
   const facts = extractKeyFacts(messages);

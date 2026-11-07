@@ -1,10 +1,11 @@
+import { Type } from "typebox";
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { SubagentManager } from "../../src/lib/index.js";
 import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { readSessionMeta } from "../../src/lib/persistence.js";
-import { Type } from "@earendil-works/pi-ai";
+
 import { fakeModel } from "../fixtures/model.js";
 
 // Minimal fake model that satisfies the Model interface

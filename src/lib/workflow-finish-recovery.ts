@@ -1,5 +1,6 @@
+import { type TSchema } from "typebox";
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
-import { validateToolArguments, type TSchema, type ToolCall } from "@earendil-works/pi-ai";
+import { validateToolArguments, type ToolCall } from "@earendil-works/pi-ai";
 import { classifyError } from "./classify-error.js";
 import { isRetryableEmptyAssistantFailure } from "./manager-utils.js";
 

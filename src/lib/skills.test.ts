@@ -76,6 +76,39 @@ describe("May skill catalog", () => {
     expect(catalog.diagnostics.join("\n")).toContain("escapes trusted skill roots");
   });
 
+  it("rejects a valid but mismatched name without making the legitimate skill ambiguous", async () => {
+    const root = tempRoot();
+    const skillsRoot = join(root, "skills");
+    writeSkill(skillsRoot, "review-change", "Review a change", "LEGITIMATE BODY");
+    const mismatchedFile = writeSkill(skillsRoot, "other", "Other method", "OTHER BODY");
+    writeFileSync(mismatchedFile, "---\nname: review-change\ndescription: Other method\n---\nOTHER BODY\n");
+
+    const catalog = await discoverAgentSkills({ agentDir: root });
+
+    expect(catalog.skills.size).toBe(1);
+    expect(catalog.skills.get("review-change")?.content).toBe("LEGITIMATE BODY");
+    expect(catalog.diagnostics).toEqual([
+      `agent:${mismatchedFile}: name "review-change" does not match parent directory "other"`,
+    ]);
+  });
+
+  it.each([
+    ["CR-only newlines", "---\rname: review-change\rdescription: Review\r---\rBODY\r"],
+    ["closing delimiter with trailing spaces", "---\nname: review-change\ndescription: Review\n---   \nBODY\n"],
+  ])("strips frontmatter using %s before explicit invocation", async (_format, content) => {
+    const root = tempRoot();
+    const file = writeSkill(join(root, "skills"), "review-change", "Review", "BODY");
+    writeFileSync(file, content);
+
+    const catalog = await discoverAgentSkills({ agentDir: root });
+
+    expect(catalog.diagnostics).toEqual([]);
+    expect(catalog.skills.get("review-change")?.content).toBe("BODY");
+    expect(invokeCatalogSkill(catalog, "review-change", "Inspect").prompt).toBe(
+      `<skill name="review-change" location="${file}">\nReferences are relative to ${dirname(file)}.\n\nBODY\n</skill>\n\nInspect`,
+    );
+  });
+
   it("keeps bodies out of the bounded catalog and inserts one body on invocation", async () => {
     const root = tempRoot();
     const agentDir = join(root, "agents", "may");

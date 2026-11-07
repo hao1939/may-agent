@@ -1,3 +1,4 @@
+import { type TSchema } from "typebox";
 import {
   readFileSync,
   writeFileSync,
@@ -16,7 +17,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { SubagentDefinition } from "./types.js";
-import type { TSchema } from "@earendil-works/pi-ai";
+
 import { currentProcessInstance, isProcessInstanceAlive, type PersistedProcessInstance } from "./process-identity.js";
 // DB writes removed from RegistryStore — handled by DbWriter subscriber via EventBus.
 import { log } from "./log.js";
