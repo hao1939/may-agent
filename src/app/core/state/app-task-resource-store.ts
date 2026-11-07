@@ -1033,7 +1033,9 @@ export class AppTaskResourceStore {
    * their parent chain, direct children, dependencies, attempts, Conditions,
    * and completed direct children, but never unrelated App history. A current
    * projection may bound direct children and omit attempt and completed-child
-   * history. A child limit of zero omits related children entirely.
+   * history. Selected children add only direct dependency evidence and parent
+   * metadata, not transitive dependency graphs. A child limit of zero omits
+   * related children entirely.
    */
   readTaskContext(
     input: {
@@ -1049,7 +1051,7 @@ export class AppTaskResourceStore {
     const requested = new Set([...input.taskIds].map((id) => id.trim()).filter(Boolean));
     const resources: Record<string, AppTaskResource> = {};
     const taskTriggers: Record<string, AppTaskTrigger> = {};
-    const loadRelatedResources = (taskIds: Iterable<string>): void => {
+    const loadRelatedResources = (taskIds: Iterable<string>, followDependencies = true): void => {
       const pending = new Set([...taskIds].filter((id) => !resources[id]));
       while (pending.size > 0) {
         const ids = [...pending];
@@ -1069,7 +1071,7 @@ export class AppTaskResourceStore {
           const resource = parseTaskResource(row.resource_json);
           resources[row.task_id] = resource;
           if (row.trigger_json) taskTriggers[row.task_id] = parseJson<AppTaskTrigger>(row.trigger_json);
-          for (const relatedId of [resource.spec.parentId, ...(resource.spec.dependsOn ?? [])]) {
+          for (const relatedId of [resource.spec.parentId, ...(followDependencies ? resource.spec.dependsOn ?? [] : [])]) {
             if (relatedId && !resources[relatedId]) pending.add(relatedId);
           }
         }
@@ -1122,10 +1124,10 @@ export class AppTaskResourceStore {
       }
     }
 
-    // Children are selected after the requested graph. Expand only their parent
-    // and dependency evidence, without selecting more children or dependents.
+    // Child readiness needs only direct dependency state. Follow parent metadata
+    // without traversing those dependencies' own dependency graphs.
     loadRelatedResources(Object.values(resources).flatMap((resource) =>
-      [resource.spec.parentId, ...(resource.spec.dependsOn ?? [])]));
+      [resource.spec.parentId, ...(resource.spec.dependsOn ?? [])]), false);
 
     const requestedConditionIds = [...new Set([...(input.conditionIds ?? [])].map((id) => id.trim()).filter(Boolean))];
     if (requestedConditionIds.length > 0) {
