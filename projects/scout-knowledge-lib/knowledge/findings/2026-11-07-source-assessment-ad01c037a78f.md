@@ -2,6 +2,52 @@
 
 Source identity: https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7
 
+## Assessment 2026-11-07T09:26:51.059Z
+
+Question: Perform a body-level review of XHS post 6adeb34e00000000150130b7 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+**Supported disposition: inaccessible.** The current retrieval targeted exactly XHS post `6adeb34e00000000150130b7` at `https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7`; no alternate post or refreshed search result was substituted. It resolved to `https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6adeb34e00000000150130b7%3FexSource%3Dnull`. The redirect preserves the requested identity, and the sole supplied excerpt—“Log in - rednote - share, connect, love”—is direct evidence that this unauthenticated retrieval encountered a Rednote login gate. It independently agrees with the earlier recorded attempts.
+
+No post-author contribution or claim is available to assess. The supplied material contains no post title, body, author identity, image or video content, captions, outbound links, implementation details, or engagement context. The slogan is platform interface text, not content attributable to the post. Consequently, the post’s subject, argument, supporting evidence, limitations, and relevance to AI-agent research are unknown. Any substantive characterization based on the identifier, redirect, or search-card metadata would be unsupported.
+
+The checked conclusion is deliberately narrow: authentication blocked body-level access to the exact target. This is sufficient for the finite backfill inventory to reconcile the identity as **inaccessible — redirected to Rednote login**. It is not evidence that the post or any linked material is defective; neither was inspected. No access-control bypass was attempted.
+
+The requested substantive review remains incomplete. Completion would require authorized access exposing the actual post body and any material media or links. This read-only assessment also cannot establish a published canonical path or Git revision; those publication facts must be generated and verified by the surrounding archive/publication workflow.
+
+Assessment incomplete. The surrounding workflow should archive/publish this inaccessible disposition and return the canonical path and Git revision. A substantive review requires a future authorized retrieval exposing the post body and material media or links, without bypassing access controls.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7",
+  "identity": "https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6adeb34e00000000150130b7%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T09:26:42.812Z",
+  "sha256": "a802dfb7238d700e89d360710772cb000b2f4f8b03ff5970f225d0df0d04cd53",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
+# XHS post 6adeb34e00000000150130b7 — inaccessible behind Rednote login
+
+Source identity: https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7
+
 ## Assessment 2026-11-07T09:23:27.322Z
 
 Question: Perform a body-level review of XHS post 6adeb34e00000000150130b7 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
@@ -132,6 +178,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
