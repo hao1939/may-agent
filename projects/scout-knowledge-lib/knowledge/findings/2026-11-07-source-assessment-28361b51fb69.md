@@ -1,3 +1,51 @@
+# XHS post 6ab7046b00000000140305a3 — inaccessible at login boundary
+
+Source identity: https://www.xiaohongshu.com/explore/6ab7046b00000000140305a3
+
+## Assessment 2026-11-07T15:31:08.787Z
+
+Question: Perform a body-level review of XHS post 6ab7046b00000000140305a3 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+**Disposition: inaccessible.** The exact requested identity is XHS post `6ab7046b00000000140305a3` at `https://www.xiaohongshu.com/explore/6ab7046b00000000140305a3`. The supplied retrieval redirects to a Rednote login URL and exposes only the complete interface string “Log in - rednote - share, connect, love.” This is login-page chrome, not search-card metadata, post-body text, or media-derived evidence.
+
+The post’s main contribution cannot be determined from this receipt. No title, caption, author claim, argument, example, hashtag, comment, or other substantive body content was supplied. There is likewise no image OCR, video transcript, alt text, or meaningful media description. Consequently, there is no supporting evidence with which to assess factual support, limitations, novelty, or substantive relevance to the finite 2026-11-07 XHS backfill. These properties are unknown, not observed defects in the post.
+
+The current receipt reproduces the earlier authentication outcome and adds no body-level coverage. It supports the checked conclusion that this retrieval path is blocked at the login boundary. It does not support concluding that the post is empty, irrelevant, unsupported, or already covered. The requested body-level review therefore remains unfinished.
+
+Recovery requires a policy-compliant authenticated, untruncated retrieval for this same stable post ID that exposes all available body text and materially relevant media text, including image OCR or a video transcript where applicable. Access controls must not be bypassed, and another post must not be substituted. If this identity is among the nine historically truncated identities, the new receipt must additionally satisfy the assignment’s untruncated-receipt requirement associated with workflow run `wr_1794040651688_zrzq`.
+
+This bounded call is read-only and does not establish durable save or publication. The owning workflow must preserve the access record, publish the assessment, and return the canonical path and publication evidence before the complete assignment can be accepted.
+
+Assessment incomplete. See the assessment for missing evidence.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6ab7046b00000000140305a3",
+  "identity": "https://www.xiaohongshu.com/explore/6ab7046b00000000140305a3",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6ab7046b00000000140305a3%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T15:31:00.877Z",
+  "sha256": "8934dee9997006ee9b12c84a4beac90edfbec7210cc46befd68cffd474813bb5",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
 # XHS post 6ab7046b00000000140305a3 — inaccessible behind login
 
 Source identity: https://www.xiaohongshu.com/explore/6ab7046b00000000140305a3
@@ -840,6 +888,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
