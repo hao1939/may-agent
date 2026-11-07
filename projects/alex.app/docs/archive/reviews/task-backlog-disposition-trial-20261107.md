@@ -11,6 +11,10 @@ creator closure capability. Both GitHub checks passed on that revision.
 No live Task was closed, cancelled, reactivated or assigned a new review job.
 Source integration does not activate the new workflow in existing sessions.
 
+**Later follow-through:** The [November 8 live disposition record](task-backlog-live-disposition-20261108.md)
+documents nine subsequent live closures. The no-live-change statements here
+describe this isolated trial only.
+
 ## The practical refinement
 
 The [lifecycle contract](../../2a-design/task-resource-engine.md#state-and-continuing-responsibility)

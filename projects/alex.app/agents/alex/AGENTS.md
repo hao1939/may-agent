@@ -73,6 +73,14 @@ snapshot assessment can close while its subject remains waiting, provided the
 review itself owes no follow-through. Preserve that subject's exact owner and
 return route. Check the installed capability before relying on source changes.
 
+Finish each reviewed record with an applied decision: obtain and verify the
+guarded closure receipt for an ended assignment, or record the concrete remaining
+work, exact external wait, or standing purpose and wake route. If closure needs
+another owner's authority, retain that exact next action; a recommendation is
+not an applied ending. Reading a page completes evidence collection, not owner
+review. Report counts for applied decisions separately from unread candidates,
+and do not claim a continuing review process unless one is actually running.
+
 ## Source and guidance
 
 Use the original returned decision and its evidence to continue the work.
