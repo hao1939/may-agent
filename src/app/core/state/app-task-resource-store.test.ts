@@ -406,6 +406,43 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
+  it("loads selected children's dependency evidence without expanding the child frontier", () => {
+    const store = open();
+    try {
+      const tree = fixture();
+      const selected = resource("child-00");
+      selected.spec.parentId = "normal";
+      selected.spec.dependsOn = ["dependency"];
+      const dependency = resource("dependency", "converged");
+      dependency.spec.parentId = "other-parent";
+      dependency.status.observedGeneration = dependency.metadata.generation;
+      const dependent = resource("unrelated-dependent");
+      dependent.spec.dependsOn = ["dependency"];
+      const grandchild = resource("grandchild");
+      grandchild.spec.parentId = selected.metadata.id;
+      const dependencyChild = resource("dependency-child");
+      dependencyChild.spec.parentId = dependency.metadata.id;
+      tree.resources = { normal: tree.resources!.normal!, "child-00": selected, dependency,
+        "unrelated-dependent": dependent, grandchild, "dependency-child": dependencyChild,
+        "other-parent": resource("other-parent") };
+      for (let index = 1; index < 20; index += 1) {
+        const child = resource(`child-${String(index).padStart(2, "0")}`);
+        child.spec.parentId = "normal";
+        tree.resources[child.metadata.id] = child;
+      }
+      tree.attempts = {};
+      tree.taskTriggers = {};
+      store.bootstrapSnapshot(tree, "dependency-context");
+
+      const context = store.readTaskContext({ taskIds: ["normal"] }, { includeHistory: false, childLimit: 1 });
+      expect(Object.keys(context.resources ?? {}).sort()).toEqual(["child-00", "dependency", "normal", "other-parent"]);
+      expect(context.resources?.dependency?.status).toMatchObject({ phase: "converged", observedGeneration: 1 });
+      expect(context.attempts).toEqual({});
+    } finally {
+      store.close();
+    }
+  });
+
   it("keeps cancelled children out of the live context limit and reads their terminal facts separately", () => {
     const store = open();
     try {

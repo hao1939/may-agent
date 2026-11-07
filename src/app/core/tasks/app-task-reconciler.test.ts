@@ -3129,6 +3129,82 @@ describe("App task reconciler state", () => {
     });
   });
 
+  it.each([1, 2])("excludes attention children ended by generation-%s receipts before the live limit", (receiptGeneration) => {
+    const { config } = fixture();
+    const fence = config.resourceStore.readTask("categorized-task")!;
+    const resources = Array.from({ length: 20 }, (_, index) => {
+      const resource = structuredClone(fence);
+      resource.metadata = { id: `child-${String(index).padStart(2, "0")}`, generation: 1, resourceVersion: 1 };
+      resource.spec.parentId = "pipeline-monitor";
+      resource.status.phase = index < 18 ? "attention" : "pending";
+      return resource;
+    });
+    // An older receipt must not hide a newer assignment with the same identity.
+    resources[18]!.metadata.generation = receiptGeneration + 1;
+    const receipts: TaskCompletionReceipt[] = resources.slice(0, 19).map((resource) => ({
+      metadata: { ...resource.metadata, generation: receiptGeneration },
+      specHash: "historical-spec",
+      parentId: resource.spec.parentId,
+      outcome: resource.spec.outcome,
+      acceptance: resource.spec.acceptance,
+      owner: "app-owner",
+      handler: "agent:app-owner",
+      summary: "Accepted historical completion",
+      facts: ["historical-result-preserved"],
+      acceptanceBasis: { method: "agent-judgment", facts: [] },
+      failureFingerprints: [],
+      completedAt: new Date().toISOString(),
+    }));
+    expect(config.resourceStore.commit({
+      fences: [{ taskId: fence.metadata.id, resourceVersion: fence.metadata.resourceVersion }],
+      tasks: resources.map((resource) => ({ resource, ready: resource.status.phase === "pending" })),
+      receipts,
+    })).toBe(true);
+
+    const context = readAppTaskChildContext(config, "pipeline-monitor");
+    expect(context.live.map(({ taskId }) => taskId)).toEqual(["child-18", "child-19"]);
+    expect(context.completed).toHaveLength(8);
+    for (const resource of resources.slice(0, 18)) {
+      expect(readRuntimeTaskView({ taskStateConfig: config }, resource.metadata.id)).toMatchObject({ status: "done" });
+      expect(config.resourceStore.listLiveTaskIds("pipeline-monitor")).not.toContain(resource.metadata.id);
+    }
+    expect(readRuntimeTaskView({ taskStateConfig: config }, "child-18")).toMatchObject({ status: "pending" });
+  });
+
+  it("loads current accepted dependencies under other parents for queued child readiness", () => {
+    const { config } = fixture();
+    const dependency = { ...intent(), id: "outside-dependency", outcome: "Produce reusable evidence" };
+    const dependencyClaim = declareAndClaimTask(config, {
+      intent: dependency, appAgent: "app-owner", handler: "workflow:known-workflow",
+    });
+    if (dependencyClaim.kind !== "claimed") throw new Error("Expected dependency claim");
+    completeAppTask(config, dependencyClaim, { summary: "Accepted current evidence" });
+    const child = declareAndClaimTask(config, {
+      intent: { ...intent(), id: "queued-child", parentId: "categorized-task", dependsOn: [dependency.id] },
+      appAgent: "app-owner", handler: "workflow:known-workflow",
+    });
+    if (child.kind !== "claimed") throw new Error("Expected child claim");
+    completeAppTask(config, child, { summary: "First input handled" });
+    recordAppTaskTrigger(config, child.taskId, { type: "source.changed", data: { revision: 2 } });
+
+    const context = readAppTaskChildContext(config, "categorized-task");
+    expect(context.live).toHaveLength(1);
+    expect(context.live[0]).toMatchObject({
+      taskId: child.taskId, phase: "pending", readiness: { state: "ready", relatedTaskIds: [] },
+    });
+    expect(readRuntimeTaskView({ taskStateConfig: config }, child.taskId)).toMatchObject({ status: "pending" });
+    expect(config.resourceStore.readTask(child.taskId)?.status.phase).toBe("converged");
+
+    observeAppTaskIntent(config, {
+      appAgent: "app-owner", intent: { ...dependency, outcome: "Produce revised evidence" },
+    });
+    expect(readAppTaskChildContext(config, "categorized-task").live[0]).toMatchObject({
+      readiness: { state: "dependency-blocked", relatedTaskIds: [dependency.id] },
+    });
+    expect(claimObservedAppTask(config, { taskId: child.taskId, appAgent: "app-owner", handler: "auto" }))
+      .toMatchObject({ kind: "waiting", dependencyIds: [dependency.id] });
+  });
+
   it("supplies a bounded App-wide live snapshot without the reviewing task", () => {
     const f = fixture();
     const { config } = f;

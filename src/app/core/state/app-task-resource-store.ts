@@ -1049,31 +1049,33 @@ export class AppTaskResourceStore {
     const requested = new Set([...input.taskIds].map((id) => id.trim()).filter(Boolean));
     const resources: Record<string, AppTaskResource> = {};
     const taskTriggers: Record<string, AppTaskTrigger> = {};
-    const pending = new Set(requested);
-
-    while (pending.size > 0) {
-      const ids = [...pending];
-      pending.clear();
-      const rows = this.db
-        .prepare(
-          `SELECT task_id, resource_json, trigger_json FROM app_tasks
-           WHERE app_id = ? AND task_id IN (${ids.map(() => "?").join(", ")})`,
-        )
-        .all(this.appId, ...ids) as Array<{
-        task_id?: string;
-        resource_json?: string;
-        trigger_json?: string | null;
-      }>;
-      for (const row of rows) {
-        if (!row.task_id || !row.resource_json || resources[row.task_id]) continue;
-        const resource = parseTaskResource(row.resource_json);
-        resources[row.task_id] = resource;
-        if (row.trigger_json) taskTriggers[row.task_id] = parseJson<AppTaskTrigger>(row.trigger_json);
-        for (const relatedId of [resource.spec.parentId, ...(resource.spec.dependsOn ?? [])]) {
-          if (relatedId && !resources[relatedId]) pending.add(relatedId);
+    const loadRelatedResources = (taskIds: Iterable<string>): void => {
+      const pending = new Set([...taskIds].filter((id) => !resources[id]));
+      while (pending.size > 0) {
+        const ids = [...pending];
+        pending.clear();
+        const rows = this.db
+          .prepare(
+            `SELECT task_id, resource_json, trigger_json FROM app_tasks
+             WHERE app_id = ? AND task_id IN (${ids.map(() => "?").join(", ")})`,
+          )
+          .all(this.appId, ...ids) as Array<{
+          task_id?: string;
+          resource_json?: string;
+          trigger_json?: string | null;
+        }>;
+        for (const row of rows) {
+          if (!row.task_id || !row.resource_json || resources[row.task_id]) continue;
+          const resource = parseTaskResource(row.resource_json);
+          resources[row.task_id] = resource;
+          if (row.trigger_json) taskTriggers[row.task_id] = parseJson<AppTaskTrigger>(row.trigger_json);
+          for (const relatedId of [resource.spec.parentId, ...(resource.spec.dependsOn ?? [])]) {
+            if (relatedId && !resources[relatedId]) pending.add(relatedId);
+          }
         }
       }
-    }
+    };
+    loadRelatedResources(requested);
 
     const requestedChildLimit = options.childLimit;
     if (requested.size > 0 && requestedChildLimit !== 0) {
@@ -1102,6 +1104,9 @@ export class AppTaskResourceStore {
                  WHERE relation.app_id = ? AND relation.relation_kind = 'parent'
                    AND NOT EXISTS (SELECT 1 FROM app_task_cancellations c
                      WHERE c.app_id = task.app_id AND c.task_id = task.task_id)
+                   AND NOT EXISTS (SELECT 1 FROM app_task_receipts r
+                     WHERE r.app_id = task.app_id AND r.receipt_id = task.task_id
+                       AND json_extract(r.receipt_json, '$.metadata.generation') >= task.generation)
                    AND relation.target_task_id IN (${relatedTo.map(() => "?").join(", ")})
                ) WHERE position <= ?`,
         )
@@ -1116,6 +1121,11 @@ export class AppTaskResourceStore {
         if (row.trigger_json) taskTriggers[row.task_id] = parseJson<AppTaskTrigger>(row.trigger_json);
       }
     }
+
+    // Children are selected after the requested graph. Expand only their parent
+    // and dependency evidence, without selecting more children or dependents.
+    loadRelatedResources(Object.values(resources).flatMap((resource) =>
+      [resource.spec.parentId, ...(resource.spec.dependsOn ?? [])]));
 
     const requestedConditionIds = [...new Set([...(input.conditionIds ?? [])].map((id) => id.trim()).filter(Boolean))];
     if (requestedConditionIds.length > 0) {
@@ -1424,11 +1434,14 @@ export class AppTaskResourceStore {
       this.db
         .prepare(
           `SELECT task_id FROM app_tasks
-           WHERE app_id = ? AND task_id <> ? AND phase <> 'converged'
+           WHERE app_id = ? AND task_id <> ? AND (${TASK_VIEW_PHASE_SQL}) <> 'converged'
              AND NOT EXISTS (
                SELECT 1 FROM app_task_cancellations c
                WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id
              )
+             AND NOT EXISTS (SELECT 1 FROM app_task_receipts r
+               WHERE r.app_id = app_tasks.app_id AND r.receipt_id = app_tasks.task_id
+                 AND json_extract(r.receipt_json, '$.metadata.generation') >= app_tasks.generation)
            ORDER BY updated_at DESC, task_id LIMIT ?`,
         )
         .all(this.appId, excludeTaskId, boundedLimit) as Array<{ task_id?: string }>
