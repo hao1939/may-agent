@@ -1,3 +1,49 @@
+# XHS post 6abf8d0e0000000002011add — inaccessible behind authentication
+
+Source identity: https://www.xiaohongshu.com/explore/6abf8d0e0000000002011add
+
+## Assessment 2026-11-07T10:25:41.477Z
+
+Question: Perform a body-level review of XHS post 6abf8d0e0000000002011add for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+**Disposition: inaccessible.** The exact source remains XHS post ID `6abf8d0e0000000002011add` at `https://www.xiaohongshu.com/explore/6abf8d0e0000000002011add`. The current retrieval redirected to a Rednote login URL whose redirect path preserves that same identity. The entire supplied document is “Log in - rednote - share, connect, love.” This is platform login-page interface copy, not the post body, caption, comments, image-derived text, video transcript, or other post-specific evidence.
+
+No main contribution or author claim can therefore be identified. There are no available examples, arguments, implementation details, results, citations, or supporting evidence to evaluate. The post’s substantive limitations and relevance to the requested research question also remain unknown. These are access-caused evidence gaps, not observed defects in the post. Although the supplied excerpt covers all 39 extracted characters, that coverage applies only to the returned login document and does not constitute reading any portion of the underlying post or inspecting its media.
+
+The governing frozen-inventory report confirms that this exact identity is item 11 and records the search-card title “Personal Agent，会成为下个入口吗🤔”. That title is card metadata only and is not sufficient to characterize the post’s body or infer its thesis. The inventory also points to the durable assessment at `/app/projects/scout-knowledge-lib/knowledge/findings/2026-11-07-source-assessment-c0465e9c2743.md`. The present receipt adds no body-level evidence beyond the prior inaccessible assessments and supports retaining, rather than substantively revising, that disposition. This read-only call does not itself establish a publication revision.
+
+The exact blocker is authentication-gated access: unauthenticated retrieval returned a login page instead of the requested content. Recovery requires a policy-compliant, authorized authenticated retrieval for this same post ID that produces an untruncated receipt containing the available post body and any materially relevant caption, image text, or video transcript. No login bypass, substitute post, or inference from the search-card title is warranted.
+
+Assessment incomplete. Use an authorized authenticated retrieval for this exact post ID, without bypassing access controls, and obtain an untruncated receipt containing the post body and any material media text. The owning workflow should retain the existing durable record and provide publication revision evidence if required for final reconciliation.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6abf8d0e0000000002011add",
+  "identity": "https://www.xiaohongshu.com/explore/6abf8d0e0000000002011add",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6abf8d0e0000000002011add%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T10:25:22.373Z",
+  "sha256": "387930d5ed16a43ec6bbb74316518678243a874c36cc93b758e5bf0b914192bf",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
 # XHS post 6abf8d0e0000000002011add — inaccessible behind login
 
 Source identity: https://www.xiaohongshu.com/explore/6abf8d0e0000000002011add
@@ -438,6 +484,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
