@@ -100,6 +100,24 @@ be treated as archived. Age, an empty queue, and `converged` alone cannot supply
 that judgment. Use a bounded review of existing outcomes and caller links, not
 one new evaluator Task for every old record.
 
+For large existing populations, Alex's read-only `task-disposition-review`
+workflow returns at most ten records per call with a continuation cursor,
+bounded assignment/result previews, exact accepted-attempt/version references,
+and explicit identities needing another read. It distinguishes ended history,
+configured standing work, current obligations and records needing owner judgment.
+These are review recommendations, not new Task states or closure authorization.
+Save completed pages and retry failures separately so one bad read does not hide
+work or restart the whole scan. Re-read full evidence and current fences before
+any effect; a live traversal is not an atomic population snapshot.
+
+An independent snapshot review owes its assessment, not fulfillment of the
+subject's entire outcome. A report intake owes its declared disposition and any
+follow-through it actually accepted. Ending either does not end the subject or
+silently release a promise to verify its eventual result. The
+[backlog trial](../archive/reviews/task-backlog-disposition-trial-20261107.md)
+records a traversal of all 544 existing Alex records and eight guarded closures
+in an isolated copy, preserving unrelated work and accepted evidence.
+
 ## One lifecycle baseline
 
 One Task lifecycle serves ordinary work, maintenance and Conversation.
