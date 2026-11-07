@@ -1,0 +1,42 @@
+# XHS post 6adeb34e00000000150130b7 — inaccessible behind Rednote login
+
+Source identity: https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7
+
+## Assessment 2026-11-07T09:21:32.227Z
+
+Question: Perform a body-level review of XHS post 6adeb34e00000000150130b7 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+**Supported disposition: inaccessible.** Retrieval of the exact requested identity, XHS post `6adeb34e00000000150130b7`, did not expose the post body. The requested XHS URL resolved instead to `https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fdiscovery%2Fitem%2F6adeb34e00000000150130b7%3FexSource%3Dnull`. The only extracted text was “Log in - rednote - share, connect, love.” This is direct evidence of a login gate and redirect for the target identity.
+
+There are no post-author claims available to assess. The supplied text contains neither a title nor body text, author information, images, captions, outbound links, engagement context, or other substantive material from the post. Accordingly, no topic, argument, evidence, implementation detail, or relevance claim about the post itself can be supported. In particular, the login-page slogan must not be interpreted as content from the target post.
+
+The evidence does support a narrow operational conclusion: body-level review is presently blocked by Rednote authentication. This satisfies the assignment’s requirement to record exact login evidence without bypassing access controls, but it does not satisfy the requested substantive review. No defect in the post or its linked material was observed; those materials were simply unavailable in this retrieval.
+
+For the 2026-11-07 backfill inventory, this identity should therefore be reconciled as **inaccessible — redirected to Rednote login**, rather than reviewed, already covered, or out of scope. A future authorized retrieval would need to expose the actual body and any material media or links before the post can be characterized or integrated. This bounded call was read-only, so it provides no canonical assessment path or Git revision; those publication details must come from the workflow after it archives this assessment.
+
+Assessment incomplete. See the assessment for missing evidence.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7",
+  "identity": "https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fdiscovery%2Fitem%2F6adeb34e00000000150130b7%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T09:21:16.335Z",
+  "sha256": "2d1b2ed16b5d1a18d1b9dd7434351d69eae1cc84f9fd81bd33d4e0bd7225e262",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
