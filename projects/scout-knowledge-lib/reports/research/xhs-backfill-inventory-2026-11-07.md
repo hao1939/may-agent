@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Checkpoint for the finite Xiaohongshu backfill requested after the 2026-11-07 `explore-xhs` run. It preserves every exact run ID still recoverable from workflow evidence, keeps later discoveries separate, records five evidence-backed dispositions, and identifies the workflow's 20-item truncation as the exact gap preventing reconstruction of all 29 run identities."
+summary: "Checkpoint for the finite Xiaohongshu backfill requested after the 2026-11-07 `explore-xhs` run. It preserves every exact run ID still recoverable from workflow evidence, keeps later discoveries separate, records six evidence-backed dispositions, and identifies the workflow's 20-item truncation as the exact gap preventing reconstruction of all 29 run identities."
 triggers: ["XHS backfill", "2026-11-07 explore-xhs", "wr_1794040651688_zrzq", "d66f10ca9325825c"]
 last_updated: "2026-11-07"
 </ai_context>
@@ -33,7 +33,7 @@ Evidence locations:
 | 1 | `6961ace3000000000903b207` | 大家将agent称为“智能体”？我已经搞明白了！ | **Inaccessible.** Retrieval of the exact post identity redirected to a Rednote login screen and returned only “Log in - rednote - share, connect, love,” with no post body or post-specific content. Recovery requires permitted access through an already authenticated XHS/Rednote browser session, or another authorized retrieval mechanism that returns the exact post body; do not use a login bypass or substitute source. Durable assessment: [`2026-11-07-source-assessment-bbe01fe68cd6.md`](../../knowledge/findings/2026-11-07-source-assessment-bbe01fe68cd6.md). |
 | 2 | `6aee77c70000000002037f37` | 一群AI组队干活？先泼盆冷水 | **Inaccessible.** Retrieval of the exact post identity redirected to a Rednote/XHS login page and returned only “Log in - rednote - share, connect, love,” with no post body, caption, author details, media, comments, or links. This is retrieval evidence only and does not support a substantive characterization or body-level review. Recovery requires authorized access that returns the actual post body; do not bypass login or substitute search-card metadata. Durable assessment: [`2026-11-07-source-assessment-a189aa436cf1.md`](../../knowledge/findings/2026-11-07-source-assessment-a189aa436cf1.md). |
 | 3 | `6adeb34e00000000150130b7` | 别再折腾多Agent编排了：Claude | **Inaccessible.** Retrieval of the exact post identity redirected to a Rednote login page and returned only “Log in - rednote - share, connect, love,” with no title, body, author identity, images, captions, video, outbound links, implementation details, or engagement context. This supports only an authentication blocker, not any characterization of the post. Recovery requires authorized retrieval that exposes the actual post body and any material media or links; do not bypass login or infer content from search-card metadata. Durable assessment: [`2026-11-07-source-assessment-ad01c037a78f.md`](../../knowledge/findings/2026-11-07-source-assessment-ad01c037a78f.md). |
-| 4 | `6ae8935000000000360101cd` | 曾经爆火的 Coze，为什么走到这一步？ | Pending body review |
+| 4 | `6ae8935000000000360101cd` | 曾经爆火的 Coze，为什么走到这一步？ | **Inaccessible.** Retrieval of the exact post identity redirected to a Rednote login page and returned only “Log in - rednote - share, connect, love,” with no post body, title, author identity, images, video, comments, linked sources, or underlying primary evidence. This supports only an authentication blocker, not a content-level disposition. Recovery requires authorized retrieval of this exact post's substantive body or media; do not bypass authentication or substitute another post or search-card metadata. Durable assessment: [`2026-11-07-source-assessment-ad621f72c274.md`](../../knowledge/findings/2026-11-07-source-assessment-ad621f72c274.md). |
 | 5 | `6ad5542b000000000c00e056` | Agent沙箱卷到25ms，然后集体翻车 | **Reviewed and integrated.** Complete readable body and visible comments were reviewed; the durable finding is [`2026-11-07-agent-sandbox-control-plane-boundary.md`](../../knowledge/findings/2026-11-07-agent-sandbox-control-plane-boundary.md). Attached images and cited primary sources were not inspected. |
 | 6 | `6ade2282000000002a0397c4` | ORCA实测：最强智能体综合管理工具 | Pending body review |
 | 7 | `6ab358e60000000015004988` | agent 夯拉榜 | Pending body review |
@@ -77,16 +77,16 @@ No inference is made that any of these 11 are among the nine unretained IDs.
 
 - Frozen-run total reported by the source workflow: **29**
 - Exact frozen-run identities durably recovered: **20**
-- Evidence-backed dispositions among recovered identities: **5**
+- Evidence-backed dispositions among recovered identities: **6**
   - reviewed and integrated: **1**
   - out of scope with reason: **1**
-  - inaccessible with exact authentication blocker: **3**
-- Known recovered identities still eligible for body review: **15**
+  - inaccessible with exact authentication blocker: **4**
+- Known recovered identities still eligible for body review: **14**
 - Frozen-run identities blocked on exact identity recovery: **9**
 - Later discoveries kept separate: **11**
 
-Continue with the 15 known eligible IDs, starting with
-`6ae8935000000000360101cd`, without rereading the five dispositioned entries. In
+Continue with the 14 known eligible IDs, starting with
+`6ade2282000000002a0397c4`, without rereading the six dispositioned entries. In
 parallel, recover the original nine identities only from an untruncated
 historical receipt; do not substitute or guess from a refreshed search
 population.
