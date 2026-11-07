@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Nanocodex commit a6e91abe shows that granting an agent permission to run is not enough to secure durable file exchange. Its Connect design carries grant identity through immutable input receipts, turn ownership, artifact publication, and exact read routes, while explicitly leaving the agent's shared brain outside that isolation boundary."
-triggers: ["agent file transfer", "capability grant", "durable inputs", "agent artifacts", "grant-scoped storage", "turn ownership", "Nanocodex", "Connect"]
-last_updated: "2026-09-25"
-source_basis: "GitHub repository search, non-truncated tree, pinned commit diff, and changed managed-runtime documentation reviewed at commit a6e91abe4004f6b98b369d93d9d929114d59b441. Tests were inspected but not executed."
+summary: "Nanocode shows two related authority boundaries: grant identity must survive durable file exchange, and runtime identity must remain attached to remote processes and reconnects. Its current SDK also separates portable contracts, orchestration, provider backends, and native host effects."
+triggers: ["agent file transfer", "capability grant", "durable inputs", "agent artifacts", "grant-scoped storage", "turn ownership", "Nanocodex", "Nanocode", "executor identity", "unknown outcome", "Connect"]
+last_updated: "2026-11-07"
+source_basis: "Original grant-scoped file evidence was inspected at a6e91abe4004f6b98b369d93d9d929114d59b441. The 2026-11-07 update used a current GitHub repository search, same-repository redirect check, non-truncated tree, crate overview, remote-runner contract, authority source, and durable-session example at 0a98b23a1ccb175aed1bca06ee0a0ed7dbb225a7. Tests and implementations were not executed."
 </ai_context>
 
 # Agent File Exchange Needs Grant Identity After Execution Starts
@@ -82,6 +82,18 @@ That caveat should be carried into architecture claims: scoped ingress and
 egress reduce cross-grant file disclosure, but they are not tenant isolation.
 A system that needs hostile-principal separation still needs separate execution
 state or a stronger mediation layer around every shared-brain access.
+
+## Update — renamed Nanocode SDK separates runtime identity from logical mounts (2026-11-07)
+
+The repository now resolves as `gakonst/nanocode` (the old `gakonst/nanocodex` API route redirects to the same repository ID). At pinned revision `0a98b23a1ccb175aed1bca06ee0a0ed7dbb225a7`, its current crate map makes a broader boundary explicit: portable contracts and state machines live in `core/`; backend-generic agents, subagents, durable sessions, and tool selection live in `runtime/`; provider protocol and prompt implementations live in separate backend trees; and native shells, browsers, sandboxes, stores, telemetry, and remote runners live in `integrations/`. The project says a dependency-boundary script enforces these directions. Scout inspected that statement and the tree, but did not run the script or compile the workspace.
+
+The remote-runner contract adds a useful continuity rule. A model-visible mount name is only a logical route: process handles retain both the runner namespace and executor runtime identity. Reopening a durable agent session can poll an earlier remote process only while that same runner remains alive; a restarted runner fences the old handle. If a connection drops after dispatch, reconnection may recover calls from the same executor journal, but an executor restart produces an **unknown-outcome** error rather than replaying the call. Explicit disconnect revokes that executor identity, and replacement stays unavailable until a runner reconnects.
+
+This sharpens the original grant-scoping lesson: durable session identity, logical workspace identity, and effect-executor identity are different coordinates. A session receipt should not make a remote effect safely replayable unless the runtime can prove which executor accepted it and whether that executor's journal survived. The same source also exposes limits: it documents architecture and recovery semantics, not production correctness; Scout did not run Nanocode, compile it, execute its examples or tests, attach a runner, or induce a disconnect. The repository has no root README at this revision, and its crate overview says there is no packaged WASM SDK or stable wasm-bindgen ABI.
+
+- **Current repository:** https://github.com/gakonst/nanocode
+- **Inspected revision:** https://github.com/gakonst/nanocode/commit/0a98b23a1ccb175aed1bca06ee0a0ed7dbb225a7
+- **Sources:** [crate boundaries](https://github.com/gakonst/nanocode/blob/0a98b23a1ccb175aed1bca06ee0a0ed7dbb225a7/crates/README.md), [remote workspace runtime](https://github.com/gakonst/nanocode/blob/0a98b23a1ccb175aed1bca06ee0a0ed7dbb225a7/crates/backends/codex/WORKSPACE_RUNTIME.md), [root-only subagent authority](https://github.com/gakonst/nanocode/blob/0a98b23a1ccb175aed1bca06ee0a0ed7dbb225a7/crates/runtime/subagents/src/authority.rs), and [durable-session example](https://github.com/gakonst/nanocode/blob/0a98b23a1ccb175aed1bca06ee0a0ed7dbb225a7/crates/nanocode/examples/durable_session.rs)
 
 ## Practical implication
 

@@ -225,7 +225,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ### 2026-09-25
 
-- [Agent file exchange needs grant identity after execution starts](./findings/2026-09-25-grant-scoped-agent-files.md) — pinned Nanocodex source carries grant identity through immutable input receipts, retained turn ownership, artifact publication, and exact retrieval routes, while explicitly leaving shared execution memory outside that isolation boundary; tests were inspected but not run.
+- [Agent file exchange needs grant identity after execution starts](./findings/2026-09-25-grant-scoped-agent-files.md) — renamed Nanocode source now also separates portable contracts, orchestration, provider backends, and host effects, and fences remote process handles by executor runtime identity; Scout inspected pinned source but did not compile, run tests, attach a runner, or exercise recovery.
 - [Agentic fuzzing needs separate search, measurement, and containment boundaries](./findings/2026-09-25-agentic-fuzzing-evidence-loop.md) — first-party documentation and pinned repository metadata show persistent campaigns, distinct search and measurement builds, plateau stopping, and a disposable outer-containment requirement; Scout did not run the pipeline or reproduce its reported crashes.
 - [Self-evolving recommendation uses two experiment cadences](./findings/2026-09-25-self-evolving-recommendation-dual-cadence.md) — a complete XHS explainer separates frequent offline proposals from slower online admission and a durable experiment journal, but the underlying paper, code, and reported performance were not verified.
 
