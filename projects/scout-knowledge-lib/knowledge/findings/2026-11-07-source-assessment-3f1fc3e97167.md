@@ -2,6 +2,54 @@
 
 Source identity: https://www.xiaohongshu.com/explore/6a6c2de5000000003501680a
 
+## Assessment 2026-11-07T09:42:41.598Z
+
+Question: Perform a body-level review of XHS post 6a6c2de5000000003501680a for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+**Disposition: inaccessible.** The exact identity assessed is XHS post `6a6c2de5000000003501680a` at `https://www.xiaohongshu.com/explore/6a6c2de5000000003501680a`. The supplied retrieval redirected to a Rednote login URL whose redirect path retains that post ID. Its entire extracted text was “Log in - rednote - share, connect, love.” This is authentication-gate text, not search-card metadata and not body-level evidence.
+
+No main contribution can therefore be attributed to the post’s author. The supplied material contains no title, caption, author text, image OCR, video transcript, comments, examples, results, references, or other substantive claims. There is consequently no supporting evidence to assess and no defensible basis for judging the post’s relevance to AI agents or the Scout knowledge library. This does not demonstrate a defect in the post: its contents are unknown under the observed access conditions. In particular, the evidence does not establish that the post is deleted, empty, misleading, or inaccessible to a properly authorized user.
+
+The retrieval supports only a narrow checked conclusion: unauthenticated access to the exact requested URL did not reach the post body. This confirms the access blocker but does not satisfy the requested body-level review. The earlier assessment reached the same disposition, and the new retrieval supplies no additional substantive evidence that would change it.
+
+Recovery requires a permitted authenticated retrieval that resolves the same post ID and exposes the body plus any material text available from images or video. Authentication controls must not be bypassed. A related post, search card, inferred topic, or item outside the frozen inventory must not be substituted. Until such evidence is obtained, reconciliation should preserve **inaccessible** as the disposition.
+
+This call was read-only and did not save or publish anything. The workflow that owns archive writes must preserve and publish this access assessment and return its canonical path and publication revision. Because neither body-level evidence nor publication evidence is available here, the complete assignment outcome remains unmet.
+
+Assessment incomplete. See the assessment for missing evidence.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6a6c2de5000000003501680a",
+  "identity": "https://www.xiaohongshu.com/explore/6a6c2de5000000003501680a",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6a6c2de5000000003501680a%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T09:42:32.144Z",
+  "sha256": "60959b59cb46def553d201330c7cb73a4cbbb887bb88a32d1b4e7a66b028250e",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
+# XHS post 6a6c2de5000000003501680a — inaccessible behind login
+
+Source identity: https://www.xiaohongshu.com/explore/6a6c2de5000000003501680a
+
 ## Assessment 2026-11-07T09:40:40.172Z
 
 Question: Perform a body-level review of XHS post 6a6c2de5000000003501680a for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
@@ -84,5 +132,7 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
