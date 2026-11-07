@@ -48,8 +48,9 @@
   "dependencies": {
     "@earendil-works/pi-agent-core": "1.5.0",
     "@earendil-works/pi-ai": "1.5.0",
-    "@may-agent/sdk": "workspace:*",
+    "@earendil-works/pi-coding-agent": "1.5.0",
     "@may-agent/control": "workspace:*",
+    "@may-agent/sdk": "workspace:*",
     "diff": "^9.0.0",
     "typebox": "1.4.3"
   },

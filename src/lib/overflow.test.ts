@@ -33,10 +33,15 @@ describe("isOverflowError", () => {
     expect(isOverflowError("413 (no body)", "cerebras")).toBe(true);
   });
 
-  it("does not infer overflow from a bodyless client error from another or unknown provider", () => {
+  it("does not infer overflow from an ambiguous bodyless 400 for another or unknown provider", () => {
     for (const provider of [undefined, "mistral", "openai"]) {
       expect(isOverflowError("400 status code (no body)", provider)).toBe(false);
-      expect(isOverflowError("413 (no body)", provider)).toBe(false);
+    }
+  });
+
+  it("recognizes HTTP 413 request-size overflow independently of the provider", () => {
+    for (const provider of [undefined, "mistral", "openai"]) {
+      expect(isOverflowError("413 (no body)", provider)).toBe(true);
     }
   });
 

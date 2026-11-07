@@ -1,3 +1,4 @@
+import { Type } from "typebox";
 /**
  * query_db tool — read-only SQL inspection for the May runtime database.
  *
@@ -5,7 +6,7 @@
  * the runtime getDb() convention and exposes only bounded read queries.
  */
 
-import { Type } from "@earendil-works/pi-ai";
+
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import { getDb } from "../db/connection.js";
 

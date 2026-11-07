@@ -1,3 +1,4 @@
+import { Type, type Static } from "typebox";
 /**
  * Agents tool — bounded calls, helper follow-up, inspection and cancellation.
  *
@@ -5,7 +6,7 @@
  */
 
 import type { AgentMessage, AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
-import { Type, StringEnum, type Static } from "@earendil-works/pi-ai";
+import { StringEnum } from "@earendil-works/pi-ai";
 import type { RegisteredAgent } from "./manager-utils.js";
 import type { SessionInfo, SubagentDefinition, TaskResult } from "./types.js";
 import type { PersistedSession } from "./persistence.js";

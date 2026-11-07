@@ -1,17 +1,7 @@
+import { Type, type TSchema } from "typebox";
 import { afterEach, describe, expect, test } from "bun:test";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
-import {
-  createAssistantMessageEventStream,
-  Type,
-  type AssistantMessage,
-  normalizeContext,
-  getCurrentSystemPrompt,
-  getCurrentTools,
-  type TranscriptContext,
-  type Model,
-  type StreamFunction,
-  type TSchema,
-} from "@earendil-works/pi-ai";
+import { createAssistantMessageEventStream, type AssistantMessage, normalizeContext, getCurrentSystemPrompt, getCurrentTools, type TranscriptContext, type Model, type StreamFunction } from "@earendil-works/pi-ai";
 import { Value } from "typebox/value";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

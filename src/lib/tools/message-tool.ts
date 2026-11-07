@@ -1,3 +1,4 @@
+import { Type, type Static } from "typebox";
 /**
  * message-tool.ts — inter-agent communication primitive.
  *
@@ -21,7 +22,7 @@
 
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
-import { Type, type Static } from "@earendil-works/pi-ai";
+
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { EventTrace } from "../../app/core/events/bus.js";
 

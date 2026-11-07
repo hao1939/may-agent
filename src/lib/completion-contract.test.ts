@@ -1,9 +1,10 @@
+import { Type } from "typebox";
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { BeforeToolCallContext } from "@earendil-works/pi-agent-core";
-import { Type, validateToolArguments, type ToolCall } from "@earendil-works/pi-ai";
+import { validateToolArguments, type ToolCall } from "@earendil-works/pi-ai";
 import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
 import { admitTaskReconcileResult, taskAgentResultSchema, taskReconcileResultSchema } from "@may-agent/sdk";
 import type { TSchema } from "typebox";

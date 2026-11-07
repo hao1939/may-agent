@@ -1,6 +1,7 @@
+import { Type } from "typebox";
 import { describe, expect, it } from "bun:test";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
-import { Type } from "@earendil-works/pi-ai";
+
 import { taskAgentResultSchema } from "@may-agent/sdk";
 import { createWorkflowFinishTool } from "./tools/workflow-finish.js";
 import {

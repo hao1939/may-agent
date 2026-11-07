@@ -1,8 +1,9 @@
+import { Type } from "typebox";
 import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Type, createAssistantMessageEventStream, type ToolCall } from "@earendil-works/pi-ai";
+import { createAssistantMessageEventStream, type ToolCall } from "@earendil-works/pi-ai";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 import { prepareAgentExecution, executePreparedAgent } from "./agent-execution.js";

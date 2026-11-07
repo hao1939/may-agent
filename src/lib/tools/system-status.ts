@@ -1,3 +1,4 @@
+import { Type } from "typebox";
 /**
  * System Status tool — read-only dashboard showing active sessions,
  * recent history, delegations, job health, and strategic context.
@@ -12,7 +13,7 @@
  * - All operations are read-only; no state mutation
  */
 
-import { Type } from "@earendil-works/pi-ai";
+
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 import { existsSync, readFileSync, statSync, openSync, readSync, closeSync } from "node:fs";
 import { join } from "node:path";

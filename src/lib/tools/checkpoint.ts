@@ -1,3 +1,4 @@
+import { Type, type TSchema } from "typebox";
 /**
  * Checkpoint tool — structured mid-session state saving.
  *
@@ -11,8 +12,8 @@
  */
 
 import type { AgentTool } from "@earendil-works/pi-agent-core";
-import { Type } from "@earendil-works/pi-ai";
-import type { TSchema } from "@earendil-works/pi-ai";
+
+
 import { mkdirSync, appendFileSync, readFileSync, writeFileSync, existsSync } from "fs";
 import { resolve } from "path";
 import { createCheckpointDigest } from "../session-digest.js";

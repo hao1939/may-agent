@@ -1,19 +1,17 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
-import { isAbsolute, join, relative } from "node:path";
+import { dirname, isAbsolute, join, relative } from "node:path";
 import { resolveSkillRoots } from "./skill-paths.js";
-import { BACKGROUND_CONTEXT } from "@earendil-works/pi-agent-core/harness/context";
-import {
-  formatSkillInvocation,
-  formatSkillsForSystemPrompt,
-  loadSourcedSkills,
-  NodeExecutionEnv,
-  type Skill,
-} from "@earendil-works/pi-agent-core/node";
+import { formatSkillsForPrompt, loadSkillsFromDir } from "@earendil-works/pi-coding-agent";
 
 export type MaySkillScope = "app-agent" | "agent" | "shared";
 
-export interface MaySkill extends Skill {
+export interface MaySkill {
+  name: string;
+  description: string;
+  filePath: string;
+  content: string;
+  disableModelInvocation?: boolean;
   scope: MaySkillScope;
   contentHash: string;
   canonicalPath: string;
@@ -73,21 +71,15 @@ export async function discoverAgentSkills(opts: {
   });
   const trustedRoots = addressedRoots.map((root) => root.path);
   const sources = addressedRoots.flatMap((root) => immediateSkillPackages(root.path, root.scope, root.priority));
-  const env = new NodeExecutionEnv({ cwd: opts.agentDir });
-  const loaded = await loadSourcedSkills(
-    env,
-    sources.map((source) => ({ path: source.packagePath, source })),
-    undefined,
-    BACKGROUND_CONTEXT,
-  );
-  diagnostics.push(
-    ...loaded.diagnostics.map((diagnostic) => `${diagnostic.source.scope}:${diagnostic.path}: ${diagnostic.message}`),
-  );
-  const invalidPackages = new Set(loaded.diagnostics.map((diagnostic) => diagnostic.source.packagePath));
+  const loaded = sources.flatMap((source) => {
+    const result = loadSkillsFromDir({ dir: source.packagePath, source: source.scope });
+    diagnostics.push(...result.diagnostics.map((item) => `${source.scope}:${item.path}: ${item.message}`));
+    // Pi emits metadata warnings alongside a skill. Preserve May's strict rejection.
+    return result.diagnostics.length ? [] : result.skills.map((skill) => ({ skill, source }));
+  });
   const grouped = new Map<string, MaySkill[]>();
 
-  for (const item of loaded.skills) {
-    if (invalidPackages.has(item.source.packagePath)) continue;
+  for (const item of loaded) {
     let canonicalPath: string;
     try {
       canonicalPath = realpathSync(item.skill.filePath);
@@ -109,6 +101,9 @@ export async function discoverAgentSkills(opts: {
     }
     const skill: MaySkill = {
       ...item.skill,
+      content: readFileSync(canonicalPath, "utf8")
+        .replace(/^\uFEFF?---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/, "")
+        .trim(),
       filePath: canonicalPath,
       scope: item.source.scope,
       canonicalPath,
@@ -144,6 +139,17 @@ export async function discoverAgentSkills(opts: {
   });
 }
 
+function formatCatalogSkills(skills: MaySkill[]): string {
+  return formatSkillsForPrompt(
+    skills.map((skill) => ({
+      ...skill,
+      baseDir: dirname(skill.filePath),
+      disableModelInvocation: skill.disableModelInvocation ?? false,
+      sourceInfo: { path: skill.filePath, source: skill.scope, scope: "project", origin: "top-level" },
+    })),
+  );
+}
+
 export function formatBoundedSkillCatalog(
   catalog: SkillCatalog,
   maxChars = DEFAULT_CATALOG_CHARS,
@@ -156,11 +162,11 @@ export function formatBoundedSkillCatalog(
   const omitted: string[] = [];
   for (const skill of ordered) {
     const compact = { ...skill, description: skill.description.slice(0, 240) };
-    const candidate = formatSkillsForSystemPrompt([...selected, compact]);
+    const candidate = formatCatalogSkills([...selected, compact]);
     if (candidate.length <= maxChars) selected.push(compact);
     else omitted.push(skill.name);
   }
-  return { text: formatSkillsForSystemPrompt(selected), omitted };
+  return { text: formatCatalogSkills(selected), omitted };
 }
 
 export function invokeCatalogSkill(
@@ -176,7 +182,8 @@ export function invokeCatalogSkill(
   if (Buffer.byteLength(skill.content, "utf8") > MAX_EXPLICIT_SKILL_BYTES) {
     throw new Error(`Skill "${name}" exceeds the ${MAX_EXPLICIT_SKILL_BYTES}-byte activation limit`);
   }
-  return { prompt: formatSkillInvocation(skill, task), skill };
+  const prompt = `<skill name="${skill.name}" location="${skill.filePath}">\nReferences are relative to ${dirname(skill.filePath)}.\n\n${skill.content}\n</skill>`;
+  return { prompt: task ? `${prompt}\n\n${task}` : prompt, skill };
 }
 
 export function parseExplicitSkill(text: string): { skill?: string; task: string } {

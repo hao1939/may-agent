@@ -1,7 +1,8 @@
+import { Type, type TSchema } from "typebox";
 import type { FileWritePolicy } from "./file-write-policy.js";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
-import { Type } from "@earendil-works/pi-ai";
-import type { TSchema } from "@earendil-works/pi-ai";
+
+
 import { mkdir as fsMkdir, readFile as fsReadFile, writeFile as fsWriteFile, stat as fsStat } from "fs/promises";
 import { dirname } from "path";
 import { resolveToCwd } from "./path-utils.js";
