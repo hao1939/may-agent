@@ -2,6 +2,52 @@
 
 Source identity: https://www.xiaohongshu.com/explore/6a6c2de5000000003501680a
 
+## Assessment 2026-11-07T09:52:16.417Z
+
+Question: Perform a body-level review of XHS post 6a6c2de5000000003501680a for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+**Disposition: inaccessible.** The exact identity assessed is XHS post `6a6c2de5000000003501680a` at `https://www.xiaohongshu.com/explore/6a6c2de5000000003501680a`. Retrieval redirected to a Rednote login URL whose redirect path preserves the same post ID. The only supplied text was “Log in - rednote - share, connect, love.” This is authentication-gate text, not search-card metadata and not body-level evidence.
+
+No main contribution can therefore be attributed to the post’s author. The supplied material contains no title, caption, author text, image OCR, video transcript, comments, examples, results, references, or substantive claims. There is no supporting evidence with which to assess the post’s arguments, reliability, or relevance to AI agents and the Scout knowledge library. This is not an observed defect in the post: its contents are unknown under the observed access conditions. The evidence establishes only that unauthenticated retrieval of the exact requested URL did not reach the post body; it does not establish that the post is deleted, empty, misleading, or unavailable to a properly authorized user.
+
+The current retrieval is materially consistent with the earlier supplied assessments and adds no body-level evidence that would change their disposition. Recovery requires a permitted authenticated retrieval resolving this same post ID and exposing the body plus any material text available from images or video. Authentication controls must not be bypassed. A related post, search card, inferred topic, or later-discovered item must not be substituted.
+
+The requested body-level review remains unfinished. This bounded call was read-only and did not publish anything. The owning workflow must preserve and publish the inaccessible assessment and return its canonical path and publication revision evidence. Until authorized body access is available, reconciliation of this finite inventory item should retain **inaccessible** with the login redirect as the exact blocker.
+
+Assessment incomplete. Preserve and publish the inaccessible assessment through the owning workflow. Retry the body-level review only when a permitted authenticated retrieval exposes the exact post’s body and any material image/video text; do not bypass authentication or substitute another post.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6a6c2de5000000003501680a",
+  "identity": "https://www.xiaohongshu.com/explore/6a6c2de5000000003501680a",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6a6c2de5000000003501680a%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T09:52:02.588Z",
+  "sha256": "8e884a6f2831ded3b89757828b44f9dc6c6415ab37cbec0a3e58750aa4fb2cf9",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
+# XHS post 6a6c2de5000000003501680a — inaccessible behind login
+
+Source identity: https://www.xiaohongshu.com/explore/6a6c2de5000000003501680a
+
 ## Assessment 2026-11-07T09:47:08.238Z
 
 Question: Perform a body-level review of XHS post 6a6c2de5000000003501680a for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
@@ -178,6 +224,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
