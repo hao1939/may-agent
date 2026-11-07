@@ -2,6 +2,56 @@
 
 Source identity: https://www.xiaohongshu.com/explore/6abf8d0e0000000002011add
 
+## Assessment 2026-11-07T09:51:55.671Z
+
+Question: Perform a body-level review of XHS post 6abf8d0e0000000002011add for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+**Disposition: inaccessible.**
+
+The exact identity is preserved as XHS post ID `6abf8d0e0000000002011add`, with stable URL `https://www.xiaohongshu.com/explore/6abf8d0e0000000002011add`. The current receipt does not expose the requested post. It resolves to a Rednote login URL whose redirect points back to that identity, and its complete extracted text is only: “Log in - rednote - share, connect, love.” This is login-page text, not search-card metadata, post-body text, a caption, comments, image-derived text, or a video transcript.
+
+Consequently, no main contribution, author claim, supporting example, or evidence can be identified. The post’s title, author, publication date, argument, implementation details, media, limitations, and relevance to AI-agent research remain unknown. These are unavailable evidence, not observed defects in the post. Although all 39 characters of the returned login document were supplied, this does not constitute reading any part of the underlying post or inspecting its media.
+
+This fresh receipt reproduces the earlier access result and adds no body-level evidence. It therefore supports reconciling this exact frozen-inventory item as `inaccessible`; it does not support substituting another post, inferring its contents, or treating the login-page slogan as an author claim.
+
+The precise blocker is authentication-gated source access: unauthenticated retrieval returned a login page rather than content for the requested post. Recovery requires an authorized authenticated retrieval, without bypassing access controls, that yields an untruncated receipt for this exact post ID, including its body and any materially relevant caption, image text, or video transcript actually available. Only then can contribution, evidentiary support, limitations, and relevance be assessed.
+
+The required durable publication is not established by this read-only assessment call. The owning workflow must preserve the access record and publish the blocked disposition—or a later recovered body-level assessment—then return its canonical path and publication revision.
+
+Assessment incomplete. See the assessment for missing evidence.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6abf8d0e0000000002011add",
+  "identity": "https://www.xiaohongshu.com/explore/6abf8d0e0000000002011add",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6abf8d0e0000000002011add%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T09:51:47.199Z",
+  "sha256": "8a7a3b8b561a113d6a621569972ebc81f508b5e5ff1beb06444408b3aa962547",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
+# XHS post 6abf8d0e0000000002011add — inaccessible behind login
+
+Source identity: https://www.xiaohongshu.com/explore/6abf8d0e0000000002011add
+
 ## Assessment 2026-11-07T09:46:53.062Z
 
 Question: Perform a body-level review of XHS post 6abf8d0e0000000002011add for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
@@ -138,6 +188,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
