@@ -1,3 +1,49 @@
+# XHS post 6ab7046b00000000140305a3 — inaccessible at authentication boundary
+
+Source identity: https://www.xiaohongshu.com/explore/6ab7046b00000000140305a3
+
+## Assessment 2026-11-07T19:33:07.991Z
+
+Question: Perform a body-level review of XHS post 6ab7046b00000000140305a3 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+**Disposition: inaccessible.** The exact identity assessed is XHS post `6ab7046b00000000140305a3` at `https://www.xiaohongshu.com/explore/6ab7046b00000000140305a3`. The supplied retrieval preserves that ID in the Rednote login redirect but exposes only the interface label “Log in - rednote - share, connect, love.” This is authentication-page chrome, not search-card metadata, post-body text, or media-derived evidence.
+
+The post’s main contribution cannot be determined from the available material. No caption, author statement, argument, example, result, citation, comment, or other substantive body text was supplied. No image OCR, video transcript, alt text, or meaningful media description was available either. Consequently, there is no evidence with which to assess the author’s claims, supporting rationale, limitations, novelty, or relevance to the Personal Agent question suggested by the inventory’s search-card title. That title is metadata only and must not be used to characterize the body.
+
+The checked conclusion is limited to access: this retrieval path is blocked at Rednote’s authentication boundary. The evidence does not establish that the post is empty, unsupported, irrelevant, deleted, or substantively covered elsewhere. The governing frozen inventory confirms that this exact ID is item 9 and already records the same inaccessible disposition, linking the durable assessment at `knowledge/findings/2026-11-07-source-assessment-28361b51fb69.md`. This read-only assessment does not modify or republish that record.
+
+Recovery requires a policy-compliant authenticated, untruncated retrieval of this same stable post ID that exposes all available body text and materially relevant media text, including image OCR or a video transcript where applicable. Access controls must not be bypassed, and neither another post nor the search-card title may substitute for body evidence. Until such a receipt is available, the requested body-level review remains incomplete, although the inaccessible disposition is suitable for reconciliation into the finite inventory.
+
+Assessment incomplete. Obtain a policy-compliant authenticated, untruncated retrieval of the same post ID exposing its caption/body and any material image OCR or video transcript, then reassess. The workflow should preserve the current access receipt and handle any publication evidence required by the owning Task.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6ab7046b00000000140305a3",
+  "identity": "https://www.xiaohongshu.com/explore/6ab7046b00000000140305a3",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6ab7046b00000000140305a3%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T19:32:54.301Z",
+  "sha256": "2c44856fc8802300e88e886548c8cf6eafa6d567d608ad90dcfe955cd97cc1b2",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
 # XHS post 6ab7046b00000000140305a3 — inaccessible at login boundary
 
 Source identity: https://www.xiaohongshu.com/explore/6ab7046b00000000140305a3
@@ -1030,6 +1076,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
