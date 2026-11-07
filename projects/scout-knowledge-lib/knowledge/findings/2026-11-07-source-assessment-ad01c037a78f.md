@@ -2,6 +2,52 @@
 
 Source identity: https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7
 
+## Assessment 2026-11-07T14:14:43.638Z
+
+Question: Perform a body-level review of XHS post 6adeb34e00000000150130b7 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+**Supported disposition: inaccessible.** Retrieval targeted exactly XHS post `6adeb34e00000000150130b7` at `https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7`; no alternate post, refreshed search result, or later discovery was substituted. The request resolved to `https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6adeb34e00000000150130b7%3FexSource%3Dnull`. That redirect preserves the exact target ID and is direct evidence of an authentication gate.
+
+The only supplied text is “Log in - rednote - share, connect, love.” This is Rednote interface copy, not a claim by the post’s author. The material contains no post title, body, author identity, images, video, captions, outbound links, argument, implementation details, or supporting evidence. Accordingly, no main substantive contribution can be identified, and there are no post-author claims that can be checked. The post’s topic, limitations, and relevance to AI-agent research remain unknown. Inferring any of these from the identifier, prior search-card metadata, later discoveries, or the missing frozen-run identities would be unsupported.
+
+The checked conclusion is deliberately narrow: authentication prevented inspection of the exact post’s body and any material media or links. This supports reconciliation of the finite backfill inventory as **inaccessible — redirected to Rednote login**. It does not indicate a defect in the post or its linked material, because neither was inspected. No login or access-control bypass was attempted.
+
+The requested body-level review remains incomplete. Completion requires authorized access that exposes this exact post’s body and material media or links. The retained Task context previews a canonical-looking output path, but this call was not given a verified publication read-back or Git revision; therefore it cannot establish that the durable record has been published. The surrounding workflow must provide the canonical assessment path and verified revision before the inventory can treat publication as complete.
+
+Assessment incomplete. The surrounding workflow should preserve and publish the supported inaccessible disposition, then return the canonical assessment path and verified Git revision. A substantive review should resume only if authorized access exposes this exact post’s body and material media or links.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7",
+  "identity": "https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6adeb34e00000000150130b7%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T14:14:31.512Z",
+  "sha256": "0202051748f84f198b81e6f08ecccb6baee7984e9f88fefe42c823dcf4fc648a",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
+# XHS post 6adeb34e00000000150130b7 — inaccessible behind Rednote login
+
+Source identity: https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7
+
 ## Assessment 2026-11-07T13:14:24.724Z
 
 Question: Perform a body-level review of XHS post 6adeb34e00000000150130b7 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
@@ -776,6 +822,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
