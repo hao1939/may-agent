@@ -2,6 +2,56 @@
 
 Source identity: https://www.xiaohongshu.com/explore/6aab4f5f0000000028029fa8
 
+## Assessment 2026-11-07T10:45:07.393Z
+
+Question: Perform a body-level review of XHS post 6aab4f5f0000000028029fa8 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+**Disposition: inaccessible.**
+
+The exact requested identity was preserved: XHS post `6aab4f5f0000000028029fa8`, which the frozen backfill inventory confirms as item 12. The authorized retrieval did not expose the post. It resolved to a Rednote login URL whose `redirectPath` retains the same post ID, and the complete supplied text was only “Log in - rednote - share, connect, love.” This is evidence of an authentication barrier, not body-level access.
+
+No main contribution or author claim can be identified from the available evidence. The post body or caption, author details, images, video, text embedded in media, comments, examples, citations, and linked evidence were not exposed. Those components are unknown—not observed to be absent, weak, or irrelevant. Accordingly, the post’s subject, argument, supporting evidence, limitations, and relevance to AI-agent research cannot be evaluated. In particular, no substantive content is inferred from the inventory’s search-card title.
+
+The frozen inventory and earlier exact-source assessments record the same access outcome and identify an existing durable assessment at `knowledge/findings/2026-11-07-source-assessment-4a53f86f1f29.md`. The present retrieval independently reproduces the login barrier. That prior record demonstrates that the exact identity was already checked and prevents treating this as a new substantive finding, but it does not support the assignment’s “already covered with evidence” disposition because no body-level evidence was previously obtained. “Reviewed and integrated” and “out of scope” are likewise unsupported.
+
+The precise blocker is the absence of an authorized authenticated XHS/Rednote session capable of opening this exact explore URL. Recovery requires policy-compliant access to this same post ID that exposes its available caption/body and any materially relevant image text, OCR, video, or transcript. A subsequent assessment must identify what was actually inspected and disclose anything still unreadable or unavailable.
+
+This read-only call makes no claim to have saved or published anything. The hosted workflow owns archival, canonical-path confirmation, and publication commit evidence.
+
+Assessment incomplete. See the assessment for missing evidence.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6aab4f5f0000000028029fa8",
+  "identity": "https://www.xiaohongshu.com/explore/6aab4f5f0000000028029fa8",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6aab4f5f0000000028029fa8%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T10:44:54.460Z",
+  "sha256": "8ae9a60920ea7b2d1127902282399e656719e466f3b48eede3bbcbef226b5f0c",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
+# XHS post 6aab4f5f0000000028029fa8 — inaccessible behind authentication
+
+Source identity: https://www.xiaohongshu.com/explore/6aab4f5f0000000028029fa8
+
 ## Assessment 2026-11-07T10:36:17.009Z
 
 Question: Perform a body-level review of XHS post 6aab4f5f0000000028029fa8 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
@@ -592,6 +642,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
