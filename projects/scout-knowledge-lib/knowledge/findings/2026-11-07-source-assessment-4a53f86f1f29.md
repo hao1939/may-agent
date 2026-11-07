@@ -2,6 +2,56 @@
 
 Source identity: https://www.xiaohongshu.com/explore/6aab4f5f0000000028029fa8
 
+## Assessment 2026-11-07T17:40:16.746Z
+
+Question: Perform a body-level review of XHS post 6aab4f5f0000000028029fa8 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+**Disposition: inaccessible.**
+
+The exact requested source identity is preserved: XHS post `6aab4f5f0000000028029fa8`. The current authorized retrieval redirected to a Rednote login URL whose `redirectPath` retains that same post ID. Its entire extracted text was the generic interface label “Log in - rednote - share, connect, love.” This directly establishes an authentication barrier; it is not evidence about the post’s topic, contribution, or claims.
+
+No main contribution or author claim can be identified from the supplied material. The post body or caption, author details, images, video, text embedded in media, comments, examples, citations, and linked evidence were not exposed. Their contents are unknown—not observed to be absent, inaccurate, weak, or irrelevant. Consequently, there is no body-level evidence with which to assess supporting evidence, factual grounding, limitations, or relevance to AI-agent research. The frozen inventory’s search-card title is metadata only and is not treated as post content or used to infer a subject.
+
+The governing frozen inventory confirms that this exact ID is item 12 and records the same authentication blocker. It points to the existing exact-source assessment at `knowledge/findings/2026-11-07-source-assessment-4a53f86f1f29.md`. Reading that record confirms repeated retrievals encountered the same login page without obtaining substantive post content. The present retrieval independently reproduces that access outcome. This supports retaining the existing access diagnosis rather than creating a duplicate substantive finding, but it does not supply the body-level evidence required by the assignment.
+
+The precise blocker is the absence of a policy-compliant authenticated XHS/Rednote session capable of opening this exact explore URL. Recovery requires authorized access to this same post ID that exposes its available caption/body and any materially relevant image text, OCR, video, or transcript. A subsequent assessment must state which components were inspected and disclose anything still unreadable or unavailable.
+
+This read-only call does not claim to have saved or published anything. The hosted workflow owns archival, canonical-path confirmation, and publication commit evidence. The requested body-level review remains incomplete because no substantive source content was retrieved.
+
+Assessment incomplete. See the assessment for missing evidence.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6aab4f5f0000000028029fa8",
+  "identity": "https://www.xiaohongshu.com/explore/6aab4f5f0000000028029fa8",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6aab4f5f0000000028029fa8%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T17:39:56.081Z",
+  "sha256": "f982d71a66836b76b8653f50e6ff8c8aa5779d966fd7221534c899f7537df73b",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
+# XHS post 6aab4f5f0000000028029fa8 — inaccessible behind authentication
+
+Source identity: https://www.xiaohongshu.com/explore/6aab4f5f0000000028029fa8
+
 ## Assessment 2026-11-07T16:39:25.362Z
 
 Question: Perform a body-level review of XHS post 6aab4f5f0000000028029fa8 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
@@ -992,6 +1042,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
