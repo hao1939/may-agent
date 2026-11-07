@@ -10,5 +10,6 @@
     "message",
     "finish"
   ],
-  "memoryLimit": 5
+  "memoryLimit": 5,
+  "disabled": true
 }
