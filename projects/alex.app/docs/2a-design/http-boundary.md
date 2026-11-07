@@ -115,8 +115,12 @@ retained evidence. It shows at most 100 direct Conditions/dependencies and
 20 reconciliation events, with visible truncation notices. History includes
 older generations/attempts and cannot establish current completion.
 
-An open converged Task is `up-to-date`. Explicit closure is separate; `done`
-remains a historical receipt label in human reads.
+SDK and human reads share one Task lifecycle. An open converged Task without
+newly runnable work is `idle`; explicit ending is `closed` or `cancelled`.
+`done` remains a historical terminal receipt label. Idle alone establishes
+neither fulfillment nor a monitoring obligation. These status changes are
+implemented in the paired candidate source; installed adoption is tracked in
+[the lifecycle record](../archive/reviews/task-lifecycle-responsibilities-20261107.md).
 Completion/cancellation comes from canonical retained records, not inferred
 events. Read failures remain failures, never empty boards or fabricated
 completion. Browser selection is local; late responses cannot replace a

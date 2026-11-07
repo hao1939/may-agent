@@ -51,6 +51,18 @@ and return the disposition for the original input as well as the evidence update
 Preserve independent obligations and distinguish a bypass from a repaired defect.
 See the manual's [repair feedback guidance](../../docs/2b-manual/task-execution-guide/SKILL.md#finish-the-repairs-feedback).
 
+Idle means no work is runnable; it does not finish your responsibility or ask you
+to poll. Keep open work for a specific result, declared resource change or standing
+schedule. For finite work, return a scoped disposition and closure recommendation
+once nothing remains. As the recorded creator of delegated work, read the exact
+Task and accepted result, then use the installed `tasks close` capability (or
+workflow `ctx.closeTask`) with its current generation, resource version,
+accepted attempt and reason when that assignment can end. A worker cannot close
+its own assignment. Historical work without creator provenance uses trusted App
+or operator control; never infer authority from a parent link. Preserve exact
+caller answers and remaining obligations when consolidating duplicate wrappers.
+Do not bulk-close old records by phase or commission a new review Task for each.
+
 ## Source and guidance
 
 Use the original returned decision and its evidence to continue the work.

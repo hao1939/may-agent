@@ -68,10 +68,24 @@ for linked Tasks. These checkpoints use the current Condition observation, not
 its creation time; a later observation can move the next review. `before-due`
 means the checkpoint has not elapsed at this snapshot. `due` warrants inspection,
 not an automatic failure judgment. Missing validity is an evidence limit.
-Read App `closed` independently from the work phase: a cancelled Task may retain
-`status: attention` and `closed: true` as evidence of how its execution ended.
+Public Task status uses one lifecycle, including `idle`, `closed` and `cancelled`.
+The compatibility `closed` flag is derived from ending; retained attempt phase
+describes execution evidence. Older snapshots may expose a cancelled Task as
+`status: attention` with `closed: true`; read its terminal decision before
+judging current activity.
 
-A valid wait, useful active execution, pending approval, or recovered transient failure is not a failure by status or age alone. A current accepted/converged result can legitimately appear as App status `done` and Task detail status `up-to-date` while `terminal=false` and `ready=false`: the current outcome is reconciled, while the durable Task remains open for later input. If it has no current Conditions, dependencies, input waits, or other obligations, no review deadline is required; do not mistake open lifetime or non-claimability for unfinished work. If the public snapshot does not expose enough evidence to distinguish those states, return `insufficient-evidence`; do not call absent coverage healthy.
+A valid wait, useful active execution, pending approval, or recovered transient
+failure is not a failure by status or age alone. An accepted/converged result
+can leave the Task `idle`, open with no runnable input. Older snapshots call
+this `up-to-date` in human reads and `done` in SDK reads. Idle establishes neither
+fulfillment nor a monitoring obligation. Read the actual assignment, scoped
+accepted result and outstanding Conditions: a standing audit has a declared
+schedule or input route; a finished finite report needs owner disposition.
+Recommend closure when the responsibility has ended, leaving authorization to
+the creator or trusted App/operator control. Quiet work requires no model
+polling or arbitrary review deadline. If the snapshot cannot establish a
+material fact, return `insufficient-evidence` for that exact scope; do not call
+absent coverage healthy or equate closure with fulfillment.
 
 ## Shared behavior review
 

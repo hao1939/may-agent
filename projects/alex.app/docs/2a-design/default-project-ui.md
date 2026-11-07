@@ -7,9 +7,10 @@
 **Design status:** Accepted.
 **Implementation status:** The Task board uses bounded human Task list/detail
 reads through the daemon. It no longer loads a path-based whole-App snapshot.
-Tree layout and richer classification remain presentation guidance, not a second
-state model. Some browser copy still calls convergence recurring work; that is
-an implementation wording gap. See [the review](../archive/reviews/design-doc-hygiene-20260927.md).
+Tree layout and richer classification remain presentation guidance. The paired
+Host source implements the shared idle/closed/cancelled lifecycle and removes
+copy that implied all converged work was recurring. Installed behavior is
+unchanged; see [implementation and adoption evidence](../archive/reviews/task-lifecycle-responsibilities-20261107.md).
 
 The default project UI is the shared control surface for every App.
 Domain UIs may go deeper, but a person should be able to open any project and
@@ -30,13 +31,13 @@ Project overview
   goal | owner | posture | last movement
 
 Task status
-  needs attention | running | pending | waiting | up to date | closed
+  needs attention | running | queued | waiting | idle | closed | cancelled
 
 Current work
   attention, running, and ready resources
 
-Waiting and standing work
-  exact Conditions and open Tasks with accepted outcomes
+Waiting and idle work
+  exact Conditions, declared next responsibility and owner disposition
 
 Structure and review
   tasks | selected task | optional relationship tree | recent completions
@@ -57,15 +58,17 @@ back into a Kanban lifecycle.
 | --- | --- | --- |
 | Needs attention | `phase=attention` | An attempt needs recovery or owner judgment; not automatically a human action |
 | Running | Current running attempt | Execution is in progress; waits or accepted results may also exist |
-| Pending | Eligible or gated unfinished work | Read readiness, retry and dependency facts for the reason |
+| Queued | `status=pending`; eligible or gated unfinished work | Read readiness, retry and dependency facts for the reason |
 | Waiting | `phase=waiting` | The current pass yielded; exact Conditions and review deadlines explain what can wake it |
-| Up to date | Open converged Task without newly runnable work | Accepted work is current; the Task can accept later input |
-| Closed / cancelled | Explicit owner closure record | No future execution; retained evidence may include success and unresolved work |
+| Idle | Open converged Task without newly runnable work | Read the declared next responsibility or seek owner disposition for finite work; fulfillment is not implied |
+| Closed | Explicit owner ending against an exact accepted result | No future execution without authorized reopening; preserve the disposition and unresolved evidence |
+| Cancelled | Explicit authorized withdrawal | The remaining assignment was withdrawn, not fulfilled |
 
 These labels summarize a view. Conditions, accepted results, failures and pending
-input remain independent facts. `done` in an SDK Task read means an accepted
-outcome; inspect its `closed` field for lifetime. Human views use `up-to-date`
-for open convergence and retain `done` for historical completion receipts.
+input remain independent facts. SDK and human reads share one public lifecycle;
+`closed` is also a derived compatibility flag. `done` remains only for legacy
+terminal Task receipts. Attempt convergence and App input `done` remain separate
+facts. Idle does not imply a monitoring obligation or require model polling.
 Accepted outcomes remain on Tasks; they are not physically moved out of storage.
 
 Structural groups explain containment. They may appear in a relationship tree,
@@ -115,7 +118,7 @@ Each executable card shows:
 - generation drift when desired and observed state differ.
 
 The default ordering is attention, running, ready, pending, waiting, then
-up-to-date work. Grouping by Condition and optional tree layout are presentation
+idle work. Grouping by Condition and optional tree layout are presentation
 guidance. Current paging and filters operate over the shared read API.
 
 An optional tree layout explains decomposition and ownership, not scheduling.
@@ -216,7 +219,7 @@ UI directories are independent extensions, not copies of the shared source.
 
 The default UI is complete when a person can:
 
-- distinguish current work, exact waits, and up-to-date work and explicit closure;
+- distinguish current work, exact waits, idle responsibility and explicit ending;
 - see desired state beside current observation;
 - explain every readiness or attention classification from raw facts;
 - inspect Conditions, evidence, and current execution without reading JSON;

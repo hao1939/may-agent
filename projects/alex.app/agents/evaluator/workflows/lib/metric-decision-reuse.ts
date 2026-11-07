@@ -38,7 +38,7 @@ function taskIsQuiet(task: Record<string, any>, now: number): boolean {
   const waits = record(obligations.inputWaits);
   const events = record(task.pendingEvents);
   if (
-    !["waiting", "done"].includes(task.status) ||
+    !["waiting", "idle", "closed", "done"].includes(task.status) ||
     obligations.available !== true ||
     dueOrInvalid(obligations.reviewAt, now) ||
     waits.truncated !== false ||

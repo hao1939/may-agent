@@ -54,7 +54,7 @@ function task(
   appId: string,
   taskId: string,
   ageDays = 0,
-  status = "up-to-date",
+  status = "idle",
 ) {
   return { appId, taskId, status, updatedAt: NOW - ageDays * DAY };
 }
@@ -763,7 +763,7 @@ describe("automatic task outcome selector", () => {
     const command = catalogCommand({
       may: [
         task("may", "goal/running", 40, "running"),
-        task("may", "goal/recent", 1, "up-to-date"),
+        task("may", "goal/recent", 1, "idle"),
         task("may", "goal/old", 8),
         task("may", "goal/older", 9),
       ],

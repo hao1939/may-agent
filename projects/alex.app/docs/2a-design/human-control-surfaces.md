@@ -203,7 +203,7 @@ The admission activity causes Console to follow the Task immediately. Later
 Task wakes make the adapter re-read canonical Task state; they do not append a
 message for every internal event. Adapters render meaningful states in their
 native style: queued, working with the latest useful progress, waiting with an
-exact blocker and resume condition, needs-human-action, up to date for a live
+exact blocker and resume condition, needs-human-action, idle for a live
 converged Task, or explicitly closed/cancelled work with retained evidence. A claim that work is
 active must come from Task/execution state, never from May's prose alone.
 
@@ -229,15 +229,38 @@ does not recover a hidden goal from arbitrary App input and does not ask a model
 to rewrite generic Task text.
 
 Each compact Task row shows the stable reference, owning App, a plain state
-(`queued`, `working`, `waiting`, `needs review`, `up to date`, `closed`, or
+(`queued`, `working`, `waiting`, `needs review`, `idle`, `closed`, or
 `cancelled`; `done` remains for historical receipts), how recently it changed, its goal, and either `needs you` or `no
-action from you`. `up to date` means an open Task has a current accepted
+action from you`. `idle` means an open Task has a current accepted
 outcome and no newly runnable input. Closure is a separate owner decision. If a new wake makes that Task changed or
 ready, show it as queued even while its last accepted phase remains converged.
 Exact reads, lists, and status filters must agree; this is a projection of
 existing readiness, not a second stored phase or lifecycle.
 `attention` alone means App review or recovery; only an open human-owned
 Condition means `needs you`.
+
+For deciding whether work needs attention, distinguish execution from retained
+responsibility. An idle detail should explain the existing next
+responsibility: a named result, a relevant resource change, the next standing
+observation, or no future work declared and owner disposition needed. Derive
+this explanation from the assignment, Conditions, schedule and accepted
+decision; do not infer fulfillment or invent a watch from the phase.
+The [Task engine](task-resource-engine.md#state-and-continuing-responsibility)
+owns those meanings. A local `/watch` subscribes to presentation updates;
+it creates no business obligation, Task observation route or model polling.
+
+Task lists should distinguish work needing action, standing work between runs,
+idle records needing disposition, and ended history. Use explicit counts such
+as running, waiting and open; a count including every converged record must not
+be described as executing work. Archive is a history view of ended work, not
+a second close flag that can conceal unresolved input. The paired candidate
+source exposes `openTasks` (all open assignments), `activeTasks` (queued,
+running, waiting, attention), `idleTasks`, and `queuedTasks`. SDK and human
+reads use the same public state names. Idle detail shows a known configured
+next run or says owner disposition is needed; it does not invent a watch from
+an accepted result. Console and Telegram distinguish open, active and idle
+counts. See the [implementation and evaluation record](../archive/reviews/task-lifecycle-responsibilities-20261107.md).
+
 
 An exact Task view answers five questions directly from the existing resource:
 

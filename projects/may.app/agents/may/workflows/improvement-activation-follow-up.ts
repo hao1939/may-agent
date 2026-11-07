@@ -561,7 +561,7 @@ export async function runActivationFollowUp(
     const postActivationOutcome =
       subjectEvidence.disposition === "eligible" &&
       subject.generation === ctx.input.newSubjectTask.generation &&
-      subject.status === "up-to-date" &&
+      ["idle", "closed", "up-to-date"].includes(String(subject.status)) &&
       acceptedAttempt.generation === subject.generation &&
       typeof acceptedAttempt.id === "string" &&
       Number.isFinite(Date.parse(String(acceptedAttempt.startedAt))) &&

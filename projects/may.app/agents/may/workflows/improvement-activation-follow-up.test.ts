@@ -251,7 +251,7 @@ function context(
           appId,
           taskId,
           generation: 1,
-          status: "up-to-date",
+          status: "idle",
           updatedAt: 1_002,
           acceptedAttempt: {
             id: "attempt-new",
@@ -516,7 +516,7 @@ describe("approved activation and independent follow-up", () => {
     ).toContain("concrete external new work");
   });
 
-  test("exact adoption requires readable current-generation new work and targets it for Evaluation", async () => {
+  test.each(["idle", "closed"])("exact adoption requires readable current-generation new work and targets it for Evaluation (%s)", async (status) => {
     const f = fixture();
     const missing = await execute(
       context(f, { ok: true, sourceCommit: f.packet.candidateCommit }, false),
@@ -555,9 +555,15 @@ describe("approved activation and independent follow-up", () => {
       "post-activation outcome",
     );
 
-    const result = await execute(
-      context(f, { ok: true, sourceCommit: f.packet.candidateCommit }),
-    );
+    const acceptedContext = context(f, { ok: true, sourceCommit: f.packet.candidateCommit });
+    const acceptedProvider = (acceptedContext as any).evidenceProvider;
+    const acceptedRead = acceptedProvider.getTask;
+    acceptedProvider.getTask = async (appId: string, taskId: string) => {
+      const task = await acceptedRead(appId, taskId);
+      if (taskId === "goal/new-subject") task.status = status;
+      return task;
+    };
+    const result = await execute(acceptedContext);
     expect(output(result)).toMatchObject({
       state: "waiting",
       result: { stage: "post-adoption-evaluation-requested" },
