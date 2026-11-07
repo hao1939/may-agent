@@ -2,6 +2,56 @@
 
 Source identity: https://www.xiaohongshu.com/explore/6961ace3000000000903b207
 
+## Assessment 2026-11-07T10:20:30.299Z
+
+Question: Perform a body-level review of XHS post 6961ace3000000000903b207 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the durable inventory.
+
+**Disposition: inaccessible.**
+
+The supplied retrieval for exact XHS post `6961ace3000000000903b207` did not expose the post. It redirected to a Rednote login URL, and the complete extracted text is only “Log in - rednote - share, connect, love.” This supports a narrow checked conclusion: the retrieval encountered an authentication boundary. It is not body-level evidence and contains no title, author caption, body text, date, comments, or other post-specific material.
+
+Because no post content was supplied, there is no author contribution, claim, or supporting evidence available to summarize or evaluate. Scout therefore cannot determine what the post concerns, whether it remains available, what evidence it offers, or whether it contributes useful information to the finite 2026-11-07 XHS backfill. These are unknowns caused by missing access, not observed defects in the source.
+
+Any images and image-embedded text, video, audio, captions, comments, outbound links, and cited primary sources remain uninspected. The generic login page does not establish whether those materials exist. No linked evidence or primary-source claim can be treated as checked or verified.
+
+The exact blocker is authentication. Recovery requires a permitted, already authenticated XHS/Rednote browser session—or another authorized retrieval mechanism—that returns the body of this exact post identity. The recovered body must then be reviewed, along with any evidence-bearing media or links needed to assess its claims and relevance. Discovery metadata, a substitute post, or an authentication bypass would not satisfy the assignment.
+
+The requested substantive review remains incomplete because body-level evidence is absent. This bounded call is read-only and does not claim that an artifact was saved or published; durable preservation, canonical artifact-path reporting, and publication evidence remain with the owning workflow.
+
+Assessment incomplete. See the assessment for missing evidence.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6961ace3000000000903b207",
+  "identity": "https://www.xiaohongshu.com/explore/6961ace3000000000903b207",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6961ace3000000000903b207%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T10:20:19.298Z",
+  "sha256": "e6610bda85a02e21b696a3f8b8f8525541ae8a9d5c9b3e4c0ec23c719b289934",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
+# XHS post 6961ace3000000000903b207 — inaccessible
+
+Source identity: https://www.xiaohongshu.com/explore/6961ace3000000000903b207
+
 ## Assessment 2026-11-07T10:07:41.122Z
 
 Question: Perform a body-level review of XHS post 6961ace3000000000903b207 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the durable inventory.
@@ -592,6 +642,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
