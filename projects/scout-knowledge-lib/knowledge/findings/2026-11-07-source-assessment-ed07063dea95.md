@@ -2,6 +2,52 @@
 
 Source identity: https://www.xiaohongshu.com/explore/6ab358e60000000015004988
 
+## Assessment 2026-11-07T11:28:54.870Z
+
+Question: Perform a body-level review of XHS post 6ab358e60000000015004988 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+The retrieval preserved the exact requested post identity, `6ab358e60000000015004988`, but did not expose its substantive content. The requested URL was `https://www.xiaohongshu.com/explore/6ab358e60000000015004988`; retrieval ended at `https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6ab358e60000000015004988%3FexSource%3Dnull`. The only observed text was the interface label “Log in - rednote - share, connect, love.” This is evidence of an authentication boundary, not evidence about the post’s subject or claims. The redirect retains the exact identity but does not demonstrate access to the post body.
+
+No title, author identity, caption, body text, image text, video content, comments, citations, or linked-source material was supplied. Therefore, no author contribution can be summarized and there is no substantive evidence with which to assess novelty, reliability, or relevance to the knowledge library. In particular, the available evidence cannot support any of the content-level dispositions—warrants integration, already covered, or out of scope. Search-card metadata or inferred subject matter would not satisfy the requested body-level review.
+
+For reconciliation into the finite 2026-11-07 XHS backfill inventory, the supported disposition is **access blocked / body-level review incomplete**. The precise gap is permitted access to the exact post body and any claim-bearing images or video. If access later becomes available, the follow-up should record which textual and media elements were actually inspected before assigning a content-level disposition. Until then, retain the blocker without bypassing authentication controls and without rereading or changing the seven separately dispositioned IDs.
+
+This current retrieval is materially consistent with the earlier supplied assessments: it again reaches a login interface and adds no post-level evidence. Repetition of the same access result does not narrow the substantive evidence gap. No archive, canonical path, or publication commit is claimed by this read-only assessment.
+
+Assessment incomplete. See the assessment for missing evidence.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6ab358e60000000015004988",
+  "identity": "https://www.xiaohongshu.com/explore/6ab358e60000000015004988",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6ab358e60000000015004988%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T11:28:37.702Z",
+  "sha256": "ef93caaaad0742fcec4b4c5c180876c067f3150a9d71a840f5e9e0e731115ff0",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
+# XHS post 6ab358e60000000015004988 — body review blocked by authentication
+
+Source identity: https://www.xiaohongshu.com/explore/6ab358e60000000015004988
+
 ## Assessment 2026-11-07T10:54:16.975Z
 
 Question: Perform a body-level review of XHS post 6ab358e60000000015004988 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
@@ -638,6 +684,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
