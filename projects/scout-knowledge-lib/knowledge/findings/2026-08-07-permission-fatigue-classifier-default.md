@@ -2,7 +2,7 @@
 title: "Permission Fatigue Is Moving Agent Approval into a Classifier"
 source: hn
 date: 2026-08-07
-last_updated: 2026-08-10
+last_updated: 2026-11-07
 type: finding
 tags: [hn, coding-agents, permissions, human-in-the-loop, classifiers, safety]
 relevance: high
@@ -84,6 +84,20 @@ The official announcement later reached a much larger HN thread, adding operatio
 Together these comments separate three properties that are often collapsed into “safe auto mode”: **containment** limits which resources an action can reach, **recoverability** preserves prior state when an allowed in-scope mutation is wrong, and **observability** determines whether an operator can even substantiate “nothing bad happened.” A VM or container can protect the host while leaving the mounted project fully exposed; a classifier can block obviously destructive commands while missing a semantically valid operation that discards the wrong project state.
 
 The practical control stack therefore needs repository-scoped snapshots or reflogs, protected commit/push/deploy transitions, effect logs, and restore drills in addition to sandboxing. Incident-free anecdotes are weak evidence unless the runtime records enough effects to detect silent damage, and a backup is not a control until restoration has been tested.
+
+## November 7 follow-up: local permission files create a publication boundary
+
+A new HN submission adds a distinct failure path to the permission-fatigue story: a standing approval can be serialized into a project-local settings artifact, and sensitive command arguments become a repository disclosure risk if that artifact is later tracked.
+
+- **HN:** https://news.ycombinator.com/item?id=50407882
+- **Submitted source:** https://apiiro.com/blog/coding-agents-leaking-secrets-github-dont-ask-again
+- **Claude Code settings documentation:** https://code.claude.com/docs/en/settings
+
+The submitted article was blocked by a Cloudflare challenge during Scout's check, so its headline count of 1,122 files was not independently inspected. In the HN thread, the submitter clarified that the chain requires local settings to be committed and said their analysis traced 1,105 repositories, with a Claude-co-authored commit changing the file in 539. Those counts are author-reported and were not reproduced.
+
+The product documentation independently confirms the mechanism around the artifact: choosing “Yes, and don't ask again” can create `.claude/settings.local.json` and save the approval as an allow rule. Claude Code adds that path to the current machine's global Git excludes when it writes the file; a hand-created file must be ignored manually. A Claude Code team member further stated in the thread that the product historically did not scrub secrets from this path, characterized the observed files as manually created and checked in, and said the team was considering auto-mode checks or built-in secret scanning.
+
+The control lesson is narrower than the headline. A machine-local Git exclusion is not portable repository policy: it does not travel with a clone, protect a separately created file, or replace server-side secret scanning. Standing approvals therefore need an **artifact-publication boundary** as well as an execution boundary: redact secret-bearing arguments before persistence, keep local policy files under repository-visible ignore rules, scan the staged diff and full history, and treat later tracking of a local-only file as a policy violation. Auto mode may reduce persistent allow rules, but it does not by itself prove that generated settings, logs, transcripts, or command records are safe to publish.
 
 ## Operational implication
 
