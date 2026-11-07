@@ -2,6 +2,54 @@
 
 Source identity: https://www.xiaohongshu.com/explore/6ab7046b00000000140305a3
 
+## Assessment 2026-11-07T10:37:22.410Z
+
+Question: Perform a body-level review of XHS post 6ab7046b00000000140305a3 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+**Disposition: inaccessible.** The exact requested source is XHS post ID `6ab7046b00000000140305a3` at `https://www.xiaohongshu.com/explore/6ab7046b00000000140305a3`. The supplied retrieval redirected to a Rednote login URL and exposed only the complete 39-character string “Log in - rednote - share, connect, love.” This is login-page chrome, not search-card metadata, post-body text, or media-derived evidence.
+
+The post’s main contribution therefore cannot be identified. No title, author caption, substantive claim, argument, example, hashtag, comment, or other body content was available. The supplied material also contains no image, video, OCR, transcript, alt text, or meaningful media description. There is consequently no supporting evidence from which to assess author claims, limitations, novelty, or substantive relevance to the finite 2026-11-07 XHS backfill. These properties are unknown, not observed defects in the post.
+
+This receipt repeats the earlier authentication outcome and adds no body-level coverage. It supports only the checked conclusion that the current retrieval path is blocked by login. It does not support concluding that the post is empty, irrelevant, unsupported, or already covered. The exact blocker is the authentication boundary: retrieval does not reach the requested post body or its material media.
+
+Recovery requires a policy-compliant, untruncated authenticated retrieval for this same stable post ID that exposes the complete available body and materially relevant media text, including image OCR or a video transcript where applicable. Access controls must not be bypassed, and another post must not be substituted. If this identity is among the historically truncated set, the receipt must also satisfy the assignment’s specified untruncated-receipt condition for workflow run `wr_1794040651688_zrzq`.
+
+Accordingly, `inaccessible` is the only evidence-backed disposition suitable for reconciliation at present. The requested body-level review remains unfinished. This bounded call was read-only and does not establish that a durable assessment was saved or published; canonical path and publication evidence remain obligations of the owning workflow.
+
+Assessment incomplete. Obtain a policy-compliant, untruncated authenticated receipt for exact post ID 6ab7046b00000000140305a3, including the available body and material image OCR, video transcript, or other media text. Then reassess; the owning workflow must preserve the access record and complete durable save/publication with canonical path and publication evidence.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6ab7046b00000000140305a3",
+  "identity": "https://www.xiaohongshu.com/explore/6ab7046b00000000140305a3",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6ab7046b00000000140305a3%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T10:37:12.093Z",
+  "sha256": "f2620250f723dadf45060322e310d011b632a720a050d3d6b7b8ceaed9a06d91",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
+# XHS post 6ab7046b00000000140305a3 — inaccessible behind login
+
+Source identity: https://www.xiaohongshu.com/explore/6ab7046b00000000140305a3
+
 ## Assessment 2026-11-07T10:28:34.295Z
 
 Question: Perform a body-level review of XHS post 6ab7046b00000000140305a3 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
@@ -552,6 +600,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
