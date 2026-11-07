@@ -1,0 +1,28 @@
+version: 2
+
+language: "en-US"
+
+reviews:
+  profile: "assertive"
+  request_changes_workflow: false
+  high_level_summary: true
+  auto_review:
+    enabled: true
+    drafts: false
+  path_instructions:
+    - path: "**"
+      instructions: |
+        Follow AGENTS.md and CONTRIBUTING.md. Review changed behavior, not only
+        whether tests pass. Flag duplicated state authority, App policy in
+        generic Host mechanics, unbounded retries, identity or generation-fence
+        gaps, lost caller results, and unsafe recovery or deployment.
+
+        Apps own meaning, desired outcomes, and acceptance. The Host owns
+        storage, scheduling, bounded execution, recovery, and exposing results.
+        Do not request installation-specific behavior or App policy in generic
+        Host code.
+
+        When a contract changes, ask for a focused regression test and the
+        relevant design reference. Prefer an existing mechanism over a new
+        framework. Do not request unrelated rewrites or treat optional live
+        checks as CI proof.
