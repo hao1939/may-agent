@@ -2,6 +2,52 @@
 
 Source identity: https://www.xiaohongshu.com/explore/6abf8d0e0000000002011add
 
+## Assessment 2026-11-07T10:30:54.529Z
+
+Question: Perform a body-level review of XHS post 6abf8d0e0000000002011add for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+**Disposition: inaccessible.** The exact source is XHS post ID `6abf8d0e0000000002011add` at `https://www.xiaohongshu.com/explore/6abf8d0e0000000002011add`. The current retrieval redirected to a Rednote login URL whose redirect path preserves this same post identity. The only supplied text is “Log in - rednote - share, connect, love,” which is platform interface copy—not the post body, caption, comments, image-derived text, video transcript, or other post-specific evidence.
+
+Consequently, no main contribution or author claim can be identified. No examples, arguments, implementation details, results, citations, or supporting evidence are available to evaluate. The post’s substantive limitations and relevance to the requested research question remain unknown. These are access-caused evidence gaps, not observed defects in the post. Coverage is complete only for the returned 39-character login document; it does not constitute reading any part of the underlying post or inspecting its media.
+
+The governing frozen-inventory report confirms that this exact identity is item 11 and records the search-card title “Personal Agent，会成为下个入口吗🤔”. That title is search-card metadata only and cannot establish the post’s thesis or body-level content. The report already links the durable assessment at `/app/projects/scout-knowledge-lib/knowledge/findings/2026-11-07-source-assessment-c0465e9c2743.md`. The present receipt adds no substantive evidence beyond the existing inaccessible disposition. This read-only assessment does not save, modify, or publish that record and does not establish a new publication revision.
+
+The exact blocker is authentication-gated access: unauthenticated retrieval returned a login page instead of the requested post. Recovery requires a policy-compliant, authorized authenticated retrieval for this same post ID that yields an untruncated receipt containing the available body and any materially relevant caption, image text, or video transcript. No login bypass, substitute post, or inference from the search-card title is warranted. Completion also requires the owning workflow to return canonical publication evidence for the durable assessment.
+
+Assessment incomplete. See the assessment for missing evidence.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6abf8d0e0000000002011add",
+  "identity": "https://www.xiaohongshu.com/explore/6abf8d0e0000000002011add",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6abf8d0e0000000002011add%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T10:30:37.613Z",
+  "sha256": "2be12da9389538cb88bdd447a65c76deaeeadf38399bba6337c95a496ed95d0e",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
+# XHS post 6abf8d0e0000000002011add — inaccessible behind authentication
+
+Source identity: https://www.xiaohongshu.com/explore/6abf8d0e0000000002011add
+
 ## Assessment 2026-11-07T10:25:41.477Z
 
 Question: Perform a body-level review of XHS post 6abf8d0e0000000002011add for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
@@ -484,6 +530,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
