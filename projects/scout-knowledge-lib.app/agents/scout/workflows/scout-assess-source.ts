@@ -52,7 +52,7 @@ function isAcceptedXhsAuthenticationBlocker(
   sourceUrl: string,
   acceptance: string[],
   packet: SourcePacket,
-  draftComplete: boolean,
+  draft: { assessment: string; complete: boolean },
   recoveryRequirement: string | undefined,
 ): boolean {
   const permitsInaccessibleDisposition = acceptance.some(
@@ -61,10 +61,23 @@ function isAcceptedXhsAuthenticationBlocker(
       (/\bif inaccessible\b/i.test(criterion) ||
         /\bor inaccessible\b/i.test(criterion)),
   );
+  const dispositionEvidence = [draft.assessment, recoveryRequirement]
+    .filter((value): value is string => typeof value === "string")
+    .join("\n");
+  const recordsBodyReviewLimitation =
+    /\b(?:body|caption|post-specific body)\b/i.test(dispositionEvidence) &&
+    /\b(?:incomplete|unavailable|not exposed|not retrieved|no substantive source content)\b/i.test(
+      dispositionEvidence,
+    );
+  const recordsRecoveryRequirement =
+    /\brecovery requires?\b/i.test(dispositionEvidence) &&
+    /\bauthorized access\b/i.test(dispositionEvidence) &&
+    /\b(?:exact|same)\b/i.test(dispositionEvidence);
   if (
     !permitsInaccessibleDisposition ||
-    draftComplete ||
-    !recoveryRequirement?.trim()
+    draft.complete ||
+    !recordsBodyReviewLimitation ||
+    !recordsRecoveryRequirement
   )
     return false;
 
@@ -333,7 +346,7 @@ ${JSON.stringify(packet)}
       input.sourceUrl,
       input.acceptance,
       packet,
-      draft.complete,
+      draft,
       facts?.next_steps,
     );
     const finalComplete =

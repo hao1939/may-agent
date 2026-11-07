@@ -369,11 +369,9 @@ it("settles any explicitly permitted XHS authentication blocker after publicatio
         ...draft,
         title: "XHS access blocked",
         summary: "The exact post reached a login page.",
+        assessment:
+          "The exact post body was not exposed, so body-level review remains incomplete. Recovery requires authorized access to this same post ID.",
         complete: false,
-      },
-      facts: {
-        status: "partial",
-        next_steps: "Obtain authorized access to the exact post body.",
       },
     })) as WorkflowContext["agents"]["call"],
     data,
