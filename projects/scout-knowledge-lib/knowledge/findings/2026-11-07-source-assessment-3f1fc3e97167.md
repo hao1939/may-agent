@@ -2,6 +2,52 @@
 
 Source identity: https://www.xiaohongshu.com/explore/6a6c2de5000000003501680a
 
+## Assessment 2026-11-07T09:47:08.238Z
+
+Question: Perform a body-level review of XHS post 6a6c2de5000000003501680a for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+**Disposition: inaccessible.** The exact identity assessed is XHS post `6a6c2de5000000003501680a` at `https://www.xiaohongshu.com/explore/6a6c2de5000000003501680a`. The supplied retrieval redirected to a Rednote login URL whose redirect path preserves that post ID. The only extracted text was “Log in - rednote - share, connect, love.” This is authentication-gate text, not search-card metadata and not body-level evidence.
+
+No main contribution can therefore be attributed to the post’s author. The supplied material contains no title, caption, author text, image OCR, video transcript, comments, examples, results, references, or substantive claims. There is no supporting evidence to assess and no defensible basis for judging relevance to AI agents or the Scout knowledge library. This is not an observed defect in the post: its contents are unknown under the observed access conditions. The retrieval establishes only that unauthenticated access to the exact requested URL did not reach the post body; it does not establish that the post is deleted, empty, misleading, or unavailable to an authorized user.
+
+The current retrieval is materially identical to the earlier access attempts and adds no body evidence that would change their disposition. Recovery requires a permitted authenticated retrieval resolving the same post ID and exposing the body plus any material text available from images or video. Authentication controls must not be bypassed. A related post, search card, inferred topic, or later-discovered item must not be substituted.
+
+The requested body-level review therefore remains unfinished. This bounded call was read-only and did not save or publish anything. Although prior Task context previews an output path, no publication revision or canonical read-back was supplied here, so this assessment cannot independently verify the acceptance requirement for publication evidence. The owning workflow must preserve and publish this inaccessible assessment and return the canonical path and revision evidence.
+
+Assessment incomplete. Preserve the inaccessible disposition and access record. Retry body-level assessment only after a permitted authenticated retrieval exposes the exact post’s body and material image/video text; do not bypass authentication or substitute another item. The owning workflow must save/publish the durable assessment and return its canonical path and revision evidence.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6a6c2de5000000003501680a",
+  "identity": "https://www.xiaohongshu.com/explore/6a6c2de5000000003501680a",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6a6c2de5000000003501680a%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T09:46:58.951Z",
+  "sha256": "674908845f92cd60e03d289fc4f4621a96dc7668d808d80fc7e246bce2b552d4",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
+# XHS post 6a6c2de5000000003501680a — inaccessible behind login
+
+Source identity: https://www.xiaohongshu.com/explore/6a6c2de5000000003501680a
+
 ## Assessment 2026-11-07T09:42:41.598Z
 
 Question: Perform a body-level review of XHS post 6a6c2de5000000003501680a for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
@@ -132,6 +178,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
