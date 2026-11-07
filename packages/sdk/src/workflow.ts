@@ -10,6 +10,8 @@ import type {
   TaskPriority,
   TaskReconcileResult,
   TaskRevision,
+  TaskStatus,
+  TaskClosure,
 } from "./task.js";
 import type { Static, TSchema } from "typebox";
 
@@ -113,10 +115,10 @@ export type TaskView = {
   /** Automatic execution stopped; unfinished work and owner recovery remain live. */
   retryExhausted?: { generation: number; attemptId: string; failures: number; limit: number; exhaustedAt: string };
   id: string;
-  /** Owner ended execution; a prior accepted result alone does not close the Task. */
+  /** Compatibility projection of terminal status; never an independent lifetime authority. */
   closed?: boolean;
-  /** Current work phase. `done` means an accepted outcome; inspect `closed` for owner closure. */
-  status: "pending" | "running" | "waiting" | "attention" | "done";
+  /** Current Task lifecycle. Idle does not establish assignment fulfillment. */
+  status: TaskStatus;
   generation: number;
   outcome: string;
   summary?: string;
@@ -178,7 +180,7 @@ export type TaskDetail = TaskView & {
 };
 
 export type TaskListOptions = {
-  /** Exact phases to include. Omitted means every phase, including closed history. */
+  /** Exact lifecycle states to include. Omitted means every state, including ended history. */
   status?: TaskView["status"][];
   /** Bounded page size. Runtime caps this at 100. */
   limit?: number;
@@ -193,7 +195,7 @@ export type TaskPage = {
 
 /** Opt-in, read-only shadow grouping. Legacy Task identities remain the traceability authority. */
 export type TaskOutcomeProjection = {
-  /** Include accepted outcomes and closed history. Omitted means active work only. */
+  /** Include ended history. Omitted means open assignments, including idle. */
   includeDone?: boolean;
   /** Return only the outcome containing this exact Task after the active/history filter. */
   taskId?: string;
@@ -405,7 +407,7 @@ export type TaskReconciliationChild = {
   };
   hasLiveChildren: boolean;
   updatedAt?: string;
-  status: "pending" | "running" | "waiting" | "attention" | "done";
+  status: TaskStatus;
   completedAt?: string;
 };
 
@@ -429,7 +431,7 @@ export type TaskReconciliationSnapshotTask = {
   readiness?: TaskReconciliationChild["readiness"];
   hasLiveChildren: boolean;
   updatedAt?: string;
-  status: "pending" | "running" | "waiting" | "attention" | "done";
+  status: TaskStatus;
 };
 
 /** One durable event linked to the task before this attempt was claimed. */
@@ -577,6 +579,8 @@ export type TaskAttempt = {
   publish(localKey: string, event: AppEvent<Record<string, unknown>>): Promise<TaskEventReceipt>;
   /** Save revised requirements through the same creator capability used by agent tools. */
   reviseTask(change: TaskRevision): Promise<TaskDetail>;
+  /** End an assignment this Task created; exact accepted-result and current-version guards apply. */
+  closeTask(change: TaskClosure): Promise<TaskDetail>;
   /**
    * Observe live feedback, approval, steering, or cancellation addressed to
    * this Task. `accept` only marks the event for atomic consumption if this
@@ -630,6 +634,8 @@ export type WorkflowContext<TInput = unknown> = {
   reconciliation?: TaskReconciliationContext<TInput>;
   /** Task-owned workflows only. Save complete requirements using the recorded creator's authority. */
   reviseTask?: TaskAttempt["reviseTask"];
+  /** End an assignment created by this Task after reviewing its exact accepted result. */
+  closeTask?: TaskAttempt["closeTask"];
   /** Apply the same changes accepted in a final result, while continuing this execution. */
   applyTaskChanges?: TaskAttempt["apply"];
   readCommunication?: TaskAttempt["read"]["communication"];

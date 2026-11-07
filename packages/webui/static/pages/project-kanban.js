@@ -5,7 +5,7 @@ const TASK_SECTIONS = [
   { id: "running", label: "Working" },
   { id: "pending", label: "Queued" },
   { id: "waiting", label: "Waiting" },
-  { id: "up-to-date", label: "Up to date" },
+  { id: "idle", label: "Idle" },
   { id: "done", label: "Done" },
   { id: "closed", label: "Closed" },
   { id: "cancelled", label: "Cancelled" },
@@ -90,7 +90,7 @@ async function renderProjectKanban(el, options = {}) {
       <div class="readout-panel readout-compact-panel task-board-controls">
         <h3>${esc(board.appId)} Tasks</h3>
         <p>Page ${board.page} · ${page.items.length} Tasks · newest changes first. Counts and text filtering apply to this page only.</p>
-        <p class="task-reason">Up to date means recurring work is currently satisfied, not finished. Open a Task for its full goal, Conditions, dependencies, and history.</p>
+        <p class="task-reason">Idle means no work is runnable; the owner retains a specific responsibility or closes the assignment. Open a Task for its full goal, Conditions, dependencies, and history.</p>
         <label>State <select id="project-task-status" onchange="reloadProjectTasks()">
           <option value="">All states</option>${TASK_SECTIONS.map((s) => `<option value="${s.id}"${s.id === board.status ? " selected" : ""}>${s.label}</option>`).join("")}
         </select></label>

@@ -325,7 +325,7 @@ describe("HTTP human Task reads and board", () => {
     expect((await read("/api/projects/detail?path=projects/sample.app")).app.appId).toBe("alpha");
     const first = await read("/api/tasks?appId=alpha&limit=1");
     expect(first).toEqual(service.listTasks({ appId: "alpha", limit: 1 }));
-    expect(first.items[0]).toMatchObject({ taskId: "work/a ?&", status: "up-to-date", terminal: false });
+    expect(first.items[0]).toMatchObject({ taskId: "work/a ?&", status: "idle", terminal: false });
     expect(
       (await read(`/api/tasks?appId=alpha&limit=1&cursor=${encodeURIComponent(first.nextCursor)}`)).items[0].taskId,
     ).toBe("work/b");
@@ -534,7 +534,7 @@ describe("HTTP human Task reads and board", () => {
         await page.evaluate("void showTaskDetail('delayed')");
         await page.evaluate("showTaskDetail('work/0')");
         await page.evaluate("window.finishDelayedTask()");
-        expect(await page.$eval("#task-detail-drawer", (el) => el.textContent)).toContain("up-to-date");
+        expect(await page.$eval("#task-detail-drawer", (el) => el.textContent)).toContain("idle");
         expect(await page.$eval("#task-detail-drawer", (el) => el.textContent)).not.toContain("STALE RESULT");
         await page.evaluate("window.fetch = window.originalTaskFetch");
         db.prepare(

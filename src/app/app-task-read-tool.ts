@@ -25,11 +25,12 @@ const parameters = Type.Object(
       Type.Literal("contract"),
       Type.Literal("publish"),
       Type.Literal("update"),
+      Type.Literal("close"),
       Type.Literal("apply"),
       Type.Literal("communication"),
     ]),
     taskId: Type.Optional(
-      Type.String({ minLength: 1, description: "Exact Task id; required for get, outcomes and update" }),
+      Type.String({ minLength: 1, description: "Exact Task id; required for get, outcomes, update and close" }),
     ),
     localKey: Type.Optional(Type.String({ minLength: 1, maxLength: 256 })),
     eventType: Type.Optional(Type.String({ minLength: 3 })),
@@ -50,6 +51,9 @@ const parameters = Type.Object(
           Type.Literal("running"),
           Type.Literal("waiting"),
           Type.Literal("attention"),
+          Type.Literal("idle"),
+          Type.Literal("closed"),
+          Type.Literal("cancelled"),
           Type.Literal("done"),
         ]),
       ),
@@ -120,6 +124,9 @@ const parameters = Type.Object(
     ),
     changes: Type.Optional(Type.Unsafe<TaskChanges>(taskChangesSchema)),
     expectedGeneration: Type.Optional(Type.Integer({ minimum: 1 })),
+    expectedResourceVersion: Type.Optional(Type.Integer({ minimum: 1 })),
+    afterResult: Type.Optional(Type.String({ minLength: 1 })),
+    reason: Type.Optional(Type.String({ minLength: 1 })),
     input: Type.Optional(
       Type.Object({ kind: Type.String({ minLength: 1 }), data: Type.Unknown() }, { additionalProperties: false }),
     ),
@@ -129,11 +136,14 @@ const parameters = Type.Object(
 
 type Params = {
   observation?: ObservationInterest;
-  action: "list" | "outcomes" | "get" | "contract" | "publish" | "update" | "apply" | "communication";
+  action: "list" | "outcomes" | "get" | "contract" | "publish" | "update" | "close" | "apply" | "communication";
   inputId?: string;
   communicationQuery?: TaskCommunicationQuery;
   changes?: TaskChanges;
   expectedGeneration?: number;
+  expectedResourceVersion?: number;
+  afterResult?: string;
+  reason?: string;
   input?: AppInput;
   taskId?: string;
   localKey?: string;
@@ -217,7 +227,7 @@ export function createAppTaskReadTool(options: {
     name: "tasks",
     label: "Tasks",
     description:
-      "List or get Tasks, read an App input contract, publish facts, update an assignment you created, or apply typed changes. apply takes changes {requests?, conditions?, actions?, communication?, inputKeys?, facts?}, uses the same admission as final results, returns saved receipts, and keeps this attempt running. Use it to request review and continue testing. communication changes publish or update accepted asks through inputId from the saved inputs, without transport details. Use action communication with inputId for current discussion context; optional communicationQuery reads an exact Request, pages Requests or reads/finds Topics. A Condition {requestId} can refer to a request in this call or one already admitted in this caller generation. contract returns the App owner agent, full installed input schema and observation capabilities for target.appId (default: current App). Supply observation {observerId,id,resource,expected} to build a Condition; return it in your Task result to retain the interest. Infra recovers missed facts without invoking the agent. Use Task reviewAt only when deliberate reconsideration is useful. No registration or taskId is needed. Exact apps.list reads expose live observer health; last changed fact is not a heartbeat. Before reusing or revising work, read the exact Task and compare outcome, acceptance, input and execution method; a matching topic alone is insufficient. For update, supply the observed expectedGeneration and complete revised input, preserving required references. Code checks creator authority, saves requirements and wakes the worker. Return proposed changes to your own assignment to its creator. target.appId selects another responsible App; the operation is the same.",
+      "List or get Tasks, read an App input contract, publish facts, update an assignment you created, or apply typed changes. apply takes changes {requests?, conditions?, actions?, communication?, inputKeys?, facts?}, uses the same admission as final results, returns saved receipts, and keeps this attempt running. Use it to request review and continue testing. communication changes publish or update accepted asks through inputId from the saved inputs, without transport details. Use action communication with inputId for current discussion context; optional communicationQuery reads an exact Request, pages Requests or reads/finds Topics. A Condition {requestId} can refer to a request in this call or one already admitted in this caller generation. contract returns the App owner agent, full installed input schema and observation capabilities for target.appId (default: current App). Supply observation {observerId,id,resource,expected} to build a Condition; return it in your Task result to retain the interest. Infra recovers missed facts without invoking the agent. Use Task reviewAt only when deliberate reconsideration is useful. No registration or taskId is needed. Exact apps.list reads expose live observer health; last changed fact is not a heartbeat. Before reusing or revising work, read the exact Task and compare outcome, acceptance, input and execution method; a matching topic alone is insufficient. For close, supply taskId, expectedGeneration, expectedResourceVersion, afterResult (the exact accepted attempt) and an owner disposition reason. Only the recorded creating Task can close this assignment; new input or unresolved work requires a fresh review. Idle means no runnable work, not completed responsibility. For update, supply the observed expectedGeneration and complete revised input, preserving required references. Code checks creator authority, saves requirements and wakes the worker. Return proposed changes to your own assignment to its creator. target.appId selects another responsible App; the operation is the same.",
     parameters,
     execute: async (_toolCallId: string, raw: unknown): Promise<AgentToolResult<undefined>> => {
       const params = raw as Params;
@@ -250,6 +260,24 @@ export function createAppTaskReadTool(options: {
           const apply = options.applier?.();
           if (!apply) return result({ error: "Current Task apply capability is unavailable" });
           return result(await apply(params.changes));
+        }
+        if (params.action === "close") {
+          if (!scope?.taskId || !scope.generation || !scope.attemptId)
+            return result({ error: "No current fenced Task attempt" });
+          if (!params.taskId || !params.expectedGeneration || !params.expectedResourceVersion || !params.afterResult || !params.reason)
+            return result({ error: "close requires taskId, expectedGeneration, expectedResourceVersion, afterResult and reason" });
+          return result((await import("./core/tasks/app-task-runtime.js")).closeCreatedLoadedAppTask({
+            bus: options.bus,
+            binding: { appId, taskId: scope.taskId, generation: scope.generation, attemptId: scope.attemptId },
+            change: {
+              appId: params.target?.appId?.trim().replace(/\.app$/, "") || appId,
+              taskId: params.taskId.trim(),
+              expectedGeneration: params.expectedGeneration,
+              expectedResourceVersion: params.expectedResourceVersion,
+              afterResult: params.afterResult,
+              reason: params.reason,
+            },
+          }));
         }
         if (params.action === "update") {
           if (!scope?.taskId || !scope.generation || !scope.attemptId)

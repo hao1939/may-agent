@@ -18,6 +18,7 @@ export function taskExecutionContext(
     taskEmitter: input.taskEvents,
     observeEvents: attempt.onEvent,
     reviseTask: (change) => attempt.reviseTask(change),
+    closeTask: (change) => attempt.closeTask(change),
     applyTaskChanges: (changes) => attempt.apply(changes),
     taskRead: attempt.read.tasks,
     readCommunication: attempt.read.communication,
@@ -42,7 +43,7 @@ export function taskExecutionContext(
       taskSnapshot: {
         live: (input.taskSnapshot?.live ?? []).map(({ phase, ...item }) => ({
           ...item,
-          status: phase === "converged" ? "done" : phase,
+          status: phase === "converged" ? "idle" : phase,
         })),
         truncated: input.taskSnapshot?.truncated ?? false,
       },

@@ -1243,7 +1243,7 @@ describe("common Task lifecycle", () => {
     expect(closeAppTask(f.config, input).applied).toBe(false);
     f.reopen();
     expect(readRuntimeTaskView({ taskStateConfig: f.config }, "conversation")).toMatchObject({
-      status: "done", closed: true,
+      status: "closed", closed: true,
     });
     expect(f.config.resourceStore.readTask("conversation")?.status.result).toEqual({ answered: true });
     expect(f.config.resourceStore.readAttempt(current.attemptId)?.acceptedResult).toMatchObject({
@@ -1486,7 +1486,7 @@ describe("common Task lifecycle", () => {
     expect(completeAppTask(f.config, current, { summary: "Late success", facts: ["late"] }).status).toBe("stale");
     f.reopen();
     expect(readRuntimeTaskView({ taskStateConfig: f.config }, "conversation")).toMatchObject({
-      status: "attention", closed: true,
+      status: "cancelled", closed: true,
     });
     expect(f.config.resourceStore.readAttempt(current.attemptId)).not.toHaveProperty("acceptedResult");
     expect(f.config.resourceStore.listRecoveryCandidates().items).toEqual([]);

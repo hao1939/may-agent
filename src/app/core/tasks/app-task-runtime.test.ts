@@ -633,7 +633,7 @@ it("shares Task detail, evidence and exact outcome reads between tools and execu
         for (const includeDone of [false, true]) {
           const projection = { taskId: "work/accepted", includeDone };
           const outcome = await read.tasks.outcomes(projection);
-          expect(outcome.sourceCount).toBe(includeDone ? 2 : 0);
+          expect(outcome.sourceCount).toBe(2);
           expect(await toolRead({ action: "outcomes", ...projection })).toEqual(JSON.parse(JSON.stringify(outcome)));
         }
         await expect(read.tasks.list({ limit: 101 })).rejects.toThrow("between 1 and 100");
@@ -676,6 +676,124 @@ it("shares Task detail, evidence and exact outcome reads between tools and execu
     dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
   });
   expect(executed).toBeTrue();
+});
+
+it("a Task-owned workflow closes a reviewed child through the common creator capability", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  const workflowDir = join(f.root, "agents", "sample-owner", "workflows");
+  mkdirSync(workflowDir, { recursive: true });
+  writeFileSync(join(workflowDir, "dispose.ts"), `
+export const name = "dispose";
+export const description = "Review and dispose a child assignment";
+export async function execute(ctx) {
+  const child = await ctx.read.tasks.get("work/child");
+  const result = await ctx.closeTask({appId: "sample", taskId: child.id,
+    expectedGeneration: child.generation, expectedResourceVersion: child.resourceVersion,
+    afterResult: child.acceptedAttempt.id, reason: "Consumed the finite result"});
+  return ctx.done("Child disposition saved", {state: "converged", summary: "Owner accepted the child", facts: [result.status]});
+}`);
+  await installAppTaskRuntimes({ ...options(f, bus), installControllers: false,
+    agentsRoot: join(f.root, "agents"), sharedRoot: join(f.root, "shared"),
+    appRegistrySnapshot: { id: "creator-close", generation: 1,
+      entries: [{ appDir: f.appDir, definition: definition() }] } });
+  const config = loadedTaskConfig(f);
+  for (const id of ["work/parent", "work/child"]) observeAppTaskIntent(config, {
+    appAgent: "sample-owner", creator: { appId: "sample", taskId: "work/parent" },
+    intent: { id, parentId: "operations", outcome: "Review evidence", acceptance: ["Verified"],
+      ...(id === "work/parent" ? { workflow: "dispose" } : {}) },
+  });
+  const child = claimObservedAppTask(config, { taskId: "work/child", appAgent: "sample-owner", handler: "auto" });
+  if (child.kind !== "claimed") throw new Error("Expected child claim");
+  completeAppTask(config, child, { summary: "Supported no change", facts: ["verified"] });
+  await reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId: "work/parent",
+    dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+  expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId: "work/child" })).toMatchObject({ status: "closed" });
+  expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId: "work/parent" })).toMatchObject({
+    status: "idle", summary: "Owner accepted the child", facts: ["closed"],
+  });
+});
+
+it("a parent attempt sees the same queued child lifecycle as exact Task reads", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  let executed = false;
+  await installCoreTaskRuntimes({ ...options(f, bus), installControllers: false,
+    appRegistrySnapshot: { id: "child-lifecycle", generation: 1,
+      entries: [{ appDir: f.appDir, definition: definition() }] },
+    executors: { inspect: async (attempt) => {
+      const child = attempt.children.live.find(({ taskId }) => taskId === "work/child");
+      expect(child).toMatchObject({ status: "pending", readiness: { state: "capacity-blocked" } });
+      const detail = await attempt.read.tasks.get("work/child");
+      expect(detail?.status).toBe(child?.status);
+      expect((await attempt.read.tasks.list({ status: ["pending"] })).items)
+        .toEqual([expect.objectContaining({ id: "work/child", status: child!.status })]);
+      executed = true;
+      return { state: "converged", summary: "Queued child remains owned", facts: ["child:queued"] };
+    } },
+  });
+  const config = loadedTaskConfig(f);
+  observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+    id: "work/parent", parentId: "operations", outcome: "Review child", acceptance: ["Exact state checked"], executor: "inspect",
+  } });
+  observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+    id: "work/child", parentId: "work/parent", outcome: "Review each input", acceptance: ["Inputs handled"],
+  } });
+  const child = claimObservedAppTask(config, { taskId: "work/child", appAgent: "sample-owner", handler: "auto" });
+  if (child.kind !== "claimed") throw new Error("Expected child claim");
+  completeAppTask(config, child, { summary: "First cycle accepted" });
+  recordAppTaskTrigger(config, "work/child", { type: "source.changed", data: { revision: 2 } });
+  await reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId: "work/parent",
+    dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+  expect(executed).toBe(true);
+  expect(config.resourceStore.readTask("work/child")?.status.phase).toBe("converged");
+});
+
+it.each(["waiting", "converged"] as const)("workflow snapshots agree with exact reads for queued %s work", async (phase) => {
+  const f = fixture();
+  const bus = eventBus();
+  const workflowDir = join(f.root, "agents", "sample-owner", "workflows");
+  mkdirSync(workflowDir, { recursive: true });
+  writeFileSync(join(workflowDir, "inspect-snapshot.ts"), `
+export const name = "inspect-snapshot";
+export const description = "Compare bounded Task lifecycle views";
+export async function execute(ctx) {
+  const child = ctx.reconciliation.children.live.find(item => item.taskId === "work/child");
+  const snapshot = ctx.reconciliation.taskSnapshot.live.find(item => item.taskId === "work/child");
+  const detail = await ctx.read.tasks.get("work/child");
+  const listed = (await ctx.read.tasks.list({ status: ["pending"] })).items.find(item => item.id === "work/child");
+  if (!snapshot || snapshot.status !== "pending" || snapshot.readiness.state !== "capacity-blocked"
+      || snapshot.status !== detail.status || snapshot.status !== child.status || listed?.status !== snapshot.status)
+    throw new Error("Task lifecycle views disagree: " + JSON.stringify({child, snapshot, detail, listed}));
+  return ctx.done("Task views agree", { state: "converged", summary: "Queued work remains pending", facts: ["views:consistent"] });
+}`);
+  await installAppTaskRuntimes({ ...options(f, bus), installControllers: false,
+    agentsRoot: join(f.root, "agents"), sharedRoot: join(f.root, "shared"),
+    appRegistrySnapshot: { id: "snapshot-lifecycle", generation: 1,
+      entries: [{ appDir: f.appDir, definition: definition() }] } });
+  const config = loadedTaskConfig(f);
+  observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+    id: "work/parent", parentId: "operations", outcome: "Review child", acceptance: ["Exact state checked"],
+    workflow: "inspect-snapshot",
+  } });
+  observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+    id: "work/child", parentId: "work/parent", outcome: "Review each input", acceptance: ["Inputs handled"],
+  } });
+  const child = claimObservedAppTask(config, { taskId: "work/child", appAgent: "sample-owner", handler: "auto" });
+  if (child.kind !== "claimed") throw new Error("Expected child claim");
+  if (phase === "converged") completeAppTask(config, child, { summary: "First cycle accepted" });
+  else deferAppTask(config, child, {
+    disposition: "waiting", summary: "Await source",
+    conditions: [{ id: "source-ready", type: "source.ready", subject: "source:fixture", expected: true,
+      owner: "app:source", reviewAfterMs: 60_000 }],
+  });
+  recordAppTaskTrigger(config, "work/child", { type: "source.changed", data: { revision: 2 } });
+  await reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId: "work/parent",
+    dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+  expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId: "work/parent" })).toMatchObject({
+    status: "idle", summary: "Queued work remains pending", facts: ["views:consistent"],
+  });
+  expect(config.resourceStore.readTask("work/child")?.status.phase).toBe(phase);
 });
 
 it.each(["converged", "waiting", "incomplete"] as const)("carries explicit earlier input through executor reads and %s settlement", async (state) => {
@@ -1221,6 +1339,20 @@ describe("caller feedback PoC", () => {
         result: { result: { source: "beta" } },
         input: { data: { source: "alpha" } },
       });
+      // Creator disposition goes through the shipped tool, retaining the exact input answer.
+      const closer = createAppTaskReadTool({ bus, scope: () => ({ appId: "sample", taskId: "parent",
+        generation: claim.generation, attemptId: claim.attemptId }) });
+      const resource = target.resourceStore.readTask("measurement")!;
+      const request = { action: "close", target: { appId: "worker" }, taskId: "measurement",
+        expectedGeneration: resource.metadata.generation, expectedResourceVersion: resource.metadata.resourceVersion,
+        afterResult: next.attemptId, reason: "Owner consumed the verified measurement" };
+      for (let replay = 0; replay < 2; replay++) {
+        const closed = await closer.execute("close-measurement", request);
+        expect(JSON.parse((closed.content[0] as { text: string }).text)).toMatchObject({
+          status: "closed", closed: true, result: { source: "beta" },
+        });
+      }
+      expect(host.get(originalInput.id)).toMatchObject({ status: "done", result: { result: { source: "beta" } } });
     } finally {
       host.close();
     }
@@ -8074,7 +8206,7 @@ describe("canonical App task runtime", () => {
     bus.emit(feedback);
 
     const deadline = performance.now() + 2_000;
-    while (readLoadedAppTaskView({ bus, appDir: f.appDir, taskId: "work/registered-executor" })?.status !== "done" && performance.now() < deadline) {
+    while (readLoadedAppTaskView({ bus, appDir: f.appDir, taskId: "work/registered-executor" })?.status !== "idle" && performance.now() < deadline) {
       await Bun.sleep(5);
     }
     expect(calls).toBe(1);
@@ -8082,7 +8214,7 @@ describe("canonical App task runtime", () => {
     expect(secondListenerSawFeedback).toBeTrue();
     expect(published).toHaveLength(1);
     expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId: "work/registered-executor" })).toMatchObject({
-      status: "done",
+      status: "idle",
       executor: "reviewer",
       summary: "Registered executor completed the Task",
       facts: ["test:reviewer:1"],
@@ -9031,13 +9163,13 @@ describe("canonical App task runtime", () => {
     await attach(true);
     const completionDeadline = performance.now() + 1500;
     while (
-      readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })?.status !== "done" &&
+      readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })?.status !== "idle" &&
       performance.now() < completionDeadline
     )
       await Bun.sleep(5);
     expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
       id: taskId,
-      status: "done",
+      status: "idle",
       generation: 2,
       facts: ["verified:current-input"],
     });
@@ -9748,7 +9880,7 @@ describe("canonical App task runtime", () => {
         },
       });
       expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
-        status: "done",
+        status: "idle",
         facts: expect.arrayContaining(["provider:facts"]),
       });
       expect(readFileSync(join(accepted.workspace!.path, "retained.txt"), "utf8")).toBe("unfinished source\n");

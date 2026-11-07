@@ -1703,13 +1703,14 @@ function liveTaskContext(
   tree: TaskTree,
   resource: AppTaskResource,
   readiness: AppTaskReadiness | undefined,
+  phase = resource.status.phase,
 ): AppTaskChildContext["live"][number] {
   const attempt = currentResourceAttempt(tree, resource);
   return {
     taskId: resource.metadata.id,
     parentId: resource.spec.parentId,
     generation: resource.metadata.generation,
-    phase: resource.status.phase,
+    phase,
     outcome: boundedChildContextText(resource.spec.outcome),
     ...(resource.spec.owner ? { agent: resource.spec.owner } : {}),
     ...(resource.spec.workflow ? { workflow: resource.spec.workflow } : {}),
@@ -1750,12 +1751,13 @@ function liveTaskSnapshotContext(
   tree: TaskTree,
   resource: AppTaskResource,
   readiness: AppTaskReadiness | undefined,
+  phase: AppTaskResource["status"]["phase"],
 ): AppTaskSnapshotContext {
   return {
     taskId: resource.metadata.id,
     parentId: resource.spec.parentId,
     generation: resource.metadata.generation,
-    phase: resource.status.phase,
+    phase,
     outcome: boundedChildContextText(resource.spec.outcome).slice(0, MAX_SNAPSHOT_CONTEXT_TEXT),
     ...(resource.spec.owner ? { agent: resource.spec.owner } : {}),
     ...(resource.spec.executor ? { executor: resource.spec.executor } : {}),
@@ -1797,12 +1799,15 @@ export function readAppTaskChildContext(config: AppTaskContext, taskId: string):
     { taskIds: new Set([taskId, ...runningIds]) },
     { childLimit: MAX_LIVE_CHILD_CONTEXT },
   );
-  const readinessById = appTaskReadinessById(tree, config.maxConcurrent);
-  const live = Object.values(tree.resources ?? {})
-    .filter((resource) => resource.spec.parentId === taskId && !tree.cancellations?.[resource.metadata.id])
+  const children = Object.values(tree.resources ?? {})
+    .filter((resource) => resource.spec.parentId === taskId && !tree.cancellations?.[resource.metadata.id] &&
+      (tree.receipts?.[resource.metadata.id]?.metadata.generation ?? -1) < resource.metadata.generation)
     .sort((left, right) => left.metadata.id.localeCompare(right.metadata.id))
-    .slice(0, MAX_LIVE_CHILD_CONTEXT)
-    .map((resource) => liveTaskContext(tree, resource, readinessById[resource.metadata.id]));
+    .slice(0, MAX_LIVE_CHILD_CONTEXT);
+  const viewPhases = config.resourceStore.readTaskViewPhases(children.map(({ metadata }) => metadata.id));
+  const readinessById = appTaskReadinessById(tree, config.maxConcurrent, viewPhases);
+  const live = children.map((resource) =>
+    liveTaskContext(tree, resource, readinessById[resource.metadata.id], viewPhases[resource.metadata.id]));
   const completed = Object.values(tree.receipts ?? {})
     .filter((receipt) => receipt.parentId === taskId)
     .sort((left, right) => right.completedAt.localeCompare(left.completedAt))
@@ -1848,14 +1853,15 @@ export function readAppTaskLiveSnapshot(config: AppTaskContext, currentTaskId: s
   const runningIds = config.resourceStore.listTaskIdsByPhase(["running"], appTaskConcurrencyLimit(config));
   const contextIds = [...new Set([...indexedIds, ...runningIds])];
   const tree = config.resourceStore.readTaskContext({ taskIds: contextIds }, { includeHistory: false, childLimit: 1 });
-  const readinessById = appTaskReadinessById(tree, config.maxConcurrent);
+  const viewPhases = config.resourceStore.readTaskViewPhases(indexedIds);
+  const readinessById = appTaskReadinessById(tree, config.maxConcurrent, viewPhases);
   const candidates = Object.values(tree.resources ?? {})
-    .filter((resource) => indexedIdSet.has(resource.metadata.id) && resource.status.phase !== "converged")
+    .filter((resource) => indexedIdSet.has(resource.metadata.id) && viewPhases[resource.metadata.id] !== "converged")
     .sort((left, right) => left.metadata.id.localeCompare(right.metadata.id));
   return {
     live: candidates
       .slice(0, MAX_APP_TASK_LIVE_SNAPSHOT)
-      .map((resource) => liveTaskSnapshotContext(tree, resource, readinessById[resource.metadata.id])),
+      .map((resource) => liveTaskSnapshotContext(tree, resource, readinessById[resource.metadata.id], viewPhases[resource.metadata.id]!)),
     truncated: indexedIds.length > MAX_APP_TASK_LIVE_SNAPSHOT,
   };
 }

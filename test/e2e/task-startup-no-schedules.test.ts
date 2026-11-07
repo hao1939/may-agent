@@ -172,7 +172,7 @@ test.each(["waiting", "running"] as const)(
             })) as {
               task?: { id: string; status: string; summary: string };
             };
-            return result.task?.status === "done" ? result.task : null;
+            return result.task?.status === "idle" ? result.task : null;
           },
           {
             timeoutMs: 10000,

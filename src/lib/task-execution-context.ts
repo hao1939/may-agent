@@ -16,6 +16,7 @@ export interface TaskExecutionContext {
   taskEmitter: AppTaskEvents;
   observeEvents: TaskAttempt["onEvent"];
   reviseTask: TaskAttempt["reviseTask"];
+  closeTask: TaskAttempt["closeTask"];
   applyTaskChanges: TaskAttempt["apply"];
   readCommunication?: NonNullable<TaskAttempt["read"]["communication"]>;
   agentDefinitions?: ReadonlyMap<string, SubagentDefinition>;

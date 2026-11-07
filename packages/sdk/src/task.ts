@@ -8,6 +8,10 @@ import type {
 } from "./app.js";
 
 export type TaskPriority = "P0" | "P1" | "P2" | "P3";
+/** One Task lifecycle. `done` is reserved for retained historical completion receipts.
+ * Idle has no runnable work and retains responsibility. Attempt result
+ * judgments (`converged`, `waiting`, `incomplete`) remain execution evidence. */
+export type TaskStatus = "pending" | "running" | "waiting" | "attention" | "idle" | "closed" | "cancelled" | "done";
 /** Stable executor adapter name selected by durable Task intent. */
 export type TaskExecutorName = string;
 
@@ -16,6 +20,16 @@ export type ResourceCreator = { appId: string; taskId?: string };
 
 /** Revise an exact assignment using the responsible App's ordinary typed input. */
 export type TaskRevision = { appId: string; taskId: string; expectedGeneration: number; input: AppInput };
+
+/** Creator ends an exact assignment after consuming its accepted result. */
+export type TaskClosure = {
+  appId: string;
+  taskId: string;
+  expectedGeneration: number;
+  expectedResourceVersion: number;
+  afterResult: string;
+  reason: string;
+};
 
 /** Desired durable outcome handed to the task reconciler. */
 export type TaskIntent = {

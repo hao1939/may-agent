@@ -666,6 +666,7 @@ export interface RunWorkflowDirectOpts {
   /** Fenced event capability for a resource-backed Task attempt. */
   taskEmitter?: AppTaskEvents;
   reviseTask?: TaskAttempt["reviseTask"];
+  closeTask?: TaskAttempt["closeTask"];
   onEvent?: (event: WorkflowEvent) => void;
   trace?: EventTrace;
   executionPaths?: { appDir: string; projectDir: string; workspaceDir: string };
@@ -709,6 +710,7 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
     recoveryOwner: opts.recoveryOwner,
     taskEmitter: opts.taskEmitter,
     reviseTask: opts.reviseTask,
+    closeTask: opts.closeTask,
     onEvent: opts.onEvent,
     trace: opts.trace,
     runtimeCtx: opts.runtimeCtx,
@@ -794,6 +796,7 @@ export interface WorkflowToolOptions {
   /** Fenced App-authored event capability for a resource-backed Task attempt. */
   taskEmitter?: AppTaskEvents;
   reviseTask?: TaskAttempt["reviseTask"];
+  closeTask?: TaskAttempt["closeTask"];
   /** Resolved app/domain paths supplied by the Host. */
   executionPaths?: { appDir: string; projectDir: string; workspaceDir: string };
   /** App-authored input for a system-dispatched top-level workflow. */
@@ -1478,6 +1481,14 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               reviseTask: (change: Parameters<TaskAttempt["reviseTask"]>[0]) => {
                 assertExecutionActive();
                 return trackStep(opts.reviseTask!(change));
+              },
+            }
+          : {}),
+        ...(opts.taskBinding && opts.closeTask
+          ? {
+              closeTask: (change: Parameters<TaskAttempt["closeTask"]>[0]) => {
+                assertExecutionActive();
+                return trackStep(opts.closeTask!(change));
               },
             }
           : {}),

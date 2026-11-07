@@ -134,7 +134,10 @@ export function renderTelegramApps(apps: HumanAppView[], selectedApp?: string): 
     "Apps:",
     ...apps.map((app) => {
       const states = [
+        `${app.openTasks ?? app.activeTasks} open`,
         `${app.activeTasks} active`,
+        ...(app.idleTasks ? [`${app.idleTasks} idle`] : []),
+        ...(app.queuedTasks ? [`${app.queuedTasks} queued`] : []),
         ...(app.runningTasks ? [`${app.runningTasks} running`] : []),
         ...(app.waitingTasks ? [`${app.waitingTasks} waiting`] : []),
         ...(app.attentionTasks ? [`${app.attentionTasks} attention`] : []),
@@ -222,7 +225,9 @@ function taskSection(task: HumanTaskView): string {
   if (task.humanAction) return "Needs you";
   if (task.status === "pending" || task.status === "running") return "Working";
   if (task.status === "waiting") return "Waiting";
-  if (task.status === "up-to-date") return "Up to date";
+  if (task.status === "idle") return "Idle";
+  if (task.status === "closed") return "Closed";
+  if (task.status === "cancelled") return "Cancelled";
   if (task.terminal) return "Completed";
   return "Attention";
 }
@@ -231,7 +236,7 @@ function taskStateMarker(task: Pick<HumanTaskView, "status" | "humanAction" | "t
   if (task.humanAction) return "🔴";
   if (task.status === "pending" || task.status === "running") return "🔵";
   if (task.status === "waiting") return "🟡";
-  if (task.status === "up-to-date") return "🟢";
+  if (task.status === "idle") return "🟢";
   if (task.terminal) return "⚪";
   return "🟠";
 }
@@ -248,10 +253,10 @@ function renderTaskCard(task: HumanTaskView): string {
 }
 
 export function renderTelegramTasks(tasks: HumanTaskView[], includeDone: boolean, hasMore = false): string {
-  if (tasks.length === 0) return includeDone ? "No active or recent Tasks." : "No active Tasks.";
-  const sections = ["Needs you", "Working", "Waiting", "Up to date", "Attention", "Completed"];
+  if (tasks.length === 0) return includeDone ? "No Tasks." : "No open Tasks.";
+  const sections = ["Needs you", "Working", "Waiting", "Idle", "Attention", "Closed", "Cancelled", "Completed"];
   return [
-    `<b>${includeDone ? "Tasks · active and recent" : "Tasks · active"}</b>`,
+    `<b>${includeDone ? "Tasks · open and history" : "Tasks · open"}</b>`,
     ...sections.flatMap((section) => {
       const matching = tasks.filter((task) => taskSection(task) === section);
       return matching.length > 0
@@ -272,8 +277,8 @@ function taskStatusLabel(task: Pick<HumanTaskView, "status" | "humanAction">): s
       return "waiting";
     case "attention":
       return task.humanAction ? "needs you" : "needs review";
-    case "up-to-date":
-      return "up to date";
+    case "idle":
+      return "idle";
     case "done":
       return "done";
     case "closed":
@@ -297,8 +302,8 @@ function currentTaskText(task: HumanTaskView): string {
       return "No new progress has been reported while the Task waits.";
     case "attention":
       return "No recovery update has been reported yet.";
-    case "up-to-date":
-      return "Current linked work is reconciled; this Task will wake when relevant facts change.";
+    case "idle":
+      return "No work is runnable. The owner must retain a specific next responsibility or close this assignment.";
     case "done":
       return "No result summary was recorded.";
     case "cancelled":

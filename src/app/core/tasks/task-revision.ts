@@ -11,7 +11,9 @@ import {
 } from "./app-task-reconciler.js";
 import { normalizeTaskAgent } from "../../app-agent-selection.js";
 
-export type TaskRevisionActor = { appId: string; taskId: string; generation: number; attemptId: string };
+import { assertCurrentTaskActor, type TaskControlActor } from "./task-actor.js";
+
+export type TaskRevisionActor = TaskControlActor;
 
 /** One creator operation for every Task executor, independent of its input route. */
 export function reviseAppTask(input: {
@@ -36,18 +38,7 @@ export function reviseAppTask(input: {
   if (!app.task) throw new Error("The responsible App does not accept Task revisions");
   assertValidAppInput(app, change.input);
   const authorize = () => {
-    const resource = source.resourceStore.readTask(actor.taskId);
-    const attempt = source.resourceStore.readAttempt(actor.attemptId);
-    if (
-      !resource ||
-      source.resourceStore.isCancelled(actor.taskId) ||
-      resource.metadata.generation !== actor.generation ||
-      resource.status.currentAttemptId !== actor.attemptId ||
-      attempt?.state !== "running" ||
-      attempt.taskId !== actor.taskId ||
-      attempt.taskGeneration !== actor.generation
-    )
-      throw new Error("Task revision caller is no longer current");
+    assertCurrentTaskActor(source, actor, "revision");
     const current = target.resourceStore.readTask(change.taskId);
     assertResourceCreator(current?.metadata.creator, { appId: actor.appId, taskId: actor.taskId });
     if (!current || current.metadata.generation !== change.expectedGeneration)

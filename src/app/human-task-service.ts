@@ -1,3 +1,5 @@
+import { taskStatusFromPhase } from "./core/reads/task-status.js";
+import type { TaskStatus } from "@may-agent/sdk";
 import { isHumanActionOwner } from "./core/tasks/human-condition.js";
 import type { ApprovalProposal } from "@may-agent/control/events";
 import type { AppRegistry } from "./core/apps/registry.js";
@@ -33,8 +35,7 @@ import {
   type ResolvedTaskReference,
 } from "./core/state/task-reference-index.js";
 
-export type HumanTaskStatus =
-  "pending" | "running" | "waiting" | "attention" | "up-to-date" | "done" | "closed" | "cancelled";
+export type HumanTaskStatus = TaskStatus;
 
 export { isHumanActionOwner } from "./core/tasks/human-condition.js";
 
@@ -177,7 +178,12 @@ export type HumanAppView = {
   id: string;
   owner: string;
   description?: string;
+  /** Queued, running, waiting or attention; excludes idle and ended history. */
   activeTasks: number;
+  /** All open assignments, including idle. */
+  openTasks?: number;
+  idleTasks?: number;
+  queuedTasks?: number;
   attentionTasks: number;
   runningTasks: number;
   waitingTasks: number;
@@ -284,9 +290,7 @@ const LIVE_TASK_PHASE_SQL = taskViewPhaseSql("t");
 
 function taskStatus(phase: string | undefined, terminal: boolean): HumanTaskStatus {
   if (terminal) return "done";
-  if (phase === "converged") return "up-to-date";
-  if (phase === "pending" || phase === "running" || phase === "waiting" || phase === "attention") return phase;
-  throw new Error(`Invalid Task phase: ${String(phase)}`);
+  return taskStatusFromPhase(phase);
 }
 
 function boundedUtf8Text(value: string, maxBytes: number): string {
@@ -334,8 +338,8 @@ function taskStatusDetail(
       return "Waiting for the facts or work shown below.";
     case "attention":
       return "The App needs review or recovery.";
-    case "up-to-date":
-      return "Current work is reconciled; this Task will wake when relevant facts change.";
+    case "idle":
+      return "No work is runnable. The owner must retain a specific next responsibility or close this assignment.";
     case "done":
       return "Completed.";
     case "closed":
@@ -656,7 +660,9 @@ function projectTask(
     resourceVersion: resource.metadata.resourceVersion,
     outcome: resource.spec.outcome,
     acceptance: [...resource.spec.acceptance],
-    statusDetail: taskStatusDetail(status, { ready: row.ready, attempt }),
+    statusDetail: status === "idle" && recurrence?.nextRunAt
+      ? `Standing work; next scheduled observation ${recurrence.nextRunAt}.`
+      : taskStatusDetail(status, { ready: row.ready, attempt }),
     ...(observationIsCurrent && resource.status.summary ? { summary: resource.status.summary } : {}),
     ...(observationIsCurrent && resource.status.response ? { response: resource.status.response } : {}),
     ...(observationIsCurrent && resource.status.result ? { result: structuredClone(resource.status.result) } : {}),
@@ -990,20 +996,23 @@ export class HumanTaskService {
     const counts = this.db
       .prepare(
         `SELECT app_id,
-           COUNT(*) AS active_tasks,
-           SUM(CASE WHEN phase = 'attention' THEN 1 ELSE 0 END) AS attention_tasks,
-           SUM(CASE WHEN phase = 'running' THEN 1 ELSE 0 END) AS running_tasks,
-           SUM(CASE WHEN phase = 'waiting' THEN 1 ELSE 0 END) AS waiting_tasks
-         FROM app_tasks
+           COUNT(*) AS open_tasks,
+           SUM(CASE WHEN view_phase <> 'converged' THEN 1 ELSE 0 END) AS active_tasks,
+           SUM(CASE WHEN view_phase = 'converged' THEN 1 ELSE 0 END) AS idle_tasks,
+           SUM(CASE WHEN view_phase = 'pending' THEN 1 ELSE 0 END) AS queued_tasks,
+           SUM(CASE WHEN view_phase = 'attention' THEN 1 ELSE 0 END) AS attention_tasks,
+           SUM(CASE WHEN view_phase = 'running' THEN 1 ELSE 0 END) AS running_tasks,
+           SUM(CASE WHEN view_phase = 'waiting' THEN 1 ELSE 0 END) AS waiting_tasks
+         FROM (SELECT app_tasks.*, ${taskViewPhaseSql("app_tasks")} AS view_phase FROM app_tasks) tasks
          WHERE phase IN ('pending', 'running', 'waiting', 'attention', 'converged')
            AND NOT EXISTS (
              SELECT 1 FROM app_task_receipts r
-             WHERE r.app_id = app_tasks.app_id AND r.receipt_id = app_tasks.task_id
-               AND json_extract(r.receipt_json, '$.metadata.generation') >= app_tasks.generation
+             WHERE r.app_id = tasks.app_id AND r.receipt_id = tasks.task_id
+               AND json_extract(r.receipt_json, '$.metadata.generation') >= tasks.generation
            )
            AND NOT EXISTS (
              SELECT 1 FROM app_task_cancellations c
-             WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id
+             WHERE c.app_id = tasks.app_id AND c.task_id = tasks.task_id
            )
          GROUP BY app_id`,
       )
@@ -1035,6 +1044,9 @@ export class HumanTaskService {
           owner: definition.owner,
           ...(definition.description ? { description: definition.description } : {}),
           activeTasks: Number(count?.active_tasks ?? 0),
+          openTasks: Number(count?.open_tasks ?? 0),
+          idleTasks: Number(count?.idle_tasks ?? 0),
+          queuedTasks: Number(count?.queued_tasks ?? 0),
           attentionTasks: Number(count?.attention_tasks ?? 0),
           runningTasks: Number(count?.running_tasks ?? 0),
           waitingTasks: Number(count?.waiting_tasks ?? 0),
@@ -1062,7 +1074,7 @@ export class HumanTaskService {
       "running",
       "waiting",
       "attention",
-      "up-to-date",
+      "idle",
       "done",
       "closed",
       "cancelled",
@@ -1079,7 +1091,7 @@ export class HumanTaskService {
       !humanActionOnly && ((!statuses && input.includeDone === true) || statuses?.has("closed") === true);
     const livePhases = statuses
       ? [...statuses].flatMap((status) =>
-          ["done", "closed", "cancelled"].includes(status) ? [] : [status === "up-to-date" ? "converged" : status],
+          ["done", "closed", "cancelled"].includes(status) ? [] : [status === "idle" ? "converged" : status],
         )
       : ["pending", "running", "waiting", "attention", "converged"];
     // Keep the indexed stored-phase search, then narrow by the display phase.

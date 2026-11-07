@@ -201,7 +201,7 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
       ...(input.childContext.cancelled ? { cancelled: structuredClone(input.childContext.cancelled) } : {}),
       live: input.childContext.live.map(({ phase, ...child }) => ({
         ...structuredClone(child),
-        status: phase === "converged" ? "done" : phase,
+        status: phase === "converged" ? "idle" : phase,
       })),
       completed: input.childContext.completed.map((child) => ({
         ...structuredClone(child),
@@ -282,6 +282,19 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
     async reviseTask(change) {
       if (closed) throw new Error("Task attempt is closed");
       return (await import("./app-task-runtime.js")).reviseLoadedAppTask({
+        bus: opts.bus,
+        binding: {
+          appId: descriptor.id,
+          taskId: claim.taskId,
+          generation: claim.generation,
+          attemptId: claim.attemptId,
+        },
+        change,
+      });
+    },
+    async closeTask(change) {
+      if (closed) throw new Error("Task attempt is closed");
+      return (await import("./app-task-runtime.js")).closeCreatedLoadedAppTask({
         bus: opts.bus,
         binding: {
           appId: descriptor.id,

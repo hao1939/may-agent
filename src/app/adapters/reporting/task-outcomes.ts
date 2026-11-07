@@ -24,7 +24,7 @@ export const readTaskOutcomes: TaskOutcomeReader = ({ appDir, tasks, projection 
   return projectTaskOutcomes(items, manifest, projection);
 };
 
-const ACTIVE_STATUSES = new Set<TaskView["status"]>(["pending", "running", "waiting", "attention"]);
+const OPEN_STATUSES = new Set<TaskView["status"]>(["pending", "running", "waiting", "attention", "idle"]);
 
 export type TaskOutcomeManifest = {
   version: 1;
@@ -65,7 +65,7 @@ export function readTaskOutcomeManifest(appDir: string): TaskOutcomeManifest | n
 }
 
 function aggregateStatus(members: TaskView[]): TaskView["status"] {
-  for (const status of ["attention", "running", "waiting", "pending", "done"] as const) {
+  for (const status of ["attention", "running", "waiting", "pending", "idle", "closed", "cancelled", "done"] as const) {
     if (members.some((member) => member.status === status)) return status;
   }
   return "done";
@@ -79,7 +79,7 @@ export function projectTaskOutcomes(
 ): TaskOutcomePage {
   const includeDone = projection.includeDone === true;
   const source = tasks
-    .filter((task) => includeDone || (!task.closed && ACTIVE_STATUSES.has(task.status)))
+    .filter((task) => includeDone || (!task.closed && OPEN_STATUSES.has(task.status)))
     .sort((a, b) => a.id.localeCompare(b.id));
   const byId = new Map(source.map((task) => [task.id, task]));
   const assigned = new Set<string>();

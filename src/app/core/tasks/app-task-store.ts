@@ -332,21 +332,22 @@ function appTaskReadiness(
   satisfied: Set<string>,
   maxConcurrent: number,
   activeCount: number,
+  phase = resource.status.phase,
 ): AppTaskReadiness {
   const conditionIds = [...(resource.status.conditionIds ?? [])];
   const satisfiedConditionIds = conditionIds.filter((id) => tree.conditions?.[id]?.status.state === "true");
-  const conditionWokeTask = resource.status.phase === "waiting" && satisfiedConditionIds.length > 0;
-  if (resource.status.phase === "waiting" && !conditionWokeTask) {
+  const conditionWokeTask = phase === "waiting" && satisfiedConditionIds.length > 0;
+  if (phase === "waiting" && !conditionWokeTask) {
     return {
       state: "condition-blocked",
       reason: conditionIds.length ? `Waiting for ${conditionIds.join(", ")}` : "Waiting without a linked Condition",
       related_ids: conditionIds,
     };
   }
-  if (resource.status.phase !== "pending" && !conditionWokeTask) {
+  if (phase !== "pending" && !conditionWokeTask) {
     return {
       state: "not-applicable",
-      reason: `Task phase is ${resource.status.phase}`,
+      reason: `Task phase is ${phase}`,
       related_ids: [],
     };
   }
@@ -380,6 +381,7 @@ function appTaskReadiness(
 export function appTaskReadinessById(
   tree: TaskTree,
   configuredMaxConcurrent: number,
+  viewPhases: Readonly<Record<string, AppTaskPhase>> = {},
 ): Record<string, AppTaskReadiness> {
   const maxConcurrent =
     Number.isInteger(configuredMaxConcurrent) && configuredMaxConcurrent > 0 ? configuredMaxConcurrent : 1;
@@ -390,7 +392,7 @@ export function appTaskReadinessById(
   return Object.fromEntries(
     Object.values(tree.resources ?? {}).map((resource) => [
       resource.metadata.id,
-      appTaskReadiness(tree, resource, satisfied, maxConcurrent, activeCount),
+      appTaskReadiness(tree, resource, satisfied, maxConcurrent, activeCount, viewPhases[resource.metadata.id]),
     ]),
   );
 }

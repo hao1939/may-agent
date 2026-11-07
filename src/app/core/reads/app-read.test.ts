@@ -476,7 +476,7 @@ describe("App read projections", () => {
     expect(completeAppTask(config, claim, { summary: "Previous cycle checked" }).status).toBe("applied");
     const read = createRuntimeAppRead({ getDb: () => db, taskStateConfig: config });
     await expect(read.tasks.get(intent.id)).resolves.toMatchObject({
-      status: "done",
+      status: "idle",
       acceptedAttempt: {
         id: claim.attemptId,
         generation: 1,
@@ -501,7 +501,10 @@ describe("App read projections", () => {
     await expect(read.tasks.list({ status: ["pending"], limit: 1 })).resolves.toMatchObject({
       items: [{ id: intent.id, status: "pending", generation: 1 }],
     });
-    await expect(read.tasks.list({ status: ["done"] })).resolves.toEqual({ items: [] });
+    await expect(read.tasks.list({ status: ["idle"] })).resolves.toEqual({ items: [] });
+    expect(readAppTaskChildContext(config, "review").live).toEqual([
+      expect.objectContaining({ taskId: intent.id, phase: "pending", readiness: { state: "ready", reason: expect.any(String), relatedTaskIds: [] } }),
+    ]);
     expect(config.resourceStore.readTask(intent.id)).toEqual(stored);
     expect(config.resourceStore.readTrigger(intent.id)).not.toBeNull();
 
@@ -513,7 +516,7 @@ describe("App read projections", () => {
     if (next.kind !== "claimed") throw new Error("expected next claim");
     await expect(read.tasks.get(intent.id)).resolves.toMatchObject({ status: "running", generation: 1 });
     expect(completeAppTask(config, next, { summary: "New cycle checked" }).status).toBe("applied");
-    await expect(read.tasks.get(intent.id)).resolves.toMatchObject({ status: "done", summary: "New cycle checked" });
+    await expect(read.tasks.get(intent.id)).resolves.toMatchObject({ status: "idle", summary: "New cycle checked" });
     await expect(read.tasks.list({ status: ["pending"] })).resolves.toEqual({ items: [] });
 
     // Scheduler hints need not rewrite the accepted resource (or its revision).
@@ -526,14 +529,100 @@ describe("App read projections", () => {
       { ready: false, changed: false },
     ]) {
       config.resourceStore.setRecoveryState(intent.id, hints);
-      const status = hints.ready || hints.changed ? "pending" : "done";
+      const status = hints.ready || hints.changed ? "pending" : "idle";
       await expect(read.tasks.get(intent.id)).resolves.toMatchObject({ status });
       await expect(read.tasks.list({ status: [status], limit: 1 })).resolves.toMatchObject({
         items: [{ id: intent.id, status }],
       });
-      await expect(read.tasks.list({ status: [status === "done" ? "pending" : "done"] })).resolves.toEqual({ items: [] });
+      await expect(read.tasks.list({ status: [status === "idle" ? "pending" : "idle"] })).resolves.toEqual({ items: [] });
+      expect(readAppTaskChildContext(config, "review").live[0]).toMatchObject({
+        phase: status === "idle" ? "converged" : "pending",
+        readiness: { state: status === "idle" ? "not-applicable" : "ready" },
+      });
       expect(config.resourceStore.readTask(intent.id)).toEqual(accepted);
     }
+  });
+
+  it("keeps child-context readiness aligned with exact reads without rewriting accepted dependency evidence", async () => {
+    const config = resourceConfig();
+    const dependency = { id: "review/dependency", parentId: "review", outcome: "Produce evidence", acceptance: ["Evidence accepted"] };
+    const consumer = { id: "review/consumer", parentId: "review", outcome: "Consume evidence", acceptance: ["Evidence considered"], dependsOn: [dependency.id] };
+    for (const intent of [dependency, consumer]) observeAppTaskIntent(config, { appAgent: "evaluation", intent });
+    const claim = (taskId: string) => {
+      const attempt = claimObservedAppTask(config, { taskId, appAgent: "evaluation", handler: "auto" });
+      if (attempt.kind !== "claimed") throw new Error(`Expected claim, got ${attempt.kind}`);
+      return attempt;
+    };
+    completeAppTask(config, claim(dependency.id), { summary: "Evidence accepted" });
+    deferAppTask(config, claim(consumer.id), { disposition: "waiting", summary: "Await another input",
+      conditions: [{ id: "external", type: "external.observed", subject: "external:one", expected: true, owner: "agent:evaluation" }],
+    });
+    recordAppTaskTrigger(config, consumer.id, { type: "source.changed", data: { revision: 2 } });
+    recordAppTaskTrigger(config, dependency.id, { type: "source.changed", data: { revision: 2 } });
+    const read = createRuntimeAppRead({ getDb: () => db, taskStateConfig: config });
+    const before = config.resourceStore.readTask(dependency.id);
+    // Queuing the next cycle does not revoke the dependency's accepted generation.
+    await expect(read.tasks.get(consumer.id)).resolves.toMatchObject({ status: "pending" });
+    expect(readAppTaskChildContext(config, "review").live.find(({ taskId }) => taskId === consumer.id))
+      .toMatchObject({ phase: "pending", readiness: { state: "ready" } });
+    expect(config.resourceStore.readTask(dependency.id)).toEqual(before);
+    // Revised requirements do invalidate the old generation's dependency evidence.
+    observeAppTaskIntent(config, { appAgent: "evaluation", intent: { ...dependency, input: { revision: 3 } } });
+    await expect(read.tasks.get(consumer.id)).resolves.toMatchObject({ status: "waiting" });
+    expect(readAppTaskChildContext(config, "review").live.find(({ taskId }) => taskId === consumer.id))
+      .toMatchObject({ phase: "waiting" });
+  });
+
+  it.each([
+    ["closed", 1], ["closed", 2], ["cancelled", 1], ["cancelled", 2], [undefined, 1], [undefined, 2],
+  ] as const)("retains resource-free terminal records with kind %s and generation %s before historical receipts", async (kind, generation) => {
+    const config = resourceConfig();
+    const store = AppTaskResourceStore.fromDb(db, "history");
+    const status = kind ?? "cancelled";
+    const cancellations = Object.fromEntries(["only-terminal", "with-receipt"].map((taskId) => [taskId, {
+      ...(kind ? { kind } : {}), appId: "history", taskId, generation, resourceVersion: 3,
+      outcome: "Retain the owner disposition", reason: "Owner ended the assignment",
+      summary: "Explicit terminal decision", response: "Retained answer", result: { scope: "terminal" },
+      facts: ["terminal:evidence"], cancelledAt: new Date(3).toISOString(),
+    }]));
+    store.bootstrapSnapshot({
+      groups: { review: { id: "review", parent_id: null } }, cancellations,
+      receipts: { "with-receipt": {
+        metadata: { id: "with-receipt", generation: 1, resourceVersion: 2 }, specHash: "old-result",
+        parentId: "review", outcome: "Historical outcome", acceptance: ["Original acceptance"],
+        owner: "historical-owner", handler: "auto", input: { original: true },
+        summary: "Historical completion", result: { scope: "receipt" }, facts: ["receipt:evidence"],
+        acceptanceBasis: { method: "agent-judgment", facts: [] }, failureFingerprints: [],
+        completedAt: new Date(2).toISOString(),
+      } },
+    }, "seed:terminal-history");
+    const read = createRuntimeAppRead({ getDb: () => db, taskStateConfig: { ...config, resourceStore: store } });
+    const first = await read.tasks.list({ status: [status], limit: 1 });
+    const second = await read.tasks.list({ status: [status], limit: 1, cursor: first.nextCursor });
+    expect(first.nextCursor).toBeString();
+    expect(second.nextCursor).toBeUndefined();
+    const items = [...first.items, ...second.items];
+    expect(items.map(({ id }) => id)).toEqual(["only-terminal", "with-receipt"]);
+    for (const item of items) {
+      expect(item).toMatchObject({ status, closed: true, generation,
+        summary: "Explicit terminal decision", response: "Retained answer",
+        result: { scope: "terminal" }, facts: ["terminal:evidence"] });
+      await expect(read.tasks.get(item.id)).resolves.toMatchObject({
+        ...item, resourceVersion: 3, currentObligations: { available: false },
+      });
+      expect(store.readTask(item.id)).toBeNull();
+    }
+    const detail = await read.tasks.get("with-receipt");
+    if (generation === 1) expect(detail).toMatchObject({
+      parentId: "review", acceptance: ["Original acceptance"], input: { original: true }, agent: "historical-owner",
+    });
+    else {
+      expect(detail).toMatchObject({ parentId: "", acceptance: [], input: {} });
+      expect(detail).not.toHaveProperty("agent");
+    }
+    await expect(read.tasks.list()).resolves.toEqual({ items });
+    await expect(read.tasks.list({ status: ["idle", "done", status === "closed" ? "cancelled" : "closed"] })).resolves.toEqual({ items: [] });
+    await expect(read.tasks.get("missing")).resolves.toBeNull();
   });
 
   it("keeps an accepted result discoverable after owner closure without reporting active work", async () => {
@@ -558,10 +647,10 @@ describe("App read projections", () => {
     }).applied).toBe(true);
     const page = await read.tasks.list();
     expect(page.items).toEqual([expect.objectContaining({
-      id: "result", status: "done", closed: true, result: { value: 17 }, facts: ["measurement:17"],
+      id: "result", status: "closed", closed: true, result: { value: 17 }, facts: ["measurement:17"],
     })]);
     expect(await read.tasks.get("result")).toMatchObject(page.items[0]!);
-    expect(await read.tasks.list({ status: ["done"] })).toEqual(page);
+    expect(await read.tasks.list({ status: ["closed"] })).toEqual(page);
     expect(await read.tasks.list({ status: ["attention", "pending", "running"] })).toEqual({ items: [] });
     expect(readAppTaskChildContext(config, "review").cancelled).toEqual([
       expect.objectContaining({ taskId: "result", kind: "closed", facts: ["measurement:17"] }),
@@ -611,6 +700,12 @@ describe("App read projections", () => {
     if (claim.kind !== "claimed") throw new Error("Expected claim");
     completeAppTask(config, claim, { summary: "Reviewed a", result: { checked: true } });
 
+    // Idle assignments remain open in outcome reads. Explicit closure excludes history.
+    expect(host.outcomes({ taskId: "review/a" })).toMatchObject({ sourceCount: 2, outcomeCount: 1 });
+    const current = config.resourceStore.readTask("review/a")!;
+    closeAppTask(config, { appId: "evaluation", taskId: "review/a",
+      expectedGeneration: current.metadata.generation, expectedResourceVersion: current.metadata.resourceVersion,
+      afterResult: claim.attemptId, reason: "Owner consumed the finite review" });
     // An exact request for an excluded member must not silently return its active sibling.
     expect(host.outcomes({ taskId: "review/a" })).toMatchObject({ sourceCount: 0, outcomeCount: 0, outcomes: [] });
     for (const includeDone of [false, true]) {
