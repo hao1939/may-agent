@@ -2,6 +2,52 @@
 
 Source identity: https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7
 
+## Assessment 2026-11-07T11:13:46.314Z
+
+Question: Perform a body-level review of XHS post 6adeb34e00000000150130b7 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+**Supported disposition: inaccessible.** Retrieval targeted exactly XHS post `6adeb34e00000000150130b7` at `https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7`; no alternate post or refreshed search result was substituted. It resolved to `https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6adeb34e00000000150130b7%3FexSource%3Dnull`. The redirect retains the exact target ID. The only supplied text—“Log in - rednote - share, connect, love”—is platform interface copy and direct evidence that unauthenticated retrieval encountered a Rednote login gate; it is not a claim attributable to the post’s author. The current retrieval agrees with the earlier recorded attempts, but repetition does not provide body-level access.
+
+No substantive contribution or supporting evidence can be identified from the available material. It contains no post title, body, author identity, images, video, captions, outbound links, argument, implementation details, or evidence. Consequently, there are no post-author claims to assess. The post’s topic, limitations, and relevance to the requested research remain unknown. Inferring them from the identifier, redirect, prior search-card metadata, or the eleven later discoveries would be unsupported.
+
+The checked conclusion is deliberately narrow: authentication prevented access to the exact target’s body and any material media or links. This supports reconciling the finite backfill inventory as **inaccessible — redirected to Rednote login**. It is not evidence of a defect in the post or linked material, since neither was inspected. No login or access-control bypass was attempted.
+
+The requested body-level review remains incomplete. Completion requires authorized access exposing the exact post body and material media or links. This read-only assessment cannot establish archive publication, a canonical assessment path, or a Git revision; those publication facts must be created and verified by the surrounding workflow.
+
+Assessment incomplete. See the assessment for missing evidence.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7",
+  "identity": "https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6adeb34e00000000150130b7%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T11:13:34.314Z",
+  "sha256": "2914ef44f9359420d0822a0571bd327d61acfddad8767abe1125f701bae36846",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
+# XHS post 6adeb34e00000000150130b7 — inaccessible behind Rednote login
+
+Source identity: https://www.xiaohongshu.com/explore/6adeb34e00000000150130b7
+
 ## Assessment 2026-11-07T10:39:19.734Z
 
 Question: Perform a body-level review of XHS post 6adeb34e00000000150130b7 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
@@ -638,6 +684,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
