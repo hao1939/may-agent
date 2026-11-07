@@ -179,9 +179,7 @@ it("the procedure saves and reads back the analysis with code-owned coverage", a
   const result = await executeSourceAssessment(ctx, async () => packet);
   expect(options).toMatchObject({ tools: "readonly" });
   expect(result.output).toHaveProperty("state", "converged");
-  expect(
-    admitTaskReconcileResult(result.output).ok,
-  ).toBe(true);
+  expect(admitTaskReconcileResult(result.output).ok).toBe(true);
   const record = assessmentRecord(root, sourceUrl);
   const saved = readFileSync(record.path, "utf8");
   const revision = execFileSync("git", ["rev-parse", "HEAD"], {
@@ -330,16 +328,15 @@ it("partial analysis is saved with its limits and cannot fulfill the research", 
   );
 });
 
-it("settles an explicitly accepted XHS authentication blocker after publication", async () => {
+it("settles any explicitly permitted XHS authentication blocker after publication", async () => {
   const root = temporary();
-  const xhsUrl =
-    "https://www.xiaohongshu.com/explore/6ade2282000000002a0397c4";
+  const xhsUrl = "https://www.xiaohongshu.com/explore/6aab4f5f0000000028029fa8";
   const loginPacket: SourcePacket = {
     ...packet,
     requestedUrl: xhsUrl,
     identity: xhsUrl,
     retrievedUrl:
-      "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6ade2282000000002a0397c4%3FexSource%3Dnull",
+      "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6aab4f5f0000000028029fa8%3FexSource%3Dnull",
     totalCharacters: 39,
     totalPages: 1,
     excerpts: [
@@ -353,9 +350,10 @@ it("settles an explicitly accepted XHS authentication blocker after publication"
   };
   const data = {
     sourceUrl: xhsUrl,
-    outcome: "Assess the exact XHS post",
+    outcome: "Perform a body-level review of the exact XHS post",
     acceptance: [
-      "If inaccessible, record the exact blocker, requested and retrieved URLs, and why body-level review is incomplete; do not bypass authentication or access controls.",
+      "Preserve and assess the exact source identity; do not substitute another post or infer body content.",
+      "Return exactly one supported disposition: reviewed and integrated, already covered with evidence, out of scope with reason, or inaccessible with the exact blocker and recovery requirement.",
       "Archive and publish the durable assessment through the hosted workflow, returning its canonical path and publication commit.",
     ],
     archive: true,
@@ -393,10 +391,60 @@ it("settles an explicitly accepted XHS authentication blocker after publication"
   });
 });
 
-it("does not settle an XHS login page without explicit inaccessible acceptance", async () => {
+it.each([
+  [
+    "a nonmatching redirected identity",
+    "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2Fdifferent-post",
+    true,
+    "Log in - rednote - share, connect, love.",
+  ],
+  [
+    "missing archival publication",
+    "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6aab4f5f0000000028029fa8",
+    false,
+    "Log in - rednote - share, connect, love.",
+  ],
+  [
+    "non-authentication incompleteness",
+    "https://www.xiaohongshu.com/explore/6aab4f5f0000000028029fa8",
+    true,
+    "The source returned no usable text.",
+  ],
+])("does not settle %s", async (_name, retrievedUrl, archive, text) => {
   const root = temporary();
-  const xhsUrl =
-    "https://www.xiaohongshu.com/explore/6ade2282000000002a0397c4";
+  const xhsUrl = "https://www.xiaohongshu.com/explore/6aab4f5f0000000028029fa8";
+  const loginPacket: SourcePacket = {
+    ...packet,
+    requestedUrl: xhsUrl,
+    identity: xhsUrl,
+    retrievedUrl,
+    excerpts: [{ page: 1, start: 0, end: text.length, text }],
+  };
+  const ctx = context(
+    root,
+    (async () => ({
+      ...success({ ...draft, complete: false }),
+      facts: {
+        status: "partial",
+        next_steps: "Obtain authorized access to the exact post body.",
+      },
+    })) as WorkflowContext["agents"]["call"],
+    {
+      sourceUrl: xhsUrl,
+      outcome: "Perform a body-level review of the exact XHS post",
+      acceptance: [
+        "Return exactly one supported disposition: reviewed, out of scope, or inaccessible with the exact blocker and recovery requirement.",
+      ],
+      archive,
+    },
+  );
+  const result = await executeSourceAssessment(ctx, async () => loginPacket);
+  expect(result.output).toHaveProperty("state", "incomplete");
+});
+
+it("does not settle an assignment that requires body-level completion", async () => {
+  const root = temporary();
+  const xhsUrl = "https://www.xiaohongshu.com/explore/6ade2282000000002a0397c4";
   const loginPacket: SourcePacket = {
     ...packet,
     requestedUrl: xhsUrl,
@@ -414,11 +462,19 @@ it("does not settle an XHS login page without explicit inaccessible acceptance",
   };
   const ctx = context(
     root,
-    (async () => success({ ...draft, complete: false })) as WorkflowContext["agents"]["call"],
+    (async () => ({
+      ...success({ ...draft, complete: false }),
+      facts: {
+        status: "partial",
+        next_steps: "Obtain authorized access to the exact post body.",
+      },
+    })) as WorkflowContext["agents"]["call"],
     {
       sourceUrl: xhsUrl,
       outcome: "Perform a body-level review",
-      acceptance: ["Review the complete post body."],
+      acceptance: [
+        "Do not accept an inaccessible disposition, even with the exact blocker; review the complete post body.",
+      ],
       archive: true,
     },
   );

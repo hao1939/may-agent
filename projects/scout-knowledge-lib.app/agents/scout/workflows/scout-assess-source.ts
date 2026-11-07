@@ -48,22 +48,28 @@ const draftSchema = Type.Object(
   { additionalProperties: false },
 );
 
-const boundedXhsBlockerSource =
-  "https://www.xiaohongshu.com/explore/6ade2282000000002a0397c4";
-
-function isAcceptedBoundedXhsAuthenticationBlocker(
+function isAcceptedXhsAuthenticationBlocker(
+  sourceUrl: string,
   acceptance: string[],
   packet: SourcePacket,
+  draftComplete: boolean,
+  recoveryRequirement: string | undefined,
 ): boolean {
   const permitsInaccessibleDisposition = acceptance.some(
     (criterion) =>
-      /\bif inaccessible\b/i.test(criterion) &&
       /\bexact blocker\b/i.test(criterion) &&
-      /\brequested and retrieved urls?\b/i.test(criterion),
+      (/\bif inaccessible\b/i.test(criterion) ||
+        /\bor inaccessible\b/i.test(criterion)),
   );
-  if (!permitsInaccessibleDisposition) return false;
+  if (
+    !permitsInaccessibleDisposition ||
+    draftComplete ||
+    !recoveryRequirement?.trim()
+  )
+    return false;
 
   try {
+    const expectedIdentity = sourceIdentity(sourceUrl);
     const requested = new URL(packet.requestedUrl);
     const retrieved = new URL(packet.retrievedUrl);
     const redirectPath = retrieved.searchParams.get("redirectPath");
@@ -74,12 +80,16 @@ function isAcceptedBoundedXhsAuthenticationBlocker(
       .join("\n")
       .toLowerCase();
     return (
-      requested.href === boundedXhsBlockerSource &&
+      sourceIdentity(packet.requestedUrl) === expectedIdentity &&
+      packet.identity === expectedIdentity &&
+      /(^|\.)xiaohongshu\.com$/i.test(requested.hostname) &&
+      /^\/explore\/[^/]+\/?$/.test(requested.pathname) &&
       /(^|\.)rednote\.com$/i.test(retrieved.hostname) &&
       /^\/login\/?$/i.test(retrieved.pathname) &&
       ["http:", "https:"].includes(redirect.protocol) &&
-      /(^|\.)rednote\.com$/i.test(redirect.hostname) &&
-      redirect.pathname === requested.pathname &&
+      /(^|\.)(rednote|xiaohongshu)\.com$/i.test(redirect.hostname) &&
+      redirect.pathname.replace(/\/$/, "") ===
+        requested.pathname.replace(/\/$/, "") &&
       /\blog in\b/.test(suppliedText)
     );
   } catch {
@@ -319,8 +329,13 @@ ${JSON.stringify(packet)}
         saveFailure = error instanceof Error ? error.message : String(error);
       }
     }
-    const acceptedAuthenticationBlocker =
-      isAcceptedBoundedXhsAuthenticationBlocker(input.acceptance, packet);
+    const acceptedAuthenticationBlocker = isAcceptedXhsAuthenticationBlocker(
+      input.sourceUrl,
+      input.acceptance,
+      packet,
+      draft.complete,
+      facts?.next_steps,
+    );
     const finalComplete =
       (complete ||
         (acceptedAuthenticationBlocker && input.archive && !!path)) &&
