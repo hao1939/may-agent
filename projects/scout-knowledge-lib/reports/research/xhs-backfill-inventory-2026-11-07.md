@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Checkpoint for the finite Xiaohongshu backfill requested after the 2026-11-07 `explore-xhs` run. It preserves every exact run ID still recoverable from workflow evidence, keeps later discoveries separate, records eleven evidence-backed dispositions, and identifies the workflow's 20-item truncation as the exact gap preventing reconstruction of all 29 run identities."
+summary: "Checkpoint for the finite Xiaohongshu backfill requested after the 2026-11-07 `explore-xhs` run. It preserves every exact run ID still recoverable from workflow evidence, keeps later discoveries separate, records twelve evidence-backed dispositions, and identifies the workflow's 20-item truncation as the exact gap preventing reconstruction of all 29 run identities."
 triggers: ["XHS backfill", "2026-11-07 explore-xhs", "wr_1794040651688_zrzq", "d66f10ca9325825c"]
 last_updated: "2026-11-07"
 </ai_context>
@@ -41,7 +41,7 @@ Evidence locations:
 | 9 | `6ab7046b00000000140305a3` | 国内谁最有机会先把 Personal Agent 跑出来 | **Inaccessible.** Retrieval of the exact post identity redirected to a Rednote login URL and returned only the 39-character login-page label “Log in - rednote - share, connect, love.” No post body, author caption, claims, comments, images, video, OCR, transcript, or other material media text was exposed, so this supports only an authentication/body-access blocker and no content inference from search-card metadata. Recovery requires a policy-compliant, untruncated authenticated retrieval of this same post ID that exposes the exact body and any material media text; do not bypass access controls or substitute another post. Durable assessment: [`2026-11-07-source-assessment-28361b51fb69.md`](../../knowledge/findings/2026-11-07-source-assessment-28361b51fb69.md). |
 | 10 | `6a6c2de5000000003501680a` | 为什么我们砍掉了多智能体流水线 | **Inaccessible.** Retrieval of the exact post identity redirected to a Rednote login URL with this post ID preserved in `redirectPath` and returned only the 39-character login-page text “Log in - rednote - share, connect, love.” No post body, title, author text, comments, images, video, captions, OCR, transcript, claims, examples, results, or references were exposed. This supports only an authentication/body-access blocker, not a substantive characterization or body-level review; do not infer content from the search-card title. Recovery requires a permitted authenticated retrieval of this same post ID that exposes its body plus any material media text; do not bypass authentication or substitute another post. Durable assessment: [`2026-11-07-source-assessment-3f1fc3e97167.md`](../../knowledge/findings/2026-11-07-source-assessment-3f1fc3e97167.md). |
 | 11 | `6abf8d0e0000000002011add` | Personal Agent，会成为下个入口吗🤔 | **Inaccessible.** Retrieval of the exact post identity redirected to a Rednote login URL with this post ID preserved in the redirect parameter and returned only the 39-character login-page text “Log in - rednote - share, connect, love.” No post title, body, claims, examples, images, video, author identity, publication date, engagement context, captions, comments, or media-derived text was exposed. This supports only an authentication-gated access blocker, not a substantive characterization or body-level review; do not infer content from the search-card title. Recovery requires an authorized authenticated retrieval of this same post ID that returns an untruncated body plus any materially relevant media text; do not bypass access controls or substitute another post. Durable assessment: [`2026-11-07-source-assessment-c0465e9c2743.md`](../../knowledge/findings/2026-11-07-source-assessment-c0465e9c2743.md). |
-| 12 | `6aab4f5f0000000028029fa8` | 智能体失控的事 国安部下场点名 | Pending body review |
+| 12 | `6aab4f5f0000000028029fa8` | 智能体失控的事 国安部下场点名 | **Inaccessible.** Retrieval of the exact post identity redirected to a Rednote login URL with this post ID preserved in the redirect parameter and returned only the 39-character login-page text “Log in - rednote - share, connect, love.” No post body, caption, claims, examples, images, video, comments, OCR, transcript, or other substantive content was exposed. This supports only an authentication/body-access blocker, not a substantive characterization or body-level review; do not infer content from the search-card title. Recovery requires an authorized authenticated retrieval of this same post ID that exposes the available body plus materially relevant media text; do not bypass authentication or substitute another post. Durable assessment: [`2026-11-07-source-assessment-4a53f86f1f29.md`](../../knowledge/findings/2026-11-07-source-assessment-4a53f86f1f29.md). |
 | 13 | `6adc2057000000002c017530` | 背下来！你的AI Agent就会很牛 | Pending body review |
 | 14 | `6ae927e0000000000e00da4c` | 别再把AI当聊天搭子，尽早进入Agent时代 | Pending body review |
 | 15 | `6aed6919000000000901282b` | 国产智能体平台落地指南 | Pending body review |
@@ -77,16 +77,16 @@ No inference is made that any of these 11 are among the nine unretained IDs.
 
 - Frozen-run total reported by the source workflow: **29**
 - Exact frozen-run identities durably recovered: **20**
-- Evidence-backed dispositions among recovered identities: **11**
+- Evidence-backed dispositions among recovered identities: **12**
   - reviewed and integrated: **1**
   - out of scope with reason: **1**
-  - inaccessible with exact authentication blocker: **9**
-- Known recovered identities still eligible for body review: **9**
+  - inaccessible with exact authentication blocker: **10**
+- Known recovered identities still eligible for body review: **8**
 - Frozen-run identities blocked on exact identity recovery: **9**
 - Later discoveries kept separate: **11**
 
-Continue with the 9 known eligible IDs, starting with
-`6aab4f5f0000000028029fa8`, without rereading the eleven dispositioned entries.
+Continue with the 8 known eligible IDs, starting with
+`6adc2057000000002c017530`, without rereading the twelve dispositioned entries.
 In parallel, recover the original nine identities only from an untruncated
-historical receipt; do not substitute or guess from a refreshed search
-population.
+historical receipt or archive for `wr_1794040651688_zrzq`; do not substitute or
+guess from a refreshed search population.
