@@ -233,7 +233,7 @@ different actions. A pending Condition is context for judgment; it does not
 give infra authority to invent a semantic veto or to fabricate satisfaction.
 An explicit App acceptance requirement still applies.
 
-Before leaving finite work up to date, answer: **what responsibility remains,
+Before leaving finite work idle, answer: **what responsibility remains,
 who owns it, and what exact input or fact should cause more work?** Follow the
 [state and responsibility contract](../../2a-design/task-resource-engine.md#state-and-continuing-responsibility).
 
@@ -246,9 +246,15 @@ who owns it, and what exact input or fact should cause more work?** Follow the
 - If the finite outcome is sufficient, return the scoped result and propose
   owner closure once it is accepted. Use only a closure capability actually
   available under the supplied authority; `finish()` does not itself close the
-  Task. Existing operator `task.close` names the exact accepted result and
-  current resource versions. Do not write storage directly or invent a close
-  action in the worker result schema.
+  Task. As the recorded creating Task, use `tasks close` or
+  `TaskAttempt.closeTask` (`ctx.closeTask` in a workflow) after reading the
+  exact target. Supply `appId`, `taskId`, `expectedGeneration`,
+  `expectedResourceVersion`, `afterResult` (the accepted attempt ID), and a
+  disposition `reason`. The agent tool uses `target.appId` for a cross-App
+  target. Root/App-created assignments use trusted App/operator `task.close`.
+  A worker cannot close itself. If a newer input or version rejects the close,
+  reread and reconcile it; do not replay stale judgment. Do not write storage
+  directly or invent a close action in the worker result schema.
 - If the outcome is unfulfilled, explain the remaining obligation or obtain
   its authorized withdrawal. Preserve ownership and caller expectations when
   consolidating duplicates. Closing a wrapper does not certify its child's work.
@@ -256,8 +262,10 @@ who owns it, and what exact input or fact should cause more work?** Follow the
 For example, after a one-off report review accepts a supported no-change
 decision and owes no follow-through, recommend closing it with its evidence.
 For a six-hour audit, retain the standing assignment and its next scheduled
-observation. Both runs can currently be up to date; only the audit has declared
-recurring work. A missing closure capability is an implementation gap to return
+observation. Both runs can currently be idle; only the audit has declared
+recurring work. The capability requires the paired Host/SDK source revision in the
+[implementation record](../../archive/reviews/task-lifecycle-responsibilities-20261107.md).
+On an older installation, return a missing closure capability
 through the existing owner path, not a reason to create a repeating review job.
 
 Read the exact accepted result when checking completion. The Task can still

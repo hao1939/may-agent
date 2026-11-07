@@ -2,23 +2,33 @@
 
 Use this only for an authorized, exact Task closure. Reviewing Tasks is not
 permission to close them. Preserve standing, running, waiting, or uncertain
-work; an accepted `done` result alone does not prove a Task should end.
+work. Attempt convergence and public Task `idle` establish no runnable work;
+neither alone proves fulfillment or that responsibility should end. Legacy SDK
+reads called open convergence `done`, and human reads called it `up-to-date`.
 Conversation execution Tasks and their deterministic successors are standing
 work: exclude them from routine hygiene unless current canonical evidence records
 an explicit human or owning-App withdrawal of the whole Conversation. Quietness,
 a completed Turn, a fulfilled Request, and an accepted child result are not that
 evidence. Likewise, do not close recurring schedules merely because their latest
-cycle is up to date, and do not replace a cancelled Conversation with an
+cycle is idle, and do not replace a cancelled Conversation with an
 operator-invented identity; supported recovery begins with fresh human input.
 
 1. Discover open work with `tasks({ action: "list", limit: 100 })`;
    follow `nextCursor` and select records whose `closed` is not true. Inspect each candidate with `get` and its
    accepted evidence. A one-off authorized cleanup can run inside the current
    Conversation; periodic reviews need one continuing Task, not one per cycle.
-2. Read the exact control view and submit guarded completion through the existing
-   public socket client. Use the running installation's socket path and the
-   candidate's exact `ref`; do not import private writers or guess a source entry
-   point.
+2. Select the authorized closure route. A current creating Task can use
+   `tasks({ action: "close", target: { appId }, taskId, expectedGeneration,
+   expectedResourceVersion, afterResult, reason })` after reading its exact
+   assignment and accepted result. Host binds the caller to its live attempt;
+   workers cannot self-close or close siblings. This capability requires the
+   paired Host/SDK described in the
+   [lifecycle implementation record](../../../../../../alex.app/docs/archive/reviews/task-lifecycle-responsibilities-20261107.md).
+   App-created roots and historical records without Task-level creator
+   provenance use trusted App/operator controls. For an authorized operator
+   closure, read the exact control view and use the public socket client below.
+   Use the running installation's socket path and candidate's exact `ref`; do
+   not import private writers or guess a source entry point.
 
    ```ts
    import { sendSocketCommand } from "/app/projects/may-agent/packages/control/src/client.ts";
@@ -69,9 +79,12 @@ operator-invented identity; supported recovery begins with fresh human input.
    active work and clear outstanding links by design; never describe an agent or
    system-originated cancellation as a human decision.
 
-4. Verify the returned event with `event.get` and reread the exact Task.
-   Acceptance proves control delivery; `tasks.get` showing `closed: true`
-   proves closure. The accepted achievement remains in history. Report what was
+4. Reread the exact Task after either route. Creator closure returns Task detail;
+   for an operator receipt carrying an event identity, also verify that event
+   with `event.get`. Acceptance proves control delivery;
+   `tasks.get` showing `status: "closed"`
+   (or the derived `closed: true` on older reads) proves ending. The accepted
+   result remains in history; ending does not itself certify fulfillment. Report what was
    closed, what remains, and current counts. Do not delete Task history or
    rewrite prior receipts.
 

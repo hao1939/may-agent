@@ -49,7 +49,7 @@ function fixture() {
     taskId: "decision",
     generation: 1,
     resourceVersion: 2,
-    status: "done",
+    status: "idle",
     currentObligations: {
       available: true,
       inputWaits: { items: [], truncated: false },
@@ -79,6 +79,14 @@ test("fresh latest accepted decision can cover a new episode without rereading u
     decision: { attemptId: "accepted-1", alertId: 42 },
     tasks: [{ appId: "sample", taskId: "decision", resourceVersion: 2 }],
   });
+});
+
+test.each(["idle", "closed"])("explicit reusable scope survives a quiet %s owner disposition", async (status) => {
+  const { basis, current, task } = fixture();
+  expect((await checkMetricDecisionReuse(basis, async () => current,
+    async () => ({ ...task, status }), now)).reusable).toBe(true);
+  expect((await checkMetricDecisionReuse(basis, async () => current,
+    async () => ({ ...task, status: "cancelled" }), now)).reusable).toBe(false);
 });
 
 test("latest no-scope decision supersedes old reuse across episodes; ambiguous acceptance never reuses", async () => {

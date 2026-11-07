@@ -12,8 +12,10 @@ retry are bounded by default; exhaustion retains unfinished work for another
 authorized decision.
 Explicit result scope is [merged in Host #269](../archive/reviews/explicit-task-input-consideration-20260930.md); source and deployment evidence remain separate.
 Responsibility review and retention below guide App judgment; they are not an
-automatic Host closure rule. Presentation and agent adoption gaps are tracked in
-[Task responsibility and retention](../proposals/task-responsibility-and-retention-20261107.md).
+automatic Host closure rule. The unified public lifecycle, open/active counts and creator closure are
+implemented in the paired candidate source; installed behavior is unchanged.
+Validation and adoption boundaries are tracked in
+[Task responsibility and retention](../archive/reviews/task-lifecycle-responsibilities-20261107.md).
 
 This page owns the durable Task contract. Historical `achieve`/`maintain` mode
 data does not select a lifecycle; result labels describe attempts, not lifetime.
@@ -32,7 +34,8 @@ For execution input, live actions, result fields and acceptance, read [Task atte
 
 ## State and continuing responsibility
 
-Task state answers what can happen now. The assignment and accepted result
+One lifecycle includes both ongoing activity and explicit ending. There is no
+separate lifetime state machine. Task state answers what can happen now. The assignment and accepted result
 answer what the agent still owes. Keeping evidence is a storage responsibility;
 keeping work open needs an accountable continuing purpose.
 
@@ -42,15 +45,17 @@ keeping work open needs an accountable continuing purpose.
 | Running | One fenced attempt is executing. | Agent works within scope and budget; Host controls execution and interruption. |
 | Waiting | A needed fact or result remains outstanding. Useful independent work can still run. | Agent owns the wait's relevance and return route; the named provider supplies the fact. |
 | Attention | Execution or progress needs review or recovery. | The assigned agent or its declared recovery owner judges the next action. Only a human-owned Condition means the human owes an action. |
-| Up to date (`converged`) | Current work is reconciled and there is no newly runnable input. | Task owner decides whether a continuing responsibility remains or whether finite work can close. This label alone establishes neither goal fulfillment nor a monitoring obligation. |
+| Idle (`idle`; stored `converged`) | Current work is reconciled and there is no newly runnable input. | Task owner decides whether a continuing responsibility remains or whether finite work can close. This label alone establishes neither goal fulfillment nor a monitoring obligation. |
 | Closed | An authorized owner ended the assignment against an exact accepted result. | Preserve evidence; further work requires explicit reopening. Closure alone does not assert fulfillment or erase unfinished work. |
 | Cancelled | Authorized withdrawal ended the assignment. | Preserve its disposition and evidence; do not report the withdrawn work as fulfilled. |
 
-`done` remains a terminal historical Task-receipt label. SDK outcome `done`,
-App input status `done`, and fulfillment of a Conversation Request are separate
+`done` remains a terminal historical Task-receipt label. Public SDK and human
+Task reads share these states; `closed` is also retained as a derived compatibility
+flag. Attempt judgments (`converged`, `waiting`, `incomplete`), App input status
+`done`, and fulfillment of a Conversation Request are separate
 facts; see [Task, Request, input and human action](message-lifecycle.md#task-request-input-and-human-action).
 
-An up-to-date Task needs no model polling merely because it remains open.
+An idle Task needs no model polling merely because it remains open.
 Possible later input is not itself a reason to watch. Retain the Task for a
 specific continuing responsibility, for example:
 
@@ -59,7 +64,7 @@ specific continuing responsibility, for example:
   acknowledgment that somebody retried or forwarded the work.
 - A standing assignment: record the recurring purpose, its declared schedule
   or input route, its budget, and who can revise or end it. Between scheduled
-  observations, the latest work may be up to date.
+  observations, the latest work may be idle.
 - Observation of a resource: name the resource, the relevant change, the
   existing observation/Condition route, and when observation should end.
   A review checkpoint is justified when a decision can change then; it is not
@@ -80,8 +85,10 @@ promise to verify the final result. Do not retain duplicate wrappers solely
 because a real obligation exists elsewhere.
 
 The assigned agent owns progress and proposes the disposition under App policy.
-The creator controls requirements and continuation authority; owner closure
-uses the existing trusted control boundary. The Host stores and validates
+The creator controls requirements and continuation authority. A current creating
+Task can explicitly close its reviewed assignment with `tasks close` or
+`TaskAttempt.closeTask`; trusted App/operator controls serve App-created root
+assignments and historical records without Task-level creator provenance. The Host stores and validates
 these decisions and returns scoped answers to callers. An evaluator supplies
 evidence and advice; a provider supplies facts; neither silently acquires the
 assignment or authority to close another owner's work.
@@ -117,6 +124,17 @@ implicitly cancels children; old events and ordinary input cannot reopen it. An 
 requires the exact accepted attempt and current generation/resource-version fences. The shared guard also requires the stored converged phase,
 no current attempt and no pending trigger. Rejection preserves every Task fact and link; exact replay returns the existing receipt without
 another write. These mechanical checks do not decide responsibility lifetime, and independent structural children can continue. Intentional withdrawal remains a separate cancellation control that may stop active work under existing authority.
+
+A creating Task closes a delegated assignment with the exact target App/Task,
+`expectedGeneration`, `expectedResourceVersion`, `afterResult` (the accepted
+attempt ID), and a disposition `reason`. Host binds the actor to its current
+running attempt, verifies immutable creator identity and commits the close with
+those fences. A sibling, stale caller or the worker itself cannot authorize it.
+Exact replay is idempotent while caller authority remains current. A new input
+or result requires rereading and judging the assignment again. The worker's
+result schema has no close action. Closure preserves exact input answers,
+accepted result evidence and independent children. It cannot certify the
+substance of the owner's judgment.
 
 Explicit `task.reopen` requires current versions and trusted operator verification of the user's continuation request.
 The App maps its optional `input`; Host atomically installs requirements, advances generation once, admits input and archives closure, preserving Task identity.
@@ -174,8 +192,9 @@ the input against that existing Task and waits for the same Task lineage. With
 no `taskId`, normal App task resolution creates or finds the requested outcome.
 
 An open Task remains available after an accepted outcome. Its lifetime is not
-selected by historical mode data. SDK `status: done` describes that outcome,
-not owner closure; read `closed` separately. A new ask waits for its own exact
+selected by historical mode data. Public `status: idle` means no runnable work;
+`status: closed` and `status: cancelled` mean authorized ending. The compatibility
+`closed` flag is derived from the terminal decision. A new ask waits for its own exact
 answer, while replaying the same admission must not run another cycle. Closed
 Tasks and historical immutable receipts are not reopened by this rule.
 
@@ -234,7 +253,7 @@ For the agent's work, ask two independent questions:
 | Yes | No | Working, with no outstanding result needed from elsewhere. |
 | Yes | Yes | Working while also waiting for a result; for example, preparing a review while a pipeline runs. |
 | No | Yes | No current execution; a result remains outstanding. Other useful work may already be queued. |
-| No | No | No current execution or outstanding wait. Work may be queued, up to date, closed, or need attention; read those facts separately. |
+| No | No | No current execution or outstanding wait. Work may be queued, idle, closed, or need attention; read those facts separately. |
 
 An execution includes its tool calls and I/O; running does not mean the model
 is continuously generating text or consuming CPU. A direct tool call can keep
@@ -273,7 +292,7 @@ an attempt is neither closing the Task nor abandoning the Request.
 | An attempt is running; results remain outstanding | Working on the review; also awaiting pipeline 42. |
 | No attempt is running; an external result is needed | Waiting for pipeline 42; no parent execution is running. |
 | No attempt is running; useful work is ready | Queued to continue the review. |
-| Current inputs are handled; no results remain outstanding | Up to date; available for later input. |
+| Current inputs are handled; no results remain outstanding | Idle; retain a declared next responsibility or obtain owner disposition. |
 | Progress needs an owner's decision | Needs attention: explain the decision and what can still proceed. |
 
 Idle is only an execution observation. It cannot establish that work is complete
@@ -673,7 +692,8 @@ The reply satisfies or updates exact evidence for the next attempt; it does not
 itself prove the Task outcome.
 
 ## Phases and historical mode data
-Phases are:
+The persisted execution phases below feed the single public lifecycle above;
+they are internal facts, not another public state machine:
 
 - `pending`: desired state needs another attempt;
 - `running`: one current attempt owns the generation;
@@ -685,8 +705,8 @@ Phases are:
 Older persisted resources may retain `achieve` or `maintain` mode data. The
 current intent contract does not accept either label, and retained data does not
 select Task lifetime. Exact accepted attempt/input references remain readable
-after later input. Owner closure is separate from phase, so `converged` alone
-does not tell whether new work can be admitted. An observation during an attempt
+after later input. The retained terminal decision overrides phase in public
+reads, so stored `converged` alone does not tell whether new work can be admitted. An observation during an attempt
 stays pending for a later bounded pass unless explicitly consumed by its admitted
 result.
 

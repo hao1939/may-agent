@@ -14,7 +14,7 @@ import {
 
 const appTask = {
   id: "goal/one",
-  status: "up-to-date",
+  status: "idle",
   generation: 1,
   outcome: "Deliver a verified result",
   summary: "Delivered",
@@ -39,7 +39,7 @@ const taskDetail = {
   appId: "sample",
   taskId: "goal/one",
   ref: "abc12345",
-  status: "up-to-date",
+  status: "idle",
   generation: 1,
   resourceVersion: 3,
   outcome: "Deliver a verified result",

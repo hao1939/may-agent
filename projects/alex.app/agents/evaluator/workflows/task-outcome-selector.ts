@@ -32,10 +32,11 @@ const MAX_STATE_APPS = 20;
 const MAX_STATE_HISTORY_BYTES = 6_000;
 const MAX_NAVIGATION_FACT_BYTES = 3_000;
 const MAX_NAVIGATION_FACTS = 20;
-// HumanTaskStatus is the public tasks.list contract. `done` is a retained
-// completion receipt, while `attention` is the current unresolved status.
-const OPEN_STATUSES = new Set(["pending", "running", "waiting", "attention"]);
-const OUTCOME_STATUSES = new Set(["up-to-date", "closed", "cancelled", "done"]);
+// Review purpose follows current activity or a recent accepted outcome.
+// Idle remains open; selecting its outcome does not establish fulfillment.
+// `up-to-date` is retained for older human snapshots, `done` for legacy receipts.
+const ACTIVE_STATUSES = new Set(["pending", "running", "waiting", "attention"]);
+const OUTCOME_STATUSES = new Set(["idle", "up-to-date", "closed", "cancelled", "done"]);
 
 type Input = { reason?: string };
 type SelectorConfig = {
@@ -548,7 +549,7 @@ function assessmentPurposeFor(
 ): AssessmentPurpose | null {
   if (!taskId(task)) return null;
   const status = canonical(task.status);
-  if (OPEN_STATUSES.has(status)) return "ongoing";
+  if (ACTIVE_STATUSES.has(status)) return "ongoing";
   if (OUTCOME_STATUSES.has(status) && Number(task.updatedAt) >= cutoff)
     return "outcome";
   return null;

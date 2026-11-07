@@ -68,7 +68,7 @@ const taskId = "goal/one";
 const VALIDITY_NOW = Date.UTC(2026, 8, 17);
 const appTask = {
   id: taskId,
-  status: "up-to-date",
+  status: "idle",
   generation: 1,
   creator: { appId },
   outcome: "Ship it",
@@ -91,7 +91,7 @@ const detail = {
   outcome: "Ship it",
   acceptance: ["verified"],
   facts: ["commit:abc"],
-  status: "up-to-date",
+  status: "idle",
   history: [],
   historyTruncated: false,
   diagnostics: { owner: appId, attemptCount: 1, conditions: [] },
@@ -743,9 +743,10 @@ describe("Task outcome review", () => {
       /^task-report-[a-f0-9]{16}-[a-f0-9]{12}$/,
     );
     expect(prompt).toContain(
-      "App status done plus Task detail up-to-date with terminal=false and ready=false is coherent",
+      "Idle establishes neither fulfillment nor a monitoring obligation",
     );
-    expect(prompt).toContain("no review deadline is required");
+    expect(prompt).toContain("finite work with no remaining obligation needs owner disposition");
+    expect(prompt).toContain("Quiet work requires no model polling or arbitrary review deadline");
     expect(prompt).toContain(
       "assessed and insufficient-evidence are both successful evaluator judgments",
     );

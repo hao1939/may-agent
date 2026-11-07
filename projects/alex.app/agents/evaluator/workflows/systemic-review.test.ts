@@ -77,7 +77,7 @@ test("recovered work reaches population review, preserves its cut through admiss
         tasks: {
           items: cmd.status
             ? []
-            : [{ ...example, status: "up-to-date", updatedAt: end }],
+            : [{ ...example, status: "idle", updatedAt: end }],
         },
       };
     if (cmd.type === "app.task.get")
@@ -101,7 +101,7 @@ test("recovered work reaches population review, preserves its cut through admiss
           appId: "sample",
           taskId: "chat",
           generation: 1,
-          status: "up-to-date",
+          status: "idle",
           history: [],
           acceptedEvidence: { page: { items: [] } },
         },
