@@ -2,9 +2,9 @@
 title: "Kiro Crew — The Gateway Is Becoming the Real Agent Product, While Chat Surfaces Become Interchangeable Viewports"
 source: github
 date: 2026-08-06
-last_updated: 2026-08-07
+last_updated: 2026-11-07
 type: finding
-tags: [github, agent-infrastructure, control-plane, sessions, multi-surface, dashboards, scheduling, approvals, delegation]
+tags: [github, agent-infrastructure, control-plane, sessions, multi-surface, dashboards, scheduling, approvals, delegation, memory, verification]
 relevance: high
 ---
 
@@ -14,7 +14,7 @@ Repo: https://github.com/kirodotdev/KiroCrew
 
 ## Overview
 
-- **Repo:** [kirodotdev/KiroCrew](https://github.com/kirodotdev/KiroCrew) (1,519★, 123 forks, created 2026-07-16, pushed 2026-08-06)
+- **Repo:** [kirodotdev/KiroCrew](https://github.com/kirodotdev/KiroCrew) (4,824★ when rechecked 2026-11-07; created 2026-07-16; latest inspected revision below)
 - **Author:** kirodotdev
 - **Language:** Python
 - **License:** Apache-2.0
@@ -79,6 +79,58 @@ The same binary now runs locally or in cloud VMs and uses Agent Client Protocol 
 **New implication:** a surface-neutral runtime needs more than a portable session schema. It needs **policy semantic identity**: the same intent must authorize the same capability regardless of which client-specific tool can realize it. A standalone process helps enforce this by making the protocol the only crossing point, while capability tags prevent a new read or shell tool from silently escaping per-tool rules. This turns multi-surface continuity from a synchronization problem into an enforcement-boundary problem.
 
 This is a company-authored architecture report, not an independent audit, and the HN item had not attracted substantive discussion at retrieval. Treat the design details as implementation evidence, not proof of security or reliability.
+
+## November 2026 Recheck: Persistence Needs Separate Memory, Work, and Verdict Boundaries
+
+A current pinned recheck sharpens the original control-plane finding. Kiro Crew no
+longer presents continuity as one undifferentiated “persistent session” feature.
+Its documentation separates at least four durable objects and gives them different
+rules:
+
+1. **Conversation history is not learned memory.** Persistent, Incognito, and
+   Temporary dashboard chats all retain reopenable chat history, but Incognito
+   blocks learning writes while still reading prior memory, and Temporary blocks
+   both memory reads and writes. Channel-origin restricted chats are not written
+   to session history. The same label therefore does not imply the same storage
+   behavior on every surface.
+2. **Manual essentials are not learned memory.** Temporary mode withholds learned
+   lessons and memory injection, while manual persona, rules, and project context
+   remain available. A “blank slate” needs a declared scope: it may mean no learned
+   memory rather than no standing instructions.
+3. **A session ledger is not a work ledger.** The session ledger carries one
+   long-horizon session's goal, phase, rejected approaches, concrete next step, and
+   artifact pointers across compaction and restart. The docs explicitly distinguish
+   it from the conductor's work-item ledger. Marking a session ledger finished stops
+   stale intent from steering later cycles.
+4. **Task completion is not verification.** The task runner records `passed`,
+   `failed`, `skipped`, and `not_configured` verification verdicts and counts only
+   `passed` as verified. With required verification enabled, no configured check or
+   a disabled check fails before execution. Headless tool use is separately
+   deny-by-default unless allowlisted, so execution authority and result validation
+   remain different gates.
+
+The practical implication is that a persistent agent host needs a **durability
+matrix**, not a single persistence switch. For each surface and mode, specify the
+fate of transcript history, learned memory, standing instructions, session intent,
+shared work state, tool authority, and verification evidence. A privacy promise
+about learning does not automatically erase history; a recoverable session does not
+establish that work is still authorized; and a completed task does not establish a
+verified result.
+
+This recheck inspected repository-authored documentation and one small shared
+transcript-kind contract at revision
+`251efa59a1fcd6820032759a1bce4edd89a138ea`. Scout did not install or run Kiro
+Crew, execute its tests, trigger compaction or restart, verify storage bytes, or
+exercise any memory mode or task-runner path. The source establishes documented
+contracts and static implementation vocabulary, not deployed privacy, durability,
+or verification behavior.
+
+- **Inspected revision:** https://github.com/kirodotdev/KiroCrew/commit/251efa59a1fcd6820032759a1bce4edd89a138ea
+- **Pinned memory documentation:** https://github.com/kirodotdev/KiroCrew/blob/251efa59a1fcd6820032759a1bce4edd89a138ea/src/kiro_crew/docs/memory-and-learning.md
+- **Pinned session-ledger documentation:** https://github.com/kirodotdev/KiroCrew/blob/251efa59a1fcd6820032759a1bce4edd89a138ea/src/kiro_crew/docs/session-ledger.md
+- **Pinned task-runner documentation:** https://github.com/kirodotdev/KiroCrew/blob/251efa59a1fcd6820032759a1bce4edd89a138ea/src/kiro_crew/docs/task-runner.md
+- **Pinned transcript-kind contract:** https://github.com/kirodotdev/KiroCrew/blob/251efa59a1fcd6820032759a1bce4edd89a138ea/src/kiro_crew/warm_task_brief_contract.py
+- **Discovery query:** GitHub Repository Search API `topic:ai-agents pushed:>=2026-11-02 stars:>=50`, sorted by updated; `total_count: 2073`, `incomplete_results: false`
 
 ## Connections to Library Themes
 
