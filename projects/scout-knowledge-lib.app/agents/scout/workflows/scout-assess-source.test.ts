@@ -330,6 +330,102 @@ it("partial analysis is saved with its limits and cannot fulfill the research", 
   );
 });
 
+it("settles an explicitly accepted XHS authentication blocker after publication", async () => {
+  const root = temporary();
+  const xhsUrl =
+    "https://www.xiaohongshu.com/explore/6ade2282000000002a0397c4";
+  const loginPacket: SourcePacket = {
+    ...packet,
+    requestedUrl: xhsUrl,
+    identity: xhsUrl,
+    retrievedUrl:
+      "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6ade2282000000002a0397c4%3FexSource%3Dnull",
+    totalCharacters: 39,
+    totalPages: 1,
+    excerpts: [
+      {
+        page: 1,
+        start: 0,
+        end: 39,
+        text: "Log in - rednote - share, connect, love.",
+      },
+    ],
+  };
+  const data = {
+    sourceUrl: xhsUrl,
+    outcome: "Assess the exact XHS post",
+    acceptance: [
+      "If inaccessible, record the exact blocker, requested and retrieved URLs, and why body-level review is incomplete; do not bypass authentication or access controls.",
+      "Archive and publish the durable assessment through the hosted workflow, returning its canonical path and publication commit.",
+    ],
+    archive: true,
+  };
+  const ctx = context(
+    root,
+    (async () => ({
+      id: "s_login_blocked",
+      kind: "agent",
+      status: "blocked",
+      summary: "The exact post reached a login page.",
+      output: {
+        ...draft,
+        title: "XHS access blocked",
+        summary: "The exact post reached a login page.",
+        complete: false,
+      },
+      facts: {
+        status: "partial",
+        next_steps: "Obtain authorized access to the exact post body.",
+      },
+    })) as WorkflowContext["agents"]["call"],
+    data,
+  );
+  const result = await executeSourceAssessment(ctx, async () => loginPacket);
+  expect(result.output).toMatchObject({
+    state: "converged",
+    facts: expect.arrayContaining([
+      "execution-status:blocked",
+      "disposition:inaccessible:authentication-required",
+      "body-review:incomplete",
+      expect.stringContaining("publication:commit:"),
+    ]),
+    response: expect.stringContaining("Assessment incomplete."),
+  });
+});
+
+it("does not settle an XHS login page without explicit inaccessible acceptance", async () => {
+  const root = temporary();
+  const xhsUrl =
+    "https://www.xiaohongshu.com/explore/6ade2282000000002a0397c4";
+  const loginPacket: SourcePacket = {
+    ...packet,
+    requestedUrl: xhsUrl,
+    identity: xhsUrl,
+    retrievedUrl:
+      "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6ade2282000000002a0397c4",
+    excerpts: [
+      {
+        page: 1,
+        start: 0,
+        end: 6,
+        text: "Log in",
+      },
+    ],
+  };
+  const ctx = context(
+    root,
+    (async () => success({ ...draft, complete: false })) as WorkflowContext["agents"]["call"],
+    {
+      sourceUrl: xhsUrl,
+      outcome: "Perform a body-level review",
+      acceptance: ["Review the complete post body."],
+      archive: true,
+    },
+  );
+  const result = await executeSourceAssessment(ctx, async () => loginPacket);
+  expect(result.output).toHaveProperty("state", "incomplete");
+});
+
 it("preserves the current Host-normalized blocked partial draft", async () => {
   const root = temporary();
   const ctx = context(root, (async () => ({

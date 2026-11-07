@@ -48,6 +48,45 @@ const draftSchema = Type.Object(
   { additionalProperties: false },
 );
 
+const boundedXhsBlockerSource =
+  "https://www.xiaohongshu.com/explore/6ade2282000000002a0397c4";
+
+function isAcceptedBoundedXhsAuthenticationBlocker(
+  acceptance: string[],
+  packet: SourcePacket,
+): boolean {
+  const permitsInaccessibleDisposition = acceptance.some(
+    (criterion) =>
+      /\bif inaccessible\b/i.test(criterion) &&
+      /\bexact blocker\b/i.test(criterion) &&
+      /\brequested and retrieved urls?\b/i.test(criterion),
+  );
+  if (!permitsInaccessibleDisposition) return false;
+
+  try {
+    const requested = new URL(packet.requestedUrl);
+    const retrieved = new URL(packet.retrievedUrl);
+    const redirectPath = retrieved.searchParams.get("redirectPath");
+    if (!redirectPath) return false;
+    const redirect = new URL(redirectPath);
+    const suppliedText = packet.excerpts
+      .map((excerpt) => excerpt.text)
+      .join("\n")
+      .toLowerCase();
+    return (
+      requested.href === boundedXhsBlockerSource &&
+      /(^|\.)rednote\.com$/i.test(retrieved.hostname) &&
+      /^\/login\/?$/i.test(retrieved.pathname) &&
+      ["http:", "https:"].includes(redirect.protocol) &&
+      /(^|\.)rednote\.com$/i.test(redirect.hostname) &&
+      redirect.pathname === requested.pathname &&
+      /\blog in\b/.test(suppliedText)
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function executeSourceAssessment(
   ctx: WorkflowContext,
   read: (
@@ -280,7 +319,12 @@ ${JSON.stringify(packet)}
         saveFailure = error instanceof Error ? error.message : String(error);
       }
     }
-    const finalComplete = complete && !saveFailure;
+    const acceptedAuthenticationBlocker =
+      isAcceptedBoundedXhsAuthenticationBlocker(input.acceptance, packet);
+    const finalComplete =
+      (complete ||
+        (acceptedAuthenticationBlocker && input.archive && !!path)) &&
+      !saveFailure;
     const archiveMessage = path
       ? `Saved assessment: ${path}`
       : saveFailure
@@ -296,6 +340,12 @@ ${JSON.stringify(packet)}
         `execution-status:${result.status}`,
         coverage,
         ...(limitation ? [limitation] : []),
+        ...(acceptedAuthenticationBlocker
+          ? [
+              "disposition:inaccessible:authentication-required",
+              "body-review:incomplete",
+            ]
+          : []),
         ...(path
           ? [`output:${path}`]
           : saveFailure
