@@ -233,6 +233,33 @@ different actions. A pending Condition is context for judgment; it does not
 give infra authority to invent a semantic veto or to fabricate satisfaction.
 An explicit App acceptance requirement still applies.
 
+Before leaving finite work up to date, answer: **what responsibility remains,
+who owns it, and what exact input or fact should cause more work?** Follow the
+[state and responsibility contract](../../2a-design/task-resource-engine.md#state-and-continuing-responsibility).
+
+- If a result is still owed, retain its exact existing Condition and caller
+  route. Check the current provider result before repeating a stale escalation;
+  a completed recovery can supersede an old request for a human retry signal.
+- If the purpose is standing or observation is still useful, identify the
+  declared next input/schedule, relevant change and budget. Do not add a timer
+  or repeatedly ask a model whether anything changed.
+- If the finite outcome is sufficient, return the scoped result and propose
+  owner closure once it is accepted. Use only a closure capability actually
+  available under the supplied authority; `finish()` does not itself close the
+  Task. Existing operator `task.close` names the exact accepted result and
+  current resource versions. Do not write storage directly or invent a close
+  action in the worker result schema.
+- If the outcome is unfulfilled, explain the remaining obligation or obtain
+  its authorized withdrawal. Preserve ownership and caller expectations when
+  consolidating duplicates. Closing a wrapper does not certify its child's work.
+
+For example, after a one-off report review accepts a supported no-change
+decision and owes no follow-through, recommend closing it with its evidence.
+For a six-hour audit, retain the standing assignment and its next scheduled
+observation. Both runs can currently be up to date; only the audit has declared
+recurring work. A missing closure capability is an implementation gap to return
+through the existing owner path, not a reason to create a repeating review job.
+
 Read the exact accepted result when checking completion. The Task can still
 display `waiting` because another Condition remains open, even after accepting
 `converged` for the addressed input. Use the Task's `acceptedAttempt` reference

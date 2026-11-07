@@ -43,6 +43,7 @@ before acting on an old checklist.
 
 | Proposal | Owning need or contract | Remaining review scope |
 | --- | --- | --- |
+| [Task responsibility and retention](task-responsibility-and-retention-20261107.md) | [Task state and continuing responsibility](../2a-design/task-resource-engine.md#state-and-continuing-responsibility) | Expose the reason to retain an up-to-date Task, distinguish open from executing work, and adopt owner disposition without automatic success or a second archive lifecycle. |
 | [Keep the Host boring and let Apps change](host-stability-and-app-extensibility-20261005.md) | [Host And App Boundary](../2a-design/system-boundary.md) | Adopt the smallest release boundary suite, paired real-App compatibility check, and current-design status correction; broader capability unification is explicitly deferred. |
 | [Alex: an App for useful system improvement](alex-improvement-app.md) | [Improvement through ordinary App work](../2a-design/practice-learning-loop.md) | May–Alex–Scout installation; App `alex` and owner agent `alex` consolidate improvement capabilities, carrying ongoing work through a breaking migration. Not implemented or activated. |
 | [Durable Tasks for agents without an App](standalone-agent-tasks.md) | [Agent ownership and App scope](../2a-design/agents.md#task-ownership-and-app-scope) | Accepted direction; direct admission, identity compatibility, authority and restart proof remain unimplemented. App addressing stays supported. |

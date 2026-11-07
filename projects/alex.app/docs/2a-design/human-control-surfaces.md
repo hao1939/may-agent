@@ -239,6 +239,25 @@ existing readiness, not a second stored phase or lifecycle.
 `attention` alone means App review or recovery; only an open human-owned
 Condition means `needs you`.
 
+For deciding whether work needs attention, distinguish execution from retained
+responsibility. An up-to-date detail should explain the existing next
+responsibility: a named result, a relevant resource change, the next standing
+observation, or no future work declared and owner disposition needed. Derive
+this explanation from the assignment, Conditions, schedule and accepted
+decision; do not infer fulfillment or invent a watch from the phase.
+The [Task engine](task-resource-engine.md#state-and-continuing-responsibility)
+owns those meanings. A local `/watch` subscribes to presentation updates;
+it creates no business obligation, Task observation route or model polling.
+
+Task lists should distinguish work needing action, standing work between runs,
+idle records needing disposition, and ended history. Use explicit counts such
+as running, waiting and open; a count including every converged record must not
+be described as executing work. Archive is a history view of ended work, not
+a second close flag that can conceal unresolved input. **Implementation gap:**
+the inspected Host `activeTasks` count includes converged records, and current
+cards do not explain this retention decision. See the
+[remaining presentation work](../proposals/task-responsibility-and-retention-20261107.md#remaining-implementation).
+
 An exact Task view answers five questions directly from the existing resource:
 
 1. `Goal` — what the Task is for (`spec.outcome`);

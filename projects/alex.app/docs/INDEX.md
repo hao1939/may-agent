@@ -17,6 +17,7 @@ contracts and guides. [Proposals](proposals/README.md) contain remaining choices
 | What does the agent decide and infra execute? | [Host/App boundary](2a-design/system-boundary.md) |
 | How should an agent work with current capabilities? | [Task execution guide](2b-manual/task-execution-guide/SKILL.md) |
 | How do Task state, Conditions and recovery work? | [Task lifecycle](2a-design/task-resource-engine.md) |
+| Does an up-to-date Task need more work, observation or closure? | [State and continuing responsibility](2a-design/task-resource-engine.md#state-and-continuing-responsibility) |
 | What does an attempt receive and return? | [Task attempts](2a-design/task-attempts.md) |
 | How do agents and workflows call each other? | [Contributions](2a-design/execution-contributions.md) |
 | What must code and agents both honor? | [Common contribution contract](2a-design/execution-contributions.md#common-contract-for-code-and-agents) |

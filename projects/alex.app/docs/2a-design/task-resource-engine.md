@@ -11,6 +11,9 @@ Task activation is independent of optional schedules. Attempts and automatic
 retry are bounded by default; exhaustion retains unfinished work for another
 authorized decision.
 Explicit result scope is [merged in Host #269](../archive/reviews/explicit-task-input-consideration-20260930.md); source and deployment evidence remain separate.
+Responsibility review and retention below guide App judgment; they are not an
+automatic Host closure rule. Presentation and agent adoption gaps are tracked in
+[Task responsibility and retention](../proposals/task-responsibility-and-retention-20261107.md).
 
 This page owns the durable Task contract. Historical `achieve`/`maintain` mode
 data does not select a lifecycle; result labels describe attempts, not lifetime.
@@ -26,6 +29,69 @@ and [resource reads](#resource-read-interface) as references when implementing a
 
 
 For execution input, live actions, result fields and acceptance, read [Task attempts and results](task-attempts.md). This chapter owns the durable lifecycle and Conditions.
+
+## State and continuing responsibility
+
+Task state answers what can happen now. The assignment and accepted result
+answer what the agent still owes. Keeping evidence is a storage responsibility;
+keeping work open needs an accountable continuing purpose.
+
+| State or fact | Meaning | Responsible next decision |
+| --- | --- | --- |
+| Pending / queued | Admitted work can run when its prerequisites and capacity permit. | Host schedules; the assigned agent advances the existing outcome. |
+| Running | One fenced attempt is executing. | Agent works within scope and budget; Host controls execution and interruption. |
+| Waiting | A needed fact or result remains outstanding. Useful independent work can still run. | Agent owns the wait's relevance and return route; the named provider supplies the fact. |
+| Attention | Execution or progress needs review or recovery. | The assigned agent or its declared recovery owner judges the next action. Only a human-owned Condition means the human owes an action. |
+| Up to date (`converged`) | Current work is reconciled and there is no newly runnable input. | Task owner decides whether a continuing responsibility remains or whether finite work can close. This label alone establishes neither goal fulfillment nor a monitoring obligation. |
+| Closed | An authorized owner ended the assignment against an exact accepted result. | Preserve evidence; further work requires explicit reopening. Closure alone does not assert fulfillment or erase unfinished work. |
+| Cancelled | Authorized withdrawal ended the assignment. | Preserve its disposition and evidence; do not report the withdrawn work as fulfilled. |
+
+`done` remains a terminal historical Task-receipt label. SDK outcome `done`,
+App input status `done`, and fulfillment of a Conversation Request are separate
+facts; see [Task, Request, input and human action](message-lifecycle.md#task-request-input-and-human-action).
+
+An up-to-date Task needs no model polling merely because it remains open.
+Possible later input is not itself a reason to watch. Retain the Task for a
+specific continuing responsibility, for example:
+
+- An awaited result: record the exact Condition, its provider, the result that
+  matters and the action it enables. Prefer the actual result over a separate
+  acknowledgment that somebody retried or forwarded the work.
+- A standing assignment: record the recurring purpose, its declared schedule
+  or input route, its budget, and who can revise or end it. Between scheduled
+  observations, the latest work may be up to date.
+- Observation of a resource: name the resource, the relevant change, the
+  existing observation/Condition route, and when observation should end.
+  A review checkpoint is justified when a decision can change then; it is not
+  a heartbeat for an otherwise quiet Task.
+
+These are explanations of existing requirements, Conditions, schedules and
+accepted decisions, not new Task modes, stored phases or required schema fields.
+An open reusable Conversation has a standing input route; a finished finite
+report review does not acquire one merely because someone could ask again.
+
+When none of these responsibilities applies, the owner reviews the finite
+assignment and its considered inputs: accept fulfillment, retain an exact
+unresolved obligation, transfer remaining work to an accountable owner with a
+verified return arrangement, or record an authorized unfulfilled/withdrawn
+disposition. Once its responsibility is ended, close or cancel through the
+existing guarded controls. A transferred request alone does not release a
+promise to verify the final result. Do not retain duplicate wrappers solely
+because a real obligation exists elsewhere.
+
+The assigned agent owns progress and proposes the disposition under App policy.
+The creator controls requirements and continuation authority; owner closure
+uses the existing trusted control boundary. The Host stores and validates
+these decisions and returns scoped answers to callers. An evaluator supplies
+evidence and advice; a provider supplies facts; neither silently acquires the
+assignment or authority to close another owner's work.
+
+Archive means retaining ended work in history, searchable by its identity and
+links. It adds no execution state and requires no deletion of results. An open
+record with no known next responsibility needs owner judgment before it can
+be treated as archived. Age, an empty queue, and `converged` alone cannot supply
+that judgment. Use a bounded review of existing outcomes and caller links, not
+one new evaluator Task for every old record.
 
 ## One lifecycle baseline
 
