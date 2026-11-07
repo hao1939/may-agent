@@ -42,7 +42,7 @@ Evidence locations:
 | 10 | `6a6c2de5000000003501680a` | 为什么我们砍掉了多智能体流水线 | **Inaccessible.** Retrieval of the exact post identity redirected to a Rednote login URL with this post ID preserved in `redirectPath` and returned only the 39-character login-page text “Log in - rednote - share, connect, love.” No post body, title, author text, comments, images, video, captions, OCR, transcript, claims, examples, results, or references were exposed. This supports only an authentication/body-access blocker, not a substantive characterization or body-level review; do not infer content from the search-card title. Recovery requires a permitted authenticated retrieval of this same post ID that exposes its body plus any material media text; do not bypass authentication or substitute another post. Durable assessment: [`2026-11-07-source-assessment-3f1fc3e97167.md`](../../knowledge/findings/2026-11-07-source-assessment-3f1fc3e97167.md). |
 | 11 | `6abf8d0e0000000002011add` | Personal Agent，会成为下个入口吗🤔 | **Inaccessible.** Retrieval of the exact post identity redirected to a Rednote login URL with this post ID preserved in the redirect parameter and returned only the 39-character login-page text “Log in - rednote - share, connect, love.” No post title, body, claims, examples, images, video, author identity, publication date, engagement context, captions, comments, or media-derived text was exposed. This supports only an authentication-gated access blocker, not a substantive characterization or body-level review; do not infer content from the search-card title. Recovery requires an authorized authenticated retrieval of this same post ID that returns an untruncated body plus any materially relevant media text; do not bypass access controls or substitute another post. Durable assessment: [`2026-11-07-source-assessment-c0465e9c2743.md`](../../knowledge/findings/2026-11-07-source-assessment-c0465e9c2743.md). |
 | 12 | `6aab4f5f0000000028029fa8` | 智能体失控的事 国安部下场点名 | **Inaccessible.** Retrieval of the exact post identity redirected to a Rednote login URL with this post ID preserved in the redirect parameter and returned only the 39-character login-page text “Log in - rednote - share, connect, love.” No post body, caption, claims, examples, images, video, comments, OCR, transcript, or other substantive content was exposed. This supports only an authentication/body-access blocker, not a substantive characterization or body-level review; do not infer content from the search-card title. Recovery requires an authorized authenticated retrieval of this same post ID that exposes the available body plus materially relevant media text; do not bypass authentication or substitute another post. Durable assessment: [`2026-11-07-source-assessment-4a53f86f1f29.md`](../../knowledge/findings/2026-11-07-source-assessment-4a53f86f1f29.md). |
-| 13 | `6adc2057000000002c017530` | 背下来！你的AI Agent就会很牛 | Pending body review |
+| 13 | `6adc2057000000002c017530` | 背下来！你的AI Agent就会很牛 | **Inaccessible.** Retrieval through the authorized XHS browser route preserved the exact post ID but resolved to XHS error `300031` (“Sorry, This Page Isn't Available Right Now”) with only a generic app-scan prompt and site chrome. No post body, author data, comments, or post-specific media was exposed. This supports only an access diagnosis; it does not establish whether the post was deleted, private, region-limited, or temporarily unavailable, and no content is inferred from the search-card title. Recovery requires an authorized exact-source route that exposes the body and materially relevant media text, or authoritative evidence of the post's disposition. Durable assessment: [`2026-11-07-xhs-6adc2057-access-blocked.md`](../../knowledge/findings/2026-11-07-xhs-6adc2057-access-blocked.md). |
 | 14 | `6ae927e0000000000e00da4c` | 别再把AI当聊天搭子，尽早进入Agent时代 | Pending body review |
 | 15 | `6aed6919000000000901282b` | 国产智能体平台落地指南 | Pending body review |
 | 16 | `6ad9eb15000000002c017145` | 2026 年，个人 Agent 走到了哪一步 | Pending body review |
@@ -77,16 +77,16 @@ No inference is made that any of these 11 are among the nine unretained IDs.
 
 - Frozen-run total reported by the source workflow: **29**
 - Exact frozen-run identities durably recovered: **20**
-- Evidence-backed dispositions among recovered identities: **12**
+- Evidence-backed dispositions among recovered identities: **13**
   - reviewed and integrated: **1**
   - out of scope with reason: **1**
-  - inaccessible with exact authentication blocker: **10**
-- Known recovered identities still eligible for body review: **8**
+  - inaccessible with exact access blocker: **11**
+- Known recovered identities still eligible for body review: **7**
 - Frozen-run identities blocked on exact identity recovery: **9**
 - Later discoveries kept separate: **11**
 
-Continue with the 8 known eligible IDs, starting with
-`6adc2057000000002c017530`, without rereading the twelve dispositioned entries.
+Continue with the 7 known eligible IDs, starting with
+`6ae927e0000000000e00da4c`, without rereading the thirteen dispositioned entries.
 In parallel, recover the original nine identities only from an untruncated
 historical receipt or archive for `wr_1794040651688_zrzq`; do not substitute or
 guess from a refreshed search population.
