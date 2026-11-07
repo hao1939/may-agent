@@ -62,3 +62,25 @@ No file was deleted or renamed. Source URLs, HN scan IDs, claims, and prose were
 preserved. The false November filenames remain observable because the paths are
 published interfaces, but they no longer assert a future observation inside the
 finding.
+
+## 2026-11-07 recurrence review
+
+The observer again reported the nine remaining November filenames. Those paths
+are intentional historical aliases: each body labels the filename false, states
+the verified 2026-07-12 observation identity, and links to its retained July
+finding. Removing or renaming them would break published interfaces without
+improving source truth.
+
+Read-back of the nine retained July targets found one narrower defect not visible
+in the filename-only signal: the two arXiv targets still repeated the false
+November date internally. This pass corrected only those stale fields:
+
+- `knowledge/findings/2026-07-12-arxiv-agent-triage-b.md`: `Triaged` changed
+  from 2026-11-12 to 2026-07-12.
+- `knowledge/findings/2026-07-12-arxiv-scan-283.md`: the heading and `Scanned`
+  date changed from 2026-11-15 to 2026-07-12.
+
+The seven retained HN targets already stated 2026-07-12. No source claim, URL,
+scan ID, finding path, or alias path changed. The nine future-dated filenames
+remain deliberately readable solely for interface compatibility; their content
+and all nine retained targets now consistently identify July 12.

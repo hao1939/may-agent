@@ -7,7 +7,7 @@ source_basis: "arXiv API queries: all:\"AI agent\" AND all:\"multi-agent\", all:
 
 # arXiv Triage — July 1–9, 2026 (Batch 6)
 
-*Triaged: 2026-11-12 | Source: `https://export.arxiv.org/api/query` | Queries: multi-agent, LLM memory, agent safety | Note: Supplements prior triages; no duplicates.*
+*Triaged: 2026-07-12 | Source: `https://export.arxiv.org/api/query` | Queries: multi-agent, LLM memory, agent safety | Note: Supplements prior triages; no duplicates.*
 
 ---
 
