@@ -2,6 +2,52 @@
 
 Source identity: https://www.xiaohongshu.com/explore/6ae8935000000000360101cd
 
+## Assessment 2026-11-07T19:23:22.759Z
+
+Question: Perform a body-level review of XHS post 6ae8935000000000360101cd for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+The evidence-backed disposition is **access blocked / body-level review incomplete**. Retrieval targeted the exact assigned identity, `https://www.xiaohongshu.com/explore/6ae8935000000000360101cd`, but returned `https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6ae8935000000000360101cd%3FexSource%3Dnull`. The entire supplied extraction is “Log in - rednote - share, connect, love.” This establishes only that the current retrieval encountered an authentication boundary; it supplies no body-level evidence about the post.
+
+No substantive author claims were exposed. Therefore, the post’s main contribution and supporting evidence cannot be identified, and no content-level limitations can responsibly be attributed to the author. Its title, author identity, body text, images, video, comments, linked sources, and underlying primary evidence remain unknown. Their absence from this login-page extraction is not an observed defect in the post.
+
+For reconciliation into the finite 2026-11-07 XHS backfill inventory, the supported disposition remains blocked rather than a knowledge-integration judgment. The post cannot be marked **already covered**, because its unknown claims cannot be compared with existing library evidence. It cannot be marked **out of scope**, because its subject and contribution are unknown. Nor is there evidence that it warrants integration. This retrieval reproduces the previously documented authentication block and adds no substantive evidence that would justify changing the disposition. Existing dispositions for other inventory items should not be reread or revised on this basis.
+
+Completing the requested body-level review requires authorized retrieval of substantive content from this exact post identity, sufficient to assess its contribution, evidence, limitations, and relevance. Authentication must not be bypassed. Search-card metadata, inferred claims, another post, or a substitute source would not satisfy the assignment. Reassess only if the hosted retrieval process obtains the exact post’s substantive content through authorized access; until then, retain **access blocked / body-level review incomplete**.
+
+Assessment incomplete. Retain the blocked inventory disposition. Reassess only if the hosted retrieval process obtains substantive content from this exact post through authorized access; do not bypass authentication, infer claims from metadata, or substitute another source.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6ae8935000000000360101cd",
+  "identity": "https://www.xiaohongshu.com/explore/6ae8935000000000360101cd",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6ae8935000000000360101cd%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T19:23:11.775Z",
+  "sha256": "699cf0c001da2ff2ba9947272a88906bb10117ca04c1f7bfeb21666a52c9b69d",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
+# XHS post 6ae8935000000000360101cd — body review remains blocked by login
+
+Source identity: https://www.xiaohongshu.com/explore/6ae8935000000000360101cd
+
 ## Assessment 2026-11-07T18:23:03.211Z
 
 Question: Perform a body-level review of XHS post 6ae8935000000000360101cd for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
@@ -1004,6 +1050,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
