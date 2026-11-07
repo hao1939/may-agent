@@ -2,6 +2,56 @@
 
 Source identity: https://www.xiaohongshu.com/explore/6961ace3000000000903b207
 
+## Assessment 2026-11-07T10:37:49.203Z
+
+Question: Perform a body-level review of XHS post 6961ace3000000000903b207 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the durable inventory.
+
+**Disposition: inaccessible.**
+
+The current retrieval of exact XHS post `6961ace3000000000903b207` again redirected to a Rednote login URL and returned only “Log in - rednote - share, connect, love.” This supports one narrow checked conclusion: the retrieval encountered an authentication boundary and did not expose the requested post. It is not body-level evidence and contains no title, author caption, body text, publication date, comments, or other post-specific content.
+
+Because the source body is absent, there is no author contribution, claim, or supporting evidence available to summarize or evaluate. Scout therefore cannot determine what the post discusses, whether it remains available, what evidence it presents, or whether it contributes relevant information to the finite 2026-11-07 XHS backfill. These are unknowns caused by inaccessible content, not observed defects in the post. The repeated generic landing-page response corroborates the access blocker but does not add substantive evidence or make the earlier assessment “already covered” under the required disposition set, because the requested body-level outcome remains unmet.
+
+Any images and image-embedded text, video, audio, captions, comments, outbound links, and cited primary sources remain uninspected. The login page does not establish whether those materials exist. No linked evidence or primary-source claim can be treated as checked or verified.
+
+The exact blocker is authentication. Recovery requires a permitted, already authenticated XHS/Rednote browser session—or another authorized retrieval mechanism—that returns the body of this exact post identity. The recovered body must then be reviewed, together with any evidence-bearing media or links needed to assess its claims and relevance. Discovery metadata, a substitute post, or an authentication bypass would not satisfy the assignment.
+
+The substantive review remains incomplete because body-level evidence is unavailable. This bounded call is read-only and does not claim that an artifact was saved or published; durable preservation, canonical artifact-path reporting, and publication evidence remain the owning workflow’s responsibility.
+
+Assessment incomplete. See the assessment for missing evidence.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6961ace3000000000903b207",
+  "identity": "https://www.xiaohongshu.com/explore/6961ace3000000000903b207",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6961ace3000000000903b207%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T10:37:39.737Z",
+  "sha256": "280e11b3754fc4ec5206e104c01e025e810c145c85fada6febfb12fed0f63e61",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
+# XHS post 6961ace3000000000903b207 — inaccessible
+
+Source identity: https://www.xiaohongshu.com/explore/6961ace3000000000903b207
+
 ## Assessment 2026-11-07T10:20:30.299Z
 
 Question: Perform a body-level review of XHS post 6961ace3000000000903b207 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the durable inventory.
@@ -642,6 +692,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
