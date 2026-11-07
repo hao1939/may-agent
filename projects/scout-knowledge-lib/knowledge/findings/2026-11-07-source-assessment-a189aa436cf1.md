@@ -1,3 +1,49 @@
+# XHS post 6aee77c70000000002037f37 remains authentication-blocked
+
+Source identity: https://www.xiaohongshu.com/explore/6aee77c70000000002037f37
+
+## Assessment 2026-11-07T09:48:35.948Z
+
+Question: Perform a body-level review of XHS post 6aee77c70000000002037f37 for the finite 2026-11-07 XHS backfill and produce one evidence-backed disposition suitable for reconciliation into the existing durable inventory.
+
+The useful result is an access disposition, not a substantive content assessment. Retrieval targeted the exact assigned XHS identity, `6aee77c70000000002037f37`, and resolved to a Rednote login URL whose redirect points back to that same explore identity. The only supplied page text is “Log in - rednote - share, connect, love.” This supports the checked conclusion that the authorized retrieval route encountered an authentication gate at the recorded observation time.
+
+No post-level author claims are available to summarize or evaluate. The supplied material contains no caption, body text, author details, publication date, images, video, comments, or evidence-bearing outbound links. Consequently, the post’s main contribution, supporting evidence, substantive limitations, and relevance to the backfill’s research question remain unknown. The redirect helps confirm that retrieval did not substitute another identity, but the login page does not establish whether the post remains published, was deleted, has another visibility restriction, or would become visible after authorized login. No search-card metadata was supplied; even if it had been, it would not satisfy the requested body-level review.
+
+For reconciliation into `/app/projects/scout-knowledge-lib/reports/research/xhs-backfill-inventory-2026-11-07.md`, use the disposition **access blocked — exact post body unavailable because Rednote/XHS authentication is required**. Retain this identity in the frozen finite inventory. Do not count it among body-level completed posts, infer that its unseen material is irrelevant, or replace it with any of the eleven later discoveries. This retrieval provides no evidence that changes the separate status of the nine identities awaiting recovery of the original untruncated receipt.
+
+The substantive outcome is incomplete. Completion requires authorized retrieval of this exact post’s body, followed by inspection of its caption and any media or linked material necessary to understand and assess its claims. Repeating the unauthenticated route again yielded only the login gate, so bypassing access controls or making content inferences would be unsupported. This read-only call did not create or update a record; the workflow still must publish or update the durable inaccessible assessment and return its exact canonical path and Git revision.
+
+Assessment incomplete. Using authorized access, retrieve this exact post and inspect its caption plus any evidence-bearing media or links. Until then, publish or update the durable inaccessible assessment and reconcile the frozen inventory with an authentication-blocked disposition.
+
+### Source access recorded by workflow
+
+Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records material supplied, not complete reading or proof verification.
+
+```json
+{
+  "requestedUrl": "https://www.xiaohongshu.com/explore/6aee77c70000000002037f37",
+  "identity": "https://www.xiaohongshu.com/explore/6aee77c70000000002037f37",
+  "retrievedUrl": "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6aee77c70000000002037f37%3FexSource%3Dnull",
+  "retrievedAt": "2026-11-07T09:48:27.225Z",
+  "sha256": "14c13abf11560e27bc07adb08efe16d02476649e75b5113365d82d582e9c136c",
+  "format": "text",
+  "totalCharacters": 39,
+  "totalPages": 1,
+  "excerpts": [
+    {
+      "page": 1,
+      "start": 0,
+      "end": 39,
+      "sha256": "a80555524bf993ddbc50daf2517622bc742f3334a4c3e26136c5d8a34e2f27e0"
+    }
+  ]
+}
+```
+
+<details>
+<summary>Earlier assessments</summary>
+
 # XHS post 6aee77c70000000002037f37 remains blocked by authentication
 
 Source identity: https://www.xiaohongshu.com/explore/6aee77c70000000002037f37
@@ -408,6 +454,8 @@ Supplied 39 of 39 extracted characters from 1 of 1 text documents. This records 
   ]
 }
 ```
+
+</details>
 
 </details>
 
