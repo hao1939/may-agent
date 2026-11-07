@@ -269,7 +269,7 @@ test("unknown detector failure retains the wait; repaired code resumes the same 
   await f.scan();
   expect(f.runnable()).toEqual(["a"]);
   f.complete("a");
-  expect(f.view("a").status).toBe("done");
+  expect(f.view("a").status).toBe("idle");
   expect((f.db.prepare("SELECT count(*) AS n FROM app_tasks WHERE task_id='a'").get() as { n: number }).n).toBe(1);
 });
 

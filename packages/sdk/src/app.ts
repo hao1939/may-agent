@@ -11,7 +11,7 @@ import type { ResourceObserver, ObservationContract } from "./observer.js";
 export { defineObserver, observationCondition } from "./observer.js";
 export type { ResourceObserver, ObservationContract, ObservationInterest, ObserverHealth } from "./observer.js";
 import type { AppEvent, EventSelector } from "./event.js";
-import type { Condition, TaskAction, TaskIntent } from "./task.js";
+import type { Condition, TaskAction, TaskIntent, TaskStatus } from "./task.js";
 import type { MetricDefinition, ObserverContext, ObserverSnapshot, TaskAttempt, TaskDetail } from "./workflow.js";
 
 export { Type } from "typebox";
@@ -85,7 +85,7 @@ export type AppResult = {
 export type AppDependencyObservation = {
   kind: "app" | "task" | "session" | "analysis";
   id: string;
-  status: "pending" | "running" | "waiting" | "attention" | "done" | "error" | "interrupted" | "unknown";
+  status: TaskStatus | "error" | "interrupted" | "unknown";
   summary?: string;
   response?: string;
   result?: Record<string, unknown>;

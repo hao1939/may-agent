@@ -5,7 +5,9 @@ import {
   type AppTaskAttachment,
   type TaskIntent as AppTaskIntent,
   type TaskRevision,
+  type TaskClosure,
 } from "@may-agent/sdk";
+import { closeCreatedAppTask } from "./task-closure.js";
 import { reviseAppTask, type TaskRevisionActor } from "./task-revision.js";
 import type {
   TaskDetail,
@@ -1084,6 +1086,20 @@ export function reviseLoadedAppTask(input: {
       target: { appId: input.change.appId, taskId: input.change.taskId },
       data: { appId: input.change.appId, taskId: input.change.taskId },
     });
+  return readRuntimeTaskView({ taskStateConfig: target }, input.change.taskId)!;
+}
+
+/** Creator closure uses the same installed-App scope and terminal publication as operator control. */
+export function closeCreatedLoadedAppTask(input: {
+  bus: EventBus;
+  binding: TaskRevisionActor;
+  change: TaskClosure;
+}): TaskDetail {
+  const source = loadedAppTaskRuntimeDescriptor(input.bus, input.binding.appId);
+  const target = readableAppTaskContextById(input.bus, input.change.appId);
+  if (!source || !target) throw new Error("Task closure requires installed caller and responsible Apps");
+  const result = closeCreatedAppTask({ source: appTaskConfig(source), target, actor: input.binding, change: input.change });
+  publishTaskCancellation(input.bus, { cancellation: result.closure, applied: result.applied });
   return readRuntimeTaskView({ taskStateConfig: target }, input.change.taskId)!;
 }
 

@@ -706,7 +706,10 @@ function renderApps(apps, pending) {
     if (typeof app.id === "string" && app.id.trim()) rememberCompletion(knownAppIds, app.id.trim(), 256);
     const active = Number(app.activeTasks || 0);
     const details = [
+      `${Number(app.openTasks ?? active)} open`,
       `${active} active`,
+      ...(Number(app.idleTasks || 0) ? [`${app.idleTasks} idle`] : []),
+      ...(Number(app.queuedTasks || 0) ? [`${app.queuedTasks} queued`] : []),
       ...(Number(app.runningTasks || 0) ? [`${app.runningTasks} running`] : []),
       ...(Number(app.waitingTasks || 0) ? [`${app.waitingTasks} waiting`] : []),
       ...(Number(app.attentionTasks || 0) ? [`${app.attentionTasks} attention`] : []),
@@ -728,7 +731,7 @@ function renderApps(apps, pending) {
 function renderTasks(page, pending) {
   const tasks = Array.isArray(page?.items) ? page.items : [];
   const scope = pending?.appId ? ` for ${pending.appId}` : " across all Apps";
-  const title = pending?.includeDone ? `Tasks${scope} (active and recent):` : `Active Tasks${scope}:`;
+  const title = pending?.includeDone ? `Tasks${scope} (open and history):` : `Open Tasks${scope}:`;
   const lines = ["", title, ""];
   if (tasks.length === 0) lines.push("  Nothing found.");
   for (const task of tasks) {
@@ -769,8 +772,8 @@ function taskStatusLabel(task) {
       return "waiting";
     case "attention":
       return task?.humanAction ? "needs you" : "needs review";
-    case "up-to-date":
-      return "up to date";
+    case "idle":
+      return "idle";
     case "done":
       return "done";
     case "cancelled":
@@ -792,11 +795,12 @@ function currentTaskText(task) {
       return "No new progress has been reported while the Task waits.";
     case "attention":
       return "No recovery update has been reported yet.";
-    case "up-to-date":
-      return "Current linked work is reconciled; this Task will wake when relevant facts change.";
+    case "idle":
+      return "No work is runnable. The owner must retain a specific next responsibility or close this assignment.";
     case "done":
       return "No result summary was recorded.";
     case "cancelled":
+    case "closed":
       return "The Task will not continue.";
     default:
       return "No current update has been reported.";

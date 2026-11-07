@@ -167,7 +167,7 @@ async function observationSmoke(mode: "prompt" | "periodic") {
       passed = true;
     }
     await until(
-      () => tasks.get({ appId: "sample", taskId: "smoke" })?.status === "done",
+      () => tasks.get({ appId: "sample", taskId: "smoke" })?.status === "idle",
       "automatic owner continuation",
     );
     if (mode === "prompt") expect(attempts).toHaveLength(2);

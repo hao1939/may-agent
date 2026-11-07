@@ -17,6 +17,7 @@ import { getAppInboxItem } from "../state/app-inbox-store.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import { readAppTaskAgent } from "../tasks/app-task-reconciler.js";
 import type { AgentEvent } from "../events/bus.js";
+import { taskStatusFromPhase } from "./task-status.js";
 import {
   hasTaskAcceptedEvidence,
   readTaskAcceptedEvidence,
@@ -184,7 +185,7 @@ function readTaskDetail(
         },
       })),
       current.resource.status.observedAttemptId ? store.readAttempt(current.resource.status.observedAttemptId) : null,
-      current.closed,
+      current.closure,
     );
   }
   const receipt = store.readReceipt(taskId);
@@ -208,12 +209,12 @@ function receiptTaskView(receipt: NonNullable<TaskTree["receipts"]>[string]): Ta
 function resourceTaskView(
   resource: NonNullable<TaskTree["resources"]>[string],
   phase: NonNullable<TaskTree["resources"]>[string]["status"]["phase"],
-  closed = false,
+  closure?: "closed" | "cancelled",
 ): TaskView {
   return {
     id: resource.metadata.id,
-    ...(closed ? { closed: true } : {}),
-    status: phase === "converged" ? "done" : phase,
+    ...(closure ? { closed: true } : {}),
+    status: taskStatusFromPhase(phase, closure),
     generation: resource.metadata.generation,
     outcome: resource.spec.outcome,
     summary: resource.status.summary,
@@ -251,10 +252,10 @@ function resourceTaskDetail(
   acceptedEvidence: TaskDetail["acceptedEvidence"],
   conditions: TaskDetail["conditions"],
   acceptedAttempt: ReturnType<AppTaskContext["resourceStore"]["readAttempt"]>,
-  closed = false,
+  closure?: "closed" | "cancelled",
 ): TaskDetail {
   return {
-    ...resourceTaskView(resource, phase, closed),
+    ...resourceTaskView(resource, phase, closure),
     resourceVersion: resource.metadata.resourceVersion,
     pendingEvents: pendingTaskEvents(store, resource.metadata.id),
     currentObligations: currentTaskObligations(store, resource),
@@ -315,7 +316,7 @@ export function listRuntimeTaskViews(
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
     throw new Error("Task list limit must be an integer between 1 and 100");
   }
-  const validStatuses = new Set<TaskView["status"]>(["pending", "running", "waiting", "attention", "done"]);
+  const validStatuses = new Set<TaskView["status"]>(["pending", "running", "waiting", "attention", "idle", "closed", "cancelled", "done"]);
   if (options.status?.some((status) => !validStatuses.has(status))) {
     throw new Error("Invalid Task status filter");
   }
@@ -328,7 +329,7 @@ export function listRuntimeTaskViews(
   return {
     items: pageIds.flatMap((id) => {
       const current = store.readTaskForView(id);
-      if (current) return [resourceTaskView(current.resource, current.phase, current.closed)];
+      if (current) return [resourceTaskView(current.resource, current.phase, current.closure)];
       const receipt = store.readReceipt(id);
       return receipt ? [receiptTaskView(receipt)] : [];
     }),

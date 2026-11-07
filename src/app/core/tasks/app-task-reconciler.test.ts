@@ -309,7 +309,7 @@ describe("worker failure facts and owner closure", () => {
     expect(readTaskSnapshot(config)).toEqual(before);
     expect(config.resourceStore.readControlReceipt("retry-cancelled")).toBeNull();
     expect(readRuntimeTaskView({ taskStateConfig: config }, intent.id)).toMatchObject({
-      status: "attention",
+      status: "cancelled",
       summary: expect.stringContaining("Cancelled by human"),
     });
     expect(config.resourceStore.listRecoveryCandidates().items.map((item) => item.taskId)).not.toContain(intent.id);
@@ -1772,7 +1772,7 @@ describe("App task reconciler state", () => {
     expect(config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult?.summary).toBe("original goal completed");
     expect(readRuntimeTaskView({ taskStateConfig: config }, original.id)).toMatchObject({
       generation: 2,
-      status: "done",
+      status: "idle",
       outcome: revised.outcome,
     });
     expect(observeAppTaskIntent(config, { intent: revised, appAgent: "app-owner" })).toMatchObject({

@@ -104,6 +104,8 @@ export type {
   TaskExecutorName,
   TaskIntent,
   TaskPriority,
+  TaskStatus,
+  TaskClosure,
   TaskReconcileResult,
   TaskChanges,
   TaskCommunication,

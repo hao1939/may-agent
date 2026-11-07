@@ -580,7 +580,7 @@ test("shows every live Task regardless of descriptive category", () => {
   });
 });
 
-test("shows a converged maintain Task as live and up to date", () => {
+test("shows reconciled work as open and idle, excluding it from active counts", () => {
   const db = database();
   insertTask(db, {
     appId: "may",
@@ -591,9 +591,28 @@ test("shows a converged maintain Task as live and up to date", () => {
   const service = new HumanTaskService(db, registry("may"));
 
   expect(service.listTasks({ appId: "may" }).items).toEqual([
-    expect.objectContaining({ taskId: "conversation/follow-up", status: "up-to-date", terminal: false }),
+    expect.objectContaining({ taskId: "conversation/follow-up", status: "idle", terminal: false }),
   ]);
-  expect(service.listApps("may")).toEqual([expect.objectContaining({ id: "may", activeTasks: 1 })]);
+  expect(service.listApps("may")).toEqual([expect.objectContaining({ id: "may", openTasks: 1, activeTasks: 0, idleTasks: 1 })]);
+});
+
+test("a standing six-hour audit is idle between observations and exposes its next run", () => {
+  setSystemTime(new Date(1));
+  const db = database();
+  insertTask(db, { appId: "sample", taskId: "audit", phase: "converged", updatedAt: 1 });
+  const service = new HumanTaskService(db, registryWithSchedules("sample", [{
+    id: "audit", intervalMs: 21_600_000,
+    event: { type: "project.task.tick", data: {}, target: { appId: "sample", taskId: "audit" } },
+  }]));
+  expect(service.getTask({ appId: "sample", taskId: "audit" })).toMatchObject({
+    status: "idle", terminal: false, recurring: true,
+    statusDetail: "Standing work; next scheduled observation 1970-01-01T06:00:00.000Z.",
+  });
+  expect(service.listApps()).toEqual([expect.objectContaining({ openTasks: 1, activeTasks: 0, idleTasks: 1 })]);
+  const store = AppTaskResourceStore.fromDb(db, "sample");
+  recordAppTaskTrigger(taskConfig(db, store, "sample"), "audit", { type: "project.task.tick", data: {} });
+  expect(service.getTask({ appId: "sample", taskId: "audit" })?.status).toBe("pending");
+  expect(service.listApps()).toEqual([expect.objectContaining({ openTasks: 1, activeTasks: 1, idleTasks: 0, queuedTasks: 1 })]);
 });
 
 test("shows a converged Task with pending work as queued in detail, lists, and status filters", () => {
@@ -628,8 +647,11 @@ test("shows a converged Task with pending work as queued in detail, lists, and s
       .items.map((task) => task.taskId)
       .sort(),
   ).toEqual(["not-ready", "ready", "scheduled"]);
-  expect(service.listTasks({ status: ["up-to-date"] }).items.map((task) => task.taskId)).toEqual(["quiet"]);
+  expect(service.listTasks({ status: ["idle"] }).items.map((task) => task.taskId)).toEqual(["quiet"]);
   expect(service.listTasks().items.filter((task) => task.status === "pending")).toHaveLength(3);
+  expect(service.listApps()).toEqual([expect.objectContaining({
+    id: "research", openTasks: 4, activeTasks: 3, idleTasks: 1, queuedTasks: 3,
+  })]);
   expect(db.prepare("SELECT DISTINCT phase FROM app_tasks").all()).toEqual([{ phase: "converged" }]);
 
   insertReceipt(db, "research", "scheduled", 3);
@@ -661,7 +683,7 @@ test("status-filtered human reads retain the stored-phase index", () => {
     },
   };
   const service = new HumanTaskService(observed, registry("research"));
-  for (const status of ["pending", "running", "up-to-date"] as const) {
+  for (const status of ["pending", "running", "idle"] as const) {
     service.listTasks({ status: [status], limit: 1 });
     expect(plans.at(-1)).toContain("idx_app_tasks_global_phase (phase=?)");
     expect(plans.at(-1)).toContain("idx_app_inbox_waiting");
@@ -2005,6 +2027,10 @@ describe("Human Task service", () => {
       const db = database();
       insertTask(db, { appId: "alpha", taskId: "completed-but-stale", phase: "attention", updatedAt: 30, generation });
       insertReceipt(db, "alpha", "completed-but-stale", 40);
+      const config = taskConfig(db, AppTaskResourceStore.fromDb(db, "alpha"), "alpha");
+      expect(readRuntimeTaskView({ taskStateConfig: config }, "completed-but-stale")).toMatchObject({ status: "done", closed: true });
+      expect(listRuntimeTaskViews({ taskStateConfig: config }, { status: ["done"] }).items).toHaveLength(1);
+      expect(listRuntimeTaskViews({ taskStateConfig: config }, { status: ["attention"] }).items).toEqual([]);
       const service = new HumanTaskService(db, registry("alpha"));
 
       expect(service.listTasks().items).toEqual([]);
@@ -2021,6 +2047,10 @@ describe("Human Task service", () => {
     insertTask(db, { appId: "alpha", taskId: "same-pr", generation: 8, phase: "attention", updatedAt: 50 });
     const service = new HumanTaskService(db, registry("alpha"));
     const expected = { taskId: "same-pr", generation: 8, status: "attention", terminal: false };
+    const config = taskConfig(db, AppTaskResourceStore.fromDb(db, "alpha"), "alpha");
+    expect(readRuntimeTaskView({ taskStateConfig: config }, "same-pr")).toMatchObject({ generation: 8, status: "attention" });
+    expect(listRuntimeTaskViews({ taskStateConfig: config }, { status: ["done"] }).items).toEqual([]);
+    expect(listRuntimeTaskViews({ taskStateConfig: config }, { status: ["attention"] }).items).toHaveLength(1);
     expect(service.getTask({ appId: "alpha", taskId: "same-pr" })).toMatchObject(expected);
     expect(service.listTasks().items).toEqual([expect.objectContaining(expected)]);
     expect(service.listTasks({ includeDone: true }).items).toEqual([expect.objectContaining(expected)]);
@@ -2196,13 +2226,14 @@ describe("Human Task service", () => {
     expect(service.listTasks({ appId: "other", status: ["closed"] }).items).toEqual([]);
     expect(service.listTasks({ includeDone: true }).items).toHaveLength(3);
 
-    const history = listRuntimeTaskViews({ taskStateConfig: config }, { status: ["done"] });
+    const history = listRuntimeTaskViews({ taskStateConfig: config }, { status: ["closed"] });
     expect(history.items).toEqual([
       expect.objectContaining({
         id: "previously-finished",
         closed: true,
         response: "previously-finished result",
       }),
+      expect.objectContaining({ id: "withdrawn", status: "closed", closed: true }),
     ]);
   });
 

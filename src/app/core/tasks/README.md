@@ -229,10 +229,23 @@ This is not a general progress stream. Apps can still declare relevant event rou
 
 | Name in code | Meaning in this lifecycle |
 | --- | --- |
-| `converged` / SDK `done` | An accepted outcome; later input can run the same open Task. Owner closure preserves this outcome status; read `closed` separately |
-| Worker result `incomplete` / `reportAppTaskFailure()` | Unsuccessful attempt facts; unfinished work retries with backoff |
+| Public `pending` (queued), `running`, `waiting`, `attention` | Current scheduling and execution state; independent Conditions remain visible during execution |
+| Public `idle` (stored `converged`) | No current runnable work; the assignment stays open pending a declared next responsibility or owner disposition |
+| `closeAppTask()` / public `closed` | Authorized owner ends the assignment against an exact accepted result; preserves evidence without certifying semantic fulfillment |
+| `cancelAppTask()` / public `cancelled` | Authorized withdrawal, including during execution; preserves unresolved disposition |
+| Public `done` | Legacy immutable completion receipts only |
+| Worker result `converged`, `waiting`, `incomplete` | Scoped attempt judgments, separate from Task lifecycle and exact App input `done` |
 | Turn Stop / `stopAppTaskAttempt()` | Stop the observed attempt; keep the Task and accepted Requests |
-| `cancelAppTask()` / SDK `closed` | Authorized owner ends the assignment; retained facts remains readable |
+
+Task reads, Human Task reads, filters and displays expose this one lifecycle.
+The existing persisted phase and terminal decision remain the authority; no
+second lifecycle column or storage migration is needed. The compatibility
+`closed` flag is derived from terminal state. App counts expose all `openTasks`,
+`activeTasks` (queued/running/waiting/attention), `idleTasks` and `queuedTasks`.
+Idle work stays visible in open outcome reporting. Quiet work consumes no model
+polling. Configured recurrence explains the next observation; otherwise the
+owner must identify a next responsibility or explicitly end finite work.
+Archive means viewing ended history, without changing execution state.
 
 Task attempt failures persist their retry deadline, backing off from 250 ms to
 one hour during prolonged failure. Fresh human input still permits one new
@@ -274,6 +287,20 @@ The save preserves current execution, observed status, failure pacing, waits,
 pending events and original input-answer links. It requires no session cleanup
 and does not wait for another caller's answer. Status progress cannot conflict
 with a spec write; concurrent spec changes still require a fresh read.
+
+The creating Task closes a reviewed assignment with `tasks close` or
+`TaskAttempt.closeTask({appId, taskId, expectedGeneration,
+expectedResourceVersion, afterResult, reason})`. The workflow capability is
+`ctx.closeTask`; executors and agent tools share `task-closure.ts`. The Host
+binds the actor to its current running attempt, checks immutable creator
+provenance and commits under one transaction. A worker cannot close itself or
+another creator's work. Closing requires the exact current accepted attempt,
+current versions, reconciled work and no running attempt or pending input;
+stale decisions must reread. Exact replay preserves the same terminal decision.
+Root assignments and historical Tasks without Task-level creator provenance
+use the existing trusted App/operator controls, without guessing authority.
+Worker result schemas gain no closure action. Accepted caller answers and
+independent children remain unchanged by closure.
 
 Creator identity is immutable Host metadata, `{ appId, taskId? }`, recorded at
 creation. App-created work has an App creator; delegated work has its calling

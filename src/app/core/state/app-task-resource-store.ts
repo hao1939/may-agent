@@ -1,4 +1,4 @@
-import type { TaskChangeReceipt } from "@may-agent/sdk";
+import type { TaskChangeReceipt, TaskStatus } from "@may-agent/sdk";
 import { storedResultFacts } from "./result-facts.js";
 import { isDeepStrictEqual } from "node:util";
 import { taskViewPhaseSql } from "./task-view-phase.js";
@@ -576,13 +576,18 @@ export class AppTaskResourceStore {
   }
 
   /** Read accepted content and its current display phase from the same row. */
-  readTaskForView(taskId: string): { resource: AppTaskResource; phase: AppTaskResource["status"]["phase"]; closed: boolean } | null {
+  readTaskForView(taskId: string): { resource: AppTaskResource; phase: AppTaskResource["status"]["phase"]; closed: boolean; closure?: "closed" | "cancelled" } | null {
     const row = this.db
       .prepare(`SELECT resource_json, ${TASK_VIEW_PHASE_SQL} AS phase,
-        EXISTS(SELECT 1 FROM app_task_cancellations c WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id) AS closed
-        FROM app_tasks WHERE app_id = ? AND task_id = ?`)
-      .get(this.appId, taskId) as { resource_json: string; phase: AppTaskResource["status"]["phase"]; closed: number } | null;
-    return row ? { resource: parseTaskResource(row.resource_json), phase: row.phase, closed: Boolean(row.closed) } : null;
+        (SELECT COALESCE(json_extract(c.cancellation_json, '$.kind'), 'cancelled') FROM app_task_cancellations c WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id) AS closure
+        FROM app_tasks WHERE app_id = ? AND task_id = ?
+          AND (EXISTS (SELECT 1 FROM app_task_cancellations c
+                WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id)
+            OR NOT EXISTS (SELECT 1 FROM app_task_receipts r
+                WHERE r.app_id = app_tasks.app_id AND r.receipt_id = app_tasks.task_id
+                  AND json_extract(r.receipt_json, '$.metadata.generation') >= app_tasks.generation))`)
+      .get(this.appId, taskId) as { resource_json: string; phase: AppTaskResource["status"]["phase"]; closure: "closed" | "cancelled" | null } | null;
+    return row ? { resource: parseTaskResource(row.resource_json), phase: row.phase, closed: Boolean(row.closure), ...(row.closure ? { closure: row.closure } : {}) } : null;
   }
 
   hasTaskEvent(taskId: string, event: Record<string, unknown>): boolean {
@@ -903,7 +908,7 @@ export class AppTaskResourceStore {
 
   listTaskIds(input: {
     after?: string | null;
-    statuses?: ReadonlySet<"pending" | "running" | "waiting" | "attention" | "done"> | null;
+    statuses?: ReadonlySet<TaskStatus> | null;
     limit: number;
   }): string[] {
     const after = input.after ?? "";
@@ -911,7 +916,7 @@ export class AppTaskResourceStore {
     const includeDone = !input.statuses || input.statuses.has("done");
     const livePhases = input.statuses
       ? statuses.flatMap((status) =>
-          status === "done" ? ["converged"] : status === "pending" ? ["pending"] : [status],
+          status === "idle" ? ["converged"] : ["done", "closed", "cancelled"].includes(status) ? [] : [status],
         )
       : ["pending", "running", "waiting", "attention", "converged"];
     // Preserve the indexed stored-phase predicate before applying readiness.
@@ -922,19 +927,34 @@ export class AppTaskResourceStore {
       clauses.push(
         `SELECT task_id AS id FROM app_tasks
          WHERE app_id = ? AND task_id > ? AND phase IN (${storedPhases.map(() => "?").join(", ")})
-           AND (${TASK_VIEW_PHASE_SQL}) IN (${livePhases.map(() => "?").join(", ")})`,
+           AND (${TASK_VIEW_PHASE_SQL}) IN (${livePhases.map(() => "?").join(", ")})
+           AND NOT EXISTS (SELECT 1 FROM app_task_cancellations c
+             WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id)
+           AND NOT EXISTS (SELECT 1 FROM app_task_receipts r
+             WHERE r.app_id = app_tasks.app_id AND r.receipt_id = app_tasks.task_id
+               AND json_extract(r.receipt_json, '$.metadata.generation') >= app_tasks.generation)`,
       );
       values.push(this.appId, after, ...storedPhases, ...livePhases);
     }
     if (includeDone) {
       clauses.push(`SELECT receipt_id AS id FROM app_task_receipts
         WHERE app_id = ? AND receipt_id > ?
+          AND NOT EXISTS (SELECT 1 FROM app_task_cancellations c
+            WHERE c.app_id = app_task_receipts.app_id AND c.task_id = app_task_receipts.receipt_id)
           AND NOT EXISTS (
             SELECT 1 FROM app_tasks current
             WHERE current.app_id = app_task_receipts.app_id
               AND current.task_id = app_task_receipts.receipt_id
+              AND current.generation > json_extract(app_task_receipts.receipt_json, '$.metadata.generation')
           )`);
       values.push(this.appId, after);
+    }
+    const terminalKinds = ["closed", "cancelled"].filter((kind) => !input.statuses || input.statuses.has(kind as "closed" | "cancelled"));
+    if (terminalKinds.length) {
+      clauses.push(`SELECT task_id AS id FROM app_task_cancellations
+        WHERE app_id = ? AND task_id > ?
+          AND COALESCE(json_extract(cancellation_json, '$.kind'), 'cancelled') IN (${terminalKinds.map(() => "?").join(", ")})`);
+      values.push(this.appId, after, ...terminalKinds);
     }
     if (clauses.length === 0) return [];
     values.push(Math.max(1, Math.floor(input.limit)));

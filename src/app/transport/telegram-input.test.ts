@@ -984,7 +984,7 @@ describe("Telegram May input", () => {
           waitingTasks: 0,
         },
       ]),
-    ).toContain("evaluation — 1 active · 1 running");
+    ).toContain("evaluation — 1 open · 1 active · 1 running");
     const workingTasks = renderTelegramTasks([task], false);
     expect(workingTasks).toContain("<b>Working</b>\n🔵 <b>Review the docs</b>");
     expect(workingTasks).toContain("🔵 <b>Review the docs</b>\n  evaluation · <code>8f12ac90</code>");
@@ -995,17 +995,28 @@ describe("Telegram May input", () => {
         { ...task, status: "waiting", humanAction: { requestedAction: "Choose the rollout." } },
         task,
         { ...task, taskId: "waiting", ref: "aa11bb22", status: "waiting" },
-        { ...task, taskId: "current", ref: "cc33dd44", status: "up-to-date" },
+        { ...task, taskId: "current", ref: "cc33dd44", status: "idle" },
       ],
       false,
     );
     expect(groupedTasks).toContain("<b>Needs you</b>\n🔴 <b>Review the docs</b>");
     expect(groupedTasks).toContain("<b>Working</b>\n🔵 <b>Review the docs</b>");
     expect(groupedTasks).toContain("<b>Waiting</b>\n🟡 <b>Review the docs</b>");
-    expect(groupedTasks).toContain("<b>Up to date</b>\n🟢 <b>Review the docs</b>");
+    expect(groupedTasks).toContain("<b>Idle</b>\n🟢 <b>Review the docs</b>");
     expect(groupedTasks).toContain("🟢 <b>Review the docs</b>\n  evaluation · <code>cc33dd44</code>");
     expect(groupedTasks).not.toContain("Waiting · evaluation");
-    expect(groupedTasks).not.toContain("Up to date · evaluation");
+    expect(groupedTasks).not.toContain("Idle · evaluation");
+    expect(groupedTasks).toContain("Tasks · open");
+    const endedTasks = renderTelegramTasks(
+      [
+        { ...task, status: "closed", terminal: true },
+        { ...task, status: "cancelled", terminal: true },
+      ],
+      true,
+    );
+    expect(endedTasks).toContain("<b>Closed</b>");
+    expect(endedTasks).toContain("<b>Cancelled</b>");
+    expect(endedTasks).not.toContain("<b>Completed</b>");
     const recurringTasks = renderTelegramTasks(
       [
         {
@@ -1688,7 +1699,7 @@ describe("Telegram May input", () => {
             event.data?.context?.focusedTask?.taskId === "review/docs",
         ),
       );
-      expect(sent).toContainEqual(expect.stringContaining("evaluation — 1 active"));
+      expect(sent).toContainEqual(expect.stringContaining("evaluation — 1 open · 1 active"));
       expect(sent).toContainEqual(expect.stringContaining("Task 8f12ac90"));
       expect(sent).toContainEqual(expect.stringContaining("Following updates. Reply here"));
       const exactProposal =

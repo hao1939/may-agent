@@ -371,11 +371,11 @@ describe("May Console", () => {
     await waitFor(() => output.includes("Selected App: evaluation") && output.includes("Reviews project behavior"));
     await waitFor(
       () =>
-        output.includes("Active Tasks for evaluation:") &&
+        output.includes("Open Tasks for evaluation:") &&
         output.includes("8f12ac90") &&
         output.includes("Review the docs"),
     );
-    expect(output).toContain("Active Tasks for evaluation:\n\n  8f12ac90 · evaluation · working ·");
+    expect(output).toContain("Open Tasks for evaluation:\n\n  8f12ac90 · evaluation · working ·");
     expect(output).toContain("    Review the docs\n    You: Nothing needed right now.\n\n");
     expect(
       frames.some((frame) => frame.type === "tasks.list" && frame.appId === "evaluation" && frame.limit === 10),
@@ -403,7 +403,7 @@ describe("May Console", () => {
     const taskReadsBeforeReconnect = frames.filter(
       (frame) => frame.type === "tasks.list" && frame.appId === "evaluation" && !frame.humanActionOnly,
     ).length;
-    const taskViewsBeforeReconnect = output.split("Active Tasks for evaluation:").length - 1;
+    const taskViewsBeforeReconnect = output.split("Open Tasks for evaluation:").length - 1;
     dropNextTaskCommandRead = true;
     child.stdin.write("/tasks\n");
     await waitFor(
@@ -411,7 +411,7 @@ describe("May Console", () => {
         frames.filter((frame) => frame.type === "tasks.list" && frame.appId === "evaluation" && !frame.humanActionOnly)
           .length >=
           taskReadsBeforeReconnect + 2 &&
-        output.split("Active Tasks for evaluation:").length - 1 === taskViewsBeforeReconnect + 1,
+        output.split("Open Tasks for evaluation:").length - 1 === taskViewsBeforeReconnect + 1,
     );
 
     humanActionActive = true;
