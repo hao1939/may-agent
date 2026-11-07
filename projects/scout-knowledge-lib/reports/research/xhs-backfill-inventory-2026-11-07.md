@@ -1,5 +1,5 @@
 <ai_context>
-summary: "Checkpoint for the finite Xiaohongshu backfill requested after the 2026-11-07 `explore-xhs` run. It preserves every exact run ID still recoverable from workflow evidence, keeps later discoveries separate, records three evidence-backed dispositions, and identifies the workflow's 20-item truncation as the exact gap preventing reconstruction of all 29 run identities."
+summary: "Checkpoint for the finite Xiaohongshu backfill requested after the 2026-11-07 `explore-xhs` run. It preserves every exact run ID still recoverable from workflow evidence, keeps later discoveries separate, records four evidence-backed dispositions, and identifies the workflow's 20-item truncation as the exact gap preventing reconstruction of all 29 run identities."
 triggers: ["XHS backfill", "2026-11-07 explore-xhs", "wr_1794040651688_zrzq", "d66f10ca9325825c"]
 last_updated: "2026-11-07"
 </ai_context>
@@ -31,7 +31,7 @@ Evidence locations:
 | # | XHS post ID | Search-card title | Durable disposition |
 |---:|---|---|---|
 | 1 | `6961ace3000000000903b207` | 大家将agent称为“智能体”？我已经搞明白了！ | **Inaccessible.** Retrieval of the exact post identity redirected to a Rednote login screen and returned only “Log in - rednote - share, connect, love,” with no post body or post-specific content. Recovery requires permitted access through an already authenticated XHS/Rednote browser session, or another authorized retrieval mechanism that returns the exact post body; do not use a login bypass or substitute source. Durable assessment: [`2026-11-07-source-assessment-bbe01fe68cd6.md`](../../knowledge/findings/2026-11-07-source-assessment-bbe01fe68cd6.md). |
-| 2 | `6aee77c70000000002037f37` | 一群AI组队干活？先泼盆冷水 | Pending body review |
+| 2 | `6aee77c70000000002037f37` | 一群AI组队干活？先泼盆冷水 | **Inaccessible.** Retrieval of the exact post identity redirected to a Rednote/XHS login page and returned only “Log in - rednote - share, connect, love,” with no post body, caption, author details, media, comments, or links. This is retrieval evidence only and does not support a substantive characterization or body-level review. Recovery requires authorized access that returns the actual post body; do not bypass login or substitute search-card metadata. Durable assessment: [`2026-11-07-source-assessment-a189aa436cf1.md`](../../knowledge/findings/2026-11-07-source-assessment-a189aa436cf1.md). |
 | 3 | `6adeb34e00000000150130b7` | 别再折腾多Agent编排了：Claude | Pending body review |
 | 4 | `6ae8935000000000360101cd` | 曾经爆火的 Coze，为什么走到这一步？ | Pending body review |
 | 5 | `6ad5542b000000000c00e056` | Agent沙箱卷到25ms，然后集体翻车 | **Reviewed and integrated.** Complete readable body and visible comments were reviewed; the durable finding is [`2026-11-07-agent-sandbox-control-plane-boundary.md`](../../knowledge/findings/2026-11-07-agent-sandbox-control-plane-boundary.md). Attached images and cited primary sources were not inspected. |
@@ -77,16 +77,16 @@ No inference is made that any of these 11 are among the nine unretained IDs.
 
 - Frozen-run total reported by the source workflow: **29**
 - Exact frozen-run identities durably recovered: **20**
-- Evidence-backed dispositions among recovered identities: **3**
+- Evidence-backed dispositions among recovered identities: **4**
   - reviewed and integrated: **1**
   - out of scope with reason: **1**
-  - inaccessible with exact authentication blocker: **1**
-- Known recovered identities still eligible for body review: **17**
+  - inaccessible with exact authentication blocker: **2**
+- Known recovered identities still eligible for body review: **16**
 - Frozen-run identities blocked on exact identity recovery: **9**
 - Later discoveries kept separate: **11**
 
-Continue with the 17 known eligible IDs, starting with
-`6aee77c70000000002037f37`, without rereading the three completed entries. In
+Continue with the 16 known eligible IDs, starting with
+`6adeb34e00000000150130b7`, without rereading the four dispositioned entries. In
 parallel, recover the original nine identities only from an untruncated
 historical receipt; do not substitute or guess from a refreshed search
 population.
