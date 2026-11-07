@@ -590,6 +590,15 @@ export class AppTaskResourceStore {
     return row ? { resource: parseTaskResource(row.resource_json), phase: row.phase, closed: Boolean(row.closure), ...(row.closure ? { closure: row.closure } : {}) } : null;
   }
 
+  /** Bounded context producers share the same readiness projection as exact reads. */
+  readTaskViewPhases(taskIds: readonly string[]): Record<string, AppTaskResource["status"]["phase"]> {
+    if (!taskIds.length) return {};
+    const rows = this.db.prepare(`SELECT task_id, ${TASK_VIEW_PHASE_SQL} AS phase FROM app_tasks
+      WHERE app_id = ? AND task_id IN (${taskIds.map(() => "?").join(", ")})`)
+      .all(this.appId, ...taskIds) as Array<{ task_id: string; phase: AppTaskResource["status"]["phase"] }>;
+    return Object.fromEntries(rows.map(({ task_id, phase }) => [task_id, phase]));
+  }
+
   hasTaskEvent(taskId: string, event: Record<string, unknown>): boolean {
     const eventId = Number(event.eventId);
     if (!Number.isSafeInteger(eventId) || eventId <= 0) return false;

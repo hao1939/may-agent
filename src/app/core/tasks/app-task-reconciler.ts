@@ -1703,13 +1703,14 @@ function liveTaskContext(
   tree: TaskTree,
   resource: AppTaskResource,
   readiness: AppTaskReadiness | undefined,
+  phase = resource.status.phase,
 ): AppTaskChildContext["live"][number] {
   const attempt = currentResourceAttempt(tree, resource);
   return {
     taskId: resource.metadata.id,
     parentId: resource.spec.parentId,
     generation: resource.metadata.generation,
-    phase: resource.status.phase,
+    phase,
     outcome: boundedChildContextText(resource.spec.outcome),
     ...(resource.spec.owner ? { agent: resource.spec.owner } : {}),
     ...(resource.spec.workflow ? { workflow: resource.spec.workflow } : {}),
@@ -1797,12 +1798,14 @@ export function readAppTaskChildContext(config: AppTaskContext, taskId: string):
     { taskIds: new Set([taskId, ...runningIds]) },
     { childLimit: MAX_LIVE_CHILD_CONTEXT },
   );
-  const readinessById = appTaskReadinessById(tree, config.maxConcurrent);
-  const live = Object.values(tree.resources ?? {})
+  const children = Object.values(tree.resources ?? {})
     .filter((resource) => resource.spec.parentId === taskId && !tree.cancellations?.[resource.metadata.id])
     .sort((left, right) => left.metadata.id.localeCompare(right.metadata.id))
-    .slice(0, MAX_LIVE_CHILD_CONTEXT)
-    .map((resource) => liveTaskContext(tree, resource, readinessById[resource.metadata.id]));
+    .slice(0, MAX_LIVE_CHILD_CONTEXT);
+  const viewPhases = config.resourceStore.readTaskViewPhases(children.map(({ metadata }) => metadata.id));
+  const readinessById = appTaskReadinessById(tree, config.maxConcurrent, viewPhases);
+  const live = children.map((resource) =>
+    liveTaskContext(tree, resource, readinessById[resource.metadata.id], viewPhases[resource.metadata.id]));
   const completed = Object.values(tree.receipts ?? {})
     .filter((receipt) => receipt.parentId === taskId)
     .sort((left, right) => right.completedAt.localeCompare(left.completedAt))

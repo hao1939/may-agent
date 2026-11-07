@@ -714,6 +714,41 @@ export async function execute(ctx) {
   });
 });
 
+it("a parent attempt sees the same queued child lifecycle as exact Task reads", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  let executed = false;
+  await installCoreTaskRuntimes({ ...options(f, bus), installControllers: false,
+    appRegistrySnapshot: { id: "child-lifecycle", generation: 1,
+      entries: [{ appDir: f.appDir, definition: definition() }] },
+    executors: { inspect: async (attempt) => {
+      const child = attempt.children.live.find(({ taskId }) => taskId === "work/child");
+      expect(child).toMatchObject({ status: "pending", readiness: { state: "capacity-blocked" } });
+      const detail = await attempt.read.tasks.get("work/child");
+      expect(detail?.status).toBe(child?.status);
+      expect((await attempt.read.tasks.list({ status: ["pending"] })).items)
+        .toEqual([expect.objectContaining({ id: "work/child", status: child!.status })]);
+      executed = true;
+      return { state: "converged", summary: "Queued child remains owned", facts: ["child:queued"] };
+    } },
+  });
+  const config = loadedTaskConfig(f);
+  observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+    id: "work/parent", parentId: "operations", outcome: "Review child", acceptance: ["Exact state checked"], executor: "inspect",
+  } });
+  observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+    id: "work/child", parentId: "work/parent", outcome: "Review each input", acceptance: ["Inputs handled"],
+  } });
+  const child = claimObservedAppTask(config, { taskId: "work/child", appAgent: "sample-owner", handler: "auto" });
+  if (child.kind !== "claimed") throw new Error("Expected child claim");
+  completeAppTask(config, child, { summary: "First cycle accepted" });
+  recordAppTaskTrigger(config, "work/child", { type: "source.changed", data: { revision: 2 } });
+  await reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId: "work/parent",
+    dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+  expect(executed).toBe(true);
+  expect(config.resourceStore.readTask("work/child")?.status.phase).toBe("converged");
+});
+
 it.each(["converged", "waiting", "incomplete"] as const)("carries explicit earlier input through executor reads and %s settlement", async (state) => {
   const f = fixture();
   const bus = eventBus();

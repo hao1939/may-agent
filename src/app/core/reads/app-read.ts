@@ -10,6 +10,7 @@ import type {
 } from "@may-agent/sdk/app";
 import type { TaskOutcomeReader } from "./reporting.js";
 import type { AppTaskContext, TaskTree } from "../tasks/app-task-store.js";
+import type { AppTaskCancellation } from "../tasks/app-task-state.js";
 import { projectAppTaskReconciliationEvents } from "../tasks/app-task-context.js";
 import { getExecutionResultFromDb } from "../../../lib/execution-result.js";
 import type { SqliteDb } from "../../../lib/db.js";
@@ -159,8 +160,7 @@ function readTaskDetail(
   taskId: string,
   options?: TaskReadOptions,
 ): TaskDetail | null {
-  // Retained Task state owns current decisions. The fallback below only
-  // exposes pre-cutover history when no retained resource exists.
+  // Current resources and terminal decisions take precedence over old receipts.
   const acceptedEvidence: TaskDetail["acceptedEvidence"] = {
     available: hasTaskAcceptedEvidence(store.db, store.appId, taskId),
     maxPageSize: TASK_ACCEPTED_EVIDENCE_MAX_PAGE_SIZE,
@@ -188,8 +188,42 @@ function readTaskDetail(
       current.closure,
     );
   }
+  const terminal = store.readCancellation(taskId);
   const receipt = store.readReceipt(taskId);
+  if (terminal) return terminalTaskDetail(terminal, receipt, acceptedEvidence);
   return receipt ? receiptTaskDetail(receipt, acceptedEvidence) : null;
+}
+
+function terminalTaskView(terminal: AppTaskCancellation): TaskView {
+  return {
+    id: terminal.taskId,
+    closed: true,
+    status: terminal.kind ?? "cancelled",
+    generation: terminal.generation,
+    outcome: terminal.outcome,
+    summary: terminal.summary,
+    response: terminal.response,
+    result: terminal.result ? structuredClone(terminal.result) : undefined,
+    facts: terminal.facts ? [...terminal.facts] : undefined,
+  };
+}
+
+function terminalTaskDetail(
+  terminal: AppTaskCancellation,
+  receipt: NonNullable<TaskTree["receipts"]>[string] | null,
+  acceptedEvidence: TaskDetail["acceptedEvidence"],
+): TaskDetail {
+  // Only a receipt for the ended assignment can supplement its missing spec.
+  const historical = receipt?.metadata.generation === terminal.generation
+    ? receiptTaskDetail(receipt, acceptedEvidence)
+    : { parentId: "", acceptance: [], input: {}, conditions: [] };
+  return {
+    ...historical,
+    ...terminalTaskView(terminal),
+    resourceVersion: terminal.resourceVersion,
+    currentObligations: { available: false },
+    acceptedEvidence,
+  };
 }
 
 function receiptTaskView(receipt: NonNullable<TaskTree["receipts"]>[string]): TaskView {
@@ -330,6 +364,8 @@ export function listRuntimeTaskViews(
     items: pageIds.flatMap((id) => {
       const current = store.readTaskForView(id);
       if (current) return [resourceTaskView(current.resource, current.phase, current.closure)];
+      const terminal = store.readCancellation(id);
+      if (terminal) return [terminalTaskView(terminal)];
       const receipt = store.readReceipt(id);
       return receipt ? [receiptTaskView(receipt)] : [];
     }),
