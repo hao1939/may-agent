@@ -17,6 +17,10 @@ The admission and compatibility details below need implementation review.
 clarifying current ownership, discovery, context and escalation. Global agents
 can run bounded calls today; durable Tasks still require App admission.
 
+The draft [Agents, Tasks and workload feedback](agent-task-workload-model.md)
+defines the proposed admission and shared-budget policy for this agent-first
+model. This document retains ownership of direct addressing and compatibility.
+
 ## Intended behavior
 
 A caller can request durable work from an agent directly or use an App address
