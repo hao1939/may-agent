@@ -101,6 +101,13 @@ are blocked. The intended feedback distinguishes runnable demand, blocked
 obligations and results awaiting creator review within the agent's read scope.
 The [workload proposal](../proposals/agent-task-workload-model.md) owns the detailed
 decision guidance, shared-accounting choices and behavioral verification cases.
+Its [bounded decision pass](../proposals/agent-task-workload-model.md#one-bounded-decision-pass)
+connects feedback to useful next actions and makes consequential deferral visible
+through existing Task and caller paths. Workload situations guide judgment;
+they introduce no new Task states or automatic admission and closure thresholds.
+The [lifecycle integration](../proposals/agent-task-workload-model.md#integrate-with-the-existing-lifecycle)
+places proposed accounting and feedback at shared admission, execution start,
+settlement/cleanup and agent decision context, preserving the existing engine.
 Its proposed protected coordination path lets existing responsible agents make
 bounded decisions under ordinary resource stress; this reserve extension,
 resource admission and shared credit renewal are unimplemented.

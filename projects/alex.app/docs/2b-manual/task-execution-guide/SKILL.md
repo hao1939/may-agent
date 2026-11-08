@@ -276,7 +276,7 @@ audit/research cycles and evaluator procedures retain their responsibility.
 The Host restricts this path to the same App's App-created assignments, guards
 remaining input and waits, and atomically saves result, caller answer and closure.
 Delegated work still requires its recorded creating Task's guarded close.
-After the reviewed Host is merged and separately deployed, activate the companion
+After the merged Host is separately deployed, activate the companion
 App definitions and verify `read.contract("alex").taskPolicy.closeOnResult`.
 Until then, use the installed creator/operator controls above. Preserve the
 review-admission identity fix when integrating the companion. Historical records

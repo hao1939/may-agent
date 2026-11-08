@@ -182,3 +182,50 @@ Private operational evidence is retained in
 baseline remainder. Plans already ran; re-read current identities before any
 further action. The public retention ledger contains navigation and judgments,
 not the full private transcripts.
+
+## Continuing the accepted-result ending path
+
+The follow-through implementation already existed as
+[Host PR #398](https://github.com/hao1939/may-agent/pull/398), head
+`50a1b17bb84b1b9335cabe42b711a0e7694b16cc`, with an opt-in
+`tasks.closeOnResult` App policy. This pass reviewed that existing candidate
+rather than introducing another controller. The App explicitly consumes the
+accepted owner decision; the Host atomically saves result, scoped caller answer
+and closure. New input, Conditions and input waits retain continuing work.
+The callback cannot acquire authority over Task-created, foreign or
+unattributed assignments. Convergence alone does not close work.
+
+Hosted Quality previously failed before source checks because the pinned scanner
+download returned HTTP 504. Rerun attempt 3 of workflow `42466631701` passed
+scanning, static checks and the complete test suite at 2026-11-08T12:17:14Z.
+Container also passed for that exact head. The PR is now ready for review.
+Fresh local verification passed `bun run check:ci` and 37 focused Host tests
+(236 expectations), including result/answer rollback, exact caller delivery,
+creator restrictions, input races, Conditions and restart.
+
+The held companion App branch was integrated with the current Apps main,
+preserving the already live review-admission identity correction. Candidate
+`0296b342d248f93368fae2bbc9f9e17293688b7c` requires an explicit evidenced
+`result.taskDisposition: {kind: "close", reason}` for finite message/goal
+assignments. Standing audit/research cycles and evaluator procedures retain
+their responsibilities. Its mapping/policy tests passed: 22 tests,
+101 expectations. Strict policy type checking against the candidate SDK passed.
+The Task contract was kept within its 900-line limit and its rollout guidance
+now distinguishes prepared source from installed capability. Standalone design
+integrity still finds eight unchanged links into cross-App documents absent from
+that worktree; the primary checkout's separate retired-alias failures remain.
+
+The active main ruleset and Host `CONTRIBUTING.md` require one approving review
+in addition to Quality and Container. There is no approval on the current head,
+so this pass did not merge or deploy it. The companion was backed up on
+`fix/app-task-result-closure` and remains held. After review and merge, deploy the
+Host separately, integrate/activate the companion, verify the loaded
+`taskPolicy.closeOnResult` contract and observe an ordinary finite assignment
+ending with its caller result intact. Task-created review consumption by the
+selector remains a separate integration gap. The first milestone and broader
+budget work remain incomplete/deferred respectively.
+
+Continuation evidence is retained under
+`.state/task-result-closure-continuation-20261108/`: exact source identities,
+local checks, the hosted run, ready PR metadata and active merge rules. No live
+Task was rerun or mutated to manufacture a completion demonstration.
