@@ -1,3 +1,4 @@
+import { workloadReviewPolicy, workloadReviewTask } from "./workload-review-policy.js";
 import { createHash } from "node:crypto";
 import { closeAcceptedAssignment } from "./task-completion.js";
 import { retiredEvaluationMetrics } from "./retired-evaluation-metrics.js";
@@ -11,6 +12,8 @@ import {
   type AppInput,
   type AppTaskInput,
 } from "@may-agent/sdk";
+
+const installedWorkloadReview = workloadReviewPolicy();
 
 const details = Type.Record(Type.String(), Type.Unknown());
 const role = Type.Union([
@@ -62,6 +65,7 @@ const comparisonData = Type.Object({
 }, { additionalProperties: false });
 
 export const inputSchema = Type.Union([
+  Type.Object({ kind: Type.Literal("workload-review"), data: Type.Object({ reason: Type.Optional(Type.String()) }, { additionalProperties: false }) }, { additionalProperties: false }),
   Type.Object({
     kind: Type.Literal("goal"),
     data: Type.Object({
@@ -278,6 +282,7 @@ export function taskInputForEvent(event: AppEvent<Record<string, unknown>>): App
 }
 
 export function taskForInput(admitted: Readonly<AppTaskInput>) {
+  if (admitted.input.kind === "workload-review") return workloadReviewTask(admitted, installedWorkloadReview.enabled);
   const data = record(admitted.input.data);
   const context = record(data.context);
   const selectorFailure = record(context.selectorFailure);
@@ -483,6 +488,7 @@ export default defineApp({
     },
   ],
   schedules: [
+    ...(installedWorkloadReview.enabled ? [installedWorkloadReview.schedule] : []),
     ...(automaticReviewConfig().enabled ? [{
       id: "task-outcome-selector",
       intervalMs: automaticReviewConfig().intervalMs,
@@ -530,5 +536,7 @@ export default defineApp({
       },
     },
   ],
-  tasks: { maxConcurrent: 3, closeOnResult: closeAcceptedAssignment },
+  tasks: { maxConcurrent: 3, closeOnResult: closeAcceptedAssignment,
+    ...(installedWorkloadReview.enabled ? { coordination: installedWorkloadReview.coordination } : {}),
+  },
 });

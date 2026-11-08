@@ -201,6 +201,33 @@ result-closure callback nor a new coordination role supplies a general managemen
 capability. Initial worker feedback can already change methods, discretionary
 contributions and caller communication within that worker's assignment.
 
+Source increment: Host [PR #404](https://github.com/hao1939/may-agent/pull/404)
+selects one exact App-created Task/workflow/owner through installed policy, shares
+the existing human reserve and additional App place, rechecks provenance before
+claim/recovery writes, and requires shared workspace and a 1–120 second hard
+workflow ceiling. An authored longer timeout cannot extend that ceiling. The
+focused source checks passed 107 tests / 251 assertions, including a real worker,
+Host size one, saturation, human precedence, pause and changed eligibility.
+Complete checks on the stacked final revision remain pending.
+
+The companion Alex pilot is disabled unless `ALEX_WORKLOAD_REVIEW_ENABLED=true`
+is present in installed configuration. A latest-only 15-minute schedule admits
+one standing `runtime/workload-review` Task through ordinary App mapping. Its
+shared workflow reads a 20-Task page and at most three exact commitments, uses
+one readonly Alex helper (60 seconds / eight operations) under a 90-second Host
+ceiling, and retains cooldown/fingerprint state in its accepted result. Empty
+and unchanged observations invoke no model. Old Hosts, scope mismatches, missing
+current evidence and damaged retained state remain visible without model calls.
+
+This first coordination pilot returns recommendations only. It applies no
+portfolio edits, closure, funding or new work. Required business work remains
+owed under both loads; pressure changes the recommended method and discretionary
+fanout, while supported spare capacity can justify a grounded opportunity.
+Limited pages and unknown resource health cannot establish fleet spare capacity.
+The contract tests prove call bounds, read-only options, coalescing, scope and
+no automatic effects; they do not prove model comprehension or improved delivery.
+Activation and any business acceptance trial remain separate.
+
 ### 3. Add shared credit accounting
 
 Retain the proposal's coarse units: new Task, committed attempt, separately
@@ -368,9 +395,14 @@ Host/SDK type checks, canonical App boundary and lint passed. The first full run
 recorded seven failures; one was the new export snapshot and was fixed, while the
 six other failures passed their targeted diagnostic checks (seven cases).
 Their causes remain unproven. A later full run overlapped source edits and is not
-valid single-revision gate evidence. The final feedback revision is frozen for
-the required local and hosted complete checks; no complete-gate success is
-claimed here.
+valid single-revision gate evidence. The initial frozen feedback revision passed 3,938 tests with 22,927 assertions
+and hosted Quality/Container. Review then reproduced two eligibility gaps:
+elapsed deadlines and fresh human recovery were misclassified before a claim.
+The fix shares accepted-deadline logic with claim/recovery and extends shared
+readiness at the observation time, preserving dependency/pause gates and stored
+wake hints. The related lifecycle suites passed 146 tests / 1,725 assertions;
+projection regressions passed 19 tests / 79 assertions. Hosted Quality/Container
+passed the review revision; its final local complete gate is still running.
 
 Verification for this review: the existing Host capacity, controller and queue
 suites passed, **46 tests and 138 assertions**. They verify current scheduling
