@@ -23,7 +23,6 @@ import {
   completeAppTask,
   stopAppTaskAttempt,
   type AppTaskClaim,
-  type AppTaskCancellationResult,
 } from "../tasks/app-task-reconciler.js";
 import { admitTaskInput, assertTaskInputCompatible } from "./inbox.js";
 import {
@@ -524,7 +523,6 @@ export function completeConversationTaskTurn(
   } = {},
 ): ReturnType<typeof completeAppTask> & {
   admittedTasks?: Array<{ appId: string; taskId: string }>;
-  cancelledTasks?: AppTaskCancellationResult[];
 } {
   const db = config.resourceStore.db;
   const now = options.now ?? Date.now();
@@ -580,7 +578,6 @@ export function completeConversationTaskTurn(
       linkConversationRequestInputs(db, item.appId, conversationId, update.id, requestInputIds(config, items, update));
     }
     const admittedTasks: Array<{ appId: string; taskId: string }> = [];
-    const cancelledTasks: AppTaskCancellationResult[] = [];
     for (const [index, control] of (decision.taskControls ?? []).entries()) {
       const prepared = options.taskControls![index]!;
       if (
@@ -589,7 +586,7 @@ export function completeConversationTaskTurn(
         (control.appId === item.appId && control.taskId === claim.taskId)
       )
         throw new Error("Conversation Task control has a mismatched or self-owned target");
-      cancelledTasks.push(
+      (accepted.cancelledTasks ??= []).push(
         cancelAppTask(resolveConversationTaskApp(config, prepared.appId, options.getTaskApp).config, {
           ...control,
           ...(!hasHumanInput ? { actor: { appId: item.appId, taskId: claim.taskId } } : {}),
@@ -643,7 +640,7 @@ export function completeConversationTaskTurn(
       ).changes;
       if (changed !== 1) throw new Error("Conversation input changed during settlement");
     }
-    return { ...accepted, admittedTasks, cancelledTasks };
+    return { ...accepted, admittedTasks };
   });
 }
 

@@ -783,6 +783,7 @@ type AppTaskContextInput = {
   agent: string;
   maxConcurrent: number;
   maxConsecutiveFailures?: AppTaskContext["maxConsecutiveFailures"];
+  closeOnResult?: AppTaskContext["closeOnResult"];
   resourceStore: AppTaskResourceStore;
 };
 
@@ -799,6 +800,7 @@ export function appTaskContext(input: AppTaskContextInput): AppTaskContext {
     agent,
     maxConcurrent: input.maxConcurrent,
     maxConsecutiveFailures: input.maxConsecutiveFailures,
+    closeOnResult: input.closeOnResult,
     resourceStore: input.resourceStore,
   };
 }
@@ -3882,6 +3884,7 @@ export function completeAppTask(
   actionsApplied: string[];
   dependentTaskIds: string[];
   taskContinues?: true;
+  cancelledTasks?: AppTaskCancellationResult[];
 } {
   const actions = input.actions ?? [];
   const tree = config.resourceStore.readTaskContext({
@@ -3957,12 +3960,56 @@ export function completeAppTask(
     };
   }
   const resourceMutation = finishResourceMutationScope(mutationScope, tree);
-  commitTaskMutation(config, tree, { resourceMutation: { ...resourceMutation, admissions } });
+  const closure = acceptedTaskClosure(config, tree, resource, claim);
+  commitTaskMutation(config, tree, { resourceMutation: {
+    ...resourceMutation,
+    admissions,
+    ...(closure ? { cancellations: [closure] } : {}),
+  } });
   return {
     status: "applied",
     actionsApplied,
     dependentTaskIds,
     ...(pendingWork ? { taskContinues: true as const } : {}),
+    ...(closure ? { cancelledTasks: [{ cancellation: closure, applied: true }] } : {}),
+  };
+}
+
+/** App policy supplies meaning; the same fenced mutation persists answer and ending. */
+function acceptedTaskClosure(
+  config: AppTaskContext,
+  tree: TaskTree,
+  resource: AppTaskResource,
+  claim: AppTaskClaim,
+): AppTaskCancellation | undefined {
+  const creator = resource.metadata.creator;
+  const accepted = tree.attempts?.[claim.attemptId]?.acceptedResult;
+  if (
+    !config.closeOnResult || creator?.appId !== config.resourceStore.appId || creator.taskId !== undefined ||
+    accepted?.state !== "converged" || resource.status.phase !== "converged" ||
+    resource.status.currentAttemptId || tree.taskTriggers?.[claim.taskId]?.event ||
+    resource.status.conditionIds?.length || resource.status.reviewAt !== undefined ||
+    Object.keys(resource.status.inputWaits ?? {}).length
+  ) return undefined;
+  const decision = config.closeOnResult(structuredClone({
+    // Internal intents normalize assignment to owner; App policy receives the
+    // public agent field, matching the Task read contract.
+    task: { ...resourceIntent(resource), ...(resource.spec.owner ? { agent: resource.spec.owner } : {}) },
+    creator,
+    acceptedResult: { ...accepted, state: "converged" as const },
+  }));
+  if (decision === null) return undefined;
+  if (!decision || typeof decision.reason !== "string" || !decision.reason.trim())
+    throw new Error("App closeOnResult must return null or a nonblank closure reason");
+  const reason = decision.reason.trim();
+  return {
+    kind: "closed", acceptedResultAttemptId: claim.attemptId,
+    appId: config.resourceStore.appId, taskId: claim.taskId,
+    generation: resource.metadata.generation, resourceVersion: resource.metadata.resourceVersion,
+    outcome: resource.spec.outcome, reason, summary: `Closed by App policy: ${reason}`,
+    cancelledAt: resource.status.updatedAt,
+    decidedBy: { kind: "app-policy" },
+    response: resource.status.response, result: resource.status.result, facts: resource.status.facts,
   };
 }
 

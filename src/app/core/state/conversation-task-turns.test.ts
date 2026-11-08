@@ -718,8 +718,12 @@ function cancellationFixture(source: "human" | "system" = "human", createdHere =
   };
 }
 
-test("human cancellation, reply and accepted Turn commit together across Apps and survive reopen", async () => {
+test.each([false, true])("human cancellation, reply and accepted Turn commit together with App closure=%s across Apps and reopen", async (closeOnResult) => {
   const c = cancellationFixture();
+  const config = appTaskContext({
+    ...c.f.context(),
+    ...(closeOnResult ? { closeOnResult: () => ({ reason: "Finite Conversation responsibility is fulfilled" }) } : {}),
+  });
   const targetClaim = claimObservedAppTask(c.config, { taskId: "job", appAgent: "worker", handler: "executor:test" });
   expect(targetClaim.kind).toBe("claimed");
   const proposal = JSON.parse(JSON.stringify(await c.prepare()));
@@ -734,16 +738,20 @@ test("human cancellation, reply and accepted Turn commit together across Apps an
   c.f.db.exec(`CREATE TRIGGER reject_cancel_reply BEFORE UPDATE OF result ON app_inbox_items
     WHEN NEW.result IS NOT NULL BEGIN SELECT RAISE(ABORT, 'reply rejected'); END`);
   const settle = () =>
-    completeConversationTaskTurn(c.f.context(), c.claim, proposal.decision, { ...proposal, getTaskApp: c.getTaskApp });
+    completeConversationTaskTurn(config, c.claim, proposal.decision, { ...proposal, getTaskApp: c.getTaskApp });
   expect(settle).toThrow("reply rejected");
   expect(c.store.readCancellation("job")).toBeNull();
+  expect(c.f.store.readCancellation(c.claim.taskId)).toBeNull();
   expect(c.store.readTask("job")?.status.currentAttemptId).toBeDefined();
   expect(c.f.store.readAttempt(c.claim.attemptId)?.acceptedResult).toBeUndefined();
   c.f.db.exec("DROP TRIGGER reject_cancel_reply");
   const result = settle();
-  expect(result.cancelledTasks).toMatchObject([{ applied: true, cancellation: { appId: "worker", taskId: "job" } }]);
+  expect(result.cancelledTasks).toMatchObject([
+    ...(closeOnResult ? [{ applied: true, cancellation: { appId: app.id, taskId: c.claim.taskId, kind: "closed" } }] : []),
+    { applied: true, cancellation: { appId: "worker", taskId: "job", kind: "cancelled" } },
+  ]);
   expect(c.store.isCancelled("job")).toBe(true);
-  expect(c.f.store.isCancelled(c.claim.taskId)).toBe(false);
+  expect(c.f.store.isCancelled(c.claim.taskId)).toBe(closeOnResult);
   expect(getAppInboxItem(c.f.db, "first")?.result?.response).toBe(c.answer.response);
   if (targetClaim.kind !== "claimed") throw new Error("Expected running target");
   expect(completeAppTask(c.config, targetClaim, { summary: "Late answer", facts: [] }).status).toBe("stale");

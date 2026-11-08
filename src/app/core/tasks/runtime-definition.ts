@@ -236,6 +236,7 @@ export function appTaskConfig(descriptor: AppTaskRuntimeDescriptor): AppTaskCont
     agent: descriptor.agent,
     maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
     maxConsecutiveFailures: descriptor.app.tasks?.maxConsecutiveFailures,
+    closeOnResult: descriptor.app.tasks?.closeOnResult,
     resourceStore: descriptor.resourceStore,
   });
   if (descriptor.app.conversation?.mode === "task") config.conversationInputMode = "task";

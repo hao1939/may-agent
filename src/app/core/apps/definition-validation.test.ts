@@ -295,6 +295,14 @@ describe("canonical App definition validation", () => {
     ).toContain("App missing-task-policy task requires a tasks policy");
   });
 
+  it("requires an executable opt-in policy for accepted-result closure", () => {
+    const app = { id: "sample", version: 1, agent: "worker", inputSchema };
+    expect(validateAppDefinition({ ...app, tasks: { closeOnResult: () => null } })).toEqual([]);
+    expect(validateAppDefinition({ ...app, tasks: { closeOnResult: true } })).toContain(
+      "App sample task closeOnResult must be a function",
+    );
+  });
+
   it("accepts direct conversational requests and requires explicit kinds beside a Task path", () => {
     expect(
       validateAppDefinition({

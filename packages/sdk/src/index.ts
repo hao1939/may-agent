@@ -50,6 +50,7 @@ export type {
   AppTaskAttachment,
   AppTaskInput,
   AppTaskPolicy,
+  AppTaskResultContext,
   AppWorkspace,
   EventSelector,
   ExecutionResult,
