@@ -36,7 +36,8 @@ function object(value: unknown, fields: string[]): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
-function validate(input: unknown): WorkloadStateInitialization {
+/** Shared validation for trusted fresh and offline-retained installation plans. */
+export function validateWorkloadStateInitialization(input: unknown): WorkloadStateInitialization {
   const plan = object(input, ["version", "host", "apps", "limits"]);
   if (
     plan.version !== 1 ||
@@ -127,7 +128,7 @@ export function initializeWorkloadState(
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
   }
-  const plan = validate(input);
+  const plan = validateWorkloadStateInitialization(input);
   const stage = mkdtempSync(join(dirname(destination), ".may-workload-init-"));
   let created = false;
   let published = false;

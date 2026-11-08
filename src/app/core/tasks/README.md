@@ -472,6 +472,18 @@ Fresh installations can publish a configured database before startup through
 explicit Host/background, recipient and new-root execution limits. It refuses
 every existing state directory, including empty directories and retained backups.
 This does not activate limits on a retained installation or adopt historical work.
+
+For externally isolated, fully stopped and already cleaned retained state,
+`scripts/operations/install-retained-workload-state.ts` joins installed policy,
+explicit fenced historical Task attribution and exact historical root limits in
+one transaction. It retains zero-charge adoption receipts and never reconstructs
+past spending or changes Task business state. Omitted Tasks still require adoption.
+Every retained reservation/running attempt and unresolved session/descendant
+artifact blocks the operation, including execution belonging to ended Tasks.
+These are supplementary evidence checks, not a start barrier; the operator must
+exclude every runtime/launcher throughout the offline operation. See the
+[offline operating contract](../../../../scripts/operations/README.md#install-workload-policy-on-retained-cleaned-state).
+Live activation, active execution import and withdrawal remain separate work.
 See the operations guide for the new-state procedure and unsupported session paths.
 Common manager start admission now charges each separately admitted helper or
 resume, records exact invocation/session/attempt evidence, and covers the primary

@@ -71,6 +71,118 @@ Initialization does not validate arbitrary App business methods, activate App
 source, launch a model, restart a service or establish model judgment quality.
 Retained installations still require an explicit adoption/cutover protocol.
 
+## Install workload policy on retained, cleaned state
+
+`install-retained-workload-state.ts` installs policy and explicit future Task
+attribution in one transaction on an existing Host database. It is an offline
+operation for state whose old executions have already been cleaned. It does not
+import live execution, drain descendants, close Tasks, reconstruct past spending,
+change an existing allowance, or provide an online activation barrier.
+
+The operator must establish exclusion **before** using the command:
+
+1. Disable ingress and every launcher or automatic restart path, including
+   maintenance/liveness supervisors. Stop the Host, all Task workers and all
+   other processes or installations that can open this state. App pause and an
+   empty runnable queue do not establish this condition.
+2. Retain the operating evidence for the installation's process/container/cgroup
+   identities, confirmed exits and absence of remaining members. Include model
+   and CLI descendants and confirmed persisted Bash-group cleanup. Prevent any
+   runtime from reopening the state throughout planning, dry run and apply; for
+   a container installation, expose its stopped state only to the maintenance
+   environment. A portable command cannot prove this installation-wide exclusion.
+3. Resolve incomplete execution through the existing confirmed recovery paths
+   before this operation. If that requires running a Host, complete recovery and
+   repeat the stop/exclusion procedure. Take a consistent offline backup after
+   cleanup. Never delete markers, group records or reservations, or edit Task
+   phases to make the installation checks pass.
+
+The command additionally refuses any unreleased execution reservation or running
+attempt, including execution belonging to an ended Task. It scans every retained
+session, refusing active/start/group artifacts, missing/corrupt metadata, running
+sessions and live detached owners even when their metadata is terminal. It never
+cleans up those artifacts. These checks are conservative prerequisites, not proof
+that a start has not passed admission before writing its first artifact.
+`--confirm-quiesced` records the external operating contract; it cannot establish
+that contract. Do not run this command against a serving installation.
+
+Save a reviewed private plan. `policy` has the same declaration format as fresh
+initialization. Every selected Task needs its exact current generation and
+resource version; every retained root needs its own fenced adoption and explicit
+root execution limit. Creation defaults apply only to future roots. For example:
+
+```json
+{
+  "version": 1,
+  "policy": {
+    "version": 1,
+    "host": { "slots": 4, "backgroundSlots": 2 },
+    "apps": [{
+      "appId": "example",
+      "sponsor": { "appId": "example", "agent": "owner" },
+      "dailyCredits": 10,
+      "rootCredits": 5,
+      "rootExecutionSlots": 2
+    }],
+    "limits": [
+      { "scope": { "kind": "agent", "recipient": {
+        "kind": "directory", "id": "projects/example.app/agents/owner"
+      } }, "slots": 2 },
+      { "scope": { "kind": "root", "root": {
+        "appId": "example", "taskId": "retained-work"
+      } }, "slots": 1 }
+    ]
+  },
+  "adoptions": [{
+    "task": { "appId": "example", "taskId": "retained-work" },
+    "generation": 2,
+    "resourceVersion": 7,
+    "root": {
+      "root": { "appId": "example", "taskId": "retained-work" },
+      "sponsor": { "appId": "example", "agent": "owner" },
+      "purpose": "ordinary",
+      "credits": 5,
+      "renewal": "lifetime"
+    },
+    "adoptionId": "workload-installation:retained-work:v1",
+    "reason": "Attribute future work under reviewed installation policy"
+  }]
+}
+```
+
+Explicitly list each contribution with the same root descriptor. No structural
+parent or old creator is used to infer funding, and no historical creation,
+attempt or helper charge is invented. Adoption records cost zero; actual future
+starts consume the existing shared allowance. Omitted retained Tasks stay
+unattributed and defer future execution rather than receiving free work. Existing
+caller obligations, accepted results and business closure records are preserved.
+Protected coordination must match its exact ordinary eligibility policy and have
+an explicit protected root/recipient limit covering its complete method.
+
+From a reviewed standalone source checkout with frozen dependencies, while the
+external exclusion remains in force:
+
+```sh
+bun scripts/operations/install-retained-workload-state.ts \
+  --state-dir /path/to/isolated-state --plan /path/to/private-installation.json \
+  --confirm-quiesced --dry-run
+```
+
+Review the successful dry-run result, then execute the same command without
+`--dry-run`, before allowing any runtime access. Dry run executes the validation
+transaction and rolls it back. A failed apply rolls back policy, limits, bindings,
+adoption receipts and recovery wakes together. Retain the plan and result with
+the external stop/exclusion evidence. This command neither upgrades the schema
+nor starts a service; starting the integrated Host remains a separately authorized
+operation. Unbound direct/persistent sessions remain unsupported under limits.
+
+Existing exact policies/adoption records can be retained; this command cannot
+amend their attribution or allowances. A stale resource fence refuses the plan;
+inspect the current state and make a new reviewed plan rather than forcing replay.
+Do not roll back a subsequently running installation by restoring an old database:
+that would erase newer obligations and spending. Online activation, historical
+live-execution import and enforcement withdrawal need their own protocols.
+
 ## Recover one malformed direct Conversation Task input
 
 `recover-malformed-conversation-input.ts` repairs the narrow case where a
