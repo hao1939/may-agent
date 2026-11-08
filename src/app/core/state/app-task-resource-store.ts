@@ -65,7 +65,7 @@ function parseJson<T>(value: unknown): T {
 }
 
 /** Retained labels are facts compatibility only, never another execution contract. */
-function parseTaskResource(value: unknown): AppTaskResource {
+export function parseTaskResource(value: unknown): AppTaskResource {
   const resource = parseJson<AppTaskResource>(value);
   const spec = resource.spec as AppTaskResource["spec"] & { mode?: unknown };
   if ("mode" in spec) {
