@@ -790,8 +790,9 @@ can proceed. Runtime, manager lifecycle, Bash groups, session recovery,
 claim/store/retry and workload owners passed **462 tests / 4,732 assertions**.
 After final release-race, cancellation, non-start and child-retention refinements,
 changed owners passed **72 tests / 390 assertions**. Host/SDK types, boundary and
-lint passed. Its frozen full local gate is running; hosted checks and independent
-review remain required.
+lint passed. Its frozen full local gate passed **4,099 tests / 3 skipped / zero
+failures / 23,856 assertions across 355 files**; hosted Quality and Container
+passed the same head. Independent review remains required.
 
 The paired App review now excludes mechanical capacity recheck timestamps from
 its decision fingerprint, but retains method demand and scope. Its new regression
