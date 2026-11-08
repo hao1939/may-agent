@@ -1159,6 +1159,10 @@ describe("source-query metric measurement", () => {
     insertSnapshot.run(UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID, now - 60_000);
     for (const metric of WORKFLOW_OUTCOME_METRICS) insertSnapshot.run(metric.id, now - 60_000);
     insertSnapshot.run(TASK_FAILOVER_METRIC.id, now - 60_000);
+    // Give unrelated seeded collectors explicit evidence; their startup clock
+    // must not decide this fixture's count of deliberately stale collectors.
+    insertSnapshot.run(METRIC_QUERY_DURATION_METRIC.id, now - 60_000);
+    insertSnapshot.run(TASK_SKIPPED_CHECK_METRIC.id, now - 60_000);
     insertMetric.run("query.fresh", "query fresh", "active", "SELECT 1 AS value", null, 300_000);
     insertSnapshot.run("query.fresh", now - 60_000);
     insertMetric.run("command.stale", "command stale", "active", null, "echo 1", 300_000);
