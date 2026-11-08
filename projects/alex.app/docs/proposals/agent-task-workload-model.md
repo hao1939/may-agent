@@ -136,10 +136,19 @@ baseline and are recorded separately in the [live disposition record](../archive
 
 **Milestone incomplete:** Baseline disposition is recorded, but new accepted
 finite results still need an integrated authorized creator/App disposition path.
-The current App policy has no trusted post-result closure hook, and the outcome
+The loaded App policy has no trusted post-result closure hook, and the outcome
 selector commissions reviews without consuming their completion for closure.
-The scoped reader and installed operator control enabled this cleanup; neither
-is an automatic result consumer. The narrow review-admission identity correction
+[Host PR #398](https://github.com/hao1939/may-agent/pull/398) now prepares the
+opt-in `tasks.closeOnResult` path and is ready for required human review; both
+hosted checks passed. Held App source
+`0296b342d248f93368fae2bbc9f9e17293688b7c` requires an explicit evidenced ending
+decision for finite message/goal assignments and includes the admission-identity
+fix. Result, caller answer and closure commit atomically in the tested candidate.
+Host merge and separate deployment, companion App integration/activation and a
+live finite-result ending remain adoption steps. Task-created reviews retain
+creator authority and still need that creator's result-consumption integration.
+The scoped reader and installed operator control enabled the historical cleanup;
+neither is an automatic result consumer. The narrow review-admission identity correction
 is live at App source `6a7e49843c5d2c8cccd7615b991472856d43f8d4`, so later
 admissions do not select closed finite reviews. That
 correction alone does not prevent the backlog from recurring. Broader budgets
