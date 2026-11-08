@@ -56,7 +56,7 @@ function fixture() {
     read: { tasks: { get: async (id: string) => id === selectorId ? { facts: [] as string[] } : review } },
     closeTask: async (change: TaskClosure) => { closes.push(change); review.status = "closed"; return review; },
     agents: { call: async () => { throw new Error("Disposition must not invoke a model"); } },
-    events: { emit: async () => { throw new Error("Do not commission another review during disposition"); } },
+    events: { emit: async (): Promise<void> => { throw new Error("Do not commission another review during disposition"); } },
     done: (_summary: string, result: unknown) => result,
   };
   const run = (overrides: Partial<typeof config> = {}) => runTaskOutcomeSelector(
@@ -127,6 +127,55 @@ test("modern finite review IDs preserve each reviewer's independent allowance", 
   const ctx = f.ctx as unknown as WorkflowContext<{ reason?: string }>;
   expect(retainedRequestedReviewTaskIds(ctx, "evaluator")).toEqual([reviewId]);
   expect(retainedRequestedReviewTaskIds(ctx, "evaluator-deepseek")).toEqual([]);
+});
+
+test("idle reusable metric services leave the semantic backlog without closure or extra reads", async () => {
+  const f = fixture();
+  const ids = Array.from({ length: 12 }, (_, index) => `runtime/metric-review/evaluator/metric-${index}`);
+  f.ctx.reconciliation.taskSnapshot.live = ids.map(taskId => ({ taskId, agent: "evaluator", status: "idle" }));
+  const reads: string[] = [];
+  f.ctx.read.tasks.get = async id => { reads.push(id); return { facts: [] }; };
+  let metricScans = 0;
+  let emitted = 0;
+  f.ctx.events.emit = async () => { emitted++; };
+  const result = await runTaskOutcomeSelector(
+    f.ctx as unknown as WorkflowContext<{ reason?: string }>,
+    async () => { throw new Error("No Task catalog needed when a metric is selected"); },
+    config, f.root,
+    async (_ctx, cursor) => {
+      metricScans++;
+      return { candidate: { metricId: "sample.failures", end: 1, alertId: 1, reviewer: "evaluator" }, cursor, facts: ["selector:metric-pass-verified"] };
+    },
+  );
+  expect(metricScans).toBe(1);
+  expect(emitted).toBe(1);
+  expect(f.closes).toEqual([]);
+  expect(reads).toEqual([selectorId]);
+  expect(result.facts).not.toContain("selector:requested-reviews-first:12");
+  expect(result.facts).toContain("selector:metric-pass-verified");
+});
+
+test.each(["pending", "running", "waiting", "attention", "unknown"])("a %s metric service still blocks routine sampling", async status => {
+  const f = fixture();
+  f.ctx.reconciliation.taskSnapshot.live = [{ taskId: "runtime/metric-review/evaluator/metric-one", agent: "evaluator", status }];
+  const result = await f.run();
+  expect(result.facts).toContain("selector:requested-reviews-first:1");
+  expect(f.closes).toEqual([]);
+  expect(f.samples()).toBe(0);
+});
+
+test("new work on an idle metric service reenters the backlog on the next snapshot", async () => {
+  const f = fixture();
+  const service = { taskId: "runtime/metric-review/evaluator/metric-one", agent: "evaluator", status: "idle" };
+  f.ctx.reconciliation.taskSnapshot.live = [service];
+  const ctx = f.ctx as unknown as WorkflowContext<{ reason?: string }>;
+  expect(retainedRequestedReviewTaskIds(ctx)).toEqual([]);
+  service.status = "pending";
+  expect(retainedRequestedReviewTaskIds(ctx)).toEqual([service.taskId]);
+  service.agent = "evaluator-deepseek";
+  service.taskId = "runtime/metric-review/evaluator-deepseek/metric-one";
+  expect(retainedRequestedReviewTaskIds(ctx)).toEqual([]);
+  expect(retainedRequestedReviewTaskIds(ctx, "evaluator-deepseek")).toEqual([service.taskId]);
 });
 
 test("bounded disposition rotates past retained early records without resetting sampling cursors", async () => {

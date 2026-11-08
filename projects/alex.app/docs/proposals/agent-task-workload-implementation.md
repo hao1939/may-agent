@@ -103,6 +103,15 @@ without a validated publication (including exclusions and acquisition failures)
 remain for explicit owner judgment. This bounded consumer does not establish
 complete fleet coverage or authorize closing unrelated historical idle records.
 
+The semantic backlog guard separately excludes canonical idle metric-review
+services under their App-mapped metric/reviewer identity. It prioritizes owed
+assessment work, not the count of open standing responsibilities. A new transition
+or deferred/failed assessment remains pending, waiting or attention and retains
+priority. This scheduling observation closes no service and needs no report read
+or consumed marker. Finite idle assessments still require the creator consumer
+above. Using a bounded subset of exact reads to exclude settled services would
+leave a larger all-idle service population blocking sampling forever.
+
 ### 1. Supply useful feedback without adding enforcement
 
 Add one bounded workload projection to the existing read/context path. The first
@@ -313,6 +322,15 @@ publication mismatch, closure races, old-Host fallback, bounded rotation and
 preserving sampling cursors. The first broad invocation exposed four missing
 modules in the sparse worktree; adding its existing May App dependencies made
 those same tests executable without source changes.
+
+The next source iteration reproduced two failures from idle reusable metric
+services permanently occupying the requested-review backlog. The fix passed
+all **359 tests and 1,892 assertions** across evaluator workflows and App
+completion policy. It covers twelve idle services (more than the four finite
+disposition reads), reentry when new work arrives, reviewer separation and
+preservation of pending/running/waiting/attention or unknown demand. No model,
+closure or additional report read is required to exclude a quiet standing
+service. This establishes source behavior only; live adoption remains pending.
 
 Host [PR #400](https://github.com/hao1939/may-agent/pull/400) isolates synthetic
 bootstrap fixture writes from the serving connection's short contention timeout.

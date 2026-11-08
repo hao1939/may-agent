@@ -1011,6 +1011,11 @@ export function retainedRequestedReviewTaskIds(
   reviewer: Reviewer = "evaluator",
 ): string[] {
   return (ctx.reconciliation?.taskSnapshot?.live ?? [])
+    // This guard prioritizes outstanding semantic work, not open service
+    // responsibilities. The App maps each metric/reviewer to a reusable Task;
+    // canonical idle means its current input is reconciled. A new transition
+    // makes it pending again. Finite idle reviews still need creator disposal.
+    .filter((task) => !(task.taskId.startsWith(`runtime/metric-review/${reviewer}/`) && task.status === "idle"))
     .filter((task) =>
       task.taskId.startsWith("review/")
         ? (task.agent ?? task.owner) === reviewer
