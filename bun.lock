@@ -11,7 +11,7 @@
         "@may-agent/control": "workspace:*",
         "@may-agent/sdk": "workspace:*",
         "diff": "^9.0.0",
-        "typebox": "1.4.3",
+        "typebox": "1.4.4",
       },
       "devDependencies": {
         "@types/node": "^24.19.2",
@@ -33,7 +33,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@earendil-works/pi-ai": "1.5.0",
-        "typebox": "1.4.3",
+        "typebox": "1.4.4",
       },
     },
     "packages/terminal": {
@@ -494,7 +494,7 @@
 
     "type-check": ["type-check@0.4.0", "", { "dependencies": { "prelude-ls": "^1.2.1" } }, "sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew=="],
 
-    "typebox": ["typebox@1.4.3", "", {}, "sha512-u3nyf7ZciAv1GOijVpI0TDt9At5wmEi7lSHSlRrnjuThv1DcB7fgGBqqrz+fGZ54jAfTpOOX0JXwxSIg3pnxQA=="],
+    "typebox": ["typebox@1.4.4", "", {}, "sha512-ctPyL8BZibv6HYU6cE3ldDtfCTh7nXM7WPuL3KQVyRRhMnZEzU3o2yLVywxEEFmKEx+8EdeqG1/uTNzazRbxLA=="],
 
     "typed-query-selector": ["typed-query-selector@2.12.3", "", {}, "sha512-/dtuMZyutHLlrxWhhC1uib00ELUr2dZ8C9B8YzZYsJmeE3V56OxRblrSM2UaF142pcMtak7ehZ6+poWGeehNIg=="],
 
