@@ -101,6 +101,22 @@ function assertRetainedSessionsClean(stateDir: string): void {
   }
 }
 
+/** Filesystem evidence is checked outside SQL; external exclusion remains mandatory. */
+export function assertOfflineWorkloadFiles(db: SqliteDb, stateDir: string): void {
+  const file = db.prepare("PRAGMA database_list").all().find(row => row.name === "main")?.file;
+  if (typeof file !== "string" || !file || realpathSync(file) !== realpathSync(join(stateDir, "may.db")))
+    throw new Error("Offline workload operation requires the exact database and session state directory");
+  assertRetainedSessionsClean(stateDir);
+}
+
+/** Recheck under the operation transaction. Neither census establishes exclusion. */
+export function assertOfflineWorkloadExecution(db: SqliteDb): void {
+  if (db.prepare("SELECT 1 FROM task_execution_reservations WHERE released_at IS NULL LIMIT 1").get())
+    throw new Error("Retained execution reservations require confirmed cleanup before an offline workload operation");
+  if (db.prepare("SELECT 1 FROM app_task_attempts WHERE state = 'running' LIMIT 1").get())
+    throw new Error("Retained running attempts require ordinary recovery before an offline workload operation");
+}
+
 /** Offline installation only. `quiesced` records an external operating contract;
  * it is not evidence that the caller has stopped or excluded other processes.
  * All previous execution must be cleaned through ordinary recovery first.
@@ -114,13 +130,7 @@ export function installRetainedWorkloadState(
 ): { kind: "installed" | "dry-run"; appCount: number; adoptionCount: number } {
   if (options.quiesced !== true) throw new Error("Retained installation requires externally isolated, quiesced state");
   const plan = validate(input);
-  const file = db
-    .prepare("PRAGMA database_list")
-    .all()
-    .find((row) => row.name === "main")?.file;
-  if (typeof file !== "string" || !file || realpathSync(file) !== realpathSync(join(stateDir, "may.db")))
-    throw new Error("Retained installation requires the exact database and session state directory");
-  assertRetainedSessionsClean(stateDir);
+  assertOfflineWorkloadFiles(db, stateDir);
   const result = {
     kind: options.dryRun ? ("dry-run" as const) : ("installed" as const),
     appCount: plan.policy.apps.length,
@@ -129,11 +139,7 @@ export function installRetainedWorkloadState(
   const dryRun = Symbol("rollback retained installation validation");
   try {
     return stateTransaction(db, () => {
-      if (db.prepare("SELECT 1 FROM task_execution_reservations WHERE released_at IS NULL LIMIT 1").get())
-        throw new Error("Retained execution reservations require confirmed cleanup before offline installation");
-      // Include ended business Tasks. A terminal business outcome is not exit.
-      if (db.prepare("SELECT 1 FROM app_task_attempts WHERE state = 'running' LIMIT 1").get())
-        throw new Error("Retained running attempts require ordinary recovery before offline installation");
+      assertOfflineWorkloadExecution(db);
       for (const adoption of plan.adoptions) {
         const resource = AppTaskResourceStore.inspectFromDb(db, adoption.task.appId).readTask(adoption.task.taskId);
         if (

@@ -7,6 +7,7 @@ import type { TaskTree } from "../tasks/app-task-store.js";
 import type { AppTaskResource } from "../tasks/app-task-state.js";
 import { matchesTaskCoordination, type TaskCoordinationPolicy } from "../tasks/task-coordination-policy.js";
 import { TaskExecutionStore } from "./task-execution-store.js";
+import { assertWorkloadEnforcementInstallable, workloadEnforcementEnabled } from "./task-workload-enforcement.js";
 import {
   TaskBudgetStore,
   utcBudgetPeriod,
@@ -76,6 +77,7 @@ export class TaskBudgetAdmissionStore {
   }
 
   install(policy: InstalledTaskBudgetPolicy): void {
+    assertWorkloadEnforcementInstallable(this.db);
     if (
       !policy.appId ||
       policy.appId !== policy.appId.trim() ||
@@ -141,6 +143,7 @@ export class TaskBudgetAdmissionStore {
 
   /** Loaded App source must agree with installation authority before dispatch. */
   assertCoordinationPolicy(appId: string, agent: string, declared: TaskCoordinationPolicy | undefined): void {
+    if (!workloadEnforcementEnabled(this.db)) return;
     const installed = this.policy(appId)?.coordination;
     if (!installed) return;
     const { agent: owner, dailyCredits: _dailyCredits, credits: _credits, ...eligibility } = installed;
@@ -150,6 +153,7 @@ export class TaskBudgetAdmissionStore {
 
   /** Recheck the current resource and actual attempt owner under start admission. */
   assertProtectedTask(task: BudgetTaskRef, resource: AppTaskResource, agent: string, handler?: string): void {
+    if (!workloadEnforcementEnabled(this.db)) return;
     const policy = this.policy(task.appId);
     const rootRef = this.budget.binding(task);
     const root = rootRef ? this.budget.root(rootRef) : null;
@@ -288,6 +292,7 @@ export class TaskBudgetAdmissionStore {
 
   /** Called by common managed-start admission, after validating the live actor. */
   admitHelper(task: BudgetTaskRef, invocationId: string, now: number): string {
+    assertWorkloadEnforcementInstallable(this.db);
     const rootRef = this.budget.binding(task);
     if (!rootRef) this.defer(task, "adoption-required", task);
     const root = this.budget.root(rootRef)!;
@@ -306,6 +311,7 @@ export class TaskBudgetAdmissionStore {
     now = Date.now(),
     current?: { resource: AppTaskResource; agent: string },
   ): boolean {
+    if (!workloadEnforcementEnabled(this.db)) return false;
     if (constraint.reason === "protected-policy" && current &&
       current.resource.metadata.id === constraint.task.taskId) {
       try {
@@ -387,6 +393,7 @@ export class TaskBudgetAdmissionStore {
   /** New authored seeds are App-created work. Retained snapshots use explicit
    * historical adoption instead; no unknown past cost or creator is invented. */
   admitNewSeed(appId: string, tree: TaskTree, now = Date.now()): void {
+    if (!workloadEnforcementEnabled(this.db)) return;
     const resources = Object.values(tree.resources ?? {});
     const relevant =
       this.policy(appId) ||
@@ -441,6 +448,7 @@ export class TaskBudgetAdmissionStore {
     restoredTaskIds: ReadonlySet<string> = new Set(),
     now = Date.now(),
   ): void {
+    if (!workloadEnforcementEnabled(this.db)) return;
     const absent = new Set(
       (mutation.tasks ?? [])
         .filter(

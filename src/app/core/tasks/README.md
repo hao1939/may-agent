@@ -483,7 +483,14 @@ artifact blocks the operation, including execution belonging to ended Tasks.
 These are supplementary evidence checks, not a start barrier; the operator must
 exclude every runtime/launcher throughout the offline operation. See the
 [offline operating contract](../../../../scripts/operations/README.md#install-workload-policy-on-retained-cleaned-state).
-Live activation, active execution import and withdrawal remain separate work.
+The source-only `scripts/operations/withdraw-workload-enforcement.ts` provides
+one-way offline withdrawal under the same external exclusion and confirmed-clean
+execution contract. Its exact-configuration-fenced receipt stops new workload
+charges/reservations and wakes funding/execution holds without erasing history or
+caller obligations. Pauses, workspace prerequisites, retries, permissions and Task
+authority still apply. Former shared limits/funding become unavailable in feedback.
+Reactivation across the unaccounted interval requires a separate adoption protocol.
+Live activation and active execution import remain separate work.
 See the operations guide for the new-state procedure and unsupported session paths.
 Common manager start admission now charges each separately admitted helper or
 resume, records exact invocation/session/attempt evidence, and covers the primary

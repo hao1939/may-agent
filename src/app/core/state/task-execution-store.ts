@@ -3,6 +3,7 @@ import { isDeepStrictEqual } from "node:util";
 import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { currentProcessInstance, type ProcessInstance } from "../../../lib/process-identity.js";
+import { assertWorkloadEnforcementInstallable, workloadEnforcementEnabled } from "./task-workload-enforcement.js";
 import { executionRecipientKey as recipientKey, type ExecutionRecipient } from "../../../lib/execution-recipient.js";
 import { TaskBudgetStore, type BudgetTaskRef } from "./task-budget-store.js";
 
@@ -82,6 +83,7 @@ export class TaskExecutionStore {
   constructor(readonly db: SqliteDb) {}
 
   configured(): boolean {
+    if (!workloadEnforcementEnabled(this.db)) return false;
     return !!this.db.prepare("SELECT 1 FROM task_execution_limits WHERE scope_kind = 'host' AND scope_key = 'host'").get();
   }
 
@@ -155,6 +157,7 @@ export class TaskExecutionStore {
   }
 
   installLimit(scope: ExecutionScope, slots: number, options?: HostExecutionOptions): void {
+    assertWorkloadEnforcementInstallable(this.db);
     if (!Number.isSafeInteger(slots) || slots < 1) throw new Error("Execution limits must be positive safe integers");
     if (options && (scope.kind !== "host" || !Number.isSafeInteger(options.backgroundSlots) ||
       options.backgroundSlots < 1 || options.backgroundSlots > slots))
@@ -222,6 +225,7 @@ export class TaskExecutionStore {
         return { kind: "admitted", receipt, replay: true, released: saved.released_at !== null };
       }
       const host: ExecutionScope = { kind: "host" };
+      if (!this.configured()) return { kind: "unavailable" };
       const hostUsage = this.usage(host);
       if (hostUsage.limit === null) return { kind: "unavailable" };
       const root = request.operation.task ? new TaskBudgetStore(this.db).binding(request.operation.task) : null;

@@ -373,3 +373,69 @@ bun scripts/operations/retire-app-state.ts \
 The operation is never invoked by startup, definition removal or background
 reconciliation. It does not require reloading retired controllers. Ship and
 review the Host tool before using it on a live installation's stopped state.
+
+## Withdraw workload enforcement on retained, cleaned state
+
+`withdraw-workload-enforcement.ts` ends the installation's workload credit and
+shared execution enforcement. Use the same external stop, launcher exclusion,
+descendant cleanup and consistent-backup procedure required for retained-state
+installation above. Keep that exclusion throughout inspect, review, dry run and
+apply. The command performs the same conservative file/session and SQL execution
+checks; neither those checks nor `--confirm-quiesced` establishes a start barrier.
+It refuses live reservations and running attempts, including ended-Task execution.
+
+From the reviewed source checkout with frozen dependencies, inspect the isolated
+state and retain the returned configuration digest:
+
+```sh
+bun scripts/operations/withdraw-workload-enforcement.ts \
+  --state-dir /path/to/isolated-state --confirm-quiesced --inspect
+```
+
+Save a reviewed private plan using that exact digest, a unique operation identity
+and the reason for withdrawal:
+
+```json
+{
+  "version": 1,
+  "operationId": "end-workload-pilot-v1",
+  "reason": "End the reviewed workload pilot",
+  "expectedConfigurationDigest": "<64 lowercase hex characters returned by inspect>"
+}
+```
+
+The digest fences all installed credit policies, execution limits and root caps.
+A changed declaration requires fresh inspection and review. Dry-run the plan:
+
+```sh
+bun scripts/operations/withdraw-workload-enforcement.ts \
+  --state-dir /path/to/isolated-state --plan /path/to/private-withdrawal.json \
+  --confirm-quiesced --dry-run
+```
+
+Review its result, then apply the same command without `--dry-run`, keeping
+external exclusion in force. The command opens an existing ordinary database;
+it does not upgrade schema, start a service or reload App definitions.
+
+Withdrawal commits one durable installation receipt and clears only workload
+funding/execution holds, waking their canonical Task and saved Inbox input paths.
+It retains policies, root attribution, credits already spent, execution receipts,
+accepted results, caller links, business closure, workspace prerequisites, pauses
+and exhausted retry authority. A failure rolls back the receipt and every wake;
+dry run rolls back the complete transaction. Exact command replay is read-only
+under the same offline prerequisites. A conflicting command is rejected.
+
+Subsequent runtime opens observe withdrawal from shared SQLite state. New Task
+creation, claims and helpers incur no new workload charges/reservations; ordinary
+Host/App scheduling, Task authority, permissions, timeouts and cleanup still
+apply. Workload feedback marks the former credit/shared execution limits
+unavailable instead of reporting historical caps as active capacity. Unbound
+execution returns to its ordinary unconfigured-policy path.
+
+This path is one-way. Reinstalling limits or policy cannot reactivate enforcement
+after withdrawal: work performed afterward has an explicit accounting gap and
+requires a separately reviewed adoption protocol. Never delete the withdrawal
+receipt, erase accounting rows or restore an older database after newer work
+starts to simulate reactivation. Retain the command, receipt and external
+stop/cleanup evidence. Runtime start and App activation remain separate authorized
+operations; portable source checks do not prove live exclusion or model behavior.

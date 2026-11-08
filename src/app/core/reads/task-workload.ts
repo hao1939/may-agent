@@ -9,6 +9,7 @@ import type { AppTaskDispatch } from "../tasks/controller.js";
 import { TaskBudgetAdmissionStore } from "../state/task-budget-admission.js";
 import { utcBudgetPeriod, type BudgetPurpose, type BudgetSponsor } from "../state/task-budget-store.js";
 import { TaskExecutionStore } from "../state/task-execution-store.js";
+import { workloadEnforcementEnabled } from "../state/task-workload-enforcement.js";
 import type { ExecutionRecipient } from "../../../lib/execution-recipient.js";
 
 export type TaskWorkloadSource = {
@@ -45,6 +46,7 @@ function readWorkloadExecution(
   const result: Pick<TaskWorkload["limits"], "sharedHost" | "agent" | "root"> = {
     sharedHost: { available: false }, agent: { available: false }, root: { available: false },
   };
+  if (!executions.configured()) return result;
   const host = executions.usage({ kind: "host" });
   if (host.limit === null) return result;
   const { backgroundMaxConcurrent } = executions.hostPolicy()!;
@@ -78,6 +80,8 @@ function readWorkloadFunding(
   taskId: string | undefined,
   now: number,
 ): NonNullable<TaskWorkload["funding"]> {
+  if (!workloadEnforcementEnabled(config.resourceStore.db))
+    return { ordinary: { available: false }, currentRoot: { available: false } };
   const accounting = new TaskBudgetAdmissionStore(config.resourceStore.db);
   const period = utcBudgetPeriod(now);
   const grant = (sponsor: BudgetSponsor, purpose: BudgetPurpose) => {

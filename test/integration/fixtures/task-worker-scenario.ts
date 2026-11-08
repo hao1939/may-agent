@@ -1,4 +1,5 @@
 import { initializeWorkloadState, type WorkloadStateInitialization } from "../../../src/app/composition/initialize-workload-state.js";
+import { inspectWorkloadConfiguration, withdrawWorkloadEnforcement } from "../../../src/app/composition/withdraw-workload-enforcement.js";
 import { makeTaskRetryDue } from "../../../src/app/core/tasks/app-task-test-support.js";
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -506,6 +507,40 @@ const scenarios: Record<string, () => Promise<void>> = {
   protectedCoordination: () => runCoordination(true),
   sharedCoordination: () => runSharedCoordination(false),
   freshWorkloadState: () => runSharedCoordination(true),
+  async withdrawnWorkloadState() {
+    const f = fixture("owner");
+    const task = { appId: "sample", taskId: "work/one" };
+    const budgets = new TaskBudgetAdmissionStore(f.db);
+    budgets.install({ appId: "sample", sponsor: { appId: "sample", agent: "owner" }, dailyCredits: 0, rootCredits: 0 });
+    installTaskExecutionLimit(f.db, { kind: "host" }, 1);
+    withdrawWorkloadEnforcement(f.db, f.persistDir, { version: 1, operationId: "withdraw-fixture",
+      reason: "End the fixture policy before starting a fresh worker",
+      expectedConfigurationDigest: inspectWorkloadConfiguration(f.db).configurationDigest }, { quiesced: true });
+    writeFileSync(join(f.appDir, "agents", "owner", "workflows", "probe.ts"), `
+      export const name = "probe";
+      export const description = "Run ordinary work after offline withdrawal";
+      export async function execute(ctx) {
+        const reply = await ctx.agents.call("owner", "Inspect fixture facts", { tools: "readonly" });
+        if (reply.status !== "done") throw Error(reply.summary);
+        return ctx.done("Work retained", { state: "converged", summary: "Work retained", facts: [],
+          result: { workload: await ctx.read.tasks.workload() } });
+      }
+    `);
+    let calls = 0;
+    const server = serveFinish({ status: "success", summary: "Fixture inspected", verification_facts: ["Fixture facts"] }, () => { calls++; });
+    f.modelBaseUrl = server.url.origin;
+    try {
+      await run(f);
+      const current = f.store.readTask(task.taskId)!;
+      assert.equal(current.status.phase, "converged", JSON.stringify(current.status));
+      assert.equal(calls, 1);
+      const workload = current.status.result!.workload as TaskWorkload;
+      assert.deepEqual(workload.limits.sharedHost, { available: false });
+      assert.deepEqual(workload.funding, { ordinary: { available: false }, currentRoot: { available: false } });
+      for (const table of ["task_budget_operations", "task_budget_managed_starts", "task_execution_reservations"])
+        assert.equal(f.db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get()?.n, 0);
+    } finally { await server.stop(true); }
+  },
   async workloadFeedback() {
     const f = fixture("owner");
     const root = { appId: "sample", taskId: "work/one" };

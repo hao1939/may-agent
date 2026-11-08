@@ -8,6 +8,7 @@ import type { TaskBinding } from "../../../lib/persistence.js";
 import { assertCurrentTaskActor } from "../tasks/task-actor.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { TaskBudgetAdmissionStore, TaskBudgetDeferredError } from "./task-budget-admission.js";
+import { workloadEnforcementEnabled } from "./task-workload-enforcement.js";
 
 declare const primaryStart: unique symbol;
 export type TaskPrimaryStart = { readonly [primaryStart]: true };
@@ -31,6 +32,15 @@ type ManagedSessionPolicy = {
 
 function taskExecutionPolicy(db: SqliteDb, input: ManagedSessionPolicy) {
   const bound = input.binding ?? input.retainedBinding;
+  if (!workloadEnforcementEnabled(db)) {
+    // Withdrawal removes resource enforcement, never current Task authority.
+    if (bound) {
+      const store = AppTaskResourceStore.activeFromDb(db, bound.appId);
+      if (!store) throw new Error("Task execution requires canonical authority after workload withdrawal");
+      assertCurrentTaskActor({ resourceStore: store }, bound, "execution");
+    }
+    return null;
+  }
   if (!bound) {
     if (new TaskExecutionStore(db).configured())
       throw new Error("Shared execution limits require a bounded Task binding; unbound execution is not configured");
@@ -91,6 +101,8 @@ export function assertManagedTaskContinuation(
   input: ManagedSessionPolicy & { admitted?: ManagedTaskStartAdmission | null; running: boolean },
 ): void {
   const policy = taskExecutionPolicy(db, input);
+  if (!policy && (input.binding || input.retainedBinding) && !workloadEnforcementEnabled(db) && !input.running)
+    throw new Error("Task continuation requires a running managed execution");
   if (!policy) return;
   if (!input.running) throw new Error("Task continuation requires a running managed execution");
   const store = AppTaskResourceStore.activeFromDb(db, policy.task.appId);

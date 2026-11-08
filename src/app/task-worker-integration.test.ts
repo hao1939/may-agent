@@ -25,6 +25,7 @@ describe("real Task worker boundary", () => {
     ["protectedCoordination", "runs protected coordination across the worker boundary with exhausted ordinary funding"],
     ["sharedCoordination", "can make its bounded model judgment when ordinary shared execution is full"],
     ["freshWorkloadState", "starts from exclusively published policy and funds protected workflow/helper execution before ordinary admission"],
+    ["withdrawnWorkloadState", "observes offline withdrawal across workflow and managed helper execution without new charges"],
     ["workloadFeedback", "preserves parent capacity and queue observations in real workflow attempts"],
     ["observationWithoutConsumer", "accepts worker observations after parent routing without another journal row"],
     ["observationAccepted", "records the parent consumer's acceptance of worker observations"],

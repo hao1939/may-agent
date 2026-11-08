@@ -11,14 +11,17 @@ import {
 } from "./task-budget-store.js";
 
 /** Shared fenced wake mechanics; queries retain each funding authority's exact scope. */
-function wakeFundedTasks(db: SqliteDb, tasks: Array<Record<string, unknown>>, now: number): void {
+export function wakeTaskWorkloadConstraints(
+  db: SqliteDb, tasks: Array<Record<string, unknown>>, now: number,
+  kinds: readonly ("funding" | "executionConstraint")[] = ["funding"],
+): void {
   for (const row of tasks) {
     const store = AppTaskResourceStore.inspectFromDb(db, row.app_id as string);
     const taskId = row.task_id as string;
     const resource = store.readTask(taskId);
     if (!resource || store.isCancelled(taskId)) continue;
     const version = resource.metadata.resourceVersion++;
-    delete resource.status.funding;
+    for (const kind of kinds) delete resource.status[kind];
     if (
       !store.commit({
         fences: [{ taskId, resourceVersion: version }],
@@ -44,7 +47,7 @@ export function changeTaskBudgetDailyCredits(db: SqliteDb, input: DailyTaskBudge
         AND json_extract(resource_json, '$.status.funding.purpose') = 'ordinary'`,
       )
       .all(sponsor.appId, sponsor.agent);
-    wakeFundedTasks(db, tasks, now);
+    wakeTaskWorkloadConstraints(db, tasks, now);
     db.prepare(
       `UPDATE app_inbox_items SET handling = NULL, available_at = ?, changed_at = ?, updated_at = ?
       WHERE status != 'done' AND json_extract(handling, '$.phase') = 'deferred'
@@ -72,7 +75,7 @@ export function changeTaskBudgetRootCredits(db: SqliteDb, input: RootBudgetFundi
         AND json_extract(resource_json, '$.status.funding.root.taskId') = ?`,
       )
       .all(root.appId, root.taskId);
-    wakeFundedTasks(db, tasks, now);
+    wakeTaskWorkloadConstraints(db, tasks, now);
     db.prepare(
       `UPDATE app_inbox_items SET handling = NULL, available_at = ?, changed_at = ?, updated_at = ?
       WHERE status != 'done' AND json_extract(handling, '$.phase') = 'deferred'
