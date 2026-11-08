@@ -839,8 +839,15 @@ assertions across nine files**; runtime and worker owners passed **279 tests /
 3,360 assertions across two files**. Cleanup/controller owners passed **74 tests /
 289 assertions across four files**. Final changed owners after refinements passed
 **70 tests / 329 assertions across four files**. Host/SDK types, boundary and lint
-passed. Frozen full local and hosted gates are pending on this revision;
-independent review remains required. Fixture-only corrections included parsing
+passed. Its frozen full local gate **failed: 4,107 passed / three skipped / one
+failed / 23,907 assertions across 356 files**, in 306.91 seconds. The real-worker
+`recoveryLeavesHandlerJudgmentToAttempt` scenario did not reach a converged accepted
+result. The same boundary failed in earlier sponsor-funding evidence. A subsequent
+targeted run with additional failure-state diagnostics passed, without establishing
+the cause or a fix; no full-gate retry is claimed. Hosted Quality (5m6s) and
+Container (2m10s) passed this exact revision. Those passes do not erase the local
+failure. Independent review and the local failure remain unresolved. Fixture-only
+corrections included parsing
 lease timestamps, selecting the existing installed reconciliation API and allowing
 the inherited startup gate to settle during teardown. They are not additional
 production bug fixes.
@@ -856,3 +863,11 @@ for new roots, direct/persistent-chat admission and cleanup, scoped capacity
 observations, and a complete one-place durable-delegation proof. Private limits
 continue to fail unsupported starts closed. Existing worktree-capacity work in
 Host #399 remains separate.
+
+
+The paired isolated Apps design check passed with the existing reports-layout
+warning. An additional check in the shared installation checkout failed because
+existing ignored `evaluation.app` and `gym.app` symlinks point into retired local
+history without canonical `app.ts` files. Those installation artifacts were left
+untouched. This is separate from the isolated source-design result; the integrated
+installation checkout is not reported as passing.
