@@ -1141,6 +1141,6 @@ coordination route starts after publication, charges creation + attempt + helper
 (**three protected credits**), makes one scripted provider call under full
 ordinary execution, and releases only coordination occupancy. The previous
 shared/protected coordination routes also passed. Static checks passed. Frozen
-full local and hosted gates are running; independent review remains. No SDK or
+full local CI passed **4,159 tests / 3 existing skips / 0 failures / 24,276 assertions across 360 files**. Hosted Quality and Container passed the same head; independent review remains. No SDK or
 App runtime source change is required. This provides no retained-installation
 cutover, historical active adoption, compiled-daemon flag or live rollout proof.
