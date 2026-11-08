@@ -34,6 +34,9 @@ contracts; Tier-2 design governs when wording conflicts.
 
 ## Reviews
 
+- [Agent workload: source and running-system gaps — 2026-11-08](reviews/agent-workload-gap-review-20261108.md)
+  — idle versus usable capacity, shared blockers, protected coordination and
+  missing shared accounting; evidence for the workload proposal's refinements.
 - [Agent judgment and code paths — 2026-10-16](reviews/agent-judgment-and-code-paths-20261016.md)
   — schema/reader mismatch reproduction, completion responsibilities, unfamiliar
   input handling and reuse of the existing recovery and audit paths.

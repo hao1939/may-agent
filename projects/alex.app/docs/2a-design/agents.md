@@ -87,6 +87,24 @@ admission, identity and recovery still require an App scope. The
 remaining change. Do not invent an App wrapper or a callable standalone API
 in agent instructions. Use current declared App routes until that path exists.
 
+### Intended workload behavior
+
+**Accepted direction; feedback and shared-budget integration are unimplemented.**
+Business need establishes the assignment. Workload guides priorities, timing,
+scope and whether discretionary expansion justifies delaying existing work.
+Required work can remain pending while execution capacity is full; Task count
+alone does not decide acceptance. Pressure can bring creator review forward,
+while completion evidence and closure authority retain their existing meaning.
+Resource limits continue to constrain execution and spending. Empty execution
+places do not imply usable capacity when workspace, disk or access prerequisites
+are blocked. The intended feedback distinguishes runnable demand, blocked
+obligations and results awaiting creator review within the agent's read scope.
+The [workload proposal](../proposals/agent-task-workload-model.md) owns the detailed
+decision guidance, shared-accounting choices and behavioral verification cases.
+Its proposed protected coordination path lets existing responsible agents make
+bounded decisions under ordinary resource stress; this reserve extension,
+resource admission and shared credit renewal are unimplemented.
+
 ## Definition sources
 
 Runtime snapshots agent and App definitions with `shared/common-sense.md`,

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent workload · Capacity map</title>
+<style>
+  :root{font:15px/1.5 system-ui,sans-serif;color:#203139;background:#f4f6f5;color-scheme:light}
+  *{box-sizing:border-box}body{margin:0}main{max-width:1220px;margin:auto;padding:30px 24px 40px}
+  h1{font-size:30px;letter-spacing:-.7px;margin:0 0 7px}h2{font-size:17px;margin:0 0 12px}
+  p{margin:6px 0 15px}.muted{color:#5b7079}.eyebrow{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#317360;margin-bottom:8px}
+  .panel,.card{background:white;border:1px solid #dce5e1;border-radius:12px;padding:20px}
+  .inputs{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:22px}
+  label{display:block;font-size:12px;color:#405962}label strong{font-size:14px;color:#203139}
+  input[type=number]{font:inherit;width:100%;margin-top:7px;padding:9px;border:1px solid #b7c8c0;border-radius:6px;background:white;color:#203139}
+  input:focus,button:focus,select:focus{outline:2px solid #266cce;outline-offset:2px}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+  .card{padding:16px 18px}.value{display:block;font-size:25px;font-weight:700;letter-spacing:-.5px}.caption{font-size:12px;color:#5b7079}
+  .plots{display:grid;grid-template-columns:1.12fr 1fr;gap:16px}.plots .panel{min-width:0}
+  canvas{display:block;width:100%;height:auto}.heatmap{cursor:crosshair;touch-action:manipulation}
+  .legend{display:flex;align-items:center;gap:10px;font-size:11px;color:#526b74;margin-top:5px}.gradient{height:10px;flex:1;background:linear-gradient(90deg,#2c8a83,#dcebc6,#f3cb66,#cf4b4d);border-radius:8px}
+  .message{margin-top:15px;border-left:3px solid #e1b54c;padding:2px 0 2px 12px;font-size:13px}
+  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:15px}
+  button,select{font:inherit;background:white;color:#294a55;border:1px solid #bed0c6;border-radius:6px;padding:6px 10px;cursor:pointer}
+  button:hover{background:#edf5f0}details{margin-top:18px}summary{cursor:pointer;color:#365b62;font-size:13px}
+  .advanced{display:grid;grid-template-columns:1.4fr 1fr 1fr;align-items:end;gap:18px;margin-top:14px}
+  .check{display:flex;gap:8px;align-items:center;font-size:13px}.math{margin-top:18px;font-size:13px;color:#465f69}
+  code{font-family:ui-monospace,monospace;font-size:12px;background:#edf2ef;padding:2px 5px;border-radius:4px}
+  .error{color:#a63636}.footnote{font-size:12px;color:#5b7079;margin-top:18px}
+  @media(max-width:850px){.plots{grid-template-columns:1fr}.inputs,.cards{grid-template-columns:repeat(2,1fr)}.advanced{grid-template-columns:1fr}main{padding:20px 14px}}
+</style>
+<main>
+  <div class="eyebrow">Three identical agents · Average-flow math</div>
+  <h1>How much work can the system carry?</h1>
+  <p class="muted">Change the workload, or click the map. Pending Tasks wait for capacity; closed Tasks leave the live population.</p>
+  <section class="panel">
+    <div class="inputs">
+      <label for="i"><strong>Interval i</strong> · minutes<input id="i" type="number" value="1" min="0.01" max="10000" step="0.5"></label>
+      <label for="j"><strong>Arrivals j</strong> · per agent, per interval<input id="j" type="number" value="3" min="0" max="10" step="0.1"></label>
+      <label for="k"><strong>Completion capacity k</strong> · per agent, per interval<input id="k" type="number" value="2" min="0" max="10" step="0.1"></label>
+      <label for="horizon"><strong>Projection horizon</strong> · minutes<input id="horizon" type="number" value="60" min="1" max="10000" step="15"></label>
+    </div>
+    <div class="controls"><span class="caption">Examples:</span><button data-j="1" data-k="2">Spare capacity</button><button data-j="2" data-k="2">At the boundary</button><button data-j="3" data-k="2">Overloaded</button></div>
+    <details>
+      <summary>Initial backlog and management capacity</summary>
+      <div class="advanced">
+        <label class="check"><input id="limitReview" type="checkbox">Limit closure by the shared management slot</label>
+        <label for="review">Management capacity · closed Tasks / minute, total<input id="review" type="number" value="12" min="0" max="10000" step="1"></label>
+        <label for="initial">Initial live Tasks · total<input id="initial" type="number" value="0" min="0" max="1000000" step="10"></label>
+      </div>
+    </details>
+    <p id="error" class="error" role="alert" hidden></p>
+  </section>
+  <section class="cards" aria-live="polite">
+    <div class="card"><span class="caption">Load ratio ρ</span><strong class="value" id="rho"></strong><span class="caption" id="state"></span></div>
+    <div class="card"><span class="caption">Arrivals / effective capacity</span><strong class="value" id="rates"></strong><span class="caption">Tasks per minute, all three agents</span></div>
+    <div class="card"><span class="caption">Excess demand</span><strong class="value" id="growth"></strong><span class="caption">Tasks added per hour at capacity</span></div>
+    <div class="card"><span class="caption">Projected live backlog</span><strong class="value" id="backlog"></strong><span class="caption" id="backlogCaption"></span></div>
+  </section>
+  <section class="plots">
+    <div class="panel">
+      <h2>Capacity map</h2>
+      <label for="colorMode">Color indicates <select id="colorMode"><option value="pressure">load ratio ρ</option><option value="growth">backlog growth per hour</option></select></label>
+      <canvas id="heatmap" class="heatmap" width="650" height="470" role="img" aria-label="Heatmap of arrival j versus completion capacity k. Use the labeled number inputs for keyboard access."></canvas>
+      <div class="legend"><span id="legendLow">Spare capacity</span><span class="gradient" id="gradient"></span><span id="legendHigh">Overloaded</span></div>
+      <p class="caption">Horizontal: j, new Tasks. Vertical: k, completion capacity. The dark line marks demand = effective capacity; the circle marks your inputs.</p>
+    </div>
+    <div class="panel">
+      <h2>Backlog projection at this point</h2>
+      <canvas id="projection" width="600" height="400" role="img" aria-label="Live backlog projected over time using average arrival and completion flows."></canvas>
+      <div class="message" id="interpretation"></div>
+      <p class="caption" id="intervalNote"></p>
+    </div>
+  </section>
+  <section class="panel math">
+    <strong>The model</strong>
+    <p>Arrival rate <code>λ = 3j/i</code>. Work capacity <code>μ_work = 3k/i</code>. With prompt closure, <code>μ = μ_work</code>; with a management limit, <code>μ = min(μ_work, μ_close)</code>.</p>
+    <p>Load ratio <code>ρ = λ/μ</code>. Excess demand <code>g = max(0, λ − μ)</code>. Fluid backlog <code>N(t) = max(0, N₀ + (λ − μ)t)</code>.</p>
+    <p class="footnote">This baseline accepts all arriving work without feedback. Color shows demand relative to capacity. The <a href="agent-task-workload-model.md#workload-feedback">workload design</a> uses that information to guide priorities, scope and discretionary expansion; pressure alone does not determine acceptance or completion. Random bursts can cause waiting even below capacity; equality leaves no headroom. The k input reflects capacity after reserving management bandwidth. Agents have equal workloads, and contribution costs are included in j or k. The stated capacity assumes disk, workspace and access prerequisites hold; a resource blocker can leave execution slots idle. This graph does not model feedback or resource blockers. This is average-flow math, not a prediction of random queue length.</p>
+  </section>
+</main>
+<script>
+  const AGENTS=3,MAX=10,W=650,H=470,L=50,R=18,T=15,B=44;
+  const $=id=>document.getElementById(id);
+  const number=(n,d=1)=>Number.isFinite(n)?n.toFixed(d):"∞";
+  const mix=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*Math.max(0,Math.min(1,t))));
+  const rgb=a=>`rgb(${a.join(',')})`;
+  function metrics(j,k,c){
+    const arrival=AGENTS*j/c.i,work=AGENTS*k/c.i,capacity=c.limitReview?Math.min(work,c.review):work;
+    return {arrival,work,capacity,rho:capacity>0?arrival/capacity:arrival===0?0:Infinity,
+      growth:Math.max(0,arrival-capacity),delta:arrival-capacity};
+  }
+  function pressureColor(rho){
+    if(rho<=.8)return rgb(mix([44,138,131],[220,235,198],rho/.8));
+    if(rho<=1)return rgb(mix([220,235,198],[243,203,102],(rho-.8)/.2));
+    return rgb(mix([243,203,102],[207,75,77],Math.min(1,(rho-1)/1.0)));
+  }
+  function color(m,c){return c.mode==="pressure"?pressureColor(m.rho):rgb(mix([242,244,238],[207,75,77],Math.min(1,m.growth*60/180)));}
+  function context(id,w,h){
+    const canvas=$(id),dpr=window.devicePixelRatio||1;
+    canvas.width=w*dpr;canvas.height=h*dpr;
+    const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+    ctx.font="12px system-ui";ctx.lineWidth=1;return ctx;
+  }
+  function heatmap(c){
+    const ctx=context('heatmap',W,H),width=W-L-R,height=H-T-B,n=100;
+    const x=j=>L+j/MAX*width,y=k=>H-B-k/MAX*height;
+    for(let row=0;row<n;row++)for(let col=0;col<n;col++){
+      const j=(col+.5)*MAX/n,k=(row+.5)*MAX/n;
+      ctx.fillStyle=color(metrics(j,k,c),c);ctx.fillRect(x(col*MAX/n),y((row+1)*MAX/n),width/n+.5,height/n+.5);
+    }
+    ctx.strokeStyle="rgba(255,255,255,.25)";
+    for(let v=0;v<=MAX;v+=2){ctx.beginPath();ctx.moveTo(x(v),T);ctx.lineTo(x(v),H-B);ctx.stroke();ctx.beginPath();ctx.moveTo(L,y(v));ctx.lineTo(W-R,y(v));ctx.stroke();}
+    ctx.strokeStyle="#233943";ctx.lineWidth=2;ctx.beginPath();
+    for(let n=0;n<=100;n++){
+      const k=n*MAX/100,j=c.limitReview?Math.min(k,c.review*c.i/AGENTS):k;
+      if(n===0)ctx.moveTo(x(j),y(k));else ctx.lineTo(x(j),y(k));
+    }ctx.stroke();
+    ctx.lineWidth=1;ctx.strokeStyle="#526b74";ctx.strokeRect(L,T,width,height);
+    ctx.fillStyle="#526b74";
+    for(let v=0;v<=MAX;v+=2){ctx.textAlign="center";ctx.fillText(String(v),x(v),H-B+20);ctx.textAlign="right";ctx.fillText(String(v),L-10,y(v)+4);}
+    ctx.textAlign="center";ctx.fillText("j · arrivals per agent per interval",L+width/2,H-6);
+    ctx.save();ctx.translate(14,T+height/2);ctx.rotate(-Math.PI/2);ctx.fillText("k · completion capacity per agent per interval",0,0);ctx.restore();
+    const px=x(c.j),py=y(c.k);ctx.strokeStyle="#ffffff";ctx.lineWidth=4;ctx.beginPath();ctx.arc(px,py,7,0,2*Math.PI);ctx.stroke();ctx.fillStyle="#203139";ctx.fill();ctx.strokeStyle="#203139";ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(px,py,10,0,2*Math.PI);ctx.stroke();
+    $('legendLow').textContent=c.mode==="pressure"?"Spare · ρ = 0":"0 Tasks / hour";
+    $('legendHigh').textContent=c.mode==="pressure"?"Overloaded · ρ ≥ 2":"≥ 180 Tasks / hour";
+    $('gradient').style.background=c.mode==="pressure"?"linear-gradient(90deg,#2c8a83,#dcebc6,#f3cb66,#cf4b4d)":"linear-gradient(90deg,#f2f4ee,#cf4b4d)";
+  }
+  function projection(c,m){
+    const ctx=context('projection',600,400),left=48,right=15,top=18,bottom=45,width=600-left-right,height=400-top-bottom;
+    const end=Math.max(0,c.initial+m.delta*c.horizon),max=Math.max(5,c.initial,end)*1.12;
+    const x=t=>left+t/c.horizon*width,y=n=>400-bottom-n/max*height;
+    ctx.strokeStyle="#e2e9e5";ctx.fillStyle="#526b74";
+    for(let n=0;n<=4;n++){const value=max*n/4,py=y(value);ctx.beginPath();ctx.moveTo(left,py);ctx.lineTo(600-right,py);ctx.stroke();ctx.textAlign="right";ctx.fillText(number(value,0),left-8,py+4);}
+    ctx.textAlign="center";for(let n=0;n<=4;n++){const t=c.horizon*n/4;ctx.fillText(number(t,0),x(t),400-bottom+21);}
+    ctx.fillText("minutes",left+width/2,395);
+    ctx.beginPath();for(let n=0;n<=100;n++){const t=c.horizon*n/100,py=y(Math.max(0,c.initial+m.delta*t));if(n===0)ctx.moveTo(x(t),py);else ctx.lineTo(x(t),py);}
+    ctx.lineWidth=3;ctx.strokeStyle=m.delta>0?"#bd4444":"#287e71";ctx.stroke();
+    ctx.lineTo(x(c.horizon),y(0));ctx.lineTo(x(0),y(0));ctx.closePath();ctx.fillStyle=m.delta>0?"rgba(189,68,68,.08)":"rgba(40,126,113,.08)";ctx.fill();
+    if(m.arrival===0&&c.initial===0)$('interpretation').textContent="No arriving or pending work. Idle capacity is appropriate.";
+    else if(m.capacity===0&&m.arrival>0)$('interpretation').textContent="No effective completion capacity. All arriving work remains outstanding.";
+    else if(Math.abs(m.delta)<1e-9)$('interpretation').textContent="Critical boundary: average inflow equals outflow. This flat fluid line hides waiting caused by random bursts; allow headroom.";
+    else if(m.delta>0)$('interpretation').textContent=`Demand exceeds effective capacity by ${number(m.delta,2)} Tasks/minute. Pending work grows unless arrivals fall or capacity increases.`;
+    else $('interpretation').textContent=`There is ${number(-m.delta,2)} Tasks/minute of capacity headroom.${c.initial>0?` The fluid backlog drains in about ${number(c.initial/-m.delta,1)} minutes.`:" Random arrivals can still produce a nonempty waiting queue."}`;
+  }
+  function update(){
+    try{
+      if(['i','j','k','horizon','initial','review'].some(id=>$(id).value===''))throw Error("Fill in each numeric input to update the graph.");
+      const c={i:Number($('i').value),j:Number($('j').value),k:Number($('k').value),horizon:Number($('horizon').value),
+        initial:Number($('initial').value),review:Number($('review').value),limitReview:$('limitReview').checked,mode:$('colorMode').value};
+      if(!Object.values(c).every(v=>typeof v!=="number"||Number.isFinite(v))||c.i<=0||c.horizon<=0||c.j<0||c.j>10||c.k<0||c.k>10||c.initial<0||c.review<0)throw Error("Use positive i and horizon, j/k between 0 and 10, and nonnegative backlog and management capacity.");
+      $('error').hidden=true;const m=metrics(c.j,c.k,c),backlog=Math.max(0,c.initial+m.delta*c.horizon);
+      $('rho').textContent=number(m.rho,2)+"×";
+      $('state').textContent=m.arrival===0?"No new demand":m.rho<1?"Spare capacity":Math.abs(m.rho-1)<1e-9?"Critical boundary":"Overloaded";
+      $('rates').textContent=number(m.arrival,1)+" / "+number(m.capacity,1);
+      $('growth').textContent="+"+number(m.growth*60,1);
+      $('backlog').textContent=number(backlog,0);$('backlogCaption').textContent=`Live Tasks after ${number(c.horizon,0)} min · fluid projection`;
+      $('intervalNote').textContent=c.limitReview?"The shared management slot can limit closure. Its rate is per minute, so changing i can change the bottleneck.":"With the same i for arrivals and service, ρ = j/k. Changing i alters growth per minute, while pressure colors stay the same. Switch color to growth to see that effect.";
+      heatmap(c);projection(c,m);window.currentWorkload={...c,...m,backlog};
+    }catch(error){$('error').hidden=false;$('error').textContent=error.message}
+  }
+  for(const id of ['i','j','k','horizon','initial','review','limitReview','colorMode'])$(id).addEventListener('input',update);
+  document.querySelectorAll('button[data-j]').forEach(button=>button.addEventListener('click',()=>{$('j').value=button.dataset.j;$('k').value=button.dataset.k;update()}));
+  $('heatmap').addEventListener('click',event=>{const rect=event.currentTarget.getBoundingClientRect(),px=(event.clientX-rect.left)*W/rect.width,py=(event.clientY-rect.top)*H/rect.height;
+    if(px<L||px>W-R||py<T||py>H-B)return;
+    $('j').value=(Math.max(0,Math.min(MAX,(px-L)/(W-L-R)*MAX))).toFixed(1);
+    $('k').value=(Math.max(0,Math.min(MAX,(H-B-py)/(H-T-B)*MAX))).toFixed(1);update();
+  });
+  update();
+</script>
+</html>

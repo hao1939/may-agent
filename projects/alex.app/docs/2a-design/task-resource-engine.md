@@ -125,6 +125,9 @@ Save completed pages and retry failures separately so one bad read does not hide
 work or restart the whole scan. Re-read full evidence and current fences before
 any effect; a live traversal is not an atomic population snapshot.
 
+Apply and verify justified endings as review finishes; a recommendation does not settle responsibility.
+Prioritize [backlog and finite-result disposition](../proposals/agent-task-workload-model.md#first-milestone-resolve-idle-work-and-complete-the-result-path) before new budget/feedback mechanisms.
+
 An independent snapshot review owes its assessment, not fulfillment of the
 subject's entire outcome. A report intake owes its declared disposition and any
 follow-through it actually accepted. Ending either does not end the subject or

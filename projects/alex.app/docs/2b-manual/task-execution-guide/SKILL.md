@@ -278,6 +278,12 @@ unresolved delivery promises. A completed bounded review may end while its
 subject remains unresolved; close the review's scope, not the subject's outcome.
 Record an explicit reason and use fresh guarded controls through the recorded
 creator or trusted App/operator. Do not invent creator metadata for old work.
+
+A finite review needs an identity that can end: replay the same admitted input
+onto the same Task, but give a later independent admission its own identity.
+Keep standing metric/reviewer and Conversation routes reusable. After closing
+finite reviews, verify that later admissions still have a valid route; closure
+capability alone does not provide continuing result-to-disposition integration.
 The [backlog trial](../../archive/reviews/task-backlog-disposition-trial-20261107.md)
 shows the real population and an isolated closure trial without live cleanup.
 
