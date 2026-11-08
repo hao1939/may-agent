@@ -415,8 +415,10 @@ message was an earlier human ask instead of the accepted corrected-source reply.
 Both parameter cases passed the unchanged owning diagnostic (2 tests /
 27 assertions). That failure remains unexplained. A later controlled diagnostic
 reproduced the coordination waiting-report failure as a premature presentation
-wake; Host #408 waits for the exact report input to settle. This does not explain
-the separate fresh-human-input failure.
+wake. Host #408 also waits for the exact report input to settle, but its
+subsequent full run still failed the message-order assertion. The premature wake
+is real but does not fully explain the failures; the separate fresh-human-input
+failure also remains unresolved.
 
 Verification for this review: the existing Host capacity, controller and queue
 suites passed, **46 tests and 138 assertions**. They verify current scheduling
@@ -469,9 +471,14 @@ starts but before its reply settles. Test-only
 [PR #408](https://github.com/hao1939/may-agent/pull/408), `3299061244`, waits for
 the exact report input's durable settlement and retains all message, Request
 and restart assertions. Its owning file passed 53 tests / 745 assertions;
-Host/SDK types, boundary and lint and hosted Quality/Container passed. Full local
-verification is running. Frozen-clock and attempted gated-wake diagnostics did
-not establish message sorting as a defect and are not retained as product tests.
+Host/SDK types, boundary and lint and hosted Quality/Container passed. Its full
+local run retained two failures: 3,930 passed / 3 skipped / 2 failed / 22,881
+assertions across 344 files. Waiting-report message ordering still failed, and a
+metric collector-grace assertion observed five newly defined sources as stale.
+A two-file diagnostic passed 86 tests / 883 assertions without reproducing
+either failure. Frozen-clock and attempted gated-wake diagnostics did not
+establish message sorting as a defect. The predicate change remains incomplete;
+no automatic retry or weakened assertion establishes a fix.
 
 Authored seed accounting is isolated in
 [PR #407](https://github.com/hao1939/may-agent/pull/407), `93f1075c5d`, stacked on
@@ -485,7 +492,16 @@ passed 44 tests / 286 assertions, and Host/SDK types, boundary and lint passed.
 Hosted Quality/Container passed. Its frozen full local run retained an existing
 Git-cleanup lifecycle failure: 3,951 passed / 3 skipped / 1 failed / 23,003
 assertions across 346 files. The unchanged cleanup diagnostic passed one test /
-20 assertions; its cause remains unproven, so the PR remains draft.
+20 assertions. A controlled frozen-clock diagnostic then reproduced the exact
+history assertion: simultaneous later attempts had random-ID tie ordering, so
+the original attempt was not guaranteed to leave bounded history. Test-only
+[PR #411](https://github.com/hao1939/may-agent/pull/411), `6626583d7b`, gives later
+fixture attempts increasing timestamps while preserving the reverse-clock
+scenario and every cleanup assertion. Its owning 17 cases / 233 assertions and
+Host/SDK types, boundary and lint passed. Its full run retained a separate
+Conversation steering-order assertion failure: 3,931 passed / 3 skipped /
+1 failed / 22,899 assertions across 344 files. These are distinct findings;
+#407 and #411 remain draft pending their integration/review gates.
 
 The next isolated managed-start increment is revision `719daf0760`, stacked on
 #407. The manager's common start path accounts direct, workflow and nested
@@ -501,8 +517,46 @@ admission, without retrying execution. Owning manager, adapter and accounting
 checks passed 61 tests / 397 assertions before the final capability assertions;
 the final focused file passed four tests / 33 assertions. Host/SDK types,
 boundary and lint passed before that final test refinement. The frozen full
-gate is running. Admitted starts stay charged if preparation later fails.
+gate passed 3,956 tests / 3 skipped / zero failures / 23,047 assertions across
+347 files, including its current types, boundary and lint checks. Hosted Quality
+and Container also passed. This is [PR #409](https://github.com/hao1939/may-agent/pull/409);
+independent review and the caller-deferral increment still remain. Admitted
+starts stay charged if preparation later fails.
 
 Structured helper caller deferrals, protected coordination funding, authorized
 cap/grant changes and additional execution reservations remain. No production
 installation switch, live activation or behavioral acceptance is established.
+
+
+Independent review of #406 identified four admission/recovery gaps. Revision
+`6c7343f993`, integrated with current Host main as `edb34aa0f7`, addresses them:
+
+- First Conversation input retains its exact Inbox identity and funding constraint
+  outside the Task-admission savepoint. Its trusted admission key distinguishes
+  deferred, unstarted input from a legacy worker after recovery clears a hold.
+- An atomic result blocked on follow-up creation retains its prepared decision,
+  trusted mapping and acceptance facts in a Host-private checkpoint on its
+  original attempt. The Task waits without an execution heartbeat. Recovery
+  retries ordinary fenced settlement without another model/mapping call,
+  attempt debit or execution failure. Cancellation and revised requirements
+  fence the saved result. Ordinary delegation already retains demand through
+  the Inbox and preserves its parent's accepted result independently.
+- Installing a missing sponsor policy wakes only its exact matching Inbox
+  holds in the installation transaction; installation rollback also rolls back
+  those wakes.
+- Restart Condition-index repair respects indefinite and future funding holds.
+  A held claim also acknowledges any obsolete indexed wake, preventing repeated
+  recovery enqueueing.
+
+The initial owning lifecycle pass succeeded with 211 tests / 2,704 assertions.
+Five additional settlement/delegation scenarios passed 62 assertions, including
+restart without execution, cancellation, requirements revision and both ordinary
+result dispositions. The Condition repair regression also passes across a real
+database reopen. Host/SDK types, boundary and lint passed before the final test
+refinements. An initial ordinary-delegation test incorrectly expected synchronous
+child admission; it was corrected to exercise the existing durable Inbox path.
+Its callback fixture also needed the owning state adapter rather than an
+unconfigured runtime attachment. Those failed diagnostics were retained.
+A full gate is running on the clean, frozen integrated revision `edb34aa0f7`;
+current hosted checks and renewed independent review remain required. Production
+activation remains unavailable.

@@ -629,11 +629,11 @@ than become unrestricted creation paths.
 | Capability | Current implementation and remaining work |
 | --- | --- |
 | Pending work, atomic claims, bounded retries and creator-controlled closure | Existing foundations; preserve them. |
-| Capacity | Host and App limits and a human foreground reserve exist. Per-agent/root limits, helper accounting and trusted coordination access remain unimplemented. |
-| Feedback | Scoped Task/child/wait reads and App owner reviews exist. The bounded summary, delivery to the deciding agent, decision guidance and consequential-deferral feedback remain unimplemented as an integrated path. |
-| Budget | Per-call limits and usage records exist. Shared attribution, credit grants, cumulative charges and renewal remain unimplemented. |
+| Capacity | Host and App limits and a human foreground reserve exist. Trusted coordination access is under review in Host #404; per-agent/root reservations remain. Managed-start credit accounting in #409 has passed local/hosted gates but is not activated. |
+| Feedback | Scoped Task/child/wait reads and App owner reviews exist. Bounded feedback and dispatch observations are under review in Host #402–403. Live delivery, consequential-deferral feedback and adaptive behavior still need adoption evidence. |
+| Budget | Shared attribution, UTC grants, cumulative charges and operation receipts merged in Host #405. Creation/claim and authored-seed integration are in #406–407; helper accounting is in #409. Caller deferrals, protected funding, authorized funding changes and activation remain. |
 | Shared blockers | Individual Conditions and recovery exist. Operation-specific prerequisite admission and cross-Task coalescing need implementation at the affected resource boundary. |
-| Lifecycle integration | The shared reconciler, fenced store and attempt runner exist. Wake writers require a focused consistency review; App closure and Conversation effect preservation merged in Host #398, with live adoption tracked separately. The four workload hooks above remain unimplemented. |
+| Lifecycle integration | The shared reconciler, fenced store and attempt runner exist. Wake writers require a focused consistency review; App closure and Conversation effect preservation merged in Host #398, with live adoption tracked separately. The workload hooks are being integrated incrementally; shared budget deferral and settlement recovery are under review, with no production activation. |
 
 The [implementation approach](agent-task-workload-implementation.md) separates
 feedback, reachable coordination, credit accounting and additional execution
