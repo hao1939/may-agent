@@ -1,4 +1,6 @@
-import { describe, it, expect, afterEach } from "bun:test";
+import { describe, it, expect, afterEach, spyOn } from "bun:test";
+import * as childProcess from "node:child_process";
+import { once } from "node:events";
 import { createBackgroundExecTool } from "./background-exec.js";
 
 describe("background_exec tool", () => {
@@ -52,19 +54,28 @@ describe("background_exec tool", () => {
     expect(second.output).toBe("(no new output)");
   });
 
-  it("limits output by lines", async () => {
+  it.each([0, 0.3])("limits output by lines after a %s second startup delay", async (delay) => {
     const tool = makeTool({ cwd: "/tmp" });
-    const { pid } = await exec(tool, { action: "spawn", command: "for i in $(seq 1 10); do echo line$i; done" });
-
-    await new Promise((r) => setTimeout(r, 200));
-
+    // Observe the real child without changing its execution. `close` follows
+    // both process exit and stdout/stderr drain; a fixed sleep proves neither.
+    const spawned = spyOn(childProcess, "spawn");
+    let child: childProcess.ChildProcess;
+    let pid: number;
+    try {
+      ({ pid } = await exec(tool, { action: "spawn", command: `sleep ${delay}; for i in $(seq 1 10); do echo line$i; done` }));
+      child = spawned.mock.results.at(-1)!.value;
+    } finally {
+      spawned.mockRestore();
+    }
+    await once(child, "close");
     const result = await exec(tool, { action: "output", pid, lines: 3 });
     const lines = result.output
       .trim()
       .split("\n")
       .filter((l: string) => l.length > 0);
-    expect(lines.length).toBe(3);
-    expect(lines[lines.length - 1]).toBe("line10");
+    expect(lines).toEqual(["line8", "line9", "line10"]);
+    expect(result.alive).toBe(false);
+    expect(result.exitCode).toBe(0);
   });
 
   it("writes to stdin", async () => {
