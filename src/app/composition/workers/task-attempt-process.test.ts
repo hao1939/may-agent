@@ -12,6 +12,7 @@ describe("isolated Task attempt process", () => {
     ["concurrentRelays", "shares relay turns across concurrent workers"],
     ["workerFailure", "surfaces failure without another Task"],
     ["abruptExit", "settles an abruptly lost worker instead of holding capacity"],
+    ["timeoutDrain", "retains dispatch capacity until a timed-out worker confirms exit"],
     ["missingResult", "rejects a clean exit without an accepted result"],
     ["workerChurn", "preserves IPC across concurrent worker churn and garbage collection"],
     ["recovery", "uses the same process protocol for recovery"],

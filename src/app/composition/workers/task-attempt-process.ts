@@ -351,24 +351,38 @@ function waitForChild(
   timeoutMs?: number,
 ): Promise<{ code: number | null; signal: NodeJS.Signals | null }> {
   return new Promise((resolveExit, reject) => {
+    let timeoutError: Error | undefined;
+    let killTimer: ReturnType<typeof setTimeout> | undefined;
     const timer =
       timeoutMs && timeoutMs > 0
         ? setTimeout(() => {
+            timeoutError = new Error(`Task worker exceeded ${timeoutMs}ms`);
             child.kill("SIGTERM");
-            setTimeout(() => child.kill("SIGKILL"), 5_000).unref();
-            reject(new Error(`Task worker exceeded ${timeoutMs}ms`));
+            killTimer = setTimeout(() => child.kill("SIGKILL"), 5_000);
+            killTimer.unref();
           }, timeoutMs)
         : undefined;
     timer?.unref();
-    child.once("error", (error) => {
+    const cleanup = () => {
       if (timer) clearTimeout(timer);
+      if (killTimer) clearTimeout(killTimer);
+      child.off("error", onError);
+    };
+    function onError(error: Error) {
+      // A failed termination request does not confirm the spawned worker exited.
+      if (timeoutError && child.pid !== undefined) return;
+      cleanup();
       reject(error);
-    });
+    }
+    child.on("error", onError);
     // close follows the final IPC messages; there is no separate raw-pipe end
     // promise that can hold a capacity slot forever after the worker exits.
     child.once("close", (code, signal) => {
-      if (timer) clearTimeout(timer);
-      resolveExit({ code, signal });
+      cleanup();
+      // The timeout requests shutdown. Keep dispatch ownership until exit is
+      // observed, then surface the timeout even if the worker exited cleanly.
+      if (timeoutError) reject(timeoutError);
+      else resolveExit({ code, signal });
     });
   });
 }
