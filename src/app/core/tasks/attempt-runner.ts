@@ -179,7 +179,7 @@ export async function runTaskAttempt(input: {
     }
     timing.attemptId = claim.attemptId;
     timing.generation = claim.generation;
-    return [...new Set([...recoveredTaskIds, ...(await runClaimedTask(opts, descriptor, config, claim))])];
+    return [...new Set([...recoveredTaskIds, ...(await runClaimedTask(opts, descriptor, config, claim, input.dispatch))])];
   } finally {
     if (timing.attemptId) input.reportTiming(timing);
   }
@@ -190,6 +190,7 @@ async function runClaimedTask(
   descriptor: AppTaskRuntimeDescriptor,
   config: AppTaskContext,
   claim: AppTaskClaim,
+  dispatch: AppTaskDispatch,
 ): Promise<string[]> {
   const intent = claim.intent;
   const event = claim.trigger as EventEnvelope | undefined;
@@ -270,7 +271,7 @@ async function runClaimedTask(
       }
     }
     // One attempt lifetime surrounds dispatch; settlement follows after it closes.
-    const execution = { opts, descriptor, claim, executionPaths, childContext, taskSnapshot, event };
+    const execution = { opts, descriptor, claim, executionPaths, childContext, taskSnapshot, event, dispatch };
     const report = await runTaskExecutorAttempt({
       ...execution,
       execute: (attempt, taskEvents) => executeTaskHandler({ ...execution, attempt, taskEvents, conversation }),

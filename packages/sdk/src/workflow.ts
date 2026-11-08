@@ -361,7 +361,7 @@ export type TaskWorkload = {
   limits: {
     app: { backgroundMaxConcurrent: number; interactiveAdditional: 1 };
     host: { available: false } | {
-      available: true; scope: "current-host-process";
+      available: true; scope: "controller-host-process"; observedAt: string;
       maxConcurrent: number; backgroundMaxConcurrent: number;
       reservedSlots: number; waitingAcquisitions: number;
     };
@@ -369,7 +369,13 @@ export type TaskWorkload = {
     agent: { available: false };
     root: { available: false };
   };
-  queueWait: { available: false };
+  /** Queue notification to this dispatch, including pause/prerequisite time.
+   * Not a fleet latency, a durable ready-since timestamp or utilization. */
+  queueWait: { available: false } | {
+    available: true; scope: "current-task-dispatch";
+    enqueuedAt: number; dispatchedAt: number; elapsedMs: number;
+    lifetime: "current-controller";
+  };
   resourceHealth: { available: false };
 };
 

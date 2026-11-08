@@ -46,10 +46,18 @@ they do not establish unread work, fulfillment or execution utilization. Graph
 expansion is capped; an observation that exceeds the cap fails visibly and can
 be retried with a smaller page. Attempt history is not loaded.
 
-Host limits are available only in the controller process. Isolated attempt
-workers report them unavailable; agent/root limits, ready-wait timing and
-physical resource health remain unavailable in this increment. Missing facts
-do not establish spare capacity. No shared credit accounting is installed.
+Host limits originate in the controller process. Its dispatch carries a bounded
+capacity observation into the worker with its own `observedAt`; a later workload
+read never makes that old observation fresh. Workers without a parent observation
+report it unavailable and never substitute their private limiter. Agent/root
+limits and physical resource health remain unavailable. Missing facts do not
+establish spare capacity. No shared credit accounting is installed.
+
+Attempt-bound reads also expose the observed queue notification-to-dispatch
+interval for this Task. It includes pause/prerequisite time and lasts only for
+the current controller; it is not fleet queue latency or time proven runnable.
+Reads outside that attempt report queue timing unavailable. The Host observation,
+dispatch interval and durable Task page retain their distinct observation times.
 
 Set `MAY_TASK_WORKLOAD_FEEDBACK_APP` to one installed App ID to opt that App's
 attempts into an agent-scoped starting observation. It is disabled by default;

@@ -1,5 +1,6 @@
 import { AppTaskQueue, type AppTaskLane, type AppTaskQueueOptions } from "./queue.js";
 import type { HostCapacity } from "../scheduling/host-capacity.js";
+import type { TaskWorkload } from "@may-agent/sdk";
 
 const hostPumpQueue: Array<{ owner: object; pump: () => void }> = [];
 let hostPumpScheduled = false;
@@ -47,6 +48,8 @@ export type AppTaskDispatch = {
   startedAt: number;
   readyWaitMs: number;
   lane: AppTaskLane;
+  /** Parent Host observation carried unchanged across the attempt boundary. */
+  hostCapacityAtDispatch?: Extract<TaskWorkload["limits"]["host"], { available: true }>;
 };
 
 /** One level-based reconciliation worker pool for one App. */
@@ -235,6 +238,7 @@ export class AppTaskController {
       startedAt,
       readyWaitMs: Math.max(0, startedAt - enqueuedAt),
       lane,
+      ...(this.options.capacity ? { hostCapacityAtDispatch: this.options.capacity.workloadSnapshot() } : {}),
     };
     // An async boundary also captures callbacks that throw before returning a Promise.
     const reconcile = async () => {

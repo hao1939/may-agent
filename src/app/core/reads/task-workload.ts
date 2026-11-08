@@ -5,16 +5,21 @@ import { readAppTaskAgent } from "../tasks/app-task-reconciler.js";
 import { listRuntimeTaskViews } from "./app-read.js";
 import type { AppTaskRuntimeOptions } from "../tasks/runtime-options.js";
 import type { AppTaskRuntimeDescriptor } from "../tasks/runtime-definition.js";
+import type { AppTaskDispatch } from "../tasks/controller.js";
 
 export type TaskWorkloadSource = {
   /** Absent in an isolated attempt worker: its limiter is not Host authority. */
   host?: () => TaskWorkload["limits"]["host"];
   foregroundTaskIds?: (taskIds: readonly string[]) => ReadonlySet<string>;
+  dispatch?: AppTaskDispatch;
 };
 
-export function runtimeWorkloadSource(opts: AppTaskRuntimeOptions, descriptor?: AppTaskRuntimeDescriptor): TaskWorkloadSource {
+export function runtimeWorkloadSource(opts: AppTaskRuntimeOptions, descriptor?: AppTaskRuntimeDescriptor, dispatch?: AppTaskDispatch): TaskWorkloadSource {
   return {
-    ...(opts.installControllers === false ? {} : { host: () => opts.hostCapacity.workloadSnapshot() }),
+    ...(opts.installControllers === false
+      ? dispatch?.hostCapacityAtDispatch ? { host: () => dispatch.hostCapacityAtDispatch! } : {}
+      : { host: () => opts.hostCapacity.workloadSnapshot() }),
+    ...(dispatch ? { dispatch } : {}),
     ...(descriptor?.app.conversation ? { foregroundTaskIds: (taskIds: readonly string[]) =>
       new Set(taskIds.filter(id => descriptor.resourceStore.hasPendingHumanConversationInput(id))) } : {}),
   };
@@ -58,10 +63,16 @@ export function readTaskWorkload(
       examples: { blockers: [], dispositionCandidates: [], truncated: false },
       limits: {
         app: { backgroundMaxConcurrent: config.maxConcurrent, interactiveAdditional: 1 },
-        host: opts.workloadSource?.host?.() ?? { available: false },
+        host: structuredClone(opts.workloadSource?.host?.() ?? { available: false }),
         agent: { available: false }, root: { available: false },
       },
-      queueWait: { available: false },
+      queueWait: opts.workloadSource?.dispatch ? {
+        available: true, scope: "current-task-dispatch",
+        enqueuedAt: opts.workloadSource.dispatch.enqueuedAt,
+        dispatchedAt: opts.workloadSource.dispatch.startedAt,
+        elapsedMs: opts.workloadSource.dispatch.readyWaitMs,
+        lifetime: "current-controller",
+      } : { available: false },
       resourceHealth: { available: false },
     };
     const blocker = (taskId: string, kind: TaskWorkload["examples"]["blockers"][number]["kind"]) => {

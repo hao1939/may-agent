@@ -1,5 +1,5 @@
 import { describe, expect, it, spyOn } from "bun:test";
-import { AppTaskController } from "./controller.js";
+import { AppTaskController, type AppTaskDispatch } from "./controller.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";
 
 async function waitUntil(predicate: () => boolean, timeoutMs = 1_000): Promise<void> {
@@ -11,6 +11,19 @@ async function waitUntil(predicate: () => boolean, timeoutMs = 1_000): Promise<v
 }
 
 describe("AppTaskController", () => {
+  it("captures the authoritative Host observation after acquiring its dispatch place", async () => {
+    const capacity = new HostCapacity(4);
+    let observed: AppTaskDispatch | undefined;
+    const controller = new AppTaskController({ maxConcurrent: 2, capacity,
+      reconcile: async (_taskId, dispatch) => { observed = dispatch; } });
+    try {
+      controller.enqueue("work");
+      await waitUntil(() => Boolean(observed));
+      expect(observed!.hostCapacityAtDispatch).toMatchObject({ available: true,
+        scope: "controller-host-process", maxConcurrent: 4, reservedSlots: 1, observedAt: expect.any(String) });
+      expect(observed!.readyWaitMs).toBeGreaterThanOrEqual(0);
+    } finally { controller.close(); await controller.whenDrained(); }
+  });
   it("holds queued work behind an explicit startup gate", async () => {
     const started: string[] = [];
     let openGate = () => {};

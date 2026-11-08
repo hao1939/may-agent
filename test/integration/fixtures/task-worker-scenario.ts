@@ -343,6 +343,40 @@ async function retryWhenDue(f: ReturnType<typeof fixture>, agent: string) {
 }
 
 const scenarios: Record<string, () => Promise<void>> = {
+  async workloadFeedback() {
+    const f = fixture("owner");
+    const previousPilot = process.env.MAY_TASK_WORKLOAD_FEEDBACK_APP;
+    process.env.MAY_TASK_WORKLOAD_FEEDBACK_APP = "sample";
+    const host = new HostCapacity(5).workloadSnapshot();
+    host.observedAt = "2026-11-09T00:00:00.000Z";
+    f.request.dispatch.hostCapacityAtDispatch = host;
+    f.request.dispatch.readyWaitMs = 123;
+    writeFileSync(join(f.appDir, "agents", "owner", "workflows", "probe.ts"), `
+      export const name = "probe";
+      export const description = "Read the bounded attempt workload";
+      export async function execute(ctx) {
+        return ctx.done("Observed workload", { state: "converged", summary: "Observed workload", facts: [],
+          result: { workload: ctx.reconciliation.workload } });
+      }
+    `);
+    try {
+      await run(f);
+      const current = f.store.readTask("work/one")!;
+      assert.equal(current.status.phase, "converged", JSON.stringify(current.status));
+      const observed = current.status.result!.workload as {
+        limits: { host: unknown; app: { backgroundMaxConcurrent: number } };
+        queueWait: { elapsedMs: number; lifetime: string }; counts: { running: number };
+      };
+      assert.deepEqual(observed.limits.host, host);
+      assert.equal(observed.limits.app.backgroundMaxConcurrent, 1);
+      assert.equal(observed.queueWait.elapsedMs, 123);
+      assert.equal(observed.queueWait.lifetime, "current-controller");
+      assert.equal(observed.counts.running, 1);
+    } finally {
+      if (previousPilot === undefined) delete process.env.MAY_TASK_WORKLOAD_FEEDBACK_APP;
+      else process.env.MAY_TASK_WORKLOAD_FEEDBACK_APP = previousPilot;
+    }
+  },
   observationWithoutConsumer: () => observationDelivery("none"),
   observationAccepted: () => observationDelivery("accept"),
   observationFailed: () => observationDelivery("fail"),

@@ -117,7 +117,8 @@ export class HostCapacity {
   workloadSnapshot() {
     return {
       available: true as const,
-      scope: "current-host-process" as const,
+      scope: "controller-host-process" as const,
+      observedAt: new Date().toISOString(),
       maxConcurrent: this.limit,
       backgroundMaxConcurrent: this.backgroundLimit,
       reservedSlots: this.running,

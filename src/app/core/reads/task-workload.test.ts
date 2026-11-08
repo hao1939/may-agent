@@ -152,12 +152,32 @@ test("SDK reads share the projection and isolated worker limiters never masquera
   const release = capacity.tryAcquire()!;
   const opts = { hostCapacity: capacity, installControllers: true } as AppTaskRuntimeOptions;
   const read = createRuntimeAppRead({ getDb: () => f.db, taskStateConfig: f.config, workloadSource: runtimeWorkloadSource(opts) });
-  expect((await read.tasks.workload!()).limits.host).toEqual({ available: true, scope: "current-host-process",
+  expect((await read.tasks.workload!()).limits.host).toEqual({ available: true, scope: "controller-host-process", observedAt: expect.any(String),
     maxConcurrent: 4, backgroundMaxConcurrent: 3, reservedSlots: 1, waitingAcquisitions: 0 });
   const worker = readTaskWorkload({ taskStateConfig: f.config, workloadSource: runtimeWorkloadSource({ ...opts, installControllers: false }) });
   expect(worker.limits.host).toEqual({ available: false });
   release();
   await expect(createRuntimeAppRead({ getDb: () => f.db }).tasks.workload!()).rejects.toThrow("App scope");
+});
+
+test("worker feedback preserves parent capacity time and dispatch timing instead of using its private limiter", () => {
+  const f = fixture(); f.add("work");
+  const parent = new HostCapacity(5);
+  const release = parent.tryAcquire()!;
+  const host = parent.workloadSnapshot();
+  const dispatch = { enqueuedAt: 100, startedAt: 250, readyWaitMs: 150, lane: "normal" as const, hostCapacityAtDispatch: host };
+  const worker = { hostCapacity: new HostCapacity(1), installControllers: false } as AppTaskRuntimeOptions;
+  const read = () => readTaskWorkload({ taskStateConfig: f.config, workloadSource: runtimeWorkloadSource(worker, undefined, dispatch) });
+  release(); // A subsequent read cannot present this older parent snapshot as fresh.
+  const observation = read();
+  expect(observation.limits.host).toEqual(host);
+  expect(observation.queueWait).toEqual({ available: true, scope: "current-task-dispatch", enqueuedAt: 100, dispatchedAt: 250, elapsedMs: 150, lifetime: "current-controller" });
+  if (!observation.limits.host.available) throw new Error("Missing parent observation");
+  observation.limits.host.reservedSlots = 999;
+  expect(read().limits.host).toEqual(host);
+  const noParent = readTaskWorkload({ taskStateConfig: f.config, workloadSource: runtimeWorkloadSource(worker) });
+  expect(noParent.limits.host).toEqual({ available: false });
+  expect(noParent.queueWait).toEqual({ available: false });
 });
 
 test("the scoped model tool exposes the same facts and rejects unavailable reads", async () => {

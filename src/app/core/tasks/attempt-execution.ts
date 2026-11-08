@@ -57,6 +57,7 @@ const APP_TASK_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
 
 /** Core-owned input for one claimed execution, before choosing its adapter. */
 export type TaskAttemptInput = {
+  dispatch?: import("./controller.js").AppTaskDispatch;
   opts: AppTaskRuntimeOptions;
   descriptor: AppTaskRuntimeDescriptor;
   claim: AppTaskClaim;
@@ -173,7 +174,7 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
     getDb: () => descriptor.resourceStore.db,
     taskStateConfig: appTaskConfig(descriptor),
     readOutcomes: opts.readOutcomes,
-    workloadSource: runtimeWorkloadSource(opts, descriptor),
+    workloadSource: runtimeWorkloadSource(opts, descriptor, input.dispatch),
   };
   const taskReads = createRuntimeAppRead(taskReadOptions).tasks;
   let workload: TaskAttempt["workload"];
