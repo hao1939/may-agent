@@ -164,6 +164,10 @@ export async function prepareAppTaskRuntimeDescriptors(opts: {
   taskAppIds?: readonly string[];
   appRegistry?: AppRegistry;
   appRegistrySnapshot?: AppRegistrySnapshot;
+  projectRoot?: string;
+  agentsRoot?: string;
+  sharedRoot?: string;
+  workflows?: AppTaskRuntimeOptions["workflows"];
 }): Promise<AppTaskRuntimeDescriptor[]> {
   const descriptors: AppTaskRuntimeDescriptor[] = [];
   const ids = new Set<string>();
@@ -175,6 +179,20 @@ export async function prepareAppTaskRuntimeDescriptors(opts: {
     if (selectedIds && !selectedIds.has(id)) continue;
     if (ids.has(id)) throw new Error(`Duplicate App task runtime id: ${id}`);
     ids.add(id);
+    const coordination = app.tasks?.coordination;
+    if (coordination) {
+      if (typeof coordination.taskId !== "string" || !coordination.taskId.trim() || coordination.taskId !== coordination.taskId.trim() ||
+          typeof coordination.workflow !== "string" || !coordination.workflow.trim() || coordination.workflow !== coordination.workflow.trim() ||
+          !Number.isSafeInteger(coordination.maxAttemptMs) || coordination.maxAttemptMs < 1_000 || coordination.maxAttemptMs > 120_000)
+        throw new Error(`App ${id} coordination requires an exact Task/workflow and a 1–120 second attempt bound`);
+      if (!opts.workflows) throw new Error(`App ${id} coordination workflow runner is unavailable`);
+      const inspected = await opts.workflows.inspect({
+        source: { ...opts, projectRoot: opts.projectRoot ?? opts.projectsRoot }, appDir,
+        agent: configuredAppAgent(app, appDir), workflow: coordination.workflow,
+      });
+      if (!inspected.available || inspected.error || inspected.workspace !== "shared")
+        throw new Error(`App ${id} coordination workflow must use the existing shared workspace`);
+    }
     const resourceStore = discoverAppTaskResourceStore(opts.persistDir, app, appDir);
     const descriptor: AppTaskRuntimeDescriptor = {
       id,

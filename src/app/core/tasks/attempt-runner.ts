@@ -56,6 +56,7 @@ import {
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
 import type { PreparedTaskWorkspace } from "./workspace.js";
 import { recordTaskCheck } from "./task-check-observations.js";
+import { isTrustedTaskCoordination } from "./task-coordination.js";
 
 export type AppTaskTiming = {
   dispatch: AppTaskDispatch;
@@ -87,6 +88,7 @@ export async function runTaskAttempt(input: {
       taskId: input.taskId,
       appAgent: descriptor.agent,
       handler: "auto",
+      ...(input.dispatch.coordination ? { canUseCoordinationReserve: (resource, agent) => isTrustedTaskCoordination(descriptor, resource, agent) } : {}),
       reason: input.reason ?? "task-controller",
       recoverPreviousSession: (attempt) => {
         if (attempt.taskId !== input.taskId) {
@@ -230,6 +232,8 @@ async function runClaimedTask(
         : undefined;
     const workflowNeedsWorktree =
       workflowWorkspace === "task" || (typeof workflowWorkspace === "object" && workflowWorkspace.kind === "task");
+    if (dispatch.coordination && workflowWorkspace !== "shared")
+      throw new Error("Coordination reserve requires the installed shared-workspace workflow");
     // Both execution paths share workspace lineage, admission fencing, and
     // failure handling. Only the workflow may override the App's base branch.
     if (

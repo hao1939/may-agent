@@ -38,6 +38,11 @@ const scenarios: Record<string, () => void | Promise<void>> = {
       { ...host, reservedSlots: -1 }, { ...host, maxConcurrent: 0 }, { ...host, waitingAcquisitions: 0.5 }])
       expect(() => parseTaskAttemptProcessRequest(JSON.stringify({ ...request, dispatch: { ...request.dispatch, hostCapacityAtDispatch: invalid } })))
         .toThrow("invalid Host capacity observation");
+    const coordination = { ...request, dispatch: { ...request.dispatch, coordination: true } };
+    expect(parseTaskAttemptProcessRequest(JSON.stringify(coordination))).toEqual(coordination);
+    for (const invalid of [false, "true", 1, null])
+      expect(() => parseTaskAttemptProcessRequest(JSON.stringify({ ...request, dispatch: { ...request.dispatch, coordination: invalid } })))
+        .toThrow("invalid dispatch context");
     const pinned = {
       ...request,
       definitionSource: {

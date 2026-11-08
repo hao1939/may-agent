@@ -22,7 +22,10 @@ export function readAppContract(app: Readonly<AppDefinition>): AppContract {
     agent: (app.agent ?? app.owner)!.trim().replace(/^agent:/, ""),
     inputSchema: structuredClone(app.inputSchema),
     ...(app.tasks || app.conversation ? { taskReads: { workload: 1 as const } } : {}),
-    ...(app.tasks?.closeOnResult ? { taskPolicy: { closeOnResult: true as const } } : {}),
+    ...(app.tasks?.closeOnResult || app.tasks?.coordination ? { taskPolicy: {
+      ...(app.tasks.closeOnResult ? { closeOnResult: true as const } : {}),
+      ...(app.tasks.coordination ? { coordination: structuredClone(app.tasks.coordination) } : {}),
+    } } : {}),
     observations: (app.observers ?? []).flatMap((observer) =>
       "inspect" in observer
         ? [

@@ -443,3 +443,23 @@ Neither transition changes the facts in historical accepted attempts.
 New Task contracts omit mode and use `incomplete` for unsuccessful reports.
 Historical labels are normalized only when reading retained resources/attempts;
 new authoring must use the current contract. Upgrade Host and App code together.
+
+
+An installed App may declare one `tasks.coordination` policy with an exact Task ID,
+workflow and `maxAttemptMs` from 1,000 through 120,000. It selects an ordinary
+App-created Task assigned to the App's responsible agent. The Host never creates
+that Task. Missing historical creator provenance, child-created work, executor
+changes or a different workflow do not grant eligibility. Preparation requires
+an available `workspace: "shared"` workflow, and the worker rechecks that contract
+before workspace preparation. Its installed timeout is a hard ceiling even if
+the workflow exports a longer default.
+
+This path shares the existing additional App place and Host foreground reserve
+with human interaction; it adds no capacity pool. Human input has precedence at
+dispatch boundaries. A one-place Host interleaves attempts and does not invent an
+extra slot. Coordination honors App pause. Eligibility is checked again against
+the claimed resource version before any attempt or recovery write. It grants no
+new Task editing, closure, funding or portfolio-management capabilities. Apps own
+the bounded workflow, useful triggers, unchanged-pass coalescing and acceptance.
+Protected credit accounting is separate; this declaration only bounds dispatch
+and workflow duration.

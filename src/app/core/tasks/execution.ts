@@ -109,6 +109,8 @@ export type TaskWorkflowInspection = {
 };
 
 export type TaskWorkflowInput = TaskExecutionInput & {
+  /** Host ceiling that a workflow declaration cannot extend. */
+  executionTimeoutLimitMs?: number;
   source: TaskDefinitionSource;
   taskEvents: AppTaskEvents;
   capability: WorkflowCapability;

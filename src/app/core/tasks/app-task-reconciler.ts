@@ -2769,6 +2769,8 @@ export function claimObservedAppTask(
     handler: string;
     reason?: string;
     isAgentRunnable?: (agent: string) => boolean;
+    /** Recheck a trusted reserve dispatch against the exact resource fence. */
+    canUseCoordinationReserve?: (resource: AppTaskResource, agent: string) => boolean;
     /** Validate and drain the retained session before replacement ownership commits. */
     recoverPreviousSession?: (attempt: AppTaskAttempt) => boolean;
     recoverSessionHandoff?: (attempt: AppTaskAttempt | undefined) => AppTaskClaim["handoff"];
@@ -2802,6 +2804,10 @@ export function claimObservedAppTask(
   if (!config.resourceStore.allowsTaskExecution(input.taskId)) {
     return { kind: "waiting", taskId: input.taskId, conditionIds: [] };
   }
+  const intent = resourceIntent(resource);
+  const agent = resolvedAgent(tree, intent, input.appAgent);
+  if (input.canUseCoordinationReserve && !input.canUseCoordinationReserve(resource, agent))
+    return { kind: "waiting", taskId: input.taskId, conditionIds: [] };
   // Adoption writes once. Reread its result and current wakes before claiming or
   // acknowledging a wait; the earlier store revision no longer describes them.
   if (exhaustRetainedFailures(config, tree, resource)) return claimObservedAppTask(config, input);
@@ -2826,8 +2832,6 @@ export function claimObservedAppTask(
   const mutationScope = beginResourceMutationScopeForTasks(tree, [resource.metadata.id]);
   const initialConditionIds = new Set(resource.status.conditionIds ?? []);
   const changedAttempts = new Set<AppTaskAttempt>();
-  const intent = resourceIntent(resource);
-  const agent = resolvedAgent(tree, intent, input.appAgent);
   let declaredOutputPaths: string[] = [];
   let outputAdmissionError: string | undefined;
   try {

@@ -676,6 +676,8 @@ export interface RunWorkflowDirectOpts {
   reconciliation?: TaskReconciliationContext;
   /** Maximum wall-clock duration for the complete workflow execution. */
   executionTimeoutMs?: number;
+  /** Host ceiling; workflow declarations may shorten but never extend this bound. */
+  executionTimeoutLimitMs?: number;
   /** Best-effort stop signal for the exact Task attempt owning this run. */
   signal?: AbortSignal;
 }
@@ -719,6 +721,7 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
     ...(opts.workflowInput !== undefined ? { workflowInput: opts.workflowInput } : {}),
     ...(opts.reconciliation ? { reconciliation: opts.reconciliation } : {}),
     executionTimeoutMs: opts.executionTimeoutMs,
+    executionTimeoutLimitMs: opts.executionTimeoutLimitMs,
     signal: opts.signal,
   });
 
@@ -805,6 +808,8 @@ export interface WorkflowToolOptions {
   reconciliation?: TaskReconciliationContext;
   /** Maximum wall-clock duration for the complete workflow execution. */
   executionTimeoutMs?: number;
+  /** Host ceiling; workflow declarations may shorten but never extend this bound. */
+  executionTimeoutLimitMs?: number;
   /** Best-effort stop signal for the exact Task attempt owning this run. */
   signal?: AbortSignal;
   /** Trace inherited from the event that started this workflow. */
@@ -1087,7 +1092,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       const maxInjected = opts.maxInjectedSteps ?? DEFAULT_MAX_INJECTED_STEPS;
       const injectedStepCount = { value: 0 };
       const guardWarnings: string[] = [];
-      const executionTimeoutMs = executionTimeout(workflow.executionTimeoutMs ?? opts.executionTimeoutMs);
+      const declaredTimeoutMs = executionTimeout(workflow.executionTimeoutMs ?? opts.executionTimeoutMs);
+      const executionTimeoutMs = opts.executionTimeoutLimitMs === undefined
+        ? declaredTimeoutMs : Math.min(declaredTimeoutMs, executionTimeout(opts.executionTimeoutLimitMs));
       const executionDeadlineAt = run.startedAt + executionTimeoutMs;
       const executionTimeoutMessage = `Workflow "${workflow.name}" timed out after ${executionTimeoutMs}ms`;
       const assertExecutionActive = (): void => {

@@ -404,6 +404,7 @@ export function parseTaskAttemptProcessRequest(raw: string): TaskAttemptProcessR
     !Number.isFinite(dispatch.enqueuedAt) ||
     !Number.isFinite(dispatch.startedAt) ||
     !Number.isFinite(dispatch.readyWaitMs) ||
+    (dispatch.coordination !== undefined && dispatch.coordination !== true) ||
     (dispatch.lane !== "human" && dispatch.lane !== "normal")
   ) {
     throw new Error("Task worker request has an invalid dispatch context");

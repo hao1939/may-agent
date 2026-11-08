@@ -20,6 +20,7 @@ describe("real Task worker boundary", () => {
   ])("%s: %s", (scenario) => runTaskWorkerProbe("./task-interaction-scenario.ts", scenario), 20_000);
 
   it.each([
+    ["coordination", "runs shared coordination with an installed timeout ceiling in a real worker"],
     ["workloadFeedback", "preserves parent capacity and queue observations in real workflow attempts"],
     ["observationWithoutConsumer", "accepts worker observations after parent routing without another journal row"],
     ["observationAccepted", "records the parent consumer's acceptance of worker observations"],

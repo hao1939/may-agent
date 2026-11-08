@@ -180,6 +180,7 @@ async function executeTaskWorkflow(
       trace,
       workflowInput: taskDetail.input ?? {},
       executionTimeoutMs: input.executionTimeoutMs,
+      executionTimeoutLimitMs: input.executionTimeoutLimitMs,
       signal: attempt.signal,
     });
     const done = result.type === "done";

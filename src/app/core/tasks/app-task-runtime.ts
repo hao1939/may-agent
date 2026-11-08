@@ -27,6 +27,7 @@ import { canonicalAppEvent } from "../../canonical-app-event.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "../events/bus.js";
 import { createRuntimeTaskRead, readRuntimeTaskView } from "../reads/app-read.js";
 import { runtimeWorkloadSource } from "../reads/task-workload.js";
+import { coordinationTaskIds } from "./task-coordination.js";
 import { readInstalledAppContract } from "../reads/app-contract.js";
 import type { AppTurnTarget, CreateAppInboxItem } from "../state/app-inbox-store.js";
 import { getAppInboxItem } from "../state/app-inbox-store.js";
@@ -589,6 +590,7 @@ function installConventionTaskControllers(
       maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
       capacity: opts.hostCapacity,
       readScheduling: () => ({
+        coordinationTaskIds: coordinationTaskIds(binding.descriptor),
         backgroundPaused: binding.descriptor.resourceStore.projectLifecycle() !== "active",
         foregroundTaskIds: binding.descriptor.app.conversation
           ? binding.descriptor.resourceStore.pendingHumanConversationTaskIds()

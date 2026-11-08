@@ -127,6 +127,8 @@ export async function runTaskWorkflow(
       app: descriptor.app,
     },
     executionTimeoutMs: APP_TASK_WORKFLOW_TIMEOUT_MS,
+    ...(input.dispatch?.coordination
+      ? { executionTimeoutLimitMs: descriptor.app.tasks!.coordination!.maxAttemptMs } : {}),
   });
 }
 
