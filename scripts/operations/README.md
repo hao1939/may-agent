@@ -102,8 +102,9 @@ App removal alone never authorizes cancellation. First retain the owner's
 exact disposition and any independently continuing work in other Apps.
 
 The plan names every nonterminal Task and every unfinished inbox row of one
-retired App (at most 1,000 combined). Tasks must have no current attempt. Each
-Task includes the exact stored `resource_json` and `trigger_json`; each inbox
+retired App (at most 1,000 combined, including admission preimages below).
+Tasks must have no current attempt. Each Task includes the exact stored
+`resource_json` and `trigger_json`; each inbox
 entry includes the complete raw `SELECT * FROM app_inbox_items` row. Reasons
 must identify the reviewed withdrawal decision, not a phase-based heuristic.
 Do not commit these private preimages or installation data.
@@ -127,7 +128,7 @@ must not be in the plan. A revised Task newer than its receipt remains in the ce
 ```
 
 Only legacy inbox rows with `pending` or `handling` status, no result and no
-Task/Conversation admission or target are supported. Their parent, source,
+Task/Conversation attachment or target are supported. Their parent, source,
 original event, session, wait, recovery and body remain unchanged. Withdrawal
 sets status to `done`, handling to `stopped`, and result to null; increments the
 lease generation; clears scheduling/lease fields; and records terminal times.
@@ -135,8 +136,39 @@ A retained session wait is historical evidence, not proof of quiescence.
 
 Missing inbox links alone do not prove absence of admission. The transaction
 also checks durable admissions using canonical and historical input keys and
-the retained request identity. Any admission, including an accepted answer
-whose inbox link was never projected, refuses withdrawal without changing state.
+the retained request identity. By default any admission, including an accepted
+answer whose inbox link was never projected, refuses withdrawal without
+changing state.
+
+For an explicitly withdrawn, unanswered legacy caller, the operator can add
+`admissionWithdrawal` to that input entry. This is a separate reviewed decision
+to end the caller's requirement unfulfilled; a Task's cancellation or completion
+alone does not authorize it. Preserve all independent continuing obligations.
+
+```ts
+admissionWithdrawal: {
+  decision: "withdraw-unfulfilled",
+  rows: [{ app_id: "retired-example", task_id: "<exact admission key>",
+    admission_json: "<exact stored admission_json bytes>" }]
+}
+```
+
+The rows must be the complete exact census of that input's durable admissions,
+including historical aliases and retained request identities. Different Task
+and generation bindings may coexist; the operation never chooses one as the
+answer authority. Every binding must name retained Task/receipt/cancellation
+authority at least as new as its generation, with no current Task attempt.
+Bound answers, accepted converged attempts for the admitted generation, and
+completion receipts for that generation refuse withdrawal and require separate
+exact answer settlement. A newer Task result cannot answer an older input.
+
+Withdrawal retains every admission byte, Task completion receipt and accepted
+attempt. The inbox row becomes stopped with a null result, preserving its caller
+chain and original wait as history. It does not publish an answer, fabricate
+fulfillment, reattach an alias, delete admission authority, or satisfy caller
+Conditions. Missing, added, changed, duplicated or foreign admissions reject
+the whole transaction, including during replay. The full plan digest binds this
+explicit withdrawal decision and all its admission preimages.
 
 An input-only plan can inspect an App that never activated Task resource
 authority, without creating metadata or activating a seed. The complete Task

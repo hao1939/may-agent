@@ -1,7 +1,7 @@
 import { isDeepStrictEqual } from "node:util";
 import { createHash } from "node:crypto";
 import { stateTransaction } from "../../../lib/db/transaction.js";
-import type { AppTaskContext } from "../tasks/app-task-store.js";
+import type { AppTaskAdmission, AppTaskContext } from "../tasks/app-task-store.js";
 import { cancelAppTask } from "../tasks/app-task-reconciler.js";
 import { parseTaskResource } from "./app-task-resource-store.js";
 
@@ -12,7 +12,14 @@ export type RetiredAppRetirementPlan = {
   quiesced: true;
   appRetired: true;
   tasks: Array<{ taskId: string; resourceJson: string; triggerJson: string | null; reason: string }>;
-  inputs: Array<{ row: Record<string, unknown>; reason: string }>;
+  inputs: Array<{
+    row: Record<string, unknown>;
+    reason: string;
+    admissionWithdrawal?: {
+      decision: "withdraw-unfulfilled";
+      rows: Array<{ app_id: string; task_id: string; admission_json: string }>;
+    };
+  }>;
 };
 
 type RetirementResult = { status: "would-retire" | "retired" | "already-retired"; tasks: number; inputs: number };
@@ -129,6 +136,7 @@ export function retireAppState(
       );
 
       const remainingInputs: typeof plan.inputs = [];
+      let reviewedRecords = plan.tasks.length + plan.inputs.length;
       for (const input of plan.inputs) {
         const expected = input.row;
         if (!expected || typeof expected !== "object") throw new Error("Reviewed input row is required");
@@ -146,20 +154,20 @@ export function retireAppState(
           expected.target_task_id != null
         )
           throw new Error(
-            "Retirement only supports unresolved legacy inputs without Task/Conversation admission or a result",
+            "Retirement only supports unresolved legacy inputs without Task/Conversation attachments or a result",
           );
         // Older Hosts could commit admission (and even its accepted answer)
         // before projecting the inbox attachment. Check that authority directly;
         // aliases may lack an event, while opaque keys can retain the input id.
         const desiredPrefix = `task:${expected.id}:desired:`;
         const existingPrefix = `task:${expected.id}:existing:`;
-        const admission = db
+        const admissions = db
           .prepare(
-            `SELECT 1 FROM app_task_admissions WHERE app_id=? AND (
+            `SELECT app_id, task_id, admission_json FROM app_task_admissions WHERE app_id=? AND (
           task_id IN (?, ?, ?) OR substr(task_id, 1, length(?))=? OR substr(task_id, 1, length(?))=?
-          OR json_extract(admission_json, '$.inputEvent.data.request.id')=?) LIMIT 1`,
+          OR json_extract(admission_json, '$.inputEvent.data.request.id')=?) LIMIT 1001`,
           )
-          .get(
+          .all(
             plan.appId,
             `task:${expected.id}`,
             `conversation-input:${expected.id}`,
@@ -170,7 +178,69 @@ export function retireAppState(
             existingPrefix,
             expected.id,
           );
-        if (admission) throw new Error(`Reviewed input has durable admission evidence: ${expected.id}`);
+        const withdrawal = input.admissionWithdrawal;
+        if (withdrawal === undefined) {
+          if (admissions.length) throw new Error(`Reviewed input has durable admission evidence: ${expected.id}`);
+        } else {
+          if (
+            !withdrawal ||
+            withdrawal.decision !== "withdraw-unfulfilled" ||
+            !Array.isArray(withdrawal.rows) ||
+            !withdrawal.rows.length ||
+            (reviewedRecords += withdrawal.rows.length) > 1000
+          )
+            throw new Error("Admitted withdrawal requires a bounded explicit unfulfilled decision");
+          for (const row of withdrawal.rows) {
+            if (!row || row.app_id !== plan.appId) throw new Error("Admission withdrawal belongs to another App");
+            required(row.task_id, "reviewed admission key");
+            required(row.admission_json, "reviewed admission bytes");
+          }
+          sameIds(
+            admissions.map((row) => String(row.task_id)),
+            withdrawal.rows.map((row) => row.task_id),
+            "Input admission",
+          );
+          const reviewed = new Map(withdrawal.rows.map((row) => [row.task_id, row]));
+          for (const row of admissions) {
+            if (!isDeepStrictEqual(row, reviewed.get(String(row.task_id))))
+              throw new Error(`Reviewed input admission changed: ${row.task_id}`);
+            const admission = JSON.parse(String(row.admission_json)) as AppTaskAdmission;
+            required(admission?.taskId, "admitted Task identity");
+            required(admission.specHash, "admitted Task spec hash");
+            if (!Number.isSafeInteger(admission.taskGeneration) || admission.taskGeneration < 1)
+              throw new Error("Admitted Task generation is invalid");
+            if (admission.resultAttemptId != null)
+              throw new Error("An accepted admission answer must be settled before withdrawal");
+            const request = admission.inputEvent?.data as { request?: { id?: unknown } } | undefined;
+            if (request?.request?.id != null && request.request.id !== expected.id)
+              throw new Error("Admission retains a different input identity");
+            const task = store.readTask(admission.taskId);
+            const receipt = store.readReceipt(admission.taskId);
+            const terminal = store.readCancellation(admission.taskId);
+            const completed = db
+              .prepare(
+                `SELECT 1 FROM app_task_attempts
+              WHERE app_id=? AND task_id=? AND task_generation=?
+                AND json_extract(attempt_json, '$.acceptedResult.state')='converged' LIMIT 1`,
+              )
+              .get(plan.appId, admission.taskId, admission.taskGeneration);
+            if (completed || receipt?.metadata.generation === admission.taskGeneration)
+              throw new Error("Completion evidence for an admitted generation must be settled before withdrawal");
+            const generation = Math.max(
+              task?.metadata.generation ?? 0,
+              receipt?.metadata.generation ?? 0,
+              terminal?.generation ?? 0,
+            );
+            if (
+              !Number.isSafeInteger(generation) ||
+              generation < admission.taskGeneration ||
+              task?.status.currentAttemptId
+            )
+              throw new Error("Admitted Task authority is missing, older than the admission, or has a current attempt");
+          }
+          // Withdraw the caller's requirement, not one selected alias or the
+          // Task's latest answer. All admissions and accepted evidence remain.
+        }
         const current = db
           .prepare("SELECT * FROM app_inbox_items WHERE id=? AND app_id=?")
           .get(expected.id, plan.appId);

@@ -8,6 +8,7 @@ import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
 import {
   appTaskContext,
+  cancelAppTask,
   claimObservedAppTask,
   completeAppTask,
   deferAppTask,
@@ -132,6 +133,45 @@ function fixture() {
   return { root, db, context, other, store: context.resourceStore, plan };
 }
 
+function admittedFixture() {
+  const f = fixture();
+  const item = getAppInboxItem(f.db, "parent")!;
+  const admit = (taskId: string, key: string) =>
+    admitTaskInput(f.context, {
+      appId: f.plan.appId,
+      attachment: { kind: "existing", taskId },
+      idempotencyKey: key,
+      inputContext: { id: item.id, source: item.source, input: item.input },
+    });
+  admit("pending", "task:parent:existing:pending");
+  observeAppTaskIntent(f.context, {
+    appAgent: f.context.agent,
+    intent: { id: "pending", parentId: "root", outcome: "Revised controller", acceptance: ["Review new work"] },
+  });
+  admit("pending", "task:parent:desired:pending");
+  admit("waiting", "task:parent:existing:waiting");
+  for (const task of f.plan.tasks) {
+    const row = f.db
+      .prepare("SELECT resource_json, trigger_json FROM app_tasks WHERE app_id=? AND task_id=?")
+      .get(f.plan.appId, task.taskId)!;
+    task.resourceJson = String(row.resource_json);
+    task.triggerJson = row.trigger_json as string | null;
+  }
+  const input = f.plan.inputs.find((input) => input.row.id === "parent")!;
+  input.admissionWithdrawal = {
+    decision: "withdraw-unfulfilled",
+    rows: f.db
+      .prepare("SELECT * FROM app_task_admissions WHERE app_id=? ORDER BY task_id")
+      .all(f.plan.appId)
+      .map((row) => ({
+        app_id: String(row.app_id),
+        task_id: String(row.task_id),
+        admission_json: String(row.admission_json),
+      })),
+  };
+  return { ...f, input };
+}
+
 async function runCli(root: string, plan: RetiredAppRetirementPlan, dryRun = false) {
   const file = join(root, "plan.json");
   writeFileSync(file, JSON.stringify(plan));
@@ -198,6 +238,214 @@ test("dry run exercises canonical withdrawal and rolls back every table", () => 
   const before = snapshot(db);
   expect(retireAppState(context, plan, { dryRun: true })).toEqual({ status: "would-retire", tasks: 2, inputs: 2 });
   expect(snapshot(db)).toEqual(before);
+});
+
+test("explicitly withdraws an unanswered caller across historical aliases without choosing or changing admission authority", () => {
+  const { db, context, other, plan, input } = admittedFixture();
+  expect(input.admissionWithdrawal!.rows).toHaveLength(3);
+  const admissions = db.prepare("SELECT * FROM app_task_admissions ORDER BY app_id, task_id").all();
+  const attempts = db.prepare("SELECT * FROM app_task_attempts ORDER BY app_id, attempt_id").all();
+  const independent = other.resourceStore.readTaskContext({ taskIds: ["waiting"], conditionIds: ["authority"] });
+  const before = snapshot(db);
+  expect(retireAppState(context, plan, { dryRun: true }).status).toBe("would-retire");
+  expect(snapshot(db)).toEqual(before);
+  expect(retireAppState(context, plan)).toEqual({ status: "retired", tasks: 2, inputs: 2 });
+  expect(db.prepare("SELECT * FROM app_task_admissions ORDER BY app_id, task_id").all()).toEqual(admissions);
+  expect(db.prepare("SELECT * FROM app_task_attempts ORDER BY app_id, attempt_id").all()).toEqual(attempts);
+  expect(other.resourceStore.readTaskContext({ taskIds: ["waiting"], conditionIds: ["authority"] })).toEqual(
+    independent,
+  );
+  expect(getAppInboxItem(db, "parent")).toMatchObject({ status: "done", handling: { phase: "stopped" } });
+  expect(getAppInboxItem(db, "parent")!.result).toBeUndefined();
+  expect(getAppInboxItem(db, "child")!.parentId).toBe("parent");
+  const retired = snapshot(db);
+  expect(retireAppState(context, plan).status).toBe("already-retired");
+  expect(snapshot(db)).toEqual(retired);
+});
+
+for (const receiptGeneration of [1, 2])
+  test(`checks generation ${receiptGeneration} completion authority before withdrawing historical aliases`, () => {
+    const { db, context, store, plan, input } = admittedFixture();
+    expect(
+      store.commit({
+        fences: [{ taskId: "pending", resourceVersion: store.readTask("pending")!.metadata.resourceVersion }],
+        receipts: [
+          {
+            metadata: { id: "legacy-done", generation: receiptGeneration, resourceVersion: 1 },
+            specHash: "completed-later-spec",
+            parentId: "root",
+            outcome: "Later outcome completed",
+            acceptance: ["Later evidence"],
+            owner: context.agent,
+            handler: "agent",
+            summary: "Later outcome",
+            facts: [],
+            acceptanceBasis: { method: "workflow-contract", facts: [] },
+            failureFingerprints: [],
+            completedAt: "2026-01-01T00:00:00.000Z",
+          },
+        ],
+      }),
+    ).toBe(true);
+    observeAppTaskIntent(context, {
+      appAgent: context.agent,
+      intent: {
+        id: "legacy-cancelled",
+        parentId: "root",
+        outcome: "Withdrawn historical work",
+        acceptance: ["Old requirement"],
+      },
+    });
+    const task = store.readTask("legacy-cancelled")!;
+    cancelAppTask(context, {
+      appId: plan.appId,
+      taskId: "legacy-cancelled",
+      expectedGeneration: task.metadata.generation,
+      expectedResourceVersion: task.metadata.resourceVersion,
+      reason: "Already withdrawn",
+    });
+    for (const taskId of ["legacy-done", "legacy-cancelled"]) {
+      const admission = {
+        ...JSON.parse(input.admissionWithdrawal!.rows[0]!.admission_json),
+        taskId,
+        taskGeneration: 1,
+      };
+      const row = {
+        app_id: plan.appId,
+        task_id: `task:parent:existing:${taskId}`,
+        admission_json: JSON.stringify(admission),
+      };
+      db.prepare("INSERT INTO app_task_admissions(app_id, task_id, admission_json) VALUES (?, ?, ?)").run(
+        row.app_id,
+        row.task_id,
+        row.admission_json,
+      );
+      input.admissionWithdrawal!.rows.push(row);
+    }
+    const receipt = store.readReceipt("legacy-done");
+    const terminal = store.readCancellation("legacy-cancelled");
+    if (receiptGeneration === 1) {
+      const before = snapshot(db);
+      expect(() => retireAppState(context, plan)).toThrow("must be settled before withdrawal");
+      expect(snapshot(db)).toEqual(before);
+      return;
+    }
+    expect(retireAppState(context, plan).status).toBe("retired");
+    expect(store.readReceipt("legacy-done")).toEqual(receipt);
+    expect(store.readCancellation("legacy-cancelled")).toEqual(terminal);
+    expect(retireAppState(context, plan).status).toBe("already-retired");
+  });
+
+test("bounds the complete retirement plan including admission preimages", () => {
+  const { db, context, plan, input } = admittedFixture();
+  input.admissionWithdrawal!.rows = Array.from({ length: 1001 }, () => input.admissionWithdrawal!.rows[0]!);
+  const before = snapshot(db);
+  expect(() => retireAppState(context, plan)).toThrow("bounded explicit");
+  expect(snapshot(db)).toEqual(before);
+});
+
+for (const binding of ["retained", "missing"] as const)
+  test(`refuses a real accepted answer with ${binding} admission result binding even with withdrawal evidence`, () => {
+    const { db, context, plan, input } = admittedFixture();
+    const claim = claimObservedAppTask(context, { taskId: "pending", appAgent: context.agent, handler: "agent" });
+    if (claim.kind !== "claimed") throw new Error(claim.kind);
+    expect(completeAppTask(context, claim, { summary: "Exact accepted answer" }).status).toBe("applied");
+    if (binding === "missing")
+      db.prepare(
+        "UPDATE app_task_admissions SET admission_json=json_remove(admission_json, '$.resultAttemptId') WHERE app_id=?",
+      ).run(plan.appId);
+    for (const row of input.admissionWithdrawal!.rows)
+      row.admission_json = String(
+        db
+          .prepare("SELECT admission_json FROM app_task_admissions WHERE app_id=? AND task_id=?")
+          .get(row.app_id, row.task_id)!.admission_json,
+      );
+    const task = plan.tasks.find((task) => task.taskId === "pending")!;
+    const current = db
+      .prepare("SELECT resource_json, trigger_json FROM app_tasks WHERE app_id=? AND task_id=?")
+      .get(plan.appId, task.taskId)!;
+    task.resourceJson = String(current.resource_json);
+    task.triggerJson = current.trigger_json as string | null;
+    const before = snapshot(db);
+    expect(() => retireAppState(context, plan)).toThrow("must be settled before withdrawal");
+    expect(snapshot(db)).toEqual(before);
+  });
+
+for (const change of [
+  "omitted",
+  "extra",
+  "duplicate",
+  "changed",
+  "accepted",
+  "foreign",
+  "unknown-task",
+  "future-generation",
+  "wrong-request",
+  "wrong-decision",
+] as const)
+  test(`refuses ${change} admission withdrawal evidence without any writes`, () => {
+    const { db, context, plan, input } = admittedFixture();
+    const withdrawal = input.admissionWithdrawal!;
+    if (change === "omitted") withdrawal.rows.pop();
+    if (change === "extra")
+      db.prepare("INSERT INTO app_task_admissions(app_id, task_id, admission_json) VALUES (?, ?, ?)").run(
+        plan.appId,
+        "task:parent:existing:new-alias",
+        withdrawal.rows[0]!.admission_json,
+      );
+    if (change === "duplicate") withdrawal.rows.push(withdrawal.rows[0]!);
+    if (change === "changed") withdrawal.rows[0]!.admission_json += " ";
+    if (change === "wrong-decision") Object.assign(withdrawal, { decision: "mark-fulfilled" });
+    if (["accepted", "foreign", "unknown-task", "future-generation", "wrong-request"].includes(change)) {
+      const row = withdrawal.rows[0]!;
+      const admission = JSON.parse(row.admission_json);
+      if (change === "accepted") admission.resultAttemptId = "retained-answer";
+      if (change === "foreign") row.app_id = "other-app";
+      if (change === "unknown-task") admission.taskId = "missing-task";
+      if (change === "future-generation") admission.taskGeneration = 1000;
+      if (change === "wrong-request") admission.inputEvent.data.request.id = "another-input";
+      row.admission_json = JSON.stringify(admission);
+      db.prepare("UPDATE app_task_admissions SET app_id=?, admission_json=? WHERE app_id=? AND task_id=?").run(
+        row.app_id,
+        row.admission_json,
+        plan.appId,
+        row.task_id,
+      );
+    }
+    const before = snapshot(db);
+    expect(() => retireAppState(context, plan)).toThrow();
+    expect(snapshot(db)).toEqual(before);
+  });
+
+test("withdrawal evidence cannot be removed or silently acquire an answer on replay", () => {
+  const { db, context, plan, input } = admittedFixture();
+  retireAppState(context, plan);
+  const changedPlan = structuredClone(plan);
+  delete changedPlan.inputs.find((input) => input.row.id === "parent")!.admissionWithdrawal;
+  const before = snapshot(db);
+  expect(() => retireAppState(context, changedPlan)).toThrow();
+  expect(snapshot(db)).toEqual(before);
+  const row = input.admissionWithdrawal!.rows[0]!;
+  db.prepare(
+    "UPDATE app_task_admissions SET admission_json=json_set(admission_json, '$.resultAttemptId', 'late-answer') WHERE app_id=? AND task_id=?",
+  ).run(plan.appId, row.task_id);
+  const afterAnswer = snapshot(db);
+  expect(() => retireAppState(context, plan)).toThrow();
+  expect(snapshot(db)).toEqual(afterAnswer);
+});
+
+test("CLI withdraws an explicitly reviewed admitted caller and replays after reopening", async () => {
+  const { root, db, plan } = admittedFixture();
+  const before = snapshot(db);
+  const dryRun = await runCli(root, plan, true);
+  expect({ code: dryRun.code, stderr: dryRun.stderr }).toEqual({ code: 0, stderr: "" });
+  expect(JSON.parse(dryRun.stdout).status).toBe("would-retire");
+  expect(snapshot(db)).toEqual(before);
+  for (const status of ["retired", "already-retired"]) {
+    const result = await runCli(root, plan);
+    expect({ code: result.code, stderr: result.stderr }).toEqual({ code: 0, stderr: "" });
+    expect(JSON.parse(result.stdout).status).toBe(status);
+  }
 });
 
 for (const receiptGeneration of [1, 2, 3])
