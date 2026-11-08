@@ -422,8 +422,15 @@ adoption makes affected work eligible again. Confirmed old-runtime cleanup can
 settle without paying for a replacement attempt. Restoring closed receipt history
 never fabricates historical creation charges.
 
+New authored App seeds use the same creation accounting inside their bootstrap
+transaction. Funded seeds must contain fresh pending resources, with exact
+App-only creator provenance and no execution history. A shortage rolls back all
+seed Tasks, accounting and authority together. Offline retained snapshots keep
+their historical facts and require explicit adoption before funded execution;
+loading them never invents historical spending.
+
 This increment provides no production activation command or daemon option.
-Executable seed bootstrap accounting, managed helper charging, protected
+Managed helper charging, protected
 coordination funding, authorized grant/cap changes and the remaining execution reservations must be integrated before
 activation is exposed. Protected accounts currently defer until their installed
 coordination validation exists; ordinary contributions cannot inherit them.

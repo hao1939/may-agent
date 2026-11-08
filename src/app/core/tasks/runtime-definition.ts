@@ -152,7 +152,7 @@ function discoverAppTaskResourceStore(
   }
   const sourceRevision = `seed:${createHash("sha256").update(seedText).digest("hex")}`;
   const store = AppTaskResourceStore.fromDb(db, appId);
-  store.bootstrapSnapshot(tree, sourceRevision);
+  store.bootstrapSnapshot(tree, sourceRevision, [], "new-app-seed");
   const bootstrapped = AppTaskResourceStore.activeFromDb(db, appId);
   if (!bootstrapped) throw new Error(`App ${appId} task resource bootstrap did not publish authority`);
   return bootstrapped;

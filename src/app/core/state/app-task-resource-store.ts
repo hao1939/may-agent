@@ -355,11 +355,13 @@ export class AppTaskResourceStore {
       );
   }
 
-  /** Atomically establish resource authority for a brand-new App seed. */
+  /** Establish resource authority atomically. Production declares new authored
+   * seed creation explicitly; offline retained snapshots do not invent past costs. */
   bootstrapSnapshot(
     treeInput: TaskTree,
     sourceRevision: string,
     readyTaskIds: Iterable<string> = [],
+    origin: "retained-facts" | "new-app-seed" = "retained-facts",
   ): void {
     const tree = normalizeTaskStateInPlace(structuredClone(treeInput));
     if (tree.project && tree.project.replace(/\.app$/, "") !== this.appId) {
@@ -385,6 +387,8 @@ export class AppTaskResourceStore {
       ]) {
         this.db.prepare(`DELETE FROM ${table} WHERE app_id = ?`).run(this.appId);
       }
+
+      if (origin === "new-app-seed") new TaskBudgetAdmissionStore(this.db).admitNewSeed(this.appId, tree);
 
       for (const cancellation of Object.values(tree.cancellations ?? {})) this.putCancellation(cancellation);
       for (const resource of Object.values(tree.resources ?? {})) {
