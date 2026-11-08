@@ -128,3 +128,66 @@ operational evidence, not portable documentation dependencies. The identity,
 counts, limitations and resulting recommendations above are the durable review
 record. No new live inspection or agent trial was performed for the subsequent
 design refinement.
+
+## Lifecycle integration source review
+
+Reviewed candidate Host `036f4a4f757eea9f8a4492231e5541f365a8fcf6`
+([PR #398](https://github.com/hao1939/may-agent/pull/398)), based on main
+`17702b600e`. This is a separate source review from the running-system snapshot
+above; no fresh live-runtime audit or deployment was performed. The
+[workload proposal](../../proposals/agent-task-workload-model.md#integrate-with-the-existing-lifecycle)
+owns the resulting integration requirements.
+
+| Lifecycle area | Source processing |
+| --- | --- |
+| Admission/revision | `state/inbox.ts: admitTaskInput()` reaches `observeAppTaskIntent()`. Conversation admission and creator revision reuse admission; event mappings can reach observation directly. |
+| Dispatch/claim | `controller.ts` schedules under Host/App capacity; `claimObservedAppTask()` establishes durable attempt ownership. |
+| Execution/settlement | `attempt-runner.ts` serves agents, workflows, registered executors and Conversation executors; settlement reaches the shared completion, defer or failure operations. |
+| Waiting/waking | `recordAppTaskTrigger()`, `app-task-condition-tracker.ts` and `lib/db-writer.ts: persistExactTaskWake()` retain evidence/readiness through different implementations. |
+| Ending/reopening | Creator controls and the candidate App result policy persist the same closure representation. Attempt Stop remains distinct from ending the assignment. |
+| Recovery | Indexed recovery rediscovers saved work. Task-bound sessions are recovered through their Task instead of independently resuming the old session. |
+
+Static counting of top-level functions containing `commitTaskMutation()` in
+`app-task-reconciler.ts` found 25 committing functions (23 exported and two
+private), with 27 call sites. This includes leases, session association and
+workspace observations, not just lifecycle phase changes. Ordinary mutations
+reach `app-task-store.ts: commitTaskMutation()` and
+`state/app-task-resource-store.ts: commit()`, which checks the exact write fences.
+One canonical store does not mean every mutation is a work start or that every
+adapter already forwards every effect correctly.
+
+Additional writers have bounded, distinct jobs. Condition observation uses the
+shared commit while constructing its own wake changes. `DbWriter` persists an
+exact-event wake in the event transaction with direct Task-row SQL. The resource
+store also maintains derived recovery indexes and initial bootstrap state.
+`malformed-conversation-input-recovery.ts` is an explicit operational repair.
+Four offline modules (`conversation-cutover.ts`, `task-state-cutover.ts`,
+`task-receipt-cutover.ts`, `task-coordination-cutover.ts`) construct import
+mutations. These paths need explicit accounting treatment; their existence is
+not evidence of an independent normal Task lifecycle or a demonstrated defect.
+
+PR #398 exposed a concrete effects-forwarding defect: Conversation settlement
+replaced the shared completion result's cancellation list with a separate
+control list. Durable App closure survived, but its notification was lost. The
+candidate removes that separate list and duplicate type declaration; explicit
+controls append to the shared result. Both execution modes use the same App
+ending policy. Task-mode Conversation already followed direct Task settlement;
+the failing adapter was the Conversation executor path.
+
+The source opportunity is to compare wake writers against the same terminal,
+generation, replay and retry rules and preserve shared operation effects across
+adapters. This review did not demonstrate another wake defect or justify a new
+controller, generic transition framework or delivery queue. The four workload
+integration boundaries are admission, execution start, settlement with confirmed
+cleanup/recovery, and agent decision context.
+
+Verification on the candidate: `bun run check:ci` and 387 focused tests passed
+(3,655 assertions, zero failures). Coverage spans result/guarded closure,
+communication, Conversation settlement/Requests/runtime, reconciliation and Task
+revision. The notification and combined-effects regressions failed before the
+fix. Both Conversation execution modes publish closure after the reply commits,
+restart does not duplicate it, and reply-persistence failure rolls back App
+closure and explicit cancellation together. Hosted **Quality** and **Container**
+passed on the exact candidate
+([CI run](https://github.com/hao1939/may-agent/actions/runs/42482182792)). These
+checks do not implement shared budgets or demonstrate adaptive workload behavior.

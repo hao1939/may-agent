@@ -12,10 +12,9 @@ retry are bounded by default; exhaustion retains unfinished work for another
 authorized decision.
 Explicit result scope is [merged in Host #269](../archive/reviews/explicit-task-input-consideration-20260930.md); source and deployment evidence remain separate.
 Responsibility review and retention below guide App judgment; they are not an
-automatic Host closure rule. The unified public lifecycle, open/active counts and creator closure are
-implemented in the paired candidate source; installed behavior is unchanged.
-Validation and adoption boundaries are tracked in
-[Task responsibility and retention](../archive/reviews/task-lifecycle-responsibilities-20261107.md).
+automatic Host closure rule. Unified states, counts and creator closure merged in Host #392; [dated deployment evidence](../archive/reviews/agent-workload-gap-review-20261108.md) is retained.
+App result closure and shared Conversation effects remain candidate [Host #398](https://github.com/hao1939/may-agent/pull/398), without rollout established here.
+[Task responsibility and retention](../archive/reviews/task-lifecycle-responsibilities-20261107.md) retains the responsibility-review evidence.
 
 This page owns the durable Task contract. Historical `achieve`/`maintain` mode
 data does not select a lifecycle; result labels describe attempts, not lifetime.
@@ -26,11 +25,9 @@ retains historical rollout evidence.
 [Message Lifecycle](message-lifecycle.md) owns conversational behavior;
 [App Contract](agent-app.md) owns declaration and input mapping.
 
-Read the lifecycle below first. Use [the executor contract](task-attempts.md#one-attempt-interface)
-and [resource reads](#resource-read-interface) as references when implementing an adapter.
-
-
-For execution input, live actions, result fields and acceptance, read [Task attempts and results](task-attempts.md). This chapter owns the durable lifecycle and Conditions.
+Read the lifecycle below first. [Task attempts and results](task-attempts.md)
+owns execution input, live actions and result acceptance; this chapter owns the
+durable lifecycle, Conditions and [resource reads](#resource-read-interface).
 
 ## State and continuing responsibility
 
@@ -434,11 +431,13 @@ eligibility, claim an attempt, validate and apply a result, reject stale effects
 and preserve the evidence needed by recovery. These are distinct responsibilities
 within the same runtime; scheduling does not own a second Task state machine.
 
-The [one-lifecycle baseline](#one-lifecycle-baseline) makes Conversation use this
-Task execution authority as well. Accepted results and owner closure remain
-separate; shared scheduling does not merge their meanings.
-A common engine requires no Task dependency on conversational policy or merged
-product-record schema.
+Ordinary input, Conversation and delegation use the [same lifecycle](#one-lifecycle-baseline).
+Adapters retain shared operations' accepted results and effects, appending their
+own authorized effects without replacing earlier ones. Publish notifications
+after commit and recover missed hints from canonical records. Wakes do not
+grant reopening, reset retry allowances or end assignments. Attempt settlement,
+execution Stop and owner closure remain distinct; shared scheduling adds no
+Task dependency on conversational policy or merged product-record schema.
 
 The controller must not interpret task prose, choose project strategy, infer
 external truth from time, contain App-specific policy, or use `tree.json` as

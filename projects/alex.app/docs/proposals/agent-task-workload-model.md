@@ -525,6 +525,75 @@ waiting for a durable child.
 
 ## Implementation boundary and verification
 
+### Integrate with the existing lifecycle
+
+**Add workload accounting and feedback at shared operations, keeping one Task
+lifecycle and its existing authority.** The [Task contract](../2a-design/task-resource-engine.md#controller)
+owns the enduring transition and effect-preservation rules. Admission/revision,
+dispatch/claim, execution/settlement, waiting/waking, ending/reopening and recovery
+are responsibilities within that lifecycle. The
+[source review](../archive/reviews/agent-workload-gap-review-20261108.md#lifecycle-integration-source-review)
+maps their implementations and remaining convergence work; its counts describe
+one source revision, not a required number of modules.
+
+Use four integration boundaries rather than a separate workload rule in every
+message, metric, schedule, Conversation or delegation adapter:
+
+| Shared boundary | Workload behavior to add | Existing contract to preserve |
+| --- | --- | --- |
+| Task admission | Establish trusted root/sponsor attribution and charge actual new Task creation once, atomically with persistence. | Attaching input, revising an existing assignment and replaying an admission do not create another Task or creation charge. Delegation retains its exact creator and caller link. |
+| Execution start | Reserve applicable capacity and credits before dispatch; charge each started attempt or separately invoked helper under the budget policy. | Claim and cancellation fences still apply. A reservation is released without spending only when non-start is established; preparation failure after dispatch is a charged start. |
+| Settlement and confirmed cleanup/recovery | Reconcile charges and reservations against the recorded operation and release execution capacity when the execution is confirmed ended. | Preserve accepted results, exact input answers and authorized closure under their transaction fences. Task closure alone does not release still-running descendants or their reservations. Uncertain starts retain their charge until reconciled. |
+| Agent decision context | Supply the bounded workload summary to the agent deciding admission, next work or cooperation; use existing coordination for commitment review. | Read authority, freshness and unknown facts remain explicit. The Host enforces limits; the agent judges business need and priorities. Feedback does not add a queue, controller or automatic closure rule. |
+
+The existing controller releases Host capacity after execution returns, while
+the SQLite claim establishes durable Task ownership. Keep scheduling places,
+attempt ownership and work-credit spending distinct when extending this path.
+Reserve and validate through the shared Host authority; per-agent or worker
+copies are observations, not independent ledgers. Helpers must use the execution
+start boundary even when they create no durable Task.
+
+Do not charge every resource-store commit. Lease renewal, session/workspace
+bookkeeping, wake observations, reads and result settlement are not additional
+charged work starts. A caller cannot gain credits by retrying, reparenting,
+closing or reopening an assignment. The [budget policy](#budget-policy) owns the
+charge units and renewal rules.
+
+### Converge mechanics without merging decisions
+
+Normal transitions retain the existing reconciler and fenced resource-store
+commit. Conversation and other adapters preserve the shared operation's outcome
+and effects, appending their authorized effects rather than replacing earlier
+ones. The existing runner/control path publishes those effects after commit.
+Keep App result policy and recorded-creator controls within their respective
+authority; sharing mechanics grants neither worker self-closure nor automatic
+ending of standing Conversation routes.
+
+Wake persistence currently spans trigger admission, Condition observation and
+exact-event persistence. Before extending the affected paths, compare their
+closed-Task guards, generation/reopening checks, event replay identities, input
+scope and retry pacing. Share matching wake mechanics within the caller's
+existing transaction; retain the distinct relevance and authority checks of each
+source. A wake records evidence for existing work; it neither creates a Task
+nor replenishes its allowance. Recovery rediscovers retained work through the
+same operations. Readiness indexes and event notifications are scheduling hints,
+not another Task state authority.
+
+An accepted result, its caller answer and an authorized ending must survive
+adapter composition together. A failed transaction publishes none of its proposed
+effects. A lost post-commit notification can delay discovery; exact stored reads
+and indexed recovery must still recover the result. Preserve the shared effect
+result and existing recovery before proposing another delivery queue or ledger.
+
+Bootstrap, explicit operator repair and offline imports are named exceptions to
+ordinary admission, not unrestricted work-creation routes. Give imported and
+standing assignments an explicit root attribution, prior-spending treatment and
+authorized allowance before enabling accounting for them. Preserve their input,
+creator, accepted evidence and retry/closure history; accounting activation does
+not itself authorize new work, reset retries or imply a fresh grant.
+
+### Adoption and verification
+
 This proposal changes admission and accounting policy, not Task identity,
 Conditions, result correlation, creator authority or the existing recovery loop.
 Direct and App-addressed input, Conversation handoff, durable delegation and
@@ -540,12 +609,15 @@ than become unrestricted creation paths.
 | Feedback | Scoped Task/child/wait reads and App owner reviews exist. The bounded summary, delivery to the deciding agent, decision guidance and consequential-deferral feedback remain unimplemented as an integrated path. |
 | Budget | Per-call limits and usage records exist. Shared attribution, credit grants, cumulative charges and renewal remain unimplemented. |
 | Shared blockers | Individual Conditions and recovery exist. Operation-specific prerequisite admission and cross-Task coalescing need implementation at the affected resource boundary. |
+| Lifecycle integration | The shared reconciler, fenced store and attempt runner exist. Wake writers require a focused consistency review; App closure and Conversation effect preservation are candidate Host #398. The four workload hooks above remain unimplemented. |
 
 First complete [idle disposition and the result path](#first-milestone-resolve-idle-work-and-complete-the-result-path)
 using existing capabilities. Then address the existing accountable
-resource-capacity work and make coordination reachable, trial the workload
-summary through owner reviews, and implement shared accounting. No additional
-controller agent is required.
+resource-capacity work and make coordination reachable, review the affected wake
+and effect paths, trial the workload summary through owner reviews, and implement
+accounting at the shared boundaries. Repair demonstrated divergence where it is
+owned; this order does not require rewriting the lifecycle or merging unrelated
+modules first. No additional controller agent is required.
 This proposal defines intended behavior and initial units; it supplies no new
 callable API or deployed instructions. Grant sizes, bounded review cadence and
 resource-specific footprint estimates remain installation choices to verify.
@@ -561,6 +633,10 @@ Verify these contrasting cases before claiming the feedback improves behavior:
 | High backlog with an incomplete Task and an already sufficient result | Keep the unmet obligation; bring sufficient evidence to creator review without lowering criteria. Cancellation remains a separate disposition. |
 | Repeated urgent arrivals while older required work stays ready | Make continued waiting and delivery conflicts visible during review; obtain an explicit commitment decision rather than silently abandoning it. |
 | Burst of repeated metric observations | Reuse accountable work where appropriate, preserving exact caller obligations. |
+| Equivalent new assignments through ordinary input, Conversation, event mapping and delegation | Use shared admission/accounting mechanics with one creation charge per new Task and no charge on replay; retain each route's real authority, root attribution and caller link. |
+| A Condition, exact Event and recovery scan rediscover the same work, including after closure or reopening | Preserve evidence and deduplication, respect the closed Task or current generation and retry pacing, and spend no new creation/start credits merely for waking. |
+| App-policy closure and explicit Conversation controls settle together; reply persistence or notification fails | Preserve the combined effects. Transaction failure rolls back result, reply and endings; after commit, a missed notification cannot erase the stored disposition or exact caller answer. |
+| Leases, session/workspace observations and result settlement update Task resources | Do not mistake storage mutations for charged starts; separately invoked helpers still pass the start-accounting boundary. |
 | Nested cooperation with `c = 1`, including restart | Yield so the child can run; preserve shared charges, attribution and responsibility. |
 | Concurrent claims, retries and exhausted credits | Enforce `B`, `C`, `c` and Host bounds without double charging; retain visible work and bounded creator coordination. |
 | Parallel helpers, including an awaited helper with `c = 1` | Charge each helper; suspended callers yield or lend capacity, while parallel work respects all applicable limits. |

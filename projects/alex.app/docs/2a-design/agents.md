@@ -105,6 +105,9 @@ Its [bounded decision pass](../proposals/agent-task-workload-model.md#one-bounde
 connects feedback to useful next actions and makes consequential deferral visible
 through existing Task and caller paths. Workload situations guide judgment;
 they introduce no new Task states or automatic admission and closure thresholds.
+The [lifecycle integration](../proposals/agent-task-workload-model.md#integrate-with-the-existing-lifecycle)
+places proposed accounting and feedback at shared admission, execution start,
+settlement/cleanup and agent decision context, preserving the existing engine.
 Its proposed protected coordination path lets existing responsible agents make
 bounded decisions under ordinary resource stress; this reserve extension,
 resource admission and shared credit renewal are unimplemented.
