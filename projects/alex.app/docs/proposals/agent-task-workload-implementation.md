@@ -451,11 +451,43 @@ on external isolation, not a live operational cutover or a software start barrie
 
 An online path still needs real start exclusion and exact historical active
 attempt/helper adoption without invented past spending. Do not expose that switch
-from empty Task counts or this offline operation. Enforcement withdrawal must
-also preserve receipts and obligations before pilot activation; deleting rows or
-restoring an old database after newer work starts is not an acceptable rollback.
-Independent integration/review and a separately authorized operational cutover
-with retained process/cleanup evidence remain required.
+from empty Task counts or this offline operation. Independent integration/review
+and a separately authorized operational cutover with retained process/cleanup
+evidence remain required.
+
+### Offline enforcement withdrawal
+
+The first withdrawal path uses the same externally excluded, stopped and
+confirmed-clean state as retained installation. It is an installation operation,
+not an agent decision, pressure response or automatic admission policy. Refuse
+active reservations, running attempts and unresolved session/descendant evidence,
+including execution whose business Task has ended. Inspection and a confirmation
+flag cannot substitute for excluding every opener and launcher.
+
+Fence the reviewed command against the exact installed credit policies,
+execution limits and historical root caps. In one transaction record its immutable
+operation/reason/configuration receipt and wake only canonical workload funding
+and execution holds, including saved unfunded Inbox input. Keep all existing
+attribution, spending, execution receipts, accepted results and caller obligations.
+Do not close Tasks or mark their inputs fulfilled. Preserve workspace shortages,
+pause, exhausted retries, permissions and confirmed cleanup requirements. Dry run
+rolls back the complete transaction; a failed wake also rolls back withdrawal.
+Exact command replay is read-only under the same offline prerequisites.
+
+Every integrated runtime observes the durable withdrawal record in the shared
+SQLite authority. New creation, claims and helpers use ordinary Host/App limits
+without new workload charges or reservations. Feedback marks withdrawn credit
+and shared execution facts unavailable, rather than advertising old caps as
+active capacity. Current Task actor authority still applies to bound workflows
+and managed sessions; cancelling a Task cannot be bypassed by withdrawing limits.
+
+This path is one-way. Work performed after withdrawal has an explicit accounting
+gap; reinstalling policy must not silently reactivate enforcement across it.
+Re-enabling needs a separately reviewed adoption protocol. Never delete the
+receipt or accounting rows, and never restore an old database after newer work
+starts to imitate rollback. A binary predating the withdrawal protocol cannot
+honor its record and must not reopen that state. Source-level withdrawal does not establish a live
+operational cutover, online start exclusion or model behavior.
 
 ## Verification and adoption gates
 
@@ -1214,8 +1246,11 @@ Static checks passed. The frozen full local gate at `03e93e39af` FAILED:
 **4,187 passed / 3 existing skips / 8 failed / 24,412 assertions / 362 files**.
 Hosted Quality failed and Container passed the same head. Eight integration
 fixtures throw from their Runtime database accessor, use an inaccessible fake
-state directory, or omit the App identity in a Task binding. They are being
-repaired to supply ordinary temporary Host state and full binding identity;
-no complete passing gate is claimed for that revision. Independent
+state directory, or omit the App identity in a Task binding. Repair `605262cbe1` supplies ordinary temporary Host state and full binding
+identity without relaxing admission. Integration/workflow/admission owners passed
+**112 / 435 across six files**, followed by manager/admission/worker/recovery
+boundaries **56 / 284 across four files**. Static checks passed; the new exact-head
+full local gate is running. No complete passing gate is claimed for the original
+revision. Independent
 review, integration, enforcement withdrawal and separately authorized operational
 and behavioral proof remain. No SDK/App runtime change is required.
