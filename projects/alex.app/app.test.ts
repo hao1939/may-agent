@@ -56,6 +56,22 @@ test("independent review may assess Alex work without App-wide exclusion", () =>
   });
 });
 
+test.each([false, true])("finite review admissions remain replayable and independent (pinned: %s)", (pinned) => {
+  const input = { kind: "review-task-outcome", data: {
+    appId: "may", taskId: "input/change-1", reviewer: "evaluator-deepseek",
+    ...(pinned ? { subjectGeneration: 2, evidenceHash: "a".repeat(64) } : {}),
+  } };
+  const admission = { id: "first-assessment", input };
+  const first = taskForInput(admission as never).intent;
+  // Host keeps closed identities terminal. A subsequent admission must not
+  // select that identity; replaying the original admission must still select it.
+  expect(taskForInput(admission as never).intent).toEqual(first);
+  const later = taskForInput({ id: "later-assessment", input } as never).intent;
+  expect(later.id).not.toBe(first.id);
+  expect(later.input).toEqual(first.input);
+  expect(later.acceptance).toEqual(first.acceptance);
+});
+
 test.each(["retrying", "incomplete", "exhausted"])("%s reconciliation does not review itself while ordinary work remains eligible", (disposition) => {
   const enabled = process.env.EVALUATION_AUTO_REVIEW_ENABLED;
   const reviewer = process.env.EVALUATION_AUTO_REVIEW_REVIEWER;

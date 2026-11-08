@@ -377,7 +377,9 @@ export function taskForInput(admitted: Readonly<AppTaskInput>) {
     const taskId = String(data.taskId);
     const reviewer = data.reviewer === "evaluator-deepseek" ? "evaluator-deepseek" : "evaluator";
     return { kind: "desired" as const, intent: {
-      id: `review/${safe(`${appId}/${taskId}/${data.subjectGeneration ?? "current"}/${data.evidenceHash ?? "current"}/${reviewer}/${data.automatic === true ? "automatic" : "requested"}`)}`,
+      // Each admitted assessment is finite. Replays keep its identity, while a
+      // later admission can run after the earlier assessment has been closed.
+      id: `review/${safe(`${appId}/${taskId}/${data.subjectGeneration ?? "current"}/${data.evidenceHash ?? "current"}/${reviewer}/${data.automatic === true ? "automatic" : "requested"}/${admitted.id}`)}`,
       parentId: "root",
       agent: reviewer === "evaluator-deepseek" ? "evaluator-deepseek" : "evaluator",
       workflow: "task-outcome-review",

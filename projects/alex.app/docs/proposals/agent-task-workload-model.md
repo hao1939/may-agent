@@ -126,12 +126,23 @@ The [Task lifecycle](../2a-design/task-resource-engine.md#state-and-continuing-r
 already defines this rule. The immediate work is to apply it and complete the
 owner's follow-through, before adding workload control machinery.
 
-The November 8 snapshot contained 756 idle Tasks across the three loaded Apps.
-Alex's 514 included 356 `input/` records and 135 `review/` records. These names
-help select a review order; they do not prove fulfillment. Previous owner review
-already [closed nine individually reviewed assignments](../archive/reviews/task-backlog-live-disposition-20261108.md),
-but did not start a continuing review of the remaining population. The existing
-reader discovers candidates; it does not make or apply the owner decision.
+**Progress, November 8:** The 756-Task idle baseline has 697 verified guarded
+closures: Alex 480, May 163 and Scout 54. Its 59 retained assignments are
+37 standing/reusable routes and 22 finite obligations with exact owners and
+next evidence in the [retention ledger](../archive/reviews/task-backlog-retained-20261108.json).
+The final snapshot has 58 currently idle Tasks; two baseline responsibilities
+are running and one new arrival is idle. Earlier nine closures preceded this
+baseline and are recorded separately in the [live disposition record](../archive/reviews/task-backlog-live-disposition-20261108.md).
+
+**Milestone incomplete:** Baseline disposition is recorded, but new accepted
+finite results still need an integrated authorized creator/App disposition path.
+The current App policy has no trusted post-result closure hook, and the outcome
+selector commissions reviews without consuming their completion for closure.
+The scoped reader and installed operator control enabled this cleanup; neither
+is an automatic result consumer. A narrow review-admission identity correction
+is prepared so later admissions do not select closed finite reviews. That
+correction alone does not prevent the backlog from recurring. Broader budgets
+and feedback remain deferred until result-to-disposition behavior is demonstrated.
 
 Start one bounded review of the existing population, saving pages and retry
 identities. Use `task-disposition-review` in batches of at most ten, starting with

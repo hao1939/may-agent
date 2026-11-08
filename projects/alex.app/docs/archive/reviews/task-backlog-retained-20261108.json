@@ -1,0 +1,1146 @@
+{
+  "version": 1,
+  "baselineCapturedAt": "2026-11-08T11:47:42.438Z",
+  "finalSnapshotAt": "2026-11-08T12:06:49.055Z",
+  "baselineIdle": 756,
+  "verifiedClosures": 697,
+  "retainedStanding": 37,
+  "retainedFinite": 22,
+  "scope": "Reviewed baseline idle cohort only. This ledger records judgments and navigation, not execution state, new Tasks, or closure authority. Re-read current exact versions and caller obligations before acting. Existing waits outside the baseline remain owned.",
+  "records": [
+    {
+      "appId": "alex",
+      "taskId": "input/app_070c837c-026e-4530-ae61-541115add533",
+      "kind": "finite-obligation",
+      "accountableOwner": "alex",
+      "reasonRetained": "Capacity-policy parent still owes judgment beyond its delivered source-only child.",
+      "nextEvidenceAndRoute": "Consume source slice input/appdep_8abe33f6c2b722158d29908f against approved design 0b73a94c; judge the next authorized complete read-only daily dry-run cycle. Cleanup and activation remain withheld.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:03.801Z",
+        "generation": 1,
+        "resourceVersion": 13,
+        "acceptedAttemptId": "r_1_14f63a98-3e7d-4347-b833-6614975e7461",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-01.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "input/app_244ac7a5-a932-4bab-a0a0-ac098ba6bd10",
+      "kind": "finite-obligation",
+      "accountableOwner": "alex",
+      "reasonRetained": "Periodic-audit establishment retains a source-reading/token comparison expectation.",
+      "nextEvidenceAndRoute": "Use a naturally authorized comparable run and return exact before/after source-reading and token evidence through this Task. Four observed natural handoffs alone do not prove improvement.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:03.801Z",
+        "generation": 1,
+        "resourceVersion": 96,
+        "acceptedAttemptId": "r_1_2ed9bc5f-4bff-4627-a576-95b085128352",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-01.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "input/app_2cb62cc7-0419-4eb8-a527-d8301466eb14",
+      "kind": "finite-obligation",
+      "accountableOwner": "alex",
+      "reasonRetained": "Packages A and B cannot both be fulfilled from the B guidance result.",
+      "nextEvidenceAndRoute": "Recover package A semantic-identity truncation-byte correction, regression and activation-plan evidence; reconcile separately with package B guidance cc24d7290a.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:03.801Z",
+        "generation": 1,
+        "resourceVersion": 22,
+        "acceptedAttemptId": "r_1_63209d03-dc9b-4b77-9dbc-5217c1efaf1f",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-01.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "input/app_7386e6dc-a078-4796-ad9f-4aa518cc272a",
+      "kind": "finite-obligation",
+      "accountableOwner": "alex",
+      "reasonRetained": "PR344 delivery and acknowledgment boundary still needs creator reconciliation.",
+      "nextEvidenceAndRoute": "Consume May goal/appdep_d23ec9ac5293ea84f23e23df terminal exact-head mismatch and record creator disposition; retain the original cleanup return route. Admission is not human acknowledgment.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:03.801Z",
+        "generation": 1,
+        "resourceVersion": 5,
+        "acceptedAttemptId": "r_1_959b7176-0da1-49fc-8a5a-cbe4e4b78e38",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-01.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "input/app_7af7036f-7fd9-4856-a2b8-42aaaeeaf373",
+      "kind": "finite-obligation",
+      "accountableOwner": "alex",
+      "reasonRetained": "Telegram human-action repair encountered an external PR356 merge without the required approval.",
+      "nextEvidenceAndRoute": "Reconcile exact merged source and missed protected gate with May goal/appdep_47f9b41104789f9444743d3e; return creator disposition and any still-required live verification.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:03.801Z",
+        "generation": 1,
+        "resourceVersion": 4,
+        "acceptedAttemptId": "r_1_7299180f-4f63-447b-8852-4fd82ed2bfff",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-01.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "input/app_a4638ea3-96fa-4162-a16a-46ed9efb18c4",
+      "kind": "finite-obligation",
+      "accountableOwner": "alex with May hygiene owner",
+      "reasonRetained": "Four unloaded-App cancellations have recommendations but no exact application or withdrawal disposition.",
+      "nextEvidenceAndRoute": "Consume exact applied/withdrawn disposition through the existing May recurring hygiene return route. Do not mutate disabled-App rows or repeat the recommendation as completion.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:04.155Z",
+        "generation": 1,
+        "resourceVersion": 5,
+        "acceptedAttemptId": "r_1_389236a8-d1f1-4fa6-ac26-c75668df17c8",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-02.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "input/app_b3cc5f5c-5450-4d63-9315-c3e25d47d1a0",
+      "kind": "finite-obligation",
+      "accountableOwner": "alex with May cadence owner",
+      "reasonRetained": "Scout Reddit cadence approval packet still needs current operator disposition.",
+      "nextEvidenceAndRoute": "Read the exact current Condition on May goal/app_a0c8d3d8-b549-4c1e-8af5-84e8d283c8fa and refresh or disposition the approval packet through that existing operator-help route.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:04.155Z",
+        "generation": 1,
+        "resourceVersion": 5,
+        "acceptedAttemptId": "r_1_10db5140-58f6-4a46-af44-e416e9fed61e",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-02.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "input/app_b99fe135-2d08-4041-ad5b-b095cc105613",
+      "kind": "finite-obligation",
+      "accountableOwner": "alex creator",
+      "reasonRetained": "PR368 eligible-human-reviewer requirement arrived after merge; accepted result explicitly says unfulfilled.",
+      "nextEvidenceAndRoute": "Return an explicit non-success creator disposition for the impossible pre-merge requirement through the saved caller route. Do not infer retrospective approval.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:04.155Z",
+        "generation": 1,
+        "resourceVersion": 14,
+        "acceptedAttemptId": "r_1_3705d943-2788-4e81-afb2-1f40c45a9259",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-02.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "input/app_ce1d16be-711f-49a2-86f1-add8bcfa3e90",
+      "kind": "finite-obligation",
+      "accountableOwner": "alex with May receipt owner",
+      "reasonRetained": "Provider recovery receipt publication is not yet demonstrated.",
+      "nextEvidenceAndRoute": "Obtain the exact durable tracked dated receipt from May goal/appdep_5f8a7c0e566e08fc95051414 or its explicit missing-publication explanation. Preserve the provider authority wait; do not replay recovery.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:04.155Z",
+        "generation": 1,
+        "resourceVersion": 5,
+        "acceptedAttemptId": "r_1_515f1cae-7ac1-4cad-b529-92b753d13013",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-02.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "input/app_fd18b226-c604-4db5-bfad-25c5f645a700",
+      "kind": "finite-obligation",
+      "accountableOwner": "alex",
+      "reasonRetained": "Originating May hygiene request is formally waiting despite a downstream accepted cycle.",
+      "nextEvidenceAndRoute": "Consume the existing exact reconciliation result using request identities in saved facts; return it on the original request rather than rerunning hygiene.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:04.492Z",
+        "generation": 1,
+        "resourceVersion": 5,
+        "acceptedAttemptId": "r_1_dd8540e4-81fa-43be-bcdc-4c948c81cf0a",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-03.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "input/appdep_715d650c41c11f59a97c020e",
+      "kind": "finite-obligation",
+      "accountableOwner": "alex",
+      "reasonRetained": "Repository/worktree capacity admission still fans out across Tasks despite a per-attempt cap.",
+      "nextEvidenceAndRoute": "Complete the narrow repository/commit-aware admission and coalescing correction with low-space/recovery checks. Keep generic budgets, disk deletion and production DB mutations outside this scope.",
+      "statusAtFinalSnapshot": "running",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:04.492Z",
+        "generation": 1,
+        "resourceVersion": 8,
+        "acceptedAttemptId": "r_1_6056f6e3-19b8-4e1d-938c-d8526ffb4334",
+        "recordedCreator": {
+          "appId": "alex",
+          "taskId": "runtime/pattern-audit"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-03.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "research-adoption",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Declared recurring or reusable responsibility remains.",
+      "nextEvidenceAndRoute": "Continue on the existing declared input, schedule or relevant-change route in App source. Do not add a new timer or polling job.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:04.492Z",
+        "generation": 1,
+        "resourceVersion": 15,
+        "acceptedAttemptId": "r_1_c035d4f3-102c-4e43-ad46-34c411a6a35e",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-03.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/metric-review/evaluator-deepseek/15a07b7ce422c9fb4f988780",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Stable metric/reviewer input route, not a completed independent assessment.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted metric evidence through this declared route. Retain the identity; do not add a periodic review.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:04.492Z",
+        "generation": 12,
+        "resourceVersion": 48,
+        "acceptedAttemptId": "r_12_c443c5e9-a9f9-4821-a583-b872560e3732",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-03.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/metric-review/evaluator-deepseek/1edc36266472804753f25f02",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Stable metric/reviewer input route, not a completed independent assessment.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted metric evidence through this declared route. Retain the identity; do not add a periodic review.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:04.837Z",
+        "generation": 2,
+        "resourceVersion": 6,
+        "acceptedAttemptId": "r_2_48f9171b-310d-4bcd-b0b2-3c241dfad14d",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-04.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/metric-review/evaluator-deepseek/237d9275fe6426d3f756c5ca",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Stable metric/reviewer input route, not a completed independent assessment.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted metric evidence through this declared route. Retain the identity; do not add a periodic review.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:04.837Z",
+        "generation": 6,
+        "resourceVersion": 24,
+        "acceptedAttemptId": "r_6_eeff9972-0659-4f2e-9f07-25dac675b2c3",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-04.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/metric-review/evaluator-deepseek/3d97cdd192a2d85246bf16d2",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Stable metric/reviewer input route, not a completed independent assessment.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted metric evidence through this declared route. Retain the identity; do not add a periodic review.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:04.837Z",
+        "generation": 2,
+        "resourceVersion": 6,
+        "acceptedAttemptId": "r_2_783b3dd0-b9e0-4ff5-af6a-e225a04200d1",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-04.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/metric-review/evaluator-deepseek/557882d20eacb05c0fe92ef1",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Stable metric/reviewer input route, not a completed independent assessment.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted metric evidence through this declared route. Retain the identity; do not add a periodic review.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:04.837Z",
+        "generation": 3,
+        "resourceVersion": 10,
+        "acceptedAttemptId": "r_3_19e66568-5bd9-4b4a-9662-190379453148",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-04.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/metric-review/evaluator-deepseek/55e6ddf35a67764540e2fdc3",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Stable metric/reviewer input route, not a completed independent assessment.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted metric evidence through this declared route. Retain the identity; do not add a periodic review.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:04.837Z",
+        "generation": 2,
+        "resourceVersion": 9,
+        "acceptedAttemptId": "r_2_95fc2bb3-1224-4e12-ad6f-1805b2a5c368",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-04.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/metric-review/evaluator-deepseek/59150b113471883b8cd28f06",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Stable metric/reviewer input route, not a completed independent assessment.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted metric evidence through this declared route. Retain the identity; do not add a periodic review.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:04.837Z",
+        "generation": 1,
+        "resourceVersion": 5,
+        "acceptedAttemptId": "r_1_d254c563-4726-4ef7-bd75-c1a0dbb95136",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-04.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/metric-review/evaluator-deepseek/6a3218cbe70a16c48db24723",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Stable metric/reviewer input route, not a completed independent assessment.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted metric evidence through this declared route. Retain the identity; do not add a periodic review.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:04.837Z",
+        "generation": 2,
+        "resourceVersion": 6,
+        "acceptedAttemptId": "r_2_cae76c29-7dc6-4a7a-a875-49f99d10c0b8",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-04.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/metric-review/evaluator-deepseek/7c0b042a53b254e14602fcfa",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Stable metric/reviewer input route, not a completed independent assessment.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted metric evidence through this declared route. Retain the identity; do not add a periodic review.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:04.837Z",
+        "generation": 3,
+        "resourceVersion": 14,
+        "acceptedAttemptId": "r_3_f9a852c1-b128-4ae7-b61f-bde92eb608c4",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-04.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/metric-review/evaluator-deepseek/856fbd94f9d6a92451f7d1ba",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Stable metric/reviewer input route, not a completed independent assessment.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted metric evidence through this declared route. Retain the identity; do not add a periodic review.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:04.837Z",
+        "generation": 2,
+        "resourceVersion": 8,
+        "acceptedAttemptId": "r_2_0a529cfc-275e-446a-a188-7fec02889e4a",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-04.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/metric-review/evaluator-deepseek/86e8195220e822c094d32f3f",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Stable metric/reviewer input route, not a completed independent assessment.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted metric evidence through this declared route. Retain the identity; do not add a periodic review.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:04.837Z",
+        "generation": 4,
+        "resourceVersion": 13,
+        "acceptedAttemptId": "r_4_3c73e08c-e8d8-48fa-9086-f1365f41145b",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-04.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/metric-review/evaluator-deepseek/8af1331a628501bff776e89f",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Stable metric/reviewer input route, not a completed independent assessment.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted metric evidence through this declared route. Retain the identity; do not add a periodic review.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:05.178Z",
+        "generation": 2,
+        "resourceVersion": 6,
+        "acceptedAttemptId": "r_2_59e8fd11-6b6e-4d38-af1f-0bad9fef7fa5",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-05.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/metric-review/evaluator-deepseek/a131144613bbe6438c404dec",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Stable metric/reviewer input route, not a completed independent assessment.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted metric evidence through this declared route. Retain the identity; do not add a periodic review.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:05.178Z",
+        "generation": 4,
+        "resourceVersion": 19,
+        "acceptedAttemptId": "r_4_585fbbb7-6e9b-421f-ac01-47434a0de274",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-05.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/metric-review/evaluator-deepseek/ab48ef674241be1759b592fa",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Stable metric/reviewer input route, not a completed independent assessment.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted metric evidence through this declared route. Retain the identity; do not add a periodic review.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:05.178Z",
+        "generation": 5,
+        "resourceVersion": 24,
+        "acceptedAttemptId": "r_5_146f63e3-8a2c-419a-b6f6-678c80fca9aa",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-05.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/metric-review/evaluator-deepseek/cb6293c3fd3c7d7ea746d047",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Stable metric/reviewer input route, not a completed independent assessment.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted metric evidence through this declared route. Retain the identity; do not add a periodic review.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:05.178Z",
+        "generation": 6,
+        "resourceVersion": 25,
+        "acceptedAttemptId": "r_6_ab3a3f38-2cf3-4604-a2a2-86715b66e4b4",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-05.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/metric-review/evaluator-deepseek/d6940234d6861a102fc1e65a",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Stable metric/reviewer input route, not a completed independent assessment.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted metric evidence through this declared route. Retain the identity; do not add a periodic review.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:05.178Z",
+        "generation": 3,
+        "resourceVersion": 10,
+        "acceptedAttemptId": "r_3_b207ba42-da83-42fe-88f5-eff9fa236896",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-05.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/metric-review/evaluator-deepseek/d9d35f2917fa49723c3b2374",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Stable metric/reviewer input route, not a completed independent assessment.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted metric evidence through this declared route. Retain the identity; do not add a periodic review.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:05.178Z",
+        "generation": 5,
+        "resourceVersion": 27,
+        "acceptedAttemptId": "r_5_517103b3-5073-4537-bce2-1f567b16c093",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-05.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/metric-review/evaluator-deepseek/f4f835ecb5b997bc24970f6e",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Stable metric/reviewer input route, not a completed independent assessment.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted metric evidence through this declared route. Retain the identity; do not add a periodic review.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:05.178Z",
+        "generation": 4,
+        "resourceVersion": 24,
+        "acceptedAttemptId": "r_4_c625d477-9534-4cbc-87f9-342d2b6e16c8",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-05.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/metric-review/evaluator/19628b5bf1a1cacf19787cf4",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Stable metric/reviewer input route, not a completed independent assessment.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted metric evidence through this declared route. Retain the identity; do not add a periodic review.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:05.178Z",
+        "generation": 1,
+        "resourceVersion": 3,
+        "acceptedAttemptId": "r_1_585050c6-2f5e-4c52-a1c5-21bb435674ae",
+        "recordedCreator": {
+          "appId": "alex",
+          "taskId": "runtime/task-outcome-selector"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-05.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/metric-review/evaluator/7c0b042a53b254e14602fcfa",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Stable metric/reviewer input route, not a completed independent assessment.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted metric evidence through this declared route. Retain the identity; do not add a periodic review.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:05.178Z",
+        "generation": 1,
+        "resourceVersion": 3,
+        "acceptedAttemptId": "r_1_1755c205-2af5-43d8-ae47-ba92563952bf",
+        "recordedCreator": {
+          "appId": "alex",
+          "taskId": "runtime/task-outcome-selector"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-05.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/pattern-audit",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Declared recurring or reusable responsibility remains.",
+      "nextEvidenceAndRoute": "Continue on the existing declared input, schedule or relevant-change route in App source. Do not add a new timer or polling job.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:05.178Z",
+        "generation": 2,
+        "resourceVersion": 48,
+        "acceptedAttemptId": "r_2_cb5a911f-99ca-4ac8-a740-cb1f79343f03",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-05.json"
+    },
+    {
+      "appId": "alex",
+      "taskId": "runtime/task-outcome-selector",
+      "kind": "standing-route",
+      "accountableOwner": "alex",
+      "reasonRetained": "Declared recurring or reusable responsibility remains.",
+      "nextEvidenceAndRoute": "Continue on the existing declared input, schedule or relevant-change route in App source. Do not add a new timer or polling job.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:05.380Z",
+        "generation": 1,
+        "resourceVersion": 2643,
+        "acceptedAttemptId": "r_1_c30edd6e-040d-4cc3-a4fb-4b0d13ede871",
+        "recordedCreator": {
+          "appId": "alex"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-alex-06.json"
+    },
+    {
+      "appId": "may",
+      "taskId": "conversation_15069848eca2e7e567b90e26",
+      "kind": "standing-route",
+      "accountableOwner": "may",
+      "reasonRetained": "Reusable Conversation retains its existing input route.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted message in this Conversation; retain existing independent waits and caller obligations.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:05.880Z",
+        "generation": 1,
+        "resourceVersion": 11,
+        "acceptedAttemptId": "r_1_e4d404f2-1a97-4d56-86af-8d1c8e9a20c2",
+        "recordedCreator": {
+          "appId": "may"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-may-01.json"
+    },
+    {
+      "appId": "may",
+      "taskId": "conversation_89b0f8b76663ff85766d32fb",
+      "kind": "standing-route",
+      "accountableOwner": "may",
+      "reasonRetained": "Reusable Conversation retains its existing input route.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted message in this Conversation; retain existing independent waits and caller obligations.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:05.880Z",
+        "generation": 1,
+        "resourceVersion": 41,
+        "acceptedAttemptId": "r_1_1dbe2c22-b05e-4d0b-8ff5-8558fa364872",
+        "recordedCreator": {
+          "appId": "may"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-may-01.json"
+    },
+    {
+      "appId": "may",
+      "taskId": "conversation_cc05bdae06b7876908553264",
+      "kind": "standing-route",
+      "accountableOwner": "may",
+      "reasonRetained": "Reusable Conversation retains its existing input route.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted message in this Conversation; retain existing independent waits and caller obligations.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:05.880Z",
+        "generation": 1,
+        "resourceVersion": 8,
+        "acceptedAttemptId": "r_1_c4358f17-9178-4333-9752-c70913f68a93",
+        "recordedCreator": {
+          "appId": "may"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-may-01.json"
+    },
+    {
+      "appId": "may",
+      "taskId": "conversation_e15cfed364a91cb9d48eaae6",
+      "kind": "standing-route",
+      "accountableOwner": "may",
+      "reasonRetained": "Reusable Conversation retains its existing input route.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted message in this Conversation; retain existing independent waits and caller obligations.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:05.880Z",
+        "generation": 1,
+        "resourceVersion": 5,
+        "acceptedAttemptId": "r_1_45f7165f-e771-42c1-bf03-a9970b62207b",
+        "recordedCreator": {
+          "appId": "may"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-may-01.json"
+    },
+    {
+      "appId": "may",
+      "taskId": "conversation_e469e282d92389034f4446ec",
+      "kind": "standing-route",
+      "accountableOwner": "may",
+      "reasonRetained": "Reusable Conversation retains its existing input route.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted message in this Conversation; retain existing independent waits and caller obligations.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:05.880Z",
+        "generation": 1,
+        "resourceVersion": 3,
+        "acceptedAttemptId": "r_1_05723a13-8838-47a2-9fef-bc602a1dca5c",
+        "recordedCreator": {
+          "appId": "may"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-may-01.json"
+    },
+    {
+      "appId": "may",
+      "taskId": "conversation_ec854e2f09f1c38566a25857_successor_2",
+      "kind": "standing-route",
+      "accountableOwner": "may",
+      "reasonRetained": "Reusable Conversation retains its existing input route.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted message in this Conversation; retain existing independent waits and caller obligations.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:05.880Z",
+        "generation": 1,
+        "resourceVersion": 8201,
+        "acceptedAttemptId": "r_1_41545351-1770-485f-a3a4-ecc5bc15adb1",
+        "recordedCreator": {
+          "appId": "may"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-may-01.json"
+    },
+    {
+      "appId": "may",
+      "taskId": "conversation_feaec266ccafa0e546edbdd5",
+      "kind": "standing-route",
+      "accountableOwner": "may",
+      "reasonRetained": "Reusable Conversation retains its existing input route.",
+      "nextEvidenceAndRoute": "Reconcile the next admitted message in this Conversation; retain existing independent waits and caller obligations.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:05.880Z",
+        "generation": 1,
+        "resourceVersion": 8,
+        "acceptedAttemptId": "r_1_62ef16cc-d2d6-4a39-a109-c11fcb8f678d",
+        "recordedCreator": {
+          "appId": "may"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-may-01.json"
+    },
+    {
+      "appId": "may",
+      "taskId": "goal/appdep_29ade05116723df51757b027",
+      "kind": "finite-obligation",
+      "accountableOwner": "may; Hao/provider operator supplies access",
+      "reasonRetained": "Exact historical archive remains inaccessible under current provider authority.",
+      "nextEvidenceAndRoute": "Obtain the authorized archive/snapshot access decision and return it through the saved Alex request. This is not withdrawal, recovery success or proof of provider impossibility.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:05.880Z",
+        "generation": 1,
+        "resourceVersion": 4,
+        "acceptedAttemptId": "r_1_575ccf90-91d0-490c-a073-63d5d3a54469",
+        "recordedCreator": {
+          "appId": "alex",
+          "taskId": "input/app_7a279469-7ac8-4bec-894a-9314635bd452"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-may-01.json"
+    },
+    {
+      "appId": "may",
+      "taskId": "goal/appdep_47f9b41104789f9444743d3e",
+      "kind": "finite-obligation",
+      "accountableOwner": "may and Alex creator",
+      "reasonRetained": "PR356 merged without eligible APPROVED review; exact merge begins dd79e4eef.",
+      "nextEvidenceAndRoute": "Record the unmet-gate creator disposition and return it through the original delivery request; do not call the protected merge compliant.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:05.880Z",
+        "generation": 3,
+        "resourceVersion": 105,
+        "acceptedAttemptId": "r_3_60fca19c-d8a0-40e5-83c3-21eb18413eb9",
+        "recordedCreator": {
+          "appId": "alex",
+          "taskId": "input/app_004df513-2f74-4641-8aea-c4cce1d7b1cf"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-may-01.json"
+    },
+    {
+      "appId": "may",
+      "taskId": "goal/appdep_6194fdf6bdcd4ee5be705817",
+      "kind": "finite-obligation",
+      "accountableOwner": "may and Alex creator",
+      "reasonRetained": "PR355 externally merged a different head with missing review and incomplete checks at merge.",
+      "nextEvidenceAndRoute": "Return exact creator non-success or remedial disposition for the protected delivery acceptance; retain the original cleanup caller route.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:06.305Z",
+        "generation": 4,
+        "resourceVersion": 117,
+        "acceptedAttemptId": "r_4_9e990b23-2a20-4daa-b2da-cc6cb6117f1d",
+        "recordedCreator": {
+          "appId": "alex",
+          "taskId": "input/app_004df513-2f74-4641-8aea-c4cce1d7b1cf"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-may-02.json"
+    },
+    {
+      "appId": "may",
+      "taskId": "goal/appdep_d23ec9ac5293ea84f23e23df",
+      "kind": "finite-obligation",
+      "accountableOwner": "may and Alex creator",
+      "reasonRetained": "PR344 evolved-head merge differs from required head beginning 84ef0aea.",
+      "nextEvidenceAndRoute": "Return the exact mismatch for Alex judgment, preserving candidate evidence and the original caller; do not retry an obsolete merge.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:06.305Z",
+        "generation": 1,
+        "resourceVersion": 18,
+        "acceptedAttemptId": "r_1_2816a9ee-3301-4d06-a6a5-6636e57f0c27",
+        "recordedCreator": {
+          "appId": "alex",
+          "taskId": "input/app_004df513-2f74-4641-8aea-c4cce1d7b1cf"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-may-02.json"
+    },
+    {
+      "appId": "may",
+      "taskId": "goal/appdep_d8ad33c74edf99d2743b6fea",
+      "kind": "finite-obligation",
+      "accountableOwner": "may",
+      "reasonRetained": "Earlier PR344 head/base/auth blocker is stale relative to the later merged head.",
+      "nextEvidenceAndRoute": "Reconcile with canonical mismatch Task goal/appdep_d23ec9ac5293ea84f23e23df and return exact disposition on the saved request; retire obsolete merge work only with creator judgment.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:06.305Z",
+        "generation": 1,
+        "resourceVersion": 4,
+        "acceptedAttemptId": "r_1_485b3add-f870-43de-9dd1-4eead8c59c20",
+        "recordedCreator": {
+          "appId": "alex",
+          "taskId": "input/app_004df513-2f74-4641-8aea-c4cce1d7b1cf"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-may-02.json"
+    },
+    {
+      "appId": "may",
+      "taskId": "goal/appdep_eae0b4ea2820d4a9b9979145",
+      "kind": "finite-obligation",
+      "accountableOwner": "may and creator",
+      "reasonRetained": "PR344 summary claims protected success while facts show evolved head and only COMMENTED reviews.",
+      "nextEvidenceAndRoute": "Resolve the summary/facts conflict against exact acceptance and creator disposition, then return an honest delivery result. The summary alone cannot establish fulfillment.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:06.305Z",
+        "generation": 1,
+        "resourceVersion": 13,
+        "acceptedAttemptId": "r_1_0a7ef433-347a-41c9-a9d8-2042cd5dc611",
+        "recordedCreator": {
+          "appId": "alex",
+          "taskId": "input/app_004df513-2f74-4641-8aea-c4cce1d7b1cf"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-may-02.json"
+    },
+    {
+      "appId": "may",
+      "taskId": "goal/appdep_f44ace579b89112090081965",
+      "kind": "finite-obligation",
+      "accountableOwner": "may and creator",
+      "reasonRetained": "Recovery-hardening successor integrated elsewhere; late pre-merge human-reviewer requirement remains explicitly unfulfilled.",
+      "nextEvidenceAndRoute": "Reconcile original implementation separately from the impossible later reviewer gate and return creator disposition through the existing request; do not fabricate a prior human decision.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:06.305Z",
+        "generation": 1,
+        "resourceVersion": 47,
+        "acceptedAttemptId": "r_1_29f3fed4-3b72-4bb0-a93e-159fb5ae0746",
+        "recordedCreator": {
+          "appId": "alex",
+          "taskId": "input/app_afd50d85-24cb-4571-8a62-3ff2548f4ace"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-may-02.json"
+    },
+    {
+      "appId": "may",
+      "taskId": "research-adoption",
+      "kind": "standing-route",
+      "accountableOwner": "may",
+      "reasonRetained": "Declared recurring or reusable responsibility remains.",
+      "nextEvidenceAndRoute": "Continue on the existing declared input, schedule or relevant-change route in App source. Do not add a new timer or polling job.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:06.305Z",
+        "generation": 1,
+        "resourceVersion": 14,
+        "acceptedAttemptId": "r_1_830c589f-d9cb-497a-9bf7-a9c853a146fb",
+        "recordedCreator": {
+          "appId": "may"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-may-02.json"
+    },
+    {
+      "appId": "scout-knowledge-lib",
+      "taskId": "daily-digest",
+      "kind": "standing-route",
+      "accountableOwner": "scout-knowledge-lib",
+      "reasonRetained": "Declared recurring or reusable responsibility remains.",
+      "nextEvidenceAndRoute": "Continue on the existing declared input, schedule or relevant-change route in App source. Do not add a new timer or polling job.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:06.587Z",
+        "generation": 2,
+        "resourceVersion": 88,
+        "acceptedAttemptId": "r_2_32c5d30d-0d25-4eb6-8df7-52d9a2215404",
+        "recordedCreator": {
+          "appId": "may"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-scout-knowledge-lib-01.json"
+    },
+    {
+      "appId": "scout-knowledge-lib",
+      "taskId": "explore-arxiv",
+      "kind": "standing-route",
+      "accountableOwner": "scout-knowledge-lib",
+      "reasonRetained": "Declared recurring or reusable responsibility remains.",
+      "nextEvidenceAndRoute": "Continue on the existing declared input, schedule or relevant-change route in App source. Do not add a new timer or polling job.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:06.587Z",
+        "generation": 3,
+        "resourceVersion": 565,
+        "acceptedAttemptId": "r_3_d6562903-81f2-4266-a2c9-e98643c7871e",
+        "recordedCreator": {
+          "appId": "scout-knowledge-lib"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-scout-knowledge-lib-01.json"
+    },
+    {
+      "appId": "scout-knowledge-lib",
+      "taskId": "explore-hn",
+      "kind": "standing-route",
+      "accountableOwner": "scout-knowledge-lib",
+      "reasonRetained": "Declared recurring or reusable responsibility remains.",
+      "nextEvidenceAndRoute": "Continue on the existing declared input, schedule or relevant-change route in App source. Do not add a new timer or polling job.",
+      "statusAtFinalSnapshot": "running",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:06.587Z",
+        "generation": 3,
+        "resourceVersion": 2337,
+        "acceptedAttemptId": "r_3_689c6d7b-c127-4834-947a-63de8bf71dff",
+        "recordedCreator": {
+          "appId": "scout-knowledge-lib"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-scout-knowledge-lib-01.json"
+    },
+    {
+      "appId": "scout-knowledge-lib",
+      "taskId": "explore-reddit",
+      "kind": "standing-route",
+      "accountableOwner": "scout-knowledge-lib",
+      "reasonRetained": "Declared recurring or reusable responsibility remains.",
+      "nextEvidenceAndRoute": "Continue on the existing declared input, schedule or relevant-change route in App source. Do not add a new timer or polling job.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:06.587Z",
+        "generation": 5,
+        "resourceVersion": 408,
+        "acceptedAttemptId": "r_5_0d51379b-ba97-4dbf-af71-f3beb82bb4fa",
+        "recordedCreator": {
+          "appId": "scout-knowledge-lib"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-scout-knowledge-lib-01.json"
+    },
+    {
+      "appId": "scout-knowledge-lib",
+      "taskId": "goal/app_03b90188-69a4-49f0-8f89-35c82c435606",
+      "kind": "finite-obligation",
+      "accountableOwner": "scout-knowledge-lib with archive provider",
+      "reasonRetained": "29-slot XHS backfill has 20 dispositioned identities and nine missing exact historical identities.",
+      "nextEvidenceAndRoute": "Recover the untruncated original receipt/archive for wr_1794040651688_zrzq and return exact nine-slot evidence. A refreshed search cannot substitute for historical proof.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:06.587Z",
+        "generation": 1,
+        "resourceVersion": 117,
+        "acceptedAttemptId": "r_1_245e23a4-d35f-4ad2-a336-6d86100aca75",
+        "recordedCreator": {
+          "appId": "scout-knowledge-lib"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-scout-knowledge-lib-01.json"
+    },
+    {
+      "appId": "scout-knowledge-lib",
+      "taskId": "goal/app_ae13596c-b915-42e5-92b8-7830531122b3",
+      "kind": "finite-obligation",
+      "accountableOwner": "scout-knowledge-lib",
+      "reasonRetained": "XHS hydration implementation was misrouted into the knowledge planner.",
+      "nextEvidenceAndRoute": "Use authorized isolated App-code execution on this same assignment; return actual correction, checks and bounded live extraction proof, or the exact external blocker, through its saved caller route.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:06.587Z",
+        "generation": 1,
+        "resourceVersion": 13,
+        "acceptedAttemptId": "r_1_5ac1e03a-1885-481f-b5f0-c3a4982c6637",
+        "recordedCreator": {
+          "appId": "may",
+          "taskId": "conversation_ec854e2f09f1c38566a25857_successor_2"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-scout-knowledge-lib-01.json"
+    },
+    {
+      "appId": "scout-knowledge-lib",
+      "taskId": "goal/appdep_7a319cd628d652dd8f44c787",
+      "kind": "finite-obligation",
+      "accountableOwner": "scout-knowledge-lib and creator",
+      "reasonRetained": "Context-inheritance proof omitted distinguishing fixtures and used the wrong execution path.",
+      "nextEvidenceAndRoute": "Construct the native owner to scout-explore to managed-helper fixture and return visibility evidence, or obtain explicit creator withdrawal. Preserve the original proof requirement.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:06.587Z",
+        "generation": 1,
+        "resourceVersion": 3,
+        "acceptedAttemptId": "r_1_1aa4a434-43c4-49f6-9359-48d5160de48a",
+        "recordedCreator": {
+          "appId": "may",
+          "taskId": "goal/app_a0c8d3d8-b549-4c1e-8af5-84e8d283c8fa"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-scout-knowledge-lib-01.json"
+    },
+    {
+      "appId": "scout-knowledge-lib",
+      "taskId": "goal/conversation-result-may-may-primary-topic_a220b363c6a7959d6eed6974-scout-knowledge-lib-r_1_65e0bfa6-671e-41a4-a0b8-f6d3071c1886",
+      "kind": "finite-obligation",
+      "accountableOwner": "scout-knowledge-lib with May cadence owner",
+      "reasonRetained": "Daily Reddit configuration plus seven accepted daily checks remain owed.",
+      "nextEvidenceAndRoute": "Obtain actual configuration and window evidence through the existing May cadence/operator return route. A capability-blocked planner report does not discharge the broader promise.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:06.587Z",
+        "generation": 1,
+        "resourceVersion": 21,
+        "acceptedAttemptId": "r_1_719455c4-2466-495d-93d5-0d465adaccb5",
+        "recordedCreator": {
+          "appId": "may",
+          "taskId": "conversation_ec854e2f09f1c38566a25857_successor_2"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-scout-knowledge-lib-01.json"
+    },
+    {
+      "appId": "scout-knowledge-lib",
+      "taskId": "library-maintenance",
+      "kind": "standing-route",
+      "accountableOwner": "scout-knowledge-lib",
+      "reasonRetained": "Declared recurring or reusable responsibility remains.",
+      "nextEvidenceAndRoute": "Continue on the existing declared input, schedule or relevant-change route in App source. Do not add a new timer or polling job.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:06.587Z",
+        "generation": 1,
+        "resourceVersion": 630,
+        "acceptedAttemptId": "r_1_e9e544c5-e44b-4c8c-ac14-71fa57554fcd",
+        "recordedCreator": {
+          "appId": "may"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-scout-knowledge-lib-01.json"
+    },
+    {
+      "appId": "scout-knowledge-lib",
+      "taskId": "runtime/library-health-observer",
+      "kind": "standing-route",
+      "accountableOwner": "scout-knowledge-lib",
+      "reasonRetained": "Declared recurring or reusable responsibility remains.",
+      "nextEvidenceAndRoute": "Continue on the existing declared input, schedule or relevant-change route in App source. Do not add a new timer or polling job.",
+      "statusAtFinalSnapshot": "idle",
+      "reviewedIdentity": {
+        "capturedAt": "2026-11-08T12:03:06.587Z",
+        "generation": 1,
+        "resourceVersion": 326,
+        "acceptedAttemptId": "r_1_a2f46dc1-0d69-488d-8172-d437772d0a5e",
+        "recordedCreator": {
+          "appId": "may"
+        }
+      },
+      "privateEvidence": ".state/task-disposition-followthrough-20261108/batch-retained-scout-knowledge-lib-01.json"
+    }
+  ]
+}
