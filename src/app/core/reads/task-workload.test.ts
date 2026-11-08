@@ -104,6 +104,25 @@ test("paused input and full capacity do not look like useful spare execution", (
   expect(f.read().counts).toMatchObject({ running: 3, runnable: 1 });
 });
 
+test.each(["retained-work", "waiting"] as const)("%s remains visible as pending input after its trigger is consumed", kind => {
+  const f = fixture(); f.add("work");
+  admitTaskInput(f.config, { appId: "sample", attachment: { kind: "existing", taskId: "work" },
+    idempotencyKey: "ask:work", inputContext: { id: "ask", source: { kind: "app", id: "caller" },
+      input: { kind: "request", data: {} } } });
+  const due = Date.now() + 60_000;
+  const claim = f.claim("work");
+  if (kind === "waiting") deferAppTask(f.config, claim, { disposition: "waiting", summary: "Await review", reviewAt: due });
+  else completeAppTask(f.config, claim, { summary: "Partial evidence retained", inputKeys: [] });
+  expect(f.config.resourceStore.readTrigger("work")).toBeNull();
+  expect(f.config.resourceStore.readTask("work")!.status.inputWaits).toHaveProperty("ask:work");
+  const before = f.db.prepare("SELECT total_changes() AS count").get();
+  expect(f.read().counts).toMatchObject({ pendingInputTasks: 1, ...(kind === "waiting" ? { waiting: 1, runnable: 0 } : { runnable: 1 }) });
+  expect(f.db.prepare("SELECT total_changes() AS count").get()).toEqual(before);
+  if (kind === "waiting") setSystemTime(due);
+  completeAppTask(f.config, f.claim("work"), { summary: "Request answered" });
+  expect(f.read().counts).toMatchObject({ pendingInputTasks: 0, idle: 1 });
+});
+
 test("retry cooldown and exhausted execution remain distinct from runnable demand", () => {
   const f = fixture(); f.add("retry");
   failAppTaskAttempt(f.config, f.claim("retry"), "Transient provider failure");

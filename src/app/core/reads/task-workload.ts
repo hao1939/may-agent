@@ -189,7 +189,8 @@ export function readTaskWorkload(
       result.coverage.matched++;
       const resource = tree.resources?.[task.id];
       if (!resource) { result.counts.unknown++; blocker(task.id, "unknown"); continue; }
-      if (tree.taskTriggers?.[task.id]) result.counts.pendingInputTasks++;
+      if (tree.taskTriggers?.[task.id] || Object.keys(resource.status.inputWaits ?? {}).length)
+        result.counts.pendingInputTasks++;
       if (task.status === "running") result.counts.running++;
       else if (taskExecutionRetryExhausted(resource)) result.counts.attention++;
       else if (pendingTaskExecutionRetryAt(resource, observedAt)) {

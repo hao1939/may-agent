@@ -350,6 +350,7 @@ export type TaskWorkload = {
   counts: {
     running: number; runnable: number; waiting: number; attention: number;
     idle: number; paused: number; cooldown: number; unknown: number;
+    /** Tasks with queued triggers or retained unanswered inputs, including waits. */
     pendingInputTasks: number;
   };
   examples: {
