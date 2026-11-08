@@ -49,5 +49,5 @@ CREATE TABLE IF NOT EXISTS task_budget_funding_receipts (
 CREATE INDEX IF NOT EXISTS idx_app_tasks_root_funding_hold
   ON app_tasks(json_extract(resource_json, '$.status.funding.root.appId'),
     json_extract(resource_json, '$.status.funding.root.taskId'), app_id, task_id)
-  WHERE json_extract(resource_json, '$.status.funding.reason') = 'root-credit';
+  WHERE json_valid(resource_json) AND json_extract(resource_json, '$.status.funding.reason') = 'root-credit';
 `;

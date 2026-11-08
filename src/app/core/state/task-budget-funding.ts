@@ -19,7 +19,7 @@ export function changeTaskBudgetRootCredits(db: SqliteDb, input: RootBudgetFundi
     const tasks = db
       .prepare(
         `SELECT app_id, task_id FROM app_tasks
-      WHERE json_extract(resource_json, '$.status.funding.reason') = 'root-credit'
+      WHERE json_valid(resource_json) AND json_extract(resource_json, '$.status.funding.reason') = 'root-credit'
         AND json_extract(resource_json, '$.status.funding.root.appId') = ?
         AND json_extract(resource_json, '$.status.funding.root.taskId') = ?`,
       )
