@@ -405,7 +405,14 @@ run that review while ordinary work is full. Reserving only its outer workflow
 can start coordination without allowing a judgment. This reserve is shared,
 not per agent, and gives helpers no exemption or slot lending.
 Prefer human input at safe dispatch boundaries and give ready coordination
-passes fair turns within their protected allowances. A one-place Host still
+passes fair turns within their protected allowances. At each App selection and
+shared controller-Host acquisition point, allow at most two human dispatches
+while eligible coordination also waits, then offer a coordination turn. Background
+dispatches do not reset this count; peeks and repeated wakes do not consume it.
+Priority and promotion still order eligible peers, and ordinary work acquires no
+coordination role from either. This preference is process-local and resets on
+controller restart; it provides no wall-clock, cross-runtime or delivery guarantee.
+Funding and all execution constraints still apply at admission. A one-place Host still
 admits bounded ordinary work and invents no extra capacity; a two-place method
 must be revised or wait for an authorized capacity change. Coordination
 eligibility and accounting exist in the source increments recorded in the

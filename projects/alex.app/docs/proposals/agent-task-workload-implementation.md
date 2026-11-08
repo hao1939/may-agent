@@ -196,6 +196,17 @@ access and applicable permissions. Reserve access must be narrow, bounded and
 fair at both Host and App selection. Autonomous coordination honors App pause;
 only the existing human exception retains its current meaning.
 
+Bound human preference at both existing selection points: when eligible human
+and coordination entries compete, give at most two human dispatches before a
+coordination turn. Keep FIFO among queued Host coordination peers and existing
+priority/promotion among eligible App peers. Count successful foreground grants
+or takes, not peeks, repeated wakes or background dispatches. A changed or paused
+coordination entry remains ineligible; a high-priority ordinary entry gains no
+reserve role. This is process-local arbitration through the current queue and
+capacity object, not another queue or durable fairness ledger. Restart resets
+the preference. It bounds turns at each contention point, not global human work,
+elapsed time or delivery, and never bypasses atomic resource admission.
+
 Keep resource checks at the operation boundary: worktree preparation uses its
 filesystem, repository and footprint evidence. Known shortfall can defer before
 claim; a later preparation failure is still a charged attempt. Reuse relevant
@@ -1435,3 +1446,29 @@ No Task lifecycle, admission, priority or resource allowance changes follow from
 these observations. Integration order is additive Host read first, then App
 source; the App remains compatible when an older Host omits the section. Independent
 review, operational adoption and real model behavior remain separate gates.
+
+The coordination fairness increment at Host `7e065a3181` fixes unbounded human
+preference in both existing selection points. Two actual-controller regressions
+failed before the fix (**0 passed / 2 failed / 6 assertions**): a coordination
+entry behind human work in the same App, and a queued coordination entry competing
+with human waiters from several Apps. Human input still receives the first turns;
+coordination receives an opportunity after two competing human dispatches.
+
+Refinement exposed another failure: an interleaved background dispatch reset the
+new App counter and could perpetuate deferral (**0 passed / 1 failed / 5 assertions**).
+Only foreground takes now update that counter. Additional checks preserve pure
+peeks, current eligibility, ordinary-work isolation and FIFO among Host coordination
+peers. Final scheduling owners passed **59 tests / 221 assertions across three
+files**; runtime/scheduling/definition/funding owners passed **344 / 3,808 across
+seven files**. Host/SDK types, boundary and lint passed. The first static check
+rejected narrowed-null inference for a selection variable; an explicit selection
+type fixed it. An initial cross-App fixture did not keep human work queued at the
+Host boundary and correctly admitted coordination early; the corrected regression
+uses several independent waiting controllers. Neither is hidden as passing evidence.
+
+The candidate is committed and frozen for its full local gate; no full passing
+result is claimed yet. No SDK or executable App policy change is required, and no
+fairness state is persisted or granted authority. Current pause, eligibility,
+funding, root/recipient/Host capacity, shared workspace and bounded execution still
+apply. Source checks establish process-local dispatch behavior, not a live deployment,
+cross-runtime fairness, usable helper capacity or improved business outcomes.
