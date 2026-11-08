@@ -175,6 +175,7 @@ export type AppTaskContext = {
   agent: string;
   maxConcurrent: number;
   maxConsecutiveFailures?: AppTaskPolicy["maxConsecutiveFailures"];
+  closeOnResult?: AppTaskPolicy["closeOnResult"];
   resourceStore: AppTaskResourceStore;
 };
 

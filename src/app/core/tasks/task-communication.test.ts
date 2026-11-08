@@ -12,6 +12,7 @@ import {
   type TaskExecutor,
   type TaskCommunication,
   type TaskAttempt,
+  type AppTaskPolicy,
 } from "@may-agent/sdk";
 import { createAssistantMessageEventStream, type ToolCall } from "@earendil-works/pi-ai";
 import { DbWriter } from "../../../lib/db-writer.js";
@@ -46,6 +47,7 @@ async function fixture(
   beforeAgent?: (input: TaskAgentInput) => Promise<void>,
   conversations?: TaskConversationRunner,
   managedAgents?: ReturnType<typeof createTaskAgentRunner>,
+  taskPolicy?: AppTaskPolicy,
 ) {
   const root = mkdtempSync(join(tmpdir(), "task-communication-"));
   const appDir = join(root, "sample.app");
@@ -73,7 +75,7 @@ async function fixture(
         acceptance: ["Address accepted requirements"],
       },
     }),
-    tasks: { maxConcurrent: 2 },
+    tasks: { maxConcurrent: 2, ...taskPolicy },
   });
   let db = getDb(root);
   let bus = new EventBus();
@@ -191,6 +193,57 @@ const progress: TaskCommunication = {
   inputId: "ask",
   message: "The tests passed; review is still pending.",
 };
+
+test("App ending policy atomically closes a finite task, returns its caller answer and stays closed across restart", async () => {
+  let calls = 0;
+  const f = await fixture(async (attempt) => {
+    calls++;
+    expect((await attempt.read.contract("sample")).taskPolicy).toEqual({ closeOnResult: true });
+    return { state: "converged", summary: "Scoped assessment completed", response: "No change is justified", facts: ["Evidence verified"], result: { endAssignment: true } };
+  }, undefined, undefined, undefined, undefined, {
+    closeOnResult: ({ acceptedResult }) => acceptedResult.result?.endAssignment === true
+      ? { reason: "Finite request answered with verified evidence" } : null,
+  });
+  try {
+    f.admit("ask");
+    await f.run();
+    await f.inbox.host.refreshTaskResults("sample", "work");
+    const task = f.store.readTask("work")!;
+    const accepted = f.store.readAttempt(task.status.observedAttemptId!)?.acceptedResult;
+    expect(f.store.readCancellation("work")).toMatchObject({ kind: "closed", acceptedResultAttemptId: task.status.observedAttemptId, decidedBy: { kind: "app-policy" } });
+    expect(accepted).toMatchObject({ response: "No change is justified", inputKeys: [expect.any(String)] });
+    const item = getAppInboxItem(f.db, "ask");
+    expect(item?.status).toBe("done");
+    expect(listAppConversationMessages(f.db, "sample", "discussion").some((message) => message.text === "No change is justified")).toBe(true);
+    expect(f.db.prepare("SELECT count(*) AS n FROM events WHERE event_type='app.task.cancelled'").get()).toEqual({ n: 1 });
+    await f.reopen();
+    await f.run();
+    expect(calls).toBe(1);
+    expect(f.store.readAttempt(task.status.observedAttemptId!)?.acceptedResult).toEqual(accepted);
+    expect(f.store.readCancellation("work")?.kind).toBe("closed");
+    expect(f.db.prepare("SELECT count(*) AS n FROM events WHERE event_type='app.task.cancelled'").get()).toEqual({ n: 1 });
+  } finally { await f.close(); }
+});
+
+test("a failed App ending decision rolls back the answer publication and accepted result together", async () => {
+  const f = await fixture(async () => ({
+    state: "converged", summary: "Scoped assessment completed", response: "No change is justified",
+    facts: ["Evidence verified"], result: { endAssignment: true },
+  }), undefined, undefined, undefined, undefined, { closeOnResult: () => ({ reason: " " }) });
+  try {
+    f.admit("ask");
+    await f.run();
+    const task = f.store.readTask("work")!;
+    expect(f.store.readCancellation("work")).toBeNull();
+    expect(task.status.summary).toContain("nonblank closure reason");
+    const attempts = Object.values(f.store.readTaskContext({ taskIds: ["work"] }).attempts ?? {});
+    expect(attempts.every(attempt => !attempt.acceptedResult)).toBe(true);
+    expect(listAppConversationMessages(f.db, "sample", "discussion").some(message => message.text === "No change is justified")).toBe(false);
+    expect(getAppInboxItem(f.db, "ask")?.status).not.toBe("done");
+    await f.reopen();
+    expect(f.store.readCancellation("work")).toBeNull();
+  } finally { await f.close(); }
+});
 
 test("a malformed Conversation procedure retains failure and original obligations across paced retry and restart", async () => {
   let agentCalls = 0;

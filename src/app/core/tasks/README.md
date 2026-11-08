@@ -64,6 +64,22 @@ admitted input -> stored Task -> queue hint -> capacity -> fenced claim
 authorized owner -> close Task -> fence running execution and future wakes
 ```
 
+Apps may opt in to `tasks.closeOnResult`: a pure App callback receives the exact
+accepted converged result, assignment and recorded App creator. It returns a
+closure reason or null. This connects an explicit App-owned ending decision to
+its effect; it does not interpret convergence as fulfillment. Only assignments
+created by that same App without a creating Task qualify. Task-created and
+unattributed assignments keep their existing creator/operator authority.
+
+The reconciler commits the accepted result, exact input answer and closure in
+one fenced resource mutation. New input, outstanding input waits, Conditions or
+reconsideration work prevent closure; the result remains accepted and useful
+work remains queued or waiting. Apps must retain standing purposes and reusable
+Conversation input routes in their policy. Omission retains today's idle behavior.
+No additional model call, lifecycle state, polling loop or terminal-result rewrite
+is involved. `task-result-closure.test.ts` and the full runtime/caller regression
+in `task-communication.test.ts` own this boundary.
+
 | Stage | Follow in source | Durable authority |
 | --- | --- | --- |
 | Admit | `attachLoadedAppTask()` -> `core/state/inbox.ts: admitTaskInput()`; declared event routes use `admitResolvedAppTaskEvent()` -> `observeAppTaskIntent()` | Atomic inbox attachment or idempotent event admission retains the owning Task |

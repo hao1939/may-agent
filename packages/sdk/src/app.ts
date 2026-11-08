@@ -11,7 +11,7 @@ import type { ResourceObserver, ObservationContract } from "./observer.js";
 export { defineObserver, observationCondition } from "./observer.js";
 export type { ResourceObserver, ObservationContract, ObservationInterest, ObserverHealth } from "./observer.js";
 import type { AppEvent, EventSelector } from "./event.js";
-import type { Condition, TaskAction, TaskIntent, TaskStatus } from "./task.js";
+import type { Condition, ResourceCreator, TaskAction, TaskIntent, TaskStatus } from "./task.js";
 import type { MetricDefinition, ObserverContext, ObserverSnapshot, TaskAttempt, TaskDetail } from "./workflow.js";
 
 export { Type } from "typebox";
@@ -421,6 +421,8 @@ export type AppContract = {
   agent: string;
   inputSchema: TSchema;
   observations: ObservationContract[];
+  /** Presence confirms that the loaded Host exposes this App's result-ending policy. */
+  taskPolicy?: { closeOnResult: true };
 };
 
 export type AppAction<TInputSchema extends TSchema = TSchema> = {
@@ -442,6 +444,14 @@ export type AppTaskPolicy = {
   validateAction?: (action: TaskAction) => string | null;
   /** Optional App-specific semantic admission for externally observable waits. */
   validateCondition?: (condition: Condition) => string | null;
+  /** Pure, opt-in App decision after a converged result is accepted. Only applies
+   * to this App's own App-created assignments, never Task-created/delegated work.
+   * Return a nonblank reason to end responsibility, or null to retain it. Inspect
+   * the owner's explicit disposition and standing purpose; convergence alone is
+   * not fulfillment. New input, waits or a reconsideration deadline prevent closing.
+   * Result, caller answer and closure commit atomically; this is not a worker tool.
+   */
+  closeOnResult?: (context: AppTaskResultContext) => { reason: string } | null;
   /** Background attempt limit; one human Conversation turn may also run within the Host limit. */
   maxConcurrent?: number;
   /** Total consecutive unsuccessful attempts before owner attention (initial attempt included).
@@ -452,6 +462,19 @@ export type AppTaskPolicy = {
    * Explicit owner retry renews the allowance; ordinary Events and spec saves do not.
    */
   maxConsecutiveFailures?: number | "unlimited";
+};
+
+export type AppTaskResultContext = {
+  task: Readonly<TaskIntent>;
+  creator: Readonly<ResourceCreator>;
+  acceptedResult: Readonly<{
+    state: "converged";
+    summary: string;
+    response?: string;
+    result?: Record<string, unknown>;
+    facts: string[];
+    inputKeys?: string[];
+  }>;
 };
 
 /** Conversation input executes through one stable Task per Conversation. */
