@@ -1000,8 +1000,9 @@ Workload reports waiting demand and a dated, Task-specific checkout blocker,
 without claiming fleet disk health. Exact fences preserve competing input,
 revision and cancellation. Git/constraint owners passed **37 / 220**; broader
 runtime/retry/projection/workload/admission owners passed **364 / 4,241**. Static
-checks passed; frozen full local and hosted gates are running. Independent review
-remains. This increment still charges the first attempt that discovers the
+checks passed. Frozen full local and hosted Quality/Container gates passed:
+**4,131 tests / 3 existing skips / 0 failures / 24,075 assertions across 359
+files**. Independent review remains. This increment still charges the first attempt that discovers the
 shortage. Preclaim discovery and invalidating a retained observation when the
 source or installed workspace method changes remain the next refinement.
 
