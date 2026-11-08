@@ -1,0 +1,101 @@
+# Systemic review of retired-App state cleanup
+
+PR: [Host #410](https://github.com/hao1939/may-agent/pull/410)  
+Reviewed correction: `d4f00453b6640c06cf48a393edbfca01e77051e9`
+
+The repeated comments exposed a missing preservation invariant, not isolated
+syntax errors. App-definition migration and filesystem retirement did not
+establish that historical Task state satisfies the newer per-attempt acceptance
+contract. Earlier retirement checks and rehearsals overstated that readiness.
+Production state has not been changed by this review.
+
+## Root cause and review-process failure
+
+The operation conflated four facts: a caller's exact requirement and answer
+scope; a Task's current desired generation; a mutable progress/diagnostic
+projection; and durable accepted execution evidence. A pending or waiting Task
+can still hold an older answer. A missing reference does not prove there is no
+outcome. Controller acknowledgement can rewind on retry. An incomplete report
+has an accepted summary and a different diagnostic summary, both legitimate.
+
+The earlier review patched each reported example and tested nearby cases. It
+did not first inventory all answer carriers or assert conservation of every
+field cancellation overwrites. The private audit also repeated the current
+phase/reference heuristic, so its counts inherited the same blind spots.
+Passing CI proved those examples, not completeness of the retirement model.
+
+## Findings and corrections
+
+| Finding | Effect | Correction |
+| --- | --- | --- |
+| Phase/reference used as a gate | Pending, waiting and attention projections lost outcomes when the observed reference was absent or dangling. | Every present summary, response or result requires a retained source; missing provenance refuses the transaction. |
+| Diagnostic text treated as the accepted summary | Canonical incomplete reports were rejected despite retained evidence. | Summary may match accepted text or the exact same attempt's retained summary; response/result checks remain strict. No prefix whitelist. |
+| Controller generation treated as payload generation | Explicit retry made retained accepted evidence appear mismatched. | The observed attempt owns its payload generation and exact identity; controller acknowledgement is independent. |
+| Completion inventory omitted terminal history | An answered caller could be stopped unfulfilled when its only completion authority was a closed record, including one archived by reopen before a later cancellation. | Reuse the admission-specific terminal-history reader; distinguish completed from cancelled authority. |
+| Preservation skipped on replay | A prior cancellation hid deleted or changed accepted history. Terminal response/facts changes were also overlooked. | Apply and replay run the same proof against original reviewed preimages, and replay checks terminal response/facts. |
+| Attempt key and embedded identity were not both checked | Conflicting retained identity could pass. | Verify exact attempt ID, Task ID, completed acceptance and valid attempt generation. |
+
+`assertRetainedRetirementOutcome` is a read-only Host function used by both the
+operation and the private inventory. It makes no acceptance record, chooses no
+latest attempt or alias, and does not claim that preserved progress fulfills a
+caller. All checks precede mutation; dry-run and refusal retain atomic rollback.
+The generic Host evidence contract is documented in its operations guide.
+
+## Validation and review scope
+
+The audit followed canonical completion, waiting, incomplete reporting, retry,
+cancellation and reopen transitions; legacy completion import/cutover; durable
+admissions and exact result scope; Task/attempt/receipt/control/terminal storage;
+complete censuses, raw preimages, digest-bound replay and CLI transactions.
+
+The expanded baseline suite reproduced 17 failures. Separate probes reproduced
+two further completion-authority failures: current closed-only history and an
+older completion archived by reopen followed by a newer cancellation. There are
+29 additional regression cases, with 91 focused retirement tests passing on the
+corrected source. They include successful incomplete-report withdrawal under
+backoff, exhaustion and explicit retry, alongside refusal controls and whole-DB
+rollback/history-preservation assertions. Current full validation is retained in
+`admitted-caller-withdrawal-preparation-receipt.json` under `systemicReviewCorrection`;
+previous revisions' results remain historical.
+
+## Saved state readiness
+
+The exact Host preservation function now identifies **59 of 66** planned Task
+projections as requiring provenance review. This supersedes the earlier count of
+nine, which skipped outcomes outside its phase/reference gate.
+
+| Evidence gap | Count |
+| --- | ---: |
+| Missing observed-attempt reference | 52 |
+| Observed attempt retained without accepted-result data | 7 |
+| Summary only | 40 |
+| Summary plus result | 19 |
+
+The blocked phases are waiting 32, attention 24, pending one and converged two.
+These are evidence gaps, not proof that 59 business tasks must run again or that
+59 outcomes were fulfilled. Some summaries may be controller diagnostics; the
+operation must not guess from their text. The snapshot contains no selected
+replacement answers or alias decisions.
+
+`systemic-review-legacy-provenance-inventory.json` lists the 59 exact preimage
+hashes, references and retained-history counts without assigning new acceptance
+or fulfillment. `state-admitted-withdrawal-systemic-review-rehearsal-receipt.json`
+records actual dry-run and in-memory apply refusal, with every loaded table
+unchanged. Its census remains 66 nonterminal Tasks, four unfinished inputs and
+41 Conditions. These are saved query-only reduced-snapshot findings, not a fresh
+live census or a full offline backup.
+
+## Required next movement
+
+Keep the candidate blocked. Review original provenance and preserve legacy
+observations as such; restore accepted identity only where original evidence
+supports it. Do not copy all summaries into new accepted answers, choose a
+historical alias, erase an ambiguous result, or rerun business work merely to
+satisfy this migration. Missing identity may require a separately reviewed
+legacy-observation cutover; existing acceptance import must not be forced past
+its own evidence checks.
+
+Only after supported preservation/cutover, reviewed Host support and merge,
+stopped workers, a verified full offline backup and fresh exact preimages can a
+new complete retirement plan be applied. Independent current May/Alex
+obligations remain independent. See [cleanup history](retirement-cleanup-2026-11-09.md).
