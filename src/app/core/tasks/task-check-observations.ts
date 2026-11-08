@@ -9,7 +9,7 @@ const observations = new WeakMap<EventBus, CheckObservation>();
 /** Bounded activity counters; no Task writes, Events, timers or per-Task labels. */
 export function resetTaskChecks(bus: EventBus, since = Date.now()): void {
   observations.set(bus, {
-    since, counts: { deferred: 0, claimed: 0, busy: 0, waiting: 0, attention: 0, completed: 0 },
+    since, counts: { deferred: 0, claimed: 0, busy: 0, waiting: 0, attention: 0, completed: 0, stale: 0 },
     examples: [], examplesTruncated: false,
   });
 }

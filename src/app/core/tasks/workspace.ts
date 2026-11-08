@@ -35,20 +35,30 @@ export type FinalizedTaskWorkspace = {
 
 export type InspectedTaskWorkspace = FinalizedTaskWorkspace & { removable: boolean };
 
+export type TaskWorkspaceInput = {
+  repoDir: string;
+  workspaceRoot: string;
+  taskId: string;
+  generation: number;
+  baseBranch: string;
+  refreshRemote?: boolean;
+  previous?: AppTaskWorkspace;
+};
+export type TaskWorkspaceAdmission =
+  | { kind: "deferred"; constraint: TaskWorkspaceConstraint }
+  | { kind: "ready" }
+  /** Existing checkout transforms/sparse mode or unavailable source objects
+   * prevent a safe byte estimate. Preserve ordinary preparation semantics. */
+  | { kind: "unchecked" }
+  /** No current observation: retain a previously known shortage and its date. */
+  | { kind: "unavailable" };
+
 /** Host-private worktree operations; core owns ordering and admission of their facts. */
 export type TaskWorkspaces = {
-  /** Read-only recheck of a retained exact-operation constraint. Missing or
-   * failed observation stays unknown; prepare still fences the actual checkout. */
-  sampleCapacity?(constraint: TaskWorkspaceConstraint): Promise<{ availableBytes: number; observedAt: number }>;
-  prepare(input: {
-    repoDir: string;
-    workspaceRoot: string;
-    taskId: string;
-    generation: number;
-    baseBranch: string;
-    refreshRemote?: boolean;
-    previous?: AppTaskWorkspace;
-  }): Promise<PreparedTaskWorkspace>;
+  /** Read-only current-operation check before claiming. It never grants a
+   * permit; prepare repeats the actual boundary check after admission. */
+  admission?(input: TaskWorkspaceInput): Promise<TaskWorkspaceAdmission>;
+  prepare(input: TaskWorkspaceInput): Promise<PreparedTaskWorkspace>;
   /** Inspect acceptance prerequisites without removing files, branches or refs. */
   inspect(prepared: PreparedTaskWorkspace): Promise<InspectedTaskWorkspace>;
   /** Preserve accepted local deliverables; integration requirements belong to App acceptance. */

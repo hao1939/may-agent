@@ -1,9 +1,10 @@
 import { afterEach, expect, test } from "bun:test";
 import { appTaskTestContext } from "./app-task-test-support.js";
-import { cancelAppTask, claimObservedAppTask, deferAppTaskExecution, observeAppTaskIntent,
+import { cancelAppTask, claimObservedAppTask, completeAppTask, deferAppTaskExecution, observeAppTaskIntent,
   recordAppTaskTrigger, refreshTaskWorkspaceConstraint } from "./app-task-reconciler.js";
 import type { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import type { TaskWorkspaceConstraint } from "./workspace.js";
+import { readTaskWorkload } from "../reads/task-workload.js";
 
 const stores: AppTaskResourceStore[] = [];
 afterEach(() => stores.splice(0).forEach(store => store.close()));
@@ -71,4 +72,34 @@ test("refresh and recovery scheduling share the canonical resource fence and inp
   expect(f.store.db.prepare("SELECT ready FROM app_tasks WHERE task_id = 'work'").get()?.ready).toBe(1);
   expect(f.store.readTrigger("work")).toEqual(input);
   expect(f.claim().kind).toBe("claimed");
+});
+
+test("preclaim observations cannot pay for changed requirements or newly admitted input", () => {
+  const f = fixture();
+  expect(refreshTaskWorkspaceConstraint(f.config, f.expected, undefined)).toBe(true);
+  const observed = f.store.readTask("work")!;
+  const expectedResource = { generation: observed.metadata.generation, resourceVersion: observed.metadata.resourceVersion };
+  recordAppTaskTrigger(f.config, "work", { type: "fixture.correction", eventId: 2, data: {} });
+  const before = f.store.readTask("work");
+  expect(claimObservedAppTask(f.config, { taskId: "work", appAgent: "owner", handler: "fixture", expectedResource }))
+    .toMatchObject({ kind: "stale" });
+  expect(f.store.readTask("work")).toEqual(before);
+  expect(f.store.readTrigger("work")?.events).toHaveLength(2);
+  expect(f.store.db.prepare("SELECT count(*) AS n FROM app_task_attempts WHERE task_id = 'work'").get()?.n).toBe(1);
+  expect(f.claim().kind).toBe("claimed");
+});
+
+test("a known prerequisite on new input preserves the prior result and reports waiting demand", () => {
+  const f = fixture();
+  refreshTaskWorkspaceConstraint(f.config, f.expected, undefined);
+  const claim = f.claim();
+  if (claim.kind !== "claimed") throw new Error(claim.kind);
+  completeAppTask(f.config, claim, { summary: "Original input answered" });
+  recordAppTaskTrigger(f.config, "work", { type: "fixture.more-input", eventId: 3, data: {} });
+  const task = f.store.readTask("work")!;
+  expect(refreshTaskWorkspaceConstraint(f.config, { taskId: "work", generation: task.metadata.generation,
+    resourceVersion: task.metadata.resourceVersion }, f.constraint)).toBe(true);
+  expect(f.store.readTask("work")?.status).toMatchObject({ phase: "pending", observedAttemptId: claim.attemptId });
+  expect(readTaskWorkload({ taskStateConfig: f.config }).counts).toMatchObject({ waiting: 1, idle: 0, pendingInputTasks: 1 });
+  expect(f.store.readAttempt(claim.attemptId)?.acceptedResult?.summary).toBe("Original input answered");
 });

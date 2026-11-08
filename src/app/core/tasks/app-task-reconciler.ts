@@ -97,6 +97,7 @@ export type AppTaskClaimResult =
   | { kind: "deferred"; taskId: string; funding: TaskFundingConstraint }
   | { kind: "deferred"; taskId: string; execution: TaskExecutionConstraint }
   | { kind: "deferred"; taskId: string; workspace: TaskWorkspaceConstraint }
+  | { kind: "stale"; taskId: string }
   | { kind: "busy"; taskId: string; attemptId: string | null }
   | {
       kind: "waiting";
@@ -2803,6 +2804,8 @@ export function claimObservedAppTask(
     taskId: string;
     appAgent: string;
     handler: string;
+    /** Fence an asynchronous read-only prerequisite check before any debit. */
+    expectedResource?: { generation: number; resourceVersion: number };
     reason?: string;
     isAgentRunnable?: (agent: string) => boolean;
     /** Private installed execution policy; provenance comes from trusted dispatch. */
@@ -2831,6 +2834,9 @@ export function claimObservedAppTask(
       generation: 0,
     };
   }
+  if (input.expectedResource && (resource.metadata.generation !== input.expectedResource.generation ||
+    resource.metadata.resourceVersion !== input.expectedResource.resourceVersion))
+    return { kind: "stale", taskId: input.taskId };
   const persistedCurrentAttempt = resource.status.currentAttemptId
     ? config.resourceStore.readAttempt(resource.status.currentAttemptId) : null;
   if (persistedCurrentAttempt && persistedCurrentAttempt.taskId !== input.taskId) {
@@ -3349,8 +3355,8 @@ export function refreshTaskWorkspaceConstraint(
     const resource = tree.resources?.[expected.taskId];
     if (!resource || config.resourceStore.isCancelled(expected.taskId) || resource.status.currentAttemptId ||
       resource.metadata.generation !== expected.generation || resource.metadata.resourceVersion !== expected.resourceVersion ||
-      !pendingTaskWorkspaceConstraint(resource)) return false;
-    touchResource(resource, { workspaceConstraint: constraint });
+      (constraint && constraint.generation !== expected.generation)) return false;
+    touchResource(resource, { workspaceConstraint: constraint, ...(constraint ? { phase: "pending" as const } : {}) });
     commitTaskMutation(config, tree, { resourceMutation: {
       fences: [{ taskId: expected.taskId, generation: expected.generation, resourceVersion: expected.resourceVersion }],
       tasks: [{ ...resourceWrite(tree, resource, !constraint), nextCheckAt: constraint?.retryAt ?? Date.now() }],

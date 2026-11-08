@@ -8,6 +8,7 @@ import type { AppTaskWorkspace } from "../../core/tasks/app-task-state.js";
 import { TaskWorkspaceDeferredError } from "../../core/tasks/workspace.js";
 import type {
   TaskWorkspaces, PreparedTaskWorkspace, FinalizedTaskWorkspace, InspectedTaskWorkspace,
+  TaskWorkspaceInput, TaskWorkspaceAdmission,
 } from "../../core/tasks/workspace.js";
 
 type GitResult = { status: number; stdout: string; stderr: string };
@@ -21,10 +22,7 @@ export type GitWorkspaceOptions = { availableBytes?: (destinationPath: string) =
 export function createGitTaskWorkspaces(options: GitWorkspaceOptions = {}): TaskWorkspaces {
   return {
     prepare: (input) => prepareAppTaskWorkspace(input, options),
-    sampleCapacity: async (constraint) => ({
-      availableBytes: await (options.availableBytes ?? filesystemAvailableBytes)(constraint.destinationPath),
-      observedAt: Date.now(),
-    }),
+    admission: (input) => checkTaskWorkspaceAdmission(input, options),
     finalize: finalizeAppTaskWorkspace,
     inspect: inspectAppTaskWorkspace,
   };
@@ -168,6 +166,68 @@ function identity(taskId: string, generation: number, workspaceId?: string): { l
   return { leaf, branch: `task/${leaf}` };
 }
 
+/** Both observation and preparation select the same retained/fresh lineage. */
+function workspaceIdentity(input: TaskWorkspaceInput) {
+  const retained = input.previous && !input.previous.released ? input.previous : undefined;
+  const fresh = identity(input.taskId, input.generation, retained ? undefined : input.previous?.branch);
+  const branch = retained?.branch ?? fresh.branch;
+  const leaf = branch.slice("task/".length);
+  return { branch, leaf, path: retained?.path ?? resolve(join(input.workspaceRoot, leaf)) };
+}
+
+async function checkoutAdmission(
+  input: TaskWorkspaceInput, repoDir: string, path: string, commit: string, options: GitWorkspaceOptions,
+): Promise<TaskWorkspaceAdmission> {
+  const requiredBytes = await estimateCheckoutBytes(repoDir, commit);
+  if (requiredBytes === undefined) return { kind: "unchecked" };
+  const availableBytes = await (options.availableBytes ?? filesystemAvailableBytes)(path);
+  if (!Number.isSafeInteger(availableBytes) || availableBytes < 0) throw new Error("Invalid workspace capacity observation");
+  if (availableBytes >= requiredBytes) return { kind: "ready" };
+  const observedAt = Date.now();
+  return { kind: "deferred", constraint: { resource: "workspace", reason: "workspace-capacity",
+    generation: input.generation, repoDir, destinationPath: path, commit,
+    requiredBytes, availableBytes, observedAt, retryAt: observedAt + 60_000 } };
+}
+
+/** Resolve the checkout without fetching, writing refs, pruning, or creating
+ * directories. Missing advertised objects stay unchecked until actual preparation.
+ * Local branches and retained lineages use the same precedence as prepare. */
+async function checkTaskWorkspaceAdmission(input: TaskWorkspaceInput, options: GitWorkspaceOptions): Promise<TaskWorkspaceAdmission> {
+  try {
+    const repoDir = await realpath(input.repoDir);
+    return await withRepoOperation(repoDir, async () => {
+      const { branch, path } = workspaceIdentity(input);
+      const registered = (await worktreeEntries(repoDir)).find(entry => entry.path === path);
+      if (registered && existsSync(path)) return { kind: "ready" };
+      if (existsSync(path)) return { kind: "unchecked" }; // Prepare owns lineage diagnostics.
+      const branchRef = `refs/heads/${branch}`;
+      let checkout: string;
+      if (await refExists(repoDir, branchRef)) checkout = branchRef;
+      else if (await remoteExists(repoDir, "origin") && input.refreshRemote !== false) {
+        const published = await git(repoDir, ["ls-remote", "--heads", "origin",
+          `refs/heads/${input.baseBranch}`, branchRef]);
+        const heads = new Map(published.stdout.split("\n").map(line => {
+          const [commit, ref] = line.split("\t");
+          return [ref, commit];
+        }));
+        const base = heads.get(`refs/heads/${input.baseBranch}`);
+        if (!base) return { kind: "unavailable" };
+        checkout = heads.get(branchRef) ?? base;
+      } else {
+        const remoteTask = `refs/remotes/origin/${branch}`;
+        const remoteBase = `refs/remotes/origin/${input.baseBranch}`;
+        checkout = await remoteExists(repoDir, "origin") && await refExists(repoDir, remoteTask) ? remoteTask
+          : await refExists(repoDir, remoteBase) ? remoteBase
+          : await refExists(repoDir, `refs/heads/${input.baseBranch}`) ? `refs/heads/${input.baseBranch}` : "HEAD";
+      }
+      const commit = (await git(repoDir, ["rev-parse", "--verify", checkout], false, worktreeEstimateEnvironment)).stdout;
+      return checkoutAdmission(input, repoDir, path, commit, options);
+    });
+  } catch {
+    return { kind: "unavailable" };
+  }
+}
+
 async function worktreeEntries(repoDir: string): Promise<Array<{ path: string; branch?: string; head?: string }>> {
   const output = (await git(repoDir, ["worktree", "list", "--porcelain"])).stdout;
   if (!output) return [];
@@ -241,15 +301,9 @@ export async function prepareAppTaskWorkspace(
       throw new Error(`Task workspace requires a Git worktree: ${repoDir}`);
     }
 
-    const retained = input.previous && !input.previous.released
-      ? input.previous
-      : undefined;
     // Derive the next lineage from the released one, not the attempt. A retry
     // after preparation failed before recording metadata still finds the same path.
-    const fresh = identity(input.taskId, input.generation, retained ? undefined : input.previous?.branch);
-    const branch = retained?.branch ?? fresh.branch;
-    const leaf = branch.slice("task/".length);
-    const path = retained?.path ?? resolve(join(input.workspaceRoot, leaf));
+    const { branch, leaf, path } = workspaceIdentity(input);
     const remote = "origin";
     const hasRemote = await remoteExists(repoDir, remote);
     const refUpdates: Array<{ ref: string; before: string; fetched: string }> = [];
@@ -344,16 +398,8 @@ export async function prepareAppTaskWorkspace(
         const checkoutCommit = branchExists
           ? (await git(repoDir, ["rev-parse", branchRef])).stdout
           : remoteTaskBranchExists ? (await git(repoDir, ["rev-parse", remoteTaskRef!])).stdout : currentBaseCommit;
-        const requiredBytes = await estimateCheckoutBytes(repoDir, checkoutCommit);
-        if (requiredBytes !== undefined) {
-          const availableBytes = await (options.availableBytes ?? filesystemAvailableBytes)(path);
-          if (availableBytes < requiredBytes) {
-            const observedAt = Date.now();
-            throw new TaskWorkspaceDeferredError({ resource: "workspace", reason: "workspace-capacity",
-              generation: input.generation, repoDir, destinationPath: path, commit: checkoutCommit,
-              requiredBytes, availableBytes, observedAt, retryAt: observedAt + 60_000 });
-          }
-        }
+        const admission = await checkoutAdmission(input, repoDir, path, checkoutCommit, options);
+        if (admission.kind === "deferred") throw new TaskWorkspaceDeferredError(admission.constraint);
         await mkdir(dirname(path), { recursive: true });
         if (branchExists) await git(repoDir, ["worktree", "add", path, branch]);
         else {

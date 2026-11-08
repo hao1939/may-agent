@@ -29,6 +29,7 @@ import {
   isAppTaskActionStaleError,
   readAppTaskChildContext,
   readAppTaskLiveSnapshot,
+  readAppTaskAgent,
   readPendingAppTaskTrigger,
   recoverableAppTaskAttempts,
   recordAppTaskAttemptWorkspace,
@@ -39,7 +40,7 @@ import {
   reportAppTaskFailure,
   type AppTaskClaim,
 } from "./app-task-reconciler.js";
-import { ResourceTaskMutationStaleError, type AppTaskContext } from "./app-task-store.js";
+import { appTaskReadinessById, ResourceTaskMutationStaleError, type AppTaskContext } from "./app-task-store.js";
 import {
   hasLiveAppTaskSession,
   interruptSupersededAgentSession,
@@ -60,7 +61,7 @@ import {
   type AppTaskRuntimeDescriptor,
 } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
-import type { PreparedTaskWorkspace } from "./workspace.js";
+import type { PreparedTaskWorkspace, TaskWorkspaceAdmission, TaskWorkspaceInput } from "./workspace.js";
 import { TaskWorkspaceDeferredError } from "./workspace.js";
 import { pendingTaskWorkspaceConstraint } from "./app-task-state.js";
 import { recordTaskCheck } from "./task-check-observations.js";
@@ -71,6 +72,29 @@ export type AppTaskTiming = {
   attemptId?: string;
   generation?: number;
 };
+
+/** Both preclaim observation and actual preparation resolve the installed method.
+ * No resource authority is passed to the adapter; it only observes the operation. */
+async function taskWorkspaceRequirement(
+  opts: AppTaskRuntimeOptions, descriptor: AppTaskRuntimeDescriptor, config: AppTaskContext,
+  input: { intent: AppTaskIntent; agent: string; generation: number },
+) {
+  const workflow = input.intent.workflow?.trim();
+  const workspace = workflow && opts.workflows ? (await opts.workflows.inspect({
+    source: opts, appDir: descriptor.appDir, agent: input.agent, workflow,
+  })).workspace : undefined;
+  const workflowNeedsWorktree = workspace === "task" || (typeof workspace === "object" && workspace.kind === "task");
+  const required = !(isConversationTask(config, input.intent.id) && descriptor.app.conversation?.mode !== "task") &&
+    (workflowNeedsWorktree || (!workflow && descriptor.app.workspace?.kind === "git"));
+  const preparation: TaskWorkspaceInput | undefined = required && descriptor.app.workspace?.kind === "git" ? {
+    repoDir: descriptor.projectDir,
+    workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
+    taskId: input.intent.id, generation: input.generation,
+    baseBranch: typeof workspace === "object" ? workspace.baseBranch : (descriptor.app.workspace.branch ?? "dev"),
+    previous: config.resourceStore.readTaskWorkspace(input.intent.id, input.generation),
+  } : undefined;
+  return { workspace, required, preparation };
+}
 
 export async function runTaskAttempt(input: {
   opts: AppTaskRuntimeOptions;
@@ -96,22 +120,46 @@ export async function runTaskAttempt(input: {
     const recoveredTaskIds = recoverTaskConditions(opts, descriptor, config, { taskId: input.taskId }).filter(
       (taskId) => taskId !== input.taskId,
     );
-    const pending = config.resourceStore.readTask(input.taskId);
+    const snapshot = config.resourceStore.readTaskContext({ taskIds: [input.taskId] }, { includeHistory: false, childLimit: 0 });
+    const pending = snapshot.resources?.[input.taskId];
     const workspaceHold = pending && pendingTaskWorkspaceConstraint(pending);
-    if (pending && workspaceHold && workspaceHold.retryAt <= Date.now()) {
-      let sample: { availableBytes: number; observedAt: number } | undefined;
-      try { sample = await opts.workspaces?.sampleCapacity?.(workspaceHold); } catch { /* Missing evidence retains the dated constraint. */ }
-      if (sample && (!Number.isSafeInteger(sample.availableBytes) || sample.availableBytes < 0 ||
-        !Number.isSafeInteger(sample.observedAt) || sample.observedAt < 1)) sample = undefined;
-      const held = !sample || sample.availableBytes < workspaceHold.requiredBytes;
-      const updated = held ? { ...workspaceHold, ...(sample ?? {}), retryAt: Date.now() + 60_000 } : undefined;
-      if (!refreshTaskWorkspaceConstraint(config, { taskId: input.taskId, generation: pending.metadata.generation,
-        resourceVersion: pending.metadata.resourceVersion }, updated) || held) return recoveredTaskIds;
+    const readiness = appTaskReadinessById(snapshot, config.maxConcurrent)[input.taskId]?.state;
+    let expectedResource: { generation: number; resourceVersion: number } | undefined;
+    if (pending && !pending.status.currentAttemptId && pending.status.phase !== "running" &&
+      (workspaceHold || (descriptor.app.workspace?.kind === "git" && opts.workspaces?.admission)) &&
+      (workspaceHold || readiness === "ready" || readiness === "capacity-blocked") &&
+      (!workspaceHold || workspaceHold.retryAt <= Date.now())) {
+      expectedResource = { generation: pending.metadata.generation, resourceVersion: pending.metadata.resourceVersion };
+      let observation: TaskWorkspaceAdmission = { kind: "unavailable" };
+      try {
+        const method = await taskWorkspaceRequirement(opts, descriptor, config, {
+          intent: { ...pending.spec, id: input.taskId }, generation: pending.metadata.generation,
+          agent: readAppTaskAgent(config, input.taskId, snapshot) ?? descriptor.agent,
+        });
+        observation = !method.required ? { kind: "ready" }
+          : method.preparation && opts.workspaces?.admission ? await opts.workspaces.admission(method.preparation)
+          : { kind: "unavailable" };
+        // A shared method with no retained blocker has no checkout observation
+        // to fence. The ordinary claim reads current requirements as before.
+        if (!method.required && !workspaceHold) expectedResource = undefined;
+      } catch { /* Actual preparation retains its established diagnostic/failure path. */ }
+      if (expectedResource && (observation.kind === "deferred" || workspaceHold)) {
+        const held = observation.kind === "deferred" ? observation.constraint
+          : observation.kind === "unavailable" && workspaceHold ? { ...workspaceHold, retryAt: Date.now() + 60_000 }
+          : undefined;
+        const applied = refreshTaskWorkspaceConstraint(config, { taskId: input.taskId, ...expectedResource }, held);
+        if (!applied || held) {
+          recordTaskCheck(opts.bus, applied ? "deferred" : "stale", { appId: descriptor.id, taskId: input.taskId });
+          return recoveredTaskIds;
+        }
+        expectedResource.resourceVersion++;
+      }
     }
     const claim = claimObservedAppTask(config, {
       taskId: input.taskId,
       appAgent: descriptor.agent,
       handler: "auto",
+      expectedResource,
       execution: { recipient: agent => opts.agents?.executionRecipient?.(agent) ?? null,
         lane: input.dispatch.coordination ? "coordination" : input.dispatch.lane === "human" ? "human" : "background" },
       ...(input.dispatch.coordination ? { canUseCoordinationReserve: (resource, agent) => isTrustedTaskCoordination(descriptor, resource, agent) } : {}),
@@ -257,44 +305,20 @@ async function runClaimedTask(
       report = claim.settlement.report;
       if (taskWorkspace) executionPaths = withAppTaskWorkspace(executionPaths, taskWorkspace.metadata.path);
     } else {
-      const workflowWorkspace =
-        workflowKey && opts.workflows
-          ? (
-              await opts.workflows.inspect({
-                source: opts,
-                appDir: descriptor.appDir,
-                agent: claim.agent,
-                workflow: workflowKey,
-              })
-            ).workspace
-          : undefined;
-      const workflowNeedsWorktree =
-        workflowWorkspace === "task" || (typeof workflowWorkspace === "object" && workflowWorkspace.kind === "task");
-      if (dispatch.coordination && workflowWorkspace !== "shared")
+      const method = await taskWorkspaceRequirement(opts, descriptor, config, {
+        intent, agent: claim.agent, generation: claim.generation,
+      });
+      if (dispatch.coordination && method.workspace !== "shared")
         throw new Error("Coordination reserve requires the installed shared-workspace workflow");
       // Both execution paths share workspace lineage, admission fencing, and
       // failure handling. Only the workflow may override the App's base branch.
-      if (
-        !(conversation && descriptor.app.conversation?.mode !== "task") &&
-        (workflowNeedsWorktree || (!workflowKey && descriptor.app.workspace?.kind === "git"))
-      ) {
+      if (method.required) {
         try {
           if (descriptor.app.workspace?.kind !== "git") {
             throw new Error(`Workflow ${workflowKey} requires a task worktree but app workspace is not Git`);
           }
           if (!opts.workspaces) throw new Error("Task workspace backend is not installed");
-          const previous = config.resourceStore.readTaskWorkspace(claim.taskId, claim.generation);
-          taskWorkspace = await opts.workspaces.prepare({
-            repoDir: descriptor.projectDir,
-            workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
-            taskId: claim.taskId,
-            generation: claim.generation,
-            baseBranch:
-              typeof workflowWorkspace === "object"
-                ? workflowWorkspace.baseBranch
-                : (descriptor.app.workspace.branch ?? "dev"),
-            previous,
-          });
+          taskWorkspace = await opts.workspaces.prepare(method.preparation!);
           executionPaths = withAppTaskWorkspace(executionPaths, taskWorkspace.metadata.path);
           if (!recordAppTaskAttemptWorkspace(config, claim, taskWorkspace.metadata)) {
             throw new Error(`Task attempt ${claim.attemptId} became stale while preparing its workspace`);
