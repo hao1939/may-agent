@@ -423,6 +423,10 @@ implementation approach; production activation remains pending.
 The declaration must cover App-local eligibility as well as Host capacity;
 otherwise a saturated App can still prevent its coordination from starting.
 Reserve eligibility grants no right to revise or close other assignments.
+A managed readonly review must receive only Task read actions, with both its
+advertised schema and invocation enforcing that scope. Returning advice cannot
+publish facts, apply changes, revise or close work through the same Task tool.
+Separately authorized writing executions retain their actual controls.
 
 Autonomous coordination still honors App pause and explicit stop; reserve access
 does not inherit the existing human-only pause exception.

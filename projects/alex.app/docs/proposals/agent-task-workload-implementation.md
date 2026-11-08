@@ -36,8 +36,11 @@ App/Host worker probe went from one persisted publication to zero using only a
 local scripted provider. Five preparation/capability regressions failed before
 the fix; the three owning suites then passed 73 tests / 334 assertions, the
 workflow owner passed 28 tests / 84 assertions and static checks passed. Exact
-full local and hosted gates remain pending. No external model or live rollout
-was used to discover or verify the boundary.
+full local CI passed **4,221 tests / 3 existing skips / 0 failures / 24,609
+assertions across 363 files**, 340.69 seconds, on
+`278a9fe755bd612a06dd7d85e7628b28794ecbda`. Hosted Quality and Container passed
+the same head (run `42535835891`). No external model or live rollout was used to
+discover or verify the boundary. Independent review remains required.
 
 Source reviewed: Host #398 merge `88a98be236baf07bfcf100208cfb0dc1589dfa06`.
 The inspected checkout `036f4a4f757eea9f8a4492231e5541f365a8fcf6` has its identical
@@ -1493,3 +1496,54 @@ fairness state is persisted or granted authority. Current pause, eligibility,
 funding, root/recipient/Host capacity, shared workspace and bounded execution still
 apply. Source checks establish process-local dispatch behavior, not a live deployment,
 cross-runtime fairness, usable helper capacity or improved business outcomes.
+
+Behavioral-trial preparation now has an executable App-owned linked experiment,
+branch `experiment/workload-behavior-comparison`, frozen source
+`5bf88f5ef6840fb092c010eaa34d2880de029b3f`, under
+`projects/alex.app/experiments/workload-behavior-20261109/`. It uses the actual App
+workflow, policy and agent instructions with minimal fixture App/agent wiring,
+real Host workers, canonical SQLite reads/claims and retained accepted results.
+It remains on its experiment branch; no generated App-specific fixture was added
+to generic Host CI or activated as a deployed workflow.
+
+The final local scripted preflight passed **56 worker passes / 48 requests /
+2,003,964 request bytes**, with no mechanical failure or business Task change.
+Two repetitions alternate control/treatment order across the six behavioral case
+families. The treatment's actual received facts are checked: total occupancy
+one/three of four, ordinary places two/zero, ordinary credits twenty in both,
+known attribution, exact protected-root scope and the Task-local workspace blocker.
+Unchanged pressure/shortage skips another helper; actual reservation or prerequisite
+recovery causes reconsideration. Each pass still pays its committed claim; only
+reviewing changed evidence pays a helper start. Strict harness/source-SDK types
+and the explicit authorization-refusal check passed.
+
+The control omits the supplied decision-time summary while retaining the same
+scoped Task reads, including workload on demand. Requests for that observation
+are flagged and retained. This first cohort measures supplied feedback against
+common scoped discovery; it does not prove complete absence of resource evidence
+in the control. Its readonly advice is not applied closure, reprioritization,
+caller disposition or repaired delivery. Those actual outcome/adoption gates
+remain required; this preflight is not a substitute for them or for model judgment.
+
+The experiment permits at most **64 `gpt-5.6-sol` Chat Completions requests**, no
+fallback, **3 MiB aggregate serialized request bytes**, four requests per pass and
+1,024 requested output tokens per request (65,536 maximum in total). Provider,
+worker and new-start/request experiment bounds are 45 seconds, 100 seconds and
+20 minutes; an already admitted worker can take its remaining bound to drain.
+Explicit trial endpoint/credentials and authority are required before `--execute`.
+The parent bridge alone receives the credential. Workers use a loopback provider,
+a restricted environment and readonly Task/finish tools. Request/output ceilings
+are not a verified billing tariff or proof of external provider support.
+
+Retain raw fixture requests/responses, accepted state, before/after records,
+charges, diagnostics and all failed runs. Initial preflight exposed duplicate
+workflow registration in the fixture; the existing helper-file convention fixed
+it. A smoke check then exposed the real readonly mutation gap. Initial strict
+harness checking also rejected missing fixture concurrency, an unsupported
+completion field and an incorrectly widened literal; those inputs were corrected,
+with the existing Markdown ambient declaration included in the checking config.
+The first corrected full preflight also passed before the final received-fact
+assertions were added. No unexplained failure was retried into a passing claim.
+Private reproduction/data remain in the workload checkpoint; Git preserves the
+active harness. No external model call, source activation, live mutation or rollout
+was performed by this preparation.
