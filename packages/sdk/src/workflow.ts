@@ -373,9 +373,25 @@ export type TaskWorkload = {
       maxConcurrent: number; backgroundMaxConcurrent: number;
       reservedSlots: number; waitingAcquisitions: number;
     };
+    /** Optional on older Hosts. Shared actual execution, independently of
+     * controller dispatch places above. These are observations, not permits. */
+    sharedHost?: { available: false } | {
+      available: true; scope: "installation";
+      maxConcurrent: number; occupied: number; remaining: number;
+      backgroundMaxConcurrent: number; backgroundOccupied: number; backgroundRemaining: number;
+    };
     /** These shared authorities are not installed by the feedback read. */
-    agent: { available: false };
-    root: { available: false };
+    agent: { available: false } | {
+      available: true; scope: "installation-recipient";
+      recipient: { kind: "directory" | "programmatic"; id: string };
+      maxConcurrent: number; occupied: number; remaining: number;
+    };
+    /** Only the Host-bound current Task can select this root. */
+    root: { available: false } | {
+      available: true; scope: "current-task-root";
+      task: { appId: string; taskId: string }; root: { appId: string; taskId: string };
+      maxConcurrent: number; occupied: number; remaining: number;
+    };
   };
   /** Queue notification to this dispatch, including pause/prerequisite time.
    * Not a fleet latency, a durable ready-since timestamp or utilization. */

@@ -9,6 +9,9 @@ import { closeDb, getDb } from "../../../src/lib/requests.js";
 import { AppTaskResourceStore } from "../../../src/app/core/state/app-task-resource-store.js";
 import { TaskBudgetAdmissionStore } from "../../../src/app/core/state/task-budget-admission.js";
 import { adoptTaskBudget } from "../../../src/app/core/state/task-budget-funding.js";
+import { installTaskExecutionLimit } from "../../../src/app/core/state/task-execution-admission.js";
+import { TaskExecutionStore } from "../../../src/app/core/state/task-execution-store.js";
+import type { TaskWorkload } from "@may-agent/sdk";
 import { DefinitionSourceReleaseStore } from "../../../src/app/app-source-release.js";
 import {
   appTaskContext,
@@ -216,7 +219,9 @@ function acceptedAttempt(f: ReturnType<typeof fixture>) {
   assert.equal(f.store.readCancellation("work/one"), null);
   assert.equal(f.store.readReceipt("work/one"), null);
   const attempt = task.status.observedAttemptId ? f.store.readAttempt(task.status.observedAttemptId) : null;
-  assert.equal(attempt?.acceptedResult?.state, "converged");
+  assert.equal(attempt?.acceptedResult?.state, "converged", JSON.stringify({
+    status: task.status, attempts: f.store.readTaskContext({ taskIds: ["work/one"] }).attempts,
+  }));
   assert.equal(attempt?.taskGeneration, task.metadata.generation);
   return attempt!;
 }
@@ -425,6 +430,15 @@ const scenarios: Record<string, () => Promise<void>> = {
   protectedCoordination: () => runCoordination(true),
   async workloadFeedback() {
     const f = fixture("owner");
+    const root = { appId: "sample", taskId: "work/one" };
+    const recipient = { kind: "directory" as const, id: "projects/sample.app/agents/owner" };
+    const sponsor = { appId: "sample", agent: "owner" };
+    new TaskBudgetAdmissionStore(f.db).install({ appId: "sample", sponsor, dailyCredits: 5, rootCredits: 5 });
+    adoptTaskBudget(f.db, { task: root, root: { root, sponsor, purpose: "ordinary", credits: 5, renewal: "lifetime" },
+      adoptionId: "workload-fixture", reason: "Adopt retained fixture for shared execution observation" });
+    installTaskExecutionLimit(f.db, { kind: "host" }, 4);
+    installTaskExecutionLimit(f.db, { kind: "agent", recipient }, 2);
+    installTaskExecutionLimit(f.db, { kind: "root", root }, 3);
     const previousPilot = process.env.MAY_TASK_WORKLOAD_FEEDBACK_APP;
     process.env.MAY_TASK_WORKLOAD_FEEDBACK_APP = "sample";
     const host = new HostCapacity(5).workloadSnapshot();
@@ -436,19 +450,25 @@ const scenarios: Record<string, () => Promise<void>> = {
       export const description = "Read the bounded attempt workload";
       export async function execute(ctx) {
         return ctx.done("Observed workload", { state: "converged", summary: "Observed workload", facts: [],
-          result: { workload: ctx.reconciliation.workload } });
+          result: { workload: ctx.reconciliation.workload, liveWorkload: await ctx.read.tasks.workload({ agent: "owner" }) } });
       }
     `);
     try {
       await run(f);
       const current = f.store.readTask("work/one")!;
       assert.equal(current.status.phase, "converged", JSON.stringify(current.status));
-      const observed = current.status.result!.workload as {
-        limits: { host: unknown; app: { backgroundMaxConcurrent: number } };
-        queueWait: { appId: string; taskId: string; elapsedMs: number; lifetime: string }; counts: { running: number };
-      };
+      const observed = current.status.result!.workload as TaskWorkload;
       assert.deepEqual(observed.limits.host, host);
+      assert.deepEqual(observed.limits.sharedHost, { available: true, scope: "installation", maxConcurrent: 4,
+        occupied: 1, remaining: 3, backgroundMaxConcurrent: 3, backgroundOccupied: 1, backgroundRemaining: 2 });
+      assert.deepEqual(observed.limits.agent, { available: true, scope: "installation-recipient", recipient,
+        maxConcurrent: 2, occupied: 1, remaining: 1 });
+      assert.deepEqual(observed.limits.root, { available: true, scope: "current-task-root", task: root, root,
+        maxConcurrent: 3, occupied: 1, remaining: 2 });
+      assert.deepEqual((current.status.result!.liveWorkload as TaskWorkload).limits, observed.limits);
+      assert.deepEqual(new TaskExecutionStore(f.db).usage({ kind: "host" }), { limit: 4, occupied: 0 });
       assert.equal(observed.limits.app.backgroundMaxConcurrent, 1);
+      assert(observed.queueWait.available);
       assert.equal(observed.queueWait.elapsedMs, 123);
       assert.equal(observed.queueWait.lifetime, "current-controller");
       assert.equal(observed.queueWait.appId, "sample");

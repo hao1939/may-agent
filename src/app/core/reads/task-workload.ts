@@ -8,10 +8,14 @@ import type { AppTaskRuntimeDescriptor } from "../tasks/runtime-definition.js";
 import type { AppTaskDispatch } from "../tasks/controller.js";
 import { TaskBudgetAdmissionStore } from "../state/task-budget-admission.js";
 import { utcBudgetPeriod, type BudgetPurpose, type BudgetSponsor } from "../state/task-budget-store.js";
+import { TaskExecutionStore } from "../state/task-execution-store.js";
+import type { ExecutionRecipient } from "../../../lib/execution-recipient.js";
 
 export type TaskWorkloadSource = {
   /** Trusted attempt context, never a workload query argument. */
   currentTaskId?: string;
+  /** Same pinned definitions as execution; aliases are never capacity keys. */
+  executionRecipient?: (agent: string) => ExecutionRecipient | null;
   /** Absent in an isolated attempt worker: its limiter is not Host authority. */
   host?: () => TaskWorkload["limits"]["host"];
   foregroundTaskIds?: (taskIds: readonly string[]) => ReadonlySet<string>;
@@ -19,8 +23,10 @@ export type TaskWorkloadSource = {
 };
 
 export function runtimeWorkloadSource(opts: AppTaskRuntimeOptions, descriptor?: AppTaskRuntimeDescriptor, dispatch?: AppTaskDispatch, taskId?: string): TaskWorkloadSource {
+  const executionRecipient = opts.agents?.executionRecipient?.bind(opts.agents);
   return {
     ...(taskId ? { currentTaskId: taskId } : {}),
+    ...(executionRecipient ? { executionRecipient } : {}),
     ...(opts.installControllers === false
       ? dispatch?.hostCapacityAtDispatch ? { host: () => dispatch.hostCapacityAtDispatch! } : {}
       : { host: () => opts.hostCapacity.workloadSnapshot() }),
@@ -28,6 +34,41 @@ export function runtimeWorkloadSource(opts: AppTaskRuntimeOptions, descriptor?: 
     ...(descriptor?.app.conversation ? { foregroundTaskIds: (taskIds: readonly string[]) =>
       new Set(taskIds.filter(id => descriptor.resourceStore.hasPendingHumanConversationInput(id))) } : {}),
   };
+}
+
+/** Same read snapshot as readiness and credits, using only live reservations.
+ * Current-root scope comes from trusted context, never a workload argument. */
+function readWorkloadExecution(
+  config: AppTaskContext, source: TaskWorkloadSource | undefined, agent: string | undefined,
+): Pick<TaskWorkload["limits"], "sharedHost" | "agent" | "root"> {
+  const executions = new TaskExecutionStore(config.resourceStore.db);
+  const result: Pick<TaskWorkload["limits"], "sharedHost" | "agent" | "root"> = {
+    sharedHost: { available: false }, agent: { available: false }, root: { available: false },
+  };
+  const host = executions.usage({ kind: "host" });
+  if (host.limit === null) return result;
+  const backgroundMaxConcurrent = Math.max(1, host.limit - 1);
+  const backgroundOccupied = executions.backgroundOccupied();
+  const remaining = Math.max(0, host.limit - host.occupied);
+  result.sharedHost = { available: true, scope: "installation", maxConcurrent: host.limit,
+    occupied: host.occupied, remaining, backgroundMaxConcurrent, backgroundOccupied,
+    backgroundRemaining: Math.max(0, Math.min(remaining, backgroundMaxConcurrent - backgroundOccupied)) };
+  const taskId = source?.currentTaskId;
+  const selectedAgent = agent ?? (taskId ? readAppTaskAgent(config, taskId) : undefined);
+  const recipient = selectedAgent ? source?.executionRecipient?.(selectedAgent) : null;
+  if (recipient) {
+    const usage = executions.usage({ kind: "agent", recipient });
+    if (usage.limit !== null) result.agent = { available: true, scope: "installation-recipient", recipient: structuredClone(recipient),
+      maxConcurrent: usage.limit, occupied: usage.occupied, remaining: Math.max(0, usage.limit - usage.occupied) };
+  }
+  const task = taskId ? { appId: config.resourceStore.appId, taskId } : null;
+  const root = task ? new TaskBudgetAdmissionStore(config.resourceStore.db).budget.binding(task) : null;
+  if (root && task) {
+    const usage = executions.usage({ kind: "root", root });
+    if (usage.limit !== null) result.root = { available: true, scope: "current-task-root", task, root,
+      maxConcurrent: usage.limit, occupied: usage.occupied, remaining: Math.max(0, usage.limit - usage.occupied) };
+  }
+  return result;
 }
 
 /** Caller holds the same SQLite snapshot as Task readiness. Exact keyed reads
@@ -123,7 +164,7 @@ export function readTaskWorkload(
       limits: {
         app: { backgroundMaxConcurrent: config.maxConcurrent, interactiveAdditional: 1 },
         host: structuredClone(opts.workloadSource?.host?.() ?? { available: false }),
-        agent: { available: false }, root: { available: false },
+        ...readWorkloadExecution(config, opts.workloadSource, agent),
       },
       queueWait: opts.workloadSource?.dispatch ? {
         available: true, scope: "current-task-dispatch",

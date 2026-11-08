@@ -71,7 +71,7 @@ function operationKey(operation: ExecutionOperation): string {
   return JSON.stringify([operation.kind, operation.invocationId]);
 }
 
-/** Private foundation, not wired to dispatch or exposed for activation yet.
+/** Shared execution accounting; installation activation remains private.
  * All runtimes share these rows. Callers must join reservation and start-credit
  * admission to their existing fenced transaction, then dispatch outside SQL.
  * Primary execution adopts its attempt reservation; it never acquires twice. */
@@ -132,11 +132,15 @@ export class TaskExecutionStore {
     if (usage.limit === null) return "execution-policy";
     if (usage.occupied + requiredSlots > usage.limit) return "execution-capacity";
     if (scope.kind === "host" && lane === "background") {
-      const occupied = this.db.prepare(`SELECT count(*) AS n FROM task_execution_reservations
-        WHERE released_at IS NULL AND lane = 'background'`).get()!.n as number;
+      const occupied = this.backgroundOccupied();
       if (occupied + requiredSlots > Math.max(1, usage.limit - 1)) return "execution-capacity";
     }
     return null;
+  }
+
+  backgroundOccupied(): number {
+    return this.db.prepare(`SELECT count(*) AS n FROM task_execution_reservations
+      WHERE released_at IS NULL AND lane = 'background'`).get()!.n as number;
   }
 
   installLimit(scope: ExecutionScope, slots: number): void {
