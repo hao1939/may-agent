@@ -24,6 +24,13 @@ field cancellation overwrites. The private audit also repeated the current
 phase/reference heuristic, so its counts inherited the same blind spots.
 Passing CI proved those examples, not completeness of the retirement model.
 
+For further review, start with the fields the operation overwrites, identify
+every durable carrier of those values, and trace the canonical writers through
+completion, wait, failure, revision, retry, cancellation and reopen. Test both
+loss refusal and legitimate withdrawal, including replay after history changes.
+Use the same preservation proof for the private census and the operation, then
+keep source correctness and installation readiness as separate conclusions.
+
 ## Findings and corrections
 
 | Finding | Effect | Correction |
@@ -57,6 +64,13 @@ backoff, exhaustion and explicit retry, alongside refusal controls and whole-DB
 rollback/history-preservation assertions. Current full validation is retained in
 `admitted-caller-withdrawal-preparation-receipt.json` under `systemicReviewCorrection`;
 previous revisions' results remain historical.
+
+Full local CI on this correction passed type, SDK, App-boundary and lint checks,
+then finished with 4,022 tests passed, three skipped and one failure. The
+unchanged Conversation waiting-report test observed Request closure before its
+final presentation reply settled; both parameter cases passed in one standalone
+diagnostic run. The full-suite failure remains recorded, without automatic
+retries. Hosted Container validation passed; hosted Quality is still running.
 
 ## Saved state readiness
 
