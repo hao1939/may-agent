@@ -420,7 +420,8 @@ suites passed, **46 tests and 138 assertions**. They verify current scheduling
 foundations, not the proposed credits, helper limits or adaptive behavior.
 
 
-The accounting foundation on Host branch `feat/workload-budget` introduces
+The accounting foundation in Host [PR #405](https://github.com/hao1939/may-agent/pull/405),
+revision `2c9fc4d0e3`, introduces
 private root bindings, UTC sponsor grants, cumulative/declared-period root
 balances and idempotent operation receipts in the existing SQLite database.
 Ordinary and protected purposes are separate. It exposes no model-facing funding
@@ -429,4 +430,10 @@ Nine focused tests / 43 assertions passed, including independent process races
 against both sponsor and root limits, caller rollback, restart/replay, and midnight
 renewal. An interleaved two-connection regression first reproduced a mixed budget
 observation; a read snapshot now keeps its root and sponsor balances consistent.
-Full verification and review of this foundation remain pending.
+The frozen full local gate passed 3,932 tests / 3 skipped / zero failures /
+22,903 assertions across 344 files, including browser execution and Host/SDK
+types, boundary and lint. Hosted Quality and Container passed the same revision;
+independent review remains required. This PR is based independently on main.
+Admission integration is the next isolated increment; installed policy is not
+exposed for production activation before creation, claim, helper and deferral
+paths support the complete accounting contract.
