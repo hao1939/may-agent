@@ -159,12 +159,20 @@ and generation bindings may coexist; the operation never chooses one as the
 answer authority. Every binding must name retained Task/receipt/cancellation
 authority at least as new as its generation, with no current Task attempt.
 Bound answers, accepted converged attempts or completion receipts at the admitted
-generation, and a converged Task at that generation refuse withdrawal. A legacy
-Task may be the only retained answer payload, even when both result bindings are
+generation, and a converged Task whose `status.observedGeneration` matches that
+generation refuse withdrawal, even after its requirements advance. A legacy Task
+may be the only retained answer payload, even when both result bindings are
 missing. Newer converged attempts also refuse withdrawal when their accepted
 `inputKeys` explicitly include this exact admission key. Those answers require
 separate exact cutover/settlement. An unrelated newer result cannot answer the
 older input and remains preserved when that unanswered caller is withdrawn.
+
+Before cancelling any planned Task, a converged projection or completed observed
+attempt requires the exact summary, response and result to be retained on its
+accepted observed attempt at `status.observedGeneration`. Missing or partial
+accepted evidence refuses the transaction; preserve it through separate exact
+cutover before retrying. This also protects newer Task-only answers and answers
+retained on pending Tasks without treating them as fulfillment of older callers.
 
 Withdrawal retains every admission byte, Task completion receipt and accepted
 attempt. The inbox row becomes stopped with a null result, preserving its caller

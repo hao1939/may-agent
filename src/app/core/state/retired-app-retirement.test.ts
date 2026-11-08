@@ -438,52 +438,110 @@ for (const answersOlderCaller of [true, false])
     }
   });
 
-test("refuses withdrawal when legacy accepted evidence exists only on the converged Task", () => {
-  const f = fixture();
-  const key = "task:parent";
-  admitTaskInput(f.context, {
-    appId: f.plan.appId,
-    attachment: { kind: "existing", taskId: "pending" },
-    idempotencyKey: key,
-    inputContext: {
-      id: "parent",
-      source: { kind: "system", id: "review" },
-      input: { kind: "message", data: { message: "Review" } },
-    },
-  });
-  const claim = claimObservedAppTask(f.context, { taskId: "pending", appAgent: f.context.agent, handler: "agent" });
-  if (claim.kind !== "claimed") throw new Error(claim.kind);
-  expect(
-    completeAppTask(f.context, claim, {
+for (const scenario of [
+  "admitted",
+  "revised-after-answer",
+  "newer-pending",
+  "newer-converged",
+  "newer-partial-evidence",
+  "newer-retained-evidence",
+])
+  test(`preserves the exact legacy Task answer before withdrawal: ${scenario}`, () => {
+    const f = fixture();
+    const key = "task:parent";
+    const newer = scenario.startsWith("newer-");
+    const revise = () =>
+      observeAppTaskIntent(f.context, {
+        appAgent: f.context.agent,
+        intent: { id: "pending", parentId: "root", outcome: "Revised controller", acceptance: ["Review new work"] },
+      });
+    admitTaskInput(f.context, {
+      appId: f.plan.appId,
+      attachment: { kind: "existing", taskId: "pending" },
+      idempotencyKey: key,
+      inputContext: {
+        id: "parent",
+        source: { kind: "system", id: "review" },
+        input: { kind: "message", data: { message: "Review" } },
+      },
+    });
+    if (newer) revise();
+    const claim = claimObservedAppTask(f.context, { taskId: "pending", appAgent: f.context.agent, handler: "agent" });
+    if (claim.kind !== "claimed") throw new Error(claim.kind);
+    expect(
+      completeAppTask(f.context, claim, {
+        summary: "Retained legacy answer",
+        response: "Original answer",
+        result: { proof: "Task-only payload" },
+        // A later outcome does not answer the original caller by implication.
+        inputKeys: newer ? [] : [key],
+      }).status,
+    ).toBe("applied");
+    const accepted = f.store.readAttempt(claim.attemptId)!;
+    if (scenario !== "newer-retained-evidence") {
+      f.db
+        .prepare(
+          "UPDATE app_task_attempts SET attempt_json=json_remove(attempt_json, ?) WHERE app_id=? AND attempt_id=?",
+        )
+        .run(
+          scenario === "newer-partial-evidence" ? "$.acceptedResult.result" : "$.acceptedResult",
+          f.plan.appId,
+          claim.attemptId,
+        );
+    }
+    f.db
+      .prepare(
+        "UPDATE app_task_admissions SET admission_json=json_remove(admission_json, '$.resultAttemptId') WHERE app_id=? AND task_id=?",
+      )
+      .run(f.plan.appId, key);
+    if (scenario === "revised-after-answer") revise();
+    if (newer && scenario !== "newer-pending") {
+      // Historical Hosts could project a converged Task before correlating its
+      // older unanswered caller. Keep the original answer payload and generation.
+      f.db
+        .prepare(`UPDATE app_tasks SET resource_json=json_set(resource_json, '$.status.phase', 'converged')
+          WHERE app_id=? AND task_id='pending'`)
+        .run(f.plan.appId);
+    }
+    const { db, context, store, plan, input } = reviewCaller(f, [key]);
+    expect(JSON.parse(input.admissionWithdrawal!.rows[0]!.admission_json).resultAttemptId).toBeUndefined();
+    const task = store.readTask("pending")!;
+    expect(task.metadata.generation).toBe(scenario === "admitted" ? 1 : 2);
+    expect(task.status).toMatchObject({
+      phase: scenario === "newer-pending" ? "pending" : "converged",
+      observedGeneration: newer ? 2 : 1,
       summary: "Retained legacy answer",
       response: "Original answer",
       result: { proof: "Task-only payload" },
-    }).status,
-  ).toBe("applied");
-  f.db
-    .prepare(
-      "UPDATE app_task_attempts SET attempt_json=json_remove(attempt_json, '$.acceptedResult') WHERE app_id=? AND attempt_id=?",
-    )
-    .run(f.plan.appId, claim.attemptId);
-  f.db
-    .prepare(
-      "UPDATE app_task_admissions SET admission_json=json_remove(admission_json, '$.resultAttemptId') WHERE app_id=? AND task_id=?",
-    )
-    .run(f.plan.appId, key);
-  const { db, context, store, plan, input } = reviewCaller(f, [key]);
-  expect(store.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
-  expect(JSON.parse(input.admissionWithdrawal!.rows[0]!.admission_json).resultAttemptId).toBeUndefined();
-  const task = store.readTask("pending")!;
-  expect(task.status).toMatchObject({
-    phase: "converged",
-    summary: "Retained legacy answer",
-    response: "Original answer",
-    result: { proof: "Task-only payload" },
+    });
+    const before = snapshot(db);
+    if (scenario === "newer-retained-evidence") {
+      expect(retireAppState(context, plan).status).toBe("retired");
+      expect(store.readAttempt(claim.attemptId)).toEqual(accepted);
+      expect(getAppInboxItem(db, "parent")!.result).toBeUndefined();
+      const after = snapshot(db);
+      expect(retireAppState(context, plan).status).toBe("already-retired");
+      expect(snapshot(db)).toEqual(after);
+    } else {
+      expect(() => retireAppState(context, plan)).toThrow(
+        newer ? "retained accepted evidence" : "must be settled before withdrawal",
+      );
+      expect(snapshot(db)).toEqual(before);
+      expect(store.readTask("pending")).toEqual(task);
+    }
   });
+
+test("refuses cancellation when a waiting Task retains its only accepted outcome", () => {
+  const { db, context, store, plan } = fixture();
+  const task = store.readTask("waiting")!;
+  db.prepare(
+    "UPDATE app_task_attempts SET attempt_json=json_remove(attempt_json, '$.acceptedResult') WHERE app_id=? AND attempt_id=?",
+  )
+    .run(plan.appId, task.status.observedAttemptId!);
   const before = snapshot(db);
-  expect(() => retireAppState(context, plan)).toThrow("must be settled before withdrawal");
+  expect(() => retireAppState(context, plan)).toThrow("retained accepted evidence");
   expect(snapshot(db)).toEqual(before);
-  expect(store.readTask("pending")).toEqual(task);
+  expect(store.readTask("waiting")).toEqual(task);
 });
 
 for (const change of [

@@ -230,7 +230,7 @@ export function retireAppState(
             if (
               completed ||
               receipt?.metadata.generation === admission.taskGeneration ||
-              (task?.metadata.generation === admission.taskGeneration && task.status.phase === "converged")
+              (task?.status.observedGeneration === admission.taskGeneration && task.status.phase === "converged")
             )
               throw new Error("Completion evidence for an admitted generation must be settled before withdrawal");
             const generation = Math.max(
@@ -304,7 +304,27 @@ export function retireAppState(
         throw new Error("Retirement plan is partially applied or changed");
 
       for (const task of remainingTasks) {
-        const expected = JSON.parse(task.resourceJson);
+        const expected = parseTaskResource(task.resourceJson)!;
+        const observed = expected.status.observedAttemptId
+          ? store.readAttempt(expected.status.observedAttemptId)
+          : undefined;
+        // Cancellation replaces the Task projection. Its exact accepted payload
+        // must survive on the observed attempt, independently of caller scope or
+        // a later requirements revision. Never manufacture missing acceptance.
+        if (expected.status.phase === "converged" || observed?.state === "completed") {
+          if (
+            !observed ||
+            observed.taskId !== task.taskId ||
+            observed.taskGeneration !== expected.status.observedGeneration ||
+            observed.state !== "completed" ||
+            !observed.acceptedResult ||
+            (expected.status.phase === "converged" && observed.acceptedResult.state !== "converged") ||
+            (["summary", "response", "result"] as const).some(
+              (field) => !isDeepStrictEqual(expected.status[field], observed.acceptedResult![field]),
+            )
+          )
+            throw new Error("Task outcome requires exact retained accepted evidence before cancellation");
+        }
         cancelAppTask(context, {
           appId: plan.appId,
           taskId: task.taskId,
