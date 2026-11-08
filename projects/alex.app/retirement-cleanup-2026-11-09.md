@@ -48,12 +48,20 @@ The exact query-only census of App `may-agent` is:
 | Resources with terminal records | 53 | Preserve existing decisions |
 | Original 117-frontier resources without terminal records | 64 | Apply reviewed obsolete-record withdrawals |
 | Additional retired controller resources | 2 | Withdraw retired controller responsibility |
-| Unfinished legacy inbox rows | 4 | Stop historical handling without a result |
+| Unfinished legacy inbox rows | 4 | Two unadmitted; two require exact admitted-caller settlement |
 | Retained Conditions | 41 | Preserve original evidence; never invent satisfaction |
 
-All 66 remaining Tasks have no current attempt. The four inputs have no Task
-or Conversation admission and no result. Existing owner decisions account for
-them: the [117-Task ledger](legacy-frontier-disposition-2026-10-04.json),
+All 66 remaining Tasks have no current attempt. All four inputs have null inbox
+Task/Conversation attachment columns and no result. PR review corrected an
+inference in the original receipt: null links do **not** prove no admission.
+Two historical handling inputs retain eleven differing durable Task admissions:
+`app_b1662085-dda4-498b-b6dc-374d94ab163d` (eight) and its child
+`app_8633038c-432d-4e5a-a492-2211c107b141` (three). Those admission records have
+no accepted-result binding; their differing Task/generation identities still
+prevent treating them as unadmitted or choosing one alias without adjudication.
+The two pending inputs have no matching durable admissions.
+
+Existing owner decisions account for the semantic dispositions: the [117-Task ledger](legacy-frontier-disposition-2026-10-04.json),
 [current handover](migration-handover-current-2026-10-04.json),
 [writer containment](workspace-writer-containment-reconciliation-2026-10-04.json)
 and accepted May result `goal/appdep_f8259919c2fd5d38a366e230`.
@@ -66,7 +74,7 @@ withdrawal tooling is proposed in
 [Host PR #401](https://github.com/hao1939/may-agent/pull/401).
 It requires reviewed exact preimages, a complete census, stopped Host/workers
 and a verified offline backup. It uses canonical cancellation, preserving
-accepted attempts; legacy inputs become stopped with null results and retain
+accepted attempts; eligible unadmitted inputs become stopped with null results and retain
 caller/session/wait provenance. Unreferenced Conditions can be pruned through
 canonical cancellation after their original bytes are archived. This is
 withdrawal of responsibility, not successful fulfillment or observed recovery.
@@ -75,32 +83,42 @@ The exact installation plan, raw preimages, original Condition bytes and
 accepted-attempt evidence are prepared privately beside the archive as
 `retirement-plan.prepared.json`, `state-preimages.json.gz` and
 `state-preparation-receipt.json`. These are a preparation snapshot, **not an
-offline Host backup**. Production remains running and unchanged; the stopped
-state must be freshly verified before any apply.
+offline Host backup**. The original prepared plan is now **blocked**, not ready
+for application: the complete-census operation refuses its admitted inputs.
+Preserve it as evidence; do not remove blocked rows from the census or delete
+admissions to make it pass. Production remains running and unchanged. Resolve
+the exact admitted-caller settlement first, then prepare and freshly verify a
+new complete plan against stopped state before any apply.
 
 ## Rehearsal and application boundary
 
-The tool was rehearsed in memory using a reduced, consistent read-only snapshot
-of the actual retired App records, all other Apps' Conditions and the exact
-current May continuation Tasks. Dry-run restored every loaded table. Isolated
-apply reduced 66 nonterminal Tasks and 4 unfinished inputs to zero, preserved
-all accepted-attempt rows and current May Task/Condition evidence, and exact
-replay made no changes. Canonical cancellation pruned 16 unreferenced retired
-Conditions; 25 historical Conditions remained. Their preimages are retained.
-This demonstrates the planned transition on those records; it does not report
-production completion or authorize replaying old work.
+An earlier isolated rehearsal used a reduced, consistent read-only snapshot of
+the retired App, all other Apps' Conditions and exact May continuations. It
+reduced 66 nonterminal Tasks and 4 unfinished inputs to zero and preserved the
+loaded accepted-attempt/current-May evidence, but it **missed durable admissions
+behind null inbox links**. Its result is superseded as application evidence by
+PR #401's review correction; it does not demonstrate a safe complete retirement.
+The original `state-rehearsal-receipt.json` remains a historical trial record.
 
-The rehearsal found and fixed legacy `achieve`/`maintain` label compatibility
-by reusing the Host's existing resource parser. Twenty focused regressions pass,
-including stale evidence/census refusal, transaction rollback, CLI restart/replay,
-legacy modes and preservation of independent authority waits. Detailed local
-results are in `state-rehearsal-receipt.json` beside the archive; full Host CI
-status belongs to PR #401.
+The corrected Host operation checks canonical and historical admission keys
+and retained request identities inside the transaction. Rehearsing the original
+plan now refuses it before any writes. A query-only live cross-check confirms
+two admitted inputs and eleven retained aliases. The private
+`review-correction-receipt.json` records those exact bindings and supersedes the
+old rehearsal's applicability. No production state was changed in either trial.
 
-Production withdrawal remains pending Host PR review/merge and the documented
-offline apply. Preserve the existing release until that boundary is satisfied.
-Then verify zero retired nonterminal Tasks/unfinished inputs, unchanged accepted
-evidence and current May waits before restarting. No old controller is needed.
+Thirty-one focused regressions pass, including accepted answers whose inbox
+links were never projected, unanswered admissions, input-only CLI retirement
+without activating Task authority, complete-census refusal, reason whitespace,
+legacy modes, rollback and preservation of independent authority waits.
+Full Host CI status belongs to PR #401.
+
+Production withdrawal requires Host PR review/merge, exact disposition and
+supported settlement of the two admitted caller boundaries, a new complete plan,
+and the documented offline apply with a verified backup. Preserve all admission
+and accepted-attempt evidence; an existing semantic withdrawal is not permission
+to erase an admission or invent a result. Verify the retired terminal census
+and unchanged current May waits before restarting. No old controller is needed.
 
 May's independent provider-authority Task
 `goal/appdep_5f8a7c0e566e08fc95051414` remains waiting on actual authority.
