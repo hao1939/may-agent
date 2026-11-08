@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from "bun:test";
+import { afterEach, expect, setSystemTime, test } from "bun:test";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
@@ -14,11 +14,12 @@ import { runTaskExecutorAttempt } from "../tasks/attempt-execution.js";
 import { taskExecutionContext } from "../../adapters/executors/task-context.js";
 import { defineApp, Type } from "@may-agent/sdk";
 import type { TaskAgentInput } from "../tasks/execution.js";
+import { admitTaskInput } from "../state/inbox.js";
 import { readAppContract } from "./app-contract.js";
 import type { TaskTree } from "../tasks/app-task-store.js";
 
 const databases: SqliteDb[] = [];
-afterEach(() => databases.splice(0).forEach(db => db.close()));
+afterEach(() => { setSystemTime(); databases.splice(0).forEach(db => db.close()); });
 
 test("the installed contract advertises workload only for Apps with a Task runtime", () => {
   const plain = defineApp({ id: "sample", version: 1, agent: "worker", inputSchema: Type.Object({}) });
@@ -205,4 +206,64 @@ test.each([undefined, "sample"])("attempt feedback is opt-in and shares workflow
       return { handlerResult: { state: "converged", summary: "Inspected", facts: [], actions: [] }, runId: null };
     },
   });
+});
+
+
+test.each(["review", "retained-input"] as const)("elapsed %s deadline is visible before recovery without changing the wake hint", kind => {
+  const f = fixture();
+  f.add("gate"); completeAppTask(f.config, f.claim("gate"), { summary: "Dependency accepted" });
+  f.add("review", { dependsOn: ["gate"] });
+  const now = 1_800_000_000_000;
+  setSystemTime(now);
+  const due = now + 60_000;
+  if (kind === "retained-input") admitTaskInput(f.config, {
+    appId: "sample", attachment: { kind: "existing", taskId: "review" }, idempotencyKey: "ask:review",
+    inputContext: { id: "review", source: { kind: "app", id: "caller" }, input: { kind: "review", data: {} } },
+  });
+  deferAppTask(f.config, f.claim("review"), { disposition: "waiting", summary: "Review when due", reviewAt: due });
+  if (kind === "retained-input") {
+    admitTaskInput(f.config, { appId: "sample", attachment: { kind: "existing", taskId: "review" }, idempotencyKey: "ask:other",
+      inputContext: { id: "other", source: { kind: "app", id: "caller" }, input: { kind: "review", data: {} } } });
+    completeAppTask(f.config, f.claim("review"), { summary: "Unrelated ask answered" });
+    // Older retained records may carry only the exact input deadline.
+    const retained = f.config.resourceStore.readTask("review")!;
+    const resourceVersion = retained.metadata.resourceVersion;
+    delete retained.status.reviewAt;
+    retained.metadata.resourceVersion++;
+    f.config.resourceStore.commit({ fences: [{ taskId: "review", resourceVersion }], tasks: [{ resource: retained }] });
+    expect(f.config.resourceStore.readTask("review")!.status.inputWaits?.["ask:review"]?.reviewAt).toBe(due);
+  }
+  expect(f.read().counts).toMatchObject({ waiting: 1, runnable: 0 });
+  setSystemTime(due);
+  const before = f.db.prepare("SELECT total_changes() AS count").get();
+  expect(f.read().counts).toMatchObject({ waiting: 0, runnable: 1 });
+  expect(f.db.prepare("SELECT total_changes() AS count").get()).toEqual(before);
+  f.add("gate", { outcome: "Recheck changed evidence" });
+  expect(f.read().counts).toMatchObject({ waiting: 1, runnable: 1 });
+  expect(f.read().examples.blockers).toContainEqual({ taskId: "review", kind: "dependency" });
+  completeAppTask(f.config, f.claim("gate"), { summary: "Changed dependency accepted" });
+  f.config.resourceStore.setProjectLifecycle("paused");
+  expect(f.read().counts).toMatchObject({ runnable: 0, paused: 1 });
+  f.config.resourceStore.setProjectLifecycle("active");
+  expect(f.claim("review").trigger?.type).toBe("project.task.review-at.reached");
+});
+
+test("fresh human admission is runnable while the retained phase is attention and replay grants no second retry", () => {
+  const f = fixture(); f.config.maxConsecutiveFailures = 1; f.add("repair");
+  failAppTaskAttempt(f.config, f.claim("repair"), "Needs a corrected source");
+  const ask = { appId: "sample", attachment: { kind: "existing" as const, taskId: "repair" }, idempotencyKey: "human:correction",
+    inputContext: { id: "correction", source: { kind: "human" as const, id: "person" }, input: { kind: "message", data: { text: "Use source B" } } } };
+  admitTaskInput(f.config, ask);
+  expect(f.config.resourceStore.readTask("repair")!.status.phase).toBe("attention");
+  const before = f.db.prepare("SELECT total_changes() AS count").get();
+  expect(f.read().counts).toMatchObject({ runnable: 1, attention: 0 });
+  expect(f.db.prepare("SELECT total_changes() AS count").get()).toEqual(before);
+  f.config.resourceStore.setProjectLifecycle("paused");
+  expect(f.read().counts).toMatchObject({ runnable: 0, paused: 1 });
+  expect(readTaskWorkload({ taskStateConfig: f.config, workloadSource: { foregroundTaskIds: () => new Set(["repair"]) } }).counts)
+    .toMatchObject({ runnable: 1, paused: 0 });
+  f.config.resourceStore.setProjectLifecycle("active");
+  failAppTaskAttempt(f.config, f.claim("repair"), "Correction did not repair the source");
+  admitTaskInput(f.config, ask);
+  expect(f.read().counts).toMatchObject({ runnable: 0, attention: 1 });
 });

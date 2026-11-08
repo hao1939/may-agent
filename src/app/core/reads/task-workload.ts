@@ -46,7 +46,7 @@ export function readTaskWorkload(
     const phases = store.readTaskViewPhases(page.items.map(task => task.id));
     // Keep prerequisite readiness distinct from scheduling pause; existing
     // human Conversation eligibility is the only pause exception today.
-    const readiness = appTaskReadinessById({ ...tree, project_lifecycle: "active" }, config.maxConcurrent, phases);
+    const readiness = appTaskReadinessById({ ...tree, project_lifecycle: "active" }, config.maxConcurrent, phases, observedAt);
     const foreground = opts.workloadSource?.foregroundTaskIds?.(page.items.map(task => task.id)) ?? new Set<string>();
     const result: TaskWorkload = {
       version: 1, observedAt: new Date(observedAt).toISOString(),
@@ -79,8 +79,6 @@ export function readTaskWorkload(
       else if (taskExecutionRetryExhausted(resource)) result.counts.attention++;
       else if (pendingTaskExecutionRetryAt(resource, observedAt)) {
         result.counts.cooldown++; blocker(task.id, "cooldown");
-      } else if (task.status === "attention") {
-        result.counts.attention++;
       } else if (task.status === "idle") {
         result.counts.idle++;
         // This is an inspection candidate, including standing responsibilities.
@@ -99,6 +97,7 @@ export function readTaskWorkload(
             result.counts.paused++; blocker(task.id, "paused");
           } else result.counts.runnable++;
         }
+        else if (task.status === "attention" && state === "not-applicable") result.counts.attention++;
         else if (state === "dependency-blocked" || state === "condition-blocked") {
           result.counts.waiting++; blocker(task.id, state === "dependency-blocked" ? "dependency" : "waiting");
         } else { result.counts.unknown++; blocker(task.id, "unknown"); }

@@ -107,6 +107,15 @@ export type AppTaskResource = {
   };
 };
 
+/** Earliest accepted review deadline, including an independently retained input. */
+export function taskReviewAt(resource: AppTaskResource): number | null {
+  if (resource.status.phase !== "waiting") return null;
+  const deadlines = [resource.status.reviewAt,
+    ...Object.values(resource.status.inputWaits ?? {}).map(wait => wait.reviewAt)]
+    .filter((value): value is number => Number.isSafeInteger(value) && Number(value) > 0);
+  return deadlines.length ? Math.min(...deadlines) : null;
+}
+
 export type AppTaskRetryExhaustion = NonNullable<TaskView["retryExhausted"]>;
 
 /** A fresh human admission permits one claim, without erasing the failed episode. */

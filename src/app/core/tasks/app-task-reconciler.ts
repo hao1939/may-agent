@@ -26,7 +26,7 @@ import {
   type TaskTree,
 } from "./app-task-store.js";
 import { resolveAppTaskOutputPaths } from "./app-task-output-paths.js";
-import { pendingTaskExecutionRetryAt, taskAdmissionRetryDelay, taskExecutionRetryDelay, taskExecutionRetryExhausted } from "./app-task-state.js";
+import { taskReviewAt, pendingTaskExecutionRetryAt, taskAdmissionRetryDelay, taskExecutionRetryDelay, taskExecutionRetryExhausted } from "./app-task-state.js";
 import type {
   AppTaskCondition as AppTaskCondition,
   AppTaskAttempt as AppTaskAttempt,
@@ -1884,15 +1884,6 @@ export function readPendingAppTaskTrigger(config: AppTaskContext, taskId: string
   return event ? structuredClone(event) : undefined;
 }
 
-function acceptedTaskReviewAt(_tree: TaskTree, resource: AppTaskResource): number | null {
-  if (resource.status.phase !== "waiting") return null;
-  const deadlines = [
-    resource.status.reviewAt,
-    ...Object.values(resource.status.inputWaits ?? {}).map((wait) => wait.reviewAt),
-  ].filter((value): value is number => Number.isSafeInteger(value) && Number(value) > 0);
-  return deadlines.length ? Math.min(...deadlines) : null;
-}
-
 function nextTaskCheckAt(tree: TaskTree, resource: AppTaskResource): number | null {
   const deadlines = [
     // Recovery rereads saved facts in code; only reviewAt authorizes an agent review.
@@ -1900,7 +1891,7 @@ function nextTaskCheckAt(tree: TaskTree, resource: AppTaskResource): number | nu
       openTaskConditionIds(tree, resource.metadata.id).length
       ? Date.now() + CONDITION_RECOVERY_INTERVAL_MS
       : null,
-    acceptedTaskReviewAt(tree, resource),
+    taskReviewAt(resource),
   ].filter((value): value is number => value !== null);
   return deadlines.length ? Math.min(...deadlines) : null;
 }
@@ -1997,7 +1988,7 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): b
   if (resource.status.phase === "pending") return true;
   if (resource.status.phase === "waiting") {
     if (hasSatisfiedTaskCondition(tree, taskId)) return true;
-    const reviewAt = acceptedTaskReviewAt(tree, resource);
+    const reviewAt = taskReviewAt(resource);
     if (reviewAt !== null) return reviewAt <= Date.now();
     return !(resource.status.conditionIds?.length ?? 0);
   }
@@ -3014,7 +3005,7 @@ export function claimObservedAppTask(
 
   const openConditionIds = openTaskConditionIds(tree, input.taskId);
   const hasSatisfiedCondition = hasSatisfiedTaskCondition(tree, input.taskId);
-  const reviewAt = acceptedTaskReviewAt(tree, resource);
+  const reviewAt = taskReviewAt(resource);
   const reviewDue = reviewAt !== null && reviewAt <= Date.now();
   if (
     resource.status.phase === "waiting" &&
