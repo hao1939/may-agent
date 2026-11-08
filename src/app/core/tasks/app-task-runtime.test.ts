@@ -9684,7 +9684,11 @@ describe("canonical App task runtime", () => {
             if (!loadedTaskConfig(f).resourceStore.readAttempt(firstAttemptId)?.acceptedResult) interruptValidation();
             if (outcome === "accepted" && newWork && prepared.metadata.path === workspacePath) {
               if (scenario === "clock-reversed") setSystemTime(Date.now() - 60_000);
+              const firstStartedAt = Date.parse(readState().attempt!.startedAt);
               for (let index = 0; index < (scenario === "clock-reversed" ? 2 : 17); index++) {
+                // The history-eviction cases need strictly newer attempts.
+                // Clock rollback is covered separately without this ordering.
+                if (scenario !== "clock-reversed") setSystemTime(firstStartedAt + (index + 1) * 1_000);
                 admitTaskInput(loadedTaskConfig(f), {
                   appId: "sample",
                   attachment: { kind: "existing", taskId },
