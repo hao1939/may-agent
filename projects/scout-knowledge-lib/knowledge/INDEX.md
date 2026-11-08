@@ -88,6 +88,11 @@ Migration and project-operation artifacts live outside `knowledge/`:
 - [Agent context needs a package supply chain and a separate runtime boundary](./findings/2026-11-07-agent-context-package-supply-chain.md) — pinned Microsoft APM source separates manifest, lockfile, install policy, deployed-file inventory, and runtime authority; Scout inspected documentation and source but did not run the CLI, tests, conformance suite, or hostile-package checks.
 - [A fast agent sandbox still needs an external control boundary](./findings/2026-11-07-agent-sandbox-control-plane-boundary.md) — a complete XHS post separates protection-domain placement, privileged-route reachability, credential and egress mediation, timeout settlement, and operational latency; the cited vulnerabilities, vendor documentation, benchmarks, prices, and attached images were not inspected.
 
+#### Prior findings extended on 2026-11-07
+
+- [Agent workspaces are becoming agent-addressable control planes](./findings/2026-07-29-github-orca-agent-development-environment.md#the-useful-architectural-change) — pinned Orca source adds durable Runs and Tasks, attempt-scoped Dispatch authority, mailbox wakes, decision gates, typed refusals, bounded nested workers, and runtime placement; Scout did not run Orca, its tests, agents, or remote runtimes.
+- [Local permission files need a publication boundary](./findings/2026-08-07-permission-fatigue-classifier-default.md#november-7-follow-up-local-permission-files-create-a-publication-boundary) — Claude Code documentation confirms that persistent approvals can enter a project-local settings file whose automatic ignore is machine-local; the submitted article was access-blocked and its reported repository counts were not reproduced.
+
 ### 2026-10-17
 
 - [Wet-lab agents need feedback that can reveal the wrong objective](./findings/2026-10-17-wet-lab-agent-feedback-needs-reality-checks.md) — a complete XHS synthesis separates intended design, executed experiment state, controls, biological outcome, and revision lineage across three reported wet-lab building blocks; the named Google article, underlying studies, figures, code, protocols, and data were not inspected.
