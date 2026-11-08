@@ -155,8 +155,13 @@ fix. The [post-merge adoption check](../archive/reviews/task-result-closure-adop
 demonstrates the paired source behavior and records a separate merge-CI failure.
 The live Host remains #392 without the companion capability. Host deployment,
 App activation and a live finite-result ending remain adoption steps.
-Task-created reviews retain creator authority and still need that creator's
-result-consumption integration; existing idle results are not retroactively closed.
+Task-created reviews retain creator authority. The selector now has a bounded
+source implementation to consume its own validated published finite assessments
+through the existing guarded closure path, without another model call. Its
+verification and remaining exclusions are recorded in the
+[implementation evidence](agent-task-workload-implementation.md#implementation-evidence).
+Activation and live proof remain outstanding; existing idle results are not
+retroactively closed by these source checks.
 The scoped reader and installed operator control enabled the historical cleanup;
 neither is an automatic result consumer. The narrow review-admission identity correction
 is live at App source `6a7e49843c5d2c8cccd7615b991472856d43f8d4`, so later

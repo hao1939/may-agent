@@ -7,8 +7,10 @@ Keep its business rules and implement them through existing Host boundaries.
 and [one authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource).
 
 **Design status:** Proposed implementation approach.
-**Implementation status:** Review only. No workload accounting, capacity extension,
-new callable API, agent activation or rollout is implemented by this document.
+**Implementation status:** Incremental source implementation underway. Creator
+consumption of published finite assessments is implemented and verified locally.
+Workload accounting, capacity extension and feedback remain proposed. No agent
+activation or rollout is established by these source checks.
 
 Source reviewed: Host #398 merge `88a98be236baf07bfcf100208cfb0dc1589dfa06`.
 The inspected checkout `036f4a4f757eea9f8a4492231e5541f365a8fcf6` has its identical
@@ -83,6 +85,23 @@ creator consumption of delegated review results. #398 alone does not close old
 idle results or implement the selector creator's follow-through. Design work can
 continue now; do not activate workload mechanisms or claim reduced idle buildup
 from source checks alone. Installation remains a separate authorized operation.
+
+The selector now discovers admission-scoped `review/` Tasks as well as historical
+IDs, preserving each reviewer's separate allowance. On an ordinary pass it reads
+at most four candidates, rotating through its bounded snapshot using the existing
+accepted selector state. It consumes only its own finite `task-outcome-review`
+assignment's current idle result with no remaining Conditions, input waits,
+pending corrections or review deadline. The immutable publication must validate
+and match the exact subject, reviewer, evidence and accepted result facts; closure
+uses the current generation, resource version and accepted-attempt guard. A race
+retains the assignment. No model is called, and a successful disposition pass
+commissions no new review. Disabling routine sampling does not abandon returned
+work. Older Hosts without creator closure retain the backlog.
+
+Reusable metric-review services remain open for their next transition. Results
+without a validated publication (including exclusions and acquisition failures)
+remain for explicit owner judgment. This bounded consumer does not establish
+complete fleet coverage or authorize closing unrelated historical idle records.
 
 ### 1. Supply useful feedback without adding enforcement
 
@@ -282,6 +301,27 @@ Account bootstrap/imports through an explicit adoption policy. Disable new
 enforcement without deleting receipts or obligations if the pilot must stop.
 Stage labels, operation records and proposed read fields above are design terms,
 not capabilities agents can call today.
+
+## Implementation evidence
+
+November 9 source iteration: the new selector-disposition regression reproduced
+the missing modern-ID backlog handling (nine failing cases before the change).
+After the fix, the evaluator workflows and App completion policy passed all 352
+tests, with 1,867 assertions. Strict TypeScript checks against the paired Host SDK
+passed. Coverage includes creator/result identity, outstanding obligations,
+publication mismatch, closure races, old-Host fallback, bounded rotation and
+preserving sampling cursors. The first broad invocation exposed four missing
+modules in the sparse worktree; adding its existing May App dependencies made
+those same tests executable without source changes.
+
+Host [PR #400](https://github.com/hao1939/may-agent/pull/400) isolates synthetic
+bootstrap fixture writes from the serving connection's short contention timeout.
+Its hosted Quality check passed; Container correctly classified the fixture-only
+change as requiring no image build. A local full run retained two unrelated
+failures (Conversation ordering and a metric-alert assertion); the owning suites
+passed their targeted diagnostic run. Those failures remain recorded for
+investigation, not erased by a broad rerun. No new live closure, Host deployment,
+App activation or workload-behavior claim follows from this iteration.
 
 Verification for this review: the existing Host capacity, controller and queue
 suites passed, **46 tests and 138 assertions**. They verify current scheduling

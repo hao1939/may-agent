@@ -17,6 +17,7 @@ import {
 } from "./lib/task-report-store.js";
 import { assessmentContext } from "./lib/task-assessment-context.js";
 import { reviewerProfile, type Reviewer } from "./lib/reviewer-profile.js";
+import { consumePublishedReviews } from "./lib/review-disposition.js";
 import { memberEmissionKey, taskEmissionKey } from "./lib/task-emission.js";
 import {
   selectMetricCandidate,
@@ -67,6 +68,7 @@ type SelectorState = {
   populationTurn: boolean;
   metricTurn?: boolean;
   metricCursor?: string;
+  reviewDispositionOffset?: number;
 };
 type Selection = {
   candidate: Candidate | null;
@@ -654,6 +656,8 @@ function cleanState(value: unknown): SelectorState {
     populationTurn: item.populationTurn !== false,
     metricTurn: item.metricTurn !== false,
     metricCursor: text(item.metricCursor).slice(0, 512),
+    reviewDispositionOffset: Number.isSafeInteger(item.reviewDispositionOffset) &&
+      Number(item.reviewDispositionOffset) >= 0 ? Number(item.reviewDispositionOffset) : 0,
   };
 }
 export function selectorStateFact(state: SelectorState): string {
@@ -1008,7 +1012,9 @@ export function retainedRequestedReviewTaskIds(
 ): string[] {
   return (ctx.reconciliation?.taskSnapshot?.live ?? [])
     .filter((task) =>
-      reviewer === "evaluator"
+      task.taskId.startsWith("review/")
+        ? (task.agent ?? task.owner) === reviewer
+        : reviewer === "evaluator"
         ? (task.taskId.startsWith("runtime/task-outcome/") ||
             task.taskId.startsWith("runtime/metric-review/evaluator/")) &&
           !task.taskId.includes("/reviewer-") &&
@@ -1064,19 +1070,30 @@ export async function runTaskOutcomeSelector(
       reconcile.requested,
       reconcile.commandKey,
     );
+  const reviewer = reviewerProfile(config.reviewer).reviewer;
+  const priorState = await acceptedSelectorState(ctx);
+  const retainedRequests = retainedRequestedReviewTaskIds(ctx, reviewer);
+  const disposition = await consumePublishedReviews(
+    ctx, retainedRequests, reviewer, reportRoot, priorState.reviewDispositionOffset ?? 0,
+  );
+  priorState.reviewDispositionOffset = disposition.nextOffset;
+  if (disposition.closed.length) {
+    const summary = `Consumed and closed ${disposition.closed.length} published finite review(s); reports remain retained and no new assessment was commissioned.`;
+    return ctx.done(summary, {
+      state: "converged", summary, response: summary,
+      facts: [...disposition.facts, selectorStateFact(priorState)], actions: [],
+    });
+  }
   if (!config.enabled) {
     const summary = "Automatic task-outcome selection is disabled.";
     return ctx.done(summary, {
       state: "converged",
       summary,
       response: summary,
-      facts: ["selector:disabled"],
+      facts: ["selector:disabled", ...disposition.facts, selectorStateFact(priorState)],
       actions: [],
     });
   }
-  const reviewer = reviewerProfile(config.reviewer).reviewer;
-  const priorState = await acceptedSelectorState(ctx);
-  const retainedRequests = retainedRequestedReviewTaskIds(ctx, reviewer);
   const taskSnapshot = ctx.reconciliation?.taskSnapshot;
   const backlogUnknown = !taskSnapshot || taskSnapshot.truncated;
   if (retainedRequests.length || backlogUnknown) {
@@ -1088,6 +1105,7 @@ export async function runTaskOutcomeSelector(
       summary,
       response: summary,
       facts: [
+        ...disposition.facts,
         retainedRequests.length
           ? `selector:requested-reviews-first:${retainedRequests.length}`
           : "selector:requested-review-backlog-unknown",
