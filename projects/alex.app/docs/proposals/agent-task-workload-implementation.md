@@ -1014,3 +1014,35 @@ The prompt preserves the obligation and scopes this evidence to the exact
 checkout. These fixtures prove policy mechanics, not model comprehension or live
 adoption. Integrate both Host dependencies (#399 and #429's chain) and the paired
 App source before a separately authorized activation.
+
+Host [#431](https://github.com/hao1939/may-agent/pull/431), revision
+`6845a96d7d`, observes current workspace prerequisites before a paid claim. Known
+initial shortage now costs only creation, with no attempt or failure retry.
+The same lineage/byte-check helpers serve read-only observation and actual
+preparation, which still checks its mutation boundary. Observations write no
+Git refs, fetch state or worktree directory; source unavailable locally remains
+unchecked until preparation can fetch it. Unsafe estimates keep #399's existing
+fallback, and failed observations retain dated known constraints. Recompute the
+current checkout instead of indefinitely waiting on an older larger source;
+a changed installed shared method drops an obsolete checkout requirement.
+An exact resource/generation guard rejects observations racing new input without
+charging, leaving it for ordinary redispatch. Readiness preserves previous
+accepted evidence while making the new waiting obligation visible.
+
+Four initial Git/runtime regressions failed before wiring. Final five cases,
+including a new-input race, passed **5 / 96**. Git/constraint owners passed
+**40 / 245**, including non-mutating remote-source observation. A broader run
+failed the existing `cleanup-fails-after-history` bounded-history assertion;
+the old attempt was unexpectedly retained. Its cause is **unproven**. Retained
+execution/check/timestamp diagnostics did not reproduce it: that run passed
+**369 / 4,321**. Final changed/runtime-history cases passed **22 / 329**, and
+Host/SDK types, boundary and lint passed. No timing fix or explanation is claimed
+from these later passes. The frozen complete local gate failed a separate
+metric-freshness assertion: **4,137 passed / 3 skipped / 1 failed / 24,180
+assertions across 359 files**. Two newly defined, unsampled collectors counted
+as stale; the SQL cut was 319 ms before the fixture's JavaScript timestamp.
+The cause of that discrepancy is unproven. A focused run passed **1 / 2** and
+does not resolve the full-gate failure. Hosted Quality and Container passed
+on this revision. Independent review must consider both local failures; no
+passing exact-head complete local gate is claimed. No new SDK shape or paired
+App source change is needed beyond #430's feedback handling.
