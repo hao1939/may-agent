@@ -9,7 +9,8 @@ and [one authority for each resource](../1-principles/core-principles.md#one-aut
 **Design status:** Proposed implementation approach.
 **Implementation status:** Incremental source implementation underway. Creator
 consumption of published finite assessments is implemented and verified locally.
-Workload accounting, capacity extension and feedback remain proposed. No agent
+The first scoped feedback increment is in Host review; accounting and capacity
+extension remain proposed. No agent
 activation or rollout is established by these source checks.
 
 Source reviewed: Host #398 merge `88a98be236baf07bfcf100208cfb0dc1589dfa06`.
@@ -113,6 +114,24 @@ above. Using a bounded subset of exact reads to exclude settled services would
 leave a larger all-idle service population blocking sampling forever.
 
 ### 1. Supply useful feedback without adding enforcement
+
+Source progress: Host [PR #402](https://github.com/hao1939/may-agent/pull/402)
+adds the optional versioned SDK read, current-App tool/control adapters and one
+opt-in App's starting decision context. Its page counts use canonical readiness,
+skip history and cap related-item expansion at 512; exceeding that cap makes the
+observation unavailable, rather than silently classifying a partial graph. Agent
+filtering reuses that same bounded context. Managed agents, workflow helpers and
+native Task execution share the same starting observation and interpretation.
+Task refresh does not relabel an old workload observation as current.
+
+This is a partial stage: workers initially report parent Host capacity unavailable,
+and queue timing, physical resources, credits and agent/root limits remain
+unavailable. The following iteration carries the controller's capacity snapshot
+and timestamp through existing dispatch transport. Existing queue timing measures
+notification to dispatch and can include pause/prerequisite time; expose that
+scope explicitly instead of calling it a durable ready-since observation. Neither
+observation is execution utilization or proof that another operation fits.
+Feedback source review does not satisfy the live adoption or behavioral gates.
 
 Add one bounded workload projection to the existing read/context path. The first
 pilot covers one declared App/agent scope, not an unrestricted fleet query.
@@ -332,7 +351,8 @@ preservation of pending/running/waiting/attention or unknown demand. No model,
 closure or additional report read is required to exclude a quiet standing
 service. This establishes source behavior only; live adoption remains pending.
 
-Host [PR #400](https://github.com/hao1939/may-agent/pull/400) isolates synthetic
+Host [PR #400](https://github.com/hao1939/may-agent/pull/400), now merged as
+`c1b9bc8833df7788dcec7f8e779fdab3d7f7d9c5`, isolates synthetic
 bootstrap fixture writes from the serving connection's short contention timeout.
 Its hosted Quality check passed; Container correctly classified the fixture-only
 change as requiring no image build. A local full run retained two unrelated
@@ -340,6 +360,17 @@ failures (Conversation ordering and a metric-alert assertion); the owning suites
 passed their targeted diagnostic run. Those failures remain recorded for
 investigation, not erased by a broad rerun. No new live closure, Host deployment,
 App activation or workload-behavior claim follows from this iteration.
+
+Host feedback source verification passed **156 focused tests and 973 assertions**,
+including the SDK export contract, SQLite/read-only boundaries, graph expansion,
+pagination, tools/control and shared native/managed context. Current-revision
+Host/SDK type checks, canonical App boundary and lint passed. The first full run
+recorded seven failures; one was the new export snapshot and was fixed, while the
+six other failures passed their targeted diagnostic checks (seven cases).
+Their causes remain unproven. A later full run overlapped source edits and is not
+valid single-revision gate evidence. The final feedback revision is frozen for
+the required local and hosted complete checks; no complete-gate success is
+claimed here.
 
 Verification for this review: the existing Host capacity, controller and queue
 suites passed, **46 tests and 138 assertions**. They verify current scheduling
