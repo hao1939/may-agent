@@ -33,6 +33,9 @@ records complete Task and pending-input accounting. Retired or withdrawn
 callers and original Conditions remain historical evidence. Independently owned
 May work named in the current receipt continues through its exact owners and
 return links without gating completion of the organizational migration.
+The [2026-11-09 cleanup receipt](../../retirement-cleanup-2026-11-09.md)
+records removal of the local compatibility alias and distinguishes completed
+file retirement from the pending offline withdrawal of residual stored state.
 
 ## Purpose and sufficient outcome
 

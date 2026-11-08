@@ -409,19 +409,19 @@ It may:
 
 Project/app review identifies a target by its stable App name only. The
 workflow does not receive absolute App or domain paths; its bounded evaluator
-inspection discovers public evidence through read-only tools. Standing coverage
-currently includes:
+inspection discovers public evidence through read-only tools. The current
+organization contains `may`, `alex` and `scout-knowledge-lib`. Inspect the live
+catalog before selecting a target. Membership does not itself register a watch
+or authorize recurring evaluation; use an explicit request or an enabled,
+bounded App review route.
 
-```text
-aks-rp-e2e.app
-may-agent.app
-scout-knowledge-lib.app
-gym.app
-evaluation.app
-```
+The former `may-agent`, `evaluation` and `gym` Apps are retired. Their retained
+Tasks and reports are historical audit evidence, rather than current standing
+targets. AKS review below is a domain example for an explicitly authorized
+review when that App is available; it is not a claim that AKS is enabled in the
+current three-App installation.
 
-For `aks-rp-e2e.app`, the review asks whether the target is really moving these
-lanes:
+For an AKS RP E2E review, ask whether the target is really moving these lanes:
 
 - spec verification loop;
 - feature reference loop;

@@ -25,7 +25,14 @@ The previous READMEs remain alongside their historical records.
 
 Runtime data, reports, accepted artifacts and the database are not source
 garbage. Local retirement retains their bytes and a relocation receipt.
-Historical path aliases may remain locally for accepted artifact references;
-they contain no active App registration. The configured shared report store,
-immutable definition releases, saved Tasks, inputs and Conditions retain their
-original identities. Alex must still judge and migrate unfinished obligations.
+The `projects/may-agent.app` compatibility alias was removed on 2026-11-09.
+Its ignored local payload was moved intact outside the active App tree, with
+matching file hashes, metadata and symlink inventories. See the
+[retirement cleanup receipt](../../retirement-cleanup-2026-11-09.md) for the
+relocation map and remaining stored-state withdrawal work.
+
+Curated evidence remains here. The configured shared report store, immutable
+definition releases and original saved identities remain historical evidence.
+The organizational handover has complete semantic dispositions; applying the
+remaining obsolete-record withdrawals is a separate offline operation. Current
+May obligations continue independently through their own exact Tasks and waits.

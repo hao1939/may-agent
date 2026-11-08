@@ -64,6 +64,12 @@ explicitly restored for migration or review.
 - `platform/` is a runtime compatibility path containing the current UI link,
   owned by Host deployment and ignored by the workspace repository.
 
+The retired `may-agent.app` alias has been removed. Its historical local data
+is preserved outside the active project tree; see Alex's
+[retirement cleanup receipt](alex.app/retirement-cleanup-2026-11-09.md).
+`may-agent/` remains the Host source repository and `may.app/` remains the
+human-facing App.
+
 Temporary clones and worktrees belong outside `/app`, for example under
 `~/workspace-worktrees/`. The shared checkout remains on `main`.
 
