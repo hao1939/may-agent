@@ -23,6 +23,10 @@ document. Current durable admission still requires an App. The
 The [source and live-system review](../archive/reviews/agent-workload-gap-review-20261108.md)
 motivates resource-health feedback and coordination that can start under stress.
 Its observations are dated evidence, not proof of improved agent behavior.
+**First priority:** finish the existing idle-Task disposition work and prevent
+new finite results from accumulating without a decision. This precedes the new
+feedback, budget and coordination mechanisms below; use the existing lifecycle,
+bounded reader and guarded controls first.
 
 ## The mental model
 
@@ -113,6 +117,60 @@ Its work has a small, explicit allowance of its own.
    Closing a root does not settle unresolved descendants, release their active
    reservations or erase accepted requirements. Input delivery and result
    recording need no new assignment execution budget.
+
+## First milestone: resolve idle work and complete the result path
+
+**Every open Task needs an accountable continuing responsibility. A completed
+finite assignment should reach an explicit ending after its result is accepted.**
+The [Task lifecycle](../2a-design/task-resource-engine.md#state-and-continuing-responsibility)
+already defines this rule. The immediate work is to apply it and complete the
+owner's follow-through, before adding workload control machinery.
+
+The November 8 snapshot contained 756 idle Tasks across the three loaded Apps.
+Alex's 514 included 356 `input/` records and 135 `review/` records. These names
+help select a review order; they do not prove fulfillment. Previous owner review
+already [closed nine individually reviewed assignments](../archive/reviews/task-backlog-live-disposition-20261108.md),
+but did not start a continuing review of the remaining population. The existing
+reader discovers candidates; it does not make or apply the owner decision.
+
+Start one bounded review of the existing population, saving pages and retry
+identities. Use `task-disposition-review` in batches of at most ten, starting with
+finite report intakes and independent assessments, then cover the other loaded
+Apps. Read original asks, accepted results and exact caller obligations before
+deciding. Apply and verify each justified ending as its review finishes; a
+completed scan or a closure recommendation alone does not finish this work.
+
+| Owner judgment | Action on the existing Task |
+| --- | --- |
+| Finite scope fulfilled, with no remaining promise | Creator or trusted App/operator closes against the current accepted result and versions; retain the result and caller evidence. |
+| Useful work is still owed | Retain the exact outcome, accountable agent and next action; make it runnable through the existing authorized path when appropriate. |
+| A result or decision is missing | Retain the precise dependency, provider/decision owner and return route. If evidence is insufficient, name the missing read or decision and who will obtain it. |
+| Standing or reusable responsibility remains | Retain its purpose and declared input, schedule or relevant-change route. An open Conversation may legitimately remain idle. |
+| Work is obsolete, duplicate or withdrawn | Obtain the creator's disposition and end the wrapper through the guarded control; verify any remaining promise has a real owner and return route. Do not record withdrawal as fulfillment. |
+
+These are decisions under the existing lifecycle, not new Task states or a
+second queue. Preserve active work, Conditions and independent descendants.
+Age only selects what to inspect; it does not authorize closure. Ending records
+retains their evidence and does not reclaim worktree or artifact storage.
+
+Prevent recurrence in the same milestone. A worker returns a finite result and
+closure recommendation. Its recorded creator consumes the accepted result,
+checks remaining scope and applies the disposition. For App-created roots, the
+declared App policy must provide an authorized owner review/control path; the
+worker does not acquire self-closure authority. Use the existing owner-review
+routes, coalescing returned results into bounded passes. Do not wake every idle
+Task or create a review Task for each record. This result-to-disposition
+integration needs source/adoption verification; the existing reader and closure
+capability alone do not establish it.
+
+Finish this milestone when the baseline idle cohort has recorded endings or
+specific continuing obligations with owners and return routes, and new finite
+assignments demonstrate accepted-result review followed by guarded disposition.
+Verify that standing work and real waits remain intact. Record added arrivals
+separately so a moving population does not invalidate review coverage. The
+target is no unexplained open responsibility, not zero idle Tasks or a closure
+quota. Any narrow repair needed to carry out review belongs in this milestone;
+broader budget and feedback work waits.
 
 ## Workload feedback
 
@@ -388,9 +446,11 @@ than become unrestricted creation paths.
 | Budget | Per-call limits and usage records exist. Shared attribution, credit grants, cumulative charges and renewal remain unimplemented. |
 | Shared blockers | Individual Conditions and recovery exist. Operation-specific prerequisite admission and cross-Task coalescing need implementation at the affected resource boundary. |
 
-Start with the existing accountable resource-capacity work and make coordination
-reachable. Then trial the workload summary through existing owner reviews before
-implementing shared accounting. No additional controller agent is required.
+First complete [idle disposition and the result path](#first-milestone-resolve-idle-work-and-complete-the-result-path)
+using existing capabilities. Then address the existing accountable
+resource-capacity work and make coordination reachable, trial the workload
+summary through owner reviews, and implement shared accounting. No additional
+controller agent is required.
 This proposal defines intended behavior and initial units; it supplies no new
 callable API or deployed instructions. Grant sizes, bounded review cadence and
 resource-specific footprint estimates remain installation choices to verify.
