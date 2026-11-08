@@ -4,7 +4,7 @@ import { ExecutionDeferredError } from "@may-agent/sdk";
 import { type TSchema } from "typebox";
 import { observeTaskFeedback, type TaskExecutionContext } from "./task-execution-context.js";
 import { prepareTaskWorkspaceContext, taskWorkspacePrompt } from "./task-workspace-context.js";
-import { admitManagedTaskStart, type TaskPrimaryStart, type ManagedTaskStartAdmission } from "../app/core/state/task-budget-managed-start.js";
+import { admitManagedTaskStart, assertManagedTaskContinuation, type TaskPrimaryStart, type ManagedTaskStartAdmission } from "../app/core/state/task-budget-managed-start.js";
 import { executionRecipientKey, resolvedExecutionRecipient } from "./execution-recipient.js";
 /**
  * Durable agent session runtime.
@@ -928,6 +928,7 @@ export class SubagentManager {
   send(sessionId: string, text: string, opts?: { trace?: EventTrace; skill?: string }): void {
     const session = this._sessions.get(sessionId);
     if (!session) throw new Error(`Session "${sessionId}" not found`);
+    this.assertSessionContinuation(session);
     const parsedSkill = parseExplicitSkill(text);
     const skillName = opts?.skill ?? parsedSkill.skill;
     const turnTask = parsedSkill.skill ? parsedSkill.task : text;
@@ -970,6 +971,8 @@ export class SubagentManager {
     if (caller.status !== "running" || helper.status !== "running") {
       throw new Error("Caller and helper must still be running; inspect the helper result before deciding the next step");
     }
+    this.assertSessionContinuation(caller);
+    this.assertSessionContinuation(helper);
     caller.executionScope?.workSignal.throwIfAborted();
     helper.executionScope?.workSignal.throwIfAborted();
     // Literal caller input, not a skill command or a new Task requirement.
@@ -979,6 +982,7 @@ export class SubagentManager {
   followUp(sessionId: string, text: string): void {
     const session = this._sessions.get(sessionId);
     if (!session) throw new Error(`Session "${sessionId}" not found`);
+    this.assertSessionContinuation(session);
     session.agent.followUp({ role: "user", content: [{ type: "text", text }] } as any);
   }
 
@@ -2233,7 +2237,17 @@ export class SubagentManager {
     session.openTurnTraces = [];
   }
 
+  private assertSessionContinuation(session: ActiveSession): void {
+    assertManagedTaskContinuation(getDb(this._persistDir), {
+      binding: session.taskBinding,
+      persistentChat: this.isPersistentChat(session),
+      admitted: session.managedStart,
+      running: session.status === "running",
+    });
+  }
+
   private startChatTurn(session: ActiveSession, start: () => Promise<void>): void {
+    this.assertSessionContinuation(session);
     const { sessionId } = session;
     session.status = "running";
     session.lastError = undefined;

@@ -23,6 +23,47 @@ export function taskPrimaryStart(binding: TaskBinding): TaskPrimaryStart {
 
 export type ManagedTaskStartAdmission = { invocationId: string; primaryCovered: boolean; reservation: ExecutionReservation | null };
 
+type ManagedSessionPolicy = {
+  binding?: TaskBinding;
+  retainedBinding?: TaskBinding;
+  persistentChat?: boolean;
+};
+
+function managedSessionPolicy(db: SqliteDb, input: ManagedSessionPolicy) {
+  const bound = input.binding ?? input.retainedBinding;
+  if (!bound) {
+    if (new TaskExecutionStore(db).configured())
+      throw new Error("Shared execution limits require a bounded Task binding; direct-session admission is not configured");
+    return null;
+  }
+  const admission = new TaskBudgetAdmissionStore(db);
+  const task = { appId: bound.appId, taskId: bound.taskId };
+  if (!admission.policy(task.appId) && !admission.budget.binding(task)) {
+    if (new TaskExecutionStore(db).configured())
+      throw new Error("Shared execution limits require explicit adoption of historical Task funding");
+    return null;
+  }
+  if (input.persistentChat) throw new Error("Budgeted Task execution requires a bounded managed session");
+  if (!input.binding) throw new Error("Budgeted session start requires a current Task binding");
+  return { admission, task, bound };
+}
+
+/** Steering an admitted execution spends no new credit or place. It cannot
+ * adopt a pre-policy session, revive stale authority, or start persistent work. */
+export function assertManagedTaskContinuation(
+  db: SqliteDb,
+  input: ManagedSessionPolicy & { admitted?: ManagedTaskStartAdmission | null; running: boolean },
+): void {
+  const policy = managedSessionPolicy(db, input);
+  if (!policy) return;
+  if (!input.running) throw new Error("Task continuation requires a running managed execution");
+  const store = AppTaskResourceStore.activeFromDb(db, policy.task.appId);
+  if (!store) throw new Error("Budgeted continuation requires canonical Task authority");
+  assertCurrentTaskActor({ resourceStore: store }, policy.bound, "continuation");
+  if (!input.admitted || (new TaskExecutionStore(db).configured() && !input.admitted.reservation))
+    throw new Error("Task continuation requires its active managed admission; historical execution needs explicit adoption");
+}
+
 /** Every actual managed start, including a resumed session, gets a fresh Host
  * invocation identity. Commit evidence before external dispatch; uncertainty
  * after admission remains charged. Session identity never grants free replay. */
@@ -39,24 +80,12 @@ export function admitManagedTaskStart(
   },
   now = Date.now(),
 ): ManagedTaskStartAdmission | null {
-  const bound = input.binding ?? input.retainedBinding;
-  if (!bound) {
-    if (new TaskExecutionStore(db).configured())
-      throw new Error("Shared execution limits require a bounded Task binding; direct-session admission is not configured");
-    return null;
-  }
-  const admission = new TaskBudgetAdmissionStore(db);
-  const task = { appId: bound.appId, taskId: bound.taskId };
   // Unconfigured installations keep their existing start path. Relevant starts
   // recheck authority and accounting under the shared write transaction.
-  if (!admission.policy(task.appId) && !admission.budget.binding(task)) {
-    if (new TaskExecutionStore(db).configured())
-      throw new Error("Shared execution limits require explicit adoption of historical Task funding");
-    return null;
-  }
+  const policy = managedSessionPolicy(db, input);
+  if (!policy) return null;
+  const { admission, task, bound } = policy;
   return stateTransaction(db, () => {
-    if (input.persistentChat) throw new Error("Budgeted Task execution requires a bounded managed session");
-    if (!input.binding) throw new Error("Budgeted session start requires a current Task binding");
     const store = AppTaskResourceStore.activeFromDb(db, task.appId);
     if (!store || store.appId !== task.appId) throw new Error("Budgeted start requires canonical Task authority");
     assertCurrentTaskActor({ resourceStore: store }, bound, "managed start");

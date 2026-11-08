@@ -189,6 +189,108 @@ function fixture(credits = 4, executionSlots?: number) {
   };
 }
 
+test.each(["send", "followUp"] as const)("an existing persistent chat cannot bypass installed execution policy through %s", async (method) => {
+  const f = fixture();
+  const id = f.manager.run("worker", "Initial chat turn", { kind: "chat", autoClose: "never" });
+  await f.manager.waitForIdle(id);
+  expect(f.manager.registry.getSession(id)?.status).toBe("idle");
+  const metadata = structuredClone(f.manager.registry.getSession(id));
+  const transcript = readSessionMessages(f.root, id);
+  const session = f.manager.activeSessions.get(id)!;
+  const prompt = spyOn(session.agent, "prompt");
+  const followUp = spyOn(session.agent, "followUp");
+  installTaskExecutionLimit(f.db, { kind: "host" }, 1);
+  try {
+    expect(() => f.manager[method](id, "Next turn")).toThrow("bounded Task binding");
+    expect(prompt).not.toHaveBeenCalled();
+    expect(followUp).not.toHaveBeenCalled();
+    expect(f.manager.registry.getSession(id)).toEqual(metadata);
+    expect(readSessionMessages(f.root, id)).toEqual(transcript);
+    expect(f.view()?.rootCharged).toBe(2);
+    expect(new TaskExecutionStore(f.db).usage({ kind: "host" }).occupied).toBe(0);
+  } finally {
+    prompt.mockRestore();
+    followUp.mockRestore();
+  }
+});
+
+test("continuation cannot adopt an unreserved bounded execution when limits are installed", async () => {
+  const f = fixture();
+  f.hold(true);
+  const id = f.manager.run("worker", "Primary before execution policy", {
+    taskBinding: f.binding, taskPrimaryStart: taskPrimaryStart(f.binding),
+  });
+  await f.started.promise;
+  installTaskExecutionLimit(f.db, { kind: "host" }, 1);
+  expect(() => f.manager.send(id, "Continue")).toThrow("historical execution needs explicit adoption");
+  expect(() => f.manager.followUp(id, "Continue")).toThrow("historical execution needs explicit adoption");
+  expect(f.view()?.rootCharged).toBe(2);
+  expect(new TaskExecutionStore(f.db).usage({ kind: "host" }).occupied).toBe(0);
+  f.release();
+  expect((await f.manager.waitFor(id)).status).toBe("done");
+});
+
+test("continuation cannot revive an interrupted funded session while its execution joins", async () => {
+  const f = fixture(4, 1);
+  f.hold(true);
+  const id = f.manager.run("worker", "Primary", {
+    taskBinding: f.binding, taskPrimaryStart: taskPrimaryStart(f.binding),
+  });
+  await f.started.promise;
+  f.manager.cancel(id);
+  try {
+    expect(() => f.manager.send(id, "Revive")).toThrow("running managed execution");
+    expect(() => f.manager.followUp(id, "Queue revival")).toThrow("running managed execution");
+    expect(f.view()?.rootCharged).toBe(2);
+  } finally {
+    f.release();
+    await f.manager.waitFor(id);
+  }
+});
+
+test("funded live continuation and helper correction reuse admission; cancelled Tasks reject queued input", async () => {
+  const f = fixture(4, 2);
+  f.hold(true);
+  const parent = f.manager.run("worker", "Primary", {
+    taskBinding: f.binding, taskPrimaryStart: taskPrimaryStart(f.binding),
+  });
+  await f.startedInvocation(1);
+  const helper = f.manager.run("worker", "Helper", { parentSessionId: parent });
+  await f.startedInvocation(2);
+  const steer = spyOn(f.manager.activeSessions.get(parent)!.agent, "steer").mockImplementation(() => {});
+  const followUp = spyOn(f.manager.activeSessions.get(parent)!.agent, "followUp").mockImplementation(() => {});
+  const correct = spyOn(f.manager.activeSessions.get(helper)!.agent, "steer").mockImplementation(() => {});
+  try {
+    f.manager.send(parent, "Parent correction");
+    f.manager.followUp(parent, "Parent follow-up");
+    f.manager.followUpHelper(helper, "Helper correction", parent);
+    expect(steer).toHaveBeenCalledTimes(1);
+    expect(followUp).toHaveBeenCalledTimes(1);
+    expect(correct).toHaveBeenCalledTimes(1);
+    expect(f.view()?.rootCharged).toBe(3);
+    expect(new TaskExecutionStore(f.db).usage({ kind: "host" }).occupied).toBe(2);
+    expect(f.db.prepare("SELECT COUNT(*) AS n FROM task_budget_managed_starts").get()?.n).toBe(2);
+    const current = f.store.readTask("work")!;
+    cancelAppTask(f.config, { appId: "sample", taskId: "work", reason: "Outcome withdrawn",
+      expectedGeneration: current.metadata.generation, expectedResourceVersion: current.metadata.resourceVersion });
+    expect(() => f.manager.send(parent, "Stale correction")).toThrow("no longer current");
+    expect(() => f.manager.followUp(parent, "Stale follow-up")).toThrow("no longer current");
+    expect(() => f.manager.followUpHelper(helper, "Stale helper correction", parent)).toThrow("no longer current");
+    expect(steer).toHaveBeenCalledTimes(1);
+    expect(followUp).toHaveBeenCalledTimes(1);
+    expect(correct).toHaveBeenCalledTimes(1);
+  } finally {
+    steer.mockRestore();
+    followUp.mockRestore();
+    correct.mockRestore();
+    f.manager.cancel(parent);
+    f.manager.cancel(helper);
+    f.release();
+    await Promise.all([f.manager.waitFor(parent), f.manager.waitFor(helper)]);
+  }
+  expect(f.view()?.rootCharged).toBe(3);
+});
+
 test("paid primary is covered once; repair and resume are distinct charges while saved results are free", async () => {
   const f = fixture();
   const primary = taskPrimaryStart(f.binding);
