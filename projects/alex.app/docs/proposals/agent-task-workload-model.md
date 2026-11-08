@@ -23,6 +23,9 @@ document. Current durable admission still requires an App. The
 The [source and live-system review](../archive/reviews/agent-workload-gap-review-20261108.md)
 motivates resource-health feedback and coordination that can start under stress.
 Its observations are dated evidence, not proof of improved agent behavior.
+The [implementation approach](agent-task-workload-implementation.md) maps this
+direction to current source, narrows the first delivery and records the remaining
+contract changes. Direct agent addressing is not a prerequisite for that work.
 **First priority:** finish the existing idle-Task disposition work and prevent
 new finite results from accumulating without a decision. This precedes the new
 feedback, budget and coordination mechanisms below; use the existing lifecycle,
@@ -52,11 +55,15 @@ date. The agent makes waiting, priority and delivery conflicts visible to its
 caller. Completing an attempt, satisfying an input and closing the assignment
 remain separate decisions under the existing lifecycle.
 
-A root Task represents one independent assignment. Its descendants are
-contributions to that assignment. The root identity also identifies their shared
+A root Task represents one independent assignment. Newly commissioned
+contributions inherit that assignment's account from trusted admission. A request
+attached to an existing Task retains the target's account and its exact caller
+link; requesting a service does not adopt its lifetime spending or transfer its
+sponsorship. The root identity also identifies the contributions' shared
 allowance; it introduces no second work lifecycle. A standing coordination Task
 lets an agent consider input and review results through the ordinary Task engine.
-Its work has a small, explicit allowance of its own.
+Its work has a small, explicit allowance of its own. This is a proposed installed
+role; the current Host does not provide a generic coordinator for every agent.
 
 ## Six rules
 
@@ -103,9 +110,11 @@ Its work has a small, explicit allowance of its own.
    to each agent's `C` and the shared Host limit. With `c = 1`, the parent yields,
    the child runs, and its result wakes the parent. Bounded helpers stay inside
    their caller's authority, cancellation scope and shared spending allowance.
-   Parallel helpers must count against applicable execution limits. A suspended
-   caller may lend its place to an awaited helper; reusing a place does not
-   authorize simultaneous work in it or bypass the recipient agent's limits.
+   Parallel helpers must count against applicable execution limits. A caller
+   must not wait indefinitely for a helper that needs its own occupied place.
+   The initial capacity implementation defers such a call before helper start;
+   durable delegation can yield and resume. Lending a suspended caller's place
+   requires a separate proven handoff and is deferred from the first version.
 
 6. **Return results, review and end assignments explicitly.** The assigned
    agent reports evidence; the creator consumes it and retains, revises, closes
@@ -280,7 +289,8 @@ with no useful independent work yields while awaiting its durable child.
 
 ### One bounded decision pass
 
-Each agent's existing coordination Task reviews changed obligations and evidence.
+A configured coordination Task reviews changed obligations and evidence; there
+is currently no generic per-agent coordination Task or portfolio-control API.
 An ordinary worker uses the same reasoning within its assignment and authority;
 it does not acquire authority to reprioritize or close other assignments.
 
@@ -341,7 +351,7 @@ not evidence of improved delivery throughput.
 
 ## Coordination that can run under stress
 
-Each agent's standing coordination Task considers input, selects useful work,
+A declared standing coordination Task considers input, selects useful work,
 consumes results and brings finite assignments to their creator for disposition.
 Use existing owner-review routes during migration. The installation declares
 the accountable agent and trusted coordination role through normal definitions;
@@ -357,6 +367,9 @@ is no permanently running controller or reserved place per agent. A one-place
 Host interleaves bounded attempts instead of reserving away all execution.
 The current foreground reserve is for pending human Conversation work; extending
 it to trusted coordination remains unimplemented.
+The declaration must cover App-local eligibility as well as Host capacity;
+otherwise a saturated App can still prevent its coordination from starting.
+Reserve eligibility grants no right to revise or close other assignments.
 
 Autonomous coordination still honors App pause and explicit stop; reserve access
 does not inherit the existing human-only pause exception.
@@ -438,8 +451,11 @@ execution contexts carry a trusted shared budget reference. Atomically reserve
 credits against both the root cap and the sponsor's relevant period balance,
 with a stable operation identity and the applicable execution claim. Each
 creation/start is charged once. Creation spends its charge when the new Task is
-persisted. An execution spends its charge on dispatch, including preparation
-failure; release an unused reservation only when non-start is established.
+persisted. An attempt spends its charge when its durable claim commits, before
+workspace preparation or executor dispatch. Controller selection, readiness
+checks and spawning a worker that never claims are not charged attempts.
+Preparation failure after claim is charged; release an unused reservation only
+when non-start is established.
 After interruption, uncertain starts retain their charge until reconciled.
 Crossing a period boundary does not refund or reassign prior charges, double
 grant credits or release execution capacity still held by live work.
@@ -543,7 +559,7 @@ message, metric, schedule, Conversation or delegation adapter:
 | Shared boundary | Workload behavior to add | Existing contract to preserve |
 | --- | --- | --- |
 | Task admission | Establish trusted root/sponsor attribution and charge actual new Task creation once, atomically with persistence. | Attaching input, revising an existing assignment and replaying an admission do not create another Task or creation charge. Delegation retains its exact creator and caller link. |
-| Execution start | Reserve applicable capacity and credits before dispatch; charge each started attempt or separately invoked helper under the budget policy. | Claim and cancellation fences still apply. A reservation is released without spending only when non-start is established; preparation failure after dispatch is a charged start. |
+| Execution start | Reserve applicable capacity and charge the attempt with its durable claim; separately invoked helpers use the same accounting authority before their own start. | Controller checks and lost claims spend nothing. Claim and cancellation fences still apply; preparation failure after claim is charged. |
 | Settlement and confirmed cleanup/recovery | Reconcile charges and reservations against the recorded operation and release execution capacity when the execution is confirmed ended. | Preserve accepted results, exact input answers and authorized closure under their transaction fences. Task closure alone does not release still-running descendants or their reservations. Uncertain starts retain their charge until reconciled. |
 | Agent decision context | Supply the bounded workload summary to the agent deciding admission, next work or cooperation; use existing coordination for commitment review. | Read authority, freshness and unknown facts remain explicit. The Host enforces limits; the agent judges business need and priorities. Feedback does not add a queue, controller or automatic closure rule. |
 
@@ -610,13 +626,17 @@ than become unrestricted creation paths.
 | Feedback | Scoped Task/child/wait reads and App owner reviews exist. The bounded summary, delivery to the deciding agent, decision guidance and consequential-deferral feedback remain unimplemented as an integrated path. |
 | Budget | Per-call limits and usage records exist. Shared attribution, credit grants, cumulative charges and renewal remain unimplemented. |
 | Shared blockers | Individual Conditions and recovery exist. Operation-specific prerequisite admission and cross-Task coalescing need implementation at the affected resource boundary. |
-| Lifecycle integration | The shared reconciler, fenced store and attempt runner exist. Wake writers require a focused consistency review; App closure and Conversation effect preservation are candidate Host #398. The four workload hooks above remain unimplemented. |
+| Lifecycle integration | The shared reconciler, fenced store and attempt runner exist. Wake writers require a focused consistency review; App closure and Conversation effect preservation merged in Host #398, with live adoption tracked separately. The four workload hooks above remain unimplemented. |
+
+The [implementation approach](agent-task-workload-implementation.md) separates
+feedback, reachable coordination, credit accounting and additional execution
+limits into reviewable deliveries. No stage claims the later stage's guarantees.
 
 First complete [idle disposition and the result path](#first-milestone-resolve-idle-work-and-complete-the-result-path)
-using existing capabilities. Then address the existing accountable
-resource-capacity work and make coordination reachable, review the affected wake
-and effect paths, trial the workload summary through owner reviews, and implement
-accounting at the shared boundaries. Repair demonstrated divergence where it is
+using existing capabilities. Then deliver the bounded workload summary and trial
+it through owner reviews, make coordination and resource checks reachable, review
+affected wake/effect paths, and implement shared accounting followed by additional
+execution limits. Repair demonstrated divergence where it is
 owned; this order does not require rewriting the lifecycle or merging unrelated
 modules first. No additional controller agent is required.
 This proposal defines intended behavior and initial units; it supplies no new
@@ -640,7 +660,7 @@ Verify these contrasting cases before claiming the feedback improves behavior:
 | Leases, session/workspace observations and result settlement update Task resources | Do not mistake storage mutations for charged starts; separately invoked helpers still pass the start-accounting boundary. |
 | Nested cooperation with `c = 1`, including restart | Yield so the child can run; preserve shared charges, attribution and responsibility. |
 | Concurrent claims, retries and exhausted credits | Enforce `B`, `C`, `c` and Host bounds without double charging; retain visible work and bounded creator coordination. |
-| Parallel helpers, including an awaited helper with `c = 1` | Charge each helper; suspended callers yield or lend capacity, while parallel work respects all applicable limits. |
+| Parallel helpers, including an awaited helper with `c = 1` | Charge each started helper. When no place is available, defer before helper start rather than deadlock; durable contributions yield and resume. Slot lending is a separate later extension. |
 | Parent closure while a child remains unresolved | Preserve child obligations and active reservations until their actual disposition and cleanup. |
 | Several Tasks hit one full filesystem or access blocker | Retain separate obligations and one shared blocker observation; avoid repeated unchanged model judgments and allow unrelated work. |
 | Ordinary budget exhausted or a new worktree cannot be created | Bounded authorized coordination can use its protected allowance and existing workspace; do not claim a decision if storage cannot persist it. |

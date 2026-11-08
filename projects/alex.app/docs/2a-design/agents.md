@@ -111,6 +111,9 @@ settlement/cleanup and agent decision context, preserving the existing engine.
 Its proposed protected coordination path lets existing responsible agents make
 bounded decisions under ordinary resource stress; this reserve extension,
 resource admission and shared credit renewal are unimplemented.
+The [implementation approach](../proposals/agent-task-workload-implementation.md)
+maps these changes to current Host owners and staged verification; current App
+admission can support that work without waiting for standalone Task addressing.
 
 ## Definition sources
 
