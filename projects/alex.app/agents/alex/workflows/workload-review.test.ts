@@ -176,3 +176,30 @@ test("mechanical capacity rechecks stay quiet while changed method demand warran
   expect(f.prompts[1]).toContain("minimum simultaneous places");
   expect(f.prompts[1]).toContain('"requiredSlots":3');
 });
+
+test("shared execution changes warrant method advice while unchanged observations stay quiet", async () => {
+  const f = fixture(true);
+  f.workload.limits.sharedHost = { available: true, scope: "installation", maxConcurrent: 4,
+    occupied: 3, remaining: 1, backgroundMaxConcurrent: 3, backgroundOccupied: 3, backgroundRemaining: 0 };
+  f.workload.limits.agent = { available: true, scope: "installation-recipient",
+    recipient: { kind: "programmatic", id: "fixture/owner" }, maxConcurrent: 2, occupied: 2, remaining: 0 };
+  f.workload.limits.root = { available: true, scope: "current-task-root",
+    task: { appId: "alex", taskId: WORKLOAD_REVIEW_TASK_ID },
+    root: { appId: "alex", taskId: WORKLOAD_REVIEW_TASK_ID }, maxConcurrent: 2, occupied: 1, remaining: 1 };
+  f.own.result = { workloadReview: state(await execute(f.ctx)) };
+  expect(f.prompts[0]).toContain("Shared Host and recipient limits describe actual installation execution");
+  expect(f.prompts[0]).toContain("current-root capacity belongs only to this review's bound assignment");
+  setSystemTime(now + WORKLOAD_REVIEW_INTERVAL_MS);
+  f.workload.observedAt = new Date(Date.now()).toISOString();
+  expect((await execute(f.ctx)).summary).toContain("No changed");
+  expect(f.prompts).toHaveLength(1);
+  f.workload.limits.sharedHost.occupied--;
+  f.workload.limits.sharedHost.remaining++;
+  f.workload.limits.sharedHost.backgroundOccupied--;
+  f.workload.limits.sharedHost.backgroundRemaining++;
+  expect((await execute(f.ctx)).summary).toContain("advice retained");
+  expect(f.prompts).toHaveLength(2);
+  expect(f.prompts[1]).toContain('"backgroundRemaining":1');
+  expect(f.prompts[1]).toContain('"occupied":2,"remaining":0');
+  expect(f.task.status).toBe("waiting");
+});

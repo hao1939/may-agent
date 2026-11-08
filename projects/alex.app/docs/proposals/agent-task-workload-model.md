@@ -247,6 +247,13 @@ retrying its caller. A mechanical recheck timestamp is not new business evidence
 changed demand, applicable capacity or an authorized method revision may justify
 a new decision.
 
+Shared Host execution and recipient occupancy have installation scope; controller
+dispatch capacity is a separate observation. Current-root feedback belongs only
+to the Host-bound Task, including its cross-App contributions. It does not
+describe the roots of every commitment in a review page. Pending input includes
+retained unanswered requests after their original triggers have been consumed,
+including requests waiting for an external change.
+
 Agents interpret these facts alongside business value, deadlines and expected
 effort, using estimates only where useful. The first version needs neither a
 universal pressure score nor a fixed admission formula. Existing App limits

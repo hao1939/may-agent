@@ -310,12 +310,28 @@ workflows that currently depend on inline helpers.
 Retain trusted scheduling eligibility in reservations so background helpers
 cannot consume the protected place merely by bypassing the parent queue.
 
+Trusted sponsor policy may supply an optional execution default for newly
+commissioned roots. Apply it in the same canonical creation transaction as the
+binding and creation charge, including authored seeds. A contribution uses its
+existing root; an explicit exact-root limit takes precedence. Failed admission
+leaves no limit behind. Defaults neither adopt historical Tasks nor amend
+existing roots, and omission does not invent a limit or activate enforcement.
+
 Use the executing definition's resolved installation-relative directory for the
 recipient-agent identity. Aliases selecting the same owner share its limit, and
 the claim and primary start must use the same pinned definition generation.
 Programmatic definitions need an explicit stable Host identity; an alias or an
 absolute source-release path cannot supply it. Resumed sessions retain their
 recorded owner even when current instructions change.
+
+The existing workload view reports shared Host execution separately from the
+parent controller's dispatch observation. Report recipient occupancy by the
+pinned resolved identity and root occupancy only for the trusted current Task's
+canonical binding. Keep them in the same SQLite snapshot as readiness and credits;
+count active reservations and helpers, including uncertain execution. Remaining
+background capacity is bounded by both total Host occupancy and its background
+sublimit. Missing policy or identity remains unavailable. These scoped
+observations neither select another Task's root nor grant an execution permit.
 
 Count live root usage through canonical Task account bindings. Explicitly
 adopting a running historical Task includes its existing attempt and helpers
@@ -871,3 +887,49 @@ existing ignored `evaluation.app` and `gym.app` symlinks point into retired loca
 history without canonical `app.ts` files. Those installation artifacts were left
 untouched. This is separate from the isolated source-design result; the integrated
 installation checkout is not reported as passing.
+
+### Root policy, cooperation and shared-capacity feedback source increments
+
+Host [#424](https://github.com/hao1939/may-agent/pull/424), revision
+`cda76e82d2`, extends the installed-runtime delegation/restart fixture with a
+finite one-place root and three distinct recipients. A child attempted before
+the parent yields is deferred without a debit; confirmed parent cleanup wakes
+it. Saved results resume the chain after restart despite missed live feedback.
+It spends three creation and five attempt credits, with no charge on repeated
+recovery. Both configured and unconfigured scenarios passed **2 tests / 64
+assertions**; runtime, admission and managed-start owners passed **297 / 3,603**.
+Static checks and hosted Quality/Container passed. This is deterministic runtime
+and storage evidence, not native-provider or model-behavior proof. No complete
+local gate was run on this head; independent review remains.
+
+Host [#425](https://github.com/hao1939/may-agent/pull/425), revision
+`c585ed31f5`, adds the optional trusted new-root execution default described above.
+Two production-creation regressions failed first. Creation and production seed
+owners then passed **11 / 50**, and funding, coordination, managed-start,
+admission, accounting and real-process recovery owners passed **89 / 557**.
+Static checks and hosted Quality/Container passed. Its complete local gate is
+running; independent review remains. No configuration is activated.
+
+Host [#426](https://github.com/hao1939/may-agent/pull/426), revision
+`b49218bba5`, supplies shared Host, pinned recipient and canonical current-root
+execution observations through the existing workload read. Two regressions
+failed first. Workload/admission/accounting owners passed **54 / 267**; expanded
+runtime and real-worker owners passed **332 / 3,610**. Final changed owners passed
+**13 / 48**, with additional lifecycle assertions inside the isolated worker.
+The actual worker's starting context and live scoped read agree, and joined
+cleanup returns occupancy to zero. Final Host/SDK types, boundary and lint passed.
+Hosted gates and a complete local gate remain pending.
+
+The paired App policy explains execution versus dispatch scope, the current-root
+boundary, and method adaptation without count-based closure. Its workload and
+disposition workflows passed **24 / 344**, with strict types against this SDK.
+This verifies source contracts and supplied decision context, not improved model
+choices or live adoption.
+
+A diagnostic-only full local gate on `a624fd5575` passed **4,108 tests / 3 skipped
+/ 23,905 assertions**. It retained missing-result Task/attempt diagnostics but
+did not reproduce or explain the earlier #423 local failure. The passing run
+does not establish a production fix. #426 carries those fixture diagnostics
+forward. Historical adoption, unsupported direct/persistent-chat starts,
+operation-specific resource constraints, independent reviews and separately
+authorized activation/behavioral evidence remain outstanding.
