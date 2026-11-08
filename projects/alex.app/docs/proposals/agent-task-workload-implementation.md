@@ -161,6 +161,17 @@ index: qualify App-level counts honestly, and add an indexed projection only if
 the pilot needs exact agent-level counts. Bound query effort as well as output;
 mark partial/unavailable observations rather than treating a page as a total.
 
+The optional `assignments` projection classifies matched page records as
+`rootTasks`, `contributions` or `unattributed` using existing canonical account
+bindings, never structural parents or executor identity. Those categories sum
+to the matched page count. `representedRoots` counts distinct known root
+references represented in that observation, including roots outside the page
+or App; it cannot be summed across pages. Use one indexed lookup per matched
+Task in the same read snapshot, with no external Task/history scan, adoption,
+spending or new ledger. Missing attribution remains unknown. Actual execution
+occupancy still includes contributions and helpers. An older Host omits this
+optional section; omission does not mean zero independent commitments.
+
 The parent daemon can supply observed Host scheduling facts to a worker using the
 existing attempt transport. Durable Task facts come from scoped canonical reads.
 Disclose their different observation times instead of claiming an atomic fleet
@@ -1394,3 +1405,30 @@ against workflow blob `43f7023407f217fd59a5ff064cff9d48cb68f8de`. Private reprod
 and logs remain under `.state/workload-implementation-20261109/`; the temporary
 paired fixtures were removed after retention. These are source and scripted
 context checks; independent review and operational/model acceptance remain.
+
+The assignment-count increment at Host `823f10191a` adds that missing distinction
+to the shared workload projection and optional SDK field. Contract checks before
+implementation confirmed the absent section (**0 passed / 2 failed / 2 assertions**),
+then focused feedback/accounting/execution/control owners passed **101 tests /
+433 assertions across five files**. The mixed population includes an unattributed
+historical Task, an independent Task with a structural parent, descendants sharing
+one account, agent filtering and bounded pages. Same-named roots in different
+Apps stay distinct even when neither root Task is in the page; no root identities
+or external Task bodies are returned. Existing tool and attempt-context checks
+also assert the projection. Reads retain unchanged SQLite `total_changes()`.
+
+An initial extra fixture attempted to admit a new overlong Task identity and was
+rejected by existing admission validation before the workload read. That invalid
+fixture was removed; it is not evidence of a production defect or repair.
+Host/SDK types, boundary and lint passed. The committed Host candidate is frozen
+for its full local gate; no full passing result is claimed yet.
+
+The App includes assignment attribution in its decision fingerprint and explains
+its page/unknown/provenance limits to Alex. Its new regression showed changed
+attribution was previously coalesced (**0 passed / 1 failed / 3 assertions**).
+Final review/policy/disposition owners passed **43 tests / 770 assertions across
+three files**, and strict source-SDK types passed against the paired candidate.
+No Task lifecycle, admission, priority or resource allowance changes follow from
+these observations. Integration order is additive Host read first, then App
+source; the App remains compatible when an older Host omits the section. Independent
+review, operational adoption and real model behavior remain separate gates.

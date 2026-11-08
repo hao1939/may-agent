@@ -198,6 +198,20 @@ test("unchanged workspace shortages stay quiet and recovery warrants reconsidera
   expect(f.task.status).toBe("waiting");
 });
 
+test("changed assignment attribution warrants advice without treating contribution counts as independent commitments", async () => {
+  const f = fixture();
+  f.workload.assignments = { rootTasks: 1, contributions: 0, unattributed: 1, representedRoots: 1 };
+  f.own.result = { workloadReview: state(await execute(f.ctx)) };
+  setSystemTime(now + WORKLOAD_REVIEW_INTERVAL_MS);
+  f.workload.assignments = { rootTasks: 1, contributions: 1, unattributed: 0, representedRoots: 1 };
+  const result = await execute(f.ctx);
+  expect(result.status).toBe("done");
+  expect(f.prompts).toHaveLength(2);
+  expect(f.prompts[1]).toContain('"contributions":1,"unattributed":0');
+  expect(f.prompts[1]).toContain("do not sum represented roots across pages");
+  expect(f.task.status).toBe("waiting");
+});
+
 test("shared execution changes warrant method advice while unchanged observations stay quiet", async () => {
   const f = fixture(true);
   f.workload.limits.sharedHost = { available: true, scope: "installation", maxConcurrent: 4,

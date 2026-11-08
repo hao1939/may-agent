@@ -252,6 +252,13 @@ retrying its caller. A mechanical recheck timestamp is not new business evidence
 changed demand, applicable capacity or an authorized method revision may justify
 a new decision.
 
+When available, page-scoped assignment counts use canonical account bindings:
+root Tasks, contributions and unattributed Tasks are distinct. Missing historical
+attribution does not establish an independent assignment. Distinct represented
+roots can be outside the page or App, and the same root may appear on several
+pages; summing those observations does not give a population total. These
+provenance counts neither classify business need nor measure execution.
+
 Shared Host execution and recipient occupancy have installation scope; controller
 dispatch capacity is a separate observation. Current-root feedback belongs only
 to the Host-bound Task, including its cross-App contributions. It does not
