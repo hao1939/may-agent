@@ -2,11 +2,12 @@ import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
+import { executionRecipientKey as recipientKey, type ExecutionRecipient } from "../../../lib/execution-recipient.js";
 import { TaskBudgetStore, type BudgetTaskRef } from "./task-budget-store.js";
 
 /** Resolved installation identity, not an alias or a source-release directory.
  * Programmatic definitions require an explicit stable Host identity. */
-export type ExecutionRecipient = { kind: "directory" | "programmatic"; id: string };
+export type { ExecutionRecipient } from "../../../lib/execution-recipient.js";
 export type ExecutionOperation =
   | { kind: "attempt"; task: BudgetTaskRef; attemptId: string }
   | { kind: "helper"; invocationId: string; sessionId: string; task?: BudgetTaskRef; attemptId?: string };
@@ -48,17 +49,6 @@ function taskKey(task: BudgetTaskRef): string {
   exact(task.appId);
   exact(task.taskId);
   return JSON.stringify([task.appId, task.taskId]);
-}
-function recipientKey(recipient: ExecutionRecipient): string {
-  exact(recipient.id);
-  if (recipient.kind !== "directory" && recipient.kind !== "programmatic")
-    throw new Error("Unknown recipient identity");
-  if (
-    recipient.kind === "directory" &&
-    (recipient.id.startsWith("/") || recipient.id.split("/").some((part) => !part || part === "." || part === ".."))
-  )
-    throw new Error("Recipient directory must be installation-relative");
-  return JSON.stringify([recipient.kind, recipient.id]);
 }
 function scopeKey(scope: ExecutionScope): string {
   return scope.kind === "host" ? "host" : scope.kind === "agent" ? recipientKey(scope.recipient) : taskKey(scope.root);

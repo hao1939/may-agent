@@ -13,6 +13,7 @@ import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "../../core/t
 import type { TaskAgentRunner, TaskAgentInput } from "../../core/tasks/execution.js";
 import { localAgentDir } from "../discovery/local-agents.js";
 import { captureAgentDefinitions } from "./agent-definitions.js";
+import { resolvedExecutionRecipient } from "../../../lib/execution-recipient.js";
 import {
   beginCanonicalAgentResidueGuard,
   planCanonicalAgentResidueCleanup,
@@ -34,6 +35,10 @@ export function createTaskAgentRunner(
 ): TaskAgentRunner {
   return {
     available: (agent) => (definitions ? definitions.has(agent) : input.manager.hasAgent(agent)),
+    executionRecipient: (agent) => {
+      const definition = definitions ? definitions.get(agent) : input.manager.getAgentDefinition(agent);
+      return definition ? resolvedExecutionRecipient(definition) : null;
+    },
     async prepare({ source, appDir, agent }) {
       if (input.manager.hasAgent(agent)) return true;
       const dir = localAgentDir(join(source.projectsRoot, basename(appDir)), agent);

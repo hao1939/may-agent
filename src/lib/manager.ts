@@ -3,6 +3,7 @@ import { type TSchema } from "typebox";
 import { observeTaskFeedback, type TaskExecutionContext } from "./task-execution-context.js";
 import { prepareTaskWorkspaceContext, taskWorkspacePrompt } from "./task-workspace-context.js";
 import { admitManagedTaskStart, type TaskPrimaryStart } from "../app/core/state/task-budget-managed-start.js";
+import { executionRecipientKey, resolvedExecutionRecipient } from "./execution-recipient.js";
 /**
  * Durable agent session runtime.
  *
@@ -409,11 +410,21 @@ export class SubagentManager {
     // A name can now select another App/global folder. Check durable ownership
     // before changing the transcript, persistence, or starting an agent run.
     const definition = this.agents.get(meta.agent)?.definition;
-    if ((meta.agentRelativeDir ?? null) !== (definition?.agentRelativeDir ?? null)) {
-      const unknown = meta.agentRelativeDir === undefined;
+    const savedRecipient = resolvedExecutionRecipient({
+      agentRelativeDir: meta.agentRelativeDir ?? undefined,
+      hostIdentity: meta.agentHostIdentity ?? undefined,
+    });
+    const selectedRecipient = definition ? resolvedExecutionRecipient(definition) : null;
+    if (
+      (savedRecipient ? executionRecipientKey(savedRecipient) : null) !==
+      (selectedRecipient ? executionRecipientKey(selectedRecipient) : null)
+    ) {
+      const directory = savedRecipient?.kind === "directory" || selectedRecipient?.kind === "directory";
+      const unknown = directory ? meta.agentRelativeDir === undefined : meta.agentHostIdentity === undefined;
+      const label = directory ? "agent directory" : "programmatic agent identity";
       const reason = unknown
-        ? `Session ${sessionId} has no recorded agent directory; cannot verify the resume owner`
-        : `Session ${sessionId} agent directory changed from ${meta.agentRelativeDir ?? "<programmatic>"} to ${definition?.agentRelativeDir ?? "<programmatic>"}; refusing cross-owner resume`;
+        ? `Session ${sessionId} has no recorded ${label}; cannot verify the resume owner`
+        : `Session ${sessionId} ${label} changed from ${savedRecipient?.id ?? "<unknown>"} to ${selectedRecipient?.id ?? "<unknown>"}; refusing cross-owner resume`;
       this.emitSessionResumeFailed(
         sessionId,
         meta,
@@ -514,6 +525,7 @@ export class SubagentManager {
   // ── Registration ──
 
   register(def: SubagentDefinition): void {
+    resolvedExecutionRecipient(def);
     this.agents.set(def.name, { definition: def });
     this._registry.saveAgent(def);
   }
@@ -564,6 +576,7 @@ export class SubagentManager {
     opts?: RunOptions,
     onAdmitted?: () => void,
   ): string {
+    const recipient = resolvedExecutionRecipient(def);
     const parent = opts?.parentSessionId ? this._sessions.get(opts.parentSessionId) : undefined;
     if (parent) {
       if (parent.status !== "running" || !parent.executionScope) throw new Error("Caller is not executing");
@@ -795,6 +808,7 @@ export class SubagentManager {
       ...(existingMeta ?? {}),
       agent: def.name,
       agentRelativeDir: def.agentRelativeDir ?? null,
+      agentHostIdentity: recipient?.kind === "programmatic" ? recipient.id : null,
       task: sessionTask,
       status: "running",
       startedAt,

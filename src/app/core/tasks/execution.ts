@@ -8,6 +8,7 @@ import type {
   TaskVerifier,
 } from "@may-agent/sdk";
 import type { TaskBinding } from "../../../lib/persistence.js";
+import type { ExecutionRecipient } from "../../../lib/execution-recipient.js";
 import type { ConversationContextQuery } from "../state/conversations.js";
 import type { ConversationRequestChange } from "../state/conversation-requests.js";
 import type { EventEnvelope } from "../events/bus.js";
@@ -80,6 +81,8 @@ export type TaskAgentInput = TaskExecutionInput & {
 export type TaskAgentRunner = {
   prepare(input: { source: TaskDefinitionSource; appDir: string; agent: string }): Promise<boolean>;
   available(agent: string): boolean;
+  /** Same pinned definition used for execution; unknown is never an alias key. */
+  executionRecipient?(agent: string): ExecutionRecipient | null;
   role(agent: string): TaskAttempt["role"];
   execute(input: TaskAgentInput): Promise<TaskCapabilityRun>;
   /** Pin agent definitions at the synchronous App publication boundary. */

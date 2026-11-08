@@ -52,6 +52,8 @@ export interface PersistedSession {
   agent: string;
   /** Selected installation-relative folder; null is programmatic, absent is legacy/unknown. */
   agentRelativeDir?: string | null;
+  /** Explicit programmatic installation owner; absent on legacy sessions. */
+  agentHostIdentity?: string | null;
   task: string;
   status: "running" | "done" | "error" | "interrupted" | "idle";
   startedAt: number;
