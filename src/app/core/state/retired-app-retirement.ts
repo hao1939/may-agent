@@ -52,12 +52,16 @@ export function retireAppState(
   // input-only plans. Reusing an id with different evidence cannot pass replay.
   const digest = createHash("sha256").update(JSON.stringify(plan)).digest("hex");
   const reason = (value: string) => `Retired by operator (${plan.id}; sha256:${digest}): ${value}`.trim();
+  const taskControlKey = (taskId: string) => `retire-app:sha256:${digest}:task:${taskId}`;
   try {
     return stateTransaction(db, () => {
       const currentTaskIds = db
         .prepare(
           `SELECT t.task_id FROM app_tasks t WHERE t.app_id = ?
-        AND NOT EXISTS (SELECT 1 FROM app_task_cancellations c WHERE c.app_id=t.app_id AND c.task_id=t.task_id)`,
+        AND NOT EXISTS (SELECT 1 FROM app_task_cancellations c WHERE c.app_id=t.app_id AND c.task_id=t.task_id)
+        AND NOT EXISTS (SELECT 1 FROM app_task_receipts r
+          WHERE r.app_id=t.app_id AND r.receipt_id=t.task_id
+            AND json_extract(r.receipt_json, '$.metadata.generation') >= t.generation)`,
         )
         .all(plan.appId)
         .map((row) => String(row.task_id));
@@ -79,7 +83,7 @@ export function retireAppState(
           (task.triggerJson !== null && typeof task.triggerJson !== "string")
         )
           throw new Error("Reviewed Task identity is mismatched or has a current attempt");
-        const controlKey = `retire-app:${plan.id}:task:${task.taskId}`;
+        const controlKey = taskControlKey(task.taskId);
         const terminal = store.readCancellation(task.taskId);
         if (terminal) {
           const receipt = store.readControlReceipt(controlKey);
@@ -231,7 +235,7 @@ export function retireAppState(
           expectedResourceVersion: expected.metadata.resourceVersion,
           reason: reason(task.reason),
           decision: "human",
-          controlKey: `retire-app:${plan.id}:task:${task.taskId}`,
+          controlKey: taskControlKey(task.taskId),
         });
       }
       const now = options.now ?? Date.now();

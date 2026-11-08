@@ -108,6 +108,10 @@ entry includes the complete raw `SELECT * FROM app_inbox_items` row. Reasons
 must identify the reviewed withdrawal decision, not a phase-based heuristic.
 Do not commit these private preimages or installation data.
 
+A retained Task is terminal when its legacy completion receipt names the same
+or a newer generation. Such Tasks are excluded from the nonterminal census and
+must not be in the plan. A revised Task newer than its receipt remains in the census.
+
 ```ts
 // JSON plan shape; strings contain exact stored bytes, not reserialized resources.
 {
@@ -149,8 +153,10 @@ satisfied. Other Apps' Tasks, Conditions and inputs are outside this operation.
 
 All census checks, preimage checks and mutations share one transaction. Dry-run
 executes the real cancellation and inbox writes, then rolls everything back.
-A SHA-256 of the full parsed plan is recorded in terminal reasons. Exact replay
-returns `already-retired`; changed plans, partial/foreign decisions, new work or
+A SHA-256 of the full parsed plan is recorded in terminal reasons and scopes
+control receipt keys, including App identity. Different Apps can reuse plan and
+Task ids without colliding. Exact replay returns `already-retired`; changed
+plans, partial/foreign decisions, new work or
 changed terminal versions fail closed. Keep the plan unchanged, including JSON
 property and array order, for replay.
 Constructed terminal reasons are trimmed consistently with canonical Task

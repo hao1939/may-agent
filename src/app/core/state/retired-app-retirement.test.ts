@@ -14,6 +14,7 @@ import {
   observeAppTaskIntent,
 } from "../tasks/app-task-reconciler.js";
 import { admitTaskInput } from "./inbox.js";
+import { readRuntimeTaskView } from "../reads/app-read.js";
 import { retireAppState, type RetiredAppRetirementPlan } from "./retired-app-retirement.js";
 
 const roots: string[] = [];
@@ -197,6 +198,97 @@ test("dry run exercises canonical withdrawal and rolls back every table", () => 
   const before = snapshot(db);
   expect(retireAppState(context, plan, { dryRun: true })).toEqual({ status: "would-retire", tasks: 2, inputs: 2 });
   expect(snapshot(db)).toEqual(before);
+});
+
+for (const receiptGeneration of [1, 2, 3])
+  test(`preserves generation ${receiptGeneration} completion history while retiring generation 2`, () => {
+    const { db, context, store, plan } = fixture();
+    observeAppTaskIntent(context, {
+      appAgent: context.agent,
+      intent: { id: "pending", parentId: "root", outcome: "Revised controller", acceptance: ["Review new work"] },
+    });
+    const resource = store.readTask("pending")!;
+    expect(resource.metadata.generation).toBe(2);
+    // Historical completion receipts can coexist with a retained resource.
+    // Only a resource revised beyond that receipt is still live work.
+    expect(
+      store.commit({
+        fences: [{ taskId: "pending", resourceVersion: resource.metadata.resourceVersion }],
+        receipts: [
+          {
+            metadata: { id: "pending", generation: receiptGeneration, resourceVersion: 1 },
+            specHash: "historical-spec",
+            parentId: "root",
+            outcome: "Historical completed outcome",
+            acceptance: ["Historical acceptance"],
+            owner: context.agent,
+            handler: "agent",
+            summary: "Completed with retained evidence",
+            result: { evidence: "historical-result" },
+            facts: ["historical-fact"],
+            acceptanceBasis: { method: "workflow-contract", facts: ["historical-fact"] },
+            failureFingerprints: [],
+            completedAt: "2026-01-01T00:00:00.000Z",
+          },
+        ],
+      }),
+    ).toBe(true);
+    const retainedTask = db.prepare("SELECT * FROM app_tasks WHERE app_id=? AND task_id='pending'").get(plan.appId)!;
+    const retainedReceipt = db.prepare("SELECT * FROM app_task_receipts WHERE app_id=?").all(plan.appId);
+    const pending = plan.tasks.find((task) => task.taskId === "pending")!;
+    pending.resourceJson = String(retainedTask.resource_json);
+    pending.triggerJson = retainedTask.trigger_json as string | null;
+    const livePlan = structuredClone(plan);
+    livePlan.tasks = livePlan.tasks.filter((task) => task.taskId !== "pending");
+    const ended = receiptGeneration >= resource.metadata.generation;
+    const before = snapshot(db);
+    expect(() => retireAppState(context, ended ? plan : livePlan)).toThrow("census");
+    expect(snapshot(db)).toEqual(before);
+    const applicablePlan = ended ? livePlan : plan;
+    expect(retireAppState(context, applicablePlan)).toMatchObject({ status: "retired", tasks: ended ? 1 : 2 });
+    expect(db.prepare("SELECT * FROM app_task_receipts WHERE app_id=?").all(plan.appId)).toEqual(retainedReceipt);
+    expect(readRuntimeTaskView({ taskStateConfig: context }, "pending")?.status).toBe(ended ? "done" : "cancelled");
+    if (ended) {
+      expect(store.readCancellation("pending")).toBeNull();
+      expect(db.prepare("SELECT * FROM app_tasks WHERE app_id=? AND task_id='pending'").get(plan.appId)).toEqual(
+        retainedTask,
+      );
+    } else {
+      expect(store.readCancellation("pending")?.generation).toBe(2);
+    }
+    const beforeReplay = snapshot(db);
+    expect(retireAppState(context, applicablePlan).status).toBe("already-retired");
+    expect(snapshot(db)).toEqual(beforeReplay);
+  });
+
+test("retires two Apps with matching plan and Task ids in one database and replays each independently", () => {
+  const { db, context, other, plan } = fixture();
+  const row = db
+    .prepare("SELECT resource_json, trigger_json FROM app_tasks WHERE app_id=? AND task_id='waiting'")
+    .get(other.resourceStore.appId)!;
+  const otherPlan: RetiredAppRetirementPlan = {
+    ...plan,
+    appId: other.resourceStore.appId,
+    tasks: [
+      {
+        taskId: "waiting",
+        resourceJson: String(row.resource_json),
+        triggerJson: row.trigger_json as string | null,
+        reason: "Reviewed outcome withdrawn unfulfilled",
+      },
+    ],
+    inputs: [],
+  };
+  expect(retireAppState(context, plan).status).toBe("retired");
+  const beforeDryRun = snapshot(db);
+  expect(retireAppState(other, otherPlan, { dryRun: true }).status).toBe("would-retire");
+  expect(snapshot(db)).toEqual(beforeDryRun);
+  expect(retireAppState(other, otherPlan)).toEqual({ status: "retired", tasks: 1, inputs: 0 });
+  expect(other.resourceStore.readCancellation("waiting")?.kind).toBe("cancelled");
+  const beforeReplay = snapshot(db);
+  expect(retireAppState(context, plan).status).toBe("already-retired");
+  expect(retireAppState(other, otherPlan).status).toBe("already-retired");
+  expect(snapshot(db)).toEqual(beforeReplay);
 });
 
 for (const [label, sql] of [
