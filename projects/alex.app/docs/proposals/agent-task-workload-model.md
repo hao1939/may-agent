@@ -48,10 +48,11 @@ Its work has a small, explicit allowance of its own.
    evidence can be batched while preserving exact caller obligations. A timer or
    metric alone grants neither authority nor another Task budget.
 
-2. **Admit independent assignments within the agent's allowance.** Set a limit
-   `K` on simultaneous funded assignments and `C` on executing attempts assigned
-   to that agent. Reserve a finite work allowance `B` for each admitted root from
-   the sponsoring agent's available budget, and set its concurrency allowance
+2. **Allow useful work to remain pending.** An agent may accept a Task while
+   execution capacity is full. Set a limit `K` on outstanding independent
+   assignments, including pending work, separately from limit `C` on executing
+   attempts. `K` can be larger than `C`. Reserve a finite work allowance `B` for
+   each admitted root from the sponsoring agent's available budget, and set its concurrency allowance
    `c`. Accepted input awaiting admission stays durably pending with a visible
    disposition. Spare admission or execution capacity is permission to consider
    useful work, not an obligation to invent it.
@@ -86,8 +87,11 @@ Its work has a small, explicit allowance of its own.
    accepting a result does not itself close a Task. The root's admission slot
    remains occupied while its descendants or accepted requirements remain
    unresolved, even if the root record was closed. Input delivery and result
-   recording need no new assignment slot. A bounded coordination allowance keeps
-   creator review possible when ordinary work has exhausted its budget.
+   recording need no new assignment slot. Reserve one shared Host execution slot
+   for coordination and human interaction, with a bounded allowance independent
+   of ordinary assignment budgets. This is available capacity, not a continuously
+   running agent or a physical slot per agent. A one-slot Host instead prioritizes
+   coordination between bounded attempts so ordinary work can still run.
 
 ## Workload feedback
 
@@ -107,6 +111,30 @@ cooldown after an empty planning pass. Routine sampling and an unchanged idle
 condition do not each invoke a model. Keep `K` and concurrency limits fixed in
 the first version; feedback adjusts the admission rate. Change limits only from
 observed waiting, completion quality, blocked work and total cost.
+
+## A simple capacity graph
+
+Use the [interactive capacity map](agent-task-workload-graph.html) to vary `i`,
+`j` and `k` for three identical agents. Every common interval `i`, each agent
+receives on average `j` new independent Tasks and has capacity for `k` work
+completions. Closed work leaves the live population; pending work uses no
+execution slot. Treat contribution costs as already included in the rates.
+This baseline accepts all arrivals without an admission limit or feedback; it
+shows the pressure those controls must address. A `K` limit bounds admitted
+assignments, while excess input still needs to be deferred or declined explicitly.
+
+Total arrival rate is `lambda = 3j/i`; work capacity is `mu_work = 3k/i`.
+With prompt creator closure, effective capacity is `mu = mu_work`. An optional
+shared management limit changes it to `mu = min(mu_work, mu_close)`.
+Load is `rho = lambda/mu`; excess demand grows at `max(0, lambda - mu)` Tasks/minute.
+The fluid backlog after time `t` is `max(0, initial + (lambda - mu)t)`.
+
+The graph uses `j` and `k` as its axes. Color can show load or growth per hour;
+clicking selects the inputs for a backlog projection. With common `i`, the
+worker load ratio `j/k` stays unchanged when `i` changes. Growth per minute and
+the effect of a fixed management rate can change. Equal arrival and service
+rates have no stochastic headroom: a flat fluid line is not a prediction of
+zero random waiting. This is rate analysis, not a simulation of agent behavior.
 
 ## One example
 
@@ -143,6 +171,13 @@ reservations and root attribution across restart, fence concurrent admissions,
 and preserve idempotent caller/result links. Budget allocation is separate from
 who may revise or close a Task. Historical storage retention remains a separate
 concern: ending work preserves evidence and does not reclaim records.
+
+Budget state belongs in the Host's existing durable store. Tasks and execution
+contexts carry a shared budget reference. Short atomic transactions reserve
+credits and capacity with admission and attempt claims; execution holds a
+reservation rather than a database lock. Child spending must not mutate the root
+Task's execution version. Recovery reconciles reservations with actual attempts
+and confirmed cleanup before releasing reusable capacity.
 
 Verify at least these contrasting cases: a burst of metric observations reuses
 accountable work; parallel admissions respect `K`; nested cooperation with
