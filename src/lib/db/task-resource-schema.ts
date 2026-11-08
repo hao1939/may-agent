@@ -1,4 +1,5 @@
 import { TASK_BUDGET_SCHEMA } from "./task-budget-schema.js";
+import { TASK_EXECUTION_SCHEMA } from "./task-execution-schema.js";
 import type { SqliteDb } from "../db.js";
 import { APP_INBOX_SCHEMA } from "./app-inbox-schema.js";
 
@@ -141,6 +142,7 @@ DROP INDEX IF EXISTS idx_app_task_admissions_target;
 CREATE INDEX IF NOT EXISTS idx_app_task_admissions_input
   ON app_task_admissions(task_id, CAST(json_extract(admission_json, '$.inputEvent.data.request.id') AS TEXT));
 ${TASK_BUDGET_SCHEMA}
+${TASK_EXECUTION_SCHEMA}
 `;
 
 /** Rebuild compact delivery identities from retained Task input/attempt evidence. */
