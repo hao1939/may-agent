@@ -966,8 +966,11 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
-  it("repairs obsolete Condition indexes without moving earlier checks or bypassing backoff", () => {
-    const store = open();
+  it("repairs obsolete Condition indexes after restart without bypassing backoff or funding holds", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-condition-recovery-"));
+    roots.push(root);
+    const path = join(root, "host.sqlite");
+    let store = AppTaskResourceStore.openStandalone(path, "example");
     const now = Date.now();
     const retryAt = now + 3_600_000;
     const earlyAt = now + 60_000;
@@ -978,6 +981,8 @@ describe("AppTaskResourceStore", () => {
       overdue: now - 1,
       retry: retryAt,
       "retry-missing": null,
+      "funding-indefinite": null,
+      "funding-future": retryAt,
       closed: null,
       satisfied: null,
       "no-condition": null,
@@ -988,6 +993,10 @@ describe("AppTaskResourceStore", () => {
       const task = resource(id, id === "closed" ? "converged" : "waiting");
       task.status.observedGeneration = 1;
       if (id.startsWith("retry")) task.status.executionRetryAt = retryAt;
+      if (id.startsWith("funding")) task.status.funding = {
+        kind: "deferred", reason: "root-credit", task: { appId: "example", taskId: id },
+        root: { appId: "example", taskId: id }, retryAt: id === "funding-indefinite" ? null : retryAt,
+      };
       if (id === "early") task.status.reviewAt = earlyAt;
       if (id !== "no-condition") {
         task.status.conditionIds = [id];
@@ -1020,6 +1029,8 @@ describe("AppTaskResourceStore", () => {
           .run(index, "example", id);
       }
       const before = store.readTaskContext({ taskIds: Object.keys(indexes) });
+      store.close();
+      store = AppTaskResourceStore.openStandalone(path, "example");
       expect(store.repairWaitingConditionRecovery(now)).toBe(3);
       expect(store.readTaskContext({ taskIds: Object.keys(indexes) })).toEqual(before);
       const actual = store.db

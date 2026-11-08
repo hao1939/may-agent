@@ -540,8 +540,13 @@ export class AppInboxHost {
         return;
       }
       if (isUnattachedTaskRequest(item)) assertAppTaskInputRoute(app, item.input.kind, item.targetTaskId);
-      if (appInputRoute(app, item.input.kind, item.targetTaskId, isUnattachedTaskRequest(item)) === "conversation")
-        throw new Error("Conversation input requires offline cutover to its Task execution owner");
+      if (appInputRoute(app, item.input.kind, item.targetTaskId, isUnattachedTaskRequest(item)) === "conversation") {
+        if (!this.#admitConversation || !item.conversationId)
+          throw new Error("Conversation input requires offline cutover to its Task execution owner");
+        this.#admitConversation({ ...item, conversationId: item.conversationId, now });
+        resolveAppInboxRecovery(this.#db, item.id, "input-admission", now);
+        return;
+      }
       if (!app.tasks || !app.task) throw new Error(`App ${app.id} does not resolve input to Task work`);
       if (!this.#attachTask) throw new Error("App task admission is not configured");
       assertValidAppInput(app, item.input);

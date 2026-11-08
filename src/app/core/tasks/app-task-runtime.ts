@@ -441,7 +441,8 @@ export function admitLoadedConversationInput(input: {
     intent: conversationTaskIntent(config),
     conversationInputKinds: conversation.inputKinds,
   });
-  wakeLoadedAppTasks({ bus: input.bus, appId: descriptor.id, taskIds: [admitted.taskId] });
+  if (admitted.item.executionTaskId)
+    wakeLoadedAppTasks({ bus: input.bus, appId: descriptor.id, taskIds: [admitted.taskId] });
   return admitted;
 }
 

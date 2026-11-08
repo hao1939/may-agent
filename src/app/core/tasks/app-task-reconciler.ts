@@ -1,3 +1,4 @@
+import type { PendingTaskSettlement } from "./result.js";
 import { TaskBudgetAdmissionStore, TaskBudgetDeferredError, type TaskFundingConstraint } from "../state/task-budget-admission.js";
 import { pendingTaskFunding } from "./app-task-state.js";
 import { isDeepStrictEqual } from "node:util";
@@ -60,6 +61,8 @@ function isManagedAgentHandler(handler: string, agent?: string): boolean {
 
 export type AppTaskClaim = {
   kind: "claimed";
+  /** Host checkpoint replay performs no new execution or attempt debit. */
+  settlement?: PendingTaskSettlement;
   taskId: string;
   generation: number;
   resourceVersion: number;
@@ -585,6 +588,7 @@ function finishAttempt(
     attempt.state = state;
     attempt.finishedAt = now;
     attempt.summary = summary;
+    delete attempt.pendingSettlement;
     if (state === "completed") {
       if (attempt.acceptedResult) delete attempt.unacceptedResult;
       resource.status.executionFailures = undefined;
@@ -594,6 +598,7 @@ function finishAttempt(
     }
   }
   resource.status.currentAttemptId = undefined;
+  delete resource.status.funding;
 }
 
 /** Capture accepted facts inside the same mutation as attempt settlement. */
@@ -2803,18 +2808,33 @@ export function claimObservedAppTask(
       generation: 0,
     };
   }
-  const heldFunding = pendingTaskFunding(resource);
-  if (heldFunding) return { kind: "deferred", taskId: input.taskId, funding: heldFunding };
   const persistedCurrentAttempt = resource.status.currentAttemptId
-    ? config.resourceStore.readAttempt(resource.status.currentAttemptId)
-    : null;
+    ? config.resourceStore.readAttempt(resource.status.currentAttemptId) : null;
   if (persistedCurrentAttempt && persistedCurrentAttempt.taskId !== input.taskId) {
     throw new Error(
       `Task ${input.taskId} current attempt ${persistedCurrentAttempt.metadata.id} belongs to ${persistedCurrentAttempt.taskId}; refusing cross-Task recovery`,
     );
   }
+  const settlement = persistedCurrentAttempt?.pendingSettlement;
+  if (settlement) {
+    if (settlement.claim.taskId !== input.taskId || !matchingClaimAttempt(resource, persistedCurrentAttempt, settlement.claim))
+      throw new Error("Deferred settlement does not match its exact Task claim");
+    if (persistedCurrentAttempt.taskGeneration !== resource.metadata.generation) {
+      releaseStaleAppTaskResult(config, settlement.claim);
+      return claimObservedAppTask(config, input);
+    }
+  }
+  const heldFunding = pendingTaskFunding(resource);
+  if (heldFunding) {
+    acknowledgeIndexedRecoveryWait(config, input.taskId, snapshotRevision, heldFunding.retryAt);
+    return { kind: "deferred", taskId: input.taskId, funding: heldFunding };
+  }
   if (!config.resourceStore.allowsTaskExecution(input.taskId)) {
     return { kind: "waiting", taskId: input.taskId, conditionIds: [] };
+  }
+  if (settlement) {
+    return { ...structuredClone(settlement.claim), resourceVersion: resource.metadata.resourceVersion,
+      settlement: structuredClone(settlement) };
   }
   // Adoption writes once. Reread its result and current wakes before claiming or
   // acknowledging a wait; the earlier store revision no longer describes them.
@@ -3219,6 +3239,35 @@ function matchingTaskAttempt(
 ): { resource: AppTaskResource; attempt: AppTaskAttempt } | null {
   if (tree.resources?.[claim.taskId]?.metadata.generation !== claim.generation) return null;
   return matchingClaimAttempt(tree.resources?.[claim.taskId], tree.attempts?.[claim.attemptId], claim);
+}
+
+/** Preserve a completed executor's proposed effects under the original claim.
+ * Funding is a wait on settlement, not another attempt or accepted business result. */
+export function deferAppTaskSettlement(
+  config: AppTaskContext,
+  claim: AppTaskClaim,
+  funding: TaskFundingConstraint,
+  settlement: PendingTaskSettlement,
+): void {
+  stateTransaction(config.resourceStore.db, () => {
+    const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
+    const match = matchingTaskAttempt(tree, claim);
+    if (!match) throw new ResourceTaskMutationStaleError();
+    const { resource, attempt } = match;
+    const resourceVersion = resource.metadata.resourceVersion;
+    const held = new TaskBudgetAdmissionStore(config.resourceStore.db).stillConstrained(funding);
+    attempt.metadata.resourceVersion++;
+    attempt.pendingSettlement = structuredClone(settlement);
+    // The attempt remains unsettled, but no worker or heartbeat is still running.
+    delete attempt.lease;
+    touchResource(resource, { phase: "waiting", funding: held ? funding : undefined });
+    commitTaskMutation(config, tree, { resourceMutation: {
+      fences: [{ taskId: claim.taskId, generation: claim.generation,
+        resourceVersion, currentAttemptId: claim.attemptId }],
+      tasks: [{ ...resourceWrite(tree, resource, !held), nextCheckAt: held ? funding.retryAt : Date.now() }],
+      attempts: [attempt],
+    } });
+  });
 }
 
 /** Record an execution failure, not a stale-result rejection. Preserve all unaccepted input. */

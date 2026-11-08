@@ -1,3 +1,4 @@
+import { TaskBudgetDeferredError } from "../state/task-budget-admission.js";
 import {
   admitTaskVerificationResult as admitAppTaskVerificationResult,
   type TaskAcceptanceBasis as AppTaskAcceptanceBasis,
@@ -18,6 +19,7 @@ import {
   claimObservedAppTask,
   completeAppTask,
   deferAppTask,
+  deferAppTaskSettlement,
   expiredAgentSessionAppTaskAttempt,
   failAppTaskAttempt,
   isAppTaskActionStaleError,
@@ -195,7 +197,7 @@ async function runClaimedTask(
   const event = claim.trigger as EventEnvelope | undefined;
   const workflowKey = claim.handler.startsWith("workflow:") ? claim.handler.slice("workflow:".length) : "";
   let executionPaths: AppTaskExecutionPaths;
-  let taskWorkspace: PreparedTaskWorkspace | undefined;
+  let taskWorkspace: PreparedTaskWorkspace | undefined = claim.settlement?.workspace;
   let workspaceFinalized = false;
   try {
     executionPaths = appTaskExecutionPaths(descriptor.appDir, descriptor.projectDir);
@@ -216,66 +218,71 @@ async function runClaimedTask(
     // between separate claims).
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
-    const workflowWorkspace =
-      workflowKey && opts.workflows
-        ? (
-            await opts.workflows.inspect({
-              source: opts,
-              appDir: descriptor.appDir,
-              agent: claim.agent,
-              workflow: workflowKey,
-            })
-          ).workspace
-        : undefined;
-    const workflowNeedsWorktree =
-      workflowWorkspace === "task" || (typeof workflowWorkspace === "object" && workflowWorkspace.kind === "task");
-    // Both execution paths share workspace lineage, admission fencing, and
-    // failure handling. Only the workflow may override the App's base branch.
-    if (
-      !(conversation && descriptor.app.conversation?.mode !== "task") &&
-      (workflowNeedsWorktree || (!workflowKey && descriptor.app.workspace?.kind === "git"))
-    ) {
-      try {
-        if (descriptor.app.workspace?.kind !== "git") {
-          throw new Error(`Workflow ${workflowKey} requires a task worktree but app workspace is not Git`);
+    let report: TaskCapabilityRun;
+    if (claim.settlement) {
+      report = claim.settlement.report;
+      if (taskWorkspace) executionPaths = withAppTaskWorkspace(executionPaths, taskWorkspace.metadata.path);
+    } else {
+      const workflowWorkspace =
+        workflowKey && opts.workflows
+          ? (
+              await opts.workflows.inspect({
+                source: opts,
+                appDir: descriptor.appDir,
+                agent: claim.agent,
+                workflow: workflowKey,
+              })
+            ).workspace
+          : undefined;
+      const workflowNeedsWorktree =
+        workflowWorkspace === "task" || (typeof workflowWorkspace === "object" && workflowWorkspace.kind === "task");
+      // Both execution paths share workspace lineage, admission fencing, and
+      // failure handling. Only the workflow may override the App's base branch.
+      if (
+        !(conversation && descriptor.app.conversation?.mode !== "task") &&
+        (workflowNeedsWorktree || (!workflowKey && descriptor.app.workspace?.kind === "git"))
+      ) {
+        try {
+          if (descriptor.app.workspace?.kind !== "git") {
+            throw new Error(`Workflow ${workflowKey} requires a task worktree but app workspace is not Git`);
+          }
+          if (!opts.workspaces) throw new Error("Task workspace backend is not installed");
+          const previous = config.resourceStore.readTaskWorkspace(claim.taskId, claim.generation);
+          taskWorkspace = await opts.workspaces.prepare({
+            repoDir: descriptor.projectDir,
+            workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
+            taskId: claim.taskId,
+            generation: claim.generation,
+            baseBranch:
+              typeof workflowWorkspace === "object"
+                ? workflowWorkspace.baseBranch
+                : (descriptor.app.workspace.branch ?? "dev"),
+            previous,
+          });
+          executionPaths = withAppTaskWorkspace(executionPaths, taskWorkspace.metadata.path);
+          if (!recordAppTaskAttemptWorkspace(config, claim, taskWorkspace.metadata)) {
+            throw new Error(`Task attempt ${claim.attemptId} became stale while preparing its workspace`);
+          }
+        } catch (error) {
+          return await finishUnsuccessfulAttempt({
+            handlerResult: {
+              state: "error",
+              summary: `Task workspace preparation failed: ${error instanceof Error ? error.message : String(error)}`,
+              facts: [],
+              actions: [],
+            },
+            runId: null,
+            workspacePreparationFailed: true,
+          });
         }
-        if (!opts.workspaces) throw new Error("Task workspace backend is not installed");
-        const previous = config.resourceStore.readTaskWorkspace(claim.taskId, claim.generation);
-        taskWorkspace = await opts.workspaces.prepare({
-          repoDir: descriptor.projectDir,
-          workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
-          taskId: claim.taskId,
-          generation: claim.generation,
-          baseBranch:
-            typeof workflowWorkspace === "object"
-              ? workflowWorkspace.baseBranch
-              : (descriptor.app.workspace.branch ?? "dev"),
-          previous,
-        });
-        executionPaths = withAppTaskWorkspace(executionPaths, taskWorkspace.metadata.path);
-        if (!recordAppTaskAttemptWorkspace(config, claim, taskWorkspace.metadata)) {
-          throw new Error(`Task attempt ${claim.attemptId} became stale while preparing its workspace`);
-        }
-      } catch (error) {
-        return await finishUnsuccessfulAttempt({
-          handlerResult: {
-            state: "error",
-            summary: `Task workspace preparation failed: ${error instanceof Error ? error.message : String(error)}`,
-            facts: [],
-            actions: [],
-          },
-          runId: null,
-          workspacePreparationFailed: true,
-        });
       }
+      // One attempt lifetime surrounds dispatch; settlement follows after it closes.
+      const execution = { opts, descriptor, claim, executionPaths, childContext, taskSnapshot, event };
+      report = await runTaskExecutorAttempt({
+        ...execution,
+        execute: (attempt, taskEvents) => executeTaskHandler({ ...execution, attempt, taskEvents, conversation }),
+      });
     }
-    // One attempt lifetime surrounds dispatch; settlement follows after it closes.
-    const execution = { opts, descriptor, claim, executionPaths, childContext, taskSnapshot, event };
-    const report = await runTaskExecutorAttempt({
-      ...execution,
-      execute: (attempt, taskEvents) => executeTaskHandler({ ...execution, attempt, taskEvents, conversation }),
-    });
-
     const result = report.handlerResult;
     const rejectResult = (
       summary: string,
@@ -331,7 +338,9 @@ async function runClaimedTask(
       }
     }
     if (result.state === "converged") {
-      const accepted = await establishTaskAcceptance({
+      const accepted = claim.settlement?.acceptanceBasis
+        ? { ok: true as const, acceptanceBasis: claim.settlement.acceptanceBasis }
+        : await establishTaskAcceptance({
         opts,
         descriptor,
         intent,
@@ -384,6 +393,8 @@ async function runClaimedTask(
               apply = report.conversation
                 ? completeConversationTaskTurn(config, claim, report.conversation.decision, {
                     taskControls: report.conversation.taskControls,
+                    followUpAttachment: report.conversation.followUpAttachment,
+                    onFollowUpMapped: (attachment) => { report.conversation!.followUpAttachment = attachment; },
                     acceptanceBasis,
                     getTaskApp: (appId) => conversationTaskApp(opts, descriptor, appId),
                   })
@@ -440,6 +451,8 @@ async function runClaimedTask(
         }
         return stale?.reconcileTaskIds ?? apply.dependentTaskIds;
       } catch (error) {
+        if (error instanceof TaskBudgetDeferredError)
+          return deferSettlement(report, error, acceptanceBasis);
         const stale = recoverStaleTaskActionResult(config, claim, error);
         if (stale) {
           const summary = error instanceof Error ? error.message : String(error);
@@ -584,6 +597,23 @@ async function runClaimedTask(
       // persistence boundary itself is unavailable.
     }
     throw error;
+  }
+
+  function deferSettlement(report: TaskCapabilityRun, error: TaskBudgetDeferredError, acceptanceBasis: AppTaskAcceptanceBasis): string[] {
+    const { settlement: _previousSettlement, ...originalClaim } = claim;
+    const workspace = taskWorkspace ? {
+      ...taskWorkspace, metadata: config.resourceStore.readAttempt(claim.attemptId)?.workspace ?? taskWorkspace.metadata,
+    } : undefined;
+    persistResult(() => deferAppTaskSettlement(config, claim, error.constraint, {
+      claim: originalClaim,
+      report: { handlerResult: report.handlerResult, runId: report.runId,
+        conversation: report.conversation, acceptedLiveEventIds: report.acceptedLiveEventIds },
+      acceptanceBasis,
+      ...(workspace ? { workspace } : {}),
+    }));
+    emit("project.task.reconciled", { disposition: "deferred", funding: error.constraint,
+      summary: "Execution completed; prepared effects await funding" });
+    return [];
   }
 
   async function finalizeWorkspace(outcome: "accepted" | "waiting" | "failed") {

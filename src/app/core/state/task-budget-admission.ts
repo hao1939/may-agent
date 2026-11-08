@@ -74,10 +74,19 @@ export class TaskBudgetAdmissionStore {
       const previous = this.policy(policy.appId);
       if (previous && !isDeepStrictEqual(previous, policy))
         throw new Error("Installed budget changes require an explicit funding operation");
-      if (!previous)
+      if (!previous) {
         this.db
           .prepare("INSERT INTO task_budget_policies(app_id, policy_json) VALUES (?, ?)")
           .run(policy.appId, JSON.stringify(policy));
+        const now = Date.now();
+        this.db.prepare(`UPDATE app_inbox_items
+          SET handling = NULL, available_at = ?, changed_at = ?, updated_at = ?
+          WHERE status != 'done' AND json_extract(handling, '$.phase') = 'deferred'
+            AND json_extract(handling, '$.funding.reason') = 'sponsor-policy'
+            AND COALESCE(json_extract(handling, '$.funding.policyAppId'),
+              json_extract(handling, '$.funding.task.appId')) = ?`)
+          .run(now, now, now, policy.appId);
+      }
     });
   }
 
