@@ -48,6 +48,9 @@ approach; this table is a coverage map, not another test execution claim.
 
 This audit identifies no additional demonstrated source defect in those supported
 first-path contracts. It does not substitute for independent review of the stack.
+Subsequent behavioral-harness preparation did demonstrate a readonly Task-tool
+mutation gap; the paired source fix and regression evidence are recorded in the
+implementation approach. The original audit is not proof that no gap remained.
 Standalone persistent addressing, online activation/live-execution import,
 automatic root reactivation after withdrawal and caller-place lending remain
 separate protocols, as already stated in the design. They are not pilot guarantees.

@@ -27,6 +27,18 @@ sets out the remaining review, result-disposition adoption, isolated behavioral
 comparison and opt-in operational acceptance. The combined candidate's green
 checks do not satisfy those separate gates.
 
+Behavioral-trial preparation subsequently demonstrated another source gap: the
+managed `readonly` policy retained the built-in Task tool's writing actions.
+Host [PR #442](https://github.com/hao1939/may-agent/pull/442) narrows both its
+advertised action schema and invocation guard per prepared execution. Scope,
+canonical reads and separately authorized full tools remain unchanged. The actual
+App/Host worker probe went from one persisted publication to zero using only a
+local scripted provider. Five preparation/capability regressions failed before
+the fix; the three owning suites then passed 73 tests / 334 assertions, the
+workflow owner passed 28 tests / 84 assertions and static checks passed. Exact
+full local and hosted gates remain pending. No external model or live rollout
+was used to discover or verify the boundary.
+
 Source reviewed: Host #398 merge `88a98be236baf07bfcf100208cfb0dc1589dfa06`.
 The inspected checkout `036f4a4f757eea9f8a4492231e5541f365a8fcf6` has its identical
 Git tree `02781aa1cdbc6d052cba4727f2173122a7040c07`. Apps source was
