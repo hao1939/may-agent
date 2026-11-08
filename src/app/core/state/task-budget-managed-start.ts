@@ -1,4 +1,4 @@
-import { reserveManagedTaskExecution } from "./task-execution-admission.js";
+import { requireLocalTaskAttemptExecution, reserveManagedTaskExecution } from "./task-execution-admission.js";
 import { TaskExecutionStore, type ExecutionReservation, type ExecutionRecipient } from "./task-execution-store.js";
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
@@ -29,11 +29,11 @@ type ManagedSessionPolicy = {
   persistentChat?: boolean;
 };
 
-function managedSessionPolicy(db: SqliteDb, input: ManagedSessionPolicy) {
+function taskExecutionPolicy(db: SqliteDb, input: ManagedSessionPolicy) {
   const bound = input.binding ?? input.retainedBinding;
   if (!bound) {
     if (new TaskExecutionStore(db).configured())
-      throw new Error("Shared execution limits require a bounded Task binding; direct-session admission is not configured");
+      throw new Error("Shared execution limits require a bounded Task binding; unbound execution is not configured");
     return null;
   }
   const admission = new TaskBudgetAdmissionStore(db);
@@ -48,13 +48,49 @@ function managedSessionPolicy(db: SqliteDb, input: ManagedSessionPolicy) {
   return { admission, task, bound };
 }
 
+/** Shared authority for authored workflow code and managed agent starts.
+ * It validates the existing claim; it never charges or reserves another start. */
+function admittedTaskAttempt(
+  db: SqliteDb,
+  policy: NonNullable<ReturnType<typeof taskExecutionPolicy>>,
+  operation: string,
+) {
+  const { admission, task, bound } = policy;
+  const store = AppTaskResourceStore.activeFromDb(db, task.appId);
+  if (!store || store.appId !== task.appId) throw new Error("Budgeted start requires canonical Task authority");
+  assertCurrentTaskActor({ resourceStore: store }, bound, operation);
+  if (!admission.budget.binding(task))
+    throw new TaskBudgetDeferredError({ kind: "deferred", reason: "adoption-required", task, root: task, retryAt: null });
+  const paidAttempt = admission.budget.receipt({ task, kind: "attempt", attemptId: bound.attemptId });
+  if (!paidAttempt || paidAttempt.credits !== 1)
+    throw new Error("Budgeted execution requires its exact paid attempt");
+  if (paidAttempt.purpose !== "ordinary") {
+    const attempt = store.readAttempt(bound.attemptId)!;
+    admission.assertProtectedTask(task, store.readTask(task.taskId)!, attempt.owner, attempt.handler);
+  }
+  return { store, paidAttempt };
+}
+
+/** Pure workflow code can execute without a managed helper. Under installed
+ * policy it still belongs to the current paid local Task attempt. Nested
+ * methods reuse that attempt; unbound starts and live historical resumes fail
+ * closed. Reading an already saved terminal result does not call this gate. */
+export function assertTaskWorkflowStart(db: SqliteDb, binding?: TaskBinding): void {
+  const policy = taskExecutionPolicy(db, { binding });
+  if (!policy) return;
+  stateTransaction(db, () => {
+    admittedTaskAttempt(db, policy, "workflow start");
+    requireLocalTaskAttemptExecution(db, policy.task, policy.bound.attemptId);
+  });
+}
+
 /** Steering an admitted execution spends no new credit or place. It cannot
  * adopt a pre-policy session, revive stale authority, or start persistent work. */
 export function assertManagedTaskContinuation(
   db: SqliteDb,
   input: ManagedSessionPolicy & { admitted?: ManagedTaskStartAdmission | null; running: boolean },
 ): void {
-  const policy = managedSessionPolicy(db, input);
+  const policy = taskExecutionPolicy(db, input);
   if (!policy) return;
   if (!input.running) throw new Error("Task continuation requires a running managed execution");
   const store = AppTaskResourceStore.activeFromDb(db, policy.task.appId);
@@ -82,28 +118,11 @@ export function admitManagedTaskStart(
 ): ManagedTaskStartAdmission | null {
   // Unconfigured installations keep their existing start path. Relevant starts
   // recheck authority and accounting under the shared write transaction.
-  const policy = managedSessionPolicy(db, input);
+  const policy = taskExecutionPolicy(db, input);
   if (!policy) return null;
   const { admission, task, bound } = policy;
   return stateTransaction(db, () => {
-    const store = AppTaskResourceStore.activeFromDb(db, task.appId);
-    if (!store || store.appId !== task.appId) throw new Error("Budgeted start requires canonical Task authority");
-    assertCurrentTaskActor({ resourceStore: store }, bound, "managed start");
-    if (!admission.budget.binding(task))
-      throw new TaskBudgetDeferredError({
-        kind: "deferred",
-        reason: "adoption-required",
-        task,
-        root: task,
-        retryAt: null,
-      });
-    const paidAttempt = admission.budget.receipt({ task, kind: "attempt", attemptId: bound.attemptId });
-    if (!paidAttempt || paidAttempt.credits !== 1)
-      throw new Error("Budgeted managed start requires its exact paid attempt");
-    if (paidAttempt.purpose !== "ordinary") {
-      const attempt = store.readAttempt(bound.attemptId)!;
-      admission.assertProtectedTask(task, store.readTask(task.taskId)!, attempt.owner, attempt.handler);
-    }
+    const { store, paidAttempt } = admittedTaskAttempt(db, policy, "managed start");
     if (input.primary && !isDeepStrictEqual(primaryScopes.get(input.primary), bound))
       throw new Error("Primary start capability does not match the live Task attempt");
     const covered =

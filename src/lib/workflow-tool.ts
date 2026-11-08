@@ -1,4 +1,6 @@
 import { ExecutionDeferredError } from "@may-agent/sdk";
+import { assertTaskWorkflowStart } from "../app/core/state/task-budget-managed-start.js";
+import { getDb } from "./db/connection.js";
 import { Type, type TSchema } from "typebox";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 import { prepareTaskWorkspaceContext } from "./task-workspace-context.js";
@@ -834,6 +836,10 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: fals
 function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: true): WorkflowTool;
 function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: boolean): WorkflowRunner | WorkflowTool {
   const { manager, workflowDir, persistDir, onEvent } = opts;
+  const assertWorkflowExecution = (): void => {
+    const db = opts.runtimeCtx?.getDb?.() ?? (persistDir ? getDb(persistDir) : undefined);
+    if (db) assertTaskWorkflowStart(db, opts.taskBinding);
+  };
   const runAgent = (agentName: string, task: string, runOptions: Parameters<SubagentManager["run"]>[2]): string => {
     const definition = opts.agentDefinitions?.get(agentName);
     return definition ? manager.runDefinition(definition, task, runOptions) : manager.run(agentName, task, runOptions);
@@ -1008,6 +1014,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     runId = generateRunId(),
     parentSignal = opts.signal,
   ): Promise<{ result: WorkflowResult; runId: string; steps: CompletedStep[] }> {
+    if (depth > 1) assertWorkflowExecution();
     const localSteps: CompletedStep[] = [];
     let stepCounter = 0;
     const callerMeta = getCallerSessionMeta(parentSessionId);
@@ -1787,13 +1794,13 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
   ): Promise<WorkflowToolResult> {
     const completedSteps: CompletedStep[] = [];
     const steeringQueue: string[] = [];
-    activeSteeringQueue = steeringQueue;
-    activeWorkflowName = workflow.name;
     const runId = generateRunId();
 
-    onEvent?.({ type: "workflow.started", workflow: workflow.name, task });
-
     try {
+      assertWorkflowExecution();
+      activeSteeringQueue = steeringQueue;
+      activeWorkflowName = workflow.name;
+      onEvent?.({ type: "workflow.started", workflow: workflow.name, task });
       const { result } = await executeWorkflow(
         catalog,
         workflow,

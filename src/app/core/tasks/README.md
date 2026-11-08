@@ -492,6 +492,15 @@ request that coverage; source labels and nested helpers cannot. Saved-result
 reads are free. A denied resume preserves its transcript and retained session.
 Admitted starts remain charged if preparation or later execution fails.
 
+Authored workflow code also passes shared start admission, even when it never
+calls a managed agent. With installed policy it needs the current paid Task
+attempt and its live local execution reservation. Direct, typed, model-tool and
+live-resume paths share this gate before workflow-start publication, run records
+or authored execution; nested methods recheck the same authority without another
+credit or place. Reading an already saved terminal result remains free. Unbound,
+cancelled, released or pre-limit unreserved execution cannot borrow an old Task
+binding. This check is not a barrier for changing policy on running processes.
+
 Caller deferrals and explicit root/sponsor funding changes share those receipts
 and canonical Task/Inbox holds. Shared execution reservations enforce actual
 starts and release only after confirmed cleanup. Retained activation still needs

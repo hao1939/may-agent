@@ -86,6 +86,19 @@ export function admitTaskMutationExecution(db: SqliteDb, appId: string, mutation
   }
 }
 
+/** Authored workflows and managed starts require the same live local receipt.
+ * Checking it never acquires another place or retroactively adopts execution. */
+export function requireLocalTaskAttemptExecution(
+  db: SqliteDb, task: BudgetTaskRef, attemptId: string,
+): ExecutionReservation | null {
+  const store = new TaskExecutionStore(db);
+  if (!store.configured()) return null;
+  const saved = store.read({ kind: "attempt", task, attemptId });
+  if (!saved || saved.released || saved.receipt.owner?.processIdentity !== currentProcessInstance().processIdentity)
+    throw new Error("Execution requires its active local claim reservation; historical execution needs explicit adoption");
+  return saved.receipt;
+}
+
 /** Managed start joins the same transaction as its existing invocation debit.
  * The paid primary adopts the claim; every later/helper invocation reserves anew. */
 export function reserveManagedTaskExecution(
@@ -95,11 +108,9 @@ export function reserveManagedTaskExecution(
   now = Date.now(),
 ): ExecutionReservation | null {
   const store = new TaskExecutionStore(db);
-  if (!store.configured()) return null;
-  const saved = store.read({ kind: "attempt", task: input.task, attemptId: input.attemptId });
-  if (!saved || saved.released || saved.receipt.owner?.processIdentity !== currentProcessInstance().processIdentity)
-    throw new Error("Managed execution requires its active local claim reservation; historical execution needs explicit adoption");
-  const lane = saved.receipt.request.lane;
+  const saved = requireLocalTaskAttemptExecution(db, input.task, input.attemptId);
+  if (!saved) return null;
+  const lane = saved.request.lane;
   const root = new TaskBudgetStore(db).binding(input.task);
   const defer = (reason: TaskExecutionConstraint["reason"], scope: TaskExecutionConstraint["scope"]): never => {
     throw new TaskExecutionDeferredError({ kind: "deferred", reason, task: input.task,
@@ -111,9 +122,9 @@ export function reserveManagedTaskExecution(
   };
   if (!input.recipient) return defer("execution-recipient", { kind: "recipient", agent: input.agent });
   if (input.primaryCovered) {
-    if (executionRecipientKey(saved.receipt.request.recipient) !== executionRecipientKey(input.recipient))
+    if (executionRecipientKey(saved.request.recipient) !== executionRecipientKey(input.recipient))
       throw new Error("Primary execution recipient does not match its pinned claim recipient");
-    return saved.receipt;
+    return saved;
   }
   const reserved = store.reserve({ operation: { kind: "helper", task: input.task, attemptId: input.attemptId,
     invocationId: input.invocationId, sessionId: input.sessionId }, recipient: input.recipient,
