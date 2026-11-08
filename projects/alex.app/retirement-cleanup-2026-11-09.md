@@ -119,9 +119,9 @@ The saved preparation snapshot contains no receipt-ended Task among its 66
 nonterminal candidates, so the generation-census correction leaves that count
 unchanged. This is a snapshot audit, not a new live census.
 
-The Host source prerequisite is satisfied. Production withdrawal still requires exact disposition and
-supported settlement of the two admitted caller boundaries, a new complete plan,
-and the documented offline apply with a verified backup. Preserve all admission
+The initial Host source prerequisite is satisfied. Production withdrawal still
+requires reviewed support for the two admitted caller boundaries, a freshly
+verified complete plan, and the documented offline apply with a verified backup. Preserve all admission
 and accepted-attempt evidence; an existing semantic withdrawal is not permission
 to erase an admission or invent a result. Verify the retired terminal census
 and unchanged current May waits before restarting. No old controller is needed.
@@ -132,3 +132,34 @@ The assignment-visibility continuation `goal/appdep_3be7de6fa2742a26d35f575b`
 and retired Gym decision `goal/appdep_c1890444e02436f8d2131ffd` are closed.
 Removing the filesystem alias or withdrawing the retired App's copy neither
 closes nor satisfies a current May obligation.
+
+## Explicit caller withdrawal candidate
+
+The 2026-11-09 cleanup request prompted a separate review of the two August
+owner-review callers. Their eleven differing aliases bind historical Tasks and
+generations; none has a selected accepted answer. The saved snapshot also has
+no converged accepted attempt or completion receipt at those admitted generations.
+The candidate decision withdraws these obsolete callers **unfulfilled**, retaining
+their original requirements, missing proof and independent current obligations.
+It does not choose an alias or substitute a later Task's result.
+
+[Host PR #410](https://github.com/hao1939/may-agent/pull/410) adds explicit
+`admissionWithdrawal` with the complete raw admission preimages. Existing plans
+still refuse admissions. Any bound answer or completion evidence at an admitted
+generation requires separate exact answer settlement. All admission bytes,
+accepted attempts, completion receipts and prior terminal decisions remain intact.
+
+The private `retirement-plan.admitted-withdrawal.candidate.json` contains 66 Tasks,
+four inputs and eleven admission preimages. Its isolated in-memory rehearsal
+reached zero nonterminal Tasks and zero unfinished inputs, retained 25 historical
+Conditions after canonical pruning, and preserved all loaded admission, accepted,
+completion, prior-terminal and current May evidence. Dry-run restored every loaded
+table; replay made no changes. The new
+`state-admitted-withdrawal-rehearsal-receipt.json` records that trial separately
+from the original refused plan and superseded trial.
+
+This is a candidate based on the saved preparation snapshot, not a fresh live
+census, an offline backup, or production application. PR #410 requires review and
+merge before use. Then stop the Host and workers, verify the backup and exact
+current preimages, prepare the final plan and run the offline procedure. The
+original plan remains blocked. Production state remains unchanged by this work.
