@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, spyOn } from "bun:test";
+import { afterEach, describe, expect, it, setSystemTime, spyOn } from "bun:test";
 import { existsSync, mkdtempSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -35,6 +35,7 @@ import {
 const roots: string[] = [];
 
 afterEach(() => {
+  setSystemTime();
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
@@ -125,7 +126,11 @@ describe("AppTaskResourceStore", () => {
       };
       expect(recordAppTaskAttemptWorkspace(config, claim, workspace)).toBe(true);
       completeAppTask(config, claim, { summary: "Contribution accepted; branch retained" });
+      const nativeStartTime = Date.now() + 1;
       for (let index = 0; index < 20; index++) {
+        // This fixture requires later attempts outside the original history,
+        // independently of wall-clock granularity and random identity order.
+        setSystemTime(nativeStartTime + index);
         recordAppTaskTrigger(config, "normal", { type: "native.check", eventId: 100 + index });
         const native = claimObservedAppTask(config, { taskId: "normal", appAgent: "may", handler: "native" });
         if (native.kind !== "claimed") throw new Error("expected native claim");
