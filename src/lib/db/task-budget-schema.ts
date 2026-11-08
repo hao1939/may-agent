@@ -1,0 +1,40 @@
+/** Resource accounting only. Task ownership and outcomes stay in canonical Task rows. */
+export const TASK_BUDGET_SCHEMA = `
+CREATE TABLE IF NOT EXISTS task_credit_grants (
+  sponsor_app_id TEXT NOT NULL, sponsor_agent TEXT NOT NULL,
+  purpose TEXT NOT NULL CHECK (purpose IN ('ordinary', 'coordination')),
+  period TEXT NOT NULL, credits INTEGER NOT NULL CHECK (credits >= 0),
+  charged INTEGER NOT NULL DEFAULT 0 CHECK (charged >= 0 AND charged <= credits),
+  PRIMARY KEY(sponsor_app_id, sponsor_agent, purpose, period)
+);
+CREATE TABLE IF NOT EXISTS task_budget_roots (
+  root_app_id TEXT NOT NULL, root_task_id TEXT NOT NULL,
+  sponsor_app_id TEXT NOT NULL, sponsor_agent TEXT NOT NULL,
+  purpose TEXT NOT NULL CHECK (purpose IN ('ordinary', 'coordination')),
+  renewal TEXT NOT NULL CHECK (renewal IN ('lifetime', 'utc-day')),
+  credits INTEGER NOT NULL CHECK (credits >= 0),
+  PRIMARY KEY(root_app_id, root_task_id)
+);
+CREATE TABLE IF NOT EXISTS task_budget_root_balances (
+  root_app_id TEXT NOT NULL, root_task_id TEXT NOT NULL, period TEXT NOT NULL,
+  charged INTEGER NOT NULL CHECK (charged >= 0),
+  PRIMARY KEY(root_app_id, root_task_id, period),
+  FOREIGN KEY(root_app_id, root_task_id) REFERENCES task_budget_roots(root_app_id, root_task_id)
+);
+CREATE TABLE IF NOT EXISTS task_budget_bindings (
+  app_id TEXT NOT NULL, task_id TEXT NOT NULL,
+  root_app_id TEXT NOT NULL, root_task_id TEXT NOT NULL,
+  PRIMARY KEY(app_id, task_id),
+  FOREIGN KEY(root_app_id, root_task_id) REFERENCES task_budget_roots(root_app_id, root_task_id)
+);
+CREATE TABLE IF NOT EXISTS task_budget_operations (
+  operation_id TEXT PRIMARY KEY,
+  app_id TEXT NOT NULL, task_id TEXT NOT NULL,
+  root_app_id TEXT NOT NULL, root_task_id TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('task', 'attempt', 'helper', 'adoption')),
+  period TEXT NOT NULL, credits INTEGER NOT NULL CHECK (credits IN (0, 1)),
+  charged_at INTEGER NOT NULL, receipt_json TEXT NOT NULL,
+  FOREIGN KEY(app_id, task_id) REFERENCES task_budget_bindings(app_id, task_id)
+);
+CREATE INDEX IF NOT EXISTS idx_task_budget_operations_task ON task_budget_operations(app_id, task_id, charged_at, operation_id);
+`;
