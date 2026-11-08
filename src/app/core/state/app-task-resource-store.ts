@@ -1049,8 +1049,21 @@ export class AppTaskResourceStore {
       admissionIds?: Iterable<string>;
       conditionIds?: Iterable<string>;
     },
-    options: { includeHistory?: boolean; childLimit?: number } = {},
+    options: { includeHistory?: boolean; childLimit?: number; maxRelatedItems?: number } = {},
   ): TaskTree {
+    // Optional read-only projections can bound graph expansion as well as
+    // output. Do not silently use a partial graph for readiness or inheritance.
+    const related = new Set<string>();
+    const track = (kind: string, ids: Iterable<string>): void => {
+      if (options.maxRelatedItems === undefined) return;
+      if (!Number.isSafeInteger(options.maxRelatedItems) || options.maxRelatedItems < 1)
+        throw new Error("Task context relation limit must be a positive integer");
+      for (const id of ids) {
+        related.add(`${kind}:${id}`);
+        if (related.size > options.maxRelatedItems)
+          throw new Error("Task context exceeds its bounded relation limit; retry a smaller page");
+      }
+    };
     const rawMetadata = this.meta("app_metadata");
     if (!rawMetadata) throw new Error("Task resource store has no imported App metadata");
     const metadata = parseJson<Record<string, unknown>>(rawMetadata);
@@ -1062,6 +1075,7 @@ export class AppTaskResourceStore {
       while (pending.size > 0) {
         const ids = [...pending];
         pending.clear();
+        track("task", ids);
         const rows = this.db
           .prepare(
             `SELECT task_id, resource_json, trigger_json FROM app_tasks
@@ -1136,6 +1150,7 @@ export class AppTaskResourceStore {
       [resource.spec.parentId, ...(resource.spec.dependsOn ?? [])]), false);
 
     const requestedConditionIds = [...new Set([...(input.conditionIds ?? [])].map((id) => id.trim()).filter(Boolean))];
+    track("condition", requestedConditionIds);
     if (requestedConditionIds.length > 0) {
       const rows = this.db
         .prepare(
@@ -1209,6 +1224,7 @@ export class AppTaskResourceStore {
         ...(input.conditionIds ?? []),
       ]),
     ];
+    track("condition", conditionIds);
     const conditions = conditionIds.length
       ? Object.fromEntries(
           (
@@ -1227,6 +1243,7 @@ export class AppTaskResourceStore {
       : {};
     const dependencyIds = new Set(Object.values(resources).flatMap((resource) => resource.spec.dependsOn ?? []));
     const receiptIds = new Set([...requested, ...dependencyIds]);
+    track("receipt", receiptIds);
     const receiptRows = [
       ...(receiptIds.size
         ? (this.db
@@ -1280,6 +1297,7 @@ export class AppTaskResourceStore {
       ]),
     ];
     while (pendingGroupIds.length > 0) {
+      track("group", pendingGroupIds);
       const rows = this.db
         .prepare(
           `SELECT group_id, group_json FROM app_task_groups

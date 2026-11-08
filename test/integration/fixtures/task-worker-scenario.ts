@@ -51,7 +51,7 @@ export async function cleanup() {
   }
 }
 
-export function fixture(agent: string, wait = false, workflow = true, conversation = false) {
+export function fixture(agent: string, wait = false, workflow = true, conversation = false, coordination = false) {
   const root = mkdtempSync(join(tmpdir(), "may-task-worker-"));
   roots.push(root);
   const appDir = join(root, "projects", "sample.app");
@@ -64,7 +64,9 @@ export function fixture(agent: string, wait = false, workflow = true, conversati
     join(appDir, "app.ts"),
     `export default {
     id: "sample", version: 1, agent: "owner", inputSchema: { type: "object" },
-    workspace: { kind: "local", localPath: "." }, ${conversation ? 'conversation: { mode: "agent" }' : "tasks: { maxConcurrent: 1 }"}
+    workspace: { kind: "local", localPath: "." }, ${conversation ? 'conversation: { mode: "agent" }' : coordination
+      ? 'tasks: { maxConcurrent: 1, coordination: { taskId: "work/one", workflow: "probe", maxAttemptMs: 1000 } }'
+      : "tasks: { maxConcurrent: 1 }"}
   };`,
   );
   for (const name of ["owner", "specialist"]) {
@@ -119,7 +121,7 @@ export function fixture(agent: string, wait = false, workflow = true, conversati
         ? {}
         : {
             "work/one": {
-              metadata: { id: "work/one", generation: 1, resourceVersion: 1 },
+              metadata: { id: "work/one", generation: 1, resourceVersion: 1, ...(coordination ? { creator: { appId: "sample" } } : {}) },
               spec: {
                 parentId: "root",
                 outcome: "Probe the worker boundary",
@@ -343,6 +345,68 @@ async function retryWhenDue(f: ReturnType<typeof fixture>, agent: string) {
 }
 
 const scenarios: Record<string, () => Promise<void>> = {
+  async coordination() {
+    for (const hangs of [false, true]) {
+      const f = fixture("owner", false, true, false, true);
+      f.request.dispatch.coordination = true;
+      writeFileSync(join(f.appDir, "agents", "owner", "workflows", "probe.ts"), `
+        export const name = "probe";
+        export const description = "Bounded coordination process-boundary probe";
+        export const workspace = "shared";
+        export const executionTimeoutMs = 60_000;
+        export async function execute(ctx) {
+          ${hangs ? 'return new Promise(() => {});' : 'return ctx.done("Shared review", { state: "converged", summary: "Shared review", facts: [] });'}
+        }
+      `);
+      await run(f);
+      const current = f.store.readTask("work/one")!;
+      assert.equal(f.store.readTaskWorkspace("work/one", 1), undefined, "Coordination must not allocate a Task worktree");
+      if (hangs) {
+        assert.equal(current.status.executionFailures, 1);
+        assert.match(current.status.summary!, /timed out after 1000ms/,
+          "An authored timeout must not extend the installed coordination ceiling");
+      } else {
+        assert.equal(current.status.phase, "converged", JSON.stringify(current.status));
+        assert.equal(acceptedAttempt(f).handler, "workflow:probe");
+      }
+    }
+  },
+  async workloadFeedback() {
+    const f = fixture("owner");
+    const previousPilot = process.env.MAY_TASK_WORKLOAD_FEEDBACK_APP;
+    process.env.MAY_TASK_WORKLOAD_FEEDBACK_APP = "sample";
+    const host = new HostCapacity(5).workloadSnapshot();
+    host.observedAt = "2026-11-09T00:00:00.000Z";
+    f.request.dispatch.hostCapacityAtDispatch = host;
+    f.request.dispatch.readyWaitMs = 123;
+    writeFileSync(join(f.appDir, "agents", "owner", "workflows", "probe.ts"), `
+      export const name = "probe";
+      export const description = "Read the bounded attempt workload";
+      export async function execute(ctx) {
+        return ctx.done("Observed workload", { state: "converged", summary: "Observed workload", facts: [],
+          result: { workload: ctx.reconciliation.workload } });
+      }
+    `);
+    try {
+      await run(f);
+      const current = f.store.readTask("work/one")!;
+      assert.equal(current.status.phase, "converged", JSON.stringify(current.status));
+      const observed = current.status.result!.workload as {
+        limits: { host: unknown; app: { backgroundMaxConcurrent: number } };
+        queueWait: { appId: string; taskId: string; elapsedMs: number; lifetime: string }; counts: { running: number };
+      };
+      assert.deepEqual(observed.limits.host, host);
+      assert.equal(observed.limits.app.backgroundMaxConcurrent, 1);
+      assert.equal(observed.queueWait.elapsedMs, 123);
+      assert.equal(observed.queueWait.lifetime, "current-controller");
+      assert.equal(observed.queueWait.appId, "sample");
+      assert.equal(observed.queueWait.taskId, "work/one");
+      assert.equal(observed.counts.running, 1);
+    } finally {
+      if (previousPilot === undefined) delete process.env.MAY_TASK_WORKLOAD_FEEDBACK_APP;
+      else process.env.MAY_TASK_WORKLOAD_FEEDBACK_APP = previousPilot;
+    }
+  },
   observationWithoutConsumer: () => observationDelivery("none"),
   observationAccepted: () => observationDelivery("accept"),
   observationFailed: () => observationDelivery("fail"),

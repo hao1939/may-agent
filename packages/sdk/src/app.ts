@@ -46,6 +46,8 @@ export type {
   TaskExecutor,
   TaskView,
   TaskListOptions,
+  TaskWorkload,
+  TaskWorkloadOptions,
   TaskPage,
   TaskOutcomeProjection,
   TaskOutcomeView,
@@ -424,7 +426,9 @@ export type AppContract = {
   inputSchema: TSchema;
   observations: ObservationContract[];
   /** Presence confirms that the loaded Host exposes this App's result-ending policy. */
-  taskPolicy?: { closeOnResult: true };
+  taskPolicy?: { closeOnResult?: true; coordination?: { taskId: string; workflow: string; maxAttemptMs: number } };
+  /** Presence confirms the loaded Host's scoped workload read contract. */
+  taskReads?: { workload: 1 };
 };
 
 export type AppAction<TInputSchema extends TSchema = TSchema> = {
@@ -454,8 +458,12 @@ export type AppTaskPolicy = {
    * Result, caller answer and closure commit atomically; this is not a worker tool.
    */
   closeOnResult?: (context: AppTaskResultContext) => { reason: string } | null;
-  /** Background attempt limit; one human Conversation turn may also run within the Host limit. */
+  /** Background limit; humans and declared coordination share one additional place within the Host limit. */
   maxConcurrent?: number;
+  /** Trusted installed, bounded management workflow sharing the human reserve.
+   * App pause still applies. The exact App-created Task must use this workflow
+   * and the App's responsible agent. This grants no portfolio-control authority. */
+  coordination?: { taskId: string; workflow: string; maxAttemptMs: number };
   /** Total consecutive unsuccessful attempts before owner attention (initial attempt included).
    * Defaults to 3 (initial attempt + 2 retries), spaced 30s then 60s.
    * Higher allowances keep doubling the delay up to one hour.

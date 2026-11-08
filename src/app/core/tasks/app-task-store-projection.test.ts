@@ -27,7 +27,8 @@ function resource(
       owner: options.owner,
     },
     status: {
-      observedGeneration: phase === "converged" ? 2 : 1,
+      // Settled waits describe this generation; a newer generation is new work.
+      observedGeneration: phase === "pending" || phase === "running" ? 1 : 2,
       phase,
       conditionIds: options.conditionIds,
       currentAttemptId: options.currentAttemptId,

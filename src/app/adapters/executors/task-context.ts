@@ -29,6 +29,7 @@ export function taskExecutionContext(
     },
     reconciliation: {
       task: structuredClone(task),
+      ...(attempt.workload ? { workload: structuredClone(attempt.workload) } : {}),
       appId: descriptor.id,
       taskId: task.id,
       generation: task.generation,

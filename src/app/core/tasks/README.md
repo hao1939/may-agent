@@ -31,6 +31,44 @@ event emission and output-path helpers live beside their lifecycle callers.
 `execution.ts` and `workspace.ts` are private contracts; concrete implementations
 live in `adapters/` and `conversations/`, selected in `composition/task-execution.ts`.
 
+## Workload observations
+
+`read.tasks.workload({agent?, limit?, cursor?})` supplies one bounded current-App
+page. Check the installed App contract's `taskReads.workload === 1` before using
+it on older Hosts. The model `tasks` tool uses `action: "workload"`; operator
+control uses `app.tasks.workload` with `appId` and the same options. Reads neither
+acknowledge work nor change scheduling, funding or closure authority.
+
+Counts describe only the scanned page. Agent filtering happens after that App
+page is scanned; follow `coverage.nextCursor` and retain each observation's time
+and coverage. Idle results are inspection candidates, including standing work;
+they do not establish unread work, fulfillment or execution utilization. Graph
+expansion is capped; an observation that exceeds the cap fails visibly and can
+be retried with a smaller page. Attempt history is not loaded.
+
+Host limits originate in the controller process. Its dispatch carries a bounded
+capacity observation into the worker with its own `observedAt`; a later workload
+read never makes that old observation fresh. Workers without a parent observation
+report it unavailable and never substitute their private limiter. Agent/root
+limits and physical resource health remain unavailable. Missing facts do not
+establish spare capacity. No shared credit accounting is installed.
+
+Attempt-bound reads also expose the observed queue notification-to-dispatch
+interval for this Task. It includes pause/prerequisite time and lasts only for
+the current controller; it is not fleet queue latency or time proven runnable.
+Reads outside that attempt report queue timing unavailable. The Host observation,
+dispatch interval and durable Task page retain their distinct observation times.
+
+Set `MAY_TASK_WORKLOAD_FEEDBACK_APP` to one installed App ID to opt that App's
+attempts into an agent-scoped starting observation. It is disabled by default;
+the read capability remains available independently. Observation failure gives
+`{available:false}` without failing execution. Workflows, their managed helpers
+and native Task executors receive the same `workloadAtAttemptStart` decision
+section. A later Task refresh does not refresh that observation. Use explicit
+scoped reads when a decision requires newer evidence. Pressure informs methods,
+priority and discretionary expansion; required work remains owed, and the
+creator retains closure. This source option does not authorize App activation.
+
 ## Execution procedure and recovery
 
 The assigned agent owns the outcome. The App declares the execution procedure;
@@ -467,3 +505,22 @@ call, attempt debit or execution failure. Cancellation and requirements changes
 still fence that result. Ordinary durable delegation already saves its demand
 through the Inbox; accepting that parent result does not promise that its child
 has been funded or executed.
+
+An installed App may declare one `tasks.coordination` policy with an exact Task ID,
+workflow and `maxAttemptMs` from 1,000 through 120,000. It selects an ordinary
+App-created Task assigned to the App's responsible agent. The Host never creates
+that Task. Missing historical creator provenance, child-created work, executor
+changes or a different workflow do not grant eligibility. Preparation requires
+an available `workspace: "shared"` workflow, and the worker rechecks that contract
+before workspace preparation. Its installed timeout is a hard ceiling even if
+the workflow exports a longer default.
+
+This path shares the existing additional App place and Host foreground reserve
+with human interaction; it adds no capacity pool. Human input has precedence at
+dispatch boundaries. A one-place Host interleaves attempts and does not invent an
+extra slot. Coordination honors App pause. Eligibility is checked again against
+the claimed resource version before any attempt or recovery write. It grants no
+new Task editing, closure, funding or portfolio-management capabilities. Apps own
+the bounded workflow, useful triggers, unchanged-pass coalescing and acceptance.
+Protected credit accounting is separate; this declaration only bounds dispatch
+and workflow duration.

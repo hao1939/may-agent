@@ -514,6 +514,29 @@ describe("control socket protocol", () => {
     expect(core.emitted).toEqual([]);
   });
 
+  it("reads scoped workload without publishing input, and rejects malformed or unavailable reads", async () => {
+    const calls: unknown[] = [];
+    const core = createCore({ getAppTaskWorkload: (appId, options) => {
+      calls.push({ appId, options });
+      return { version: 1, scope: { appId }, coverage: { truncated: true }, counts: { runnable: 2 } };
+    } });
+    await expect(sendSocketCommand(core.endpoint, { type: "app.tasks.workload", appId: "sample", agent: "worker", limit: 2, cursor: "next" }))
+      .resolves.toMatchObject({ type: "ok", command: "app.tasks.workload", workload: {
+        version: 1, scope: { appId: "sample" }, counts: { runnable: 2 }, coverage: { truncated: true },
+      } });
+    expect(calls).toEqual([{ appId: "sample", options: { agent: "worker", limit: 2, cursor: "next" } }]);
+    for (const change of [{ appId: "" }, { agent: "" }, { limit: 101 }, { limit: "2" }, { cursor: 9 }]) {
+      await expect(sendSocketCommand(core.endpoint, { type: "app.tasks.workload", appId: "sample", ...change }))
+        .rejects.toThrow();
+    }
+    expect(calls).toHaveLength(1);
+    expect(core.emitted).toEqual([]);
+    const old = createCore();
+    await expect(sendSocketCommand(old.endpoint, { type: "app.tasks.workload", appId: "sample" }))
+      .rejects.toThrow("App workload reads are unavailable");
+    expect(old.emitted).toEqual([]);
+  });
+
   it("lists and gets App-scoped Tasks without exposing storage paths", async () => {
     const task = {
       id: "review/docs",

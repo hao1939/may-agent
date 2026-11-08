@@ -1,6 +1,7 @@
 type CapacityWaiter = {
   active: boolean;
   foreground: boolean;
+  human: boolean;
   grant(release: () => void): void;
 };
 
@@ -55,13 +56,23 @@ export class HostCapacity {
   async acquire(): Promise<() => void> {
     const release = this.tryAcquire();
     if (release) return release;
-    return new Promise((resolve) => this.waiters.push({ active: true, foreground: false, grant: resolve }));
+    return new Promise((resolve) => this.waiters.push({ active: true, foreground: false, human: false, grant: resolve }));
   }
 
   async acquireForeground(): Promise<() => void> {
     const release = this.tryAcquireForeground();
     if (release) return release;
-    return new Promise((resolve) => this.waiters.push({ active: true, foreground: true, grant: resolve }));
+    return new Promise((resolve) => this.waiters.push({ active: true, foreground: true, human: true, grant: resolve }));
+  }
+
+  /** Shares the foreground place; queued human interaction has precedence. */
+  tryAcquireCoordination(): (() => void) | null {
+    if (this.waiters.some(waiter => waiter.active && waiter.human)) return null;
+    return this.tryAcquireForeground();
+  }
+
+  acquireCoordinationCancellable(callback: (release: () => void) => void): () => void {
+    return this.acquireCancellableLane(true, callback, false);
   }
 
   acquireCancellable(callback: (release: () => void) => void): () => void {
@@ -72,12 +83,13 @@ export class HostCapacity {
     return this.acquireCancellableLane(true, callback);
   }
 
-  private acquireCancellableLane(foreground: boolean, callback: (release: () => void) => void): () => void {
+  private acquireCancellableLane(foreground: boolean, callback: (release: () => void) => void, human = foreground): () => void {
     let active = true;
     let reservedRelease: (() => void) | undefined;
     const waiter: CapacityWaiter = {
       active: true,
       foreground,
+      human,
       grant: (release) => {
         reservedRelease = release;
         setTimeout(() => {
@@ -92,7 +104,7 @@ export class HostCapacity {
         }, 0);
       },
     };
-    const release = foreground ? this.tryAcquireForeground() : this.tryAcquire();
+    const release = foreground ? human ? this.tryAcquireForeground() : this.tryAcquireCoordination() : this.tryAcquire();
     if (release) waiter.grant(release);
     else this.waiters.push(waiter);
 
@@ -113,6 +125,19 @@ export class HostCapacity {
     return { running: this.running, waiting: this.waiters.length };
   }
 
+  /** Call only on the controller Host authority, never a worker-local limiter. */
+  workloadSnapshot() {
+    return {
+      available: true as const,
+      scope: "controller-host-process" as const,
+      observedAt: new Date().toISOString(),
+      maxConcurrent: this.limit,
+      backgroundMaxConcurrent: this.backgroundLimit,
+      reservedSlots: this.running,
+      waitingAcquisitions: this.waiters.length,
+    };
+  }
+
   private releaseHandle(foreground: boolean): () => void {
     let released = false;
     return () => {
@@ -126,7 +151,8 @@ export class HostCapacity {
 
   private drainWaiters(): void {
     while (this.running < this.limit) {
-      let index = this.waiters.findIndex((waiter) => waiter.active && waiter.foreground);
+      let index = this.waiters.findIndex((waiter) => waiter.active && waiter.human);
+      if (index < 0) index = this.waiters.findIndex((waiter) => waiter.active && waiter.foreground);
       if (index < 0 && this.backgroundRunning < this.backgroundLimit) {
         index = this.waiters.findIndex((waiter) => waiter.active && !waiter.foreground);
       }

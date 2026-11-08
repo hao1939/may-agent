@@ -404,10 +404,21 @@ export function parseTaskAttemptProcessRequest(raw: string): TaskAttemptProcessR
     !Number.isFinite(dispatch.enqueuedAt) ||
     !Number.isFinite(dispatch.startedAt) ||
     !Number.isFinite(dispatch.readyWaitMs) ||
+    (dispatch.coordination !== undefined && dispatch.coordination !== true) ||
     (dispatch.lane !== "human" && dispatch.lane !== "normal")
   ) {
     throw new Error("Task worker request has an invalid dispatch context");
   }
+  const host = dispatch.hostCapacityAtDispatch;
+  if (host !== undefined && (
+    !host || host.available !== true || host.scope !== "controller-host-process" ||
+    typeof host.observedAt !== "string" || !Number.isFinite(Date.parse(host.observedAt)) ||
+    !Number.isSafeInteger(host.maxConcurrent) || host.maxConcurrent < 1 ||
+    !Number.isSafeInteger(host.backgroundMaxConcurrent) || host.backgroundMaxConcurrent < 1 ||
+    host.backgroundMaxConcurrent > host.maxConcurrent ||
+    !Number.isSafeInteger(host.reservedSlots) || host.reservedSlots < 0 ||
+    !Number.isSafeInteger(host.waitingAcquisitions) || host.waitingAcquisitions < 0
+  )) throw new Error("Task worker request has an invalid Host capacity observation");
   return {
     appId: required(String(parsed.appId ?? ""), "Task worker appId"),
     taskId: required(String(parsed.taskId ?? ""), "Task worker taskId"),

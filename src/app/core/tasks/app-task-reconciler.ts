@@ -29,7 +29,7 @@ import {
   type TaskTree,
 } from "./app-task-store.js";
 import { resolveAppTaskOutputPaths } from "./app-task-output-paths.js";
-import { pendingTaskExecutionRetryAt, taskAdmissionRetryDelay, taskExecutionRetryDelay, taskExecutionRetryExhausted } from "./app-task-state.js";
+import { taskReviewAt, pendingTaskExecutionRetryAt, taskAdmissionRetryDelay, taskExecutionRetryDelay, taskExecutionRetryExhausted } from "./app-task-state.js";
 import type {
   AppTaskCondition as AppTaskCondition,
   AppTaskAttempt as AppTaskAttempt,
@@ -1596,8 +1596,8 @@ export function readAppTaskIntent(config: AppTaskContext, taskId: string): AppTa
 }
 
 /** Resolve the exact Task's agent, including inheritance, before worker loading. */
-export function readAppTaskAgent(config: AppTaskContext, taskId: string): string | null {
-  const tree = config.resourceStore.readTaskContext(
+export function readAppTaskAgent(config: AppTaskContext, taskId: string, snapshot?: TaskTree): string | null {
+  const tree = snapshot ?? config.resourceStore.readTaskContext(
     { taskIds: [taskId] },
     { includeHistory: false, childLimit: 0 },
   );
@@ -1892,15 +1892,6 @@ export function readPendingAppTaskTrigger(config: AppTaskContext, taskId: string
   return event ? structuredClone(event) : undefined;
 }
 
-function acceptedTaskReviewAt(_tree: TaskTree, resource: AppTaskResource): number | null {
-  if (resource.status.phase !== "waiting") return null;
-  const deadlines = [
-    resource.status.reviewAt,
-    ...Object.values(resource.status.inputWaits ?? {}).map((wait) => wait.reviewAt),
-  ].filter((value): value is number => Number.isSafeInteger(value) && Number(value) > 0);
-  return deadlines.length ? Math.min(...deadlines) : null;
-}
-
 function nextTaskCheckAt(tree: TaskTree, resource: AppTaskResource): number | null {
   const deadlines = [
     // Recovery rereads saved facts in code; only reviewAt authorizes an agent review.
@@ -1908,7 +1899,7 @@ function nextTaskCheckAt(tree: TaskTree, resource: AppTaskResource): number | nu
       openTaskConditionIds(tree, resource.metadata.id).length
       ? Date.now() + CONDITION_RECOVERY_INTERVAL_MS
       : null,
-    acceptedTaskReviewAt(tree, resource),
+    taskReviewAt(resource),
   ].filter((value): value is number => value !== null);
   return deadlines.length ? Math.min(...deadlines) : null;
 }
@@ -2005,7 +1996,7 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): b
   if (resource.status.phase === "pending") return true;
   if (resource.status.phase === "waiting") {
     if (hasSatisfiedTaskCondition(tree, taskId)) return true;
-    const reviewAt = acceptedTaskReviewAt(tree, resource);
+    const reviewAt = taskReviewAt(resource);
     if (reviewAt !== null) return reviewAt <= Date.now();
     return !(resource.status.conditionIds?.length ?? 0);
   }
@@ -2786,6 +2777,8 @@ export function claimObservedAppTask(
     handler: string;
     reason?: string;
     isAgentRunnable?: (agent: string) => boolean;
+    /** Recheck a trusted reserve dispatch against the exact resource fence. */
+    canUseCoordinationReserve?: (resource: AppTaskResource, agent: string) => boolean;
     /** Validate and drain the retained session before replacement ownership commits. */
     recoverPreviousSession?: (attempt: AppTaskAttempt) => boolean;
     recoverSessionHandoff?: (attempt: AppTaskAttempt | undefined) => AppTaskClaim["handoff"];
@@ -2832,6 +2825,10 @@ export function claimObservedAppTask(
   if (!config.resourceStore.allowsTaskExecution(input.taskId)) {
     return { kind: "waiting", taskId: input.taskId, conditionIds: [] };
   }
+  const intent = resourceIntent(resource);
+  const agent = resolvedAgent(tree, intent, input.appAgent);
+  if (input.canUseCoordinationReserve && !input.canUseCoordinationReserve(resource, agent))
+    return { kind: "waiting", taskId: input.taskId, conditionIds: [] };
   if (settlement) {
     return { ...structuredClone(settlement.claim), resourceVersion: resource.metadata.resourceVersion,
       settlement: structuredClone(settlement) };
@@ -2860,8 +2857,6 @@ export function claimObservedAppTask(
   const mutationScope = beginResourceMutationScopeForTasks(tree, [resource.metadata.id]);
   const initialConditionIds = new Set(resource.status.conditionIds ?? []);
   const changedAttempts = new Set<AppTaskAttempt>();
-  const intent = resourceIntent(resource);
-  const agent = resolvedAgent(tree, intent, input.appAgent);
   let declaredOutputPaths: string[] = [];
   let outputAdmissionError: string | undefined;
   try {
@@ -3039,7 +3034,7 @@ export function claimObservedAppTask(
 
   const openConditionIds = openTaskConditionIds(tree, input.taskId);
   const hasSatisfiedCondition = hasSatisfiedTaskCondition(tree, input.taskId);
-  const reviewAt = acceptedTaskReviewAt(tree, resource);
+  const reviewAt = taskReviewAt(resource);
   const reviewDue = reviewAt !== null && reviewAt <= Date.now();
   if (
     resource.status.phase === "waiting" &&

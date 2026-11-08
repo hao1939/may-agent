@@ -1,5 +1,6 @@
 import { AppTaskQueue, type AppTaskLane, type AppTaskQueueOptions } from "./queue.js";
 import type { HostCapacity } from "../scheduling/host-capacity.js";
+import type { TaskWorkload } from "@may-agent/sdk";
 
 const hostPumpQueue: Array<{ owner: object; pump: () => void }> = [];
 let hostPumpScheduled = false;
@@ -31,7 +32,7 @@ export type AppTaskControllerOptions = {
   /** Shared Host capacity. App-local limits still apply independently. */
   capacity?: HostCapacity;
   /** One current scheduling read per dispatch boundary, not per queued key. */
-  readScheduling?(): { backgroundPaused: boolean; foregroundTaskIds: ReadonlySet<string> };
+  readScheduling?(): { backgroundPaused: boolean; foregroundTaskIds: ReadonlySet<string>; coordinationTaskIds?: ReadonlySet<string> };
   reconcile(taskId: string, dispatch: AppTaskDispatch): Promise<void>;
   /** Best-effort diagnostics; never holds capacity or gates retries. */
   onError?(taskId: string, error: unknown, willRetry: boolean): void | Promise<void>;
@@ -47,6 +48,10 @@ export type AppTaskDispatch = {
   startedAt: number;
   readyWaitMs: number;
   lane: AppTaskLane;
+  /** Parent Host observation carried unchanged across the attempt boundary. */
+  hostCapacityAtDispatch?: Extract<TaskWorkload["limits"]["host"], { available: true }>;
+  /** Trusted installed coordination eligibility; rechecked at the fenced claim. */
+  coordination?: true;
 };
 
 /** One level-based reconciliation worker pool for one App. */
@@ -64,9 +69,10 @@ export class AppTaskController {
   private waitingForCapacity = false;
   private waitingCapacityLane?: AppTaskLane;
   private waitingCapacityForeground?: boolean;
+  private waitingCapacityCoordination?: boolean;
   private cancelCapacityWait?: () => void;
   private readonly drainWaiters = new Set<() => void>();
-  private scheduling = { backgroundPaused: false, foregroundTaskIds: new Set<string>() as ReadonlySet<string> };
+  private scheduling: { backgroundPaused: boolean; foregroundTaskIds: ReadonlySet<string>; coordinationTaskIds?: ReadonlySet<string> } = { backgroundPaused: false, foregroundTaskIds: new Set() };
 
   constructor(private readonly options: AppTaskControllerOptions) {
     this.queue = new AppTaskQueue(
@@ -74,7 +80,7 @@ export class AppTaskController {
       (taskId) =>
         !this.retryTimers.has(taskId) &&
         (!this.scheduling.backgroundPaused || this.scheduling.foregroundTaskIds.has(taskId)),
-      (taskId) => this.scheduling.foregroundTaskIds.has(taskId),
+      (taskId) => this.scheduling.foregroundTaskIds.has(taskId) || (!this.scheduling.backgroundPaused && this.isCoordination(taskId)),
     );
     this.startReady = !options.startAfter;
     if (options.startAfter) {
@@ -95,6 +101,7 @@ export class AppTaskController {
       this.waitingForCapacity &&
       next &&
       (this.waitingCapacityForeground !== next.foreground ||
+        this.waitingCapacityCoordination !== this.isCoordination(next.taskId) ||
         (this.waitingCapacityLane === "normal" && next.lane === "human"))
     ) {
       this.cancelCapacityWait?.();
@@ -102,6 +109,7 @@ export class AppTaskController {
       this.waitingForCapacity = false;
       this.waitingCapacityLane = undefined;
       this.waitingCapacityForeground = undefined;
+      this.waitingCapacityCoordination = undefined;
     }
     this.schedulePump();
     return added;
@@ -126,6 +134,7 @@ export class AppTaskController {
       this.waitingForCapacity = false;
       this.waitingCapacityLane = undefined;
       this.waitingCapacityForeground = undefined;
+      this.waitingCapacityCoordination = undefined;
       return;
     }
     this.schedulePump();
@@ -141,6 +150,7 @@ export class AppTaskController {
     this.waitingForCapacity = false;
     this.waitingCapacityLane = undefined;
     this.waitingCapacityForeground = undefined;
+    this.waitingCapacityCoordination = undefined;
     this.readySince.clear();
     this.resolveDrainWaiters();
   }
@@ -171,9 +181,10 @@ export class AppTaskController {
     const next = this.queue.peek();
     if (!next) return;
     if (this.options.capacity) {
-      // Priority orders work; only durable human Conversation input earns the reserve.
+      // Priority alone grants no reserve: human input and installed bounded
+      // coordination share it, with human waiters first at safe boundaries.
       const release = next.foreground
-        ? this.options.capacity.tryAcquireForeground()
+        ? this.isCoordination(next.taskId) ? this.options.capacity.tryAcquireCoordination() : this.options.capacity.tryAcquireForeground()
         : this.options.capacity.tryAcquire();
       if (!release) {
         this.waitForCapacity(next.lane, next.foreground);
@@ -201,10 +212,13 @@ export class AppTaskController {
     this.waitingForCapacity = true;
     this.waitingCapacityLane = lane;
     this.waitingCapacityForeground = foreground;
+    const coordination = this.isCoordination(this.queue.peek()?.taskId ?? "");
+    this.waitingCapacityCoordination = coordination;
     const acquired = (release: () => void) => {
       this.waitingForCapacity = false;
       this.waitingCapacityLane = undefined;
       this.waitingCapacityForeground = undefined;
+      this.waitingCapacityCoordination = undefined;
       this.cancelCapacityWait = undefined;
       if (this.closed || !this.enabled || !this.startReady) {
         release();
@@ -216,13 +230,13 @@ export class AppTaskController {
         return;
       }
       const next = this.queue.peek();
-      const taskId = next?.foreground === foreground ? this.queue.take() : null;
+      const taskId = next?.foreground === foreground && this.isCoordination(next.taskId) === coordination ? this.queue.take() : null;
       if (taskId) this.run(taskId, release, next!.lane);
       else release();
       this.schedulePump();
     };
     this.cancelCapacityWait = foreground
-      ? this.options.capacity.acquireForegroundCancellable(acquired)
+      ? coordination ? this.options.capacity.acquireCoordinationCancellable(acquired) : this.options.capacity.acquireForegroundCancellable(acquired)
       : this.options.capacity.acquireCancellable(acquired);
   }
 
@@ -235,6 +249,8 @@ export class AppTaskController {
       startedAt,
       readyWaitMs: Math.max(0, startedAt - enqueuedAt),
       lane,
+      ...(this.isCoordination(taskId) ? { coordination: true as const } : {}),
+      ...(this.options.capacity ? { hostCapacityAtDispatch: this.options.capacity.workloadSnapshot() } : {}),
     };
     // An async boundary also captures callbacks that throw before returning a Promise.
     const reconcile = async () => {
@@ -263,6 +279,10 @@ export class AppTaskController {
       if (taskId && !this.retryTimers.has(taskId)) this.recordFailure(taskId, error, "normal");
       return false;
     }
+  }
+
+  private isCoordination(taskId: string): boolean {
+    return !this.scheduling.foregroundTaskIds.has(taskId) && Boolean(this.scheduling.coordinationTaskIds?.has(taskId));
   }
 
   private recordFailure(taskId: string, error: unknown, lane: AppTaskLane): void {

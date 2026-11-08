@@ -19,6 +19,8 @@ export interface AppTaskRuntimeOptions {
   sessions?: TaskSessionRecovery;
   bus: EventBus;
   hostCapacity: HostCapacity;
+  /** One explicit prompt-feedback pilot. No execution enforcement is enabled. */
+  workloadFeedbackAppId?: string;
   /**
    * Optional execution boundary for one claimed Task attempt. Production uses
    * an isolated process; tests and explicit single-process tools may omit it.

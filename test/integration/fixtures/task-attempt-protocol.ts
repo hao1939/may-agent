@@ -30,6 +30,19 @@ function scriptedWorker(source: string): ChildProcess {
 const scenarios: Record<string, () => void | Promise<void>> = {
   requestParsing() {
     expect(parseTaskAttemptProcessRequest(JSON.stringify(request))).toEqual(request);
+    const host = { available: true, scope: "controller-host-process", observedAt: "2026-11-09T00:00:00Z",
+      maxConcurrent: 5, backgroundMaxConcurrent: 4, reservedSlots: 3, waitingAcquisitions: 1 };
+    const observed = { ...request, dispatch: { ...request.dispatch, hostCapacityAtDispatch: host } };
+    expect(parseTaskAttemptProcessRequest(JSON.stringify(observed))).toEqual(observed);
+    for (const invalid of [null, {}, { ...host, scope: "worker-local" }, { ...host, observedAt: "bad" },
+      { ...host, reservedSlots: -1 }, { ...host, maxConcurrent: 0 }, { ...host, waitingAcquisitions: 0.5 }])
+      expect(() => parseTaskAttemptProcessRequest(JSON.stringify({ ...request, dispatch: { ...request.dispatch, hostCapacityAtDispatch: invalid } })))
+        .toThrow("invalid Host capacity observation");
+    const coordination = { ...request, dispatch: { ...request.dispatch, coordination: true } };
+    expect(parseTaskAttemptProcessRequest(JSON.stringify(coordination))).toEqual(coordination);
+    for (const invalid of [false, "true", 1, null])
+      expect(() => parseTaskAttemptProcessRequest(JSON.stringify({ ...request, dispatch: { ...request.dispatch, coordination: invalid } })))
+        .toThrow("invalid dispatch context");
     const pinned = {
       ...request,
       definitionSource: {
