@@ -433,7 +433,30 @@ observation; a read snapshot now keeps its root and sponsor balances consistent.
 The frozen full local gate passed 3,932 tests / 3 skipped / zero failures /
 22,903 assertions across 344 files, including browser execution and Host/SDK
 types, boundary and lint. Hosted Quality and Container passed the same revision;
-independent review remains required. This PR is based independently on main.
+it received independent automated approval and merged as
+`c4b43127d06368fbc32f8486317cc97b08a64853`. No other maintainer was available.
+The PR was based independently on main.
 Admission integration is the next isolated increment; installed policy is not
 exposed for production activation before creation, claim, helper and deferral
 paths support the complete accounting contract.
+
+
+The next source increment charges runtime Task creation and winning claims in
+the existing fenced resource commit. Task-created contributions inherit their
+creator account; existing services keep theirs. Funding denial persists a
+constraint on the existing Task/Inbox record and returns a distinct deferred
+claim, preserving pending input, obligations, retry costs and the one authorized
+fresh-human claim. Separate ready/due Inbox indexes exclude sleeping funding
+holds. Confirmed old-runtime cleanup can commit without charging a replacement
+attempt. Explicit historical adoption wakes only matching source dependencies;
+a recheck while recording the hold prevents a racing adoption from being lost.
+Closed receipt restoration remains free rather than fabricating historical costs.
+
+Owning lifecycle checks passed 218 tests / 1,338 assertions. The subsequent
+funding, Inbox, receipt and metric checks passed 81 tests / 708 assertions,
+including protected-account isolation and exact cross-App adoption wakes.
+Host/SDK type checks, canonical App boundary and lint passed. The revision is
+frozen for its complete gate; no production installation switch is exposed.
+Executable seed bootstrap is a separate creation path and still needs accounting
+before activation. Managed helper admission, protected coordination funding,
+authorized cap/grant changes and additional execution reservations also remain.
