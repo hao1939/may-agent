@@ -15,6 +15,7 @@ import {
   type AppTaskPolicy,
 } from "@may-agent/sdk";
 import { createAssistantMessageEventStream, type ToolCall } from "@earendil-works/pi-ai";
+import { prepareConversationTaskTurn } from "../../composition/conversation-task-turn.js";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { createAgentRun } from "../../../lib/agent-runner.js";
 import { SubagentManager } from "../../../lib/manager.js";
@@ -242,6 +243,60 @@ test("a failed App ending decision rolls back the answer publication and accepte
     expect(getAppInboxItem(f.db, "ask")?.status).not.toBe("done");
     await f.reopen();
     expect(f.store.readCancellation("work")).toBeNull();
+  } finally { await f.close(); }
+});
+
+test.each(["task", "agent"] as const)("%s-mode Conversation publishes its App-policy closure after the reply commits, once across restart", async (mode) => {
+  let calls = 0;
+  let policyCalls = 0;
+  const response = "The finite comparison is complete.";
+  const f = await fixture(async () => {
+    calls++;
+    return { state: "converged", summary: "Compared the options", response, facts: ["Both options verified"] };
+  }, mode, undefined, {
+    execute: (input) => prepareConversationTaskTurn({
+      ...input,
+      resolveConversationInput: async () => {
+        calls++;
+        return { summary: "Compared the options", response, facts: ["Both options verified"] };
+      },
+    }),
+  }, undefined, {
+    closeOnResult: ({ acceptedResult }) => {
+      policyCalls++;
+      return acceptedResult.response === response ? { reason: "The finite comparison was delivered" } : null;
+    },
+  });
+  try {
+    const item = f.admit("ask").item;
+    const taskId = item.executionTaskId!;
+    const notifications: Array<{ taskId: string; inputStatus?: string; replyPublished: boolean; closed: boolean }> = [];
+    f.bus.subscribe((event) => {
+      if (event.type !== "app.task.cancelled") return;
+      notifications.push({
+        taskId: event.data.taskId,
+        inputStatus: getAppInboxItem(f.db, item.id)?.status,
+        replyPublished: listAppConversationMessages(f.db, "sample", "discussion").some((message) => message.text === response),
+        closed: f.store.readCancellation(taskId)?.kind === "closed",
+      });
+    });
+    await f.run(taskId);
+    const task = f.store.readTask(taskId)!;
+    const accepted = f.store.readAttempt(task.status.observedAttemptId!)?.acceptedResult;
+    expect(accepted).toMatchObject({ state: "converged", response, facts: ["Both options verified"] });
+    expect(f.store.readCancellation(taskId)).toMatchObject({
+      kind: "closed",
+      acceptedResultAttemptId: task.status.observedAttemptId,
+      decidedBy: { kind: "app-policy" },
+    });
+    expect(notifications).toEqual([{ taskId, inputStatus: "done", replyPublished: true, closed: true }]);
+    await f.reopen();
+    await f.run(taskId);
+    expect(calls).toBe(1);
+    expect(policyCalls).toBe(1);
+    expect(f.store.readAttempt(task.status.observedAttemptId!)?.acceptedResult).toEqual(accepted);
+    expect(f.store.readCancellation(taskId)?.kind).toBe("closed");
+    expect(f.db.prepare("SELECT count(*) AS n FROM events WHERE event_type='app.task.cancelled'").get()).toEqual({ n: 1 });
   } finally { await f.close(); }
 });
 

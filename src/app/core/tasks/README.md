@@ -77,8 +77,12 @@ reconsideration work prevent closure; the result remains accepted and useful
 work remains queued or waiting. Apps must retain standing purposes and reusable
 Conversation input routes in their policy. Omission retains today's idle behavior.
 No additional model call, lifecycle state, polling loop or terminal-result rewrite
-is involved. `task-result-closure.test.ts` and the full runtime/caller regression
-in `task-communication.test.ts` own this boundary.
+is involved. Conversation settlement uses the same completion result and appends
+authorized Task-control effects to it; the attempt runner publishes closure
+notifications from that result after the transaction commits. There is one App
+ending policy for ordinary and Conversation Tasks. `task-result-closure.test.ts`
+and the full runtime/caller regressions in `task-communication.test.ts` own this
+boundary.
 
 | Stage | Follow in source | Durable authority |
 | --- | --- | --- |
