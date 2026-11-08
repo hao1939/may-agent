@@ -269,7 +269,7 @@ On an older installation, return a missing closure capability
 through the existing owner path, not a reason to create a repeating review job.
 
 **Prepared, not installed:** [Host PR #398](https://github.com/hao1939/may-agent/pull/398)
-adds an opt-in `tasks.closeOnResult` App callback. Alex's held companion policy
+adds an opt-in `tasks.closeOnResult` App callback. Alex's integrated companion policy
 accepts an explicit evidenced converged `result.taskDisposition` with
 `{kind: "close", reason}` for finite message/goal assignments. Standing
 audit/research cycles and evaluator procedures retain their responsibility.

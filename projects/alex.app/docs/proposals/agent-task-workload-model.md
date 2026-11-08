@@ -139,15 +139,15 @@ finite results still need an integrated authorized creator/App disposition path.
 The loaded App policy has no trusted post-result closure hook, and the outcome
 selector commissions reviews without consuming their completion for closure.
 [Host PR #398](https://github.com/hao1939/may-agent/pull/398) merged at
-`88a98be236baf07bfcf100208cfb0dc1589dfa06`. Its PR checks passed; the merge
-commit's Container check passed but Quality failed in concurrent database-opener
-fixture writes, outside the result-closure path. Held App source
-`0296b342d248f93368fae2bbc9f9e17293688b7c` requires an explicit evidenced ending
-decision for finite message/goal assignments and includes the admission-identity
-fix. Result, caller answer and closure commit atomically in the tested candidate.
-Separate Host deployment, companion App integration/activation and a live
-finite-result ending remain adoption steps. Task-created reviews retain creator
-authority and still need that creator's result-consumption integration.
+`88a98be236baf07bfcf100208cfb0dc1589dfa06`; companion App source integrated at
+`9ed31e767f71fe5314b3b5b109350b4e01ed667e`. It requires an explicit evidenced
+ending for finite message/goal assignments and preserves the admission-identity
+fix. The [post-merge adoption check](../archive/reviews/task-result-closure-adoption-20261108.md)
+demonstrates the paired source behavior and records a separate merge-CI failure.
+The live Host remains #392 without the companion capability. Host deployment,
+App activation and a live finite-result ending remain adoption steps.
+Task-created reviews retain creator authority and still need that creator's
+result-consumption integration; existing idle results are not retroactively closed.
 The scoped reader and installed operator control enabled the historical cleanup;
 neither is an automatic result consumer. The narrow review-admission identity correction
 is live at App source `6a7e49843c5d2c8cccd7615b991472856d43f8d4`, so later
