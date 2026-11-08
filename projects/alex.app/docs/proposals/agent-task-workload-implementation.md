@@ -16,8 +16,9 @@ policy in Host #432. These increments remain subject to independent review and
 integration; local gate failures and their fixture refinements are recorded below.
 Fresh-state initialization and an offline retained-state installation path now
 have source implementations. The retained path requires externally excluded,
-already cleaned execution; it does not import live work. Enforcement withdrawal,
-retained active execution adoption and operational activation remain work. No production activation, rollout or improved model behavior is established
+already cleaned execution; it does not import live work. One-way offline
+enforcement withdrawal now has draft source under verification. Retained active
+execution adoption and operational activation remain work. No production activation, rollout or improved model behavior is established
 by these source checks.
 
 Source reviewed: Host #398 merge `88a98be236baf07bfcf100208cfb0dc1589dfa06`.
@@ -1254,3 +1255,30 @@ full local gate is running. No complete passing gate is claimed for the original
 revision. Independent
 review, integration, enforcement withdrawal and separately authorized operational
 and behavioral proof remain. No SDK/App runtime change is required.
+
+
+Host [#439](https://github.com/hao1939/may-agent/pull/439), revision
+`ac00e95783` (implementation `b9a3d3d7d6`), implements the offline withdrawal
+contract above. Shared SQLite records withdrawal and exact configuration;
+canonical mutation/start/read paths stop new workload enforcement without erasing
+spending or losing caller obligations. Existing file/session and SQL execution
+checks remain conditional on real external exclusion. Exact offline replay is
+read-only, and dry run/late-fence failures roll back receipt and wakes together.
+Policy reinstallation cannot reactivate enforcement across unaccounted work.
+Older binaries do not understand this record and must not reopen withdrawn state.
+
+Focused installation/admission/manager/workflow/workspace owners passed
+**106 tests / 620 assertions across seven files**. Final operation owners,
+including malformed command boundaries, passed **38 / 204 across two files**.
+A real fresh worker executed authored workflow code and a managed helper against
+a local scripted provider with one exact request, retained result, unavailable
+policy feedback and no new budget/managed-start/reservation records. Actual
+saved unfunded Inbox input returned through normal admission without fulfillment;
+pause, exhausted retries, workspace holds and cancelled actor authority remained.
+Two initial fixture assumptions were corrected (workload read signature and the
+preexisting indefinite hold before admission); no production fix is claimed for
+those fixture errors or for this new feature. Host/SDK types, boundary and lint
+passed. Full local CI has not started while #438's repaired full gate runs;
+hosted checks are pending. Independent review, integration and separately
+authorized operational/model acceptance remain. No production withdrawal,
+reactivation protocol or live exclusion is established.
