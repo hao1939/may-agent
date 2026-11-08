@@ -1121,3 +1121,26 @@ revisions. #435's frozen complete local gate includes all three refinements and
 passed **4,144 tests / 3 existing skips / 0 failures / 24,236 assertions across
 359 files**. Hosted Quality and Container passed the same head. Independent
 review remains. No rollout or business judgment claim follows from these fixtures.
+
+
+Host [#436](https://github.com/hao1939/may-agent/pull/436), revision
+`f0a9bddc15`, implements the fresh-state initialization boundary above. Its
+source-checkout command refuses every existing destination and builds the
+existing Host schema, budget declarations and execution limits in private
+staging state before exclusive publication. Closed single-file SQLite state is
+published without replacement; a competing ordinary opener keeps its database.
+The plan requires explicit background and root defaults, bounded unique Apps
+and exact recipient/root scopes. There is no new accounting authority, runtime
+activation flag or model capability.
+
+Initializer owners passed **14 / 41**, including three real operator processes
+with one winner, first-open policy completeness, a real ordinary opener winning
+publication, malformed/duplicate policy and retained-state refusal. Final
+initializer/authored-seed owners passed **18 / 61**. The real worker's new fresh
+coordination route starts after publication, charges creation + attempt + helper
+(**three protected credits**), makes one scripted provider call under full
+ordinary execution, and releases only coordination occupancy. The previous
+shared/protected coordination routes also passed. Static checks passed. Frozen
+full local and hosted gates are running; independent review remains. No SDK or
+App runtime source change is required. This provides no retained-installation
+cutover, historical active adoption, compiled-daemon flag or live rollout proof.
