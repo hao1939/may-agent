@@ -11,15 +11,15 @@ export type TaskWorkloadSource = {
   /** Absent in an isolated attempt worker: its limiter is not Host authority. */
   host?: () => TaskWorkload["limits"]["host"];
   foregroundTaskIds?: (taskIds: readonly string[]) => ReadonlySet<string>;
-  dispatch?: AppTaskDispatch;
+  dispatch?: AppTaskDispatch & { taskId: string };
 };
 
-export function runtimeWorkloadSource(opts: AppTaskRuntimeOptions, descriptor?: AppTaskRuntimeDescriptor, dispatch?: AppTaskDispatch): TaskWorkloadSource {
+export function runtimeWorkloadSource(opts: AppTaskRuntimeOptions, descriptor?: AppTaskRuntimeDescriptor, dispatch?: AppTaskDispatch, taskId?: string): TaskWorkloadSource {
   return {
     ...(opts.installControllers === false
       ? dispatch?.hostCapacityAtDispatch ? { host: () => dispatch.hostCapacityAtDispatch! } : {}
       : { host: () => opts.hostCapacity.workloadSnapshot() }),
-    ...(dispatch ? { dispatch } : {}),
+    ...(dispatch && taskId ? { dispatch: { ...dispatch, taskId } } : {}),
     ...(descriptor?.app.conversation ? { foregroundTaskIds: (taskIds: readonly string[]) =>
       new Set(taskIds.filter(id => descriptor.resourceStore.hasPendingHumanConversationInput(id))) } : {}),
   };
@@ -68,6 +68,7 @@ export function readTaskWorkload(
       },
       queueWait: opts.workloadSource?.dispatch ? {
         available: true, scope: "current-task-dispatch",
+        appId: store.appId, taskId: opts.workloadSource.dispatch.taskId,
         enqueuedAt: opts.workloadSource.dispatch.enqueuedAt,
         dispatchedAt: opts.workloadSource.dispatch.startedAt,
         elapsedMs: opts.workloadSource.dispatch.readyWaitMs,

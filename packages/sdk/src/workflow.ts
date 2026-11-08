@@ -373,6 +373,7 @@ export type TaskWorkload = {
    * Not a fleet latency, a durable ready-since timestamp or utilization. */
   queueWait: { available: false } | {
     available: true; scope: "current-task-dispatch";
+    appId: string; taskId: string;
     enqueuedAt: number; dispatchedAt: number; elapsedMs: number;
     lifetime: "current-controller";
   };

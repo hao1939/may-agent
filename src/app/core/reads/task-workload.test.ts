@@ -167,11 +167,11 @@ test("worker feedback preserves parent capacity time and dispatch timing instead
   const host = parent.workloadSnapshot();
   const dispatch = { enqueuedAt: 100, startedAt: 250, readyWaitMs: 150, lane: "normal" as const, hostCapacityAtDispatch: host };
   const worker = { hostCapacity: new HostCapacity(1), installControllers: false } as AppTaskRuntimeOptions;
-  const read = () => readTaskWorkload({ taskStateConfig: f.config, workloadSource: runtimeWorkloadSource(worker, undefined, dispatch) });
+  const read = () => readTaskWorkload({ taskStateConfig: f.config, workloadSource: runtimeWorkloadSource(worker, undefined, dispatch, "work") });
   release(); // A subsequent read cannot present this older parent snapshot as fresh.
   const observation = read();
   expect(observation.limits.host).toEqual(host);
-  expect(observation.queueWait).toEqual({ available: true, scope: "current-task-dispatch", enqueuedAt: 100, dispatchedAt: 250, elapsedMs: 150, lifetime: "current-controller" });
+  expect(observation.queueWait).toEqual({ available: true, scope: "current-task-dispatch", appId: "sample", taskId: "work", enqueuedAt: 100, dispatchedAt: 250, elapsedMs: 150, lifetime: "current-controller" });
   if (!observation.limits.host.available) throw new Error("Missing parent observation");
   observation.limits.host.reservedSlots = 999;
   expect(read().limits.host).toEqual(host);

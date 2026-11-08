@@ -365,12 +365,14 @@ const scenarios: Record<string, () => Promise<void>> = {
       assert.equal(current.status.phase, "converged", JSON.stringify(current.status));
       const observed = current.status.result!.workload as {
         limits: { host: unknown; app: { backgroundMaxConcurrent: number } };
-        queueWait: { elapsedMs: number; lifetime: string }; counts: { running: number };
+        queueWait: { appId: string; taskId: string; elapsedMs: number; lifetime: string }; counts: { running: number };
       };
       assert.deepEqual(observed.limits.host, host);
       assert.equal(observed.limits.app.backgroundMaxConcurrent, 1);
       assert.equal(observed.queueWait.elapsedMs, 123);
       assert.equal(observed.queueWait.lifetime, "current-controller");
+      assert.equal(observed.queueWait.appId, "sample");
+      assert.equal(observed.queueWait.taskId, "work/one");
       assert.equal(observed.counts.running, 1);
     } finally {
       if (previousPilot === undefined) delete process.env.MAY_TASK_WORKLOAD_FEEDBACK_APP;
