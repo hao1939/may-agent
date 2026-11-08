@@ -77,6 +77,29 @@ or operator control; never infer authority from a parent link. Preserve exact
 caller answers and remaining obligations when consolidating duplicate wrappers.
 Do not bulk-close old records by phase or commission a new review Task for each.
 
+Use supplied workload observations when deciding the next useful action. If the
+installed App contract advertises `taskReads.workload`, workflows can use
+`ctx.read.tasks.workload` and agents can use `tasks {action: "workload"}` for a
+bounded current-App read. Retain its time, scope and coverage: page counts are
+not totals, blocked or idle assignments are not utilization, and unavailable
+resource or budget facts do not prove spare capacity. Read only the additional
+scope needed for a consequential choice; no separate model call is required.
+
+Business need determines whether work is owed. Under pressure, prefer advancing
+existing commitments, consuming returned work and reusing useful investigations;
+raise the benefit required for optional expansion or parallel contributions.
+Choose a smaller useful method when it preserves acceptance. When capacity puts
+a commitment at risk, retain the demand and explain the delivery conflict to its
+accountable owner through the existing return path. Pressure alone does not
+justify rejecting required work, weakening acceptance or claiming fulfillment.
+
+With supported spare capacity, consider one bounded useful opportunity from the
+existing priorities or backlog. Missing runnable work can be a valid wait or a
+resource constraint; do not manufacture Tasks to fill slots. Review obsolete or
+duplicate assignments when useful under either load, applying creator or trusted
+App authority. End an assignment because its responsibility ended, never because
+the live Task count is high. A recommendation is still not an applied closure.
+
 For a backlog, use `task-disposition-review` with `{appId, limit: 10, cursor?}`.
 It reads existing work without model calls or mutations. Save each returned page
 and its next cursor; retry explicit `retryTaskIds` with `{appId, taskIds}` rather
