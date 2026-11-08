@@ -1,6 +1,10 @@
 import { expect } from "bun:test";
 import { spawn, type ChildProcess } from "node:child_process";
+import { once } from "node:events";
+import { createInterface } from "node:readline";
+import { fileURLToPath } from "node:url";
 import { EventBus } from "../../../src/app/core/events/bus.js";
+import { HostCapacity } from "../../../src/app/core/scheduling/host-capacity.js";
 import { readTaskChecks } from "../../../src/app/core/tasks/task-check-observations.js";
 import {
   createTaskAttemptProcessExecutor,
@@ -302,6 +306,51 @@ const scenarios: Record<string, () => void | Promise<void>> = {
       spawnWorker: () => scriptedWorker("process.exit(7);"),
     });
     await expect(execute(request)).rejects.toThrow("Task worker exited with code 7");
+  },
+
+  async timeoutDrain() {
+    // Observe readiness before starting the deadline. The child acknowledges
+    // SIGTERM but remains alive until the test explicitly permits exit.
+    const child = spawn(process.execPath, [
+      "--preload", fileURLToPath(new URL("../../fixtures/process-lifetime.ts", import.meta.url)),
+      "-e", `
+        process.on("message", () => {});
+        process.on("SIGTERM", () => process.stdout.write("stopping\\n"));
+        process.on("SIGUSR1", () => process.exit(0));
+        process.stdout.write("ready\\n");
+      `,
+    ], { stdio: ["pipe", "pipe", "pipe", "ipc"] });
+    const lines = createInterface({ input: child.stdout! });
+    const closed = once(child, "close");
+    let outcome: Promise<unknown> | undefined;
+    try {
+      expect((await once(lines, "line"))[0]).toBe("ready");
+      const stopping = once(lines, "line");
+      const capacity = new HostCapacity(1);
+      const execute = createTaskAttemptProcessExecutor({
+        bus: new EventBus(), timeoutMs: 20, spawnWorker: () => child,
+      });
+      let settled = false;
+      outcome = capacity.run(() => execute(request)).then(
+        () => { settled = true; return null; },
+        (error) => { settled = true; return error; },
+      );
+      expect((await stopping)[0]).toBe("stopping");
+      expect(child.exitCode).toBeNull();
+      expect(settled).toBe(false);
+      expect(capacity.snapshot()).toEqual({ running: 1, waiting: 0 });
+      child.kill("SIGUSR1");
+      await closed;
+      const error = await outcome;
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toContain("Task worker exceeded 20ms");
+      expect(capacity.snapshot()).toEqual({ running: 0, waiting: 0 });
+    } finally {
+      child.kill("SIGKILL");
+      await closed;
+      await outcome;
+      lines.close();
+    }
   },
 
   async missingResult() {
