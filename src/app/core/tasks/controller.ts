@@ -32,7 +32,7 @@ export type AppTaskControllerOptions = {
   /** Shared Host capacity. App-local limits still apply independently. */
   capacity?: HostCapacity;
   /** One current scheduling read per dispatch boundary, not per queued key. */
-  readScheduling?(): { backgroundPaused: boolean; foregroundTaskIds: ReadonlySet<string>; coordinationTaskIds?: ReadonlySet<string> };
+  readScheduling?(): { backgroundPaused: boolean; foregroundTaskIds: ReadonlySet<string>; coordinationTaskIds?: ReadonlySet<string>; executionCleanupTaskIds?: ReadonlySet<string> };
   reconcile(taskId: string, dispatch: AppTaskDispatch): Promise<void>;
   /** Best-effort diagnostics; never holds capacity or gates retries. */
   onError?(taskId: string, error: unknown, willRetry: boolean): void | Promise<void>;
@@ -72,14 +72,14 @@ export class AppTaskController {
   private waitingCapacityCoordination?: boolean;
   private cancelCapacityWait?: () => void;
   private readonly drainWaiters = new Set<() => void>();
-  private scheduling: { backgroundPaused: boolean; foregroundTaskIds: ReadonlySet<string>; coordinationTaskIds?: ReadonlySet<string> } = { backgroundPaused: false, foregroundTaskIds: new Set() };
+  private scheduling: { backgroundPaused: boolean; foregroundTaskIds: ReadonlySet<string>; coordinationTaskIds?: ReadonlySet<string>; executionCleanupTaskIds?: ReadonlySet<string> } = { backgroundPaused: false, foregroundTaskIds: new Set() };
 
   constructor(private readonly options: AppTaskControllerOptions) {
     this.queue = new AppTaskQueue(
       options.maxConcurrent,
       (taskId) =>
         !this.retryTimers.has(taskId) &&
-        (!this.scheduling.backgroundPaused || this.scheduling.foregroundTaskIds.has(taskId)),
+        (!this.scheduling.backgroundPaused || this.scheduling.foregroundTaskIds.has(taskId) || Boolean(this.scheduling.executionCleanupTaskIds?.has(taskId))),
       (taskId) => this.scheduling.foregroundTaskIds.has(taskId) || (!this.scheduling.backgroundPaused && this.isCoordination(taskId)),
     );
     this.startReady = !options.startAfter;

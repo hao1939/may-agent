@@ -1,4 +1,5 @@
 import type { PendingTaskSettlement } from "./result.js";
+import { TaskExecutionStore } from "../state/task-execution-store.js";
 import { TaskBudgetAdmissionStore, TaskBudgetDeferredError, type TaskFundingConstraint } from "../state/task-budget-admission.js";
 import { pendingTaskFunding, pendingTaskExecutionConstraint } from "./app-task-state.js";
 import {
@@ -184,6 +185,14 @@ export type AppTaskRecoveryRepair = {
 };
 
 const reconcilerRuntimeId = randomUUID();
+
+/** Recovery cannot replace an execution whose shutdown is still unconfirmed.
+ * All routes use the same active reservations, independent of Task phase. */
+function hasUnconfirmedTaskExecution(config: AppTaskContext, taskId: string, attemptId?: string): boolean {
+  return new TaskExecutionStore(config.resourceStore.db).hasActive(
+    { appId: config.resourceStore.appId, taskId }, attemptId,
+  );
+}
 export const APP_TASK_ATTEMPT_LEASE_DURATION_MS = 15 * 60_000;
 
 function boundedLeaseTimes(nowMs = Date.now()): { lastActivityAt: string; expiresAt: string } {
@@ -1091,6 +1100,7 @@ export function releaseInterruptedAppTaskAttempt(
   if (!resource || resource.status.phase !== "running") return { released: false, sessionIds: [] };
   const attempt = currentResourceAttempt(tree, resource);
   if (!attempt || attempt.runtimeId === reconcilerRuntimeId) return { released: false, sessionIds: [] };
+  if (hasUnconfirmedTaskExecution(config, taskId, attempt.metadata.id)) return { released: false, sessionIds: [] };
   if (
     resource.metadata.generation !== recovery.taskGeneration ||
     resource.metadata.resourceVersion !== recovery.taskResourceVersion ||
@@ -1140,6 +1150,7 @@ export function releaseTerminalSessionExpiredAppTaskAttempt(
     return { released: false, sessionIds: [] };
   }
   const attempt = currentResourceAttempt(tree, resource);
+  if (hasUnconfirmedTaskExecution(config, recovery.taskId)) return { released: false, sessionIds: [] };
   if (
     !attempt ||
     !isManagedAgentHandler(attempt.handler) ||
@@ -1190,6 +1201,7 @@ export function releaseLateTerminalWorkflowAppTaskAttempt(
     return { released: false, taskId: binding.taskId };
   }
   const attempt = currentResourceAttempt(tree, resource);
+  if (hasUnconfirmedTaskExecution(config, binding.taskId)) return { released: false, taskId: binding.taskId };
   if (!attempt || attempt.taskGeneration !== binding.generation || attempt.state !== "running" || attempt.sessionId !== sessionId) {
     return { released: false, taskId: binding.taskId };
   }
@@ -1318,6 +1330,7 @@ export function repairRunningAppTasksWithoutAttempt(
   const now = new Date().toISOString();
   for (const resource of Object.values(tree.resources ?? {})) {
     if (resource.status.phase !== "running") continue;
+    if (hasUnconfirmedTaskExecution(config, resource.metadata.id)) continue;
     const attemptId = resource.status.currentAttemptId;
     const attempt = attemptId ? tree.attempts?.[attemptId] : undefined;
     if (attempt?.state === "running") continue;
@@ -2823,11 +2836,15 @@ export function claimObservedAppTask(
     );
   }
   const settlement = persistedCurrentAttempt?.pendingSettlement;
+  if (!settlement && hasUnconfirmedTaskExecution(config, input.taskId)) {
+    return { kind: "busy", taskId: input.taskId, attemptId: resource.status.currentAttemptId ?? null };
+  }
   if (settlement) {
     if (settlement.claim.taskId !== input.taskId || !matchingClaimAttempt(resource, persistedCurrentAttempt, settlement.claim))
       throw new Error("Deferred settlement does not match its exact Task claim");
     if (persistedCurrentAttempt.taskGeneration !== resource.metadata.generation) {
-      releaseStaleAppTaskResult(config, settlement.claim);
+      const released = releaseStaleAppTaskResult(config, settlement.claim);
+      if (released.status === "busy") return { kind: "busy", taskId: input.taskId, attemptId: persistedCurrentAttempt.metadata.id };
       return claimObservedAppTask(config, input);
     }
   }
@@ -3404,7 +3421,7 @@ export function releaseStaleAppTaskResult(
   config: AppTaskContext,
   claim: AppTaskClaim,
   summary = "Stale reconciliation result was rejected; retrying from current task facts",
-): { status: "released" | "superseded" | "missing"; taskId: string } {
+): { status: "released" | "superseded" | "missing" | "busy"; taskId: string } {
   const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
   const resource = tree.resources?.[claim.taskId];
   if (!resource) return { status: "missing", taskId: claim.taskId };
@@ -3415,6 +3432,8 @@ export function releaseStaleAppTaskResult(
   if (!attempt || attempt.state !== "running" || attempt.taskId !== claim.taskId || attempt.taskGeneration !== claim.generation) {
     return { status: "superseded", taskId: claim.taskId };
   }
+  if (attempt.runtimeId !== reconcilerRuntimeId && hasUnconfirmedTaskExecution(config, claim.taskId, claim.attemptId))
+    return { status: "busy", taskId: claim.taskId };
   // The rejected claim's version predates the very update we must preserve.
   // Fence this freshly read state, still requiring the same intent/attempt.
   const resourceVersion = resource.metadata.resourceVersion;

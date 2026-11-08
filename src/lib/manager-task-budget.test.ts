@@ -1,3 +1,4 @@
+import { releaseJoinedTaskAttemptExecution } from "../app/core/state/task-execution-cleanup.js";
 import { ExecutionDeferredError, Type, defineApp } from "@may-agent/sdk";
 import { EventBus } from "../app/core/events/bus.js";
 import { createWorkflowRunner, createWorkflowTool } from "./workflow-tool.js";
@@ -24,7 +25,7 @@ import { readSessionMessages, readSessionProcessOwner, type TaskBinding } from "
 import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
 import { TaskBudgetAdmissionStore, TaskBudgetDeferredError } from "../app/core/state/task-budget-admission.js";
 import { TaskExecutionStore } from "../app/core/state/task-execution-store.js";
-import { installTaskExecutionLimit, releaseTaskExecutionReservation, releaseJoinedTaskAttemptExecution, TaskExecutionDeferredError } from "../app/core/state/task-execution-admission.js";
+import { installTaskExecutionLimit, releaseTaskExecutionReservation, TaskExecutionDeferredError } from "../app/core/state/task-execution-admission.js";
 import { taskPrimaryStart } from "../app/core/state/task-budget-managed-start.js";
 import {
   appTaskContext,

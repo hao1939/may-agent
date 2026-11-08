@@ -97,6 +97,35 @@ export class TaskExecutionStore {
       .map(row => JSON.parse(row.receipt_json as string) as ExecutionReservation);
   }
 
+  activeForTask(task: BudgetTaskRef): ExecutionReservation[] {
+    taskKey(task);
+    return this.db.prepare(`SELECT receipt_json FROM task_execution_reservations
+      WHERE released_at IS NULL AND task_app_id = ? AND task_id = ?`)
+      .all(task.appId, task.taskId)
+      .map(row => JSON.parse(row.receipt_json as string) as ExecutionReservation);
+  }
+
+  /** Execution recovery must also visit ended Tasks, without reading history.
+   * The scheduler retains this keyset cursor, so live rows cannot block later work. */
+  activeTaskPage(appId: string, limit: number, afterTaskId?: string): { taskIds: string[]; nextTaskId?: string } {
+    exact(appId);
+    const bounded = Math.max(1, Math.min(256, Math.floor(limit)));
+    const rows = this.db.prepare(`SELECT DISTINCT task_id FROM task_execution_reservations
+      WHERE released_at IS NULL AND task_app_id = ? ${afterTaskId === undefined ? "" : "AND task_id > ?"}
+      ORDER BY task_id LIMIT ?`).all(appId, ...(afterTaskId === undefined ? [] : [afterTaskId]), bounded);
+    const taskIds = rows.map(row => row.task_id as string);
+    return { taskIds, ...(taskIds.length === bounded ? { nextTaskId: taskIds.at(-1)! } : {}) };
+  }
+
+  /** All recovery routes share this prerequisite. Business cancellation and
+   * local result settlement remain independent of execution accounting. */
+  hasActive(task: BudgetTaskRef, attemptId?: string): boolean {
+    return !!this.db.prepare(`SELECT 1 FROM task_execution_reservations
+      WHERE released_at IS NULL AND task_app_id = ? AND task_id = ?
+      ${attemptId === undefined ? "" : "AND attempt_id = ?"} LIMIT 1`)
+      .get(task.appId, task.taskId, ...(attemptId === undefined ? [] : [attemptId]));
+  }
+
   blocked(scope: ExecutionScope, lane: ExecutionRequest["lane"], requiredSlots = 1): "execution-policy" | "execution-capacity" | null {
     if (!Number.isSafeInteger(requiredSlots) || requiredSlots < 1) throw new Error("Execution demand must be positive slots");
     const usage = this.usage(scope);

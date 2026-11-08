@@ -11,6 +11,28 @@ async function waitUntil(predicate: () => boolean, timeoutMs = 1_000): Promise<v
 }
 
 describe("AppTaskController", () => {
+  it("paused Apps can drain dead execution through ordinary capacity while business and coordination stay paused", async () => {
+    const starts: string[] = [];
+    const drained = Promise.withResolvers<void>();
+    const controller = new AppTaskController({ maxConcurrent: 1, capacity: new HostCapacity(2),
+      readScheduling: () => ({ backgroundPaused: true, foregroundTaskIds: new Set<string>(),
+        coordinationTaskIds: new Set(["review"]), executionCleanupTaskIds: new Set(["ended"]) }),
+      reconcile: async (id, dispatch) => {
+        starts.push(id);
+        expect(dispatch.coordination).toBeUndefined();
+        expect(dispatch.lane).toBe("normal");
+        drained.resolve();
+      },
+    });
+    try {
+      controller.enqueue("business");
+      controller.enqueue("review");
+      controller.enqueue("ended");
+      await drained.promise;
+      expect(starts).toEqual(["ended"]);
+      expect(controller.snapshot().pending).toEqual(["business", "review"]);
+    } finally { controller.close(); await controller.whenDrained(); }
+  });
   it("runs trusted coordination when App and Host background work are saturated without lending ordinary work the reserve", async () => {
     const capacity = new HostCapacity(2);
     const starts: string[] = [];

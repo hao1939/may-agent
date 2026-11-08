@@ -1,3 +1,5 @@
+import { recoverDeadTaskExecution, taskExecutionRecoveryPage } from "../state/task-execution-cleanup.js";
+import { TaskExecutionStore } from "../state/task-execution-store.js";
 import { EVENT_RECORD_ONLY } from "../events/bus.js";
 import { taskEventPredatesReopening } from "./app-task-state.js";
 import {
@@ -214,6 +216,7 @@ type AppTaskControllerBinding = {
   descriptor: AppTaskRuntimeDescriptor;
   opts: AppTaskRuntimeOptions;
   recoveryScheduler?: AppTaskRecoveryScheduler;
+  executionCleanupTaskIds: Set<string>;
 };
 const appTaskControllerBindingsByBus = new WeakMap<EventBus, Map<string, AppTaskControllerBinding>>();
 const APP_TASK_RECOVERY_SAFETY_INTERVAL_MS = 60_000;
@@ -567,6 +570,8 @@ function installConventionTaskControllers(
   const installedIds = new Set(descriptors.map((descriptor) => descriptor.id));
   for (const previous of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
     if (installedIds.has(previous.id)) continue;
+    if (new TaskExecutionStore(previous.resourceStore.db).activeTaskPage(previous.id, 1).taskIds.length)
+      throw new Error(`Cannot remove App ${previous.id} while it has unconfirmed Task execution`);
     if (previous.resourceStore.hasUnfinishedTasks()) {
       throw new Error(`Cannot remove App ${previous.id} while it has unfinished Tasks`);
     }
@@ -586,12 +591,13 @@ function installConventionTaskControllers(
       continue;
     }
 
-    const binding: AppTaskControllerBinding = { descriptor, opts };
+    const binding: AppTaskControllerBinding = { descriptor, opts, executionCleanupTaskIds: new Set() };
     const controller = new AppTaskController({
       maxConcurrent: descriptor.app.tasks?.maxConcurrent ?? 1,
       capacity: opts.hostCapacity,
       readScheduling: () => ({
         coordinationTaskIds: coordinationTaskIds(binding.descriptor),
+        executionCleanupTaskIds: binding.executionCleanupTaskIds,
         backgroundPaused: binding.descriptor.resourceStore.projectLifecycle() !== "active",
         foregroundTaskIds: binding.descriptor.app.conversation
           ? binding.descriptor.resourceStore.pendingHumanConversationTaskIds()
@@ -625,6 +631,7 @@ function installConventionTaskControllers(
             });
           }
         } finally {
+          binding.executionCleanupTaskIds.delete(taskId);
           binding.recoveryScheduler?.stateChanged();
         }
       },
@@ -653,6 +660,11 @@ function installConventionTaskControllers(
     const config = appTaskConfig(descriptor);
     const recoveryScheduler = new AppTaskRecoveryScheduler({
       source: config.resourceStore,
+      executionCandidates: (limit, after) => {
+        const page = taskExecutionRecoveryPage(config.resourceStore.db, descriptor.id, limit, after);
+        for (const id of page.taskIds) binding.executionCleanupTaskIds.add(id);
+        return page;
+      },
       safetyIntervalMs: APP_TASK_RECOVERY_SAFETY_INTERVAL_MS,
       enqueue: (taskId, options) => {
         enqueueAppTask(controller, config, taskId, options);
@@ -1196,10 +1208,20 @@ function recoverInterruptedAppTasks(
       appTaskRecoverySchedulersByBus.get(opts.bus)?.get(descriptor.id)?.stateChanged();
     }
     settleTerminalAppTaskSessions(opts, descriptor);
+    // Startup work is bounded too. Periodic scheduler paging covers later
+    // active rows and sends their cleanup through ordinary worker dispatch.
+    for (const taskId of new TaskExecutionStore(config.resourceStore.db).activeTaskPage(descriptor.id, 256).taskIds) {
+      recoverDeadTaskExecution(config.resourceStore.db, { appId: descriptor.id, taskId },
+        opts.sessions ? (id, binding) => !opts.sessions!.isLive(id) &&
+          opts.sessions!.interrupt(id, "Recovering stopped Task execution", taskId, binding) : undefined);
+    }
     const runningRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["running"], 512);
     const attentionRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["attention"], 512);
     const waitingRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["waiting"], 512);
     const releaseRecovery = (recovery: AppTaskAttemptRecovery, reason?: string) => {
+      if (new TaskExecutionStore(config.resourceStore.db).hasActive(
+        { appId: descriptor.id, taskId: recovery.taskId }, recovery.attemptId,
+      )) return;
       if (recovery.sessionId) {
         interruptSupersededAgentSession(
           opts,

@@ -1,4 +1,5 @@
-import { releaseJoinedTaskAttemptExecution } from "../state/task-execution-admission.js";
+import { recoverDeadTaskExecution, releaseJoinedTaskAttemptExecution } from "../state/task-execution-cleanup.js";
+import { TaskExecutionStore } from "../state/task-execution-store.js";
 import { TaskBudgetDeferredError } from "../state/task-budget-admission.js";
 import {
   admitTaskVerificationResult as admitAppTaskVerificationResult,
@@ -83,6 +84,9 @@ export async function runTaskAttempt(input: {
   };
 
   const config = appTaskConfig(descriptor);
+  recoverDeadTaskExecution(config.resourceStore.db, { appId: descriptor.id, taskId: input.taskId },
+    opts.sessions ? (id, binding) => !opts.sessions!.isLive(id) &&
+      opts.sessions!.interrupt(id, "Recovering stopped Task execution", input.taskId, binding) : undefined);
   let claimedExecution: AppTaskClaim | undefined;
   try {
     // Recover the exact saved answer before deciding whether any agent work is needed.
@@ -149,7 +153,9 @@ export async function runTaskAttempt(input: {
           session?.status === "done" || session?.status === "error" || session?.status === "interrupted"
             ? session.status
             : null;
-        if (expired && sessionId && terminalStatus && !hasLiveAppTaskSession(opts, sessionId)) {
+        if (expired && sessionId && terminalStatus &&
+          !new TaskExecutionStore(config.resourceStore.db).hasActive({ appId: descriptor.id, taskId: input.taskId }, expired.attemptId) &&
+          !hasLiveAppTaskSession(opts, sessionId)) {
           // A session artifact is facts, not an accepted Task result. Drain
           // the exact old execution before retrying through normal settlement.
           interruptSupersededAgentSession(
@@ -909,7 +915,7 @@ function emitTaskReconciliationEvent(
 function recoverStaleTaskResult(
   config: AppTaskContext,
   claim: AppTaskClaim,
-): { staleRecovery: "released" | "superseded" | "missing"; reconcileTaskIds: string[] } {
+): { staleRecovery: "released" | "superseded" | "missing" | "busy"; reconcileTaskIds: string[] } {
   const recovery = releaseStaleAppTaskResult(
     config,
     claim,
@@ -917,7 +923,7 @@ function recoverStaleTaskResult(
   );
   return {
     staleRecovery: recovery.status,
-    reconcileTaskIds: recovery.status === "missing" ? [] : [claim.taskId],
+    reconcileTaskIds: recovery.status === "missing" || recovery.status === "busy" ? [] : [claim.taskId],
   };
 }
 
@@ -925,7 +931,7 @@ function recoverStaleTaskActionResult(
   config: AppTaskContext,
   claim: AppTaskClaim,
   error: unknown,
-): { staleRecovery: "released" | "superseded" | "missing"; reconcileTaskIds: string[] } | null {
+): { staleRecovery: "released" | "superseded" | "missing" | "busy"; reconcileTaskIds: string[] } | null {
   if (!isAppTaskActionStaleError(error) && !(error instanceof ResourceTaskMutationStaleError)) {
     return null;
   }
@@ -938,7 +944,7 @@ function recoverStaleTaskActionResult(
   );
   return {
     staleRecovery: recovery.status,
-    reconcileTaskIds: recovery.status === "missing" ? [] : [claim.taskId],
+    reconcileTaskIds: recovery.status === "missing" || recovery.status === "busy" ? [] : [claim.taskId],
   };
 }
 

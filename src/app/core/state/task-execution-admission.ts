@@ -1,5 +1,4 @@
 import { ExecutionDeferredError } from "@may-agent/sdk";
-import type { TaskBinding } from "../../../lib/persistence.js";
 import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { currentProcessInstance } from "../../../lib/process-identity.js";
@@ -170,34 +169,5 @@ export function releaseTaskExecutionReservation(
         ...(root ? [{ kind: "root" as const, root }] : [])], now);
     }
     return released;
-  });
-}
-
-/** The local attempt body has unwound; canonical execution evidence still fences
- * release even when business settlement closed or superseded the Task. */
-export function releaseJoinedTaskAttemptExecution(
-  db: SqliteDb, task: BudgetTaskRef, attemptId: string,
-  confirmSessionStopped?: (sessionId: string, binding: TaskBinding) => boolean,
-): boolean {
-  const executions = new TaskExecutionStore(db);
-  const saved = executions.read({ kind: "attempt", task, attemptId });
-  if (!saved || saved.released || saved.receipt.owner?.processIdentity !== currentProcessInstance().processIdentity) return false;
-  if (executions.activeForAttempt(task, attemptId).some(receipt => receipt.request.operation.kind !== "attempt")) return false;
-  const tasks = AppTaskResourceStore.inspectFromDb(db, task.appId);
-  const attempt = tasks.readAttempt(attemptId);
-  if (!attempt || attempt.taskId !== task.taskId) return false;
-  const primary = db.prepare(`SELECT session_id FROM task_budget_managed_starts
-    WHERE app_id = ? AND task_id = ? AND attempt_id = ? AND primary_covered = 1`).get(task.appId, task.taskId, attemptId);
-  const sessions = new Set([attempt.sessionId, primary?.session_id as string | undefined].filter((id): id is string => !!id));
-  const binding = { ...task, generation: attempt.taskGeneration, attemptId };
-  for (const id of sessions) if (!confirmSessionStopped?.(id, binding)) return false;
-  return stateTransaction(db, () => {
-    // Cleanup runs outside SQL. Fence any start/session attachment that raced it.
-    if (executions.activeForAttempt(task, attemptId).some(receipt => receipt.request.operation.kind !== "attempt")) return false;
-    if (tasks.readAttempt(attemptId)?.sessionId !== attempt.sessionId) return false;
-    const currentPrimary = db.prepare(`SELECT session_id FROM task_budget_managed_starts
-      WHERE app_id = ? AND task_id = ? AND attempt_id = ? AND primary_covered = 1`).get(task.appId, task.taskId, attemptId);
-    if (currentPrimary?.session_id !== primary?.session_id) return false;
-    return releaseTaskExecutionReservation(db, saved.receipt, { kind: "joined", evidenceId: attemptId });
   });
 }
