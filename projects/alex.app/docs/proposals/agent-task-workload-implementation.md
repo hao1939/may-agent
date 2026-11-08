@@ -1406,7 +1406,8 @@ and logs remain under `.state/workload-implementation-20261109/`; the temporary
 paired fixtures were removed after retention. These are source and scripted
 context checks; independent review and operational/model acceptance remain.
 
-The assignment-count increment at Host `823f10191a` adds that missing distinction
+The assignment-count increment in Host [#440](https://github.com/hao1939/may-agent/pull/440),
+revision `823f10191a`, adds that missing distinction
 to the shared workload projection and optional SDK field. Contract checks before
 implementation confirmed the absent section (**0 passed / 2 failed / 2 assertions**),
 then focused feedback/accounting/execution/control owners passed **101 tests /
@@ -1420,8 +1421,10 @@ also assert the projection. Reads retain unchanged SQLite `total_changes()`.
 An initial extra fixture attempted to admit a new overlong Task identity and was
 rejected by existing admission validation before the workload read. That invalid
 fixture was removed; it is not evidence of a production defect or repair.
-Host/SDK types, boundary and lint passed. The committed Host candidate is frozen
-for its full local gate; no full passing result is claimed yet.
+Host/SDK types, boundary and lint passed. The frozen full local gate passed on
+`823f10191a`: **4,211 tests / 3 existing skips / 0 failures / 24,537 assertions
+across 363 files**, 320.38 seconds. Hosted Quality and Container both passed the
+same revision (run `42532500643`). Independent review remains required.
 
 The App includes assignment attribution in its decision fingerprint and explains
 its page/unknown/provenance limits to Alex. Its new regression showed changed
