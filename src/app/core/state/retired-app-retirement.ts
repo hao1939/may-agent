@@ -220,11 +220,18 @@ export function retireAppState(
             const completed = db
               .prepare(
                 `SELECT 1 FROM app_task_attempts
-              WHERE app_id=? AND task_id=? AND task_generation=?
-                AND json_extract(attempt_json, '$.acceptedResult.state')='converged' LIMIT 1`,
+              WHERE app_id=? AND task_id=? AND task_generation>=?
+                AND json_extract(attempt_json, '$.acceptedResult.state')='converged'
+                AND (task_generation=? OR EXISTS (
+                  SELECT 1 FROM json_each(app_task_attempts.attempt_json, '$.acceptedResult.inputKeys') input
+                  WHERE input.value=?)) LIMIT 1`,
               )
-              .get(plan.appId, admission.taskId, admission.taskGeneration);
-            if (completed || receipt?.metadata.generation === admission.taskGeneration)
+              .get(plan.appId, admission.taskId, admission.taskGeneration, admission.taskGeneration, row.task_id);
+            if (
+              completed ||
+              receipt?.metadata.generation === admission.taskGeneration ||
+              (task?.metadata.generation === admission.taskGeneration && task.status.phase === "converged")
+            )
               throw new Error("Completion evidence for an admitted generation must be settled before withdrawal");
             const generation = Math.max(
               task?.metadata.generation ?? 0,

@@ -150,6 +150,10 @@ function admittedFixture() {
   });
   admit("pending", "task:parent:desired:pending");
   admit("waiting", "task:parent:existing:waiting");
+  return reviewCaller(f);
+}
+
+function reviewCaller(f: ReturnType<typeof fixture>, admissionKeys?: string[]) {
   for (const task of f.plan.tasks) {
     const row = f.db
       .prepare("SELECT resource_json, trigger_json FROM app_tasks WHERE app_id=? AND task_id=?")
@@ -163,6 +167,7 @@ function admittedFixture() {
     rows: f.db
       .prepare("SELECT * FROM app_task_admissions WHERE app_id=? ORDER BY task_id")
       .all(f.plan.appId)
+      .filter((row) => !admissionKeys || admissionKeys.includes(String(row.task_id)))
       .map((row) => ({
         app_id: String(row.app_id),
         task_id: String(row.task_id),
@@ -370,6 +375,116 @@ for (const binding of ["retained", "missing"] as const)
     expect(() => retireAppState(context, plan)).toThrow("must be settled before withdrawal");
     expect(snapshot(db)).toEqual(before);
   });
+
+for (const answersOlderCaller of [true, false])
+  test(`newer accepted outcome answers the older caller: ${answersOlderCaller}`, () => {
+    const f = fixture();
+    const olderKey = "task:parent";
+    const admit = (id: string, key: string) =>
+      admitTaskInput(f.context, {
+        appId: f.plan.appId,
+        attachment: { kind: "existing", taskId: "pending" },
+        idempotencyKey: key,
+        inputContext: {
+          id,
+          source: { kind: "system", id: "review" },
+          input: { kind: "message", data: { message: id } },
+        },
+      });
+    admit("parent", olderKey);
+    observeAppTaskIntent(f.context, {
+      appAgent: f.context.agent,
+      intent: { id: "pending", parentId: "root", outcome: "Revised controller", acceptance: ["Review new work"] },
+    });
+    const scope = answersOlderCaller ? olderKey : "unrelated-admission";
+    if (!answersOlderCaller) admit("unrelated-input", scope);
+    const claim = claimObservedAppTask(f.context, { taskId: "pending", appAgent: f.context.agent, handler: "agent" });
+    if (claim.kind !== "claimed") throw new Error(claim.kind);
+    expect(claim.generation).toBe(2);
+    expect(
+      completeAppTask(f.context, claim, {
+        summary: "A scoped answer under newer requirements",
+        result: { evidence: scope },
+        inputKeys: [scope],
+      }).status,
+    ).toBe("applied");
+    // Retain the answer's exact accepted scope while simulating a missing
+    // admission result projection. No admission for this caller exists at g2.
+    f.db
+      .prepare(
+        "UPDATE app_task_admissions SET admission_json=json_remove(admission_json, '$.resultAttemptId') WHERE app_id=? AND task_id=?",
+      )
+      .run(f.plan.appId, olderKey);
+    const { db, context, store, plan, input } = reviewCaller(f, [olderKey]);
+    expect(input.admissionWithdrawal!.rows).toHaveLength(1);
+    expect(JSON.parse(input.admissionWithdrawal!.rows[0]!.admission_json).taskGeneration).toBe(1);
+    const accepted = store.readAttempt(claim.attemptId)!;
+    expect(accepted.acceptedResult?.inputKeys).toEqual([scope]);
+    const before = snapshot(db);
+    if (answersOlderCaller) {
+      expect(() => retireAppState(context, plan)).toThrow("must be settled before withdrawal");
+      expect(snapshot(db)).toEqual(before);
+    } else {
+      const unrelated = db
+        .prepare("SELECT * FROM app_task_admissions WHERE app_id=? AND task_id=?")
+        .get(plan.appId, scope);
+      expect(retireAppState(context, plan).status).toBe("retired");
+      expect(store.readAttempt(claim.attemptId)).toEqual(accepted);
+      expect(
+        db.prepare("SELECT * FROM app_task_admissions WHERE app_id=? AND task_id=?").get(plan.appId, scope),
+      ).toEqual(unrelated);
+      expect(getAppInboxItem(db, "parent")!.result).toBeUndefined();
+      expect(retireAppState(context, plan).status).toBe("already-retired");
+    }
+  });
+
+test("refuses withdrawal when legacy accepted evidence exists only on the converged Task", () => {
+  const f = fixture();
+  const key = "task:parent";
+  admitTaskInput(f.context, {
+    appId: f.plan.appId,
+    attachment: { kind: "existing", taskId: "pending" },
+    idempotencyKey: key,
+    inputContext: {
+      id: "parent",
+      source: { kind: "system", id: "review" },
+      input: { kind: "message", data: { message: "Review" } },
+    },
+  });
+  const claim = claimObservedAppTask(f.context, { taskId: "pending", appAgent: f.context.agent, handler: "agent" });
+  if (claim.kind !== "claimed") throw new Error(claim.kind);
+  expect(
+    completeAppTask(f.context, claim, {
+      summary: "Retained legacy answer",
+      response: "Original answer",
+      result: { proof: "Task-only payload" },
+    }).status,
+  ).toBe("applied");
+  f.db
+    .prepare(
+      "UPDATE app_task_attempts SET attempt_json=json_remove(attempt_json, '$.acceptedResult') WHERE app_id=? AND attempt_id=?",
+    )
+    .run(f.plan.appId, claim.attemptId);
+  f.db
+    .prepare(
+      "UPDATE app_task_admissions SET admission_json=json_remove(admission_json, '$.resultAttemptId') WHERE app_id=? AND task_id=?",
+    )
+    .run(f.plan.appId, key);
+  const { db, context, store, plan, input } = reviewCaller(f, [key]);
+  expect(store.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
+  expect(JSON.parse(input.admissionWithdrawal!.rows[0]!.admission_json).resultAttemptId).toBeUndefined();
+  const task = store.readTask("pending")!;
+  expect(task.status).toMatchObject({
+    phase: "converged",
+    summary: "Retained legacy answer",
+    response: "Original answer",
+    result: { proof: "Task-only payload" },
+  });
+  const before = snapshot(db);
+  expect(() => retireAppState(context, plan)).toThrow("must be settled before withdrawal");
+  expect(snapshot(db)).toEqual(before);
+  expect(store.readTask("pending")).toEqual(task);
+});
 
 for (const change of [
   "omitted",
