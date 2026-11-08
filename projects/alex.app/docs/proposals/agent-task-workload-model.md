@@ -380,13 +380,20 @@ result can wake the recorded creator's coordination Task, with repeated wakes
 coalesced. App-created roots need an explicitly authorized App-policy control
 path; the assigned worker never acquires closure authority by reviewing itself.
 
-Reserve one shared Host place for human interaction and these bounded
-coordination passes. Prefer human input at safe dispatch boundaries and give
-ready coordination passes fair turns within their protected allowances. There
-is no permanently running controller or reserved place per agent. A one-place
-Host interleaves bounded attempts instead of reserving away all execution.
-The current foreground reserve is for pending human Conversation work; extending
-it to trusted coordination remains unimplemented.
+Reserve shared Host capacity for human interaction and bounded coordination.
+One place is the default, but installation policy must leave enough for the
+complete method: a workflow plus its inline model helper needs two execution
+places, matching root and recipient limits, and two protected start credits.
+For example, four total places with an ordinary background limit of two can
+run that review while ordinary work is full. Reserving only its outer workflow
+can start coordination without allowing a judgment. This reserve is shared,
+not per agent, and gives helpers no exemption or slot lending.
+Prefer human input at safe dispatch boundaries and give ready coordination
+passes fair turns within their protected allowances. A one-place Host still
+admits bounded ordinary work and invents no extra capacity; a two-place method
+must be revised or wait for an authorized capacity change. Coordination
+eligibility and accounting exist in the source increments recorded in the
+implementation approach; production activation remains pending.
 The declaration must cover App-local eligibility as well as Host capacity;
 otherwise a saturated App can still prevent its coordination from starting.
 Reserve eligibility grants no right to revise or close other assignments.

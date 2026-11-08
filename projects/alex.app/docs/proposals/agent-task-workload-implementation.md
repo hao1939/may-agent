@@ -310,6 +310,18 @@ workflows that currently depend on inline helpers.
 Retain trusted scheduling eligibility in reservations so background helpers
 cannot consume the protected place merely by bypassing the parent queue.
 
+Size the shared reserve for the complete coordination method, not just its
+outer Task. A workflow with an inline model helper requires two live places;
+one reserved place can start it while still preventing any judgment. Trusted
+initial Host policy may set an ordinary background sublimit in the same limits
+authority. Four total places with two background places leave two for this
+method; root/recipient limits and protected credits must also cover it. Retain
+the existing one-place default when no sublimit is supplied. This is explicit
+configuration, not automatic capacity inflation, lending or a helper exemption.
+Admission and workload feedback use the same sublimit; policy replay cannot
+silently amend it. App eligibility still uses the existing additional Task
+dispatch place, independently of actual managed-execution accounting.
+
 Trusted sponsor policy may supply an optional execution default for newly
 commissioned roots. Apply it in the same canonical creation transaction as the
 binding and creation charge, including authored seeds. A contribution uses its
@@ -919,7 +931,9 @@ runtime and real-worker owners passed **332 / 3,610**. Final changed owners pass
 **13 / 48**, with additional lifecycle assertions inside the isolated worker.
 The actual worker's starting context and live scoped read agree, and joined
 cleanup returns occupancy to zero. Final Host/SDK types, boundary and lint passed.
-Hosted Quality and the complete local gate are running; Container passed.
+Hosted Quality/Container and the frozen complete local gate passed:
+**4,118 tests / 3 existing skips / 0 failures / 23,993 assertions across 358
+files**. Independent review remains.
 
 The paired App policy explains execution versus dispatch scope, the current-root
 boundary, and method adaptation without count-based closure. Its workload and
@@ -941,6 +955,37 @@ Two actual admission/settlement regressions first showed zero demand while the
 Task still owed an answer. The existing bounded workload page now counts retained
 input obligations, whether runnable or waiting, and removes them after completion.
 Workload, shared-execution feedback and retained-input decision-context owners
-passed **28 / 135**; final Host/SDK types, boundary and lint passed. Hosted checks
-and a complete local gate remain pending. No new lifecycle or accounting state is
-introduced.
+passed **28 / 135**; final Host/SDK types, boundary, lint and hosted Quality/Container
+passed. No complete local gate on this exact head; #428's full gate includes this
+change. No new lifecycle or accounting state is introduced.
+
+Host [#428](https://github.com/hao1939/may-agent/pull/428), revision
+`028371e3e5`, extends the actual worker/provider-protocol fixture with funded
+one-place A → B → C → B → A delegation. Policy creates the root cap, child
+admission inherits it, and parents yield before contributions execute. The exact
+returned result fulfills the original Request. After storage/runtime reopen,
+a fresh human turn uses retained evidence; duplicate dispatch and recovery add no
+charge. Three creations and six actual attempts cost nine credits, and cleanup
+leaves zero occupied places. All five neighboring/new interaction cases and
+static checks passed. Hosted Quality/Container and the frozen complete local gate
+passed: **4,121 tests / 3 existing skips / 0 failures / 24,002 assertions across
+358 files**. Independent review remains.
+This uses scripted provider replies, not model judgment. The one-place chain
+serializes contributions; simultaneous parent discussion remains a separate
+unconfigured-concurrency scenario. No production change was needed.
+
+Host [#429](https://github.com/hao1939/may-agent/pull/429), revision
+`c02aea08ae`, closes a demonstrated coordination saturation gap. With ordinary
+execution full, the reserved outer workflow could start but its model helper
+was deferred with Host demand of two places. The real-worker regression failed
+before the change. Explicitly configuring two ordinary places within four total
+places now lets the complete review run under saturation, retaining the same
+overall, recipient, root, eligibility and funding bounds. It makes one scripted
+model call, spends two protected credits with ordinary funding exhausted, reports
+the configured sublimit and releases only coordination occupancy. Changed
+coordination/feedback/admission owners passed **19 / 81** parent-process assertions,
+with more inside the fixture. Complete reservation, claim, workload and controller
+capacity owners passed **52 / 258**. Static and hosted Quality/Container checks
+passed. The frozen complete local gate passed: **4,123 tests / 3 existing skips /
+0 failures / 24,019 assertions across 358 files**. Independent review remains. No new ledger, queue or schema is introduced;
+configuration and activation stay with trusted installation authority.
