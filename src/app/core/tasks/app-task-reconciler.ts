@@ -3270,6 +3270,46 @@ export function deferAppTaskSettlement(
   });
 }
 
+/** An executing parent yielded after a managed child was denied before start.
+ * Preserve its inputs and paid execution facts; no result or failure is accepted. */
+export function deferAppTaskExecution(
+  config: AppTaskContext,
+  claim: AppTaskClaim,
+  funding: TaskFundingConstraint,
+  facts: string[] = [],
+): "applied" | "stale" {
+  return stateTransaction(config.resourceStore.db, () => {
+    const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
+    const match = matchingTaskAttempt(tree, claim);
+    if (!match) return "stale";
+    const { resource, attempt } = match;
+    const scope = beginResourceMutationScope(tree, claim, []);
+    const now = new Date().toISOString();
+    restoreAttemptEvents(tree, claim.taskId, resource, attempt, now);
+    const summary = `Managed operation deferred: ${funding.reason}`;
+    finishAttempt(tree, resource, "interrupted", [summary, ...facts].join("\n"), now);
+    attempt.failureReason = "ResourceAdmissionDeferred";
+    delete attempt.lease;
+    const held = new TaskBudgetAdmissionStore(config.resourceStore.db).stillConstrained(funding);
+    touchResource(resource, {
+      phase: "pending",
+      currentAttemptId: undefined,
+      funding: held ? funding : undefined,
+      summary,
+    });
+    const mutation = finishResourceMutationScope(scope, tree);
+    commitTaskMutation(config, tree, {
+      resourceMutation: {
+        ...mutation,
+        tasks: mutation.tasks.map((write) => write.resource.metadata.id === claim.taskId
+          ? { ...write, ready: !held, nextCheckAt: held ? funding.retryAt : Date.now() }
+          : write),
+      },
+    });
+    return "applied";
+  });
+}
+
 /** Record an execution failure, not a stale-result rejection. Preserve all unaccepted input. */
 export function failAppTaskAttempt(
   config: AppTaskContext,

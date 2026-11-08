@@ -1,3 +1,5 @@
+export { ExecutionDeferredError } from "./workflow.js";
+export type { ExecutionDeferral } from "./workflow.js";
 import {
   conversationRequestUpdatesSchema,
   type AppConversationRequest,

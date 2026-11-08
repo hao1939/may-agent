@@ -20,6 +20,7 @@ import {
   completeAppTask,
   deferAppTask,
   deferAppTaskSettlement,
+  deferAppTaskExecution,
   expiredAgentSessionAppTaskAttempt,
   failAppTaskAttempt,
   isAppTaskActionStaleError,
@@ -284,6 +285,21 @@ async function runClaimedTask(
       });
     }
     const result = report.handlerResult;
+    if (report.funding) {
+      const funding = report.funding;
+      // Execution has drained. Retain its workspace and all unaccepted input;
+      // this resource constraint must not consume an execution retry.
+      const finalized = await finalizeWorkspace("waiting");
+      const facts = [...result.facts, ...(!finalized.ok && finalized.reason ? [finalized.reason] : [])];
+      const applied = persistResult(() => deferAppTaskExecution(config, claim, funding, facts));
+      emit("project.task.reconciled", {
+        disposition: applied === "applied" ? "deferred" : "stale",
+        funding,
+        workflowRunId: report.runId,
+        summary: result.summary,
+      });
+      return [];
+    }
     const rejectResult = (
       summary: string,
       diagnostics: Pick<TaskCapabilityRun, "handlerBlocked"> = {},

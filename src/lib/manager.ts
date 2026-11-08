@@ -1,3 +1,4 @@
+import { ExecutionDeferredError } from "@may-agent/sdk";
 import { type TSchema } from "typebox";
 import { observeTaskFeedback, type TaskExecutionContext } from "./task-execution-context.js";
 import { prepareTaskWorkspaceContext, taskWorkspacePrompt } from "./task-workspace-context.js";
@@ -503,6 +504,7 @@ export class SubagentManager {
         taskContext: opts.taskContext,
       }, prepareAdmittedResume);
     } catch (err) {
+      if (err instanceof ExecutionDeferredError) throw err;
       const reason = `Failed to resume session: ${err instanceof Error ? err.message : String(err)}`;
       this.emitSessionResumeFailed(sessionId, meta, reason, "resume_run_failed", true);
       throw err;

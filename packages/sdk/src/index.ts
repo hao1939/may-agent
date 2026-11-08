@@ -1,3 +1,5 @@
+export { ExecutionDeferredError } from "./workflow.js";
+export type { ExecutionDeferral } from "./workflow.js";
 /** Stable authoring contract for App declarations and bounded App-owned work. */
 
 export { Type, defineApp, matchesEventSelector, conversationRequestUpdatesSchema } from "./app.js";

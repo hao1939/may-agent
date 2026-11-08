@@ -1,3 +1,4 @@
+import { ExecutionDeferredError } from "@may-agent/sdk";
 import { isDeepStrictEqual } from "node:util";
 import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
@@ -34,9 +35,15 @@ export type TaskFundingConstraint = (
       retryAt: null;
     }
 ) & { sponsor?: BudgetSponsor; purpose?: BudgetPurpose; policyAppId?: string };
-export class TaskBudgetDeferredError extends Error {
+export class TaskBudgetDeferredError extends ExecutionDeferredError {
   constructor(readonly constraint: TaskFundingConstraint) {
-    super(`Task admission deferred: ${constraint.reason}`);
+    super({
+      resource: "task-credit",
+      reason: constraint.reason,
+      retryAt: constraint.retryAt,
+      task: constraint.task,
+      root: constraint.root,
+    });
     this.name = "TaskBudgetDeferredError";
   }
 }
