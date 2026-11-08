@@ -397,7 +397,7 @@ export type TaskReconciliationChild = {
   dependsOn?: string[];
   conditions: Condition[];
   readiness?: {
-    state: "ready" | "dependency-blocked" | "condition-blocked" | "capacity-blocked" | "paused" | "not-applicable";
+    state: "ready" | "dependency-blocked" | "condition-blocked" | "funding-blocked" | "capacity-blocked" | "paused" | "not-applicable";
     reason: string;
     relatedTaskIds: string[];
   };

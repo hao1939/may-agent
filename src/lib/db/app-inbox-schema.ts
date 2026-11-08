@@ -50,6 +50,17 @@ CREATE INDEX IF NOT EXISTS idx_app_inbox_unadmitted
   ON app_inbox_items(id)
   WHERE status != 'done' AND execution_task_id IS NULL
     AND (waiting_on_kind IS NULL OR waiting_on_kind != 'task' OR lease_owner IS NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_app_inbox_unadmitted_ready ON app_inbox_items(id)
+  WHERE status != 'done' AND execution_task_id IS NULL
+    AND (waiting_on_kind IS NULL OR waiting_on_kind != 'task' OR lease_owner IS NOT NULL)
+    AND COALESCE(json_extract(handling, '$.phase'), '') != 'deferred';
+CREATE INDEX IF NOT EXISTS idx_app_inbox_funding_due ON app_inbox_items(available_at, id)
+  WHERE status != 'done' AND execution_task_id IS NULL
+    AND (waiting_on_kind IS NULL OR waiting_on_kind != 'task' OR lease_owner IS NOT NULL)
+    AND json_extract(handling, '$.phase') = 'deferred' AND available_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_app_inbox_funding_source ON app_inbox_items (
+  json_extract(handling, '$.funding.root.appId'), json_extract(handling, '$.funding.root.taskId')
+) WHERE status != 'done' AND json_extract(handling, '$.phase') = 'deferred';
 CREATE INDEX IF NOT EXISTS idx_app_inbox_available
   ON app_inbox_items(available_at, app_id)
   WHERE status != 'done' AND lease_owner IS NULL AND available_at IS NOT NULL;

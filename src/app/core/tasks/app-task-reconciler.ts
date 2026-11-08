@@ -1,3 +1,5 @@
+import { TaskBudgetAdmissionStore, TaskBudgetDeferredError, type TaskFundingConstraint } from "../state/task-budget-admission.js";
+import { pendingTaskFunding } from "./app-task-state.js";
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { CONDITION_RECOVERY_INTERVAL_MS, taskEventPredatesReopening } from "./app-task-state.js";
@@ -83,6 +85,7 @@ export type AppTaskClaim = {
 
 export type AppTaskClaimResult =
   | AppTaskClaim
+  | { kind: "deferred"; taskId: string; funding: TaskFundingConstraint }
   | { kind: "busy"; taskId: string; attemptId: string | null }
   | {
       kind: "waiting";
@@ -1630,7 +1633,7 @@ export type AppTaskChildContext = {
     dependsOn?: string[];
     conditions: AppTaskConditionSpec[];
     readiness?: {
-      state: "ready" | "dependency-blocked" | "condition-blocked" | "capacity-blocked" | "paused" | "not-applicable";
+      state: "ready" | "dependency-blocked" | "condition-blocked" | "funding-blocked" | "capacity-blocked" | "paused" | "not-applicable";
       reason: string;
       relatedTaskIds: string[];
     };
@@ -1673,7 +1676,7 @@ export type AppTaskSnapshotContext = {
     Pick<AppTaskConditionSpec, "id" | "type" | "subject" | "requestedAction" | "owner" | "reviewAfterMs">
   >;
   readiness?: {
-    state: "ready" | "dependency-blocked" | "condition-blocked" | "capacity-blocked" | "paused" | "not-applicable";
+    state: "ready" | "dependency-blocked" | "condition-blocked" | "funding-blocked" | "capacity-blocked" | "paused" | "not-applicable";
     reason: string;
     relatedTaskIds: string[];
   };
@@ -2800,6 +2803,8 @@ export function claimObservedAppTask(
       generation: 0,
     };
   }
+  const heldFunding = pendingTaskFunding(resource);
+  if (heldFunding) return { kind: "deferred", taskId: input.taskId, funding: heldFunding };
   const persistedCurrentAttempt = resource.status.currentAttemptId
     ? config.resourceStore.readAttempt(resource.status.currentAttemptId)
     : null;
@@ -3114,6 +3119,7 @@ export function claimObservedAppTask(
     phase: "running",
     currentAttemptId: attemptId,
     admissionFailures: undefined,
+    funding: undefined,
     executionRetryAt: undefined,
     freshHumanInput: undefined,
   });
@@ -3131,6 +3137,37 @@ export function claimObservedAppTask(
       },
     });
   } catch (error) {
+    if (error instanceof TaskBudgetDeferredError) {
+      // The failed claim rolled back. Preserve every unclaimed input and the
+      // fresh-human exception; persist only confirmed cleanup of the old runtime.
+      return stateTransaction(config.resourceStore.db, () => {
+        const retained = config.resourceStore.readTaskContext({ taskIds: [input.taskId] });
+        const pending = retained.resources?.[input.taskId];
+        if (!pending) throw new ResourceTaskMutationStaleError();
+        const cleaned = [...changedAttempts].filter(item => item.metadata.id !== attemptId);
+        if (pending.status.phase === "running" && (!previousAttempt || canRecoverPreviousRuntime)) {
+          pending.status.phase = "pending";
+          delete pending.status.currentAttemptId;
+        }
+        const savedTrigger = retained.taskTriggers?.[input.taskId];
+        const restoredTrigger = pendingEvents.length ? {
+          taskId: input.taskId, taskGeneration: pending.metadata.generation,
+          resourceVersion: (savedTrigger?.resourceVersion ?? 0) + 1,
+          events: structuredClone(pendingEvents),
+          event: structuredClone(preferredTriggerFromEvents(pendingEvents, agent)),
+          observedAt: pendingEvents.at(-1)!.observedAt,
+        } : savedTrigger;
+        const held = new TaskBudgetAdmissionStore(config.resourceStore.db).stillConstrained(error.constraint);
+        touchResource(pending, { funding: held ? error.constraint : undefined });
+        retained.taskTriggers = { ...retained.taskTriggers, ...(restoredTrigger ? { [input.taskId]: restoredTrigger } : {}) };
+        commitTaskMutation(config, retained, { resourceMutation: {
+          fences: [resourceFence],
+          tasks: [{ ...resourceWrite(retained, pending, !held), nextCheckAt: held ? error.constraint.retryAt : Date.now() }],
+          attempts: cleaned,
+        } });
+        return { kind: "deferred", taskId: input.taskId, funding: error.constraint };
+      });
+    }
     if (error instanceof ResourceTaskMutationStaleError && !config.resourceStore.allowsTaskExecution(input.taskId)) {
       return { kind: "waiting", taskId: input.taskId, conditionIds: [] };
     }

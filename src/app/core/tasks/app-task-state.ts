@@ -1,3 +1,4 @@
+import type { TaskFundingConstraint } from "../state/task-budget-admission.js";
 import type { TaskChangeReceipt, TaskView } from "@may-agent/sdk";
 import type { Condition, ResourceCreator, TaskAcceptanceBasis, TaskAttempt, TaskIntent } from "@may-agent/sdk";
 
@@ -89,6 +90,8 @@ export type AppTaskResource = {
     executionFailureAttemptId?: string | null;
     /** Cheap pre-claim checks have their own backoff and do not spend an attempt. */
     admissionFailures?: number;
+    /** Resource admission facts; this is neither failure nor a new lifecycle phase. */
+    funding?: TaskFundingConstraint;
     /** Stops automatic execution, independently of unfinished input and Conditions. */
     retryExhausted?: AppTaskRetryExhaustion;
     /** Earliest next attempt after execution failure; ordinary wakes do not waive it. */
@@ -230,6 +233,11 @@ export type AppTaskTrigger = {
   event: Record<string, unknown>;
   observedAt: string;
 };
+
+export function pendingTaskFunding(resource: AppTaskResource, now = Date.now()): TaskFundingConstraint | undefined {
+  const funding = resource.status.funding;
+  return funding && (funding.retryAt === null || funding.retryAt > now) ? funding : undefined;
+}
 
 export type AppTaskAcceptanceBasis = TaskAcceptanceBasis;
 

@@ -1,3 +1,4 @@
+import { TaskBudgetAdmissionStore } from "./task-budget-admission.js";
 import type { TaskChangeReceipt, TaskStatus } from "@may-agent/sdk";
 import { storedResultFacts } from "./result-facts.js";
 import { isDeepStrictEqual } from "node:util";
@@ -10,7 +11,7 @@ import {
   ensureTaskResourceSchema,
 } from "../../../lib/db/task-resource-schema.js";
 import { indexTaskReference } from "./task-reference-index.js";
-import { CONDITION_RECOVERY_INTERVAL_MS, pendingTaskExecutionRetryAt, taskExecutionRetryExhausted } from "../tasks/app-task-state.js";
+import { CONDITION_RECOVERY_INTERVAL_MS, pendingTaskExecutionRetryAt, pendingTaskFunding, taskExecutionRetryExhausted } from "../tasks/app-task-state.js";
 import type {
   AppTaskAttempt,
   AppTaskCancellation,
@@ -260,6 +261,7 @@ export class AppTaskResourceStore {
     // Retain pending input without a ready hint that bypasses its cooldown.
     const retryAt = pendingTaskExecutionRetryAt(resource);
     const exhausted = taskExecutionRetryExhausted(resource);
+    const funding = pendingTaskFunding(resource);
     const activeAttempt = resource.status.currentAttemptId;
     const leaseUntil = activeAttempt
       ? ((
@@ -290,9 +292,9 @@ export class AppTaskResourceStore {
         resource.status.observedGeneration,
         resource.status.phase,
         resource.status.lane ?? "normal",
-        !retryAt && !exhausted && taskChanged(resource, trigger) ? 1 : 0,
-        !retryAt && !exhausted && ready ? 1 : 0,
-        retryAt ?? nextCheckAt,
+        !retryAt && !exhausted && !funding && taskChanged(resource, trigger) ? 1 : 0,
+        !retryAt && !exhausted && !funding && ready ? 1 : 0,
+        funding ? funding.retryAt : retryAt ?? nextCheckAt,
         leaseUntil,
         resource.status.currentAttemptId ?? null,
         epoch(resource.status.updatedAt) ?? Date.now(),
@@ -1509,6 +1511,7 @@ export class AppTaskResourceStore {
           LIMIT 1`).get(this.appId, cancellation.taskId);
         if (child) return false;
       }
+      const restoredTaskIds = new Set<string>();
       for (const { resource } of mutation.tasks ?? []) {
         const previous = this.readTask(resource.metadata.id);
         if (previous && !isDeepStrictEqual(previous.metadata.creator, resource.metadata.creator)) {
@@ -1525,6 +1528,7 @@ export class AppTaskResourceStore {
               closure.generation === resource.metadata.generation &&
               this.readReceipt(resource.metadata.id)?.metadata.generation === closure.generation,
           );
+        if (restoredClosure) restoredTaskIds.add(resource.metadata.id);
         if (
           previous?.spec.parentId !== resource.spec.parentId &&
           this.isCancelled(resource.spec.parentId) &&
@@ -1533,6 +1537,8 @@ export class AppTaskResourceStore {
           return false;
         }
       }
+
+      new TaskBudgetAdmissionStore(this.db).admitMutation(this.appId, mutation, restoredTaskIds);
 
       for (const taskId of new Set(mutation.reopenTaskIds ?? [])) {
         const closure = this.readCancellation(taskId);
@@ -1723,6 +1729,8 @@ export class AppTaskResourceStore {
       const resource = this.readTask(taskId);
       const retryAt = resource && pendingTaskExecutionRetryAt(resource);
       if (retryAt) input = { ...input, ready: false, changed: false, nextCheckAt: retryAt };
+      const funding = resource && pendingTaskFunding(resource);
+      if (funding) input = { ...input, ready: false, changed: false, nextCheckAt: funding.retryAt };
       if (resource && taskExecutionRetryExhausted(resource)) input = { ...input, ready: false, changed: false };
       const assignments: string[] = [];
       const assignmentValues: unknown[] = [];

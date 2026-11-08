@@ -405,3 +405,25 @@ Neither transition changes the facts in historical accepted attempts.
 New Task contracts omit mode and use `incomplete` for unsuccessful reports.
 Historical labels are normalized only when reading retained resources/attempts;
 new authoring must use the current contract. Upgrade Host and App code together.
+
+### Work-credit admission foundations
+
+Host-private credit accounting uses the existing SQLite authority. When an
+installation policy is explicitly published through `TaskBudgetAdmissionStore`,
+resource commits charge actual new Task creation and winning attempt claims in
+their existing transactions. Trusted App policy selects sponsorship; the executor
+and structural parent do not. New contributions inherit their creating Task's
+account, while existing destination services retain theirs.
+
+Funding shortage returns `deferred`. It retains input, obligations, execution
+retry allowance and any fresh-human retry opportunity. Task and Inbox recovery
+indexes suppress unchanged holds; declared UTC renewal or exact historical
+adoption makes affected work eligible again. Confirmed old-runtime cleanup can
+settle without paying for a replacement attempt. Restoring closed receipt history
+never fabricates historical creation charges.
+
+This increment provides no production activation command or daemon option.
+Executable seed bootstrap accounting, managed helper charging, protected
+coordination funding, authorized grant/cap changes and the remaining execution reservations must be integrated before
+activation is exposed. Protected accounts currently defer until their installed
+coordination validation exists; ordinary contributions cannot inherit them.

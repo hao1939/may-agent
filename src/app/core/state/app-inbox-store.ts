@@ -1,3 +1,4 @@
+import { TaskBudgetAdmissionStore, type TaskFundingConstraint } from "./task-budget-admission.js";
 import { storedResultFacts } from "./result-facts.js";
 import { createHash, randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
@@ -20,9 +21,30 @@ export type AppInboxWaitKind = "app" | "task" | "session" | "analysis";
 /** Input execution facts, not fulfillment of the accepted human ask. */
 export type AppInboxHandling =
   | { phase: "executing" }
+  | { phase: "deferred"; funding: TaskFundingConstraint }
   | { phase: "decided"; decision: ConversationTurnResult; requestRevisions?: Record<string, number> }
   | { phase: "failed"; reason: string }
   | { phase: "stopped"; reason: string };
+
+/** Funding is an admission constraint on the saved input, never a failed attempt. */
+export function hasAppInboxFundingHold(item: AppInboxItem, now: number): boolean {
+  return item.handling?.phase === "deferred" &&
+    (item.handling.funding.retryAt === null || item.handling.funding.retryAt > now);
+}
+
+export function deferAppInboxTaskFunding(db: SqliteDb, inputId: string, funding: TaskFundingConstraint, now: number): boolean {
+  return stateTransaction(db, () => {
+    const item = getAppInboxItem(db, inputId);
+    if (!item || item.status === "done" || item.executionTaskId || item.waitingOn?.kind === "task" ||
+      (item.lease && item.lease.expiresAt > now)) return false;
+    resolveAppInboxRecovery(db, inputId, "input-admission", now);
+    const held = new TaskBudgetAdmissionStore(db).stillConstrained(funding, now);
+    if (!held) return db.prepare("UPDATE app_inbox_items SET handling = NULL, available_at = ?, changed_at = ?, updated_at = ? WHERE id = ?")
+      .run(now, now, now, inputId).changes === 1;
+    return db.prepare(`UPDATE app_inbox_items SET handling = ?, available_at = ?, changed_at = ?, updated_at = ?
+      WHERE id = ?`).run(JSON.stringify({ phase: "deferred", funding }), funding.retryAt, now, now, inputId).changes === 1;
+  });
+}
 
 export type AppTurnTarget = { appId: string; conversationId: string; turnId: string; expectedRevision: number };
 

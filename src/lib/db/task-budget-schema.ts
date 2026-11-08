@@ -1,5 +1,8 @@
 /** Resource accounting only. Task ownership and outcomes stay in canonical Task rows. */
 export const TASK_BUDGET_SCHEMA = `
+CREATE TABLE IF NOT EXISTS task_budget_policies (
+  app_id TEXT PRIMARY KEY, policy_json TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS task_credit_grants (
   sponsor_app_id TEXT NOT NULL, sponsor_agent TEXT NOT NULL,
   purpose TEXT NOT NULL CHECK (purpose IN ('ordinary', 'coordination')),

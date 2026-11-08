@@ -1,3 +1,4 @@
+import { pendingTaskFunding } from "./app-task-state.js";
 import type {
   AppTaskCancellation,
   AppTaskCondition as AppTaskCondition,
@@ -25,6 +26,7 @@ export type AppTaskReadiness = {
     | "ready"
     | "dependency-blocked"
     | "condition-blocked"
+    | "funding-blocked"
     | "capacity-blocked"
     | "paused"
     | "not-applicable";
@@ -335,6 +337,8 @@ function appTaskReadiness(
   activeCount: number,
   phase = resource.status.phase,
 ): AppTaskReadiness {
+  const funding = pendingTaskFunding(resource);
+  if (funding) return { state: "funding-blocked", reason: `Task funding: ${funding.reason}`, related_ids: funding.root ? [funding.root.taskId] : [] };
   const conditionIds = [...(resource.status.conditionIds ?? [])];
   const satisfiedConditionIds = conditionIds.filter((id) => tree.conditions?.[id]?.status.state === "true");
   const conditionWokeTask = phase === "waiting" && satisfiedConditionIds.length > 0;
