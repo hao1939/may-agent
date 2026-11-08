@@ -425,7 +425,8 @@ and exhausted retry authority. A failure rolls back the receipt and every wake;
 dry run rolls back the complete transaction. Exact command replay is read-only
 under the same offline prerequisites. A conflicting command is rejected.
 
-Subsequent runtime opens observe withdrawal from shared SQLite state. New Task
+Subsequent runtime opens using this integrated source observe withdrawal from
+shared SQLite state. New Task
 creation, claims and helpers incur no new workload charges/reservations; ordinary
 Host/App scheduling, Task authority, permissions, timeouts and cleanup still
 apply. Workload feedback marks the former credit/shared execution limits
@@ -436,6 +437,8 @@ This path is one-way. Reinstalling limits or policy cannot reactivate enforcemen
 after withdrawal: work performed afterward has an explicit accounting gap and
 requires a separately reviewed adoption protocol. Never delete the withdrawal
 receipt, erase accounting rows or restore an older database after newer work
-starts to simulate reactivation. Retain the command, receipt and external
+starts to simulate reactivation. Continue using a withdrawal-aware Host revision;
+a binary predating this protocol cannot honor its receipt and must not reopen
+withdrawn state. Retain the command, receipt and external
 stop/cleanup evidence. Runtime start and App activation remain separate authorized
 operations; portable source checks do not prove live exclusion or model behavior.
