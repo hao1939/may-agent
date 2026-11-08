@@ -51,6 +51,12 @@ first-path contracts. It does not substitute for independent review of the stack
 Subsequent behavioral-harness preparation did demonstrate a readonly Task-tool
 mutation gap; the paired source fix and regression evidence are recorded in the
 implementation approach. The original audit is not proof that no gap remained.
+A subsequent full-stack review-thread check also found four unresolved #406
+comments whose reported defects remained in the combined candidate. The next
+increment fixes exact standing scope, retained cross-App accounting, creation
+hold recovery and child/root adoption wakes. Its reproduced failures and exact
+verification remain in the implementation approach; unresolved parent threads
+and independent integration review are not treated as approvals.
 Standalone persistent addressing, online activation/live-execution import,
 automatic root reactivation after withdrawal and caller-place lending remain
 separate protocols, as already stated in the design. They are not pilot guarantees.

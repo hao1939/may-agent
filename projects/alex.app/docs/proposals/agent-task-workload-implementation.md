@@ -1547,3 +1547,47 @@ assertions were added. No unexplained failure was retried into a passing claim.
 Private reproduction/data remain in the workload checkpoint; Git preserves the
 active harness. No external model call, source activation, live mutation or rollout
 was performed by this preparation.
+
+## Budget admission review: exact scope and recovery
+
+A current read of every open Host PR's review threads found four unresolved
+comments on #406, rather than only the newest PR. All four reported source gaps
+remained in the combined candidate `278a9fe755`. The follow-up revision
+`f68fd7f3070b6dfd88657e4e8527b00dd2d4b984`, [PR #443](https://github.com/hao1939/may-agent/pull/443), stacked on #442, addresses them:
+
+- A standing allowance now matches its policy App as well as Task ID. A same-named
+  cross-App root uses its ordinary lifetime cap.
+- Claims, authored workflow starts and managed starts share a retained-accounting
+  relevance check. The immutable creator's configured or funded scope requires
+  explicit adoption even when the recipient App has no policy. Independently
+  owned unconfigured services retain their behavior. No historical debit or
+  inferred attribution is introduced.
+- New Task creation wakes deferred creation inputs by exact target App/Task in
+  the creation transaction, using an expression index. Saving a hold rechecks
+  Task existence to prevent a lost wake. Attaching the retained caller is free
+  and preserves the Task's existing creator and account.
+- Child adoption wakes both its own identity and the root bound by the same
+  operation, including their exact Inbox holds. Wakes, zero-charge adoption and
+  resource fences remain transactional; unrelated accounts stay asleep.
+
+Six regressions first failed on the original source. Final cases additionally
+cover a bound creator without an installed policy, retained workflow/helper
+execution, independently owned services, both creation/hold orderings and
+transaction rollback. The ten admission/funding/coordination/seed/Inbox/schema/
+managed/workflow owning suites passed **167 tests / 1,427 assertions**, and
+Host/SDK types, boundary and lint passed. SQLite's actual update plan selects
+the exact deferred-Task index. A range-formatting attempt introduced a syntax
+error; static checking caught it, the edit was repaired, and the final expanded
+tests/static checks passed. The failed diagnostic remains retained.
+
+Frozen full local CI passed **4,229 tests / 3 existing skips / 0 failures /
+24,671 assertions across 363 files**, 328.59 seconds, on that exact revision.
+Hosted Quality and Container both passed the same head in run `42536958367`.
+The frozen App experiment `5bf88f5ef6840fb092c010eaa34d2880de029b3f` then passed
+a new **56 worker passes / 48 local scripted requests / 2,003,964 request bytes**
+preflight against this Host head, with no mechanical failure or business Task
+change. Strict harness/source-SDK types passed against the same candidate.
+Model judgment remains unassessed. This changes neither executable App policy nor
+the SDK; the active harness remains on its linked experiment branch. No external model request, live mutation, activation or
+review-thread resolution was performed. Independent review/integration and
+separately authorized behavioral/operational acceptance remain required.

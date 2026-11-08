@@ -675,6 +675,15 @@ authorized allowance before enabling accounting for them. Preserve their input,
 creator, accepted evidence and retry/closure history; accounting activation does
 not itself authorize new work, reset retries or imply a fresh grant.
 
+Retained work with a known creator remains in that creator's configured or funded
+scope even when its recipient App is unconfigured. Require explicit attribution
+before future claims, workflows or helper starts; do not silently infer a binding.
+An independently owned service keeps its original account. Standing allowances
+match the full App/Task identity. If another caller creates an exact requested
+Task, release the retained creation hold for free attachment. Creation and that
+wake commit together, and saving a hold rechecks existence. Adopting a child also
+binds its root, so both exact assignments and their input holds must be woken.
+
 ### Adoption and verification
 
 This proposal changes admission and accounting policy, not Task identity,
