@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { promisify } from "node:util";
-import { finalizeAppTaskWorkspace, inspectAppTaskWorkspace, prepareAppTaskWorkspace } from "./git.js";
+import { createGitTaskWorkspaces, finalizeAppTaskWorkspace, inspectAppTaskWorkspace, prepareAppTaskWorkspace } from "./git.js";
 
 const roots: string[] = [];
 const execGit = promisify(execFile);
@@ -38,6 +38,71 @@ afterEach(() => {
 });
 
 describe("project task workspace", () => {
+  it("refuses a new worktree before mutation and admits it after capacity recovers", async () => {
+    const f = await fixture();
+    writeFileSync(join(f.repo, "payload.bin"), Buffer.alloc(4096, 1));
+    await git(f.repo, "add", "payload.bin");
+    await git(f.repo, "commit", "-m", "add checkout payload");
+    let availableBytes = 1;
+    let sampledDestination = "";
+    const workspaces = createGitTaskWorkspaces({ availableBytes: async (destination) => {
+      sampledDestination = destination;
+      return availableBytes;
+    } });
+    const input = {
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "capacity-recovery", generation: 1, baseBranch: "dev",
+    };
+
+    await expect(workspaces.prepare(input)).rejects.toThrow(/Insufficient worktree capacity.*1 bytes available/);
+    expect(sampledDestination).toContain(join(f.worktrees, "capacity-recovery-"));
+    expect(existsSync(f.worktrees)).toBe(false);
+    expect(await git(f.repo, "show-ref", "--verify", "--quiet", "refs/heads/task/capacity-recovery-2f3989cd55").catch(() => "missing")).toBe("missing");
+
+    availableBytes = 1024 * 1024;
+    const prepared = await workspaces.prepare(input);
+    expect(existsSync(prepared.metadata.path)).toBe(true);
+    expect(readFileSync(join(prepared.metadata.path, "payload.bin")).byteLength).toBe(4096);
+  });
+
+  it("declines capacity estimation for explicit text transformations and preserves ordinary checkout", async () => {
+    const f = await fixture();
+    writeFileSync(join(f.repo, ".gitattributes"), "*.txt text eol=crlf\n");
+    writeFileSync(join(f.repo, "expanded.txt"), "one\ntwo\n");
+    await git(f.repo, "add", ".gitattributes", "expanded.txt");
+    await git(f.repo, "commit", "-m", "add explicit checkout transform");
+    let sampled = false;
+    const workspaces = createGitTaskWorkspaces({ availableBytes: async () => { sampled = true; return 1; } });
+    const prepared = await workspaces.prepare({
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "attribute-fallback", generation: 1, baseBranch: "dev",
+    });
+    expect(sampled).toBe(false);
+    expect(readFileSync(join(prepared.metadata.path, "expanded.txt"), "utf8")).toBe("one\r\ntwo\r\n");
+  });
+
+  it("declines capacity estimation for legacy crlf transformations", async () => {
+    const f = await fixture();
+    writeFileSync(join(f.repo, ".gitattributes"), "*.txt crlf\n");
+    writeFileSync(join(f.repo, "expanded.txt"), "one\ntwo\n");
+    await git(f.repo, "add", ".gitattributes", "expanded.txt");
+    await git(f.repo, "commit", "-m", "add legacy checkout transform");
+    let sampled = false;
+    const workspaces = createGitTaskWorkspaces({ availableBytes: async () => { sampled = true; return 1; } });
+    const prepared = await workspaces.prepare({
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "legacy-attribute-fallback", generation: 1, baseBranch: "dev",
+    });
+    expect(sampled).toBe(false);
+    expect(existsSync(join(prepared.metadata.path, "expanded.txt"))).toBe(true);
+  });
+
+  it("samples a fresh nested destination through its nearest existing ancestor", async () => {
+    const f = await fixture();
+    const nested = join(f.root, "missing", "nested", "worktrees");
+    const prepared = await prepareAppTaskWorkspace({
+      repoDir: f.repo, workspaceRoot: nested, taskId: "nested-capacity", generation: 1, baseBranch: "dev",
+    });
+    expect(existsSync(prepared.metadata.path)).toBe(true);
+  });
+
   it("fetches an exact base without competing with worker remote-tracking refs or FETCH_HEAD", async () => {
     const f = await fixture();
     const remote = join(f.root, "remote.git");
