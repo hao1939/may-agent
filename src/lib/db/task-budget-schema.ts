@@ -60,4 +60,13 @@ CREATE INDEX IF NOT EXISTS idx_app_tasks_sponsor_funding_hold
     json_extract(resource_json, '$.status.funding.sponsor.agent'),
     json_extract(resource_json, '$.status.funding.purpose'), app_id, task_id)
   WHERE json_valid(resource_json) AND json_extract(resource_json, '$.status.funding.reason') = 'sponsor-credit';
+CREATE TABLE IF NOT EXISTS task_budget_managed_starts (
+  invocation_id TEXT PRIMARY KEY, app_id TEXT NOT NULL, task_id TEXT NOT NULL,
+  generation INTEGER NOT NULL, attempt_id TEXT NOT NULL, session_id TEXT NOT NULL,
+  primary_covered INTEGER NOT NULL CHECK (primary_covered IN (0, 1)),
+  operation_id TEXT NOT NULL REFERENCES task_budget_operations(operation_id),
+  admitted_at INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_task_budget_primary_start
+  ON task_budget_managed_starts(app_id, task_id, attempt_id) WHERE primary_covered = 1;
 `;

@@ -1,3 +1,5 @@
+import { ExecutionDeferredError } from "@may-agent/sdk";
+import { TaskBudgetDeferredError } from "../state/task-budget-admission.js";
 import { listConversationInputRequests } from "../state/conversation-requests.js";
 import { boundedAppRequestConversation } from "../reads/conversation-context.js";
 import {
@@ -410,6 +412,19 @@ export async function runTaskExecutorAttempt(
     const result = await input.execute(taskAttempt.attempt, taskAttempt.events);
     const acceptedLiveEventIds = taskAttempt.acceptedLiveEventIds();
     return acceptedLiveEventIds.length > 0 ? { ...result, acceptedLiveEventIds } : result;
+  } catch (error) {
+    if (!(error instanceof TaskBudgetDeferredError)) throw error;
+    const runId = error.callerExecution?.id ?? null;
+    return {
+      funding: error.constraint,
+      runId,
+      handlerResult: {
+        state: "error",
+        summary: error.message,
+        actions: [],
+        facts: error.callerExecution?.kind === "workflow" ? [`workflow-run:${runId}`] : [],
+      },
+    };
   } finally {
     clearInterval(leaseTimer);
     taskAttempt.close();
@@ -477,6 +492,7 @@ export async function runRegisteredTaskExecutor(
       runId,
     };
   } catch (error) {
+    if (error instanceof ExecutionDeferredError) throw error;
     return {
       handlerResult: {
         state: "error",

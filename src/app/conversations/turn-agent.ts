@@ -1,4 +1,5 @@
 import type { TaskExecutionContext } from "../../lib/task-execution-context.js";
+import { taskPrimaryStart } from "../core/state/task-budget-managed-start.js";
 import {
   Type,
   conversationRequestUpdatesSchema,
@@ -145,6 +146,7 @@ export function createConversationAgentResolver(options: {
         projectId: app.id,
         recoveryOwner: APP_TASK_RECOVERY_OWNER,
         taskBinding: binding.taskBinding,
+        taskPrimaryStart: taskPrimaryStart(binding.taskBinding),
         taskContext: options.taskContext,
         requireFinish: true,
         outputSchema: binding.outputSchema,

@@ -1,3 +1,4 @@
+import { ExecutionDeferredError } from "@may-agent/sdk";
 import { Type, type Static } from "typebox";
 /**
  * Agents tool — bounded calls, helper follow-up, inspection and cancellation.
@@ -11,7 +12,7 @@ import type { RegisteredAgent } from "./manager-utils.js";
 import type { SessionInfo, SubagentDefinition, TaskResult } from "./types.js";
 import type { PersistedSession } from "./persistence.js";
 import { getDb } from "./db/connection.js";
-import { agentExecutionResult } from "./execution-handoff.js";
+import { agentExecutionResult, deferredExecutionResult } from "./execution-handoff.js";
 import { readIdentity } from "./instance-identity.js";
 import type { EventTrace } from "../app/core/events/bus.js";
 
@@ -545,6 +546,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             return textResult(JSON.stringify({ error: `Unknown action: ${(params as any).action}` }));
         }
       } catch (err: unknown) {
+        if (err instanceof ExecutionDeferredError) return textResult(JSON.stringify(deferredExecutionResult(err)));
         const msg = err instanceof Error ? err.message : String(err);
         return textResult(JSON.stringify({ error: msg }));
       }

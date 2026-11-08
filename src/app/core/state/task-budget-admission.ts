@@ -1,7 +1,9 @@
+import { ExecutionDeferredError } from "@may-agent/sdk";
 import { isDeepStrictEqual } from "node:util";
 import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import type { AppTaskResourceMutation } from "./app-task-resource-store.js";
+import type { TaskTree } from "../tasks/app-task-store.js";
 import type { AppTaskResource } from "../tasks/app-task-state.js";
 import {
   TaskBudgetStore,
@@ -46,9 +48,15 @@ export type TaskFundingConstraint = (
       retryAt: null;
     }
 ) & { sponsor?: BudgetSponsor; purpose?: BudgetPurpose; policyAppId?: string };
-export class TaskBudgetDeferredError extends Error {
+export class TaskBudgetDeferredError extends ExecutionDeferredError {
   constructor(readonly constraint: TaskFundingConstraint) {
-    super(`Task admission deferred: ${constraint.reason}`);
+    super({
+      resource: "task-credit",
+      reason: constraint.reason,
+      retryAt: constraint.retryAt,
+      task: constraint.task,
+      root: constraint.root,
+    });
     this.name = "TaskBudgetDeferredError";
   }
 }
@@ -226,6 +234,19 @@ export class TaskBudgetAdmissionStore {
       });
   }
 
+  /** Called by common managed-start admission, after validating the live actor. */
+  admitHelper(task: BudgetTaskRef, invocationId: string, now: number): string {
+    const rootRef = this.budget.binding(task);
+    if (!rootRef) this.defer(task, "adoption-required", task);
+    const root = this.budget.root(rootRef)!;
+    if (root.purpose !== "ordinary") this.defer(task, "protected-policy", rootRef);
+    this.renew(root, now);
+    const charged = this.budget.charge({ task, kind: "helper", invocationId }, now);
+    if (charged.kind === "deferred")
+      throw new TaskBudgetDeferredError({ ...charged, sponsor: root.sponsor, purpose: root.purpose });
+    return charged.receipt.operationId;
+  }
+
   /** Recheck under the transaction that records a hold, avoiding lost funding
    * or adoption wakes between a rolled-back admission and its saved constraint. */
   stillConstrained(constraint: TaskFundingConstraint, now = Date.now()): boolean {
@@ -278,6 +299,55 @@ export class TaskBudgetAdmissionStore {
     const charged = this.budget.charge({ task, kind: "task" }, now);
     if (charged.kind === "deferred")
       throw new TaskBudgetDeferredError({ ...charged, sponsor: root.sponsor, purpose: root.purpose });
+  }
+
+  /** New authored seeds are App-created work. Retained snapshots use explicit
+   * historical adoption instead; no unknown past cost or creator is invented. */
+  admitNewSeed(appId: string, tree: TaskTree, now = Date.now()): void {
+    const resources = Object.values(tree.resources ?? {});
+    const relevant =
+      this.policy(appId) ||
+      resources.some((resource) => {
+        const creator = resource.metadata.creator;
+        return (
+          this.budget.binding({ appId, taskId: resource.metadata.id }) ||
+          (creator &&
+            (this.policy(creator.appId) ||
+              (creator.taskId && this.budget.binding({ appId: creator.appId, taskId: creator.taskId }))))
+        );
+      });
+    if (!relevant) return;
+    if (
+      Object.keys(tree.attempts ?? {}).length ||
+      Object.keys(tree.receipts ?? {}).length ||
+      Object.keys(tree.cancellations ?? {}).length ||
+      resources.some(
+        (resource) =>
+          resource.metadata.generation !== 1 ||
+          resource.metadata.resourceVersion !== 1 ||
+          resource.status.phase !== "pending" ||
+          resource.status.observedGeneration !== 0 ||
+          resource.status.currentAttemptId ||
+          resource.status.observedAttemptId ||
+          resource.status.workspaceAttemptId,
+      )
+    )
+      throw new Error(
+        "Budgeted seed contains execution history; restore retained facts and explicitly adopt future work",
+      );
+    for (const resource of resources) {
+      if (resource.metadata.creator && !isDeepStrictEqual(resource.metadata.creator, { appId }))
+        throw new Error(
+          "A new budgeted seed requires its exact App-only creator; contribution admission needs its creating Task",
+        );
+      resource.metadata.creator = { appId };
+    }
+    this.admitMutation(
+      appId,
+      { fences: [], tasks: resources.map((resource) => ({ resource, ready: false })) },
+      new Set(),
+      now,
+    );
   }
 
   /** Invoked only after every resource fence passes, inside its write transaction.

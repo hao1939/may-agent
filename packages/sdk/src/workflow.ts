@@ -376,6 +376,29 @@ export type ExecutionResult<T = unknown> = {
   cliCalls?: CliCallFacts[];
 };
 
+/** A requested managed execution was not started. The caller retains its work. */
+export type ExecutionDeferral = {
+  resource: "task-credit";
+  reason: string;
+  retryAt: number | null;
+  task: { appId: string; taskId: string };
+  root: { appId: string; taskId: string } | null;
+};
+
+/** A resource admission constraint, not a terminal execution result or failed
+ * helper. Typed callers may choose a cheaper method, retain demand or rethrow.
+ * No session identity is created for the denied operation. */
+export class ExecutionDeferredError extends Error {
+  readonly started = false;
+  /** Existing enclosing execution, when it retained the blocked call as facts. */
+  callerExecution?: { kind: "agent" | "workflow"; id: string };
+
+  constructor(readonly deferral: ExecutionDeferral) {
+    super(`Execution deferred: ${deferral.reason}`);
+    this.name = "ExecutionDeferredError";
+  }
+}
+
 /** The input is App/workflow-owned; the runtime only carries it across the boundary. */
 export type WorkflowInput<T = unknown> = T;
 
@@ -641,7 +664,9 @@ export type WorkflowContext<TInput = unknown> = {
   readCommunication?: TaskAttempt["read"]["communication"];
   read: AppRead;
   agents: {
-    /** Schema for the contribution report, including incomplete work. Make
+    /** Resource admission can throw ExecutionDeferredError before a helper starts.
+     * Catch it to choose another method or retain demand; it has no helper ID.
+     * Schema for the contribution report, including incomplete work. Make
      * unavailable information optional; a valid report does not imply Task
      * fulfillment. Missing optional fields do not require a correction turn.
      * Declare every representation the App accepts, including inputs to its

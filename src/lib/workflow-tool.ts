@@ -1,3 +1,4 @@
+import { ExecutionDeferredError } from "@may-agent/sdk";
 import { Type, type TSchema } from "typebox";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 import { prepareTaskWorkspaceContext } from "./task-workspace-context.js";
@@ -81,7 +82,7 @@ import type {
 import { createRuntimeAppRead } from "../app/core/reads/app-read.js";
 import { readMetricView } from "../app/adapters/reporting/metric-read.js";
 import { canonicalAppEvent } from "../app/canonical-app-event.js";
-import { agentExecutionResult, workflowExecutionResult } from "./execution-handoff.js";
+import { agentExecutionResult, workflowExecutionResult, deferredExecutionResult } from "./execution-handoff.js";
 
 function normalizeAuthoredWorkflowResult(
   value: unknown,
@@ -170,6 +171,17 @@ function textResult(text: string): AgentToolResult<string> {
     content: [{ type: "text", text }],
     details: text,
   };
+}
+
+/** Model tools expose a denied helper start as data; typed callers retain the exception. */
+async function workflowModelExecution(execute: () => Promise<WorkflowToolResult>): Promise<AgentToolResult<string>> {
+  try {
+    const result = await execute();
+    return textResult(JSON.stringify({ ...result, ...workflowExecutionResult(result) }, null, 2));
+  } catch (error) {
+    if (error instanceof ExecutionDeferredError) return textResult(JSON.stringify(deferredExecutionResult(error)));
+    throw error;
+  }
 }
 
 function truncate(text: string, maxLen: number): string {
@@ -1258,6 +1270,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             if (!taskResult) taskResult = await waitForStep(sid);
             taskResult = { ...taskResult, messages: manager.progress(sid, 1000) };
           } catch (err) {
+            if (err instanceof ExecutionDeferredError) throw err;
             const message = err instanceof Error ? err.message : String(err);
             if (message.includes("not found")) {
               sid = runAgent(agentName, effectiveTask, {
@@ -1696,6 +1709,10 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       } else if (err instanceof WorkflowBlocked) {
         run.status = "blocked";
         run.result = { reason: `Blocked by guard: ${err.reason}` };
+      } else if (err instanceof ExecutionDeferredError) {
+        run.status = "blocked";
+        run.result = { reason: err.message };
+        err.callerExecution = { kind: "workflow", id: runId };
       } else {
         run.status = "error";
         run.result = { reason: err instanceof Error ? err.message : String(err) };
@@ -1705,6 +1722,8 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           status: run.status,
           endedAt: run.endedAt,
           result_reason: run.result?.reason,
+          ...(err instanceof ExecutionDeferredError
+            ? { result_payload: retainWorkflowResultPayload({ facts: deferredExecutionResult(err) }) } : {}),
         });
       if (err instanceof WorkflowBlocked && depth === 1 && !opts.taskBinding) {
         emitWorkflowBlockedOwnerWake({
@@ -1722,7 +1741,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           type:
             err instanceof WorkflowInterrupted
               ? "workflow.interrupted"
-              : err instanceof WorkflowBlocked
+              : err instanceof WorkflowBlocked || err instanceof ExecutionDeferredError
                 ? "workflow.blocked"
                 : "workflow.failed",
           source: `workflow:${workflow.name}`,
@@ -1826,6 +1845,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     } catch (err) {
       activeSteeringQueue = null;
       activeWorkflowName = null;
+      if (err instanceof ExecutionDeferredError) throw err;
 
       if (err instanceof WorkflowInterrupted) {
         const toolResult: WorkflowToolResult = {
@@ -1963,8 +1983,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               ? params.input
               : JSON.stringify(params.input)
             : params.task!;
-          const result = await runTyped(params.name, task, catalog, hasInput ? { value: params.input } : undefined);
-          return textResult(JSON.stringify({ ...result, ...workflowExecutionResult(result) }, null, 2));
+          return workflowModelExecution(() => runTyped(params.name!, task, catalog, hasInput ? { value: params.input } : undefined));
         }
 
         case "resume": {
@@ -2099,7 +2118,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             });
           }
 
-          const result = await runOrResume(
+          return workflowModelExecution(() => runOrResume(
             catalog,
             resumeWf,
             prevRun.task,
@@ -2107,8 +2126,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             prevRun.parentSessionId === "unknown" ? undefined : prevRun.parentSessionId,
             prevRun.parentWorkflowRunId,
             prevRun,
-          );
-          return textResult(JSON.stringify({ ...result, ...workflowExecutionResult(result) }, null, 2));
+          ));
         }
 
         default: {
