@@ -198,6 +198,13 @@ broader budget and feedback work waits.
 **Honor existing obligations, spend spare capacity on useful expansion, and use
 workload pressure to reconsider priorities and commitments.**
 
+Feedback changes the agent's choices about admission, timing, method and
+cooperation. Business need, agreed acceptance and creator authority keep their
+meaning at every workload. The following behavior is proposed; it does not
+activate new instructions or capabilities in the running agents.
+
+### Feedback available at decisions
+
 The Host supplies a small workload summary through scoped reads and attempt
 context, projected from existing authority. It contains these facts, not a new
 Task state or a second queue:
@@ -222,6 +229,14 @@ effort, using estimates only where useful. The first version needs neither a
 universal pressure score nor a fixed admission formula. Existing App limits
 continue to apply until per-agent and root limits are implemented.
 
+Supply the summary in the existing attempt context when the agent considers
+new work, selects what to advance or requests a contribution. A workflow must
+pass relevant feedback to the agent making that decision. Reuse sufficiently
+fresh context; obtain an exact scoped read when missing or stale facts could
+change the choice. This adds neither a model call before each action nor an
+extra admission approval. The Host still validates spending and execution
+against authoritative state when the chosen operation is admitted.
+
 Task count is supporting context. If `K` is used as a workload reference, crossing
 it prompts review; it is not an automatic rejection or closure threshold. Hard
 limits apply to spending, permissions and executing attempts (`C` per agent,
@@ -230,17 +245,67 @@ do not establish whether an assignment is valuable or complete. Any separate
 installation intake or storage quota must return an explicit deferred or refused
 disposition, preserving already accepted obligations.
 
-Each agent uses a bounded pass of its existing coordination Task to review
-changed obligations and evidence, choose valuable next work and make necessary
-priority, funding or scope decisions. Workload influences that judgment:
+### Behavior under different workloads
 
-| Decision | With spare capacity | Under workload stress |
-| --- | --- | --- |
-| Required work | Advance it and make delivery expectations visible. | Retain its need; prioritize urgency and value, explain conflicts and renegotiate commitments when necessary. |
-| Discretionary work | Consider a useful authorized improvement or experiment. | Require enough benefit to justify delaying existing commitments; defer or decline low-value expansion. |
-| Scope and execution | Use an appropriate method and depth for the agreed outcome. | Seek the smallest sufficient outcome; obtain creator authorization for changed acceptance criteria. Reprioritize at safe attempt boundaries. |
-| Cooperation | Delegate where specialist skill or parallel capacity helps. | Check the recipient's capacity and coordination cost; delegation preserves the root budget and caller responsibility. |
-| Review and closure | Review results and stale work regularly. | Review blockers, already sufficient results, duplicates and obsolete work sooner; retain the same evidence and authority requirements. |
+Interpret workload for the affected agent, assignment and resource. A busy agent
+can coexist with another agent's usable capacity, while a shared Host or disk
+constraint can affect both. These situations guide judgment; they are not new
+Task states, Host-assigned modes or universal numeric thresholds.
+
+| Situation and evidence | Creating or accepting work | Advancing existing work | Review and disposition |
+| --- | --- | --- | --- |
+| Spare capacity: usable resources and allowances remain after considering existing commitments. | Consider useful authorized improvements; no obligation to invent work. | Advance commitments and use worthwhile parallelism. | Consume results and review continuing responsibilities normally. |
+| Busy: ready work competes for capacity, but delivery expectations still appear achievable. | Required work may wait as pending; optional work must justify the delay it introduces. | Choose by urgency, value, dependencies and waiting time. | Maintain bounded result review so completed work does not accumulate. |
+| Overloaded: waiting or known resource shortages put commitments at risk. | Preserve required demand; defer or decline low-value expansion and make delivery conflicts visible. | Focus on the most valuable achievable outcomes; seek authorized changes to deadlines, scope, funding or capacity. | Bring sufficient results, duplicates and potentially obsolete work to creator review sooner; keep unmet obligations visible. |
+| Idle because work is blocked: empty execution places coexist with missing prerequisites. | Inspect blockers and available results before expanding; independent useful work may still be admitted. | Coordinate useful recovery and run work whose prerequisites hold. | Retain genuine waits and their next relevant change; avoid repeated unchanged reviews. |
+
+Required and discretionary describe business judgments, not new Task types.
+Recognizing a required need does not promise immediate execution or a delivery
+date. A pending Task still needs its creation charge; if that cannot be paid,
+retain the input with its visible funding disposition under the budget policy.
+
+Use an appropriate method and depth for the agreed outcome. Under pressure,
+prefer the smallest sufficient method and defer optional depth; changing
+acceptance criteria still requires creator authorization. Reprioritize at safe
+attempt boundaries rather than discarding useful in-flight work on every load
+change. Pressure advances review, not the definition of completion. Cancellation
+or reduced scope needs the creator's explicit decision and its actual disposition.
+
+Delegate when expertise or usable recipient capacity justifies the contribution
+and coordination cost. Under pressure, avoid decomposition that merely moves
+waiting work or competes for the same blocked resource. Cooperation retains the
+root allowance, the recipient's limits and the caller's responsibility. A parent
+with no useful independent work yields while awaiting its durable child.
+
+### One bounded decision pass
+
+Each agent's existing coordination Task reviews changed obligations and evidence.
+An ordinary worker uses the same reasoning within its assignment and authority;
+it does not acquire authority to reprioritize or close other assignments.
+
+1. **Read the relevant facts.** Use the bounded summary, current assignment and
+   changed evidence to distinguish runnable work, real waits, returned results
+   and usable resources. Missing capacity facts remain unknown.
+2. **Compare useful choices.** Consider existing promises, urgent new needs,
+   older ready work, useful blocker recovery and results awaiting review before
+   deciding whether discretionary expansion is worthwhile. Compare the expected
+   benefit with the effort and delay imposed on other commitments.
+3. **Choose within authority and allowance.** Advance existing work, accept a
+   justified pending assignment, request a useful contribution, defer an
+   opportunity, seek a commitment decision or stay quiet. Request changes from
+   the responsible creator or funding authority when existing bounds cannot
+   support delivery; the request itself does not change the commitment.
+4. **Record consequential choices through existing paths.** When deferral or
+   reprioritization puts a commitment at risk, retain the affected obligation,
+   reason, expected delivery impact and next review event or justified time in
+   its existing input, Task or caller feedback. Report estimates as estimates.
+   Use ordinary result and authorized control paths for disposition; a model's
+   recommendation is not a persisted priority change, funding grant or closure.
+
+These are reasoning steps within an existing pass, not four model calls or a
+new decision ledger. Record enough to explain changed commitments without
+requiring a separate report for every routine scheduling choice. Preserve
+deferred demand even when it has not become a Task.
 
 Include old ready obligations in review so low-priority work cannot silently
 disappear behind repeated urgent arrivals. The agent must explain continued
@@ -248,12 +313,8 @@ deferral or seek a changed commitment; queue age alone does not grant priority,
 funding or a delivery guarantee. Automatic priority aging is not required for
 the first version.
 
-Required and discretionary describe business judgments, not new Task types.
-When execution is idle because work is blocked, resolve useful blockers and
-consume results before expanding. Independent work may still proceed when its
-value and allowances justify it. When no useful authorized work remains, idle
-capacity is appropriate. Neither maximum utilization nor minimum live Task
-count is the objective.
+When no useful authorized work remains, idle capacity is appropriate. Neither
+maximum utilization nor minimum live Task count is the objective.
 
 Relevant input, a returned result, a meaningful change in capacity or sustained
 shortage of runnable work may wake coordination. Coalesce repeated notifications,
@@ -261,6 +322,13 @@ bound each review and use a cooldown after an empty planning pass. Routine
 sampling and an unchanged idle condition do not each invoke a model. No separate
 controller agent is needed. Limits and acceptance criteria do not automatically
 change with the pressure signal.
+
+A justified review time may revisit a delivery commitment without new capacity
+evidence. Review the affected obligation once within the bounded pass; unchanged
+overload alone does not justify repeatedly replanning the whole queue or
+re-notifying its callers. Meaningful recovery lets the agent reconsider deferred
+opportunities alongside current obligations; it does not automatically admit
+all of them or restore an old priority ordering.
 
 The expected benefit is less low-value expansion during overload, useful
 exploration when capacity is spare and faster disposition of completed or
@@ -415,13 +483,19 @@ execution places are empty; the heatmap does not currently model that constraint
 
 ## One example
 
-Alex has execution limit `C = 2` and is working on a required repair and an
-optional investigation. Both use their own finite root allowance `B`.
-Its coordination Task receives a metric breach. Repeated evidence for the repair
-updates that assignment. A critical new incident becomes a pending Task
-even while both execution slots are occupied. Alex defers the optional
-investigation at a safe boundary and advances the incident when credits and a
-slot are available. Any delivery conflict is reported to the relevant creator.
+Use the same business inputs in each workload: an urgent incident requiring a
+repair, an accepted report due tomorrow and an optional research opportunity.
+Alex has execution limit `C = 2`; independent assignments have their own finite
+root allowance `B`. Repeated metric evidence for the incident updates its repair
+assignment rather than creating another commitment.
+
+With spare usable capacity, Alex advances the repair and report and considers
+research when its benefit justifies the resources. When busy, Alex can retain the
+research opportunity for later consideration without promising to execute it.
+Under overload, Alex defers the research, advances the incident at a safe
+boundary and assesses whether the report deadline is still achievable. If it
+is at risk, Alex reports the conflict and seeks a creator decision on scope,
+deadline or priority. The report remains owed until an authorized change.
 
 The repair requests a diagnostic contribution from Bob with `c = 1`. Its parent
 yields execution while waiting, so Bob can run within that root's shared budget
@@ -430,9 +504,9 @@ does not make the repair complete while Bob's required result is outstanding.
 An already sufficient result can receive earlier creator review; obsolete
 optional work can be explicitly cancelled with its reason and caller disposition.
 
-When useful runnable work becomes scarce and credits remain, Alex can consider
-another improvement under authorized goals. If no worthwhile work exists, it
-stays quiet. There is no requirement to refill a Task count.
+When pressure subsides, Alex reconsiders the research against current commitments
+and remaining credits. If it is no longer worthwhile, spare capacity can remain
+idle. There is no requirement to refill a Task count.
 
 If the incident needs a worktree and disk capacity is insufficient, it remains
 pending on that prerequisite. Other Tasks needing the same resource reuse the
@@ -463,7 +537,7 @@ than become unrestricted creation paths.
 | --- | --- |
 | Pending work, atomic claims, bounded retries and creator-controlled closure | Existing foundations; preserve them. |
 | Capacity | Host and App limits and a human foreground reserve exist. Per-agent/root limits, helper accounting and trusted coordination access remain unimplemented. |
-| Feedback | Scoped Task/child/wait reads and App owner reviews exist. The shared bounded workload summary and its use in agent decisions remain unimplemented. |
+| Feedback | Scoped Task/child/wait reads and App owner reviews exist. The bounded summary, delivery to the deciding agent, decision guidance and consequential-deferral feedback remain unimplemented as an integrated path. |
 | Budget | Per-call limits and usage records exist. Shared attribution, credit grants, cumulative charges and renewal remain unimplemented. |
 | Shared blockers | Individual Conditions and recovery exist. Operation-specific prerequisite admission and cross-Task coalescing need implementation at the affected resource boundary. |
 
@@ -482,6 +556,7 @@ Verify these contrasting cases before claiming the feedback improves behavior:
 | --- | --- |
 | Same required incident under light and heavy workload | Preserve its need in both; pressure changes priority and delivery expectations, not acceptance by Task count. |
 | Same discretionary opportunity under light and heavy workload | Consider expansion when useful capacity exists; under pressure require enough value to displace existing work. |
+| Busy workload becomes overloaded, then recovers | Surface endangered commitments, defer optional expansion and reconsider it on meaningful recovery; avoid repeated whole-queue replanning or automatic admission. |
 | Idle execution with blocked assignments | Review actual blockers; do not infer missing business work from low utilization. |
 | High backlog with an incomplete Task and an already sufficient result | Keep the unmet obligation; bring sufficient evidence to creator review without lowering criteria. Cancellation remains a separate disposition. |
 | Repeated urgent arrivals while older required work stays ready | Make continued waiting and delivery conflicts visible during review; obtain an explicit commitment decision rather than silently abandoning it. |
@@ -496,10 +571,22 @@ Verify these contrasting cases before claiming the feedback improves behavior:
 | Daily boundary, restart and uncertain execution start | Grant once, retain in-flight reservations/charges, preserve finite root spending and renew only declared standing allowances. |
 | An idle finite result and an idle standing Task | Bring the finite result to its creator for disposition; retain the standing purpose and declared wake. Neither is ended by phase alone. |
 | No useful work after a planning pass | Stay quiet until relevant input or a justified review time. |
+| Missing or stale workload facts, including inside a workflow | Deliver relevant feedback to the deciding agent; make a scoped read when material, disclose unknowns and let Host admission enforce actual bounds. |
 
-Use the same business scenarios under different loads and inspect actual agent
-decisions, fulfillment, waiting, discretionary effort and review cost. Smaller
-Task counts or more closures alone do not establish improvement. These are
-proposed verification cases, not tests run, behavioral evidence or deployment
-claims. Reconsider additional control machinery only if observed decisions or
-resource enforcement remain inadequate.
+For a behavioral trial, hold the business inputs, acceptance and authority fixed
+and vary competing load or usable resources. Compare the same workload with and
+without the proposed feedback. Capture the facts the agent received, its chosen
+action and reason, the recorded caller disposition and subsequent outcome.
+Inspect required delivery and ready-work waiting time, discretionary effort,
+result-review delay, repeated blocked attempts and coordination cost. Include
+repeated observations to see whether unchanged pressure causes churn; one good
+decision does not establish a stable policy.
+
+The expected change is less low-value expansion during overload and worthwhile
+expansion when usable capacity exists, with unchanged completion criteria and
+visible required obligations. Persistent required demand above capacity should
+produce an explicit delivery conflict, not a claim that feedback stabilized the
+queue. Smaller Task counts, more closures or higher utilization alone do not
+establish improvement. These are proposed verification cases, not tests run,
+behavioral evidence or deployment claims. Reconsider additional control
+machinery only if observed decisions or resource enforcement remain inadequate.
