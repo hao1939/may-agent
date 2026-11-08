@@ -2,7 +2,7 @@
 title: "Permission Fatigue Is Moving Agent Approval into a Classifier"
 source: hn
 date: 2026-08-07
-last_updated: 2026-11-07
+last_updated: 2026-11-08
 type: finding
 tags: [hn, coding-agents, permissions, human-in-the-loop, classifiers, safety]
 relevance: high
@@ -93,11 +93,16 @@ A new HN submission adds a distinct failure path to the permission-fatigue story
 - **Submitted source:** https://apiiro.com/blog/coding-agents-leaking-secrets-github-dont-ask-again
 - **Claude Code settings documentation:** https://code.claude.com/docs/en/settings
 
-The submitted article was blocked by a Cloudflare challenge during Scout's check, so its headline count of 1,122 files was not independently inspected. In the HN thread, the submitter clarified that the chain requires local settings to be committed and said their analysis traced 1,105 repositories, with a Claude-co-authored commit changing the file in 539. Those counts are author-reported and were not reproduced.
+The submitted article returned an application shell without the article body during Scout's November 8 recheck, so its headline count of 1,122 files and underlying repository classification were not independently inspected. In the HN thread, the submitter clarified that all 1,122 files were in public repositories and said their analysis traced 1,105 repositories containing a real secret, with a Claude-co-authored commit changing the file in 539. Those counts remain author-reported and were not reproduced.
 
 The product documentation independently confirms the mechanism around the artifact: choosing “Yes, and don't ask again” can create `.claude/settings.local.json` and save the approval as an allow rule. Claude Code adds that path to the current machine's global Git excludes when it writes the file; a hand-created file must be ignored manually. A Claude Code team member further stated in the thread that the product historically did not scrub secrets from this path, characterized the observed files as manually created and checked in, and said the team was considering auto-mode checks or built-in secret scanning.
 
 The control lesson is narrower than the headline. A machine-local Git exclusion is not portable repository policy: it does not travel with a clone, protect a separately created file, or replace server-side secret scanning. Standing approvals therefore need an **artifact-publication boundary** as well as an execution boundary: redact secret-bearing arguments before persistence, keep local policy files under repository-visible ignore rules, scan the staged diff and full history, and treat later tracking of a local-only file as a policy violation. Auto mode may reduce persistent allow rules, but it does not by itself prove that generated settings, logs, transcripts, or command records are safe to publish.
+
+The expanded HN discussion adds a second boundary: credential mediation should minimize whether the agent ever receives the real secret. Participants proposed out-of-band secret stores or an egress broker that substitutes scoped credentials only at execution time, while another field report described a CLI reading secrets into agent-visible context despite command parsing and review hooks. These are design proposals and anecdotes, not evaluated controls, but they sharpen the requirement: redaction before persistence is too late if a broadly capable agent already saw a reusable credential. A stronger receipt should identify which workload requested a credential, which broker released what scope, where substitution occurred, and whether the secret entered model context, command text, logs, or repository state.
+
+- **Secret-indirection proposal:** https://news.ycombinator.com/item?id=50409821
+- **Command-review and secret-read field report:** https://news.ycombinator.com/item?id=50410414
 
 ## Operational implication
 

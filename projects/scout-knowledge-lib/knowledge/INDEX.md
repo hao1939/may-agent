@@ -105,7 +105,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 #### Prior findings extended on 2026-11-07
 
 - [Agent workspaces are becoming agent-addressable control planes](./findings/2026-07-29-github-orca-agent-development-environment.md#the-useful-architectural-change) — pinned Orca source adds durable Runs and Tasks, attempt-scoped Dispatch authority, mailbox wakes, decision gates, typed refusals, bounded nested workers, and runtime placement; Scout did not run Orca, its tests, agents, or remote runtimes.
-- [Local permission files need a publication boundary](./findings/2026-08-07-permission-fatigue-classifier-default.md#november-7-follow-up-local-permission-files-create-a-publication-boundary) — Claude Code documentation confirms that persistent approvals can enter a project-local settings file whose automatic ignore is machine-local; the submitted article was access-blocked and its reported repository counts were not reproduced.
+- [Local permission files need publication and credential-mediation boundaries](./findings/2026-08-07-permission-fatigue-classifier-default.md#november-7-follow-up-local-permission-files-create-a-publication-boundary) — Claude Code documentation confirms persistent approvals can enter a project-local settings file whose ignore is machine-local; the current HN thread adds secret-broker proposals, but article counts and controls were not independently reproduced or evaluated.
 
 ### 2026-10-17
 
