@@ -1210,6 +1210,12 @@ files**; four real-worker cases passed one-place A-B-C cooperation, ordinary-fun
 exhaustion, ordinary-capacity saturation and fresh published policy with charged
 workflow/helper execution. Two old authoring fixtures initially threw `unused`
 from their database accessor; they now supply and close ordinary Host state.
-Static checks passed; frozen full local and hosted gates are running. Independent
+Static checks passed. The frozen full local gate at `03e93e39af` FAILED:
+**4,187 passed / 3 existing skips / 8 failed / 24,412 assertions / 362 files**.
+Hosted Quality failed and Container passed the same head. Eight integration
+fixtures throw from their Runtime database accessor, use an inaccessible fake
+state directory, or omit the App identity in a Task binding. They are being
+repaired to supply ordinary temporary Host state and full binding identity;
+no complete passing gate is claimed for that revision. Independent
 review, integration, enforcement withdrawal and separately authorized operational
 and behavioral proof remain. No SDK/App runtime change is required.
