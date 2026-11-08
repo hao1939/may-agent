@@ -240,6 +240,27 @@ The contract tests prove call bounds, read-only options, coalescing, scope and
 no automatic effects; they do not prove model comprehension or improved delivery.
 Activation and any business acceptance trial remain separate.
 
+Successive bounded passes must make progress beyond the first three detailed
+reads and the first discovery page. Retain the Host's opaque page continuation
+and the next three-item offset in the coordination Task's accepted result. Use
+the same continuation for workload and Task-list reads, finish the current page
+in bounded batches, then advance or wrap after the final page. These are review
+positions, not Task priority changes or a claim that the population is static.
+A failed exact read or helper preserves the previous accepted progress.
+
+Retain at most 64 batch fingerprints in that same result. A revisited batch with
+unchanged evidence needs no helper call; an evicted batch can be reviewed again
+on a later rotation. This is a bounded observation window, not a permanent
+per-Task review ledger or a guarantee against reconsideration in arbitrarily
+large populations. Each successful pass also retains the cooldown. Version-one
+state can migrate without rebuying an identical first-batch review; damaged
+progress remains blocked for owner repair rather than silently restarting.
+New accepted state uses version two; older App source cannot read it and must
+not be reactivated without an explicit compatible state migration. Rotation
+provides progress for stable populations; concurrent insertions, removal and
+permission changes can affect subsequent pages and do not establish atomic
+fleet coverage or a delivery guarantee.
+
 ### 3. Add shared credit accounting
 
 Retain the proposal's coarse units: new Task, committed attempt, separately
@@ -1314,3 +1335,36 @@ This verifies the actual two App source files with fixture wiring and
 instructions, not the full installed App. Scripted answers prove neither model
 comprehension nor changed decisions; live activation and business behavior
 acceptance remain separately authorized gates.
+
+The App review rotation increment fixes two demonstrated discovery failures:
+repeated exact reads of the first three commitments and never following the
+first page's continuation. The corrected baseline command failed both regressions
+with **16 tests passed / 2 failed / 143 assertions**. The first command without
+the required relative-path prefix discovered no tests and is not red evidence.
+The workflow now retains version-two page/batch progress and at most 64 recent
+fingerprints in its existing accepted result, within the unchanged limits of
+20 listed Tasks, three exact reads and one read-only helper per pass.
+
+Final review/policy/disposition owners passed **38 tests / 0 failures /
+737 assertions across three files**; strict source-SDK TypeScript checking passed
+against Host `ac00e95783`. Coverage includes page rotation, unchanged revisits,
+new obligations, helper failure, a changed exact read, malformed saved progress,
+empty-page continuation, legacy migration and cache eviction. One intermediate
+fixture used an asymmetric matcher that affected reused state and broke cloning;
+primitive assertions fixed the fixture. A later unknown/string assertion typing
+error was narrowed explicitly. Neither fixture correction is a production fix.
+
+A private paired-source probe passed **one test / 70 assertions**, using actual
+Host SQLite reads, opaque pagination, claims and canonical accepted results at
+`ac00e95783`. It runs the actual old workflow first, then the new workflow:
+21 unchanged commitments are inspected across ten passes with eight scripted
+helper calls, including a migration pass without another helper. Each pass uses
+at most four Task gets including its own, and all business records remain
+unchanged. Workflow blobs are `2cc2a3b73f018fc4bf899112123a6885b2009bc1`
+(legacy) and `d896f5a70733ae6dac0ffd0d03eb60e39aa319c6` (candidate).
+Private reproduction, fixtures and logs are retained at
+`.state/workload-implementation-20261109/review-rotation-reproduction.md`;
+temporary App-specific files were removed from the Host experiment checkout.
+This verifies saved progress and migration with scripted advice, not a full
+installed App, model judgment, live activation or changed business behavior.
+No additional Host source change or repeated Host full gate was needed.

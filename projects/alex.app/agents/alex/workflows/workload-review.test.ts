@@ -223,3 +223,178 @@ test("shared execution changes warrant method advice while unchanged observation
   expect(f.prompts[1]).toContain('"occupied":2,"remaining":0');
   expect(f.task.status).toBe("waiting");
 });
+
+test("bounded exact reads rotate through a stable page and unchanged revisits make no model call", async () => {
+  const f = fixture();
+  f.tasks.splice(1, 1, ...Array.from({ length: 6 }, (_, index) => ({
+    ...structuredClone(f.task), id: `commitment-${index + 1}`, outcome: `Required delivery ${index + 1}`,
+  })));
+  f.own.result = { workloadReview: state(await execute(f.ctx)) };
+  expect(f.reads.slice(-3)).toEqual(["commitment-1", "commitment-2", "commitment-3"]);
+  setSystemTime(now + WORKLOAD_REVIEW_INTERVAL_MS);
+  f.own.result = { workloadReview: state(await execute(f.ctx)) };
+  expect(f.reads.slice(-3)).toEqual(["commitment-4", "commitment-5", "commitment-6"]);
+  expect(f.prompts).toHaveLength(2);
+  expect(f.prompts[1]).toContain("Required delivery 6");
+  setSystemTime(now + 2 * WORKLOAD_REVIEW_INTERVAL_MS);
+  f.own.result = { workloadReview: state(await execute(f.ctx)) };
+  expect(f.reads.slice(-3)).toEqual(["commitment-1", "commitment-2", "commitment-3"]);
+  expect(f.prompts).toHaveLength(2);
+  const obligations = f.tasks[1]!.currentObligations;
+  if (!obligations?.available) throw new Error("Missing fixture obligations");
+  obligations.inputWaits.items.push({ key: "new-obligation", pending: true } as never);
+  setSystemTime(now + 3 * WORKLOAD_REVIEW_INTERVAL_MS);
+  f.own.result = { workloadReview: state(await execute(f.ctx)) };
+  setSystemTime(now + 4 * WORKLOAD_REVIEW_INTERVAL_MS);
+  f.own.result = { workloadReview: state(await execute(f.ctx)) };
+  expect(f.prompts).toHaveLength(3);
+  expect(f.prompts[2]).toContain("new-obligation");
+});
+
+test("review progresses beyond the first Task page with matching bounded workload reads", async () => {
+  const f = fixture();
+  const commitments = Array.from({ length: 21 }, (_, index) => ({
+    ...structuredClone(f.task), id: `commitment-${String(index + 1).padStart(2, "0")}`,
+    outcome: `Required delivery ${index + 1}`,
+  }));
+  f.tasks.splice(1, 1, ...commitments);
+  const cursors: Array<string | undefined> = [];
+  const workloadCursors: Array<string | undefined> = [];
+  f.ctx.read.tasks.list = async options => {
+    expect(options?.limit).toBe(20);
+    cursors.push(options?.cursor);
+    return options?.cursor === "next-page"
+      ? { items: structuredClone(commitments.slice(20)) }
+      : { items: structuredClone(commitments.slice(0, 20)), nextCursor: "next-page" };
+  };
+  f.ctx.read.tasks.workload = async options => {
+    expect(options?.limit).toBe(20);
+    workloadCursors.push(options?.cursor);
+    return structuredClone(f.workload);
+  };
+  for (let pass = 0; pass < 9; pass++) {
+    setSystemTime(now + pass * WORKLOAD_REVIEW_INTERVAL_MS);
+    const before = f.reads.length;
+    f.own.result = { workloadReview: state(await execute(f.ctx)) };
+    expect(f.reads.length - before).toBeLessThanOrEqual(4); // Own Task plus at most three exact commitments.
+  }
+  expect(cursors).toEqual([...Array(7).fill(undefined), "next-page", undefined]);
+  expect(workloadCursors).toEqual(cursors);
+  expect(f.prompts).toHaveLength(8);
+  expect(f.prompts[7]).toContain("Required delivery 21");
+  expect(f.reads).toContain("commitment-21");
+});
+
+test("an unchanged legacy result migrates progress without purchasing the same review again", async () => {
+  const f = fixture();
+  const first = state(await execute(f.ctx));
+  if (typeof first.fingerprint !== "string") throw new Error("Missing initial fingerprint");
+  f.own.result = { workloadReview: { version: 1, fingerprint: first.fingerprint,
+    reviewedAt: first.reviewedAt, decision: first.decision } };
+  setSystemTime(now + WORKLOAD_REVIEW_INTERVAL_MS);
+  const migrated = await execute(f.ctx);
+  expect(migrated.summary).toContain("No changed");
+  expect(f.prompts).toHaveLength(1);
+  const progress = state(migrated);
+  expect(progress.version).toBe(2);
+  expect(progress.offset).toBe(0);
+  expect((progress.recent as Array<{ fingerprint: string }>)[0]?.fingerprint).toBe(first.fingerprint);
+  f.own.result = { workloadReview: state(migrated) };
+  expect((await execute(f.ctx)).summary).toContain("cooldown");
+  expect(f.prompts).toHaveLength(1);
+});
+
+test("a changed exact commitment preserves the next batch for retry without a helper call", async () => {
+  const f = fixture();
+  f.tasks.splice(1, 1, ...Array.from({ length: 6 }, (_, index) => ({
+    ...structuredClone(f.task), id: `commitment-${index + 1}`,
+  })));
+  f.own.result = { workloadReview: state(await execute(f.ctx)) };
+  const retained = structuredClone(f.own.result);
+  setSystemTime(now + WORKLOAD_REVIEW_INTERVAL_MS);
+  const get = f.ctx.read.tasks.get;
+  f.ctx.read.tasks.get = async id => {
+    const task = await get(id);
+    return id === "commitment-4" && task ? { ...task, generation: task.generation + 1 } : task;
+  };
+  const failed = await execute(f.ctx);
+  expect(failed.status).toBe("blocked");
+  expect(failed.output).toBeUndefined();
+  expect(f.own.result).toEqual(retained);
+  expect(f.prompts).toHaveLength(1);
+  f.ctx.read.tasks.get = get;
+  f.own.result = { workloadReview: state(await execute(f.ctx)) };
+  expect(f.reads.slice(-3)).toEqual(["commitment-4", "commitment-5", "commitment-6"]);
+  expect(f.prompts).toHaveLength(2);
+});
+
+test("a failed helper retains the same next commitments for retry", async () => {
+  const f = fixture();
+  f.tasks.splice(1, 1, ...Array.from({ length: 6 }, (_, index) => ({
+    ...structuredClone(f.task), id: `commitment-${index + 1}`,
+  })));
+  f.own.result = { workloadReview: state(await execute(f.ctx)) };
+  const retained = structuredClone(f.own.result);
+  setSystemTime(now + WORKLOAD_REVIEW_INTERVAL_MS);
+  f.setResponse({ status: "error" });
+  expect((await execute(f.ctx)).status).toBe("blocked");
+  expect(f.own.result).toEqual(retained);
+  f.setResponse({ status: "done", output: { decision: "retain", reason: "Required work remains owed." } });
+  f.own.result = { workloadReview: state(await execute(f.ctx)) };
+  expect(f.reads.slice(-3)).toEqual(["commitment-4", "commitment-5", "commitment-6"]);
+  expect(f.prompts).toHaveLength(3);
+  expect(f.prompts[2]).toContain("Previous recommendation for this batch: null");
+});
+
+test.each(["offset", "cache-bound", "duplicate-key", "decision-key"] as const)(
+  "damaged %s progress remains visible without silently restarting the scan", async kind => {
+    const f = fixture();
+    const saved = state(await execute(f.ctx));
+    const recent = saved.recent as Array<{ key: string; fingerprint: string }>;
+    if (kind === "offset") saved.offset = 21;
+    if (kind === "cache-bound") saved.recent = Array(65).fill(recent[0]);
+    if (kind === "duplicate-key") saved.recent = [recent[0], recent[0]];
+    if (kind === "decision-key") delete saved.decisionKey;
+    f.own.result = { workloadReview: saved };
+    setSystemTime(now + WORKLOAD_REVIEW_INTERVAL_MS);
+    expect((await execute(f.ctx)).status).toBe("blocked");
+    expect(f.prompts).toHaveLength(1);
+    expect(f.own.result.workloadReview).toEqual(saved);
+  },
+);
+
+test("an empty discovery page advances its continuation without buying a planning call", async () => {
+  const f = fixture();
+  f.ctx.read.tasks.list = async options => options?.cursor === "next-page"
+    ? { items: [structuredClone(f.task)] }
+    : { items: [structuredClone(f.own)], nextCursor: "next-page" };
+  f.own.result = { workloadReview: state(await execute(f.ctx)) };
+  expect(f.prompts).toHaveLength(0);
+  setSystemTime(now + WORKLOAD_REVIEW_INTERVAL_MS);
+  f.own.result = { workloadReview: state(await execute(f.ctx)) };
+  expect(f.prompts).toHaveLength(1);
+  expect(f.prompts[0]).toContain("Restore required delivery");
+});
+
+test("the retained observation window stays bounded during a larger population scan", async () => {
+  const f = fixture();
+  const commitments = Array.from({ length: 70 }, (_, index) => ({
+    ...structuredClone(f.task), id: `commitment-${index}`,
+  }));
+  f.tasks.splice(1, 1, ...commitments);
+  f.ctx.read.tasks.list = async options => {
+    const index = options?.cursor ? Number(options.cursor.slice(5)) : 0;
+    return { items: [structuredClone(commitments[index]!)],
+      ...(index < 69 ? { nextCursor: `page-${index + 1}` } : {}) };
+  };
+  for (let pass = 0; pass <= 70; pass++) {
+    setSystemTime(now + pass * WORKLOAD_REVIEW_INTERVAL_MS);
+    const result = await execute(f.ctx);
+    expect(result.status).toBe("done");
+    const progress = state(result);
+    expect((progress.recent as unknown[]).length).toBeLessThanOrEqual(64);
+    expect(JSON.stringify(progress).length).toBeLessThan(16_384);
+    f.own.result = { workloadReview: progress };
+  }
+  expect(f.prompts).toHaveLength(71); // The first batch was evicted before the complete scan returned to it.
+});

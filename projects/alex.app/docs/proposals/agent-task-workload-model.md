@@ -346,8 +346,12 @@ deferred demand even when it has not become a Task.
 Include old ready obligations in review so low-priority work cannot silently
 disappear behind repeated urgent arrivals. The agent must explain continued
 deferral or seek a changed commitment; queue age alone does not grant priority,
-funding or a delivery guarantee. Automatic priority aging is not required for
-the first version.
+funding or a delivery guarantee. A bounded review must advance through its
+selected commitments and discovery pages across passes; repeatedly inspecting
+the same prefix leaves older work invisible. Retain review progress and bounded
+unchanged-evidence memory in the existing accepted result, with explicit scope
+and retention limits. Automatic priority aging is not required for the first
+version.
 
 When no useful authorized work remains, idle capacity is appropriate. Neither
 maximum utilization nor minimum live Task count is the objective.
