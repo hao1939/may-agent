@@ -177,6 +177,26 @@ test("mechanical capacity rechecks stay quiet while changed method demand warran
   expect(f.prompts[1]).toContain('"requiredSlots":3');
 });
 
+test("unchanged workspace shortages stay quiet and recovery warrants reconsideration", async () => {
+  const f = fixture();
+  f.workload.counts = { ...f.workload.counts, runnable: 0, waiting: 1 };
+  f.workload.examples.blockers = [{ taskId: "incident", kind: "workspace", reason: "workspace-capacity", retryAt: now + 60_000,
+    workspace: { operation: "checkout", requiredBytes: 4096, availableBytes: 0, observedAt: now } }];
+  f.own.result = { workloadReview: state(await execute(f.ctx)) };
+  setSystemTime(now + WORKLOAD_REVIEW_INTERVAL_MS);
+  f.workload.examples.blockers[0].retryAt = Date.now() + 60_000;
+  f.workload.examples.blockers[0].workspace!.observedAt = Date.now();
+  f.workload.examples.blockers[0].workspace!.availableBytes = 512;
+  expect((await execute(f.ctx)).summary).toContain("No changed");
+  expect(f.prompts).toHaveLength(1);
+  expect(f.prompts[0]).toContain("A workspace blocker is a dated checkout prerequisite");
+  f.workload.counts = { ...f.workload.counts, runnable: 1, waiting: 0 };
+  f.workload.examples.blockers = [];
+  expect((await execute(f.ctx)).summary).toContain("advice retained");
+  expect(f.prompts).toHaveLength(2);
+  expect(f.task.status).toBe("waiting");
+});
+
 test("shared execution changes warrant method advice while unchanged observations stay quiet", async () => {
   const f = fixture(true);
   f.workload.limits.sharedHost = { available: true, scope: "installation", maxConcurrent: 4,

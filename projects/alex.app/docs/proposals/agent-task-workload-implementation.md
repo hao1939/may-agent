@@ -989,3 +989,27 @@ capacity owners passed **52 / 258**. Static and hosted Quality/Container checks
 passed. The frozen complete local gate passed: **4,123 tests / 3 existing skips /
 0 failures / 24,019 assertions across 358 files**. Independent review remains. No new ledger, queue or schema is introduced;
 configuration and activation stay with trusted installation authority.
+
+Host [#430](https://github.com/hao1939/may-agent/pull/430), revision
+`89cdc9c9f4`, incorporates #399's checkout fence and converges its known disk
+rejection on the existing Task resource-deferral path. The actual Git/runtime
+regression first consumed a failure retry; it now preserves the assignment and
+input without execution failures. Known-shortage rechecks run before another
+claim and spend no credits, including runtime reinstall and unavailable samples.
+Workload reports waiting demand and a dated, Task-specific checkout blocker,
+without claiming fleet disk health. Exact fences preserve competing input,
+revision and cancellation. Git/constraint owners passed **37 / 220**; broader
+runtime/retry/projection/workload/admission owners passed **364 / 4,241**. Static
+checks passed; frozen full local and hosted gates are running. Independent review
+remains. This increment still charges the first attempt that discovers the
+shortage. Preclaim discovery and invalidating a retained observation when the
+source or installed workspace method changes remain the next refinement.
+
+The paired App policy suppresses repeated review from sampling timestamps or
+byte changes that still leave the same checkout short. Its regression first
+requested another judgment for an unchanged shortage, then passed. Workload and
+disposition workflows passed **25 / 352**; strict types against #430's SDK passed.
+The prompt preserves the obligation and scopes this evidence to the exact
+checkout. These fixtures prove policy mechanics, not model comprehension or live
+adoption. Integrate both Host dependencies (#399 and #429's chain) and the paired
+App source before a separately authorized activation.

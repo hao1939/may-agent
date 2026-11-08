@@ -99,6 +99,11 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       blockers: workload.examples.blockers.map(blocker => blocker.kind === "capacity"
         ? { taskId: blocker.taskId, kind: blocker.kind, reason: blocker.reason,
             scope: blocker.scope, requiredSlots: blocker.requiredSlots }
+        : blocker.kind === "workspace"
+          ? { taskId: blocker.taskId, kind: blocker.kind, reason: blocker.reason,
+              workspace: blocker.workspace && { operation: blocker.workspace.operation,
+                requiredBytes: blocker.workspace.requiredBytes,
+                fits: blocker.workspace.availableBytes >= blocker.workspace.requiredBytes } }
         : blocker),
     };
     const fingerprint = createHash("sha256").update(JSON.stringify(evidence)).digest("hex");
@@ -113,6 +118,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       "A funding hold retains the obligation; recommend an authorized funding or method decision. Ordinary sponsor credits and a Task's root allowance have different scopes. This review's protected credits cannot fund business work, and available credits do not establish spare execution capacity.",
       "A capacity blocker reports minimum simultaneous places for the current method, including its caller. Prefer a smaller method or durable delegation when inline cooperation cannot fit; a mechanical retry time is not new business evidence.",
       "Shared Host and recipient limits describe actual installation execution; controller capacity is a separate dispatch observation. A free Host place cannot override a full recipient or root. The current-root capacity belongs only to this review's bound assignment, not the other commitments being reviewed. These observations grant no start permit; admission rechecks every applicable limit.",
+      "A workspace blocker is a dated checkout prerequisite for that exact Task. It does not establish fleet disk health or whether another operation fits. Preserve the obligation, consider an authorized smaller method or useful prerequisite recovery, and let mechanical samples run without repeated model reviews of the same shortage.",
       "Supported spare capacity may justify one useful opportunity grounded in an existing commitment and concrete evidence. Few runnable Tasks, blocked idle, unknown resource health or a partial page do not establish spare capacity.",
       "Do not create filler Tasks or prefer closure to reduce counts. Closure depends on fulfillment or an explicit creator decision to end responsibility. Keep standing services and unanswered obligations.",
       "Return advice only. Reserve access grants no portfolio, closure, funding or priority authority. Use readonly tools if more evidence is needed. A taskId must be one of the exact commitments supplied here; omit it when evidence is insufficient. Applied changes are a separate authorized operation.",
