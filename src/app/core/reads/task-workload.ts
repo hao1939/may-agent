@@ -136,9 +136,11 @@ export function readTaskWorkload(
       resourceHealth: { available: false },
       funding: readWorkloadFunding(config, opts.workloadSource?.currentTaskId, observedAt),
     };
-    const blocker = (taskId: string, kind: TaskWorkload["examples"]["blockers"][number]["kind"], constraint?: { reason: string; retryAt: number | null }) => {
+    const blocker = (taskId: string, kind: TaskWorkload["examples"]["blockers"][number]["kind"], constraint?: { reason: string; retryAt: number | null; requiredSlots?: number; scope?: { kind: "host" | "agent" | "root" | "recipient" } }) => {
       if (result.examples.blockers.length < 5 && Buffer.byteLength(taskId) <= 256)
-        result.examples.blockers.push({ taskId, kind, ...(constraint ? { reason: constraint.reason, retryAt: constraint.retryAt } : {}) });
+        result.examples.blockers.push({ taskId, kind, ...(constraint ? { reason: constraint.reason, retryAt: constraint.retryAt,
+          ...(constraint.requiredSlots ? { requiredSlots: constraint.requiredSlots } : {}),
+          ...(constraint.scope ? { scope: constraint.scope.kind } : {}) } : {}) });
       else result.examples.truncated = true;
     };
     for (const task of page.items) {

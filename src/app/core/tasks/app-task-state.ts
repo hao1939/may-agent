@@ -254,7 +254,8 @@ export function pendingTaskFunding(resource: AppTaskResource, now = Date.now()):
 
 export function pendingTaskExecutionConstraint(resource: AppTaskResource, now = Date.now()) {
   const constraint = resource.status.executionConstraint;
-  return constraint && constraint.retryAt > now ? constraint : undefined;
+  return constraint && (constraint.generation === undefined || constraint.generation === resource.metadata.generation)
+    && constraint.retryAt > now ? constraint : undefined;
 }
 
 export type AppTaskAcceptanceBasis = TaskAcceptanceBasis;

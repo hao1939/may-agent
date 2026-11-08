@@ -2,10 +2,11 @@ import { ExecutionDeferredError, Type, defineApp } from "@may-agent/sdk";
 import { EventBus } from "../app/core/events/bus.js";
 import { createWorkflowRunner, createWorkflowTool } from "./workflow-tool.js";
 import { getWorkflowRun } from "./db/workflows.js";
+import { createTaskAgentRunner } from "../app/adapters/executors/managed-agent.js";
 import { createTaskWorkflowRunner } from "../app/adapters/executors/workflow.js";
 import { runTaskAttempt } from "../app/core/tasks/attempt-runner.js";
 import { admitTaskInput } from "../app/core/state/inbox.js";
-import { afterEach, expect, spyOn, test } from "bun:test";
+import { afterEach, expect, setSystemTime, spyOn, test } from "bun:test";
 import { execFile } from "node:child_process";
 import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -13,13 +14,17 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
 import { fakeModel } from "../../test/fixtures/model.js";
+import { readTaskWorkload } from "../app/core/reads/task-workload.js";
+import * as bashLifecycle from "./tools/bash.js";
 import { createAgentRun } from "./agent-runner.js";
 import { SubagentManager } from "./manager.js";
 import { closeDb, getDb } from "./db/connection.js";
 import { stateTransaction } from "./db/transaction.js";
-import { readSessionMessages, type TaskBinding } from "./persistence.js";
+import { readSessionMessages, readSessionProcessOwner, type TaskBinding } from "./persistence.js";
 import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
 import { TaskBudgetAdmissionStore, TaskBudgetDeferredError } from "../app/core/state/task-budget-admission.js";
+import { TaskExecutionStore } from "../app/core/state/task-execution-store.js";
+import { installTaskExecutionLimit, releaseTaskExecutionReservation, releaseJoinedTaskAttemptExecution, TaskExecutionDeferredError } from "../app/core/state/task-execution-admission.js";
 import { taskPrimaryStart } from "../app/core/state/task-budget-managed-start.js";
 import {
   appTaskContext,
@@ -34,9 +39,10 @@ import {
 const cleanups: Array<() => Promise<void>> = [];
 afterEach(async () => {
   for (const close of cleanups.splice(0)) await close();
+  setSystemTime();
 });
 
-function fixture(credits = 4) {
+function fixture(credits = 4, executionSlots?: number) {
   const root = mkdtempSync(join(tmpdir(), "may-managed-budget-"));
   const db = getDb(root);
   const accounting = new TaskBudgetAdmissionStore(db);
@@ -73,7 +79,15 @@ function fixture(credits = 4) {
       acceptance: ["Result accepted"],
     },
   });
-  const claimed = claimObservedAppTask(config, { taskId: "work", appAgent: "worker", handler: "agent" });
+  const recipient = { kind: "programmatic" as const, id: "fixture/worker" };
+  if (executionSlots !== undefined) {
+    installTaskExecutionLimit(db, { kind: "host" }, 8);
+    installTaskExecutionLimit(db, { kind: "agent", recipient }, 8);
+    installTaskExecutionLimit(db, { kind: "root", root: { appId: "sample", taskId: "work" } }, executionSlots);
+  }
+  const claimed = claimObservedAppTask(config, { taskId: "work", appAgent: "worker", handler: "agent",
+    ...(executionSlots !== undefined ? { execution: { recipient: () => recipient, lane: "background" as const } } : {}),
+  });
   if (claimed.kind !== "claimed") throw new Error("Expected funded attempt");
   const binding: TaskBinding = {
     appId: "sample",
@@ -82,15 +96,22 @@ function fixture(credits = 4) {
     attemptId: claimed.attemptId,
   };
   let factories = 0;
+  let rejectFactory = false;
+  const invocationStarts: Array<ReturnType<typeof Promise.withResolvers<void>>> = [];
   let hold = false;
   const started = Promise.withResolvers<void>();
   const replies: Array<() => void> = [];
+  const invocationReplies = new Map<number, () => void>();
   const bus = new EventBus();
   const manager = new SubagentManager({
     persistDir: root,
     bus,
     agentRunFactory: (options) => {
       factories++;
+      if (rejectFactory) throw new Error("Fixture agent factory failed");
+      const invocationStarted = Promise.withResolvers<void>();
+      invocationStarts.push(invocationStarted);
+      const invocationIndex = factories;
       return createAgentRun({
         ...options,
         streamFn: (model) => {
@@ -115,7 +136,9 @@ function fixture(credits = 4) {
             };
             stream.push({ type: "done", reason: "stop", message });
           };
+          invocationReplies.set(invocationIndex, reply);
           started.resolve();
+          invocationStarted.resolve();
           if (hold) replies.push(reply);
           else reply();
           return stream;
@@ -125,6 +148,7 @@ function fixture(credits = 4) {
   });
   manager.register({
     name: "worker",
+    hostIdentity: recipient.id,
     description: "Fixture worker",
     domain: "test",
     systemPrompt: "Work",
@@ -151,6 +175,9 @@ function fixture(credits = 4) {
     manager,
     started,
     factories: () => factories,
+    rejectFactory: () => { rejectFactory = true; },
+    startedInvocation: (index: number) => invocationStarts[index - 1]!.promise,
+    releaseInvocation: (index: number) => invocationReplies.get(index)!(),
     hold: (value: boolean) => {
       hold = value;
     },
@@ -550,4 +577,176 @@ test("caller rollback preserves the live parent claim and recovery facts togethe
   expect(f.store.listRecoveryCandidates()).toEqual(recovery);
   expect(f.view()?.rootCharged).toBe(2);
   expect(f.factories()).toBe(0);
+});
+
+test("a primary reuses its claim place; an inline helper with root c=1 is denied before charge or factory", async () => {
+  const f = fixture(10, 1); f.hold(true);
+  const executions = new TaskExecutionStore(f.db);
+  const scope = { kind: "root" as const, root: { appId: "sample", taskId: "work" } };
+  const primary = f.manager.run("worker", "Primary", { taskBinding: f.binding, taskPrimaryStart: taskPrimaryStart(f.binding) });
+  await f.started.promise;
+  expect(executions.usage(scope).occupied).toBe(1);
+  expect(() => f.manager.run("worker", "Helper", { parentSessionId: primary })).toThrow(TaskExecutionDeferredError);
+  expect(f.factories()).toBe(1);
+  expect(f.view()?.rootCharged).toBe(2);
+  expect(f.store.readAttempt(f.binding.attemptId)?.state).toBe("running");
+  f.release();
+  await f.manager.waitFor(primary);
+  // The actual Task body still owns this primary place until it unwinds.
+  expect(executions.usage(scope).occupied).toBe(1);
+});
+
+test("an admitted helper shares its start identity with its debit and releases only after joined execution", async () => {
+  const f = fixture(10, 2); f.hold(true);
+  const executions = new TaskExecutionStore(f.db);
+  const scope = { kind: "root" as const, root: { appId: "sample", taskId: "work" } };
+  const primary = f.manager.run("worker", "Primary", { taskBinding: f.binding, taskPrimaryStart: taskPrimaryStart(f.binding) });
+  await f.started.promise;
+  const helper = f.manager.run("worker", "Helper", { parentSessionId: primary });
+  await f.startedInvocation(2);
+  expect(executions.usage(scope).occupied).toBe(2);
+  expect(f.view()?.rootCharged).toBe(3);
+  const debited = f.db.prepare("SELECT invocation_id FROM task_budget_managed_starts WHERE session_id = ?").get(helper);
+  const helperReceipt = executions.activeForAttempt(scope.root, f.binding.attemptId)
+    .find(receipt => receipt.request.operation.kind === "helper");
+  expect(helperReceipt?.request.operation).toMatchObject({ kind: "helper", invocationId: debited?.invocation_id, sessionId: helper });
+  f.manager.cancel(helper);
+  expect(executions.usage(scope).occupied).toBe(2);
+  f.release();
+  await Promise.all([f.manager.waitFor(helper), f.manager.waitFor(primary)]);
+  expect(executions.usage(scope).occupied).toBe(1);
+});
+
+test("a managed primary cannot substitute another resolved owner for its claim recipient", () => {
+  const f = fixture(10, 2);
+  const definition = f.manager.getAgentDefinition("worker")!;
+  f.manager.register({ ...definition, hostIdentity: "fixture/replacement" });
+  expect(() => f.manager.run("worker", "Wrong owner", {
+    taskBinding: f.binding, taskPrimaryStart: taskPrimaryStart(f.binding),
+  })).toThrow("recipient");
+  expect(f.factories()).toBe(0);
+  expect(f.view()?.rootCharged).toBe(2);
+});
+
+test("an unhandled inline capacity denial retains demand without spending retries or spinning after parent release", async () => {
+  const f = fixture(10, 1);
+  completeAppTask(f.config, f.claim, { summary: "Earlier result" });
+  const executions = new TaskExecutionStore(f.db);
+  const prior = executions.read({ kind: "attempt", task: f.binding, attemptId: f.binding.attemptId })!;
+  releaseTaskExecutionReservation(f.db, prior.receipt, { kind: "confirmed-nonstart", evidenceId: "fixture-never-dispatched" });
+  const revise = (outcome: string) => observeAppTaskIntent(f.config, {
+    appAgent: "worker", creator: { appId: "sample" }, creatorRevision: true,
+    intent: { id: "work", parentId: "root", outcome, acceptance: ["Facts returned"], executor: "inspect" },
+  });
+  revise("Collect more facts");
+  admitTaskInput(f.config, { appId: "sample", attachment: { kind: "existing", taskId: "work" },
+    idempotencyKey: "ask:capacity", inputContext: { id: "capacity", source: { kind: "human", id: "person" },
+      input: { kind: "work", data: {} } } });
+  let calls = 0;
+  let delegate = true;
+  const run = () => runTaskAttempt({ taskId: "work",
+    descriptor: { id: "sample", appDir: f.config.appDir, projectDir: f.root, agent: "worker", resourceStore: f.store,
+      reconciliationPaused: false, app: defineApp({ id: "sample", version: 1, agent: "worker", inputSchema: Type.Object({}), tasks: {} }) },
+    opts: { projectRoot: f.root, projectsRoot: f.root, persistDir: f.root, agentsRoot: f.root,
+      sharedRoot: join(f.root, "shared"), bus: f.bus, agents: createTaskAgentRunner({ manager: f.manager }).snapshot(),
+      executors: { inspect: async attempt => {
+        calls++;
+        if (delegate) await f.manager.callAgent("worker", "Required helper", { taskBinding: {
+          appId: "sample", taskId: "work", generation: attempt.task.generation, attemptId: attempt.attemptId,
+        } });
+        return { state: "converged", summary: "Facts retained", facts: [] };
+      } } },
+    dispatch: { lane: "human", enqueuedAt: Date.now(), startedAt: Date.now(), readyWaitMs: 0 }, reportTiming: () => {},
+  });
+  await run();
+  expect(calls).toBe(1);
+  expect(f.factories()).toBe(0);
+  expect(f.store.readTask("work")?.status).toMatchObject({ phase: "pending",
+    executionConstraint: { reason: "execution-capacity", requiredSlots: 2 } });
+  expect(readTaskWorkload({ taskStateConfig: f.config }).examples.blockers).toEqual([
+    { taskId: "work", kind: "capacity", scope: "root", reason: "execution-capacity", requiredSlots: 2, retryAt: expect.any(Number) },
+  ]);
+  expect(executions.usage({ kind: "root", root: f.binding }).occupied).toBe(0);
+  expect(f.view()?.rootCharged).toBe(3);
+  expect(f.store.readTask("work")?.status.executionFailures).toBeUndefined();
+  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:capacity")).toBeNull();
+  expect(f.store.listRecoveryCandidates().items).toEqual([]);
+  await run();
+  expect(calls).toBe(1);
+  expect(f.view()?.rootCharged).toBe(3);
+  setSystemTime(f.store.readTask("work")!.status.executionConstraint!.retryAt + 1);
+  await run();
+  expect(calls).toBe(1);
+  expect(f.view()?.rootCharged).toBe(3);
+  expect(f.store.listRecoveryCandidates().items).toEqual([]);
+  delegate = false;
+  revise("Collect facts with a sequential method");
+  await run();
+  expect(calls).toBe(2);
+  expect(f.store.readTask("work")?.status.executionConstraint).toBeUndefined();
+  expect(f.view()?.rootCharged).toBe(4);
+});
+
+test("a helper cleanup failure remains joined after it leaves the active-session map", async () => {
+  const f = fixture(10, 2); f.hold(true);
+  let helper = "";
+  const drain = spyOn(bashLifecycle, "drainSessionBashProcessGroups").mockImplementation(async (_root, id) => id !== helper);
+  try {
+    const primary = f.manager.run("worker", "Primary", { taskBinding: f.binding, taskPrimaryStart: taskPrimaryStart(f.binding) });
+    await f.started.promise;
+    helper = f.manager.run("worker", "Helper", { parentSessionId: primary });
+    await f.startedInvocation(2);
+    const joined = f.manager.waitFor(helper);
+    f.releaseInvocation(2);
+    await expect(joined).rejects.toThrow("cleanup is unconfirmed");
+    expect(f.manager.hasActiveSession(helper)).toBe(false);
+    f.releaseInvocation(1);
+    await expect(f.manager.waitFor(primary)).rejects.toThrow("cleanup is unconfirmed");
+    expect(new TaskExecutionStore(f.db).usage({ kind: "root", root: f.binding }).occupied).toBe(2);
+  } finally { drain.mockRestore(); }
+});
+
+test("joined release cannot race a late managed start admitted during session confirmation", async () => {
+  const f = fixture(10, 2);
+  await f.manager.callAgent("worker", "Primary", { taskBinding: f.binding, taskPrimaryStart: taskPrimaryStart(f.binding) });
+  f.hold(true);
+  let helper = "";
+  expect(releaseJoinedTaskAttemptExecution(f.db, f.binding, f.binding.attemptId, () => {
+    helper = f.manager.run("worker", "Late helper", { taskBinding: f.binding });
+    return true;
+  })).toBe(false);
+  const executions = new TaskExecutionStore(f.db);
+  expect(executions.usage({ kind: "root", root: f.binding }).occupied).toBe(2);
+  await f.startedInvocation(2);
+  f.releaseInvocation(2);
+  await f.manager.waitFor(helper);
+  expect(releaseJoinedTaskAttemptExecution(f.db, f.binding, f.binding.attemptId, id => !f.manager.hasActiveSession(id))).toBe(true);
+  expect(executions.usage({ kind: "root", root: f.binding }).occupied).toBe(0);
+});
+
+test("Task cancellation retains the place until the actual primary and its cleanup join", async () => {
+  const f = fixture(10, 1); f.hold(true);
+  const primary = f.manager.run("worker", "Primary", { taskBinding: f.binding, taskPrimaryStart: taskPrimaryStart(f.binding) });
+  await f.started.promise;
+  const task = f.store.readTask("work")!;
+  cancelAppTask(f.config, { appId: "sample", taskId: "work", expectedGeneration: task.metadata.generation,
+    expectedResourceVersion: task.metadata.resourceVersion, reason: "Withdrawn" });
+  expect(releaseJoinedTaskAttemptExecution(f.db, f.binding, f.binding.attemptId, id => !f.manager.hasActiveSession(id))).toBe(false);
+  f.manager.cancel(primary);
+  f.releaseInvocation(1);
+  await f.manager.waitFor(primary);
+  expect(releaseJoinedTaskAttemptExecution(f.db, f.binding, f.binding.attemptId, id => !f.manager.hasActiveSession(id))).toBe(true);
+  expect(new TaskExecutionStore(f.db).usage({ kind: "root", root: f.binding }).occupied).toBe(0);
+});
+
+test("a confirmed factory non-start clears its helper place and execution marker while retaining its admitted debit", () => {
+  const f = fixture(10, 2); f.rejectFactory();
+  expect(() => f.manager.run("worker", "Helper", { taskBinding: f.binding })).toThrow("Fixture agent factory failed");
+  const executions = new TaskExecutionStore(f.db);
+  expect(executions.usage({ kind: "root", root: f.binding }).occupied).toBe(1);
+  expect(f.view()?.rootCharged).toBe(3);
+  const start = f.db.prepare("SELECT invocation_id, session_id FROM task_budget_managed_starts").get()!;
+  expect(readSessionProcessOwner(f.root, start.session_id as string)).toBeNull();
+  expect(executions.read({ kind: "helper", invocationId: start.invocation_id as string,
+    sessionId: start.session_id as string, task: f.binding, attemptId: f.binding.attemptId })?.released).toBe(true);
 });

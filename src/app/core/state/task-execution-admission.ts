@@ -1,8 +1,9 @@
 import { ExecutionDeferredError } from "@may-agent/sdk";
+import type { TaskBinding } from "../../../lib/persistence.js";
 import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { currentProcessInstance } from "../../../lib/process-identity.js";
-import type { ExecutionRecipient } from "../../../lib/execution-recipient.js";
+import { executionRecipientKey, type ExecutionRecipient } from "../../../lib/execution-recipient.js";
 import { AppTaskResourceStore, type AppTaskResourceMutation } from "./app-task-resource-store.js";
 import { TaskBudgetStore, type BudgetTaskRef } from "./task-budget-store.js";
 import {
@@ -19,6 +20,10 @@ export type TaskExecutionConstraint = {
   kind: "deferred";
   reason: "execution-policy" | "execution-capacity" | "execution-recipient";
   task: BudgetTaskRef;
+  /** Minimum simultaneous places for the denied method, including its caller. */
+  requiredSlots?: number;
+  /** A revised method rechecks admission instead of inheriting an obsolete hold. */
+  generation?: number;
   scope: ExecutionScope | { kind: "recipient"; agent: string };
   scopeKey: string;
   lane: ExecutionRequest["lane"];
@@ -28,7 +33,7 @@ export type TaskExecutionConstraint = {
 export class TaskExecutionDeferredError extends ExecutionDeferredError {
   constructor(readonly constraint: TaskExecutionConstraint, root: BudgetTaskRef | null) {
     super({ resource: "execution-capacity", reason: constraint.reason, retryAt: constraint.retryAt,
-      task: constraint.task, root });
+      task: constraint.task, root, scope: constraint.scope.kind, ...(constraint.requiredSlots ? { requiredSlots: constraint.requiredSlots } : {}) });
     this.name = "TaskExecutionDeferredError";
   }
 }
@@ -42,7 +47,7 @@ function scopeKey(scope: TaskExecutionConstraint["scope"]): string {
 /** Private claim admission. Installed limits are still unavailable for production
  * activation until managed starts and complete descendant recovery are wired. */
 function reserveTaskAttemptExecution(
-  db: SqliteDb, input: { task: BudgetTaskRef; attemptId: string; agent: string; execution?: TaskExecutionAdmissionContext },
+  db: SqliteDb, input: { task: BudgetTaskRef; attemptId: string; generation: number; agent: string; execution?: TaskExecutionAdmissionContext },
   now = Date.now(),
 ): ExecutionReservation | null {
   const store = new TaskExecutionStore(db);
@@ -52,7 +57,7 @@ function reserveTaskAttemptExecution(
   const root = new TaskBudgetStore(db).binding(input.task);
   const defer = (reason: TaskExecutionConstraint["reason"], scope: TaskExecutionConstraint["scope"]): never => {
     throw new TaskExecutionDeferredError({ kind: "deferred", reason, task: input.task,
-      scope, scopeKey: scopeKey(scope), lane, retryAt: now + 60_000 }, root);
+      scope, scopeKey: scopeKey(scope), lane, requiredSlots: 1, generation: input.generation, retryAt: now + 60_000 }, root);
   };
   if (!recipient) return defer("execution-recipient", { kind: "recipient", agent: input.agent });
   const result = store.reserve({
@@ -77,14 +82,51 @@ export function admitTaskMutationExecution(db: SqliteDb, appId: string, mutation
     if (!resource || resource.status.currentAttemptId !== attempt.metadata.id || resource.metadata.generation !== attempt.taskGeneration)
       throw new Error("Execution admission requires its exact resource claim");
     reserveTaskAttemptExecution(db, { task: { appId, taskId: attempt.taskId },
-      attemptId: attempt.metadata.id, agent: attempt.owner, execution: mutation.execution });
+      attemptId: attempt.metadata.id, generation: attempt.taskGeneration, agent: attempt.owner, execution: mutation.execution });
   }
+}
+
+/** Managed start joins the same transaction as its existing invocation debit.
+ * The paid primary adopts the claim; every later/helper invocation reserves anew. */
+export function reserveManagedTaskExecution(
+  db: SqliteDb,
+  input: { task: BudgetTaskRef; attemptId: string; generation: number; invocationId: string; sessionId: string;
+    primaryCovered: boolean; recipient: ExecutionRecipient | null; agent: string },
+  now = Date.now(),
+): ExecutionReservation | null {
+  const store = new TaskExecutionStore(db);
+  if (!store.configured()) return null;
+  const saved = store.read({ kind: "attempt", task: input.task, attemptId: input.attemptId });
+  if (!saved || saved.released || saved.receipt.owner?.processIdentity !== currentProcessInstance().processIdentity)
+    throw new Error("Managed execution requires its active local claim reservation; historical execution needs explicit adoption");
+  const lane = saved.receipt.request.lane;
+  const root = new TaskBudgetStore(db).binding(input.task);
+  const defer = (reason: TaskExecutionConstraint["reason"], scope: TaskExecutionConstraint["scope"]): never => {
+    throw new TaskExecutionDeferredError({ kind: "deferred", reason, task: input.task,
+      scope, scopeKey: scopeKey(scope), lane, generation: input.generation,
+      requiredSlots: 1 + store.activeForAttempt(input.task, input.attemptId).filter(receipt =>
+        scope.kind === "host" || scope.kind === "root" ||
+        (scope.kind === "agent" && executionRecipientKey(receipt.request.recipient) === executionRecipientKey(scope.recipient)),
+      ).length, retryAt: now + 60_000 }, root);
+  };
+  if (!input.recipient) return defer("execution-recipient", { kind: "recipient", agent: input.agent });
+  if (input.primaryCovered) {
+    if (executionRecipientKey(saved.receipt.request.recipient) !== executionRecipientKey(input.recipient))
+      throw new Error("Primary execution recipient does not match its pinned claim recipient");
+    return saved.receipt;
+  }
+  const reserved = store.reserve({ operation: { kind: "helper", task: input.task, attemptId: input.attemptId,
+    invocationId: input.invocationId, sessionId: input.sessionId }, recipient: input.recipient,
+    lane, ownerId: currentProcessInstance().processIdentity }, now);
+  if (reserved.kind === "deferred") return defer(reserved.reason, reserved.scope);
+  if (reserved.kind === "unavailable" || reserved.replay) throw new Error("A managed invocation requires fresh execution admission");
+  return reserved.receipt;
 }
 
 export function executionStillConstrained(db: SqliteDb, constraint: TaskExecutionConstraint): boolean {
   const store = new TaskExecutionStore(db);
   if (!store.configured()) return false;
-  return constraint.scope.kind === "recipient" || store.blocked(constraint.scope, constraint.lane) !== null;
+  return constraint.scope.kind === "recipient" || store.blocked(constraint.scope, constraint.lane, constraint.requiredSlots ?? 1) !== null;
 }
 
 /** Reuse canonical fenced resources and recovery indexes, not a second queue. */
@@ -128,5 +170,34 @@ export function releaseTaskExecutionReservation(
         ...(root ? [{ kind: "root" as const, root }] : [])], now);
     }
     return released;
+  });
+}
+
+/** The local attempt body has unwound; canonical execution evidence still fences
+ * release even when business settlement closed or superseded the Task. */
+export function releaseJoinedTaskAttemptExecution(
+  db: SqliteDb, task: BudgetTaskRef, attemptId: string,
+  confirmSessionStopped?: (sessionId: string, binding: TaskBinding) => boolean,
+): boolean {
+  const executions = new TaskExecutionStore(db);
+  const saved = executions.read({ kind: "attempt", task, attemptId });
+  if (!saved || saved.released || saved.receipt.owner?.processIdentity !== currentProcessInstance().processIdentity) return false;
+  if (executions.activeForAttempt(task, attemptId).some(receipt => receipt.request.operation.kind !== "attempt")) return false;
+  const tasks = AppTaskResourceStore.inspectFromDb(db, task.appId);
+  const attempt = tasks.readAttempt(attemptId);
+  if (!attempt || attempt.taskId !== task.taskId) return false;
+  const primary = db.prepare(`SELECT session_id FROM task_budget_managed_starts
+    WHERE app_id = ? AND task_id = ? AND attempt_id = ? AND primary_covered = 1`).get(task.appId, task.taskId, attemptId);
+  const sessions = new Set([attempt.sessionId, primary?.session_id as string | undefined].filter((id): id is string => !!id));
+  const binding = { ...task, generation: attempt.taskGeneration, attemptId };
+  for (const id of sessions) if (!confirmSessionStopped?.(id, binding)) return false;
+  return stateTransaction(db, () => {
+    // Cleanup runs outside SQL. Fence any start/session attachment that raced it.
+    if (executions.activeForAttempt(task, attemptId).some(receipt => receipt.request.operation.kind !== "attempt")) return false;
+    if (tasks.readAttempt(attemptId)?.sessionId !== attempt.sessionId) return false;
+    const currentPrimary = db.prepare(`SELECT session_id FROM task_budget_managed_starts
+      WHERE app_id = ? AND task_id = ? AND attempt_id = ? AND primary_covered = 1`).get(task.appId, task.taskId, attemptId);
+    if (currentPrimary?.session_id !== primary?.session_id) return false;
+    return releaseTaskExecutionReservation(db, saved.receipt, { kind: "joined", evidenceId: attemptId });
   });
 }

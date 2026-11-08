@@ -359,6 +359,8 @@ export type TaskWorkload = {
       /** Resource constraint facts; neither failure nor a business disposition. */
       reason?: string;
       retryAt?: number | null;
+      requiredSlots?: number;
+      scope?: "host" | "agent" | "root" | "recipient";
     }>;
     /** Accepted idle results worth inspecting; neither unread nor proven fulfilled. */
     dispositionCandidates: Array<{ taskId: string; acceptedAttemptId: string }>;
@@ -462,6 +464,9 @@ export type ExecutionResult<T = unknown> = {
 /** A requested managed execution was not started. The caller retains its work. */
 export type ExecutionDeferral = {
   resource: "task-credit" | "execution-capacity";
+  /** Minimum simultaneous execution places needed by the denied method. */
+  requiredSlots?: number;
+  scope?: "host" | "agent" | "root" | "recipient";
   reason: string;
   retryAt: number | null;
   task: { appId: string; taskId: string };

@@ -1,3 +1,5 @@
+import { reserveManagedTaskExecution } from "./task-execution-admission.js";
+import { TaskExecutionStore, type ExecutionReservation, type ExecutionRecipient } from "./task-execution-store.js";
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import type { SqliteDb } from "../../../lib/db.js";
@@ -19,6 +21,8 @@ export function taskPrimaryStart(binding: TaskBinding): TaskPrimaryStart {
   return permit;
 }
 
+export type ManagedTaskStartAdmission = { invocationId: string; primaryCovered: boolean; reservation: ExecutionReservation | null };
+
 /** Every actual managed start, including a resumed session, gets a fresh Host
  * invocation identity. Commit evidence before external dispatch; uncertainty
  * after admission remains charged. Session identity never grants free replay. */
@@ -30,17 +34,27 @@ export function admitManagedTaskStart(
     retainedBinding?: TaskBinding;
     primary?: TaskPrimaryStart;
     persistentChat?: boolean;
+    recipient?: ExecutionRecipient | null;
+    agent?: string;
   },
   now = Date.now(),
-): void {
+): ManagedTaskStartAdmission | null {
   const bound = input.binding ?? input.retainedBinding;
-  if (!bound) return;
+  if (!bound) {
+    if (new TaskExecutionStore(db).configured())
+      throw new Error("Shared execution limits require a bounded Task binding; direct-session admission is not configured");
+    return null;
+  }
   const admission = new TaskBudgetAdmissionStore(db);
   const task = { appId: bound.appId, taskId: bound.taskId };
   // Unconfigured installations keep their existing start path. Relevant starts
   // recheck authority and accounting under the shared write transaction.
-  if (!admission.policy(task.appId) && !admission.budget.binding(task)) return;
-  stateTransaction(db, () => {
+  if (!admission.policy(task.appId) && !admission.budget.binding(task)) {
+    if (new TaskExecutionStore(db).configured())
+      throw new Error("Shared execution limits require explicit adoption of historical Task funding");
+    return null;
+  }
+  return stateTransaction(db, () => {
     if (input.persistentChat) throw new Error("Budgeted Task execution requires a bounded managed session");
     if (!input.binding) throw new Error("Budgeted session start requires a current Task binding");
     const store = AppTaskResourceStore.activeFromDb(db, task.appId);
@@ -73,6 +87,9 @@ export function admitManagedTaskStart(
         .get(task.appId, task.taskId, bound.attemptId);
     const invocationId = randomUUID();
     const operationId = covered ? paidAttempt.operationId : admission.admitHelper(task, invocationId, now);
+    const reservation = reserveManagedTaskExecution(db, { task, attemptId: bound.attemptId, generation: bound.generation,
+      invocationId, sessionId: input.sessionId, primaryCovered: covered,
+      recipient: input.recipient ?? null, agent: input.agent ?? store.readAttempt(bound.attemptId)!.owner }, now);
     db.prepare(
       `INSERT INTO task_budget_managed_starts(invocation_id, app_id, task_id, generation,
        attempt_id, session_id, primary_covered, operation_id, admitted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -87,5 +104,6 @@ export function admitManagedTaskStart(
       operationId,
       now,
     );
+    return { invocationId, primaryCovered: covered, reservation };
   });
 }

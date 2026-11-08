@@ -1,3 +1,4 @@
+import { releaseJoinedTaskAttemptExecution } from "../state/task-execution-admission.js";
 import { TaskBudgetDeferredError } from "../state/task-budget-admission.js";
 import {
   admitTaskVerificationResult as admitAppTaskVerificationResult,
@@ -81,8 +82,9 @@ export async function runTaskAttempt(input: {
     dispatch: input.dispatch,
   };
 
+  const config = appTaskConfig(descriptor);
+  let claimedExecution: AppTaskClaim | undefined;
   try {
-    const config = appTaskConfig(descriptor);
     // Recover the exact saved answer before deciding whether any agent work is needed.
     const recoveredTaskIds = recoverTaskConditions(opts, descriptor, config, { taskId: input.taskId }).filter(
       (taskId) => taskId !== input.taskId,
@@ -91,6 +93,8 @@ export async function runTaskAttempt(input: {
       taskId: input.taskId,
       appAgent: descriptor.agent,
       handler: "auto",
+      execution: { recipient: agent => opts.agents?.executionRecipient?.(agent) ?? null,
+        lane: input.dispatch.coordination ? "coordination" : input.dispatch.lane === "human" ? "human" : "background" },
       ...(input.dispatch.coordination ? { canUseCoordinationReserve: (resource, agent) => isTrustedTaskCoordination(descriptor, resource, agent) } : {}),
       reason: input.reason ?? "task-controller",
       recoverPreviousSession: (attempt) => {
@@ -182,10 +186,15 @@ export async function runTaskAttempt(input: {
       log("debug", `[app-task:${descriptor.id}] ${input.taskId} check: ${claim.kind}`);
       return recoveredTaskIds;
     }
+    claimedExecution = claim;
     timing.attemptId = claim.attemptId;
     timing.generation = claim.generation;
     return [...new Set([...recoveredTaskIds, ...(await runClaimedTask(opts, descriptor, config, claim, input.dispatch))])];
   } finally {
+    if (claimedExecution) releaseJoinedTaskAttemptExecution(config.resourceStore.db,
+      { appId: descriptor.id, taskId: input.taskId }, claimedExecution.attemptId,
+      opts.sessions ? (id, binding) => !opts.sessions!.isLive(id) &&
+        opts.sessions!.interrupt(id, "Task execution joined", input.taskId, binding) : undefined);
     if (timing.attemptId) input.reportTiming(timing);
   }
 }
@@ -290,16 +299,16 @@ async function runClaimedTask(
       });
     }
     const result = report.handlerResult;
-    if (report.funding) {
-      const funding = report.funding;
+    if (report.funding || report.execution) {
+      const constraint = (report.funding ?? report.execution)!;
       // Execution has drained. Retain its workspace and all unaccepted input;
       // this resource constraint must not consume an execution retry.
       const finalized = await finalizeWorkspace("waiting");
       const facts = [...result.facts, ...(!finalized.ok && finalized.reason ? [finalized.reason] : [])];
-      const applied = persistResult(() => deferAppTaskExecution(config, claim, funding, facts));
+      const applied = persistResult(() => deferAppTaskExecution(config, claim, constraint, facts));
       emit("project.task.reconciled", {
         disposition: applied === "applied" ? "deferred" : "stale",
-        funding,
+        ...(report.funding ? { funding: report.funding } : { execution: report.execution }),
         workflowRunId: report.runId,
         summary: result.summary,
       });

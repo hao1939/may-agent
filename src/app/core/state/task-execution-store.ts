@@ -97,14 +97,15 @@ export class TaskExecutionStore {
       .map(row => JSON.parse(row.receipt_json as string) as ExecutionReservation);
   }
 
-  blocked(scope: ExecutionScope, lane: ExecutionRequest["lane"]): "execution-policy" | "execution-capacity" | null {
+  blocked(scope: ExecutionScope, lane: ExecutionRequest["lane"], requiredSlots = 1): "execution-policy" | "execution-capacity" | null {
+    if (!Number.isSafeInteger(requiredSlots) || requiredSlots < 1) throw new Error("Execution demand must be positive slots");
     const usage = this.usage(scope);
     if (usage.limit === null) return "execution-policy";
-    if (usage.occupied >= usage.limit) return "execution-capacity";
+    if (usage.occupied + requiredSlots > usage.limit) return "execution-capacity";
     if (scope.kind === "host" && lane === "background") {
       const occupied = this.db.prepare(`SELECT count(*) AS n FROM task_execution_reservations
         WHERE released_at IS NULL AND lane = 'background'`).get()!.n as number;
-      if (occupied >= Math.max(1, usage.limit - 1)) return "execution-capacity";
+      if (occupied + requiredSlots > Math.max(1, usage.limit - 1)) return "execution-capacity";
     }
     return null;
   }

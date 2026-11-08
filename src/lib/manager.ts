@@ -1,8 +1,10 @@
+import { releaseTaskExecutionReservation } from "../app/core/state/task-execution-admission.js";
+import { drainSessionBashProcessGroups } from "./tools/bash.js";
 import { ExecutionDeferredError } from "@may-agent/sdk";
 import { type TSchema } from "typebox";
 import { observeTaskFeedback, type TaskExecutionContext } from "./task-execution-context.js";
 import { prepareTaskWorkspaceContext, taskWorkspacePrompt } from "./task-workspace-context.js";
-import { admitManagedTaskStart, type TaskPrimaryStart } from "../app/core/state/task-budget-managed-start.js";
+import { admitManagedTaskStart, type TaskPrimaryStart, type ManagedTaskStartAdmission } from "../app/core/state/task-budget-managed-start.js";
 import { executionRecipientKey, resolvedExecutionRecipient } from "./execution-recipient.js";
 /**
  * Durable agent session runtime.
@@ -177,6 +179,9 @@ export type CallAgentOptions = Pick<
 
 interface ActiveSession {
   usage?: ReturnType<typeof observeExecutionUsage>;
+  managedStart?: ManagedTaskStartAdmission | null;
+  executionCleanupConfirmed?: boolean;
+  scopedChildren?: Set<Promise<TaskResult>>;
   sessionId: string;
   agent: AgentRun;
   agentName: string;
@@ -634,241 +639,255 @@ export class SubagentManager {
     }
 
     const existingMeta = this._registry.getSession(sessionId);
-    admitManagedTaskStart(getDb(this._persistDir), {
+    const managedStart = admitManagedTaskStart(getDb(this._persistDir), {
       sessionId,
       binding: opts?.taskBinding,
       retainedBinding: existingMeta?.taskBinding,
       primary: opts?.taskPrimaryStart,
       persistentChat,
+      recipient, agent: def.name,
     });
-    onAdmitted?.();
-
-    const usage = observeExecutionUsage(
-      this._persistDir,
-      {
-        sessionId,
-        agent: def.name,
-        appId: opts?.taskBinding?.appId ?? opts?.projectId ?? def.projectId,
-        workflowRunId: opts?.workflowRunId,
-        taskId: opts?.taskBinding?.taskId,
-        attemptId: opts?.taskBinding?.attemptId,
-        configuredModel: `${def.model.provider}/${def.model.id}`,
-      },
-      (error) => log("warn", `[usage] Could not save execution measurements for ${sessionId}: ${String(error)}`),
-    );
-    const prepared = prepareAgentExecution({
-      onPreparation: usage.preparation,
-      executionContext,
-      definition: def,
-      projectRoot: this._projectRoot,
-      sessionId,
-      task,
-      persistentChat,
-      taskContext: opts?.taskContext,
-      contextPrompt: opts?.contextPrompt,
-      skill: opts?.skill,
-      parseSkillCommand: opts?.parseSkillCommand,
-      requireFinish: opts?.requireFinish,
-      outputSchema: opts?.outputSchema,
-      validateOutput: opts?.validateOutput,
-      toolPolicy,
-      executionRoot: opts?.executionRoot,
-      promptTimestamp: this._promptTimestamp,
-      ...(persistentChat
-        ? {
-            chatContext: () => this.buildChatContextPacket(sessionId, def.name),
-          }
-        : {}),
-      createFinish: () =>
-        createFinishTool({
-          agentName: def.name,
-          projectRoot: opts?.executionRoot ?? def.projectRoot ?? this._projectRoot,
-          persistDir: this._persistDir,
-        }),
-      createCheckpoint: () =>
-        createCheckpointTool({
-          sessionId,
-          agentName: def.name,
-          persistDir: this._persistDir,
-        }),
-      bashProcessGroupOwner: { persistDir: this._persistDir, sessionId },
-      onGuard: ({ context, guard, block, reason }) => {
-        this.bus?.emit({
-          [EVENT_RECORD_ONLY]: true,
-          type: "guard.triggered",
-          source: "tool",
-          owner: normalizeEventOwner(def.name),
-          data: {
-            workflowRunId: opts?.workflowRunId,
-            projectId: opts?.projectId,
-            parentSessionId: opts?.parentSessionId,
-            sessionId,
-            guard,
-            demandType: block ? "block" : "warn",
-            action: block ? "blocked" : "warned",
-            reason,
-            sourceEventType: `tool.${context.toolCall.name}`,
-          },
-        });
-      },
-      onCompact: (info, messages) => {
-        log(
-          "info",
-          `[manager] Compacted ${sessionId} (${def.name}): ${info.messagesCompacted} compacted, ${info.messagesKept} kept, ${info.tokensBefore}->${info.tokensAfter} tokens`,
-        );
-        try {
-          saveCompactedMessages(this._persistDir, sessionId, messages);
-        } catch (error) {
-          log(
-            "warn",
-            `[manager] Failed to save compacted context for ${sessionId}: ${error instanceof Error ? error.message : String(error)}`,
-          );
-        }
-      },
-      onNotice: (message) => log("warn", message),
-    });
-    const sessionTask = prepared.task;
-    const outputSchema = prepared.outputSchema;
-    const requireFinish = prepared.requireFinish;
-    const activation = prepared.activatedSkill;
-
-    // Setup persistence
-    ensureSessionDir(this._persistDir, sessionId);
-    markSessionActive(this._persistDir, sessionId);
-    mkdirSync(sessionOutputDir(this._persistDir, sessionId), { recursive: true });
-    writeFileSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"), new Date().toISOString(), "utf-8");
-
-    // Create the same prepared model/tool loop used by direct callers. The
-    // durable manager only adds persistence and system-event adapters around it.
-    const tools = bindToolsToExecutionScope(prepared.tools, () => this._sessions.get(sessionId)?.executionScope);
-    const agent = this._agentRunFactory({
-      ...prepared.runner,
-      initialState: { ...prepared.runner.initialState, tools },
-    });
-    agent.subscribe(usage.observe);
-
-    // JSONL persistence
-    agent.subscribe((event) => {
-      if (event.type === "message_end" && "message" in event) {
-        appendSessionMessage(this._persistDir, sessionId, (event as any).message);
-      }
-    });
-
-    const session: ActiveSession = {
-      usage,
-      sessionId,
-      agent,
-      agentName: def.name,
-      definition: def,
-      task: sessionTask,
-      startedAt,
-      status: "running",
-      kind,
-      autoClose,
-      parentSessionId: opts?.parentSessionId,
-      originSessionId: opts?.originSessionId,
-      workflowRunId: opts?.workflowRunId,
-      stepLabel: opts?.stepLabel,
-      source: opts?.source,
-      admittedTimeoutMs: timeoutMs,
-      parentSignal: opts?.signal,
-      parentDeadlineAt: opts?.deadlineAt,
-      toolCalls: 0,
-      modelStepCount: 0,
-      requestId: opts?.requestId,
-      conversationId: opts?.conversationId,
-      channelMessageId: opts?.channelMessageId,
-      projectId: opts?.projectId,
-      taskBinding: opts?.taskBinding,
-      taskContext: opts?.taskContext,
-      recoveryOwner: opts?.recoveryOwner,
-      resumeMessages: opts?.resumeMessages,
-      trace: opts?.trace,
-      openTurnTraces: opts?.trace ? [opts.trace] : [],
-      promptTask: prepared.prompt,
-      loadedSkillHashes: new Set(activation ? [activation.contentHash] : []),
-      requireFinish,
-      operationAllowance,
-      outputSchema,
-      tools,
-      toolPolicy,
-      executionRoot: opts?.executionRoot,
-    };
-
-    if (!existingMeta && opts?.resumeMessages?.length) {
-      for (const message of opts.resumeMessages) {
-        try {
-          appendSessionMessage(this._persistDir, sessionId, message);
-        } catch {
-          /* best-effort */
-        }
-      }
-    }
-    this._registry.saveSession(sessionId, {
-      ...(existingMeta ?? {}),
-      agent: def.name,
-      agentRelativeDir: def.agentRelativeDir ?? null,
-      agentHostIdentity: recipient?.kind === "programmatic" ? recipient.id : null,
-      task: sessionTask,
-      status: "running",
-      startedAt,
-      parentSessionId: opts?.parentSessionId ?? existingMeta?.parentSessionId,
-      workflowRunId: opts?.workflowRunId ?? existingMeta?.workflowRunId,
-      stepLabel: opts?.stepLabel ?? existingMeta?.stepLabel,
-      source: opts?.source ?? existingMeta?.source,
-      requestId: opts?.requestId ?? existingMeta?.requestId,
-      conversationId: opts?.conversationId ?? existingMeta?.conversationId,
-      channelMessageId: opts?.channelMessageId ?? existingMeta?.channelMessageId,
-      projectId: opts?.projectId ?? existingMeta?.projectId,
-      // Persist the live attempt's exact scope, including an explicit absence.
-      // Retained transcript metadata must not resurrect an old fenced binding.
-      taskBinding: session.taskBinding,
-      recoveryOwner: opts?.recoveryOwner ?? existingMeta?.recoveryOwner,
-      kind,
-      autoClose,
-      orderId: opts?.orderId ?? existingMeta?.orderId,
-      requireFinish,
-      operationAllowance: operationAllowance ?? existingMeta?.operationAllowance,
-      outputSchema: outputSchema ?? existingMeta?.outputSchema,
-      toolPolicy,
-      executionRoot: opts?.executionRoot ?? existingMeta?.executionRoot,
-    });
-
-    // Register before publishing session.start so synchronous subscribers see
-    // the same live state as the durable event. Roll back the in-memory and
-    // registry state if the required persistence boundary rejects the event.
-    // Reusing a session for a paid resume must wait for the new invocation,
-    // rather than return the previous invocation's cached terminal result.
-    this.completedResults.delete(sessionId);
-    this._sessions.set(sessionId, session);
+    let executionDispatched = false;
     try {
-      this.bridgeEvents(session);
-      if (activation) this.emitSkillLoaded(session, activation, prepared.skillActivation ?? "explicit", opts?.trace);
-    } catch (err) {
-      this._sessions.delete(sessionId);
-      const reason = `Failed to persist session start: ${err instanceof Error ? err.message : String(err)}`;
-      this._registry.updateSessionStatus(sessionId, "error", reason);
-      markSessionInactive(this._persistDir, sessionId);
-      throw err;
-    }
+      onAdmitted?.();
 
-    // Run agent. Persistent chat sessions complete a turn by going idle;
-    // task/call sessions complete by emitting session.end and leaving memory.
-    if (this.isPersistentChat(session)) {
-      this.startChatTurn(
-        session,
-        async () => {
-          if (session.resumeMessages) {
-            restoreAgentMessages(agent, session.resumeMessages as AgentMessage[]);
-          }
-          await agent.prompt(prepared.prompt);
+      const usage = observeExecutionUsage(
+        this._persistDir,
+        {
+          sessionId,
+          agent: def.name,
+          appId: opts?.taskBinding?.appId ?? opts?.projectId ?? def.projectId,
+          workflowRunId: opts?.workflowRunId,
+          taskId: opts?.taskBinding?.taskId,
+          attemptId: opts?.taskBinding?.attemptId,
+          configuredModel: `${def.model.provider}/${def.model.id}`,
         },
+        (error) => log("warn", `[usage] Could not save execution measurements for ${sessionId}: ${String(error)}`),
       );
-    } else {
-      this.startManagedExecution(session);
-    }
+      const prepared = prepareAgentExecution({
+        onPreparation: usage.preparation,
+        executionContext,
+        definition: def,
+        projectRoot: this._projectRoot,
+        sessionId,
+        task,
+        persistentChat,
+        taskContext: opts?.taskContext,
+        contextPrompt: opts?.contextPrompt,
+        skill: opts?.skill,
+        parseSkillCommand: opts?.parseSkillCommand,
+        requireFinish: opts?.requireFinish,
+        outputSchema: opts?.outputSchema,
+        validateOutput: opts?.validateOutput,
+        toolPolicy,
+        executionRoot: opts?.executionRoot,
+        promptTimestamp: this._promptTimestamp,
+        ...(persistentChat
+          ? {
+              chatContext: () => this.buildChatContextPacket(sessionId, def.name),
+            }
+          : {}),
+        createFinish: () =>
+          createFinishTool({
+            agentName: def.name,
+            projectRoot: opts?.executionRoot ?? def.projectRoot ?? this._projectRoot,
+            persistDir: this._persistDir,
+          }),
+        createCheckpoint: () =>
+          createCheckpointTool({
+            sessionId,
+            agentName: def.name,
+            persistDir: this._persistDir,
+          }),
+        bashProcessGroupOwner: { persistDir: this._persistDir, sessionId },
+        onGuard: ({ context, guard, block, reason }) => {
+          this.bus?.emit({
+            [EVENT_RECORD_ONLY]: true,
+            type: "guard.triggered",
+            source: "tool",
+            owner: normalizeEventOwner(def.name),
+            data: {
+              workflowRunId: opts?.workflowRunId,
+              projectId: opts?.projectId,
+              parentSessionId: opts?.parentSessionId,
+              sessionId,
+              guard,
+              demandType: block ? "block" : "warn",
+              action: block ? "blocked" : "warned",
+              reason,
+              sourceEventType: `tool.${context.toolCall.name}`,
+            },
+          });
+        },
+        onCompact: (info, messages) => {
+          log(
+            "info",
+            `[manager] Compacted ${sessionId} (${def.name}): ${info.messagesCompacted} compacted, ${info.messagesKept} kept, ${info.tokensBefore}->${info.tokensAfter} tokens`,
+          );
+          try {
+            saveCompactedMessages(this._persistDir, sessionId, messages);
+          } catch (error) {
+            log(
+              "warn",
+              `[manager] Failed to save compacted context for ${sessionId}: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          }
+        },
+        onNotice: (message) => log("warn", message),
+      });
+      const sessionTask = prepared.task;
+      const outputSchema = prepared.outputSchema;
+      const requireFinish = prepared.requireFinish;
+      const activation = prepared.activatedSkill;
 
-    return sessionId;
+      // Setup persistence
+      ensureSessionDir(this._persistDir, sessionId);
+      markSessionActive(this._persistDir, sessionId);
+      mkdirSync(sessionOutputDir(this._persistDir, sessionId), { recursive: true });
+      writeFileSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"), new Date().toISOString(), "utf-8");
+
+      // Create the same prepared model/tool loop used by direct callers. The
+      // durable manager only adds persistence and system-event adapters around it.
+      const tools = bindToolsToExecutionScope(prepared.tools, () => this._sessions.get(sessionId)?.executionScope);
+      const agent = this._agentRunFactory({
+        ...prepared.runner,
+        initialState: { ...prepared.runner.initialState, tools },
+      });
+      agent.subscribe(usage.observe);
+
+      // JSONL persistence
+      agent.subscribe((event) => {
+        if (event.type === "message_end" && "message" in event) {
+          appendSessionMessage(this._persistDir, sessionId, (event as any).message);
+        }
+      });
+
+      const session: ActiveSession = {
+        usage, managedStart,
+        sessionId,
+        agent,
+        agentName: def.name,
+        definition: def,
+        task: sessionTask,
+        startedAt,
+        status: "running",
+        kind,
+        autoClose,
+        parentSessionId: opts?.parentSessionId,
+        originSessionId: opts?.originSessionId,
+        workflowRunId: opts?.workflowRunId,
+        stepLabel: opts?.stepLabel,
+        source: opts?.source,
+        admittedTimeoutMs: timeoutMs,
+        parentSignal: opts?.signal,
+        parentDeadlineAt: opts?.deadlineAt,
+        toolCalls: 0,
+        modelStepCount: 0,
+        requestId: opts?.requestId,
+        conversationId: opts?.conversationId,
+        channelMessageId: opts?.channelMessageId,
+        projectId: opts?.projectId,
+        taskBinding: opts?.taskBinding,
+        taskContext: opts?.taskContext,
+        recoveryOwner: opts?.recoveryOwner,
+        resumeMessages: opts?.resumeMessages,
+        trace: opts?.trace,
+        openTurnTraces: opts?.trace ? [opts.trace] : [],
+        promptTask: prepared.prompt,
+        loadedSkillHashes: new Set(activation ? [activation.contentHash] : []),
+        requireFinish,
+        operationAllowance,
+        outputSchema,
+        tools,
+        toolPolicy,
+        executionRoot: opts?.executionRoot,
+      };
+
+      if (!existingMeta && opts?.resumeMessages?.length) {
+        for (const message of opts.resumeMessages) {
+          try {
+            appendSessionMessage(this._persistDir, sessionId, message);
+          } catch {
+            /* best-effort */
+          }
+        }
+      }
+      this._registry.saveSession(sessionId, {
+        ...(existingMeta ?? {}),
+        agent: def.name,
+        agentRelativeDir: def.agentRelativeDir ?? null,
+        agentHostIdentity: recipient?.kind === "programmatic" ? recipient.id : null,
+        task: sessionTask,
+        status: "running",
+        startedAt,
+        parentSessionId: opts?.parentSessionId ?? existingMeta?.parentSessionId,
+        workflowRunId: opts?.workflowRunId ?? existingMeta?.workflowRunId,
+        stepLabel: opts?.stepLabel ?? existingMeta?.stepLabel,
+        source: opts?.source ?? existingMeta?.source,
+        requestId: opts?.requestId ?? existingMeta?.requestId,
+        conversationId: opts?.conversationId ?? existingMeta?.conversationId,
+        channelMessageId: opts?.channelMessageId ?? existingMeta?.channelMessageId,
+        projectId: opts?.projectId ?? existingMeta?.projectId,
+        // Persist the live attempt's exact scope, including an explicit absence.
+        // Retained transcript metadata must not resurrect an old fenced binding.
+        taskBinding: session.taskBinding,
+        recoveryOwner: opts?.recoveryOwner ?? existingMeta?.recoveryOwner,
+        kind,
+        autoClose,
+        orderId: opts?.orderId ?? existingMeta?.orderId,
+        requireFinish,
+        operationAllowance: operationAllowance ?? existingMeta?.operationAllowance,
+        outputSchema: outputSchema ?? existingMeta?.outputSchema,
+        toolPolicy,
+        executionRoot: opts?.executionRoot ?? existingMeta?.executionRoot,
+      });
+
+      // Register before publishing session.start so synchronous subscribers see
+      // the same live state as the durable event. Roll back the in-memory and
+      // registry state if the required persistence boundary rejects the event.
+      // Reusing a session for a paid resume must wait for the new invocation,
+      // rather than return the previous invocation's cached terminal result.
+      this.completedResults.delete(sessionId);
+      this._sessions.set(sessionId, session);
+      try {
+        this.bridgeEvents(session);
+        if (activation) this.emitSkillLoaded(session, activation, prepared.skillActivation ?? "explicit", opts?.trace);
+      } catch (err) {
+        this._sessions.delete(sessionId);
+        const reason = `Failed to persist session start: ${err instanceof Error ? err.message : String(err)}`;
+        this._registry.updateSessionStatus(sessionId, "error", reason);
+        markSessionInactive(this._persistDir, sessionId);
+        throw err;
+      }
+
+      // Run agent. Persistent chat sessions complete a turn by going idle;
+      // task/call sessions complete by emitting session.end and leaving memory.
+      executionDispatched = true;
+      if (this.isPersistentChat(session)) {
+        this.startChatTurn(
+          session,
+          async () => {
+            if (session.resumeMessages) {
+              restoreAgentMessages(agent, session.resumeMessages as AgentMessage[]);
+            }
+            await agent.prompt(prepared.prompt);
+          },
+        );
+      } else {
+        this.startManagedExecution(session);
+      }
+
+      return sessionId;
+    } catch (error) {
+      if (!executionDispatched) {
+        this._sessions.delete(sessionId);
+        markSessionInactive(this._persistDir, sessionId);
+        if (managedStart?.reservation && !managedStart.primaryCovered)
+          releaseTaskExecutionReservation(getDb(this._persistDir), managedStart.reservation,
+            { kind: "confirmed-nonstart", evidenceId: managedStart.invocationId });
+      }
+      throw error;
+    }
   }
 
   cancel(sessionId: string): void {
@@ -1907,6 +1926,14 @@ export class SubagentManager {
         throw error;
       },
     );
+    const parent = session.parentSessionId ? this._sessions.get(session.parentSessionId) : undefined;
+    const siblings = parent?.scopedChildren;
+    if (siblings) {
+      siblings.add(promise);
+      promise.then(() => siblings.delete(promise), () => {
+        if (session.executionCleanupConfirmed) siblings.delete(promise);
+      });
+    }
     this.results.set(session.sessionId, promise);
     // Managed executions usually gain a waiter immediately, but task owners
     // are allowed to observe them later. Attach a rejection observer now so a
@@ -1930,6 +1957,8 @@ export class SubagentManager {
       session.requireFinish ? () => this.requestBoundedFinish(session) : undefined,
     );
     session.executionScope = scope;
+    session.executionCleanupConfirmed = false;
+    session.scopedChildren = new Set();
     let unsubscribe = () => {};
     try {
       unsubscribe = observeTaskFeedback(session.taskContext, (message, trace) =>
@@ -1957,9 +1986,17 @@ export class SubagentManager {
     if (session.executionScope !== scope) return;
     // Joining is necessary: an accepted cancellation is not completed cleanup.
     const children = [...this._sessions.values()].filter((child) => child.parentSessionId === session.sessionId);
-    const results = await Promise.allSettled(children.map((child) => this.waitFor(child.sessionId)));
+    const results = await Promise.allSettled([
+      ...(session.scopedChildren ?? []), ...children.map(child => this.waitFor(child.sessionId)),
+    ]);
     const failed = results.find((result) => result.status === "rejected");
     if (failed?.status === "rejected") throw failed.reason;
+    if (!await drainSessionBashProcessGroups(this._persistDir, session.sessionId))
+      throw new Error(`Managed execution cleanup is unconfirmed for ${session.sessionId}`);
+    if (session.managedStart?.reservation && !session.managedStart.primaryCovered)
+      releaseTaskExecutionReservation(getDb(this._persistDir), session.managedStart.reservation,
+        { kind: "joined", evidenceId: session.managedStart.invocationId });
+    session.executionCleanupConfirmed = true;
   }
 
   private async executeSession(session: ActiveSession): Promise<TaskResult> {
@@ -2035,6 +2072,7 @@ export class SubagentManager {
         }
       });
     } catch (err) {
+      if (!session.executionCleanupConfirmed) throw err;
       errorText =
         session.status === "interrupted" && session.lastError
           ? session.lastError

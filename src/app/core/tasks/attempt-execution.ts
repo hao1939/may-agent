@@ -1,4 +1,5 @@
 import { ExecutionDeferredError } from "@may-agent/sdk";
+import { TaskExecutionDeferredError } from "../state/task-execution-admission.js";
 import { TaskBudgetDeferredError } from "../state/task-budget-admission.js";
 import { listConversationInputRequests } from "../state/conversation-requests.js";
 import { boundedAppRequestConversation } from "../reads/conversation-context.js";
@@ -426,10 +427,10 @@ export async function runTaskExecutorAttempt(
     const acceptedLiveEventIds = taskAttempt.acceptedLiveEventIds();
     return acceptedLiveEventIds.length > 0 ? { ...result, acceptedLiveEventIds } : result;
   } catch (error) {
-    if (!(error instanceof TaskBudgetDeferredError)) throw error;
+    if (!(error instanceof TaskBudgetDeferredError) && !(error instanceof TaskExecutionDeferredError)) throw error;
     const runId = error.callerExecution?.id ?? null;
     return {
-      funding: error.constraint,
+      ...(error instanceof TaskBudgetDeferredError ? { funding: error.constraint } : { execution: error.constraint }),
       runId,
       handlerResult: {
         state: "error",

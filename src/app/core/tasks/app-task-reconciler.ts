@@ -2841,6 +2841,24 @@ export function claimObservedAppTask(
     acknowledgeIndexedRecoveryWait(config, input.taskId, snapshotRevision, heldExecution.retryAt);
     return { kind: "deferred", taskId: input.taskId, execution: heldExecution };
   }
+  const methodConstraint = resource.status.executionConstraint;
+  if (methodConstraint && (methodConstraint.requiredSlots ?? 1) > 1 &&
+      (methodConstraint.generation === undefined || methodConstraint.generation === resource.metadata.generation)) {
+    // A due check is mechanical. Restarting just the caller cannot make an
+    // inline method fit; retain the complete demand until it fits or is revised.
+    const retained = stateTransaction(config.resourceStore.db, () => {
+      if (!executionStillConstrained(config.resourceStore.db, methodConstraint)) return undefined;
+      const refreshed = { ...methodConstraint, retryAt: Date.now() + 60_000 };
+      const version = resource.metadata.resourceVersion;
+      touchResource(resource, { executionConstraint: refreshed });
+      commitTaskMutation(config, tree, { resourceMutation: {
+        fences: [{ taskId: input.taskId, resourceVersion: version }],
+        tasks: [{ ...resourceWrite(tree, resource, false), nextCheckAt: refreshed.retryAt }],
+      } });
+      return refreshed;
+    });
+    if (retained) return { kind: "deferred", taskId: input.taskId, execution: retained };
+  }
   if (!config.resourceStore.allowsTaskExecution(input.taskId)) {
     return { kind: "waiting", taskId: input.taskId, conditionIds: [] };
   }
@@ -3297,7 +3315,7 @@ export function deferAppTaskSettlement(
 export function deferAppTaskExecution(
   config: AppTaskContext,
   claim: AppTaskClaim,
-  funding: TaskFundingConstraint,
+  constraint: TaskFundingConstraint | TaskExecutionConstraint,
   facts: string[] = [],
 ): "applied" | "stale" {
   return stateTransaction(config.resourceStore.db, () => {
@@ -3308,15 +3326,19 @@ export function deferAppTaskExecution(
     const scope = beginResourceMutationScope(tree, claim, []);
     const now = new Date().toISOString();
     restoreAttemptEvents(tree, claim.taskId, resource, attempt, now);
-    const summary = `Managed operation deferred: ${funding.reason}`;
+    const summary = `Managed operation deferred: ${constraint.reason}`;
     finishAttempt(tree, resource, "interrupted", [summary, ...facts].join("\n"), now);
     attempt.failureReason = "ResourceAdmissionDeferred";
     delete attempt.lease;
-    const held = new TaskBudgetAdmissionStore(config.resourceStore.db).stillConstrained(funding);
+    const execution = "lane" in constraint ? constraint : undefined;
+    const funding = "lane" in constraint ? undefined : constraint;
+    const held = execution ? executionStillConstrained(config.resourceStore.db, execution)
+      : new TaskBudgetAdmissionStore(config.resourceStore.db).stillConstrained(funding!);
     touchResource(resource, {
       phase: "pending",
       currentAttemptId: undefined,
       funding: held ? funding : undefined,
+      executionConstraint: held ? execution : undefined,
       summary,
     });
     const mutation = finishResourceMutationScope(scope, tree);
@@ -3324,7 +3346,7 @@ export function deferAppTaskExecution(
       resourceMutation: {
         ...mutation,
         tasks: mutation.tasks.map((write) => write.resource.metadata.id === claim.taskId
-          ? { ...write, ready: !held, nextCheckAt: held ? funding.retryAt : Date.now() }
+          ? { ...write, ready: !held, nextCheckAt: held ? constraint.retryAt : Date.now() }
           : write),
       },
     });

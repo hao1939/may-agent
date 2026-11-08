@@ -1,3 +1,4 @@
+import type { TaskExecutionConstraint } from "../state/task-execution-admission.js";
 import type { TaskFundingConstraint } from "../state/task-budget-admission.js";
 import type { TaskAcceptanceBasis } from "@may-agent/sdk";
 import type { AppTaskClaim } from "./app-task-reconciler.js";
@@ -23,6 +24,7 @@ export type TaskCapabilityRun = {
   executionFailed?: boolean;
   /** A managed operation did not start; preserve work without execution failure. */
   funding?: TaskFundingConstraint;
+  execution?: TaskExecutionConstraint;
   /** The workflow reported a blocker; retain its diagnosis for the next reconciliation. */
   handlerBlocked?: true;
   workspacePreparationFailed?: boolean;

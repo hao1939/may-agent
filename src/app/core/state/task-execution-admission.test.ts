@@ -180,7 +180,7 @@ test("capacity-held work remains runnable demand with a read-only exact blocker"
   const workload = readTaskWorkload({ taskStateConfig: f.config });
   expect(workload.counts).toMatchObject({ running: 1, runnable: 1, waiting: 0 });
   expect(workload.examples.blockers).toEqual([{ taskId: "child", kind: "capacity",
-    reason: "execution-capacity", retryAt: expect.any(Number) }]);
+    reason: "execution-capacity", retryAt: expect.any(Number), scope: "root", requiredSlots: 1 }]);
   expect(f.db.prepare("SELECT total_changes() AS n").get()).toEqual(before);
 });
 

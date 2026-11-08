@@ -153,6 +153,16 @@ export async function drainBashProcessGroup(pgid: number): Promise<boolean> {
 	return waitForProcessGroupExit(pgid, BASH_PROCESS_GROUP_KILL_GRACE_MS);
 }
 
+/** Live scope cleanup stays asynchronous and retains every unconfirmed group. */
+export async function drainSessionBashProcessGroups(persistDir: string, sessionId: string): Promise<boolean> {
+  const results = await Promise.all(readSessionBashProcessGroups(persistDir, sessionId).map(async pgid => {
+    if (!await drainBashProcessGroup(pgid)) return false;
+    removeSessionBashProcessGroup(persistDir, sessionId, pgid);
+    return true;
+  }));
+  return results.every(Boolean);
+}
+
 /**
  * Startup recovery has no live child-process handle and is intentionally
  * synchronous. Bound both signal phases before terminal persistence or resume.
