@@ -21,6 +21,12 @@ enforcement withdrawal now has verified draft source. Retained active
 execution adoption and operational activation remain work. No production activation, rollout or improved model behavior is established
 by these source checks.
 
+The [completion audit](../archive/reviews/workload-completion-audit-20261109.md)
+maps the supported contracts to their owners, rechecks installation identity and
+sets out the remaining review, result-disposition adoption, isolated behavioral
+comparison and opt-in operational acceptance. The combined candidate's green
+checks do not satisfy those separate gates.
+
 Source reviewed: Host #398 merge `88a98be236baf07bfcf100208cfb0dc1589dfa06`.
 The inspected checkout `036f4a4f757eea9f8a4492231e5541f365a8fcf6` has its identical
 Git tree `02781aa1cdbc6d052cba4727f2173122a7040c07`. Apps source was

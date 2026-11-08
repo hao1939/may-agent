@@ -22,6 +22,9 @@ coordination integration are under verification/review,
 as recorded in the implementation approach. Production budget activation and
 behavioral acceptance remain pending. Fresh-state initialization and a conditional
 offline installation path for already cleaned retained state have source evidence.
+The [completion audit](../archive/reviews/workload-completion-audit-20261109.md)
+maps the supported first path to its implementation owners and records the
+remaining review, result-disposition adoption and behavioral acceptance gates.
 A one-way offline withdrawal path has verified draft source; it preserves history and
 obligations and refuses automatic reactivation across unaccounted work. None of
 these source checks establishes a live cutover or online start exclusion.
