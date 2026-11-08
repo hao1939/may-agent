@@ -6,6 +6,7 @@ import type { AppTaskResourceMutation } from "./app-task-resource-store.js";
 import type { TaskTree } from "../tasks/app-task-store.js";
 import type { AppTaskResource } from "../tasks/app-task-state.js";
 import { matchesTaskCoordination, type TaskCoordinationPolicy } from "../tasks/task-coordination-policy.js";
+import { TaskExecutionStore } from "./task-execution-store.js";
 import {
   TaskBudgetStore,
   utcBudgetPeriod,
@@ -23,6 +24,9 @@ export type InstalledTaskBudgetPolicy = {
   sponsor: BudgetSponsor;
   dailyCredits: number;
   rootCredits: number;
+  /** Creation default for independent roots. Contributions retain their shared
+   * root's limit; existing roots require an explicit installation operation. */
+  rootExecutionSlots?: number;
   /** Exact installed standing assignments; ordinary roots otherwise have lifetime caps. */
   standing?: ReadonlyArray<{ taskId: string; credits: number }>;
   /** Exact installed coordination declaration and its separate protected grant. */
@@ -83,6 +87,9 @@ export class TaskBudgetAdmissionStore {
       Buffer.byteLength(policy.sponsor.agent) > 1024
     )
       throw new Error("Budget installation requires exact App and sponsor identities");
+    if (policy.rootExecutionSlots !== undefined &&
+      (!Number.isSafeInteger(policy.rootExecutionSlots) || policy.rootExecutionSlots < 1))
+      throw new Error("Root execution defaults must be positive safe integers");
     const coordination = policy.coordination;
     if (
       coordination &&
@@ -361,6 +368,10 @@ export class TaskBudgetAdmissionStore {
         credits: coordination?.credits ?? standing?.credits ?? policy.rootCredits,
         renewal: coordination || standing ? "utc-day" : "lifetime",
       });
+      const executions = new TaskExecutionStore(this.db);
+      const scope = { kind: "root" as const, root: task };
+      if (policy.rootExecutionSlots !== undefined && executions.usage(scope).limit === null)
+        executions.installLimit(scope, policy.rootExecutionSlots);
     }
     const root = this.budget.root(this.budget.binding(task)!)!;
     if (root.purpose !== "ordinary") {

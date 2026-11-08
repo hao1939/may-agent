@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { Type, defineApp } from "@may-agent/sdk";
 import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { TaskBudgetAdmissionStore } from "./task-budget-admission.js";
+import { TaskExecutionStore } from "./task-execution-store.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { appTaskConfig, prepareAppTaskRuntimeDescriptors } from "../tasks/runtime-definition.js";
 import { appTaskContext, claimObservedAppTask } from "../tasks/app-task-reconciler.js";
@@ -29,6 +30,7 @@ function fixture(credits = 5) {
     sponsor: { appId: "sample", agent: "sponsor" },
     dailyCredits: credits,
     rootCredits: 3,
+    rootExecutionSlots: 2,
   });
   const tree: TaskTree = {
     project: "sample",
@@ -70,6 +72,8 @@ test("production descriptor bootstrap accounts new seeded Tasks and records App-
   });
   await f.prepare();
   expect(f.budgets.budget.view({ appId: "sample", taskId: "work" }, Date.now())?.rootCharged).toBe(1);
+  expect(new TaskExecutionStore(f.db).usage({ kind: "root", root: { appId: "sample", taskId: "work" } }))
+    .toEqual({ limit: 2, occupied: 0 });
   expect(
     claimObservedAppTask(appTaskConfig(first), { taskId: "work", appAgent: "executor", handler: "agent" }).kind,
   ).toBe("claimed");
@@ -87,6 +91,7 @@ test("unfunded authored seed activation rolls back every new Task and accounting
   expect(f.budgets.budget.binding({ appId: "sample", taskId: "second" })).toBeNull();
   expect(f.db.prepare("SELECT count(*) AS n FROM task_budget_operations").get()?.n).toBe(0);
   expect(f.db.prepare("SELECT count(*) AS n FROM task_credit_grants").get()?.n).toBe(0);
+  expect(f.db.prepare("SELECT count(*) AS n FROM task_execution_limits").get()?.n).toBe(0);
 });
 
 test("retained snapshots keep unknown historical spending explicit instead of creating a new allowance", () => {
@@ -94,6 +99,8 @@ test("retained snapshots keep unknown historical spending explicit instead of cr
   const store = AppTaskResourceStore.fromDb(f.db, "sample");
   store.bootstrapSnapshot(f.tree, "retained-installation-facts");
   expect(f.budgets.budget.binding({ appId: "sample", taskId: "work" })).toBeNull();
+  expect(new TaskExecutionStore(f.db).usage({ kind: "root", root: { appId: "sample", taskId: "work" } }).limit)
+    .toBeNull();
   expect(
     claimObservedAppTask(
       appTaskContext({ appDir: f.appDir, projectDir: f.appDir, agent: "executor", resourceStore: store }),
