@@ -1,8 +1,75 @@
 # Offline Host state operations
 
-These commands are explicit maintenance operations, not startup recovery. They
-must be run against a stopped Host with a reviewed, installation-specific plan.
-They do not scan for candidates or choose state to repair.
+These commands use reviewed, installation-specific plans. Existing-state
+maintenance requires a stopped Host and is not startup recovery. New-state
+initialization publishes only into a genuinely unused state path. These commands
+do not scan for candidates or choose business work to repair.
+
+## Initialize workload policy for a new installation
+
+`initialize-workload-state.ts` creates a complete Host database with trusted
+credit and execution declarations before the first ordinary opener can start
+work. Its destination must not exist; the parent directory must already exist.
+It refuses an existing empty directory, database, backup, recovery file or
+session history. Never delete or move retained state to make it look new: this
+command does not adopt historical obligations or executions.
+
+Save a private plan. Recipient identities are resolved installation-relative
+definition directories or explicit programmatic Host identities, not call aliases
+or absolute release paths. Each App needs an explicit new-root concurrency default;
+exact future root limits may be supplied in `limits` and take precedence. Known
+standing/coordination funding uses the existing installed-policy declarations.
+
+```json
+{
+  "version": 1,
+  "host": { "slots": 4, "backgroundSlots": 2 },
+  "apps": [{
+    "appId": "example",
+    "sponsor": { "appId": "example", "agent": "owner" },
+    "dailyCredits": 10,
+    "rootCredits": 5,
+    "rootExecutionSlots": 2
+  }],
+  "limits": [{
+    "scope": {
+      "kind": "agent",
+      "recipient": { "kind": "directory", "id": "projects/example.app/agents/owner" }
+    },
+    "slots": 2
+  }]
+}
+```
+
+Run this command from the reviewed standalone Host checkout with frozen
+dependencies and the supported Bun version. It is not a compiled-daemon flag.
+
+```sh
+bun scripts/operations/initialize-workload-state.ts \
+  --new-state-dir /path/to/unused-state --plan /path/to/private-installation.json
+```
+
+Review installed App declarations and the resources required by their methods
+before starting the Host at that path. A coordination workflow with an inline
+model helper needs two simultaneous places across Host, recipient and root,
+and enough protected credits for creation, attempt and helper. Its installed
+coordination declaration must match the App's exact Task, owner, workflow and
+timeout. A free Host place cannot override missing or full narrower limits.
+
+The initializer validates bounded declarations and uses the existing accounting
+stores in private staging state. It closes SQLite in single-file journal mode,
+then publishes exclusively without replacing a competing opener's file. On a
+race or interruption, inspect the destination; never overwrite it to retry.
+An existing database may be the successful result of the first invocation or
+belong to another opener. The tool does not infer a safe replay from emptiness.
+
+Task/App admission, seeded resources, claims and helpers continue through their
+ordinary authority and deferral paths. Unbound direct and persistent sessions
+remain unsupported under installed execution limits; Task-based Conversations
+use the canonical Task engine. Missing policy does not grant free starts.
+Initialization does not validate arbitrary App business methods, activate App
+source, launch a model, restart a service or establish model judgment quality.
+Retained installations still require an explicit adoption/cutover protocol.
 
 ## Recover one malformed direct Conversation Task input
 

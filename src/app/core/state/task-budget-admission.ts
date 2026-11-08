@@ -18,7 +18,7 @@ import {
 } from "./task-budget-store.js";
 
 /** Host-private installation policy. No input, Task label or executor selects funds.
- * Not exposed for production activation until all start paths support deferral. */
+ * Fresh-state initialization is explicit; retained activation needs adoption. */
 export type InstalledTaskBudgetPolicy = {
   appId: string;
   sponsor: BudgetSponsor;

@@ -467,7 +467,12 @@ seed Tasks, accounting and authority together. Offline retained snapshots keep
 their historical facts and require explicit adoption before funded execution;
 loading them never invents historical spending.
 
-This increment provides no production activation command or daemon option.
+Fresh installations can publish a configured database before startup through
+`scripts/operations/initialize-workload-state.ts`; its reviewed plan must include
+explicit Host/background, recipient and new-root execution limits. It refuses
+every existing state directory, including empty directories and retained backups.
+This does not activate limits on a retained installation or adopt historical work.
+See the operations guide for the new-state procedure and unsupported session paths.
 Common manager start admission now charges each separately admitted helper or
 resume, records exact invocation/session/attempt evidence, and covers the primary
 agent once through its paid attempt. Only an opaque Host adapter capability can
@@ -476,8 +481,9 @@ reads are free. A denied resume preserves its transcript and retained session.
 Admitted starts remain charged if preparation or later execution fails.
 
 Caller deferrals and explicit root/sponsor funding changes share those receipts
-and canonical Task/Inbox holds. Shared execution reservations must still be
-integrated before activation is exposed.
+and canonical Task/Inbox holds. Shared execution reservations enforce actual
+starts and release only after confirmed cleanup. Retained activation still needs
+a start barrier and historical adoption; an empty queue cannot prove quiescence.
 
 An optional private coordination funding declaration names the same exact Task,
 workflow, responsible agent and timeout as installed App coordination policy.
