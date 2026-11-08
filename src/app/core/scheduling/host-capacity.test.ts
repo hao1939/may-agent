@@ -28,6 +28,28 @@ describe("HostCapacity foreground lane", () => {
     } finally { releaseHuman?.(); releaseCoordination?.(); occupied.forEach(release => release()); }
     expect(capacity.snapshot()).toEqual({ running: 0, waiting: 0 });
   });
+  it("bounds human preference and preserves FIFO among queued coordination peers", async () => {
+    const capacity = new HostCapacity(1);
+    const unblock = capacity.tryAcquireForeground()!;
+    const order: string[] = [];
+    const done = Promise.withResolvers<void>();
+    const grant = (id: string) => (release: () => void) => {
+      order.push(id);
+      expect(capacity.snapshot().running).toBe(1);
+      release();
+      if (order.length === 5) done.resolve();
+    };
+    const cancel = [capacity.acquireCoordinationCancellable(grant("review-0")),
+      ...[0, 1, 2].map(index => capacity.acquireForegroundCancellable(grant(`human-${index}`))),
+      capacity.acquireCoordinationCancellable(grant("review-1"))];
+    try {
+      unblock();
+      await done.promise;
+      expect(order).toEqual(["human-0", "human-1", "review-0", "human-2", "review-1"]);
+    } finally { cancel.forEach(cancel => cancel()); unblock(); }
+    expect(capacity.snapshot()).toEqual({ running: 0, waiting: 0 });
+  });
+
   it("reserves one slot from background work", () => {
     const capacity = new HostCapacity(4);
     const releases = [capacity.tryAcquire(), capacity.tryAcquire(), capacity.tryAcquire()];

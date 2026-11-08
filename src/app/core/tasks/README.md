@@ -31,6 +31,22 @@ event emission and output-path helpers live beside their lifecycle callers.
 `execution.ts` and `workspace.ts` are private contracts; concrete implementations
 live in `adapters/` and `conversations/`, selected in `composition/task-execution.ts`.
 
+## Coordination dispatch
+
+Trusted coordination and human work share the existing foreground capacity.
+When both compete, prefer at most two human dispatches before a coordination
+turn, at both App selection and shared controller-Host acquisition. Background
+dispatches do not reset that count, and peeks or repeated wakes spend no turn.
+Normal priority and promotion still apply within each eligible class; a label
+or high priority never grants coordination eligibility.
+
+This is process-local scheduling preference, not a durable queue or execution
+permit. It resets on controller restart, does not preempt running work and
+gives no wall-clock, multi-runtime or delivery guarantee. App pause and current
+eligibility still apply; atomic admission rechecks funding, recipient, root and
+shared Host limits. A bounded review still needs its complete execution method
+to fit. The rule creates no extra place, budget or authority.
+
 ## Workload observations
 
 `read.tasks.workload({agent?, limit?, cursor?})` supplies one bounded current-App

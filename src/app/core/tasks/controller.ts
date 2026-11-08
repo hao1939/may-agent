@@ -81,6 +81,7 @@ export class AppTaskController {
         !this.retryTimers.has(taskId) &&
         (!this.scheduling.backgroundPaused || this.scheduling.foregroundTaskIds.has(taskId) || Boolean(this.scheduling.executionCleanupTaskIds?.has(taskId))),
       (taskId) => this.scheduling.foregroundTaskIds.has(taskId) || (!this.scheduling.backgroundPaused && this.isCoordination(taskId)),
+      (taskId) => this.isCoordination(taskId),
     );
     this.startReady = !options.startAfter;
     if (options.startAfter) {
@@ -182,7 +183,7 @@ export class AppTaskController {
     if (!next) return;
     if (this.options.capacity) {
       // Priority alone grants no reserve: human input and installed bounded
-      // coordination share it, with human waiters first at safe boundaries.
+      // coordination share it, with bounded human preference at safe boundaries.
       const release = next.foreground
         ? this.isCoordination(next.taskId) ? this.options.capacity.tryAcquireCoordination() : this.options.capacity.tryAcquireForeground()
         : this.options.capacity.tryAcquire();

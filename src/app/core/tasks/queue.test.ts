@@ -111,6 +111,43 @@ describe("AppTaskQueue", () => {
     expect(queue.snapshot()).toEqual({ pending: ["task-a"], running: [], dirty: [] });
   });
 
+  it("keeps coordination's turn across background dispatches between human turns", () => {
+    const queue = new AppTaskQueue(1, () => true,
+      id => id.startsWith("human") || id === "review", id => id === "review");
+    queue.enqueue("review", { priority: "P3" });
+    for (const id of ["human-0", "human-1", "human-2"]) queue.enqueue(id, { lane: "human" });
+    for (const index of [0, 1]) {
+      const human = `human-${index}`;
+      expect(queue.take()).toBe(human);
+      const background = `background-${index}`;
+      queue.enqueue(background, { priority: "P0" });
+      expect(queue.take()).toBe(background);
+      queue.complete(background);
+      queue.complete(human);
+    }
+    expect(queue.take()).toBe("review");
+  });
+
+  it("only successful human takes count toward an eligible coordination turn", () => {
+    let coordinationReady = true;
+    const queue = new AppTaskQueue(1, id => id !== "review" || coordinationReady,
+      id => id !== "ordinary", id => id === "review");
+    queue.enqueue("review", { priority: "P3" });
+    queue.enqueue("ordinary", { lane: "human", priority: "P0" });
+    for (const id of ["human-0", "human-1", "human-2"]) queue.enqueue(id, { lane: "human" });
+    for (const id of ["human-0", "human-1"]) {
+      for (let count = 0; count < 10; count++) expect(queue.peek()?.taskId).toBe(id);
+      expect(queue.take()).toBe(id);
+      queue.complete(id);
+    }
+    coordinationReady = false;
+    expect(queue.peek()?.taskId).toBe("human-2");
+    coordinationReady = true;
+    expect(queue.take()).toBe("review");
+    queue.complete("review");
+    expect(queue.take()).toBe("human-2");
+  });
+
   it("rejects invalid limits, keys, and completions", () => {
     expect(() => new AppTaskQueue(0)).toThrow("positive integer");
     const queue = new AppTaskQueue(1);

@@ -5,6 +5,9 @@ type CapacityWaiter = {
   grant(release: () => void): void;
 };
 
+/** Prefer human dispatches, without indefinitely postponing ready coordination. */
+export const MAX_HUMAN_DISPATCH_BURST = 2;
+
 /** One Host-owned limit shared by App request owners and task attempts. */
 export class HostCapacity {
   private readonly limit: number;
@@ -12,6 +15,7 @@ export class HostCapacity {
   private running = 0;
   private backgroundRunning = 0;
   private readonly waiters: CapacityWaiter[] = [];
+  private humanTurns = 0;
 
   constructor(maxConcurrent: number) {
     if (!Number.isInteger(maxConcurrent) || maxConcurrent < 1) {
@@ -48,8 +52,14 @@ export class HostCapacity {
   }
 
   tryAcquireForeground(): (() => void) | null {
+    if (this.coordinationWaiting() && this.humanTurns >= MAX_HUMAN_DISPATCH_BURST) return null;
+    return this.reserveForeground(true);
+  }
+
+  private reserveForeground(human: boolean): (() => void) | null {
     if (this.running >= this.limit) return null;
     this.running += 1;
+    this.recordForegroundGrant(human);
     return this.releaseHandle(true);
   }
 
@@ -65,10 +75,20 @@ export class HostCapacity {
     return new Promise((resolve) => this.waiters.push({ active: true, foreground: true, human: true, grant: resolve }));
   }
 
-  /** Shares the foreground place; queued human interaction has precedence. */
+  /** Shares the foreground place, with bounded preference for human interaction. */
   tryAcquireCoordination(): (() => void) | null {
-    if (this.waiters.some(waiter => waiter.active && waiter.human)) return null;
-    return this.tryAcquireForeground();
+    if (this.waiters.some(waiter => waiter.active && waiter.human) &&
+        !(this.coordinationWaiting() && this.humanTurns >= MAX_HUMAN_DISPATCH_BURST)) return null;
+    return this.reserveForeground(false);
+  }
+
+  private coordinationWaiting(): boolean {
+    return this.waiters.some(waiter => waiter.active && waiter.foreground && !waiter.human);
+  }
+
+  private recordForegroundGrant(human: boolean): void {
+    this.humanTurns = human && this.coordinationWaiting()
+      ? Math.min(MAX_HUMAN_DISPATCH_BURST, this.humanTurns + 1) : 0;
   }
 
   acquireCoordinationCancellable(callback: (release: () => void) => void): () => void {
@@ -106,7 +126,10 @@ export class HostCapacity {
     };
     const release = foreground ? human ? this.tryAcquireForeground() : this.tryAcquireCoordination() : this.tryAcquire();
     if (release) waiter.grant(release);
-    else this.waiters.push(waiter);
+    else {
+      if (foreground && !human && !this.coordinationWaiting()) this.humanTurns = 0;
+      this.waiters.push(waiter);
+    }
 
     return () => {
       if (!active) return;
@@ -115,6 +138,7 @@ export class HostCapacity {
         waiter.active = false;
         const index = this.waiters.indexOf(waiter);
         if (index >= 0) this.waiters.splice(index, 1);
+        if (!this.coordinationWaiting()) this.humanTurns = 0;
       }
       reservedRelease?.();
       reservedRelease = undefined;
@@ -151,8 +175,10 @@ export class HostCapacity {
 
   private drainWaiters(): void {
     while (this.running < this.limit) {
-      let index = this.waiters.findIndex((waiter) => waiter.active && waiter.human);
-      if (index < 0) index = this.waiters.findIndex((waiter) => waiter.active && waiter.foreground);
+      const human = this.waiters.findIndex((waiter) => waiter.active && waiter.human);
+      const coordination = this.waiters.findIndex((waiter) => waiter.active && waiter.foreground && !waiter.human);
+      let index = coordination >= 0 && (human < 0 || this.humanTurns >= MAX_HUMAN_DISPATCH_BURST)
+        ? coordination : human;
       if (index < 0 && this.backgroundRunning < this.backgroundLimit) {
         index = this.waiters.findIndex((waiter) => waiter.active && !waiter.foreground);
       }
@@ -163,6 +189,7 @@ export class HostCapacity {
       next.active = false;
       this.running += 1;
       if (!next.foreground) this.backgroundRunning += 1;
+      else this.recordForegroundGrant(next.human);
       next.grant(this.releaseHandle(next.foreground));
     }
   }
