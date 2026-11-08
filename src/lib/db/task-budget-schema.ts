@@ -46,8 +46,18 @@ CREATE TABLE IF NOT EXISTS task_budget_funding_receipts (
   changed_at INTEGER NOT NULL, receipt_json TEXT NOT NULL,
   FOREIGN KEY(root_app_id, root_task_id) REFERENCES task_budget_roots(root_app_id, root_task_id)
 );
+CREATE TABLE IF NOT EXISTS task_budget_policy_funding_receipts (
+  change_id TEXT PRIMARY KEY, policy_app_id TEXT NOT NULL,
+  changed_at INTEGER NOT NULL, receipt_json TEXT NOT NULL,
+  FOREIGN KEY(policy_app_id) REFERENCES task_budget_policies(app_id)
+);
 CREATE INDEX IF NOT EXISTS idx_app_tasks_root_funding_hold
   ON app_tasks(json_extract(resource_json, '$.status.funding.root.appId'),
     json_extract(resource_json, '$.status.funding.root.taskId'), app_id, task_id)
-  WHERE json_extract(resource_json, '$.status.funding.reason') = 'root-credit';
+  WHERE json_valid(resource_json) AND json_extract(resource_json, '$.status.funding.reason') = 'root-credit';
+CREATE INDEX IF NOT EXISTS idx_app_tasks_sponsor_funding_hold
+  ON app_tasks(json_extract(resource_json, '$.status.funding.sponsor.appId'),
+    json_extract(resource_json, '$.status.funding.sponsor.agent'),
+    json_extract(resource_json, '$.status.funding.purpose'), app_id, task_id)
+  WHERE json_valid(resource_json) AND json_extract(resource_json, '$.status.funding.reason') = 'sponsor-credit';
 `;

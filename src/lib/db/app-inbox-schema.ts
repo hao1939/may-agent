@@ -61,6 +61,11 @@ CREATE INDEX IF NOT EXISTS idx_app_inbox_funding_due ON app_inbox_items(availabl
 CREATE INDEX IF NOT EXISTS idx_app_inbox_funding_source ON app_inbox_items (
   json_extract(handling, '$.funding.root.appId'), json_extract(handling, '$.funding.root.taskId')
 ) WHERE status != 'done' AND json_extract(handling, '$.phase') = 'deferred';
+CREATE INDEX IF NOT EXISTS idx_app_inbox_sponsor_funding_hold
+  ON app_inbox_items(json_extract(handling, '$.funding.sponsor.appId'),
+    json_extract(handling, '$.funding.sponsor.agent'), json_extract(handling, '$.funding.purpose'))
+  WHERE status != 'done' AND json_extract(handling, '$.phase') = 'deferred'
+    AND json_extract(handling, '$.funding.reason') = 'sponsor-credit';
 CREATE INDEX IF NOT EXISTS idx_app_inbox_available
   ON app_inbox_items(available_at, app_id)
   WHERE status != 'done' AND lease_owner IS NULL AND available_at IS NOT NULL;

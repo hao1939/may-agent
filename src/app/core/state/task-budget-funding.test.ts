@@ -13,7 +13,8 @@ import { AppInboxHost } from "../inbox/app-inbox-host.js";
 import { createAppInboxItem } from "./app-inbox-store.js";
 import { admitTaskInput } from "./inbox.js";
 import { TaskBudgetAdmissionStore, TaskBudgetDeferredError } from "./task-budget-admission.js";
-import { adoptTaskBudget, changeTaskBudgetRootCredits } from "./task-budget-funding.js";
+import { adoptTaskBudget, changeTaskBudgetDailyCredits, changeTaskBudgetRootCredits } from "./task-budget-funding.js";
+import { utcBudgetPeriod } from "./task-budget-store.js";
 import {
   appTaskContext,
   cancelAppTask,
@@ -30,7 +31,7 @@ afterEach(() => {
   roots.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true }));
 });
 
-function fixture(path = ":memory:") {
+function fixture(path = ":memory:", dailyCredits = 20, rootCredits = 2) {
   const db = openDatabase(path);
   databases.push(db);
   if (path !== ":memory:") db.exec("PRAGMA journal_mode=WAL");
@@ -39,8 +40,8 @@ function fixture(path = ":memory:") {
   accounting.install({
     appId: "sample",
     sponsor: { appId: "sample", agent: "owner" },
-    dailyCredits: 20,
-    rootCredits: 2,
+    dailyCredits,
+    rootCredits,
   });
   function app(appId: string) {
     const store = AppTaskResourceStore.fromDb(db, appId);
@@ -325,6 +326,198 @@ test("historical adoption replay retains an amended allowance without applying f
   expect(() =>
     adoptTaskBudget(f.db, { ...input, root: { ...input.root, sponsor: { appId: "sample", agent: "other" } } }),
   ).toThrow("attribution");
+});
+
+test("a daily grant amendment wakes exact cross-App holds and preserves other sponsors and protected funds", () => {
+  const f = fixture(":memory:", 2, 10);
+  const other = f.app("other");
+  other.add("contribution", f.target);
+  expect(f.claim("work")).toMatchObject({ kind: "deferred", funding: { reason: "sponsor-credit" } });
+  expect(other.claim("contribution").kind).toBe("deferred");
+  f.accounting.install({
+    appId: "independent",
+    sponsor: { appId: "independent", agent: "owner" },
+    dailyCredits: 1,
+    rootCredits: 5,
+  });
+  const independent = f.app("independent");
+  independent.add("obligation");
+  expect(independent.claim("obligation").kind).toBe("deferred");
+  const before = independent.store.readTaskContext({ taskIds: ["obligation"] });
+  const policy = f.accounting.policy("sample")!;
+  f.accounting.budget.grant({
+    sponsor: policy.sponsor,
+    purpose: "coordination",
+    period: utcBudgetPeriod(Date.now()),
+    credits: 3,
+  });
+  const protectedBefore = f.db.prepare("SELECT * FROM task_credit_grants WHERE purpose = 'coordination'").all();
+  const input = { changeId: "daily-increase", expected: policy, dailyCredits: 5, reason: "Authorized daily capacity" };
+  changeTaskBudgetDailyCredits(f.db, input);
+  expect(f.store.listRecoveryCandidates().items.map((item) => item.taskId)).toEqual(["work"]);
+  expect(other.store.listRecoveryCandidates().items.map((item) => item.taskId)).toEqual(["contribution"]);
+  expect(independent.store.readTaskContext({ taskIds: ["obligation"] })).toEqual(before);
+  expect(f.db.prepare("SELECT * FROM task_credit_grants WHERE purpose = 'coordination'").all()).toEqual(
+    protectedBefore,
+  );
+  expect(f.accounting.budget.view(f.target, Date.now())).toMatchObject({
+    credits: 10,
+    rootCharged: 2,
+    grant: { credits: 5, charged: 2 },
+  });
+  expect(other.claim("contribution").kind).toBe("claimed");
+  const replayBefore = f.db.prepare("SELECT total_changes() AS n").get();
+  expect(changeTaskBudgetDailyCredits(f.db, input).replay).toBe(true);
+  expect(f.db.prepare("SELECT total_changes() AS n").get()).toEqual(replayBefore);
+  expect(() => changeTaskBudgetDailyCredits(f.db, { ...input, dailyCredits: 8 })).toThrow("identity");
+  expect(() => changeTaskBudgetDailyCredits(f.db, { ...input, changeId: "stale-daily" })).toThrow("exact current");
+});
+
+test("daily funding cannot erase spending and rolls its policy, grant, receipt and wakes back together", () => {
+  const f = fixture(":memory:", 1, 10);
+  expect(f.claim("work").kind).toBe("deferred");
+  const input = {
+    changeId: "daily-increase",
+    expected: f.accounting.policy("sample")!,
+    dailyCredits: 4,
+    reason: "Authorized daily capacity",
+  };
+  const task = f.store.readTaskContext({ taskIds: ["work"] });
+  const budget = f.accounting.budget.view(f.target, Date.now());
+  expect(() => changeTaskBudgetDailyCredits(f.db, { ...input, dailyCredits: 0 })).toThrow("charged credits");
+  expect(() =>
+    stateTransaction(f.db, () => {
+      changeTaskBudgetDailyCredits(f.db, input);
+      throw new Error("Installation failed");
+    }),
+  ).toThrow("Installation failed");
+  expect(f.accounting.policy("sample")).toEqual(input.expected);
+  expect(f.accounting.budget.view(f.target, Date.now())).toEqual(budget);
+  expect(f.store.readTaskContext({ taskIds: ["work"] })).toEqual(task);
+  expect(f.store.listRecoveryCandidates().items).toEqual([]);
+  expect(f.db.prepare("SELECT count(*) AS n FROM task_budget_policy_funding_receipts").get()?.n).toBe(0);
+});
+
+test("daily funding arriving between failed debit and saved hold is not lost", () => {
+  const f = fixture(":memory:", 1, 10);
+  const original = f.store.commit.bind(f.store);
+  let changed = false;
+  f.store.commit = (mutation) => {
+    try {
+      return original(mutation);
+    } catch (error) {
+      if (error instanceof TaskBudgetDeferredError && !changed) {
+        changed = true;
+        changeTaskBudgetDailyCredits(f.db, {
+          changeId: "racing-daily",
+          expected: f.accounting.policy("sample")!,
+          dailyCredits: 4,
+          reason: "Authorized capacity",
+        });
+      }
+      throw error;
+    }
+  };
+  expect(f.claim("work").kind).toBe("deferred");
+  expect(f.store.readTask("work")!.status.funding).toBeUndefined();
+  expect(f.store.listRecoveryCandidates().items.map((item) => item.taskId)).toContain("work");
+  expect(f.claim("work").kind).toBe("claimed");
+});
+
+test("daily funding releases denied Inbox creation without rewriting its caller or root cap", async () => {
+  const f = fixture(":memory:", 1, 10);
+  const definition = defineApp({
+    id: "sample",
+    version: 1,
+    agent: "worker",
+    tasks: {},
+    inputSchema: Type.Object({ kind: Type.Literal("work"), data: Type.Object({}) }),
+    task: (input) => ({
+      kind: "desired",
+      intent: { id: input.id, parentId: "root", outcome: "Collect facts", acceptance: ["Facts accepted"] },
+    }),
+  });
+  const host = new AppInboxHost({
+    db: f.db,
+    apps: [definition],
+    attachTask: (input) => admitTaskInput(f.config, input),
+  });
+  try {
+    createAppInboxItem(f.db, {
+      id: "needed-child",
+      appId: "sample",
+      creator: f.target,
+      source: { kind: "app", id: "caller" },
+      input: { kind: "work", data: {} },
+    });
+    await host.recoverAdmissions();
+    expect(host.get("needed-child")?.handling).toMatchObject({
+      phase: "deferred",
+      funding: { reason: "sponsor-credit" },
+    });
+    changeTaskBudgetDailyCredits(f.db, {
+      changeId: "daily-increase",
+      expected: f.accounting.policy("sample")!,
+      dailyCredits: 3,
+      reason: "Authorized daily capacity",
+    });
+    await host.recoverAdmissions();
+    expect(host.get("needed-child")).toMatchObject({
+      source: { kind: "app", id: "caller" },
+      creator: f.target,
+      waitingOn: { kind: "task", id: "needed-child" },
+    });
+    expect(f.accounting.budget.view({ appId: "sample", taskId: "needed-child" }, Date.now())).toMatchObject({
+      root: f.target,
+      credits: 10,
+      rootCharged: 2,
+    });
+  } finally {
+    host.close();
+  }
+});
+
+test("daily policy and receipt survive restart and publish the next UTC grant once", () => {
+  setSystemTime(new Date("2026-11-09T12:00:00Z"));
+  const root = mkdtempSync(join(tmpdir(), "may-daily-funding-"));
+  roots.push(root);
+  const path = join(root, "state.sqlite");
+  const f = fixture(path, 1, 10);
+  const input = {
+    changeId: "daily-increase",
+    expected: f.accounting.policy("sample")!,
+    dailyCredits: 3,
+    reason: "Authorized daily capacity",
+  };
+  const result = changeTaskBudgetDailyCredits(f.db, input);
+  f.db.close();
+  databases.splice(databases.indexOf(f.db), 1);
+  const db = openDatabase(path);
+  databases.push(db);
+  applyDbSchema(db);
+  const accounting = new TaskBudgetAdmissionStore(db);
+  setSystemTime(new Date("2026-11-10T12:00:00Z"));
+  expect(changeTaskBudgetDailyCredits(db, input)).toEqual({ receipt: result.receipt, replay: true });
+  const store = AppTaskResourceStore.inspectFromDb(db, "sample");
+  const config = appTaskContext({
+    appDir: "/fixture/sample.app",
+    projectDir: "/fixture/sample.app",
+    agent: "worker",
+    resourceStore: store,
+  });
+  observeAppTaskIntent(config, {
+    appAgent: "worker",
+    intent: { id: "new-day", parentId: "root", outcome: "New day obligation", acceptance: ["Facts accepted"] },
+  });
+  expect(accounting.budget.view({ appId: "sample", taskId: "new-day" }, Date.now())).toMatchObject({
+    credits: 10,
+    grant: { credits: 3, charged: 1 },
+  });
+  expect(db.prepare("SELECT credits, charged FROM task_credit_grants WHERE period = '2026-11-09'").get()).toEqual({
+    credits: 3,
+    charged: 1,
+  });
+  expect(accounting.policy("sample")).toEqual({ ...input.expected, dailyCredits: 3 });
 });
 
 test("an amended standing cap survives daily renewal without resetting finite root spending", () => {

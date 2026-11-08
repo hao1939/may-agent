@@ -23,6 +23,19 @@ export type InstalledTaskBudgetPolicy = {
   /** Exact installed standing assignments; ordinary roots otherwise have lifetime caps. */
   standing?: ReadonlyArray<{ taskId: string; credits: number }>;
 };
+/** Host-private installation command. It changes the current UTC grant and
+ * future daily default together, without changing root caps or past grants. */
+export type DailyTaskBudgetFundingChange = {
+  changeId: string;
+  expected: InstalledTaskBudgetPolicy;
+  dailyCredits: number;
+  reason: string;
+};
+export type DailyTaskBudgetFundingReceipt = {
+  change: DailyTaskBudgetFundingChange;
+  period: string;
+  changedAt: number;
+};
 export type TaskFundingConstraint = (
   | Exclude<BudgetAdmission, { kind: "admitted" }>
   | {
@@ -92,6 +105,98 @@ export class TaskBudgetAdmissionStore {
   policy(appId: string): InstalledTaskBudgetPolicy | null {
     const row = this.db.prepare("SELECT policy_json FROM task_budget_policies WHERE app_id = ?").get(appId);
     return row ? (JSON.parse(row.policy_json as string) as InstalledTaskBudgetPolicy) : null;
+  }
+
+  setDailyCredits(
+    input: DailyTaskBudgetFundingChange,
+    now: number,
+  ): {
+    receipt: DailyTaskBudgetFundingReceipt;
+    replay: boolean;
+  } {
+    if (
+      [input.changeId, input.reason].some(
+        (value) =>
+          typeof value !== "string" ||
+          !value ||
+          value !== value.trim() ||
+          Buffer.byteLength(value) > 1024,
+      )
+    )
+      throw new Error(
+        "Daily funding requires exact command identity and reason",
+      );
+    if (!Number.isSafeInteger(input.dailyCredits) || input.dailyCredits < 0)
+      throw new Error("Daily credits must be a non-negative safe integer");
+    const period = utcBudgetPeriod(now);
+    return stateTransaction(this.db, () => {
+      const saved = this.db
+        .prepare(
+          "SELECT receipt_json FROM task_budget_policy_funding_receipts WHERE change_id = ?",
+        )
+        .get(input.changeId);
+      if (saved) {
+        const receipt = JSON.parse(
+          saved.receipt_json as string,
+        ) as DailyTaskBudgetFundingReceipt;
+        if (!isDeepStrictEqual(receipt.change, input))
+          throw new Error(
+            "Daily funding identity was reused for a different command",
+          );
+        return { receipt, replay: true };
+      }
+      const current = this.policy(input.expected.appId);
+      if (!current || !isDeepStrictEqual(current, input.expected))
+        throw new Error(
+          "Daily funding requires the exact current installed policy",
+        );
+      const grant = this.db
+        .prepare(
+          `SELECT credits, charged FROM task_credit_grants
+        WHERE sponsor_app_id = ? AND sponsor_agent = ? AND purpose = 'ordinary' AND period = ?`,
+        )
+        .get(current.sponsor.appId, current.sponsor.agent, period);
+      if (grant && grant.credits !== current.dailyCredits)
+        throw new Error(
+          "Current grant differs from its installed daily policy",
+        );
+      if (input.dailyCredits < ((grant?.charged as number | undefined) ?? 0))
+        throw new Error(
+          "Daily allowance cannot be lower than its charged credits",
+        );
+      const receipt: DailyTaskBudgetFundingReceipt = {
+        change: structuredClone(input),
+        period,
+        changedAt: now,
+      };
+      this.db
+        .prepare(
+          "UPDATE task_budget_policies SET policy_json = ? WHERE app_id = ?",
+        )
+        .run(
+          JSON.stringify({ ...current, dailyCredits: input.dailyCredits }),
+          current.appId,
+        );
+      this.db
+        .prepare(
+          `INSERT INTO task_credit_grants(sponsor_app_id, sponsor_agent, purpose, period, credits)
+        VALUES (?, ?, 'ordinary', ?, ?)
+        ON CONFLICT(sponsor_app_id, sponsor_agent, purpose, period) DO UPDATE SET credits = excluded.credits`,
+        )
+        .run(
+          current.sponsor.appId,
+          current.sponsor.agent,
+          period,
+          input.dailyCredits,
+        );
+      this.db
+        .prepare(
+          `INSERT INTO task_budget_policy_funding_receipts(change_id, policy_app_id, changed_at, receipt_json)
+        VALUES (?, ?, ?, ?)`,
+        )
+        .run(input.changeId, current.appId, now, JSON.stringify(receipt));
+      return { receipt, replay: false };
+    });
   }
 
   private defer(

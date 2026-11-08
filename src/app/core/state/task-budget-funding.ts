@@ -2,12 +2,60 @@ import { isDeepStrictEqual } from "node:util";
 import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
+import { TaskBudgetAdmissionStore, type DailyTaskBudgetFundingChange } from "./task-budget-admission.js";
 import {
   TaskBudgetStore,
   type BudgetRoot,
   type BudgetTaskRef,
   type RootBudgetFundingChange,
 } from "./task-budget-store.js";
+
+/** Shared fenced wake mechanics; queries retain each funding authority's exact scope. */
+function wakeFundedTasks(db: SqliteDb, tasks: Array<Record<string, unknown>>, now: number): void {
+  for (const row of tasks) {
+    const store = AppTaskResourceStore.inspectFromDb(db, row.app_id as string);
+    const taskId = row.task_id as string;
+    const resource = store.readTask(taskId);
+    if (!resource || store.isCancelled(taskId)) continue;
+    const version = resource.metadata.resourceVersion++;
+    delete resource.status.funding;
+    if (
+      !store.commit({
+        fences: [{ taskId, resourceVersion: version }],
+        tasks: [{ resource, trigger: store.readTrigger(taskId) ?? undefined, ready: true, nextCheckAt: now }],
+      })
+    )
+      throw new Error("Funding lost its exact resource fence");
+  }
+}
+
+/** Installation-only daily allowance change; protected funds remain separate. */
+export function changeTaskBudgetDailyCredits(db: SqliteDb, input: DailyTaskBudgetFundingChange, now = Date.now()) {
+  return stateTransaction(db, () => {
+    const result = new TaskBudgetAdmissionStore(db).setDailyCredits(input, now);
+    if (result.replay || input.dailyCredits <= input.expected.dailyCredits) return result;
+    const sponsor = input.expected.sponsor;
+    const tasks = db
+      .prepare(
+        `SELECT app_id, task_id FROM app_tasks
+      WHERE json_valid(resource_json) AND json_extract(resource_json, '$.status.funding.reason') = 'sponsor-credit'
+        AND json_extract(resource_json, '$.status.funding.sponsor.appId') = ?
+        AND json_extract(resource_json, '$.status.funding.sponsor.agent') = ?
+        AND json_extract(resource_json, '$.status.funding.purpose') = 'ordinary'`,
+      )
+      .all(sponsor.appId, sponsor.agent);
+    wakeFundedTasks(db, tasks, now);
+    db.prepare(
+      `UPDATE app_inbox_items SET handling = NULL, available_at = ?, changed_at = ?, updated_at = ?
+      WHERE status != 'done' AND json_extract(handling, '$.phase') = 'deferred'
+        AND json_extract(handling, '$.funding.reason') = 'sponsor-credit'
+        AND json_extract(handling, '$.funding.sponsor.appId') = ?
+        AND json_extract(handling, '$.funding.sponsor.agent') = ?
+        AND json_extract(handling, '$.funding.purpose') = 'ordinary'`,
+    ).run(now, now, now, sponsor.appId, sponsor.agent);
+    return result;
+  });
+}
 
 /** Trusted installation funding only. No creator, worker or model capability.
  * Join the cap receipt and exact affected recovery wakes in one transaction. */
@@ -19,26 +67,12 @@ export function changeTaskBudgetRootCredits(db: SqliteDb, input: RootBudgetFundi
     const tasks = db
       .prepare(
         `SELECT app_id, task_id FROM app_tasks
-      WHERE json_extract(resource_json, '$.status.funding.reason') = 'root-credit'
+      WHERE json_valid(resource_json) AND json_extract(resource_json, '$.status.funding.reason') = 'root-credit'
         AND json_extract(resource_json, '$.status.funding.root.appId') = ?
         AND json_extract(resource_json, '$.status.funding.root.taskId') = ?`,
       )
       .all(root.appId, root.taskId);
-    for (const row of tasks) {
-      const store = AppTaskResourceStore.inspectFromDb(db, row.app_id as string);
-      const taskId = row.task_id as string;
-      const resource = store.readTask(taskId);
-      if (!resource || store.isCancelled(taskId)) continue;
-      const version = resource.metadata.resourceVersion++;
-      delete resource.status.funding;
-      if (
-        !store.commit({
-          fences: [{ taskId, resourceVersion: version }],
-          tasks: [{ resource, trigger: store.readTrigger(taskId) ?? undefined, ready: true, nextCheckAt: now }],
-        })
-      )
-        throw new Error("Root funding lost its exact resource fence");
-    }
+    wakeFundedTasks(db, tasks, now);
     db.prepare(
       `UPDATE app_inbox_items SET handling = NULL, available_at = ?, changed_at = ?, updated_at = ?
       WHERE status != 'done' AND json_extract(handling, '$.phase') = 'deferred'
