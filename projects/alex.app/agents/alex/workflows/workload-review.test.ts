@@ -107,3 +107,56 @@ test.each(["old-host", "wrong-scope", "damaged-state", "missing-task", "over-bou
   expect(f.task.status).toBe("waiting");
   if (["old-host", "wrong-scope", "damaged-state", "missing-task", "over-bound"].includes(kind)) expect(f.prompts).toHaveLength(0);
 });
+
+test("changed ordinary funding warrants new advice; paying for this protected review does not", async () => {
+  const f = fixture();
+  f.workload.funding = {
+    ordinary: {
+      available: true,
+      sponsor: { appId: "alex", agent: "alex" },
+      period: "2027-01-15",
+      credits: 5,
+      charged: 0,
+      remaining: 5,
+    },
+    currentRoot: {
+      available: true,
+      task: { appId: "alex", taskId: WORKLOAD_REVIEW_TASK_ID },
+      root: { appId: "alex", taskId: WORKLOAD_REVIEW_TASK_ID },
+      sponsor: { appId: "alex", agent: "alex" },
+      purpose: "coordination",
+      renewal: "utc-day",
+      period: "2027-01-15",
+      credits: 5,
+      charged: 2,
+      remaining: 3,
+      sponsorRemaining: 3,
+    },
+  };
+  f.own.result = { workloadReview: state(await execute(f.ctx)) };
+  setSystemTime(now + WORKLOAD_REVIEW_INTERVAL_MS);
+  if (!f.workload.funding.currentRoot.available || !f.workload.funding.ordinary.available)
+    throw new Error("Expected fixture funding");
+  f.workload.funding.currentRoot.charged++;
+  f.workload.funding.currentRoot.remaining--;
+  f.workload.funding.currentRoot.sponsorRemaining = f.workload.funding.currentRoot.sponsorRemaining! - 1;
+  expect((await execute(f.ctx)).summary).toContain("No changed");
+  expect(f.prompts).toHaveLength(1);
+  f.workload.funding.ordinary.charged = 5;
+  f.workload.funding.ordinary.remaining = 0;
+  const stressed = await execute(f.ctx);
+  expect(stressed.summary).toContain("advice retained");
+  expect(f.prompts).toHaveLength(2);
+  expect(f.prompts[1]).toContain('"remaining":0');
+  expect(f.prompts[1]).toContain("funding hold retains the obligation");
+  expect(f.task.status).toBe("waiting");
+  expect(stressed.output).not.toHaveProperty("requests");
+  f.own.result = { workloadReview: state(stressed) };
+  setSystemTime(now + 2 * WORKLOAD_REVIEW_INTERVAL_MS);
+  f.workload.funding.ordinary.credits = 10;
+  f.workload.funding.ordinary.remaining = 5;
+  expect((await execute(f.ctx)).summary).toContain("advice retained");
+  expect(f.prompts).toHaveLength(3);
+  expect(f.prompts[2]).toContain("available credits do not establish spare execution capacity");
+  expect(f.task.status).toBe("waiting");
+});

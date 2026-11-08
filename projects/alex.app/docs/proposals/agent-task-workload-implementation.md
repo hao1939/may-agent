@@ -639,10 +639,48 @@ assertions**. Two real worker scenarios also passed, covering ordinary and
 protected completion and the installed timeout ceiling. Host/SDK types, boundary
 and lint passed. The first regressions failed before integration; one invalid
 workflow-plus-executor fixture was corrected to exercise valid alternate
-selection. Full local CI, current hosted checks and independent review remain.
+selection. Hosted Quality and Container pass that revision. No full local gate has run on
+that head; independent review remains.
 
 The next implementation stage is shared Host/recipient-agent/root execution
 reservations, including helpers and confirmed descendant cleanup. Complete
 budget/constraint feedback, operation-specific resource blockers, explicit pilot
 adoption and business-behavior evidence remain. Source publication alone does
 not establish activation, automatic Task closure or improved model decisions.
+
+
+Budget feedback is the next independent source increment, Host
+[PR #417](https://github.com/hao1939/may-agent/pull/417), `924442d4e9`, stacked on
+#415. Initial regressions reproduced funding-held work classified as unknown and
+missing credit observations. The shared read now counts those assignments as
+waiting demand and supplies exact constraint reasons/due times. Optional funding
+facts separate the current App's ordinary sponsor from the Host-bound current
+Task's shared root, including inherited cross-App sponsorship and protected
+coordination. No workload query argument selects another root. Exact keyed reads
+share the existing Task-read snapshot; observing renewal writes no grants and
+never resets finite root spending. Missing policy/bindings remain unavailable.
+Read/accounting/tool/context/SDK checks passed **95 tests / 644 assertions**; the
+final owning projection file passed **20 / 84**. Host/SDK types, boundary and lint
+passed. Full local CI, hosted checks and independent review remain pending for
+this new revision.
+
+The paired pilot includes changed ordinary funding and blocker facts in its
+review fingerprint. A new regression reproduced the previous behavior of
+ignoring changed ordinary funds. The fingerprint excludes the review's own
+protected spending, so paying for a pass does not commission another judgment.
+The ordinary allowance reaching zero or increasing warrants new advice after
+cooldown; the same required incident remains owed, and the pass still applies
+no portfolio edits or new work. Workload/disposition workflows passed **22 tests /
+326 assertions**, and strict checks against the paired source SDK passed. This
+is source contract evidence with scripted helper responses, not a model-backed
+business acceptance trial. Install the paired Host before activating these
+optional feedback facts; source work grants no rollout authority.
+
+The sponsor amendment's frozen local gate subsequently retained **4,005 passed /
+3 skipped / 1 failed / 23,343 assertions across 347 files**. The worker
+recovery/handler-judgment scenario did not observe a converged accepted attempt;
+its cause is unproven. Separately, all three root-funding gate failures passed an
+unchanged targeted diagnostic (**3 tests / 142 assertions**), without proving a
+fix. Those results do not replace either failed full gate. The isolated
+background-output correction #416 passed hosted Quality and Container; Container
+correctly treated the fixture-only diff as requiring no image build.
