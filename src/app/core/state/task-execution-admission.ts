@@ -8,6 +8,7 @@ import { TaskBudgetStore, type BudgetTaskRef } from "./task-budget-store.js";
 import {
   TaskExecutionStore, type ExecutionScope, type ExecutionRequest,
   type ExecutionReservation, type ExecutionRelease,
+  type HostExecutionOptions,
 } from "./task-execution-store.js";
 
 export type TaskExecutionAdmissionContext = {
@@ -150,9 +151,12 @@ function wakeExecutionConstraints(db: SqliteDb, scopes: TaskExecutionConstraint[
 }
 
 /** A trusted installation operation; no Task/model authority or default cap. */
-export function installTaskExecutionLimit(db: SqliteDb, scope: ExecutionScope, slots: number, now = Date.now()): void {
+export function installTaskExecutionLimit(
+  db: SqliteDb, scope: ExecutionScope, slots: number, nowOrOptions: number | HostExecutionOptions = Date.now(),
+): void {
+  const now = typeof nowOrOptions === "number" ? nowOrOptions : Date.now();
   stateTransaction(db, () => {
-    new TaskExecutionStore(db).installLimit(scope, slots);
+    new TaskExecutionStore(db).installLimit(scope, slots, typeof nowOrOptions === "number" ? undefined : nowOrOptions);
     wakeExecutionConstraints(db, [scope], now);
   });
 }

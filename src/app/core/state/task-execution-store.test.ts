@@ -82,6 +82,38 @@ test("Host reserve is shared by humans and coordination; size one invents no ext
   expect(one.store.usage({ kind: "host" })).toEqual({ limit: 1, occupied: 1 });
 });
 
+test("an installed background sublimit preserves the complete protected method across connections", () => {
+  const dir = mkdtempSync(join(tmpdir(), "may-execution-reserve-")); roots.push(dir);
+  const path = join(dir, "state.db");
+  const db = openDatabase(path); databases.push(db); applyDbSchema(db);
+  const store = new TaskExecutionStore(db);
+  expect(() => stateTransaction(db, () => {
+    store.installLimit({ kind: "host" }, 4, { backgroundSlots: 2 });
+    throw new Error("installation rolled back");
+  })).toThrow("installation rolled back");
+  expect(store.hostPolicy()).toBeNull();
+  store.installLimit({ kind: "host" }, 4, { backgroundSlots: 2 });
+  store.installLimit({ kind: "agent", recipient }, 4);
+  const reopened = openDatabase(path); databases.push(reopened);
+  const shared = new TaskExecutionStore(reopened);
+  expect(shared.hostPolicy()).toEqual({ maxConcurrent: 4, backgroundMaxConcurrent: 2 });
+  const reserve = (id: string, lane: ExecutionRequest["lane"]) => shared.reserve({
+    operation: { kind: "helper", invocationId: id, sessionId: `session-${id}` }, recipient, lane, ownerId: "fixture" });
+  expect(reserve("ordinary-1", "background").kind).toBe("admitted");
+  expect(reserve("ordinary-2", "background").kind).toBe("admitted");
+  expect(reserve("ordinary-3", "background").kind).toBe("deferred");
+  expect(reserve("review-workflow", "coordination").kind).toBe("admitted");
+  expect(reserve("review-model", "coordination").kind).toBe("admitted");
+  expect(reserve("extra", "human").kind).toBe("deferred");
+  expect(shared.usage({ kind: "host" })).toEqual({ limit: 4, occupied: 4 });
+  shared.installLimit({ kind: "host" }, 4, { backgroundSlots: 2 });
+  expect(() => shared.installLimit({ kind: "host" }, 4, { backgroundSlots: 3 })).toThrow("explicit installation authority");
+  expect(shared.hostPolicy()).toEqual({ maxConcurrent: 4, backgroundMaxConcurrent: 2 });
+  for (const backgroundSlots of [0, -1, 1.5, 5])
+    expect(() => shared.installLimit({ kind: "host" }, 4, { backgroundSlots })).toThrow("Host sublimit");
+  expect(() => shared.installLimit({ kind: "root", root }, 2, { backgroundSlots: 1 })).toThrow("Host sublimit");
+});
+
 test("root and resolved recipient constraints do not block unrelated work", () => {
   const f = fixture(6, 2, 1);
   f.reserve("one", "human");

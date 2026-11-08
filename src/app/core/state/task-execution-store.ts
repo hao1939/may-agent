@@ -36,6 +36,9 @@ export type ExecutionRelease = {
 };
 export type ExecutionScope =
   { kind: "host" } | { kind: "agent"; recipient: ExecutionRecipient } | { kind: "root"; root: BudgetTaskRef };
+/** Trusted Host policy. Leave enough places for the complete protected method,
+ * including its workflow and inline helpers; total execution stays bounded. */
+export type HostExecutionOptions = { backgroundSlots: number };
 export type ExecutionReservationResult =
   | { kind: "unavailable" }
   | { kind: "deferred"; reason: "execution-policy" | "execution-capacity"; scope: ExecutionScope }
@@ -133,7 +136,7 @@ export class TaskExecutionStore {
     if (usage.occupied + requiredSlots > usage.limit) return "execution-capacity";
     if (scope.kind === "host" && lane === "background") {
       const occupied = this.backgroundOccupied();
-      if (occupied + requiredSlots > Math.max(1, usage.limit - 1)) return "execution-capacity";
+      if (occupied + requiredSlots > this.hostPolicy()!.backgroundMaxConcurrent) return "execution-capacity";
     }
     return null;
   }
@@ -143,8 +146,19 @@ export class TaskExecutionStore {
       WHERE released_at IS NULL AND lane = 'background'`).get()!.n as number;
   }
 
-  installLimit(scope: ExecutionScope, slots: number): void {
+  hostPolicy(): { maxConcurrent: number; backgroundMaxConcurrent: number } | null {
+    const row = this.db.prepare(`SELECT slots,
+      (SELECT slots FROM task_execution_limits WHERE scope_kind = 'host' AND scope_key = 'background') AS background
+      FROM task_execution_limits WHERE scope_kind = 'host' AND scope_key = 'host'`).get();
+    return row ? { maxConcurrent: row.slots as number,
+      backgroundMaxConcurrent: (row.background as number | null) ?? Math.max(1, (row.slots as number) - 1) } : null;
+  }
+
+  installLimit(scope: ExecutionScope, slots: number, options?: HostExecutionOptions): void {
     if (!Number.isSafeInteger(slots) || slots < 1) throw new Error("Execution limits must be positive safe integers");
+    if (options && (scope.kind !== "host" || !Number.isSafeInteger(options.backgroundSlots) ||
+      options.backgroundSlots < 1 || options.backgroundSlots > slots))
+      throw new Error("Background execution requires a positive Host sublimit within total capacity");
     const key = scopeKey(scope);
     stateTransaction(this.db, () => {
       const existing = this.db
@@ -152,10 +166,16 @@ export class TaskExecutionStore {
         .get(scope.kind, key);
       if (existing && existing.slots !== slots)
         throw new Error("Execution limit changes require explicit installation authority");
+      const background = options?.backgroundSlots ?? Math.max(1, slots - 1);
+      if (scope.kind === "host" && existing && this.hostPolicy()!.backgroundMaxConcurrent !== background)
+        throw new Error("Execution limit changes require explicit installation authority");
       if (!existing)
         this.db
           .prepare("INSERT INTO task_execution_limits(scope_kind, scope_key, slots) VALUES (?, ?, ?)")
           .run(scope.kind, key, slots);
+      if (scope.kind === "host" && options && !existing)
+        this.db.prepare("INSERT INTO task_execution_limits(scope_kind, scope_key, slots) VALUES ('host', 'background', ?)")
+          .run(background);
     });
   }
 

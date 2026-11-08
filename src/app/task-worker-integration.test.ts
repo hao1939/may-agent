@@ -23,6 +23,7 @@ describe("real Task worker boundary", () => {
   it.each([
     ["coordination", "runs shared coordination with an installed timeout ceiling in a real worker"],
     ["protectedCoordination", "runs protected coordination across the worker boundary with exhausted ordinary funding"],
+    ["sharedCoordination", "can make its bounded model judgment when ordinary shared execution is full"],
     ["workloadFeedback", "preserves parent capacity and queue observations in real workflow attempts"],
     ["observationWithoutConsumer", "accepts worker observations after parent routing without another journal row"],
     ["observationAccepted", "records the parent consumer's acceptance of worker observations"],

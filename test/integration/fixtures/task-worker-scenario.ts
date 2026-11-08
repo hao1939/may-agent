@@ -428,6 +428,58 @@ async function runCoordination(funded: boolean) {
 const scenarios: Record<string, () => Promise<void>> = {
   coordination: () => runCoordination(false),
   protectedCoordination: () => runCoordination(true),
+  async sharedCoordination() {
+    const f = fixture("owner", false, true, false, true);
+    f.request.dispatch.coordination = true;
+    const root = { appId: "sample", taskId: "work/one" };
+    const sponsor = { appId: "sample", agent: "owner" };
+    const budgets = new TaskBudgetAdmissionStore(f.db);
+    budgets.install({ appId: "sample", sponsor, dailyCredits: 0, rootCredits: 2,
+      coordination: { taskId: root.taskId, workflow: "probe", agent: "owner", maxAttemptMs: 1000,
+        dailyCredits: 2, credits: 2 } });
+    adoptTaskBudget(f.db, { task: root, root: { root, sponsor, purpose: "coordination", credits: 2, renewal: "utc-day" },
+      adoptionId: "shared-coordination-fixture", reason: "Adopt retained bounded coordination" });
+    const recipient = { kind: "directory" as const, id: "projects/sample.app/agents/owner" };
+    const ordinary = { kind: "programmatic" as const, id: "fixture/ordinary" };
+    installTaskExecutionLimit(f.db, { kind: "host" }, 4, { backgroundSlots: 2 });
+    installTaskExecutionLimit(f.db, { kind: "agent", recipient }, 2);
+    installTaskExecutionLimit(f.db, { kind: "agent", recipient: ordinary }, 4);
+    installTaskExecutionLimit(f.db, { kind: "root", root }, 2);
+    const executions = new TaskExecutionStore(f.db);
+    let occupied = 0;
+    for (let index = 0; index < 4; index++) {
+      const admission = executions.reserve({ operation: { kind: "helper", invocationId: `ordinary-${index}`, sessionId: `ordinary-session-${index}` },
+        recipient: ordinary, lane: "background", ownerId: "fixture" });
+      if (admission.kind === "deferred") break;
+      assert.equal(admission.kind, "admitted"); occupied++;
+    }
+    assert(occupied > 0);
+    assert.equal(executions.blocked({ kind: "host" }, "background"), "execution-capacity");
+    writeFileSync(join(f.appDir, "agents", "owner", "workflows", "probe.ts"), `
+      export const name = "probe";
+      export const description = "Judge workload under full ordinary execution";
+      export const workspace = "shared";
+      export async function execute(ctx) {
+        const reply = await ctx.agents.call("owner", "Review the fixture workload", { tools: "readonly" });
+        if (reply.status !== "done") throw Error(reply.summary);
+        return ctx.done("Review retained", { state: "converged", summary: "Review retained", facts: [],
+          result: { workload: await ctx.read.tasks.workload() } });
+      }
+    `);
+    let calls = 0;
+    const server = serveFinish({ status: "success", summary: "Required work remains owed", verification_facts: ["Fixture reviewed"] }, () => { calls++; });
+    f.modelBaseUrl = server.url.origin;
+    try {
+      await run(f);
+      assert.equal(f.store.readTask(root.taskId)?.status.phase, "converged", JSON.stringify(f.store.readTask(root.taskId)?.status));
+      assert.equal(calls, 1);
+      assert.equal(budgets.budget.view(root, Date.now())?.rootCharged, 2);
+      assert.deepEqual((f.store.readTask(root.taskId)?.status.result?.workload as TaskWorkload).limits.sharedHost,
+        { available: true, scope: "installation", maxConcurrent: 4, occupied: occupied + 1, remaining: 3 - occupied,
+          backgroundMaxConcurrent: 2, backgroundOccupied: occupied, backgroundRemaining: 0 });
+      assert.deepEqual(executions.usage({ kind: "host" }), { limit: 4, occupied });
+    } finally { await server.stop(true); }
+  },
   async workloadFeedback() {
     const f = fixture("owner");
     const root = { appId: "sample", taskId: "work/one" };

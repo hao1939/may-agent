@@ -47,7 +47,7 @@ function readWorkloadExecution(
   };
   const host = executions.usage({ kind: "host" });
   if (host.limit === null) return result;
-  const backgroundMaxConcurrent = Math.max(1, host.limit - 1);
+  const { backgroundMaxConcurrent } = executions.hostPolicy()!;
   const backgroundOccupied = executions.backgroundOccupied();
   const remaining = Math.max(0, host.limit - host.occupied);
   result.sharedHost = { available: true, scope: "installation", maxConcurrent: host.limit,
