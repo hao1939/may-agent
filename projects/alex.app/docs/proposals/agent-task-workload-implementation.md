@@ -500,6 +500,7 @@ operational cutover, online start exclusion or model behavior.
 | Attempt/helper accounting | Concurrent workers cannot overspend; lost claims and checks charge nothing. Primary execution is charged once; real helper/repair starts are charged, replay is free. |
 | Execution bounds | Cross-worker helpers count; parallel starts respect all limits. Root `c = 1` durable delegation resumes; denied inline calls return without deadlock and cannot block unrelated ready work. |
 | Recovery and renewal | Non-start, uncertain start, midnight, restart and delayed cleanup preserve receipts, finite caps, live reservations and original caller obligations. |
+| Installation / withdrawal | Exclusive fresh publication or externally isolated, cleaned retained state; exact fences; no invented history; complete rollback; one-way withdrawal preserves obligations and refuses silent reactivation. |
 | Business behavior | Same required incident remains owed under both loads. Heavy load reduces discretionary expansion and surfaces delivery conflicts; blocked idle is distinguished from usable spare capacity. |
 
 Run focused portable tests for each changed contract and the required Host checks
@@ -1283,3 +1284,31 @@ passed. Full frozen local CI is running on `ac00e95783`, after the repaired pare
 #438 gate finished green; hosted checks are pending. Independent review, integration and separately
 authorized operational/model acceptance remain. No production withdrawal,
 reactivation protocol or live exclusion is established.
+
+
+Paired App/Host wiring was also checked at Host `ac00e95783` and Apps
+`3637973092`. A private linked experiment derives the existing actual-worker
+fixture, uses minimal App/agent wiring, and copies the real App workload-review
+workflow and policy (Git blobs `2cc2a3b73f018fc4bf899112123a6885b2009bc1` and
+`880c3550f44e6011e3835e5eca3a2b0d7dbfa107`). A local scripted provider returns
+one structured recommendation; no external model or live installation is used.
+
+| Actual outgoing observation before the helper starts | Light load | Ordinary saturation |
+| --- | ---: | ---: |
+| Shared Host occupied places, of four | 1 | 3 |
+| Remaining ordinary places, of two | 2 | 0 |
+| Remaining ordinary daily credits | 5 | 0 |
+| Provider calls across review and immediate repeat | 1 | 1 |
+| Protected credits spent: first attempt + helper + cooldown attempt | 3 | 3 |
+
+Both actual worker cases retained the same required incident byte-for-byte and
+accepted the scripted recommendation. Immediate repeat used the accepted cooldown
+without another provider call. The protected root was explicitly adopted with
+zero historical charge; its creation cost was not invented. Exact outgoing facts
+were asserted, rather than inferred from the configured limits. No implementation
+fix was needed. Private reproduction and logs are retained under
+`.state/workload-implementation-20261109/pilot-integration-reproduction.md`.
+This verifies the actual two App source files with fixture wiring and
+instructions, not the full installed App. Scripted answers prove neither model
+comprehension nor changed decisions; live activation and business behavior
+acceptance remain separately authorized gates.
