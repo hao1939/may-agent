@@ -72,6 +72,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ### 2026-11-08
 
+- [A kernel agent audit still needs capture and attribution receipts](./findings/2026-11-08-sentient-kernel-agent-audit-boundary.md) — Sentient's pinned design separates agent logs from optional kernel observation, while documenting stream gaps, exact-binary policy staleness, privilege assumptions, and heuristic prompt attribution; Scout inspected static project material but did not run Sentient, Tetragon, its tests, or record verification.
 - [Latent agent swarms trade textual overhead for a harder evidence boundary](./findings/2026-11-08-latent-agent-swarms.md) — SwarmEvolve's abstract reports KV-cache communication, hidden-state novelty filtering, and latent crossover for evolutionary program search; the full paper, code, traces, hidden states, compute accounting, task suite, and results were not inspected or reproduced.
 
 ### 2026-11-07
