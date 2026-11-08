@@ -147,6 +147,7 @@ test("changed ordinary funding warrants new advice; paying for this protected re
   const stressed = await execute(f.ctx);
   expect(stressed.summary).toContain("advice retained");
   expect(f.prompts).toHaveLength(2);
+  expect(f.prompts[1]).toContain('Previous recommendation for this batch: {"decision":"retain"');
   expect(f.prompts[1]).toContain('"remaining":0');
   expect(f.prompts[1]).toContain("funding hold retains the obligation");
   expect(f.task.status).toBe("waiting");
@@ -328,6 +329,26 @@ test("a changed exact commitment preserves the next batch for retry without a he
   expect(f.prompts).toHaveLength(2);
 });
 
+test.each(["identity", "generation", "legacy-identity"] as const)("changed %s at the same review position never receives unrelated previous advice", async kind => {
+  const f = fixture();
+  f.setResponse({ status: "done", output: { decision: "reconsider", taskId: "incident", reason: "Inspect the original delivery method." } });
+  const saved = state(await execute(f.ctx));
+  f.own.result = { workloadReview: kind === "legacy-identity"
+    ? { version: 1, fingerprint: saved.fingerprint, reviewedAt: saved.reviewedAt, decision: saved.decision }
+    : saved };
+  if (kind === "generation") f.task.generation++;
+  else f.task.id = "replacement";
+  f.task.outcome = "Deliver a different required outcome";
+  f.workload.examples.blockers = [{ taskId: f.task.id, kind: "waiting" }];
+  f.setResponse({ status: "done", output: { decision: "retain", taskId: f.task.id, reason: "The new outcome remains owed." } });
+  setSystemTime(now + WORKLOAD_REVIEW_INTERVAL_MS);
+  const result = await execute(f.ctx);
+  expect(result.status).toBe("done");
+  expect(f.prompts).toHaveLength(2);
+  expect(f.prompts[1]).toContain("Previous recommendation for this batch: null");
+  expect(f.prompts[1]).not.toContain("Inspect the original delivery method.");
+});
+
 test("a failed helper retains the same next commitments for retry", async () => {
   const f = fixture();
   f.tasks.splice(1, 1, ...Array.from({ length: 6 }, (_, index) => ({
@@ -344,6 +365,25 @@ test("a failed helper retains the same next commitments for retry", async () => 
   expect(f.reads.slice(-3)).toEqual(["commitment-4", "commitment-5", "commitment-6"]);
   expect(f.prompts).toHaveLength(3);
   expect(f.prompts[2]).toContain("Previous recommendation for this batch: null");
+});
+
+test("position-only version-two state is reconsidered once without unverified advice", async () => {
+  const f = fixture();
+  const saved = state(await execute(f.ctx));
+  // Saved batch key used by revision 25772d6430 for the first page at offset zero.
+  const historicalKey = "221733ba36840953d9f42366315dc22ae547051f4d9ba5099e8384b02c1b0023";
+  saved.decisionKey = historicalKey;
+  saved.recent = [{ key: historicalKey, fingerprint: saved.fingerprint }];
+  f.own.result = { workloadReview: saved };
+  setSystemTime(now + WORKLOAD_REVIEW_INTERVAL_MS);
+  const reconsidered = await execute(f.ctx);
+  expect(reconsidered.status).toBe("done");
+  expect(f.prompts).toHaveLength(2);
+  expect(f.prompts[1]).toContain("Previous recommendation for this batch: null");
+  f.own.result = { workloadReview: state(reconsidered) };
+  setSystemTime(now + 2 * WORKLOAD_REVIEW_INTERVAL_MS);
+  expect((await execute(f.ctx)).summary).toContain("No changed");
+  expect(f.prompts).toHaveLength(2);
 });
 
 test.each(["offset", "cache-bound", "duplicate-key", "decision-key"] as const)(

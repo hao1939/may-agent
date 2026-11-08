@@ -261,6 +261,14 @@ provides progress for stable populations; concurrent insertions, removal and
 permission changes can affect subsequent pages and do not establish atomic
 fleet coverage or a delivery guarantee.
 
+Bind a retained recommendation to the inspected Task identities and generations,
+as well as its review position. Churn can put a different assignment at the same
+cursor/offset; its predecessor's advice is not context for that new assignment.
+Legacy state without that binding can still coalesce identical evidence, but
+changed evidence is reviewed without assuming its old advice applies. Older
+position-only version-two cache entries remain readable; a nonmatching key causes
+one conservative reconsideration and never supplies unverified prior advice.
+
 ### 3. Add shared credit accounting
 
 Retain the proposal's coarse units: new Task, committed attempt, separately
@@ -1368,3 +1376,21 @@ temporary App-specific files were removed from the Host experiment checkout.
 This verifies saved progress and migration with scripted advice, not a full
 installed App, model judgment, live activation or changed business behavior.
 No additional Host source change or repeated Host full gate was needed.
+
+A follow-up regression showed that a review position alone is not a safe advice
+identity. After page churn, the previous Task's recommendation was supplied to
+its replacement; a changed generation and changed legacy evidence had the same
+problem. All three new regressions failed before the fix (**0 passed / 3 failed /
+15 assertions**). Batch keys now include exact Task identities and generations;
+legacy advice without that proof is omitted when evidence changes. Same-assignment
+advice still carries forward after a funding change. A position-only version-two
+result remains readable and is reconsidered once without unverified advice,
+then unchanged repeats coalesce normally.
+
+Final owners passed **42 tests / 0 failures / 763 assertions across three files**,
+and strict source-SDK TypeScript checking passed at Host `ac00e95783`. The actual
+SQLite/pagination/legacy-migration probe passed again (**one test / 70 assertions**)
+against workflow blob `43f7023407f217fd59a5ff064cff9d48cb68f8de`. Private reproduction
+and logs remain under `.state/workload-implementation-20261109/`; the temporary
+paired fixtures were removed after retention. These are source and scripted
+context checks; independent review and operational/model acceptance remain.

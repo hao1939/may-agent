@@ -128,7 +128,11 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
         : blocker),
     };
     const fingerprint = createHash("sha256").update(JSON.stringify(evidence)).digest("hex");
-    const key = createHash("sha256").update(JSON.stringify([cursor ?? null, offset])).digest("hex");
+    // A page position can hold different commitments after churn or revision.
+    // Bind advice to the inspected identities and generations as well.
+    const key = createHash("sha256").update(JSON.stringify([
+      cursor ?? null, offset, exact.map(task => [task.id, task.generation]),
+    ])).digest("hex");
     const nextCursor = offset + EXACT_LIMIT < tasks.length ? cursor : page.nextCursor;
     const nextOffset = offset + EXACT_LIMIT < tasks.length ? offset + EXACT_LIMIT : 0;
     // Progress and a finite observation cache live in the accepted result. A
@@ -153,7 +157,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       "Supported spare capacity may justify one useful opportunity grounded in an existing commitment and concrete evidence. Few runnable Tasks, blocked idle, unknown resource health or a partial page do not establish spare capacity.",
       "Do not create filler Tasks or prefer closure to reduce counts. Closure depends on fulfillment or an explicit creator decision to end responsibility. Keep standing services and unanswered obligations.",
       "Return advice only. Reserve access grants no portfolio, closure, funding or priority authority. Use readonly tools if more evidence is needed. A taskId must be one of the exact commitments supplied here; omit it when evidence is insufficient. Applied changes are a separate authorized operation.",
-      `Previous recommendation for this batch: ${JSON.stringify(!rotation || rotation.decisionKey === key ? prior?.decision ?? null : null)}`,
+      `Previous recommendation for this batch: ${JSON.stringify(rotation?.decisionKey === key ? prior?.decision ?? null : null)}`,
       `Scoped workload (observation times and unavailable facts are explicit): ${JSON.stringify(workload)}`,
       `Exact commitment previews, not full evidence: ${JSON.stringify(exact)}`,
     ].join("\n\n");
