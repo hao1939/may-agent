@@ -1,7 +1,8 @@
 import type { PendingTaskSettlement } from "./result.js";
 import { TaskExecutionStore } from "../state/task-execution-store.js";
 import { TaskBudgetAdmissionStore, TaskBudgetDeferredError, type TaskFundingConstraint } from "../state/task-budget-admission.js";
-import { pendingTaskFunding, pendingTaskExecutionConstraint } from "./app-task-state.js";
+import { pendingTaskFunding, pendingTaskExecutionConstraint, pendingTaskWorkspaceConstraint } from "./app-task-state.js";
+import type { TaskWorkspaceConstraint } from "./workspace.js";
 import {
   executionStillConstrained, TaskExecutionDeferredError,
   type TaskExecutionAdmissionContext, type TaskExecutionConstraint,
@@ -95,6 +96,7 @@ export type AppTaskClaimResult =
   | AppTaskClaim
   | { kind: "deferred"; taskId: string; funding: TaskFundingConstraint }
   | { kind: "deferred"; taskId: string; execution: TaskExecutionConstraint }
+  | { kind: "deferred"; taskId: string; workspace: TaskWorkspaceConstraint }
   | { kind: "busy"; taskId: string; attemptId: string | null }
   | {
       kind: "waiting";
@@ -1663,7 +1665,7 @@ export type AppTaskChildContext = {
     dependsOn?: string[];
     conditions: AppTaskConditionSpec[];
     readiness?: {
-      state: "ready" | "dependency-blocked" | "condition-blocked" | "funding-blocked" | "capacity-blocked" | "paused" | "not-applicable";
+      state: "ready" | "dependency-blocked" | "condition-blocked" | "funding-blocked" | "capacity-blocked" | "resource-blocked" | "paused" | "not-applicable";
       reason: string;
       relatedTaskIds: string[];
     };
@@ -1706,7 +1708,7 @@ export type AppTaskSnapshotContext = {
     Pick<AppTaskConditionSpec, "id" | "type" | "subject" | "requestedAction" | "owner" | "reviewAfterMs">
   >;
   readiness?: {
-    state: "ready" | "dependency-blocked" | "condition-blocked" | "funding-blocked" | "capacity-blocked" | "paused" | "not-applicable";
+    state: "ready" | "dependency-blocked" | "condition-blocked" | "funding-blocked" | "capacity-blocked" | "resource-blocked" | "paused" | "not-applicable";
     reason: string;
     relatedTaskIds: string[];
   };
@@ -1925,6 +1927,7 @@ function nextTaskCheckAt(tree: TaskTree, resource: AppTaskResource): number | nu
       ? Date.now() + CONDITION_RECOVERY_INTERVAL_MS
       : null,
     taskReviewAt(resource),
+    pendingTaskWorkspaceConstraint(resource)?.retryAt ?? null,
   ].filter((value): value is number => value !== null);
   return deadlines.length ? Math.min(...deadlines) : null;
 }
@@ -2858,6 +2861,11 @@ export function claimObservedAppTask(
     acknowledgeIndexedRecoveryWait(config, input.taskId, snapshotRevision, heldExecution.retryAt);
     return { kind: "deferred", taskId: input.taskId, execution: heldExecution };
   }
+  const heldWorkspace = pendingTaskWorkspaceConstraint(resource);
+  if (heldWorkspace) {
+    acknowledgeIndexedRecoveryWait(config, input.taskId, snapshotRevision, heldWorkspace.retryAt);
+    return { kind: "deferred", taskId: input.taskId, workspace: heldWorkspace };
+  }
   const methodConstraint = resource.status.executionConstraint;
   if (methodConstraint && (methodConstraint.requiredSlots ?? 1) > 1 &&
       (methodConstraint.generation === undefined || methodConstraint.generation === resource.metadata.generation)) {
@@ -3190,6 +3198,7 @@ export function claimObservedAppTask(
     admissionFailures: undefined,
     funding: undefined,
     executionConstraint: undefined,
+    workspaceConstraint: undefined,
     executionRetryAt: undefined,
     freshHumanInput: undefined,
   });
@@ -3327,12 +3336,36 @@ export function deferAppTaskSettlement(
   });
 }
 
-/** An executing parent yielded after a managed child was denied before start.
+/** Record a mechanical observation without a claim, charge, or input settlement.
+ * The sample occurs outside SQL; the exact resource fence rejects concurrent
+ * revision, cancellation, input admission, or a competing observation. */
+export function refreshTaskWorkspaceConstraint(
+  config: AppTaskContext,
+  expected: { taskId: string; generation: number; resourceVersion: number },
+  constraint: TaskWorkspaceConstraint | undefined,
+): boolean {
+  return stateTransaction(config.resourceStore.db, () => {
+    const tree = config.resourceStore.readTaskContext({ taskIds: [expected.taskId] });
+    const resource = tree.resources?.[expected.taskId];
+    if (!resource || config.resourceStore.isCancelled(expected.taskId) || resource.status.currentAttemptId ||
+      resource.metadata.generation !== expected.generation || resource.metadata.resourceVersion !== expected.resourceVersion ||
+      !pendingTaskWorkspaceConstraint(resource)) return false;
+    touchResource(resource, { workspaceConstraint: constraint });
+    commitTaskMutation(config, tree, { resourceMutation: {
+      fences: [{ taskId: expected.taskId, generation: expected.generation, resourceVersion: expected.resourceVersion }],
+      tasks: [{ ...resourceWrite(tree, resource, !constraint), nextCheckAt: constraint?.retryAt ?? Date.now() }],
+    } });
+    return true;
+  });
+}
+
+/** An executing parent yielded after a managed child was denied before start,
+ * or workspace preparation established a resource prerequisite.
  * Preserve its inputs and paid execution facts; no result or failure is accepted. */
 export function deferAppTaskExecution(
   config: AppTaskContext,
   claim: AppTaskClaim,
-  constraint: TaskFundingConstraint | TaskExecutionConstraint,
+  constraint: TaskFundingConstraint | TaskExecutionConstraint | TaskWorkspaceConstraint,
   facts: string[] = [],
 ): "applied" | "stale" {
   return stateTransaction(config.resourceStore.db, () => {
@@ -3343,19 +3376,22 @@ export function deferAppTaskExecution(
     const scope = beginResourceMutationScope(tree, claim, []);
     const now = new Date().toISOString();
     restoreAttemptEvents(tree, claim.taskId, resource, attempt, now);
-    const summary = `Managed operation deferred: ${constraint.reason}`;
+    const summary = `Operation deferred: ${constraint.reason}`;
     finishAttempt(tree, resource, "interrupted", [summary, ...facts].join("\n"), now);
     attempt.failureReason = "ResourceAdmissionDeferred";
     delete attempt.lease;
     const execution = "lane" in constraint ? constraint : undefined;
-    const funding = "lane" in constraint ? undefined : constraint;
-    const held = execution ? executionStillConstrained(config.resourceStore.db, execution)
+    const workspace = "resource" in constraint ? constraint : undefined;
+    const funding = "lane" in constraint || "resource" in constraint ? undefined : constraint;
+    const held = workspace ? workspace.generation === resource.metadata.generation
+      : execution ? executionStillConstrained(config.resourceStore.db, execution)
       : new TaskBudgetAdmissionStore(config.resourceStore.db).stillConstrained(funding!);
     touchResource(resource, {
       phase: "pending",
       currentAttemptId: undefined,
       funding: held ? funding : undefined,
       executionConstraint: held ? execution : undefined,
+      workspaceConstraint: held ? workspace : undefined,
       summary,
     });
     const mutation = finishResourceMutationScope(scope, tree);

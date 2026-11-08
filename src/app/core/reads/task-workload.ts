@@ -220,6 +220,14 @@ export function readTaskWorkload(
         else if (task.status === "attention" && state === "not-applicable") result.counts.attention++;
         else if (state === "funding-blocked") {
           result.counts.waiting++; blocker(task.id, "funding", resource.status.funding);
+        } else if (state === "resource-blocked") {
+          result.counts.waiting++; blocker(task.id, "workspace", resource.status.workspaceConstraint);
+          const example = result.examples.blockers.at(-1);
+          const constraint = resource.status.workspaceConstraint;
+          if (example?.taskId === task.id && constraint) example.workspace = {
+            operation: "checkout", requiredBytes: constraint.requiredBytes, availableBytes: constraint.availableBytes,
+            observedAt: constraint.observedAt,
+          };
         } else if (state === "dependency-blocked" || state === "condition-blocked") {
           result.counts.waiting++; blocker(task.id, state === "dependency-blocked" ? "dependency" : "waiting");
         } else { result.counts.unknown++; blocker(task.id, "unknown"); }

@@ -23,6 +23,7 @@ import {
   deferAppTask,
   deferAppTaskSettlement,
   deferAppTaskExecution,
+  refreshTaskWorkspaceConstraint,
   expiredAgentSessionAppTaskAttempt,
   failAppTaskAttempt,
   isAppTaskActionStaleError,
@@ -60,6 +61,8 @@ import {
 } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
 import type { PreparedTaskWorkspace } from "./workspace.js";
+import { TaskWorkspaceDeferredError } from "./workspace.js";
+import { pendingTaskWorkspaceConstraint } from "./app-task-state.js";
 import { recordTaskCheck } from "./task-check-observations.js";
 import { isTrustedTaskCoordination } from "./task-coordination.js";
 
@@ -93,6 +96,18 @@ export async function runTaskAttempt(input: {
     const recoveredTaskIds = recoverTaskConditions(opts, descriptor, config, { taskId: input.taskId }).filter(
       (taskId) => taskId !== input.taskId,
     );
+    const pending = config.resourceStore.readTask(input.taskId);
+    const workspaceHold = pending && pendingTaskWorkspaceConstraint(pending);
+    if (pending && workspaceHold && workspaceHold.retryAt <= Date.now()) {
+      let sample: { availableBytes: number; observedAt: number } | undefined;
+      try { sample = await opts.workspaces?.sampleCapacity?.(workspaceHold); } catch { /* Missing evidence retains the dated constraint. */ }
+      if (sample && (!Number.isSafeInteger(sample.availableBytes) || sample.availableBytes < 0 ||
+        !Number.isSafeInteger(sample.observedAt) || sample.observedAt < 1)) sample = undefined;
+      const held = !sample || sample.availableBytes < workspaceHold.requiredBytes;
+      const updated = held ? { ...workspaceHold, ...(sample ?? {}), retryAt: Date.now() + 60_000 } : undefined;
+      if (!refreshTaskWorkspaceConstraint(config, { taskId: input.taskId, generation: pending.metadata.generation,
+        resourceVersion: pending.metadata.resourceVersion }, updated) || held) return recoveredTaskIds;
+    }
     const claim = claimObservedAppTask(config, {
       taskId: input.taskId,
       appAgent: descriptor.agent,
@@ -285,6 +300,12 @@ async function runClaimedTask(
             throw new Error(`Task attempt ${claim.attemptId} became stale while preparing its workspace`);
           }
         } catch (error) {
+          if (error instanceof TaskWorkspaceDeferredError) {
+            const applied = persistResult(() => deferAppTaskExecution(config, claim, error.constraint));
+            emit("project.task.reconciled", { disposition: applied === "applied" ? "deferred" : "stale",
+              workspace: error.constraint, summary: error.message });
+            return [];
+          }
           return await finishUnsuccessfulAttempt({
             handlerResult: {
               state: "error",

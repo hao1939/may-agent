@@ -356,12 +356,15 @@ export type TaskWorkload = {
   examples: {
     blockers: Array<{
       taskId: string;
-      kind: "waiting" | "paused" | "cooldown" | "dependency" | "funding" | "capacity" | "unknown";
+      kind: "waiting" | "paused" | "cooldown" | "dependency" | "funding" | "capacity" | "workspace" | "unknown";
       /** Resource constraint facts; neither failure nor a business disposition. */
       reason?: string;
       retryAt?: number | null;
       requiredSlots?: number;
       scope?: "host" | "agent" | "root" | "recipient";
+      /** Dated observation for this Task's checkout only. Not fleet resource
+       * health, a reservation, or evidence that another operation fits. */
+      workspace?: { operation: "checkout"; requiredBytes: number; availableBytes: number; observedAt: number };
     }>;
     /** Accepted idle results worth inspecting; neither unread nor proven fulfilled. */
     dispositionCandidates: Array<{ taskId: string; acceptedAttemptId: string }>;
@@ -525,7 +528,7 @@ export type TaskReconciliationChild = {
   dependsOn?: string[];
   conditions: Condition[];
   readiness?: {
-    state: "ready" | "dependency-blocked" | "condition-blocked" | "funding-blocked" | "capacity-blocked" | "paused" | "not-applicable";
+    state: "ready" | "dependency-blocked" | "condition-blocked" | "funding-blocked" | "capacity-blocked" | "resource-blocked" | "paused" | "not-applicable";
     reason: string;
     relatedTaskIds: string[];
   };

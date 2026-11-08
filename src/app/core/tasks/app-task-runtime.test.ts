@@ -64,7 +64,8 @@ import {
 import { createTaskAttemptProcessExecutor } from "../../composition/workers/task-attempt-process.js";
 import { admitTaskAppRequests, recoverTaskConditions } from "./dependency-admission.js";
 import { createTaskExecutionBackends } from "../../composition/task-execution.js";
-import { gitTaskWorkspaces } from "../../adapters/workspaces/git.js";
+import { createGitTaskWorkspaces, gitTaskWorkspaces } from "../../adapters/workspaces/git.js";
+import { readTaskWorkload } from "../reads/task-workload.js";
 import { createTaskSessionRecovery } from "../../adapters/executors/session-recovery.js";
 import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
 import { createAppTaskReadTool } from "../../app-task-read-tool.js";
@@ -6352,6 +6353,85 @@ describe("canonical App task runtime", () => {
     expect(ownerCalls).toBe(1);
     expect(ownerObservedReadinessTurn).toBe(true);
     expect(readTaskSnapshot(config).receipts?.historical?.facts).toEqual([retainedFacts]);
+  });
+
+  it("retains low-disk work without failure retries or repeated paid attempts, then resumes after a fresh sample", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const git = (...args: string[]) => promisify(execFile)("git", ["-C", f.appDir, ...args], { timeout: 10_000 });
+    await git("init", "-b", "main");
+    await git("config", "user.email", "test@example.com");
+    await git("config", "user.name", "Test");
+    await git("add", ".");
+    await git("commit", "-m", "workspace capacity fixture");
+    let availableBytes = 0;
+    let unavailable = false;
+    let calls = 0;
+    const workspaces = createGitTaskWorkspaces({ availableBytes: async () => {
+      if (unavailable) throw new Error("Filesystem sample unavailable");
+      return availableBytes;
+    } });
+    const install = () => installAppTaskRuntimes({
+      ...options(f, bus), installControllers: false, workspaces,
+      appRegistrySnapshot: { id: "workspace-capacity", generation: 1,
+        entries: [{ appDir: f.appDir, definition: { ...definition(),
+          workspace: { kind: "git", localPath: ".", branch: "main" } } }] },
+      executors: { verify: async () => {
+        calls++;
+        return { state: "converged", summary: "Verified", facts: ["test:verified"] };
+      } },
+    });
+    await install();
+    let config = loadedTaskConfig(f);
+    const db = config.resourceStore.db;
+    new TaskBudgetAdmissionStore(db).install({ appId: "sample", sponsor: { appId: "sample", agent: "sample-owner" },
+      dailyCredits: 20, rootCredits: 20 });
+    const taskId = "work/low-disk";
+    admitTaskInput(config, { appId: "sample", idempotencyKey: "disk-request",
+      inputContext: { id: "disk-request", source: { kind: "human", id: "operator" }, input: { kind: "sample", data: {} } },
+      attachment: { kind: "desired", intent: { id: taskId, parentId: "operations", outcome: "Verify the change",
+        acceptance: ["Checks pass"], executor: "verify" } } });
+    const reconcile = () => reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+    const charged = () => new TaskBudgetAdmissionStore(db).budget.view({ appId: "sample", taskId }, Date.now())!.rootCharged;
+    const attemptCount = () => db.prepare("SELECT count(*) AS n FROM app_task_attempts WHERE app_id = 'sample' AND task_id = ?").get(taskId)!.n;
+    await reconcile();
+    expect(config.resourceStore.readTask(taskId)?.status.executionFailures ?? 0).toBe(0);
+    expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({ phase: "pending",
+      workspaceConstraint: { reason: "workspace-capacity", availableBytes: 0, requiredBytes: expect.any(Number) } });
+    expect(config.resourceStore.readTrigger(taskId)?.events).toHaveLength(1);
+    expect(calls).toBe(0);
+    expect(charged()).toBe(2); // Creation and the attempt that discovered the prerequisite.
+    expect(attemptCount()).toBe(1);
+    const workload = readTaskWorkload({ taskStateConfig: config });
+    expect(workload.counts).toMatchObject({ waiting: 1, runnable: 0, pendingInputTasks: 1 });
+    expect(workload.examples.blockers).toContainEqual(expect.objectContaining({ taskId, kind: "workspace", reason: "workspace-capacity" }));
+    expect(existsSync(join(f.root, "worktrees"))).toBe(false);
+    await closeInstalledAppTaskRuntimes(bus);
+    await install();
+    config = loadedTaskConfig(f);
+    for (let check = 0; check < 3; check++) {
+      // Repeated due checks sample mechanically; they neither retry the handler nor charge.
+      setSystemTime(new Date(config.resourceStore.readTask(taskId)!.status.workspaceConstraint!.retryAt));
+      await reconcile();
+      expect(charged()).toBe(2);
+      expect(attemptCount()).toBe(1);
+    }
+    const lastSample = config.resourceStore.readTask(taskId)!.status.workspaceConstraint!.observedAt;
+    unavailable = true;
+    setSystemTime(new Date(config.resourceStore.readTask(taskId)!.status.workspaceConstraint!.retryAt));
+    await reconcile();
+    expect(config.resourceStore.readTask(taskId)!.status.workspaceConstraint!.observedAt).toBe(lastSample);
+    expect(charged()).toBe(2);
+    unavailable = false;
+    availableBytes = Number.MAX_SAFE_INTEGER;
+    setSystemTime(new Date(config.resourceStore.readTask(taskId)!.status.workspaceConstraint!.retryAt));
+    await reconcile();
+    expect(calls).toBe(1);
+    expect(charged()).toBe(3);
+    expect(config.resourceStore.readTask(taskId)?.status.workspaceConstraint).toBeUndefined();
+    expect(config.resourceStore.readTrigger(taskId)).toBeNull();
+    expect(acceptedTaskAttempt(config, taskId)?.acceptedResult?.summary).toBe("Verified");
   });
 
   it.each([

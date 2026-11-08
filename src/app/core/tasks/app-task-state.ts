@@ -94,6 +94,7 @@ export type AppTaskResource = {
     /** Resource admission facts; this is neither failure nor a new lifecycle phase. */
     funding?: TaskFundingConstraint;
     executionConstraint?: import("../state/task-execution-admission.js").TaskExecutionConstraint;
+    workspaceConstraint?: import("./workspace.js").TaskWorkspaceConstraint;
     /** Stops automatic execution, independently of unfinished input and Conditions. */
     retryExhausted?: AppTaskRetryExhaustion;
     /** Earliest next attempt after execution failure; ordinary wakes do not waive it. */
@@ -256,6 +257,11 @@ export function pendingTaskExecutionConstraint(resource: AppTaskResource, now = 
   const constraint = resource.status.executionConstraint;
   return constraint && (constraint.generation === undefined || constraint.generation === resource.metadata.generation)
     && constraint.retryAt > now ? constraint : undefined;
+}
+
+export function pendingTaskWorkspaceConstraint(resource: AppTaskResource) {
+  const constraint = resource.status.workspaceConstraint;
+  return constraint?.generation === resource.metadata.generation ? constraint : undefined;
 }
 
 export type AppTaskAcceptanceBasis = TaskAcceptanceBasis;

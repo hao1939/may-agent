@@ -5,6 +5,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { execFile } from "node:child_process";
 import { homedir } from "node:os";
 import type { AppTaskWorkspace } from "../../core/tasks/app-task-state.js";
+import { TaskWorkspaceDeferredError } from "../../core/tasks/workspace.js";
 import type {
   TaskWorkspaces, PreparedTaskWorkspace, FinalizedTaskWorkspace, InspectedTaskWorkspace,
 } from "../../core/tasks/workspace.js";
@@ -20,6 +21,10 @@ export type GitWorkspaceOptions = { availableBytes?: (destinationPath: string) =
 export function createGitTaskWorkspaces(options: GitWorkspaceOptions = {}): TaskWorkspaces {
   return {
     prepare: (input) => prepareAppTaskWorkspace(input, options),
+    sampleCapacity: async (constraint) => ({
+      availableBytes: await (options.availableBytes ?? filesystemAvailableBytes)(constraint.destinationPath),
+      observedAt: Date.now(),
+    }),
     finalize: finalizeAppTaskWorkspace,
     inspect: inspectAppTaskWorkspace,
   };
@@ -343,7 +348,10 @@ export async function prepareAppTaskWorkspace(
         if (requiredBytes !== undefined) {
           const availableBytes = await (options.availableBytes ?? filesystemAvailableBytes)(path);
           if (availableBytes < requiredBytes) {
-            throw new Error(`Insufficient worktree capacity for ${repoDir}: ${availableBytes} bytes available, ${requiredBytes} bytes required for ${checkoutCommit}`);
+            const observedAt = Date.now();
+            throw new TaskWorkspaceDeferredError({ resource: "workspace", reason: "workspace-capacity",
+              generation: input.generation, repoDir, destinationPath: path, commit: checkoutCommit,
+              requiredBytes, availableBytes, observedAt, retryAt: observedAt + 60_000 });
           }
         }
         await mkdir(dirname(path), { recursive: true });
