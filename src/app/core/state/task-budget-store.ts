@@ -12,6 +12,18 @@ export type BudgetRoot = {
   credits: number;
   renewal: "lifetime" | "utc-day";
 };
+/** Host-private installation command, never Task or model-supplied authority. */
+export type RootBudgetFundingChange = {
+  changeId: string;
+  expected: BudgetRoot;
+  credits: number;
+  reason: string;
+};
+export type RootBudgetFundingReceipt = {
+  change: RootBudgetFundingChange;
+  rootPeriod: string;
+  changedAt: number;
+};
 export type BudgetOperation = { task: BudgetTaskRef } & (
   | { kind: "task" }
   | { kind: "attempt"; attemptId: string }
@@ -143,6 +155,53 @@ export class TaskBudgetStore {
     });
   }
 
+  /** Change only the allowance, retaining attribution and every spent credit.
+   * Exact receipt replay cannot apply the command again after a later change. */
+  setRootCredits(
+    input: RootBudgetFundingChange,
+    now: number,
+  ): {
+    receipt: RootBudgetFundingReceipt;
+    replay: boolean;
+  } {
+    exact(input.changeId);
+    exact(input.reason);
+    credits(input.credits);
+    const period = utcBudgetPeriod(now);
+    taskRef(input.expected.root);
+    return stateTransaction(this.db, () => {
+      const saved = this.db
+        .prepare("SELECT receipt_json FROM task_budget_funding_receipts WHERE change_id = ?")
+        .get(input.changeId);
+      if (saved) {
+        const receipt = JSON.parse(saved.receipt_json as string) as RootBudgetFundingReceipt;
+        if (!isDeepStrictEqual(receipt.change, input))
+          throw new Error("Funding change identity was reused for a different command");
+        return { receipt, replay: true };
+      }
+      const current = this.root(input.expected.root);
+      if (!current || !isDeepStrictEqual(current, input.expected))
+        throw new Error("Root funding requires the exact current attribution and allowance");
+      const view = this.view(current.root, now)!;
+      if (input.credits < view.rootCharged) throw new Error("Root allowance cannot be lower than its charged credits");
+      const receipt: RootBudgetFundingReceipt = {
+        change: structuredClone(input),
+        rootPeriod: current.renewal === "lifetime" ? "lifetime" : period,
+        changedAt: now,
+      };
+      this.db
+        .prepare("UPDATE task_budget_roots SET credits = ? WHERE root_app_id = ? AND root_task_id = ?")
+        .run(input.credits, current.root.appId, current.root.taskId);
+      this.db
+        .prepare(
+          `INSERT INTO task_budget_funding_receipts(change_id, root_app_id, root_task_id, changed_at, receipt_json)
+        VALUES (?, ?, ?, ?, ?)`,
+        )
+        .run(input.changeId, current.root.appId, current.root.taskId, now, JSON.stringify(receipt));
+      return { receipt, replay: false };
+    });
+  }
+
   root(ref: BudgetTaskRef): BudgetRoot | null {
     taskRef(ref);
     const row = this.db
@@ -222,8 +281,19 @@ export class TaskBudgetStore {
     };
   }
 
-  /** A replay keeps its original period and charge even across midnight/restart.
-   * A helper receipt commits before external dispatch; uncertain starts stay paid. */
+  /** Read an exact committed operation without creating a debit. */
+  receipt(operation: BudgetOperation): BudgetReceipt | null {
+    const row = this.db
+      .prepare("SELECT receipt_json FROM task_budget_operations WHERE operation_id = ?")
+      .get(budgetOperationId(operation));
+    if (!row) return null;
+    const receipt = JSON.parse(row.receipt_json as string) as BudgetReceipt;
+    if (!isDeepStrictEqual(receipt.operation, operation))
+      throw new Error("Budget operation identity was reused for different work");
+    return receipt;
+  }
+
+  /** Replay retains its original debit/period; uncertain admitted starts stay paid. */
   charge(operation: BudgetOperation, now: number): BudgetAdmission {
     const operationId = budgetOperationId(operation);
     const currentPeriod = utcBudgetPeriod(now);
@@ -231,15 +301,8 @@ export class TaskBudgetStore {
       exact(operation.reason);
     }
     return stateTransaction(this.db, () => {
-      const previous = this.db
-        .prepare("SELECT receipt_json FROM task_budget_operations WHERE operation_id = ?")
-        .get(operationId);
-      if (previous) {
-        const receipt = JSON.parse(previous.receipt_json as string) as BudgetReceipt;
-        if (!isDeepStrictEqual(receipt.operation, operation))
-          throw new Error("Budget operation identity was reused for different work");
-        return { kind: "admitted", receipt, replay: true };
-      }
+      const previous = this.receipt(operation);
+      if (previous) return { kind: "admitted", receipt: previous, replay: true };
       const view = this.view(operation.task, now);
       if (!view) throw new Error("Historical or unbound Task requires explicit budget adoption");
       const charge = operation.kind === "adoption" ? 0 : 1;
