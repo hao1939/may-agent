@@ -1,4 +1,4 @@
-import { pendingTaskFunding, taskReviewAt, taskExecutionRetryExhausted } from "./app-task-state.js";
+import { pendingTaskFunding, pendingTaskExecutionConstraint, taskReviewAt, taskExecutionRetryExhausted } from "./app-task-state.js";
 import type {
   AppTaskCancellation,
   AppTaskCondition as AppTaskCondition,
@@ -340,6 +340,8 @@ function appTaskReadiness(
 ): AppTaskReadiness {
   const funding = pendingTaskFunding(resource);
   if (funding) return { state: "funding-blocked", reason: `Task funding: ${funding.reason}`, related_ids: funding.root ? [funding.root.taskId] : [] };
+  const execution = pendingTaskExecutionConstraint(resource, now);
+  if (execution) return { state: "capacity-blocked", reason: `Task execution: ${execution.reason}`, related_ids: [] };
   const conditionIds = [...(resource.status.conditionIds ?? [])];
   const satisfiedConditionIds = conditionIds.filter((id) => tree.conditions?.[id]?.status.state === "true");
   const conditionWokeTask = phase === "waiting" && satisfiedConditionIds.length > 0;

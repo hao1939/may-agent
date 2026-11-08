@@ -22,4 +22,7 @@ CREATE INDEX IF NOT EXISTS idx_task_execution_active_agent
   ON task_execution_reservations(recipient_key) WHERE released_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_task_execution_active_task
   ON task_execution_reservations(task_app_id, task_id, attempt_id) WHERE released_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_app_tasks_execution_constraint
+  ON app_tasks(json_extract(resource_json, '$.status.executionConstraint.scopeKey'), app_id, task_id)
+  WHERE json_valid(resource_json) AND json_extract(resource_json, '$.status.executionConstraint.scopeKey') IS NOT NULL;
 `;

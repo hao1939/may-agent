@@ -167,7 +167,11 @@ export function readTaskWorkload(
         if (state === "ready" || state === "capacity-blocked") {
           if (tree.project_lifecycle !== "active" && !foreground.has(task.id)) {
             result.counts.paused++; blocker(task.id, "paused");
-          } else result.counts.runnable++;
+          } else {
+            result.counts.runnable++;
+            if (state === "capacity-blocked" && resource.status.executionConstraint)
+              blocker(task.id, "capacity", resource.status.executionConstraint);
+          }
         }
         else if (task.status === "attention" && state === "not-applicable") result.counts.attention++;
         else if (state === "funding-blocked") {

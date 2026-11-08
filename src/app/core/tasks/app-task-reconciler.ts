@@ -1,6 +1,10 @@
 import type { PendingTaskSettlement } from "./result.js";
 import { TaskBudgetAdmissionStore, TaskBudgetDeferredError, type TaskFundingConstraint } from "../state/task-budget-admission.js";
-import { pendingTaskFunding } from "./app-task-state.js";
+import { pendingTaskFunding, pendingTaskExecutionConstraint } from "./app-task-state.js";
+import {
+  executionStillConstrained, TaskExecutionDeferredError,
+  type TaskExecutionAdmissionContext, type TaskExecutionConstraint,
+} from "../state/task-execution-admission.js";
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { CONDITION_RECOVERY_INTERVAL_MS, taskEventPredatesReopening } from "./app-task-state.js";
@@ -89,6 +93,7 @@ export type AppTaskClaim = {
 export type AppTaskClaimResult =
   | AppTaskClaim
   | { kind: "deferred"; taskId: string; funding: TaskFundingConstraint }
+  | { kind: "deferred"; taskId: string; execution: TaskExecutionConstraint }
   | { kind: "busy"; taskId: string; attemptId: string | null }
   | {
       kind: "waiting";
@@ -2784,6 +2789,8 @@ export function claimObservedAppTask(
     handler: string;
     reason?: string;
     isAgentRunnable?: (agent: string) => boolean;
+    /** Private installed execution policy; provenance comes from trusted dispatch. */
+    execution?: TaskExecutionAdmissionContext;
     /** Recheck a trusted reserve dispatch against the exact resource fence. */
     canUseCoordinationReserve?: (resource: AppTaskResource, agent: string) => boolean;
     /** Validate and drain the retained session before replacement ownership commits. */
@@ -2828,6 +2835,11 @@ export function claimObservedAppTask(
   if (heldFunding) {
     acknowledgeIndexedRecoveryWait(config, input.taskId, snapshotRevision, heldFunding.retryAt);
     return { kind: "deferred", taskId: input.taskId, funding: heldFunding };
+  }
+  const heldExecution = pendingTaskExecutionConstraint(resource);
+  if (heldExecution) {
+    acknowledgeIndexedRecoveryWait(config, input.taskId, snapshotRevision, heldExecution.retryAt);
+    return { kind: "deferred", taskId: input.taskId, execution: heldExecution };
   }
   if (!config.resourceStore.allowsTaskExecution(input.taskId)) {
     return { kind: "waiting", taskId: input.taskId, conditionIds: [] };
@@ -3142,6 +3154,7 @@ export function claimObservedAppTask(
     currentAttemptId: attemptId,
     admissionFailures: undefined,
     funding: undefined,
+    executionConstraint: undefined,
     executionRetryAt: undefined,
     freshHumanInput: undefined,
   });
@@ -3151,6 +3164,7 @@ export function claimObservedAppTask(
     commitTaskMutation(config, tree, {
       resourceMutation: {
         requireUnpausedTask: input.taskId,
+        execution: input.execution,
         fences: [resourceFence],
         tasks: [resourceWrite(tree, resource, false)],
         attempts: [...changedAttempts],
@@ -3159,7 +3173,7 @@ export function claimObservedAppTask(
       },
     });
   } catch (error) {
-    if (error instanceof TaskBudgetDeferredError) {
+    if (error instanceof TaskBudgetDeferredError || error instanceof TaskExecutionDeferredError) {
       // The failed claim rolled back. Preserve every unclaimed input and the
       // fresh-human exception; persist only confirmed cleanup of the old runtime.
       return stateTransaction(config.resourceStore.db, () => {
@@ -3179,15 +3193,21 @@ export function claimObservedAppTask(
           event: structuredClone(preferredTriggerFromEvents(pendingEvents, agent)),
           observedAt: pendingEvents.at(-1)!.observedAt,
         } : savedTrigger;
-        const held = new TaskBudgetAdmissionStore(config.resourceStore.db).stillConstrained(error.constraint);
-        touchResource(pending, { funding: held ? error.constraint : undefined });
+        const held = error instanceof TaskBudgetDeferredError
+          ? new TaskBudgetAdmissionStore(config.resourceStore.db).stillConstrained(error.constraint)
+          : executionStillConstrained(config.resourceStore.db, error.constraint);
+        touchResource(pending, error instanceof TaskBudgetDeferredError
+          ? { funding: held ? error.constraint : undefined }
+          : { executionConstraint: held ? error.constraint : undefined });
         retained.taskTriggers = { ...retained.taskTriggers, ...(restoredTrigger ? { [input.taskId]: restoredTrigger } : {}) };
         commitTaskMutation(config, retained, { resourceMutation: {
           fences: [resourceFence],
           tasks: [{ ...resourceWrite(retained, pending, !held), nextCheckAt: held ? error.constraint.retryAt : Date.now() }],
           attempts: cleaned,
         } });
-        return { kind: "deferred", taskId: input.taskId, funding: error.constraint };
+        return error instanceof TaskBudgetDeferredError
+          ? { kind: "deferred", taskId: input.taskId, funding: error.constraint }
+          : { kind: "deferred", taskId: input.taskId, execution: error.constraint };
       });
     }
     if (error instanceof ResourceTaskMutationStaleError && !config.resourceStore.allowsTaskExecution(input.taskId)) {

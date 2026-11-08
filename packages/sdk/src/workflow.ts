@@ -355,7 +355,7 @@ export type TaskWorkload = {
   examples: {
     blockers: Array<{
       taskId: string;
-      kind: "waiting" | "paused" | "cooldown" | "dependency" | "funding" | "unknown";
+      kind: "waiting" | "paused" | "cooldown" | "dependency" | "funding" | "capacity" | "unknown";
       /** Resource constraint facts; neither failure nor a business disposition. */
       reason?: string;
       retryAt?: number | null;
@@ -461,7 +461,7 @@ export type ExecutionResult<T = unknown> = {
 
 /** A requested managed execution was not started. The caller retains its work. */
 export type ExecutionDeferral = {
-  resource: "task-credit";
+  resource: "task-credit" | "execution-capacity";
   reason: string;
   retryAt: number | null;
   task: { appId: string; taskId: string };

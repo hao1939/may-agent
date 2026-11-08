@@ -93,6 +93,7 @@ export type AppTaskResource = {
     admissionFailures?: number;
     /** Resource admission facts; this is neither failure nor a new lifecycle phase. */
     funding?: TaskFundingConstraint;
+    executionConstraint?: import("../state/task-execution-admission.js").TaskExecutionConstraint;
     /** Stops automatic execution, independently of unfinished input and Conditions. */
     retryExhausted?: AppTaskRetryExhaustion;
     /** Earliest next attempt after execution failure; ordinary wakes do not waive it. */
@@ -249,6 +250,11 @@ export type AppTaskTrigger = {
 export function pendingTaskFunding(resource: AppTaskResource, now = Date.now()): TaskFundingConstraint | undefined {
   const funding = resource.status.funding;
   return funding && (funding.retryAt === null || funding.retryAt > now) ? funding : undefined;
+}
+
+export function pendingTaskExecutionConstraint(resource: AppTaskResource, now = Date.now()) {
+  const constraint = resource.status.executionConstraint;
+  return constraint && constraint.retryAt > now ? constraint : undefined;
 }
 
 export type AppTaskAcceptanceBasis = TaskAcceptanceBasis;

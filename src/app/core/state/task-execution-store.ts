@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
+import { currentProcessInstance, type ProcessInstance } from "../../../lib/process-identity.js";
 import { executionRecipientKey as recipientKey, type ExecutionRecipient } from "../../../lib/execution-recipient.js";
 import { TaskBudgetStore, type BudgetTaskRef } from "./task-budget-store.js";
 
@@ -26,12 +27,14 @@ export type ExecutionReservation = {
    * including subsequent explicit historical adoption. */
   root: BudgetTaskRef | null;
   admittedAt: number;
+  /** Historical receipts may have no process evidence; recovery must retain them. */
+  owner?: ProcessInstance;
 };
 export type ExecutionRelease = {
   kind: "joined" | "confirmed-nonstart" | "confirmed-recovery";
   evidenceId: string;
 };
-type ExecutionScope =
+export type ExecutionScope =
   { kind: "host" } | { kind: "agent"; recipient: ExecutionRecipient } | { kind: "root"; root: BudgetTaskRef };
 export type ExecutionReservationResult =
   | { kind: "unavailable" }
@@ -74,6 +77,37 @@ function operationKey(operation: ExecutionOperation): string {
  * Primary execution adopts its attempt reservation; it never acquires twice. */
 export class TaskExecutionStore {
   constructor(readonly db: SqliteDb) {}
+
+  configured(): boolean {
+    return !!this.db.prepare("SELECT 1 FROM task_execution_limits WHERE scope_kind = 'host' AND scope_key = 'host'").get();
+  }
+
+  read(operation: ExecutionOperation): { receipt: ExecutionReservation; released: boolean } | null {
+    const row = this.db.prepare("SELECT receipt_json, released_at FROM task_execution_reservations WHERE operation_id = ?")
+      .get(operationKey(operation));
+    return row ? { receipt: JSON.parse(row.receipt_json as string), released: row.released_at !== null } : null;
+  }
+
+  activeForAttempt(task: BudgetTaskRef, attemptId: string): ExecutionReservation[] {
+    taskKey(task);
+    exact(attemptId);
+    return this.db.prepare(`SELECT receipt_json FROM task_execution_reservations
+      WHERE released_at IS NULL AND task_app_id = ? AND task_id = ? AND attempt_id = ?`)
+      .all(task.appId, task.taskId, attemptId)
+      .map(row => JSON.parse(row.receipt_json as string) as ExecutionReservation);
+  }
+
+  blocked(scope: ExecutionScope, lane: ExecutionRequest["lane"]): "execution-policy" | "execution-capacity" | null {
+    const usage = this.usage(scope);
+    if (usage.limit === null) return "execution-policy";
+    if (usage.occupied >= usage.limit) return "execution-capacity";
+    if (scope.kind === "host" && lane === "background") {
+      const occupied = this.db.prepare(`SELECT count(*) AS n FROM task_execution_reservations
+        WHERE released_at IS NULL AND lane = 'background'`).get()!.n as number;
+      if (occupied >= Math.max(1, usage.limit - 1)) return "execution-capacity";
+    }
+    return null;
+  }
 
   installLimit(scope: ExecutionScope, slots: number): void {
     if (!Number.isSafeInteger(slots) || slots < 1) throw new Error("Execution limits must be positive safe integers");
@@ -143,18 +177,8 @@ export class TaskExecutionStore {
         ...(root ? [{ kind: "root" as const, root }] : []),
       ];
       for (const scope of scopes) {
-        const usage = scope.kind === "host" ? hostUsage : this.usage(scope);
-        if (usage.limit === null) return { kind: "deferred", reason: "execution-policy", scope };
-        if (usage.occupied >= usage.limit) return { kind: "deferred", reason: "execution-capacity", scope };
-      }
-      if (request.lane === "background") {
-        const occupied = this.db
-          .prepare(
-            "SELECT count(*) AS n FROM task_execution_reservations WHERE released_at IS NULL AND lane = 'background'",
-          )
-          .get()!.n as number;
-        if (occupied >= Math.max(1, hostUsage.limit - 1))
-          return { kind: "deferred", reason: "execution-capacity", scope: host };
+        const reason = this.blocked(scope, request.lane);
+        if (reason) return { kind: "deferred", reason, scope };
       }
       const receipt: ExecutionReservation = {
         operationId,
@@ -162,6 +186,7 @@ export class TaskExecutionStore {
         request: structuredClone(request),
         root,
         admittedAt: now,
+        owner: currentProcessInstance(),
       };
       this.db
         .prepare(
