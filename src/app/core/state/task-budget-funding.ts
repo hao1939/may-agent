@@ -127,26 +127,20 @@ export function adoptTaskBudget(
     budget.bind(input.task, input.root.root);
     const receipt = budget.charge(operation, now);
     if (receipt.kind !== "admitted") throw new Error("Budget adoption must not spend credits");
-    const resource = store.readTask(input.task.taskId)!;
-    if (resource.status.funding?.reason === "adoption-required") {
-      const version = resource.metadata.resourceVersion++;
-      delete resource.status.funding;
-      if (
-        !store.commit({
-          fences: [{ taskId: input.task.taskId, resourceVersion: version }],
-          tasks: [
-            { resource, trigger: store.readTrigger(input.task.taskId) ?? undefined, ready: true, nextCheckAt: now },
-          ],
-        })
-      )
-        throw new Error("Budget adoption lost its exact resource fence");
+    // registerRoot binds the root as well as the adopted contribution. Wake
+    // both exact identities without changing another account or charging history.
+    const identities = isDeepStrictEqual(input.task, input.root.root) ? [input.task] : [input.task, input.root.root];
+    for (const task of identities) {
+      const target = AppTaskResourceStore.inspectFromDb(db, task.appId);
+      if (target.readTask(task.taskId)?.status.funding?.reason === "adoption-required")
+        wakeTaskWorkloadConstraints(db, [{ app_id: task.appId, task_id: task.taskId }], now);
+      db.prepare(
+        `UPDATE app_inbox_items SET handling = NULL, available_at = ?, changed_at = ?, updated_at = ?
+        WHERE status != 'done' AND json_extract(handling, '$.phase') = 'deferred'
+          AND json_extract(handling, '$.funding.reason') = 'adoption-required'
+          AND json_extract(handling, '$.funding.root.appId') = ?
+          AND json_extract(handling, '$.funding.root.taskId') = ?`,
+      ).run(now, now, now, task.appId, task.taskId);
     }
-    db.prepare(
-      `UPDATE app_inbox_items SET handling = NULL, available_at = ?, changed_at = ?, updated_at = ?
-      WHERE status != 'done' AND json_extract(handling, '$.phase') = 'deferred'
-        AND json_extract(handling, '$.funding.reason') = 'adoption-required'
-        AND json_extract(handling, '$.funding.root.appId') = ?
-        AND json_extract(handling, '$.funding.root.taskId') = ?`,
-    ).run(now, now, now, input.task.appId, input.task.taskId);
   });
 }

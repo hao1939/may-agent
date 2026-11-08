@@ -7,6 +7,7 @@ import { HostCapacity } from "../scheduling/host-capacity.js";
 import { failAppTaskAttempt } from "../tasks/app-task-reconciler.js";
 import { adoptTaskBudget } from "./task-budget-funding.js";
 import { TaskBudgetAdmissionStore, TaskBudgetDeferredError } from "./task-budget-admission.js";
+import { assertTaskWorkflowStart, admitManagedTaskStart } from "./task-budget-managed-start.js";
 import {
   appTaskContext,
   observeAppTaskIntent,
@@ -224,7 +225,7 @@ test("dependency checks are free and explicit standing policy determines renewal
   expect(f.view("standing", "ordinary")).toMatchObject({ renewal: "lifetime", credits: 3 });
 });
 
-function inboxApp(id = "sample") {
+function inboxApp(id = "sample", taskId?: string) {
   return defineApp({
     id,
     version: 1,
@@ -233,10 +234,225 @@ function inboxApp(id = "sample") {
     inputSchema: Type.Object({ kind: Type.Literal("work"), data: Type.Object({}) }),
     task: (input) => ({
       kind: "desired",
-      intent: { id: input.id, parentId: "root", outcome: "Deliver the result", acceptance: ["Result accepted"] },
+      intent: { id: taskId ?? input.id, parentId: "root", outcome: "Deliver the result", acceptance: ["Result accepted"] },
     }),
   });
 }
+
+test("standing allowances require the exact App as well as Task identity", () => {
+  const f = fixture(20, 3, [{ taskId: "scheduled", credits: 8 }]);
+  f.add("scheduled");
+  const destination = f.app("destination");
+  destination.add("scheduled", { appId: "sample" });
+  expect(f.view("sample", "scheduled")).toMatchObject({ credits: 8, renewal: "utc-day" });
+  expect(f.view("destination", "scheduled")).toMatchObject({ credits: 3, renewal: "lifetime" });
+});
+
+for (const timing of ["before-claim", "after-claim"] as const) {
+  for (const installedPolicy of [true, false]) {
+    test(`historical cross-App contributions require adoption when creator funding activates ${timing}, policy=${installedPolicy}`, () => {
+      const f = fixture();
+      const owner = f.app("historical");
+      const receiver = f.app("receiver");
+      owner.add("caller");
+      receiver.add("contribution", { appId: "historical", taskId: "caller" });
+      receiver.add("independent");
+      const retained = timing === "after-claim" ? receiver.claim("contribution") : undefined;
+      if (retained && retained.kind !== "claimed") throw new Error("Expected pre-policy claim");
+      if (installedPolicy)
+        f.accounting.install({
+          appId: "historical",
+          sponsor: { appId: "historical", agent: "owner" },
+          dailyCredits: 10,
+          rootCredits: 8,
+        });
+      else
+        f.accounting.budget.grant({
+          sponsor: { appId: "historical", agent: "owner" },
+          purpose: "ordinary",
+          period: new Date().toISOString().slice(0, 10),
+          credits: 10,
+        });
+      const root = { appId: "historical", taskId: "caller" };
+      adoptTaskBudget(f.db, {
+        task: root,
+        root: {
+          root,
+          sponsor: { appId: "historical", agent: "owner" },
+          purpose: "ordinary",
+          credits: 8,
+          renewal: "lifetime",
+        },
+        adoptionId: "caller-adoption",
+        reason: "Future work",
+      });
+      expect(receiver.claim("independent").kind).toBe("claimed");
+      expect(f.view("receiver", "independent")).toBeNull();
+      if (retained?.kind === "claimed") {
+        const binding = {
+          appId: "receiver",
+          taskId: "contribution",
+          generation: retained.generation,
+          attemptId: retained.attemptId,
+          agent: "executor",
+        };
+        expect(() => assertTaskWorkflowStart(f.db, binding)).toThrow("adoption-required");
+        expect(() => admitManagedTaskStart(f.db, { sessionId: "unpaid-helper", binding })).toThrow("adoption-required");
+      } else {
+        expect(receiver.claim("contribution")).toMatchObject({
+          kind: "deferred",
+          funding: { reason: "adoption-required" },
+        });
+        expect(receiver.store.readTask("contribution")!.status.currentAttemptId).toBeUndefined();
+      }
+      expect(f.view("receiver", "contribution")).toBeNull();
+      expect(f.view("historical", "caller")?.rootCharged).toBe(0);
+      receiver.add("new-contribution", root);
+      expect(f.view("receiver", "new-contribution")).toMatchObject({ root, rootCharged: 1 });
+    });
+  }
+}
+
+for (const timing of ["after-hold", "before-hold"] as const) {
+  test(`another funded creator's exact Task creation wakes free attachment ${timing}`, async () => {
+    const f = fixture(20, 2);
+    f.add("funded");
+    f.add("exhausted");
+    const claim = f.claim("exhausted");
+    if (claim.kind !== "claimed") throw new Error("Expected final funded claim");
+    completeAppTask(f.config, claim, { summary: "Allowance spent" });
+    const destination = f.app("destination");
+    const unrelated = f.app("unrelated");
+    let injected = false;
+    const host = new AppInboxHost({
+      db: f.db,
+      apps: [inboxApp("destination", "shared"), inboxApp("unrelated", "shared")],
+      attachTask: (input) => {
+        try {
+          return admitTaskInput(input.appId === "destination" ? destination.config : unrelated.config, input);
+        } catch (error) {
+          if (
+            timing === "before-hold" &&
+            input.appId === "destination" &&
+            error instanceof TaskBudgetDeferredError &&
+            !injected
+          ) {
+            injected = true;
+            destination.add("shared", { appId: "sample", taskId: "funded" });
+          }
+          throw error;
+        }
+      },
+    });
+    try {
+      const denied = (id: string, appId: string) => ({
+        ...workInput(id, appId),
+        creator: { appId: "sample", taskId: "exhausted" },
+      });
+      host.admit(denied("other-ask", "unrelated"));
+      host.admit(denied("original-ask", "destination"));
+      if (timing === "after-hold") {
+        const held = host.get("original-ask");
+        expect(held?.handling).toMatchObject({ phase: "deferred", funding: { reason: "root-credit", retryAt: null } });
+        expect(() =>
+          stateTransaction(f.db, () => {
+            destination.add("shared", { appId: "sample", taskId: "funded" });
+            throw new Error("Caller rollback");
+          }),
+        ).toThrow("Caller rollback");
+        expect(host.get("original-ask")).toEqual(held);
+        expect(destination.store.readTask("shared")).toBeNull();
+        destination.add("shared", { appId: "sample", taskId: "funded" });
+      }
+      expect(host.get("original-ask")?.handling).toBeUndefined();
+      await host.recoverAdmissions();
+      expect(host.get("original-ask")).toMatchObject({ status: "handling", waitingOn: { kind: "task", id: "shared" } });
+      expect(host.get("other-ask")?.handling).toMatchObject({ phase: "deferred", funding: { reason: "root-credit" } });
+      expect(destination.store.readTask("shared")!.metadata.creator).toEqual({ appId: "sample", taskId: "funded" });
+      expect(f.view("destination", "shared")).toMatchObject({
+        root: { appId: "sample", taskId: "funded" },
+        rootCharged: 2,
+      });
+      expect(f.view("sample", "exhausted")?.rootCharged).toBe(2);
+    } finally {
+      host.close();
+    }
+  });
+}
+
+test("adopting a child also wakes its newly bound root and both exact Inbox accounts atomically", async () => {
+  const f = fixture();
+  const owner = f.app("historical");
+  const receiver = f.app("receiver");
+  const root = { appId: "historical", taskId: "caller" };
+  const child = { appId: "receiver", taskId: "contribution" };
+  owner.add(root.taskId);
+  receiver.add(child.taskId, root);
+  for (const appId of ["historical", "receiver"])
+    f.accounting.install({ appId, sponsor: { appId, agent: "owner" }, dailyCredits: 20, rootCredits: 10 });
+  expect(owner.claim(root.taskId).kind).toBe("deferred");
+  expect(receiver.claim(child.taskId).kind).toBe("deferred");
+  const host = new AppInboxHost({
+    db: f.db,
+    apps: [inboxApp()],
+    attachTask: (input) => admitTaskInput(f.config, input),
+  });
+  try {
+    for (const [id, creator] of [
+      ["root-ask", root],
+      ["child-ask", child],
+      ["unrelated-ask", { appId: "historical", taskId: "other" }],
+    ] as const)
+      host.admit({ ...workInput(id), creator });
+    const before = [
+      owner.store.readTask(root.taskId),
+      receiver.store.readTask(child.taskId),
+      host.get("root-ask"),
+      host.get("child-ask"),
+    ];
+    const input = {
+      task: child,
+      root: {
+        root,
+        sponsor: { appId: "historical", agent: "owner" },
+        purpose: "ordinary" as const,
+        credits: 10,
+        renewal: "lifetime" as const,
+      },
+      adoptionId: "shared-adoption",
+      reason: "Future work only",
+    };
+    expect(() =>
+      stateTransaction(f.db, () => {
+        adoptTaskBudget(f.db, input);
+        throw new Error("Installation rollback");
+      }),
+    ).toThrow("Installation rollback");
+    expect([
+      owner.store.readTask(root.taskId),
+      receiver.store.readTask(child.taskId),
+      host.get("root-ask"),
+      host.get("child-ask"),
+    ]).toEqual(before);
+    expect(f.accounting.budget.binding(root)).toBeNull();
+    adoptTaskBudget(f.db, input);
+    expect(owner.store.readTask(root.taskId)!.status.funding).toBeUndefined();
+    expect(receiver.store.readTask(child.taskId)!.status.funding).toBeUndefined();
+    expect(owner.store.listRecoveryCandidates().items.map((item) => item.taskId)).toContain(root.taskId);
+    expect(host.get("root-ask")?.handling).toBeUndefined();
+    expect(host.get("child-ask")?.handling).toBeUndefined();
+    expect(host.get("unrelated-ask")?.handling?.phase).toBe("deferred");
+    expect(f.view(root.appId, root.taskId)?.rootCharged).toBe(0);
+    await host.recoverAdmissions();
+    expect(host.get("root-ask")?.waitingOn).toEqual({ kind: "task", id: "root-ask" });
+    expect(host.get("child-ask")?.waitingOn).toEqual({ kind: "task", id: "child-ask" });
+    expect(owner.claim(root.taskId).kind).toBe("claimed");
+    expect(receiver.claim(child.taskId).kind).toBe("claimed");
+    expect(f.view(root.appId, root.taskId)?.rootCharged).toBe(4);
+  } finally {
+    host.close();
+  }
+});
 const workInput = (id: string, appId = "sample") => ({
   id,
   appId,

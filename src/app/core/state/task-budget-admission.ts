@@ -141,6 +141,31 @@ export class TaskBudgetAdmissionStore {
     return row ? (JSON.parse(row.policy_json as string) as InstalledTaskBudgetPolicy) : null;
   }
 
+  /** Retained contributions remain in their immutable creator's accounting
+   * scope even when their recipient App has no policy. No binding is inferred. */
+  requiresAccounting(task: BudgetTaskRef): boolean {
+    if (this.policy(task.appId) || this.budget.binding(task)) return true;
+    const row = this.db
+      .prepare("SELECT resource_json FROM app_tasks WHERE app_id = ? AND task_id = ?")
+      .get(task.appId, task.taskId);
+    const creator = row ? (JSON.parse(row.resource_json as string) as AppTaskResource).metadata.creator : undefined;
+    return (
+      !!creator &&
+      (!!this.policy(creator.appId) ||
+        (!!creator.taskId && !!this.budget.binding({ appId: creator.appId, taskId: creator.taskId })))
+    );
+  }
+
+  /** Creation holds end when the exact Task exists: attaching retained input
+   * spends no creation credit. Attempt/helper holds still use their own check. */
+  creationStillConstrained(constraint: TaskFundingConstraint, now: number): boolean {
+    return (
+      !this.db
+        .prepare("SELECT 1 FROM app_tasks WHERE app_id = ? AND task_id = ?")
+        .get(constraint.task.appId, constraint.task.taskId) && this.stillConstrained(constraint, now)
+    );
+  }
+
   /** Loaded App source must agree with installation authority before dispatch. */
   assertCoordinationPolicy(appId: string, agent: string, declared: TaskCoordinationPolicy | undefined): void {
     if (!workloadEnforcementEnabled(this.db)) return;
@@ -366,7 +391,8 @@ export class TaskBudgetAdmissionStore {
           resource.spec.agent ?? resource.spec.owner ?? coordination.agent)
       )
         this.defer(task, "protected-policy", task);
-      const standing = policy.standing?.find((item) => item.taskId === task.taskId);
+      const standing =
+        appId === policy.appId ? policy.standing?.find((item) => item.taskId === task.taskId) : undefined;
       this.budget.registerRoot({
         root: task,
         sponsor: policy.sponsor,
@@ -459,9 +485,22 @@ export class TaskBudgetAdmissionStore {
         )
         .map(({ resource }) => resource.metadata.id),
     );
-    for (const { resource } of mutation.tasks ?? [])
-      if (absent.has(resource.metadata.id) && !restoredTaskIds.has(resource.metadata.id))
+    for (const { resource } of mutation.tasks ?? []) {
+      if (absent.has(resource.metadata.id) && !restoredTaskIds.has(resource.metadata.id)) {
         this.creation(appId, resource, now);
+        // Same transaction as creation and its caller links. An independently
+        // funded creator may satisfy another caller's indefinite creation hold.
+        this.db
+          .prepare(
+            `UPDATE app_inbox_items
+          SET handling = NULL, available_at = ?, changed_at = ?, updated_at = ?
+          WHERE status != 'done' AND json_extract(handling, '$.phase') = 'deferred'
+            AND json_extract(handling, '$.funding.task.appId') = ?
+            AND json_extract(handling, '$.funding.task.taskId') = ?`,
+          )
+          .run(now, now, now, appId, resource.metadata.id);
+      }
+    }
     for (const attempt of mutation.attempts ?? []) {
       if (
         attempt.state !== "running" ||
@@ -473,7 +512,7 @@ export class TaskBudgetAdmissionStore {
       const task = { appId, taskId: attempt.taskId };
       const rootRef = this.budget.binding(task);
       if (!rootRef) {
-        if (this.policy(appId)) this.defer(task, "adoption-required", task);
+        if (this.requiresAccounting(task)) this.defer(task, "adoption-required", task);
         continue;
       }
       const write = mutation.tasks?.find((entry) => entry.resource.metadata.id === attempt.taskId)?.resource;

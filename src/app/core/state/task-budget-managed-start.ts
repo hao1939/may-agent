@@ -48,7 +48,7 @@ function taskExecutionPolicy(db: SqliteDb, input: ManagedSessionPolicy) {
   }
   const admission = new TaskBudgetAdmissionStore(db);
   const task = { appId: bound.appId, taskId: bound.taskId };
-  if (!admission.policy(task.appId) && !admission.budget.binding(task)) {
+  if (!admission.requiresAccounting(task)) {
     if (new TaskExecutionStore(db).configured())
       throw new Error("Shared execution limits require explicit adoption of historical Task funding");
     return null;

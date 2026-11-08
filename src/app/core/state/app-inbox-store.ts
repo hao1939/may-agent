@@ -38,7 +38,7 @@ export function deferAppInboxTaskFunding(db: SqliteDb, inputId: string, funding:
     if (!item || item.status === "done" || item.executionTaskId || item.waitingOn?.kind === "task" ||
       (item.lease && item.lease.expiresAt > now)) return false;
     resolveAppInboxRecovery(db, inputId, "input-admission", now);
-    const held = new TaskBudgetAdmissionStore(db).stillConstrained(funding, now);
+    const held = new TaskBudgetAdmissionStore(db).creationStillConstrained(funding, now);
     if (!held) return db.prepare("UPDATE app_inbox_items SET handling = NULL, available_at = ?, changed_at = ?, updated_at = ? WHERE id = ?")
       .run(now, now, now, inputId).changes === 1;
     return db.prepare(`UPDATE app_inbox_items SET handling = ?, available_at = ?, changed_at = ?, updated_at = ?
