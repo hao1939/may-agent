@@ -1250,9 +1250,10 @@ fixtures throw from their Runtime database accessor, use an inaccessible fake
 state directory, or omit the App identity in a Task binding. Repair `605262cbe1` supplies ordinary temporary Host state and full binding
 identity without relaxing admission. Integration/workflow/admission owners passed
 **112 / 435 across six files**, followed by manager/admission/worker/recovery
-boundaries **56 / 284 across four files**. Static checks passed; the new exact-head
-full local gate is running. No complete passing gate is claimed for the original
-revision. Independent
+boundaries **56 / 284 across four files**. Static checks passed. The frozen full local gate on `605262cbe1` passed
+**4,195 tests / 3 existing skips / 0 failures / 24,440 assertions across 362 files**
+in 344.63 seconds. Hosted Quality and Container passed the same revision. No
+complete passing gate is claimed for the original revision. Independent
 review, integration, enforcement withdrawal and separately authorized operational
 and behavioral proof remain. No SDK/App runtime change is required.
 
@@ -1278,7 +1279,7 @@ pause, exhausted retries, workspace holds and cancelled actor authority remained
 Two initial fixture assumptions were corrected (workload read signature and the
 preexisting indefinite hold before admission); no production fix is claimed for
 those fixture errors or for this new feature. Host/SDK types, boundary and lint
-passed. Full local CI has not started while #438's repaired full gate runs;
-hosted checks are pending. Independent review, integration and separately
+passed. Full frozen local CI is running on `ac00e95783`, after the repaired parent
+#438 gate finished green; hosted checks are pending. Independent review, integration and separately
 authorized operational/model acceptance remain. No production withdrawal,
 reactivation protocol or live exclusion is established.
