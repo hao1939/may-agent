@@ -190,3 +190,14 @@ The saved census remains 66 nonterminal Tasks, four unfinished inputs and 41
 Conditions. Previous successful rehearsal receipts remain historical evidence.
 The candidate remains blocked, and production state remains unchanged by this
 review. This is still a saved-snapshot finding, not a fresh live census.
+
+The [systemic review](retirement-systemic-review-2026-11-09.md) on Host source
+`d4f00453b6` supersedes the earlier nine-blocker census. The prior check skipped
+retained values when phase/reference heuristics did not enter its guard. The
+actual shared preservation function finds 59 historical projections requiring
+provenance review: 52 missing observed references and seven without accepted
+payloads; 40 have only a summary and 19 also retain a result. This does not
+classify their business fulfillment or require rerunning their original work.
+The complete saved-snapshot inventory and refusal rehearsal retain every loaded
+table unchanged. The candidate remains blocked; no acceptance or caller answer
+was invented, and production remains unchanged by the review.
