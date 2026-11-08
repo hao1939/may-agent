@@ -170,6 +170,14 @@ tradeoff that led to this implementation.
 Capacity is backpressure, not policy. It decides when work may start, never
 which work matters or whether the result is acceptable.
 
+**Intended extension, unimplemented:** the [workload proposal](../proposals/agent-task-workload-model.md#coordination-that-can-run-under-stress)
+would share the existing reserve between human interaction and trusted, bounded
+agent coordination, with protected credits and a path that needs no new worktree
+for review. It preserves human responsiveness, pause/stop controls and creator
+authority. Current automated reviews still use background capacity; a name or
+priority grants no reserve eligibility. Operation-specific resource prerequisites
+and shared accounting also remain unimplemented.
+
 ## Pausing
 
 Pause has one meaning:

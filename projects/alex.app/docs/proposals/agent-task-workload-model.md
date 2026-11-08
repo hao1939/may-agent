@@ -13,12 +13,16 @@ enforces authority and resource bounds. Shared allowances permit cooperation
 without multiplying budgets or making every observation a new assignment.
 
 **Design status:** Accepted direction for the mental model and workload behavior.
-Budget units, charging and runtime integration remain proposed implementation work.
+The initial charging, renewal and coordination choices below are proposed refinements.
 **Implementation status:** Proposed. Agent ownership, creator-controlled revision
 and closure, bounded attempts and Host concurrency exist. Direct agent admission,
 the shared allowances and workload feedback below are not implemented by this
 document. Current durable admission still requires an App. The
 [standalone-agent proposal](standalone-agent-tasks.md) owns that addressing change.
+
+The [source and live-system review](../archive/reviews/agent-workload-gap-review-20261108.md)
+motivates resource-health feedback and coordination that can start under stress.
+Its observations are dated evidence, not proof of improved agent behavior.
 
 ## The mental model
 
@@ -79,17 +83,14 @@ Its work has a small, explicit allowance of its own.
    not structural parent links or model-supplied labels, establish attribution.
 
 4. **Creation and execution both consume the allowance.** The Host atomically
-   reserves credits against the root allowance and sponsor's available credits
-   before each charged operation. Creating a pending root consumes only its
-   record-creation charge, not the full allowance `B`. Descendant creation and
-   execution charge that same root allowance. A pending Task uses no execution
-   slot. Positive creation charges bound generated records within the available
-   spending allowance;
-   large decompositions create children incrementally. Replaying an admission
-   does not charge again, and closing a Task does not refund spent work. If
-   credits are unavailable, retain the input or assignment with its actual
-   disposition and seek an authorized funding or scope decision. Retry,
-   revision and delegation cannot silently replenish the allowance.
+   reserves against the root allowance and sponsor's available credits before
+   each charged operation. A pending root needs only its creation charge and no
+   execution slot; it does not reserve the full allowance `B`. Children share
+   that root's allowance. Create large decompositions incrementally. Replays do
+   not charge twice; closure does not refund spent work. At exhaustion, retain
+   the input or assignment with its actual disposition and seek an authorized
+   funding or scope decision. The [budget policy](#budget-policy) defines charges
+   and renewal; retry, revision and delegation do not replenish the allowance.
 
 5. **Yield execution while retaining responsibility.** A parent that has no
    useful independent work yields its attempt while awaiting a child. It retains
@@ -97,7 +98,10 @@ Its work has a small, explicit allowance of its own.
    At most `c` attempts execute across the assignment and its descendants, subject
    to each agent's `C` and the shared Host limit. With `c = 1`, the parent yields,
    the child runs, and its result wakes the parent. Bounded helpers stay inside
-   their caller's execution scope and shared spending allowance.
+   their caller's authority, cancellation scope and shared spending allowance.
+   Parallel helpers must count against applicable execution limits. A suspended
+   caller may lend its place to an awaited helper; reusing a place does not
+   authorize simultaneous work in it or bypass the recipient agent's limits.
 
 6. **Return results, review and end assignments explicitly.** The assigned
    agent reports evidence; the creator consumes it and retains, revises, closes
@@ -110,27 +114,34 @@ Its work has a small, explicit allowance of its own.
    reservations or erase accepted requirements. Input delivery and result
    recording need no new assignment execution budget.
 
-Reserve one shared Host execution slot for coordination and human interaction,
-with a bounded allowance independent of ordinary assignment budgets. This keeps
-priority, funding and closure decisions reachable under pressure. It is available
-capacity, not a continuously running agent or a physical slot per agent. A
-one-slot Host instead prioritizes coordination between bounded attempts so
-ordinary work can still run. Coordination itself remains bounded; backlog does
-not authorize unlimited review work.
-
 ## Workload feedback
 
 **Honor existing obligations, spend spare capacity on useful expansion, and use
 workload pressure to reconsider priorities and commitments.**
 
-The Host supplies current resource and Task facts through existing reads and
-attempt context. Show runnable work and available execution capacity, pending
-and blocked work, results awaiting review, waiting time and remaining credits.
-Agents interpret those facts alongside business value, deadlines and expected
-effort, using estimates only where useful. Ten blocked Tasks and ten urgent
-runnable Tasks should not produce the same decision merely because both count
-as ten. The first version needs neither a universal pressure score nor a fixed
-admission formula.
+The Host supplies a small workload summary through scoped reads and attempt
+context, projected from existing authority. It contains these facts, not a new
+Task state or a second queue:
+
+| Information | What the agent can judge |
+| --- | --- |
+| Running and runnable work, applicable Host/agent/App/root limits, and ready-work waiting time | What can advance now, and what another execution would delay |
+| Pending input, blocked assignments with their next relevant change, and results awaiting creator review | Which obligations need consideration, help or disposition |
+| Remaining credits and operation-specific resource constraints such as disk, workspace or source access | Whether spare execution places can actually be used |
+| Observation time, read scope, estimates, unavailable facts and truncation | Whether the summary is sufficient or an exact scoped read is needed |
+
+Count independent commitments separately from contributions, while including
+contribution execution in resource use. Limit the view to the recipient's read
+authority and loaded operational scope; ended work and retired Apps are not
+current runnable demand. Idle is an execution state: standing work, a finite
+result awaiting disposition and an unfulfilled obligation can all be idle.
+Unknown or stale capacity is not evidence of available capacity. Avoid full
+population scans on each attempt; expose bounded examples and exact-read links.
+
+Agents interpret these facts alongside business value, deadlines and expected
+effort, using estimates only where useful. The first version needs neither a
+universal pressure score nor a fixed admission formula. Existing App limits
+continue to apply until per-agent and root limits are implemented.
 
 Task count is supporting context. If `K` is used as a workload reference, crossing
 it prompts review; it is not an automatic rejection or closure threshold. Hard
@@ -151,6 +162,12 @@ priority, funding or scope decisions. Workload influences that judgment:
 | Scope and execution | Use an appropriate method and depth for the agreed outcome. | Seek the smallest sufficient outcome; obtain creator authorization for changed acceptance criteria. Reprioritize at safe attempt boundaries. |
 | Cooperation | Delegate where specialist skill or parallel capacity helps. | Check the recipient's capacity and coordination cost; delegation preserves the root budget and caller responsibility. |
 | Review and closure | Review results and stale work regularly. | Review blockers, already sufficient results, duplicates and obsolete work sooner; retain the same evidence and authority requirements. |
+
+Include old ready obligations in review so low-priority work cannot silently
+disappear behind repeated urgent arrivals. The agent must explain continued
+deferral or seek a changed commitment; queue age alone does not grant priority,
+funding or a delivery guarantee. Automatic priority aging is not required for
+the first version.
 
 Required and discretionary describe business judgments, not new Task types.
 When execution is idle because work is blocked, resolve useful blockers and
@@ -173,6 +190,119 @@ completion capacity, waiting grows until demand, commitments or capacity change;
 the agent must surface that conflict. Deferring a request moves outstanding
 demand elsewhere and must remain visible. Cancellation is a business decision,
 not evidence of improved delivery throughput.
+
+## Coordination that can run under stress
+
+Each agent's standing coordination Task considers input, selects useful work,
+consumes results and brings finite assignments to their creator for disposition.
+Use existing owner-review routes during migration. The installation declares
+the accountable agent and trusted coordination role through normal definitions;
+a Task name, priority or model-authored label cannot grant that role. A returned
+result can wake the recorded creator's coordination Task, with repeated wakes
+coalesced. App-created roots need an explicitly authorized App-policy control
+path; the assigned worker never acquires closure authority by reviewing itself.
+
+Reserve one shared Host place for human interaction and these bounded
+coordination passes. Prefer human input at safe dispatch boundaries and give
+ready coordination passes fair turns within their protected allowances. There
+is no permanently running controller or reserved place per agent. A one-place
+Host interleaves bounded attempts instead of reserving away all execution.
+The current foreground reserve is for pending human Conversation work; extending
+it to trusted coordination remains unimplemented.
+
+Autonomous coordination still honors App pause and explicit stop; reserve access
+does not inherit the existing human-only pause exception.
+
+Coordination uses an installed definition or existing authorized workspace and
+must not require a new worktree for reads, priority decisions, funding review or
+guarded closure. It has protected credits independent of exhausted ordinary
+work. Business execution and decomposition still use ordinary assignment
+budgets; they cannot be relabeled as coordination. If canonical storage cannot
+persist a decision, report that failure through the existing operational path;
+do not acknowledge an unrecorded commitment or claim autonomous recovery.
+
+## Resource prerequisites and shared blockers
+
+Check prerequisites at the boundary of the operation that needs them. For
+example, worktree preparation uses its filesystem, repository/commit and measured
+or declared footprint; source retrieval uses the relevant provider/access scope.
+A failed prerequisite defers that operation with evidence and a recovery route.
+It does not reject the business need, close a Task or stop unrelated operations.
+Missing estimates remain explicit and use the existing bounded failure path;
+a universal free-space threshold cannot establish every operation's eligibility.
+
+Use existing Conditions and observations to reference a shared blocker by its
+resource, relevant requirement and observed episode. Several assignments can
+refer to the same capacity incident without merging caller promises, permissions
+or budgets. Coalesce unchanged blocker notifications before invoking a model.
+An inexpensive provider observation can recheck the prerequisite; wake affected
+work on a relevant transition, explicit new requirement or justified review
+deadline. An unchanged schedule alone need not purchase the same judgment again.
+Preserve schedules that actually require new consideration under their agreed
+business scope.
+
+A prerequisite check that defers before execution does not spend an execution
+start credit. A started attempt that fails preparation does spend one and remains
+subject to the existing retry policy. A recovery observation neither renews
+exhausted retries nor grants credits: it wakes an eligible waiting Task, or its
+responsible agent for an explicit retry/funding decision. Retain the original
+input, exact return path and accepted evidence throughout.
+
+Storage and artifact retention remain separate resource responsibilities. Ending
+a Task does not delete its records or restore disk space. Cleanup requires its
+existing ownership and retention policy; spare slots and work credits cannot
+substitute for physical capacity.
+
+## Budget policy
+
+For the first implementation, `B` counts coarse work credits. Charge one credit
+for a newly created durable Task, one for each started Task attempt, and one for
+each separately invoked bounded agent helper. The primary agent executing an attempt is
+included in the attempt charge; nested calls add their own charges. Retries and
+failed starts after dispatch count. Mechanical input delivery, reads and result
+settlement need no execution credit; ordinary tool calls remain covered by their
+attempt's per-call bounds. Keep per-call time/tool/token bounds and
+observed usage alongside this quota: a work credit does not promise equal work,
+fixed financial cost or a storage allowance.
+
+The sponsor supplies ordinary credits and a protected coordination allowance
+under declared grants for fixed daily UTC periods. Installation policy chooses
+the grant sizes; pressure cannot silently enlarge them. Renewal is mechanical
+and idempotent by agent, purpose and period. Unused daily credits do not roll
+over. Normal Task creation and business work cannot spend coordination credits.
+If the creation charge cannot be paid, retain the received input with a visible
+funding disposition; accepting input must not silently promise funded execution.
+
+Finite assignments retain a cumulative root cap `B` across days, retries and
+reopening. A new daily agent grant does not reset that cap. An explicitly
+authorized funding decision can increase it within the sponsor's resources,
+preserving all prior spending. The sponsor or its authorized policy sets and
+increases root caps within its grant; only the installation's authorized funding
+control can enlarge that grant. Task creation or closure authority alone grants
+neither power. Standing assignments and coordination use a
+declared per-period root allowance under the same agent grant, retaining their
+Task identity and historical charges. A wake or a change of structural parent
+does not convert finite work into a renewed standing allowance. Funding decisions
+do not change scope or grant creator authority.
+
+Budget state belongs in the Host's existing SQLite-backed store. Tasks and
+execution contexts carry a trusted shared budget reference. Atomically reserve
+credits against both the root cap and the sponsor's relevant period balance,
+with a stable operation identity and the applicable execution claim. Each
+creation/start is charged once. Creation spends its charge when the new Task is
+persisted. An execution spends its charge on dispatch, including preparation
+failure; release an unused reservation only when non-start is established.
+After interruption, uncertain starts retain their charge until reconciled.
+Crossing a period boundary does not refund or reassign prior charges, double
+grant credits or release execution capacity still held by live work.
+
+Execution holds a capacity reservation, not a database lock. Recover that
+capacity through the existing attempt ownership and confirmed-cleanup path;
+reconcile credit reservations against the recorded operation. Child spending
+does not mutate the root Task's execution version. There is one authoritative ledger for
+the Host's runtimes; per-agent copies or a separate distributed lock are not
+needed. These accounting choices remain unimplemented and bound work starts,
+not monetary spending or indefinite retained storage.
 
 ## A simple capacity graph
 
@@ -200,6 +330,9 @@ worker load ratio `j/k` stays unchanged when `i` changes. Growth per minute and
 the effect of a fixed management rate can change. Equal arrival and service
 rates have no stochastic headroom: a flat fluid line is not a prediction of
 zero random waiting. This is rate analysis, not a simulation of agent behavior.
+The baseline assumes the prerequisites for its stated capacity hold. A disk or
+access blocker can make the usable capacity for affected work zero even while
+execution places are empty; the heatmap does not currently model that constraint.
 
 ## One example
 
@@ -222,6 +355,14 @@ When useful runnable work becomes scarce and credits remain, Alex can consider
 another improvement under authorized goals. If no worthwhile work exists, it
 stays quiet. There is no requirement to refill a Task count.
 
+If the incident needs a worktree and disk capacity is insufficient, it remains
+pending on that prerequisite. Other Tasks needing the same resource reuse the
+blocker evidence. Alex's coordination pass can still run from an existing
+workspace, review priorities and report the exact missing capacity. A meaningful
+capacity observation wakes eligible work; it does not create another repair
+assignment or reset an exhausted retry allowance. A returning finite result
+receives creator review even when the execution queue is otherwise quiet.
+
 The reentrant-lock analogy applies only to shared budget attribution: children
 reuse the root allowance rather than acquiring another independent budget.
 Execution uses a shared concurrency allowance, so siblings may run together
@@ -239,24 +380,20 @@ attribution and spent charges; additional funding needs authorization. Bootstrap
 standing work and historical imports must be accounted for explicitly rather
 than become unrestricted creation paths.
 
-An implementation must define the unit and charge schedule for `B`, retain
-reservations and root attribution across restart, fence concurrent admissions,
-and preserve idempotent caller/result links. Budget allocation is separate from
-who may revise or close a Task. Historical storage retention remains a separate
-concern: ending work preserves evidence and does not reclaim records.
+| Capability | Current implementation and remaining work |
+| --- | --- |
+| Pending work, atomic claims, bounded retries and creator-controlled closure | Existing foundations; preserve them. |
+| Capacity | Host and App limits and a human foreground reserve exist. Per-agent/root limits, helper accounting and trusted coordination access remain unimplemented. |
+| Feedback | Scoped Task/child/wait reads and App owner reviews exist. The shared bounded workload summary and its use in agent decisions remain unimplemented. |
+| Budget | Per-call limits and usage records exist. Shared attribution, credit grants, cumulative charges and renewal remain unimplemented. |
+| Shared blockers | Individual Conditions and recovery exist. Operation-specific prerequisite admission and cross-Task coalescing need implementation at the affected resource boundary. |
 
-Budget state belongs in the Host's existing SQLite-backed durable store. Tasks
-and execution contexts carry a shared budget reference. Short atomic transactions
-reserve credits and capacity with admission and attempt claims; execution holds a
-reservation rather than a database lock. Child spending must not mutate the root
-Task's execution version. Recovery reconciles reservations with actual attempts
-and confirmed cleanup before releasing reusable capacity.
-
-There is one authoritative budget ledger for the Host's runtimes, not replicated
-per-agent counters or a separate distributed lock. A pending record needs its
-creation charge, not full execution funding. Authority to accept input or close a
-Task remains separate from authority to spend. A failed operation must leave
-its actual disposition available through the existing input/result path.
+Start with the existing accountable resource-capacity work and make coordination
+reachable. Then trial the workload summary through existing owner reviews before
+implementing shared accounting. No additional controller agent is required.
+This proposal defines intended behavior and initial units; it supplies no new
+callable API or deployed instructions. Grant sizes, bounded review cadence and
+resource-specific footprint estimates remain installation choices to verify.
 
 Verify these contrasting cases before claiming the feedback improves behavior:
 
@@ -266,10 +403,17 @@ Verify these contrasting cases before claiming the feedback improves behavior:
 | Same discretionary opportunity under light and heavy workload | Consider expansion when useful capacity exists; under pressure require enough value to displace existing work. |
 | Idle execution with blocked assignments | Review actual blockers; do not infer missing business work from low utilization. |
 | High backlog with an incomplete Task and an already sufficient result | Keep the unmet obligation; bring sufficient evidence to creator review without lowering criteria. Cancellation remains a separate disposition. |
+| Repeated urgent arrivals while older required work stays ready | Make continued waiting and delivery conflicts visible during review; obtain an explicit commitment decision rather than silently abandoning it. |
 | Burst of repeated metric observations | Reuse accountable work where appropriate, preserving exact caller obligations. |
 | Nested cooperation with `c = 1`, including restart | Yield so the child can run; preserve shared charges, attribution and responsibility. |
 | Concurrent claims, retries and exhausted credits | Enforce `B`, `C`, `c` and Host bounds without double charging; retain visible work and bounded creator coordination. |
+| Parallel helpers, including an awaited helper with `c = 1` | Charge each helper; suspended callers yield or lend capacity, while parallel work respects all applicable limits. |
 | Parent closure while a child remains unresolved | Preserve child obligations and active reservations until their actual disposition and cleanup. |
+| Several Tasks hit one full filesystem or access blocker | Retain separate obligations and one shared blocker observation; avoid repeated unchanged model judgments and allow unrelated work. |
+| Ordinary budget exhausted or a new worktree cannot be created | Bounded authorized coordination can use its protected allowance and existing workspace; do not claim a decision if storage cannot persist it. |
+| A blocker recovers after retry exhaustion | Deliver the new evidence to the responsible agent without resetting retry counts, credits or caller obligations. |
+| Daily boundary, restart and uncertain execution start | Grant once, retain in-flight reservations/charges, preserve finite root spending and renew only declared standing allowances. |
+| An idle finite result and an idle standing Task | Bring the finite result to its creator for disposition; retain the standing purpose and declared wake. Neither is ended by phase alone. |
 | No useful work after a planning pass | Stay quiet until relevant input or a justified review time. |
 
 Use the same business scenarios under different loads and inspect actual agent
