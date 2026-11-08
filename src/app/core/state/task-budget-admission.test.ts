@@ -513,3 +513,59 @@ test("historical adoption wakes only inputs waiting on that exact source account
   expect(f.store.readTask("second")).toBeNull();
   host.close();
 });
+
+test("late sponsor installation wakes only the exact policy's deferred input and rolls back its wake with installation", async () => {
+  const f = fixture();
+  const host = new AppInboxHost({
+    db: f.db,
+    apps: [inboxApp()],
+    attachTask: (input) => admitTaskInput(f.config, input),
+  });
+  try {
+    for (const id of ["late", "unrelated"])
+      createAppInboxItem(f.db, { ...workInput(id), creator: { appId: id } });
+    await host.recoverAdmissions();
+    expect(host.get("late")?.handling).toMatchObject({
+      phase: "deferred", funding: { reason: "sponsor-policy", policyAppId: "late", retryAt: null },
+    });
+    const policy = { appId: "late", sponsor: { appId: "late", agent: "owner" }, dailyCredits: 3, rootCredits: 2 };
+    expect(() => stateTransaction(f.db, () => {
+      f.accounting.install(policy);
+      throw new Error("Installation rolled back");
+    })).toThrow("Installation rolled back");
+    expect(f.accounting.policy("late")).toBeNull();
+    expect(host.get("late")?.handling?.phase).toBe("deferred");
+    f.accounting.install(policy);
+    expect(host.get("late")?.handling).toBeUndefined();
+    await host.recoverAdmissions();
+    expect(host.get("late")?.waitingOn).toEqual({ kind: "task", id: "late" });
+    expect(f.view("sample", "late")).toMatchObject({ sponsor: policy.sponsor, rootCharged: 1 });
+    expect(host.get("unrelated")?.handling).toMatchObject({
+      phase: "deferred", funding: { reason: "sponsor-policy", policyAppId: "unrelated" },
+    });
+    expect(f.store.readTask("unrelated")).toBeNull();
+  } finally { host.close(); }
+});
+
+for (const renewal of ["indefinite", "utc"] as const) {
+  test(`held ${renewal} funding acknowledges an obsolete recovery wake without spending or repeated scheduling`, () => {
+    setSystemTime(new Date("2026-11-09T12:00:00Z"));
+    const f = fixture(renewal === "utc" ? 1 : 10, renewal === "utc" ? 5 : 1);
+    f.add("held");
+    const denied = f.claim("held");
+    if (denied.kind !== "deferred") throw new Error("Expected funding hold");
+    const resource = f.store.readTask("held");
+    f.db.prepare("UPDATE app_tasks SET ready = 1, changed = 1, next_check_at = ? WHERE app_id = ? AND task_id = ?")
+      .run(Date.now() - 1, "sample", "held");
+    expect(f.store.listRecoveryCandidates().items.map((item) => item.taskId)).toContain("held");
+    expect(f.claim("held")).toEqual(denied);
+    expect(f.store.readTask("held")).toEqual(resource);
+    expect(f.store.listRecoveryCandidates().items).toEqual([]);
+    expect(f.db.prepare("SELECT next_check_at FROM app_tasks WHERE task_id = 'held'").get()?.next_check_at)
+      .toBe(denied.funding.retryAt);
+    const changes = f.db.prepare("SELECT total_changes() AS n").get();
+    expect(f.claim("held")).toEqual(denied);
+    expect(f.db.prepare("SELECT total_changes() AS n").get()).toEqual(changes);
+    expect(f.view("sample", "held")?.rootCharged).toBe(1);
+  });
+}

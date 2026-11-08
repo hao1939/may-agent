@@ -434,3 +434,29 @@ Managed helper charging, protected
 coordination funding, authorized grant/cap changes and the remaining execution reservations must be integrated before
 activation is exposed. Protected accounts currently defer until their installed
 coordination validation exists; ordinary contributions cannot inherit them.
+
+
+## Work-credit admission (private integration)
+
+`../state/task-budget-admission.ts` joins new-resource and running-attempt
+admission to the fenced resource transaction in the installation database.
+Creation, claims and their receipts roll back together on denial. Unconfigured
+installations retain their existing behavior. Installation activation remains
+unexposed until seed, helper, deferral and protected-funding paths are complete.
+
+Unfunded ordinary input and first Conversation input retain their exact Inbox
+receipt and funding constraint. They acquire a Task link only on successful
+admission. Sponsor-policy installation wakes only the matching policy's held
+input in the installation transaction. Recovery does not poll indefinite holds
+or replace a future funding deadline with a Condition check.
+
+An executed result whose atomic effects require an unfunded creation retains a
+Host-private `pendingSettlement` checkpoint on its original attempt. The Task
+waits with the funding deadline; its execution callback has finished and its lease is removed.
+The attempt remains unsettled until its original effects are accepted or the
+claim is superseded. Recovery reuses the saved decision, exact follow-up mapping
+and acceptance facts through ordinary fenced settlement, without a new model
+call, attempt debit or execution failure. Cancellation and requirements changes
+still fence that result. Ordinary durable delegation already saves its demand
+through the Inbox; accepting that parent result does not promise that its child
+has been funded or executed.

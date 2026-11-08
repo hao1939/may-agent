@@ -1,3 +1,6 @@
+import type { TaskAcceptanceBasis } from "@may-agent/sdk";
+import type { AppTaskClaim } from "./app-task-reconciler.js";
+import type { PreparedTaskWorkspace } from "./workspace.js";
 import {
   admitTaskReconcileResult as admitAppTaskHandlerResult,
   type TaskAction as AppTaskAction,
@@ -21,6 +24,14 @@ export type TaskCapabilityRun = {
   handlerBlocked?: true;
   workspacePreparationFailed?: boolean;
   conversation?: ConversationTaskProposal;
+};
+
+/** Execution is over; retry only the fenced effects, never the executor. */
+export type PendingTaskSettlement = {
+  claim: Omit<AppTaskClaim, "settlement">;
+  report: Pick<TaskCapabilityRun, "handlerResult" | "runId" | "conversation" | "acceptedLiveEventIds">;
+  acceptanceBasis: TaskAcceptanceBasis;
+  workspace?: PreparedTaskWorkspace;
 };
 
 export type NormalizedTaskHandlerResult = {
