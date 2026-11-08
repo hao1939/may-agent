@@ -1568,6 +1568,13 @@ export function observeAppTaskIntent(
   ) {
     touchResource(resource, { executionRetryAt: undefined, freshHumanInput: true });
   }
+  // An authorized specification correction can remove the exact protected-policy
+  // blocker. Keep spending and all other holds, waits and retry facts unchanged.
+  const funding = resource.status.funding;
+  if (desiredStateChanged && funding?.reason === "protected-policy" &&
+    !new TaskBudgetAdmissionStore(config.resourceStore.db).stillConstrained(
+      funding, Date.parse(now), { resource, agent },
+    )) touchResource(resource, { funding: undefined });
   recordAdmission(input.intent.id, generation);
   const relevantConditionIds = new Set([...initialConditionIds, ...(resource.status.conditionIds ?? [])]);
   commitTaskMutation(config, tree, {

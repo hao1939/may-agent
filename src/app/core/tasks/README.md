@@ -475,10 +475,21 @@ request that coverage; source labels and nested helpers cannot. Saved-result
 reads are free. A denied resume preserves its transcript and retained session.
 Admitted starts remain charged if preparation or later execution fails.
 
-Caller deferral handling, protected coordination funding, authorized grant/cap
-changes and the remaining execution reservations must be integrated before
-activation is exposed. Protected accounts currently defer until their installed
-coordination validation exists; ordinary contributions cannot inherit them.
+Caller deferrals and explicit root/sponsor funding changes share those receipts
+and canonical Task/Inbox holds. Shared execution reservations must still be
+integrated before activation is exposed.
+
+An optional private coordination funding declaration names the same exact Task,
+workflow, responsible agent and timeout as installed App coordination policy.
+Runtime preparation rejects disagreement before bootstrap or dispatch. Its
+separate UTC grant funds creation, workflow attempts and managed helpers when
+ordinary credits are exhausted. The shared eligibility rule checks immutable
+App-only creator provenance and current execution selection; claims also verify
+the actual workflow handler. New business contributions cannot inherit protected
+funds or occupy its installed Task identity. Requirements correction can clear
+its exact protected-policy hold without erasing charges or other obligations.
+Retained assignments still require explicit adoption; loading source fabricates
+no historical spending. This grants no additional control or funding capability.
 
 
 ## Work-credit admission (private integration)

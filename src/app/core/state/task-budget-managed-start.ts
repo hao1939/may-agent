@@ -57,14 +57,10 @@ export function admitManagedTaskStart(
     const paidAttempt = admission.budget.receipt({ task, kind: "attempt", attemptId: bound.attemptId });
     if (!paidAttempt || paidAttempt.credits !== 1)
       throw new Error("Budgeted managed start requires its exact paid attempt");
-    if (paidAttempt.purpose !== "ordinary")
-      throw new TaskBudgetDeferredError({
-        kind: "deferred",
-        reason: "protected-policy",
-        task,
-        root: paidAttempt.root,
-        retryAt: null,
-      });
+    if (paidAttempt.purpose !== "ordinary") {
+      const attempt = store.readAttempt(bound.attemptId)!;
+      admission.assertProtectedTask(task, store.readTask(task.taskId)!, attempt.owner, attempt.handler);
+    }
     if (input.primary && !isDeepStrictEqual(primaryScopes.get(input.primary), bound))
       throw new Error("Primary start capability does not match the live Task attempt");
     const covered =

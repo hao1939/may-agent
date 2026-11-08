@@ -7,6 +7,8 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { closeDb, getDb } from "../../../src/lib/requests.js";
 import { AppTaskResourceStore } from "../../../src/app/core/state/app-task-resource-store.js";
+import { TaskBudgetAdmissionStore } from "../../../src/app/core/state/task-budget-admission.js";
+import { adoptTaskBudget } from "../../../src/app/core/state/task-budget-funding.js";
 import { DefinitionSourceReleaseStore } from "../../../src/app/app-source-release.js";
 import {
   appTaskContext,
@@ -344,33 +346,83 @@ async function retryWhenDue(f: ReturnType<typeof fixture>, agent: string) {
   }
 }
 
-const scenarios: Record<string, () => Promise<void>> = {
-  async coordination() {
-    for (const hangs of [false, true]) {
-      const f = fixture("owner", false, true, false, true);
-      f.request.dispatch.coordination = true;
-      writeFileSync(join(f.appDir, "agents", "owner", "workflows", "probe.ts"), `
+async function runCoordination(funded: boolean) {
+  for (const hangs of [false, true]) {
+    const f = fixture("owner", false, true, false, true);
+    f.request.dispatch.coordination = true;
+    if (funded) {
+      const accounting = new TaskBudgetAdmissionStore(f.db);
+      const root = { appId: "sample", taskId: "work/one" };
+      accounting.install({
+        appId: "sample",
+        sponsor: { appId: "sample", agent: "owner" },
+        dailyCredits: 0,
+        rootCredits: 5,
+        coordination: {
+          taskId: root.taskId,
+          workflow: "probe",
+          agent: "owner",
+          maxAttemptMs: 1000,
+          dailyCredits: 2,
+          credits: 2,
+        },
+      });
+      adoptTaskBudget(f.db, {
+        task: root,
+        root: {
+          root,
+          sponsor: { appId: "sample", agent: "owner" },
+          purpose: "coordination",
+          credits: 2,
+          renewal: "utc-day",
+        },
+        adoptionId: "coordination-fixture",
+        reason: "Adopt retained coordination without historical spending",
+      });
+    }
+    writeFileSync(
+      join(f.appDir, "agents", "owner", "workflows", "probe.ts"),
+      `
         export const name = "probe";
         export const description = "Bounded coordination process-boundary probe";
         export const workspace = "shared";
         export const executionTimeoutMs = 60_000;
         export async function execute(ctx) {
-          ${hangs ? 'return new Promise(() => {});' : 'return ctx.done("Shared review", { state: "converged", summary: "Shared review", facts: [] });'}
+          ${hangs ? "return new Promise(() => {});" : 'return ctx.done("Shared review", { state: "converged", summary: "Shared review", facts: [] });'}
         }
-      `);
-      await run(f);
-      const current = f.store.readTask("work/one")!;
-      assert.equal(f.store.readTaskWorkspace("work/one", 1), undefined, "Coordination must not allocate a Task worktree");
-      if (hangs) {
-        assert.equal(current.status.executionFailures, 1);
-        assert.match(current.status.summary!, /timed out after 1000ms/,
-          "An authored timeout must not extend the installed coordination ceiling");
-      } else {
-        assert.equal(current.status.phase, "converged", JSON.stringify(current.status));
-        assert.equal(acceptedAttempt(f).handler, "workflow:probe");
-      }
+      `,
+    );
+    await run(f);
+    if (funded) {
+      const view = new TaskBudgetAdmissionStore(f.db).budget.view({ appId: "sample", taskId: "work/one" }, Date.now());
+      assert.equal(view?.purpose, "coordination");
+      assert.equal(view?.rootCharged, 1, "The worker claims once without fabricating historical creation cost");
+      assert.equal(view?.grant?.charged, 1);
+      assert.equal(
+        f.db.prepare("SELECT count(*) AS n FROM task_credit_grants WHERE purpose = 'ordinary' AND charged > 0").get()
+          ?.n,
+        0,
+      );
     }
-  },
+    const current = f.store.readTask("work/one")!;
+    assert.equal(f.store.readTaskWorkspace("work/one", 1), undefined, "Coordination must not allocate a Task worktree");
+    if (hangs) {
+      assert.equal(current.status.executionFailures, 1);
+      assert.match(
+        current.status.summary!,
+        /timed out after 1000ms/,
+        "An authored timeout must not extend the installed coordination ceiling",
+      );
+    } else {
+      assert.equal(current.status.phase, "converged", JSON.stringify(current.status));
+      assert.equal(acceptedAttempt(f).handler, "workflow:probe");
+    }
+  }
+}
+
+const scenarios: Record<string, () => Promise<void>> = {
+  coordination: () => runCoordination(false),
+  protectedCoordination: () => runCoordination(true),
   async workloadFeedback() {
     const f = fixture("owner");
     const previousPilot = process.env.MAY_TASK_WORKLOAD_FEEDBACK_APP;

@@ -5,6 +5,7 @@ import { stateTransaction } from "../../../lib/db/transaction.js";
 import type { AppTaskResourceMutation } from "./app-task-resource-store.js";
 import type { TaskTree } from "../tasks/app-task-store.js";
 import type { AppTaskResource } from "../tasks/app-task-state.js";
+import { matchesTaskCoordination, type TaskCoordinationPolicy } from "../tasks/task-coordination-policy.js";
 import {
   TaskBudgetStore,
   utcBudgetPeriod,
@@ -24,6 +25,8 @@ export type InstalledTaskBudgetPolicy = {
   rootCredits: number;
   /** Exact installed standing assignments; ordinary roots otherwise have lifetime caps. */
   standing?: ReadonlyArray<{ taskId: string; credits: number }>;
+  /** Exact installed coordination declaration and its separate protected grant. */
+  coordination?: TaskCoordinationPolicy & { agent: string; dailyCredits: number; credits: number };
 };
 /** Host-private installation command. It changes the current UTC grant and
  * future daily default together, without changing root caps or past grants. */
@@ -80,14 +83,28 @@ export class TaskBudgetAdmissionStore {
       Buffer.byteLength(policy.sponsor.agent) > 1024
     )
       throw new Error("Budget installation requires exact App and sponsor identities");
-    const values = [policy.dailyCredits, policy.rootCredits, ...(policy.standing ?? []).map((item) => item.credits)];
+    const coordination = policy.coordination;
+    if (
+      coordination &&
+      ([coordination.taskId, coordination.workflow, coordination.agent].some(
+        (value) => typeof value !== "string" || !value || value !== value.trim() || Buffer.byteLength(value) > 1024,
+      ) ||
+        !Number.isSafeInteger(coordination.maxAttemptMs) ||
+        coordination.maxAttemptMs < 1_000 || coordination.maxAttemptMs > 120_000)
+    )
+      throw new Error("Protected funding requires exact bounded coordination eligibility");
+    const values = [
+      policy.dailyCredits, policy.rootCredits, ...(policy.standing ?? []).map((item) => item.credits),
+      ...(coordination ? [coordination.dailyCredits, coordination.credits] : []),
+    ];
     if (values.some((value) => !Number.isSafeInteger(value) || value < 0))
       throw new Error("Invalid installed credit allowance");
     const tasks = policy.standing?.map((item) => item.taskId) ?? [];
     if (
       tasks.length > 128 ||
       tasks.some((id) => !id || id !== id.trim() || Buffer.byteLength(id) > 1024) ||
-      new Set(tasks).size !== tasks.length
+      new Set(tasks).size !== tasks.length ||
+      (coordination && tasks.includes(coordination.taskId))
     )
       throw new Error("Standing allowances require unique exact Task identities");
     stateTransaction(this.db, () => {
@@ -113,6 +130,30 @@ export class TaskBudgetAdmissionStore {
   policy(appId: string): InstalledTaskBudgetPolicy | null {
     const row = this.db.prepare("SELECT policy_json FROM task_budget_policies WHERE app_id = ?").get(appId);
     return row ? (JSON.parse(row.policy_json as string) as InstalledTaskBudgetPolicy) : null;
+  }
+
+  /** Loaded App source must agree with installation authority before dispatch. */
+  assertCoordinationPolicy(appId: string, agent: string, declared: TaskCoordinationPolicy | undefined): void {
+    const installed = this.policy(appId)?.coordination;
+    if (!installed) return;
+    const { agent: owner, dailyCredits: _dailyCredits, credits: _credits, ...eligibility } = installed;
+    if (agent !== owner || !isDeepStrictEqual(eligibility, declared))
+      throw new Error("Protected funding differs from the installed App coordination declaration");
+  }
+
+  /** Recheck the current resource and actual attempt owner under start admission. */
+  assertProtectedTask(task: BudgetTaskRef, resource: AppTaskResource, agent: string, handler?: string): void {
+    const policy = this.policy(task.appId);
+    const rootRef = this.budget.binding(task);
+    const root = rootRef ? this.budget.root(rootRef) : null;
+    if (
+      !policy?.coordination || !root || !isDeepStrictEqual(root.root, task) ||
+      root.purpose !== "coordination" || root.renewal !== "utc-day" ||
+      !isDeepStrictEqual(root.sponsor, policy.sponsor) ||
+      (handler !== undefined && handler !== `workflow:${policy.coordination.workflow}`) ||
+      !matchesTaskCoordination(task.appId, policy.coordination.agent, policy.coordination, resource, agent)
+    )
+      this.defer(task, "protected-policy", rootRef);
   }
 
   setDailyCredits(
@@ -225,12 +266,16 @@ export class TaskBudgetAdmissionStore {
 
   private renew(root: BudgetRoot, now: number): void {
     const policy = this.policy(root.sponsor.appId);
-    if (root.purpose === "ordinary" && policy && isDeepStrictEqual(root.sponsor, policy.sponsor))
+    if (
+      policy && isDeepStrictEqual(root.sponsor, policy.sponsor) &&
+      (root.purpose === "ordinary" ||
+        (policy.coordination && root.root.appId === policy.appId && root.root.taskId === policy.coordination.taskId))
+    )
       this.budget.grant({
         sponsor: root.sponsor,
         purpose: root.purpose,
         period: utcBudgetPeriod(now),
-        credits: policy.dailyCredits,
+        credits: root.purpose === "ordinary" ? policy.dailyCredits : policy.coordination!.dailyCredits,
       });
   }
 
@@ -239,7 +284,7 @@ export class TaskBudgetAdmissionStore {
     const rootRef = this.budget.binding(task);
     if (!rootRef) this.defer(task, "adoption-required", task);
     const root = this.budget.root(rootRef)!;
-    if (root.purpose !== "ordinary") this.defer(task, "protected-policy", rootRef);
+    // Managed admission already rechecked the exact protected Task and live actor.
     this.renew(root, now);
     const charged = this.budget.charge({ task, kind: "helper", invocationId }, now);
     if (charged.kind === "deferred")
@@ -249,7 +294,21 @@ export class TaskBudgetAdmissionStore {
 
   /** Recheck under the transaction that records a hold, avoiding lost funding
    * or adoption wakes between a rolled-back admission and its saved constraint. */
-  stillConstrained(constraint: TaskFundingConstraint, now = Date.now()): boolean {
+  stillConstrained(
+    constraint: TaskFundingConstraint,
+    now = Date.now(),
+    current?: { resource: AppTaskResource; agent: string },
+  ): boolean {
+    if (constraint.reason === "protected-policy" && current &&
+      current.resource.metadata.id === constraint.task.taskId) {
+      try {
+        this.assertProtectedTask(constraint.task, current.resource, current.agent);
+        return false;
+      } catch (error) {
+        if (!(error instanceof TaskBudgetDeferredError)) throw error;
+        return true;
+      }
+    }
     if (constraint.reason === "adoption-required") return !this.budget.binding(constraint.root ?? constraint.task);
     if (constraint.reason === "sponsor-policy") return !this.policy(constraint.policyAppId ?? constraint.task.appId);
     if (constraint.reason === "sponsor-credit" && constraint.sponsor && constraint.purpose) {
@@ -274,9 +333,12 @@ export class TaskBudgetAdmissionStore {
     const creatorTask = creator.taskId ? { appId: creator.appId, taskId: creator.taskId } : null;
     const creatorRoot = creatorTask ? this.budget.binding(creatorTask) : null;
     const policy = this.policy(creator.appId);
+    const destinationPolicy = this.policy(appId);
     // Unconfigured installations preserve their existing behavior. A funded
     // creator still carries its account into an unconfigured destination App.
-    if (!policy && !this.policy(appId) && !creatorRoot && !this.budget.binding(task)) return;
+    if (!policy && !destinationPolicy && !creatorRoot && !this.budget.binding(task)) return;
+    if (destinationPolicy?.coordination?.taskId === task.taskId && (creator.appId !== appId || creatorTask))
+      this.defer(task, "protected-policy", task);
     if (creatorTask) {
       if (!creatorRoot) this.defer(task, "adoption-required", creatorTask);
       if (this.budget.root(creatorRoot)!.purpose !== "ordinary")
@@ -284,17 +346,27 @@ export class TaskBudgetAdmissionStore {
       this.budget.bind(task, creatorRoot);
     } else if (!this.budget.binding(task)) {
       if (!policy) this.defer(task, "sponsor-policy", null, creator.appId);
+      const coordination =
+        appId === policy.appId && policy.coordination?.taskId === task.taskId ? policy.coordination : undefined;
+      if (
+        coordination && !matchesTaskCoordination(appId, coordination.agent, coordination, resource,
+          resource.spec.agent ?? resource.spec.owner ?? coordination.agent)
+      )
+        this.defer(task, "protected-policy", task);
       const standing = policy.standing?.find((item) => item.taskId === task.taskId);
       this.budget.registerRoot({
         root: task,
         sponsor: policy.sponsor,
-        purpose: "ordinary",
-        credits: standing?.credits ?? policy.rootCredits,
-        renewal: standing ? "utc-day" : "lifetime",
+        purpose: coordination ? "coordination" : "ordinary",
+        credits: coordination?.credits ?? standing?.credits ?? policy.rootCredits,
+        renewal: coordination || standing ? "utc-day" : "lifetime",
       });
     }
     const root = this.budget.root(this.budget.binding(task)!)!;
-    if (root.purpose !== "ordinary") this.defer(task, "protected-contribution", root.root);
+    if (root.purpose !== "ordinary") {
+      if (creatorTask) this.defer(task, "protected-contribution", root.root);
+      this.assertProtectedTask(task, resource, resource.spec.agent ?? resource.spec.owner ?? policy?.coordination?.agent ?? "");
+    }
     this.renew(root, now);
     const charged = this.budget.charge({ task, kind: "task" }, now);
     if (charged.kind === "deferred")
@@ -393,7 +465,7 @@ export class TaskBudgetAdmissionStore {
       )
         throw new Error("Budgeted attempt requires its exact resource claim");
       const root = this.budget.root(rootRef)!;
-      if (root.purpose !== "ordinary") this.defer(task, "protected-policy", rootRef);
+      if (root.purpose !== "ordinary") this.assertProtectedTask(task, write, attempt.owner, attempt.handler);
       this.renew(root, now);
       const charged = this.budget.charge({ task, kind: "attempt", attemptId: attempt.metadata.id }, now);
       if (charged.kind === "deferred")

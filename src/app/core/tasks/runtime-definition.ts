@@ -5,6 +5,7 @@ import { join, relative, resolve } from "node:path";
 import { getDb } from "../../../lib/db/connection.js";
 import type { AppRegistry, AppRegistrySnapshot } from "../apps/registry.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
+import { TaskBudgetAdmissionStore } from "../state/task-budget-admission.js";
 import { appTaskContext } from "./app-task-reconciler.js";
 import { loadProjectReadModel, projectRuntimePaths } from "./app-task-runtime-state.js";
 import type { TaskTree } from "./app-task-store.js";
@@ -101,6 +102,9 @@ export function syncProjectReadModel(
 
 function validatePreparedAppTaskRuntime(descriptor: AppTaskRuntimeDescriptor): void {
   const { app, id } = descriptor;
+  new TaskBudgetAdmissionStore(descriptor.resourceStore.db).assertCoordinationPolicy(
+    id, descriptor.agent, app.tasks?.coordination,
+  );
   const concurrency = app.tasks?.maxConcurrent ?? 1;
   if (!Number.isInteger(concurrency) || concurrency <= 0) {
     throw new Error(`App ${id} task maxConcurrent must be a positive integer`);
@@ -120,6 +124,7 @@ function discoverAppTaskResourceStore(
   const appId = app.id;
   if (!persistDir) throw new Error(`App ${appId} task runtime requires the Host persistence directory`);
   const db = getDb(persistDir);
+  new TaskBudgetAdmissionStore(db).assertCoordinationPolicy(appId, configuredAppAgent(app, appDir), app.tasks?.coordination);
   const active = AppTaskResourceStore.activeFromDb(db, appId);
   if (active) return active;
   if (existsSync(projectRuntimePaths(appDir).taskStatePath)) {
