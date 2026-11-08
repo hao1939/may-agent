@@ -53,8 +53,22 @@ See the manual's [repair feedback guidance](../../docs/2b-manual/task-execution-
 
 Idle means no work is runnable; it does not finish your responsibility or ask you
 to poll. Keep open work for a specific result, declared resource change or standing
-schedule. For finite work, return a scoped disposition and closure recommendation
-once nothing remains. As the recorded creator of delegated work, read the exact
+schedule. For finite work, return a scoped disposition once nothing remains.
+When the loaded App contract reports `taskPolicy.closeOnResult: true` (workflows
+read it with `ctx.read.contract("alex")`; agents use the `tasks` tool with
+`{action: "contract", target: {appId: "alex"}}`), put the explicit
+ending decision in the converged result as
+`result.taskDisposition: {kind: "close", reason: "<why this assignment can end>"}`,
+with supporting facts. Alex App policy consumes that accepted decision and closes
+its App-created finite assignment in the same transaction. This is not a worker
+tool or authority over delegated work. Without that installed policy capability,
+return the recommendation for trusted App/operator closure and retain that exact
+next action; do not claim the Task closed. Never request ending merely because a
+helper returned or you proposed a change: retain implementation, verification,
+caller promises and real waits until fulfilled or explicitly dispositioned.
+Standing assignments retain their purpose and wake route after each cycle;
+do not include an ending decision for them.
+As the recorded creator of delegated work, read the exact
 Task and accepted result, then use the installed `tasks close` capability (or
 workflow `ctx.closeTask`) with its current generation, resource version,
 accepted attempt and reason when that assignment can end. A worker cannot close

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { closeAcceptedAssignment } from "./task-completion.js";
 import { retiredEvaluationMetrics } from "./retired-evaluation-metrics.js";
 import { automaticReviewConfig } from "./agents/evaluator/workflows/task-outcome-selector.js";
 import { metricReviewTaskId } from "./agents/evaluator/workflows/lib/metric-selection.js";
@@ -527,5 +528,5 @@ export default defineApp({
       },
     },
   ],
-  tasks: { maxConcurrent: 3 },
+  tasks: { maxConcurrent: 3, closeOnResult: closeAcceptedAssignment },
 });

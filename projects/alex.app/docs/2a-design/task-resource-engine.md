@@ -75,6 +75,21 @@ accepted decisions, not new Task modes, stored phases or required schema fields.
 An open reusable Conversation has a standing input route; a finished finite
 report review does not acquire one merely because someone could ask again.
 
+Normal completion must connect the owner's ending decision to its authorized
+effect. For App-created finite assignments, the opt-in `tasks.closeOnResult`
+App callback consumes the exact accepted result and returns a closure reason or
+null. Alex requires an explicit evidenced `result.taskDisposition` with
+`kind: "close"`, and excludes standing audit/research cycles and evaluator
+procedures. The Host applies this policy only to assignments whose recorded
+creator is that same App without a creating Task; delegated and unattributed
+historical assignments retain their existing closure authority. Result and
+closure commit atomically after current input/wait guards, preserving the caller
+answer and accepted attempt. `converged` alone still leaves a Task idle.
+
+Historical idle records need a one-off resumable evidence review through the
+existing guarded closure controls; do not rerun their workers just to manufacture
+a new completion result. No permanent backlog poller or new Task state is needed.
+
 When none of these responsibilities applies, the owner reviews the finite
 assignment and its considered inputs: accept fulfillment, retain an exact
 unresolved obligation, transfer remaining work to an accountable owner with a
