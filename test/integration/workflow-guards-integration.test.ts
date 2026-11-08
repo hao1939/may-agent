@@ -6,7 +6,7 @@
  * demands (warn, run_step, block) are resolved during executeWorkflow.
  */
 
-import { describe, test, expect } from "bun:test";
+import { afterEach, describe, test, expect } from "bun:test";
 import { join, dirname } from "node:path";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -61,13 +61,21 @@ function createMockManager(callAgentImpl?: (name: string, task: string, opts?: a
   };
 }
 
+const runtimeRoots: string[] = [];
+afterEach(() => {
+  for (const root of runtimeRoots.splice(0)) {
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 function createRuntimeCtx(events: unknown[] = []) {
+  const root = mkdtempSync(join(tmpdir(), "may-workflow-guard-runtime-"));
+  runtimeRoots.push(root);
   return {
     emit: (event: unknown) => events.push(event),
     dispatchEvent: () => {},
-    getDb: () => {
-      throw new Error("getDb unavailable in guard integration test");
-    },
+    getDb: () => getDb(root),
     query: {},
     log: () => {},
     notify: () => {},
