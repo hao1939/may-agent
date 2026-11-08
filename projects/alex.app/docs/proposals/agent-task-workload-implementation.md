@@ -310,6 +310,20 @@ workflows that currently depend on inline helpers.
 Retain trusted scheduling eligibility in reservations so background helpers
 cannot consume the protected place merely by bypassing the parent queue.
 
+Use the executing definition's resolved installation-relative directory for the
+recipient-agent identity. Aliases selecting the same owner share its limit, and
+the claim and primary start must use the same pinned definition generation.
+Programmatic definitions need an explicit stable Host identity; an alias or an
+absolute source-release path cannot supply it. Resumed sessions retain their
+recorded owner even when current instructions change.
+
+Count live root usage through canonical Task account bindings. Explicitly
+adopting a running historical Task includes its existing attempt and helpers
+in the root's occupied capacity in the same commit, retaining their original
+admission receipts. Adoption may leave usage above the installed limit; admit
+no additional execution until cleanup brings it below the limit. Adoption does
+not terminate existing work or rewrite its original spending.
+
 The initial rule has no slot lending: an inline helper with no available place
 gets a typed not-started admission result rather than waiting while its caller
 holds the only place. Adapt the SDK and caller handling before enabling this
@@ -661,8 +675,8 @@ share the existing Task-read snapshot; observing renewal writes no grants and
 never resets finite root spending. Missing policy/bindings remain unavailable.
 Read/accounting/tool/context/SDK checks passed **95 tests / 644 assertions**; the
 final owning projection file passed **20 / 84**. Host/SDK types, boundary and lint
-passed. Full local CI, hosted checks and independent review remain pending for
-this new revision.
+passed. Hosted Quality and Container passed the same revision. No full local
+gate has run on that head; independent review remains required.
 
 The paired pilot includes changed ordinary funding and blocker facts in its
 review fingerprint. A new regression reproduced the previous behavior of
@@ -684,3 +698,33 @@ unchanged targeted diagnostic (**3 tests / 142 assertions**), without proving a
 fix. Those results do not replace either failed full gate. The isolated
 background-output correction #416 passed hosted Quality and Container; Container
 correctly treated the fixture-only diff as requiring no image build.
+
+The private shared-execution foundation is Host
+[PR #418](https://github.com/hao1939/may-agent/pull/418), `3c8df6de55`, stacked on
+#417. SQLite admission atomically obtains the applicable Host, resolved
+recipient-agent and root places, preserving the shared foreground place and
+Host size-one behavior. Exact operation receipts fence ownership, replay and
+confirmed release. Two new regressions first reproduced release rejecting a
+valid composite identity and adoption omitting already-live execution. Live
+root counts now follow canonical bindings through indexed active reservations
+and keyed lookups, retaining immutable admission evidence and rollback.
+Accounting, funding and schema owners passed **62 tests / 397 assertions**.
+The frozen full gate passed **4,078 tests / 3 skipped / zero failures / 23,742
+assertions across 353 files**, including Host/SDK types, boundary and lint.
+Hosted Quality and Container passed that revision; independent review remains.
+This foundation has no runtime consumer, fairness queue or production activation.
+The caller still must integrate real claims, helpers, confirmed descendant
+cleanup and indexed constraint wakes before it enforces execution bounds.
+
+The recipient-identity boundary is isolated in Host
+[PR #419](https://github.com/hao1939/may-agent/pull/419), `0b82725297`, stacked on
+#418. One resolver supplies directory or explicit programmatic installation
+identity to the pinned Task adapter and reservation keys. A regression reproduced
+resuming a programmatic session under a replacement owner using the same name.
+Sessions now retain the explicit owner; denial preserves metadata and transcript,
+and the original owner can resume with updated instructions. Pinned-alias,
+reservation, resume and cleanup checks passed **109 tests / 589 assertions**;
+managed-budget and session-lifecycle boundaries passed **41 / 249**. Host/SDK
+types, boundary and lint passed. The full local gate is running on its frozen
+head; hosted checks and independent review remain required. These source tests
+do not establish runtime execution enforcement or model-backed business behavior.
