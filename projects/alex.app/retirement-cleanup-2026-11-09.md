@@ -171,3 +171,22 @@ census, an offline backup, or production application. PR #410 requires review an
 merge before use. Then stop the Host and workers, verify the backup and exact
 current preimages, prepare the final plan and run the offline procedure. The
 original plan remains blocked. Production state remains unchanged by this work.
+
+A further observed-generation review of PR #410 supersedes the successful
+rehearsal's applicability. Requirements can advance while a Task retains an
+older accepted observation, and canonical cancellation replaces its projected
+summary, response and result. Source `e505000123` checks the caller's answer at
+`status.observedGeneration` and requires the exact projected payload to survive
+on the accepted observed attempt before any planned Task cancellation. This
+also protects newer outcomes without answering an older caller by implication.
+
+The saved candidate now correctly refuses: nine historical Task projections
+lack sufficient retained accepted evidence (one waiting, six attention, two
+converged). Separate exact outcome preservation/cutover is required; do not
+manufacture acceptance or discard those payloads to make retirement pass.
+`state-admitted-withdrawal-observed-generation-rehearsal-receipt.json` records
+both dry-run and in-memory apply refusal, with every loaded table unchanged.
+The saved census remains 66 nonterminal Tasks, four unfinished inputs and 41
+Conditions. Previous successful rehearsal receipts remain historical evidence.
+The candidate remains blocked, and production state remains unchanged by this
+review. This is still a saved-snapshot finding, not a fresh live census.
