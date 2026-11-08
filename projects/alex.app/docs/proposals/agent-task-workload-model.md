@@ -17,7 +17,8 @@ The initial charging, renewal and coordination choices below are proposed refine
 **Implementation status:** Incremental source implementation underway. Agent
 ownership, creator-controlled revision and closure, bounded attempts and Host
 concurrency exist. The shared accounting foundation merged; admission, seed and
-managed-start integration and workload feedback are under verification/review,
+managed starts, caller deferrals, authorized funding changes and protected
+coordination integration are under verification/review,
 as recorded in the implementation approach. Production budget activation and
 behavioral acceptance remain pending. Current durable admission still requires an App. The
 [standalone-agent proposal](standalone-agent-tasks.md) owns that addressing change.

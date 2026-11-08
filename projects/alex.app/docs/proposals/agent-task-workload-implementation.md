@@ -11,9 +11,11 @@ and [one authority for each resource](../1-principles/core-principles.md#one-aut
 consumption of published finite assessments is implemented and verified locally.
 Scoped feedback, dispatch observations and bounded coordination are in Host
 review. Shared credit accounting foundations merged in Host #405. Creation,
-claims, authored seeds and managed starts have isolated integration increments
-under verification and review; no production activation is exposed. Capacity extension
-remains proposed. No agent
+claims, authored seeds, managed starts, caller deferrals and authorized root/sponsor
+funding changes have isolated integration increments under verification and review.
+Protected coordination funding now has a separate integration draft. Shared
+execution reservations and complete constraint feedback remain; no production
+activation is exposed. No agent
 activation or rollout is established by these source checks.
 
 Source reviewed: Host #398 merge `88a98be236baf07bfcf100208cfb0dc1589dfa06`.
@@ -523,9 +525,10 @@ and Container also passed. This is [PR #409](https://github.com/hao1939/may-agen
 independent review and the caller-deferral increment still remain. Admitted
 starts stay charged if preparation later fails.
 
-Structured helper caller deferrals, protected coordination funding, authorized
-cap/grant changes and additional execution reservations remain. No production
-installation switch, live activation or behavioral acceptance is established.
+Caller deferrals and authorized cap/grant changes now have separate source
+increments, with protected coordination integration following below. Shared
+execution reservations remain. No production installation switch, live activation
+or behavioral acceptance is established.
 
 
 Independent review of #406 identified four admission/recovery gaps. Revision
@@ -560,3 +563,86 @@ unconfigured runtime attachment. Those failed diagnostics were retained.
 A full gate is running on the clean, frozen integrated revision `edb34aa0f7`;
 current hosted checks and renewed independent review remain required. Production
 activation remains unavailable.
+
+
+The bounded-history fixture correction in Host
+[PR #411](https://github.com/hao1939/may-agent/pull/411) advanced to `e2a051f173`.
+Its clean full gate passed **3,967 tests / 3 skipped / zero failures / 23,070
+assertions across 345 files**. Hosted Quality and Container passed the same head;
+independent review remains required. This supersedes that draft's earlier gate
+status without claiming the separate Conversation ordering issue was solved.
+
+Managed-helper caller deferrals are isolated in Host
+[PR #412](https://github.com/hao1939/may-agent/pull/412), `14928e1901`, stacked on
+#409. A denied start returns structured not-started data without inventing a
+helper identity; a denied resume cannot fall through to a fresh call. Unhandled
+helper funding denial drains the enclosing execution and retains pending input,
+workspace, paid attempt and workflow evidence in the normal funding hold. It
+consumes no executor retry. Cancellation and revised requirements fence late
+deferrals, and rollback restores claim/recovery facts together. Final SDK and
+owning cases passed **13 tests / 104 assertions**; the workflow/model boundaries
+passed **40 / 187**. The first full run retained a missing intentional SDK export
+snapshot and a Conversation steering last-message failure. The export snapshot
+is corrected. The frozen corrected gate passed **4,008 tests / 3 skipped / zero
+failures / 23,380 assertions across 348 files**; hosted Quality and Container
+passed. A controlled Conversation diagnostic did not reproduce its earlier
+failure, so no Conversation fix is established by this passing run.
+
+Root allowance amendments are Host
+[PR #413](https://github.com/hao1939/may-agent/pull/413), `2ebc2aade1`, stacked
+independently on #406. One private expected-account command and durable receipt
+preserve spending and attribution, reject stale/reused commands and caps below
+spending, and wake exact cross-App Task/Inbox root-credit holds. Replay cannot
+undo a later amendment. Historical adoption receipt replay now preserves a
+subsequently amended cap without applying funding or wakes again. The initial
+full gate retained **3,999 passed / 3 skipped / 2 failed / 23,298 assertions across
+347 files**. One failure demonstrated a new expression index parsing malformed
+unrelated Task JSON; guarded index and query predicates fix that compatibility
+defect. Affected funding and scoped diagnostics then passed **53 tests / 312
+assertions**. The other Conversation last-message failure remains unexplained.
+Hosted Quality and Container pass the guarded revision. Its new frozen full local gate retained **3,998 passed / 3 skipped / 3 failed /
+23,246 assertions across 347 files**: a four-second mechanical-recovery fixture
+timeout, a metric pass returning unknown after a sample, and restored-executor
+retry eligibility. Those failures remain unexplained; targeted passes do not
+erase them.
+
+Sponsor daily amendments are Host
+[PR #414](https://github.com/hao1939/may-agent/pull/414), `e499a6112d`, stacked on
+#413. An exact installed-policy command changes the current UTC ordinary grant
+and future daily default together, preserving charged credits, historical grants,
+root caps and protected funds. It wakes only matching ordinary sponsor-credit
+Task/Inbox holds; replay after restart or midnight changes no grants or wakes.
+Accounting/funding owners passed **41 tests / 239 assertions**; funding plus
+scoped diagnostics passed **58 / 344**. Types, boundary and lint passed. The root
+index-guard merge retained the identical tested tree
+`524a3ec7e89ec21c07fc0bd527bda8ec2e9b79a5`. Hosted Container passed, but Quality
+retained **4,005 passed / 3 skipped / 1 failed / 23,337 assertions across 347
+files**: the existing background-exec line-limit fixture read the no-output
+placeholder after a fixed 200 ms startup sleep. A controlled 300 ms startup
+reproduced that exact failure on main. Separate test-only Host [PR #416](https://github.com/hao1939/may-agent/pull/416),
+`765a81b8e4`, now awaits the real child's output-drained close event. Its owning
+**15 tests / 28 assertions** and static checks passed. This is not a green full gate for #414.
+
+Protected coordination funding is Host
+[PR #415](https://github.com/hao1939/may-agent/pull/415), `f5bf427c9e`, integrating
+#414 with #412 and #404. One shared exact eligibility function serves reserve
+dispatch and protected funding. The installed Task, workflow, owner and timeout
+must agree with loaded App source before bootstrap or dispatch. The existing
+transaction charges protected creation, workflow attempts and helpers even when
+ordinary funds are exhausted. Business contributions cannot spend those funds or
+occupy the installed protected Task identity. Claims verify the actual workflow
+handler. A further regression reproduced a stale policy hold after correcting
+requirements; the normal fenced mutation now clears only that exact hold after
+rechecking eligibility, without renewing spending or dropping obligations.
+Owning accounting, lifecycle and scheduling checks passed **282 tests / 1,743
+assertions**. Two real worker scenarios also passed, covering ordinary and
+protected completion and the installed timeout ceiling. Host/SDK types, boundary
+and lint passed. The first regressions failed before integration; one invalid
+workflow-plus-executor fixture was corrected to exercise valid alternate
+selection. Full local CI, current hosted checks and independent review remain.
+
+The next implementation stage is shared Host/recipient-agent/root execution
+reservations, including helpers and confirmed descendant cleanup. Complete
+budget/constraint feedback, operation-specific resource blockers, explicit pilot
+adoption and business-behavior evidence remain. Source publication alone does
+not establish activation, automatic Task closure or improved model decisions.
