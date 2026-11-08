@@ -1,3 +1,4 @@
+import type { PendingTaskSettlement } from "./result.js";
 import type { TaskFundingConstraint } from "../state/task-budget-admission.js";
 import type { TaskChangeReceipt, TaskView } from "@may-agent/sdk";
 import type { Condition, ResourceCreator, TaskAcceptanceBasis, TaskAttempt, TaskIntent } from "@may-agent/sdk";
@@ -191,6 +192,8 @@ export type AppTaskAttempt = {
   failureReason?: string;
   /** Immutable evidence of reaching the App's automatic execution limit. */
   retryExhausted?: AppTaskRetryExhaustion;
+  /** The executor exited; only these exact effects await resource admission. */
+  pendingSettlement?: PendingTaskSettlement;
   /** Retained separately from acceptance so recovery can reuse execution evidence. */
   unacceptedResult?: NonNullable<TaskAttempt["previousAttempt"]>["unacceptedResult"];
   sessionId?: string;

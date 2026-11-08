@@ -1704,6 +1704,8 @@ export class AppTaskResourceStore {
         `UPDATE app_tasks
          SET next_check_at = MAX(?, COALESCE(json_extract(resource_json, '$.status.executionRetryAt'), ?))
          WHERE app_id = ? AND phase = 'waiting'
+           AND (json_extract(resource_json, '$.status.funding') IS NULL
+             OR json_extract(resource_json, '$.status.funding.retryAt') <= ?)
            AND (next_check_at IS NULL OR next_check_at > MAX(?,
              COALESCE(json_extract(resource_json, '$.status.executionRetryAt'), ?)))
            AND NOT EXISTS (
@@ -1718,7 +1720,7 @@ export class AppTaskResourceStore {
                AND conditions.state <> 'true'
            )`,
       )
-      .run(now, now, this.appId, now + CONDITION_RECOVERY_INTERVAL_MS, now).changes;
+      .run(now, now, this.appId, now, now + CONDITION_RECOVERY_INTERVAL_MS, now).changes;
   }
 
   setRecoveryState(
