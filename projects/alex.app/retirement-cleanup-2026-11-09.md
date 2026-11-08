@@ -141,12 +141,14 @@ generations; none has a selected accepted answer. The saved snapshot also has
 no converged accepted attempt or completion receipt at those admitted generations.
 The candidate decision withdraws these obsolete callers **unfulfilled**, retaining
 their original requirements, missing proof and independent current obligations.
-It does not choose an alias or substitute a later Task's result.
+It does not choose an alias or substitute an unrelated later Task's result.
 
 [Host PR #410](https://github.com/hao1939/may-agent/pull/410) adds explicit
 `admissionWithdrawal` with the complete raw admission preimages. Existing plans
-still refuse admissions. Any bound answer or completion evidence at an admitted
-generation requires separate exact answer settlement. All admission bytes,
+still refuse admissions. Bound answers, newer accepted attempts explicitly scoped
+to the admission, and completion evidence at the admitted generation require
+separate exact answer settlement. A converged legacy Task at that generation
+also blocks withdrawal when it retains the only answer payload. All admission bytes,
 accepted attempts, completion receipts and prior terminal decisions remain intact.
 
 The private `retirement-plan.admitted-withdrawal.candidate.json` contains 66 Tasks,
@@ -157,6 +159,12 @@ completion, prior-terminal and current May evidence. Dry-run restored every load
 table; replay made no changes. The new
 `state-admitted-withdrawal-rehearsal-receipt.json` records that trial separately
 from the original refused plan and superseded trial.
+
+PR review added the newer scoped-answer and legacy Task-only answer guards.
+Auditing the saved snapshot found neither condition among the eleven admission
+preimages. The corrected in-memory rehearsal still reaches the same terminal
+census and protected-evidence hash; its separate
+`state-admitted-withdrawal-review-rehearsal-receipt.json` preserves that result.
 
 This is a candidate based on the saved preparation snapshot, not a fresh live
 census, an offline backup, or production application. PR #410 requires review and
