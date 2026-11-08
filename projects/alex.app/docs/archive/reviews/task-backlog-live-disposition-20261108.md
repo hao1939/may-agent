@@ -149,6 +149,18 @@ Focused mapping, disposition-reader and selector checks passed: **74 tests,
 0 failures, 821 expectations**. This repairs admission after closure; it does
 not consume or close future accepted review results.
 
+Source commit `6a7e49843c5d2c8cccd7615b991472856d43f8d4` was activated through
+the supported pinned App-definition reload at 2026-11-08T12:09:27.697Z.
+Request `finite-review-admission-20261108-6a7e49843c` was accepted as event
+`6691799`; correlated completion `6691805` reported `ok: true`, the same full
+source commit and three task-enabled Apps. The active source link and release
+manifest match that commit. Loaded Alex `app.ts` matches the committed bytes,
+SHA-256 `11dfcf174a51a1cae5351cf8353d72e1ba6408c17472945c16e7d2e6a67fffaf`.
+No Host binary deployment or restart was needed. Existing executions retain
+their selected snapshot; the reload establishes source for newly selected work.
+Exact request, admission, completion and source verification are retained in
+the private evidence directory as `reload-*.json`.
+
 The required `bun run check:may-design` passed design integrity and executable
 examples, but the canonical-App check still fails on the existing retired aliases
 `evaluation.app`, `gym.app` and `may-agent.app`, which lack canonical `app.ts`.

@@ -139,8 +139,9 @@ finite results still need an integrated authorized creator/App disposition path.
 The current App policy has no trusted post-result closure hook, and the outcome
 selector commissions reviews without consuming their completion for closure.
 The scoped reader and installed operator control enabled this cleanup; neither
-is an automatic result consumer. A narrow review-admission identity correction
-is prepared so later admissions do not select closed finite reviews. That
+is an automatic result consumer. The narrow review-admission identity correction
+is live at App source `6a7e49843c5d2c8cccd7615b991472856d43f8d4`, so later
+admissions do not select closed finite reviews. That
 correction alone does not prevent the backlog from recurring. Broader budgets
 and feedback remain deferred until result-to-disposition behavior is demonstrated.
 
