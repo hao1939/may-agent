@@ -2,8 +2,9 @@ import { isDeepStrictEqual } from "node:util";
 import { createHash } from "node:crypto";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import type { AppTaskAdmission, AppTaskContext } from "../tasks/app-task-store.js";
+import type { AppTaskResource } from "../tasks/app-task-state.js";
 import { cancelAppTask } from "../tasks/app-task-reconciler.js";
-import { parseTaskResource } from "./app-task-resource-store.js";
+import { parseTaskResource, type AppTaskResourceStore } from "./app-task-resource-store.js";
 
 /** Private operator data: preserve the reviewed plan and a verified offline backup. */
 export type RetiredAppRetirementPlan = {
@@ -34,6 +35,45 @@ function required(value: unknown, field: string): asserts value is string {
 function sameIds(actual: string[], expected: string[], label: string) {
   if (new Set(expected).size !== expected.length || !isDeepStrictEqual(actual.sort(), [...expected].sort()))
     throw new Error(`${label} census changed or plan has duplicate identities`);
+}
+
+/** Read-only preservation proof, also used to audit private offline plans. */
+export function assertRetainedRetirementOutcome(store: AppTaskResourceStore, task: AppTaskResource): void {
+  const { status } = task;
+  const payloadFields = ["summary", "response", "result"] as const;
+  // Phase and missing references cannot prove there is no historical outcome.
+  // Each projected value that cancellation replaces needs its own retained copy.
+  const requiresEvidence =
+    status.phase === "converged" ||
+    status.phase === "waiting" ||
+    status.observedAttemptId !== undefined ||
+    payloadFields.some((field) => status[field] !== undefined);
+  if (!requiresEvidence) return;
+  const observed = status.observedAttemptId ? store.readAttempt(status.observedAttemptId) : undefined;
+  const accepted = observed?.acceptedResult;
+  if (
+    !observed ||
+    observed.metadata.id !== status.observedAttemptId ||
+    observed.taskId !== task.metadata.id ||
+    !Number.isSafeInteger(observed.taskGeneration) ||
+    observed.taskGeneration < 1 ||
+    // Controller acknowledgement can rewind on explicit retry; the accepted
+    // attempt, not observedGeneration, owns the retained payload's generation.
+    observed.taskGeneration > task.metadata.generation ||
+    observed.state !== "completed" ||
+    !accepted ||
+    (status.phase === "converged" && accepted.state !== "converged") ||
+    payloadFields.some(
+      (field) =>
+        status[field] !== undefined &&
+        !isDeepStrictEqual(status[field], accepted[field]) &&
+        // The exact attempt also retains canonical controller diagnostics, such
+        // as reportAppTaskFailure's decorated summary. This is preservation, not
+        // acceptance or caller fulfillment; never whitelist a text prefix.
+        !(field === "summary" && status.summary === observed.summary),
+    )
+  )
+    throw new Error(`Task outcome requires retained accepted evidence before cancellation: ${task.metadata.id}`);
 }
 
 /**
@@ -113,6 +153,10 @@ export function retireAppState(
             current.status.currentAttemptId ||
             current.status.phase !== "attention" ||
             current.status.summary !== terminal.summary ||
+            current.status.response !== terminal.response ||
+            !isDeepStrictEqual(current.status.facts, terminal.facts) ||
+            !isDeepStrictEqual(terminal.facts, expected.status.facts ?? []) ||
+            terminal.result !== undefined ||
             current.status.result !== undefined ||
             current.status.conditionIds?.length ||
             store.readTrigger(task.taskId)
@@ -216,7 +260,9 @@ export function retireAppState(
               throw new Error("Admission retains a different input identity");
             const task = store.readTask(admission.taskId);
             const receipt = store.readReceipt(admission.taskId);
-            const terminal = store.readCancellation(admission.taskId);
+            // Reopening retains earlier terminal authority in its control
+            // receipt. A newer cancellation cannot erase an older completion.
+            const terminal = store.readAdmissionCancellation(admission.taskId, String(row.task_id));
             const completed = db
               .prepare(
                 `SELECT 1 FROM app_task_attempts
@@ -230,6 +276,7 @@ export function retireAppState(
             if (
               completed ||
               receipt?.metadata.generation === admission.taskGeneration ||
+              (terminal?.kind === "closed" && terminal.generation === admission.taskGeneration) ||
               (task?.status.observedGeneration === admission.taskGeneration && task.status.phase === "converged")
             )
               throw new Error("Completion evidence for an admitted generation must be settled before withdrawal");
@@ -296,6 +343,9 @@ export function retireAppState(
         remainingInputs.map((input) => String(input.row.id)),
         "Input",
       );
+      // Prove conservation for the complete original plan before any mutation,
+      // including replay. A prior cancellation is not proof its history survives.
+      for (const task of plan.tasks) assertRetainedRetirementOutcome(store, parseTaskResource(task.resourceJson));
       if (!remainingTasks.length && !remainingInputs.length)
         return { status: "already-retired", tasks: plan.tasks.length, inputs: plan.inputs.length };
       // One transaction is all-or-nothing. Refuse a mixed replay rather than
@@ -304,27 +354,7 @@ export function retireAppState(
         throw new Error("Retirement plan is partially applied or changed");
 
       for (const task of remainingTasks) {
-        const expected = parseTaskResource(task.resourceJson)!;
-        const observed = expected.status.observedAttemptId
-          ? store.readAttempt(expected.status.observedAttemptId)
-          : undefined;
-        // Cancellation replaces the Task projection. Its exact accepted payload
-        // must survive on the observed attempt, independently of caller scope or
-        // a later requirements revision. Never manufacture missing acceptance.
-        if (expected.status.phase === "converged" || observed?.state === "completed") {
-          if (
-            !observed ||
-            observed.taskId !== task.taskId ||
-            observed.taskGeneration !== expected.status.observedGeneration ||
-            observed.state !== "completed" ||
-            !observed.acceptedResult ||
-            (expected.status.phase === "converged" && observed.acceptedResult.state !== "converged") ||
-            (["summary", "response", "result"] as const).some(
-              (field) => !isDeepStrictEqual(expected.status[field], observed.acceptedResult![field]),
-            )
-          )
-            throw new Error("Task outcome requires exact retained accepted evidence before cancellation");
-        }
+        const expected = parseTaskResource(task.resourceJson);
         cancelAppTask(context, {
           appId: plan.appId,
           taskId: task.taskId,

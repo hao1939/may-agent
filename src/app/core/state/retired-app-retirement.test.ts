@@ -10,9 +10,13 @@ import {
   appTaskContext,
   cancelAppTask,
   claimObservedAppTask,
+  closeAppTask,
   completeAppTask,
   deferAppTask,
   observeAppTaskIntent,
+  reportAppTaskFailure,
+  reopenAppTask,
+  retryFailedAppTask,
 } from "../tasks/app-task-reconciler.js";
 import { admitTaskInput } from "./inbox.js";
 import { readRuntimeTaskView } from "../reads/app-read.js";
@@ -153,7 +157,7 @@ function admittedFixture() {
   return reviewCaller(f);
 }
 
-function reviewCaller(f: ReturnType<typeof fixture>, admissionKeys?: string[]) {
+function refreshReviewedTasks(f: ReturnType<typeof fixture>) {
   for (const task of f.plan.tasks) {
     const row = f.db
       .prepare("SELECT resource_json, trigger_json FROM app_tasks WHERE app_id=? AND task_id=?")
@@ -161,6 +165,10 @@ function reviewCaller(f: ReturnType<typeof fixture>, admissionKeys?: string[]) {
     task.resourceJson = String(row.resource_json);
     task.triggerJson = row.trigger_json as string | null;
   }
+}
+
+function reviewCaller(f: ReturnType<typeof fixture>, admissionKeys?: string[]) {
+  refreshReviewedTasks(f);
   const input = f.plan.inputs.find((input) => input.row.id === "parent")!;
   input.admissionWithdrawal = {
     decision: "withdraw-unfulfilled",
@@ -543,6 +551,320 @@ test("refuses cancellation when a waiting Task retains its only accepted outcome
   expect(snapshot(db)).toEqual(before);
   expect(store.readTask("waiting")).toEqual(task);
 });
+
+
+for (const phase of ["pending", "waiting", "attention", "converged"] as const)
+  for (const reference of ["absent", "dangling"] as const)
+    test(`retained outcome requires resolvable provenance (${phase}, ${reference})`, () => {
+      const f = fixture();
+      const task = f.store.readTask("waiting")!;
+      task.status.phase = phase;
+      if (reference === "absent") delete task.status.observedAttemptId;
+      else task.status.observedAttemptId = "missing-observed-attempt";
+      f.db
+        .prepare(
+          "UPDATE app_tasks SET resource_json=? WHERE app_id=? AND task_id='waiting'",
+        )
+        .run(JSON.stringify(task), f.plan.appId);
+      refreshReviewedTasks(f);
+      const before = snapshot(f.db);
+      for (const dryRun of [true, false]) {
+        expect(() => retireAppState(f.context, f.plan, { dryRun })).toThrow(
+          "retained accepted evidence",
+        );
+        expect(snapshot(f.db)).toEqual(before);
+      }
+    });
+
+for (const field of ["summary", "response", "result"] as const)
+  test(`a legacy ${field} alone still requires outcome preservation`, () => {
+    const f = fixture();
+    const task = f.store.readTask("waiting")!;
+    delete task.status.observedAttemptId;
+    delete task.status.summary;
+    delete task.status.response;
+    delete task.status.result;
+    task.status.phase = "pending";
+    if (field === "result")
+      task.status.result = { proof: "only retained payload" };
+    else task.status[field] = "only retained payload";
+    f.db
+      .prepare(
+        "UPDATE app_tasks SET resource_json=? WHERE app_id=? AND task_id='waiting'",
+      )
+      .run(JSON.stringify(task), f.plan.appId);
+    refreshReviewedTasks(f);
+    const before = snapshot(f.db);
+    expect(() => retireAppState(f.context, f.plan)).toThrow(
+      "retained accepted evidence",
+    );
+    expect(snapshot(f.db)).toEqual(before);
+  });
+
+function incompleteFixture(mode: "backoff" | "exhausted" | "retried") {
+  const f = admittedFixture();
+  f.context.maxConsecutiveFailures = mode === "backoff" ? "unlimited" : 1;
+  const claim = claimObservedAppTask(f.context, {
+    taskId: "pending",
+    appAgent: f.context.agent,
+    handler: "agent",
+  });
+  if (claim.kind !== "claimed") throw new Error(claim.kind);
+  expect(
+    reportAppTaskFailure(f.context, claim, {
+      summary: "  Provider did not supply the required evidence  ",
+      response: "Unable to finish the request",
+      result: { missing: "provider authority" },
+      facts: ["provider:unavailable"],
+    }).status,
+  ).toBe("applied");
+  if (mode === "retried") {
+    const task = f.store.readTask("pending")!;
+    retryFailedAppTask(f.context, {
+      appId: f.plan.appId,
+      taskId: "pending",
+      expectedGeneration: task.metadata.generation,
+      expectedResourceVersion: task.metadata.resourceVersion,
+      controlKey: "operator-retry",
+    });
+  }
+  return { ...reviewCaller(f), claim };
+}
+
+for (const mode of ["backoff", "exhausted", "retried"] as const)
+  test(`canonical incomplete evidence remains withdrawable without fulfilling its caller (${mode})`, () => {
+    const { db, context, store, plan, claim } = incompleteFixture(mode);
+    const task = store.readTask("pending")!;
+    const accepted = store.readAttempt(claim.attemptId)!;
+    expect(task.status.summary).not.toBe(accepted.acceptedResult!.summary);
+    expect(task.status.summary).toBe(accepted.summary);
+    if (mode === "retried")
+      expect(task.status.observedGeneration).toBeLessThan(
+        accepted.taskGeneration,
+      );
+    const admissions = db
+      .prepare("SELECT * FROM app_task_admissions ORDER BY app_id, task_id")
+      .all();
+    const attempts = db
+      .prepare("SELECT * FROM app_task_attempts ORDER BY app_id, attempt_id")
+      .all();
+    const before = snapshot(db);
+    expect(retireAppState(context, plan, { dryRun: true }).status).toBe(
+      "would-retire",
+    );
+    expect(snapshot(db)).toEqual(before);
+    expect(retireAppState(context, plan).status).toBe("retired");
+    expect(
+      db
+        .prepare("SELECT * FROM app_task_admissions ORDER BY app_id, task_id")
+        .all(),
+    ).toEqual(admissions);
+    expect(
+      db
+        .prepare("SELECT * FROM app_task_attempts ORDER BY app_id, attempt_id")
+        .all(),
+    ).toEqual(attempts);
+    expect(getAppInboxItem(db, "parent")!.result).toBeUndefined();
+    const after = snapshot(db);
+    expect(retireAppState(context, plan).status).toBe("already-retired");
+    expect(snapshot(db)).toEqual(after);
+  });
+
+for (const field of ["summary", "response", "result"] as const)
+  test(`diagnostic summaries cannot hide unretained ${field}`, () => {
+    const f = incompleteFixture("backoff");
+    const task = f.store.readTask("pending")!;
+    if (field === "result")
+      task.status.result = { missing: "unrecorded additional evidence" };
+    else
+      task.status[field] =
+        "Outcome not achieved: unrecorded text; continuing after backoff";
+    f.db
+      .prepare(
+        "UPDATE app_tasks SET resource_json=? WHERE app_id=? AND task_id='pending'",
+      )
+      .run(JSON.stringify(task), f.plan.appId);
+    refreshReviewedTasks(f);
+    const before = snapshot(f.db);
+    expect(() => retireAppState(f.context, f.plan)).toThrow(
+      "retained accepted evidence",
+    );
+    expect(snapshot(f.db)).toEqual(before);
+  });
+
+for (const change of [
+  "attempt-id",
+  "future-generation",
+  "foreign-task",
+] as const)
+  test(`retained outcome requires the exact attempt identity (${change})`, () => {
+    const f = fixture();
+    const task = f.store.readTask("waiting")!;
+    const attempt = f.store.readAttempt(task.status.observedAttemptId!)!;
+    if (change === "attempt-id") attempt.metadata.id = "another-attempt";
+    if (change === "future-generation")
+      attempt.taskGeneration = task.metadata.generation + 1;
+    if (change === "foreign-task") attempt.taskId = "pending";
+    f.db
+      .prepare(
+        "UPDATE app_task_attempts SET attempt_json=?, task_id=?, task_generation=? WHERE app_id=? AND attempt_id=?",
+      )
+      .run(
+        JSON.stringify(attempt),
+        attempt.taskId,
+        attempt.taskGeneration,
+        f.plan.appId,
+        task.status.observedAttemptId!,
+      );
+    const before = snapshot(f.db);
+    expect(() => retireAppState(f.context, f.plan)).toThrow(
+      "retained accepted evidence",
+    );
+    expect(snapshot(f.db)).toEqual(before);
+  });
+
+for (const change of ["missing", "changed"] as const)
+  test(`replay still verifies the original outcome survives (${change})`, () => {
+    const f = fixture();
+    const observed = f.store.readTask("waiting")!.status.observedAttemptId!;
+    expect(retireAppState(f.context, f.plan).status).toBe("retired");
+    if (change === "missing") {
+      f.db
+        .prepare(
+          "DELETE FROM app_task_attempts WHERE app_id=? AND attempt_id=?",
+        )
+        .run(f.plan.appId, observed);
+    } else {
+      f.db
+        .prepare(
+          "UPDATE app_task_attempts SET attempt_json=json_set(attempt_json, '$.acceptedResult.summary', 'changed') WHERE app_id=? AND attempt_id=?",
+        )
+        .run(f.plan.appId, observed);
+      // Neither summary source may retain the original value after corruption.
+      f.db
+        .prepare(
+          "UPDATE app_task_attempts SET attempt_json=json_set(attempt_json, '$.summary', 'changed') WHERE app_id=? AND attempt_id=?",
+        )
+        .run(f.plan.appId, observed);
+    }
+    const before = snapshot(f.db);
+    expect(() => retireAppState(f.context, f.plan)).toThrow(
+      "retained accepted evidence",
+    );
+    expect(snapshot(f.db)).toEqual(before);
+  });
+
+for (const field of ["response", "facts", "result"] as const)
+  test(`replay refuses changed terminal ${field}`, () => {
+    const f = fixture();
+    expect(retireAppState(f.context, f.plan).status).toBe("retired");
+    f.db
+      .prepare(
+        "UPDATE app_tasks SET resource_json=json_set(resource_json, ?, json(?)) WHERE app_id=? AND task_id='waiting'",
+      )
+      .run(
+        `$.status.${field}`,
+        JSON.stringify(
+          field === "facts" ? ["changed"] : field === "result" ? {} : "changed",
+        ),
+        f.plan.appId,
+      );
+    const before = snapshot(f.db);
+    expect(() => retireAppState(f.context, f.plan)).toThrow(
+      "different terminal decision",
+    );
+    expect(snapshot(f.db)).toEqual(before);
+  });
+
+for (const kind of ["closed", "cancelled"] as const)
+  for (const storage of ["current", "reopened"] as const)
+    test(`terminal authority distinguishes an answer from withdrawal (${kind}, ${storage})`, () => {
+      const f = fixture();
+      const key = "task:parent";
+      admitTaskInput(f.context, {
+        appId: f.plan.appId,
+        attachment: { kind: "existing", taskId: "pending" },
+        idempotencyKey: key,
+        inputContext: {
+          id: "parent",
+          source: { kind: "system", id: "review" },
+          input: { kind: "message", data: { message: "Review" } },
+        },
+      });
+      let answerId: string | undefined;
+      if (kind === "closed") {
+        const claim = claimObservedAppTask(f.context, {
+          taskId: "pending",
+          appAgent: f.context.agent,
+          handler: "agent",
+        });
+        if (claim.kind !== "claimed") throw new Error(claim.kind);
+        completeAppTask(f.context, claim, {
+          summary: "Accepted answer",
+          response: "Original response",
+        });
+        answerId = claim.attemptId;
+      }
+      const task = f.store.readTask("pending")!;
+      const control = {
+        appId: f.plan.appId,
+        taskId: "pending",
+        expectedGeneration: task.metadata.generation,
+        expectedResourceVersion: task.metadata.resourceVersion,
+        reason: "Prior owner decision",
+      };
+      if (kind === "closed")
+        closeAppTask(f.context, { ...control, afterResult: answerId! });
+      else cancelAppTask(f.context, control);
+      if (storage === "reopened") {
+        const closure = f.store.readCancellation("pending")!;
+        reopenAppTask(f.context, {
+          appId: f.plan.appId,
+          taskId: "pending",
+          expectedGeneration: closure.generation,
+          expectedResourceVersion: closure.resourceVersion,
+          reason: "Continue with a new requirement",
+          controlKey: "prior-reopen",
+        });
+        const reopened = f.store.readTask("pending")!;
+        cancelAppTask(f.context, {
+          appId: f.plan.appId,
+          taskId: "pending",
+          expectedGeneration: reopened.metadata.generation,
+          expectedResourceVersion: reopened.metadata.resourceVersion,
+          reason: "Later requirement withdrawn",
+        });
+      }
+      // Only the terminal authority remains in this historical storage shape.
+      f.db
+        .prepare("DELETE FROM app_tasks WHERE app_id=? AND task_id='pending'")
+        .run(f.plan.appId);
+      f.db
+        .prepare(
+          "DELETE FROM app_task_attempts WHERE app_id=? AND task_id='pending'",
+        )
+        .run(f.plan.appId);
+      f.db
+        .prepare(
+          "UPDATE app_task_admissions SET admission_json=json_remove(admission_json, '$.resultAttemptId') WHERE app_id=? AND task_id=?",
+        )
+        .run(f.plan.appId, key);
+      f.plan.tasks = f.plan.tasks.filter((entry) => entry.taskId !== "pending");
+      const { db, context, store, plan } = reviewCaller(f, [key]);
+      const terminal = store.readCancellation("pending")!;
+      const before = snapshot(db);
+      if (kind === "closed") {
+        expect(() => retireAppState(context, plan)).toThrow(
+          "must be settled before withdrawal",
+        );
+        expect(snapshot(db)).toEqual(before);
+      } else {
+        expect(retireAppState(context, plan).status).toBe("retired");
+        expect(getAppInboxItem(db, "parent")!.result).toBeUndefined();
+        expect(store.readCancellation("pending")).toEqual(terminal);
+        expect(retireAppState(context, plan).status).toBe("already-retired");
+      }
+    });
 
 for (const change of [
   "omitted",

@@ -158,7 +158,8 @@ including historical aliases and retained request identities. Different Task
 and generation bindings may coexist; the operation never chooses one as the
 answer authority. Every binding must name retained Task/receipt/cancellation
 authority at least as new as its generation, with no current Task attempt.
-Bound answers, accepted converged attempts or completion receipts at the admitted
+Bound answers, accepted converged attempts, completion receipts or `closed`
+terminal decisions (including prior closures archived by reopen) at the admitted
 generation, and a converged Task whose `status.observedGeneration` matches that
 generation refuse withdrawal, even after its requirements advance. A legacy Task
 may be the only retained answer payload, even when both result bindings are
@@ -167,12 +168,42 @@ missing. Newer converged attempts also refuse withdrawal when their accepted
 separate exact cutover/settlement. An unrelated newer result cannot answer the
 older input and remains preserved when that unanswered caller is withdrawn.
 
-Before cancelling any planned Task, a converged projection or completed observed
-attempt requires the exact summary, response and result to be retained on its
-accepted observed attempt at `status.observedGeneration`. Missing or partial
-accepted evidence refuses the transaction; preserve it through separate exact
-cutover before retrying. This also protects newer Task-only answers and answers
-retained on pending Tasks without treating them as fulfillment of older callers.
+Retirement has two independent proof obligations: the withdrawn caller has no
+retained answer authority, and cancellation cannot destroy the only retained
+outcome. Neither can be inferred from a current phase, a missing inbox link or
+a missing attempt reference. The relevant records have different meanings:
+
+| Record | Authority in retirement |
+| --- | --- |
+| Task `metadata.generation` | Current desired requirements; not the generation of every retained observation. |
+| Task `status.observedGeneration` | Controller acknowledgement. Revisions can retain it; explicit retry can rewind it while keeping the accepted attempt and payload. |
+| Admission Task/generation/key | The exact caller requirement. Every alias remains; retirement never selects one. |
+| Attempt `taskGeneration` and accepted `inputKeys` | The accepted contribution's generation and explicit caller scope. Newer unrelated outcomes do not fulfill an older caller. |
+| Attempt `acceptedResult` | Retained accepted summary, response and result, including waiting and incomplete reports. |
+| Attempt `summary` | Retained execution/controller diagnostic. An incomplete report can retain a decorated summary here and a different original summary in `acceptedResult`. |
+| Task `status.summary/response/result` | A projection that cancellation replaces. A pending, waiting or attention phase can still hold the only historical payload. |
+| Completion receipt or `closed` terminal decision | Legacy completion authority, including the closure archived in a reopen control receipt. Same-generation completion requires separate caller settlement; a later cancellation does not erase it. A `cancelled` decision records withdrawal instead. |
+
+Before mutation, `assertRetainedRetirementOutcome` verifies every planned Task's
+projected values independently of phase. Any retained summary, response, result,
+observed-attempt reference or accepted phase requires a resolvable, completed,
+accepted observed attempt belonging to that exact Task. Its own generation must
+be valid and no newer than the desired generation; controller acknowledgement
+is not a replacement for attempt identity. Missing, dangling, foreign or
+inconsistent provenance refuses the transaction. A fresh Task without outcome
+evidence needs no manufactured acceptance record.
+
+Every present response/result must match the retained accepted payload. The
+summary must match either the accepted summary or the same attempt's retained
+summary. This recognizes canonical incomplete-report diagnostics without parsing
+or whitelisting text prefixes, weakening payload checks or claiming fulfillment.
+Ambiguous legacy/controller-only projections require separate exact cutover;
+retirement never reconstructs an acceptance record or picks a latest attempt.
+
+The same proof runs on the original reviewed Task preimages during exact replay,
+so a previous cancellation cannot conceal missing or changed outcome history.
+Replay also fences terminal response and facts. All refusal paths and dry-runs
+leave the complete transaction unchanged.
 
 Withdrawal retains every admission byte, Task completion receipt and accepted
 attempt. The inbox row becomes stopped with a null result, preserving its caller
