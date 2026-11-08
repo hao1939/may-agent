@@ -1185,6 +1185,31 @@ transaction rollback; and ended-Task execution remaining occupied. Two initial
 fixture assumptions failed (cancellation had settled a non-session attempt, and
 an invented caller-wait key was absent); corrected assertions inspect actual
 reservation/canonical caller evidence. No production fix is claimed for those
-fixture errors. Static checks passed. Frozen full local and hosted gates are
-running; independent review remains. No SDK/App runtime change, live exclusion
+fixture errors. Static checks passed. Frozen full local CI passed **4,184 tests /
+3 existing skips / 0 failures / 24,397 assertions across 361 files**. Hosted
+Quality and Container passed the same head; independent review remains. No SDK/App runtime change, live exclusion
 proof, pilot activation or model-behavior claim follows from these checks.
+
+
+Host [#438](https://github.com/hao1939/may-agent/pull/438), revision
+`03e93e39af`, closes a newly demonstrated start bypass: authored workflows can
+run code without calling a managed agent. Seven regressions failed before the
+fix across unbound typed/model/direct starts, retained live resume, a pre-limit
+paid attempt without a reservation, and cancelled/released Task authority. Two
+compatibility cases already passed; these witnesses ran actual authored code,
+not missing proposed APIs.
+
+Workflow execution now shares the existing managed-start Task, paid-attempt and
+local-reservation authority. It checks before start publication/run persistence,
+and rechecks nested methods; valid nesting uses no additional credit or place.
+A supplied Runtime database retains policy authority even if a runner omits its
+persistence option. Saved terminal-result reads remain free. Definition loading
+remains trusted source inspection, not a sandbox or online activation barrier.
+Final workflow/manager/admission/recovery owners passed **82 / 414 across five
+files**; four real-worker cases passed one-place A-B-C cooperation, ordinary-fund
+exhaustion, ordinary-capacity saturation and fresh published policy with charged
+workflow/helper execution. Two old authoring fixtures initially threw `unused`
+from their database accessor; they now supply and close ordinary Host state.
+Static checks passed; frozen full local and hosted gates are running. Independent
+review, integration, enforcement withdrawal and separately authorized operational
+and behavioral proof remain. No SDK/App runtime change is required.
