@@ -9,8 +9,10 @@ and [one authority for each resource](../1-principles/core-principles.md#one-aut
 **Design status:** Proposed implementation approach.
 **Implementation status:** Incremental source implementation underway. Creator
 consumption of published finite assessments is implemented and verified locally.
-The first scoped feedback increment is in Host review; accounting and capacity
-extension remain proposed. No agent
+Scoped feedback, dispatch observations and bounded coordination are in Host
+review. Shared credit accounting foundations are implemented on an isolated
+branch; creation, claims and helpers do not yet enforce them. Capacity extension
+remains proposed. No agent
 activation or rollout is established by these source checks.
 
 Source reviewed: Host #398 merge `88a98be236baf07bfcf100208cfb0dc1589dfa06`.
@@ -208,7 +210,11 @@ claim/recovery writes, and requires shared workspace and a 1–120 second hard
 workflow ceiling. An authored longer timeout cannot extend that ceiling. The
 focused source checks passed 107 tests / 251 assertions, including a real worker,
 Host size one, saturation, human precedence, pause and changed eligibility.
-Complete checks on the stacked final revision remain pending.
+Hosted Quality and Container passed the stacked revision `fe7407e1ca`. Its
+full local gate retained one Conversation ordering failure: 3,953 passed /
+3 skipped / 1 failed. Both parameter cases passed the unchanged owning diagnostic
+(2 tests / 39 assertions); the cause remains unproven. Independent approval
+remains required.
 
 The companion Alex pilot is disabled unless `ALEX_WORKLOAD_REVIEW_ENABLED=true`
 is present in installed configuration. A latest-only 15-minute schedule admits
@@ -402,8 +408,25 @@ The fix shares accepted-deadline logic with claim/recovery and extends shared
 readiness at the observation time, preserving dependency/pause gates and stored
 wake hints. The related lifecycle suites passed 146 tests / 1,725 assertions;
 projection regressions passed 19 tests / 79 assertions. Hosted Quality/Container
-passed the review revision; its final local complete gate is still running.
+passed review revision `414b83578e`. Its full local gate retained one
+Conversation ordering failure: 3,940 passed / 3 skipped / 1 failed. The last
+message was an earlier human ask instead of the accepted corrected-source reply.
+Both parameter cases passed the unchanged owning diagnostic (2 tests /
+27 assertions). That failure and the coordination ordering failure remain
+unresolved evidence; green hosted checks do not establish their cause.
 
 Verification for this review: the existing Host capacity, controller and queue
 suites passed, **46 tests and 138 assertions**. They verify current scheduling
 foundations, not the proposed credits, helper limits or adaptive behavior.
+
+
+The accounting foundation on Host branch `feat/workload-budget` introduces
+private root bindings, UTC sponsor grants, cumulative/declared-period root
+balances and idempotent operation receipts in the existing SQLite database.
+Ordinary and protected purposes are separate. It exposes no model-facing funding
+or refund operation and does not yet enforce creation, claims or helper dispatch.
+Nine focused tests / 43 assertions passed, including independent process races
+against both sponsor and root limits, caller rollback, restart/replay, and midnight
+renewal. An interleaved two-connection regression first reproduced a mixed budget
+observation; a read snapshot now keeps its root and sponsor balances consistent.
+Full verification and review of this foundation remain pending.
