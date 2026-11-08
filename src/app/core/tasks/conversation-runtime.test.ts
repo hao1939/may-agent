@@ -1164,10 +1164,11 @@ function measurementReply(context: AppInputContext): ConversationTurnResult {
   };
 }
 
-test.each(["live", "restart", "admission-write-failure"])(
+test.each(["live", "restart", "admission-write-failure", "clock-reversed"])(
   "linked outcomes enter the Conversation controller (%s)",
   async (route) => {
     const missed = route === "restart";
+    const live = route === "live" || route === "clock-reversed";
     const started = Promise.withResolvers<void>();
     const release = Promise.withResolvers<void>();
     const contexts: AppInputContext[] = [];
@@ -1216,7 +1217,7 @@ test.each(["live", "restart", "admission-write-failure"])(
             event.type === "conversation.updated" &&
             readConversationRequest(f.db, app.id, "primary", "measurement")?.status === "closed",
         );
-      let replied = route === "live" ? replyObserved() : undefined;
+      let replied = live ? replyObserved() : undefined;
       ingress.publish("ask", "Get the measurement and report it here");
       await started.promise;
       const topicId = readAppConversationResource(f.db, app.id, "primary").topics[0]!.id;
@@ -1239,6 +1240,7 @@ test.each(["live", "restart", "admission-write-failure"])(
       WHEN NEW.input_kind = 'task-outcome' BEGIN SELECT RAISE(ABORT, 'outcome input unavailable'); END`);
       if (missed) ingress.runtime.close();
       const childSettled = settled(f.bus, "sample");
+      if (route === "clock-reversed") setSystemTime(Date.now() - 60_000);
       release.resolve();
       await childSettled;
       if (missed) {
@@ -1255,7 +1257,7 @@ test.each(["live", "restart", "admission-write-failure"])(
         f.db.exec("DROP TRIGGER reject_outcome_input");
         replied = replyObserved();
       }
-      if (route !== "live")
+      if (!live)
         f.bus.emit({ type: "conversation.supervision.review", source: "timer", data: { project: app.id, limit: 1 } });
       await replied;
       expect(contexts).toHaveLength(2);
@@ -1267,7 +1269,11 @@ test.each(["live", "restart", "admission-write-failure"])(
       const child = AppTaskResourceStore.activeFromDb(f.db, background.id)!;
       expect(child.isCancelled("sample")).toBe(false);
       expect(f.store.isCancelled(input.executionTaskId!)).toBe(false);
-      expect(readAppConversationResource(f.db, app.id, "primary").messages.at(-1)?.text).toBe("The measurement is 17.");
+      // Verify this caller's one durable reply, independently of wall-clock order.
+      const replies = readAppConversationResource(f.db, app.id, "primary").messages
+        .filter(message => message.author.kind === "agent" && message.metadata?.requestId === input.id);
+      expect(replies).toHaveLength(1);
+      expect(replies[0]?.text).toBe("The measurement is 17.");
       expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
       // Replayed notifications carry no result authority; both routes read the same saved outcome.
       const original = contexts[1]!.input.data as { attemptId: string };
