@@ -333,6 +333,14 @@ the parent from its exact returned result. The budget attribution is shared;
 execution is not a reentrant lock. A later lending protocol needs independent
 suspension, cancellation, parallel-call and restart proofs.
 
+Retain the denied method's minimum simultaneous places per constrained scope,
+including its caller and applicable live inline work. Releasing the caller must
+not wake an identical method that still cannot fit. A due recheck only refreshes
+that hold; it does not run or charge the caller. A revised Task method rechecks
+admission. Expose this demand and scope to the deciding agent. App review
+fingerprints omit mechanical capacity retry timestamps while retaining changed
+method demand, scope and business facts.
+
 Release reservations after joined execution actually ends, including descendants.
 Reconcile after process loss through existing ownership/cleanup recovery. Expired
 leases, stopped worker transport or a closed Task alone are insufficient evidence
@@ -728,8 +736,9 @@ Sessions now retain the explicit owner; denial preserves metadata and transcript
 and the original owner can resume with updated instructions. Pinned-alias,
 reservation, resume and cleanup checks passed **109 tests / 589 assertions**;
 managed-budget and session-lifecycle boundaries passed **41 / 249**. Host/SDK
-types, boundary and lint passed. The full local gate is running on its frozen
-head; hosted checks and independent review remain required. These source tests
+types, boundary and lint passed. The frozen full local gate passed **4,080 tests /
+3 skipped / zero failures / 23,763 assertions across 354 files**; hosted Quality
+and Container passed the same head. Independent review remains. These source tests
 do not establish runtime execution enforcement or model-backed business behavior.
 
 A separate actual-runtime cleanup fix is Host
@@ -742,7 +751,57 @@ The production waiter now reports the timeout after child close and cancels its
 remaining escalation timer. Worker protocol/controller owners passed **44 tests /
 95 parent-process assertions**, with additional lifecycle assertions inside the
 isolated probe; the final owning regression passed again after a small test
-cleanup. Host/SDK types, boundary and lint passed. No full local gate has run on
-that head; hosted checks and independent review remain required. This fixes the
+cleanup. Host/SDK types, boundary and lint passed. The frozen full local gate
+passed **3,968 tests / 3 skipped / zero failures / 23,066 assertions across 345
+files**; hosted Quality and Container passed the same head. Independent review
+remains. This fixes the
 existing dispatch boundary; it does not yet reconcile durable reservations or
 confirm every retained descendant after process loss.
+
+
+The canonical claim boundary is Host
+[PR #421](https://github.com/hao1939/may-agent/pull/421), `c2461de052`, stacked on
+#419 with #420's independent cleanup prerequisite. Initial regressions reproduced
+claims ignoring execution limits. A broader run then exposed that an outer claim
+transaction interfered with existing pause and late-funding race boundaries;
+reservation admission now belongs inside the canonical resource commit, after
+its exact fences and alongside credit admission. The corrected owners passed
+**200 tests / 1,463 assertions**. The frozen full local gate passed **4,091 tests /
+3 skipped / zero failures / 23,809 assertions across 355 files**, including static
+checks; hosted Quality and Container passed the same head. Independent review
+remains. Capacity holds reuse Task readiness, indexed recovery and fenced input
+restoration; release/policy wakes use an indexed scope instead of another queue.
+This head still has no actual runtime capacity consumer or activation switch.
+
+Bounded Task runtime integration is Host
+[PR #422](https://github.com/hao1939/may-agent/pull/422), `a8bae462a1`, stacked on
+#421. The actual runner supplies pinned identity and dispatch provenance. A paid
+primary reuses its claim place; helpers and resumes reserve separate places with
+the existing invocation debit. Joined cleanup drains child promises and Bash
+groups. Cancellation retains occupancy until actual cleanup; local release
+rechecks starts and session attachments that race its cleanup callback. Historical
+receipts without owner evidence are not treated as cleaned up.
+
+Regressions first reproduced uncounted helpers, recipient substitution, lost
+child-cleanup failures and caller spending repeated after due rechecks. A root
+with `c = 1` now retains a two-place inline-method constraint, its unaccepted
+input and its retry allowance without running another caller; a revised method
+can proceed. Runtime, manager lifecycle, Bash groups, session recovery,
+claim/store/retry and workload owners passed **462 tests / 4,732 assertions**.
+After final release-race, cancellation, non-start and child-retention refinements,
+changed owners passed **72 tests / 390 assertions**. Host/SDK types, boundary and
+lint passed. Its frozen full local gate is running; hosted checks and independent
+review remain required.
+
+The paired App review now excludes mechanical capacity recheck timestamps from
+its decision fingerprint, but retains method demand and scope. Its new regression
+failed first; paired workload/disposition workflows passed **23 tests / 333
+assertions**, with strict types checked against this Host SDK. These are scripted
+contract checks; they do not prove model behavior or live adoption. The workflow
+continues to advise without portfolio, closure, funding or priority effects.
+
+Activation remains unavailable. Required subsequent work includes crash recovery
+of indexed active reservations even for closed Tasks, explicit historical adoption,
+trusted execution policies for newly created roots, direct-session admission and
+scoped capacity observations. Private limits currently fail direct-session starts
+closed; bounded Task fixtures are not general installation activation proof.

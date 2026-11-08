@@ -241,6 +241,11 @@ current runnable demand. Idle is an execution state: standing work, a finite
 result awaiting disposition and an unfulfilled obligation can all be idle.
 Unknown or stale capacity is not evidence of available capacity. Avoid full
 population scans on each attempt; expose bounded examples and exact-read links.
+A cooperation constraint includes its minimum simultaneous execution demand,
+including the caller. A one-place method cannot run an inline helper simply by
+retrying its caller. A mechanical recheck timestamp is not new business evidence;
+changed demand, applicable capacity or an authorized method revision may justify
+a new decision.
 
 Agents interpret these facts alongside business value, deadlines and expected
 effort, using estimates only where useful. The first version needs neither a

@@ -160,3 +160,19 @@ test("changed ordinary funding warrants new advice; paying for this protected re
   expect(f.prompts[2]).toContain("available credits do not establish spare execution capacity");
   expect(f.task.status).toBe("waiting");
 });
+
+test("mechanical capacity rechecks stay quiet while changed method demand warrants advice", async () => {
+  const f = fixture();
+  f.workload.examples.blockers = [{ taskId: "incident", kind: "capacity", scope: "root",
+    reason: "execution-capacity", requiredSlots: 2, retryAt: now + 60_000 }];
+  f.own.result = { workloadReview: state(await execute(f.ctx)) };
+  setSystemTime(now + WORKLOAD_REVIEW_INTERVAL_MS);
+  f.workload.examples.blockers[0].retryAt = Date.now() + 60_000;
+  expect((await execute(f.ctx)).summary).toContain("No changed");
+  expect(f.prompts).toHaveLength(1);
+  f.workload.examples.blockers[0].requiredSlots = 3;
+  await execute(f.ctx);
+  expect(f.prompts).toHaveLength(2);
+  expect(f.prompts[1]).toContain("minimum simultaneous places");
+  expect(f.prompts[1]).toContain('"requiredSlots":3');
+});
