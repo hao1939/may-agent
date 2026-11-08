@@ -353,7 +353,13 @@ export type TaskWorkload = {
     pendingInputTasks: number;
   };
   examples: {
-    blockers: Array<{ taskId: string; kind: "waiting" | "paused" | "cooldown" | "dependency" | "unknown" }>;
+    blockers: Array<{
+      taskId: string;
+      kind: "waiting" | "paused" | "cooldown" | "dependency" | "funding" | "unknown";
+      /** Resource constraint facts; neither failure nor a business disposition. */
+      reason?: string;
+      retryAt?: number | null;
+    }>;
     /** Accepted idle results worth inspecting; neither unread nor proven fulfilled. */
     dispositionCandidates: Array<{ taskId: string; acceptedAttemptId: string }>;
     truncated: boolean;
@@ -378,6 +384,34 @@ export type TaskWorkload = {
     lifetime: "current-controller";
   };
   resourceHealth: { available: false };
+  /** Optional on older Hosts. Work-start credits are not money or token usage,
+   * and available credit alone does not establish execution capacity. */
+  funding?: {
+    /** Current App's installed ordinary sponsor, independently of executor. */
+    ordinary: { available: false } | {
+      available: true;
+      sponsor: { appId: string; agent: string };
+      period: string;
+      credits: number;
+      charged: number;
+      remaining: number;
+    };
+    /** Only the Host-bound current Task's root; never selected by read input. */
+    currentRoot: { available: false } | {
+      available: true;
+      task: { appId: string; taskId: string };
+      root: { appId: string; taskId: string };
+      sponsor: { appId: string; agent: string };
+      purpose: "ordinary" | "coordination";
+      renewal: "lifetime" | "utc-day";
+      period: string;
+      credits: number;
+      charged: number;
+      remaining: number;
+      /** Null means the sponsor allowance is unavailable, not zero. */
+      sponsorRemaining: number | null;
+    };
+  };
 };
 
 /** Disposable provider observation memory, never Task state or a delivery queue. */

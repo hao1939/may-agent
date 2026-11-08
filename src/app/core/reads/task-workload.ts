@@ -6,8 +6,12 @@ import { listRuntimeTaskViews } from "./app-read.js";
 import type { AppTaskRuntimeOptions } from "../tasks/runtime-options.js";
 import type { AppTaskRuntimeDescriptor } from "../tasks/runtime-definition.js";
 import type { AppTaskDispatch } from "../tasks/controller.js";
+import { TaskBudgetAdmissionStore } from "../state/task-budget-admission.js";
+import { utcBudgetPeriod, type BudgetPurpose, type BudgetSponsor } from "../state/task-budget-store.js";
 
 export type TaskWorkloadSource = {
+  /** Trusted attempt context, never a workload query argument. */
+  currentTaskId?: string;
   /** Absent in an isolated attempt worker: its limiter is not Host authority. */
   host?: () => TaskWorkload["limits"]["host"];
   foregroundTaskIds?: (taskIds: readonly string[]) => ReadonlySet<string>;
@@ -16,12 +20,67 @@ export type TaskWorkloadSource = {
 
 export function runtimeWorkloadSource(opts: AppTaskRuntimeOptions, descriptor?: AppTaskRuntimeDescriptor, dispatch?: AppTaskDispatch, taskId?: string): TaskWorkloadSource {
   return {
+    ...(taskId ? { currentTaskId: taskId } : {}),
     ...(opts.installControllers === false
       ? dispatch?.hostCapacityAtDispatch ? { host: () => dispatch.hostCapacityAtDispatch! } : {}
       : { host: () => opts.hostCapacity.workloadSnapshot() }),
     ...(dispatch && taskId ? { dispatch: { ...dispatch, taskId } } : {}),
     ...(descriptor?.app.conversation ? { foregroundTaskIds: (taskIds: readonly string[]) =>
       new Set(taskIds.filter(id => descriptor.resourceStore.hasPendingHumanConversationInput(id))) } : {}),
+  };
+}
+
+/** Caller holds the same SQLite snapshot as Task readiness. Exact keyed reads
+ * only; observing a UTC grant never publishes it or changes accounting. */
+function readWorkloadFunding(
+  config: AppTaskContext,
+  taskId: string | undefined,
+  now: number,
+): NonNullable<TaskWorkload["funding"]> {
+  const accounting = new TaskBudgetAdmissionStore(config.resourceStore.db);
+  const period = utcBudgetPeriod(now);
+  const grant = (sponsor: BudgetSponsor, purpose: BudgetPurpose) => {
+    const saved = accounting.db
+      .prepare(
+        `SELECT credits, charged FROM task_credit_grants
+      WHERE sponsor_app_id = ? AND sponsor_agent = ? AND purpose = ? AND period = ?`,
+      )
+      .get(sponsor.appId, sponsor.agent, purpose, period);
+    const policy = accounting.policy(sponsor.appId);
+    const configured =
+      policy?.sponsor.agent === sponsor.agent
+        ? purpose === "ordinary"
+          ? policy.dailyCredits
+          : policy.coordination?.dailyCredits
+        : undefined;
+    const credits = (saved?.credits as number | undefined) ?? configured;
+    if (credits === undefined) return null;
+    const charged = (saved?.charged as number | undefined) ?? 0;
+    return { credits, charged, remaining: Math.max(0, credits - charged) };
+  };
+  const policy = accounting.policy(config.resourceStore.appId);
+  const ordinary = policy ? grant(policy.sponsor, "ordinary") : null;
+  const task = taskId ? { appId: config.resourceStore.appId, taskId } : null;
+  const root = task ? accounting.budget.view(task, now) : null;
+  return {
+    ordinary:
+      ordinary && policy ? { available: true, sponsor: policy.sponsor, period, ...ordinary } : { available: false },
+    currentRoot:
+      root && task
+        ? {
+            available: true,
+            task,
+            root: root.root,
+            sponsor: root.sponsor,
+            purpose: root.purpose,
+            renewal: root.renewal,
+            period: root.rootPeriod,
+            credits: root.credits,
+            charged: root.rootCharged,
+            remaining: Math.max(0, root.credits - root.rootCharged),
+            sponsorRemaining: grant(root.sponsor, root.purpose)?.remaining ?? null,
+          }
+        : { available: false },
   };
 }
 
@@ -75,10 +134,11 @@ export function readTaskWorkload(
         lifetime: "current-controller",
       } : { available: false },
       resourceHealth: { available: false },
+      funding: readWorkloadFunding(config, opts.workloadSource?.currentTaskId, observedAt),
     };
-    const blocker = (taskId: string, kind: TaskWorkload["examples"]["blockers"][number]["kind"]) => {
+    const blocker = (taskId: string, kind: TaskWorkload["examples"]["blockers"][number]["kind"], constraint?: { reason: string; retryAt: number | null }) => {
       if (result.examples.blockers.length < 5 && Buffer.byteLength(taskId) <= 256)
-        result.examples.blockers.push({ taskId, kind });
+        result.examples.blockers.push({ taskId, kind, ...(constraint ? { reason: constraint.reason, retryAt: constraint.retryAt } : {}) });
       else result.examples.truncated = true;
     };
     for (const task of page.items) {
@@ -110,7 +170,9 @@ export function readTaskWorkload(
           } else result.counts.runnable++;
         }
         else if (task.status === "attention" && state === "not-applicable") result.counts.attention++;
-        else if (state === "dependency-blocked" || state === "condition-blocked") {
+        else if (state === "funding-blocked") {
+          result.counts.waiting++; blocker(task.id, "funding", resource.status.funding);
+        } else if (state === "dependency-blocked" || state === "condition-blocked") {
           result.counts.waiting++; blocker(task.id, state === "dependency-blocked" ? "dependency" : "waiting");
         } else { result.counts.unknown++; blocker(task.id, "unknown"); }
       }
