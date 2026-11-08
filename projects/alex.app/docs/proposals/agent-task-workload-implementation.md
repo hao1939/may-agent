@@ -338,6 +338,9 @@ Reconcile after process loss through existing ownership/cleanup recovery. Expire
 leases, stopped worker transport or a closed Task alone are insufficient evidence
 that an external invocation ended. Retain uncertain reservations visibly until
 confirmed cleanup; period rollover must not make live work disappear from capacity.
+Workflow/executor attempts without a managed session still need the owning
+process-instance evidence for recovery. A changed runtime ID or a shutdown
+request cannot establish that the old execution ended.
 
 ### Deferral is not failure
 
@@ -728,3 +731,18 @@ managed-budget and session-lifecycle boundaries passed **41 / 249**. Host/SDK
 types, boundary and lint passed. The full local gate is running on its frozen
 head; hosted checks and independent review remain required. These source tests
 do not establish runtime execution enforcement or model-backed business behavior.
+
+A separate actual-runtime cleanup fix is Host
+[PR #420](https://github.com/hao1939/may-agent/pull/420), `367a145702`, independently
+based on current main. A real-process regression reproduced the worker deadline
+rejecting its promise and freeing the parent's dispatch place while the worker
+was still alive. The fixture observes readiness before starting the deadline,
+receives a termination acknowledgement over stdout and explicitly permits exit.
+The production waiter now reports the timeout after child close and cancels its
+remaining escalation timer. Worker protocol/controller owners passed **44 tests /
+95 parent-process assertions**, with additional lifecycle assertions inside the
+isolated probe; the final owning regression passed again after a small test
+cleanup. Host/SDK types, boundary and lint passed. No full local gate has run on
+that head; hosted checks and independent review remain required. This fixes the
+existing dispatch boundary; it does not yet reconcile durable reservations or
+confirm every retained descendant after process loss.
