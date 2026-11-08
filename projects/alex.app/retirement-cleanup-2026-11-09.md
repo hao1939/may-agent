@@ -70,8 +70,10 @@ The ledger's SHA-256 remains
 
 Online controls require a loaded App runtime. Re-enabling retired controllers
 to retire their records would risk replaying obsolete work. Generic offline
-withdrawal tooling is proposed in
-[Host PR #401](https://github.com/hao1939/may-agent/pull/401).
+withdrawal tooling merged in
+[Host PR #401](https://github.com/hao1939/may-agent/pull/401) at
+`f29d3132535e2b01d7b5196141e2f62de7070f8b` on 2026-11-09 (Shanghai).
+The merge does not apply the installation plan or deploy the Host.
 It requires reviewed exact preimages, a complete census, stopped Host/workers
 and a verified offline backup. It uses canonical cancellation, preserving
 accepted attempts; eligible unadmitted inputs become stopped with null results and retain
@@ -107,13 +109,17 @@ two admitted inputs and eleven retained aliases. The private
 `review-correction-receipt.json` records those exact bindings and supersedes the
 old rehearsal's applicability. No production state was changed in either trial.
 
-Thirty-one focused regressions pass, including accepted answers whose inbox
+Thirty-five focused regressions passed on the reviewed revision, including accepted answers whose inbox
 links were never projected, unanswered admissions, input-only CLI retirement
 without activating Task authority, complete-census refusal, reason whitespace,
-legacy modes, rollback and preservation of independent authority waits.
-Full Host CI status belongs to PR #401.
+legacy modes, rollback, completion-receipt preservation, cross-App control-key
+isolation and preservation of independent authority waits. The merged operation
+source matches that reviewed revision. Full Host CI status belongs to PR #401.
+The saved preparation snapshot contains no receipt-ended Task among its 66
+nonterminal candidates, so the generation-census correction leaves that count
+unchanged. This is a snapshot audit, not a new live census.
 
-Production withdrawal requires Host PR review/merge, exact disposition and
+The Host source prerequisite is satisfied. Production withdrawal still requires exact disposition and
 supported settlement of the two admitted caller boundaries, a new complete plan,
 and the documented offline apply with a verified backup. Preserve all admission
 and accepted-attempt evidence; an existing semantic withdrawal is not permission
