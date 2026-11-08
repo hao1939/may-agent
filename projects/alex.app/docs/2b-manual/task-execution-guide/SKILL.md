@@ -268,6 +268,20 @@ recurring work. The capability requires the paired Host/SDK source revision in t
 On an older installation, return a missing closure capability
 through the existing owner path, not a reason to create a repeating review job.
 
+**Prepared, not installed:** [Host PR #398](https://github.com/hao1939/may-agent/pull/398)
+adds an opt-in `tasks.closeOnResult` App callback. Alex's held companion policy
+accepts an explicit evidenced converged `result.taskDisposition` with
+`{kind: "close", reason}` for finite message/goal assignments. Standing
+audit/research cycles and evaluator procedures retain their responsibility.
+The Host restricts this path to the same App's App-created assignments, guards
+remaining input and waits, and atomically saves result, caller answer and closure.
+Delegated work still requires its recorded creating Task's guarded close.
+After the reviewed Host is merged and separately deployed, activate the companion
+App definitions and verify `read.contract("alex").taskPolicy.closeOnResult`.
+Until then, use the installed creator/operator controls above. Preserve the
+review-admission identity fix when integrating the companion. Historical records
+use bounded review; do not rerun their workers to manufacture closure results.
+
 For a large Alex backlog, use `task-disposition-review` with
 `{appId: "alex", limit: 10}` and continue with the returned `cursor`.
 Save each page before advancing; retry only `retryTaskIds` through

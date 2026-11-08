@@ -26,11 +26,9 @@ retains historical rollout evidence.
 [Message Lifecycle](message-lifecycle.md) owns conversational behavior;
 [App Contract](agent-app.md) owns declaration and input mapping.
 
-Read the lifecycle below first. Use [the executor contract](task-attempts.md#one-attempt-interface)
-and [resource reads](#resource-read-interface) as references when implementing an adapter.
-
-
-For execution input, live actions, result fields and acceptance, read [Task attempts and results](task-attempts.md). This chapter owns the durable lifecycle and Conditions.
+Read the lifecycle below first. [Task attempts and results](task-attempts.md)
+owns execution input, actions and acceptance. Use [resource reads](#resource-read-interface)
+for adapter implementation; this chapter owns the durable lifecycle and Conditions.
 
 ## State and continuing responsibility
 
@@ -75,29 +73,18 @@ accepted decisions, not new Task modes, stored phases or required schema fields.
 An open reusable Conversation has a standing input route; a finished finite
 report review does not acquire one merely because someone could ask again.
 
-Normal completion must connect the owner's ending decision to its authorized
-effect. For App-created finite assignments, the opt-in `tasks.closeOnResult`
-App callback consumes the exact accepted result and returns a closure reason or
-null. Alex requires an explicit evidenced `result.taskDisposition` with
-`kind: "close"`, and excludes standing audit/research cycles and evaluator
-procedures. The Host applies this policy only to assignments whose recorded
-creator is that same App without a creating Task; delegated and unattributed
-historical assignments retain their existing closure authority. Result and
-closure commit atomically after current input/wait guards, preserving the caller
-answer and accepted attempt. `converged` alone still leaves a Task idle.
+An opt-in `tasks.closeOnResult` App policy can end its own App-created finite
+assignment from an explicit accepted owner decision. Result, caller answer and
+closure commit atomically; pending input and waits prevent ending. Task-created
+and unattributed assignments retain creator authority. [Host PR #398](https://github.com/hao1939/may-agent/pull/398)
+implements this optional policy but is not deployed. Alex's requirements and
+adoption boundary are in the [Task execution guide](../2b-manual/task-execution-guide/SKILL.md).
 
-Historical idle records need a one-off resumable evidence review through the
-existing guarded closure controls; do not rerun their workers just to manufacture
-a new completion result. No permanent backlog poller or new Task state is needed.
-
-When none of these responsibilities applies, the owner reviews the finite
-assignment and its considered inputs: accept fulfillment, retain an exact
-unresolved obligation, transfer remaining work to an accountable owner with a
-verified return arrangement, or record an authorized unfulfilled/withdrawn
-disposition. Once its responsibility is ended, close or cancel through the
-existing guarded controls. A transferred request alone does not release a
-promise to verify the final result. Do not retain duplicate wrappers solely
-because a real obligation exists elsewhere.
+When none of these responsibilities applies, the creator judges fulfillment,
+transfer with a verified return route, or authorized unfulfilled/withdrawn
+disposition, then closes or cancels through guarded controls. A transferred
+request alone does not release a promise to verify the result; independent work
+elsewhere does not itself justify retaining duplicate wrappers.
 
 The assigned agent owns progress and proposes the disposition under App policy.
 The creator controls requirements and continuation authority. A current creating
@@ -108,11 +95,9 @@ these decisions and returns scoped answers to callers. An evaluator supplies
 evidence and advice; a provider supplies facts; neither silently acquires the
 assignment or authority to close another owner's work.
 
-Archive means retaining ended work in history, searchable by its identity and
-links. It adds no execution state and requires no deletion of results. An open
-record with no known next responsibility needs owner judgment before it can
-be treated as archived. Age, an empty queue, and `converged` alone cannot supply
-that judgment. Use a bounded review of existing outcomes and caller links, not
+Archive retains ended work and evidence in searchable history, without another
+execution state. Open work needs an owner decision before archival; age, an empty
+queue and `converged` alone cannot supply it. Use bounded outcome/caller review, not
 one new evaluator Task for every old record.
 
 For large existing populations, Alex's read-only `task-disposition-review`
