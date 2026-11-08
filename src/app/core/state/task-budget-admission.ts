@@ -113,6 +113,19 @@ export class TaskBudgetAdmissionStore {
       });
   }
 
+  /** Called by common managed-start admission, after validating the live actor. */
+  admitHelper(task: BudgetTaskRef, invocationId: string, now: number): string {
+    const rootRef = this.budget.binding(task);
+    if (!rootRef) this.defer(task, "adoption-required", task);
+    const root = this.budget.root(rootRef)!;
+    if (root.purpose !== "ordinary") this.defer(task, "protected-policy", rootRef);
+    this.renew(root, now);
+    const charged = this.budget.charge({ task, kind: "helper", invocationId }, now);
+    if (charged.kind === "deferred")
+      throw new TaskBudgetDeferredError({ ...charged, sponsor: root.sponsor, purpose: root.purpose });
+    return charged.receipt.operationId;
+  }
+
   /** Recheck under the transaction that records a hold, avoiding lost funding
    * or adoption wakes between a rolled-back admission and its saved constraint. */
   stillConstrained(constraint: TaskFundingConstraint, now = Date.now()): boolean {

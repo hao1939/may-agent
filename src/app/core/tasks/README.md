@@ -430,7 +430,14 @@ their historical facts and require explicit adoption before funded execution;
 loading them never invents historical spending.
 
 This increment provides no production activation command or daemon option.
-Managed helper charging, protected
-coordination funding, authorized grant/cap changes and the remaining execution reservations must be integrated before
+Common manager start admission now charges each separately admitted helper or
+resume, records exact invocation/session/attempt evidence, and covers the primary
+agent once through its paid attempt. Only an opaque Host adapter capability can
+request that coverage; source labels and nested helpers cannot. Saved-result
+reads are free. A denied resume preserves its transcript and retained session.
+Admitted starts remain charged if preparation or later execution fails.
+
+Caller deferral handling, protected coordination funding, authorized grant/cap
+changes and the remaining execution reservations must be integrated before
 activation is exposed. Protected accounts currently defer until their installed
 coordination validation exists; ordinary contributions cannot inherit them.

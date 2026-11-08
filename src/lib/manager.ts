@@ -1,6 +1,7 @@
 import { type TSchema } from "typebox";
 import { observeTaskFeedback, type TaskExecutionContext } from "./task-execution-context.js";
 import { prepareTaskWorkspaceContext, taskWorkspacePrompt } from "./task-workspace-context.js";
+import { admitManagedTaskStart, type TaskPrimaryStart } from "../app/core/state/task-budget-managed-start.js";
 /**
  * Durable agent session runtime.
  *
@@ -114,6 +115,8 @@ export interface RunOptions {
   /** Current fenced App Task attempt exposed only to scoped Task tools. */
   taskBinding?: TaskBinding;
   taskContext?: TaskExecutionContext;
+  /** Opaque Host adapter capability; never persisted or inherited by helpers. */
+  taskPrimaryStart?: TaskPrimaryStart;
   contextPrompt?: string;
   /** Runtime that exclusively owns crash recovery for this session. */
   recoveryOwner?: string;
@@ -150,6 +153,7 @@ export type CallAgentOptions = Pick<
   | "projectId"
   | "taskBinding"
   | "taskContext"
+  | "taskPrimaryStart"
   | "contextPrompt"
   | "recoveryOwner"
   | "stepLabel"
@@ -445,34 +449,31 @@ export class SubagentManager {
       resume.added.push(newUserTurn);
     }
 
-    // Recovery messages are runtime-authored input. The agent does not emit a
-    // message_end event for them, so append them explicitly before resuming.
-    try {
-      for (const message of resume.added) {
-        appendSessionMessage(this._persistDir, sessionId, message);
-      }
-    } catch (err) {
-      const reason = `Failed to persist session recovery: ${err instanceof Error ? err.message : String(err)}`;
-      this.emitSessionResumeFailed(sessionId, meta, reason, "resume_persistence_failed", true);
-      throw err;
-    }
-
-    if (opts.resetDbRow) {
-      // Clear stale endedAt/error in the DB row so the session looks fresh
-      // again. updateSessionDb uses COALESCE(?, endedAt) which keeps the old
-      // value on null, so we have to write directly.
+    const prepareAdmittedResume = () => {
+      // Do not change retained evidence when shared admission denies this start.
+      // Runtime-authored recovery input is persisted after admission.
       try {
-        const db = getDb(this._persistDir);
-        db.run(`UPDATE sessions SET status = 'running', endedAt = NULL, error = NULL WHERE sessionId = ?`, [sessionId]);
-      } catch {
-        /* best-effort — manager.run will re-save the registry row */
+        for (const message of resume.added) appendSessionMessage(this._persistDir, sessionId, message);
+      } catch (err) {
+        const reason = `Failed to persist session recovery: ${err instanceof Error ? err.message : String(err)}`;
+        this.emitSessionResumeFailed(sessionId, meta, reason, "resume_persistence_failed", true);
+        throw err;
       }
-    }
+      if (opts.resetDbRow) {
+        // Clear stale terminal fields only for an admitted resume.
+        try {
+          const db = getDb(this._persistDir);
+          db.run(`UPDATE sessions SET status = 'running', endedAt = NULL, error = NULL WHERE sessionId = ?`, [sessionId]);
+        } catch {
+          /* best-effort — the admitted start re-saves the registry row */
+        }
+      }
+    };
 
     const task = opts.injectUserMessage ?? meta.task;
 
     try {
-      this.run(meta.agent, task, {
+      this.startDefinition(definition!, task, {
         sessionId,
         parentSessionId: meta.parentSessionId,
         workflowRunId: meta.workflowRunId,
@@ -500,7 +501,7 @@ export class SubagentManager {
         // Transcript metadata is facts, not authority for a new attempt.
         taskBinding: opts.taskBinding,
         taskContext: opts.taskContext,
-      });
+      }, prepareAdmittedResume);
     } catch (err) {
       const reason = `Failed to resume session: ${err instanceof Error ? err.message : String(err)}`;
       this.emitSessionResumeFailed(sessionId, meta, reason, "resume_run_failed", true);
@@ -552,6 +553,15 @@ export class SubagentManager {
 
   /** Start from an immutable definition captured by the caller. */
   runDefinition(def: SubagentDefinition, task: string, opts?: RunOptions): string {
+    return this.startDefinition(def, task, opts);
+  }
+
+  private startDefinition(
+    def: SubagentDefinition,
+    task: string,
+    opts?: RunOptions,
+    onAdmitted?: () => void,
+  ): string {
     const parent = opts?.parentSessionId ? this._sessions.get(opts.parentSessionId) : undefined;
     if (parent) {
       if (parent.status !== "running" || !parent.executionScope) throw new Error("Caller is not executing");
@@ -563,6 +573,7 @@ export class SubagentManager {
         ...opts,
         taskBinding: parent.taskBinding ?? opts?.taskBinding,
         taskContext: parent.taskContext ?? opts?.taskContext,
+        taskPrimaryStart: undefined,
         recoveryOwner: parent.recoveryOwner ?? opts?.recoveryOwner,
         executionRoot: parent.executionRoot ?? opts?.executionRoot,
         toolPolicy: opts?.toolPolicy ?? parent.toolPolicy,
@@ -606,6 +617,16 @@ export class SubagentManager {
     if (requestedStructuredCompletion && persistentChat) {
       throw new Error("Structured workflow completion is not supported for persistent chat sessions");
     }
+
+    const existingMeta = this._registry.getSession(sessionId);
+    admitManagedTaskStart(getDb(this._persistDir), {
+      sessionId,
+      binding: opts?.taskBinding,
+      retainedBinding: existingMeta?.taskBinding,
+      primary: opts?.taskPrimaryStart,
+      persistentChat,
+    });
+    onAdmitted?.();
 
     const usage = observeExecutionUsage(
       this._persistDir,
@@ -759,7 +780,6 @@ export class SubagentManager {
       executionRoot: opts?.executionRoot,
     };
 
-    const existingMeta = this._registry.getSession(sessionId);
     if (!existingMeta && opts?.resumeMessages?.length) {
       for (const message of opts.resumeMessages) {
         try {
@@ -801,6 +821,9 @@ export class SubagentManager {
     // Register before publishing session.start so synchronous subscribers see
     // the same live state as the durable event. Roll back the in-memory and
     // registry state if the required persistence boundary rejects the event.
+    // Reusing a session for a paid resume must wait for the new invocation,
+    // rather than return the previous invocation's cached terminal result.
+    this.completedResults.delete(sessionId);
     this._sessions.set(sessionId, session);
     try {
       this.bridgeEvents(session);
@@ -1063,6 +1086,7 @@ export class SubagentManager {
       projectId: opts?.projectId,
       taskBinding: opts?.taskBinding,
       taskContext: opts?.taskContext,
+      taskPrimaryStart: opts?.taskPrimaryStart,
       recoveryOwner: opts?.recoveryOwner,
       stepLabel: opts?.stepLabel,
       contextPrompt: opts?.contextPrompt,

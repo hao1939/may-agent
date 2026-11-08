@@ -1,4 +1,5 @@
 import { taskExecutionContext } from "./task-context.js";
+import { taskPrimaryStart } from "../../core/state/task-budget-managed-start.js";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { taskAgentResultSchema as appTaskAgentResultSchema } from "@may-agent/sdk";
@@ -129,6 +130,7 @@ async function executeTaskAgent(
     taskContext,
     contextPrompt: "Pursue the assignment in the current Task decision brief and return the result required by finish().",
     taskBinding: taskContext.taskBinding,
+    taskPrimaryStart: taskPrimaryStart(taskContext.taskBinding),
     signal: attempt.signal,
     sessionStarted: input.sessionStarted,
     source: "app-task-agent",
