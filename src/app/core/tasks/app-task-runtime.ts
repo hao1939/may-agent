@@ -26,6 +26,7 @@ import { stateTransaction } from "../../../lib/db/transaction.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "../events/bus.js";
 import { createRuntimeTaskRead, readRuntimeTaskView } from "../reads/app-read.js";
+import { runtimeWorkloadSource } from "../reads/task-workload.js";
 import { readInstalledAppContract } from "../reads/app-contract.js";
 import type { AppTurnTarget, CreateAppInboxItem } from "../state/app-inbox-store.js";
 import { getAppInboxItem } from "../state/app-inbox-store.js";
@@ -1021,6 +1022,18 @@ export function listLoadedAppTaskViews(input: { bus: EventBus; appId: string; op
   const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId);
   if (!descriptor) throw new Error(`App ${input.appId} has no loaded Task runtime`);
   return createRuntimeTaskRead({ taskStateConfig: appTaskConfig(descriptor) }).list(input.options);
+}
+
+export function readLoadedAppTaskWorkload(input: {
+  bus: EventBus; appId: string; options?: import("@may-agent/sdk").TaskWorkloadOptions;
+}) {
+  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId);
+  if (!descriptor) throw new Error(`App ${input.appId} has no loaded Task runtime`);
+  const opts = appRouterOptionsByBus.get(input.bus);
+  return createRuntimeTaskRead({
+    taskStateConfig: appTaskConfig(descriptor),
+    ...(opts ? { workloadSource: runtimeWorkloadSource(opts, descriptor) } : {}),
+  }).workload(input.options);
 }
 
 export function listLoadedAppTaskOutcomeViews(input: {

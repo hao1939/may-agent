@@ -113,6 +113,18 @@ export class HostCapacity {
     return { running: this.running, waiting: this.waiters.length };
   }
 
+  /** Call only on the controller Host authority, never a worker-local limiter. */
+  workloadSnapshot() {
+    return {
+      available: true as const,
+      scope: "current-host-process" as const,
+      maxConcurrent: this.limit,
+      backgroundMaxConcurrent: this.backgroundLimit,
+      reservedSlots: this.running,
+      waitingAcquisitions: this.waiters.length,
+    };
+  }
+
   private releaseHandle(foreground: boolean): () => void {
     let released = false;
     return () => {

@@ -321,6 +321,9 @@ export type AppRead = {
   appResult(itemId: string): Promise<AppResult | null>;
   /** Missing Task access rejects; empty results mean a scoped read found no matching work. */
   tasks: {
+    /** Optional installed read. Counts cover only the bounded page, never the
+     * fleet. Reading neither accepts work nor authorizes repriority/closure. */
+    workload?(options?: TaskWorkloadOptions): Promise<TaskWorkload>;
     list(options?: TaskListOptions): Promise<TaskPage>;
     /** Opt-in outcome grouping. Optional Host reporting capability; rejects when not installed. */
     outcomes(options?: TaskOutcomeProjection): Promise<TaskOutcomePage>;
@@ -329,6 +332,45 @@ export type AppRead = {
   execution(executionId: string): Promise<ExecutionView | null>;
   /** Null means no matching metric; an absent reporting capability rejects. */
   metric(metricId: string): Promise<MetricView | null>;
+};
+
+export type TaskWorkloadOptions = {
+  agent?: string;
+  limit?: number;
+  cursor?: string;
+};
+
+/** Observations, not business judgments or utilization measurements. */
+export type TaskWorkload = {
+  version: 1;
+  observedAt: string;
+  scope: { appId: string; agent?: string };
+  coverage: { limit: number; scanned: number; matched: number; truncated: boolean; nextCursor?: string };
+  /** Exclusive execution categories in this page; pendingInputTasks overlaps. */
+  counts: {
+    running: number; runnable: number; waiting: number; attention: number;
+    idle: number; paused: number; cooldown: number; unknown: number;
+    pendingInputTasks: number;
+  };
+  examples: {
+    blockers: Array<{ taskId: string; kind: "waiting" | "paused" | "cooldown" | "dependency" | "unknown" }>;
+    /** Accepted idle results worth inspecting; neither unread nor proven fulfilled. */
+    dispositionCandidates: Array<{ taskId: string; acceptedAttemptId: string }>;
+    truncated: boolean;
+  };
+  limits: {
+    app: { backgroundMaxConcurrent: number; interactiveAdditional: 1 };
+    host: { available: false } | {
+      available: true; scope: "current-host-process";
+      maxConcurrent: number; backgroundMaxConcurrent: number;
+      reservedSlots: number; waitingAcquisitions: number;
+    };
+    /** These shared authorities are not installed by the feedback read. */
+    agent: { available: false };
+    root: { available: false };
+  };
+  queueWait: { available: false };
+  resourceHealth: { available: false };
 };
 
 /** Disposable provider observation memory, never Task state or a delivery queue. */
@@ -479,6 +521,8 @@ export type TaskAttempt = {
   };
   /** Snapshot at attempt start. Use read.tasks.get(task.id) for current facts. */
   task: TaskDetail;
+  /** Opt-in starting observation; current reads remain available separately. */
+  workload?: TaskWorkload | { available: false };
   /**
    * The same scoped Task reads available to workflows and agent tools.
    * Reads neither consume pending input nor change this attempt's binding.
@@ -593,6 +637,7 @@ export type TaskExecutor = (attempt: TaskAttempt) => Promise<TaskReconcileResult
 
 /** Bounded task-attempt facts supplied without exposing task storage or prompt packets. */
 export type TaskReconciliationContext<TInput = unknown> = {
+  workload?: TaskWorkload | { available: false };
   /** Host-supplied starting state, including accepted work, Conditions and pending input. */
   task: TaskDetail;
   appId: string;

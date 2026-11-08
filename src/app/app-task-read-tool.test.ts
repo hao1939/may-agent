@@ -198,7 +198,7 @@ describe("App Task read tool", () => {
         get: () => null,
       },
     });
-    for (const action of ["list", "outcomes"]) {
+    for (const action of ["list", "workload", "outcomes"]) {
       expect(
         text(
           await tool.execute("wrong-scope", {
@@ -208,7 +208,7 @@ describe("App Task read tool", () => {
           }),
         ),
       ).toEqual({
-        error: "list and outcomes are scoped to the current App; use get with target.appId for an exact cross-App Task",
+        error: "list, workload and outcomes are scoped to the current App; use get with target.appId for an exact cross-App Task",
       });
     }
   });

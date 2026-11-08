@@ -21,6 +21,7 @@ import type { EventEnvelope } from "../events/bus.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent } from "../events/bus.js";
 import { createRuntimeAppRead, readRuntimeTaskView } from "../reads/app-read.js";
 import { readInstalledAppContract } from "../reads/app-contract.js";
+import { readTaskWorkload, runtimeWorkloadSource } from "../reads/task-workload.js";
 import {
   readAppTaskLiveEvent,
   readAppTaskReconciliationEvents,
@@ -168,6 +169,18 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
   const conversationIds = [
     ...new Set(inputs.flatMap((input) => (input.communication ? [input.communication.conversationId] : []))),
   ];
+  const taskReadOptions = {
+    getDb: () => descriptor.resourceStore.db,
+    taskStateConfig: appTaskConfig(descriptor),
+    readOutcomes: opts.readOutcomes,
+    workloadSource: runtimeWorkloadSource(opts, descriptor),
+  };
+  const taskReads = createRuntimeAppRead(taskReadOptions).tasks;
+  let workload: TaskAttempt["workload"];
+  if (opts.workloadFeedbackAppId === descriptor.id) {
+    try { workload = readTaskWorkload(taskReadOptions, { agent: claim.agent }); }
+    catch { workload = { available: false }; }
+  }
   const attempt: TaskAttempt = {
     appId: descriptor.id,
     attemptId: claim.attemptId,
@@ -178,6 +191,7 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
       instructions: `Act as the selected May agent ${claim.agent}.`,
     },
     task: structuredClone(task),
+    ...(workload ? { workload } : {}),
     read: {
       async communication(inputId, query) {
         if (closed) throw new Error("Task attempt is closed");
@@ -188,11 +202,7 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
           : readAppConversationResource(config.resourceStore.db, item.appId, item.conversationId!, { limit: 40 });
       },
       contract: async (appId) => readInstalledAppContract(configuredRegistryEntries(opts), appId),
-      tasks: createRuntimeAppRead({
-        getDb: () => descriptor.resourceStore.db,
-        taskStateConfig: appTaskConfig(descriptor),
-        readOutcomes: opts.readOutcomes,
-      }).tasks,
+      tasks: taskReads,
     },
     ...(claim.previousAttempt ? { previousAttempt: structuredClone(claim.previousAttempt) } : {}),
     cwd: input.executionPaths.workspaceDir,

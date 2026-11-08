@@ -31,6 +31,36 @@ event emission and output-path helpers live beside their lifecycle callers.
 `execution.ts` and `workspace.ts` are private contracts; concrete implementations
 live in `adapters/` and `conversations/`, selected in `composition/task-execution.ts`.
 
+## Workload observations
+
+`read.tasks.workload({agent?, limit?, cursor?})` supplies one bounded current-App
+page. Check the installed App contract's `taskReads.workload === 1` before using
+it on older Hosts. The model `tasks` tool uses `action: "workload"`; operator
+control uses `app.tasks.workload` with `appId` and the same options. Reads neither
+acknowledge work nor change scheduling, funding or closure authority.
+
+Counts describe only the scanned page. Agent filtering happens after that App
+page is scanned; follow `coverage.nextCursor` and retain each observation's time
+and coverage. Idle results are inspection candidates, including standing work;
+they do not establish unread work, fulfillment or execution utilization. Graph
+expansion is capped; an observation that exceeds the cap fails visibly and can
+be retried with a smaller page. Attempt history is not loaded.
+
+Host limits are available only in the controller process. Isolated attempt
+workers report them unavailable; agent/root limits, ready-wait timing and
+physical resource health remain unavailable in this increment. Missing facts
+do not establish spare capacity. No shared credit accounting is installed.
+
+Set `MAY_TASK_WORKLOAD_FEEDBACK_APP` to one installed App ID to opt that App's
+attempts into an agent-scoped starting observation. It is disabled by default;
+the read capability remains available independently. Observation failure gives
+`{available:false}` without failing execution. Workflows, their managed helpers
+and native Task executors receive the same `workloadAtAttemptStart` decision
+section. A later Task refresh does not refresh that observation. Use explicit
+scoped reads when a decision requires newer evidence. Pressure informs methods,
+priority and discretionary expansion; required work remains owed, and the
+creator retains closure. This source option does not authorize App activation.
+
 ## Execution procedure and recovery
 
 The assigned agent owns the outcome. The App declares the execution procedure;

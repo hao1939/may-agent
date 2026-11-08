@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { writeJsonArtifact } from "./artifacts.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 import type { SubagentDefinition } from "./types.js";
-import { taskWorkContext, taskWorkGuidance } from "./task-work-context.js";
+import { taskWorkContext, taskWorkGuidance, taskWorkloadGuidance } from "./task-work-context.js";
 
 export type TaskWorkspaceBrief = { taskFile: string } | { error: string };
 
@@ -66,6 +66,7 @@ export function prepareTaskWorkspaceContext(
       "## Current work at attempt start",
       taskWorkGuidance(work),
       JSON.stringify(work, null, 2),
+      ...(rec.workload ? ["", "## Workload at attempt start", taskWorkloadGuidance(rec.workload), "Read reconciliation.workload in context.json for the scoped observation supplied to this attempt."] : []),
       "",
       "## Full context and discovery",
       "- Read context.json beside this file for full supplied input, references/attachments, pending events, waits, children, prior attempt and accepted result references. Fields omitted here remain there; inspect input/context references even when they are not named in this brief.",

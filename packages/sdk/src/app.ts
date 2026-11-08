@@ -44,6 +44,8 @@ export type {
   TaskExecutor,
   TaskView,
   TaskListOptions,
+  TaskWorkload,
+  TaskWorkloadOptions,
   TaskPage,
   TaskOutcomeProjection,
   TaskOutcomeView,
@@ -423,6 +425,8 @@ export type AppContract = {
   observations: ObservationContract[];
   /** Presence confirms that the loaded Host exposes this App's result-ending policy. */
   taskPolicy?: { closeOnResult: true };
+  /** Presence confirms the loaded Host's scoped workload read contract. */
+  taskReads?: { workload: 1 };
 };
 
 export type AppAction<TInputSchema extends TSchema = TSchema> = {

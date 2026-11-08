@@ -14,6 +14,7 @@ import { usageReply } from "../../test/fixtures/execution-usage.js";
 import { prepareAgentExecution } from "./agent-execution.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 import { fakeModel } from "../../test/fixtures/model.js";
+import { workloadObservation } from "../../test/fixtures/task-workload.js";
 
 function fixture(root: string) {
   const task: TaskDetail = {
@@ -175,6 +176,32 @@ test("refresh keeps current evidence, independent approval and a scoped last-kno
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test("workload retains its attempt-start time and coverage across Task refresh; absent feedback stays absent", async () => {
+  const root = mkdtempSync(join(tmpdir(), "decision-workload-"));
+  try {
+    const f = fixture(root);
+    const read = createTaskDecisionContext(f.context);
+    expect(packet(await read()).workloadAtAttemptStart).toBeUndefined();
+    f.context.reconciliation.workload = workloadObservation();
+    const first = await read();
+    expect(packet(first).workloadAtAttemptStart).toEqual(workloadObservation());
+    expect(JSON.stringify(first)).toContain("Required work remains owed under pressure");
+    f.setCurrent({ ...f.task, resourceVersion: 4 });
+    const updated = packet(await read());
+    expect(updated.observed.resourceVersion).toBe(4);
+    expect(updated.workloadAtAttemptStart).toEqual(workloadObservation());
+    f.context.reconciliation.workload = { available: false };
+    expect(packet(await read()).workloadAtAttemptStart).toEqual({ available: false });
+    // The workspace brief references the same retained observation for helpers.
+    delete f.context.workspaceBrief;
+    const brief = prepareTaskWorkspaceContext(f.context, root, []);
+    if (!("taskFile" in brief)) throw new Error(brief.error);
+    expect(readFileSync(brief.taskFile, "utf8")).toContain("Workload at attempt start");
+    const full = JSON.parse(readFileSync(join(brief.taskFile, "..", "context.json"), "utf8"));
+    expect(full.reconciliation.workload).toEqual({ available: false });
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
 test("initial failure and a changed generation preserve known scope without claiming a fresh binding", async () => {

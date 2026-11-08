@@ -21,6 +21,7 @@ export function readAppContract(app: Readonly<AppDefinition>): AppContract {
     appId: app.id,
     agent: (app.agent ?? app.owner)!.trim().replace(/^agent:/, ""),
     inputSchema: structuredClone(app.inputSchema),
+    ...(app.tasks || app.conversation ? { taskReads: { workload: 1 as const } } : {}),
     ...(app.tasks?.closeOnResult ? { taskPolicy: { closeOnResult: true as const } } : {}),
     observations: (app.observers ?? []).flatMap((observer) =>
       "inspect" in observer

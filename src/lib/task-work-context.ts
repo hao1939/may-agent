@@ -1,5 +1,10 @@
 import type { TaskAttempt, TaskDetail, TaskReconciliationEvents } from "@may-agent/sdk/app";
 
+/** Shared interpretation for every executor; observations grant no authority. */
+export function taskWorkloadGuidance(workload: TaskAttempt["workload"]): string {
+  return workload ? "Workload at attempt start is a scoped observation, not an admission decision. Respect its time, coverage and unavailable fields; missing or truncated facts do not prove spare capacity. Required work remains owed under pressure. Use the observations to judge priorities, methods and discretionary expansion. Idle and blocked assignments are not execution utilization. Pressure does not prove fulfillment or authorize closure; the creator retains that decision." : "";
+}
+
 /** Disposable facts for presentation, never a scheduler or a judgment of useful progress. */
 export function taskWorkContext(
   task: TaskDetail,

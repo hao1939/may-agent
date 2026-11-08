@@ -1047,7 +1047,7 @@ describe("caller feedback PoC", () => {
     const result = await tool.execute("contract", { action: "contract", target: { appId: "reviewer.app" } });
     const content = result.content[0];
     if (content?.type !== "text") throw new Error("Expected contract text");
-    expect(JSON.parse(content.text)).toEqual({ appId: "reviewer", agent: "reviewer", inputSchema, observations: [] });
+    expect(JSON.parse(content.text)).toEqual({ appId: "reviewer", agent: "reviewer", inputSchema, observations: [], taskReads: { workload: 1 } });
     const clone = getLoadedAppInputContract({ bus, appId: "reviewer" });
     clone.inputSchema.properties = {};
     expect(getLoadedAppInputContract({ bus, appId: "reviewer" }).inputSchema).toEqual(inputSchema);

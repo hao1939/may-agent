@@ -78,6 +78,8 @@ export type {
   TaskExecutor,
   TaskView,
   TaskListOptions,
+  TaskWorkload,
+  TaskWorkloadOptions,
   TaskPage,
   TaskOutcomeProjection,
   TaskOutcomeView,
