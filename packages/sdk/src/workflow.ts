@@ -353,6 +353,18 @@ export type TaskWorkload = {
     /** Tasks with queued triggers or retained unanswered inputs, including waits. */
     pendingInputTasks: number;
   };
+  /** Optional on older Hosts. Canonical account provenance for matched Tasks
+   * in this page, not fleet totals or execution utilization. The first three
+   * categories sum to coverage.matched. Missing attribution is never inferred
+   * from structural parents, creator labels or the selected agent. */
+  assignments?: {
+    rootTasks: number;
+    contributions: number;
+    unattributed: number;
+    /** Distinct attributed roots represented by this page. A root can be in
+     * another App or outside the page; do not sum this across pages. */
+    representedRoots: number;
+  };
   examples: {
     blockers: Array<{
       taskId: string;

@@ -46,12 +46,24 @@ they do not establish unread work, fulfillment or execution utilization. Graph
 expansion is capped; an observation that exceeds the cap fails visibly and can
 be retried with a smaller page. Attempt history is not loaded.
 
+Optional `assignments` distinguishes attributed root Tasks, contributions and
+unattributed Tasks among that page's matched records. Only canonical account
+bindings establish these categories; structural parents and agent labels do not.
+`representedRoots` counts distinct known root references in this observation,
+including roots outside the page or App. It exposes no external Task identities
+or contents and must not be summed across pages. Missing attribution remains
+unknown; reads never adopt historical work or install accounting. These counts
+do not measure useful business outcomes or execution. Shared occupancy still
+counts actual primary/helper execution across contributions.
+
 Host limits originate in the controller process. Its dispatch carries a bounded
 capacity observation into the worker with its own `observedAt`; a later workload
 read never makes that old observation fresh. Workers without a parent observation
-report it unavailable and never substitute their private limiter. Agent/root
-limits and physical resource health remain unavailable. Missing facts do not
-establish spare capacity. No shared credit accounting is installed.
+report it unavailable and never substitute their private limiter. Shared
+Host/recipient/current-root execution and funding facts are available only when
+their corresponding policies and trusted scope are installed. Physical resource
+health remains unavailable. Missing facts do not establish spare capacity;
+observation installs no policies.
 
 Attempt-bound reads also expose the observed queue notification-to-dispatch
 interval for this Task. It includes pause/prerequisite time and lasts only for

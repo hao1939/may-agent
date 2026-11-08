@@ -164,6 +164,7 @@ export function readTaskWorkload(
         truncated: Boolean(page.nextCursor), ...(page.nextCursor ? { nextCursor: page.nextCursor } : {}) },
       counts: { running: 0, runnable: 0, waiting: 0, attention: 0, idle: 0,
         paused: 0, cooldown: 0, unknown: 0, pendingInputTasks: 0 },
+      assignments: { rootTasks: 0, contributions: 0, unattributed: 0, representedRoots: 0 },
       examples: { blockers: [], dispositionCandidates: [], truncated: false },
       limits: {
         app: { backgroundMaxConcurrent: config.maxConcurrent, interactiveAdditional: 1 },
@@ -188,9 +189,21 @@ export function readTaskWorkload(
           ...(constraint.scope ? { scope: constraint.scope.kind } : {}) } : {}) });
       else result.examples.truncated = true;
     };
+    // One keyed binding read per matched Task, in the same bounded snapshot.
+    // No parent inference, historical adoption or traversal of another App.
+    const binding = store.db.prepare("SELECT root_app_id, root_task_id FROM task_budget_bindings WHERE app_id = ? AND task_id = ?");
+    const representedRoots = new Set<string>();
+    const assignments = result.assignments!;
     for (const task of page.items) {
       if (agent && readAppTaskAgent(config, task.id, tree) !== agent) continue;
       result.coverage.matched++;
+      const root = binding.get(store.appId, task.id);
+      if (!root) assignments.unattributed++;
+      else {
+        representedRoots.add(JSON.stringify([root.root_app_id, root.root_task_id]));
+        if (root.root_app_id === store.appId && root.root_task_id === task.id) assignments.rootTasks++;
+        else assignments.contributions++;
+      }
       const resource = tree.resources?.[task.id];
       if (!resource) { result.counts.unknown++; blocker(task.id, "unknown"); continue; }
       if (tree.taskTriggers?.[task.id] || Object.keys(resource.status.inputWaits ?? {}).length)
@@ -237,6 +250,7 @@ export function readTaskWorkload(
         } else { result.counts.unknown++; blocker(task.id, "unknown"); }
       }
     }
+    assignments.representedRoots = representedRoots.size;
     store.db.exec("RELEASE task_workload_read");
     return result;
   } catch (error) {

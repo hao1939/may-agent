@@ -67,6 +67,7 @@ test("feedback separates actual runnable work, blockers, idle results and closed
   expect(observed.coverage).toMatchObject({ scanned: 5, matched: 5, truncated: false });
   expect(observed.counts).toEqual({ running: 1, runnable: 1, waiting: 2, attention: 0, idle: 1,
     paused: 0, cooldown: 0, unknown: 0, pendingInputTasks: 0 });
+  expect(observed.assignments).toEqual({ rootTasks: 0, contributions: 0, unattributed: 5, representedRoots: 0 });
   expect(observed.examples.blockers).toEqual([{ taskId: "dependency", kind: "dependency" }, { taskId: "waiting", kind: "waiting" }]);
   expect(observed.examples.dispositionCandidates).toEqual([{ taskId: "idle", acceptedAttemptId: expect.any(String) }]);
   expect(observed.limits).toMatchObject({ app: { backgroundMaxConcurrent: 3, interactiveAdditional: 1 },
@@ -93,6 +94,61 @@ test("agent-scoped counts preserve bounded App coverage and continuation instead
   expect(() => reader.workload({ agent: " " })).toThrow("agent");
   // Invalid queries release their read snapshot too.
   f.add("another");
+});
+
+test("assignment feedback separates canonical roots, contributions and unattributed work within each page and agent", () => {
+  const f = fixture();
+  f.add("a-legacy");
+  const budgets = new TaskBudgetAdmissionStore(f.db);
+  budgets.install({ appId: "sample", sponsor: { appId: "sample", agent: "sponsor" }, dailyCredits: 30, rootCredits: 20 });
+  f.add("b-root");
+  const contribute = (id: string, creatorId: string, agent = "worker") => observeAppTaskIntent(f.config, {
+    appAgent: "worker", creator: { appId: "sample", taskId: creatorId },
+    intent: { id, parentId: "root", agent, outcome: "Supply a contribution", acceptance: ["Evidence returned"] },
+  });
+  contribute("c-child", "b-root");
+  contribute("d-grandchild", "c-child", "other");
+  f.add("e-independent", { parentId: "b-root" }); // Structural parenting grants no account inheritance.
+  const before = f.db.prepare("SELECT total_changes() AS n").get();
+  expect(f.read()).toMatchObject({ assignments: { rootTasks: 2, contributions: 2, unattributed: 1, representedRoots: 2 } });
+  const read = createRuntimeTaskRead({ taskStateConfig: f.config });
+  expect(read.workload({ agent: "worker" })).toMatchObject({ coverage: { matched: 4 },
+    assignments: { rootTasks: 2, contributions: 1, unattributed: 1, representedRoots: 2 } });
+  const first = read.workload({ limit: 2 });
+  expect(first).toMatchObject({ coverage: { scanned: 2, matched: 2, truncated: true },
+    assignments: { rootTasks: 1, contributions: 0, unattributed: 1, representedRoots: 1 } });
+  const second = read.workload({ limit: 2, cursor: first.coverage.nextCursor });
+  expect(second).toMatchObject({ coverage: { scanned: 2, matched: 2, truncated: true },
+    assignments: { rootTasks: 0, contributions: 2, unattributed: 0, representedRoots: 1 } });
+  const third = read.workload({ limit: 2, cursor: second.coverage.nextCursor });
+  expect(third).toMatchObject({ coverage: { scanned: 1, matched: 1, truncated: false },
+    assignments: { rootTasks: 1, contributions: 0, unattributed: 0, representedRoots: 1 } });
+  expect(f.db.prepare("SELECT total_changes() AS n").get()).toEqual(before);
+});
+
+test("assignment feedback distinguishes same-named external roots without scanning or exposing their Tasks", () => {
+  const f = fixture();
+  const budgets = new TaskBudgetAdmissionStore(f.db);
+  const otherStore = AppTaskResourceStore.fromDb(f.db, "other");
+  const other = appTaskTestContext({ appDir: "/tmp/workload-fixture/other.app", appId: "other", agent: "worker",
+    resourceStore: otherStore, tree: { groups: { root: { id: "root", owner: "worker" } } } });
+  for (const appId of ["sample", "other"]) budgets.install({ appId, sponsor: { appId, agent: "sponsor" }, dailyCredits: 20, rootCredits: 15 });
+  f.add("work");
+  observeAppTaskIntent(other, { appAgent: "worker", intent: { id: "work", parentId: "root", outcome: "Another assignment", acceptance: ["Delivered"] } });
+  const destinationStore = AppTaskResourceStore.fromDb(f.db, "destination");
+  const destination = appTaskTestContext({ appDir: "/tmp/workload-fixture/destination.app", appId: "destination", agent: "worker",
+    resourceStore: destinationStore, tree: { groups: { root: { id: "root", owner: "worker" } } } });
+  for (const [id, creator] of [["one", { appId: "sample", taskId: "work" }], ["two", { appId: "other", taskId: "work" }],
+    ["three", { appId: "destination", taskId: "one" }]] as const) {
+    observeAppTaskIntent(destination, { appAgent: "worker", creator,
+      intent: { id, parentId: "root", outcome: "Return scoped facts", acceptance: ["Facts returned"] } });
+  }
+  const before = f.db.prepare("SELECT total_changes() AS n").get();
+  const observed = readTaskWorkload({ taskStateConfig: destination });
+  expect(observed).toMatchObject({ scope: { appId: "destination" }, coverage: { matched: 3, truncated: false } });
+  expect(observed.assignments).toEqual({ rootTasks: 0, contributions: 3, unattributed: 0, representedRoots: 2 });
+  expect(observed.counts.runnable).toBe(3);
+  expect(f.db.prepare("SELECT total_changes() AS n").get()).toEqual(before);
 });
 
 test("paused input and full capacity do not look like useful spare execution", () => {
@@ -231,6 +287,7 @@ test("the scoped model tool exposes the same facts and rejects unavailable reads
     scope: { appId: "sample", agent: "worker" },
     funding: { ordinary: { remaining: 2 }, currentRoot: { task: { taskId: "work" }, remaining: 2 } },
     counts: { runnable: 1 },
+    assignments: { rootTasks: 1, contributions: 0, unattributed: 0, representedRoots: 1 },
     coverage: { limit: 1, matched: 1, scanned: 1, truncated: false },
   });
   const old = createAppTaskReadTool({
@@ -263,6 +320,7 @@ test.each([undefined, "sample"])("attempt feedback is opt-in and shares workflow
     execute: async attempt => {
       if (pilot) {
         expect(attempt.workload).toMatchObject({ scope: { appId: "sample", agent: "worker" }, counts: { running: 1 },
+          assignments: { rootTasks: 1, contributions: 0, unattributed: 0, representedRoots: 1 },
           limits: { host: { available: false } }, funding: { ordinary: { remaining: 3 }, currentRoot: { available: true, remaining: 1 } } });
       } else expect(attempt.workload).toBeUndefined();
       const context = taskExecutionContext({ descriptor: { id: "sample" }, attempt,
