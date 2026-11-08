@@ -10,8 +10,9 @@ and [one authority for each resource](../1-principles/core-principles.md#one-aut
 **Implementation status:** Incremental source implementation underway. Creator
 consumption of published finite assessments is implemented and verified locally.
 Scoped feedback, dispatch observations and bounded coordination are in Host
-review. Shared credit accounting foundations are implemented on an isolated
-branch; creation, claims and helpers do not yet enforce them. Capacity extension
+review. Shared credit accounting foundations merged in Host #405. Creation,
+claims, authored seeds and managed starts have isolated integration increments
+under verification and review; no production activation is exposed. Capacity extension
 remains proposed. No agent
 activation or rollout is established by these source checks.
 
@@ -412,8 +413,10 @@ passed review revision `414b83578e`. Its full local gate retained one
 Conversation ordering failure: 3,940 passed / 3 skipped / 1 failed. The last
 message was an earlier human ask instead of the accepted corrected-source reply.
 Both parameter cases passed the unchanged owning diagnostic (2 tests /
-27 assertions). That failure and the coordination ordering failure remain
-unresolved evidence; green hosted checks do not establish their cause.
+27 assertions). That failure remains unexplained. A later controlled diagnostic
+reproduced the coordination waiting-report failure as a premature presentation
+wake; Host #408 waits for the exact report input to settle. This does not explain
+the separate fresh-human-input failure.
 
 Verification for this review: the existing Host capacity, controller and queue
 suites passed, **46 tests and 138 assertions**. They verify current scheduling
@@ -455,8 +458,51 @@ Closed receipt restoration remains free rather than fabricating historical costs
 Owning lifecycle checks passed 218 tests / 1,338 assertions. The subsequent
 funding, Inbox, receipt and metric checks passed 81 tests / 708 assertions,
 including protected-account isolation and exact cross-App adoption wakes.
-Host/SDK type checks, canonical App boundary and lint passed. The revision is
-frozen for its complete gate; no production installation switch is exposed.
-Executable seed bootstrap is a separate creation path and still needs accounting
-before activation. Managed helper admission, protected coordination funding,
-authorized cap/grant changes and additional execution reservations also remain.
+Host/SDK type checks, canonical App boundary and lint passed. Host
+[PR #406](https://github.com/hao1939/may-agent/pull/406), revision `eed61dfee7`,
+passed hosted Quality and Container. Its frozen local gate retained one
+waiting-report Conversation assertion failure: 3,947 passed / 3 skipped /
+1 failed / 22,972 assertions across 345 files. A controlled diagnostic holding
+the second reply for 30 milliseconds reproduced both parameter failures:
+an earlier asynchronous presentation wake can arrive after the next model call
+starts but before its reply settles. Test-only
+[PR #408](https://github.com/hao1939/may-agent/pull/408), `3299061244`, waits for
+the exact report input's durable settlement and retains all message, Request
+and restart assertions. Its owning file passed 53 tests / 745 assertions;
+Host/SDK types, boundary and lint and hosted Quality/Container passed. Full local
+verification is running. Frozen-clock and attempted gated-wake diagnostics did
+not establish message sorting as a defect and are not retained as product tests.
+
+Authored seed accounting is isolated in
+[PR #407](https://github.com/hao1939/may-agent/pull/407), `93f1075c5d`, stacked on
+#406. Production descriptor discovery explicitly identifies new authored seeds;
+fresh funded Tasks require exact App-only provenance and use the same creation
+admission inside bootstrap's transaction. Denial after the first seed Task
+rolls back every Task, grant, debit, binding and resource authority. Offline
+retained snapshots never invent historical creation costs and require explicit
+adoption for funded execution. The seed/resource-store/runtime-definition owners
+passed 44 tests / 286 assertions, and Host/SDK types, boundary and lint passed.
+Hosted Quality/Container passed. Its frozen full local run retained an existing
+Git-cleanup lifecycle failure: 3,951 passed / 3 skipped / 1 failed / 23,003
+assertions across 346 files. The unchanged cleanup diagnostic passed one test /
+20 assertions; its cause remains unproven, so the PR remains draft.
+
+The next isolated managed-start increment is revision `719daf0760`, stacked on
+#407. The manager's common start path accounts direct, workflow and nested
+helpers and resumes before dispatch. An opaque Host adapter capability and
+durable unique guard cover the primary once through its exact paid attempt.
+Source labels cannot grant coverage; a saved-result read is free. Denied
+resumes preserve retained transcript/session state. An owning test exposed a
+previous invocation's cached result being returned during a resume; each newly
+admitted start now invalidates that cache. The six-process primary/helper race
+uses actual schema-only worker connections. Its initial Host-startup connection
+variant retained SQLite contention and was corrected to exercise worker
+admission, without retrying execution. Owning manager, adapter and accounting
+checks passed 61 tests / 397 assertions before the final capability assertions;
+the final focused file passed four tests / 33 assertions. Host/SDK types,
+boundary and lint passed before that final test refinement. The frozen full
+gate is running. Admitted starts stay charged if preparation later fails.
+
+Structured helper caller deferrals, protected coordination funding, authorized
+cap/grant changes and additional execution reservations remain. No production
+installation switch, live activation or behavioral acceptance is established.

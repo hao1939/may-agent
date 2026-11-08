@@ -14,10 +14,12 @@ without multiplying budgets or making every observation a new assignment.
 
 **Design status:** Accepted direction for the mental model and workload behavior.
 The initial charging, renewal and coordination choices below are proposed refinements.
-**Implementation status:** Proposed. Agent ownership, creator-controlled revision
-and closure, bounded attempts and Host concurrency exist. Direct agent admission,
-the shared allowances and workload feedback below are not implemented by this
-document. Current durable admission still requires an App. The
+**Implementation status:** Incremental source implementation underway. Agent
+ownership, creator-controlled revision and closure, bounded attempts and Host
+concurrency exist. The shared accounting foundation merged; admission, seed and
+managed-start integration and workload feedback are under verification/review,
+as recorded in the implementation approach. Production budget activation and
+behavioral acceptance remain pending. Current durable admission still requires an App. The
 [standalone-agent proposal](standalone-agent-tasks.md) owns that addressing change.
 
 The [source and live-system review](../archive/reviews/agent-workload-gap-review-20261108.md)
