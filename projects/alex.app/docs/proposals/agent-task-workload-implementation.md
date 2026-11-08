@@ -907,8 +907,9 @@ Host [#425](https://github.com/hao1939/may-agent/pull/425), revision
 Two production-creation regressions failed first. Creation and production seed
 owners then passed **11 / 50**, and funding, coordination, managed-start,
 admission, accounting and real-process recovery owners passed **89 / 557**.
-Static checks and hosted Quality/Container passed. Its complete local gate is
-running; independent review remains. No configuration is activated.
+Static checks, hosted Quality/Container and its frozen complete local gate passed:
+**4,116 tests / 3 existing skips / 0 failures / 23,981 assertions across 357
+files**. Independent review remains. No configuration is activated.
 
 Host [#426](https://github.com/hao1939/may-agent/pull/426), revision
 `b49218bba5`, supplies shared Host, pinned recipient and canonical current-root
@@ -918,7 +919,7 @@ runtime and real-worker owners passed **332 / 3,610**. Final changed owners pass
 **13 / 48**, with additional lifecycle assertions inside the isolated worker.
 The actual worker's starting context and live scoped read agree, and joined
 cleanup returns occupancy to zero. Final Host/SDK types, boundary and lint passed.
-Hosted gates and a complete local gate remain pending.
+Hosted Quality and the complete local gate are running; Container passed.
 
 The paired App policy explains execution versus dispatch scope, the current-root
 boundary, and method adaptation without count-based closure. Its workload and
@@ -933,3 +934,13 @@ does not establish a production fix. #426 carries those fixture diagnostics
 forward. Historical adoption, unsupported direct/persistent-chat starts,
 operation-specific resource constraints, independent reviews and separately
 authorized activation/behavioral evidence remain outstanding.
+
+Host [#427](https://github.com/hao1939/may-agent/pull/427), revision
+`1c831e59be`, corrects pending-input counts after an attempt consumes its trigger.
+Two actual admission/settlement regressions first showed zero demand while the
+Task still owed an answer. The existing bounded workload page now counts retained
+input obligations, whether runnable or waiting, and removes them after completion.
+Workload, shared-execution feedback and retained-input decision-context owners
+passed **28 / 135**; final Host/SDK types, boundary and lint passed. Hosted checks
+and a complete local gate remain pending. No new lifecycle or accounting state is
+introduced.
