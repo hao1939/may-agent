@@ -194,6 +194,13 @@ adapts those operations to the SDK's Promise interface. Loaded-App access and
 model tools use the same implementation. Adapters preserve options and format
 results; the reporting implementation owns outcome membership and counts.
 
+A managed `readonly` execution receives a narrowed Task tool: list, workload,
+outcomes, exact get, contract and communication reads. Its advertised schema and
+invocation guard both exclude publication, apply, revision and closure. The
+restriction belongs to the prepared execution, so it cannot narrow a shared
+agent definition's separately authorized full tools. A review recommendation
+does not acquire write authority through the built-in Task tool.
+
 Task profiling retains dispatch identity, queue wait and total elapsed time.
 Session timestamps and execution-usage records supply execution duration, prompt
 preparation size and token usage. Task adapters do not duplicate those observations
