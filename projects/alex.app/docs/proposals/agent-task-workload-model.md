@@ -22,7 +22,7 @@ coordination integration are under verification/review,
 as recorded in the implementation approach. Production budget activation and
 behavioral acceptance remain pending. Fresh-state initialization and a conditional
 offline installation path for already cleaned retained state have source evidence.
-A one-way offline withdrawal path is under verification; it preserves history and
+A one-way offline withdrawal path has verified draft source; it preserves history and
 obligations and refuses automatic reactivation across unaccounted work. None of
 these source checks establishes a live cutover or online start exclusion.
 Current durable admission still requires an App. The
@@ -665,7 +665,7 @@ than become unrestricted creation paths.
 | Pending work, atomic claims, bounded retries and creator-controlled closure | Existing foundations; preserve them. |
 | Capacity | Draft source includes shared Host/recipient/root reservations, confirmed cleanup and active recovery, new-root defaults, full-method coordination reserve and real-worker one-place cooperation. Retained session continuation uses the bounded admission policy. Fresh-state initialization and externally isolated, cleaned retained-state installation have verified draft source. Operational activation and historical active adoption remain; direct/persistent sessions are unsupported under installed limits. |
 | Feedback | Draft source supplies bounded readiness, retained input demand, scoped actual execution, controller dispatch and credit observations, including typed capacity and checkout blockers. App review coalesces unchanged mechanical observations. Live delivery and adaptive behavior still need adoption evidence. |
-| Budget | Shared accounting foundations merged in Host #405. Draft source integrates creation, claims, seeds, primary/helper starts, caller deferrals, protected coordination and authorized root/sponsor funding changes. Offline installation preserves historical obligations without inventing spending; one-way withdrawal is under verification. Operational activation and historical active adoption remain. |
+| Budget | Shared accounting foundations merged in Host #405. Draft source integrates creation, claims, seeds, primary/helper starts, caller deferrals, protected coordination and authorized root/sponsor funding changes. Offline installation preserves historical obligations without inventing spending; one-way withdrawal has verified draft source. Operational activation and historical active adoption remain. |
 | Shared blockers | Draft source checks known Git checkout prerequisites before paying for an attempt and again at mutation, invalidates obsolete source/method requirements and retains scoped waiting evidence. Unknown samples and other physical resources do not establish spare capacity. |
 | Lifecycle integration | The shared reconciler, fenced store and attempt runner exist. Wake writers require a focused consistency review; App closure and Conversation effect preservation merged in Host #398, with live adoption tracked separately. The workload hooks are being integrated incrementally; shared budget deferral and settlement recovery are under review, with no production activation. |
 

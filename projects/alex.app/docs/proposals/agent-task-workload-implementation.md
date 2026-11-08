@@ -17,7 +17,7 @@ integration; local gate failures and their fixture refinements are recorded belo
 Fresh-state initialization and an offline retained-state installation path now
 have source implementations. The retained path requires externally excluded,
 already cleaned execution; it does not import live work. One-way offline
-enforcement withdrawal now has draft source under verification. Retained active
+enforcement withdrawal now has verified draft source. Retained active
 execution adoption and operational activation remain work. No production activation, rollout or improved model behavior is established
 by these source checks.
 
@@ -1280,8 +1280,10 @@ pause, exhausted retries, workspace holds and cancelled actor authority remained
 Two initial fixture assumptions were corrected (workload read signature and the
 preexisting indefinite hold before admission); no production fix is claimed for
 those fixture errors or for this new feature. Host/SDK types, boundary and lint
-passed. Full frozen local CI is running on `ac00e95783`, after the repaired parent
-#438 gate finished green; hosted checks are pending. Independent review, integration and separately
+passed. Full frozen local CI passed on `ac00e95783`: **4,209 tests / 3 existing skips /
+0 failures / 24,530 assertions across 363 files**, 338.26 seconds. Hosted Quality
+and Container passed the same head. The repaired parent #438 gate completed
+before this local gate started. Independent review, integration and separately
 authorized operational/model acceptance remain. No production withdrawal,
 reactivation protocol or live exclusion is established.
 
