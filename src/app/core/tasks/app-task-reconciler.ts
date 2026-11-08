@@ -3992,7 +3992,10 @@ function acceptedTaskClosure(
     Object.keys(resource.status.inputWaits ?? {}).length
   ) return undefined;
   const decision = config.closeOnResult(structuredClone({
-    task: resourceIntent(resource), creator,
+    // Internal intents normalize assignment to owner; App policy receives the
+    // public agent field, matching the Task read contract.
+    task: { ...resourceIntent(resource), ...(resource.spec.owner ? { agent: resource.spec.owner } : {}) },
+    creator,
     acceptedResult: { ...accepted, state: "converged" as const },
   }));
   if (decision === null) return undefined;

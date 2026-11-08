@@ -28,7 +28,11 @@ const policy: AppTaskPolicy["closeOnResult"] = ({ acceptedResult }) =>
     ? { reason: "The scoped review is fulfilled; no follow-through remains" }
     : null;
 
-function fixture(creator: ResourceCreator | null = { appId: "sample" }, closeOnResult = policy) {
+function fixture(
+  creator: ResourceCreator | null = { appId: "sample" },
+  closeOnResult = policy,
+  agent?: string,
+) {
   const root = mkdtempSync(join(tmpdir(), "task-result-closure-"));
   roots.push(root);
   const store = AppTaskResourceStore.fromDb(getDb(root), "sample");
@@ -49,6 +53,7 @@ function fixture(creator: ResourceCreator | null = { appId: "sample" }, closeOnR
       parentId: "root",
       outcome: "Assess the exact report",
       acceptance: ["Return a supported disposition"],
+      ...(agent ? { agent } : {}),
     },
   });
   if (creator === null) {
@@ -102,6 +107,28 @@ test("App policy ends its own finite assignment in the accepted-result transacti
   });
   expect(reopened.readAttempt(claim.attemptId)?.acceptedResult).toEqual(accepted);
   expect(reopened.listRecoveryCandidates().items).toEqual([]);
+});
+
+test("an assigned agent reaches the App policy and can authorize the finite ending", () => {
+  let callbackAgent: string | undefined;
+  const f = fixture(
+    undefined,
+    (context) => {
+      callbackAgent = context.task.agent;
+      return context.task.agent === "reviewer" ? policy(context) : null;
+    },
+    "reviewer",
+  );
+  expect(f.read.get("review")?.agent).toBe("reviewer");
+  const claim = f.claim();
+  expect(claim.agent).toBe("reviewer");
+  completeAppTask(f.config, claim, ending);
+  expect(callbackAgent).toBe("reviewer");
+  expect(f.read.get("review")).toMatchObject({
+    status: "closed",
+    agent: "reviewer",
+    acceptedAttempt: { id: claim.attemptId },
+  });
 });
 
 test.each([{ appId: "sample", taskId: "creator" }, { appId: "another-app" }, null])(
