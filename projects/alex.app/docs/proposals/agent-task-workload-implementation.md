@@ -350,6 +350,14 @@ Workflow/executor attempts without a managed session still need the owning
 process-instance evidence for recovery. A changed runtime ID or a shutdown
 request cannot establish that the old execution ended.
 
+Recover from indexed active reservations, including those for ended Tasks, through
+the existing recovery scheduler and Task controller. Keep bounded paging progress
+past live or unknown owners. Local joins and dead-worker recovery share exact
+session/start evidence and transaction fences; all replacement paths wait for
+confirmed execution cleanup. App pause permits mechanical cleanup through
+ordinary dispatch capacity without enabling business execution. Reject App removal
+while unconfirmed execution still depends on its runtime.
+
 ### Deferral is not failure
 
 Extend the internal claim/admission result for funding, execution or prerequisite
@@ -806,3 +814,45 @@ of indexed active reservations even for closed Tasks, explicit historical adopti
 trusted execution policies for newly created roots, direct-session admission and
 scoped capacity observations. Private limits currently fail direct-session starts
 closed; bounded Task fixtures are not general installation activation proof.
+
+
+### Active execution recovery source increment
+
+Host [#423](https://github.com/hao1939/may-agent/pull/423), revision
+`11684a2ba3`, stacks on #422. Two real-process regressions first demonstrated a
+new runtime interrupting a still-live sessionless worker and an ended Task
+stranding capacity after its worker exited. Recovery now follows indexed active
+reservations regardless of business closure, requires dead process-instance
+ownership, and confirms the unattached primary and every exact helper through the
+existing session/Bash cleanup adapter. Local joins use the same confirmation and
+transaction fences. Missing historical owner evidence remains occupied.
+
+The existing scheduler retains a bounded active-reservation paging cursor; a
+live first page does not hide later dead owners. Cleanup uses the existing Task
+queue and worker. App pause permits this mechanical work through ordinary dispatch
+capacity while business admission stays paused. Runtime removal cannot orphan
+unconfirmed Task execution. No new business lifecycle, queue, model call or
+activation switch is introduced.
+
+Accounting, claim, retry and session recovery owners passed **369 tests / 2,506
+assertions across nine files**; runtime and worker owners passed **279 tests /
+3,360 assertions across two files**. Cleanup/controller owners passed **74 tests /
+289 assertions across four files**. Final changed owners after refinements passed
+**70 tests / 329 assertions across four files**. Host/SDK types, boundary and lint
+passed. Frozen full local and hosted gates are pending on this revision;
+independent review remains required. Fixture-only corrections included parsing
+lease timestamps, selecting the existing installed reconciliation API and allowing
+the inherited startup gate to settle during teardown. They are not additional
+production bug fixes.
+
+The workflow audit confirms that supported agent steps and nested workflows
+retain the exact Task binding and use managed-start reservations; their Bash tools
+persist process groups against those exact sessions. This evidence covers the
+Host-managed execution contract, not arbitrary detached processes spawned by App
+code outside that contract. No live adoption or model behavior has been tested.
+
+Activation still requires explicit historical execution adoption, trusted policies
+for new roots, direct/persistent-chat admission and cleanup, scoped capacity
+observations, and a complete one-place durable-delegation proof. Private limits
+continue to fail unsupported starts closed. Existing worktree-capacity work in
+Host #399 remains separate.

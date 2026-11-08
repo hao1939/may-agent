@@ -478,8 +478,17 @@ capacity through the existing attempt ownership and confirmed-cleanup path;
 reconcile credit reservations against the recorded operation. Child spending
 does not mutate the root Task's execution version. There is one authoritative ledger for
 the Host's runtimes; per-agent copies or a separate distributed lock are not
-needed. These accounting choices remain unimplemented and bound work starts,
-not monetary spending or indefinite retained storage.
+needed. These allowances bound work starts rather than monetary spending or
+indefinite retained storage; source increments and activation gates are recorded
+below.
+
+Recovery follows active execution reservations even after the business Task
+ends. A different runtime or an expired lease cannot replace a live worker.
+Sessionless attempts require confirmed dead process-instance ownership; managed
+execution also requires the exact primary and every helper and Bash descendant
+to stop. Missing historical ownership remains occupied. App pause still permits
+mechanical cleanup through ordinary dispatch capacity, without admitting paused
+business work. App removal cannot orphan unconfirmed execution.
 
 ## A simple capacity graph
 
@@ -635,7 +644,7 @@ than become unrestricted creation paths.
 | Capability | Current implementation and remaining work |
 | --- | --- |
 | Pending work, atomic claims, bounded retries and creator-controlled closure | Existing foundations; preserve them. |
-| Capacity | Host and App limits and a human foreground reserve exist. Trusted coordination access is under review in Host #404; per-agent/root reservations remain. Managed-start credit accounting in #409 has passed local/hosted gates but is not activated. |
+| Capacity | Host/App bounds and a human foreground reserve exist. Trusted coordination and shared Host/recipient/root reservations, claim/managed-start admission and joined cleanup are implemented in draft Host increments through #422; conservative active-reservation recovery follows in #423. Historical adoption, new-root policy and direct/persistent-chat integration remain before activation. |
 | Feedback | Scoped Task/child/wait reads and App owner reviews exist. Bounded feedback and dispatch observations are under review in Host #402–403. Live delivery, consequential-deferral feedback and adaptive behavior still need adoption evidence. |
 | Budget | Shared attribution, UTC grants, cumulative charges and operation receipts merged in Host #405. Creation/claim and authored-seed integration are in #406–407; helper accounting is in #409. Caller deferrals, protected funding, authorized funding changes and activation remain. |
 | Shared blockers | Individual Conditions and recovery exist. Operation-specific prerequisite admission and cross-Task coalescing need implementation at the affected resource boundary. |
