@@ -20,7 +20,10 @@ concurrency exist. The shared accounting foundation merged; admission, seed and
 managed starts, caller deferrals, authorized funding changes and protected
 coordination integration are under verification/review,
 as recorded in the implementation approach. Production budget activation and
-behavioral acceptance remain pending. Current durable admission still requires an App. The
+behavioral acceptance remain pending. Fresh-state initialization and a conditional
+offline installation path for already cleaned retained state have source evidence;
+neither establishes a live cutover, online start exclusion or enforcement withdrawal.
+Current durable admission still requires an App. The
 [standalone-agent proposal](standalone-agent-tasks.md) owns that addressing change.
 
 The [source and live-system review](../archive/reviews/agent-workload-gap-review-20261108.md)

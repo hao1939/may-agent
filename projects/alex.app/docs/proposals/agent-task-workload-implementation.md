@@ -14,8 +14,10 @@ reservations and recovery, new-root defaults, durable one-place cooperation and
 workspace prerequisites. Retained-session continuations use the bounded-session
 policy in Host #432. These increments remain subject to independent review and
 integration; local gate failures and their fixture refinements are recorded below.
-Trusted activation and retained active execution adoption remain implementation
-work. No production activation, rollout or improved model behavior is established
+Fresh-state initialization and an offline retained-state installation path now
+have source implementations. The retained path requires externally excluded,
+already cleaned execution; it does not import live work. Enforcement withdrawal,
+retained active execution adoption and operational activation remain work. No production activation, rollout or improved model behavior is established
 by these source checks.
 
 Source reviewed: Host #398 merge `88a98be236baf07bfcf100208cfb0dc1589dfa06`.
@@ -402,7 +404,7 @@ indexed affected work on relevant release, funding, recovery or a declared due
 time through the existing scheduler. An unchanged constraint is not another model
 decision, and recovery never silently resets retry exhaustion.
 
-## Activation boundary and next increment
+## Activation paths and remaining gates
 
 Accounting APIs are still Host-private. An empty runnable queue or no running
 Task rows cannot establish quiescence: an unconfigured start may have passed its
@@ -410,10 +412,10 @@ policy check before writing session metadata, and an ended Task may still have
 unjoined execution. Session continuation checks prevent specific bypasses; they
 are not a barrier for changing policy across running processes.
 
-The next source increment will initialize **fresh state only**. Build and validate
-the ordinary Host database, installed budget declarations and execution limits in
-private temporary state, close it with all SQLite data in the database file, then
-publish that complete file exclusively. A competing opener either obtains the
+Host #436 initializes **fresh state only**. It builds and validates the ordinary
+Host database, installed budget declarations and execution limits in private
+temporary state, closes it with all SQLite data in the database file, then
+publishes that complete file exclusively. A competing opener either obtains the
 configured database or wins creation first, in which case initialization refuses
 to replace it. Reject any pre-existing destination state, including backups and
 recovery files. This is a new-installation path, not historical adoption or a
@@ -429,12 +431,31 @@ and real-worker fixtures must prove the published policy is present before any
 Task or helper can start, and that races, invalid plans and existing state cannot
 produce a partially configured or overwritten database.
 
-Retained installations still require an explicit adoption protocol and separately
-authorized operational cutover. It must account for active attempts and helpers,
-including ended business Tasks, without inventing historical spending. Do not
-expose an online activation switch until a real start barrier/adoption protocol
-is proven. A deliberately quiesced operational cutover needs its own concrete
-process/cleanup evidence; a flag or a SQL count alone is insufficient.
+Host #437 adds a separate **offline, already cleaned retained-state** path.
+The operator must first exclude every launcher, runtime, worker, supervisor and
+other state opener, retaining exact process/container/cgroup exits, descendant
+cleanup and exclusion evidence. State checks and `--confirm-quiesced` cannot
+establish that exclusion: a start may not yet have written any artifact. The
+command conservatively refuses any active reservation, running attempt or
+unresolved session/descendant evidence, including ended-Task execution and live
+owners whose session metadata says done. It performs no cleanup or live import.
+
+An explicit bounded plan supplies installed policy, exact retained Task version
+fences, zero-charge adoption and a separate explicit limit plus fenced adoption
+for every historical root. Contributions share that declared root. Omitted
+retained Tasks stay unattributed and defer future starts. Existing adoption and
+policy authorities commit attribution, limits and exact recovery wakes together;
+dry run rolls the transaction back. Original results, spending and caller
+obligations remain. This is source-level transaction and refusal proof conditional
+on external isolation, not a live operational cutover or a software start barrier.
+
+An online path still needs real start exclusion and exact historical active
+attempt/helper adoption without invented past spending. Do not expose that switch
+from empty Task counts or this offline operation. Enforcement withdrawal must
+also preserve receipts and obligations before pilot activation; deleting rows or
+restoring an old database after newer work starts is not an acceptable rollback.
+Independent integration/review and a separately authorized operational cutover
+with retained process/cleanup evidence remain required.
 
 ## Verification and adoption gates
 
@@ -1144,3 +1165,26 @@ shared/protected coordination routes also passed. Static checks passed. Frozen
 full local CI passed **4,159 tests / 3 existing skips / 0 failures / 24,276 assertions across 360 files**. Hosted Quality and Container passed the same head; independent review remains. No SDK or
 App runtime source change is required. This provides no retained-installation
 cutover, historical active adoption, compiled-daemon flag or live rollout proof.
+
+
+Host [#437](https://github.com/hao1939/may-agent/pull/437), revision
+`72b0226927`, implements the conditional offline retained-state path above. It
+shares #436's plan validation and the existing policy, zero-charge adoption,
+scoped-limit and canonical recovery authorities. Its source-checkout command
+requires an existing database, exact database/session directory identity and
+external isolation; it does not upgrade schema, clear execution evidence,
+import live starts or start a service.
+
+The retained/fresh installation, admission, funding, coordination, execution and
+recovery owners passed **99 tests / 530 assertions across seven files**. Evidence
+includes a real detached process with terminal metadata refused while alive and
+accepted after confirmed exit; actual operator dry-run/apply/reopen; zero invented
+historical charges; shared contribution limits; preserved accepted results and
+caller records; exact retained funding wakes; protected eligibility; late-failure
+transaction rollback; and ended-Task execution remaining occupied. Two initial
+fixture assumptions failed (cancellation had settled a non-session attempt, and
+an invented caller-wait key was absent); corrected assertions inspect actual
+reservation/canonical caller evidence. No production fix is claimed for those
+fixture errors. Static checks passed. Frozen full local and hosted gates are
+running; independent review remains. No SDK/App runtime change, live exclusion
+proof, pilot activation or model-behavior claim follows from these checks.
