@@ -1,5 +1,11 @@
 # Research handoff iteration — September 16, 2026
 
+**Historical context (2026-11-09):** This dated record predates the Alex migration.
+Current improvement ownership and common design live under Alex; old App names
+and rollout instructions below retain their original context. Consult the
+[current retirement receipt](../../alex.app/retirement-cleanup-2026-11-09.md)
+and [Alex guidance](../../alex.app/README.md) before acting.
+
 Status: implemented, reviewed, merged, and deployed to the existing local instance.
 The initial isolated experiments and the later deployed trial are distinguished below.
 Preference learning remains at the earlier PoC boundary.

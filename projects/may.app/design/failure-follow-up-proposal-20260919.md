@@ -1,5 +1,11 @@
 # Following failures through the improvement process
 
+**Historical context (2026-11-09):** This dated record predates the Alex migration.
+Current improvement ownership and common design live under Alex; old App names
+and rollout instructions below retain their original context. Consult the
+[current retirement receipt](../../alex.app/retirement-cleanup-2026-11-09.md)
+and [Alex guidance](../../alex.app/README.md) before acting.
+
 Refined for a user-authorized May implementation assignment, September 19, 2026.
 Copied deliberately from the uncommitted reviewer source at
 `/app/projects/may.app/design/failure-follow-up-proposal-20260919.md`, SHA-256

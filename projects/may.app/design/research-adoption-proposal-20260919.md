@@ -1,5 +1,11 @@
 # Research adoption with Bob-owned investigation
 
+**Historical context (2026-11-09):** This dated record predates the Alex migration.
+Current improvement ownership and common design live under Alex; old App names
+and rollout instructions below retain their original context. Consult the
+[current retirement receipt](../../alex.app/retirement-cleanup-2026-11-09.md)
+and [Alex guidance](../../alex.app/README.md) before acting.
+
 User-approved direction and implementation assignment, September 19, 2026.
 This is a proposal to implement and verify, not a claim of installed behavior.
 The latest user requirement is explicit: May may ask the human for final
