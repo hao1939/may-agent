@@ -34,7 +34,10 @@ const db = openDatabase(path);
 try {
   db.exec("PRAGMA busy_timeout = 1000");
   db.exec("PRAGMA foreign_keys = ON");
-  const store = AppTaskResourceStore.activeFromDb(db, plan.appId);
+  const store =
+    Array.isArray(plan.tasks) && plan.tasks.length === 0
+      ? AppTaskResourceStore.inspectFromDb(db, plan.appId)
+      : AppTaskResourceStore.activeFromDb(db, plan.appId);
   if (!store) throw new Error("Retired App has no Task resource state");
   const context = appTaskContext({
     appDir: resolve(state),

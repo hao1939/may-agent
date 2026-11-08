@@ -51,7 +51,7 @@ export function retireAppState(
   // Bind every terminal decision to the complete reviewed preimages, including
   // input-only plans. Reusing an id with different evidence cannot pass replay.
   const digest = createHash("sha256").update(JSON.stringify(plan)).digest("hex");
-  const reason = (value: string) => `Retired by operator (${plan.id}; sha256:${digest}): ${value}`;
+  const reason = (value: string) => `Retired by operator (${plan.id}; sha256:${digest}): ${value}`.trim();
   try {
     return stateTransaction(db, () => {
       const currentTaskIds = db
@@ -144,6 +144,29 @@ export function retireAppState(
           throw new Error(
             "Retirement only supports unresolved legacy inputs without Task/Conversation admission or a result",
           );
+        // Older Hosts could commit admission (and even its accepted answer)
+        // before projecting the inbox attachment. Check that authority directly;
+        // aliases may lack an event, while opaque keys can retain the input id.
+        const desiredPrefix = `task:${expected.id}:desired:`;
+        const existingPrefix = `task:${expected.id}:existing:`;
+        const admission = db
+          .prepare(
+            `SELECT 1 FROM app_task_admissions WHERE app_id=? AND (
+          task_id IN (?, ?, ?) OR substr(task_id, 1, length(?))=? OR substr(task_id, 1, length(?))=?
+          OR json_extract(admission_json, '$.inputEvent.data.request.id')=?) LIMIT 1`,
+          )
+          .get(
+            plan.appId,
+            `task:${expected.id}`,
+            `conversation-input:${expected.id}`,
+            `conversation-follow-up:${plan.appId}:${expected.id}`,
+            desiredPrefix,
+            desiredPrefix,
+            existingPrefix,
+            existingPrefix,
+            expected.id,
+          );
+        if (admission) throw new Error(`Reviewed input has durable admission evidence: ${expected.id}`);
         const current = db
           .prepare("SELECT * FROM app_inbox_items WHERE id=? AND app_id=?")
           .get(expected.id, plan.appId);

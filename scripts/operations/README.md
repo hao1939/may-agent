@@ -129,6 +129,16 @@ sets status to `done`, handling to `stopped`, and result to null; increments the
 lease generation; clears scheduling/lease fields; and records terminal times.
 A retained session wait is historical evidence, not proof of quiescence.
 
+Missing inbox links alone do not prove absence of admission. The transaction
+also checks durable admissions using canonical and historical input keys and
+the retained request identity. Any admission, including an accepted answer
+whose inbox link was never projected, refuses withdrawal without changing state.
+
+An input-only plan can inspect an App that never activated Task resource
+authority, without creating metadata or activating a seed. The complete Task
+census still applies: omitting existing nonterminal Tasks is rejected. Plans
+that include Tasks require active resource authority for canonical cancellation.
+
 Tasks use canonical human cancellation with exact generation/resource-version
 fences and control receipts. Original accepted attempts are retained. The
 current Task projection records withdrawal; it does not replace the original
@@ -143,6 +153,8 @@ A SHA-256 of the full parsed plan is recorded in terminal reasons. Exact replay
 returns `already-retired`; changed plans, partial/foreign decisions, new work or
 changed terminal versions fail closed. Keep the plan unchanged, including JSON
 property and array order, for replay.
+Constructed terminal reasons are trimmed consistently with canonical Task
+cancellation; trailing whitespace in a reviewed reason does not break replay.
 
 ### Retirement procedure
 

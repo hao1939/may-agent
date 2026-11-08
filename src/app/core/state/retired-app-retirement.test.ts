@@ -9,9 +9,11 @@ import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
 import {
   appTaskContext,
   claimObservedAppTask,
+  completeAppTask,
   deferAppTask,
   observeAppTaskIntent,
 } from "../tasks/app-task-reconciler.js";
+import { admitTaskInput } from "./inbox.js";
 import { retireAppState, type RetiredAppRetirementPlan } from "./retired-app-retirement.js";
 
 const roots: string[] = [];
@@ -33,12 +35,16 @@ function snapshot(db: SqliteDb) {
         .sort(),
     ]);
 }
-function fixture() {
+function databaseFixture() {
   const root = mkdtempSync(join(tmpdir(), "may-retirement-"));
   roots.push(root);
   const db = openDatabase(join(root, "may.db"));
   connections.push(db);
   applyDbSchema(db);
+  return { root, db };
+}
+function fixture() {
+  const { root, db } = databaseFixture();
   const contextFor = (appId: string) => {
     const store = AppTaskResourceStore.fromDb(db, appId);
     store.bootstrapSnapshot(
@@ -123,6 +129,31 @@ function fixture() {
       .map((row) => ({ row, reason: "Reviewed historical caller chain withdrawn" })),
   };
   return { root, db, context, other, store: context.resourceStore, plan };
+}
+
+async function runCli(root: string, plan: RetiredAppRetirementPlan, dryRun = false) {
+  const file = join(root, "plan.json");
+  writeFileSync(file, JSON.stringify(plan));
+  const child = Bun.spawn(
+    [
+      process.execPath,
+      "scripts/operations/retire-app-state.ts",
+      "--state-dir",
+      root,
+      "--plan",
+      file,
+      "--confirm-quiesced",
+      "--confirm-app-retired",
+      ...(dryRun ? ["--dry-run"] : []),
+    ],
+    { stdout: "pipe", stderr: "pipe", timeout: 10_000 },
+  );
+  const [stdout, stderr, code] = await Promise.all([
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+    child.exited,
+  ]);
+  return { stdout, stderr, code };
 }
 
 test("withdraws responsibility atomically, retaining accepted evidence, caller chain and unrelated authority waits", () => {
@@ -251,30 +282,10 @@ for (const change of ["mixed", "foreign", "reopened-input", "resource-version"] 
 
 test("CLI applies the reviewed file offline and replays after reopening the database", async () => {
   const { root, db, plan } = fixture();
-  const file = join(root, "plan.json");
-  writeFileSync(file, JSON.stringify(plan));
   db.close();
   connections.splice(connections.indexOf(db), 1);
   const run = async (dryRun = false) => {
-    const child = Bun.spawn(
-      [
-        process.execPath,
-        "scripts/operations/retire-app-state.ts",
-        "--state-dir",
-        root,
-        "--plan",
-        file,
-        "--confirm-quiesced",
-        "--confirm-app-retired",
-        ...(dryRun ? ["--dry-run"] : []),
-      ],
-      { stdout: "pipe", stderr: "pipe", timeout: 10_000 },
-    );
-    const [stdout, stderr, code] = await Promise.all([
-      new Response(child.stdout).text(),
-      new Response(child.stderr).text(),
-      child.exited,
-    ]);
+    const { stdout, stderr, code } = await runCli(root, plan, dryRun);
     expect({ code, stderr }).toEqual({ code: 0, stderr: "" });
     return JSON.parse(stdout);
   };
@@ -304,3 +315,136 @@ test("replays canonical withdrawal of legacy achieve/maintain resources without 
   expect(retireAppState(context, plan).status).toBe("already-retired");
   expect(snapshot(db)).toEqual(before);
 });
+
+for (const key of [
+  "task:parent",
+  "task:parent:desired:pending",
+  "task:parent:existing:pending",
+  "conversation-input:parent",
+  "conversation-follow-up:retired-example:parent",
+  "opaque-historical-key",
+])
+  test(`preserves an accepted admission without inbox links: ${key}`, () => {
+    const { db, context, store, plan } = fixture();
+    const item = getAppInboxItem(db, "parent")!;
+    // Model the released Host's crash boundary: the Task admission and answer
+    // committed, but no inbox attachment or result was projected.
+    admitTaskInput(context, {
+      appId: plan.appId,
+      attachment: { kind: "existing", taskId: "pending" },
+      idempotencyKey: "task:parent",
+      inputContext: { id: item.id, source: item.source, input: item.input },
+    });
+    const claim = claimObservedAppTask(context, { taskId: "pending", appAgent: context.agent, handler: "agent" });
+    if (claim.kind !== "claimed") throw new Error(claim.kind);
+    expect(completeAppTask(context, claim, { summary: "Accepted answer before inbox linkage" }).status).toBe("applied");
+    const admission = store.readTaskContext({ taskIds: [], admissionIds: ["task:parent"] }).appTaskAdmissions![
+      "task:parent"
+    ]!;
+    expect(admission.resultAttemptId).toBe(claim.attemptId);
+    expect(getAppInboxItem(db, "parent")).toMatchObject({ status: "pending" });
+    // Old canonical/alias keys can survive without an input-event envelope.
+    // An opaque key must instead be recognized by its retained request identity.
+    if (key !== "opaque-historical-key") delete admission.inputEvent;
+    db.prepare(
+      "UPDATE app_task_admissions SET task_id=?, admission_json=? WHERE app_id=? AND task_id='task:parent'",
+    ).run(key, JSON.stringify(admission), plan.appId);
+    const task = db
+      .prepare("SELECT resource_json, trigger_json FROM app_tasks WHERE app_id=? AND task_id='pending'")
+      .get(plan.appId)!;
+    Object.assign(
+      plan.tasks.find((task) => task.taskId === "pending")!,
+      {
+        resourceJson: task.resource_json,
+        triggerJson: task.trigger_json,
+      },
+    );
+    const before = snapshot(db);
+    expect(() => retireAppState(context, plan)).toThrow("durable admission");
+    expect(snapshot(db)).toEqual(before);
+  });
+
+test("refuses an unanswered durable admission before inbox linkage", () => {
+  const { db, context, plan } = fixture();
+  const item = getAppInboxItem(db, "parent")!;
+  admitTaskInput(context, {
+    appId: plan.appId,
+    attachment: { kind: "existing", taskId: "pending" },
+    idempotencyKey: "task:parent",
+    inputContext: { id: item.id, source: item.source, input: item.input },
+  });
+  const task = db
+    .prepare("SELECT resource_json, trigger_json FROM app_tasks WHERE app_id=? AND task_id='pending'")
+    .get(plan.appId)!;
+  Object.assign(
+    plan.tasks.find((task) => task.taskId === "pending")!,
+    {
+      resourceJson: task.resource_json,
+      triggerJson: task.trigger_json,
+    },
+  );
+  const before = snapshot(db);
+  expect(() => retireAppState(context, plan)).toThrow("durable admission");
+  expect(snapshot(db)).toEqual(before);
+});
+
+test("replays unchanged withdrawal reasons ending in spaces and a newline", () => {
+  const { db, context, plan } = fixture();
+  for (const task of plan.tasks) task.reason += " \t\n";
+  for (const input of plan.inputs) input.reason += " \t\n";
+  expect(retireAppState(context, plan).status).toBe("retired");
+  const before = snapshot(db);
+  expect(retireAppState(context, plan).status).toBe("already-retired");
+  expect(snapshot(db)).toEqual(before);
+});
+
+test("CLI retires only legacy inputs without creating or activating Task resource authority", async () => {
+  const { root, db } = databaseFixture();
+  createAppInboxItem(db, {
+    id: "legacy-input",
+    appId: "never-activated",
+    source: { kind: "system", id: "retired-controller" },
+    input: { kind: "message", data: { message: "Historical input" } },
+    now: 1,
+  });
+  const plan: RetiredAppRetirementPlan = {
+    id: "input-only-v1",
+    appId: "never-activated",
+    quiesced: true,
+    appRetired: true,
+    tasks: [],
+    inputs: [
+      {
+        row: db.prepare("SELECT * FROM app_inbox_items WHERE id='legacy-input'").get()!,
+        reason: "Controller responsibility explicitly withdrawn",
+      },
+    ],
+  };
+  expect(AppTaskResourceStore.activeFromDb(db, plan.appId)).toBeNull();
+  const before = snapshot(db);
+  const dryRun = await runCli(root, plan, true);
+  expect({ code: dryRun.code, stderr: dryRun.stderr }).toEqual({ code: 0, stderr: "" });
+  expect(JSON.parse(dryRun.stdout)).toEqual({ status: "would-retire", tasks: 0, inputs: 1 });
+  expect(snapshot(db)).toEqual(before);
+  for (const status of ["retired", "already-retired"]) {
+    const result = await runCli(root, plan);
+    expect({ code: result.code, stderr: result.stderr }).toEqual({ code: 0, stderr: "" });
+    expect(JSON.parse(result.stdout)).toEqual({ status, tasks: 0, inputs: 1 });
+    expect(db.prepare("SELECT * FROM app_task_store_meta WHERE app_id=?").all(plan.appId)).toEqual([]);
+    expect(db.prepare("SELECT * FROM app_tasks WHERE app_id=?").all(plan.appId)).toEqual([]);
+  }
+  expect(getAppInboxItem(db, "legacy-input")).toMatchObject({ status: "done", handling: { phase: "stopped" } });
+  expect(getAppInboxItem(db, "legacy-input")!.result).toBeUndefined();
+});
+
+for (const includeTasks of [true, false])
+  test(`CLI preserves inactive Task state when plan includes Tasks: ${includeTasks}`, async () => {
+    const { root, db, plan } = fixture();
+    db.prepare("DELETE FROM app_task_store_meta WHERE app_id=?").run(plan.appId);
+    if (!includeTasks) plan.tasks = [];
+    const before = snapshot(db);
+    const result = await runCli(root, plan);
+    expect(result.code).not.toBe(0);
+    expect(result.stderr).toContain(includeTasks ? "no Task resource state" : "Task census changed");
+    expect(snapshot(db)).toEqual(before);
+  });
