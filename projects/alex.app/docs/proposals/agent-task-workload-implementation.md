@@ -7,16 +7,16 @@ Keep its business rules and implement them through existing Host boundaries.
 and [one authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource).
 
 **Design status:** Proposed implementation approach.
-**Implementation status:** Incremental source implementation underway. Creator
-consumption of published finite assessments is implemented and verified locally.
-Scoped feedback, dispatch observations and bounded coordination are in Host
-review. Shared credit accounting foundations merged in Host #405. Creation,
-claims, authored seeds, managed starts, caller deferrals and authorized root/sponsor
-funding changes have isolated integration increments under verification and review.
-Protected coordination funding now has a separate integration draft. Shared
-execution reservations and complete constraint feedback remain; no production
-activation is exposed. No agent
-activation or rollout is established by these source checks.
+**Implementation status:** Incremental source implementation underway. The source
+stack now includes result disposition, scoped feedback, protected coordination,
+creation/claim/helper accounting, authorized funding changes, shared execution
+reservations and recovery, new-root defaults, durable one-place cooperation and
+workspace prerequisites. Retained-session continuations use the bounded-session
+policy in Host #432. These increments remain subject to independent review and
+integration; local gate failures and their fixture refinements are recorded below.
+Trusted activation and retained active execution adoption remain implementation
+work. No production activation, rollout or improved model behavior is established
+by these source checks.
 
 Source reviewed: Host #398 merge `88a98be236baf07bfcf100208cfb0dc1589dfa06`.
 The inspected checkout `036f4a4f757eea9f8a4492231e5541f365a8fcf6` has its identical
@@ -401,6 +401,40 @@ atomic admission because a feedback or scheduling snapshot can race. Wake the
 indexed affected work on relevant release, funding, recovery or a declared due
 time through the existing scheduler. An unchanged constraint is not another model
 decision, and recovery never silently resets retry exhaustion.
+
+## Activation boundary and next increment
+
+Accounting APIs are still Host-private. An empty runnable queue or no running
+Task rows cannot establish quiescence: an unconfigured start may have passed its
+policy check before writing session metadata, and an ended Task may still have
+unjoined execution. Session continuation checks prevent specific bypasses; they
+are not a barrier for changing policy across running processes.
+
+The next source increment will initialize **fresh state only**. Build and validate
+the ordinary Host database, installed budget declarations and execution limits in
+private temporary state, close it with all SQLite data in the database file, then
+publish that complete file exclusively. A competing opener either obtains the
+configured database or wins creation first, in which case initialization refuses
+to replace it. Reject any pre-existing destination state, including backups and
+recovery files. This is a new-installation path, not historical adoption or a
+check that a live installation happens to look empty. Existing start, claim,
+constraint, cleanup and replay rules remain the enforcement authority.
+
+Use a trusted installation plan, not Task input. Configure all needed recipient
+and root limits and the complete protected coordination method. Unbound direct
+or persistent sessions remain unsupported under these limits and fail before
+execution. App admission and Task-based Conversations use the existing paths;
+this increment does not implement standalone-agent addressing. Portable startup
+and real-worker fixtures must prove the published policy is present before any
+Task or helper can start, and that races, invalid plans and existing state cannot
+produce a partially configured or overwritten database.
+
+Retained installations still require an explicit adoption protocol and separately
+authorized operational cutover. It must account for active attempts and helpers,
+including ended business Tasks, without inventing historical spending. Do not
+expose an online activation switch until a real start barrier/adoption protocol
+is proven. A deliberately quiesced operational cutover needs its own concrete
+process/cleanup evidence; a flag or a SQL count alone is insufficient.
 
 ## Verification and adoption gates
 
@@ -1046,3 +1080,44 @@ does not resolve the full-gate failure. Hosted Quality and Container passed
 on this revision. Independent review must consider both local failures; no
 passing exact-head complete local gate is claimed. No new SDK shape or paired
 App source change is needed beyond #430's feedback handling.
+
+
+Host [#432](https://github.com/hao1939/may-agent/pull/432), revision
+`eecee266f1`, shares bounded-session eligibility across managed starts,
+`send`, `followUp`, owned-helper correction and chat-turn start. Existing
+pre-limit chats and unreserved bounded work cannot adopt limits through retained
+memory. Current admitted corrections reuse their original credit/place;
+cancelled/stale authority and interrupted sessions reject new input before
+mutation. Both chat regressions and an interrupted-session revival were
+reproduced before fixes. Focused owners passed **132 / 959**; static and hosted
+Quality/Container passed. Frozen full local failed a separate Conversation
+assertion: **4,142 passed / 3 skipped / 1 failed / 24,215 assertions / 359 files**.
+A focused run passed **3 / 67**, which does not explain the earlier failure.
+No exact-head complete local pass is claimed.
+
+Three small portable fixture refinements preserve the failed evidence:
+
+- [#433](https://github.com/hao1939/may-agent/pull/433), `dbc08fa2ae`, gives two
+  unrelated collectors explicit fresh samples. A one-second future definition
+  offset reproduced the earlier extra stale count; the same offset passed after
+  supplying evidence. Final owners passed **34 / 146**. The original 319 ms
+  clock discrepancy remains unproven; production freshness rules are unchanged.
+- [#434](https://github.com/hao1939/may-agent/pull/434), `759431e02d`, explicitly
+  orders the attempts meant to evict old history. A 60-second rollback reproduced
+  old-attempt retention and the assertion captured as cleanup error; controlled
+  ordering passed under that same rollback. Final cleanup cases passed
+  **17 / 233**, including the separate rollback/reference case. The original
+  failure did not record timestamps, so its exact cause is still unproven.
+- [#435](https://github.com/hao1939/may-agent/pull/435), `90eb7d23ad`, verifies one
+  final reply for the exact caller instead of assuming publication order equals
+  wall-clock order. A rollback reproduced the earlier acknowledgement being
+  last. Four routes, now including rollback, passed **4 / 92**; Conversation
+  runtime/store owners passed **68 / 863**. Production projection order is
+  unchanged. The earlier real clock discrepancy is not explained.
+
+All three refinements passed Host/SDK types, boundary and lint. #433 and #434
+hosted checks passed; no exact-head full local run was made for those test-only
+revisions. #435's frozen complete local gate includes all three refinements and
+passed **4,144 tests / 3 existing skips / 0 failures / 24,236 assertions across
+359 files**. Hosted Quality and Container passed the same head. Independent
+review remains. No rollout or business judgment claim follows from these fixtures.
