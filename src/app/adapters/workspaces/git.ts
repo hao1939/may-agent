@@ -13,7 +13,6 @@ type GitResult = { status: number; stdout: string; stderr: string };
 
 export const worktreeEstimateEnvironment = Object.freeze({
   GIT_NO_LAZY_FETCH: "1",
-  GIT_ATTR_NOSYSTEM: "1",
 } as const);
 
 export type GitWorkspaceOptions = { availableBytes?: (destinationPath: string) => Promise<number> };
@@ -69,7 +68,17 @@ async function estimateCheckoutBytes(repoDir: string, commit: string): Promise<n
     if ((await git(repoDir, ["config", "--get", "--default", "false", "core.autocrlf"], false, env)).stdout !== "false") return undefined;
     if ((await git(repoDir, ["config", "--path", "--get", "--default", "", "core.attributesFile"], false, env)).stdout) return undefined;
     const infoAttributes = (await git(repoDir, ["rev-parse", "--git-path", "info/attributes"], false, env)).stdout;
-    for (const path of [resolve(repoDir, infoAttributes), join(process.env.XDG_CONFIG_HOME || join(homedir(), ".config"), "git", "attributes"), join(homedir(), ".gitattributes")]) {
+    const gitExecPath = (await git(repoDir, ["--exec-path"], false, env)).stdout;
+    const systemAttributes = [
+      "/etc/gitattributes",
+      join(dirname(dirname(gitExecPath)), "etc", "gitattributes"),
+    ];
+    for (const path of [
+      resolve(repoDir, infoAttributes),
+      join(process.env.XDG_CONFIG_HOME || join(homedir(), ".config"), "git", "attributes"),
+      join(homedir(), ".gitattributes"),
+      ...new Set(systemAttributes),
+    ]) {
       if (await readOptional(path) !== undefined) return undefined;
     }
     const output = (await git(repoDir, ["ls-tree", "-r", "-l", "-z", exactCommit], false, env)).stdout;
@@ -94,7 +103,7 @@ async function estimateCheckoutBytes(repoDir: string, commit: string): Promise<n
       const transforms = attributes.split("\n").some((line) => {
         if (line.startsWith("#")) return false;
         const content = line.trim();
-        return content.length > 0 && /(?:^|\s)(?:filter|working-tree-encoding)(?:=|\s|$)/.test(content);
+        return content.length > 0 && /(?:^|\s)(?:filter|working-tree-encoding|text|eol|ident|crlf)(?:=|\s|$)/.test(content);
       });
       if (transforms) return undefined;
     }
@@ -338,7 +347,7 @@ export async function prepareAppTaskWorkspace(
           }
         }
         await mkdir(dirname(path), { recursive: true });
-        if (branchExists) await git(repoDir, ["worktree", "add", path, branch], false, worktreeEstimateEnvironment);
+        if (branchExists) await git(repoDir, ["worktree", "add", path, branch]);
         else {
           if (remoteTaskBranchExists) {
             // A private fetch ref cannot establish Git's ordinary upstream.
@@ -355,7 +364,7 @@ export async function prepareAppTaskWorkspace(
             branch,
             path,
             remoteTaskBranchExists ? remoteTaskRef : currentBaseCommit,
-          ], false, worktreeEstimateEnvironment);
+          ]);
         }
       }
 

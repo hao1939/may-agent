@@ -64,6 +64,36 @@ describe("project task workspace", () => {
     expect(readFileSync(join(prepared.metadata.path, "payload.bin")).byteLength).toBe(4096);
   });
 
+  it("declines capacity estimation for explicit text transformations and preserves ordinary checkout", async () => {
+    const f = await fixture();
+    writeFileSync(join(f.repo, ".gitattributes"), "*.txt text eol=crlf\n");
+    writeFileSync(join(f.repo, "expanded.txt"), "one\ntwo\n");
+    await git(f.repo, "add", ".gitattributes", "expanded.txt");
+    await git(f.repo, "commit", "-m", "add explicit checkout transform");
+    let sampled = false;
+    const workspaces = createGitTaskWorkspaces({ availableBytes: async () => { sampled = true; return 1; } });
+    const prepared = await workspaces.prepare({
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "attribute-fallback", generation: 1, baseBranch: "dev",
+    });
+    expect(sampled).toBe(false);
+    expect(readFileSync(join(prepared.metadata.path, "expanded.txt"), "utf8")).toBe("one\r\ntwo\r\n");
+  });
+
+  it("declines capacity estimation for legacy crlf transformations", async () => {
+    const f = await fixture();
+    writeFileSync(join(f.repo, ".gitattributes"), "*.txt crlf\n");
+    writeFileSync(join(f.repo, "expanded.txt"), "one\ntwo\n");
+    await git(f.repo, "add", ".gitattributes", "expanded.txt");
+    await git(f.repo, "commit", "-m", "add legacy checkout transform");
+    let sampled = false;
+    const workspaces = createGitTaskWorkspaces({ availableBytes: async () => { sampled = true; return 1; } });
+    const prepared = await workspaces.prepare({
+      repoDir: f.repo, workspaceRoot: f.worktrees, taskId: "legacy-attribute-fallback", generation: 1, baseBranch: "dev",
+    });
+    expect(sampled).toBe(false);
+    expect(existsSync(join(prepared.metadata.path, "expanded.txt"))).toBe(true);
+  });
+
   it("samples a fresh nested destination through its nearest existing ancestor", async () => {
     const f = await fixture();
     const nested = join(f.root, "missing", "nested", "worktrees");
