@@ -184,7 +184,7 @@ a missing attempt reference. The relevant records have different meanings:
 | Task `status.summary/response/result` | A projection that cancellation replaces. A pending, waiting or attention phase can still hold the only historical payload. |
 | Completion receipt or `closed` terminal decision | Legacy completion authority, including the closure archived in a reopen control receipt. Same-generation completion requires separate caller settlement; a later cancellation does not erase it. A `cancelled` decision records withdrawal instead. |
 
-Before mutation, `assertRetainedRetirementOutcome` verifies every planned Task's
+By default, `assertRetainedRetirementOutcome` verifies every planned Task's
 projected values independently of phase. Any retained summary, response, result,
 observed-attempt reference or accepted phase requires a resolvable, completed,
 accepted observed attempt belonging to that exact Task. Its own generation must
@@ -200,7 +200,35 @@ or whitelisting text prefixes, weakening payload checks or claiming fulfillment.
 Ambiguous legacy/controller-only projections require separate exact cutover;
 retirement never reconstructs an acceptance record or picks a latest attempt.
 
-The same proof runs on the original reviewed Task preimages during exact replay,
+For a reviewed legacy projection whose acceptance identity cannot be established,
+the Task entry can explicitly request archival preservation instead:
+
+```ts
+legacyObservation: {
+  decision: "preserve-unverified",
+  reason: "Original acceptance identity is unavailable; preserve the exact observation without assigning fulfillment"
+}
+```
+
+This changes only the preservation proof for that Task. Canonical cancellation
+and an exact copy of its original `resourceJson` and `triggerJson` commit in the
+same transaction. The cancellation control receipt retains those bytes, the
+reviewed preservation reason, and kind `unverified-legacy-observation` under
+`retainedObservation`. Whitespace, legacy fields, payloads and references are
+preserved verbatim. Missing or changed archival evidence, including during
+replay, refuses the transaction; a failed write rolls back cancellation and
+caller withdrawal together. The original plan remains necessary for replay.
+
+An observation is historical evidence, not an accepted attempt, completion,
+answer or reconstructed identity. This option creates no acceptance records,
+selects no alias, and changes none of the caller-answer checks above. A known
+answer still requires separate settlement even when its Task is archived.
+Absent this explicit per-Task decision, missing accepted provenance still
+refuses retirement. All original attempts, admissions and prior terminal
+authority remain unchanged. Preserve original Conditions in the offline backup
+as required below; Task archival does not replace that backup.
+
+The selected proof runs on the original reviewed Task preimages during exact replay,
 so a previous cancellation cannot conceal missing or changed outcome history.
 Replay also fences terminal response and facts. All refusal paths and dry-runs
 leave the complete transaction unchanged.

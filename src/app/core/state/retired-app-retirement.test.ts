@@ -357,8 +357,10 @@ test("bounds the complete retirement plan including admission preimages", () => 
   expect(snapshot(db)).toEqual(before);
 });
 
-for (const binding of ["retained", "missing"] as const)
-  test(`refuses a real accepted answer with ${binding} admission result binding even with withdrawal evidence`, () => {
+for (const { preserveLegacy, binding } of [false, true].flatMap((preserveLegacy) =>
+  ["retained", "missing"].map((binding) => ({ preserveLegacy, binding })),
+))
+  test(`refuses a real accepted answer with ${binding} admission result binding (legacy archive: ${preserveLegacy})`, () => {
     const { db, context, plan, input } = admittedFixture();
     const claim = claimObservedAppTask(context, { taskId: "pending", appAgent: context.agent, handler: "agent" });
     if (claim.kind !== "claimed") throw new Error(claim.kind);
@@ -379,13 +381,18 @@ for (const binding of ["retained", "missing"] as const)
       .get(plan.appId, task.taskId)!;
     task.resourceJson = String(current.resource_json);
     task.triggerJson = current.trigger_json as string | null;
+    if (preserveLegacy)
+      for (const entry of plan.tasks)
+        entry.legacyObservation = { decision: "preserve-unverified", reason: "Retain original observations" };
     const before = snapshot(db);
     expect(() => retireAppState(context, plan)).toThrow("must be settled before withdrawal");
     expect(snapshot(db)).toEqual(before);
   });
 
-for (const answersOlderCaller of [true, false])
-  test(`newer accepted outcome answers the older caller: ${answersOlderCaller}`, () => {
+for (const { preserveLegacy, answersOlderCaller } of [false, true].flatMap((preserveLegacy) =>
+  [true, false].map((answersOlderCaller) => ({ preserveLegacy, answersOlderCaller })),
+))
+  test(`newer accepted outcome answers the older caller: ${answersOlderCaller} (legacy archive: ${preserveLegacy})`, () => {
     const f = fixture();
     const olderKey = "task:parent";
     const admit = (id: string, key: string) =>
@@ -424,6 +431,9 @@ for (const answersOlderCaller of [true, false])
       )
       .run(f.plan.appId, olderKey);
     const { db, context, store, plan, input } = reviewCaller(f, [olderKey]);
+    if (preserveLegacy)
+      for (const entry of plan.tasks)
+        entry.legacyObservation = { decision: "preserve-unverified", reason: "Retain original observations" };
     expect(input.admissionWithdrawal!.rows).toHaveLength(1);
     expect(JSON.parse(input.admissionWithdrawal!.rows[0]!.admission_json).taskGeneration).toBe(1);
     const accepted = store.readAttempt(claim.attemptId)!;
@@ -1283,3 +1293,164 @@ for (const includeTasks of [true, false])
     expect(result.stderr).toContain(includeTasks ? "no Task resource state" : "Task census changed");
     expect(snapshot(db)).toEqual(before);
   });
+
+function legacyObservationFixture(
+  phase: "pending" | "waiting" | "attention" | "converged" = "waiting",
+  reference: "absent" | "dangling" | "unaccepted" = "absent",
+) {
+  const f = fixture();
+  const task = f.store.readTask("waiting")!;
+  if (reference === "unaccepted")
+    f.db
+      .prepare(
+        "UPDATE app_task_attempts SET attempt_json=json_remove(attempt_json, '$.acceptedResult') WHERE app_id=? AND attempt_id=?",
+      )
+      .run(f.plan.appId, task.status.observedAttemptId!);
+  else if (reference === "absent") delete task.status.observedAttemptId;
+  else task.status.observedAttemptId = "missing-original-attempt";
+  task.status.phase = phase;
+  task.status.summary = "Original observation; fulfillment is unknown";
+  task.status.response = "Original response";
+  task.status.result = { nested: { retained: [false, 0, "", null] } };
+  const raw = ` \n${JSON.stringify({ ...task, spec: { ...task.spec, mode: "maintain" }, legacyExtra: { retained: true } })}\n`;
+  const trigger = f.plan.tasks.find((entry) => entry.taskId === "pending")!.triggerJson!;
+  f.db
+    .prepare("UPDATE app_tasks SET resource_json=?, trigger_json=? WHERE app_id=? AND task_id='waiting'")
+    .run(raw, trigger, f.plan.appId);
+  refreshReviewedTasks(f);
+  const planned = f.plan.tasks.find((entry) => entry.taskId === "waiting")!;
+  planned.legacyObservation = {
+    decision: "preserve-unverified",
+    reason: "Original acceptance identity cannot be established; retain observations without assigning fulfillment",
+  };
+  return { ...f, planned };
+}
+
+for (const phase of ["pending", "waiting", "attention", "converged"] as const)
+  for (const reference of ["absent", "dangling", "unaccepted"] as const)
+    test(`explicit legacy preservation retains raw observations without manufacturing acceptance (${phase}, ${reference})`, () => {
+      const f = legacyObservationFixture(phase, reference);
+      const attempts = f.db.prepare("SELECT * FROM app_task_attempts ORDER BY app_id, attempt_id").all();
+      const other = f.other.resourceStore.readSnapshot();
+      const before = snapshot(f.db);
+      expect(retireAppState(f.context, f.plan, { dryRun: true }).status).toBe("would-retire");
+      expect(snapshot(f.db)).toEqual(before);
+      expect(retireAppState(f.context, f.plan).status).toBe("retired");
+      expect(f.db.prepare("SELECT * FROM app_task_attempts ORDER BY app_id, attempt_id").all()).toEqual(attempts);
+      expect(f.other.resourceStore.readSnapshot()).toEqual(other);
+      const controls = f.db
+        .prepare("SELECT receipt_json FROM app_task_control_receipts WHERE app_id=? AND task_id='waiting'")
+        .all(f.plan.appId);
+      expect(controls).toHaveLength(1);
+      const saved = JSON.parse(String(controls[0]!.receipt_json)).retainedObservation;
+      expect(saved).toEqual({
+        kind: "unverified-legacy-observation",
+        resourceJson: f.planned.resourceJson,
+        triggerJson: f.planned.triggerJson,
+        reason: f.planned.legacyObservation!.reason,
+      });
+      expect(f.store.readCancellation("waiting")!.kind).toBe("cancelled");
+      expect(f.store.readCancellation("waiting")!.result).toBeUndefined();
+      expect(getAppInboxItem(f.db, "parent")!.result).toBeUndefined();
+      const after = snapshot(f.db);
+      expect(retireAppState(f.context, f.plan).status).toBe("already-retired");
+      expect(snapshot(f.db)).toEqual(after);
+    });
+
+for (const change of ["missing", "resource", "trigger", "kind", "reason"] as const)
+  test(`legacy replay requires the exact durable observation (${change})`, () => {
+    const f = legacyObservationFixture();
+    retireAppState(f.context, f.plan);
+    if (change === "missing")
+      f.db
+        .prepare(
+          "UPDATE app_task_control_receipts SET receipt_json=json_remove(receipt_json, '$.retainedObservation') WHERE app_id=? AND task_id='waiting'",
+        )
+        .run(f.plan.appId);
+    else {
+      const field = { resource: "resourceJson", trigger: "triggerJson", kind: "kind", reason: "reason" }[change];
+      f.db
+        .prepare(
+          "UPDATE app_task_control_receipts SET receipt_json=json_set(receipt_json, ?, 'changed') WHERE app_id=? AND task_id='waiting'",
+        )
+        .run(`$.retainedObservation.${field}`, f.plan.appId);
+    }
+    const before = snapshot(f.db);
+    expect(() => retireAppState(f.context, f.plan)).toThrow("different terminal decision");
+    expect(snapshot(f.db)).toEqual(before);
+  });
+
+for (const failure of ["abort", "corrupt"] as const)
+  test(`failure to retain an exact observation rolls back cancellations and callers (${failure})`, () => {
+    const f = legacyObservationFixture();
+    if (failure === "abort")
+      f.db.exec(`CREATE TRIGGER reject_retirement_observation BEFORE UPDATE ON app_task_control_receipts
+      BEGIN SELECT RAISE(ABORT, 'fixture observation write rejected'); END`);
+    else
+      f.db.exec(`CREATE TRIGGER corrupt_retirement_observation AFTER UPDATE ON app_task_control_receipts
+      BEGIN UPDATE app_task_control_receipts SET receipt_json=json_remove(NEW.receipt_json, '$.retainedObservation')
+        WHERE app_id=NEW.app_id AND control_key=NEW.control_key; END`);
+    const before = snapshot(f.db);
+    expect(() => retireAppState(f.context, f.plan)).toThrow(
+      failure === "abort" ? "fixture observation write rejected" : "not retained",
+    );
+    expect(snapshot(f.db)).toEqual(before);
+  });
+
+test("legacy preservation requires an explicit reviewed decision and never changes default refusal", () => {
+  const f = legacyObservationFixture();
+  delete f.planned.legacyObservation;
+  const before = snapshot(f.db);
+  expect(() => retireAppState(f.context, f.plan)).toThrow("retained accepted evidence");
+  const malformed = JSON.parse(JSON.stringify(f.plan));
+  malformed.tasks.find((entry: { taskId: string }) => entry.taskId === "waiting").legacyObservation = {
+    decision: "accept",
+    reason: "Unknown origin",
+  };
+  expect(() => retireAppState(f.context, malformed)).toThrow("explicit preservation decision");
+  malformed.tasks.find((entry: { taskId: string }) => entry.taskId === "waiting").legacyObservation = {
+    decision: "preserve-unverified",
+    reason: " ",
+  };
+  expect(() => retireAppState(f.context, malformed)).toThrow("preservation reason must be non-empty");
+  expect(snapshot(f.db)).toEqual(before);
+});
+
+test("legacy observation does not substitute for settlement of a Task-only caller answer", () => {
+  const f = admittedFixture();
+  const task = f.store.readTask("pending")!;
+  task.status.phase = "converged";
+  task.status.observedGeneration = task.metadata.generation;
+  task.status.summary = "The original answer exists on this Task alone";
+  f.db
+    .prepare("UPDATE app_tasks SET resource_json=? WHERE app_id=? AND task_id='pending'")
+    .run(JSON.stringify(task), f.plan.appId);
+  refreshReviewedTasks(f);
+  for (const entry of f.plan.tasks)
+    entry.legacyObservation = { decision: "preserve-unverified", reason: "Preserve exact original state" };
+  const before = snapshot(f.db);
+  expect(() => retireAppState(f.context, f.plan)).toThrow("must be settled before withdrawal");
+  expect(snapshot(f.db)).toEqual(before);
+});
+
+test("CLI retains legacy bytes through database reopen and rejects changed archival evidence", async () => {
+  const f = legacyObservationFixture("attention", "unaccepted");
+  const before = snapshot(f.db);
+  expect((await runCli(f.root, f.plan, true)).code).toBe(0);
+  expect(snapshot(f.db)).toEqual(before);
+  for (const status of ["retired", "already-retired"]) {
+    const result = await runCli(f.root, f.plan);
+    expect({ code: result.code, stderr: result.stderr }).toEqual({ code: 0, stderr: "" });
+    expect(JSON.parse(result.stdout).status).toBe(status);
+  }
+  f.db
+    .prepare(
+      "UPDATE app_task_control_receipts SET receipt_json=json_remove(receipt_json, '$.retainedObservation') WHERE app_id=? AND task_id='waiting'",
+    )
+    .run(f.plan.appId);
+  const after = snapshot(f.db);
+  const replay = await runCli(f.root, f.plan);
+  expect(replay.code).not.toBe(0);
+  expect(replay.stderr).toContain("different terminal decision");
+  expect(snapshot(f.db)).toEqual(after);
+});
