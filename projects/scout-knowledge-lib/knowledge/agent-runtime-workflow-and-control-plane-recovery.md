@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion to agent-runtime-unattended-execution-and-replay.md for workflow and control-plane recovery boundaries: host-owned durability, trace-compilation limits, deterministic recovery projections, pause-versus-execution authority, receipt-bound action selection, and fresh-state checks after concurrency fences."
-triggers: ["AgentRun", "workflow DSL", "late settlement", "Hotpath", "trace compilation", "workflow drift", "Kiso", "recovery projection", "crash matrix", "LoopX", "hard lease", "agent pause", "lease retirement", "host-owned turn", "action selection", "receipt binding", "concurrent admission", "fresh-state recovery"]
-last_updated: "2026-10-16"
-source_basis: "Extracted intact from agent-runtime-unattended-execution-and-replay.md during its 2026-10-01 oversized-note review, then extended with pinned LoopX evidence on host-owned Turn selection and concurrent recovery admission. Each section retains stable source links, pinned revisions, inspected implementation or repository-authored test evidence, and explicit execution limitations."
+summary: "Companion to agent-runtime-unattended-execution-and-replay.md for workflow and control-plane recovery boundaries: host-owned durability, trace-compilation limits, deterministic recovery projections, bounded executor re-adoption, pause-versus-execution authority, receipt-bound action selection, and fresh-state checks after concurrency fences."
+triggers: ["AgentRun", "workflow DSL", "late settlement", "Hotpath", "trace compilation", "workflow drift", "Kiso", "recovery projection", "crash matrix", "Stablehand", "orphan grace", "turn re-attachment", "delivery journal", "LoopX", "hard lease", "agent pause", "lease retirement", "host-owned turn", "action selection", "receipt binding", "concurrent admission", "fresh-state recovery"]
+last_updated: "2026-11-09"
+source_basis: "Extracted intact from agent-runtime-unattended-execution-and-replay.md during its 2026-10-01 oversized-note review, then extended with pinned LoopX evidence on host-owned Turn selection and concurrent recovery admission and pinned Stablehand evidence on bounded sandbox survival, fenced owner replacement, and journal replay after an orchestrator crash. Each section retains stable source links, pinned revisions, inspected implementation or repository-authored test evidence, and explicit execution limitations."
 </ai_context>
 
 # Agent Runtime Workflow and Control-Plane Recovery
@@ -159,6 +159,63 @@ choosing the convenient replay path.
 - **Inspected revision:** https://github.com/vincemakes/kiso/commit/3f77d06741cb39e2e98d09d8f55afae6d3bfe0ee
 - **Primary sources:** [recovery projection](https://github.com/vincemakes/kiso/blob/3f77d06741cb39e2e98d09d8f55afae6d3bfe0ee/packages/runtime/src/recovery-plan.ts), [execution identity and receipt repair ADR](https://github.com/vincemakes/kiso/blob/3f77d06741cb39e2e98d09d8f55afae6d3bfe0ee/docs/adrs/0025-execution-identity-and-crash-safe-recovery.md), [pure-projection ADR](https://github.com/vincemakes/kiso/blob/3f77d06741cb39e2e98d09d8f55afae6d3bfe0ee/docs/adrs/0048-recovery-as-projection.md), [crash matrix](https://github.com/vincemakes/kiso/blob/3f77d06741cb39e2e98d09d8f55afae6d3bfe0ee/packages/runtime/tests/crash-matrix.test.ts), and [purity checks](https://github.com/vincemakes/kiso/blob/3f77d06741cb39e2e98d09d8f55afae6d3bfe0ee/packages/runtime/tests/recovery-purity.test.ts)
 - **Discovery query:** GitHub Repository Search API `topic:ai-agent pushed:>2026-09-24 stars:>20`, sorted by updated; `total_count: 160`, `incomplete_results: false`
+
+## Recover the Executor, Replace the Owner, Replay the Observation — Stablehand (GitHub, November 2026)
+
+Stablehand's crash-takeover design separates three things that a streaming agent
+runtime can accidentally collapse: the sandbox process doing the work, the
+orchestrator currently authorized to control it, and the stream consumer observing
+its events. At pinned revision `a9a59695ebb742b916e971e66698adf3febd5ded`,
+dropping the orchestrator's stream detaches that consumer rather than cancelling the
+sandbox turn. An in-memory, append-only delivery journal stamps every event with one
+`delivery_id` and a 1-based `delivery_seq`; a successor can attach from a cursor and
+receive the whole journal or only its missing tail.
+
+This survival is deliberately bounded. A configurable orphan window defaults to 120
+seconds. During that interval the sandbox keeps running and an unavailable
+orchestrator-side tool callback retries with the same request ID. If no successor
+attaches before the window closes, the turn is aborted with an explicit failure
+rather than left to execute without a control plane. The repository-authored tests
+cover a stream dropping while the harness continues, full and tail replay, timeout
+abandonment, retry under a successor capability with one request ID, and rejection
+of a stale owner's cancellation after a higher fence has attached.
+
+The pattern is stronger than “keep the worker alive.” Successor ownership receives a
+new fence, so the displaced process cannot cancel or finalize the adopted turn.
+Meanwhile, retaining the completed journal for the grace period covers the narrow
+crash window where an orchestrator consumed the terminal event but died before
+settlement. Recovery therefore needs separate receipts for executor liveness,
+current control authority, observation cursor, and terminal persistence; a live
+container or a replayable event stream alone proves only one of them.
+
+The source also keeps an important effect limit explicit. Sandbox-native tools
+continue in the surviving process, but an orchestrator-side tool interrupted after
+an external effect and before its result was recorded may run again under the new
+fence. Stable request identity creates a place for deduplication, but does not make an
+uncooperative external service exactly once. Stablehand's README therefore tells
+operators to give side-effecting tools an idempotency key. Artifact callbacks are
+also outside the retry path in this revision.
+
+**Runtime rule:** treat crash takeover as a bounded re-adoption protocol, not an
+automatic rerun. Keep the executor alive only inside an explicit orphan budget;
+replace control authority with a monotonic fence; replay observations from stable
+journal identity and sequence; and settle the terminal record separately. For any
+callback that can outlive its first owner, preserve one logical request identity and
+still reconcile the external effect before retry unless the provider enforces that
+identity.
+
+Scout inspected the pinned README, accepted design record, delivery-journal source,
+and repository-authored takeover tests through public GitHub endpoints. Scout did
+not clone or run the 1,677-entry repository, kill a live orchestrator, verify
+PostgreSQL watermark behavior, or exercise an external side effect. The journal is
+in sandbox memory, not durable across sandbox death, and the repository had 14 stars
+at retrieval; this is concrete static implementation and authored regression
+evidence, not independent production reliability or exactly-once proof.
+
+- **Repo:** https://github.com/iofold/stablehand
+- **Inspected revision:** https://github.com/iofold/stablehand/commit/a9a59695ebb742b916e971e66698adf3febd5ded
+- **Primary sources:** [crash-takeover ADR](https://github.com/iofold/stablehand/blob/a9a59695ebb742b916e971e66698adf3febd5ded/docs/adr/025-crash-takeover-of-running-turns.md), [delivery journal and orphan window](https://github.com/iofold/stablehand/blob/a9a59695ebb742b916e971e66698adf3febd5ded/packages/sandbox-daemon/src/sandbox/turn-delivery-journal.ts), [takeover regression tests](https://github.com/iofold/stablehand/blob/a9a59695ebb742b916e971e66698adf3febd5ded/packages/sandbox-daemon/src/sandbox/__tests__/turn-takeover.test.ts), and [README architecture and limits](https://github.com/iofold/stablehand/blob/a9a59695ebb742b916e971e66698adf3febd5ded/README.md)
+- **Discovery query:** GitHub Repository Search API `agent runtime sandbox created:>2026-10-01 stars:>10`, sorted by stars; `total_count: 3`, `incomplete_results: false`
 
 ## Pausing Work Must Not Reuse Execution Authority — LoopX (GitHub, September 2026)
 
