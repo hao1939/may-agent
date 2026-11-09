@@ -9512,7 +9512,11 @@ describe("canonical App task runtime", () => {
             if (!loadedTaskConfig(f).resourceStore.readAttempt(firstAttemptId)?.acceptedResult) interruptValidation();
             if (outcome === "accepted" && newWork && prepared.metadata.path === workspacePath) {
               if (scenario === "clock-reversed") setSystemTime(Date.now() - 60_000);
+              const nextAttemptTime = Date.now() + 1;
               for (let index = 0; index < (scenario === "clock-reversed" ? 2 : 17); index++) {
+                // This case needs the original attempt outside bounded history;
+                // timestamp ties must not let random attempt IDs retain it.
+                if (scenario !== "clock-reversed") setSystemTime(nextAttemptTime + index);
                 admitTaskInput(loadedTaskConfig(f), {
                   appId: "sample",
                   attachment: { kind: "existing", taskId },
