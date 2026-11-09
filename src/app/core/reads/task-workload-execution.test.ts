@@ -1,4 +1,10 @@
 import { afterEach, expect, test } from "bun:test";
+import { mkdtempSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { buildTools, type ToolsetLoaderOptions } from "../../loader/toolset-loader.js";
+import type { AgentConfig } from "../../loader/agent-config.js";
+import { EventBus } from "../events/bus.js";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
@@ -64,6 +70,91 @@ function fixture() {
   });
   return { db, source, target, root, add, executions, read };
 }
+
+test("the production Task tool uses the current attempt workload reader without an injected tool reader", async () => {
+  const f = fixture();
+  installTaskExecutionLimit(f.db, { kind: "host" }, 4);
+  const root = mkdtempSync(join(tmpdir(), "may-workload-tool-"));
+  try {
+    const host = new HostCapacity(5).workloadSnapshot();
+    const dispatch = {
+      enqueuedAt: 100,
+      startedAt: 250,
+      readyWaitMs: 150,
+      lane: "normal" as const,
+      hostCapacityAtDispatch: host,
+    };
+    const runtime = { installControllers: false, hostCapacity: new HostCapacity(1) } as AppTaskRuntimeOptions;
+    const taskRead = createRuntimeTaskRead({
+      taskStateConfig: f.target,
+      workloadSource: runtimeWorkloadSource(runtime, undefined, dispatch, "child"),
+    });
+    const binding = { appId: "target", taskId: "child", generation: 1, attemptId: "attempt-child" };
+    const session: { taskBinding: typeof binding; taskContext?: { taskRead: typeof taskRead } } = {
+      taskBinding: binding,
+      taskContext: { taskRead },
+    };
+    const sessions = new Map([
+      ["first", session],
+      [
+        "second",
+        {
+          taskBinding: { ...binding, appId: "source", taskId: "work" },
+          taskContext: {
+            taskRead: createRuntimeTaskRead({
+              taskStateConfig: f.source,
+              workloadSource: runtimeWorkloadSource(runtime, undefined, undefined, "work"),
+            }),
+          },
+        },
+      ],
+    ]);
+    let active = "first";
+    const tools = await buildTools(
+      { name: "worker", tools: [] } as unknown as AgentConfig,
+      {
+        agentsRoot: root,
+        sharedRoot: root,
+        projectsRoot: root,
+        projectRoot: root,
+        persistDir: root,
+        bus: new EventBus(),
+        cronEnabled: false,
+        getAgentSessionId: () => active,
+        manager: { activeSessions: sessions },
+      } as unknown as ToolsetLoaderOptions,
+    );
+    const tool = tools.find((tool) => tool.name === "tasks")!;
+    const read = async (target?: { appId: string }) => {
+      const result = await tool.execute("workload", {
+        action: "workload",
+        taskId: "untrusted-query-task",
+        ...(target ? { target } : {}),
+      });
+      return JSON.parse((result.content[0] as { text: string }).text);
+    };
+    expect(await read()).toMatchObject({
+      scope: { appId: "target" },
+      limits: { host, root: { available: true, task: { appId: "target", taskId: "child" }, root: f.root } },
+      funding: { currentRoot: { available: true, task: { appId: "target", taskId: "child" } } },
+      queueWait: { available: true, taskId: "child", elapsedMs: 150 },
+    });
+    expect(await read({ appId: "source" })).toMatchObject({
+      error: expect.stringContaining("scoped to the current App"),
+    });
+    active = "second";
+    expect(await read()).toMatchObject({
+      scope: { appId: "source" },
+      funding: { currentRoot: { task: { taskId: "work" } } },
+      queueWait: { available: false },
+    });
+    active = "first";
+    delete session.taskContext;
+    expect(await read()).toEqual({ error: "Current Task workload read is unavailable" });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test("worker feedback reads shared Host, resolved recipient and inherited root execution without writes", () => {
   const f = fixture();

@@ -9,7 +9,7 @@ import { runTaskAttempt } from "../app/core/tasks/attempt-runner.js";
 import { admitTaskInput } from "../app/core/state/inbox.js";
 import { afterEach, expect, setSystemTime, spyOn, test } from "bun:test";
 import { execFile } from "node:child_process";
-import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -788,6 +788,31 @@ test("an unhandled inline capacity denial retains demand without spending retrie
   expect(calls).toBe(2);
   expect(f.store.readTask("work")?.status.executionConstraint).toBeUndefined();
   expect(f.view()?.rootCharged).toBe(4);
+});
+
+test("damaged helper process evidence retains both execution places after the helper leaves the session map", async () => {
+  const f = fixture(10, 2);
+  f.hold(true);
+  const primary = f.manager.run("worker", "Primary", {
+    taskBinding: f.binding,
+    taskPrimaryStart: taskPrimaryStart(f.binding),
+  });
+  await f.started.promise;
+  const helper = f.manager.run("worker", "Helper", { parentSessionId: primary });
+  await f.startedInvocation(2);
+  const dir = join(f.root, "sessions", helper);
+  mkdirSync(dir, { recursive: true });
+  const path = join(dir, "bash-process-groups.json");
+  const damaged = '{"pgids":[';
+  writeFileSync(path, damaged);
+  const joined = f.manager.waitFor(helper);
+  f.releaseInvocation(2);
+  await expect(joined).rejects.toThrow("bash process-group evidence");
+  expect(f.manager.hasActiveSession(helper)).toBe(false);
+  f.releaseInvocation(1);
+  await expect(f.manager.waitFor(primary)).rejects.toThrow("bash process-group evidence");
+  expect(new TaskExecutionStore(f.db).usage({ kind: "root", root: f.binding }).occupied).toBe(2);
+  expect(readFileSync(path, "utf8")).toBe(damaged);
 });
 
 test("a helper cleanup failure remains joined after it leaves the active-session map", async () => {

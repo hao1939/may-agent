@@ -227,6 +227,7 @@ export function createAppTaskReadTool(options: {
   };
   /** Resolve the live attempt capability at invocation time; shared tools must not retain one session's scope. */
   communicationReader?: () => TaskAttempt["read"]["communication"];
+  workloadReader?: () => TaskAttempt["read"]["tasks"]["workload"] | undefined;
   applier?: () => ((changes: TaskChanges) => Promise<unknown>) | undefined;
 }): AgentTool {
   return {
@@ -340,6 +341,9 @@ export function createAppTaskReadTool(options: {
             ...(params.limit !== undefined ? { limit: params.limit } : {}),
             ...(params.cursor !== undefined ? { cursor: params.cursor } : {}),
           };
+          const read = options.workloadReader?.();
+          if (read) return result(await read(query));
+          if (options.workloadReader && scope?.taskId) throw new Error("Current Task workload read is unavailable");
           if (options.reader && !options.reader.workload) throw new Error("Workload read is unavailable");
           return result(options.reader?.workload
             ? await options.reader.workload({ bus: options.bus, appId, options: query })

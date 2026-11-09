@@ -1,4 +1,4 @@
-import { afterEach, expect, setSystemTime, test } from "bun:test";
+import { afterEach, expect, setSystemTime, spyOn, test } from "bun:test";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
@@ -422,6 +422,38 @@ test("funding holds are waiting demand with exact reasons, not unknown or usable
   });
   expect(observed.funding?.currentRoot).toEqual({ available: false });
   expect(f.db.prepare("SELECT total_changes() AS count").get()).toEqual(before);
+});
+
+test("funding readiness and balances keep one snapshot when the clock crosses renewal during a read", () => {
+  const beforeRenewal = Date.parse("2026-07-01T23:59:59.999Z");
+  const afterRenewal = beforeRenewal + 1;
+  setSystemTime(beforeRenewal);
+  const f = fixture();
+  new TaskBudgetAdmissionStore(f.db).install({
+    appId: "sample",
+    sponsor: { appId: "sample", agent: "worker" },
+    dailyCredits: 1,
+    rootCredits: 3,
+  });
+  f.add("owed");
+  expect(claimObservedAppTask(f.config, { taskId: "owed", appAgent: "worker", handler: "fixture" }).kind).toBe(
+    "deferred",
+  );
+  let calls = 0;
+  const clock = spyOn(Date, "now").mockImplementation(() => (++calls === 1 ? beforeRenewal : afterRenewal));
+  try {
+    const observed = f.read();
+    expect(observed.observedAt).toBe(new Date(beforeRenewal).toISOString());
+    expect(observed.counts).toMatchObject({ waiting: 1, runnable: 0 });
+    expect(observed.funding?.ordinary).toMatchObject({ period: "2026-07-01", remaining: 0 });
+  } finally {
+    clock.mockRestore();
+  }
+  setSystemTime(afterRenewal);
+  expect(f.read()).toMatchObject({
+    counts: { waiting: 0, runnable: 1 },
+    funding: { ordinary: { period: "2026-07-02", remaining: 1 } },
+  });
 });
 
 test("budget feedback keeps the current root and App sponsor scopes distinct through UTC renewal without writes", () => {

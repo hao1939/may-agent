@@ -269,6 +269,24 @@ it.each([
   expect(f.handoff()!.facts.join("\n")).toContain("Recovery history incomplete");
 });
 
+it("preserves session state and result evidence until damaged process evidence is repaired", () => {
+  const f = recoveryFixture();
+  const metadata = readFileSync(f.metadata, "utf8");
+  const result = '{"summary":"Retained work"}';
+  const path = join(f.root, "sessions", f.sessionId, "bash-process-groups.json");
+  const damaged = '{"pgids":[';
+  writeFileSync(f.result, result);
+  writeFileSync(path, damaged);
+  expect(() => f.recovery.interrupt(f.sessionId, "Recover", "work", f.binding)).toThrow("bash process-group evidence");
+  expect(readFileSync(path, "utf8")).toBe(damaged);
+  expect(readFileSync(f.metadata, "utf8")).toBe(metadata);
+  expect(readFileSync(f.result, "utf8")).toBe(result);
+  expect(f.events).toEqual([]);
+  writeFileSync(path, '{"pgids":[]}');
+  expect(f.recovery.interrupt(f.sessionId, "Recover", "work", f.binding)).toBe(true);
+  expect(readFileSync(f.result, "utf8")).toBe(result);
+});
+
 it("still requires the old process to exit when session metadata is missing", () => {
   const f = recoveryFixture();
   rmSync(f.metadata);
