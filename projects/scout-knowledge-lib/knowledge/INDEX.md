@@ -1397,3 +1397,7 @@ The [reconstruction audit](../reports/review/scout-provenance-reconstruction-cyc
 ## Recent agent-supervision findings
 
 - [Multi-Forge: cross-runtime supervision needs attempt evidence, not only a verdict](findings/2026-10-17-cross-runtime-supervision-needs-attempt-evidence.md) — Pinned source distinguishes completed, unavailable, incomplete, and cached review attempts, while its block threshold accepts a supplied citation without requiring that citation to verify against the plan snapshot; Scout did not run the software, tests, runtimes, models, proxies, or providers.
+
+## Recent coding-agent verification findings
+
+- [SemVer labels can change how thoroughly an agent verifies identical code](findings/2026-11-09-semver-labels-change-agent-verification.md) — A Microsoft first-party article reports label-dependent checking in some model-and-harness configurations when dependency code was held constant; Scout did not inspect trajectories or experiment artifacts or reproduce the runs.
