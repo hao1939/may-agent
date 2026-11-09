@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Agent self-evolution is not one mechanism. The credible core is a governed release loop over explicit mutable surfaces: skills, memory, routing, harness code, weights, world models, or evaluators. Current evidence is strongest when an external fixed evaluator controls admission, and much weaker for self-generated or co-evolving judges and broad-goal autonomy."
 triggers: ["agent self-evolution", "self-improving agents", "recursive self-improvement", "agent autonomy", "skill evolution", "harness evolution", "world models", "co-evolving evaluators"]
-last_updated: "2026-10-15"
-source_basis: "A source-agnostic 984-row lead ledger: 908 observed cards from the human's Xiaohongshu collection, including a bounded authenticated frontier of 11 readable text bodies and one image-only cover; 69 primary paper, repository, benchmark, survey, blog, and interview records; and 8 existing Scout artifacts, plus 2026-09-10 direct XHS inspection of HarnessEvolve reception, an HN-surfaced primary-paper inspection of Procedural Graphs (arXiv 2609.09153), 2026-09-11 inspection of HN-surfaced Salesforce Beagle at commit 15f12b7, 2026-09-11 full-paper inspection of Ecdysis (arXiv 2609.11677v1), 2026-09-12 direct XHS inspection of the Seed/TokenWave Self-Developing Agents announcement, 2026-09-13 direct XHS inspection of Procedural Graphs reception, 2026-09-14 direct XHS inspection of a six-survey self-evolution reading map and its practitioner discussion, 2026-09-15 inspection of the HN-surfaced rekursiv.ai auto-autoresearch report plus its runnable NanoChat recipe at Priml commit 92c6bd2, 2026-09-16 inspection of EvoOntology's ontology-evolution lifecycle and admission boundary at commit ace8ff69, 2026-09-19 abstract-level inspection of SoL-Pi (arXiv 2609.20519v1), 2026-09-19 inspection of SourceShift/mini-ork's path-specific self-modification controls at commit 962bf478, 2026-09-22 direct XHS inspection of Chinese-language reception of the matched-budget harness-evolution critique and RSIAgent's exploration-memory framing, 2026-09-23 full-paper inspection of the HN-surfaced AIDE² recursive harness-improvement study (arXiv 2609.26457v1), 2026-09-23 direct XHS inspection of a secondary RRSI explainer (arXiv 2609.24972 named but not inspected), 2026-09-24 direct XHS inspection of a secondary Mobile Planner Agent explainer, 2026-09-24 inspection of Bitterbot's peer-skill admission and propagation controls at commit 873e5d58, and 2026-10-15 direct XHS inspection of a secondary Evo² explainer (arXiv 2610.13025 named but not independently inspected). Claims are traced to full primary sources and pinned code where available; XHS reception is labeled as secondary commentary, and titles remain discovery metadata, never technical evidence."
+last_updated: "2026-11-09"
+source_basis: "A source-agnostic 984-row lead ledger: 908 observed cards from the human's Xiaohongshu collection, including a bounded authenticated frontier of 11 readable text bodies and one image-only cover; 69 primary paper, repository, benchmark, survey, blog, and interview records; and 8 existing Scout artifacts, plus 2026-09-10 direct XHS inspection of HarnessEvolve reception, an HN-surfaced primary-paper inspection of Procedural Graphs (arXiv 2609.09153), 2026-09-11 inspection of HN-surfaced Salesforce Beagle at commit 15f12b7, 2026-09-11 full-paper inspection of Ecdysis (arXiv 2609.11677v1), 2026-09-12 direct XHS inspection of the Seed/TokenWave Self-Developing Agents announcement, 2026-09-13 direct XHS inspection of Procedural Graphs reception, 2026-09-14 direct XHS inspection of a six-survey self-evolution reading map and its practitioner discussion, 2026-09-15 inspection of the HN-surfaced rekursiv.ai auto-autoresearch report plus its runnable NanoChat recipe at Priml commit 92c6bd2, 2026-09-16 inspection of EvoOntology's ontology-evolution lifecycle and admission boundary at commit ace8ff69, 2026-09-19 abstract-level inspection of SoL-Pi (arXiv 2609.20519v1), 2026-09-19 inspection of SourceShift/mini-ork's path-specific self-modification controls at commit 962bf478, 2026-09-22 direct XHS inspection of Chinese-language reception of the matched-budget harness-evolution critique and RSIAgent's exploration-memory framing, 2026-09-23 full-paper inspection of the HN-surfaced AIDE² recursive harness-improvement study (arXiv 2609.26457v1), 2026-09-23 direct XHS inspection of a secondary RRSI explainer (arXiv 2609.24972 named but not inspected), 2026-09-24 direct XHS inspection of a secondary Mobile Planner Agent explainer, 2026-09-24 inspection of Bitterbot's peer-skill admission and propagation controls at commit 873e5d58, 2026-10-15 direct XHS inspection of a secondary Evo² explainer (arXiv 2610.13025 named but not independently inspected), and 2026-11-09 reinspection of SourceShift/mini-ork's verdict, certificate, hidden-check, and detached-seal boundaries at commit d779e3d6. Claims are traced to full primary sources and pinned code where available; XHS reception is labeled as secondary commentary, and titles remain discovery metadata, never technical evidence."
 </ai_context>
 
 # Agent Self-Evolution and Autonomy: What Actually Changes?
@@ -125,6 +125,59 @@ commit; it did not run the probe suite, exercise rollback, or independently test
 that all mutation entry points pass through these gates. The model-based patch
 critic is also not an independent deterministic evaluator, even though its
 missing or non-approving verdict fails closed.
+
+### November 9 update: verdict, evidence bundle, and issuer authenticity are separate claims
+
+Reinspection at commit
+[`d779e3d6740cff107dce5acc1a9bec7f60996f9c`](https://github.com/SourceShift/mini-ork/tree/d779e3d6740cff107dce5acc1a9bec7f60996f9c)
+shows that mini-ork has expanded from mutation-path controls into a more explicit
+verification artifact stack. Its
+[`certify` command](https://github.com/SourceShift/mini-ork/blob/d779e3d6740cff107dce5acc1a9bec7f60996f9c/mini_ork/cli/certify.py)
+returns `PROVEN`, `REFUTED`, or `UNVERIFIED`; the important design choice is that
+missing or unusable evidence remains abstention rather than being converted into
+a pass. Metamorphic invariants require a supermajority across informative
+perturbations, while the
+[`differential check`](https://github.com/SourceShift/mini-ork/blob/d779e3d6740cff107dce5acc1a9bec7f60996f9c/mini_ork/certify/differential.py)
+can only veto a would-be proof when confirmed preserve-domain behavior diverges.
+The model proposes candidate checks, but deterministic executions decide their
+observations.
+
+The resulting
+[`certificate`](https://github.com/SourceShift/mini-ork/blob/d779e3d6740cff107dce5acc1a9bec7f60996f9c/mini_ork/certify/certificate.py)
+binds the verdict to base and head revisions, patch and issue hashes, method,
+context files, probe and invariant evidence, optional mutation score, costs, and
+duration. It can also carry a precommitment and trial count for
+[`hidden checks`](https://github.com/SourceShift/mini-ork/blob/d779e3d6740cff107dce5acc1a9bec7f60996f9c/mini_ork/certify/hidden_checks.py).
+Those checks are honestly weaker without `MO_HIDDEN_CHECK_SECRET`: their key
+source falls back to a run ID or patch digest and is therefore reproducible by
+someone who knows that input. A hidden-check receipt must consequently state the
+key source; “renamed after generation” is not equivalent to “unpredictable to
+the patch author.”
+
+A certificate digest is still only self-consistency: anyone editing the JSON can
+recompute it. mini-ork therefore adds a detached
+[`seal`](https://github.com/SourceShift/mini-ork/blob/d779e3d6740cff107dce5acc1a9bec7f60996f9c/mini_ork/certify/seal.py)
+that can bind the certificate ID and digest to an audit-chain issuance row and
+an Ed25519 signature. Verification distinguishes `VERIFIED` with an independently
+pinned public key from `UNPINNED`, `UNSIGNED`, and `FAILED`; the repository's
+[`seal tests`](https://github.com/SourceShift/mini-ork/blob/d779e3d6740cff107dce5acc1a9bec7f60996f9c/tests/unit/test_certificate_seal.py)
+exercise content tampering, foreign keys, altered seal digests, removed issuance
+rows, and the missing-crypto path.
+
+The reusable rule is: **a mutation admission verdict, its evidence bundle, and
+the issuer/authenticity proof need separate receipts.** `PROVEN` describes the
+oracle's execution judgment; a certificate records what that judgment covered;
+a digest detects accidental or unacknowledged edits only when compared with a
+trusted value; a pinned signature attributes issuance; and an audit-chain row
+supports retention and ordering. None alone proves that the patch was deployed,
+that the evaluator was adequate for every failure mode, or that the claimed
+production outcome occurred.
+
+Limits: Scout statically inspected the pinned README, complete tree, verification
+architecture, certificate, seal, hidden-check, differential, and selected test
+files. Scout did not execute mini-ork, Docker, its models, tests, audit database,
+certification corpus, or reported benchmark, so this update establishes artifact
+and control-flow boundaries rather than empirical verifier accuracy.
 
 ## Peer reputation should buy evaluation priority, not activation
 
