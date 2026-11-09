@@ -1,11 +1,16 @@
 # Retired maintenance App cleanup — 2026-11-09
 
-The May–Alex–Scout organizational migration is complete. The old maintenance
-App is absent from the live catalog and loaded definitions. Its executable
+The May–Alex–Scout organizational migration and final stored-state withdrawal
+are complete. The old maintenance App is absent from the live catalog and
+loaded definitions. Its executable
 source was removed earlier and Alex's migration Task
 `input/app_7a279469-7ac8-4bec-894a-9314635bd452` is closed.
-This receipt distinguishes completed filesystem retirement from the remaining
-stored-state withdrawal operation. No historical outcome is newly fulfilled.
+The final offline operation on 2026-11-09 withdrew 66 historical Tasks and four
+inputs unfulfilled, preserving 59 exact legacy observations. There are now zero
+nonterminal Tasks and zero unfinished inputs for the retired App. The Host is
+running and ready again; independent current May/Alex/Scout state is preserved.
+No historical outcome is newly fulfilled. Preparation sections below are history;
+the final application receipt at the end supersedes their earlier blocked labels.
 
 ## Completed filesystem retirement
 
@@ -21,8 +26,8 @@ The same-filesystem move preserved 19,570 entries: 17,845 regular files
 Before/after inventories match on file hashes, link targets, modes, owner/group
 and modification times. Local historical databases, WAL/SHM files and
 reproducible dependencies were preserved together. No production database was
-moved or edited. Descriptor inspection found no open archived file among
-readable processes; unavailable process namespaces are recorded in the private
+moved or edited by that filesystem relocation. Descriptor inspection found no
+open archived file among readable processes; unavailable process namespaces are recorded in the private
 receipt, rather than claimed as inspected.
 
 Private relocation evidence lives beside the relocated payload:
@@ -38,7 +43,7 @@ Current entry docs now identify retired methods and review targets accurately.
 The Host source repository `projects/may-agent` and human-facing App
 `projects/may.app` remain active and independent of the removed alias.
 
-## Remaining production state
+## Pre-application production state (historical)
 
 The exact query-only census of App `may-agent` is:
 
@@ -215,7 +220,8 @@ exact Task/trigger bytes commit on cancellation control receipts in the same
 transaction as withdrawal. They become neither accepted attempts nor caller
 answers; all existing answer-settlement checks remain in force.
 
-PR #444 is ready for review on `956d3fcd39`: 117 focused regressions pass,
+PR #444 merged at `9271468020`, with the same source tree as reviewed
+`956d3fcd39`: 117 focused regressions pass,
 full local CI and hosted Quality each report 4,049 passed, three
 installation-dependent skips and zero failures, and hosted Container passes.
 
@@ -224,8 +230,45 @@ preserving all 59 original observations, loaded accepted/admission/completion
 evidence, prior terminal/control decisions and independent May state. Dry-run
 restores every loaded table and replay changes nothing. A separate query-only
 live comparison at 04:17 UTC confirms unchanged reviewed Task/trigger and input
-preimages and the same 66/4/41 census. Neither check is an offline backup or a
-production apply. The new candidate remains private and blocked on Host review,
-merge, stopped-state verification and the verified full backup. See the
+preimages and the same 66/4/41 census. Neither check was an offline backup or a
+production apply. The candidate was retained privately while Host review,
+merge, stopped-state verification and the verified full backup were pending.
+The final application below supersedes that preparation status. See the
 [systemic review](retirement-systemic-review-2026-11-09.md) for validation and
-private evidence references. Production state remains unchanged by this work.
+private evidence references.
+
+## Final offline application
+
+The merged operation was applied on 2026-11-09 at 04:39 UTC (12:39 Shanghai).
+The Host, web service, maintenance service and workers were stopped, and a
+descriptor check confirmed no remaining database opener. A complete SQLite
+backup of the shared Host database was created through SQLite's backup API,
+including all committed WAL pages. Its full table census, `quick_check` and
+SHA-256 were verified before mutation. The fresh stopped-state census and exact
+Task, trigger, input and admission preimages matched the reviewed candidate.
+
+Dry-run exercised the real operation and restored all 47 database tables and
+the schema. Apply withdrew all 66 selected Tasks and stopped four inputs with
+null results; all 119 historical Task resources remain. All 59 selected legacy
+observations retain their exact original Task and trigger bytes on cancellation
+control receipts. The 41 original Condition rows were archived, 16 unreferenced
+Conditions were canonically pruned, and the 25 retained Conditions are unchanged.
+No Condition was marked satisfied.
+
+All 47 protected table scopes and the schema matched their pre-apply hashes.
+Accepted attempts, admissions, completion receipts, prior terminal/control
+decisions, nonselected rows and all other Apps' state were preserved. Exact
+replay returned `already-retired` without changing logical state, and SQLite
+`quick_check` passed. The original runtime binary was restarted unchanged;
+all three Host services are running and readiness is true. A post-restart census
+still finds zero nonterminal retired Tasks and zero unfinished inputs. May's
+independent provider-authority Task remains waiting.
+
+The current private receipt is `production-retirement-application-receipt.json`
+beside the relocated payload. The `offline-apply-20261109/` directory retains the
+final plan, merged-source proof, full backup and manifest, restoration procedure,
+archived Conditions, before/after table hashes, dry-run/apply/replay results and
+runtime verification. `cleanup-execution-receipt.json` now points to this completed
+operation; its former contents are preserved as
+`cleanup-execution-receipt.pre-application-history.json`. Earlier saved candidates
+and blocked rehearsal records remain historical evidence, not current work.

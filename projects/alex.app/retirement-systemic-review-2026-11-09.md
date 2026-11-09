@@ -12,6 +12,8 @@ syntax errors. App-definition migration and filesystem retirement did not
 establish that historical Task state satisfies the newer per-attempt acceptance
 contract. Earlier retirement checks and rehearsals overstated that readiness.
 Production state has not been changed by this review.
+The later merged preservation operation and its final production application are
+recorded below and in the [cleanup receipt](retirement-cleanup-2026-11-09.md).
 
 ## Root cause and review-process failure
 
@@ -104,7 +106,10 @@ unchanged. Its census remains 66 nonterminal Tasks, four unfinished inputs and
 41 Conditions. These are saved query-only reduced-snapshot findings, not a fresh
 live census or a full offline backup.
 
-## Required next movement
+## Pre-application disposition (historical)
+
+This was the review's disposition before explicit observation preservation and
+the final application recorded below; it does not describe the current backlog.
 
 Keep the candidate blocked. Review original provenance and preserve legacy
 observations as such; restore accepted identity only where original evidence
@@ -134,7 +139,8 @@ All 117 focused retirement regressions and type, SDK, App-boundary and lint
 checks pass. Full local CI and hosted Quality each report 4,049 passed, three
 installation-dependent checks skipped and zero failures. Hosted Container also
 passed. [Validation run](https://github.com/hao1939/may-agent/actions/runs/42561079423)
-is on the same revision, without automatic retries; PR #444 is ready for review.
+is on the same revision, without automatic retries. PR #444 merged at
+`9271468020`, whose source tree matches reviewed `956d3fcd39` exactly.
 An isolated rehearsal of the saved reduced snapshot reaches zero nonterminal
 Tasks and zero unfinished inputs, preserving 59 exact legacy observations and
 all loaded attempts, admissions, completion receipts, prior terminal/control
@@ -147,6 +153,26 @@ input preimages unchanged. This is a read-only comparison, not quiescence proof
 or a full offline backup. Private evidence is retained in
 `state-legacy-observation-rehearsal-receipt.json` and
 `state-legacy-observation-live-preimage-check.json`; the separate candidate is
-`retirement-plan.legacy-observation.candidate.json`. It is not ready for
-production application before Host review/merge, stopped-state verification
-and the full backup procedure. Production state remains unchanged by this work.
+`retirement-plan.legacy-observation.candidate.json`. At that preparation stage
+it still required Host review/merge, stopped-state verification and the full
+backup procedure. The final application below records those completed
+prerequisites and the actual production change separately from the rehearsals.
+
+## Final production application
+
+The stopped-state operation was applied on 2026-11-09 after verifying the full
+shared Host database backup and fresh exact preimages. It withdrew 66 Tasks and
+four inputs unfulfilled, preserved all 59 legacy observations, and left zero
+nonterminal Tasks and zero unfinished inputs for the retired App. All 119 Task
+resources remain. All 47 protected database table scopes, existing accepted and
+terminal evidence, and independent App state were preserved. Dry-run restored
+every table and the schema, exact replay changed nothing, and `quick_check`
+passed. The Host restarted with its original binary and reports ready; May's
+independent provider-authority Task remains waiting.
+
+This final application supersedes the earlier candidate's operational blocker,
+without manufacturing accepted-attempt identity or caller fulfillment. See the
+[final cleanup receipt](retirement-cleanup-2026-11-09.md) and private
+`production-retirement-application-receipt.json` for the backup, actual final
+plan, before/after hashes and runtime verification. Original refusal rehearsals
+remain evidence of the gaps that prompted this change.
