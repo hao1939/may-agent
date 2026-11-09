@@ -131,7 +131,10 @@ Missing or altered archival bytes refuse replay, and failed/corrupted archival
 writes roll back cancellation and caller withdrawal.
 
 All 117 focused retirement regressions and type, SDK, App-boundary and lint
-checks pass. Full local and hosted validation are in progress; the PR is draft.
+checks pass. Full local CI and hosted Quality each report 4,049 passed, three
+installation-dependent checks skipped and zero failures. Hosted Container also
+passed. [Validation run](https://github.com/hao1939/may-agent/actions/runs/42561079423)
+is on the same revision, without automatic retries; PR #444 is ready for review.
 An isolated rehearsal of the saved reduced snapshot reaches zero nonterminal
 Tasks and zero unfinished inputs, preserving 59 exact legacy observations and
 all loaded attempts, admissions, completion receipts, prior terminal/control

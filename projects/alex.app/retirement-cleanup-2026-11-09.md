@@ -215,6 +215,10 @@ exact Task/trigger bytes commit on cancellation control receipts in the same
 transaction as withdrawal. They become neither accepted attempts nor caller
 answers; all existing answer-settlement checks remain in force.
 
+PR #444 is ready for review on `956d3fcd39`: 117 focused regressions pass,
+full local CI and hosted Quality each report 4,049 passed, three
+installation-dependent skips and zero failures, and hosted Container passes.
+
 The saved reduced-snapshot rehearsal withdraws 66 Tasks and four inputs while
 preserving all 59 original observations, loaded accepted/admission/completion
 evidence, prior terminal/control decisions and independent May state. Dry-run
