@@ -1403,3 +1403,7 @@ The [reconstruction audit](../reports/review/scout-provenance-reconstruction-cyc
 ## Recent coding-agent verification findings
 
 - [SemVer labels can change how thoroughly an agent verifies identical code](findings/2026-11-09-semver-labels-change-agent-verification.md) — A Microsoft first-party article reports label-dependent checking in some model-and-harness configurations when dependency code was held constant; Scout did not inspect trajectories or experiment artifacts or reproduce the runs.
+
+## Recent agent-effect governance findings
+
+- [Agent email guards need an effect-owning boundary](findings/2026-11-09-agent-email-guards-need-effect-boundary.md) — Pinned code specifies atomic send budgets, typed holds, loop refusal, and persistent pause, but Scout did not run it or prove that every provider route crosses the guard.
