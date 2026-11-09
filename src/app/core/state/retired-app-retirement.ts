@@ -1,9 +1,14 @@
 import { isDeepStrictEqual } from "node:util";
 import { createHash } from "node:crypto";
 import { stateTransaction } from "../../../lib/db/transaction.js";
-import type { AppTaskContext } from "../tasks/app-task-store.js";
+import type { AppTaskAdmission, AppTaskContext } from "../tasks/app-task-store.js";
+import type { AppTaskResource } from "../tasks/app-task-state.js";
 import { cancelAppTask } from "../tasks/app-task-reconciler.js";
-import { parseTaskResource } from "./app-task-resource-store.js";
+import {
+  parseTaskResource,
+  type AppTaskControlReceipt,
+  type AppTaskResourceStore,
+} from "./app-task-resource-store.js";
 
 /** Private operator data: preserve the reviewed plan and a verified offline backup. */
 export type RetiredAppRetirementPlan = {
@@ -11,8 +16,21 @@ export type RetiredAppRetirementPlan = {
   appId: string;
   quiesced: true;
   appRetired: true;
-  tasks: Array<{ taskId: string; resourceJson: string; triggerJson: string | null; reason: string }>;
-  inputs: Array<{ row: Record<string, unknown>; reason: string }>;
+  tasks: Array<{
+    taskId: string;
+    resourceJson: string;
+    triggerJson: string | null;
+    reason: string;
+    legacyObservation?: { decision: "preserve-unverified"; reason: string };
+  }>;
+  inputs: Array<{
+    row: Record<string, unknown>;
+    reason: string;
+    admissionWithdrawal?: {
+      decision: "withdraw-unfulfilled";
+      rows: Array<{ app_id: string; task_id: string; admission_json: string }>;
+    };
+  }>;
 };
 
 type RetirementResult = { status: "would-retire" | "retired" | "already-retired"; tasks: number; inputs: number };
@@ -27,6 +45,60 @@ function required(value: unknown, field: string): asserts value is string {
 function sameIds(actual: string[], expected: string[], label: string) {
   if (new Set(expected).size !== expected.length || !isDeepStrictEqual(actual.sort(), [...expected].sort()))
     throw new Error(`${label} census changed or plan has duplicate identities`);
+}
+
+function retainedObservation(
+  task: RetiredAppRetirementPlan["tasks"][number],
+): AppTaskControlReceipt["retainedObservation"] {
+  if (task.legacyObservation === undefined) return undefined;
+  if (!task.legacyObservation || task.legacyObservation.decision !== "preserve-unverified")
+    throw new Error("Legacy observation requires an explicit preservation decision");
+  required(task.legacyObservation.reason, "legacy observation preservation reason");
+  return {
+    kind: "unverified-legacy-observation",
+    resourceJson: task.resourceJson,
+    triggerJson: task.triggerJson,
+    reason: task.legacyObservation.reason,
+  };
+}
+
+/** Read-only preservation proof, also used to audit private offline plans. */
+export function assertRetainedRetirementOutcome(store: AppTaskResourceStore, task: AppTaskResource): void {
+  const { status } = task;
+  const payloadFields = ["summary", "response", "result"] as const;
+  // Phase and missing references cannot prove there is no historical outcome.
+  // Each projected value that cancellation replaces needs its own retained copy.
+  const requiresEvidence =
+    status.phase === "converged" ||
+    status.phase === "waiting" ||
+    status.observedAttemptId !== undefined ||
+    payloadFields.some((field) => status[field] !== undefined);
+  if (!requiresEvidence) return;
+  const observed = status.observedAttemptId ? store.readAttempt(status.observedAttemptId) : undefined;
+  const accepted = observed?.acceptedResult;
+  if (
+    !observed ||
+    observed.metadata.id !== status.observedAttemptId ||
+    observed.taskId !== task.metadata.id ||
+    !Number.isSafeInteger(observed.taskGeneration) ||
+    observed.taskGeneration < 1 ||
+    // Controller acknowledgement can rewind on explicit retry; the accepted
+    // attempt, not observedGeneration, owns the retained payload's generation.
+    observed.taskGeneration > task.metadata.generation ||
+    observed.state !== "completed" ||
+    !accepted ||
+    (status.phase === "converged" && accepted.state !== "converged") ||
+    payloadFields.some(
+      (field) =>
+        status[field] !== undefined &&
+        !isDeepStrictEqual(status[field], accepted[field]) &&
+        // The exact attempt also retains canonical controller diagnostics, such
+        // as reportAppTaskFailure's decorated summary. This is preservation, not
+        // acceptance or caller fulfillment; never whitelist a text prefix.
+        !(field === "summary" && status.summary === observed.summary),
+    )
+  )
+    throw new Error(`Task outcome requires retained accepted evidence before cancellation: ${task.metadata.id}`);
 }
 
 /**
@@ -70,6 +142,7 @@ export function retireAppState(
         required(task.taskId, "Task id");
         required(task.reason, "Task retirement reason");
         required(task.resourceJson, "reviewed Task resource");
+        const observation = retainedObservation(task);
         const expected = parseTaskResource(task.resourceJson);
         if (
           expected?.metadata?.id !== task.taskId ||
@@ -96,6 +169,7 @@ export function retireAppState(
             receipt.expectedGeneration !== expected.metadata.generation ||
             receipt.expectedResourceVersion !== expected.metadata.resourceVersion ||
             receipt.appliedResourceVersion !== expected.metadata.resourceVersion + 1 ||
+            !isDeepStrictEqual(receipt.retainedObservation, observation) ||
             terminal.generation !== expected.metadata.generation ||
             terminal.resourceVersion !== receipt.appliedResourceVersion ||
             terminal.kind !== "cancelled" ||
@@ -106,6 +180,10 @@ export function retireAppState(
             current.status.currentAttemptId ||
             current.status.phase !== "attention" ||
             current.status.summary !== terminal.summary ||
+            current.status.response !== terminal.response ||
+            !isDeepStrictEqual(current.status.facts, terminal.facts) ||
+            !isDeepStrictEqual(terminal.facts, expected.status.facts ?? []) ||
+            terminal.result !== undefined ||
             current.status.result !== undefined ||
             current.status.conditionIds?.length ||
             store.readTrigger(task.taskId)
@@ -129,6 +207,7 @@ export function retireAppState(
       );
 
       const remainingInputs: typeof plan.inputs = [];
+      let reviewedRecords = plan.tasks.length + plan.inputs.length;
       for (const input of plan.inputs) {
         const expected = input.row;
         if (!expected || typeof expected !== "object") throw new Error("Reviewed input row is required");
@@ -146,20 +225,20 @@ export function retireAppState(
           expected.target_task_id != null
         )
           throw new Error(
-            "Retirement only supports unresolved legacy inputs without Task/Conversation admission or a result",
+            "Retirement only supports unresolved legacy inputs without Task/Conversation attachments or a result",
           );
         // Older Hosts could commit admission (and even its accepted answer)
         // before projecting the inbox attachment. Check that authority directly;
         // aliases may lack an event, while opaque keys can retain the input id.
         const desiredPrefix = `task:${expected.id}:desired:`;
         const existingPrefix = `task:${expected.id}:existing:`;
-        const admission = db
+        const admissions = db
           .prepare(
-            `SELECT 1 FROM app_task_admissions WHERE app_id=? AND (
+            `SELECT app_id, task_id, admission_json FROM app_task_admissions WHERE app_id=? AND (
           task_id IN (?, ?, ?) OR substr(task_id, 1, length(?))=? OR substr(task_id, 1, length(?))=?
-          OR json_extract(admission_json, '$.inputEvent.data.request.id')=?) LIMIT 1`,
+          OR json_extract(admission_json, '$.inputEvent.data.request.id')=?) LIMIT 1001`,
           )
-          .get(
+          .all(
             plan.appId,
             `task:${expected.id}`,
             `conversation-input:${expected.id}`,
@@ -170,7 +249,79 @@ export function retireAppState(
             existingPrefix,
             expected.id,
           );
-        if (admission) throw new Error(`Reviewed input has durable admission evidence: ${expected.id}`);
+        const withdrawal = input.admissionWithdrawal;
+        if (withdrawal === undefined) {
+          if (admissions.length) throw new Error(`Reviewed input has durable admission evidence: ${expected.id}`);
+        } else {
+          if (
+            !withdrawal ||
+            withdrawal.decision !== "withdraw-unfulfilled" ||
+            !Array.isArray(withdrawal.rows) ||
+            !withdrawal.rows.length ||
+            (reviewedRecords += withdrawal.rows.length) > 1000
+          )
+            throw new Error("Admitted withdrawal requires a bounded explicit unfulfilled decision");
+          for (const row of withdrawal.rows) {
+            if (!row || row.app_id !== plan.appId) throw new Error("Admission withdrawal belongs to another App");
+            required(row.task_id, "reviewed admission key");
+            required(row.admission_json, "reviewed admission bytes");
+          }
+          sameIds(
+            admissions.map((row) => String(row.task_id)),
+            withdrawal.rows.map((row) => row.task_id),
+            "Input admission",
+          );
+          const reviewed = new Map(withdrawal.rows.map((row) => [row.task_id, row]));
+          for (const row of admissions) {
+            if (!isDeepStrictEqual(row, reviewed.get(String(row.task_id))))
+              throw new Error(`Reviewed input admission changed: ${row.task_id}`);
+            const admission = JSON.parse(String(row.admission_json)) as AppTaskAdmission;
+            required(admission?.taskId, "admitted Task identity");
+            required(admission.specHash, "admitted Task spec hash");
+            if (!Number.isSafeInteger(admission.taskGeneration) || admission.taskGeneration < 1)
+              throw new Error("Admitted Task generation is invalid");
+            if (admission.resultAttemptId != null)
+              throw new Error("An accepted admission answer must be settled before withdrawal");
+            const request = admission.inputEvent?.data as { request?: { id?: unknown } } | undefined;
+            if (request?.request?.id != null && request.request.id !== expected.id)
+              throw new Error("Admission retains a different input identity");
+            const task = store.readTask(admission.taskId);
+            const receipt = store.readReceipt(admission.taskId);
+            // Reopening retains earlier terminal authority in its control
+            // receipt. A newer cancellation cannot erase an older completion.
+            const terminal = store.readAdmissionCancellation(admission.taskId, String(row.task_id));
+            const completed = db
+              .prepare(
+                `SELECT 1 FROM app_task_attempts
+              WHERE app_id=? AND task_id=? AND task_generation>=?
+                AND json_extract(attempt_json, '$.acceptedResult.state')='converged'
+                AND (task_generation=? OR EXISTS (
+                  SELECT 1 FROM json_each(app_task_attempts.attempt_json, '$.acceptedResult.inputKeys') input
+                  WHERE input.value=?)) LIMIT 1`,
+              )
+              .get(plan.appId, admission.taskId, admission.taskGeneration, admission.taskGeneration, row.task_id);
+            if (
+              completed ||
+              receipt?.metadata.generation === admission.taskGeneration ||
+              (terminal?.kind === "closed" && terminal.generation === admission.taskGeneration) ||
+              (task?.status.observedGeneration === admission.taskGeneration && task.status.phase === "converged")
+            )
+              throw new Error("Completion evidence for an admitted generation must be settled before withdrawal");
+            const generation = Math.max(
+              task?.metadata.generation ?? 0,
+              receipt?.metadata.generation ?? 0,
+              terminal?.generation ?? 0,
+            );
+            if (
+              !Number.isSafeInteger(generation) ||
+              generation < admission.taskGeneration ||
+              task?.status.currentAttemptId
+            )
+              throw new Error("Admitted Task authority is missing, older than the admission, or has a current attempt");
+          }
+          // Withdraw the caller's requirement, not one selected alias or the
+          // Task's latest answer. All admissions and accepted evidence remain.
+        }
         const current = db
           .prepare("SELECT * FROM app_inbox_items WHERE id=? AND app_id=?")
           .get(expected.id, plan.appId);
@@ -219,6 +370,11 @@ export function retireAppState(
         remainingInputs.map((input) => String(input.row.id)),
         "Input",
       );
+      // Default plans still require accepted provenance. Explicit legacy plans
+      // retain exact preimages atomically with cancellation, without acceptance.
+      // Replay already verified that durable copy above; a flag alone is no proof.
+      for (const task of plan.tasks)
+        if (!retainedObservation(task)) assertRetainedRetirementOutcome(store, parseTaskResource(task.resourceJson));
       if (!remainingTasks.length && !remainingInputs.length)
         return { status: "already-retired", tasks: plan.tasks.length, inputs: plan.inputs.length };
       // One transaction is all-or-nothing. Refuse a mixed replay rather than
@@ -227,7 +383,7 @@ export function retireAppState(
         throw new Error("Retirement plan is partially applied or changed");
 
       for (const task of remainingTasks) {
-        const expected = JSON.parse(task.resourceJson);
+        const expected = parseTaskResource(task.resourceJson);
         cancelAppTask(context, {
           appId: plan.appId,
           taskId: task.taskId,
@@ -237,6 +393,21 @@ export function retireAppState(
           decision: "human",
           controlKey: taskControlKey(task.taskId),
         });
+        const observation = retainedObservation(task);
+        if (observation) {
+          const controlKey = taskControlKey(task.taskId);
+          const updated = db
+            .prepare(`UPDATE app_task_control_receipts
+            SET receipt_json=json_set(receipt_json, '$.retainedObservation', json(?))
+            WHERE app_id=? AND control_key=? AND action='cancel'
+              AND json_type(receipt_json, '$.retainedObservation') IS NULL`)
+            .run(JSON.stringify(observation), plan.appId, controlKey);
+          if (
+            updated.changes !== 1 ||
+            !isDeepStrictEqual(store.readControlReceipt(controlKey)?.retainedObservation, observation)
+          )
+            throw new Error("Legacy observation was not retained with its exact cancellation");
+        }
       }
       const now = options.now ?? Date.now();
       for (const input of remainingInputs) {
