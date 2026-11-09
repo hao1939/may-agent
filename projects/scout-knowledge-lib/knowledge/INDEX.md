@@ -72,6 +72,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ### 2026-11-09
 
+- [Hook policy needs host-coverage receipts](./findings/2026-11-09-hook-policy-needs-host-coverage-receipts.md) — pinned Fairlead documents show a deterministic, sequence-aware Cedar gate with signed decisions, while explicitly limiting those receipts to calls the host delivered to the hook; Scout did not run the software, tests, live host probes, or bypass checks.
 - [Longitudinal memory needs time, identity, and safety receipts](./findings/2026-11-09-longitudinal-memory-needs-time-identity-and-safety.md) — MedGraph's abstract identifies outdated state, cross-person contamination, and omitted safety facts as separate longitudinal-memory failures; Scout did not inspect the full paper, benchmark, implementation, records, prompts, or reported results.
 
 ### 2026-11-08
