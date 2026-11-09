@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion to agent-runtime-effect-integrity.md for operation admission and identity: separating conversation from business transitions, live single-winner approval response, ownership claims, ambiguity-aware mutation review, centralized effect-mode derivation, pre-wait attempt journals, decision-time feedback binding, and durable receipt joins."
-triggers: ["operation admission", "business operation boundary", "approval responder", "ownership claim", "mutation review", "effect mode", "provider attempt journal", "decision-time choice set", "receipt identity", "steering receipt"]
-last_updated: "2026-09-28"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-28 oversized-note review. Each section preserves stable source links, pinned revisions where applicable, reproduced checks where performed, and explicit evidence limitations."
+summary: "Companion to agent-runtime-effect-integrity.md for operation admission and identity: separating conversation from business transitions, evidence-bound independent review, live single-winner approval response, ownership claims, ambiguity-aware mutation review, centralized effect-mode derivation, pre-wait attempt journals, decision-time feedback binding, and durable receipt joins."
+triggers: ["operation admission", "business operation boundary", "review certificate", "reviewed head", "approval responder", "ownership claim", "mutation review", "effect mode", "provider attempt journal", "decision-time choice set", "receipt identity", "steering receipt"]
+last_updated: "2026-11-09"
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-09-28 oversized-note review, then extended with pinned GitHub implementation evidence for review admission, candidate identity, and exact-head delivery enforcement. Each section preserves stable source links, pinned revisions where applicable, reproduced checks where performed, and explicit evidence limitations."
 </ai_context>
 
 # Agent Runtime Operation Admission and Identity
@@ -13,6 +13,66 @@ These patterns cover the boundary before and around effect admission: separating
 conversation from deterministic operations, making approval answerable, claiming
 ownership safely, preserving uncertainty under restricted modes, and joining
 feedback or receipts to the exact operation identity that produced them.
+
+## A Review Verdict Is Evidence About One Candidate, Not Merge Authority — Orbit (GitHub, November 2026)
+
+Orbit's coding-agent runtime makes independent review a separately admitted and
+settled operation rather than another prompt in the implementer's session. At
+pinned revision `c1f50c1b39433270c1f1d478d4c171cf40682162`, admission captures
+the base and head commit and tree identities, every implementation commit, a
+digest of the task's meaning, the review crew, required validation commands,
+and a bounded review budget. A fresh reviewer from a separately configured crew
+receives that frozen candidate. An unavailable or excluded reviewer escalates;
+the gate does not silently substitute the implementer.
+
+The review result is also narrower than delivery authority. Orbit's shipped
+design states that a verdict grants no merge permission. An `accept` covers the
+unchanged implementation head. If the reviewer fixes a defect, the
+implementation commits are not amended: all reviewer changes become one
+separately attributed commit with the review attempt and crew recorded in Git
+trailers. Owner-required validation then reruns on that final tree. A failure at
+this stage stops publication even though the review certificate records what the
+reviewer itself established.
+
+The exact-head rule continues at landing. Before-landing review settles the
+published pull-request head; a reviewer repair is pushed under a lease requiring
+the remote branch still to be at that head, and completion receives the settled
+head rather than resolving an arbitrary current branch. Settlement rechecks the
+checked-out head against the admitted candidate, ignores reports predating the
+attempt, and binds the immutable certificate to reviewer identity, base,
+reviewed and final candidate, implementation and reviewer commits, findings,
+validation, budget, and escalation. A candidate change, mismatched attempt, open
+finding under an accept verdict, claimed fix with no tree change, or clean accept
+with a changed tree downgrades the result to `incomplete`.
+
+This separates four facts that are often collapsed: a reviewer examined a
+particular candidate; its fixes were attributed and validated; the candidate
+still matches the reviewed identity; and a distinct delivery controller is
+authorized to land it. The repository also distinguishes file-reservation
+policy: overlapping `file:`, `dir:`, and symbol selectors are detected, hard
+leases refuse conflicting task reservations, advisory leases do not, and
+refusals are logged. Those reservations coordinate writers but do not replace
+the review certificate or grant merge authority.
+
+**Runtime rule:** admit review against frozen task meaning and candidate identity;
+settle it into a durable certificate that names exactly what was examined and
+what evidence passed; attribute reviewer repairs separately and rerun owner
+validation on the repaired tree; then require the delivery path to prove it is
+landing that settled head. Treat path leases as concurrency controls, review as
+evidence, and merge as a separate authority boundary.
+
+Scout inspected the pinned README, repository tree, shipped review design,
+review-gate Git mechanics, lease admission code, and repository-authored overlap
+tests through public GitHub endpoints. Scout did not clone or build the large
+Rust workspace, execute its tests, operate a live pull request, or independently
+validate the README's usage statistics. The finding establishes a substantive
+implemented contract and authored test coverage, not production reliability or
+security of every agent backend.
+
+- **Repo:** https://github.com/constellation-works/orbit
+- **Inspected revision:** https://github.com/constellation-works/orbit/commit/c1f50c1b39433270c1f1d478d4c171cf40682162
+- **Primary sources:** [review-gate overview](https://github.com/constellation-works/orbit/blob/c1f50c1b39433270c1f1d478d4c171cf40682162/docs/design/review-gate/1_overview.md), [review admission, settlement, exact-head enforcement, and compatibility contract](https://github.com/constellation-works/orbit/blob/c1f50c1b39433270c1f1d478d4c171cf40682162/docs/design/review-gate/2_design.md), [candidate and reviewer-commit identity mechanics](https://github.com/constellation-works/orbit/blob/c1f50c1b39433270c1f1d478d4c171cf40682162/crates/orbit-engine/src/executor/automation/vcs/review_gate.rs), [lease-token admission bounds](https://github.com/constellation-works/orbit/blob/c1f50c1b39433270c1f1d478d4c171cf40682162/crates/orbit-runtime/src/task/locks/lease/admission.rs), and [selector-overlap and hard-versus-advisory lease tests](https://github.com/constellation-works/orbit/blob/c1f50c1b39433270c1f1d478d4c171cf40682162/crates/orbit-core/tests/runtime/admission_audit/lock_overlap.rs)
+- **Discovery query:** GitHub Repository Search API `(ai-agent OR agentic) (runtime OR orchestration OR approval) pushed:>=2026-11-01`, sorted by updated; `total_count: 130854`, `incomplete_results: false`
 
 ## Separate Conversation From Business Operations Before Production — Reddit (September 2026)
 
