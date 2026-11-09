@@ -10,7 +10,7 @@ and [one authority for each resource](../1-principles/core-principles.md#one-aut
 **Implementation status:** The Host candidate is consolidated in
 [PR #443](https://github.com/hao1939/may-agent/pull/443), targeting main and ready
 for independent review. Review fixes at Host
-`403c6f39a46aad420acf01c14491a54c451475ca` are under final verification.
+`403c6f39a46aad420acf01c14491a54c451475ca` passed final Host and paired App verification.
 It includes scoped feedback, protected coordination,
 creation/claim/helper accounting, authorized funding changes, shared execution
 reservations and recovery, new-root defaults, durable one-place cooperation,
@@ -1569,7 +1569,8 @@ remained in the combined candidate `278a9fe755`. The follow-up revision
 - Claims, authored workflow starts and managed starts share a retained-accounting
   relevance check. The immutable creator's configured or funded scope requires
   explicit adoption even when the recipient App has no policy. Independently
-  owned unconfigured services retain their behavior. No historical debit or
+  owned unconfigured services retain their behavior before shared execution
+  enforcement. No historical debit or
   inferred attribution is introduced.
 - New Task creation wakes deferred creation inputs by exact target App/Task in
   the creation transaction, using an expression index. Saving a hold rechecks
@@ -1712,6 +1713,32 @@ a narrow feedback experiment does not imply App-local enforcement. Two fresh/
 retained admission regressions failed before the fix. Final six-file admission,
 seed, workload and control owners passed **118 tests / 530 assertions**; the
 broader nine-file operation/admission pass was **169 / 772** before the final
-seed regression. Full Host CI, paired strict types and scripted worker recheck
-are pending at this source checkpoint. Previous model cohorts keep their exact
-original revisions and do not establish this new input-review behavior.
+seed regression.
+
+Final frozen Host CI passed **4,325 tests / 3 existing fleet skips / 0 failures /
+25,201 assertions across 363 files**, with 340.03 seconds for tests. Host/SDK
+checks, canonical App boundary and lint passed. Hosted Quality and Container
+both passed the exact Host head in run `42604821917`. This includes #416's merged
+stability work; no old incremental workload PR needs a separate merge.
+
+Strict actual-App, owning-test and experiment source-SDK types passed. The new
+frozen App experiment `6ef14b89049bb56a9de5d5f3fb84d038691fa2a9`, using the
+same product source as App implementation `72c40c88689072f2cb49106fb918ffe34c3c7249`,
+passed **72 actual-worker scripted passes / 60 local requests / 2,593,830
+serialized request bytes** against Host `403c6f39a4`. All mechanical assertions
+passed, every business Task and original input remained unchanged, and no parent
+SQLite-lock diagnostic was found. Eight passes specifically use zero ordinary
+credits and only received required demand: the deciding helper receives the
+saved hold and exact source; four unchanged follow-up passes skip the helper.
+No placeholder business Task is created. This establishes wiring, deferral and
+coalescing mechanics, not real-model judgment or applied caller disposition.
+
+An initial experiment typecheck caught a new fixture's `.ts` import spelling;
+it was corrected to the source-SDK `.js` convention. Its already passing initial
+72-pass cohort remains retained, and the complete final matrix was rerun on the
+corrected frozen experiment. No production source changed during either final
+gate. Previous real-model cohorts keep their exact original revisions and do not
+establish this new input-review behavior. No external model request, live Task
+or budget mutation, deployment or activation was performed. Independent approval,
+resolved review findings and separately authorized finite-result/caller/operational
+acceptance remain outstanding.
