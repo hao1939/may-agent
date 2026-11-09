@@ -129,7 +129,9 @@ function readWorkloadFunding(
   };
 }
 
-/** Project retained pre-Task demand from the existing Inbox in this snapshot. */
+/** Project retained pre-Task demand from the existing Inbox in this snapshot.
+ * Recovery also admits old handling rows and non-Task waits. Leases and future
+ * availability restrict dispatch, not visibility; legacy Task waits are attached. */
 function readUnadmittedInputs(config: AppTaskContext, cursor?: string): NonNullable<TaskWorkload["unadmittedInputs"]> {
   let after = "";
   if (cursor !== undefined) {
@@ -140,8 +142,9 @@ function readUnadmittedInputs(config: AppTaskContext, cursor?: string): NonNulla
   const rows = config.resourceStore.db.prepare(`SELECT id, input_kind, source_kind, source_id, created_at, changed_at,
       CASE WHEN json_extract(handling, '$.phase') = 'deferred' THEN json_extract(handling, '$.funding.reason') END AS reason,
       json_extract(handling, '$.funding.retryAt') AS retry_at
-    FROM app_inbox_items INDEXED BY idx_app_inbox_pending_admission_read
-    WHERE app_id = ? AND status = 'pending' AND execution_task_id IS NULL AND waiting_on_kind IS NULL AND id > ?
+    FROM app_inbox_items INDEXED BY idx_app_inbox_admission_read
+    WHERE app_id = ? AND status != 'done' AND execution_task_id IS NULL
+      AND (waiting_on_kind IS NULL OR waiting_on_kind != 'task') AND id > ?
     ORDER BY id LIMIT 6`).all(config.resourceStore.appId, after) as Array<{
       id: string; input_kind: string; source_kind: "human" | "app" | "system"; source_id: string;
       created_at: number; changed_at: number | null; reason: string | null; retry_at: number | null;

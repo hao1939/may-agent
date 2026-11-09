@@ -116,6 +116,7 @@ test("unadmitted input discovery has its own App-scoped continuation and exclude
   });
   f.db.prepare("UPDATE app_inbox_items SET status = 'done' WHERE id = 'input-5'").run();
   f.db.prepare("UPDATE app_inbox_items SET execution_task_id = 'attached' WHERE id = 'input-6'").run();
+  f.db.prepare("UPDATE app_inbox_items SET status = 'handling', waiting_on_kind = 'analysis' WHERE id = 'input-2'").run();
   const reader = createRuntimeTaskRead({ taskStateConfig: f.config });
   const first = reader.workload({ agent: "other-agent", limit: 1 });
   expect(first.unadmittedInputs).toMatchObject({
@@ -136,6 +137,44 @@ test("unadmitted input discovery has its own App-scoped continuation and exclude
   ).toEqual(["tail"]);
   expect(JSON.stringify(page)).not.toContain("privatePayload");
   expect(() => reader.workload({ inputCursor: "!bad" })).toThrow("input cursor");
+});
+
+test.each([
+  { status: "pending", waiting: null, leaseUntil: null, attached: null, visible: true },
+  { status: "handling", waiting: null, leaseUntil: 1, attached: null, visible: true },
+  { status: "handling", waiting: "app", leaseUntil: null, attached: null, visible: true },
+  { status: "handling", waiting: "session", leaseUntil: null, attached: null, visible: true },
+  { status: "handling", waiting: "analysis", leaseUntil: Number.MAX_SAFE_INTEGER, attached: null, visible: true },
+  { status: "handling", waiting: "task", leaseUntil: null, attached: null, visible: false },
+  { status: "handling", waiting: "task", leaseUntil: 1, attached: null, visible: false },
+  { status: "handling", waiting: "task", leaseUntil: Number.MAX_SAFE_INTEGER, attached: null, visible: false },
+  { status: "handling", waiting: null, leaseUntil: null, attached: "existing-task", visible: false },
+  { status: "done", waiting: null, leaseUntil: null, attached: null, visible: false },
+])("input discovery preserves admission-state coverage independently of dispatch eligibility: %j", row => {
+  const f = fixture();
+  createAppInboxItem(f.db, {
+    id: "retained", appId: "sample", source: { kind: "app", id: "caller" }, input: { kind: "work", data: {} },
+  });
+  f.db.prepare(`UPDATE app_inbox_items SET status = ?, waiting_on_kind = ?, lease_owner = ?,
+    lease_expires_at = ?, available_at = ?, execution_task_id = ? WHERE id = 'retained'`)
+    .run(row.status, row.waiting, row.leaseUntil === null ? null : "old-worker", row.leaseUntil, Number.MAX_SAFE_INTEGER, row.attached);
+  const before = f.db.prepare("SELECT total_changes() AS n").get();
+  expect(f.read().unadmittedInputs?.items.map(item => item.id)).toEqual(row.visible ? ["retained"] : []);
+  expect(f.db.prepare("SELECT total_changes() AS n").get()).toEqual(before);
+});
+
+test("input discovery upgrades the old pending-only index without losing retained handling rows", () => {
+  const f = fixture();
+  f.db.exec(`DROP INDEX IF EXISTS idx_app_inbox_admission_read;
+    CREATE INDEX IF NOT EXISTS idx_app_inbox_pending_admission_read ON app_inbox_items(app_id, id)
+    WHERE status = 'pending' AND execution_task_id IS NULL AND waiting_on_kind IS NULL`);
+  createAppInboxItem(f.db, {
+    id: "retained", appId: "sample", source: { kind: "app", id: "caller" }, input: { kind: "work", data: {} },
+  });
+  f.db.prepare("UPDATE app_inbox_items SET status = 'handling' WHERE id = 'retained'").run();
+  applyDbSchema(f.db);
+  applyDbSchema(f.db); // Restart/standalone schema setup must be idempotent too.
+  expect(f.read().unadmittedInputs?.items.map(item => item.id)).toEqual(["retained"]);
 });
 
 test("feedback separates actual runnable work, blockers, idle results and closed history without mutations", () => {

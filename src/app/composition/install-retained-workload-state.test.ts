@@ -6,6 +6,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { spawnFixtureProcess } from "../../../test/fixtures/owned-process.js";
+import { claimAppInboxItem } from "../../../test/fixtures/legacy-inbox.js";
+import { defineApp, Type } from "@may-agent/sdk";
 import { closeDb, getDb } from "../../lib/db/connection.js";
 import { isProcessInstanceAlive, type ProcessInstance } from "../../lib/process-identity.js";
 import { sessionDir, writeSessionMeta } from "../../lib/persistence.js";
@@ -13,6 +15,9 @@ import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";
 import { TaskBudgetAdmissionStore } from "../core/state/task-budget-admission.js";
 import { TaskExecutionStore } from "../core/state/task-execution-store.js";
 import { admitTaskInput } from "../core/state/inbox.js";
+import { createAppInboxItem } from "../core/state/app-inbox-store.js";
+import { AppInboxHost } from "../core/inbox/app-inbox-host.js";
+import { readTaskWorkload } from "../core/reads/task-workload.js";
 import {
   appTaskContext,
   cancelAppTask,
@@ -104,6 +109,101 @@ function fixture() {
   const accounting = new TaskBudgetAdmissionStore(db);
   return { state, db, store, config, add, claim, plan, install, root, historical, accounting };
 }
+
+test("retained installation and recovery keep an unfunded handling input visible without creating a Task", async () => {
+  const state = mkdtempSync(join(tmpdir(), "may-retained-input-"));
+  const db = getDb(state);
+  cleanups.push(() => {
+    closeDb(state);
+    rmSync(state, { recursive: true, force: true });
+  });
+  const store = AppTaskResourceStore.fromDb(db, "sample");
+  store.bootstrapSnapshot({ groups: { root: { id: "root", parent_id: null } } }, "seed");
+  const config = appTaskContext({
+    appDir: join(state, "sample.app"),
+    projectDir: state,
+    agent: "owner",
+    resourceStore: store,
+  });
+  const app = defineApp({
+    id: "sample",
+    version: 1,
+    agent: "owner",
+    tasks: {},
+    inputSchema: Type.Object({ kind: Type.Literal("work"), data: Type.Object({}) }),
+    task: (input) => ({
+      kind: "desired",
+      intent: {
+        id: input.id,
+        parentId: "root",
+        outcome: "Deliver required report",
+        acceptance: ["Report delivered"],
+      },
+    }),
+  });
+  createAppInboxItem(db, {
+    id: "old-required-input",
+    appId: "sample",
+    source: { kind: "app", id: "exact-caller" },
+    input: { kind: "work", data: {} },
+    now: 1,
+  });
+  expect(claimAppInboxItem(db, "old-required-input", "retired-worker", 1, 1)).not.toBeNull();
+  expect(
+    installRetainedWorkloadState(
+      db,
+      state,
+      {
+        version: 1,
+        policy: {
+          version: 1,
+          host: { slots: 4, backgroundSlots: 2 },
+          apps: [
+            {
+              appId: "sample",
+              sponsor: { appId: "sample", agent: "owner" },
+              dailyCredits: 0,
+              rootCredits: 5,
+              rootExecutionSlots: 2,
+            },
+          ],
+          limits: [{ scope: { kind: "agent", recipient }, slots: 2 }],
+        },
+        adoptions: [],
+      },
+      { quiesced: true },
+    ),
+  ).toEqual({ kind: "installed", appCount: 1, adoptionCount: 0 });
+  const host = new AppInboxHost({ db, apps: [app], attachTask: (input) => admitTaskInput(config, input) });
+  cleanups.push(() => host.close());
+  await host.recoverAdmissions();
+  const retained = host.get("old-required-input");
+  expect(retained).toMatchObject({
+    status: "handling",
+    source: { kind: "app", id: "exact-caller" },
+    handling: { phase: "deferred", funding: { reason: "sponsor-credit" } },
+  });
+  const before = db.prepare("SELECT total_changes() AS n").get();
+  const observed = readTaskWorkload({ taskStateConfig: config });
+  expect(observed.coverage.matched).toBe(0);
+  expect(observed.unadmittedInputs).toMatchObject({
+    coverage: { scanned: 1, truncated: false },
+    omitted: 0,
+    items: [
+      {
+        id: "old-required-input",
+        kind: "work",
+        source: { kind: "app", id: "exact-caller" },
+        funding: { reason: "sponsor-credit", retryAt: retained?.availableAt },
+      },
+    ],
+  });
+  expect(db.prepare("SELECT total_changes() AS n").get()).toEqual(before);
+  expect(host.get("old-required-input")).toEqual(retained);
+  expect(store.readTask("old-required-input")).toBeNull();
+  for (const table of ["app_task_attempts", "task_execution_reservations", "task_budget_operations"])
+    expect(db.prepare(`SELECT count(*) AS n FROM ${table}`).get()?.n).toBe(0);
+});
 
 test("offline adoption preserves history and caller obligations, shares future charges and enforces the explicit historical root limit", () => {
   const f = fixture();

@@ -55,8 +55,11 @@ it on older Hosts. The model `tasks` tool uses `action: "workload"`; operator
 control uses `app.tasks.workload` with `appId` and the same options. Reads neither
 acknowledge work nor change scheduling, funding or closure authority.
 
-Optional `unadmittedInputs` separately projects pending Inbox input that has no
-Task link. Its five-item App-scoped page uses `inputCursor` independently of
+Optional `unadmittedInputs` separately projects outstanding Inbox input that has
+no Task link, including retained `handling` rows and non-Task waits. Leases and
+future admission times do not hide demand or authorize dispatch. Both execution
+Task links and legacy Task waits are excluded, as are ended inputs.
+Its five-item App-scoped page uses `inputCursor` independently of
 Task continuation and agent filters. It contains identities and saved admission
 constraints, not input payloads or transport destinations. The receiving App's
 declared agent owns funding/disposition review. Missing projection or omitted

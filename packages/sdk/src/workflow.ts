@@ -371,7 +371,9 @@ export type TaskWorkload = {
    * declared agent before Task admission. This separate, bounded Inbox page is
    * App-scoped even when Task counts are filtered by agent. No input payload or
    * transport destination is exposed; exact evidence remains on the Inbox row.
-   * Saved funding holds describe admission, not rejection or fulfillment. */
+   * Outstanding pending and retained handling input without a Task link stays
+   * visible regardless of lease or retry time. Saved funding holds describe
+   * admission, not rejection or fulfillment; visibility never permits dispatch. */
   unadmittedInputs?: {
     scope: { appId: string };
     coverage: { limit: 5; scanned: number; truncated: boolean; nextCursor?: string };
