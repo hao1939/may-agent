@@ -87,153 +87,27 @@ general agent can safely rewrite itself.
 
 ## Implementation signal: autonomy is a property of a mutation path, not a repository
 
-**Observed 2026-09-19. Repo:** [SourceShift/mini-ork](https://github.com/SourceShift/mini-ork) at commit [`962bf47874b84ca0a393851d59896cdbb71a6eaa`](https://github.com/SourceShift/mini-ork/tree/962bf47874b84ca0a393851d59896cdbb71a6eaa).
-
-mini-ork contains at least two materially different self-change paths. Its
-[`self_improve.py`](https://github.com/SourceShift/mini-ork/blob/962bf47874b84ca0a393851d59896cdbb71a6eaa/mini_ork/cli/self_improve.py)
-outer loop creates a fresh branch and worktree for each patch, requires three
-deterministic verifier results plus an explicit approving model-critic verdict,
-commits only after those gates pass, and merges into the current branch only
-when `--auto-merge` is supplied. The default therefore creates a reviewable
-branch without activating it on the parent branch.
-
-The separate [`apply.py`](https://github.com/SourceShift/mini-ork/blob/962bf47874b84ca0a393851d59896cdbb71a6eaa/mini_ork/cli/apply.py)
-path mutates recipe prompt files. File writes are master-gated off by default,
-but once enabled there is deliberately no human approval branch: a real
-held-out probe must strictly improve the measured candidate, previously passing
-per-task probes may not regress, fabricated scorers cannot authorize promotion,
-and an unmeasured or dead two-arm probe is quarantined. A promoted mutation is
-then written directly, with prior bytes retained for rollback. The repository's
-[`SAFETY.md`](https://github.com/SourceShift/mini-ork/blob/962bf47874b84ca0a393851d59896cdbb71a6eaa/docs/SAFETY.md)
-is unusually explicit that its seven-rung ladder describes intent rather than a
-runtime dispatcher, that the advertised declarative `config/safety.yaml` root
-of trust does not exist, and that the effective backstop for this unattended
-path is the measurement gate plus version control.
-
-This is useful evidence for a sharper audit rule: **never label a system
-“human-gated,” “autonomous,” or “rollback-safe” at repository level.** Inventory
-each mutation path as `(target, enable switch, evaluator, activation action,
-recovery action)`. Here, harness-code evolution and prompt evolution share a
-project but not the same activation boundary. The former defaults to branch
-quarantine; the latter defaults disabled, then becomes measurement-authorized
-and immediately effectful when enabled. A policy diagram that merges those
-paths would overstate human review on one side or understate isolation on the
-other.
-
-Limits: this inspection established control flow and documentation at one pinned
-commit; it did not run the probe suite, exercise rollback, or independently test
-that all mutation entry points pass through these gates. The model-based patch
-critic is also not an independent deterministic evaluator, even though its
-missing or non-approving verdict fails closed.
+The full pinned mini-ork implementation review now lives in the companion note:
+[autonomy is a property of a mutation path, not a repository](./agent-self-evolution-evidence-and-release-controls.md#implementation-signal-autonomy-is-a-property-of-a-mutation-path-not-a-repository).
+Its durable rule is to inventory each mutation path separately as `(target,
+enable switch, evaluator, activation action, recovery action)` rather than
+labeling an entire repository “human-gated,” “autonomous,” or “rollback-safe.”
 
 ### November 9 update: verdict, evidence bundle, and issuer authenticity are separate claims
 
-Reinspection at commit
-[`d779e3d6740cff107dce5acc1a9bec7f60996f9c`](https://github.com/SourceShift/mini-ork/tree/d779e3d6740cff107dce5acc1a9bec7f60996f9c)
-shows that mini-ork has expanded from mutation-path controls into a more explicit
-verification artifact stack. Its
-[`certify` command](https://github.com/SourceShift/mini-ork/blob/d779e3d6740cff107dce5acc1a9bec7f60996f9c/mini_ork/cli/certify.py)
-returns `PROVEN`, `REFUTED`, or `UNVERIFIED`; the important design choice is that
-missing or unusable evidence remains abstention rather than being converted into
-a pass. Metamorphic invariants require a supermajority across informative
-perturbations, while the
-[`differential check`](https://github.com/SourceShift/mini-ork/blob/d779e3d6740cff107dce5acc1a9bec7f60996f9c/mini_ork/certify/differential.py)
-can only veto a would-be proof when confirmed preserve-domain behavior diverges.
-The model proposes candidate checks, but deterministic executions decide their
-observations.
-
-The resulting
-[`certificate`](https://github.com/SourceShift/mini-ork/blob/d779e3d6740cff107dce5acc1a9bec7f60996f9c/mini_ork/certify/certificate.py)
-binds the verdict to base and head revisions, patch and issue hashes, method,
-context files, probe and invariant evidence, optional mutation score, costs, and
-duration. It can also carry a precommitment and trial count for
-[`hidden checks`](https://github.com/SourceShift/mini-ork/blob/d779e3d6740cff107dce5acc1a9bec7f60996f9c/mini_ork/certify/hidden_checks.py).
-Those checks are honestly weaker without `MO_HIDDEN_CHECK_SECRET`: their key
-source falls back to a run ID or patch digest and is therefore reproducible by
-someone who knows that input. A hidden-check receipt must consequently state the
-key source; “renamed after generation” is not equivalent to “unpredictable to
-the patch author.”
-
-A certificate digest is still only self-consistency: anyone editing the JSON can
-recompute it. mini-ork therefore adds a detached
-[`seal`](https://github.com/SourceShift/mini-ork/blob/d779e3d6740cff107dce5acc1a9bec7f60996f9c/mini_ork/certify/seal.py)
-that can bind the certificate ID and digest to an audit-chain issuance row and
-an Ed25519 signature. Verification distinguishes `VERIFIED` with an independently
-pinned public key from `UNPINNED`, `UNSIGNED`, and `FAILED`; the repository's
-[`seal tests`](https://github.com/SourceShift/mini-ork/blob/d779e3d6740cff107dce5acc1a9bec7f60996f9c/tests/unit/test_certificate_seal.py)
-exercise content tampering, foreign keys, altered seal digests, removed issuance
-rows, and the missing-crypto path.
-
-The reusable rule is: **a mutation admission verdict, its evidence bundle, and
-the issuer/authenticity proof need separate receipts.** `PROVEN` describes the
-oracle's execution judgment; a certificate records what that judgment covered;
-a digest detects accidental or unacknowledged edits only when compared with a
-trusted value; a pinned signature attributes issuance; and an audit-chain row
-supports retention and ordering. None alone proves that the patch was deployed,
-that the evaluator was adequate for every failure mode, or that the claimed
-production outcome occurred.
-
-Limits: Scout statically inspected the pinned README, complete tree, verification
-architecture, certificate, seal, hidden-check, differential, and selected test
-files. Scout did not execute mini-ork, Docker, its models, tests, audit database,
-certification corpus, or reported benchmark, so this update establishes artifact
-and control-flow boundaries rather than empirical verifier accuracy.
+The detailed certificate and detached-seal inspection moved with that profile;
+see [verdict, evidence bundle, and issuer authenticity are separate claims](./agent-self-evolution-evidence-and-release-controls.md#november-9-update-verdict-evidence-bundle-and-issuer-authenticity-are-separate-claims).
+The reusable rule is that an execution verdict, evidence-bearing certificate,
+content digest, pinned issuer signature, audit-chain record, and deployment
+receipt establish different claims and should not be collapsed into one proof.
 
 ## Peer reputation should buy evaluation priority, not activation
 
-**Observed 2026-09-24. Repo:** [Bitterbot-AI/bitterbot-desktop](https://github.com/Bitterbot-AI/bitterbot-desktop) at commit [`873e5d58ce95eccd7908d1d0bf0f28112db4bbe7`](https://github.com/Bitterbot-AI/bitterbot-desktop/commit/873e5d58ce95eccd7908d1d0bf0f28112db4bbe7).
-
-Bitterbot's peer-skill pipeline implements a useful separation between trusting
-an identity and trusting its artifact. Its
-[`ingest.ts`](https://github.com/Bitterbot-AI/bitterbot-desktop/blob/873e5d58ce95eccd7908d1d0bf0f28112db4bbe7/src/agents/skills/ingest.ts)
-verifies envelope structure, signature and content hash, runs injection and
-routing checks, and normally quarantines received skills. Under `auto` policy,
-a sufficiently trusted peer can skip operator review, but the skill only enters
-staging. [`peer-staging.ts`](https://github.com/Bitterbot-AI/bitterbot-desktop/blob/873e5d58ce95eccd7908d1d0bf0f28112db4bbe7/src/agents/skills/peer-staging.ts)
-binds that stage to author key, peer identity, content hash and receipt time;
-it refuses to replace a local pending proposal or another author's same-name
-stage. Trust therefore changes intake friction, not service state.
-
-Activation is a separate empirical decision. The
-[`validation gate`](https://github.com/Bitterbot-AI/bitterbot-desktop/blob/873e5d58ce95eccd7908d1d0bf0f28112db4bbe7/src/memory/skill-evolution/validation-gate.ts)
-requires a received skill to beat its incumbent on the receiving node's own
-private capability tasks. Public canonical tasks are treated as a memorizable
-baseline and cannot promote a peer skill by themselves. Model-predicted replay
-judgments are diagnostic only; missing or underpowered evidence holds the
-candidate, measured non-improvement rejects it, and acceptance uses paired real
-rollouts with a one-sided sign test before a canary release. Republishing the
-same author/name lineage does not buy unlimited validation attempts, and exact
-bytes already measured negatively on that node are not rerun.
-
-The repository makes the policy explicit in a test named
-[`trust-not-evidence.test.ts`](https://github.com/Bitterbot-AI/bitterbot-desktop/blob/873e5d58ce95eccd7908d1d0bf0f28112db4bbe7/src/memory/skill-evolution/trust-not-evidence.test.ts):
-peer trust is excluded from activation fitness and used only to prioritize
-which candidate gets evaluated first. Sender attestations similarly remain
-claims. A local regression can disable a live peer skill, while two fresh
-current-generation verdicts from configured attesters are required for remote
-demotion; unknown attesters do not count.
-
-Outbound propagation applies another boundary. The
-[`P2P publisher`](https://github.com/Bitterbot-AI/bitterbot-desktop/blob/873e5d58ce95eccd7908d1d0bf0f28112db4bbe7/src/memory/skill-evolution/p2p-publish.ts)
-selects only locally evolved skills with an accepted validation verdict that
-have reached stable state and survived a default three-day maturity delay. It
-refuses bodies containing detected secrets or user-specific identifiers and
-ships signed provenance so receivers can inspect the sender's evidence, then
-re-gate locally rather than inherit the verdict.
-
-The reusable control is to assign peer reputation only narrowly scoped rights:
-transport eligibility, review bypass, and evaluation priority. **Activation
-should require artifact-bound local evidence.** A signature establishes who
-made a claim; reputation can decide which claim is economical to test; neither
-establishes that the procedure helps this node, model, task distribution or
-tool environment. This avoids both extremes of ignoring useful network
-reputation and turning it into transitive execution authority.
-
-Limits: this was a source inspection at one pinned revision. Scout did not run
-the repository's tests, benchmark the skill gate, exercise a two-node transfer,
-or verify live network behavior. Comments, tests and project documentation
-show intended invariants plus implementation paths, not proof that every
-runtime path enforces them or that the statistical gate is well calibrated.
+The complete Bitterbot source profile is preserved in the companion note:
+[peer reputation should buy evaluation priority, not activation](./agent-self-evolution-evidence-and-release-controls.md#peer-reputation-should-buy-evaluation-priority-not-activation).
+Its reusable control is narrow delegation: reputation may affect transport,
+review bypass, or evaluation order, while artifact-bound local evidence remains
+responsible for activation and later regression response.
 
 ## Six comparisons that matter in practice
 
