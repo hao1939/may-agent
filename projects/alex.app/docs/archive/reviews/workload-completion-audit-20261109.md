@@ -5,6 +5,17 @@ and [implementation approach](../../proposals/agent-task-workload-implementation
 It records source evidence, a fresh read-only installation check and the remaining
 acceptance work. It changes no business rule and authorizes no live operation.
 
+A later review found five additional boundary gaps at Host `2aebdfaf4c`: received
+input absent from Task-only coordination, installation-wide admission discovered
+too late, damaged descendant evidence accepted as cleanup, model-tool reads
+losing attempt context, and inconsistent funding clock samples. Host
+`403c6f39a46aad420acf01c14491a54c451475ca` and the paired App review now address
+them in source. Their reproduced failures and exact final checks belong to the
+[implementation record](../../proposals/agent-task-workload-implementation.md#review-closure-received-demand-cutover-and-observation-integrity).
+The earlier audit and advice cohorts do not establish these new guarantees.
+Caller disposition and applied finite-result consumption/guarded closure remain
+acceptance gates before broader activation.
+
 The subsequent [authorized model comparison](workload-behavior-trial-20261109.md)
 supersedes this audit's original pending-trial status. It exposed and refined
 finite-result advice and stale-blocker reasoning; it establishes no applied
