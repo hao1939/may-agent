@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt validity from verifier isolation and claim scope; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; static egress policy from irreversible post-sensitive-access session restriction; stable tool digests from equivalent semantics and complete lifecycle coverage; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; human approval records from end-to-end effect binding; authority migrations from behavioral-equivalence and retired-path absence proof; effect-owning execution routes from provider-reported hook correlation and ambient process coverage; signed workflow conformance from evidence-grade propagation and independently proved declaration pre-existence; and workflow stage labels from prerequisite and ship-gate enforcement."
-triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "HELM AI Kernel", "offline verifier", "verifier isolation", "claim-typed verification", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "session-aware egress", "sensitive-source transition", "sticky egress restriction", "tool identity", "tool pin", "schema canonicalization", "MCP Hangar", "cold-start pinning", "tool annotations", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "authority migration", "oracle retirement", "absence proof", "action lattice", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash", "Aegis", "exact action policy", "provider hook correlation", "direct child execution", "route coverage", "Treeship", "workflow conformance", "evidence grade", "declaration pre-existence", "CE-AI", "workflow stage evidence", "ship gate", "prerequisite enforcement"]
-last_updated: "2026-10-04"
-source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-10-04: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, HELM AI Kernel fe122d4 and 44d4622, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, MCP Hangar f02651c, Soup Wall be8db48, HOL Guard 56faea4, f5d568f, and 31e223d, ctrlrun 8ebc5a8, aep-sandbox 3495e27, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, antropos17/Aegis 6cae92e, zerkerlabs/treeship 7fd3993, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, 49844056, and 49855568 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
+summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt validity from verifier isolation and claim scope; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; static egress policy from irreversible post-sensitive-access session restriction; stable tool digests from equivalent semantics and complete lifecycle coverage; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; completion evidence from requirement binding, post-edit freshness, and non-vacuous execution; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; human approval records from end-to-end effect binding; authority migrations from behavioral-equivalence and retired-path absence proof; effect-owning execution routes from provider-reported hook correlation and ambient process coverage; signed workflow conformance from evidence-grade propagation and independently proved declaration pre-existence; and workflow stage labels from prerequisite and ship-gate enforcement."
+triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "HELM AI Kernel", "offline verifier", "verifier isolation", "claim-typed verification", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "session-aware egress", "sensitive-source transition", "sticky egress restriction", "tool identity", "tool pin", "schema canonicalization", "MCP Hangar", "cold-start pinning", "tool annotations", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "authority migration", "oracle retirement", "absence proof", "action lattice", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "M31A", "requirement-scoped evidence", "evidence freshness", "zero-test rejection", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash", "Aegis", "exact action policy", "provider hook correlation", "direct child execution", "route coverage", "Treeship", "workflow conformance", "evidence grade", "declaration pre-existence", "CE-AI", "workflow stage evidence", "ship gate", "prerequisite enforcement"]
+last_updated: "2026-11-09"
+source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-11-09: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, HELM AI Kernel fe122d4 and 44d4622, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, MCP Hangar f02651c, Soup Wall be8db48, HOL Guard 56faea4, f5d568f, and 31e223d, ctrlrun 8ebc5a8, aep-sandbox 3495e27, M31A efd97af, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, antropos17/Aegis 6cae92e, zerkerlabs/treeship 7fd3993, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, 49844056, and 49855568 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
 </ai_context>
 
 # Agent Security: Enforcement Evidence and Runtime Coverage
@@ -1451,6 +1451,56 @@ agents. The guard detects the documented intended-call/no-execution channel; it
 does not by itself prove complete mediation, parser completeness, backend
 correctness, artifact semantics, or the paper's broader scientific claims.
 Large-scale agent scoring is explicitly deferred to a later study.
+
+### Follow-up: completion evidence needs scope, freshness, and non-vacuity (M31A, GitHub, November 2026)
+
+**Repo:** https://github.com/eshanized/M31A
+
+**Pinned observation:** repository commit
+[`efd97af1cb3d5b8e099a8f323126cf44afddc03a`](https://github.com/eshanized/M31A/commit/efd97af1cb3d5b8e099a8f323126cf44afddc03a)
+
+M31A's verification timeline turns APEXA's positive-execution rule into a
+criterion-level completion check. A completion report does not satisfy a planned
+criterion merely by citing any successful record. The implementation requires the
+evidence record's `requirement_id` to match that criterion, rejects failed status,
+and—after an edit—rejects records without an execution turn or with a turn at or
+before the latest edit. Its test-evidence branch also rejects successful commands
+that executed zero tests, using structured counts when available and conservative
+output checks otherwise.
+
+Those checks separate three properties that generic “tests passed” language
+usually collapses:
+
+1. **Scope:** this evidence belongs to the exact acceptance criterion being
+   claimed, rather than a neighboring requirement.
+2. **Freshness:** it was produced after the latest relevant mutation, rather than
+   inherited from the pre-change baseline.
+3. **Non-vacuity:** the verifier exercised something observable; exit code zero
+   with an empty test selection is not positive proof.
+
+Repository-authored adversarial tests cover foreign-evidence substitution, failed
+evidence, empty plans, duplicate criterion reporting, stale pre-edit evidence,
+and zero-test success. The broader architecture specification applies the same
+fail-closed stance to workflow completion, worker leases, integration, and
+artifact persistence. The reusable rule is narrower: a completion gate should
+validate an evidence tuple such as `(criterion, candidate revision or edit epoch,
+executed operation, observed count/result)`, not merely a command name and green
+exit code. This complements APEXA: an execution event proves that *something ran*;
+criterion binding and freshness prove that the run is relevant to the result now
+being admitted.
+
+**Evidence inspected at the pinned commit:**
+[`verification_timeline.rs`](https://github.com/eshanized/M31A/blob/efd97af1cb3d5b8e099a8f323126cf44afddc03a/crates/m31a-verify/src/verification_timeline.rs),
+[`verification_evidence_integrity_test.rs`](https://github.com/eshanized/M31A/blob/efd97af1cb3d5b8e099a8f323126cf44afddc03a/crates/m31a-verify/tests/verification_evidence_integrity_test.rs),
+[`EXECUTION_INTEGRITY_CONTRACT.md`](https://github.com/eshanized/M31A/blob/efd97af1cb3d5b8e099a8f323126cf44afddc03a/docs/architecture/EXECUTION_INTEGRITY_CONTRACT.md),
+and
+[`WORKFLOW_EXECUTION_INTEGRITY.md`](https://github.com/eshanized/M31A/blob/efd97af1cb3d5b8e099a8f323126cf44afddc03a/docs/architecture/WORKFLOW_EXECUTION_INTEGRITY.md).
+
+**Evidence boundary:** Scout statically inspected pinned implementation, tests,
+and architecture documents. It did not clone or build the repository, run its
+Rust suite, trace every completion path to this verifier, or validate the broader
+workflow and product claims. Repository-authored tests show intended invariants,
+not an independent runtime replication.
 
 ## Sandbox Policy Needs Configuration Coherence, Not Just Strong Primitives (GitHub, September 2026)
 
