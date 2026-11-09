@@ -7,19 +7,25 @@ Keep its business rules and implement them through existing Host boundaries.
 and [one authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource).
 
 **Design status:** Proposed implementation approach.
-**Implementation status:** Incremental source implementation underway. The source
-stack now includes result disposition, scoped feedback, protected coordination,
+**Implementation status:** The Host candidate is consolidated in
+[PR #443](https://github.com/hao1939/may-agent/pull/443), targeting main and ready
+for independent review. It includes scoped feedback, protected coordination,
 creation/claim/helper accounting, authorized funding changes, shared execution
-reservations and recovery, new-root defaults, durable one-place cooperation and
-workspace prerequisites. Retained-session continuations use the bounded-session
-policy in Host #432. These increments remain subject to independent review and
-integration; local gate failures and their fixture refinements are recorded below.
-Fresh-state initialization and an offline retained-state installation path now
-have source implementations. The retained path requires externally excluded,
-already cleaned execution; it does not import live work. One-way offline
-enforcement withdrawal now has verified draft source. Retained active
-execution adoption and operational activation remain work. No production activation, rollout or improved model behavior is established
-by these source checks.
+reservations and recovery, new-root defaults, durable one-place cooperation,
+workspace prerequisites and bounded retained-session continuations. Fresh-state
+initialization, offline retained-state installation and one-way enforcement
+withdrawal have verified implementations. Retained installation requires
+externally excluded, already cleaned execution; it does not import live work.
+Independent review, integration and operational acceptance remain outstanding.
+
+The 37 earlier PR heads are included in the unchanged tested candidate
+`97cbfdf9748297501f21ab2bff2047041997ceef`. Their branches, original descriptions
+and review discussions are retained; links below record implementation history
+rather than additional merge dependencies. #443 carries the four outstanding
+#406 review findings with their final regressions. Superseding a PR does not
+approve its code or resolve its discussions. Independent test-stability fixes
+from #408 and #411 are grouped separately in #416; that PR can merge first,
+followed by refreshing and revalidating #443 against the resulting main.
 
 The [completion audit](../archive/reviews/workload-completion-audit-20261109.md)
 maps the supported contracts to their owners, rechecks installation identity and
