@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { addSessionBashProcessGroup, readSessionBashProcessGroups, removeSessionBashProcessGroup, sessionDir } from "../persistence.js";
@@ -7,8 +7,10 @@ import {
   BASH_PROCESS_GROUP_TERM_GRACE_MS,
   createBashTool,
   createLocalBashOperations,
+  drainBashProcessGroup,
   drainPersistedSessionBashProcessGroups,
   drainSessionBashProcessGroups,
+  processGroupContainsLiveMember,
 } from "./bash.js";
 
 const fixtures: string[] = [];
@@ -30,6 +32,133 @@ afterEach(() => {
 });
 
 describe("exact-session bash process-group lifecycle", () => {
+  it.each(["invalid-json", "unreadable"] as const)(
+    "rejects %s evidence before invoking local Bash execution",
+    async (kind) => {
+      const f = fixture();
+      const sessionId = `preflight-${kind}`;
+      const dir = sessionDir(f.persistDir, sessionId);
+      mkdirSync(dir, { recursive: true });
+      const path = join(dir, "bash-process-groups.json");
+      const damaged = '{"pgids":[';
+      if (kind === "unreadable") mkdirSync(path);
+      else writeFileSync(path, damaged);
+      const local = createLocalBashOperations();
+      let executionCalls = 0;
+      const tool = createBashTool(f.root, {
+        processGroupOwner: { persistDir: f.persistDir, sessionId },
+        operations: {
+          ...local,
+          exec(command, cwd, options) {
+            executionCalls += 1;
+            return local.exec(command, cwd, options);
+          },
+        },
+      });
+
+      await expect(tool.execute("preflight", { command: "true" })).rejects.toThrow("bash process-group evidence");
+      expect(executionCalls).toBe(0);
+      expect(existsSync(path)).toBe(true);
+      if (kind !== "unreadable") expect(readFileSync(path, "utf8")).toBe(damaged);
+    },
+  );
+
+  it.each(["changed-evidence", "write-failure"] as const)(
+    "drains and joins the spawned Bash group when registration fails from %s",
+    async (kind) => {
+      const f = fixture();
+      const sessionId = `registration-${kind}`;
+      addSessionBashProcessGroup(f.persistDir, sessionId, 999999999);
+      const path = join(sessionDir(f.persistDir, sessionId), "bash-process-groups.json");
+      const originalEvidence = readFileSync(path, "utf8");
+      const damaged = '{"pgids":[';
+      // The evidence remains readable, but the atomic registration write fails.
+      if (kind === "write-failure") mkdirSync(`${path}.tmp.${process.pid}`);
+      const ready = join(f.root, "descendant-ready");
+      let spawnedPgid: number | undefined;
+      let confirmedDrain = false;
+      let removalCalls = 0;
+      const local = createLocalBashOperations(async (pgid) => {
+        // Observe an actual descendant before draining; do not assume fork speed.
+        const deadline = Date.now() + 5_000;
+        while (!existsSync(ready) && Date.now() < deadline) await Bun.sleep(10);
+        confirmedDrain = await drainBashProcessGroup(pgid);
+        return confirmedDrain;
+      });
+      const tool = createBashTool(f.root, {
+        defaultTimeout: 10,
+        processGroupOwner: { persistDir: f.persistDir, sessionId },
+        operations: {
+          ...local,
+          exec(command, cwd, options) {
+            // Corrupt after the tool's preflight to exercise the spawn/register gap.
+            if (kind === "changed-evidence") writeFileSync(path, damaged);
+            return local.exec(command, cwd, {
+              ...options,
+              onProcessGroupSpawn(pgid) {
+                spawnedPgid = pgid;
+                options.onProcessGroupSpawn?.(pgid);
+              },
+              onProcessGroupDrained(pgid) {
+                removalCalls += 1;
+                options.onProcessGroupDrained?.(pgid);
+              },
+            });
+          },
+        },
+      });
+
+      try {
+        await expect(
+          tool.execute("registration-failure", {
+            command: `(trap '' TERM; printf ready > ${JSON.stringify(ready)}; sleep 30) & wait`,
+          }),
+        ).rejects.toThrow(kind === "changed-evidence" ? "bash process-group evidence" : "EISDIR");
+        expect(spawnedPgid).toBeNumber();
+        expect(confirmedDrain).toBe(true);
+        expect(existsSync(ready)).toBe(true);
+        expect(() => process.kill(spawnedPgid!, 0)).toThrow();
+        expect(processGroupContainsLiveMember(spawnedPgid!, readdirSync("/proc"))).toBe(false);
+        expect(removalCalls).toBe(0);
+        expect(readFileSync(path, "utf8")).toBe(kind === "changed-evidence" ? damaged : originalEvidence);
+      } finally {
+        // Also contain the child when running this regression against broken code.
+        if (spawnedPgid) await drainBashProcessGroup(spawnedPgid);
+      }
+    },
+    10_000,
+  );
+
+  it("rejects settlement and preserves evidence damaged after successful registration", async () => {
+    const f = fixture();
+    const sessionId = "damaged-after-registration";
+    const path = join(sessionDir(f.persistDir, sessionId), "bash-process-groups.json");
+    const damaged = '{"pgids":[';
+    let spawnedPgid: number | undefined;
+    const local = createLocalBashOperations();
+    const tool = createBashTool(f.root, {
+      processGroupOwner: { persistDir: f.persistDir, sessionId },
+      operations: {
+        ...local,
+        exec(command, cwd, options) {
+          return local.exec(command, cwd, {
+            ...options,
+            onProcessGroupSpawn(pgid) {
+              spawnedPgid = pgid;
+              options.onProcessGroupSpawn?.(pgid);
+              writeFileSync(path, damaged);
+            },
+          });
+        },
+      },
+    });
+
+    await expect(tool.execute("cleanup-evidence", { command: "true" })).rejects.toThrow("bash process-group evidence");
+    expect(spawnedPgid).toBeNumber();
+    expect(() => process.kill(spawnedPgid!, 0)).toThrow();
+    expect(readFileSync(path, "utf8")).toBe(damaged);
+  });
+
   it.each(["invalid-json", "invalid-shape", "invalid-member", "unreadable"] as const)(
     "retains %s sidecar evidence and rejects live and recovery cleanup",
     async (kind) => {
