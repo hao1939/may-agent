@@ -1628,3 +1628,29 @@ Task records remained unchanged in every cohort.
 The [trial evidence and limitations](../archive/reviews/workload-behavior-trial-20261109.md)
 supersede earlier statements that no model trial has run; they do not establish
 applied caller outcomes or live adoption.
+
+## Compatibility with subsequent Host retirement fixes
+
+The combined workload candidate now incorporates Host main
+`92714680200bc4472be3c21814ad3f0d5a4b8c01`, including #410 and #444, at
+`97cbfdf9748297501f21ab2bff2047041997ceef` in
+[PR #443](https://github.com/hao1939/may-agent/pull/443). The merge required no
+conflict resolution or additional behavior change. Retirement continues to use
+the shared fenced cancellation operation; explicitly retained legacy observations
+remain preservation evidence rather than accepted results or caller fulfillment.
+
+Seven retirement, funding, execution-recovery and offline installation/withdrawal
+owners passed **211 tests / 1,163 assertions**. Frozen full local CI passed
+**4,311 tests / 3 existing skips / 0 failures / 25,104 assertions across 363
+files**, with 345.13 seconds for tests. Host/SDK types, boundary checks and lint
+passed. Hosted Quality and Container passed the same head in run `42568564550`.
+Strict App/experiment source-SDK types also passed against that revision.
+
+The unchanged App experiment `74f18feb4ac3ec247648fc77ab9f2a86998945f6` then
+passed all **64 actual-worker scripted passes / 56 local requests / 2,386,276
+serialized request bytes**, including the optional-only cases. No mechanical
+assertion failed, no business Task changed and no parent SQLite-lock diagnostic
+was observed. This rechecks integration mechanics; the preceding real model
+judgments remain evidence from Host `f68fd7f3070b6dfd88657e4e8527b00dd2d4b984`.
+No external model trial or live operation was repeated. Independent stack review,
+integration and separately authorized operational acceptance remain outstanding.
