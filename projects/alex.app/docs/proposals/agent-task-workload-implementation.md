@@ -1591,3 +1591,40 @@ Model judgment remains unassessed. This changes neither executable App policy no
 the SDK; the active harness remains on its linked experiment branch. No external model request, live mutation, activation or
 review-thread resolution was performed. Independent review/integration and
 separately authorized behavioral/operational acceptance remain required.
+
+## Authorized model advice comparison
+
+The user subsequently authorized the isolated model trial. The first real cohort
+completed **56 passes / 62 requests / 2,632,353 serialized request bytes**, with
+no scoped mechanical failure or business Task change. Manual assessment of its
+48 new decisions found required obligations preserved, but finite-result creator
+review was not uniformly actionable. Descriptive wake labels also gave control
+hints about resource changes. The next frozen experiment uses neutral wake input
+and checks its actual received brief; its scripted preflight passed **56 passes /
+48 requests / 2,002,552 bytes**. Its real cohort completed **56 / 64 / 2,711,001
+bytes**, with zero scoped mechanical failures. All eight finite-result decisions
+missed actionable creator review, and both feedback recovery decisions carried
+forward an obsolete checkout constraint. SQLite lock warnings from earlier runs
+are retained separately from passing assertions; the neutral model log had none.
+
+App revision `52b3a48be87d6dc8d9006c36d39d2bbc903d5611` refines the existing
+review call: distinguish a completed finite assignment from its unfinished
+subject, direct useful creator review, and treat prior advice as history rather
+than a current resource observation. Existing authority persists when load
+changes. No additional call, Task state, mutation or closure mechanism is added.
+Owning review/policy/disposition tests passed **43 / 770 assertions / three files**;
+strict source-SDK types and a new **56 / 48 / 2,050,120-byte** scripted preflight
+passed. The new frozen model cohort permits 80 requests / 4 MiB prospectively to
+leave room for readonly checks after the baseline consumed its 64-request ceiling.
+It completed **56 passes / 61 requests / 2,637,577 bytes**, with no scoped
+mechanical failure. All eight finite decisions now directed creator review while
+preserving the repair and standing route; both feedback recoveries dropped the
+historical checkout shortage. The instruction changed in both arms, so this is
+not a summary-only causal claim. A focused optional-only text-method pair then
+completed **8 passes / 8 requests / 336,156 bytes**, retaining the same production
+prompt and ordinary admission. All eight considered the cheap opportunity useful
+under both loads; no timing or throughput improvement is demonstrated. Business
+Task records remained unchanged in every cohort.
+The [trial evidence and limitations](../archive/reviews/workload-behavior-trial-20261109.md)
+supersede earlier statements that no model trial has run; they do not establish
+applied caller outcomes or live adoption.

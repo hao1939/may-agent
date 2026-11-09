@@ -5,6 +5,11 @@ and [implementation approach](../../proposals/agent-task-workload-implementation
 It records source evidence, a fresh read-only installation check and the remaining
 acceptance work. It changes no business rule and authorizes no live operation.
 
+The subsequent [authorized model comparison](workload-behavior-trial-20261109.md)
+supersedes this audit's original pending-trial status. It exposed and refined
+finite-result advice and stale-blocker reasoning; it establishes no applied
+caller outcomes, live activation or workload-sensitive throughput.
+
 ## Candidate and evidence boundary
 
 The combined Host candidate is `7e065a31816b47e5c488ac9e2cc50ad8204316c7`,
@@ -44,7 +49,7 @@ approach; this table is a coverage map, not another test execution claim.
 | Empty/unchanged reviews coalesce while a stable population still advances. | Apps workload-review owners and actual SQLite/claim/accepted-result rotation probe cover bounded pages, exact Task/generation advice binding and legacy state. | Observe the activated workflow; retain the explicit churn/eviction and App-state rollback limits. |
 | Idle execution does not imply usable resources or missing business work. | Workspace prerequisite/source invalidation owners and scoped blocker observations retain actual constraints without spending for known non-starts. | Behavioral comparison must distinguish blocked idle from spare capacity. Other unmeasured resources remain unknown. |
 | Install or withdraw enforcement without erasing history or obligations. | Fresh initialization, retained-state installation and one-way withdrawal composition owners and operation commands have focused, full local and hosted evidence. | External stop/exclusion and cleaned-state proof remain operator responsibilities; no online start barrier or live-execution import is claimed. |
-| Feedback changes useful choices without changing acceptance or creator authority. | App instructions and readonly bounded review are implemented; scripted integration proves facts reach the deciding helper. | Real matched behavioral trial and subsequent caller/outcome evidence remain unperformed. |
+| Feedback changes useful choices without changing acceptance or creator authority. | Scripted integration proves facts reach the deciding helper. Real paired advice trials exposed and repaired weak finite-result review and stale-blocker reasoning while preserving obligations; see the [trial evidence](workload-behavior-trial-20261109.md). | Applied caller/outcome evidence and operational assessment remain; advice alone is insufficient, and timing/throughput gains are unproven. |
 
 This audit identifies no additional demonstrated source defect in those supported
 first-path contracts. It does not substitute for independent review of the stack.
