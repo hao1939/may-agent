@@ -201,3 +201,27 @@ classify their business fulfillment or require rerunning their original work.
 The complete saved-snapshot inventory and refusal rehearsal retain every loaded
 table unchanged. The candidate remains blocked; no acceptance or caller answer
 was invented, and production remains unchanged by the review.
+
+## Merged withdrawal support and legacy-observation follow-up
+
+PR #410 merged on 2026-11-09 at `06e7870b72`. It establishes the caller and
+preservation safeguards; the original installation candidate remains blocked.
+Its hosted Quality check was cancelled, while Container passed. The full local
+failure and diagnostic result remain recorded in the systemic review.
+
+[Host PR #444](https://github.com/hao1939/may-agent/pull/444) proposes explicit
+preservation of the 59 legacy projections as unverified observations. Their
+exact Task/trigger bytes commit on cancellation control receipts in the same
+transaction as withdrawal. They become neither accepted attempts nor caller
+answers; all existing answer-settlement checks remain in force.
+
+The saved reduced-snapshot rehearsal withdraws 66 Tasks and four inputs while
+preserving all 59 original observations, loaded accepted/admission/completion
+evidence, prior terminal/control decisions and independent May state. Dry-run
+restores every loaded table and replay changes nothing. A separate query-only
+live comparison at 04:17 UTC confirms unchanged reviewed Task/trigger and input
+preimages and the same 66/4/41 census. Neither check is an offline backup or a
+production apply. The new candidate remains private and blocked on Host review,
+merge, stopped-state verification and the verified full backup. See the
+[systemic review](retirement-systemic-review-2026-11-09.md) for validation and
+private evidence references. Production state remains unchanged by this work.

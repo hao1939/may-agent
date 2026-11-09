@@ -3,6 +3,10 @@
 PR: [Host #410](https://github.com/hao1939/may-agent/pull/410)  
 Reviewed correction: `d4f00453b6640c06cf48a393edbfca01e77051e9`
 
+Merged on 2026-11-09 at `06e7870b722a22037c64c2eb8a03f799457e5c7c`.
+The original installation candidate remains blocked by legacy provenance;
+merging the source does not apply or deploy it.
+
 The repeated comments exposed a missing preservation invariant, not isolated
 syntax errors. App-definition migration and filesystem retirement did not
 establish that historical Task state satisfies the newer per-attempt acceptance
@@ -70,7 +74,8 @@ then finished with 4,022 tests passed, three skipped and one failure. The
 unchanged Conversation waiting-report test observed Request closure before its
 final presentation reply settled; both parameter cases passed in one standalone
 diagnostic run. The full-suite failure remains recorded, without automatic
-retries. Hosted Container validation passed; hosted Quality is still running.
+retries. Hosted Container validation passed; hosted Quality was cancelled on
+2026-11-08 at 20:05:27 UTC and is not recorded as a pass.
 
 ## Saved state readiness
 
@@ -113,3 +118,32 @@ Only after supported preservation/cutover, reviewed Host support and merge,
 stopped workers, a verified full offline backup and fresh exact preimages can a
 new complete retirement plan be applied. Independent current May/Alex
 obligations remain independent. See [cleanup history](retirement-cleanup-2026-11-09.md).
+
+## Explicit observation preservation follow-up
+
+[Host PR #444](https://github.com/hao1939/may-agent/pull/444), source
+`956d3fcd39`, adds a separate reviewed `legacyObservation` preservation decision.
+It copies the exact original Task and trigger bytes into the cancellation control
+receipt as an unverified legacy observation, atomically with withdrawal. This
+creates no acceptance record or caller answer and selects no alias. Existing
+caller-answer guards still apply. Default plans retain their provenance refusal.
+Missing or altered archival bytes refuse replay, and failed/corrupted archival
+writes roll back cancellation and caller withdrawal.
+
+All 117 focused retirement regressions and type, SDK, App-boundary and lint
+checks pass. Full local and hosted validation are in progress; the PR is draft.
+An isolated rehearsal of the saved reduced snapshot reaches zero nonterminal
+Tasks and zero unfinished inputs, preserving 59 exact legacy observations and
+all loaded attempts, admissions, completion receipts, prior terminal/control
+decisions and independent App state. Dry-run restores every loaded table and
+replay changes nothing. The original candidate still refuses.
+
+A query-only live comparison on 2026-11-09 at 04:17 UTC finds the same 66 Tasks,
+four unfinished inputs and 41 Conditions, with all reviewed Task/trigger and
+input preimages unchanged. This is a read-only comparison, not quiescence proof
+or a full offline backup. Private evidence is retained in
+`state-legacy-observation-rehearsal-receipt.json` and
+`state-legacy-observation-live-preimage-check.json`; the separate candidate is
+`retirement-plan.legacy-observation.candidate.json`. It is not ready for
+production application before Host review/merge, stopped-state verification
+and the full backup procedure. Production state remains unchanged by this work.
