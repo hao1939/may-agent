@@ -18,6 +18,7 @@ function fixture(heavy = false) {
     coverage: { limit: 20, scanned: 2, matched: 2, truncated: false },
     counts: { running: heavy ? 4 : 1, runnable: heavy ? 10 : 0, waiting: 1, attention: 0, idle: 0, paused: 0, cooldown: 0, unknown: 0, pendingInputTasks: 0 },
     examples: { blockers: [{ taskId: "incident", kind: "waiting" }], dispositionCandidates: [], truncated: false },
+    unadmittedInputs: { scope: { appId: "alex" }, coverage: { limit: 5, scanned: 0, truncated: false }, omitted: 0, items: [] },
     limits: { app: { backgroundMaxConcurrent: 3, interactiveAdditional: 1 }, host: { available: false }, agent: { available: false }, root: { available: false } },
     queueWait: { available: false }, resourceHealth: { available: false },
   };
@@ -53,6 +54,34 @@ test("pilot opt-in selects one stable standing Task and never grants role from i
   expect(workloadReviewTask({ ...input, id: "later" } as never, true).intent.id).toBe(first.intent.id);
   expect(first.intent).toMatchObject({ id: WORKLOAD_REVIEW_TASK_ID, agent: "alex", workflow: "workload-review" });
   expect(workloadReviewPolicy({ ALEX_WORKLOAD_REVIEW_ENABLED: "true" }).schedule.catchUp).toBe("latest");
+});
+
+test("pre-Task received demand receives accountable advice even with no business Task", async () => {
+  const f = fixture();
+  f.tasks.splice(1);
+  const pending = { id: "required-report", kind: "work", source: { kind: "app" as const, id: "exact-caller" },
+    receivedAt: now, changedAt: now, funding: { reason: "sponsor-credit", retryAt: now + 60_000 } };
+  f.workload.unadmittedInputs = { scope: { appId: "alex" }, coverage: { limit: 5, scanned: 1, truncated: true, nextCursor: "next-input" }, omitted: 0, items: [pending] };
+  f.setResponse({ status: "done", output: { decision: "reconsider", inputId: pending.id, reason: "The receiving App owes a funding decision", nextStep: "Owner inspect the exact retained input and seek authorized funding; preserve its caller route" } });
+  const result = await execute(f.ctx);
+  expect(result.status).toBe("done");
+  expect(f.prompts).toHaveLength(1);
+  expect(f.prompts[0]).toContain("required-report");
+  expect(f.prompts[0]).toContain("receiving App");
+  expect(state(result)).toMatchObject({ inputCursor: "next-input", decision: { inputId: pending.id } });
+  expect(result.output).not.toHaveProperty("requests");
+  f.setResponse({ status: "done", output: { decision: "reconsider", inputId: "unread-input", reason: "Unknown demand" } });
+  expect((await execute(f.ctx)).status).toBe("blocked");
+});
+
+test("an empty Task batch cannot hide unavailable or omitted pre-Task demand", async () => {
+  const f = fixture();
+  f.tasks.splice(1);
+  delete f.workload.unadmittedInputs;
+  expect((await execute(f.ctx)).status).toBe("blocked");
+  f.workload.unadmittedInputs = { scope: { appId: "alex" }, coverage: { limit: 5, scanned: 1, truncated: false }, omitted: 1, items: [] };
+  expect((await execute(f.ctx)).status).toBe("blocked");
+  expect(f.prompts).toHaveLength(0);
 });
 
 test.each([false, true])("required work stays owed in the same bounded advice contract under heavy=%s", async heavy => {

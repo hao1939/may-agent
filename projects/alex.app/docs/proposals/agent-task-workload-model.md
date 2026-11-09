@@ -138,6 +138,38 @@ role; the current Host does not provide a generic coordinator for every agent.
    reservations or erase accepted requirements. Input delivery and result
    recording need no new assignment execution budget.
 
+## Responsibility before Task admission
+
+The receiving App's declared agent owns received input before a Task can be
+created. Exhausted creation credits retain the original Inbox row, source and
+exact caller route with its saved funding hold. This is pending admission,
+not business rejection, fulfillment or an accepted result. An empty Task page
+does not establish an empty workload.
+
+The workload projection includes a separate five-item `unadmittedInputs` page,
+with independent `inputCursor` continuation. It is scoped to the receiving App,
+even when Task counts are filtered by agent. It exposes identity, input kind,
+source, dates and saved funding reason/deadline; payload and transport destination
+remain in the existing Inbox authority. The responsible agent can recommend an
+authorized funding or disposition review from these facts. Exact business and
+caller evidence must be inspected through the existing trusted Inbox read before
+any decision. Missing projection or omitted oversized identities require visible
+owner inspection, never an empty-work conclusion.
+
+| Boundary | Retained authority and charge | Responsible decision and next change |
+| --- | --- | --- |
+| Creation funding unavailable | Original Inbox and caller route; no Task, creation debit or execution place. | Receiving App agent reviews need; authorized funding/policy change, exact Task creation/adoption or due UTC grant wakes existing admission recovery. |
+| Required Task lacks bandwidth | Existing Task, inputs and creator authority; creation is already paid, no attempt debit/place. | Assigned agent chooses priority or method; applicable capacity release or method revision permits another admission check. |
+| Retained Task lacks attribution under shared enforcement | Existing Task and inputs; no new attempt or execution place. | Trusted funding authority explicitly adopts future work; no historical cost is invented. |
+| Attempt or helper ends with damaged process evidence | Original claim/reservation and sidecar remain; no refund or release. | Host recovery requires confirmed cleanup; business closure cannot supply that proof. |
+| Finite result accepted | Existing result and exact caller obligations remain. | Creator inspects consumption and caller disposition before guarded ending; advice alone proves neither. |
+
+The existing receipt/status read exposes a saved admission deferral. It must not
+be presented as a completed App result or a caller notification. Any business
+refusal or reduced promise still requires the App's authorized decision and exact
+caller path. The readonly review pilot recommends that work; applied disposition
+and actual caller delivery remain separate acceptance evidence.
+
 ## First milestone: resolve idle work and complete the result path
 
 **Every open Task needs an accountable continuing responsibility. A completed
@@ -389,6 +421,17 @@ demand elsewhere and must remain visible. Cancellation is a business decision,
 not evidence of improved delivery throughput.
 
 ## Coordination that can run under stress
+
+Shared Host enforcement covers the installation, including Apps outside a
+feedback pilot. The supported first cutover uses an isolated configured
+installation or a reviewed coverage plan for every enabled App, recipient and
+method. Missing sponsor policy constrains new independent creation; retained
+unattributed Tasks defer before a claim. A funded contribution may use its
+creator's account across Apps. Unbound/direct and persistent execution remain
+unsupported under shared enforcement. Enabling one App's feedback does not
+promise that other unconfigured execution stays operational. Keep trusted
+operator inspection and the documented offline withdrawal path available
+outside constrained business methods.
 
 A declared standing coordination Task considers input, selects useful work,
 consumes results and brings finite assignments to their creator for disposition.

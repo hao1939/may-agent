@@ -9,7 +9,9 @@ and [one authority for each resource](../1-principles/core-principles.md#one-aut
 **Design status:** Proposed implementation approach.
 **Implementation status:** The Host candidate is consolidated in
 [PR #443](https://github.com/hao1939/may-agent/pull/443), targeting main and ready
-for independent review. It includes scoped feedback, protected coordination,
+for independent review. Review fixes at Host
+`403c6f39a46aad420acf01c14491a54c451475ca` are under final verification.
+It includes scoped feedback, protected coordination,
 creation/claim/helper accounting, authorized funding changes, shared execution
 reservations and recovery, new-root defaults, durable one-place cooperation,
 workspace prerequisites and bounded retained-session continuations. Fresh-state
@@ -18,14 +20,15 @@ withdrawal have verified implementations. Retained installation requires
 externally excluded, already cleaned execution; it does not import live work.
 Independent review, integration and operational acceptance remain outstanding.
 
-The 37 earlier PR heads are included in the unchanged tested candidate
-`97cbfdf9748297501f21ab2bff2047041997ceef`. Their branches, original descriptions
+The 37 earlier PR heads are included in the consolidated candidate. The earlier
+validated baseline was `97cbfdf9748297501f21ab2bff2047041997ceef`. Their branches, original descriptions
 and review discussions are retained; links below record implementation history
 rather than additional merge dependencies. #443 carries the four outstanding
 #406 review findings with their final regressions. Superseding a PR does not
 approve its code or resolve its discussions. Independent test-stability fixes
-from #408 and #411 are grouped separately in #416; that PR can merge first,
-followed by refreshing and revalidating #443 against the resulting main.
+from #408 and #411 merged together in #416 at main
+`a7d9a15e3c4cebce93924c70b2926643d0358372`; #443 includes that merge.
+#426 remains superseded by #443 rather than a separate merge dependency.
 
 The [completion audit](../archive/reviews/workload-completion-audit-20261109.md)
 maps the supported contracts to their owners, rechecks installation identity and
@@ -1660,3 +1663,55 @@ was observed. This rechecks integration mechanics; the preceding real model
 judgments remain evidence from Host `f68fd7f3070b6dfd88657e4e8527b00dd2d4b984`.
 No external model trial or live operation was repeated. Independent stack review,
 integration and separately authorized operational acceptance remain outstanding.
+
+
+## Review closure: received demand, cutover and observation integrity
+
+Host `403c6f39a46aad420acf01c14491a54c451475ca` repairs three new #443
+review findings at existing boundaries: damaged Bash sidecars block both live
+and persisted cleanup; the production Task tool resolves the current attempt's
+canonical workload reader on every invocation; funding readiness uses the same
+observation time as balances. Missing legacy sidecars still mean no known groups.
+Damaged evidence is preserved, helper/root places remain occupied and restart
+recovery does not rewrite saved results before cleanup is established. Seven
+regressions failed before those fixes; the added restart case also passes.
+
+The broader design review reproduced two more gaps. The workload read could
+return a complete empty Task page while ordinary funding held all received input
+in the Inbox. Shared execution could also claim a fresh unconfigured App's Task
+and then reject its workflow start as historical work. The refinements in the
+[model](agent-task-workload-model.md#responsibility-before-task-admission) name
+the receiving App's responsibility before admission and make enforcement's
+installation scope explicit. There is no new queue or Task lifecycle.
+
+The shared projection now reads a separate indexed five-item Inbox page with
+independent continuation, source identity and saved admission constraint. It
+excludes ended or Task-attached input and reads no input payload or transport
+destination. Agent Task filters do not hide App-owned pre-admission demand.
+Oversized identities are counted as omitted, so they cannot make an empty-work
+claim. The existing trusted Inbox item read supplies exact business/caller
+evidence; it is not replaced by a model preview. Policy installation and the
+existing funding/adoption/exact-creation/UTC wakes retain their original roles.
+
+The App's existing bounded review accepts a supplied `inputId` recommendation,
+advances its independent input cursor in the accepted result and considers
+received demand even with no business Task. Missing or omitted input evidence
+blocks visibly. Recommendations remain readonly and cannot grant credits,
+reject input, fulfill a caller or close an assignment. A saved funding hold is
+pending admission; actual caller disposition still needs the App's authorized
+result path and separate acceptance evidence. The two App regressions failed
+before the change; the three App owners pass **45 tests / 782 assertions**.
+
+Installed shared Host limits now make accounting relevant to every App. Missing
+policy holds new independent creation and authored seeds before a charge;
+retained unattributed claims defer before an attempt or reservation. Funded
+cross-App contributions retain their creator's account. Existing unbound and
+persistent-session refusals remain. The first operational cutover must be an
+isolated configured installation or cover every method that remains enabled;
+a narrow feedback experiment does not imply App-local enforcement. Two fresh/
+retained admission regressions failed before the fix. Final six-file admission,
+seed, workload and control owners passed **118 tests / 530 assertions**; the
+broader nine-file operation/admission pass was **169 / 772** before the final
+seed regression. Full Host CI, paired strict types and scripted worker recheck
+are pending at this source checkpoint. Previous model cohorts keep their exact
+original revisions and do not establish this new input-review behavior.
