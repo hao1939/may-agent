@@ -1356,7 +1356,15 @@ test.each([false, true])("a waiting report reaches Conversation, survives reopen
   if (afterClosure) seedRetiredConversation(f);
   let ingress = await startConversationIngress(f);
   try {
-    const reported = eventAfter(f.bus, (event) => event.type === "conversation.updated" && seen.length === 2);
+    // A prior turn's presentation wake may arrive after the next model call
+    // starts. Wait for this exact report input to settle before reading its reply.
+    const reported = eventAfter(
+      f.bus,
+      (event) =>
+        event.type === "conversation.updated" &&
+        seen.length === 2 &&
+        getAppInboxItem(f.db, seen[1]!.id)?.status === "done",
+    );
     ingress.publish("ask", "Get the measurement and report it here");
     await reported;
     expect(seen[1]!.input.data).toMatchObject({
