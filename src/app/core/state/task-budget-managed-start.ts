@@ -48,11 +48,7 @@ function taskExecutionPolicy(db: SqliteDb, input: ManagedSessionPolicy) {
   }
   const admission = new TaskBudgetAdmissionStore(db);
   const task = { appId: bound.appId, taskId: bound.taskId };
-  if (!admission.requiresAccounting(task)) {
-    if (new TaskExecutionStore(db).configured())
-      throw new Error("Shared execution limits require explicit adoption of historical Task funding");
-    return null;
-  }
+  if (!admission.requiresAccounting(task)) return null;
   if (input.persistentChat) throw new Error("Budgeted Task execution requires a bounded managed session");
   if (!input.binding) throw new Error("Budgeted session start requires a current Task binding");
   return { admission, task, bound };

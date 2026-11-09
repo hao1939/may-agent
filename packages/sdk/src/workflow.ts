@@ -338,6 +338,8 @@ export type TaskWorkloadOptions = {
   agent?: string;
   limit?: number;
   cursor?: string;
+  /** Independent continuation of received input not yet attached to a Task. */
+  inputCursor?: string;
 };
 
 /** Observations, not business judgments or utilization measurements. */
@@ -364,6 +366,24 @@ export type TaskWorkload = {
     /** Distinct attributed roots represented by this page. A root can be in
      * another App or outside the page; do not sum this across pages. */
     representedRoots: number;
+  };
+  /** Optional on older Hosts. Received demand is owned by the receiving App's
+   * declared agent before Task admission. This separate, bounded Inbox page is
+   * App-scoped even when Task counts are filtered by agent. No input payload or
+   * transport destination is exposed; exact evidence remains on the Inbox row.
+   * Saved funding holds describe admission, not rejection or fulfillment. */
+  unadmittedInputs?: {
+    scope: { appId: string };
+    coverage: { limit: 5; scanned: number; truncated: boolean; nextCursor?: string };
+    omitted: number;
+    items: Array<{
+      id: string;
+      kind: string;
+      source: { kind: "human" | "app" | "system"; id: string };
+      receivedAt: number;
+      changedAt: number;
+      funding?: { reason: string; retryAt: number | null };
+    }>;
   };
   examples: {
     blockers: Array<{

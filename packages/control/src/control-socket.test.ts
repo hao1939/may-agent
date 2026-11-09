@@ -520,12 +520,12 @@ describe("control socket protocol", () => {
       calls.push({ appId, options });
       return { version: 1, scope: { appId }, coverage: { truncated: true }, counts: { runnable: 2 } };
     } });
-    await expect(sendSocketCommand(core.endpoint, { type: "app.tasks.workload", appId: "sample", agent: "worker", limit: 2, cursor: "next" }))
+    await expect(sendSocketCommand(core.endpoint, { type: "app.tasks.workload", appId: "sample", agent: "worker", limit: 2, cursor: "next", inputCursor: "next-input" }))
       .resolves.toMatchObject({ type: "ok", command: "app.tasks.workload", workload: {
         version: 1, scope: { appId: "sample" }, counts: { runnable: 2 }, coverage: { truncated: true },
       } });
-    expect(calls).toEqual([{ appId: "sample", options: { agent: "worker", limit: 2, cursor: "next" } }]);
-    for (const change of [{ appId: "" }, { agent: "" }, { limit: 101 }, { limit: "2" }, { cursor: 9 }]) {
+    expect(calls).toEqual([{ appId: "sample", options: { agent: "worker", limit: 2, cursor: "next", inputCursor: "next-input" } }]);
+    for (const change of [{ appId: "" }, { agent: "" }, { limit: 101 }, { limit: "2" }, { cursor: 9 }, { inputCursor: 9 }]) {
       await expect(sendSocketCommand(core.endpoint, { type: "app.tasks.workload", appId: "sample", ...change }))
         .rejects.toThrow();
     }

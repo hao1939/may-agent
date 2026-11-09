@@ -46,6 +46,9 @@ CREATE TABLE IF NOT EXISTS app_inbox_items (
 );
 CREATE INDEX IF NOT EXISTS idx_app_inbox_ready
   ON app_inbox_items(app_id, status, available_at, created_at);
+CREATE INDEX IF NOT EXISTS idx_app_inbox_pending_admission_read
+  ON app_inbox_items(app_id, id)
+  WHERE status = 'pending' AND execution_task_id IS NULL AND waiting_on_kind IS NULL;
 CREATE INDEX IF NOT EXISTS idx_app_inbox_unadmitted
   ON app_inbox_items(id)
   WHERE status != 'done' AND execution_task_id IS NULL

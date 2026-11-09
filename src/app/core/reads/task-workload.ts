@@ -129,7 +129,36 @@ function readWorkloadFunding(
   };
 }
 
-/** A bounded page over existing Task authority, never a second work ledger. */
+/** Project retained pre-Task demand from the existing Inbox in this snapshot. */
+function readUnadmittedInputs(config: AppTaskContext, cursor?: string): NonNullable<TaskWorkload["unadmittedInputs"]> {
+  let after = "";
+  if (cursor !== undefined) {
+    after = typeof cursor === "string" ? Buffer.from(cursor, "base64url").toString("utf8") : "";
+    if (!after || Buffer.from(after, "utf8").toString("base64url") !== cursor)
+      throw new Error("Invalid workload input cursor");
+  }
+  const rows = config.resourceStore.db.prepare(`SELECT id, input_kind, source_kind, source_id, created_at, changed_at,
+      CASE WHEN json_extract(handling, '$.phase') = 'deferred' THEN json_extract(handling, '$.funding.reason') END AS reason,
+      json_extract(handling, '$.funding.retryAt') AS retry_at
+    FROM app_inbox_items INDEXED BY idx_app_inbox_pending_admission_read
+    WHERE app_id = ? AND status = 'pending' AND execution_task_id IS NULL AND waiting_on_kind IS NULL AND id > ?
+    ORDER BY id LIMIT 6`).all(config.resourceStore.appId, after) as Array<{
+      id: string; input_kind: string; source_kind: "human" | "app" | "system"; source_id: string;
+      created_at: number; changed_at: number | null; reason: string | null; retry_at: number | null;
+    }>;
+  const selected = rows.slice(0, 5);
+  const items = selected.flatMap(row => [row.id, row.input_kind, row.source_id].some(value => Buffer.byteLength(value) > 1024) ? [] : [{
+    id: row.id, kind: row.input_kind, source: { kind: row.source_kind, id: row.source_id },
+    receivedAt: row.created_at, changedAt: row.changed_at ?? row.created_at,
+    ...(row.reason ? { funding: { reason: row.reason, retryAt: row.retry_at } } : {}),
+  }]);
+  return { scope: { appId: config.resourceStore.appId },
+    coverage: { limit: 5, scanned: selected.length, truncated: rows.length > 5,
+      ...(rows.length > 5 ? { nextCursor: Buffer.from(selected.at(-1)!.id, "utf8").toString("base64url") } : {}) },
+    omitted: selected.length - items.length, items };
+}
+
+/** Bounded projections over Task and Inbox authority, never a second ledger. */
 export function readTaskWorkload(
   opts: { taskStateConfig?: AppTaskContext; workloadSource?: TaskWorkloadSource },
   options: TaskWorkloadOptions = {},
@@ -165,6 +194,7 @@ export function readTaskWorkload(
       counts: { running: 0, runnable: 0, waiting: 0, attention: 0, idle: 0,
         paused: 0, cooldown: 0, unknown: 0, pendingInputTasks: 0 },
       assignments: { rootTasks: 0, contributions: 0, unattributed: 0, representedRoots: 0 },
+      unadmittedInputs: readUnadmittedInputs(config, options.inputCursor),
       examples: { blockers: [], dispositionCandidates: [], truncated: false },
       limits: {
         app: { backgroundMaxConcurrent: config.maxConcurrent, interactiveAdditional: 1 },

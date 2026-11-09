@@ -18,6 +18,8 @@ import type { TaskAgentInput } from "../tasks/execution.js";
 import { admitTaskInput } from "../state/inbox.js";
 import { readAppContract } from "./app-contract.js";
 import type { TaskTree } from "../tasks/app-task-store.js";
+import { AppInboxHost } from "../inbox/app-inbox-host.js";
+import { createAppInboxItem } from "../state/app-inbox-store.js";
 
 const databases: SqliteDb[] = [];
 afterEach(() => { setSystemTime(); databases.splice(0).forEach(db => db.close()); });
@@ -44,6 +46,97 @@ function fixture(appId = "sample", lifecycle: "active" | "paused" = "active", tr
   };
   return { db, config, add, claim, read: () => readTaskWorkload({ taskStateConfig: config }) };
 }
+
+test("workload exposes unfunded received demand when no Task can be created", async () => {
+  const f = fixture();
+  new TaskBudgetAdmissionStore(f.db).install({
+    appId: "sample",
+    sponsor: { appId: "sample", agent: "worker" },
+    dailyCredits: 0,
+    rootCredits: 5,
+  });
+  const app = defineApp({
+    id: "sample",
+    version: 1,
+    agent: "worker",
+    tasks: {},
+    inputSchema: Type.Object({ kind: Type.Literal("work"), data: Type.Object({}) }),
+    task: (input) => ({
+      kind: "desired",
+      intent: { id: input.id, parentId: "root", outcome: "Deliver required report", acceptance: ["Report delivered"] },
+    }),
+  });
+  const host = new AppInboxHost({ db: f.db, apps: [app], attachTask: (input) => admitTaskInput(f.config, input) });
+  try {
+    host.admit({
+      id: "required-report",
+      appId: "sample",
+      source: { kind: "app", id: "exact-caller" },
+      input: { kind: "work", data: {} },
+    });
+    const before = f.db.prepare("SELECT total_changes() AS n").get();
+    const observed = f.read();
+    expect(observed.coverage.matched).toBe(0);
+    expect(observed.counts.pendingInputTasks).toBe(0);
+    expect(observed.unadmittedInputs).toMatchObject({
+      scope: { appId: "sample" },
+      coverage: { scanned: 1, truncated: false },
+      omitted: 0,
+      items: [
+        {
+          id: "required-report",
+          kind: "work",
+          source: { kind: "app", id: "exact-caller" },
+          funding: { reason: "sponsor-credit", retryAt: expect.any(Number) },
+        },
+      ],
+    });
+    expect(f.db.prepare("SELECT total_changes() AS n").get()).toEqual(before);
+    expect(host.get("required-report")).toMatchObject({ status: "pending", source: { id: "exact-caller" } });
+    expect(f.config.resourceStore.readTask("required-report")).toBeNull();
+  } finally {
+    host.close();
+  }
+});
+
+test("unadmitted input discovery has its own App-scoped continuation and excludes attached or ended input", () => {
+  const f = fixture();
+  for (let index = 0; index < 7; index++)
+    createAppInboxItem(f.db, {
+      id: `input-${index}`,
+      appId: "sample",
+      source: { kind: "system", id: "fixture" },
+      input: { kind: "work", data: { privatePayload: "not a workload preview" } },
+    });
+  createAppInboxItem(f.db, {
+    id: "other-app",
+    appId: "other",
+    source: { kind: "system", id: "fixture" },
+    input: { kind: "work", data: {} },
+  });
+  f.db.prepare("UPDATE app_inbox_items SET status = 'done' WHERE id = 'input-5'").run();
+  f.db.prepare("UPDATE app_inbox_items SET execution_task_id = 'attached' WHERE id = 'input-6'").run();
+  const reader = createRuntimeTaskRead({ taskStateConfig: f.config });
+  const first = reader.workload({ agent: "other-agent", limit: 1 });
+  expect(first.unadmittedInputs).toMatchObject({
+    scope: { appId: "sample" },
+    coverage: { limit: 5, scanned: 5, truncated: false },
+    items: Array.from({ length: 5 }, (_, i) => ({ id: `input-${i}` })),
+  });
+  createAppInboxItem(f.db, {
+    id: "tail",
+    appId: "sample",
+    source: { kind: "system", id: "fixture" },
+    input: { kind: "work", data: {} },
+  });
+  const page = reader.workload().unadmittedInputs!;
+  expect(page.coverage.truncated).toBe(true);
+  expect(
+    reader.workload({ inputCursor: page.coverage.nextCursor }).unadmittedInputs?.items.map((item) => item.id),
+  ).toEqual(["tail"]);
+  expect(JSON.stringify(page)).not.toContain("privatePayload");
+  expect(() => reader.workload({ inputCursor: "!bad" })).toThrow("input cursor");
+});
 
 test("feedback separates actual runnable work, blockers, idle results and closed history without mutations", () => {
   const f = fixture();

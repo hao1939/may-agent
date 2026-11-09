@@ -94,6 +94,14 @@ test("unfunded authored seed activation rolls back every new Task and accounting
   expect(f.db.prepare("SELECT count(*) AS n FROM task_execution_limits").get()?.n).toBe(0);
 });
 
+test("shared execution cannot bypass missing App policy through a new authored seed", () => {
+  const f = fixture();
+  new TaskExecutionStore(f.db).installLimit({ kind: "host" }, 4);
+  expect(() => f.budgets.admitNewSeed("other", structuredClone(f.tree))).toThrow("sponsor-policy");
+  expect(f.budgets.budget.binding({ appId: "other", taskId: "work" })).toBeNull();
+  expect(f.db.prepare("SELECT count(*) AS n FROM task_budget_operations").get()).toEqual({ n: 0 });
+});
+
 test("retained snapshots keep unknown historical spending explicit instead of creating a new allowance", () => {
   const f = fixture();
   const store = AppTaskResourceStore.fromDb(f.db, "sample");

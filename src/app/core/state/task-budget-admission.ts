@@ -141,9 +141,11 @@ export class TaskBudgetAdmissionStore {
     return row ? (JSON.parse(row.policy_json as string) as InstalledTaskBudgetPolicy) : null;
   }
 
-  /** Retained contributions remain in their immutable creator's accounting
-   * scope even when their recipient App has no policy. No binding is inferred. */
+  /** Shared execution requires accounting throughout the installation. Without
+   * it, retained contributions still follow their immutable creator's scope
+   * even when their recipient App has no policy. No binding is inferred. */
   requiresAccounting(task: BudgetTaskRef): boolean {
+    if (new TaskExecutionStore(this.db).configured()) return true;
     if (this.policy(task.appId) || this.budget.binding(task)) return true;
     const row = this.db
       .prepare("SELECT resource_json FROM app_tasks WHERE app_id = ? AND task_id = ?")
@@ -374,7 +376,8 @@ export class TaskBudgetAdmissionStore {
     const destinationPolicy = this.policy(appId);
     // Unconfigured installations preserve their existing behavior. A funded
     // creator still carries its account into an unconfigured destination App.
-    if (!policy && !destinationPolicy && !creatorRoot && !this.budget.binding(task)) return;
+    if (!policy && !destinationPolicy && !creatorRoot && !this.budget.binding(task) &&
+        !new TaskExecutionStore(this.db).configured()) return;
     if (destinationPolicy?.coordination?.taskId === task.taskId && (creator.appId !== appId || creatorTask))
       this.defer(task, "protected-policy", task);
     if (creatorTask) {
@@ -422,6 +425,7 @@ export class TaskBudgetAdmissionStore {
     if (!workloadEnforcementEnabled(this.db)) return;
     const resources = Object.values(tree.resources ?? {});
     const relevant =
+      new TaskExecutionStore(this.db).configured() ||
       this.policy(appId) ||
       resources.some((resource) => {
         const creator = resource.metadata.creator;

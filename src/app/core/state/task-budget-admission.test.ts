@@ -19,6 +19,7 @@ import { defineApp, Type, type ResourceCreator } from "@may-agent/sdk";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
 import { admitTaskInput } from "./inbox.js";
 import { createAppInboxItem } from "./app-inbox-store.js";
+import { TaskExecutionStore } from "./task-execution-store.js";
 
 const databases: SqliteDb[] = [];
 afterEach(() => {
@@ -92,6 +93,87 @@ test("creation and claim spend once with canonical mutations; attachments, busy 
   completeAppTask(f.config, claim, { summary: "Accepted" });
   expect(f.claim("work").kind).toBe("completed");
   expect(f.view("sample", "work")).toMatchObject({ rootCharged: 2, grant: { charged: 2 } });
+});
+
+test("shared execution defers retained unconfigured claims before spending or reserving", () => {
+  const f = fixture();
+  const other = f.app("other");
+  other.add("retained");
+  const executions = new TaskExecutionStore(f.db);
+  const recipient = { kind: "programmatic" as const, id: "other/worker" };
+  executions.installLimit({ kind: "host" }, 4);
+  executions.installLimit({ kind: "agent", recipient }, 2);
+  expect(() => other.add("fresh")).toThrow("sponsor-policy");
+  expect(other.store.readTask("fresh")).toBeNull();
+  expect(
+    claimObservedAppTask(other.config, {
+      taskId: "retained",
+      appAgent: "executor",
+      handler: "workflow:service",
+      execution: { recipient: () => recipient, lane: "background" },
+    }),
+  ).toMatchObject({
+    kind: "deferred",
+    funding: { reason: "adoption-required" },
+  });
+  expect(other.store.readTask("retained")?.status).toMatchObject({
+    phase: "pending",
+    funding: { reason: "adoption-required" },
+  });
+  expect(other.store.readTask("retained")?.status.executionFailures).toBeUndefined();
+  expect(f.db.prepare("SELECT count(*) AS n FROM app_task_attempts").get()).toEqual({ n: 0 });
+  expect(executions.usage({ kind: "host" }).occupied).toBe(0);
+  expect(f.view("other", "retained")).toBeNull();
+  expect(() => assertTaskWorkflowStart(f.db)).toThrow("bounded Task binding");
+  expect(() => admitManagedTaskStart(f.db, { sessionId: "unbound", persistentChat: true })).toThrow(
+    "bounded Task binding",
+  );
+});
+
+test("missing policy retains fresh Inbox demand until configuration permits creation and start", async () => {
+  const f = fixture();
+  const other = f.app("other");
+  const executions = new TaskExecutionStore(f.db);
+  const recipient = { kind: "programmatic" as const, id: "other/worker" };
+  executions.installLimit({ kind: "host" }, 4);
+  executions.installLimit({ kind: "agent", recipient }, 2);
+  const host = new AppInboxHost({
+    db: f.db,
+    apps: [inboxApp("other")],
+    attachTask: (input) => admitTaskInput(other.config, input),
+  });
+  try {
+    expect(host.admit(workInput("fresh", "other")).item).toMatchObject({
+      status: "pending",
+      handling: { phase: "deferred", funding: { reason: "sponsor-policy", policyAppId: "other" } },
+    });
+    expect(other.store.readTask("fresh")).toBeNull();
+    f.accounting.install({
+      appId: "other",
+      sponsor: { appId: "other", agent: "owner" },
+      dailyCredits: 10,
+      rootCredits: 5,
+      rootExecutionSlots: 2,
+    });
+    await host.recoverAdmissions();
+    const claim = claimObservedAppTask(other.config, {
+      taskId: "fresh",
+      appAgent: "executor",
+      handler: "workflow:service",
+      execution: { recipient: () => recipient, lane: "background" },
+    });
+    if (claim.kind !== "claimed") throw new Error(`Expected configured claim, received ${claim.kind}`);
+    const binding = { appId: "other", taskId: "fresh", generation: claim.generation, attemptId: claim.attemptId };
+    expect(() => assertTaskWorkflowStart(f.db, binding)).not.toThrow();
+    expect(() => admitManagedTaskStart(f.db, { sessionId: "persistent", binding, persistentChat: true })).toThrow(
+      "bounded managed session",
+    );
+    expect(f.view("other", "fresh")?.rootCharged).toBe(2);
+    expect(executions.usage({ kind: "host" }).occupied).toBe(1);
+    expect(host.get("fresh")?.handling).toBeUndefined();
+  } finally {
+    host.close();
+  }
 });
 
 test("new cross-App contributions inherit their creating Task account, independently of executor and structural parent", () => {

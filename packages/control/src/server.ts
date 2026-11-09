@@ -64,7 +64,7 @@ export interface AttachControlSocketOptions {
     conversationId: string,
     options?: { limit?: number; topicId?: string; topicLimit?: number; topicCursor?: string },
   ) => unknown;
-  getAppTaskWorkload?: (appId: string, options?: { agent?: string; limit?: number; cursor?: string }) => unknown;
+  getAppTaskWorkload?: (appId: string, options?: { agent?: string; limit?: number; cursor?: string; inputCursor?: string }) => unknown;
   listAppTasks?: (appId: string, options?: { status?: string[]; limit?: number; cursor?: string }) => unknown;
   getAppTask?: (
     appId: string,
@@ -819,12 +819,15 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               throw new Error("limit must be an integer between 1 and 100");
             if (frame.cursor !== undefined && (typeof frame.cursor !== "string" || !frame.cursor.trim()))
               throw new Error("cursor must be a non-empty string");
+            if (frame.inputCursor !== undefined && (typeof frame.inputCursor !== "string" || !frame.inputCursor.trim()))
+              throw new Error("inputCursor must be a non-empty string");
             writeFrame(socket, {
               type: "ok", command: normalized.command, appId,
               workload: getAppTaskWorkload(appId, {
                 ...(typeof frame.agent === "string" ? { agent: frame.agent } : {}),
                 ...(typeof frame.limit === "number" ? { limit: frame.limit } : {}),
                 ...(typeof frame.cursor === "string" ? { cursor: frame.cursor } : {}),
+                ...(typeof frame.inputCursor === "string" ? { inputCursor: frame.inputCursor } : {}),
               }),
             });
           } catch (error) {

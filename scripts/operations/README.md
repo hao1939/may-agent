@@ -49,6 +49,15 @@ bun scripts/operations/initialize-workload-state.ts \
   --new-state-dir /path/to/unused-state --plan /path/to/private-installation.json
 ```
 
+Shared Host limits cover the entire installation. Use an isolated configured
+installation for the first pilot, or review coverage for every App, recipient
+and execution method that will remain enabled. Enabling one App's feedback does
+not make enforcement App-local. Unconfigured independent creation is retained
+with `sponsor-policy`; retained unattributed claims defer with `adoption-required`
+before taking a place or spending an attempt. A funded contribution can still
+use its creator's account across Apps. Other enabled work is not promised to
+continue without configuration and, for retained Tasks, explicit adoption.
+
 Review installed App declarations and the resources required by their methods
 before starting the Host at that path. A coordination workflow with an inline
 model helper needs two simultaneous places across Host, recipient and root,
@@ -70,6 +79,19 @@ use the canonical Task engine. Missing policy does not grant free starts.
 Initialization does not validate arbitrary App business methods, activate App
 source, launch a model, restart a service or establish model judgment quality.
 Retained installations still require an explicit adoption/cutover protocol.
+
+The receiving App's declared agent owns input before Task creation. Its scoped
+workload read includes a separate five-item `unadmittedInputs` page with its own
+`inputCursor`; Task-page counts and agent filters do not cover that demand.
+Inspect exact evidence and the saved caller route through the existing trusted
+Inbox item read (`GET /api/app-inbox/:id`). A saved funding hold is pending
+admission, not an accepted business result, rejection or caller delivery. Policy
+installation, an authorized funding change, exact Task creation/adoption or a
+due UTC grant can wake existing admission recovery. A declared bounded owner
+review may consider a changed hold; it cannot grant funding or end the input
+without the App's existing authority. Oversized identities are counted as omitted
+and require exact Inbox inspection; unavailable or omitted evidence cannot prove
+an empty workload. Keep operator inspection available outside budgeted methods.
 
 ## Install workload policy on retained, cleaned state
 

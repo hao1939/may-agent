@@ -49,11 +49,19 @@ to fit. The rule creates no extra place, budget or authority.
 
 ## Workload observations
 
-`read.tasks.workload({agent?, limit?, cursor?})` supplies one bounded current-App
+`read.tasks.workload({agent?, limit?, cursor?, inputCursor?})` supplies one bounded current-App
 page. Check the installed App contract's `taskReads.workload === 1` before using
 it on older Hosts. The model `tasks` tool uses `action: "workload"`; operator
 control uses `app.tasks.workload` with `appId` and the same options. Reads neither
 acknowledge work nor change scheduling, funding or closure authority.
+
+Optional `unadmittedInputs` separately projects pending Inbox input that has no
+Task link. Its five-item App-scoped page uses `inputCursor` independently of
+Task continuation and agent filters. It contains identities and saved admission
+constraints, not input payloads or transport destinations. The receiving App's
+declared agent owns funding/disposition review. Missing projection or omitted
+identities require exact Inbox inspection; empty Task counts prove nothing about
+received input. Reads use the same snapshot and change no Inbox receipt.
 
 Counts describe only the scanned page. Agent filtering happens after that App
 page is scanned; follow `coverage.nextCursor` and retain each observation's time
@@ -566,8 +574,9 @@ no historical spending. This grants no additional control or funding capability.
 `../state/task-budget-admission.ts` joins new-resource and running-attempt
 admission to the fenced resource transaction in the installation database.
 Creation, claims and their receipts roll back together on denial. Unconfigured
-installations retain their existing behavior. Installation activation remains
-unexposed until seed, helper, deferral and protected-funding paths are complete.
+installations retain their existing behavior. Shared Host execution enforcement
+is installation-wide: missing sponsor policy constrains new independent work,
+and retained unattributed claims require explicit adoption before execution.
 
 Unfunded ordinary input and first Conversation input retain their exact Inbox
 receipt and funding constraint. They acquire a Task link only on successful

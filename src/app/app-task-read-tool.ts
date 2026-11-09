@@ -70,6 +70,7 @@ const parameters = Type.Object(
       }),
     ),
     cursor: Type.Optional(Type.String({ minLength: 1 })),
+    inputCursor: Type.Optional(Type.String({ minLength: 1, description: "For workload: independent continuation of unadmitted Inbox input." })),
     agent: Type.Optional(Type.String({ minLength: 1, description: "For workload: optional responsible agent within this App page." })),
     includeDone: Type.Optional(
       Type.Boolean({ description: "For outcomes only. For list, use status; omitted status includes every phase." }),
@@ -158,6 +159,7 @@ type Params = {
   status?: TaskView["status"][];
   limit?: number;
   cursor?: string;
+  inputCursor?: string;
   includeDone?: boolean;
   acceptedEvidence?: TaskReadOptions["acceptedEvidence"];
   inputKeys?: string[];
@@ -340,6 +342,7 @@ export function createAppTaskReadTool(options: {
             ...(params.agent !== undefined ? { agent: params.agent } : {}),
             ...(params.limit !== undefined ? { limit: params.limit } : {}),
             ...(params.cursor !== undefined ? { cursor: params.cursor } : {}),
+            ...(params.inputCursor !== undefined ? { inputCursor: params.inputCursor } : {}),
           };
           const read = options.workloadReader?.();
           if (read) return result(await read(query));
