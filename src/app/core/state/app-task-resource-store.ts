@@ -163,6 +163,13 @@ export type AppTaskControlReceipt = {
   appliedResourceVersion: number;
   appliedAt: number;
   result?: unknown;
+  /** Exact pre-control bytes retained by reviewed offline retirement; never acceptance authority. */
+  retainedObservation?: {
+    kind: "unverified-legacy-observation";
+    resourceJson: string;
+    triggerJson: string | null;
+    reason: string;
+  };
 };
 
 export type AppTaskResourceMutation = {

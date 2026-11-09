@@ -4,7 +4,11 @@ import { stateTransaction } from "../../../lib/db/transaction.js";
 import type { AppTaskAdmission, AppTaskContext } from "../tasks/app-task-store.js";
 import type { AppTaskResource } from "../tasks/app-task-state.js";
 import { cancelAppTask } from "../tasks/app-task-reconciler.js";
-import { parseTaskResource, type AppTaskResourceStore } from "./app-task-resource-store.js";
+import {
+  parseTaskResource,
+  type AppTaskControlReceipt,
+  type AppTaskResourceStore,
+} from "./app-task-resource-store.js";
 
 /** Private operator data: preserve the reviewed plan and a verified offline backup. */
 export type RetiredAppRetirementPlan = {
@@ -12,7 +16,13 @@ export type RetiredAppRetirementPlan = {
   appId: string;
   quiesced: true;
   appRetired: true;
-  tasks: Array<{ taskId: string; resourceJson: string; triggerJson: string | null; reason: string }>;
+  tasks: Array<{
+    taskId: string;
+    resourceJson: string;
+    triggerJson: string | null;
+    reason: string;
+    legacyObservation?: { decision: "preserve-unverified"; reason: string };
+  }>;
   inputs: Array<{
     row: Record<string, unknown>;
     reason: string;
@@ -35,6 +45,21 @@ function required(value: unknown, field: string): asserts value is string {
 function sameIds(actual: string[], expected: string[], label: string) {
   if (new Set(expected).size !== expected.length || !isDeepStrictEqual(actual.sort(), [...expected].sort()))
     throw new Error(`${label} census changed or plan has duplicate identities`);
+}
+
+function retainedObservation(
+  task: RetiredAppRetirementPlan["tasks"][number],
+): AppTaskControlReceipt["retainedObservation"] {
+  if (task.legacyObservation === undefined) return undefined;
+  if (!task.legacyObservation || task.legacyObservation.decision !== "preserve-unverified")
+    throw new Error("Legacy observation requires an explicit preservation decision");
+  required(task.legacyObservation.reason, "legacy observation preservation reason");
+  return {
+    kind: "unverified-legacy-observation",
+    resourceJson: task.resourceJson,
+    triggerJson: task.triggerJson,
+    reason: task.legacyObservation.reason,
+  };
 }
 
 /** Read-only preservation proof, also used to audit private offline plans. */
@@ -117,6 +142,7 @@ export function retireAppState(
         required(task.taskId, "Task id");
         required(task.reason, "Task retirement reason");
         required(task.resourceJson, "reviewed Task resource");
+        const observation = retainedObservation(task);
         const expected = parseTaskResource(task.resourceJson);
         if (
           expected?.metadata?.id !== task.taskId ||
@@ -143,6 +169,7 @@ export function retireAppState(
             receipt.expectedGeneration !== expected.metadata.generation ||
             receipt.expectedResourceVersion !== expected.metadata.resourceVersion ||
             receipt.appliedResourceVersion !== expected.metadata.resourceVersion + 1 ||
+            !isDeepStrictEqual(receipt.retainedObservation, observation) ||
             terminal.generation !== expected.metadata.generation ||
             terminal.resourceVersion !== receipt.appliedResourceVersion ||
             terminal.kind !== "cancelled" ||
@@ -343,9 +370,11 @@ export function retireAppState(
         remainingInputs.map((input) => String(input.row.id)),
         "Input",
       );
-      // Prove conservation for the complete original plan before any mutation,
-      // including replay. A prior cancellation is not proof its history survives.
-      for (const task of plan.tasks) assertRetainedRetirementOutcome(store, parseTaskResource(task.resourceJson));
+      // Default plans still require accepted provenance. Explicit legacy plans
+      // retain exact preimages atomically with cancellation, without acceptance.
+      // Replay already verified that durable copy above; a flag alone is no proof.
+      for (const task of plan.tasks)
+        if (!retainedObservation(task)) assertRetainedRetirementOutcome(store, parseTaskResource(task.resourceJson));
       if (!remainingTasks.length && !remainingInputs.length)
         return { status: "already-retired", tasks: plan.tasks.length, inputs: plan.inputs.length };
       // One transaction is all-or-nothing. Refuse a mixed replay rather than
@@ -364,6 +393,21 @@ export function retireAppState(
           decision: "human",
           controlKey: taskControlKey(task.taskId),
         });
+        const observation = retainedObservation(task);
+        if (observation) {
+          const controlKey = taskControlKey(task.taskId);
+          const updated = db
+            .prepare(`UPDATE app_task_control_receipts
+            SET receipt_json=json_set(receipt_json, '$.retainedObservation', json(?))
+            WHERE app_id=? AND control_key=? AND action='cancel'
+              AND json_type(receipt_json, '$.retainedObservation') IS NULL`)
+            .run(JSON.stringify(observation), plan.appId, controlKey);
+          if (
+            updated.changes !== 1 ||
+            !isDeepStrictEqual(store.readControlReceipt(controlKey)?.retainedObservation, observation)
+          )
+            throw new Error("Legacy observation was not retained with its exact cancellation");
+        }
       }
       const now = options.now ?? Date.now();
       for (const input of remainingInputs) {
