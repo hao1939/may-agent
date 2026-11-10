@@ -1412,3 +1412,7 @@ The [reconstruction audit](../reports/review/scout-provenance-reconstruction-cyc
 ## Recent agent-effect governance findings
 
 - [Agent email guards need an effect-owning boundary](findings/2026-11-09-agent-email-guards-need-effect-boundary.md) — Pinned code specifies atomic send budgets, typed holds, loop refusal, and persistent pause, but Scout did not run it or prove that every provider route crosses the guard.
+
+## Recent harness-evaluation findings
+
+- [Harness benchmarks need separate quality and cost resolution verdicts](findings/2026-11-10-harness-benchmarks-separate-quality-cost-resolution.md) — A pinned repository reports saturated public dev tasks that could not separate harness pass rates but did expose metered cost differences; Scout inspected reports and selected artifacts without rerunning trials, graders, analyses, or billing checks.
