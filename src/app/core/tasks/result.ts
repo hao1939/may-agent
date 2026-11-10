@@ -1,3 +1,8 @@
+import type { TaskExecutionConstraint } from "../state/task-execution-admission.js";
+import type { TaskFundingConstraint } from "../state/task-budget-admission.js";
+import type { TaskAcceptanceBasis } from "@may-agent/sdk";
+import type { AppTaskClaim } from "./app-task-reconciler.js";
+import type { PreparedTaskWorkspace } from "./workspace.js";
 import {
   admitTaskReconcileResult as admitAppTaskHandlerResult,
   type TaskAction as AppTaskAction,
@@ -17,10 +22,21 @@ export type TaskCapabilityRun = {
   verifier?: { name: string; sourcePath: string; verify: AppTaskVerifier };
   unavailable?: boolean;
   executionFailed?: boolean;
+  /** A managed operation did not start; preserve work without execution failure. */
+  funding?: TaskFundingConstraint;
+  execution?: TaskExecutionConstraint;
   /** The workflow reported a blocker; retain its diagnosis for the next reconciliation. */
   handlerBlocked?: true;
   workspacePreparationFailed?: boolean;
   conversation?: ConversationTaskProposal;
+};
+
+/** Execution is over; retry only the fenced effects, never the executor. */
+export type PendingTaskSettlement = {
+  claim: Omit<AppTaskClaim, "settlement">;
+  report: Pick<TaskCapabilityRun, "handlerResult" | "runId" | "conversation" | "acceptedLiveEventIds">;
+  acceptanceBasis: TaskAcceptanceBasis;
+  workspace?: PreparedTaskWorkspace;
 };
 
 export type NormalizedTaskHandlerResult = {

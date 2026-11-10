@@ -1,3 +1,6 @@
+import { TaskBudgetAdmissionStore } from "../state/task-budget-admission.js";
+import { TaskExecutionStore } from "../state/task-execution-store.js";
+import { installTaskExecutionLimit } from "../state/task-execution-admission.js";
 import { normalizeTaskHandlerResult } from "./result.js";
 import { afterEach, describe, expect, it, setSystemTime, spyOn } from "bun:test";
 import { execFile, execFileSync, spawn } from "node:child_process";
@@ -61,7 +64,8 @@ import {
 import { createTaskAttemptProcessExecutor } from "../../composition/workers/task-attempt-process.js";
 import { admitTaskAppRequests, recoverTaskConditions } from "./dependency-admission.js";
 import { createTaskExecutionBackends } from "../../composition/task-execution.js";
-import { gitTaskWorkspaces } from "../../adapters/workspaces/git.js";
+import { createGitTaskWorkspaces, gitTaskWorkspaces } from "../../adapters/workspaces/git.js";
+import { readTaskWorkload } from "../reads/task-workload.js";
 import { createTaskSessionRecovery } from "../../adapters/executors/session-recovery.js";
 import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
 import { createAppTaskReadTool } from "../../app-task-read-tool.js";
@@ -1047,7 +1051,7 @@ describe("caller feedback PoC", () => {
     const result = await tool.execute("contract", { action: "contract", target: { appId: "reviewer.app" } });
     const content = result.content[0];
     if (content?.type !== "text") throw new Error("Expected contract text");
-    expect(JSON.parse(content.text)).toEqual({ appId: "reviewer", agent: "reviewer", inputSchema, observations: [] });
+    expect(JSON.parse(content.text)).toEqual({ appId: "reviewer", agent: "reviewer", inputSchema, observations: [], taskReads: { workload: 1 } });
     const clone = getLoadedAppInputContract({ bus, appId: "reviewer" });
     clone.inputSchema.properties = {};
     expect(getLoadedAppInputContract({ bus, appId: "reviewer" }).inputSchema).toEqual(inputSchema);
@@ -1358,12 +1362,32 @@ describe("caller feedback PoC", () => {
     }
   });
 
-  it("composes three assignments through the same executor and return contract across restart", async () => {
+  it.each([{ onePlace: false }, { onePlace: true }])("composes three assignments through the same executor and return contract across restart (one-place budget=$onePlace)", async ({ onePlace }) => {
     const f = fixture();
     const persistDir = join(f.root, "state");
     let bus = eventBus();
     let host: AppInboxHost;
     const calls: string[] = [];
+    const rootRef = { appId: "sample", taskId: "work/0" };
+    const recipient = (agent: string) => ({ kind: "programmatic" as const, id: `fixture/${agent}` });
+    const ready = Promise.withResolvers<void>();
+    const yielded = Promise.withResolvers<void>();
+    const agents: TaskAgentRunner = {
+      available: () => true, prepare: async () => true, snapshot: () => agents,
+      executionRecipient: recipient, role: agent => ({ agent, instructions: "Collect and review facts" }),
+      execute: async () => { throw new Error("Code executor must own this fixture"); },
+    };
+    if (onePlace) {
+      const db = getDb(persistDir);
+      new TaskBudgetAdmissionStore(db).install({ appId: "sample", sponsor: { appId: "sample", agent: "sample-owner" },
+        dailyCredits: 20, rootCredits: 20 });
+      installTaskExecutionLimit(db, { kind: "host" }, 4);
+      for (let level = 0; level < 3; level++)
+        installTaskExecutionLimit(db, { kind: "agent", recipient: recipient(`role-${level}`) }, 1);
+      installTaskExecutionLimit(db, { kind: "root", root: rootRef }, 1);
+    }
+    const occupied = () => new TaskExecutionStore(getDb(persistDir)).usage({ kind: "root", root: rootRef }).occupied;
+    const charged = () => new TaskBudgetAdmissionStore(getDb(persistDir)).budget.view(rootRef, Date.now())?.rootCharged;
     const app = defineApp({
       ...definition(),
       task: ({ input }) => ({
@@ -1377,6 +1401,7 @@ describe("caller feedback PoC", () => {
           acceptance: ["Return the measured value through each assigning caller"],
           input: input.data as Record<string, unknown>,
           executor: "measure",
+          ...(onePlace ? { agent: `role-${(input.data as { level: number }).level}` } : {}),
         },
       }),
     });
@@ -1384,6 +1409,7 @@ describe("caller feedback PoC", () => {
       await installCoreTaskRuntimes({
         ...options(f, bus),
         installControllers: false,
+        ...(onePlace ? { agents } : {}),
         appRegistrySnapshot: {
           id: "assignment-roles",
           generation: 1,
@@ -1392,6 +1418,10 @@ describe("caller feedback PoC", () => {
         executors: {
           measure: async (attempt) => {
             calls.push(attempt.task.id);
+            if (onePlace) {
+              expect(occupied()).toBe(1);
+              expect(new TaskBudgetAdmissionStore(getDb(persistDir)).budget.binding({ appId: "sample", taskId: attempt.task.id })).toEqual(rootRef);
+            }
             expect(attempt.task.agent).toBe(attempt.role.agent);
             expect((await attempt.read.contract("sample")).agent).toBe(app.agent);
             const level = Number(attempt.task.id.split("/").at(-1));
@@ -1414,6 +1444,14 @@ describe("caller feedback PoC", () => {
                 facts: ["measurement:7"],
                 result: { value: 7, reviewedBy: [2] },
               };
+            if (onePlace) {
+              await attempt.apply({
+                requests: [{ id: "measurement", appId: "sample", input: { kind: "measure", data: { level: level + 1 } } }],
+                conditions: [{ requestId: "measurement" }],
+              });
+              if (level === 0) { ready.resolve(); await yielded.promise; }
+              return { state: "waiting", summary: "Requested independent measurement", facts: [] };
+            }
             return {
               state: "waiting",
               summary: "Requested independent measurement",
@@ -1461,7 +1499,20 @@ describe("caller feedback PoC", () => {
         source: { kind: "human", id: "human" },
         input: { kind: "measure", data: { level: 0 } },
       });
-      await run(0);
+      if (onePlace) {
+        const parent = run(0);
+        try {
+          await ready.promise;
+          const before = charged();
+          expect(occupied()).toBe(1);
+          await run(1);
+          expect(calls).toEqual(["work/0"]);
+          expect(charged()).toBe(before);
+          expect(loadedTaskConfig(f).resourceStore.readTask("work/1")?.status.executionConstraint?.scope.kind).toBe("root");
+        } finally { yielded.resolve(); await parent; }
+        expect(occupied()).toBe(0);
+        expect(loadedTaskConfig(f).resourceStore.readTask("work/1")?.status.executionConstraint).toBeUndefined();
+      } else await run(0);
       await run(1);
       await run(2);
       expect(host!.get("original")?.result).toBeUndefined();
@@ -1481,10 +1532,12 @@ describe("caller feedback PoC", () => {
       await host!.recoverTaskResults();
       expect(host!.get("original")?.result?.result).toEqual({ value: 7, reviewedBy: [2, 1, 0] });
       expect(calls).toEqual(["work/0", "work/1", "work/2", "work/1", "work/0"]);
+      if (onePlace) { expect(occupied()).toBe(0); expect(charged()).toBe(8); }
       await host!.recoverTaskResults();
       await recoverInstalledAppTasks(bus);
       await run(0);
       expect(calls).toHaveLength(5);
+      if (onePlace) { expect(occupied()).toBe(0); expect(charged()).toBe(8); }
       const revisionConfig = loadedTaskConfig(f);
       expect(revisionConfig.resourceStore.readTask("work/1")?.metadata.creator).toEqual({
         appId: "sample",
@@ -1499,6 +1552,7 @@ describe("caller feedback PoC", () => {
         taskId: "work/0",
         appAgent: "sample-owner",
         handler: "agent",
+        ...(onePlace ? { execution: { recipient, lane: "background" as const } } : {}),
       });
       if (reviewer.kind !== "claimed") throw new Error("Expected caller review");
       const tool = createAppTaskReadTool({
@@ -1525,6 +1579,7 @@ describe("caller feedback PoC", () => {
       for (let level = 0; level < 3; level++)
         expect(loadedTaskConfig(f).resourceStore.isCancelled(`work/${level}`)).toBe(false);
     } finally {
+      yielded.resolve();
       host!.close();
     }
   });
@@ -6301,6 +6356,123 @@ describe("canonical App task runtime", () => {
   });
 
   it.each([
+    { name: "known before claim", late: false, recovery: "capacity" },
+    { name: "shortage appears at preparation", late: true, recovery: "capacity" },
+    { name: "current checkout becomes smaller", late: false, recovery: "source" },
+    { name: "installed method no longer needs a checkout", late: false, recovery: "shared" },
+    { name: "new input races a successful observation", late: false, recovery: "race-input" },
+  ])("retains low-disk work without paid retries: $name", async ({ late, recovery }) => {
+    const f = fixture();
+    const bus = eventBus();
+    const git = (...args: string[]) => promisify(execFile)("git", ["-C", f.appDir, ...args], { timeout: 10_000 });
+    await git("init", "-b", "main");
+    await git("config", "user.email", "test@example.com");
+    await git("config", "user.name", "Test");
+    writeFileSync(join(f.appDir, "payload.bin"), Buffer.alloc(8192));
+    await git("add", ".");
+    await git("commit", "-m", "workspace capacity fixture");
+    let availableBytes = 0;
+    let unavailable = false;
+    let calls = 0;
+    let samples = 0;
+    let taskWorktree = true;
+    const workspaces = createGitTaskWorkspaces({ availableBytes: async () => {
+      if (unavailable) throw new Error("Filesystem sample unavailable");
+      if (recovery === "race-input" && samples === 0) {
+        recordAppTaskTrigger(loadedTaskConfig(f), "work/low-disk", { type: "fixture.more-input", eventId: 2, data: {} });
+        availableBytes = Number.MAX_SAFE_INTEGER;
+      }
+      if (++samples === 1 && late) return Number.MAX_SAFE_INTEGER;
+      return availableBytes;
+    } });
+    const install = () => installAppTaskRuntimes({
+      ...options(f, bus), installControllers: false, workspaces,
+      appRegistrySnapshot: { id: "workspace-capacity", generation: 1,
+        entries: [{ appDir: f.appDir, definition: { ...definition(),
+          workspace: taskWorktree ? { kind: "git", localPath: ".", branch: "main" } : { kind: "local", localPath: "." } } }] },
+      executors: { verify: async () => {
+        calls++;
+        return { state: "converged", summary: "Verified", facts: ["test:verified"] };
+      } },
+    });
+    await install();
+    let config = loadedTaskConfig(f);
+    const db = config.resourceStore.db;
+    new TaskBudgetAdmissionStore(db).install({ appId: "sample", sponsor: { appId: "sample", agent: "sample-owner" },
+      dailyCredits: 20, rootCredits: 20 });
+    const taskId = "work/low-disk";
+    admitTaskInput(config, { appId: "sample", idempotencyKey: "disk-request",
+      inputContext: { id: "disk-request", source: { kind: "human", id: "operator" }, input: { kind: "sample", data: {} } },
+      attachment: { kind: "desired", intent: { id: taskId, parentId: "operations", outcome: "Verify the change",
+        acceptance: ["Checks pass"], executor: "verify" } } });
+    const reconcile = () => reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
+    const charged = () => new TaskBudgetAdmissionStore(db).budget.view({ appId: "sample", taskId }, Date.now())!.rootCharged;
+    const attemptCount = () => db.prepare("SELECT count(*) AS n FROM app_task_attempts WHERE app_id = 'sample' AND task_id = ?").get(taskId)!.n;
+    await reconcile();
+    if (recovery === "race-input") {
+      expect(charged()).toBe(1);
+      expect(attemptCount()).toBe(0);
+      expect(calls).toBe(0);
+      expect(config.resourceStore.readTrigger(taskId)?.events).toHaveLength(2);
+      expect(readTaskChecks(bus).counts.stale).toBe(1);
+      await reconcile();
+      expect(charged()).toBe(2);
+      expect(calls).toBe(1);
+      expect(config.resourceStore.readTrigger(taskId)).toBeNull();
+      return;
+    }
+    expect(config.resourceStore.readTask(taskId)?.status.executionFailures ?? 0).toBe(0);
+    expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({ phase: "pending",
+      workspaceConstraint: { reason: "workspace-capacity", availableBytes: 0, requiredBytes: expect.any(Number) } });
+    expect(config.resourceStore.readTrigger(taskId)?.events).toHaveLength(1);
+    expect(calls).toBe(0);
+    const discoveryCharge = late ? 2 : 1;
+    expect(charged()).toBe(discoveryCharge);
+    expect(attemptCount()).toBe(late ? 1 : 0);
+    const workload = readTaskWorkload({ taskStateConfig: config });
+    expect(workload.counts).toMatchObject({ waiting: 1, runnable: 0, pendingInputTasks: 1 });
+    expect(workload.examples.blockers).toContainEqual(expect.objectContaining({ taskId, kind: "workspace", reason: "workspace-capacity" }));
+    expect(existsSync(join(f.root, "worktrees"))).toBe(false);
+    await closeInstalledAppTaskRuntimes(bus);
+    await install();
+    config = loadedTaskConfig(f);
+    for (let check = 0; check < 3; check++) {
+      // Repeated due checks sample mechanically; they neither retry the handler nor charge.
+      setSystemTime(new Date(config.resourceStore.readTask(taskId)!.status.workspaceConstraint!.retryAt));
+      await reconcile();
+      expect(charged()).toBe(discoveryCharge);
+      expect(attemptCount()).toBe(late ? 1 : 0);
+    }
+    const lastSample = config.resourceStore.readTask(taskId)!.status.workspaceConstraint!.observedAt;
+    unavailable = true;
+    setSystemTime(new Date(config.resourceStore.readTask(taskId)!.status.workspaceConstraint!.retryAt));
+    await reconcile();
+    expect(config.resourceStore.readTask(taskId)!.status.workspaceConstraint!.observedAt).toBe(lastSample);
+    expect(charged()).toBe(discoveryCharge);
+    unavailable = false;
+    availableBytes = Number.MAX_SAFE_INTEGER;
+    if (recovery === "source") {
+      availableBytes = config.resourceStore.readTask(taskId)!.status.workspaceConstraint!.requiredBytes - 8192;
+      await git("rm", "payload.bin");
+      await git("commit", "-m", "smaller checkout");
+    }
+    if (recovery === "shared") {
+      taskWorktree = false;
+      availableBytes = 0;
+      await install();
+      config = loadedTaskConfig(f);
+    }
+    setSystemTime(new Date(config.resourceStore.readTask(taskId)!.status.workspaceConstraint!.retryAt));
+    await reconcile();
+    expect(calls).toBe(1);
+    expect(charged()).toBe(discoveryCharge + 1);
+    expect(config.resourceStore.readTask(taskId)?.status.workspaceConstraint).toBeUndefined();
+    expect(config.resourceStore.readTrigger(taskId)).toBeNull();
+    expect(acceptedTaskAttempt(config, taskId)?.acceptedResult?.summary).toBe("Verified");
+  });
+
+  it.each([
     { name: "executor uses App branch", git: true, branch: "main", expectedBase: "main" },
     { name: "executor defaults to dev", git: true, expectedBase: "dev" },
     { name: "local executor needs no worktree", git: false },
@@ -9512,11 +9684,11 @@ describe("canonical App task runtime", () => {
             if (!loadedTaskConfig(f).resourceStore.readAttempt(firstAttemptId)?.acceptedResult) interruptValidation();
             if (outcome === "accepted" && newWork && prepared.metadata.path === workspacePath) {
               if (scenario === "clock-reversed") setSystemTime(Date.now() - 60_000);
-              const nextAttemptTime = Date.now() + 1;
+              const firstStartedAt = Date.parse(readState().attempt!.startedAt);
               for (let index = 0; index < (scenario === "clock-reversed" ? 2 : 17); index++) {
-                // This case needs the original attempt outside bounded history;
-                // timestamp ties must not let random attempt IDs retain it.
-                if (scenario !== "clock-reversed") setSystemTime(nextAttemptTime + index);
+                // The history-eviction cases need strictly newer attempts.
+                // Clock rollback is covered separately without this ordering.
+                if (scenario !== "clock-reversed") setSystemTime(firstStartedAt + (index + 1) * 1_000);
                 admitTaskInput(loadedTaskConfig(f), {
                   appId: "sample",
                   attachment: { kind: "existing", taskId },
@@ -9535,7 +9707,16 @@ describe("canonical App task runtime", () => {
                 });
               }
               const history = loadedTaskConfig(f).resourceStore.readTaskContext({ taskIds: [taskId] });
-              if (scenario !== "clock-reversed") expect(history.attempts?.[firstAttemptId]).toBeUndefined();
+              if (scenario !== "clock-reversed") expect({
+                executions: newerWorkspacePaths.length,
+                checks: readTaskChecks(bus).counts,
+                firstStillLoaded: !!history.attempts?.[firstAttemptId],
+                started: loadedTaskConfig(f).resourceStore.db.prepare(
+                  "SELECT attempt_id, started_at FROM app_task_attempts WHERE app_id = 'sample' AND task_id = ? ORDER BY started_at, attempt_id",
+                ).all(taskId),
+                current: history.resources?.[taskId]?.status.currentAttemptId,
+                observed: history.resources?.[taskId]?.status.observedAttemptId,
+              }).toMatchObject({ executions: 17, firstStillLoaded: false });
             }
             if (outcome === "accepted" && cleanupFails) throw new Error("fixture cleanup failure");
             if (outcome === "accepted" && scenario === "dirty-after-release")

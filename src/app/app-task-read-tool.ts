@@ -12,6 +12,8 @@ import type {
   TaskPage,
   TaskReadOptions,
   TaskView,
+  TaskWorkload,
+  TaskWorkloadOptions,
 } from "@may-agent/sdk";
 import type { EventBus } from "./core/events/bus.js";
 import { taskChangesSchema, observationCondition, type ObservationInterest } from "@may-agent/sdk";
@@ -20,6 +22,7 @@ const parameters = Type.Object(
   {
     action: Type.Union([
       Type.Literal("list"),
+      Type.Literal("workload"),
       Type.Literal("outcomes"),
       Type.Literal("get"),
       Type.Literal("contract"),
@@ -67,6 +70,8 @@ const parameters = Type.Object(
       }),
     ),
     cursor: Type.Optional(Type.String({ minLength: 1 })),
+    inputCursor: Type.Optional(Type.String({ minLength: 1, description: "For workload: independent continuation of unadmitted Inbox input." })),
+    agent: Type.Optional(Type.String({ minLength: 1, description: "For workload: optional responsible agent within this App page." })),
     includeDone: Type.Optional(
       Type.Boolean({ description: "For outcomes only. For list, use status; omitted status includes every phase." }),
     ),
@@ -136,7 +141,8 @@ const parameters = Type.Object(
 
 type Params = {
   observation?: ObservationInterest;
-  action: "list" | "outcomes" | "get" | "contract" | "publish" | "update" | "close" | "apply" | "communication";
+  action: "list" | "workload" | "outcomes" | "get" | "contract" | "publish" | "update" | "close" | "apply" | "communication";
+  agent?: string;
   inputId?: string;
   communicationQuery?: TaskCommunicationQuery;
   changes?: TaskChanges;
@@ -153,6 +159,7 @@ type Params = {
   status?: TaskView["status"][];
   limit?: number;
   cursor?: string;
+  inputCursor?: string;
   includeDone?: boolean;
   acceptedEvidence?: TaskReadOptions["acceptedEvidence"];
   inputKeys?: string[];
@@ -194,6 +201,7 @@ export function createAppTaskReadTool(options: {
   appId?: () => string | undefined;
   scope?: () => { appId: string; taskId?: string; generation?: number; attemptId?: string } | undefined;
   reader?: {
+    workload?(input: { bus: EventBus; appId: string; options?: TaskWorkloadOptions }): TaskWorkload | Promise<TaskWorkload>;
     list(input: { bus: EventBus; appId: string; options?: TaskListOptions }): TaskPage | Promise<TaskPage>;
     outcomes?(input: {
       bus: EventBus;
@@ -221,6 +229,7 @@ export function createAppTaskReadTool(options: {
   };
   /** Resolve the live attempt capability at invocation time; shared tools must not retain one session's scope. */
   communicationReader?: () => TaskAttempt["read"]["communication"];
+  workloadReader?: () => TaskAttempt["read"]["tasks"]["workload"] | undefined;
   applier?: () => ((changes: TaskChanges) => Promise<unknown>) | undefined;
 }): AgentTool {
   return {
@@ -325,8 +334,23 @@ export function createAppTaskReadTool(options: {
         if (params.action !== "get" && requestedAppId && requestedAppId !== appId.replace(/\.app$/, "")) {
           return result({
             error:
-              "list and outcomes are scoped to the current App; use get with target.appId for an exact cross-App Task",
+              "list, workload and outcomes are scoped to the current App; use get with target.appId for an exact cross-App Task",
           });
+        }
+        if (params.action === "workload") {
+          const query: TaskWorkloadOptions = {
+            ...(params.agent !== undefined ? { agent: params.agent } : {}),
+            ...(params.limit !== undefined ? { limit: params.limit } : {}),
+            ...(params.cursor !== undefined ? { cursor: params.cursor } : {}),
+            ...(params.inputCursor !== undefined ? { inputCursor: params.inputCursor } : {}),
+          };
+          const read = options.workloadReader?.();
+          if (read) return result(await read(query));
+          if (options.workloadReader && scope?.taskId) throw new Error("Current Task workload read is unavailable");
+          if (options.reader && !options.reader.workload) throw new Error("Workload read is unavailable");
+          return result(options.reader?.workload
+            ? await options.reader.workload({ bus: options.bus, appId, options: query })
+            : (await import("./core/tasks/app-task-runtime.js")).readLoadedAppTaskWorkload({ bus: options.bus, appId, options: query }));
         }
         if (params.action === "outcomes") {
           const taskId = params.taskId?.trim();

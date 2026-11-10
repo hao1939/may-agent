@@ -2,6 +2,7 @@ import type { TaskAttempt } from "@may-agent/sdk/app";
 import { join } from "node:path";
 import { writeContentAddressedJson } from "../../../../lib/artifacts.js";
 import { taskDecisionState, previewTaskDecisionSections } from "../../../../lib/task-decision-context.js";
+import { taskWorkloadGuidance } from "../../../../lib/task-work-context.js";
 
 export const MAX_CODEX_GOAL_OBJECTIVE_CHARS = 4_000;
 const CODEX_ATTEMPT_PACKET_MARKER = "## Canonical May Task Attempt\n";
@@ -19,7 +20,7 @@ export function projectCanonicalTaskAttempt(attempt: TaskAttempt) {
       attemptId: attempt.attemptId,
     },
     observed: { snapshot: "attempt-start", resourceVersion: attempt.task.resourceVersion },
-    ...taskDecisionState(attempt.task, attempt.events),
+    ...taskDecisionState(attempt.task, attempt.events, attempt.workload),
     role: attempt.role,
     related: { childrenAtAttemptStart: attempt.children },
     waitsAtAttemptStart: attempt.waits,
@@ -67,6 +68,7 @@ export function renderCodexGoalTaskAttempt(
       "Return only after acceptance is supported or an exact external wait is identified.",
       "Return only a result accepted by the supplied resultSchema.",
       "Follow the Task's authorized scope and the installation's execution permissions; available tools do not grant additional authority.",
+      ...(packet.workloadAtAttemptStart ? [taskWorkloadGuidance(packet.workloadAtAttemptStart)] : []),
       "Progress commentary may become a durable Task event, so omit secret values, raw command output, tool payloads, and diffs.",
       "",
       CODEX_ATTEMPT_PACKET_MARKER + JSON.stringify(context),

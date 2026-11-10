@@ -1,3 +1,5 @@
+import { admitTaskMutationExecution, type TaskExecutionAdmissionContext } from "./task-execution-admission.js";
+import { TaskBudgetAdmissionStore } from "./task-budget-admission.js";
 import type { TaskChangeReceipt, TaskStatus } from "@may-agent/sdk";
 import { storedResultFacts } from "./result-facts.js";
 import { isDeepStrictEqual } from "node:util";
@@ -10,7 +12,7 @@ import {
   ensureTaskResourceSchema,
 } from "../../../lib/db/task-resource-schema.js";
 import { indexTaskReference } from "./task-reference-index.js";
-import { CONDITION_RECOVERY_INTERVAL_MS, pendingTaskExecutionRetryAt, taskExecutionRetryExhausted } from "../tasks/app-task-state.js";
+import { CONDITION_RECOVERY_INTERVAL_MS, pendingTaskExecutionRetryAt, pendingTaskFunding, pendingTaskExecutionConstraint, taskExecutionRetryExhausted } from "../tasks/app-task-state.js";
 import type {
   AppTaskAttempt,
   AppTaskCancellation,
@@ -176,6 +178,8 @@ export type AppTaskResourceMutation = {
   fences: TaskMutationFence[];
   /** Check background pause against current input inside the claim transaction. */
   requireUnpausedTask?: string;
+  /** Private resolved definitions and trusted scheduling provenance for new claims. */
+  execution?: TaskExecutionAdmissionContext;
   expectMissingTaskIds?: string[];
   tasks?: TaskResourceWrite[];
   deleteTaskIds?: string[];
@@ -267,6 +271,8 @@ export class AppTaskResourceStore {
     // Retain pending input without a ready hint that bypasses its cooldown.
     const retryAt = pendingTaskExecutionRetryAt(resource);
     const exhausted = taskExecutionRetryExhausted(resource);
+    const funding = pendingTaskFunding(resource);
+    const execution = pendingTaskExecutionConstraint(resource);
     const activeAttempt = resource.status.currentAttemptId;
     const leaseUntil = activeAttempt
       ? ((
@@ -297,9 +303,9 @@ export class AppTaskResourceStore {
         resource.status.observedGeneration,
         resource.status.phase,
         resource.status.lane ?? "normal",
-        !retryAt && !exhausted && taskChanged(resource, trigger) ? 1 : 0,
-        !retryAt && !exhausted && ready ? 1 : 0,
-        retryAt ?? nextCheckAt,
+        !retryAt && !exhausted && !funding && !execution && taskChanged(resource, trigger) ? 1 : 0,
+        !retryAt && !exhausted && !funding && !execution && ready ? 1 : 0,
+        funding ? funding.retryAt : execution ? execution.retryAt : retryAt ?? nextCheckAt,
         leaseUntil,
         resource.status.currentAttemptId ?? null,
         epoch(resource.status.updatedAt) ?? Date.now(),
@@ -360,11 +366,13 @@ export class AppTaskResourceStore {
       );
   }
 
-  /** Atomically establish resource authority for a brand-new App seed. */
+  /** Establish resource authority atomically. Production declares new authored
+   * seed creation explicitly; offline retained snapshots do not invent past costs. */
   bootstrapSnapshot(
     treeInput: TaskTree,
     sourceRevision: string,
     readyTaskIds: Iterable<string> = [],
+    origin: "retained-facts" | "new-app-seed" = "retained-facts",
   ): void {
     const tree = normalizeTaskStateInPlace(structuredClone(treeInput));
     if (tree.project && tree.project.replace(/\.app$/, "") !== this.appId) {
@@ -390,6 +398,8 @@ export class AppTaskResourceStore {
       ]) {
         this.db.prepare(`DELETE FROM ${table} WHERE app_id = ?`).run(this.appId);
       }
+
+      if (origin === "new-app-seed") new TaskBudgetAdmissionStore(this.db).admitNewSeed(this.appId, tree);
 
       for (const cancellation of Object.values(tree.cancellations ?? {})) this.putCancellation(cancellation);
       for (const resource of Object.values(tree.resources ?? {})) {
@@ -1050,8 +1060,21 @@ export class AppTaskResourceStore {
       admissionIds?: Iterable<string>;
       conditionIds?: Iterable<string>;
     },
-    options: { includeHistory?: boolean; childLimit?: number } = {},
+    options: { includeHistory?: boolean; childLimit?: number; maxRelatedItems?: number } = {},
   ): TaskTree {
+    // Optional read-only projections can bound graph expansion as well as
+    // output. Do not silently use a partial graph for readiness or inheritance.
+    const related = new Set<string>();
+    const track = (kind: string, ids: Iterable<string>): void => {
+      if (options.maxRelatedItems === undefined) return;
+      if (!Number.isSafeInteger(options.maxRelatedItems) || options.maxRelatedItems < 1)
+        throw new Error("Task context relation limit must be a positive integer");
+      for (const id of ids) {
+        related.add(`${kind}:${id}`);
+        if (related.size > options.maxRelatedItems)
+          throw new Error("Task context exceeds its bounded relation limit; retry a smaller page");
+      }
+    };
     const rawMetadata = this.meta("app_metadata");
     if (!rawMetadata) throw new Error("Task resource store has no imported App metadata");
     const metadata = parseJson<Record<string, unknown>>(rawMetadata);
@@ -1063,6 +1086,7 @@ export class AppTaskResourceStore {
       while (pending.size > 0) {
         const ids = [...pending];
         pending.clear();
+        track("task", ids);
         const rows = this.db
           .prepare(
             `SELECT task_id, resource_json, trigger_json FROM app_tasks
@@ -1137,6 +1161,7 @@ export class AppTaskResourceStore {
       [resource.spec.parentId, ...(resource.spec.dependsOn ?? [])]), false);
 
     const requestedConditionIds = [...new Set([...(input.conditionIds ?? [])].map((id) => id.trim()).filter(Boolean))];
+    track("condition", requestedConditionIds);
     if (requestedConditionIds.length > 0) {
       const rows = this.db
         .prepare(
@@ -1210,6 +1235,7 @@ export class AppTaskResourceStore {
         ...(input.conditionIds ?? []),
       ]),
     ];
+    track("condition", conditionIds);
     const conditions = conditionIds.length
       ? Object.fromEntries(
           (
@@ -1228,6 +1254,7 @@ export class AppTaskResourceStore {
       : {};
     const dependencyIds = new Set(Object.values(resources).flatMap((resource) => resource.spec.dependsOn ?? []));
     const receiptIds = new Set([...requested, ...dependencyIds]);
+    track("receipt", receiptIds);
     const receiptRows = [
       ...(receiptIds.size
         ? (this.db
@@ -1281,6 +1308,7 @@ export class AppTaskResourceStore {
       ]),
     ];
     while (pendingGroupIds.length > 0) {
+      track("group", pendingGroupIds);
       const rows = this.db
         .prepare(
           `SELECT group_id, group_json FROM app_task_groups
@@ -1516,6 +1544,7 @@ export class AppTaskResourceStore {
           LIMIT 1`).get(this.appId, cancellation.taskId);
         if (child) return false;
       }
+      const restoredTaskIds = new Set<string>();
       for (const { resource } of mutation.tasks ?? []) {
         const previous = this.readTask(resource.metadata.id);
         if (previous && !isDeepStrictEqual(previous.metadata.creator, resource.metadata.creator)) {
@@ -1532,6 +1561,7 @@ export class AppTaskResourceStore {
               closure.generation === resource.metadata.generation &&
               this.readReceipt(resource.metadata.id)?.metadata.generation === closure.generation,
           );
+        if (restoredClosure) restoredTaskIds.add(resource.metadata.id);
         if (
           previous?.spec.parentId !== resource.spec.parentId &&
           this.isCancelled(resource.spec.parentId) &&
@@ -1540,6 +1570,9 @@ export class AppTaskResourceStore {
           return false;
         }
       }
+
+      new TaskBudgetAdmissionStore(this.db).admitMutation(this.appId, mutation, restoredTaskIds);
+      admitTaskMutationExecution(this.db, this.appId, mutation);
 
       for (const taskId of new Set(mutation.reopenTaskIds ?? [])) {
         const closure = this.readCancellation(taskId);
@@ -1705,6 +1738,10 @@ export class AppTaskResourceStore {
         `UPDATE app_tasks
          SET next_check_at = MAX(?, COALESCE(json_extract(resource_json, '$.status.executionRetryAt'), ?))
          WHERE app_id = ? AND phase = 'waiting'
+           AND (json_extract(resource_json, '$.status.funding') IS NULL
+             OR json_extract(resource_json, '$.status.funding.retryAt') <= ?)
+           AND (json_extract(resource_json, '$.status.executionConstraint') IS NULL
+             OR json_extract(resource_json, '$.status.executionConstraint.retryAt') <= ?)
            AND (next_check_at IS NULL OR next_check_at > MAX(?,
              COALESCE(json_extract(resource_json, '$.status.executionRetryAt'), ?)))
            AND NOT EXISTS (
@@ -1719,7 +1756,7 @@ export class AppTaskResourceStore {
                AND conditions.state <> 'true'
            )`,
       )
-      .run(now, now, this.appId, now + CONDITION_RECOVERY_INTERVAL_MS, now).changes;
+      .run(now, now, this.appId, now, now, now + CONDITION_RECOVERY_INTERVAL_MS, now).changes;
   }
 
   setRecoveryState(
@@ -1730,6 +1767,10 @@ export class AppTaskResourceStore {
       const resource = this.readTask(taskId);
       const retryAt = resource && pendingTaskExecutionRetryAt(resource);
       if (retryAt) input = { ...input, ready: false, changed: false, nextCheckAt: retryAt };
+      const funding = resource && pendingTaskFunding(resource);
+      if (funding) input = { ...input, ready: false, changed: false, nextCheckAt: funding.retryAt };
+      const execution = resource && pendingTaskExecutionConstraint(resource);
+      if (execution) input = { ...input, ready: false, changed: false, nextCheckAt: execution.retryAt };
       if (resource && taskExecutionRetryExhausted(resource)) input = { ...input, ready: false, changed: false };
       const assignments: string[] = [];
       const assignmentValues: unknown[] = [];

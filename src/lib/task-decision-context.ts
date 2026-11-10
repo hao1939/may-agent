@@ -1,9 +1,9 @@
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
-import type { TaskDetail, TaskReconciliationEvents } from "@may-agent/sdk/app";
+import type { TaskAttempt, TaskDetail, TaskReconciliationEvents } from "@may-agent/sdk/app";
 import { dirname, join } from "node:path";
 import { writeContentAddressedJson } from "./artifacts.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
-import { taskWorkContext, taskWorkGuidance } from "./task-work-context.js";
+import { taskWorkContext, taskWorkGuidance, taskWorkloadGuidance } from "./task-work-context.js";
 
 const SECTION_BYTES = 1_600;
 const INPUT_EVENT_BYTES = 1_100;
@@ -116,7 +116,7 @@ function previewTaskInputs(value: unknown): unknown {
 }
 
 /** Shared facts for model presentation; the Task remains the only state authority. */
-export function taskDecisionState(task: TaskDetail, events: TaskReconciliationEvents) {
+export function taskDecisionState(task: TaskDetail, events: TaskReconciliationEvents, workload?: TaskAttempt["workload"]) {
   return {
     assignment: {
       agent: task.agent,
@@ -136,6 +136,7 @@ export function taskDecisionState(task: TaskDetail, events: TaskReconciliationEv
     evidence: task.acceptedEvidence,
     events: { attemptInput: events, pendingInput: task.pendingEvents },
     input: task.input,
+    ...(workload ? { workloadAtAttemptStart: workload } : {}),
   };
 }
 
@@ -182,7 +183,7 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
     const rec = context.reconciliation;
     const work = taskWorkContext(known, rec.events, rec.previousAttempt);
     const full = {
-      ...taskDecisionState(known, rec.events),
+      ...taskDecisionState(known, rec.events, rec.workload),
       work,
       environment: { paths: context.executionPaths, declaredOutputs: context.details?.declaredOutputs },
       related: { childrenAtAttemptStart: rec.children, installedAppsAtAttemptStart: context.details?.dependencies },
@@ -239,6 +240,7 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
           text: [
             "Task decision brief (source data). Your call request defines your contribution; shared facts do not expand authority.",
             taskWorkGuidance(work),
+            ...(rec.workload ? [taskWorkloadGuidance(rec.workload)] : []),
             "Judge new input alongside accepted understanding. Progress, failures and waits coexist. Reading input is not fulfillment.",
             "When coverage is incomplete, read the linked detail before the action needing that evidence. A refresh failure leaves known facts usable within their snapshot scope; diagnose with ordinary reads. Verify current authority for actions that require it.",
             JSON.stringify(packet),

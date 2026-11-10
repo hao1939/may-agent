@@ -19,6 +19,7 @@ import { canonicalAppEvent } from "../../canonical-app-event.js";
 import { readAppTaskAgent } from "../tasks/app-task-reconciler.js";
 import type { AgentEvent } from "../events/bus.js";
 import { taskStatusFromPhase } from "./task-status.js";
+import { readTaskWorkload, type TaskWorkloadSource } from "./task-workload.js";
 import {
   hasTaskAcceptedEvidence,
   readTaskAcceptedEvidence,
@@ -34,6 +35,7 @@ export type RuntimeAppReadOptions = {
   /** Canonical loaded-App Task reader. Installed Runtime contexts supply it or resource authority. */
   taskRead?: AppRead["tasks"];
   taskStateConfig?: AppTaskContext;
+  workloadSource?: TaskWorkloadSource;
 };
 
 const TASK_INPUT_OBLIGATION_LIMIT = 100;
@@ -386,13 +388,14 @@ export function readRuntimeExecutionView(opts: Pick<RuntimeAppReadOptions, "getD
 }
 
 /** One scoped implementation for Host callers, SDK reads and model tool adapters. */
-export function createRuntimeTaskRead(opts: Pick<RuntimeAppReadOptions, "taskStateConfig" | "readOutcomes">) {
+export function createRuntimeTaskRead(opts: Pick<RuntimeAppReadOptions, "taskStateConfig" | "readOutcomes" | "workloadSource">) {
   const tasks = {
     list: (options?: TaskListOptions) => listRuntimeTaskViews(opts, options),
     get: (taskId: string, options?: TaskReadOptions) => readRuntimeTaskView(opts, taskId, options),
   };
   return {
     ...tasks,
+    workload: (options?: import("@may-agent/sdk").TaskWorkloadOptions) => readTaskWorkload(opts, options),
     outcomes(projection?: TaskOutcomeProjection) {
       if (!opts.readOutcomes) throw new Error("Task outcome reporting is unavailable");
       if (!opts.taskStateConfig) throw new Error("Task outcome reporting requires an App scope");
@@ -413,6 +416,7 @@ export function createRuntimeAppRead(opts: RuntimeAppReadOptions): AppRead {
       return getAppInboxItem(opts.getDb(), itemId)?.result ?? null;
     },
     tasks: opts.taskRead ?? {
+      async workload(options) { return tasks.workload(options); },
       async list(options) {
         return tasks.list(options);
       },

@@ -3,6 +3,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createWorkflowRunner, createWorkflowTool } from "./workflow-tool.js";
+import { closeDb, getDb } from "./db/connection.js";
 
 const roots: string[] = [];
 function workflowRoot(prefix: string): string {
@@ -11,7 +12,10 @@ function workflowRoot(prefix: string): string {
   return root;
 }
 afterEach(() => {
-  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+  for (const root of roots.splice(0)) {
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 describe("workflow execution boundaries", () => {
@@ -666,9 +670,7 @@ export async function execute(ctx) {
       runtimeCtx: {
         emit: (event) => emitted.push(event as { type: string; data?: unknown }),
         dispatchEvent: () => undefined,
-        getDb: () => {
-          throw new Error("unused");
-        },
+        getDb: () => getDb(root),
         query: {} as any,
         log: () => undefined,
         notify: () => undefined,
@@ -824,9 +826,7 @@ export async function execute(ctx) {
       runtimeCtx: {
         emit: () => undefined,
         dispatchEvent: () => undefined,
-        getDb: () => {
-          throw new Error("unused");
-        },
+        getDb: () => getDb(root),
         query: {} as any,
         log: (message) => logged.push(message),
         notify: () => undefined,

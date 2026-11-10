@@ -31,6 +31,7 @@ import {
   hasLoadedAppTask,
   listLoadedAppTaskOutcomeViews,
   listLoadedAppTaskViews,
+  readLoadedAppTaskWorkload,
   previewLoadedCanonicalAppTaskEvent,
   previewLoadedCanonicalAppTaskEventRoutes,
   readLoadedAppTaskView,
@@ -76,6 +77,7 @@ export type AppTaskCapability = {
     admissionKey?: string;
   }): Promise<TaskInputObservation | null>;
   list(input: { appId: string; options?: TaskListOptions }): TaskPage;
+  workload(input: { appId: string; options?: import("@may-agent/sdk").TaskWorkloadOptions }): import("@may-agent/sdk").TaskWorkload;
   outcomes(input: { appId: string; projection?: TaskOutcomeProjection }): TaskOutcomePage;
   get(input: { appId: string; taskId: string; options?: TaskReadOptions }): TaskDetail | null;
   has(input: { appId: string; taskId: string }): boolean;
@@ -210,6 +212,7 @@ export function createAppTaskCapability(options: {
           }
         : null;
     },
+    workload: (input) => readLoadedAppTaskWorkload({ bus: options.bus, ...input }),
     list: ({ appId, options: taskOptions }) =>
       listLoadedAppTaskViews({
         bus: options.bus,

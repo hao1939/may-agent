@@ -1,3 +1,5 @@
+import { AppInboxHost } from "../inbox/app-inbox-host.js";
+import { TaskBudgetAdmissionStore } from "../state/task-budget-admission.js";
 import { makeTaskRetryDue } from "./app-task-test-support.js";
 import { readConversationReplyContext } from "../../../../test/fixtures/conversation-prompt.js";
 import { afterEach, expect, setSystemTime, test } from "bun:test";
@@ -1162,10 +1164,11 @@ function measurementReply(context: AppInputContext): ConversationTurnResult {
   };
 }
 
-test.each(["live", "restart", "admission-write-failure"])(
+test.each(["live", "restart", "admission-write-failure", "clock-reversed"])(
   "linked outcomes enter the Conversation controller (%s)",
   async (route) => {
     const missed = route === "restart";
+    const live = route === "live" || route === "clock-reversed";
     const started = Promise.withResolvers<void>();
     const release = Promise.withResolvers<void>();
     const contexts: AppInputContext[] = [];
@@ -1214,7 +1217,7 @@ test.each(["live", "restart", "admission-write-failure"])(
             event.type === "conversation.updated" &&
             readConversationRequest(f.db, app.id, "primary", "measurement")?.status === "closed",
         );
-      let replied = route === "live" ? replyObserved() : undefined;
+      let replied = live ? replyObserved() : undefined;
       ingress.publish("ask", "Get the measurement and report it here");
       await started.promise;
       const topicId = readAppConversationResource(f.db, app.id, "primary").topics[0]!.id;
@@ -1237,6 +1240,7 @@ test.each(["live", "restart", "admission-write-failure"])(
       WHEN NEW.input_kind = 'task-outcome' BEGIN SELECT RAISE(ABORT, 'outcome input unavailable'); END`);
       if (missed) ingress.runtime.close();
       const childSettled = settled(f.bus, "sample");
+      if (route === "clock-reversed") setSystemTime(Date.now() - 60_000);
       release.resolve();
       await childSettled;
       if (missed) {
@@ -1253,7 +1257,7 @@ test.each(["live", "restart", "admission-write-failure"])(
         f.db.exec("DROP TRIGGER reject_outcome_input");
         replied = replyObserved();
       }
-      if (route !== "live")
+      if (!live)
         f.bus.emit({ type: "conversation.supervision.review", source: "timer", data: { project: app.id, limit: 1 } });
       await replied;
       expect(contexts).toHaveLength(2);
@@ -1265,7 +1269,11 @@ test.each(["live", "restart", "admission-write-failure"])(
       const child = AppTaskResourceStore.activeFromDb(f.db, background.id)!;
       expect(child.isCancelled("sample")).toBe(false);
       expect(f.store.isCancelled(input.executionTaskId!)).toBe(false);
-      expect(readAppConversationResource(f.db, app.id, "primary").messages.at(-1)?.text).toBe("The measurement is 17.");
+      // Verify this caller's one durable reply, independently of wall-clock order.
+      const replies = readAppConversationResource(f.db, app.id, "primary").messages
+        .filter(message => message.author.kind === "agent" && message.metadata?.requestId === input.id);
+      expect(replies).toHaveLength(1);
+      expect(replies[0]?.text).toBe("The measurement is 17.");
       expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
       // Replayed notifications carry no result authority; both routes read the same saved outcome.
       const original = contexts[1]!.input.data as { attemptId: string };
@@ -2988,3 +2996,166 @@ test("an omitted accepted Request fails settlement and recovers in the same Conv
   for (const id of ["report", "news"]) expect(getAppInboxItem(f.db, id)?.status).toBe("done");
   expect(readAppConversationResource(f.db, app.id, "primary").messages.filter(({ author }) => author.kind === "agent")).toHaveLength(1);
 });
+
+
+test("an unfunded follow-up retains its prepared decision and retries settlement after restart without another execution", async () => {
+  setSystemTime(new Date("2026-11-09T12:00:00Z"));
+  let calls = 0;
+  let mappings = 0;
+  const f = await fixture(async () => {
+    calls++;
+    return { status: "done", structuredResult: delegated };
+  }, (root, appDir) => {
+    const configured = withBackground(root, appDir);
+    const target = configured.appRegistrySnapshot!.entries[1]!;
+    target.definition = defineApp({ ...background, task: (input) => {
+      mappings++;
+      return background.task!(input);
+    } });
+    return { ...configured, installControllers: false };
+  });
+  new TaskBudgetAdmissionStore(f.db).install({
+    appId: app.id, sponsor: { appId: app.id, agent: app.agent! }, dailyCredits: 2, rootCredits: 5,
+  });
+  const admitted = f.admit();
+  await f.run(admitted.taskId);
+  expect(calls).toBe(1);
+  expect(mappings).toBe(1);
+  const held = f.store.readTask(admitted.taskId)!;
+  expect(held.status).toMatchObject({ phase: "waiting", funding: { reason: "sponsor-credit" } });
+  expect(held.status.executionFailures).toBeUndefined();
+  expect(held.status.executionRetryAt).toBeUndefined();
+  const attempt = f.store.readAttempt(held.status.currentAttemptId!)!;
+  expect(attempt.pendingSettlement?.report.conversation?.decision).toEqual(delegated);
+  expect(attempt.pendingSettlement?.report.conversation?.followUpAttachment).toMatchObject({
+    kind: "desired", intent: { id: "sample" },
+  });
+  expect(attempt.lease).toBeUndefined();
+  expect(attempt.acceptedResult).toBeUndefined();
+  expect(getAppInboxItem(f.db, admitted.item.id)?.status).toBe("pending");
+  expect(readConversationRequest(f.db, app.id, "primary", "measurement")).toBeNull();
+  expect(AppTaskResourceStore.activeFromDb(f.db, background.id)?.readTask("sample")).toBeNull();
+  expect(f.store.listRecoveryCandidates().items).toEqual([]);
+  await f.reopen();
+  await f.run(admitted.taskId);
+  expect(calls).toBe(1);
+  expect(mappings).toBe(1);
+  if (!held.status.funding?.retryAt) throw new Error("Expected UTC grant boundary");
+  setSystemTime(held.status.funding.retryAt);
+  await f.run(admitted.taskId);
+  expect(calls).toBe(1);
+  expect(mappings).toBe(1);
+  expect(f.store.readTask(admitted.taskId)?.status.funding).toBeUndefined();
+  expect(f.store.readTask(admitted.taskId)?.status.executionFailures).toBeUndefined();
+  expect(f.store.readAttempt(attempt.metadata.id)?.pendingSettlement).toBeUndefined();
+  expect(f.store.readAttempt(attempt.metadata.id)?.acceptedResult?.state).toBe("converged");
+  expect(getAppInboxItem(f.db, admitted.item.id)).toMatchObject({ status: "done", result: { response: delegated.response } });
+  expect(readConversationRequest(f.db, app.id, "primary", "measurement")).toMatchObject({
+    status: "open", taskRefs: [{ appId: background.id, taskId: "sample" }],
+  });
+  expect(new TaskBudgetAdmissionStore(f.db).budget.view({ appId: app.id, taskId: admitted.taskId }, Date.now()))
+    .toMatchObject({ rootCharged: 3, grant: { charged: 1 } });
+  expect(f.db.prepare("SELECT count(*) AS n FROM app_task_attempts WHERE app_id = ? AND task_id = ?")
+    .get(app.id, admitted.taskId)?.n).toBe(1);
+  await f.run(admitted.taskId);
+  expect(calls).toBe(1);
+  expect(mappings).toBe(1);
+});
+
+for (const change of ["cancelled", "revised"] as const) {
+  test(`funding recovery cannot publish a prepared decision after the Task is ${change}`, async () => {
+    setSystemTime(new Date("2026-11-09T12:00:00Z"));
+    let calls = 0;
+    const f = await fixture(async () => ({ status: "done", structuredResult: ++calls === 1 ? delegated : answer }),
+      (root, appDir) => ({ ...withBackground(root, appDir), installControllers: false }));
+    new TaskBudgetAdmissionStore(f.db).install({
+      appId: app.id, sponsor: { appId: app.id, agent: app.agent! }, dailyCredits: 2, rootCredits: 5,
+    });
+    const admitted = f.admit();
+    await f.run(admitted.taskId);
+    const held = f.store.readTask(admitted.taskId)!;
+    const attemptId = held.status.currentAttemptId!;
+    if (!held.status.funding?.retryAt) throw new Error("Expected UTC funding wait");
+    if (change === "cancelled") {
+      cancelAppTask(f.context(), { appId: app.id, taskId: admitted.taskId,
+        expectedGeneration: held.metadata.generation, expectedResourceVersion: held.metadata.resourceVersion,
+        reason: "The human withdrew this discussion" });
+    } else {
+      observeAppTaskIntent(f.context(), { appAgent: app.agent!, creator: { appId: app.id },
+        creatorRevision: true, intent: { id: admitted.taskId, parentId: "root", executor: "conversation",
+          outcome: "Explain the options directly", acceptance: ["Address the input"] } });
+    }
+    await f.reopen();
+    setSystemTime(held.status.funding.retryAt);
+    await f.run(admitted.taskId);
+    expect(calls).toBe(change === "cancelled" ? 1 : 2);
+    expect(f.store.readAttempt(attemptId)?.pendingSettlement).toBeUndefined();
+    expect(f.store.readAttempt(attemptId)?.acceptedResult).toBeUndefined();
+    expect(AppTaskResourceStore.activeFromDb(f.db, background.id)?.readTask("sample")).toBeNull();
+    if (change === "revised") {
+      expect(getAppInboxItem(f.db, admitted.item.id)).toMatchObject({ status: "done", result: { response: answer.response } });
+      expect(f.store.readTask(admitted.taskId)?.status.executionFailures).toBeUndefined();
+    } else {
+      expect(f.store.isCancelled(admitted.taskId)).toBe(true);
+    }
+  });
+}
+
+for (const state of ["converged", "waiting"] as const) {
+  test(`ordinary ${state} Task retains unfunded delegated demand in the Inbox without rerunning its executor`, async () => {
+    setSystemTime(new Date("2026-11-09T12:00:00Z"));
+    let executions = 0;
+    const f = await fixture(async () => { throw new Error("No Conversation execution expected"); },
+      (root, appDir) => ({
+        ...withBackground(root, appDir), installControllers: false,
+        executors: { inspect: async () => {
+          executions++;
+          return { state, summary: "Measurement commissioned", facts: [],
+            requests: [{ id: "sample", appId: background.id, input: { kind: "measure", data: {} } }],
+            ...(state === "waiting" ? { conditions: [{ requestId: "sample" }] } : {}),
+          };
+        } },
+      }));
+    new TaskBudgetAdmissionStore(f.db).install({
+      appId: app.id, sponsor: { appId: app.id, agent: app.agent! }, dailyCredits: 2, rootCredits: 5,
+    });
+    observeAppTaskIntent(f.context(), { appAgent: app.agent!, intent: {
+      id: "parent", parentId: "root", outcome: "Collect the measurement", acceptance: ["Commission it"], executor: "inspect",
+    } });
+    await f.run("parent");
+    const accepted = f.store.readTask("parent")!;
+    const attemptId = accepted.status.observedAttemptId!;
+    expect(f.store.readAttempt(attemptId)?.acceptedResult?.state).toBe(state);
+    expect(f.store.readAttempt(attemptId)?.pendingSettlement).toBeUndefined();
+    const hostFor = () => new AppInboxHost({ db: f.db, apps: [background],
+      attachTask: (input) => admitTaskInput(appTaskContext({
+        appDir: join(f.root, "measurement.app"), projectDir: join(f.root, "measurement.app"),
+        agent: background.agent!, maxConcurrent: 1,
+        resourceStore: AppTaskResourceStore.activeFromDb(f.db, background.id)!,
+      }), input) });
+    let host = hostFor();
+    try {
+      await host.recoverAdmissions();
+      const denied = listAppInboxItems(f.db, { appId: background.id })[0]!;
+      expect(denied).toMatchObject({ status: "pending", creator: { appId: app.id, taskId: "parent" },
+        handling: { phase: "deferred", funding: { reason: "sponsor-credit" } } });
+      expect(accepted.status.executionFailures).toBeUndefined();
+      expect(executions).toBe(1);
+      expect(AppTaskResourceStore.activeFromDb(f.db, background.id)?.readTask("sample")).toBeNull();
+      host.close();
+      await f.reopen();
+      host = hostFor();
+      if (denied.handling?.phase !== "deferred" || !denied.handling.funding.retryAt)
+        throw new Error("Expected UTC funding wait");
+      setSystemTime(denied.handling.funding.retryAt);
+      await host.recoverAdmissions();
+      expect(executions).toBe(1);
+      expect(f.store.readAttempt(attemptId)?.acceptedResult?.state).toBe(state);
+      expect(f.store.readTask("parent")?.status.executionFailures).toBeUndefined();
+      expect(getAppInboxItem(f.db, denied.id)).toMatchObject({ waitingOn: { kind: "task", id: "sample" } });
+      expect(AppTaskResourceStore.activeFromDb(f.db, background.id)?.readTask("sample")).not.toBeNull();
+    } finally { host.close(); }
+    expect(new TaskBudgetAdmissionStore(f.db).budget.view({ appId: app.id, taskId: "parent" }, Date.now()))
+      .toMatchObject({ rootCharged: 3, grant: { charged: 1 } });
+  });
+}

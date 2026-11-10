@@ -1,3 +1,4 @@
+import { TaskBudgetDeferredError } from "./task-budget-admission.js";
 import { assertValidAppInput } from "../apps/definition-validation.js";
 import { assertResourceCreator } from "./resource-creator.js";
 import { createHash } from "node:crypto";
@@ -8,6 +9,7 @@ import {
   MAX_CONVERSATION_REQUESTS_PER_TURN,
   conversationTurnResultSchema,
   type AppDefinition,
+  type AppTaskAttachment,
   type AppTaskInput,
   type AppConversationRequest,
   type ConversationTurnResult,
@@ -27,6 +29,8 @@ import {
 import { admitTaskInput, assertTaskInputCompatible } from "./inbox.js";
 import {
   createAppInboxItem,
+  deferAppInboxTaskFunding,
+  hasAppInboxFundingHold,
   getAppInboxItem,
   hasConversationExecutionTask,
   listAppInboxItems,
@@ -99,6 +103,8 @@ export function isConversationTask(config: AppTaskContext, taskId: string): bool
 /** A prepared judgment has no authority to settle or close its executing Task. */
 export type ConversationTaskProposal = {
   decision: ConversationTurnResult;
+  /** Trusted App mapping retained only when settlement is deferred. */
+  followUpAttachment?: AppTaskAttachment;
   taskControls?: Array<{
     appId: string;
     taskId: string;
@@ -278,7 +284,7 @@ export function stopConversationTaskTurn(config: AppTaskContext, target: AppTurn
   });
 }
 
-/** Input and its Task admission become visible in one commit. */
+/** Retain unfunded demand; the exact Task link and admission share a savepoint. */
 export function admitConversationTaskInput(
   config: AppTaskContext,
   input: CreateAppInboxItem & {
@@ -304,6 +310,7 @@ export function admitConversationTaskInput(
         .prepare(
           `SELECT 1 FROM app_inbox_items legacy WHERE legacy.app_id = ? AND legacy.conversation_id = ?
       AND legacy.execution_task_id IS NULL AND legacy.status != 'done'
+      AND COALESCE(legacy.task_admission_key, '') != 'conversation-input:' || legacy.id
       AND NOT EXISTS (
         SELECT 1 FROM app_task_admissions admission
         JOIN app_tasks task ON task.app_id = admission.app_id
@@ -351,36 +358,50 @@ export function admitConversationTaskInput(
     const created = prior ? { item: prior, created: false } : createAppInboxItem(db, input);
     const item = created.item;
     const admissionKey = `conversation-input:${item.id}`;
-    // Bind the saved input before shared admission checks executor compatibility.
-    // The surrounding transaction rolls back this link if admission fails.
-    db.run(
-      `UPDATE app_inbox_items SET execution_task_id = ?, task_admission_key = ?,
-      available_at = NULL WHERE id = ?`,
-      [taskId, admissionKey, item.id],
-    );
-    const observed = admitTaskInput(config, {
-      appId: input.appId,
-      attachment: config.resourceStore.readTask(taskId)
-        ? { kind: "existing", taskId }
-        : {
-            kind: "desired",
-            intent: {
-              ...input.intent,
-              id: taskId,
-              ...(predecessorTaskId
-                ? {
-                    input: {
-                      ...input.intent.input,
-                      conversationLineage: { appId: input.appId, conversationId: input.conversationId, predecessorTaskId },
-                    },
-                  }
-                : {}),
-            },
-          },
-      idempotencyKey: admissionKey,
-      inputContext: { id: item.id, source: item.source, input: item.input },
-    });
-    return { item: getAppInboxItem(db, item.id)!, taskId: observed.taskId, created: created.created };
+    // This trusted ingress identity distinguishes retained, unstarted demand
+    // from a legacy worker even after an explicit funding wake clears its hold.
+    db.prepare("UPDATE app_inbox_items SET task_admission_key = ? WHERE id = ? AND task_admission_key IS NOT ?")
+      .run(admissionKey, item.id, admissionKey);
+    if (hasAppInboxFundingHold(item, input.now ?? Date.now()))
+      return { item, taskId, created: created.created };
+    try {
+      return stateTransaction(db, () => {
+        // Bind the saved input before shared admission checks executor compatibility.
+        // The surrounding transaction rolls back this link if admission fails.
+        db.run(
+          `UPDATE app_inbox_items SET execution_task_id = ?, task_admission_key = ?,
+          available_at = NULL, handling = NULL WHERE id = ?`,
+          [taskId, admissionKey, item.id],
+        );
+        const observed = admitTaskInput(config, {
+          appId: input.appId,
+          attachment: config.resourceStore.readTask(taskId)
+            ? { kind: "existing", taskId }
+            : {
+                kind: "desired",
+                intent: {
+                  ...input.intent,
+                  id: taskId,
+                  ...(predecessorTaskId
+                    ? {
+                        input: {
+                          ...input.intent.input,
+                          conversationLineage: { appId: input.appId, conversationId: input.conversationId, predecessorTaskId },
+                        },
+                      }
+                    : {}),
+                },
+              },
+          idempotencyKey: admissionKey,
+          inputContext: { id: item.id, source: item.source, input: item.input },
+        });
+        return { item: getAppInboxItem(db, item.id)!, taskId: observed.taskId, created: created.created };
+      });
+    } catch (error) {
+      if (!(error instanceof TaskBudgetDeferredError)) throw error;
+      deferAppInboxTaskFunding(db, item.id, error.constraint, input.now ?? Date.now());
+      return { item: getAppInboxItem(db, item.id)!, taskId, created: created.created };
+    }
   });
 }
 
@@ -519,6 +540,8 @@ export function completeConversationTaskTurn(
     now?: number;
     taskControls?: ConversationTaskProposal["taskControls"];
     acceptanceBasis?: TaskAcceptanceBasis;
+    followUpAttachment?: AppTaskAttachment;
+    onFollowUpMapped?: (attachment: AppTaskAttachment) => void;
     getTaskApp?: ConversationTaskAppResolver;
   } = {},
 ): ReturnType<typeof completeAppTask> & {
@@ -605,10 +628,11 @@ export function completeConversationTaskTurn(
         options.getTaskApp,
       );
       // Mapping is an execution effect. Run it once, only during settlement.
-      const attachment = desired.task
+      const attachment = options.followUpAttachment ?? (desired.task
         ? { kind: "existing" as const, taskId: desired.task.taskId }
-        : targetApp.task!({ id: item.id, source: item.source, input: desired.input });
+        : targetApp.task!({ id: item.id, source: item.source, input: desired.input }));
       if (!attachment) throw new Error("App selected no Task for Conversation follow-up");
+      options.onFollowUpMapped?.(structuredClone(attachment));
       const admitted = admitTaskInput(target, {
         appId: decision.followUp.appId,
         creator: { appId: item.appId, taskId: claim.taskId },

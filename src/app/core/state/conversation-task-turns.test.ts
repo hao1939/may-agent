@@ -1,3 +1,4 @@
+import { TaskBudgetAdmissionStore } from "./task-budget-admission.js";
 import { afterEach, expect, setSystemTime, spyOn, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
@@ -2570,4 +2571,52 @@ test("settlement rechecks a Request changed after successful preflight", () => {
     scope: "Also compare C",
   });
   expect(readAppConversationResource(f.db, app.id, "chat").topics).toEqual([]);
+});
+
+
+test("unfunded first Conversation input survives replay and storage reopen, then admits once at the next grant", async () => {
+  setSystemTime(new Date("2026-11-09T12:00:00Z"));
+  const f = fixture();
+  const accounting = new TaskBudgetAdmissionStore(f.db);
+  accounting.install({ appId: app.id, sponsor: { appId: app.id, agent: app.id }, dailyCredits: 1, rootCredits: 5 });
+  observeAppTaskIntent(f.context(), { appAgent: app.id, intent: {
+    id: "earlier-work", parentId: "root", outcome: "Earlier work", acceptance: ["Done"],
+  } });
+  const hostFor = () => new AppInboxHost({
+    db: f.db, apps: [app],
+    admitConversation: (input) => admitConversationTaskInput(f.context(), { ...input, intent: f.input().intent }),
+  });
+  let host = hostFor();
+  try {
+    const { intent: _intent, ...input } = f.input();
+    const denied = host.admit(input);
+    expect(denied.created).toBe(true);
+    expect(denied.item).toMatchObject({
+      id: input.id, source: input.source, input: input.input, conversationSequence: 1, status: "pending",
+      handling: { phase: "deferred", funding: { reason: "sponsor-credit" } },
+    });
+    expect(denied.item.executionTaskId).toBeUndefined();
+    expect(denied.item.taskAdmissionKey).toBe(`conversation-input:${input.id}`);
+    expect(denied.item.recovery).toBeUndefined();
+    expect(f.store.readTask(conversationTaskId(app.id, "chat"))).toBeNull();
+    expect(host.admit(input)).toMatchObject({ created: false, item: denied.item });
+    host.close();
+    f.reopen();
+    host = hostFor();
+    await host.recoverAdmissions();
+    expect(host.get(input.id)).toEqual(denied.item);
+    if (denied.item.handling?.phase !== "deferred" || denied.item.handling.funding.retryAt === null)
+      throw new Error("Expected UTC funding deadline");
+    setSystemTime(denied.item.handling.funding.retryAt);
+    await host.recoverAdmissions();
+    const admitted = host.get(input.id)!;
+    expect(admitted).toMatchObject({ input: input.input, source: input.source,
+      executionTaskId: conversationTaskId(app.id, "chat"), taskAdmissionKey: `conversation-input:${input.id}` });
+    expect(admitted.handling).toBeUndefined();
+    const budget = new TaskBudgetAdmissionStore(f.db).budget;
+    expect(budget.view({ appId: app.id, taskId: admitted.executionTaskId! }, Date.now())?.rootCharged).toBe(1);
+    await host.recoverAdmissions();
+    host.admit(input);
+    expect(budget.view({ appId: app.id, taskId: admitted.executionTaskId! }, Date.now())?.rootCharged).toBe(1);
+  } finally { host.close(); }
 });

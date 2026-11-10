@@ -23,7 +23,11 @@ import {
   admitConversationTaskInput,
   conversationTaskIntent,
   listPendingConversationTaskChanges,
+  conversationTaskId,
 } from "../../../src/app/core/state/conversation-task-turns.js";
+import { TaskBudgetAdmissionStore } from "../../../src/app/core/state/task-budget-admission.js";
+import { installTaskExecutionLimit } from "../../../src/app/core/state/task-execution-admission.js";
+import { TaskExecutionStore } from "../../../src/app/core/state/task-execution-store.js";
 import { getAppInboxItem } from "../../../src/app/core/state/app-inbox-store.js";
 import { claimAppInboxItem } from "../../fixtures/legacy-inbox.js";
 import { attachControlSocket } from "../../../packages/control/src/server.js";
@@ -265,8 +269,18 @@ function eventAfter(bus: EventBus, matches: (event: AgentEvent) => boolean) {
   });
 }
 
-async function delegation(nested = false, contendAdmission = false) {
+async function delegation(nested = false, contendAdmission = false, onePlace = false) {
   const f = fixture("owner", false, false, true);
+  const root = { appId: "sample", taskId: conversationTaskId("sample", "primary") };
+  const accounting = new TaskBudgetAdmissionStore(f.db);
+  const executions = new TaskExecutionStore(f.db);
+  if (onePlace) {
+    accounting.install({ appId: "sample", sponsor: { appId: "sample", agent: "owner" },
+      dailyCredits: 20, rootCredits: 20, rootExecutionSlots: 1,
+      standing: [{ taskId: root.taskId, credits: 20 }] });
+    installTaskExecutionLimit(f.db, { kind: "host" }, 4);
+    installTaskExecutionLimit(f.db, { kind: "agent", recipient: { kind: "directory", id: "projects/sample.app/agents/owner" } }, 2);
+  }
   const measurement = Promise.withResolvers<void>();
   const source = createServer(async (_request, response) => {
     await measurement.promise;
@@ -434,15 +448,15 @@ async function delegation(nested = false, contendAdmission = false) {
                 requestId: "measurement",
               },
             };
-          if (humanTurns === 2) {
+          if (!onePlace && humanTurns === 2) {
             assert.equal(f.store.readTask(nested ? "sample" : "measurement")?.status.phase, "running");
             if (nested) assert.equal(f.store.readTask("measurement")?.status.conditionIds?.length, 1);
           }
-          if (humanTurns === 3)
+          if (humanTurns === (onePlace ? 2 : 3))
             assert(context.conversation?.messages.some((message) => message.text === "The measurement is 17."));
           return {
             summary: "Answered the human",
-            response: humanTurns === 2 ? "We can keep discussing while it runs." : "The earlier result is still 17.",
+            response: !onePlace && humanTurns === 2 ? "We can keep discussing while it runs." : "The earlier result is still 17.",
             topic: { kind: "existing", id: context.conversation!.topics![0]!.id },
           };
         }
@@ -492,11 +506,18 @@ async function delegation(nested = false, contendAdmission = false) {
             assert(admissionFailed, "The input must recover after a confirmed SQLite admission failure");
           }
           assert.equal(readConversationRequest(f.db, "sample", "primary", "measurement")?.status, "open");
-          const discussion = replyAfter("We can keep discussing while it runs.");
-          publish("discuss", "Can we discuss the method while it runs?");
-          await discussion;
+          if (onePlace) {
+            assert.deepEqual(executions.usage({ kind: "root", root }), { limit: 1, occupied: 1 });
+            assert.equal(accounting.budget.view(root, Date.now())?.rootCharged, 6);
+            for (const id of Object.keys(f.store.readSnapshot().resources!))
+              assert.deepEqual(accounting.budget.binding({ appId: "sample", taskId: id }), root);
+          } else {
+            const discussion = replyAfter("We can keep discussing while it runs.");
+            publish("discuss", "Can we discuss the method while it runs?");
+            await discussion;
+          }
           if (nested) {
-            assert.equal(contexts.length, 2, "Saving B's wait must not execute A");
+            assert.equal(contexts.length, onePlace ? 1 : 2, "Saving B's wait must not execute A");
             assert.equal(listPendingConversationTaskChanges(f.db, "sample").length, 0);
             f.bus.emit({
               type: "conversation.supervision.review",
@@ -535,7 +556,7 @@ async function delegation(nested = false, contendAdmission = false) {
           const resumed = replyAfter("The earlier result is still 17.");
           publish("resume", "Remind me of the result.");
           await resumed;
-          assert.equal(contexts.length, 4);
+          assert.equal(contexts.length, onePlace ? 3 : 4);
           assert.deepEqual(Object.keys(f.store.readSnapshot().resources!).sort(), ids);
           assert.equal(listPendingConversationTaskChanges(f.db, "sample").length, 0);
         } finally {
@@ -551,14 +572,23 @@ async function delegation(nested = false, contendAdmission = false) {
     source.closeAllConnections();
     await new Promise<void>((resolve) => source.close(() => resolve()));
   }
+  if (onePlace) {
+    const request = { ...f.request, taskId: root.taskId };
+    await run({ ...f, request });
+    await run({ ...f, request }, true);
+    const retained = new TaskBudgetAdmissionStore(f.db).budget;
+    assert.equal(retained.view(root, Date.now())?.rootCharged, 9);
+    assert.deepEqual(new TaskExecutionStore(f.db).usage({ kind: "root", root }), { limit: 1, occupied: 0 });
+    assert.deepEqual(new TaskExecutionStore(f.db).usage({ kind: "host" }), { limit: 4, occupied: 0 });
+  }
 }
 
 try {
   const scenario = process.argv[2];
   if (scenario === "conversation") await conversation();
   else {
-    assert(["delegation", "nested", "nestedRecovery"].includes(scenario!));
-    await delegation(scenario !== "delegation", scenario === "nestedRecovery");
+    assert(["delegation", "nested", "nestedRecovery", "nestedOnePlace"].includes(scenario!));
+    await delegation(scenario !== "delegation", scenario === "nestedRecovery", scenario === "nestedOnePlace");
   }
 } finally {
   await cleanup();

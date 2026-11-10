@@ -46,6 +46,7 @@ import { ExecutionScope } from "./execution-scope.js";
 import { createExecutionUsage, type ExecutionUsage, type PreparationMeasurement } from "./execution-usage.js";
 import executionInstructions from "./execution-instructions.md" with { type: "text" };
 import { assertUniqueToolNames } from "./tool-name-audit.js";
+import { readOnlyTaskTool } from "./tools/task-read-policy.js";
 
 const CHAT_TOOL_DENYLIST = new Set([
   "bash",
@@ -360,7 +361,8 @@ function resolveTools(options: AgentPreparationOptions, requireFinish: boolean):
   if (options.toolPolicy === "full-no-tasks") {
     tools = tools.filter((tool) => tool.name !== "tasks");
   } else if (options.toolPolicy === "readonly") {
-    tools = tools.filter((tool) => READONLY_TOOL_ALLOWLIST.has(tool.name));
+    tools = tools.filter((tool) => READONLY_TOOL_ALLOWLIST.has(tool.name))
+      .map((tool) => tool.name === "tasks" ? readOnlyTaskTool(tool) : tool);
   } else if (
     options.toolPolicy === "deputy" ||
     options.toolPolicy === "app-agent-deputy" ||

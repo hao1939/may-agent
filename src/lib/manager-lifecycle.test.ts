@@ -295,6 +295,25 @@ describe("manager session lifecycle", () => {
     expect(readSessionRecoveryEvidence(persistDir, sessionId).state).toBe("valid");
   });
 
+  it("fences an explicit programmatic owner before mutating a resumed session", async () => {
+    manager.register({ ...definition("original"), hostIdentity: "installed-worker" });
+    const sessionId = manager.run("worker", "Original assignment");
+    await manager.waitFor(sessionId);
+    const retained = readSessionMeta(persistDir, sessionId);
+    const transcript = readSessionRecoveryEvidence(persistDir, sessionId);
+    manager.register({ ...definition("replacement"), hostIdentity: "another-worker" });
+    expect(() => manager.resumeSession(sessionId, "Continue")).toThrow("refusing cross-owner resume");
+    expect(requests).toHaveLength(1);
+    expect(readSessionMeta(persistDir, sessionId)).toEqual(retained);
+    expect(readSessionRecoveryEvidence(persistDir, sessionId)).toEqual(transcript);
+    // Definition updates remain allowed when they retain the installation owner.
+    manager.register({ ...definition("updated"), hostIdentity: "installed-worker" });
+    manager.resumeSession(sessionId, "Continue with the owner");
+    await manager.waitFor(sessionId);
+    expect(requests).toHaveLength(2);
+    expect(requests[1].systemPrompt).toContain("Instructions for updated");
+  });
+
   it("records persistent chat replies without recounting retained history on resume", async () => {
     const taskBinding = { appId: "example", taskId: "conversation", generation: 1, attemptId: "attempt-1" };
     const sessionId = manager.run("worker", "First chat input", { kind: "chat", autoClose: "never", taskBinding });

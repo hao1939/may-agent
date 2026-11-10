@@ -1,4 +1,4 @@
-import type { ExecutionResult } from "@may-agent/sdk";
+import { ExecutionDeferredError, type ExecutionResult } from "@may-agent/sdk";
 import type { TaskResult } from "./types.js";
 import type { WorkflowToolResult } from "./workflow.js";
 import { cliCallFacts } from "./tools/run-cli-agent.js";
@@ -43,5 +43,16 @@ export function workflowExecutionResult(result: WorkflowToolResult): ExecutionRe
     ...(result.output !== undefined ? { output: result.output } : {}),
     ...(result.facts !== undefined ? { facts: result.facts }
       : result.type === "blocked" && result.context !== undefined ? { facts: result.context } : {}),
+  };
+}
+
+/** Model tools expose non-start as data without fabricating a terminal result ID. */
+export function deferredExecutionResult(error: ExecutionDeferredError) {
+  return {
+    status: "deferred" as const,
+    started: false as const,
+    summary: error.message,
+    deferral: error.deferral,
+    ...(error.callerExecution ? { callerExecution: error.callerExecution } : {}),
   };
 }

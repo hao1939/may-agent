@@ -28,6 +28,9 @@ export interface SubagentDefinition {
   agentDir?: string;
   /** Canonical installation-relative owner for recovery and completion, not the immutable source directory. */
   agentRelativeDir?: string;
+  /** Explicit stable installation owner for programmatic definitions. Required
+   * for shared execution admission when no directory identity exists. */
+  hostIdentity?: string;
   workspace?: string;
   /** Directory containing agent knowledge files (INDEX.md, etc.). */
   knowledgeDir?: string;

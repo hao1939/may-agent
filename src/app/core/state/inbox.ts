@@ -249,6 +249,7 @@ export function linkTaskInput(
     .prepare(
       `UPDATE app_inbox_items SET status = 'handling',
     waiting_on_kind = 'task', waiting_on_id = ?, task_admission_key = ?,
+    handling = CASE WHEN json_extract(handling, '$.phase') = 'deferred' THEN NULL ELSE handling END,
     available_at = NULL, review_at = NULL, lease_owner = NULL, lease_expires_at = NULL,
     changed_at = ?, updated_at = ? WHERE id = ? AND status != 'done' AND execution_task_id IS NULL`,
     )

@@ -153,6 +153,16 @@ export async function drainBashProcessGroup(pgid: number): Promise<boolean> {
 	return waitForProcessGroupExit(pgid, BASH_PROCESS_GROUP_KILL_GRACE_MS);
 }
 
+/** Live scope cleanup stays asynchronous and retains every unconfirmed group. */
+export async function drainSessionBashProcessGroups(persistDir: string, sessionId: string): Promise<boolean> {
+  const results = await Promise.all(readSessionBashProcessGroups(persistDir, sessionId).map(async pgid => {
+    if (!await drainBashProcessGroup(pgid)) return false;
+    removeSessionBashProcessGroup(persistDir, sessionId, pgid);
+    return true;
+  }));
+  return results.every(Boolean);
+}
+
 /**
  * Startup recovery has no live child-process handle and is intentionally
  * synchronous. Bound both signal phases before terminal persistence or resume.
@@ -303,6 +313,7 @@ export function createLocalBashOperations(
 				stdio: ["ignore", captureFd, captureFd],
 			});
 			let settled = false;
+			let processGroupRegistered = false;
 			let captureClosed = false;
 			let capturePollHandle: NodeJS.Timeout | undefined;
 			let timeoutHandle: NodeJS.Timeout | undefined;
@@ -364,32 +375,44 @@ export function createLocalBashOperations(
 				settled = true;
 				if (timeoutHandle) clearTimeout(timeoutHandle);
 				if (signal) signal.removeEventListener("abort", onAbort);
-				if (child.pid) {
-					const drained = await drainProcessGroup(child.pid);
-					if (!drained) {
-						const capture = cleanup();
-						const drainError = new Error(`bash process group ${child.pid} did not exit after bounded SIGTERM/SIGKILL drain; durable ownership must be recovered before settlement`) as BashExecutionError;
-						Object.assign(drainError, capture);
-						reject(drainError);
-						return;
+				try {
+					if (child.pid) {
+						if (!await drainProcessGroup(child.pid)) {
+							throw new Error(`bash process group ${child.pid} did not exit after bounded SIGTERM/SIGKILL drain; durable ownership must be recovered before settlement`);
+						}
 					}
-					onProcessGroupDrained?.(child.pid);
+					// Confirm the child handle has also exited before exposing settlement.
+					await childExited;
+					if (child.pid && processGroupRegistered) onProcessGroupDrained?.(child.pid);
+				} catch (cause) {
+					error = cause instanceof Error ? cause : new Error(String(cause));
 				}
-				const capture = cleanup();
-				if (error) {
-					Object.assign(error as BashExecutionError, capture);
-					reject(error);
-				} else resolve({ exitCode, ...capture });
+				try {
+					const capture = cleanup();
+					if (error) {
+						Object.assign(error as BashExecutionError, capture);
+						reject(error);
+					} else resolve({ exitCode, ...capture });
+				} catch (cause) {
+					reject(cause);
+				}
 			};
 			const onAbort = () => void settleAfterDrain(null, new Error("aborted"));
+			const childExited = new Promise<void>((exited) => {
+				child.once("error", (error) => {
+					exited();
+					void settleAfterDrain(null, error);
+				});
+				child.once("exit", (exitCode) => {
+					exited();
+					void settleAfterDrain(exitCode);
+				});
+			});
 
-			if (child.pid) onProcessGroupSpawn?.(child.pid);
 			// Progress is only observable once per BASH_PROGRESS_INTERVAL_MS. Polling
 			// the same file ten times inside that window adds timer and allocation
 			// churn to every long-running command without improving the agent view.
 			capturePollHandle = setInterval(observeCapture, BASH_PROGRESS_INTERVAL_MS);
-			child.once("error", (error) => void settleAfterDrain(null, error));
-			child.once("exit", (exitCode) => void settleAfterDrain(exitCode));
 			if (signal) signal.addEventListener("abort", onAbort, { once: true });
 			if (timeout !== undefined && timeout > 0) {
 				timeoutHandle = setTimeout(
@@ -397,6 +420,16 @@ export function createLocalBashOperations(
 					timeout * 1000,
 				);
 			}
+			try {
+				if (child.pid) onProcessGroupSpawn?.(child.pid);
+				processGroupRegistered = true;
+			} catch (cause) {
+				// A failed registration still owns a live child. Use the same bounded
+				// drain/join path, preserving the original evidence and registration error.
+				void settleAfterDrain(null, cause instanceof Error ? cause : new Error(String(cause)));
+				return;
+			}
+			if (signal?.aborted) onAbort();
 			});
 		},
 	};
@@ -521,6 +554,11 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 			// Apply command prefix if configured (e.g., "shopt -s expand_aliases" for alias support)
 			const resolvedCommand = commandPrefix ? `${commandPrefix}\n${command}` : command;
 			const spawnContext = resolveSpawnContext(resolvedCommand, cwd, spawnHook);
+			// Do not start new work while existing descendant evidence is damaged.
+			// Registration may still fail after this read and must drain its child.
+			if (options?.processGroupOwner) {
+				readSessionBashProcessGroups(options.processGroupOwner.persistDir, options.processGroupOwner.sessionId);
+			}
 
 			return new Promise((resolve, reject) => {
 				// We'll stream to a temp file if output gets large

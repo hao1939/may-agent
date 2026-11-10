@@ -1,3 +1,4 @@
+import { pendingTaskFunding, pendingTaskExecutionConstraint, pendingTaskWorkspaceConstraint, taskReviewAt, taskExecutionRetryExhausted } from "./app-task-state.js";
 import type {
   AppTaskCancellation,
   AppTaskCondition as AppTaskCondition,
@@ -25,7 +26,9 @@ export type AppTaskReadiness = {
     | "ready"
     | "dependency-blocked"
     | "condition-blocked"
+    | "funding-blocked"
     | "capacity-blocked"
+    | "resource-blocked"
     | "paused"
     | "not-applicable";
   reason: string;
@@ -334,18 +337,30 @@ function appTaskReadiness(
   maxConcurrent: number,
   activeCount: number,
   phase = resource.status.phase,
+  now = Date.now(),
 ): AppTaskReadiness {
+  const funding = pendingTaskFunding(resource, now);
+  if (funding) return { state: "funding-blocked", reason: `Task funding: ${funding.reason}`, related_ids: funding.root ? [funding.root.taskId] : [] };
+  const execution = pendingTaskExecutionConstraint(resource, now);
+  if (execution) return { state: "capacity-blocked", reason: `Task execution: ${execution.reason}`, related_ids: [] };
+  const workspace = pendingTaskWorkspaceConstraint(resource);
+  if (workspace) return { state: "resource-blocked", reason: `Task prerequisite: ${workspace.reason}`, related_ids: [] };
   const conditionIds = [...(resource.status.conditionIds ?? [])];
   const satisfiedConditionIds = conditionIds.filter((id) => tree.conditions?.[id]?.status.state === "true");
   const conditionWokeTask = phase === "waiting" && satisfiedConditionIds.length > 0;
-  if (phase === "waiting" && !conditionWokeTask) {
+  const reviewAt = taskReviewAt(resource);
+  const reviewDue = reviewAt !== null && reviewAt <= now;
+  const changed = resource.metadata.generation > resource.status.observedGeneration || Boolean(tree.taskTriggers?.[resource.metadata.id]);
+  const waitingWokeTask = phase === "waiting" && (conditionWokeTask || reviewDue || changed);
+  const attentionWokeTask = phase === "attention" && changed && !taskExecutionRetryExhausted(resource);
+  if (phase === "waiting" && !waitingWokeTask) {
     return {
       state: "condition-blocked",
       reason: conditionIds.length ? `Waiting for ${conditionIds.join(", ")}` : "Waiting without a linked Condition",
       related_ids: conditionIds,
     };
   }
-  if (phase !== "pending" && !conditionWokeTask) {
+  if (phase !== "pending" && !waitingWokeTask && !attentionWokeTask) {
     return {
       state: "not-applicable",
       reason: `Task phase is ${phase}`,
@@ -383,6 +398,7 @@ export function appTaskReadinessById(
   tree: TaskTree,
   configuredMaxConcurrent: number,
   viewPhases: Readonly<Record<string, AppTaskPhase>> = {},
+  now = Date.now(),
 ): Record<string, AppTaskReadiness> {
   const maxConcurrent =
     Number.isInteger(configuredMaxConcurrent) && configuredMaxConcurrent > 0 ? configuredMaxConcurrent : 1;
@@ -393,7 +409,7 @@ export function appTaskReadinessById(
   return Object.fromEntries(
     Object.values(tree.resources ?? {}).map((resource) => [
       resource.metadata.id,
-      appTaskReadiness(tree, resource, satisfied, maxConcurrent, activeCount, viewPhases[resource.metadata.id]),
+      appTaskReadiness(tree, resource, satisfied, maxConcurrent, activeCount, viewPhases[resource.metadata.id], now),
     ]),
   );
 }

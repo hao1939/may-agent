@@ -1,3 +1,4 @@
+import { TaskBudgetDeferredError } from "../state/task-budget-admission.js";
 import { AppTaskAdmissionError } from "../state/task-admission-error.js";
 import { appInputRoute, assertAppTaskInputRoute } from "../apps/input-routing.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
@@ -30,6 +31,8 @@ import {
 } from "../apps/definition-validation.js";
 import {
   createAppInboxItem,
+  deferAppInboxTaskFunding,
+  hasAppInboxFundingHold,
   getAppInboxItem,
   listAppInboxItems,
   hasConversationExecutionTask,
@@ -509,7 +512,7 @@ export class AppInboxHost {
 
   #admitTask(item: AppInboxItem): void {
     const now = this.#now();
-    if (item.status === "done" || item.executionTaskId) return;
+    if (item.status === "done" || item.executionTaskId || hasAppInboxFundingHold(item, now)) return;
     if (item.availableAt !== undefined && item.availableAt > now) return;
     if (item.lease && item.lease.expiresAt > now) return;
     try {
@@ -537,8 +540,13 @@ export class AppInboxHost {
         return;
       }
       if (isUnattachedTaskRequest(item)) assertAppTaskInputRoute(app, item.input.kind, item.targetTaskId);
-      if (appInputRoute(app, item.input.kind, item.targetTaskId, isUnattachedTaskRequest(item)) === "conversation")
-        throw new Error("Conversation input requires offline cutover to its Task execution owner");
+      if (appInputRoute(app, item.input.kind, item.targetTaskId, isUnattachedTaskRequest(item)) === "conversation") {
+        if (!this.#admitConversation || !item.conversationId)
+          throw new Error("Conversation input requires offline cutover to its Task execution owner");
+        this.#admitConversation({ ...item, conversationId: item.conversationId, now });
+        resolveAppInboxRecovery(this.#db, item.id, "input-admission", now);
+        return;
+      }
       if (!app.tasks || !app.task) throw new Error(`App ${app.id} does not resolve input to Task work`);
       if (!this.#attachTask) throw new Error("App task admission is not configured");
       assertValidAppInput(app, item.input);
@@ -569,6 +577,10 @@ export class AppInboxHost {
         // failure cannot relabel the successfully attached input.
       }
     } catch (error) {
+      if (error instanceof TaskBudgetDeferredError) {
+        deferAppInboxTaskFunding(this.#db, item.id, error.constraint, this.#now());
+        return;
+      }
       if (error instanceof AppTaskAdmissionError) {
         const result = stateTransaction(this.#db, () => {
           recordAppInboxRecoveryFailure(this.#db, item.id, "input-admission", error.message, this.#now());
@@ -606,11 +618,18 @@ export class AppInboxHost {
       this.#db
         .prepare(
           `SELECT id FROM (
-        SELECT id FROM app_inbox_items INDEXED BY idx_app_inbox_unadmitted
+        SELECT id FROM app_inbox_items INDEXED BY idx_app_inbox_unadmitted_ready
         WHERE status != 'done' AND execution_task_id IS NULL
         AND (waiting_on_kind IS NULL OR waiting_on_kind != 'task' OR lease_owner IS NOT NULL)
         AND (lease_expires_at IS NULL OR lease_expires_at <= ?)
         AND (available_at IS NULL OR available_at <= ?)
+        AND COALESCE(json_extract(handling, '$.phase'), '') != 'deferred'
+        UNION ALL
+        SELECT id FROM app_inbox_items INDEXED BY idx_app_inbox_funding_due
+        WHERE status != 'done' AND execution_task_id IS NULL
+        AND (waiting_on_kind IS NULL OR waiting_on_kind != 'task' OR lease_owner IS NOT NULL)
+        AND (lease_expires_at IS NULL OR lease_expires_at <= ?)
+        AND json_extract(handling, '$.phase') = 'deferred' AND available_at IS NOT NULL AND available_at <= ?
         UNION ALL
         SELECT id FROM app_inbox_items INDEXED BY idx_app_inbox_rejected_feedback
         WHERE execution_task_id IS NULL AND status = 'done' AND waiting_on_kind IS NULL
@@ -622,7 +641,7 @@ export class AppInboxHost {
         ${this.#admissionCursor ? "AND id > ?" : ""}
       ORDER BY id LIMIT 64`,
         )
-        .all(this.#now(), this.#now(), this.#now(), ...(this.#admissionCursor ? [this.#admissionCursor] : []));
+        .all(this.#now(), this.#now(), this.#now(), this.#now(), this.#now(), ...(this.#admissionCursor ? [this.#admissionCursor] : []));
     let rows = readPage();
     if (!rows.length && this.#admissionCursor) {
       this.#admissionCursor = undefined;

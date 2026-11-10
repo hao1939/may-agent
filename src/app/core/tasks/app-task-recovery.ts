@@ -12,6 +12,9 @@ export type IndexedTaskRecoverySource = {
 export type AppTaskRecoverySchedulerOptions = {
   source: IndexedTaskRecoverySource;
   enqueue(taskId: string, options: { lane: AppTaskLane }): void;
+  /** Active execution can outlive its business Task. Reuse this scheduler and
+   * controller for mechanical cleanup, including cancelled/closed Tasks. */
+  executionCandidates?: (limit: number, afterTaskId?: string) => { taskIds: string[]; nextTaskId?: string };
   safetyIntervalMs?: number;
   pageSize?: number;
   now?: () => number;
@@ -30,6 +33,7 @@ export class AppTaskRecoveryScheduler {
   private dueAt?: number;
   private lastRecoveryAt?: number;
   private recoveryCursor?: IndexedTaskRecoveryCursor;
+  private executionCursor?: string;
   private closed = false;
 
   constructor(private readonly options: AppTaskRecoverySchedulerOptions) {
@@ -72,7 +76,16 @@ export class AppTaskRecoveryScheduler {
         lane: candidate.lane,
       });
     }
-    return page.items.length;
+    const execution = this.options.executionCandidates?.(this.pageSize, this.executionCursor);
+    this.executionCursor = execution?.nextTaskId;
+    const queued = new Set(page.items.map(candidate => candidate.taskId));
+    for (const taskId of execution?.taskIds ?? []) {
+      if (!queued.has(taskId)) {
+        this.options.enqueue(taskId, { lane: "normal" });
+        queued.add(taskId);
+      }
+    }
+    return queued.size;
   }
 
   private armNearestDue(force = false): void {

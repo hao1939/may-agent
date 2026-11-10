@@ -353,6 +353,7 @@ export async function runAppRuntime(opts: {
           getDb: () => getDb(opts.persistDir),
           readMetric: opts.reporting?.readMetric,
           taskRead: {
+            workload: async (options) => appTasks.workload({ appId, options }),
             list: async (options) => appTasks.list({ appId, ...(options ? { options } : {}) }),
             outcomes: async (projection) => appTasks.outcomes({ appId, ...(projection ? { projection } : {}) }),
             get: async (taskId, options) => appTasks.get({ appId, taskId, options }),
@@ -551,6 +552,7 @@ export async function runAppRuntime(opts: {
         },
       });
     },
+    getAppTaskWorkload: (appId, options) => appTasks.workload({ appId, options }),
     getAppTask: (appId, taskId, options) => appTasks.get({ appId, taskId, options }),
     resolveAppTask: (appId, event) =>
       appRegistry.resolveInstalledTask(appId.trim().replace(/\.app$/, ""), event as AppEvent<Record<string, unknown>>),
