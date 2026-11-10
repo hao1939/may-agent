@@ -9,6 +9,11 @@ source_basis: "XHS browsing signals cross-referenced with KE syntheses (Jun 13-1
 
 **Evolves:** `xhs_chinese_ai_trends_may2026.md` (May 20 snapshot)
 
+**Reading route:** Use this note for the maintained synthesis and later trajectory
+updates. Use the [source-level findings mirror](./findings/xhs-chinese-ai-trends-june2026.md)
+when you need the earlier observation sequence, engagement details, or prediction
+checkpoints that were not retained in the synthesis.
+
 ## What Changed Since May
 
 The May report captured single-agent backlash, vibe coding maturation, MCP turbulence, and Claude Code vs Cursor. In the 3.5 weeks since, the community has moved decisively past *whether* to use agents toward *how to govern them architecturally*. The paradigm naming cycle accelerated: what was "Prompt Engineering" in April became "Loop Engineering" by mid-June, with "Skill Engineering" predicted next.

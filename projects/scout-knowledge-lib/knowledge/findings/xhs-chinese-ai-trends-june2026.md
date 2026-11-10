@@ -1,5 +1,11 @@
 # XHS Chinese AI Community — June 2026 Findings
 
+> **Record role:** This is the source-level observation and prediction record.
+> For the maintained interpretation and later trajectory updates, start with
+> [XHS Chinese AI Community Trends — June 2026](../xhs_chinese_ai_trends_june2026.md).
+> This file remains available because its detailed observation sequence and
+> checkpoints are not all duplicated in the synthesis.
+
 **Source:** 小红书 (Xiaohongshu / XHS) — Chinese AI developer community  
 **Date:** 2026-06-14, updated 2026-06-15, prediction tracking added 2026-06-14  
 **Cross-referenced with:** KE-1915, KE-1919, KE-1922, KE-1924, KE-1925, KE-1927, KE-1952
