@@ -741,8 +741,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
     // Historical presence is not a transport receipt. An interrupted or legacy
     // send is visible to the owner, but must not be blindly repeated on startup.
-    retainUncertainConversationDelivery(persistDir, delivery);
-    const saved = readConversationDelivery(persistDir, conversationDeliveryId(delivery))!;
+    let saved = readConversationDelivery(persistDir, conversationDeliveryId(delivery));
+    if (!saved) {
+      retainUncertainConversationDelivery(persistDir, delivery);
+      saved = readConversationDelivery(persistDir, conversationDeliveryId(delivery))!;
+    }
     if (saved.state === "delivered") rememberRenderedConversationMessage(message.id);
     else reportConversationDelivery(message, delivery, saved.state);
   }
@@ -978,6 +981,18 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     });
   }
 
+  function reportConversationDeliveryError(
+    message: AppConversationMessage,
+    delivery: ConversationDelivery,
+    error: unknown,
+  ): void {
+    reportConversationDelivery(message, delivery, "uncertain");
+    bus.emit({
+      type: "info",
+      message: `[telegram] Conversation answer delivery failed: ${error instanceof Error ? error.message : String(error)}`,
+    });
+  }
+
   async function syncConversation(): Promise<void> {
     const conversation = readAppConversationResource(getDb(persistDir), conversationAppId, sharedConversationId, {
       limit: 200,
@@ -1000,51 +1015,51 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       const delivery = addressedConversationDelivery(message);
       const operationId = delivery ? conversationDeliveryId(delivery) : undefined;
       if (delivery) {
-        let claimed: boolean;
         try {
-          claimed = claimConversationDelivery(persistDir, delivery);
+          if (!claimConversationDelivery(persistDir, delivery)) {
+            const saved = readConversationDelivery(persistDir, operationId!);
+            if (saved?.state === "delivered") rememberRenderedConversationMessage(message.id);
+            else reportConversationDelivery(message, delivery, saved?.state ?? "uncertain");
+            continue;
+          }
         } catch (error) {
-          reportConversationDelivery(message, delivery, "uncertain");
-          throw error;
-        }
-        if (!claimed) {
-          const saved = readConversationDelivery(persistDir, operationId!)!;
-          if (saved.state === "delivered") rememberRenderedConversationMessage(message.id);
-          else reportConversationDelivery(message, delivery, saved.state);
+          reportConversationDeliveryError(message, delivery, error);
           continue;
         }
       }
-      const delivered = await sendMessage(targetChatId, renderTelegramConversationMessage(message), undefined, {
-        eventType: "conversation.mirror",
-        agent: message.author.kind === "agent" ? opts.interfaceAgent : message.author.id,
-        messageThreadId: topicId,
-        ...(operationId
-          ? {
-              onDelivery: (outcome) => {
-                try {
+      let delivered: number | undefined;
+      try {
+        delivered = await sendMessage(targetChatId, renderTelegramConversationMessage(message), undefined, {
+          eventType: "conversation.mirror",
+          agent: message.author.kind === "agent" ? opts.interfaceAgent : message.author.id,
+          messageThreadId: topicId,
+          ...(operationId
+            ? {
+                onDelivery: (outcome) => {
                   settleConversationDelivery(persistDir, operationId, outcome);
-                } catch (error) {
-                  reportConversationDelivery(message, delivery!, "uncertain");
-                  throw error;
-                }
-                if (outcome.state !== "delivered") reportConversationDelivery(message, delivery!, outcome.state);
-              },
-            }
-          : {}),
-        ...(message.metadata?.channelMessageId ? { replyToMessageId: message.metadata.channelMessageId } : {}),
-        replyMarkup: taskButtons(
-          message.metadata?.followTask ? [message.metadata.followTask] : message.metadata?.taskRefs,
-        ),
-        data: JSON.stringify({
-          direction: "mirror",
-          conversationId: sharedConversationId,
-          conversationMessageId: message.id,
-          sourceChannel: message.metadata?.channel,
-          text: message.text.slice(0, 500),
-          taskRefs: message.metadata?.followTask ? [message.metadata.followTask] : message.metadata?.taskRefs,
-          topicId: message.metadata?.topicId,
-        }),
-      });
+                  if (outcome.state !== "delivered") reportConversationDelivery(message, delivery!, outcome.state);
+                },
+              }
+            : {}),
+          ...(message.metadata?.channelMessageId ? { replyToMessageId: message.metadata.channelMessageId } : {}),
+          replyMarkup: taskButtons(
+            message.metadata?.followTask ? [message.metadata.followTask] : message.metadata?.taskRefs,
+          ),
+          data: JSON.stringify({
+            direction: "mirror",
+            conversationId: sharedConversationId,
+            conversationMessageId: message.id,
+            sourceChannel: message.metadata?.channel,
+            text: message.text.slice(0, 500),
+            taskRefs: message.metadata?.followTask ? [message.metadata.followTask] : message.metadata?.taskRefs,
+            topicId: message.metadata?.topicId,
+          }),
+        });
+      } catch (error) {
+        if (!delivery) throw error;
+        reportConversationDeliveryError(message, delivery, error);
+        continue;
+      }
       if (!running) return;
       if (!delivered) {
         if (delivery) continue; // One unresolved caller must not hide another answer.

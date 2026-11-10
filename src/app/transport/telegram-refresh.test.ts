@@ -357,16 +357,76 @@ describe("Telegram refresh lifecycle", () => {
     }
   });
 
-  it("does not send an answer when its durable claim cannot be saved", async () => {
+  it("starts with a readable delivered receipt while another connection holds the writer lock", async () => {
+    const first = fixture({ removeOnClose: false });
+    const { root } = first;
+    try {
+      first.answer("Already delivered before contention.");
+      first.wakeConversation();
+      await waitFor(
+        () => getDb(root).prepare("SELECT state FROM telegram_conversation_deliveries").get()?.state === "delivered",
+      );
+    } finally {
+      await first.close();
+    }
+    const alias = `${root}/.`;
+    const writer = getDb(alias);
+    getDb(root).exec("PRAGMA busy_timeout = 0");
+    const priorFetch = globalThis.fetch;
+    const priorToken = process.env.TELEGRAM_BOT_TOKEN;
+    const priorChat = process.env.TELEGRAM_CHAT_ID;
+    let restarted: ReturnType<typeof fixture> | undefined;
+    let locked = false;
+    try {
+      writer.exec("BEGIN IMMEDIATE");
+      locked = true;
+      restarted = fixture({ root, removeOnClose: false });
+      await restarted.ready();
+      expect(restarted.sent).toHaveLength(0);
+      expect(restarted.deliveryFailures).toHaveLength(0);
+      expect(getDb(root).prepare("SELECT state FROM telegram_conversation_deliveries").get()?.state).toBe("delivered");
+      writer.exec("ROLLBACK");
+      locked = false;
+      restarted.answer("A fresh answer after contention.", "new-ask");
+      restarted.wakeConversation();
+      await waitFor(() => restarted!.sent.some((send) => send.text === "A fresh answer after contention."));
+      expect(restarted.sent.some((send) => send.text === "Already delivered before contention.")).toBe(false);
+    } finally {
+      if (locked) writer.exec("ROLLBACK");
+      await restarted?.close();
+      closeDb(alias);
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+      globalThis.fetch = priorFetch;
+      if (priorToken === undefined) delete process.env.TELEGRAM_BOT_TOKEN;
+      else process.env.TELEGRAM_BOT_TOKEN = priorToken;
+      if (priorChat === undefined) delete process.env.TELEGRAM_CHAT_ID;
+      else process.env.TELEGRAM_CHAT_ID = priorChat;
+    }
+  });
+
+  it("skips an unsaved answer claim and delivers the next caller in the same refresh", async () => {
     const f = fixture();
     try {
       getDb(f.root).exec(`CREATE TRIGGER reject_delivery_claim BEFORE INSERT ON telegram_conversation_deliveries
-        BEGIN SELECT RAISE(ABORT, 'fixture claim persistence unavailable'); END`);
+        WHEN NEW.message_id='answer:exact-ask' BEGIN SELECT RAISE(ABORT, 'fixture claim persistence unavailable'); END`);
       f.answer("Do not send without a claim.");
+      f.answer("Another caller has a valid claim.", "other-ask");
       f.wakeConversation();
       await waitFor(() => f.errors.some((error) => error.includes("fixture claim persistence unavailable")));
-      expect(f.sent).toHaveLength(0);
+      await waitFor(
+        () =>
+          getDb(f.root)
+            .prepare("SELECT state FROM telegram_conversation_deliveries WHERE message_id='answer:other-ask'")
+            .get()?.state === "delivered",
+      );
+      expect(f.sent.map((send) => send.text)).toEqual(["Another caller has a valid claim."]);
       expect(f.deliveryFailures[0]).toMatchObject({ requestId: "exact-ask", deliveryStatus: "uncertain" });
+      expect(
+        getDb(f.root)
+          .prepare("SELECT state FROM telegram_conversation_deliveries WHERE message_id='answer:exact-ask'")
+          .get(),
+      ).toBeNull();
     } finally {
       await f.close();
     }
@@ -377,13 +437,28 @@ describe("Telegram refresh lifecycle", () => {
     const { root } = first;
     try {
       getDb(root).exec(`CREATE TRIGGER reject_delivery_receipt BEFORE UPDATE ON telegram_conversation_deliveries
-        WHEN NEW.state='delivered' BEGIN SELECT RAISE(ABORT, 'fixture receipt persistence unavailable'); END`);
+        WHEN NEW.state='delivered' AND NEW.message_id='answer:exact-ask' BEGIN SELECT RAISE(ABORT, 'fixture receipt persistence unavailable'); END`);
       first.answer("Sent bytes are not a saved receipt.");
+      first.answer("Another caller keeps its receipt.", "other-ask");
       first.wakeConversation();
       await waitFor(() => first.errors.some((error) => error.includes("fixture receipt persistence unavailable")));
-      expect(first.sent).toHaveLength(1);
+      await waitFor(
+        () =>
+          getDb(root)
+            .prepare("SELECT state FROM telegram_conversation_deliveries WHERE message_id='answer:other-ask'")
+            .get()?.state === "delivered",
+      );
+      expect(first.sent.map((send) => send.text)).toEqual([
+        "Sent bytes are not a saved receipt.",
+        "Another caller keeps its receipt.",
+      ]);
+      expect(first.deliveryFailures).toHaveLength(1);
       expect(first.deliveryFailures[0]).toMatchObject({ requestId: "exact-ask", deliveryStatus: "uncertain" });
-      expect(getDb(root).prepare("SELECT state FROM telegram_conversation_deliveries").get()).toEqual({
+      expect(
+        getDb(root)
+          .prepare("SELECT state FROM telegram_conversation_deliveries WHERE message_id='answer:exact-ask'")
+          .get(),
+      ).toEqual({
         state: "sending",
       });
     } finally {
@@ -394,6 +469,20 @@ describe("Telegram refresh lifecycle", () => {
       await restarted.ready();
       expect(restarted.sent).toHaveLength(0);
       expect(restarted.deliveryFailures[0]).toMatchObject({ deliveryStatus: "uncertain", requestId: "exact-ask" });
+      restarted.answer("A fresh caller after a receipt failure.", "fresh-ask");
+      restarted.wakeConversation();
+      await waitFor(
+        () =>
+          getDb(root)
+            .prepare("SELECT state FROM telegram_conversation_deliveries WHERE message_id='answer:fresh-ask'")
+            .get()?.state === "delivered",
+      );
+      expect(restarted.sent.map((send) => send.text)).toEqual(["A fresh caller after a receipt failure."]);
+      expect(
+        getDb(root)
+          .prepare("SELECT state FROM telegram_conversation_deliveries WHERE message_id='answer:exact-ask'")
+          .get()?.state,
+      ).toBe("sending");
     } finally {
       await restarted.close();
     }
