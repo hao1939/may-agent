@@ -54,6 +54,12 @@ export interface TelegramSendContext {
   data?: string;
   /** Persist reply authority only after every chunk was delivered, on the final chunk. */
   bindToCompleteDelivery?: boolean;
+  /** Required delivery state may not be replaced by best-effort notification indexing. */
+  onDelivery?: (outcome: {
+    state: "delivered" | "failed" | "uncertain";
+    reason?: string;
+    externalMessageId?: number;
+  }) => void;
   replyToMessageId?: number;
   messageThreadId?: number;
   replyMarkup?: { inline_keyboard: Array<Array<{ text: string; callback_data: string }>> };
@@ -122,6 +128,8 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
     let lastMsgId: number | undefined;
     const sentMsgIds: number[] = [];
     let complete = true;
+    let uncertain = false;
+    let failureReason: string | undefined;
     for (const chunk of chunks) {
       if (closed) {
         complete = false;
@@ -143,7 +151,10 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
         });
         lastMsgId = result?.message_id;
         if (lastMsgId) sentMsgIds.push(lastMsgId);
-        else complete = false;
+        else {
+          complete = false;
+          uncertain = true;
+        }
       } catch (err) {
         if (
           !closed &&
@@ -162,13 +173,20 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
             });
             lastMsgId = result?.message_id;
             if (lastMsgId) sentMsgIds.push(lastMsgId);
-            else complete = false;
+            else {
+              complete = false;
+              uncertain = true;
+            }
           } catch (retryErr) {
             complete = false;
+            uncertain ||= !(retryErr instanceof TelegramApiError);
+            failureReason = errorMessage(retryErr);
             opts.emitInfo(`[telegram] Send failed: ${errorMessage(retryErr)}`);
           }
         } else {
           complete = false;
+          uncertain ||= !(err instanceof TelegramApiError);
+          failureReason = errorMessage(err);
           opts.emitInfo(`[telegram] Send failed: ${errorMessage(err)}`);
         }
       }
@@ -198,6 +216,15 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
         }
       }
     }
+    const fullyDelivered = complete && sentMsgIds.length === chunks.length;
+    context?.onDelivery?.(
+      fullyDelivered
+        ? { state: "delivered", externalMessageId: lastMsgId }
+        : {
+            state: uncertain || sentMsgIds.length > 0 ? "uncertain" : "failed",
+            reason: failureReason ?? "The complete message was not confirmed delivered.",
+          },
+    );
     return complete && sentMsgIds.length === chunks.length ? lastMsgId : undefined;
   }
 

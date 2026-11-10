@@ -107,6 +107,25 @@ receive their scoped publishing capability through the SDK.
 | `getEvent` / HTTP `GET /api/events/:id` | Trusted operator diagnostics, including internal types; linked route state is not Task state |
 | Explicit raw event/session subscription | Best-effort diagnostic stream; payloads outside documented integrations may change |
 
+An accepted Conversation answer and its external Telegram delivery are separate
+facts. Addressed agent answers retain a destination- and content-bound transport
+claim before sending. Only a complete provider response records delivery;
+confirmed rejections before any delivered chunk may retry on a later Conversation
+wake or restart. Interrupted, partial or ambiguous sends remain uncertain and are
+not automatically repeated. Startup does not treat an existing answer as a send
+receipt: legacy answers without complete evidence remain uncertain too. This
+startup check covers the same bounded recent Conversation view as the adapter;
+it is not a historical delivery audit.
+
+The existing `message.delivery_failed` diagnostic identifies the owning App,
+original request, Conversation message, destination and delivery operation. Use
+its exact receipt and the retained answer to investigate the caller obligation;
+Task closure or an Inbox `done` state alone is insufficient. Verify the provider
+or caller evidence before authorizing a fresh communication after an uncertain
+send. Preserve the prior uncertainty instead of rerunning accepted Task work or
+rewriting its result. These transport records do not change Task acceptance or
+creator authority, and an unresolved delivery does not block another answer.
+
 App admission and another route's delivery receipt are independent. A durable
 addressed message with no matching App gets three admission attempts, including
 the first; recovery uses the existing scan. Exhaustion stops that App route and

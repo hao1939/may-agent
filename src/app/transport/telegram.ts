@@ -25,6 +25,14 @@ import { EVENT_DELIVERY_RESULT, eventData, type EventBus } from "../core/events/
 import { loadPersistedEvent } from "../core/events/persisted.js";
 import { getDb } from "../../lib/db/connection.js";
 import {
+  claimConversationDelivery,
+  conversationDeliveryId,
+  readConversationDelivery,
+  retainUncertainConversationDelivery,
+  settleConversationDelivery,
+  type ConversationDelivery,
+} from "../../lib/db/telegram-conversation-deliveries.js";
+import {
   getNotificationMessage,
   hasCompletedHumanActionDelivery,
   storeNotificationMessage,
@@ -717,14 +725,26 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       renderedConversationMessages.delete(oldest);
     }
   };
+  let initialMessages: AppConversationMessage[] = [];
   try {
-    for (const message of readAppConversationResource(getDb(persistDir), conversationAppId, sharedConversationId, {
+    initialMessages = readAppConversationResource(getDb(persistDir), conversationAppId, sharedConversationId, {
       limit: 200,
-    }).messages) {
-      rememberRenderedConversationMessage(message.id);
-    }
+    }).messages;
   } catch {
     // The Conversation may not be available until App runtime startup finishes.
+  }
+  for (const message of initialMessages) {
+    const delivery = addressedConversationDelivery(message);
+    if (!delivery) {
+      rememberRenderedConversationMessage(message.id);
+      continue;
+    }
+    // Historical presence is not a transport receipt. An interrupted or legacy
+    // send is visible to the owner, but must not be blindly repeated on startup.
+    retainUncertainConversationDelivery(persistDir, delivery);
+    const saved = readConversationDelivery(persistDir, conversationDeliveryId(delivery))!;
+    if (saved.state === "delivered") rememberRenderedConversationMessage(message.id);
+    else reportConversationDelivery(message, delivery, saved.state);
   }
 
   // Presentation only: one read in flight per key, with at most one follow-up
@@ -909,6 +929,55 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     );
   }
 
+  function addressedConversationDelivery(message: AppConversationMessage): ConversationDelivery | undefined {
+    if (
+      message.author.kind !== "agent" ||
+      message.metadata?.channel !== "telegram" ||
+      !message.metadata.channelTargetId ||
+      !message.metadata.requestId
+    )
+      return undefined;
+    return {
+      appId: conversationAppId,
+      conversationId: sharedConversationId,
+      messageId: message.id,
+      chatId: message.metadata.channelTargetId,
+      threadId: telegramThreadId(message.metadata.channelThreadId),
+      text: renderTelegramConversationMessage(message),
+    };
+  }
+
+  function reportConversationDelivery(
+    message: AppConversationMessage,
+    delivery: ConversationDelivery,
+    state: string,
+  ): void {
+    const status = state === "failed" ? "failed" : "uncertain";
+    const operationId = conversationDeliveryId(delivery);
+    bus.emit({
+      type: "message.delivery_failed",
+      source: "telegram",
+      owner: `app:${conversationAppId}`,
+      data: {
+        from: conversationAppId,
+        to: delivery.chatId,
+        content: message.text.slice(0, 500),
+        reason:
+          status === "failed"
+            ? "Telegram rejected the answer before any chunk was delivered; the existing answer remains available for delivery."
+            : "No complete Telegram delivery outcome is available; verify the caller receipt before resending the existing answer.",
+        appId: conversationAppId,
+        conversationId: sharedConversationId,
+        requestId: message.metadata?.requestId,
+        conversationMessageId: message.id,
+        deliveryOperationId: operationId,
+        deliveryStatus: status,
+        channelThreadId: message.metadata?.channelThreadId,
+        idempotencyKey: `telegram-conversation-delivery:${operationId}:${status}`,
+      },
+    });
+  }
+
   async function syncConversation(): Promise<void> {
     const conversation = readAppConversationResource(getDb(persistDir), conversationAppId, sharedConversationId, {
       limit: 200,
@@ -928,10 +997,26 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       if (!targetChatId) return;
       const topicId = telegramThreadId(message.metadata?.channelThreadId);
       const surface = surfaceKey(targetChatId, topicId);
+      const delivery = addressedConversationDelivery(message);
+      const operationId = delivery ? conversationDeliveryId(delivery) : undefined;
+      if (delivery && !claimConversationDelivery(persistDir, delivery)) {
+        const saved = readConversationDelivery(persistDir, operationId!)!;
+        if (saved.state === "delivered") rememberRenderedConversationMessage(message.id);
+        else reportConversationDelivery(message, delivery, saved.state);
+        continue;
+      }
       const delivered = await sendMessage(targetChatId, renderTelegramConversationMessage(message), undefined, {
         eventType: "conversation.mirror",
         agent: message.author.kind === "agent" ? opts.interfaceAgent : message.author.id,
         messageThreadId: topicId,
+        ...(operationId
+          ? {
+              onDelivery: (outcome) => {
+                settleConversationDelivery(persistDir, operationId, outcome);
+                if (outcome.state !== "delivered") reportConversationDelivery(message, delivery!, outcome.state);
+              },
+            }
+          : {}),
         ...(message.metadata?.channelMessageId ? { replyToMessageId: message.metadata.channelMessageId } : {}),
         replyMarkup: taskButtons(
           message.metadata?.followTask ? [message.metadata.followTask] : message.metadata?.taskRefs,
@@ -946,7 +1031,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           topicId: message.metadata?.topicId,
         }),
       });
-      if (!delivered || !running) return;
+      if (!running) return;
+      if (!delivered) {
+        if (delivery) continue; // One unresolved caller must not hide another answer.
+        return;
+      }
       rememberRenderedConversationMessage(message.id);
       const watched = watchedTasks.get(surface);
       if (

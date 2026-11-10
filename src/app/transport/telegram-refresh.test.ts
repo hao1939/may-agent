@@ -59,6 +59,7 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
   const published: EventInput[] = [];
   const sent: Send[] = [];
   const errors: string[] = [];
+  const deliveryFailures: Array<Record<string, unknown>> = [];
   const reads: string[] = [];
   const listReads: string[] = [];
   const tasks = new Map<string, HumanTaskView>(
@@ -91,8 +92,10 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
   }> = [];
   const readFailures = new Set<string>();
   const sendFailures = new Set<string>();
+  const sendRejections = new Set<string>();
   const unsubscribe = bus.subscribe((event) => {
     if (event.type === "info") errors.push(event.message);
+    if (event.type === "message.delivery_failed") deliveryFailures.push(event.data);
   });
   globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
     const method = String(url).split("/").at(-1);
@@ -106,6 +109,8 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
     if (method === "sendMessage") {
       const body = JSON.parse(String(init?.body)) as Send;
       sent.push(body);
+      if ([...sendRejections].some((text) => body.text.includes(text)))
+        return Response.json({ ok: false, error_code: 429, description: "fixture rate limit" });
       if ([...sendFailures].some((text) => body.text.includes(text))) throw new Error("fixture send unavailable");
       const messageId = 900 + sent.length;
       const hold = holds.find((candidate) => !candidate.started && candidate.matches(body));
@@ -153,11 +158,17 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
     sent,
     published,
     errors,
+    deliveryFailures,
     reads,
     tasks,
     readFailures,
     sendFailures,
+    sendRejections,
     listReads,
+    ready: () => waitFor(() => receive !== undefined),
+    answer(text: string, id = "exact-ask") {
+      saveAddressedAnswer(root, text, id);
+    },
     conversation(text: string, sequence: number) {
       createAppInboxItem(getDb(root), {
         id: `console-${sequence}`,
@@ -243,7 +254,187 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
   };
 }
 
+function saveAddressedAnswer(root: string, text: string, id = "exact-ask") {
+  getDb(root)
+    .prepare(
+      `INSERT INTO events (event_type, source, owner, data, timestamp)
+     VALUES ('conversation.message.created', 'app-task', 'app:may', ?, ?)`,
+    )
+    .run(
+      JSON.stringify({
+        appId: "may",
+        conversationId: "may:primary",
+        messageId: `answer:${id}`,
+        author: { kind: "agent", id: "may" },
+        text,
+        metadata: { channel: "telegram", channelTargetId: "123", channelMessageId: 7, requestId: id },
+      }),
+      Date.now(),
+    );
+}
+
 describe("Telegram refresh lifecycle", () => {
+  it("exposes a saved addressed answer without inventing delivery or replaying an uncertain send", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-telegram-saved-answer-"));
+    saveAddressedAnswer(root, "The finite assignment is complete.");
+    closeDb(root);
+    const f = fixture({ root });
+    try {
+      await f.ready();
+      expect(f.sent).toHaveLength(0);
+      expect(f.deliveryFailures[0]).toMatchObject({
+        appId: "may",
+        conversationId: "may:primary",
+        requestId: "exact-ask",
+        conversationMessageId: "answer:exact-ask",
+        to: "123",
+        deliveryStatus: "uncertain",
+        deliveryOperationId: expect.any(String),
+        idempotencyKey: expect.any(String),
+      });
+      expect(getDb(root).prepare("SELECT state FROM telegram_conversation_deliveries").all()).toEqual([
+        { state: "uncertain" },
+      ]);
+    } finally {
+      await f.close();
+    }
+  });
+
+  it("retains a confirmed addressed answer across restart without resending it", async () => {
+    const first = fixture({ removeOnClose: false });
+    const { root } = first;
+    try {
+      first.answer("The accepted finite answer.");
+      first.wakeConversation();
+      await waitFor(
+        () =>
+          getDb(root).prepare("SELECT 1 FROM telegram_conversation_deliveries WHERE state='delivered'").get() !== null,
+      );
+      expect(first.sent.filter((send) => send.text.includes("The accepted finite answer."))).toHaveLength(1);
+    } finally {
+      await first.close();
+    }
+    const restarted = fixture({ root });
+    try {
+      await restarted.ready();
+      expect(restarted.sent).toHaveLength(0);
+      expect(restarted.deliveryFailures).toHaveLength(0);
+      expect(
+        getDb(root).prepare("SELECT state, external_message_id FROM telegram_conversation_deliveries").get(),
+      ).toEqual({ state: "delivered", external_message_id: 901 });
+    } finally {
+      await restarted.close();
+    }
+  });
+
+  it("retries a confirmed provider rejection after restart using the existing answer", async () => {
+    const first = fixture({ removeOnClose: false });
+    const { root } = first;
+    try {
+      first.sendRejections.add("Retry this answer.");
+      first.answer("Retry this answer.");
+      first.wakeConversation();
+      await waitFor(() => first.deliveryFailures.some((failure) => failure.deliveryStatus === "failed"));
+      expect(getDb(root).prepare("SELECT state FROM telegram_conversation_deliveries").get()).toEqual({
+        state: "failed",
+      });
+    } finally {
+      await first.close();
+    }
+    const restarted = fixture({ root });
+    try {
+      await waitFor(
+        () => getDb(root).prepare("SELECT state FROM telegram_conversation_deliveries").get()?.state === "delivered",
+      );
+      expect(restarted.sent.filter((send) => send.text.includes("Retry this answer."))).toHaveLength(1);
+      expect(getDb(root).prepare("SELECT COUNT(*) AS n FROM telegram_conversation_deliveries").get()).toEqual({ n: 1 });
+    } finally {
+      await restarted.close();
+    }
+  });
+
+  it("does not send an answer when its durable claim cannot be saved", async () => {
+    const f = fixture();
+    try {
+      getDb(f.root).exec(`CREATE TRIGGER reject_delivery_claim BEFORE INSERT ON telegram_conversation_deliveries
+        BEGIN SELECT RAISE(ABORT, 'fixture claim persistence unavailable'); END`);
+      f.answer("Do not send without a claim.");
+      f.wakeConversation();
+      await waitFor(() => f.errors.some((error) => error.includes("fixture claim persistence unavailable")));
+      expect(f.sent).toHaveLength(0);
+    } finally {
+      await f.close();
+    }
+  });
+
+  it("keeps a sent answer uncertain when its complete receipt cannot be saved", async () => {
+    const first = fixture({ removeOnClose: false });
+    const { root } = first;
+    try {
+      getDb(root).exec(`CREATE TRIGGER reject_delivery_receipt BEFORE UPDATE ON telegram_conversation_deliveries
+        WHEN NEW.state='delivered' BEGIN SELECT RAISE(ABORT, 'fixture receipt persistence unavailable'); END`);
+      first.answer("Sent bytes are not a saved receipt.");
+      first.wakeConversation();
+      await waitFor(() => first.errors.some((error) => error.includes("fixture receipt persistence unavailable")));
+      expect(first.sent).toHaveLength(1);
+      expect(getDb(root).prepare("SELECT state FROM telegram_conversation_deliveries").get()).toEqual({
+        state: "sending",
+      });
+    } finally {
+      await first.close();
+    }
+    const restarted = fixture({ root });
+    try {
+      await restarted.ready();
+      expect(restarted.sent).toHaveLength(0);
+      expect(restarted.deliveryFailures[0]).toMatchObject({ deliveryStatus: "uncertain", requestId: "exact-ask" });
+    } finally {
+      await restarted.close();
+    }
+  });
+
+  it.each([false, true])(
+    "keeps an uncertain send discoverable after restart without repeating confirmed chunks (multipart: %s)",
+    async (multipart) => {
+      const first = fixture({ removeOnClose: false });
+      const { root } = first;
+      try {
+        const answer = multipart ? `${"a".repeat(4096)}uncertain tail` : "uncertain answer";
+        first.sendFailures.add(multipart ? "uncertain tail" : "uncertain answer");
+        first.answer(answer);
+        first.answer("A separate caller still receives this.", "other-ask");
+        first.wakeConversation();
+        await waitFor(() => first.deliveryFailures.some((failure) => failure.deliveryStatus === "uncertain"));
+        await waitFor(
+          () =>
+            getDb(root)
+              .prepare("SELECT COUNT(*) AS n FROM telegram_conversation_deliveries WHERE state='delivered'")
+              .get()?.n === 1,
+        );
+        expect(first.sent.filter((send) => send.text.includes("A separate caller still receives this."))).toHaveLength(
+          1,
+        );
+      } finally {
+        await first.close();
+      }
+      const restarted = fixture({ root });
+      try {
+        await restarted.ready();
+        expect(restarted.sent).toHaveLength(0);
+        expect(
+          restarted.deliveryFailures.some(
+            (failure) => failure.requestId === "exact-ask" && failure.deliveryStatus === "uncertain",
+          ),
+        ).toBe(true);
+        expect(getDb(root).prepare("SELECT state FROM telegram_conversation_deliveries ORDER BY state").all()).toEqual([
+          { state: "delivered" },
+          { state: "uncertain" },
+        ]);
+      } finally {
+        await restarted.close();
+      }
+    },
+  );
   it.each(["second", "first"])("restores the new %s watch after an old terminal send finishes", async (next) => {
     const f = fixture();
     try {
