@@ -1,4 +1,5 @@
 import { MAX_CODEX_GOAL_OBJECTIVE_CHARS, renderCodexGoalTaskAttempt } from "./codex-goal-packet.js";
+import { workloadObservation } from "../../../../../test/fixtures/task-workload.js";
 import { afterEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -137,6 +138,20 @@ function contextAttempt(root: string, version: string): TaskAttempt {
 
 // Exercise the real Task projection: a hand-reduced packet hid missing fields before.
 describe("Codex goal Task context", () => {
+  it("preserves scoped workload and common guidance in the native execution context only when supplied", () => {
+    const root = fixtureRoot();
+    const base = attempt();
+    const absent = codexGoalExecutorInternals.packetFor(base);
+    expect(absent.workloadAtAttemptStart).toBeUndefined();
+    const value = codexGoalExecutorInternals.packetFor({ ...base, workload: workloadObservation() });
+    expect(value.workloadAtAttemptStart).toEqual(workloadObservation());
+    const rendered = renderCodexGoalTaskAttempt(value, root);
+    expect(rendered.developerInstructions).toContain("Required work remains owed under pressure");
+    const packet = JSON.parse(rendered.developerInstructions.split("## Canonical May Task Attempt\n")[1]!);
+    expect(packet.workloadAtAttemptStart).toEqual(workloadObservation());
+    const unavailable = codexGoalExecutorInternals.packetFor({ ...base, workload: { available: false } });
+    expect(unavailable.workloadAtAttemptStart).toEqual({ available: false });
+  });
   it("keeps the goal stable on replay, preserves generation and bounds only the objective", () => {
     const root = fixtureRoot();
     const first = contextAttempt(root, "v3");

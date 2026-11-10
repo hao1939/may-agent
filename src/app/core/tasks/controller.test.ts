@@ -1,5 +1,5 @@
 import { describe, expect, it, spyOn } from "bun:test";
-import { AppTaskController } from "./controller.js";
+import { AppTaskController, type AppTaskDispatch } from "./controller.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";
 
 async function waitUntil(predicate: () => boolean, timeoutMs = 1_000): Promise<void> {
@@ -11,6 +11,191 @@ async function waitUntil(predicate: () => boolean, timeoutMs = 1_000): Promise<v
 }
 
 describe("AppTaskController", () => {
+  it("paused Apps can drain dead execution through ordinary capacity while business and coordination stay paused", async () => {
+    const starts: string[] = [];
+    const drained = Promise.withResolvers<void>();
+    const controller = new AppTaskController({ maxConcurrent: 1, capacity: new HostCapacity(2),
+      readScheduling: () => ({ backgroundPaused: true, foregroundTaskIds: new Set<string>(),
+        coordinationTaskIds: new Set(["review"]), executionCleanupTaskIds: new Set(["ended"]) }),
+      reconcile: async (id, dispatch) => {
+        starts.push(id);
+        expect(dispatch.coordination).toBeUndefined();
+        expect(dispatch.lane).toBe("normal");
+        drained.resolve();
+      },
+    });
+    try {
+      controller.enqueue("business");
+      controller.enqueue("review");
+      controller.enqueue("ended");
+      await drained.promise;
+      expect(starts).toEqual(["ended"]);
+      expect(controller.snapshot().pending).toEqual(["business", "review"]);
+    } finally { controller.close(); await controller.whenDrained(); }
+  });
+  it("runs trusted coordination when App and Host background work are saturated without lending ordinary work the reserve", async () => {
+    const capacity = new HostCapacity(2);
+    const starts: string[] = [];
+    const releases = new Map<string, () => void>();
+    const controller = new AppTaskController({ maxConcurrent: 1, capacity,
+      readScheduling: () => ({ backgroundPaused: false, foregroundTaskIds: new Set(), coordinationTaskIds: new Set(["review"]) }),
+      reconcile: async (id, dispatch) => {
+        starts.push(id);
+        if (id === "review") expect(dispatch.coordination).toBe(true);
+        else expect(dispatch.coordination).toBeUndefined();
+        await new Promise<void>(resolve => releases.set(id, resolve));
+      },
+    });
+    try {
+      controller.enqueue("business");
+      await waitUntil(() => starts.length === 1);
+      controller.enqueue("ordinary-p0", { priority: "P0" });
+      controller.enqueue("review");
+      await waitUntil(() => starts.length === 2);
+      expect(starts).toEqual(["business", "review"]);
+      expect(capacity.snapshot().running).toBe(2);
+      releases.get("review")!();
+      await waitUntil(() => controller.snapshot().running.length === 1);
+      expect(starts).toEqual(["business", "review"]);
+      releases.get("business")!();
+      await waitUntil(() => starts.length === 3);
+      expect(starts[2]).toBe("ordinary-p0");
+    } finally { controller.close(); releases.forEach(release => release()); await controller.whenDrained(); }
+  });
+
+  it("coordination has no autonomous exception to App pause", async () => {
+    const starts: string[] = [];
+    const controller = new AppTaskController({ maxConcurrent: 1, capacity: new HostCapacity(2),
+      readScheduling: () => ({ backgroundPaused: true, foregroundTaskIds: new Set(["human"]), coordinationTaskIds: new Set(["review"]) }),
+      reconcile: async id => { starts.push(id); },
+    });
+    try {
+      controller.enqueue("review", { priority: "P0" });
+      controller.enqueue("human", { lane: "human" });
+      await waitUntil(() => starts.includes("human") && !controller.snapshot().running.length);
+      expect(starts).toEqual(["human"]);
+      expect(controller.snapshot().pending).toContain("review");
+    } finally { controller.close(); await controller.whenDrained(); }
+  });
+  it("interleaves coordination on a one-place Host and serves newly queued human input first", async () => {
+    const capacity = new HostCapacity(1);
+    const starts: string[] = [];
+    const releases = new Map<string, () => void>();
+    const controller = new AppTaskController({ maxConcurrent: 1, capacity,
+      readScheduling: () => ({ backgroundPaused: false, foregroundTaskIds: new Set(["human"]), coordinationTaskIds: new Set(["review"]) }),
+      reconcile: async id => { starts.push(id); await new Promise<void>(resolve => releases.set(id, resolve)); },
+    });
+    try {
+      controller.enqueue("business");
+      await waitUntil(() => starts.length === 1);
+      controller.enqueue("review");
+      await waitUntil(() => capacity.snapshot().waiting === 1);
+      controller.enqueue("human", { lane: "human" });
+      releases.get("business")!();
+      await waitUntil(() => starts.length === 2);
+      expect(starts).toEqual(["business", "human"]);
+      expect(capacity.snapshot().running).toBe(1);
+      releases.get("human")!();
+      await waitUntil(() => starts.length === 3);
+      expect(starts).toEqual(["business", "human", "review"]);
+      expect(capacity.snapshot().running).toBe(1);
+    } finally { controller.close(); releases.forEach(release => release()); await controller.whenDrained(); }
+    expect(capacity.snapshot()).toEqual({ running: 0, waiting: 0 });
+  });
+
+  it("gives ready coordination a turn within two human dispatches in the same App", async () => {
+    const capacity = new HostCapacity(1);
+    const unblock = capacity.tryAcquireForeground()!;
+    const humans = ["human-0", "human-1", "human-2", "human-3"];
+    const starts: string[] = [];
+    const releases = new Map<string, () => void>();
+    const controller = new AppTaskController({ maxConcurrent: 1, capacity,
+      readScheduling: () => ({ backgroundPaused: false, foregroundTaskIds: new Set(humans), coordinationTaskIds: new Set(["review"]) }),
+      reconcile: async id => { starts.push(id); await new Promise<void>(resolve => releases.set(id, resolve)); },
+    });
+    try {
+      controller.enqueue("review");
+      for (const id of humans) controller.enqueue(id, { lane: "human" });
+      await waitUntil(() => capacity.snapshot().waiting === 1);
+      unblock();
+      await waitUntil(() => starts.length === 1);
+      expect(starts).toEqual(["human-0"]);
+      releases.get("human-0")!();
+      await waitUntil(() => starts.length === 2);
+      expect(starts).toEqual(["human-0", "human-1"]);
+      releases.get("human-1")!();
+      await waitUntil(() => starts.length === 3);
+      expect(starts).toEqual(["human-0", "human-1", "review"]);
+      expect(capacity.snapshot().running).toBe(1);
+    } finally { controller.close(); unblock(); releases.forEach(release => release()); await controller.whenDrained(); }
+    expect(capacity.snapshot()).toEqual({ running: 0, waiting: 0 });
+  });
+
+  it("gives another App's queued coordination a turn amid human waiters from several Apps", async () => {
+    const capacity = new HostCapacity(1);
+    const unblock = capacity.tryAcquireForeground()!;
+    const ids = ["human-0", "human-1", "human-2"];
+    const starts: string[] = [];
+    const releases = new Map<string, () => void>();
+    const reconcile = async (id: string) => { starts.push(id); await new Promise<void>(resolve => releases.set(id, resolve)); };
+    const humans = ids.map(id => new AppTaskController({ maxConcurrent: 1, capacity,
+      readScheduling: () => ({ backgroundPaused: false, foregroundTaskIds: new Set([id]) }), reconcile }));
+    const coordination = new AppTaskController({ maxConcurrent: 1, capacity,
+      readScheduling: () => ({ backgroundPaused: false, foregroundTaskIds: new Set<string>(), coordinationTaskIds: new Set(["review"]) }), reconcile });
+    try {
+      coordination.enqueue("review");
+      humans.forEach((controller, index) => controller.enqueue(ids[index]!, { lane: "human" }));
+      await waitUntil(() => capacity.snapshot().waiting === 4);
+      unblock();
+      await waitUntil(() => starts.length === 1);
+      expect(starts).toEqual(["human-0"]);
+      releases.get("human-0")!();
+      await waitUntil(() => starts.length === 2);
+      expect(starts).toEqual(["human-0", "human-1"]);
+      releases.get("human-1")!();
+      await waitUntil(() => starts.length === 3);
+      expect(starts).toEqual(["human-0", "human-1", "review"]);
+      expect(capacity.snapshot().running).toBe(1);
+    } finally {
+      humans.forEach(controller => controller.close()); coordination.close(); unblock(); releases.forEach(release => release());
+      await Promise.all([...humans, coordination].map(controller => controller.whenDrained()));
+    }
+    expect(capacity.snapshot()).toEqual({ running: 0, waiting: 0 });
+  });
+
+  it("rechecks coordination eligibility after a queued capacity acquisition", async () => {
+    const capacity = new HostCapacity(1);
+    const release = capacity.tryAcquireForeground()!;
+    let trusted = true;
+    const dispatches: AppTaskDispatch[] = [];
+    const controller = new AppTaskController({ maxConcurrent: 1, capacity,
+      readScheduling: () => ({ backgroundPaused: false, foregroundTaskIds: new Set(), coordinationTaskIds: new Set(trusted ? ["review"] : []) }),
+      reconcile: async (_id, dispatch) => { dispatches.push(dispatch); },
+    });
+    try {
+      controller.enqueue("review");
+      await waitUntil(() => capacity.snapshot().waiting === 1);
+      trusted = false;
+      release();
+      await waitUntil(() => dispatches.length === 1 && !controller.snapshot().running.length);
+      expect(dispatches[0]!.coordination).toBeUndefined();
+    } finally { release(); controller.close(); await controller.whenDrained(); }
+    expect(capacity.snapshot()).toEqual({ running: 0, waiting: 0 });
+  });
+
+  it("captures the authoritative Host observation after acquiring its dispatch place", async () => {
+    const capacity = new HostCapacity(4);
+    let observed: AppTaskDispatch | undefined;
+    const controller = new AppTaskController({ maxConcurrent: 2, capacity,
+      reconcile: async (_taskId, dispatch) => { observed = dispatch; } });
+    try {
+      controller.enqueue("work");
+      await waitUntil(() => Boolean(observed));
+      expect(observed!.hostCapacityAtDispatch).toMatchObject({ available: true,
+        scope: "controller-host-process", maxConcurrent: 4, reservedSlots: 1, observedAt: expect.any(String) });
+      expect(observed!.readyWaitMs).toBeGreaterThanOrEqual(0);
+    } finally { controller.close(); await controller.whenDrained(); }
+  });
   it("holds queued work behind an explicit startup gate", async () => {
     const started: string[] = [];
     let openGate = () => {};

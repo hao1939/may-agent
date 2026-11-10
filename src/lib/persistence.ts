@@ -52,6 +52,8 @@ export interface PersistedSession {
   agent: string;
   /** Selected installation-relative folder; null is programmatic, absent is legacy/unknown. */
   agentRelativeDir?: string | null;
+  /** Explicit programmatic installation owner; absent on legacy sessions. */
+  agentHostIdentity?: string | null;
   task: string;
   status: "running" | "done" | "error" | "interrupted" | "idle";
   startedAt: number;
@@ -523,17 +525,25 @@ function bashProcessGroupsPath(persistDir: string, sessionId: string): string {
 
 /**
  * Read durable setsid groups for an exact session. Legacy sessions have no
- * sidecar and intentionally dual-read as an empty set.
+ * sidecar and intentionally dual-read as an empty set. Damaged evidence must
+ * block cleanup rather than authorize releasing execution capacity.
  */
 export function readSessionBashProcessGroups(persistDir: string, sessionId: string): number[] {
   try {
-    const parsed = JSON.parse(
-      readFileSync(bashProcessGroupsPath(persistDir, sessionId), "utf-8"),
-    ) as Partial<PersistedBashProcessGroups>;
-    if (!Array.isArray(parsed.pgids)) return [];
-    return [...new Set(parsed.pgids.filter((pgid): pgid is number => Number.isInteger(pgid) && pgid > 0))];
-  } catch {
-    return [];
+    const parsed: unknown = JSON.parse(readFileSync(bashProcessGroupsPath(persistDir, sessionId), "utf-8"));
+    if (
+      !isRecord(parsed) ||
+      !Array.isArray(parsed.pgids) ||
+      !parsed.pgids.every(
+        (pgid: unknown): pgid is number => typeof pgid === "number" && Number.isSafeInteger(pgid) && pgid > 0,
+      )
+    ) {
+      throw new Error("Expected a list of positive process-group IDs");
+    }
+    return [...new Set<number>(parsed.pgids)];
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw new Error(`Cannot read bash process-group evidence for session ${sessionId}`, { cause: error });
   }
 }
 

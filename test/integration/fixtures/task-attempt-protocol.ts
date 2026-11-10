@@ -1,6 +1,10 @@
 import { expect } from "bun:test";
 import { spawn, type ChildProcess } from "node:child_process";
+import { once } from "node:events";
+import { createInterface } from "node:readline";
+import { fileURLToPath } from "node:url";
 import { EventBus } from "../../../src/app/core/events/bus.js";
+import { HostCapacity } from "../../../src/app/core/scheduling/host-capacity.js";
 import { readTaskChecks } from "../../../src/app/core/tasks/task-check-observations.js";
 import {
   createTaskAttemptProcessExecutor,
@@ -30,6 +34,19 @@ function scriptedWorker(source: string): ChildProcess {
 const scenarios: Record<string, () => void | Promise<void>> = {
   requestParsing() {
     expect(parseTaskAttemptProcessRequest(JSON.stringify(request))).toEqual(request);
+    const host = { available: true, scope: "controller-host-process", observedAt: "2026-11-09T00:00:00Z",
+      maxConcurrent: 5, backgroundMaxConcurrent: 4, reservedSlots: 3, waitingAcquisitions: 1 };
+    const observed = { ...request, dispatch: { ...request.dispatch, hostCapacityAtDispatch: host } };
+    expect(parseTaskAttemptProcessRequest(JSON.stringify(observed))).toEqual(observed);
+    for (const invalid of [null, {}, { ...host, scope: "worker-local" }, { ...host, observedAt: "bad" },
+      { ...host, reservedSlots: -1 }, { ...host, maxConcurrent: 0 }, { ...host, waitingAcquisitions: 0.5 }])
+      expect(() => parseTaskAttemptProcessRequest(JSON.stringify({ ...request, dispatch: { ...request.dispatch, hostCapacityAtDispatch: invalid } })))
+        .toThrow("invalid Host capacity observation");
+    const coordination = { ...request, dispatch: { ...request.dispatch, coordination: true } };
+    expect(parseTaskAttemptProcessRequest(JSON.stringify(coordination))).toEqual(coordination);
+    for (const invalid of [false, "true", 1, null])
+      expect(() => parseTaskAttemptProcessRequest(JSON.stringify({ ...request, dispatch: { ...request.dispatch, coordination: invalid } })))
+        .toThrow("invalid dispatch context");
     const pinned = {
       ...request,
       definitionSource: {
@@ -289,6 +306,51 @@ const scenarios: Record<string, () => void | Promise<void>> = {
       spawnWorker: () => scriptedWorker("process.exit(7);"),
     });
     await expect(execute(request)).rejects.toThrow("Task worker exited with code 7");
+  },
+
+  async timeoutDrain() {
+    // Observe readiness before starting the deadline. The child acknowledges
+    // SIGTERM but remains alive until the test explicitly permits exit.
+    const child = spawn(process.execPath, [
+      "--preload", fileURLToPath(new URL("../../fixtures/process-lifetime.ts", import.meta.url)),
+      "-e", `
+        process.on("message", () => {});
+        process.on("SIGTERM", () => process.stdout.write("stopping\\n"));
+        process.on("SIGUSR1", () => process.exit(0));
+        process.stdout.write("ready\\n");
+      `,
+    ], { stdio: ["pipe", "pipe", "pipe", "ipc"] });
+    const lines = createInterface({ input: child.stdout! });
+    const closed = once(child, "close");
+    let outcome: Promise<unknown> | undefined;
+    try {
+      expect((await once(lines, "line"))[0]).toBe("ready");
+      const stopping = once(lines, "line");
+      const capacity = new HostCapacity(1);
+      const execute = createTaskAttemptProcessExecutor({
+        bus: new EventBus(), timeoutMs: 20, spawnWorker: () => child,
+      });
+      let settled = false;
+      outcome = capacity.run(() => execute(request)).then(
+        () => { settled = true; return null; },
+        (error) => { settled = true; return error; },
+      );
+      expect((await stopping)[0]).toBe("stopping");
+      expect(child.exitCode).toBeNull();
+      expect(settled).toBe(false);
+      expect(capacity.snapshot()).toEqual({ running: 1, waiting: 0 });
+      child.kill("SIGUSR1");
+      await closed;
+      const error = await outcome;
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toContain("Task worker exceeded 20ms");
+      expect(capacity.snapshot()).toEqual({ running: 0, waiting: 0 });
+    } finally {
+      child.kill("SIGKILL");
+      await closed;
+      await outcome;
+      lines.close();
+    }
   },
 
   async missingResult() {

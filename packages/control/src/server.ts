@@ -64,6 +64,7 @@ export interface AttachControlSocketOptions {
     conversationId: string,
     options?: { limit?: number; topicId?: string; topicLimit?: number; topicCursor?: string },
   ) => unknown;
+  getAppTaskWorkload?: (appId: string, options?: { agent?: string; limit?: number; cursor?: string; inputCursor?: string }) => unknown;
   listAppTasks?: (appId: string, options?: { status?: string[]; limit?: number; cursor?: string }) => unknown;
   getAppTask?: (
     appId: string,
@@ -268,6 +269,7 @@ export interface ControlSocketCoreOptions {
   admitAppInput?: AttachControlSocketOptions["admitAppInput"];
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
   listAppTasks?: AttachControlSocketOptions["listAppTasks"];
+  getAppTaskWorkload?: AttachControlSocketOptions["getAppTaskWorkload"];
   getAppTask?: AttachControlSocketOptions["getAppTask"];
   resolveAppTask?: AttachControlSocketOptions["resolveAppTask"];
   listApps?: AttachControlSocketOptions["listApps"];
@@ -293,6 +295,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     admitAppInput,
     getAppConversation,
     listAppTasks,
+    getAppTaskWorkload,
     getAppTask,
     resolveAppTask,
     listApps,
@@ -805,6 +808,35 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           continue;
         }
 
+        if (normalized.kind === "control" && normalized.command === "app.tasks.workload") {
+          const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
+          try {
+            if (!appId) throw new Error("appId is required");
+            if (!getAppTaskWorkload) throw new Error("App workload reads are unavailable");
+            if (frame.agent !== undefined && (typeof frame.agent !== "string" || !frame.agent.trim()))
+              throw new Error("agent must be a non-empty string");
+            if (frame.limit !== undefined && (!Number.isSafeInteger(frame.limit) || Number(frame.limit) < 1 || Number(frame.limit) > 100))
+              throw new Error("limit must be an integer between 1 and 100");
+            if (frame.cursor !== undefined && (typeof frame.cursor !== "string" || !frame.cursor.trim()))
+              throw new Error("cursor must be a non-empty string");
+            if (frame.inputCursor !== undefined && (typeof frame.inputCursor !== "string" || !frame.inputCursor.trim()))
+              throw new Error("inputCursor must be a non-empty string");
+            writeFrame(socket, {
+              type: "ok", command: normalized.command, appId,
+              workload: getAppTaskWorkload(appId, {
+                ...(typeof frame.agent === "string" ? { agent: frame.agent } : {}),
+                ...(typeof frame.limit === "number" ? { limit: frame.limit } : {}),
+                ...(typeof frame.cursor === "string" ? { cursor: frame.cursor } : {}),
+                ...(typeof frame.inputCursor === "string" ? { inputCursor: frame.inputCursor } : {}),
+              }),
+            });
+          } catch (error) {
+            writeFrame(socket, { type: "error", command: normalized.command,
+              message: error instanceof Error ? error.message : String(error) });
+          }
+          continue;
+        }
+
         if (normalized.kind === "control" && normalized.command === "app.tasks.list") {
           const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
           if (!appId || !listAppTasks) {
@@ -1289,6 +1321,7 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
     admitAppInput: opts.admitAppInput,
     getAppConversation: opts.getAppConversation,
     listAppTasks: opts.listAppTasks,
+    getAppTaskWorkload: opts.getAppTaskWorkload,
     getAppTask: opts.getAppTask,
     resolveAppTask: opts.resolveAppTask,
     listApps: opts.listApps,

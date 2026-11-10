@@ -192,6 +192,7 @@ export async function prepareDaemonAgents(opts: {
       sharedRoot: opts.definitionSharedRoot,
       bus: opts.bus,
       hostCapacity: opts.hostCapacity,
+      workloadFeedbackAppId: process.env.MAY_TASK_WORKLOAD_FEEDBACK_APP?.trim().replace(/\.app$/, "") || undefined,
       ...createTaskExecutionBackends({
         manager: opts.manager,
         bus: opts.bus,

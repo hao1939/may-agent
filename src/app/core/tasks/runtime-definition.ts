@@ -5,6 +5,7 @@ import { join, relative, resolve } from "node:path";
 import { getDb } from "../../../lib/db/connection.js";
 import type { AppRegistry, AppRegistrySnapshot } from "../apps/registry.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
+import { TaskBudgetAdmissionStore } from "../state/task-budget-admission.js";
 import { appTaskContext } from "./app-task-reconciler.js";
 import { loadProjectReadModel, projectRuntimePaths } from "./app-task-runtime-state.js";
 import type { TaskTree } from "./app-task-store.js";
@@ -101,6 +102,9 @@ export function syncProjectReadModel(
 
 function validatePreparedAppTaskRuntime(descriptor: AppTaskRuntimeDescriptor): void {
   const { app, id } = descriptor;
+  new TaskBudgetAdmissionStore(descriptor.resourceStore.db).assertCoordinationPolicy(
+    id, descriptor.agent, app.tasks?.coordination,
+  );
   const concurrency = app.tasks?.maxConcurrent ?? 1;
   if (!Number.isInteger(concurrency) || concurrency <= 0) {
     throw new Error(`App ${id} task maxConcurrent must be a positive integer`);
@@ -120,6 +124,7 @@ function discoverAppTaskResourceStore(
   const appId = app.id;
   if (!persistDir) throw new Error(`App ${appId} task runtime requires the Host persistence directory`);
   const db = getDb(persistDir);
+  new TaskBudgetAdmissionStore(db).assertCoordinationPolicy(appId, configuredAppAgent(app, appDir), app.tasks?.coordination);
   const active = AppTaskResourceStore.activeFromDb(db, appId);
   if (active) return active;
   if (existsSync(projectRuntimePaths(appDir).taskStatePath)) {
@@ -152,7 +157,7 @@ function discoverAppTaskResourceStore(
   }
   const sourceRevision = `seed:${createHash("sha256").update(seedText).digest("hex")}`;
   const store = AppTaskResourceStore.fromDb(db, appId);
-  store.bootstrapSnapshot(tree, sourceRevision);
+  store.bootstrapSnapshot(tree, sourceRevision, [], "new-app-seed");
   const bootstrapped = AppTaskResourceStore.activeFromDb(db, appId);
   if (!bootstrapped) throw new Error(`App ${appId} task resource bootstrap did not publish authority`);
   return bootstrapped;
@@ -164,6 +169,10 @@ export async function prepareAppTaskRuntimeDescriptors(opts: {
   taskAppIds?: readonly string[];
   appRegistry?: AppRegistry;
   appRegistrySnapshot?: AppRegistrySnapshot;
+  projectRoot?: string;
+  agentsRoot?: string;
+  sharedRoot?: string;
+  workflows?: AppTaskRuntimeOptions["workflows"];
 }): Promise<AppTaskRuntimeDescriptor[]> {
   const descriptors: AppTaskRuntimeDescriptor[] = [];
   const ids = new Set<string>();
@@ -175,6 +184,20 @@ export async function prepareAppTaskRuntimeDescriptors(opts: {
     if (selectedIds && !selectedIds.has(id)) continue;
     if (ids.has(id)) throw new Error(`Duplicate App task runtime id: ${id}`);
     ids.add(id);
+    const coordination = app.tasks?.coordination;
+    if (coordination) {
+      if (typeof coordination.taskId !== "string" || !coordination.taskId.trim() || coordination.taskId !== coordination.taskId.trim() ||
+          typeof coordination.workflow !== "string" || !coordination.workflow.trim() || coordination.workflow !== coordination.workflow.trim() ||
+          !Number.isSafeInteger(coordination.maxAttemptMs) || coordination.maxAttemptMs < 1_000 || coordination.maxAttemptMs > 120_000)
+        throw new Error(`App ${id} coordination requires an exact Task/workflow and a 1–120 second attempt bound`);
+      if (!opts.workflows) throw new Error(`App ${id} coordination workflow runner is unavailable`);
+      const inspected = await opts.workflows.inspect({
+        source: { ...opts, projectRoot: opts.projectRoot ?? opts.projectsRoot }, appDir,
+        agent: configuredAppAgent(app, appDir), workflow: coordination.workflow,
+      });
+      if (!inspected.available || inspected.error || inspected.workspace !== "shared")
+        throw new Error(`App ${id} coordination workflow must use the existing shared workspace`);
+    }
     const resourceStore = discoverAppTaskResourceStore(opts.persistDir, app, appDir);
     const descriptor: AppTaskRuntimeDescriptor = {
       id,

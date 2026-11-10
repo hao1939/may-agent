@@ -4,12 +4,16 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createWorkflowRunner, type WorkflowToolOptions } from "../../src/lib/workflow-tool.js";
+import { closeDb } from "../../src/lib/db/connection.js";
 import { buildRuntimeCtx } from "../../src/lib/runtime-ctx.js";
 import type { WorkflowEvent } from "../../src/lib/workflow.js";
 
 const roots: string[] = [];
 afterEach(() => {
-  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+  for (const root of roots.splice(0)) {
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 async function runFixture(body: string, options: Partial<WorkflowToolOptions> = {}) {
@@ -44,10 +48,12 @@ async function runFixture(body: string, options: Partial<WorkflowToolOptions> = 
 describe("one workflow context", () => {
   for (const mode of ["direct", "runtime", "task"] as const) {
     it(`exposes only SDK capabilities in ${mode} execution`, async () => {
+      const stateDir = mkdtempSync(join(tmpdir(), "may-workflow-context-state-"));
+      roots.push(stateDir);
       const runtimeCtx = buildRuntimeCtx({
         bus: { emit: () => undefined } as any,
         agentName: "fixture-owner",
-        persistDir: "/not-exposed/state",
+        persistDir: stateDir,
         projectRoot: "/not-exposed/project",
         agentsRoot: "/not-exposed/agents",
         sharedRoot: "/not-exposed/shared",

@@ -22,6 +22,14 @@ The Task runtime decides transitions; these operations enforce their storage
 boundaries. Events announce meaningful changes and accelerate discovery, while
 durable state remains authoritative. There is no extra server or storage queue.
 
+Budget admission uses the Task's immutable creator as well as its recipient App
+to identify retained work requiring explicit attribution. Unconfigured independent
+services keep their own scope. Standing allowances match the full App/Task identity.
+Task creation wakes exact deferred creation inputs in the same transaction;
+saving a hold rechecks existence so a concurrent free attachment cannot be lost.
+Adopting a contribution wakes both it and its bound root, with their exact input
+holds, without charging historical work.
+
 Bounded Task context retains the exact current and observed attempt references
 before filling the remaining history slots. Timestamp order alone cannot select
 execution authority or accepted facts: clocks can move backwards, and two

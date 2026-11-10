@@ -1,3 +1,6 @@
+import { ExecutionDeferredError } from "@may-agent/sdk";
+import { TaskExecutionDeferredError } from "../state/task-execution-admission.js";
+import { TaskBudgetDeferredError } from "../state/task-budget-admission.js";
 import { listConversationInputRequests } from "../state/conversation-requests.js";
 import { boundedAppRequestConversation } from "../reads/conversation-context.js";
 import {
@@ -21,6 +24,7 @@ import type { EventEnvelope } from "../events/bus.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent } from "../events/bus.js";
 import { createRuntimeAppRead, readRuntimeTaskView } from "../reads/app-read.js";
 import { readInstalledAppContract } from "../reads/app-contract.js";
+import { readTaskWorkload, runtimeWorkloadSource } from "../reads/task-workload.js";
 import {
   readAppTaskLiveEvent,
   readAppTaskReconciliationEvents,
@@ -56,6 +60,7 @@ const APP_TASK_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
 
 /** Core-owned input for one claimed execution, before choosing its adapter. */
 export type TaskAttemptInput = {
+  dispatch?: import("./controller.js").AppTaskDispatch;
   opts: AppTaskRuntimeOptions;
   descriptor: AppTaskRuntimeDescriptor;
   claim: AppTaskClaim;
@@ -125,6 +130,8 @@ export async function runTaskWorkflow(
       app: descriptor.app,
     },
     executionTimeoutMs: APP_TASK_WORKFLOW_TIMEOUT_MS,
+    ...(input.dispatch?.coordination
+      ? { executionTimeoutLimitMs: descriptor.app.tasks!.coordination!.maxAttemptMs } : {}),
   });
 }
 
@@ -168,6 +175,18 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
   const conversationIds = [
     ...new Set(inputs.flatMap((input) => (input.communication ? [input.communication.conversationId] : []))),
   ];
+  const taskReadOptions = {
+    getDb: () => descriptor.resourceStore.db,
+    taskStateConfig: appTaskConfig(descriptor),
+    readOutcomes: opts.readOutcomes,
+    workloadSource: runtimeWorkloadSource(opts, descriptor, input.dispatch, claim.taskId),
+  };
+  const taskReads = createRuntimeAppRead(taskReadOptions).tasks;
+  let workload: TaskAttempt["workload"];
+  if (opts.workloadFeedbackAppId === descriptor.id) {
+    try { workload = readTaskWorkload(taskReadOptions, { agent: claim.agent }); }
+    catch { workload = { available: false }; }
+  }
   const attempt: TaskAttempt = {
     appId: descriptor.id,
     attemptId: claim.attemptId,
@@ -178,6 +197,7 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
       instructions: `Act as the selected May agent ${claim.agent}.`,
     },
     task: structuredClone(task),
+    ...(workload ? { workload } : {}),
     read: {
       async communication(inputId, query) {
         if (closed) throw new Error("Task attempt is closed");
@@ -188,11 +208,7 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
           : readAppConversationResource(config.resourceStore.db, item.appId, item.conversationId!, { limit: 40 });
       },
       contract: async (appId) => readInstalledAppContract(configuredRegistryEntries(opts), appId),
-      tasks: createRuntimeAppRead({
-        getDb: () => descriptor.resourceStore.db,
-        taskStateConfig: appTaskConfig(descriptor),
-        readOutcomes: opts.readOutcomes,
-      }).tasks,
+      tasks: taskReads,
     },
     ...(claim.previousAttempt ? { previousAttempt: structuredClone(claim.previousAttempt) } : {}),
     cwd: input.executionPaths.workspaceDir,
@@ -410,6 +426,19 @@ export async function runTaskExecutorAttempt(
     const result = await input.execute(taskAttempt.attempt, taskAttempt.events);
     const acceptedLiveEventIds = taskAttempt.acceptedLiveEventIds();
     return acceptedLiveEventIds.length > 0 ? { ...result, acceptedLiveEventIds } : result;
+  } catch (error) {
+    if (!(error instanceof TaskBudgetDeferredError) && !(error instanceof TaskExecutionDeferredError)) throw error;
+    const runId = error.callerExecution?.id ?? null;
+    return {
+      ...(error instanceof TaskBudgetDeferredError ? { funding: error.constraint } : { execution: error.constraint }),
+      runId,
+      handlerResult: {
+        state: "error",
+        summary: error.message,
+        actions: [],
+        facts: error.callerExecution?.kind === "workflow" ? [`workflow-run:${runId}`] : [],
+      },
+    };
   } finally {
     clearInterval(leaseTimer);
     taskAttempt.close();
@@ -477,6 +506,7 @@ export async function runRegisteredTaskExecutor(
       runId,
     };
   } catch (error) {
+    if (error instanceof ExecutionDeferredError) throw error;
     return {
       handlerResult: {
         state: "error",

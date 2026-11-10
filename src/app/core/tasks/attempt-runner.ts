@@ -1,3 +1,6 @@
+import { recoverDeadTaskExecution, releaseJoinedTaskAttemptExecution } from "../state/task-execution-cleanup.js";
+import { TaskExecutionStore } from "../state/task-execution-store.js";
+import { TaskBudgetDeferredError } from "../state/task-budget-admission.js";
 import {
   admitTaskVerificationResult as admitAppTaskVerificationResult,
   type TaskAcceptanceBasis as AppTaskAcceptanceBasis,
@@ -18,11 +21,15 @@ import {
   claimObservedAppTask,
   completeAppTask,
   deferAppTask,
+  deferAppTaskSettlement,
+  deferAppTaskExecution,
+  refreshTaskWorkspaceConstraint,
   expiredAgentSessionAppTaskAttempt,
   failAppTaskAttempt,
   isAppTaskActionStaleError,
   readAppTaskChildContext,
   readAppTaskLiveSnapshot,
+  readAppTaskAgent,
   readPendingAppTaskTrigger,
   recoverableAppTaskAttempts,
   recordAppTaskAttemptWorkspace,
@@ -33,7 +40,7 @@ import {
   reportAppTaskFailure,
   type AppTaskClaim,
 } from "./app-task-reconciler.js";
-import { ResourceTaskMutationStaleError, type AppTaskContext } from "./app-task-store.js";
+import { appTaskReadinessById, ResourceTaskMutationStaleError, type AppTaskContext } from "./app-task-store.js";
 import {
   hasLiveAppTaskSession,
   interruptSupersededAgentSession,
@@ -54,14 +61,40 @@ import {
   type AppTaskRuntimeDescriptor,
 } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
-import type { PreparedTaskWorkspace } from "./workspace.js";
+import type { PreparedTaskWorkspace, TaskWorkspaceAdmission, TaskWorkspaceInput } from "./workspace.js";
+import { TaskWorkspaceDeferredError } from "./workspace.js";
+import { pendingTaskWorkspaceConstraint } from "./app-task-state.js";
 import { recordTaskCheck } from "./task-check-observations.js";
+import { isTrustedTaskCoordination } from "./task-coordination.js";
 
 export type AppTaskTiming = {
   dispatch: AppTaskDispatch;
   attemptId?: string;
   generation?: number;
 };
+
+/** Both preclaim observation and actual preparation resolve the installed method.
+ * No resource authority is passed to the adapter; it only observes the operation. */
+async function taskWorkspaceRequirement(
+  opts: AppTaskRuntimeOptions, descriptor: AppTaskRuntimeDescriptor, config: AppTaskContext,
+  input: { intent: AppTaskIntent; agent: string; generation: number },
+) {
+  const workflow = input.intent.workflow?.trim();
+  const workspace = workflow && opts.workflows ? (await opts.workflows.inspect({
+    source: opts, appDir: descriptor.appDir, agent: input.agent, workflow,
+  })).workspace : undefined;
+  const workflowNeedsWorktree = workspace === "task" || (typeof workspace === "object" && workspace.kind === "task");
+  const required = !(isConversationTask(config, input.intent.id) && descriptor.app.conversation?.mode !== "task") &&
+    (workflowNeedsWorktree || (!workflow && descriptor.app.workspace?.kind === "git"));
+  const preparation: TaskWorkspaceInput | undefined = required && descriptor.app.workspace?.kind === "git" ? {
+    repoDir: descriptor.projectDir,
+    workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
+    taskId: input.intent.id, generation: input.generation,
+    baseBranch: typeof workspace === "object" ? workspace.baseBranch : (descriptor.app.workspace.branch ?? "dev"),
+    previous: config.resourceStore.readTaskWorkspace(input.intent.id, input.generation),
+  } : undefined;
+  return { workspace, required, preparation };
+}
 
 export async function runTaskAttempt(input: {
   opts: AppTaskRuntimeOptions;
@@ -77,16 +110,59 @@ export async function runTaskAttempt(input: {
     dispatch: input.dispatch,
   };
 
+  const config = appTaskConfig(descriptor);
+  recoverDeadTaskExecution(config.resourceStore.db, { appId: descriptor.id, taskId: input.taskId },
+    opts.sessions ? (id, binding) => !opts.sessions!.isLive(id) &&
+      opts.sessions!.interrupt(id, "Recovering stopped Task execution", input.taskId, binding) : undefined);
+  let claimedExecution: AppTaskClaim | undefined;
   try {
-    const config = appTaskConfig(descriptor);
     // Recover the exact saved answer before deciding whether any agent work is needed.
     const recoveredTaskIds = recoverTaskConditions(opts, descriptor, config, { taskId: input.taskId }).filter(
       (taskId) => taskId !== input.taskId,
     );
+    const snapshot = config.resourceStore.readTaskContext({ taskIds: [input.taskId] }, { includeHistory: false, childLimit: 0 });
+    const pending = snapshot.resources?.[input.taskId];
+    const workspaceHold = pending && pendingTaskWorkspaceConstraint(pending);
+    const readiness = appTaskReadinessById(snapshot, config.maxConcurrent)[input.taskId]?.state;
+    let expectedResource: { generation: number; resourceVersion: number } | undefined;
+    if (pending && !pending.status.currentAttemptId && pending.status.phase !== "running" &&
+      (workspaceHold || (descriptor.app.workspace?.kind === "git" && opts.workspaces?.admission)) &&
+      (workspaceHold || readiness === "ready" || readiness === "capacity-blocked") &&
+      (!workspaceHold || workspaceHold.retryAt <= Date.now())) {
+      expectedResource = { generation: pending.metadata.generation, resourceVersion: pending.metadata.resourceVersion };
+      let observation: TaskWorkspaceAdmission = { kind: "unavailable" };
+      try {
+        const method = await taskWorkspaceRequirement(opts, descriptor, config, {
+          intent: { ...pending.spec, id: input.taskId }, generation: pending.metadata.generation,
+          agent: readAppTaskAgent(config, input.taskId, snapshot) ?? descriptor.agent,
+        });
+        observation = !method.required ? { kind: "ready" }
+          : method.preparation && opts.workspaces?.admission ? await opts.workspaces.admission(method.preparation)
+          : { kind: "unavailable" };
+        // A shared method with no retained blocker has no checkout observation
+        // to fence. The ordinary claim reads current requirements as before.
+        if (!method.required && !workspaceHold) expectedResource = undefined;
+      } catch { /* Actual preparation retains its established diagnostic/failure path. */ }
+      if (expectedResource && (observation.kind === "deferred" || workspaceHold)) {
+        const held = observation.kind === "deferred" ? observation.constraint
+          : observation.kind === "unavailable" && workspaceHold ? { ...workspaceHold, retryAt: Date.now() + 60_000 }
+          : undefined;
+        const applied = refreshTaskWorkspaceConstraint(config, { taskId: input.taskId, ...expectedResource }, held);
+        if (!applied || held) {
+          recordTaskCheck(opts.bus, applied ? "deferred" : "stale", { appId: descriptor.id, taskId: input.taskId });
+          return recoveredTaskIds;
+        }
+        expectedResource.resourceVersion++;
+      }
+    }
     const claim = claimObservedAppTask(config, {
       taskId: input.taskId,
       appAgent: descriptor.agent,
       handler: "auto",
+      expectedResource,
+      execution: { recipient: agent => opts.agents?.executionRecipient?.(agent) ?? null,
+        lane: input.dispatch.coordination ? "coordination" : input.dispatch.lane === "human" ? "human" : "background" },
+      ...(input.dispatch.coordination ? { canUseCoordinationReserve: (resource, agent) => isTrustedTaskCoordination(descriptor, resource, agent) } : {}),
       reason: input.reason ?? "task-controller",
       recoverPreviousSession: (attempt) => {
         if (attempt.taskId !== input.taskId) {
@@ -140,7 +216,9 @@ export async function runTaskAttempt(input: {
           session?.status === "done" || session?.status === "error" || session?.status === "interrupted"
             ? session.status
             : null;
-        if (expired && sessionId && terminalStatus && !hasLiveAppTaskSession(opts, sessionId)) {
+        if (expired && sessionId && terminalStatus &&
+          !new TaskExecutionStore(config.resourceStore.db).hasActive({ appId: descriptor.id, taskId: input.taskId }, expired.attemptId) &&
+          !hasLiveAppTaskSession(opts, sessionId)) {
           // A session artifact is facts, not an accepted Task result. Drain
           // the exact old execution before retrying through normal settlement.
           interruptSupersededAgentSession(
@@ -177,10 +255,15 @@ export async function runTaskAttempt(input: {
       log("debug", `[app-task:${descriptor.id}] ${input.taskId} check: ${claim.kind}`);
       return recoveredTaskIds;
     }
+    claimedExecution = claim;
     timing.attemptId = claim.attemptId;
     timing.generation = claim.generation;
-    return [...new Set([...recoveredTaskIds, ...(await runClaimedTask(opts, descriptor, config, claim))])];
+    return [...new Set([...recoveredTaskIds, ...(await runClaimedTask(opts, descriptor, config, claim, input.dispatch))])];
   } finally {
+    if (claimedExecution) releaseJoinedTaskAttemptExecution(config.resourceStore.db,
+      { appId: descriptor.id, taskId: input.taskId }, claimedExecution.attemptId,
+      opts.sessions ? (id, binding) => !opts.sessions!.isLive(id) &&
+        opts.sessions!.interrupt(id, "Task execution joined", input.taskId, binding) : undefined);
     if (timing.attemptId) input.reportTiming(timing);
   }
 }
@@ -190,12 +273,13 @@ async function runClaimedTask(
   descriptor: AppTaskRuntimeDescriptor,
   config: AppTaskContext,
   claim: AppTaskClaim,
+  dispatch: AppTaskDispatch,
 ): Promise<string[]> {
   const intent = claim.intent;
   const event = claim.trigger as EventEnvelope | undefined;
   const workflowKey = claim.handler.startsWith("workflow:") ? claim.handler.slice("workflow:".length) : "";
   let executionPaths: AppTaskExecutionPaths;
-  let taskWorkspace: PreparedTaskWorkspace | undefined;
+  let taskWorkspace: PreparedTaskWorkspace | undefined = claim.settlement?.workspace;
   let workspaceFinalized = false;
   try {
     executionPaths = appTaskExecutionPaths(descriptor.appDir, descriptor.projectDir);
@@ -216,67 +300,71 @@ async function runClaimedTask(
     // between separate claims).
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
-    const workflowWorkspace =
-      workflowKey && opts.workflows
-        ? (
-            await opts.workflows.inspect({
-              source: opts,
-              appDir: descriptor.appDir,
-              agent: claim.agent,
-              workflow: workflowKey,
-            })
-          ).workspace
-        : undefined;
-    const workflowNeedsWorktree =
-      workflowWorkspace === "task" || (typeof workflowWorkspace === "object" && workflowWorkspace.kind === "task");
-    // Both execution paths share workspace lineage, admission fencing, and
-    // failure handling. Only the workflow may override the App's base branch.
-    if (
-      !(conversation && descriptor.app.conversation?.mode !== "task") &&
-      (workflowNeedsWorktree || (!workflowKey && descriptor.app.workspace?.kind === "git"))
-    ) {
-      try {
-        if (descriptor.app.workspace?.kind !== "git") {
-          throw new Error(`Workflow ${workflowKey} requires a task worktree but app workspace is not Git`);
+    let report: TaskCapabilityRun;
+    if (claim.settlement) {
+      report = claim.settlement.report;
+      if (taskWorkspace) executionPaths = withAppTaskWorkspace(executionPaths, taskWorkspace.metadata.path);
+    } else {
+      const method = await taskWorkspaceRequirement(opts, descriptor, config, {
+        intent, agent: claim.agent, generation: claim.generation,
+      });
+      if (dispatch.coordination && method.workspace !== "shared")
+        throw new Error("Coordination reserve requires the installed shared-workspace workflow");
+      // Both execution paths share workspace lineage, admission fencing, and
+      // failure handling. Only the workflow may override the App's base branch.
+      if (method.required) {
+        try {
+          if (descriptor.app.workspace?.kind !== "git") {
+            throw new Error(`Workflow ${workflowKey} requires a task worktree but app workspace is not Git`);
+          }
+          if (!opts.workspaces) throw new Error("Task workspace backend is not installed");
+          taskWorkspace = await opts.workspaces.prepare(method.preparation!);
+          executionPaths = withAppTaskWorkspace(executionPaths, taskWorkspace.metadata.path);
+          if (!recordAppTaskAttemptWorkspace(config, claim, taskWorkspace.metadata)) {
+            throw new Error(`Task attempt ${claim.attemptId} became stale while preparing its workspace`);
+          }
+        } catch (error) {
+          if (error instanceof TaskWorkspaceDeferredError) {
+            const applied = persistResult(() => deferAppTaskExecution(config, claim, error.constraint));
+            emit("project.task.reconciled", { disposition: applied === "applied" ? "deferred" : "stale",
+              workspace: error.constraint, summary: error.message });
+            return [];
+          }
+          return await finishUnsuccessfulAttempt({
+            handlerResult: {
+              state: "error",
+              summary: `Task workspace preparation failed: ${error instanceof Error ? error.message : String(error)}`,
+              facts: [],
+              actions: [],
+            },
+            runId: null,
+            workspacePreparationFailed: true,
+          });
         }
-        if (!opts.workspaces) throw new Error("Task workspace backend is not installed");
-        const previous = config.resourceStore.readTaskWorkspace(claim.taskId, claim.generation);
-        taskWorkspace = await opts.workspaces.prepare({
-          repoDir: descriptor.projectDir,
-          workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
-          taskId: claim.taskId,
-          generation: claim.generation,
-          baseBranch:
-            typeof workflowWorkspace === "object"
-              ? workflowWorkspace.baseBranch
-              : (descriptor.app.workspace.branch ?? "dev"),
-          previous,
-        });
-        executionPaths = withAppTaskWorkspace(executionPaths, taskWorkspace.metadata.path);
-        if (!recordAppTaskAttemptWorkspace(config, claim, taskWorkspace.metadata)) {
-          throw new Error(`Task attempt ${claim.attemptId} became stale while preparing its workspace`);
-        }
-      } catch (error) {
-        return await finishUnsuccessfulAttempt({
-          handlerResult: {
-            state: "error",
-            summary: `Task workspace preparation failed: ${error instanceof Error ? error.message : String(error)}`,
-            facts: [],
-            actions: [],
-          },
-          runId: null,
-          workspacePreparationFailed: true,
-        });
       }
+      // One attempt lifetime surrounds dispatch; settlement follows after it closes.
+      const execution = { opts, descriptor, claim, executionPaths, childContext, taskSnapshot, event, dispatch };
+      report = await runTaskExecutorAttempt({
+        ...execution,
+        execute: (attempt, taskEvents) => executeTaskHandler({ ...execution, attempt, taskEvents, conversation }),
+      });
     }
-    // One attempt lifetime surrounds dispatch; settlement follows after it closes.
-    const execution = { opts, descriptor, claim, executionPaths, childContext, taskSnapshot, event };
-    const report = await runTaskExecutorAttempt({
-      ...execution,
-      execute: (attempt, taskEvents) => executeTaskHandler({ ...execution, attempt, taskEvents, conversation }),
-    });
-
     const result = report.handlerResult;
+    if (report.funding || report.execution) {
+      const constraint = (report.funding ?? report.execution)!;
+      // Execution has drained. Retain its workspace and all unaccepted input;
+      // this resource constraint must not consume an execution retry.
+      const finalized = await finalizeWorkspace("waiting");
+      const facts = [...result.facts, ...(!finalized.ok && finalized.reason ? [finalized.reason] : [])];
+      const applied = persistResult(() => deferAppTaskExecution(config, claim, constraint, facts));
+      emit("project.task.reconciled", {
+        disposition: applied === "applied" ? "deferred" : "stale",
+        ...(report.funding ? { funding: report.funding } : { execution: report.execution }),
+        workflowRunId: report.runId,
+        summary: result.summary,
+      });
+      return [];
+    }
     const rejectResult = (
       summary: string,
       diagnostics: Pick<TaskCapabilityRun, "handlerBlocked"> = {},
@@ -331,7 +419,9 @@ async function runClaimedTask(
       }
     }
     if (result.state === "converged") {
-      const accepted = await establishTaskAcceptance({
+      const accepted = claim.settlement?.acceptanceBasis
+        ? { ok: true as const, acceptanceBasis: claim.settlement.acceptanceBasis }
+        : await establishTaskAcceptance({
         opts,
         descriptor,
         intent,
@@ -384,6 +474,8 @@ async function runClaimedTask(
               apply = report.conversation
                 ? completeConversationTaskTurn(config, claim, report.conversation.decision, {
                     taskControls: report.conversation.taskControls,
+                    followUpAttachment: report.conversation.followUpAttachment,
+                    onFollowUpMapped: (attachment) => { report.conversation!.followUpAttachment = attachment; },
                     acceptanceBasis,
                     getTaskApp: (appId) => conversationTaskApp(opts, descriptor, appId),
                   })
@@ -440,6 +532,8 @@ async function runClaimedTask(
         }
         return stale?.reconcileTaskIds ?? apply.dependentTaskIds;
       } catch (error) {
+        if (error instanceof TaskBudgetDeferredError)
+          return deferSettlement(report, error, acceptanceBasis);
         const stale = recoverStaleTaskActionResult(config, claim, error);
         if (stale) {
           const summary = error instanceof Error ? error.message : String(error);
@@ -584,6 +678,23 @@ async function runClaimedTask(
       // persistence boundary itself is unavailable.
     }
     throw error;
+  }
+
+  function deferSettlement(report: TaskCapabilityRun, error: TaskBudgetDeferredError, acceptanceBasis: AppTaskAcceptanceBasis): string[] {
+    const { settlement: _previousSettlement, ...originalClaim } = claim;
+    const workspace = taskWorkspace ? {
+      ...taskWorkspace, metadata: config.resourceStore.readAttempt(claim.attemptId)?.workspace ?? taskWorkspace.metadata,
+    } : undefined;
+    persistResult(() => deferAppTaskSettlement(config, claim, error.constraint, {
+      claim: originalClaim,
+      report: { handlerResult: report.handlerResult, runId: report.runId,
+        conversation: report.conversation, acceptedLiveEventIds: report.acceptedLiveEventIds },
+      acceptanceBasis,
+      ...(workspace ? { workspace } : {}),
+    }));
+    emit("project.task.reconciled", { disposition: "deferred", funding: error.constraint,
+      summary: "Execution completed; prepared effects await funding" });
+    return [];
   }
 
   async function finalizeWorkspace(outcome: "accepted" | "waiting" | "failed") {
@@ -849,7 +960,7 @@ function emitTaskReconciliationEvent(
 function recoverStaleTaskResult(
   config: AppTaskContext,
   claim: AppTaskClaim,
-): { staleRecovery: "released" | "superseded" | "missing"; reconcileTaskIds: string[] } {
+): { staleRecovery: "released" | "superseded" | "missing" | "busy"; reconcileTaskIds: string[] } {
   const recovery = releaseStaleAppTaskResult(
     config,
     claim,
@@ -857,7 +968,7 @@ function recoverStaleTaskResult(
   );
   return {
     staleRecovery: recovery.status,
-    reconcileTaskIds: recovery.status === "missing" ? [] : [claim.taskId],
+    reconcileTaskIds: recovery.status === "missing" || recovery.status === "busy" ? [] : [claim.taskId],
   };
 }
 
@@ -865,7 +976,7 @@ function recoverStaleTaskActionResult(
   config: AppTaskContext,
   claim: AppTaskClaim,
   error: unknown,
-): { staleRecovery: "released" | "superseded" | "missing"; reconcileTaskIds: string[] } | null {
+): { staleRecovery: "released" | "superseded" | "missing" | "busy"; reconcileTaskIds: string[] } | null {
   if (!isAppTaskActionStaleError(error) && !(error instanceof ResourceTaskMutationStaleError)) {
     return null;
   }
@@ -878,7 +989,7 @@ function recoverStaleTaskActionResult(
   );
   return {
     staleRecovery: recovery.status,
-    reconcileTaskIds: recovery.status === "missing" ? [] : [claim.taskId],
+    reconcileTaskIds: recovery.status === "missing" || recovery.status === "busy" ? [] : [claim.taskId],
   };
 }
 

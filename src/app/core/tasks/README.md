@@ -31,6 +31,83 @@ event emission and output-path helpers live beside their lifecycle callers.
 `execution.ts` and `workspace.ts` are private contracts; concrete implementations
 live in `adapters/` and `conversations/`, selected in `composition/task-execution.ts`.
 
+## Coordination dispatch
+
+Trusted coordination and human work share the existing foreground capacity.
+When both compete, prefer at most two human dispatches before a coordination
+turn, at both App selection and shared controller-Host acquisition. Background
+dispatches do not reset that count, and peeks or repeated wakes spend no turn.
+Normal priority and promotion still apply within each eligible class; a label
+or high priority never grants coordination eligibility.
+
+This is process-local scheduling preference, not a durable queue or execution
+permit. It resets on controller restart, does not preempt running work and
+gives no wall-clock, multi-runtime or delivery guarantee. App pause and current
+eligibility still apply; atomic admission rechecks funding, recipient, root and
+shared Host limits. A bounded review still needs its complete execution method
+to fit. The rule creates no extra place, budget or authority.
+
+## Workload observations
+
+`read.tasks.workload({agent?, limit?, cursor?, inputCursor?})` supplies one bounded current-App
+page. Check the installed App contract's `taskReads.workload === 1` before using
+it on older Hosts. The model `tasks` tool uses `action: "workload"`; operator
+control uses `app.tasks.workload` with `appId` and the same options. Reads neither
+acknowledge work nor change scheduling, funding or closure authority.
+
+Optional `unadmittedInputs` separately projects outstanding Inbox input that has
+no Task link, including retained `handling` rows and non-Task waits. Leases and
+future admission times do not hide demand or authorize dispatch. Both execution
+Task links and legacy Task waits are excluded, as are ended inputs.
+Its five-item App-scoped page uses `inputCursor` independently of
+Task continuation and agent filters. It contains identities and saved admission
+constraints, not input payloads or transport destinations. The receiving App's
+declared agent owns funding/disposition review. Missing projection or omitted
+identities require exact Inbox inspection; empty Task counts prove nothing about
+received input. Reads use the same snapshot and change no Inbox receipt.
+
+Counts describe only the scanned page. Agent filtering happens after that App
+page is scanned; follow `coverage.nextCursor` and retain each observation's time
+and coverage. Idle results are inspection candidates, including standing work;
+they do not establish unread work, fulfillment or execution utilization. Graph
+expansion is capped; an observation that exceeds the cap fails visibly and can
+be retried with a smaller page. Attempt history is not loaded.
+
+Optional `assignments` distinguishes attributed root Tasks, contributions and
+unattributed Tasks among that page's matched records. Only canonical account
+bindings establish these categories; structural parents and agent labels do not.
+`representedRoots` counts distinct known root references in this observation,
+including roots outside the page or App. It exposes no external Task identities
+or contents and must not be summed across pages. Missing attribution remains
+unknown; reads never adopt historical work or install accounting. These counts
+do not measure useful business outcomes or execution. Shared occupancy still
+counts actual primary/helper execution across contributions.
+
+Host limits originate in the controller process. Its dispatch carries a bounded
+capacity observation into the worker with its own `observedAt`; a later workload
+read never makes that old observation fresh. Workers without a parent observation
+report it unavailable and never substitute their private limiter. Shared
+Host/recipient/current-root execution and funding facts are available only when
+their corresponding policies and trusted scope are installed. Physical resource
+health remains unavailable. Missing facts do not establish spare capacity;
+observation installs no policies.
+
+Attempt-bound reads also expose the observed queue notification-to-dispatch
+interval for this Task. It includes pause/prerequisite time and lasts only for
+the current controller; it is not fleet queue latency or time proven runnable.
+Reads outside that attempt report queue timing unavailable. The Host observation,
+dispatch interval and durable Task page retain their distinct observation times.
+
+Set `MAY_TASK_WORKLOAD_FEEDBACK_APP` to one installed App ID to opt that App's
+attempts into an agent-scoped starting observation. It is disabled by default;
+the read capability remains available independently. Observation failure gives
+`{available:false}` without failing execution. Workflows, their managed helpers
+and native Task executors receive the same `workloadAtAttemptStart` decision
+section. A later Task refresh does not refresh that observation. Use explicit
+scoped reads when a decision requires newer evidence. Pressure informs methods,
+priority and discretionary expansion; required work remains owed, and the
+creator retains closure. This source option does not authorize App activation.
+
 ## Execution procedure and recovery
 
 The assigned agent owns the outcome. The App declares the execution procedure;
@@ -127,6 +204,13 @@ and supplies its reads to optional outcome reporting. `createRuntimeAppRead()`
 adapts those operations to the SDK's Promise interface. Loaded-App access and
 model tools use the same implementation. Adapters preserve options and format
 results; the reporting implementation owns outcome membership and counts.
+
+A managed `readonly` execution receives a narrowed Task tool: list, workload,
+outcomes, exact get, contract and communication reads. Its advertised schema and
+invocation guard both exclude publication, apply, revision and closure. The
+restriction belongs to the prepared execution, so it cannot narrow a shared
+agent definition's separately authorized full tools. A review recommendation
+does not acquire write authority through the built-in Task tool.
 
 Task profiling retains dispatch identity, queue wait and total elapsed time.
 Session timestamps and execution-usage records supply execution duration, prompt
@@ -405,3 +489,130 @@ Neither transition changes the facts in historical accepted attempts.
 New Task contracts omit mode and use `incomplete` for unsuccessful reports.
 Historical labels are normalized only when reading retained resources/attempts;
 new authoring must use the current contract. Upgrade Host and App code together.
+
+### Work-credit admission foundations
+
+Host-private credit accounting uses the existing SQLite authority. When an
+installation policy is explicitly published through `TaskBudgetAdmissionStore`,
+resource commits charge actual new Task creation and winning attempt claims in
+their existing transactions. Trusted App policy selects sponsorship; the executor
+and structural parent do not. New contributions inherit their creating Task's
+account, while existing destination services retain theirs.
+
+Funding shortage returns `deferred`. It retains input, obligations, execution
+retry allowance and any fresh-human retry opportunity. Task and Inbox recovery
+indexes suppress unchanged holds; declared UTC renewal or exact historical
+adoption makes affected work eligible again. Confirmed old-runtime cleanup can
+settle without paying for a replacement attempt. Restoring closed receipt history
+never fabricates historical creation charges.
+
+New authored App seeds use the same creation accounting inside their bootstrap
+transaction. Funded seeds must contain fresh pending resources, with exact
+App-only creator provenance and no execution history. A shortage rolls back all
+seed Tasks, accounting and authority together. Offline retained snapshots keep
+their historical facts and require explicit adoption before funded execution;
+loading them never invents historical spending.
+
+Fresh installations can publish a configured database before startup through
+`scripts/operations/initialize-workload-state.ts`; its reviewed plan must include
+explicit Host/background, recipient and new-root execution limits. It refuses
+every existing state directory, including empty directories and retained backups.
+This does not activate limits on a retained installation or adopt historical work.
+
+For externally isolated, fully stopped and already cleaned retained state,
+`scripts/operations/install-retained-workload-state.ts` joins installed policy,
+explicit fenced historical Task attribution and exact historical root limits in
+one transaction. It retains zero-charge adoption receipts and never reconstructs
+past spending or changes Task business state. Omitted Tasks still require adoption.
+Every retained reservation/running attempt and unresolved session/descendant
+artifact blocks the operation, including execution belonging to ended Tasks.
+These are supplementary evidence checks, not a start barrier; the operator must
+exclude every runtime/launcher throughout the offline operation. See the
+[offline operating contract](../../../../scripts/operations/README.md#install-workload-policy-on-retained-cleaned-state).
+The source-only `scripts/operations/withdraw-workload-enforcement.ts` provides
+one-way offline withdrawal under the same external exclusion and confirmed-clean
+execution contract. Its exact-configuration-fenced receipt stops new workload
+charges/reservations and wakes funding/execution holds without erasing history or
+caller obligations. Pauses, workspace prerequisites, retries, permissions and Task
+authority still apply. Former shared limits/funding become unavailable in feedback.
+Reactivation across the unaccounted interval requires a separate adoption protocol.
+Live activation and active execution import remain separate work.
+See the operations guide for the new-state procedure and unsupported session paths.
+Common manager start admission now charges each separately admitted helper or
+resume, records exact invocation/session/attempt evidence, and covers the primary
+agent once through its paid attempt. Only an opaque Host adapter capability can
+request that coverage; source labels and nested helpers cannot. Saved-result
+reads are free. A denied resume preserves its transcript and retained session.
+Admitted starts remain charged if preparation or later execution fails.
+
+Authored workflow code also passes shared start admission, even when it never
+calls a managed agent. With installed policy it needs the current paid Task
+attempt and its live local execution reservation. Direct, typed, model-tool and
+live-resume paths share this gate before workflow-start publication, run records
+or authored execution; nested methods recheck the same authority without another
+credit or place. Reading an already saved terminal result remains free. Unbound,
+cancelled, released or pre-limit unreserved execution cannot borrow an old Task
+binding. This check is not a barrier for changing policy on running processes.
+
+Caller deferrals and explicit root/sponsor funding changes share those receipts
+and canonical Task/Inbox holds. Shared execution reservations enforce actual
+starts and release only after confirmed cleanup. Retained activation still needs
+a start barrier and historical adoption; an empty queue cannot prove quiescence.
+
+An optional private coordination funding declaration names the same exact Task,
+workflow, responsible agent and timeout as installed App coordination policy.
+Runtime preparation rejects disagreement before bootstrap or dispatch. Its
+separate UTC grant funds creation, workflow attempts and managed helpers when
+ordinary credits are exhausted. The shared eligibility rule checks immutable
+App-only creator provenance and current execution selection; claims also verify
+the actual workflow handler. New business contributions cannot inherit protected
+funds or occupy its installed Task identity. Requirements correction can clear
+its exact protected-policy hold without erasing charges or other obligations.
+Retained assignments still require explicit adoption; loading source fabricates
+no historical spending. This grants no additional control or funding capability.
+
+
+## Work-credit admission (private integration)
+
+`../state/task-budget-admission.ts` joins new-resource and running-attempt
+admission to the fenced resource transaction in the installation database.
+Creation, claims and their receipts roll back together on denial. Unconfigured
+installations retain their existing behavior. Shared Host execution enforcement
+is installation-wide: missing sponsor policy constrains new independent work,
+and retained unattributed claims require explicit adoption before execution.
+
+Unfunded ordinary input and first Conversation input retain their exact Inbox
+receipt and funding constraint. They acquire a Task link only on successful
+admission. Sponsor-policy installation wakes only the matching policy's held
+input in the installation transaction. Recovery does not poll indefinite holds
+or replace a future funding deadline with a Condition check.
+
+An executed result whose atomic effects require an unfunded creation retains a
+Host-private `pendingSettlement` checkpoint on its original attempt. The Task
+waits with the funding deadline; its execution callback has finished and its lease is removed.
+The attempt remains unsettled until its original effects are accepted or the
+claim is superseded. Recovery reuses the saved decision, exact follow-up mapping
+and acceptance facts through ordinary fenced settlement, without a new model
+call, attempt debit or execution failure. Cancellation and requirements changes
+still fence that result. Ordinary durable delegation already saves its demand
+through the Inbox; accepting that parent result does not promise that its child
+has been funded or executed.
+
+An installed App may declare one `tasks.coordination` policy with an exact Task ID,
+workflow and `maxAttemptMs` from 1,000 through 120,000. It selects an ordinary
+App-created Task assigned to the App's responsible agent. The Host never creates
+that Task. Missing historical creator provenance, child-created work, executor
+changes or a different workflow do not grant eligibility. Preparation requires
+an available `workspace: "shared"` workflow, and the worker rechecks that contract
+before workspace preparation. Its installed timeout is a hard ceiling even if
+the workflow exports a longer default.
+
+This path shares the existing additional App place and Host foreground reserve
+with human interaction; it adds no capacity pool. Human input has precedence at
+dispatch boundaries. A one-place Host interleaves attempts and does not invent an
+extra slot. Coordination honors App pause. Eligibility is checked again against
+the claimed resource version before any attempt or recovery write. It grants no
+new Task editing, closure, funding or portfolio-management capabilities. Apps own
+the bounded workflow, useful triggers, unchanged-pass coalescing and acceptance.
+Protected credit accounting is separate; this declaration only bounds dispatch
+and workflow duration.

@@ -20,6 +20,14 @@ guide. `app/direct-agent.ts` also uses the prepared execution path for direct
 calls. A returned session result is execution evidence; the Task reconciler
 owns acceptance of Task results.
 
+When workload policy is installed, workflows use the same paid Task authority
+and local claim reservation as managed starts, including workflows with no model
+helper. `workflow-tool.ts` checks actual starts and nested methods through
+`app/core/state/task-budget-managed-start.ts`; it does not mint another budget or
+execution place. Unbound direct/live-resume execution fails closed, while saved
+terminal-result reads remain free. Definition inspection is still a read of
+trusted source; this is neither a code sandbox nor an online activation barrier.
+
 ## Shared execution environment
 
 Agents, App workflows, Task workers and native executors inherit the environment

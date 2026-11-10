@@ -17,6 +17,7 @@ import type { AppTaskAdmission, TaskCompletionReceipt, TaskTree } from "../tasks
 import { buildAppTaskTreeProjection } from "../tasks/app-task-store.js";
 import type { AppTaskResource } from "../tasks/app-task-state.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
+import { TaskBudgetAdmissionStore } from "./task-budget-admission.js";
 import { migrateTaskCompletionReceipts } from "./task-receipt-cutover.js";
 
 const roots: string[] = [];
@@ -278,4 +279,16 @@ test("cutover refuses conflicting same-generation state and requires an explicit
   expect(() => f.migrate(false)).toThrow("old Host and all workers to be stopped");
   expect(() => f.migrate()).toThrow("conflicts with the retained Task");
   expect(f.store.readSnapshot()).toEqual(before);
+});
+
+
+test("restoring closed receipt history never invents creation spending under an installed budget", () => {
+  const result = receipt();
+  const f = fixture({ receipts: { measurement: result }, appTaskAdmissions: { ask: admission(result) } });
+  const accounting = new TaskBudgetAdmissionStore(f.store.db);
+  accounting.install({ appId: "sample", sponsor: { appId: "sample", agent: "owner" }, dailyCredits: 0, rootCredits: 0 });
+  expect(f.migrate()).toEqual({ imported: 1, closed: 1, linkedInputs: 1 });
+  expect(f.store.readCancellation("measurement")?.kind).toBe("closed");
+  expect(accounting.budget.binding({ appId: "sample", taskId: "measurement" })).toBeNull();
+  expect(f.store.db.prepare("SELECT count(*) AS n FROM task_budget_operations").get()?.n).toBe(0);
 });

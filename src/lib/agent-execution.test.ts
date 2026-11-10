@@ -18,6 +18,8 @@ import { agentExecutionResult } from "./execution-handoff.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace } from "../app/core/tasks/app-task-output-paths.js";
+import { createAppTaskReadTool } from "../app/app-task-read-tool.js";
+import { EventBus } from "../app/core/events/bus.js";
 
 const roots: string[] = [];
 
@@ -34,6 +36,54 @@ function tool(name: string): AgentTool {
     execute: async () => ({ content: [{ type: "text", text: "ok" }] }),
   };
 }
+
+describe("read-only Task capability", () => {
+  function fixture() {
+    let mutations = 0;
+    let reads = 0;
+    const tasks = createAppTaskReadTool({ bus: new EventBus(),
+      scope: () => ({ appId: "sample", taskId: "owner", generation: 1, attemptId: "attempt-one" }),
+      publisher: { publish: () => { mutations++; return 1; } },
+      applier: () => async () => { mutations++; return { applied: true }; },
+      reader: { list: () => { reads++; return { items: [] }; }, get: () => { reads++; return null; } },
+    });
+    const prepare = (toolPolicy: "readonly" | "full") => prepareAgentExecution({
+      definition: { name: "reviewer", description: "Review evidence", domain: "test", systemPrompt: "Review only",
+        model: streamTestModel, tools: [tasks] }, projectRoot: "/tmp", sessionId: `review-${toolPolicy}`,
+      task: "Return advice", toolPolicy,
+    }).tools.find(tool => tool.name === "tasks")!;
+    const invoke = async (tool: AgentTool, action: string) => {
+      const response = await tool.execute("call", { action, taskId: "child", expectedGeneration: 1,
+        expectedResourceVersion: 1, afterResult: "accepted-one", reason: "Review complete", input: { kind: "review", data: {} },
+        localKey: "review", eventType: "fixture.reviewed", changes: { facts: ["Review observation"] } });
+      return JSON.parse((response.content[0] as { text: string }).text);
+    };
+    return { tasks, prepare, invoke, mutations: () => mutations, reads: () => reads };
+  }
+
+  test.each(["publish", "apply", "update", "close"])("read-only Task execution rejects %s before invoking a capability", async action => {
+    const f = fixture();
+    expect(await f.invoke(f.prepare("readonly"), action)).toEqual({ error: "Read-only Task capability does not allow this action" });
+    expect(f.mutations()).toBe(0);
+    expect(f.reads()).toBe(0);
+  });
+
+  test("read-only Task schema and execution preserve reads without narrowing a shared full tool", async () => {
+    const f = fixture();
+    const readonly = f.prepare("readonly");
+    expect(Value.Check(readonly.parameters, { action: "apply", changes: {} })).toBe(false);
+    expect(Value.Check(readonly.parameters, { action: "workload" })).toBe(true);
+    expect(Value.Check(readonly.parameters, { action: "communication", inputId: "input-one" })).toBe(true);
+    expect(await f.invoke(readonly, "list")).toMatchObject({ items: [] });
+    expect(await f.invoke(readonly, "get")).toEqual(null);
+    expect(f.reads()).toBe(2);
+    expect(await f.invoke(f.prepare("full"), "apply")).toEqual({ applied: true });
+    expect(f.mutations()).toBe(1);
+    expect(Value.Check(f.tasks.parameters, { action: "apply", changes: {} })).toBe(true);
+    expect(await f.invoke(readonly, "apply")).toEqual({ error: "Read-only Task capability does not allow this action" });
+    expect(f.mutations()).toBe(1);
+  });
+});
 
 const fallbackTestModel = {
   api: "anthropic-messages",

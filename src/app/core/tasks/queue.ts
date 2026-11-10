@@ -1,3 +1,7 @@
+import { MAX_HUMAN_DISPATCH_BURST } from "../scheduling/host-capacity.js";
+
+type QueueSelection = { taskId: string; lane: AppTaskLane; foreground: boolean };
+
 /**
  * Core level-triggered work queue for one App.
  *
@@ -17,11 +21,13 @@ export class AppTaskQueue {
   private readonly dirtyPriorities = new Map<string, AppTaskPriority>();
   private readonly lanes = new Map<string, AppTaskLane>();
   private readonly dirtyLanes = new Map<string, AppTaskLane>();
+  private humanTurns = 0;
 
   constructor(
     private concurrency: number,
     private readonly isReady: (taskId: string) => boolean = () => true,
     private readonly isForeground: (taskId: string) => boolean = () => false,
+    private readonly isCoordination: (taskId: string) => boolean = () => false,
   ) {
     this.validateMaxConcurrent(concurrency);
   }
@@ -82,8 +88,9 @@ export class AppTaskQueue {
   }
 
   take(): string | null {
-    const next = this.peek();
-    if (!next) return null;
+    const choice = this.selectNext();
+    if (!choice) return null;
+    const next = choice.next;
     const takeIndex = this.pending.indexOf(next.taskId);
     if (takeIndex < 0) return null;
     const [taskId] = this.pending.splice(takeIndex, 1);
@@ -92,6 +99,8 @@ export class AppTaskQueue {
     this.promotedQueued.delete(taskId);
     this.running.add(taskId);
     if (next.foreground) this.foregroundRunning.add(taskId);
+    if (next.foreground) this.humanTurns = !this.isCoordination(taskId) && choice.coordinationReady
+      ? Math.min(MAX_HUMAN_DISPATCH_BURST, this.humanTurns + 1) : 0;
     return taskId;
   }
 
@@ -138,10 +147,17 @@ export class AppTaskQueue {
   }
 
   /** One interactive slot in addition to the declared background App limit. */
-  peek(): { taskId: string; lane: AppTaskLane; foreground: boolean } | null {
-    let selected: { taskId: string; lane: AppTaskLane; foreground: boolean } | null = null;
+  peek(): QueueSelection | null {
+    return this.selectNext()?.next ?? null;
+  }
+
+  private selectNext(): { next: QueueSelection; coordinationReady: boolean } | null {
+    let selected: QueueSelection | null = null;
     let selectedRank = Number.POSITIVE_INFINITY;
     let selectedPromoted = false;
+    let coordination: QueueSelection | null = null;
+    let coordinationRank = Number.POSITIVE_INFINITY;
+    let coordinationPromoted = false;
     for (let index = 0; index < this.pending.length; index++) {
       const taskId = this.pending[index];
       if (!taskId || !this.isReady(taskId)) continue;
@@ -153,16 +169,24 @@ export class AppTaskQueue {
       )
         continue;
       const lane = this.lanes.get(taskId) ?? "normal";
+      const isCoordination = foreground && this.isCoordination(taskId);
       const rank =
-        (foreground ? 0 : 8) + (lane === "human" ? 0 : 4) + priorityRank(this.priorities.get(taskId) ?? "P2");
+        (foreground ? 0 : 12) + (isCoordination ? 8 : lane === "human" ? 0 : 4) + priorityRank(this.priorities.get(taskId) ?? "P2");
       const promoted = this.promotedQueued.has(taskId);
+      if (isCoordination && (rank < coordinationRank || (rank === coordinationRank && promoted && !coordinationPromoted))) {
+        coordination = { taskId, lane, foreground };
+        coordinationRank = rank;
+        coordinationPromoted = promoted;
+      }
       if (rank < selectedRank || (rank === selectedRank && promoted && !selectedPromoted)) {
         selected = { taskId, lane, foreground };
         selectedRank = rank;
         selectedPromoted = promoted;
       }
     }
-    return selected;
+    if (!selected) return null;
+    return { next: coordination && this.humanTurns >= MAX_HUMAN_DISPATCH_BURST ? coordination : selected,
+      coordinationReady: Boolean(coordination) };
   }
 }
 

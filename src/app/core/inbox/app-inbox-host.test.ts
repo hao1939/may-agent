@@ -992,8 +992,9 @@ it("recovers admission and rejection feedback through indexes on outstanding inp
   try {
     await host.recoverAdmissions();
     expect(query).not.toBe("");
-    const plan = prepare(`EXPLAIN QUERY PLAN ${query}`).all(1, 1, 1).map((row) => row.detail).join("\n");
-    expect(plan).toContain("idx_app_inbox_unadmitted");
+    const plan = prepare(`EXPLAIN QUERY PLAN ${query}`).all(1, 1, 1, 1, 1).map((row) => row.detail).join("\n");
+    expect(plan).toContain("idx_app_inbox_unadmitted_ready");
+    expect(plan).toContain("idx_app_inbox_funding_due");
     expect(plan).toContain("idx_app_inbox_rejected_feedback");
     expect(plan).not.toContain("sqlite_autoindex_app_inbox_items");
   } finally { reads.mockRestore(); host.close(); db.close(); }

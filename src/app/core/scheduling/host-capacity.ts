@@ -1,8 +1,12 @@
 type CapacityWaiter = {
   active: boolean;
   foreground: boolean;
+  human: boolean;
   grant(release: () => void): void;
 };
+
+/** Prefer human dispatches, without indefinitely postponing ready coordination. */
+export const MAX_HUMAN_DISPATCH_BURST = 2;
 
 /** One Host-owned limit shared by App request owners and task attempts. */
 export class HostCapacity {
@@ -11,6 +15,7 @@ export class HostCapacity {
   private running = 0;
   private backgroundRunning = 0;
   private readonly waiters: CapacityWaiter[] = [];
+  private humanTurns = 0;
 
   constructor(maxConcurrent: number) {
     if (!Number.isInteger(maxConcurrent) || maxConcurrent < 1) {
@@ -47,21 +52,47 @@ export class HostCapacity {
   }
 
   tryAcquireForeground(): (() => void) | null {
+    if (this.coordinationWaiting() && this.humanTurns >= MAX_HUMAN_DISPATCH_BURST) return null;
+    return this.reserveForeground(true);
+  }
+
+  private reserveForeground(human: boolean): (() => void) | null {
     if (this.running >= this.limit) return null;
     this.running += 1;
+    this.recordForegroundGrant(human);
     return this.releaseHandle(true);
   }
 
   async acquire(): Promise<() => void> {
     const release = this.tryAcquire();
     if (release) return release;
-    return new Promise((resolve) => this.waiters.push({ active: true, foreground: false, grant: resolve }));
+    return new Promise((resolve) => this.waiters.push({ active: true, foreground: false, human: false, grant: resolve }));
   }
 
   async acquireForeground(): Promise<() => void> {
     const release = this.tryAcquireForeground();
     if (release) return release;
-    return new Promise((resolve) => this.waiters.push({ active: true, foreground: true, grant: resolve }));
+    return new Promise((resolve) => this.waiters.push({ active: true, foreground: true, human: true, grant: resolve }));
+  }
+
+  /** Shares the foreground place, with bounded preference for human interaction. */
+  tryAcquireCoordination(): (() => void) | null {
+    if (this.waiters.some(waiter => waiter.active && waiter.human) &&
+        !(this.coordinationWaiting() && this.humanTurns >= MAX_HUMAN_DISPATCH_BURST)) return null;
+    return this.reserveForeground(false);
+  }
+
+  private coordinationWaiting(): boolean {
+    return this.waiters.some(waiter => waiter.active && waiter.foreground && !waiter.human);
+  }
+
+  private recordForegroundGrant(human: boolean): void {
+    this.humanTurns = human && this.coordinationWaiting()
+      ? Math.min(MAX_HUMAN_DISPATCH_BURST, this.humanTurns + 1) : 0;
+  }
+
+  acquireCoordinationCancellable(callback: (release: () => void) => void): () => void {
+    return this.acquireCancellableLane(true, callback, false);
   }
 
   acquireCancellable(callback: (release: () => void) => void): () => void {
@@ -72,12 +103,13 @@ export class HostCapacity {
     return this.acquireCancellableLane(true, callback);
   }
 
-  private acquireCancellableLane(foreground: boolean, callback: (release: () => void) => void): () => void {
+  private acquireCancellableLane(foreground: boolean, callback: (release: () => void) => void, human = foreground): () => void {
     let active = true;
     let reservedRelease: (() => void) | undefined;
     const waiter: CapacityWaiter = {
       active: true,
       foreground,
+      human,
       grant: (release) => {
         reservedRelease = release;
         setTimeout(() => {
@@ -92,9 +124,12 @@ export class HostCapacity {
         }, 0);
       },
     };
-    const release = foreground ? this.tryAcquireForeground() : this.tryAcquire();
+    const release = foreground ? human ? this.tryAcquireForeground() : this.tryAcquireCoordination() : this.tryAcquire();
     if (release) waiter.grant(release);
-    else this.waiters.push(waiter);
+    else {
+      if (foreground && !human && !this.coordinationWaiting()) this.humanTurns = 0;
+      this.waiters.push(waiter);
+    }
 
     return () => {
       if (!active) return;
@@ -103,6 +138,7 @@ export class HostCapacity {
         waiter.active = false;
         const index = this.waiters.indexOf(waiter);
         if (index >= 0) this.waiters.splice(index, 1);
+        if (!this.coordinationWaiting()) this.humanTurns = 0;
       }
       reservedRelease?.();
       reservedRelease = undefined;
@@ -111,6 +147,19 @@ export class HostCapacity {
 
   snapshot(): { running: number; waiting: number } {
     return { running: this.running, waiting: this.waiters.length };
+  }
+
+  /** Call only on the controller Host authority, never a worker-local limiter. */
+  workloadSnapshot() {
+    return {
+      available: true as const,
+      scope: "controller-host-process" as const,
+      observedAt: new Date().toISOString(),
+      maxConcurrent: this.limit,
+      backgroundMaxConcurrent: this.backgroundLimit,
+      reservedSlots: this.running,
+      waitingAcquisitions: this.waiters.length,
+    };
   }
 
   private releaseHandle(foreground: boolean): () => void {
@@ -126,7 +175,10 @@ export class HostCapacity {
 
   private drainWaiters(): void {
     while (this.running < this.limit) {
-      let index = this.waiters.findIndex((waiter) => waiter.active && waiter.foreground);
+      const human = this.waiters.findIndex((waiter) => waiter.active && waiter.human);
+      const coordination = this.waiters.findIndex((waiter) => waiter.active && waiter.foreground && !waiter.human);
+      let index = coordination >= 0 && (human < 0 || this.humanTurns >= MAX_HUMAN_DISPATCH_BURST)
+        ? coordination : human;
       if (index < 0 && this.backgroundRunning < this.backgroundLimit) {
         index = this.waiters.findIndex((waiter) => waiter.active && !waiter.foreground);
       }
@@ -137,6 +189,7 @@ export class HostCapacity {
       next.active = false;
       this.running += 1;
       if (!next.foreground) this.backgroundRunning += 1;
+      else this.recordForegroundGrant(next.human);
       next.grant(this.releaseHandle(next.foreground));
     }
   }

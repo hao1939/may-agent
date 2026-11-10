@@ -1,4 +1,5 @@
 import { taskExecutionContext } from "./task-context.js";
+import { taskPrimaryStart } from "../../core/state/task-budget-managed-start.js";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { taskAgentResultSchema as appTaskAgentResultSchema } from "@may-agent/sdk";
@@ -12,6 +13,7 @@ import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "../../core/t
 import type { TaskAgentRunner, TaskAgentInput } from "../../core/tasks/execution.js";
 import { localAgentDir } from "../discovery/local-agents.js";
 import { captureAgentDefinitions } from "./agent-definitions.js";
+import { resolvedExecutionRecipient } from "../../../lib/execution-recipient.js";
 import {
   beginCanonicalAgentResidueGuard,
   planCanonicalAgentResidueCleanup,
@@ -33,6 +35,10 @@ export function createTaskAgentRunner(
 ): TaskAgentRunner {
   return {
     available: (agent) => (definitions ? definitions.has(agent) : input.manager.hasAgent(agent)),
+    executionRecipient: (agent) => {
+      const definition = definitions ? definitions.get(agent) : input.manager.getAgentDefinition(agent);
+      return definition ? resolvedExecutionRecipient(definition) : null;
+    },
     async prepare({ source, appDir, agent }) {
       if (input.manager.hasAgent(agent)) return true;
       const dir = localAgentDir(join(source.projectsRoot, basename(appDir)), agent);
@@ -129,6 +135,7 @@ async function executeTaskAgent(
     taskContext,
     contextPrompt: "Pursue the assignment in the current Task decision brief and return the result required by finish().",
     taskBinding: taskContext.taskBinding,
+    taskPrimaryStart: taskPrimaryStart(taskContext.taskBinding),
     signal: attempt.signal,
     sessionStarted: input.sessionStarted,
     source: "app-task-agent",

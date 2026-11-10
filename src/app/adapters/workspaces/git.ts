@@ -1,27 +1,41 @@
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { mkdir, readFile, realpath } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { mkdir, readFile, realpath, statfs } from "node:fs/promises";
+import { basename, dirname, join, resolve } from "node:path";
 import { execFile } from "node:child_process";
+import { homedir } from "node:os";
 import type { AppTaskWorkspace } from "../../core/tasks/app-task-state.js";
+import { TaskWorkspaceDeferredError } from "../../core/tasks/workspace.js";
 import type {
   TaskWorkspaces, PreparedTaskWorkspace, FinalizedTaskWorkspace, InspectedTaskWorkspace,
+  TaskWorkspaceInput, TaskWorkspaceAdmission,
 } from "../../core/tasks/workspace.js";
 
 type GitResult = { status: number; stdout: string; stderr: string };
 
-export const gitTaskWorkspaces: TaskWorkspaces = {
-  prepare: prepareAppTaskWorkspace,
-  finalize: finalizeAppTaskWorkspace,
-  inspect: inspectAppTaskWorkspace,
-};
+export const worktreeEstimateEnvironment = Object.freeze({
+  GIT_NO_LAZY_FETCH: "1",
+} as const);
 
-function git(repoDir: string, args: string[], allowFailure = false): Promise<GitResult> {
+export type GitWorkspaceOptions = { availableBytes?: (destinationPath: string) => Promise<number> };
+
+export function createGitTaskWorkspaces(options: GitWorkspaceOptions = {}): TaskWorkspaces {
+  return {
+    prepare: (input) => prepareAppTaskWorkspace(input, options),
+    admission: (input) => checkTaskWorkspaceAdmission(input, options),
+    finalize: finalizeAppTaskWorkspace,
+    inspect: inspectAppTaskWorkspace,
+  };
+}
+
+export const gitTaskWorkspaces: TaskWorkspaces = createGitTaskWorkspaces();
+
+function git(repoDir: string, args: string[], allowFailure = false, env?: NodeJS.ProcessEnv): Promise<GitResult> {
   return new Promise((resolveResult, reject) => {
     execFile(
       "git",
       ["-C", repoDir, ...args],
-      { encoding: "utf8", maxBuffer: 16 * 1024 * 1024, timeout: 120_000 },
+      { encoding: "utf8", maxBuffer: 64 * 1024 * 1024, timeout: 120_000, ...(env ? { env: { ...process.env, ...env } } : {}) },
       (error, stdout, stderr) => {
         const status = error ? (typeof error.code === "number" ? error.code : 1) : 0;
         const output = {
@@ -38,6 +52,83 @@ function git(repoDir: string, args: string[], allowFailure = false): Promise<Git
       },
     );
   });
+}
+
+
+async function readOptional(path: string): Promise<string | undefined> {
+  try { return await readFile(path, "utf8"); } catch (error: any) {
+    if (error?.code === "ENOENT") return undefined;
+    throw error;
+  }
+}
+
+async function estimateCheckoutBytes(repoDir: string, commit: string): Promise<number | undefined> {
+  const env = worktreeEstimateEnvironment;
+  try {
+    const exactCommit = (await git(repoDir, ["rev-parse", "--verify", `${commit}^{commit}`], false, env)).stdout;
+    if (!/^[0-9a-f]{40,64}$/i.test(exactCommit)) return undefined;
+    if ((await git(repoDir, ["config", "--bool", "--get", "--default", "false", "core.sparseCheckout"], false, env)).stdout === "true") return undefined;
+    if ((await git(repoDir, ["config", "--get", "--default", "false", "core.autocrlf"], false, env)).stdout !== "false") return undefined;
+    if ((await git(repoDir, ["config", "--path", "--get", "--default", "", "core.attributesFile"], false, env)).stdout) return undefined;
+    const infoAttributes = (await git(repoDir, ["rev-parse", "--git-path", "info/attributes"], false, env)).stdout;
+    const gitExecPath = (await git(repoDir, ["--exec-path"], false, env)).stdout;
+    const systemAttributes = [
+      "/etc/gitattributes",
+      join(dirname(dirname(gitExecPath)), "etc", "gitattributes"),
+    ];
+    for (const path of [
+      resolve(repoDir, infoAttributes),
+      join(process.env.XDG_CONFIG_HOME || join(homedir(), ".config"), "git", "attributes"),
+      join(homedir(), ".gitattributes"),
+      ...new Set(systemAttributes),
+    ]) {
+      if (await readOptional(path) !== undefined) return undefined;
+    }
+    const output = (await git(repoDir, ["ls-tree", "-r", "-l", "-z", exactCommit], false, env)).stdout;
+    let total = 0;
+    const attributePaths: string[] = [];
+    for (const raw of output.split("\0")) {
+      if (!raw) continue;
+      const tab = raw.indexOf("\t");
+      if (tab < 0) return undefined;
+      const match = raw.slice(0, tab).match(/^\d+\s+(\S+)\s+[0-9a-f]+\s+(\S+)$/i);
+      if (!match) return undefined;
+      const path = raw.slice(tab + 1);
+      if (match[1] !== "blob") continue;
+      if (basename(path) === ".gitattributes") attributePaths.push(path);
+      if (!/^\d+$/.test(match[2])) return undefined;
+      const size = Number(match[2]);
+      if (!Number.isSafeInteger(size) || size < 0 || total > Number.MAX_SAFE_INTEGER - size) return undefined;
+      total += size;
+    }
+    for (const path of attributePaths) {
+      const attributes = (await git(repoDir, ["show", `${exactCommit}:${path}`], false, env)).stdout;
+      const transforms = attributes.split("\n").some((line) => {
+        if (line.startsWith("#")) return false;
+        const content = line.trim();
+        return content.length > 0 && /(?:^|\s)(?:filter|working-tree-encoding|text|eol|ident|crlf)(?:=|\s|$)/.test(content);
+      });
+      if (transforms) return undefined;
+    }
+    return total;
+  } catch {
+    return undefined;
+  }
+}
+
+async function filesystemAvailableBytes(destinationPath: string): Promise<number> {
+  let samplePath = dirname(destinationPath);
+  while (!existsSync(samplePath)) {
+    const parent = dirname(samplePath);
+    if (parent === samplePath) break;
+    samplePath = parent;
+  }
+  const sample = await statfs(await realpath(samplePath));
+  const bytes = Number(sample.bavail) * Number(sample.bsize);
+  if (!Number.isSafeInteger(bytes) || bytes < 0) {
+    throw new Error(`Invalid filesystem capacity sample for ${destinationPath}`);
+  }
+  return bytes;
 }
 
 const repoOperations = new Map<string, Promise<void>>();
@@ -73,6 +164,68 @@ function identity(taskId: string, generation: number, workspaceId?: string): { l
     .digest("hex").slice(0, 10);
   const leaf = `${safePart(taskId)}-${hash}`;
   return { leaf, branch: `task/${leaf}` };
+}
+
+/** Both observation and preparation select the same retained/fresh lineage. */
+function workspaceIdentity(input: TaskWorkspaceInput) {
+  const retained = input.previous && !input.previous.released ? input.previous : undefined;
+  const fresh = identity(input.taskId, input.generation, retained ? undefined : input.previous?.branch);
+  const branch = retained?.branch ?? fresh.branch;
+  const leaf = branch.slice("task/".length);
+  return { branch, leaf, path: retained?.path ?? resolve(join(input.workspaceRoot, leaf)) };
+}
+
+async function checkoutAdmission(
+  input: TaskWorkspaceInput, repoDir: string, path: string, commit: string, options: GitWorkspaceOptions,
+): Promise<TaskWorkspaceAdmission> {
+  const requiredBytes = await estimateCheckoutBytes(repoDir, commit);
+  if (requiredBytes === undefined) return { kind: "unchecked" };
+  const availableBytes = await (options.availableBytes ?? filesystemAvailableBytes)(path);
+  if (!Number.isSafeInteger(availableBytes) || availableBytes < 0) throw new Error("Invalid workspace capacity observation");
+  if (availableBytes >= requiredBytes) return { kind: "ready" };
+  const observedAt = Date.now();
+  return { kind: "deferred", constraint: { resource: "workspace", reason: "workspace-capacity",
+    generation: input.generation, repoDir, destinationPath: path, commit,
+    requiredBytes, availableBytes, observedAt, retryAt: observedAt + 60_000 } };
+}
+
+/** Resolve the checkout without fetching, writing refs, pruning, or creating
+ * directories. Missing advertised objects stay unchecked until actual preparation.
+ * Local branches and retained lineages use the same precedence as prepare. */
+async function checkTaskWorkspaceAdmission(input: TaskWorkspaceInput, options: GitWorkspaceOptions): Promise<TaskWorkspaceAdmission> {
+  try {
+    const repoDir = await realpath(input.repoDir);
+    return await withRepoOperation(repoDir, async () => {
+      const { branch, path } = workspaceIdentity(input);
+      const registered = (await worktreeEntries(repoDir)).find(entry => entry.path === path);
+      if (registered && existsSync(path)) return { kind: "ready" };
+      if (existsSync(path)) return { kind: "unchecked" }; // Prepare owns lineage diagnostics.
+      const branchRef = `refs/heads/${branch}`;
+      let checkout: string;
+      if (await refExists(repoDir, branchRef)) checkout = branchRef;
+      else if (await remoteExists(repoDir, "origin") && input.refreshRemote !== false) {
+        const published = await git(repoDir, ["ls-remote", "--heads", "origin",
+          `refs/heads/${input.baseBranch}`, branchRef]);
+        const heads = new Map(published.stdout.split("\n").map(line => {
+          const [commit, ref] = line.split("\t");
+          return [ref, commit];
+        }));
+        const base = heads.get(`refs/heads/${input.baseBranch}`);
+        if (!base) return { kind: "unavailable" };
+        checkout = heads.get(branchRef) ?? base;
+      } else {
+        const remoteTask = `refs/remotes/origin/${branch}`;
+        const remoteBase = `refs/remotes/origin/${input.baseBranch}`;
+        checkout = await remoteExists(repoDir, "origin") && await refExists(repoDir, remoteTask) ? remoteTask
+          : await refExists(repoDir, remoteBase) ? remoteBase
+          : await refExists(repoDir, `refs/heads/${input.baseBranch}`) ? `refs/heads/${input.baseBranch}` : "HEAD";
+      }
+      const commit = (await git(repoDir, ["rev-parse", "--verify", checkout], false, worktreeEstimateEnvironment)).stdout;
+      return checkoutAdmission(input, repoDir, path, commit, options);
+    });
+  } catch {
+    return { kind: "unavailable" };
+  }
 }
 
 async function worktreeEntries(repoDir: string): Promise<Array<{ path: string; branch?: string; head?: string }>> {
@@ -140,6 +293,7 @@ async function isIntegrated(repoDir: string, metadata: AppTaskWorkspace): Promis
 
 export async function prepareAppTaskWorkspace(
   input: Parameters<TaskWorkspaces["prepare"]>[0],
+  options: GitWorkspaceOptions = {},
 ): Promise<PreparedTaskWorkspace> {
   const repoDir = await realpath(input.repoDir);
   return withRepoOperation(repoDir, async () => {
@@ -147,15 +301,9 @@ export async function prepareAppTaskWorkspace(
       throw new Error(`Task workspace requires a Git worktree: ${repoDir}`);
     }
 
-    const retained = input.previous && !input.previous.released
-      ? input.previous
-      : undefined;
     // Derive the next lineage from the released one, not the attempt. A retry
     // after preparation failed before recording metadata still finds the same path.
-    const fresh = identity(input.taskId, input.generation, retained ? undefined : input.previous?.branch);
-    const branch = retained?.branch ?? fresh.branch;
-    const leaf = branch.slice("task/".length);
-    const path = retained?.path ?? resolve(join(input.workspaceRoot, leaf));
+    const { branch, leaf, path } = workspaceIdentity(input);
     const remote = "origin";
     const hasRemote = await remoteExists(repoDir, remote);
     const refUpdates: Array<{ ref: string; before: string; fetched: string }> = [];
@@ -247,6 +395,11 @@ export async function prepareAppTaskWorkspace(
         if (existsSync(path)) {
           throw new Error(`Task workspace path exists but is not a registered Git worktree: ${path}`);
         }
+        const checkoutCommit = branchExists
+          ? (await git(repoDir, ["rev-parse", branchRef])).stdout
+          : remoteTaskBranchExists ? (await git(repoDir, ["rev-parse", remoteTaskRef!])).stdout : currentBaseCommit;
+        const admission = await checkoutAdmission(input, repoDir, path, checkoutCommit, options);
+        if (admission.kind === "deferred") throw new TaskWorkspaceDeferredError(admission.constraint);
         await mkdir(dirname(path), { recursive: true });
         if (branchExists) await git(repoDir, ["worktree", "add", path, branch]);
         else {

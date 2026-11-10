@@ -290,6 +290,11 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         const sessionId = opts.getAgentSessionId(config.name);
         return sessionId ? manager.activeSessions.get(sessionId)?.taskContext?.readCommunication : undefined;
       },
+      workloadReader: () => {
+        const sessionId = opts.getAgentSessionId(config.name);
+        const read = sessionId ? manager.activeSessions.get(sessionId)?.taskContext?.taskRead : undefined;
+        return read?.workload;
+      },
       applier: () => {
         const sessionId = opts.getAgentSessionId(config.name);
         const session = sessionId ? manager.activeSessions.get(sessionId) : undefined;

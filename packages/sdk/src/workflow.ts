@@ -321,6 +321,9 @@ export type AppRead = {
   appResult(itemId: string): Promise<AppResult | null>;
   /** Missing Task access rejects; empty results mean a scoped read found no matching work. */
   tasks: {
+    /** Optional installed read. Counts cover only the bounded page, never the
+     * fleet. Reading neither accepts work nor authorizes repriority/closure. */
+    workload?(options?: TaskWorkloadOptions): Promise<TaskWorkload>;
     list(options?: TaskListOptions): Promise<TaskPage>;
     /** Opt-in outcome grouping. Optional Host reporting capability; rejects when not installed. */
     outcomes(options?: TaskOutcomeProjection): Promise<TaskOutcomePage>;
@@ -329,6 +332,142 @@ export type AppRead = {
   execution(executionId: string): Promise<ExecutionView | null>;
   /** Null means no matching metric; an absent reporting capability rejects. */
   metric(metricId: string): Promise<MetricView | null>;
+};
+
+export type TaskWorkloadOptions = {
+  agent?: string;
+  limit?: number;
+  cursor?: string;
+  /** Independent continuation of received input not yet attached to a Task. */
+  inputCursor?: string;
+};
+
+/** Observations, not business judgments or utilization measurements. */
+export type TaskWorkload = {
+  version: 1;
+  observedAt: string;
+  scope: { appId: string; agent?: string };
+  coverage: { limit: number; scanned: number; matched: number; truncated: boolean; nextCursor?: string };
+  /** Exclusive execution categories in this page; pendingInputTasks overlaps. */
+  counts: {
+    running: number; runnable: number; waiting: number; attention: number;
+    idle: number; paused: number; cooldown: number; unknown: number;
+    /** Tasks with queued triggers or retained unanswered inputs, including waits. */
+    pendingInputTasks: number;
+  };
+  /** Optional on older Hosts. Canonical account provenance for matched Tasks
+   * in this page, not fleet totals or execution utilization. The first three
+   * categories sum to coverage.matched. Missing attribution is never inferred
+   * from structural parents, creator labels or the selected agent. */
+  assignments?: {
+    rootTasks: number;
+    contributions: number;
+    unattributed: number;
+    /** Distinct attributed roots represented by this page. A root can be in
+     * another App or outside the page; do not sum this across pages. */
+    representedRoots: number;
+  };
+  /** Optional on older Hosts. Received demand is owned by the receiving App's
+   * declared agent before Task admission. This separate, bounded Inbox page is
+   * App-scoped even when Task counts are filtered by agent. No input payload or
+   * transport destination is exposed; exact evidence remains on the Inbox row.
+   * Outstanding pending and retained handling input without a Task link stays
+   * visible regardless of lease or retry time. Saved funding holds describe
+   * admission, not rejection or fulfillment; visibility never permits dispatch. */
+  unadmittedInputs?: {
+    scope: { appId: string };
+    coverage: { limit: 5; scanned: number; truncated: boolean; nextCursor?: string };
+    omitted: number;
+    items: Array<{
+      id: string;
+      kind: string;
+      source: { kind: "human" | "app" | "system"; id: string };
+      receivedAt: number;
+      changedAt: number;
+      funding?: { reason: string; retryAt: number | null };
+    }>;
+  };
+  examples: {
+    blockers: Array<{
+      taskId: string;
+      kind: "waiting" | "paused" | "cooldown" | "dependency" | "funding" | "capacity" | "workspace" | "unknown";
+      /** Resource constraint facts; neither failure nor a business disposition. */
+      reason?: string;
+      retryAt?: number | null;
+      requiredSlots?: number;
+      scope?: "host" | "agent" | "root" | "recipient";
+      /** Dated observation for this Task's checkout only. Not fleet resource
+       * health, a reservation, or evidence that another operation fits. */
+      workspace?: { operation: "checkout"; requiredBytes: number; availableBytes: number; observedAt: number };
+    }>;
+    /** Accepted idle results worth inspecting; neither unread nor proven fulfilled. */
+    dispositionCandidates: Array<{ taskId: string; acceptedAttemptId: string }>;
+    truncated: boolean;
+  };
+  limits: {
+    app: { backgroundMaxConcurrent: number; interactiveAdditional: 1 };
+    host: { available: false } | {
+      available: true; scope: "controller-host-process"; observedAt: string;
+      maxConcurrent: number; backgroundMaxConcurrent: number;
+      reservedSlots: number; waitingAcquisitions: number;
+    };
+    /** Optional on older Hosts. Shared actual execution, independently of
+     * controller dispatch places above. These are observations, not permits. */
+    sharedHost?: { available: false } | {
+      available: true; scope: "installation";
+      maxConcurrent: number; occupied: number; remaining: number;
+      backgroundMaxConcurrent: number; backgroundOccupied: number; backgroundRemaining: number;
+    };
+    /** These shared authorities are not installed by the feedback read. */
+    agent: { available: false } | {
+      available: true; scope: "installation-recipient";
+      recipient: { kind: "directory" | "programmatic"; id: string };
+      maxConcurrent: number; occupied: number; remaining: number;
+    };
+    /** Only the Host-bound current Task can select this root. */
+    root: { available: false } | {
+      available: true; scope: "current-task-root";
+      task: { appId: string; taskId: string }; root: { appId: string; taskId: string };
+      maxConcurrent: number; occupied: number; remaining: number;
+    };
+  };
+  /** Queue notification to this dispatch, including pause/prerequisite time.
+   * Not a fleet latency, a durable ready-since timestamp or utilization. */
+  queueWait: { available: false } | {
+    available: true; scope: "current-task-dispatch";
+    appId: string; taskId: string;
+    enqueuedAt: number; dispatchedAt: number; elapsedMs: number;
+    lifetime: "current-controller";
+  };
+  resourceHealth: { available: false };
+  /** Optional on older Hosts. Work-start credits are not money or token usage,
+   * and available credit alone does not establish execution capacity. */
+  funding?: {
+    /** Current App's installed ordinary sponsor, independently of executor. */
+    ordinary: { available: false } | {
+      available: true;
+      sponsor: { appId: string; agent: string };
+      period: string;
+      credits: number;
+      charged: number;
+      remaining: number;
+    };
+    /** Only the Host-bound current Task's root; never selected by read input. */
+    currentRoot: { available: false } | {
+      available: true;
+      task: { appId: string; taskId: string };
+      root: { appId: string; taskId: string };
+      sponsor: { appId: string; agent: string };
+      purpose: "ordinary" | "coordination";
+      renewal: "lifetime" | "utc-day";
+      period: string;
+      credits: number;
+      charged: number;
+      remaining: number;
+      /** Null means the sponsor allowance is unavailable, not zero. */
+      sponsorRemaining: number | null;
+    };
+  };
 };
 
 /** Disposable provider observation memory, never Task state or a delivery queue. */
@@ -376,6 +515,32 @@ export type ExecutionResult<T = unknown> = {
   cliCalls?: CliCallFacts[];
 };
 
+/** A requested managed execution was not started. The caller retains its work. */
+export type ExecutionDeferral = {
+  resource: "task-credit" | "execution-capacity";
+  /** Minimum simultaneous execution places needed by the denied method. */
+  requiredSlots?: number;
+  scope?: "host" | "agent" | "root" | "recipient";
+  reason: string;
+  retryAt: number | null;
+  task: { appId: string; taskId: string };
+  root: { appId: string; taskId: string } | null;
+};
+
+/** A resource admission constraint, not a terminal execution result or failed
+ * helper. Typed callers may choose a cheaper method, retain demand or rethrow.
+ * No session identity is created for the denied operation. */
+export class ExecutionDeferredError extends Error {
+  readonly started = false;
+  /** Existing enclosing execution, when it retained the blocked call as facts. */
+  callerExecution?: { kind: "agent" | "workflow"; id: string };
+
+  constructor(readonly deferral: ExecutionDeferral) {
+    super(`Execution deferred: ${deferral.reason}`);
+    this.name = "ExecutionDeferredError";
+  }
+}
+
 /** The input is App/workflow-owned; the runtime only carries it across the boundary. */
 export type WorkflowInput<T = unknown> = T;
 
@@ -397,7 +562,7 @@ export type TaskReconciliationChild = {
   dependsOn?: string[];
   conditions: Condition[];
   readiness?: {
-    state: "ready" | "dependency-blocked" | "condition-blocked" | "capacity-blocked" | "paused" | "not-applicable";
+    state: "ready" | "dependency-blocked" | "condition-blocked" | "funding-blocked" | "capacity-blocked" | "resource-blocked" | "paused" | "not-applicable";
     reason: string;
     relatedTaskIds: string[];
   };
@@ -479,6 +644,8 @@ export type TaskAttempt = {
   };
   /** Snapshot at attempt start. Use read.tasks.get(task.id) for current facts. */
   task: TaskDetail;
+  /** Opt-in starting observation; current reads remain available separately. */
+  workload?: TaskWorkload | { available: false };
   /**
    * The same scoped Task reads available to workflows and agent tools.
    * Reads neither consume pending input nor change this attempt's binding.
@@ -593,6 +760,7 @@ export type TaskExecutor = (attempt: TaskAttempt) => Promise<TaskReconcileResult
 
 /** Bounded task-attempt facts supplied without exposing task storage or prompt packets. */
 export type TaskReconciliationContext<TInput = unknown> = {
+  workload?: TaskWorkload | { available: false };
   /** Host-supplied starting state, including accepted work, Conditions and pending input. */
   task: TaskDetail;
   appId: string;
@@ -641,7 +809,9 @@ export type WorkflowContext<TInput = unknown> = {
   readCommunication?: TaskAttempt["read"]["communication"];
   read: AppRead;
   agents: {
-    /** Schema for the contribution report, including incomplete work. Make
+    /** Resource admission can throw ExecutionDeferredError before a helper starts.
+     * Catch it to choose another method or retain demand; it has no helper ID.
+     * Schema for the contribution report, including incomplete work. Make
      * unavailable information optional; a valid report does not imply Task
      * fulfillment. Missing optional fields do not require a correction turn.
      * Declare every representation the App accepts, including inputs to its

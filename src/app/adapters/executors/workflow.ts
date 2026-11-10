@@ -1,3 +1,4 @@
+import { ExecutionDeferredError } from "@may-agent/sdk";
 import { taskExecutionContext } from "./task-context.js";
 import { basename, join } from "node:path";
 import type { TaskVerifier as AppTaskVerifier } from "@may-agent/sdk";
@@ -180,6 +181,7 @@ async function executeTaskWorkflow(
       trace,
       workflowInput: taskDetail.input ?? {},
       executionTimeoutMs: input.executionTimeoutMs,
+      executionTimeoutLimitMs: input.executionTimeoutLimitMs,
       signal: attempt.signal,
     });
     const done = result.type === "done";
@@ -241,6 +243,7 @@ async function executeTaskWorkflow(
         : {}),
     };
   } catch (error) {
+    if (error instanceof ExecutionDeferredError) throw error;
     const summary = error instanceof Error ? error.message : String(error);
     const unavailable = error instanceof WorkflowHandlerUnavailable;
     const runId = error instanceof WorkflowExecutionFailure ? error.execution.id : null;

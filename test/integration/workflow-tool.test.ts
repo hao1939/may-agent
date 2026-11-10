@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createWorkflowRunner, createWorkflowTool } from "../../src/lib/workflow-tool.js";
 import { SubagentManager } from "../../src/lib/manager.js";
-import { closeDb } from "../../src/lib/requests.js";
+import { closeDb, getDb } from "../../src/lib/db/connection.js";
 import type { WorkflowEvent, WorkflowToolResult } from "../../src/lib/workflow.js";
 
 // ── Test fixtures ──────────────────────────────────────────────────────
@@ -522,9 +522,7 @@ describe("workflow tool: run", () => {
       runtimeCtx: {
         emit: (event: { type: string; [key: string]: unknown }) => runtimeEvents.push(event),
         dispatchEvent: () => {},
-        getDb: () => {
-          throw new Error("getDb should not be called");
-        },
+        getDb: () => getDb(join(testDir, "state")),
         query: {} as never,
         log: () => {},
         notify: () => {},
@@ -579,9 +577,7 @@ describe("workflow tool: run", () => {
       runtimeCtx: {
         emit: (event: { type: string; [key: string]: unknown }) => runtimeEvents.push(event),
         dispatchEvent: () => {},
-        getDb: () => {
-          throw new Error("getDb should not be called");
-        },
+        getDb: () => getDb(join(testDir, "state")),
         query: {} as never,
         log: () => {},
         notify: () => {},
@@ -632,15 +628,15 @@ describe("workflow tool: run", () => {
       agentName: "aks-explorer",
       projectId: "alpha-project",
       taskBinding: {
+        appId: "alpha-project",
         taskId: "vm-pipeline-rest-plan",
         generation: 1,
+        attemptId: "a_vm_pipeline_rest_plan_1",
       },
       runtimeCtx: {
         emit: (event: { type: string; [key: string]: unknown }) => runtimeEvents.push(event),
         dispatchEvent: () => {},
-        getDb: () => {
-          throw new Error("getDb should not be called");
-        },
+        getDb: () => getDb(join(testDir, "state")),
         query: {} as never,
         log: () => {},
         notify: () => {},
@@ -713,9 +709,7 @@ describe("workflow tool: run", () => {
       runtimeCtx: {
         emit: (event: { type: string; [key: string]: unknown }) => runtimeEvents.push(event),
         dispatchEvent: () => {},
-        getDb: () => {
-          throw new Error("getDb should not be called");
-        },
+        getDb: () => getDb(join(testDir, "state")),
         query: {} as never,
         log: () => {},
         notify: () => {},
