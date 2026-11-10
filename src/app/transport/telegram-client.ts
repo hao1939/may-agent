@@ -46,6 +46,12 @@ class TelegramApiError extends Error {
   }
 }
 
+function confirmedRejection(error: unknown): boolean {
+  // Server failures can follow an accepted side effect; only a definite client
+  // rejection permits retrying a complete message without a provider receipt.
+  return error instanceof TelegramApiError && error.code >= 400 && error.code < 500;
+}
+
 export interface TelegramSendContext {
   eventType?: string;
   agent?: string;
@@ -54,6 +60,12 @@ export interface TelegramSendContext {
   data?: string;
   /** Persist reply authority only after every chunk was delivered, on the final chunk. */
   bindToCompleteDelivery?: boolean;
+  /** Required delivery state may not be replaced by best-effort notification indexing. */
+  onDelivery?: (outcome: {
+    state: "delivered" | "failed" | "uncertain";
+    reason?: string;
+    externalMessageId?: number;
+  }) => void;
   replyToMessageId?: number;
   messageThreadId?: number;
   replyMarkup?: { inline_keyboard: Array<Array<{ text: string; callback_data: string }>> };
@@ -122,6 +134,8 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
     let lastMsgId: number | undefined;
     const sentMsgIds: number[] = [];
     let complete = true;
+    let uncertain = false;
+    let failureReason: string | undefined;
     for (const chunk of chunks) {
       if (closed) {
         complete = false;
@@ -141,9 +155,14 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
           ...threadParams,
           ...replyParams,
         });
-        lastMsgId = result?.message_id;
-        if (lastMsgId) sentMsgIds.push(lastMsgId);
-        else complete = false;
+        const messageId = result?.message_id;
+        if (Number.isSafeInteger(messageId) && messageId > 0) {
+          lastMsgId = messageId;
+          sentMsgIds.push(messageId);
+        } else {
+          complete = false;
+          uncertain = true;
+        }
       } catch (err) {
         if (
           !closed &&
@@ -160,15 +179,24 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
               ...threadParams,
               ...replyParams,
             });
-            lastMsgId = result?.message_id;
-            if (lastMsgId) sentMsgIds.push(lastMsgId);
-            else complete = false;
+            const messageId = result?.message_id;
+            if (Number.isSafeInteger(messageId) && messageId > 0) {
+              lastMsgId = messageId;
+              sentMsgIds.push(messageId);
+            } else {
+              complete = false;
+              uncertain = true;
+            }
           } catch (retryErr) {
             complete = false;
+            uncertain ||= !confirmedRejection(retryErr);
+            failureReason = errorMessage(retryErr);
             opts.emitInfo(`[telegram] Send failed: ${errorMessage(retryErr)}`);
           }
         } else {
           complete = false;
+          uncertain ||= !confirmedRejection(err);
+          failureReason = errorMessage(err);
           opts.emitInfo(`[telegram] Send failed: ${errorMessage(err)}`);
         }
       }
@@ -198,6 +226,15 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
         }
       }
     }
+    const fullyDelivered = complete && sentMsgIds.length === chunks.length;
+    context?.onDelivery?.(
+      fullyDelivered
+        ? { state: "delivered", externalMessageId: lastMsgId }
+        : {
+            state: uncertain || sentMsgIds.length > 0 ? "uncertain" : "failed",
+            reason: failureReason ?? "The complete message was not confirmed delivered.",
+          },
+    );
     return complete && sentMsgIds.length === chunks.length ? lastMsgId : undefined;
   }
 

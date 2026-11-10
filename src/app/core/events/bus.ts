@@ -779,6 +779,15 @@ export type SystemEvent =
         reason: string;
         content: string;
         priority?: "P0" | "P1" | "P2" | "P3";
+        /** Exact transport evidence; this diagnostic does not alter Task state. */
+        appId?: string;
+        conversationId?: string;
+        requestId?: string;
+        conversationMessageId?: string;
+        deliveryOperationId?: string;
+        deliveryStatus?: "failed" | "uncertain";
+        channelThreadId?: string;
+        idempotencyKey?: string;
       };
     }
   | {

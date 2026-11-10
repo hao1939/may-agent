@@ -107,6 +107,55 @@ receive their scoped publishing capability through the SDK.
 | `getEvent` / HTTP `GET /api/events/:id` | Trusted operator diagnostics, including internal types; linked route state is not Task state |
 | Explicit raw event/session subscription | Best-effort diagnostic stream; payloads outside documented integrations may change |
 
+An accepted Conversation answer and its external Telegram delivery are separate
+facts. Addressed agent answers retain a destination- and content-bound transport
+claim before sending. Only a complete provider response records delivery;
+confirmed rejections before any delivered chunk may retry on a later Conversation
+wake or restart. Interrupted, partial or ambiguous sends remain uncertain and are
+not automatically repeated. Startup does not treat an existing answer as a send
+receipt: legacy answers without complete evidence remain uncertain too. This
+startup check covers the same bounded recent Conversation view as the adapter;
+it is not a historical delivery audit. Startup captures a read-only boundary;
+all receipt reconciliation runs through the same per-answer delivery decision:
+
+| Existing evidence | Decision |
+| --- | --- |
+| No receipt; answer first observed in the startup snapshot | Retain uncertainty; never claim it as a new send |
+| No receipt; answer appeared after that snapshot | Commit an exclusive claim before provider I/O |
+| Confirmed rejection before any chunk was delivered | Acquire a new claim before retrying |
+| Sending or uncertain | Retain the operation; require caller/provider evidence before a fresh communication |
+| Delivered | Suppress replay using the exact receipt, including content and destination; presentation caches cannot bypass this check |
+| Receipt read, claim or settlement fails | Send nothing without a claim; preserve incomplete evidence and continue to other callers |
+
+The startup boundary survives failed uncertainty writes for the adapter's lifetime.
+If the initial Conversation read is unavailable, the first successful snapshot is
+treated as historical. That conservative rule can retain a newly saved answer as
+uncertain during a startup outage; it cannot safely be assumed unsent. Recovery
+uses the next existing Conversation wake or restart, without another Task attempt
+or a new retry loop.
+
+The existing `message.delivery_failed` diagnostic identifies the owning App,
+original request, Conversation message, destination and delivery operation. Use
+its exact receipt and the retained answer to investigate the caller obligation;
+Task closure or an Inbox `done` state alone is insufficient. Verify the provider
+or caller evidence before authorizing a fresh communication after an uncertain
+send. Preserve the prior uncertainty instead of rerunning accepted Task work or
+rewriting its result. These transport records do not change Task acceptance or
+creator authority, and an unresolved delivery does not block another answer.
+Diagnostic persistence shares the same database and may fail too. In that case,
+the independent system logger logs the caller and operation identity; reporting
+cannot grant send authority or stop later callers. A later wake retries the
+diagnostic from the retained evidence. A log alone is not a provider receipt.
+The diagnostic uses the Host's record-only event marker: subscribers can observe
+it, and an absent consumer receives no-op acceptance rather than another worker
+obligation. That event receipt does not settle the underlying Telegram operation.
+
+A watched Task ends its focus after the terminal result has been presented.
+For an addressed answer, that check reads the exact durable delivery receipt,
+including content and destination, whether delivery precedes or follows the
+terminal Task update. A previous version's presentation cannot establish that a
+rejected or uncertain revision was delivered.
+
 App admission and another route's delivery receipt are independent. A durable
 addressed message with no matching App gets three admission attempts, including
 the first; recovery uses the existing scan. Exhaustion stops that App route and
