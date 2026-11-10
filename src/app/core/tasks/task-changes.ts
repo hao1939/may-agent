@@ -167,3 +167,22 @@ export function applyTaskChanges(input: {
   }
   return receipt;
 }
+const PREFLIGHT_COMPLETE = Symbol("task-change-preflight-complete");
+
+/** Run the authoritative task-change admission path in a transaction that is always rolled back. */
+export function preflightTaskChanges(input: Omit<Parameters<typeof applyTaskChanges>[0], "settle"> & {
+  settle: (receipt: TaskChangeReceipt) => void;
+}): void {
+  try {
+    applyTaskChanges({
+      ...input,
+      settle: (receipt) => {
+        input.settle(receipt);
+        throw PREFLIGHT_COMPLETE;
+      },
+    });
+  } catch (error) {
+    if (error === PREFLIGHT_COMPLETE) return;
+    throw error;
+  }
+}

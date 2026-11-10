@@ -3789,6 +3789,68 @@ function finishResourceMutationScope(scope: ResourceMutationScope, tree: TaskTre
   };
 }
 
+function taskFinalReviewAt(
+  tree: TaskTree,
+  claim: AppTaskClaim,
+  inputKeys: string[],
+  reviewAt?: number,
+): number | undefined {
+  const match = matchingTaskAttempt(tree, claim);
+  if (!match) throw new Error("Task result requires a current running attempt");
+  const retainedReviewAt = [
+    match.resource.status.reviewAt,
+    ...inputKeys.map((key) => match.resource.status.inputWaits?.[key]?.reviewAt),
+  ]
+    .filter((value): value is number => Number.isSafeInteger(value) && Number(value) > Date.now())
+    .sort((left, right) => left - right)[0];
+  const resolved = reviewAt ?? retainedReviewAt;
+  if (resolved !== undefined && (!Number.isSafeInteger(resolved) || resolved <= 0)) {
+    throw new Error(`Waiting result for ${claim.taskId} reviewAt must be a positive Unix timestamp in milliseconds`);
+  }
+  return resolved;
+}
+
+function validateTaskFinalSettlementRoute(
+  tree: TaskTree,
+  claim: AppTaskClaim,
+  input: { continue?: true; reviewAt?: number },
+): void {
+  const conditionIds = taskConditionIds(tree, claim.taskId);
+  const hasOpenCondition = conditionIds.some((id) => {
+    const condition = tree.conditions?.[id];
+    return Boolean(condition && condition.status.state !== "true");
+  });
+  const hadSatisfiedCondition = conditionIds.some((id) => tree.conditions?.[id]?.status.state === "true");
+  const pendingTrigger = tree.taskTriggers?.[claim.taskId];
+  const hasPendingEvents = Boolean(pendingTrigger && taskTriggerEvents(pendingTrigger).length > 0);
+  if (!input.continue && input.reviewAt === undefined && !hasOpenCondition && !hadSatisfiedCondition && !hasPendingEvents) {
+    throw new Error(`Waiting result for ${claim.taskId} requires at least one exact Condition`);
+  }
+}
+
+export function validateTaskFinalSettlement(
+  config: AppTaskContext,
+  claim: AppTaskClaim,
+  input: {
+    state: "converged" | "waiting";
+    continue?: true;
+    reviewAt?: number;
+    inputKeys?: string[];
+    acceptedLiveEventIds?: number[];
+  },
+): { reviewAt?: number } {
+  const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
+  const inputKeys = resultInputKeys(config, tree, claim, input);
+  if (input.state !== "waiting") return {};
+  consumeSettledTaskEvents(tree, claim.taskId, claim.agent, {
+    acceptedLiveEventIds: input.acceptedLiveEventIds,
+    inputKeys,
+  });
+  const reviewAt = taskFinalReviewAt(tree, claim, inputKeys, input.reviewAt);
+  validateTaskFinalSettlementRoute(tree, claim, { continue: input.continue, reviewAt });
+  return reviewAt === undefined ? {} : { reviewAt };
+}
+
 export function readTaskChangeInputKeys(
   config: AppTaskContext,
   claim: AppTaskClaim,
@@ -4053,16 +4115,7 @@ export function deferAppTask(
   const { keys: inputKeys, writes: admissions } = inputOutcomeAdmissions(
     config, tree, claim, input, input.report ? "progress" : "retain",
   );
-  const retainedReviewAt = [
-    resource.status.reviewAt,
-    ...inputKeys.map((key) => resource.status.inputWaits?.[key]?.reviewAt),
-  ]
-    .filter((value): value is number => Number.isSafeInteger(value) && Number(value) > Date.now())
-    .sort((left, right) => left - right)[0];
-  const reviewAt = input.reviewAt ?? retainedReviewAt;
-  if (reviewAt !== undefined && (!Number.isSafeInteger(reviewAt) || reviewAt <= 0)) {
-    throw new Error(`Waiting result for ${claim.taskId} reviewAt must be a positive Unix timestamp in milliseconds`);
-  }
+  const reviewAt = taskFinalReviewAt(tree, claim, inputKeys, input.reviewAt);
   const acceptedResult = acceptedAttemptResult(
     tree,
     claim.taskId,
@@ -4093,17 +4146,13 @@ export function deferAppTask(
   finishAttempt(tree, resource, "completed", input.summary, now);
   // A declaration changes the specification; an unchanged wait preserves its observation.
   if (conditions.length) materializeWaitingConditions(tree, claim.taskId, conditions, now);
+  validateTaskFinalSettlementRoute(tree, claim, { continue: input.continue, reviewAt });
   const hadSatisfiedCondition = hasSatisfiedTaskCondition(tree, claim.taskId);
   unlinkSatisfiedTaskConditions(tree, claim.taskId);
   const openConditions = taskConditionIds(tree, claim.taskId).flatMap((id) => {
     const condition = tree.conditions?.[id];
     return condition && condition.status.state !== "true" ? [{ id, ...condition.spec }] : [];
   });
-  // Only a sleeping attempt needs an external return route. `continue` is its
-  // own bounded scheduler request and may remain useful after the last wait resolves.
-  if (input.disposition === "waiting" && !input.continue && reviewAt === undefined && openConditions.length === 0 && !hadSatisfiedCondition && pendingEvents.length === 0) {
-    throw new Error(`Waiting result for ${claim.taskId} requires at least one exact Condition`);
-  }
   for (const key of inputKeys) {
     const previous = resource.status.inputWaits?.[key]?.conditions ?? [];
     // Correlation is input-local: retain that input's exact existing waits and
