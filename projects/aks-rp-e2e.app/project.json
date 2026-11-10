@@ -1,0 +1,8 @@
+{
+  "id": "aks-rp-e2e.app",
+  "owner": "app-ops",
+  "status": "active",
+  "type": "agent-app",
+  "goal": "View Kubernetes version support progress and the preserved paused session. All AKS task execution is disabled.",
+  "installationMode": "ui-only"
+}
