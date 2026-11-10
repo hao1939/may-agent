@@ -46,6 +46,12 @@ class TelegramApiError extends Error {
   }
 }
 
+function confirmedRejection(error: unknown): boolean {
+  // Server failures can follow an accepted side effect; only a definite client
+  // rejection permits retrying a complete message without a provider receipt.
+  return error instanceof TelegramApiError && error.code >= 400 && error.code < 500;
+}
+
 export interface TelegramSendContext {
   eventType?: string;
   agent?: string;
@@ -149,9 +155,11 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
           ...threadParams,
           ...replyParams,
         });
-        lastMsgId = result?.message_id;
-        if (lastMsgId) sentMsgIds.push(lastMsgId);
-        else {
+        const messageId = result?.message_id;
+        if (Number.isSafeInteger(messageId) && messageId > 0) {
+          lastMsgId = messageId;
+          sentMsgIds.push(messageId);
+        } else {
           complete = false;
           uncertain = true;
         }
@@ -171,21 +179,23 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
               ...threadParams,
               ...replyParams,
             });
-            lastMsgId = result?.message_id;
-            if (lastMsgId) sentMsgIds.push(lastMsgId);
-            else {
+            const messageId = result?.message_id;
+            if (Number.isSafeInteger(messageId) && messageId > 0) {
+              lastMsgId = messageId;
+              sentMsgIds.push(messageId);
+            } else {
               complete = false;
               uncertain = true;
             }
           } catch (retryErr) {
             complete = false;
-            uncertain ||= !(retryErr instanceof TelegramApiError);
+            uncertain ||= !confirmedRejection(retryErr);
             failureReason = errorMessage(retryErr);
             opts.emitInfo(`[telegram] Send failed: ${errorMessage(retryErr)}`);
           }
         } else {
           complete = false;
-          uncertain ||= !(err instanceof TelegramApiError);
+          uncertain ||= !confirmedRejection(err);
           failureReason = errorMessage(err);
           opts.emitInfo(`[telegram] Send failed: ${errorMessage(err)}`);
         }

@@ -171,6 +171,32 @@ describe("telegram client", () => {
     }
   });
 
+  it.each([
+    { ok: false, error_code: 500, description: "Internal Server Error" },
+    { ok: true, result: { message_id: "missing-numeric-receipt" } },
+  ])("retains uncertain provider outcomes without permitting a complete-message retry: %j", async (response) => {
+    const root = mkdtempSync(join(tmpdir(), "telegram-uncertain-receipt-"));
+    const outcomes: unknown[] = [];
+    const client = createTelegramClient({
+      token: "fixture-token",
+      persistDir: root,
+      emitInfo: () => {},
+      fetchImpl: (async () => Response.json(response)) as typeof fetch,
+    });
+    try {
+      await expect(
+        client.sendMessage("123", "An exact answer", undefined, {
+          onDelivery: (outcome) => outcomes.push(outcome),
+        }),
+      ).resolves.toBeUndefined();
+      expect(outcomes).toEqual([{ state: "uncertain", reason: expect.any(String) }]);
+    } finally {
+      client.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("splits long messages without dropping content", () => {
     const chunks = splitTelegramMessage(["one", "two", "three"].join("\n"), 8);
     expect(chunks).toEqual(["one\ntwo", "three"]);
