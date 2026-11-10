@@ -12,6 +12,21 @@ CREATE TABLE IF NOT EXISTS notification_messages (
   data TEXT,
   sent_at INTEGER,
   PRIMARY KEY (chat_id, telegram_msg_id)
+);
+
+-- Transport evidence only. Accepted Conversation messages remain the answer;
+-- sending or uncertain evidence never grants permission to repeat a send.
+CREATE TABLE IF NOT EXISTS telegram_conversation_deliveries (
+  operation_id TEXT PRIMARY KEY,
+  app_id TEXT NOT NULL,
+  conversation_id TEXT NOT NULL,
+  message_id TEXT NOT NULL,
+  chat_id TEXT NOT NULL,
+  thread_id INTEGER,
+  state TEXT NOT NULL CHECK (state IN ('sending', 'delivered', 'failed', 'uncertain')),
+  reason TEXT,
+  external_message_id INTEGER,
+  updated_at INTEGER NOT NULL
 );`;
 
 const METRIC_DISPOSITION_SCHEMA = `

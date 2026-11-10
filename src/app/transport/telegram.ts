@@ -21,9 +21,16 @@ import { log } from "../../lib/log.js";
 import { setDefaultAutoSelectFamily } from "node:net";
 import type { AppConversationMessage, AppConversationTopic, AppConversationResource } from "@may-agent/sdk";
 import type { ApprovalProposal, EventInput, EventReceipt } from "@may-agent/control/events";
-import { EVENT_DELIVERY_RESULT, eventData, type EventBus } from "../core/events/bus.js";
+import { EVENT_DELIVERY_RESULT, EVENT_RECORD_ONLY, eventData, type EventBus } from "../core/events/bus.js";
 import { loadPersistedEvent } from "../core/events/persisted.js";
 import { getDb } from "../../lib/db/connection.js";
+import {
+  prepareConversationDelivery,
+  conversationDeliveryId,
+  readConversationDelivery,
+  settleConversationDelivery,
+  type ConversationDelivery,
+} from "../../lib/db/telegram-conversation-deliveries.js";
 import {
   getNotificationMessage,
   hasCompletedHumanActionDelivery,
@@ -717,14 +724,30 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       renderedConversationMessages.delete(oldest);
     }
   };
-  try {
-    for (const message of readAppConversationResource(getDb(persistDir), conversationAppId, sharedConversationId, {
-      limit: 200,
-    }).messages) {
-      rememberRenderedConversationMessage(message.id);
+  const historicalDeliveries = new Set<string>();
+  let startupCaptured = false;
+  function captureStartupMessages(messages: AppConversationMessage[]): void {
+    if (startupCaptured) return;
+    for (const message of messages) {
+      const delivery = addressedConversationDelivery(message);
+      if (delivery) historicalDeliveries.add(conversationDeliveryId(delivery));
+      else rememberRenderedConversationMessage(message.id);
     }
-  } catch {
-    // The Conversation may not be available until App runtime startup finishes.
+    // Keep this bounded first-snapshot fence even when a receipt write fails.
+    // Until the first successful read, no answer can be classified as fresh.
+    startupCaptured = true;
+  }
+  try {
+    captureStartupMessages(
+      readAppConversationResource(getDb(persistDir), conversationAppId, sharedConversationId, {
+        limit: 200,
+      }).messages,
+    );
+  } catch (error) {
+    log(
+      "warn",
+      `[telegram] Startup Conversation read unavailable: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 
   // Presentation only: one read in flight per key, with at most one follow-up
@@ -751,10 +774,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         try {
           if (running) await refresh(key);
         } catch (error) {
-          bus.emit({
-            type: "info",
-            message: `[telegram] ${label} failed: ${error instanceof Error ? error.message : String(error)}`,
-          });
+          log("warn", `[telegram] ${label} failed: ${error instanceof Error ? error.message : String(error)}`);
         } finally {
           pending.delete(key);
           if (state.dirty) queue(key);
@@ -909,14 +929,87 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     );
   }
 
+  function addressedConversationDelivery(message: AppConversationMessage): ConversationDelivery | undefined {
+    if (
+      message.author.kind !== "agent" ||
+      message.metadata?.channel !== "telegram" ||
+      !message.metadata.channelTargetId ||
+      !message.metadata.requestId
+    )
+      return undefined;
+    return {
+      appId: conversationAppId,
+      conversationId: sharedConversationId,
+      messageId: message.id,
+      chatId: message.metadata.channelTargetId,
+      threadId: telegramThreadId(message.metadata.channelThreadId),
+      text: renderTelegramConversationMessage(message),
+    };
+  }
+
+  function reportConversationDelivery(
+    message: AppConversationMessage,
+    delivery: ConversationDelivery,
+    state: string,
+    error?: unknown,
+  ): void {
+    const status = state === "failed" ? "failed" : "uncertain";
+    const operationId = conversationDeliveryId(delivery);
+    const identity = {
+      appId: conversationAppId,
+      conversationId: sharedConversationId,
+      requestId: message.metadata?.requestId,
+      conversationMessageId: message.id,
+      deliveryOperationId: operationId,
+      to: delivery.chatId,
+      channelThreadId: message.metadata?.channelThreadId,
+    };
+    const context = JSON.stringify(identity);
+    if (error !== undefined)
+      log(
+        "warn",
+        `[telegram] Conversation answer delivery failed ${context}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    try {
+      bus.emit({
+        [EVENT_RECORD_ONLY]: true,
+        type: "message.delivery_failed",
+        source: "telegram",
+        owner: `app:${conversationAppId}`,
+        data: {
+          from: conversationAppId,
+          ...identity,
+          content: message.text.slice(0, 500),
+          reason:
+            status === "failed"
+              ? "Telegram rejected the answer before any chunk was delivered; the existing answer remains available for delivery."
+              : "No complete Telegram delivery outcome is available; verify the caller receipt before resending the existing answer.",
+          deliveryStatus: status,
+          idempotencyKey: `telegram-conversation-delivery:${operationId}:${status}`,
+        },
+      });
+    } catch (reportingError) {
+      // The journal shares the failing database. Reporting is never send authority
+      // and must not interrupt another caller; the independent logger cannot throw.
+      log(
+        "warn",
+        `[telegram] Delivery diagnostic not persisted ${context}: ${reportingError instanceof Error ? reportingError.message : String(reportingError)}`,
+      );
+    }
+  }
+
   async function syncConversation(): Promise<void> {
     const conversation = readAppConversationResource(getDb(persistDir), conversationAppId, sharedConversationId, {
       limit: 200,
     });
+    captureStartupMessages(conversation.messages);
     await syncTurnControls(conversation.activeTurn);
     for (const message of conversation.messages) {
       if (!running) return;
-      if (renderedConversationMessages.has(message.id)) continue;
+      const delivery = addressedConversationDelivery(message);
+      // Addressed answers always use their exact durable operation, including
+      // content/destination revisions under the same Conversation message ID.
+      if (!delivery && renderedConversationMessages.has(message.id)) continue;
       if (
         message.metadata?.channel === "telegram" &&
         (message.author.kind === "human" || message.author.kind === "command")
@@ -928,26 +1021,57 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       if (!targetChatId) return;
       const topicId = telegramThreadId(message.metadata?.channelThreadId);
       const surface = surfaceKey(targetChatId, topicId);
-      const delivered = await sendMessage(targetChatId, renderTelegramConversationMessage(message), undefined, {
-        eventType: "conversation.mirror",
-        agent: message.author.kind === "agent" ? opts.interfaceAgent : message.author.id,
-        messageThreadId: topicId,
-        ...(message.metadata?.channelMessageId ? { replyToMessageId: message.metadata.channelMessageId } : {}),
-        replyMarkup: taskButtons(
-          message.metadata?.followTask ? [message.metadata.followTask] : message.metadata?.taskRefs,
-        ),
-        data: JSON.stringify({
-          direction: "mirror",
-          conversationId: sharedConversationId,
-          conversationMessageId: message.id,
-          sourceChannel: message.metadata?.channel,
-          text: message.text.slice(0, 500),
-          taskRefs: message.metadata?.followTask ? [message.metadata.followTask] : message.metadata?.taskRefs,
-          topicId: message.metadata?.topicId,
-        }),
-      });
-      if (!delivered || !running) return;
-      rememberRenderedConversationMessage(message.id);
+      const operationId = delivery ? conversationDeliveryId(delivery) : undefined;
+      let delivered: number | undefined;
+      try {
+        if (delivery) {
+          const decision = prepareConversationDelivery(
+            persistDir,
+            delivery,
+            historicalDeliveries.has(operationId!) ? "historical" : "fresh",
+          );
+          if (decision.kind === "retained") {
+            if (decision.state !== "delivered") reportConversationDelivery(message, delivery, decision.state);
+            continue;
+          }
+        }
+        delivered = await sendMessage(targetChatId, renderTelegramConversationMessage(message), undefined, {
+          eventType: "conversation.mirror",
+          agent: message.author.kind === "agent" ? opts.interfaceAgent : message.author.id,
+          messageThreadId: topicId,
+          ...(operationId
+            ? {
+                onDelivery: (outcome) => {
+                  settleConversationDelivery(persistDir, operationId, outcome);
+                  if (outcome.state !== "delivered") reportConversationDelivery(message, delivery!, outcome.state);
+                },
+              }
+            : {}),
+          ...(message.metadata?.channelMessageId ? { replyToMessageId: message.metadata.channelMessageId } : {}),
+          replyMarkup: taskButtons(
+            message.metadata?.followTask ? [message.metadata.followTask] : message.metadata?.taskRefs,
+          ),
+          data: JSON.stringify({
+            direction: "mirror",
+            conversationId: sharedConversationId,
+            conversationMessageId: message.id,
+            sourceChannel: message.metadata?.channel,
+            text: message.text.slice(0, 500),
+            taskRefs: message.metadata?.followTask ? [message.metadata.followTask] : message.metadata?.taskRefs,
+            topicId: message.metadata?.topicId,
+          }),
+        });
+      } catch (error) {
+        if (!delivery) throw error;
+        reportConversationDelivery(message, delivery, "uncertain", error);
+        continue;
+      }
+      if (!running) return;
+      if (!delivered) {
+        if (delivery) continue; // One unresolved caller must not hide another answer.
+        return;
+      }
+      if (!delivery) rememberRenderedConversationMessage(message.id);
       const watched = watchedTasks.get(surface);
       if (
         watched &&
@@ -1004,7 +1128,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             message.metadata?.taskRefs?.some((ref) => ref.appId === task.appId && ref.taskId === task.taskId),
         );
       if (equivalent) {
-        if (renderedConversationMessages.has(equivalent.id)) stopWatching(surface);
+        const delivery = addressedConversationDelivery(equivalent);
+        const presented = delivery
+          ? readConversationDelivery(persistDir, conversationDeliveryId(delivery))?.state === "delivered"
+          : renderedConversationMessages.has(equivalent.id);
+        if (presented) stopWatching(surface);
         else conversationRefresh.queue(sharedConversationId);
         return;
       }
