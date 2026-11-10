@@ -54,7 +54,7 @@ The workflow-owned bounded request checked:
 
 - **Endpoint:** `https://export.arxiv.org/api/query?search_query=cat%3Acs.AI&start=0&max_results=20&sortBy=submittedDate&sortOrder=descending`
 - **HTTP status:** 200
-- **Latency:** 434 ms
+- **Latency:** 470 ms
 - **Request count:** 1
 - **Retry-After:** not present
 
