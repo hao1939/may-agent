@@ -1698,7 +1698,7 @@ test("managed finish pins retained reviewAt across executor closure", async () =
   }
 });
 
-test("managed finish preflight replays a journaled retire action before validating the corrected settlement", async () => {
+test.each(["retire action", "condition and communication batch"] as const)("managed finish preflight replays a journaled %s before validating the corrected settlement", async (replay) => {
   const managerRoot = mkdtempSync(join(tmpdir(), "task-managed-action-replay-"));
   let modelRequests = 0;
   let usefulFeedback = "";
@@ -1716,19 +1716,29 @@ test("managed finish preflight replays a journaled retire action before validati
     expectedConditionGeneration: 1,
     reason: "The original review route is obsolete",
   };
+  const original = {
+    conditions: [retained],
+    ...(replay === "condition and communication batch"
+      ? { communication: [{ id: "review-started", inputId: "ask", message: "The review was requested." }] }
+      : {}),
+  };
   const malformed = {
     state: "waiting" as const,
     summary: "The obsolete review was retired",
     facts: ["review:retired"],
-    actions: [action],
+    ...(replay === "retire action" ? { actions: [action] } : original),
   };
-  const corrected = { ...malformed, conditions: [replacement] };
+  const corrected = {
+    ...malformed,
+    conditions: [replacement],
+  };
   const manager = new SubagentManager({
     persistDir: managerRoot,
     agentRunFactory: (config) => createAgentRun({
       ...config,
       streamFn: (_model, context) => {
         modelRequests++;
+        if (modelRequests > 2) throw new Error("Unexpected extra scripted model request");
         if (modelRequests === 2) usefulFeedback = JSON.stringify(context.messages);
         const result = modelRequests === 1 ? malformed : corrected;
         const stream = createAssistantMessageEventStream();
@@ -1760,7 +1770,7 @@ test("managed finish preflight replays a journaled retire action before validati
     async () => corrected,
     "task",
     async ({ attempt }) => {
-      await attempt.apply({ conditions: [retained] });
+      await attempt.apply(original);
       await attempt.apply({ actions: [action], facts: ["review:retired"] });
     },
     undefined,
@@ -1775,11 +1785,16 @@ test("managed finish preflight replays a journaled retire action before validati
     const tree = f.store.readTaskContext({ taskIds: [input.executionTaskId!] });
     const attempts = Object.values(tree.attempts ?? {});
     expect(attempts).toHaveLength(1);
-    expect(attempts[0]?.acceptedResult).toBeDefined();
+    expect(attempts[0]?.acceptedResult).toMatchObject({ state: "waiting" });
     expect(f.store.readTask(input.executionTaskId!)?.status).toMatchObject({
       phase: "waiting",
       conditionIds: [replacement.id],
     });
+    expect(
+      listAppConversationMessages(f.db, "sample", "discussion")
+        .filter(({ author }) => author.kind === "agent")
+        .map(({ text }) => text),
+    ).toEqual(replay === "condition and communication batch" ? ["The review was requested."] : []);
   } finally {
     await f.close();
     closeDb(managerRoot);

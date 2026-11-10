@@ -1,14 +1,7 @@
-import { stateTransaction } from "../../../lib/db/transaction.js";
-import { assertAppTaskClaimCurrent } from "./app-task-reconciler.js";
 import { readTaskInputs } from "./app-task-inputs.js";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import {
-  admitTaskChanges,
-  type TaskCommunication,
-  type TaskChangeReceipt,
-  type TaskReconcileResult,
-} from "@may-agent/sdk";
+import type { TaskCommunication, TaskChangeReceipt, TaskReconcileResult } from "@may-agent/sdk";
 import type { AppTaskContext } from "./app-task-store.js";
 import type { AppTaskClaim } from "./app-task-reconciler.js";
 import { getAppInboxItem } from "../state/app-inbox-store.js";
@@ -257,39 +250,4 @@ export function taskResultCommunication(
   const input = inputs.filter(({ source }) => source.kind === "human").at(-1) ?? inputs.at(-1)!;
   const id = `response-${createHash("sha256").update(input.key).digest("hex").slice(0, 32)}`;
   return [...(changes ?? []), { id, inputId: input.id, message: result.response }];
-}
-
-/** Exercise exactly the communication admission rules without committing or publishing effects. */
-export function validateTaskCommunication(
-  config: AppTaskContext,
-  claim: AppTaskClaim,
-  changes: readonly TaskCommunication[],
-  events: AppTaskEvents,
-): string | null {
-  // Implicit response conversion has already run. Use settlement's schema here
-  // too, including the combined entry count and message bounds.
-  const admitted = admitTaskChanges({ communication: changes });
-  if (!admitted.ok) return admitted.error;
-  const completed = new Error("communication preview complete");
-  const proposed = new Map<string, { eventId: number; data: Record<string, unknown> }>();
-  try {
-    stateTransaction(config.resourceStore.db, () => {
-      assertAppTaskClaimCurrent(config, claim);
-      applyTaskCommunication(config, claim, changes, {
-        read: (type, key) => proposed.get(JSON.stringify([type, key])) ?? events.read(type, key),
-        publish(key, event) {
-          proposed.set(JSON.stringify([event.type, key]), { eventId: 0, data: event.data ?? {} });
-          return 0;
-        },
-        onEvent: events.onEvent,
-      });
-      // Savepoints are discarded even on success. No event is sent to EventBus,
-      // no request is dispatched, and no App mapping or external effect runs.
-      throw completed;
-    });
-  } catch (error) {
-    if (error === completed) return null;
-    return error instanceof Error ? error.message : String(error);
-  }
-  return null;
 }

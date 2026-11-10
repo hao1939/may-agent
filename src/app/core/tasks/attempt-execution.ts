@@ -1,10 +1,6 @@
 import { listConversationInputRequests } from "../state/conversation-requests.js";
 import { boundedAppRequestConversation } from "../reads/conversation-context.js";
-import {
-  readTaskCommunicationInput,
-  taskResultCommunication,
-  validateTaskCommunication,
-} from "./task-communication.js";
+import { readTaskCommunicationInput, taskResultCommunication } from "./task-communication.js";
 import { readAppConversationResource, readConversationContext } from "../state/conversations.js";
 import { readTaskInputs } from "./app-task-inputs.js";
 import { readTaskEventTarget } from "../events/task-target.js";
@@ -454,16 +450,19 @@ export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabil
         if (result.inputKeys !== undefined) readTaskChangeInputKeys(config, claim, result.inputKeys);
         if (result.state !== "converged" && result.state !== "waiting") return null;
         const acceptedLiveEventIds = execution.acceptedLiveEventIds();
+        // Replay the complete final batch: communication is part of its receipt identity.
         preflightTaskChanges({
           opts,
           descriptor,
           claim,
           changes: {
             requests: result.requests,
-            conditions: result.conditions,
+            conditions: result.state === "waiting" ? result.conditions : undefined,
             actions: result.actions,
             facts: result.facts,
             inputKeys: result.inputKeys,
+            communication:
+              result.state === "converged" ? taskResultCommunication(config, claim, result) : result.communication,
           },
           acceptedLiveEventIds,
           settle: () => {
@@ -472,8 +471,7 @@ export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabil
             preflightReviewAt = resolved.reviewAt;
           },
         });
-        const changes = taskResultCommunication(config, claim, result);
-        return changes?.length ? validateTaskCommunication(config, claim, changes, execution.taskEvents) : null;
+        return null;
       } catch (error) {
         return error instanceof Error ? error.message : String(error);
       }
