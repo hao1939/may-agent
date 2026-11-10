@@ -13,7 +13,7 @@ checks. Directory names alone do not indicate test cost or isolation.
 | Startup and recovery order | `app-runtime.test.ts` and `composition/background-startup.test.ts` call isolated production-code probes; `core/tasks/startup-recovery.test.ts` owns session eligibility | `task-startup-no-schedules.test.ts` runs real daemon/socket/worker restart; registry and Task runtime tests own atomic publication/rollback |
 | Shutdown decisions | `test/integration/shutdown.test.ts` calls production lifecycle/signal handlers with intercepted process effects | Real daemon teardown and process lifetime tests |
 | Browser rendering | E8 executes served `chat.js`, including raw/Markdown streaming and safe fallback | Same browser checks the project-comment HTTP journey |
-| Addressed Telegram answer delivery | `src/app/transport/telegram-refresh.test.ts` uses the real `DbWriter` and reads saved diagnostics; `telegram-client.test.ts` owns provider outcomes | File-backed competing writers, failed startup reads, claim/receipt and diagnostic failures together, next-caller progress and reopen; the delivery-store tests own exclusive claims |
+| Addressed Telegram answer delivery | `src/app/transport/telegram-refresh.test.ts` installs `DbWriter` persistence and delivery recording, and reads saved diagnostics/receipts; `telegram-client.test.ts` owns provider outcomes | File-backed competing writers, failed startup reads, claim/receipt and diagnostic failures together, passive no-op acceptance, watch focus across delivery/terminal ordering and revised answers, next-caller progress and reopen; the delivery-store tests own exclusive claims |
 | Bounded execution imports | ESLint restricted imports | SDK exports, execution results and shipped artifacts retain their own tests |
 
 Startup probes are child processes so module mocks cannot leak across test
@@ -22,8 +22,9 @@ external Telegram/Console effects and indefinite loops. Recovery probes hold
 the real startup caller's recovery dependency pending, then settle it. They do
 not claim live Telegram, model, or deployed-App acceptance.
 
-Delivery failure tests retain the required persistence subscriber. An in-memory
-EventBus cannot expose a diagnostic write failing alongside the operation it
+Delivery failure tests retain both the required persistence subscriber and the
+delivery recorder; an appended diagnostic alone does not establish its receipt.
+An in-memory EventBus cannot expose a diagnostic write failing alongside the operation it
 reports. Cover retained and absent evidence, and assert both the forbidden replay
 and progress of another caller after the fault; an exception-free refresh alone
 does not establish either guarantee.

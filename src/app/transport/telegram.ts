@@ -21,12 +21,13 @@ import { log } from "../../lib/log.js";
 import { setDefaultAutoSelectFamily } from "node:net";
 import type { AppConversationMessage, AppConversationTopic, AppConversationResource } from "@may-agent/sdk";
 import type { ApprovalProposal, EventInput, EventReceipt } from "@may-agent/control/events";
-import { EVENT_DELIVERY_RESULT, eventData, type EventBus } from "../core/events/bus.js";
+import { EVENT_DELIVERY_RESULT, EVENT_RECORD_ONLY, eventData, type EventBus } from "../core/events/bus.js";
 import { loadPersistedEvent } from "../core/events/persisted.js";
 import { getDb } from "../../lib/db/connection.js";
 import {
   prepareConversationDelivery,
   conversationDeliveryId,
+  readConversationDelivery,
   settleConversationDelivery,
   type ConversationDelivery,
 } from "../../lib/db/telegram-conversation-deliveries.js";
@@ -971,6 +972,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       );
     try {
       bus.emit({
+        [EVENT_RECORD_ONLY]: true,
         type: "message.delivery_failed",
         source: "telegram",
         owner: `app:${conversationAppId}`,
@@ -1126,7 +1128,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             message.metadata?.taskRefs?.some((ref) => ref.appId === task.appId && ref.taskId === task.taskId),
         );
       if (equivalent) {
-        if (renderedConversationMessages.has(equivalent.id)) stopWatching(surface);
+        const delivery = addressedConversationDelivery(equivalent);
+        const presented = delivery
+          ? readConversationDelivery(persistDir, conversationDeliveryId(delivery))?.state === "delivered"
+          : renderedConversationMessages.has(equivalent.id);
+        if (presented) stopWatching(surface);
         else conversationRefresh.queue(sharedConversationId);
         return;
       }

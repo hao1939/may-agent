@@ -146,6 +146,15 @@ Diagnostic persistence shares the same database and may fail too. In that case,
 the independent system logger logs the caller and operation identity; reporting
 cannot grant send authority or stop later callers. A later wake retries the
 diagnostic from the retained evidence. A log alone is not a provider receipt.
+The diagnostic uses the Host's record-only event marker: subscribers can observe
+it, and an absent consumer receives no-op acceptance rather than another worker
+obligation. That event receipt does not settle the underlying Telegram operation.
+
+A watched Task ends its focus after the terminal result has been presented.
+For an addressed answer, that check reads the exact durable delivery receipt,
+including content and destination, whether delivery precedes or follows the
+terminal Task update. A previous version's presentation cannot establish that a
+rejected or uncertain revision was delivered.
 
 App admission and another route's delivery receipt are independent. A durable
 addressed message with no matching App gets three admission attempts, including

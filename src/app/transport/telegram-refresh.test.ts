@@ -63,7 +63,9 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
   const priorToken = process.env.TELEGRAM_BOT_TOKEN;
   const priorChat = process.env.TELEGRAM_CHAT_ID;
   const bus = new EventBus();
-  bus.setPersistenceSubscriber(new DbWriter(root).handler);
+  const writer = new DbWriter(root);
+  bus.setPersistenceSubscriber(writer.handler);
+  bus.setDeliveryRecorder(writer.recordDelivery);
   const published: EventInput[] = [];
   const sent: Send[] = [];
   const errors: string[] = [];
@@ -179,8 +181,8 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
     sendRejections,
     listReads,
     ready: () => waitFor(() => receive !== undefined),
-    answer(text: string, id = "exact-ask") {
-      saveAddressedAnswer(root, text, id);
+    answer(text: string, id = "exact-ask", taskRefs?: Array<{ appId: string; taskId: string }>) {
+      saveAddressedAnswer(root, text, id, taskRefs);
     },
     conversation(text: string, sequence: number) {
       createAppInboxItem(getDb(root), {
@@ -268,7 +270,12 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
   };
 }
 
-function saveAddressedAnswer(root: string, text: string, id = "exact-ask") {
+function saveAddressedAnswer(
+  root: string,
+  text: string,
+  id = "exact-ask",
+  taskRefs?: Array<{ appId: string; taskId: string }>,
+) {
   getDb(root)
     .prepare(
       `INSERT INTO events (event_type, source, owner, data, timestamp)
@@ -281,7 +288,13 @@ function saveAddressedAnswer(root: string, text: string, id = "exact-ask") {
         messageId: `answer:${id}`,
         author: { kind: "agent", id: "may" },
         text,
-        metadata: { channel: "telegram", channelTargetId: "123", channelMessageId: 7, requestId: id },
+        metadata: {
+          channel: "telegram",
+          channelTargetId: "123",
+          channelMessageId: 7,
+          requestId: id,
+          ...(taskRefs ? { taskRefs } : {}),
+        },
       }),
       Date.now(),
     );
@@ -310,6 +323,18 @@ describe("Telegram refresh lifecycle", () => {
       expect(getDb(root).prepare("SELECT state FROM telegram_conversation_deliveries").all()).toEqual([
         { state: "uncertain" },
       ]);
+      expect(
+        getDb(root)
+          .prepare(
+            "SELECT record_only, delivery_status, delivery_route, accepted_by FROM events WHERE event_type='message.delivery_failed'",
+          )
+          .get(),
+      ).toEqual({
+        record_only: 1,
+        delivery_status: "accepted",
+        delivery_route: "noop",
+        accepted_by: "event-interface:record",
+      });
     } finally {
       await f.close();
     }
@@ -672,6 +697,90 @@ describe("Telegram refresh lifecycle", () => {
       }
     },
   );
+  it("clears focus when the Task becomes terminal after its addressed answer was delivered", async () => {
+    const f = fixture();
+    try {
+      await f.command("/watch first");
+      await f.command("/watch second", 456);
+      const answer = "Accepted answer before Task closure.";
+      f.answer(answer, "exact-ask", [{ appId: "may", taskId: "first" }]);
+      f.wakeConversation();
+      await waitFor(
+        () => getDb(f.root).prepare("SELECT state FROM telegram_conversation_deliveries").get()?.state === "delivered",
+      );
+      const priorReads = f.reads.length;
+      Object.assign(f.tasks.get("first")!, { terminal: true, status: "done", response: answer });
+      f.wake("first");
+      await waitFor(() => f.reads.length > priorReads);
+      await f.command("A new independent question.", 123, false);
+      await waitFor(() => f.published.some((event) => event.data?.text === "A new independent question."));
+      const input = f.published.find((event) => event.data?.text === "A new independent question.");
+      expect((input?.data?.context as Record<string, unknown>)?.focusedTask).toBeUndefined();
+      await f.command("Continue the other Task.", 456, false);
+      await waitFor(() => f.published.some((event) => event.data?.text === "Continue the other Task."));
+      const other = f.published.find((event) => event.data?.text === "Continue the other Task.");
+      expect((other?.data?.context as Record<string, unknown>)?.focusedTask).toEqual({
+        appId: "may",
+        taskId: "second",
+      });
+      expect(f.sent.filter((send) => send.text === answer)).toHaveLength(1);
+    } finally {
+      await f.close();
+    }
+  });
+
+  it.each(["rejected", "receipt-unavailable"] as const)(
+    "keeps focus until the exact revised answer has delivery evidence (%s)",
+    async (outcome) => {
+      const f = fixture();
+      try {
+        await f.command("/watch first");
+        const refs = [{ appId: "may", taskId: "first" }];
+        f.answer("Original answer for this Task.", "exact-ask", refs);
+        f.wakeConversation();
+        await waitFor(
+          () =>
+            getDb(f.root)
+              .prepare("SELECT count(*) AS n FROM telegram_conversation_deliveries WHERE state='delivered'")
+              .get()?.n === 1,
+        );
+        const answer = "Revised answer that closes this Task.";
+        if (outcome === "rejected") f.sendRejections.add(answer);
+        else
+          getDb(f.root).exec(`CREATE TRIGGER reject_revised_receipt BEFORE UPDATE ON telegram_conversation_deliveries
+        WHEN NEW.state='delivered' BEGIN SELECT RAISE(ABORT, 'fixture revised receipt unavailable'); END`);
+        f.answer(answer, "exact-ask", refs);
+        f.wakeConversation();
+        await waitFor(
+          () =>
+            getDb(f.root)
+              .prepare("SELECT count(*) AS n FROM telegram_conversation_deliveries WHERE state=?")
+              .get(outcome === "rejected" ? "failed" : "sending")?.n === 1,
+        );
+        const priorReads = f.reads.length;
+        Object.assign(f.tasks.get("first")!, { terminal: true, status: "done", response: answer });
+        f.wake("first");
+        await waitFor(() => f.reads.length > priorReads);
+        await f.command("Follow up before delivery is confirmed.", 123, false);
+        await waitFor(() =>
+          f.published.some((event) => event.data?.text === "Follow up before delivery is confirmed."),
+        );
+        const input = f.published.find((event) => event.data?.text === "Follow up before delivery is confirmed.");
+        expect((input?.data?.context as Record<string, unknown>)?.focusedTask).toEqual({
+          appId: "may",
+          taskId: "first",
+        });
+        expect(
+          getDb(f.root)
+            .prepare("SELECT count(*) AS n FROM telegram_conversation_deliveries WHERE state='delivered'")
+            .get()?.n,
+        ).toBe(1);
+      } finally {
+        await f.close();
+      }
+    },
+  );
+
   it.each(["second", "first"])("restores the new %s watch after an old terminal send finishes", async (next) => {
     const f = fixture();
     try {
