@@ -322,6 +322,10 @@ describe("Telegram refresh lifecycle", () => {
       expect(
         getDb(root).prepare("SELECT state, external_message_id FROM telegram_conversation_deliveries").get(),
       ).toEqual({ state: "delivered", external_message_id: 901 });
+      restarted.answer("A fresh caller after restart.", "new-ask");
+      restarted.wakeConversation();
+      await waitFor(() => restarted.sent.some((send) => send.text.includes("A fresh caller after restart.")));
+      expect(restarted.sent.filter((send) => send.text.includes("The accepted finite answer."))).toHaveLength(0);
     } finally {
       await restarted.close();
     }
@@ -362,6 +366,7 @@ describe("Telegram refresh lifecycle", () => {
       f.wakeConversation();
       await waitFor(() => f.errors.some((error) => error.includes("fixture claim persistence unavailable")));
       expect(f.sent).toHaveLength(0);
+      expect(f.deliveryFailures[0]).toMatchObject({ requestId: "exact-ask", deliveryStatus: "uncertain" });
     } finally {
       await f.close();
     }
@@ -377,6 +382,7 @@ describe("Telegram refresh lifecycle", () => {
       first.wakeConversation();
       await waitFor(() => first.errors.some((error) => error.includes("fixture receipt persistence unavailable")));
       expect(first.sent).toHaveLength(1);
+      expect(first.deliveryFailures[0]).toMatchObject({ requestId: "exact-ask", deliveryStatus: "uncertain" });
       expect(getDb(root).prepare("SELECT state FROM telegram_conversation_deliveries").get()).toEqual({
         state: "sending",
       });
@@ -420,13 +426,20 @@ describe("Telegram refresh lifecycle", () => {
       const restarted = fixture({ root });
       try {
         await restarted.ready();
-        expect(restarted.sent).toHaveLength(0);
+        restarted.answer("A fresh caller after uncertainty.", "fresh-ask");
+        restarted.wakeConversation();
+        await waitFor(() =>
+          getDb(root).prepare("SELECT COUNT(*) AS n FROM telegram_conversation_deliveries WHERE state='delivered'").get()?.n === 2,
+        );
+        expect(restarted.sent).toHaveLength(1);
+        expect(restarted.sent[0]?.text).toBe("A fresh caller after uncertainty.");
         expect(
           restarted.deliveryFailures.some(
             (failure) => failure.requestId === "exact-ask" && failure.deliveryStatus === "uncertain",
           ),
         ).toBe(true);
         expect(getDb(root).prepare("SELECT state FROM telegram_conversation_deliveries ORDER BY state").all()).toEqual([
+          { state: "delivered" },
           { state: "delivered" },
           { state: "uncertain" },
         ]);

@@ -999,11 +999,20 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       const surface = surfaceKey(targetChatId, topicId);
       const delivery = addressedConversationDelivery(message);
       const operationId = delivery ? conversationDeliveryId(delivery) : undefined;
-      if (delivery && !claimConversationDelivery(persistDir, delivery)) {
-        const saved = readConversationDelivery(persistDir, operationId!)!;
-        if (saved.state === "delivered") rememberRenderedConversationMessage(message.id);
-        else reportConversationDelivery(message, delivery, saved.state);
-        continue;
+      if (delivery) {
+        let claimed: boolean;
+        try {
+          claimed = claimConversationDelivery(persistDir, delivery);
+        } catch (error) {
+          reportConversationDelivery(message, delivery, "uncertain");
+          throw error;
+        }
+        if (!claimed) {
+          const saved = readConversationDelivery(persistDir, operationId!)!;
+          if (saved.state === "delivered") rememberRenderedConversationMessage(message.id);
+          else reportConversationDelivery(message, delivery, saved.state);
+          continue;
+        }
       }
       const delivered = await sendMessage(targetChatId, renderTelegramConversationMessage(message), undefined, {
         eventType: "conversation.mirror",
@@ -1012,7 +1021,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         ...(operationId
           ? {
               onDelivery: (outcome) => {
-                settleConversationDelivery(persistDir, operationId, outcome);
+                try {
+                  settleConversationDelivery(persistDir, operationId, outcome);
+                } catch (error) {
+                  reportConversationDelivery(message, delivery!, "uncertain");
+                  throw error;
+                }
                 if (outcome.state !== "delivered") reportConversationDelivery(message, delivery!, outcome.state);
               },
             }
