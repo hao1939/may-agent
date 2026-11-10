@@ -231,7 +231,8 @@ test("current Task context reaches a late helper and survives settlement into a 
       };
       const run = await runTaskExecutorAttempt({
         ...execution,
-        execute: (attempt, taskEvents) => runTaskAgent({ ...execution, attempt, taskEvents }),
+        execute: (attempt, taskEvents, acceptedLiveEventIds) =>
+          runTaskAgent({ ...execution, attempt, taskEvents, acceptedLiveEventIds }),
       });
       expect(run.handlerResult.state).toBe("waiting");
       deferAppTask(config, active, {
