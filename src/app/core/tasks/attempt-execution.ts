@@ -482,9 +482,10 @@ export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabil
       recordAppTaskAttemptSession(appTaskConfig(descriptor), claim, id);
     },
   });
+  const settled = report.handlerResult.state === "converged" || report.handlerResult.state === "waiting";
   return {
     ...report,
-    ...(preflightAcceptedLiveEventIds !== undefined
+    ...(settled && preflightAcceptedLiveEventIds !== undefined
       ? { acceptedLiveEventIds: preflightAcceptedLiveEventIds }
       : {}),
     ...(preflightReviewAt !== undefined && report.handlerResult.state === "waiting" && report.handlerResult.reviewAt === undefined

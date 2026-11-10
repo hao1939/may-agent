@@ -1364,6 +1364,135 @@ test("managed finish rejects a consumed live-event-only wait before closing the 
   }
 });
 
+test("managed finish refreshes accepted live events when a rejected waiting proposal is followed by incomplete", async () => {
+  const managerRoot = mkdtempSync(join(tmpdir(), "task-managed-rejected-waiting-incomplete-"));
+  let agentRuns = 0;
+  let modelRequests = 0;
+  let usefulFeedback = "";
+  let emitLiveInput: (() => Promise<void>) | undefined;
+  const rejected = {
+    state: "waiting" as const,
+    summary: "Waiting after an invalid update",
+    facts: ["update:invalid"],
+    communication: [{ id: "invalid-update", inputId: "missing-input", message: "This cannot be delivered" }],
+  };
+  const incomplete = {
+    state: "incomplete" as const,
+    summary: "The correction could not be completed",
+    facts: ["correction:incomplete"],
+  };
+  const manager = new SubagentManager({
+    persistDir: managerRoot,
+    agentRunFactory: (config) => {
+      agentRuns++;
+      return createAgentRun({
+        ...config,
+        streamFn: (_model, context) => {
+          modelRequests++;
+          const request = modelRequests;
+          const result = request === 1 ? rejected : incomplete;
+          const stream = createAssistantMessageEventStream();
+          const finish = () => stream.push({ type: "done", reason: "toolUse", message: usageReply({
+            stopReason: "toolUse",
+            content: [{
+              type: "toolCall",
+              id: `finish-${request}`,
+              name: "finish",
+              arguments: {
+                status: request === 1 ? "success" : "partial",
+                summary: result.summary,
+                result,
+              },
+            }],
+          }) });
+          if (request === 1) finish();
+          else {
+            usefulFeedback = JSON.stringify(context.messages);
+            void emitLiveInput?.().then(finish);
+          }
+          return stream;
+        },
+      });
+    },
+  });
+  const definition = {
+    name: "owner",
+    description: "Synthetic Task owner",
+    domain: "tests",
+    systemPrompt: "Report incomplete if the rejected settlement cannot be corrected.",
+    projectRoot: managerRoot,
+    tools: [],
+    model: fakeModel(),
+  };
+  manager.register(definition);
+  const agents = createTaskAgentRunner({ manager }, new Map([[definition.name, definition]]));
+  const f = await fixture(
+    async () => incomplete,
+    "task",
+    async ({ attempt }) => {
+      const accepted = Promise.withResolvers<void>();
+      const unsubscribe = attempt.onEvent((event, accept) => {
+        if (event.type !== "app.task.requested") return;
+        accept();
+        unsubscribe();
+        accepted.resolve();
+      });
+      emitLiveInput = () => {
+        const liveKey = "task:after-rejected-waiting";
+        const liveEvent = {
+          type: "app.task.requested",
+          source: "fixture",
+          owner: "agent:owner",
+          target: { appId: "sample", taskId: attempt.task.id },
+          idempotencyKey: liveKey,
+          data: {
+            appId: "sample",
+            taskId: attempt.task.id,
+            idempotencyKey: liveKey,
+            request: {
+              id: "after-rejected-waiting",
+              source: { kind: "system", id: "fixture" },
+              input: { kind: "message", data: {} },
+            },
+          },
+        };
+        observeAppTaskIntent(
+          appTaskContext({ appDir: "fixture", projectDir: "fixture", agent: "owner", resourceStore: f.store }),
+          {
+            appAgent: "owner",
+            intent: { ...f.store.readTask(attempt.task.id)!.spec, id: attempt.task.id },
+            admissionKey: liveKey,
+            trigger: liveEvent,
+          },
+        );
+        f.bus.emit(liveEvent);
+        return accepted.promise;
+      };
+    },
+    undefined,
+    agents,
+  );
+  try {
+    const input = f.admit("ask").item;
+    await f.run(input.executionTaskId!);
+    expect(agentRuns).toBe(1);
+    expect(modelRequests).toBe(2);
+    expect(usefulFeedback).toContain("finish() error:");
+    expect(usefulFeedback).toContain("missing-input");
+    const tree = f.store.readTaskContext({ taskIds: [input.executionTaskId!] });
+    const attempts = Object.values(tree.attempts ?? {});
+    expect(attempts).toHaveLength(1);
+    expect(attempts[0]?.acceptedResult).toMatchObject({
+      state: "incomplete",
+      acceptedLiveEventIds: [expect.any(Number)],
+    });
+  } finally {
+    await f.close();
+    closeDb(managerRoot);
+    rmSync(managerRoot, { recursive: true, force: true });
+  }
+});
+
 test("managed finish pins an empty accepted-live-event snapshot across executor closure", async () => {
   const managerRoot = mkdtempSync(join(tmpdir(), "task-managed-empty-live-snapshot-"));
   const condition = {
