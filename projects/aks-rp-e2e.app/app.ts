@@ -4,6 +4,6 @@ export default {
   version: 1,
   agent: "app-ops",
   description:
-    "AKS Kubernetes version progress and session history. Task execution is disabled in this installation.",
+    "AKS Kubernetes version progress and session. Legacy automation is disabled; the selected upgrade Task runs in its scoped backend.",
   inputSchema: { not: {} },
 };

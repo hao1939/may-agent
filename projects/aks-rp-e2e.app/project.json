@@ -3,6 +3,6 @@
   "owner": "app-ops",
   "status": "active",
   "type": "agent-app",
-  "goal": "View Kubernetes version support progress and the preserved paused session. All AKS task execution is disabled.",
+  "goal": "View Kubernetes version support progress and steer the selected upgrade Task. Legacy AKS task execution remains disabled.",
   "installationMode": "ui-only"
 }
