@@ -346,7 +346,8 @@ async function runClaimedTask(
       const execution = { opts, descriptor, claim, executionPaths, childContext, taskSnapshot, event, dispatch };
       report = await runTaskExecutorAttempt({
         ...execution,
-        execute: (attempt, taskEvents) => executeTaskHandler({ ...execution, attempt, taskEvents, conversation }),
+        execute: (attempt, taskEvents, acceptedLiveEventIds) =>
+          executeTaskHandler({ ...execution, attempt, taskEvents, acceptedLiveEventIds, conversation }),
       });
     }
     const result = report.handlerResult;

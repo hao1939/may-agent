@@ -1038,6 +1038,843 @@ test("managed finish corrects invalid input scope in one model execution and pre
   }
 });
 
+test.each([
+  ["retiring the only Condition", false, "requires at least one exact Condition"],
+  ["retiring and redeclaring one Condition", true, "cannot retire and redeclare the same Condition"],
+])("managed finish rejects %s and accepts a correction in the same execution", async (_case, redeclare, expectedError) => {
+  const managerRoot = mkdtempSync(join(tmpdir(), "task-managed-settlement-"));
+  let agentRuns = 0;
+  let modelRequests = 0;
+  let usefulFeedback = "";
+  const retained = {
+    id: "retained-review",
+    type: "review.completed",
+    subject: "change:candidate",
+    expected: true,
+    owner: "app:sample",
+  };
+  const replacement = { ...retained, id: "replacement-review", subject: "change:replacement" };
+  const action = {
+    kind: "retire-condition" as const,
+    conditionId: retained.id,
+    expectedConditionGeneration: 1,
+    reason: "The original review route is obsolete",
+  };
+  const malformed = {
+    state: "waiting" as const,
+    summary: "Review route updated",
+    facts: ["review:updated"],
+    actions: [action],
+    ...(redeclare ? { conditions: [retained] } : {}),
+  };
+  const corrected = redeclare
+    ? { state: "waiting" as const, summary: "Existing review remains", facts: ["review:retained"] }
+    : { ...malformed, conditions: [replacement] };
+  const manager = new SubagentManager({
+    persistDir: managerRoot,
+    agentRunFactory: (config) => {
+      agentRuns++;
+      return createAgentRun({
+      ...config,
+      streamFn: (_model, context) => {
+        modelRequests++;
+        if (modelRequests === 2) usefulFeedback = JSON.stringify(context.messages);
+        const result = modelRequests === 1 ? malformed : corrected;
+        const stream = createAssistantMessageEventStream();
+        stream.push({ type: "done", reason: "toolUse", message: usageReply({
+          stopReason: "toolUse",
+          content: [{
+            type: "toolCall",
+            id: `finish-${modelRequests}`,
+            name: "finish",
+            arguments: { status: "success", summary: result.summary, result },
+          }],
+        }) });
+        return stream;
+      },
+    });
+    },
+  });
+  const definition = {
+    name: "owner",
+    description: "Synthetic Task owner",
+    domain: "tests",
+    systemPrompt: "Correct a rejected final settlement without restarting the Task.",
+    projectRoot: managerRoot,
+    tools: [],
+    model: fakeModel(),
+  };
+  manager.register(definition);
+  const agents = createTaskAgentRunner({ manager }, new Map([[definition.name, definition]]));
+  const f = await fixture(
+    async () => corrected,
+    "task",
+    async ({ attempt }) => {
+      await attempt.apply({ conditions: [retained] });
+    },
+    undefined,
+    agents,
+  );
+  try {
+    const input = f.admit("ask").item;
+    await f.run(input.executionTaskId!);
+    expect(agentRuns).toBe(1);
+    expect(modelRequests).toBe(2);
+    expect(usefulFeedback.toLowerCase()).toContain(expectedError.toLowerCase());
+    expect(usefulFeedback).toContain("finish() error:");
+    const tree = f.store.readTaskContext({ taskIds: [input.executionTaskId!] });
+    const attempts = Object.values(tree.attempts ?? {});
+    expect(attempts).toHaveLength(1);
+    expect(attempts[0]?.acceptedResult).toBeDefined();
+    expect(f.store.readTask(input.executionTaskId!)?.status).toMatchObject({
+      phase: "waiting",
+      conditionIds: [redeclare ? retained.id : replacement.id],
+    });
+  } finally {
+    await f.close();
+    closeDb(managerRoot);
+    rmSync(managerRoot, { recursive: true, force: true });
+  }
+});
+
+test("managed finish preflight rolls back an App request and publishes it exactly once after correction", async () => {
+  const managerRoot = mkdtempSync(join(tmpdir(), "task-managed-request-rollback-"));
+  let agentRuns = 0;
+  let modelRequests = 0;
+  let usefulFeedback = "";
+  let runtime: Awaited<ReturnType<typeof fixture>> | undefined;
+  const retained = {
+    id: "retained-review",
+    type: "review.completed",
+    subject: "change:candidate",
+    expected: true,
+    owner: "app:sample",
+  };
+  const request = {
+    id: "review",
+    appId: "sample",
+    input: { kind: "review", data: { outcome: "Review the candidate" } },
+  };
+  const action = {
+    kind: "retire-condition" as const,
+    conditionId: retained.id,
+    expectedConditionGeneration: 1,
+    reason: "Replace the retained review route",
+  };
+  const malformed = {
+    state: "waiting" as const,
+    summary: "Requested review while replacing its route",
+    facts: ["review:requested"],
+    requests: [request],
+    conditions: [{ requestId: request.id }, retained],
+    actions: [action],
+  };
+  const corrected = {
+    state: "waiting" as const,
+    summary: "Requested review and retained the existing route",
+    facts: ["review:requested"],
+    requests: [request],
+    conditions: [{ requestId: request.id }, retained],
+  };
+  const manager = new SubagentManager({
+    persistDir: managerRoot,
+    agentRunFactory: (config) => {
+      agentRuns++;
+      return createAgentRun({
+        ...config,
+        streamFn: (_model, context) => {
+          modelRequests++;
+          if (modelRequests === 2) {
+            usefulFeedback = JSON.stringify(context.messages);
+            expect(listAppInboxItems(runtime!.db, { appId: "sample" }).filter(({ id }) => id !== "ask"))
+              .toHaveLength(0);
+            expect(runtime!.db.prepare("SELECT count(*) AS n FROM events WHERE event_type='app.input.requested'").get())
+              .toEqual({ n: 0 });
+          }
+          const result = modelRequests === 1 ? malformed : corrected;
+          const stream = createAssistantMessageEventStream();
+          stream.push({ type: "done", reason: "toolUse", message: usageReply({
+            stopReason: "toolUse",
+            content: [{
+              type: "toolCall",
+              id: `finish-${modelRequests}`,
+              name: "finish",
+              arguments: { status: "success", summary: result.summary, result },
+            }],
+          }) });
+          return stream;
+        },
+      });
+    },
+  });
+  const definition = {
+    name: "owner",
+    description: "Synthetic Task owner",
+    domain: "tests",
+    systemPrompt: "Correct a rejected final settlement without restarting the Task.",
+    projectRoot: managerRoot,
+    tools: [],
+    model: fakeModel(),
+  };
+  manager.register(definition);
+  const agents = createTaskAgentRunner({ manager }, new Map([[definition.name, definition]]));
+  runtime = await fixture(
+    async () => corrected,
+    "task",
+    async ({ attempt }) => {
+      await attempt.apply({ conditions: [retained] });
+    },
+    undefined,
+    agents,
+  );
+  const f = runtime;
+  try {
+    const input = f.admit("ask").item;
+    await f.run(input.executionTaskId!);
+    expect(agentRuns).toBe(1);
+    expect(modelRequests).toBe(2);
+    expect(usefulFeedback).toContain("finish() error:");
+    expect(usefulFeedback).toContain("cannot retire and redeclare the same Condition");
+    expect(f.db.prepare("SELECT count(*) AS n FROM events WHERE event_type='app.input.requested'").get())
+      .toEqual({ n: 1 });
+    expect(listAppInboxItems(f.db, { appId: "sample" }).filter(({ id }) => id !== "ask"))
+      .toHaveLength(1);
+    const tree = f.store.readTaskContext({ taskIds: [input.executionTaskId!] });
+    const attempts = Object.values(tree.attempts ?? {});
+    expect(attempts).toHaveLength(1);
+    expect(attempts[0]?.acceptedResult).toBeDefined();
+    expect(f.store.readTask(input.executionTaskId!)?.status).toMatchObject({
+      phase: "waiting",
+      conditionIds: expect.arrayContaining([retained.id, expect.stringContaining("app-request:")]),
+    });
+  } finally {
+    await f.close();
+    closeDb(managerRoot);
+    rmSync(managerRoot, { recursive: true, force: true });
+  }
+});
+
+test("managed finish rejects a consumed live-event-only wait before closing the executor", async () => {
+  const managerRoot = mkdtempSync(join(tmpdir(), "task-managed-live-route-"));
+  let agentRuns = 0;
+  let modelRequests = 0;
+  let usefulFeedback = "";
+  const condition = {
+    id: "replacement-review",
+    type: "review.completed",
+    subject: "change:replacement",
+    expected: true,
+    owner: "app:sample",
+  };
+  const malformed = { state: "waiting" as const, summary: "Accepted the live input", facts: ["input:accepted"] };
+  const corrected = { ...malformed, conditions: [condition] };
+  const manager = new SubagentManager({
+    persistDir: managerRoot,
+    agentRunFactory: (config) => {
+      agentRuns++;
+      return createAgentRun({
+        ...config,
+        streamFn: (_model, context) => {
+          modelRequests++;
+          if (modelRequests === 2) usefulFeedback = JSON.stringify(context.messages);
+          const result = modelRequests === 1 ? malformed : corrected;
+          const stream = createAssistantMessageEventStream();
+          stream.push({ type: "done", reason: "toolUse", message: usageReply({
+            stopReason: "toolUse",
+            content: [{
+              type: "toolCall",
+              id: `finish-${modelRequests}`,
+              name: "finish",
+              arguments: { status: "success", summary: result.summary, result },
+            }],
+          }) });
+          return stream;
+        },
+      });
+    },
+  });
+  const definition = {
+    name: "owner",
+    description: "Synthetic Task owner",
+    domain: "tests",
+    systemPrompt: "Correct a rejected final settlement without restarting the Task.",
+    projectRoot: managerRoot,
+    tools: [],
+    model: fakeModel(),
+  };
+  manager.register(definition);
+  const agents = createTaskAgentRunner({ manager }, new Map([[definition.name, definition]]));
+  const f = await fixture(
+    async () => corrected,
+    "task",
+    async ({ attempt }) => {
+      const accepted = Promise.withResolvers<void>();
+      const unsubscribe = attempt.onEvent((event, accept) => {
+        if (event.type !== "app.task.requested") return;
+        accept();
+        unsubscribe();
+        accepted.resolve();
+      });
+      const config = appTaskContext({ appDir: "fixture", projectDir: "fixture", agent: "owner", resourceStore: f.store });
+      const liveKey = "task:synthetic-live-route";
+      const liveEvent = {
+        type: "app.task.requested",
+        source: "fixture",
+        owner: "agent:owner",
+        target: { appId: "sample", taskId: attempt.task.id },
+        idempotencyKey: liveKey,
+        data: {
+          appId: "sample",
+          taskId: attempt.task.id,
+          idempotencyKey: liveKey,
+          request: { id: "synthetic-live-route", source: { kind: "system", id: "fixture" }, input: { kind: "message", data: {} } },
+        },
+      };
+      observeAppTaskIntent(config, {
+        appAgent: "owner",
+        intent: { ...f.store.readTask(attempt.task.id)!.spec, id: attempt.task.id },
+        admissionKey: liveKey,
+        trigger: liveEvent,
+      });
+      f.bus.emit(liveEvent);
+      await accepted.promise;
+    },
+    undefined,
+    agents,
+  );
+  try {
+    const input = f.admit("ask").item;
+    await f.run(input.executionTaskId!);
+    expect(agentRuns).toBe(1);
+    expect(modelRequests).toBe(2);
+    expect(usefulFeedback).toContain("finish() error:");
+    expect(usefulFeedback).toContain("requires at least one exact Condition");
+    const tree = f.store.readTaskContext({ taskIds: [input.executionTaskId!] });
+    const attempts = Object.values(tree.attempts ?? {});
+    expect(attempts).toHaveLength(1);
+    expect(attempts[0]?.acceptedResult?.acceptedLiveEventIds).toHaveLength(1);
+    expect(f.store.readTask(input.executionTaskId!)?.status).toMatchObject({
+      phase: "waiting",
+      conditionIds: [condition.id],
+    });
+  } finally {
+    await f.close();
+    closeDb(managerRoot);
+    rmSync(managerRoot, { recursive: true, force: true });
+  }
+});
+
+test("managed finish refreshes accepted live events when a rejected waiting proposal is followed by incomplete", async () => {
+  const managerRoot = mkdtempSync(join(tmpdir(), "task-managed-rejected-waiting-incomplete-"));
+  let agentRuns = 0;
+  let modelRequests = 0;
+  let usefulFeedback = "";
+  let emitLiveInput: (() => Promise<void>) | undefined;
+  const rejected = {
+    state: "waiting" as const,
+    summary: "Waiting after an invalid update",
+    facts: ["update:invalid"],
+    communication: [{ id: "invalid-update", inputId: "missing-input", message: "This cannot be delivered" }],
+  };
+  const incomplete = {
+    state: "incomplete" as const,
+    summary: "The correction could not be completed",
+    facts: ["correction:incomplete"],
+  };
+  const manager = new SubagentManager({
+    persistDir: managerRoot,
+    agentRunFactory: (config) => {
+      agentRuns++;
+      return createAgentRun({
+        ...config,
+        streamFn: (_model, context) => {
+          modelRequests++;
+          const request = modelRequests;
+          const result = request === 1 ? rejected : incomplete;
+          const stream = createAssistantMessageEventStream();
+          const finish = () => stream.push({ type: "done", reason: "toolUse", message: usageReply({
+            stopReason: "toolUse",
+            content: [{
+              type: "toolCall",
+              id: `finish-${request}`,
+              name: "finish",
+              arguments: {
+                status: request === 1 ? "success" : "partial",
+                summary: result.summary,
+                result,
+              },
+            }],
+          }) });
+          if (request === 1) finish();
+          else {
+            usefulFeedback = JSON.stringify(context.messages);
+            void emitLiveInput?.().then(finish);
+          }
+          return stream;
+        },
+      });
+    },
+  });
+  const definition = {
+    name: "owner",
+    description: "Synthetic Task owner",
+    domain: "tests",
+    systemPrompt: "Report incomplete if the rejected settlement cannot be corrected.",
+    projectRoot: managerRoot,
+    tools: [],
+    model: fakeModel(),
+  };
+  manager.register(definition);
+  const agents = createTaskAgentRunner({ manager }, new Map([[definition.name, definition]]));
+  const f = await fixture(
+    async () => incomplete,
+    "task",
+    async ({ attempt }) => {
+      const accepted = Promise.withResolvers<void>();
+      const unsubscribe = attempt.onEvent((event, accept) => {
+        if (event.type !== "app.task.requested") return;
+        accept();
+        unsubscribe();
+        accepted.resolve();
+      });
+      emitLiveInput = () => {
+        const liveKey = "task:after-rejected-waiting";
+        const liveEvent = {
+          type: "app.task.requested",
+          source: "fixture",
+          owner: "agent:owner",
+          target: { appId: "sample", taskId: attempt.task.id },
+          idempotencyKey: liveKey,
+          data: {
+            appId: "sample",
+            taskId: attempt.task.id,
+            idempotencyKey: liveKey,
+            request: {
+              id: "after-rejected-waiting",
+              source: { kind: "system", id: "fixture" },
+              input: { kind: "message", data: {} },
+            },
+          },
+        };
+        observeAppTaskIntent(
+          appTaskContext({ appDir: "fixture", projectDir: "fixture", agent: "owner", resourceStore: f.store }),
+          {
+            appAgent: "owner",
+            intent: { ...f.store.readTask(attempt.task.id)!.spec, id: attempt.task.id },
+            admissionKey: liveKey,
+            trigger: liveEvent,
+          },
+        );
+        f.bus.emit(liveEvent);
+        return accepted.promise;
+      };
+    },
+    undefined,
+    agents,
+  );
+  try {
+    const input = f.admit("ask").item;
+    await f.run(input.executionTaskId!);
+    expect(agentRuns).toBe(1);
+    expect(modelRequests).toBe(2);
+    expect(usefulFeedback).toContain("finish() error:");
+    expect(usefulFeedback).toContain("missing-input");
+    const tree = f.store.readTaskContext({ taskIds: [input.executionTaskId!] });
+    const attempts = Object.values(tree.attempts ?? {});
+    expect(attempts).toHaveLength(1);
+    expect(attempts[0]?.acceptedResult).toMatchObject({
+      state: "incomplete",
+      acceptedLiveEventIds: [expect.any(Number)],
+    });
+  } finally {
+    await f.close();
+    closeDb(managerRoot);
+    rmSync(managerRoot, { recursive: true, force: true });
+  }
+});
+
+test("managed finish pins an empty accepted-live-event snapshot across executor closure", async () => {
+  const managerRoot = mkdtempSync(join(tmpdir(), "task-managed-empty-live-snapshot-"));
+  const condition = {
+    id: "independent-review",
+    type: "review.completed",
+    subject: "change:candidate",
+    expected: true,
+    owner: "app:sample",
+  };
+  const result = { state: "waiting" as const, summary: "Waiting for review", facts: [], conditions: [condition] };
+  let emitted = false;
+  const manager = new SubagentManager({
+    persistDir: managerRoot,
+    agentRunFactory: (config) => createAgentRun({
+      ...config,
+      streamFn: () => {
+        const stream = createAssistantMessageEventStream();
+        stream.push({ type: "done", reason: "toolUse", message: usageReply({
+          stopReason: "toolUse",
+          content: [{
+            type: "toolCall",
+            id: "finish",
+            name: "finish",
+            arguments: { status: "success", summary: result.summary, result },
+          }],
+        }) });
+        return stream;
+      },
+    }),
+  });
+  const definition = {
+    name: "owner",
+    description: "Synthetic Task owner",
+    domain: "tests",
+    systemPrompt: "Wait for review.",
+    projectRoot: managerRoot,
+    tools: [],
+    model: fakeModel(),
+  };
+  manager.register(definition);
+  const agents = createTaskAgentRunner({ manager }, new Map([[definition.name, definition]]));
+  const f = await fixture(
+    async () => result,
+    "task",
+    async (input) => {
+      input.attempt.onEvent((event, accept) => {
+        if (event.type === "app.task.requested") accept();
+      });
+      const validate = input.validateResult!;
+      input.validateResult = (proposal) => {
+        const problem = validate(proposal);
+        if (problem !== null || emitted) return problem;
+        emitted = true;
+        const liveKey = "task:after-preflight";
+        const liveEvent = {
+          type: "app.task.requested",
+          source: "fixture",
+          owner: "agent:owner",
+          target: { appId: "sample", taskId: input.attempt.task.id },
+          idempotencyKey: liveKey,
+          data: {
+            appId: "sample",
+            taskId: input.attempt.task.id,
+            idempotencyKey: liveKey,
+            request: { id: "after-preflight", source: { kind: "system", id: "fixture" }, input: { kind: "message", data: {} } },
+          },
+        };
+        observeAppTaskIntent(
+          appTaskContext({ appDir: "fixture", projectDir: "fixture", agent: "owner", resourceStore: f.store }),
+          {
+            appAgent: "owner",
+            intent: { ...f.store.readTask(input.attempt.task.id)!.spec, id: input.attempt.task.id },
+            admissionKey: liveKey,
+            trigger: liveEvent,
+          },
+        );
+        f.bus.emit(liveEvent);
+        return null;
+      };
+    },
+    undefined,
+    agents,
+  );
+  try {
+    const input = f.admit("ask").item;
+    await f.run(input.executionTaskId!);
+    const tree = f.store.readTaskContext({ taskIds: [input.executionTaskId!] });
+    const attempts = Object.values(tree.attempts ?? {});
+    expect(attempts).toHaveLength(1);
+    expect(attempts[0]?.acceptedResult?.acceptedLiveEventIds).toBeUndefined();
+    expect(f.store.readTrigger(input.executionTaskId!)?.events).toHaveLength(2);
+    expect(f.store.readTask(input.executionTaskId!)?.status).toMatchObject({
+      phase: "pending",
+      conditionIds: [condition.id],
+    });
+  } finally {
+    await f.close();
+    closeDb(managerRoot);
+    rmSync(managerRoot, { recursive: true, force: true });
+  }
+});
+
+test("managed finish pins retained reviewAt across executor closure", async () => {
+  const managerRoot = mkdtempSync(join(tmpdir(), "task-managed-review-at-"));
+  const startedAt = Date.parse("2026-11-10T00:00:00Z");
+  const due = startedAt + 1_000;
+  setSystemTime(startedAt);
+  let agentRuns = 0;
+  let modelRequests = 0;
+  let beforeAgentRuns = 0;
+  const manager = new SubagentManager({
+    persistDir: managerRoot,
+    agentRunFactory: (config) => {
+      agentRuns++;
+      return createAgentRun({
+        ...config,
+        streamFn: () => {
+          modelRequests++;
+          const result = agentRuns === 1
+            ? { state: "waiting" as const, summary: "Scheduled review", facts: ["review:scheduled"], reviewAt: due }
+            : { state: "waiting" as const, summary: "Retained scheduled review", facts: ["review:retained"] };
+          const stream = createAssistantMessageEventStream();
+          stream.push({ type: "done", reason: "toolUse", message: usageReply({
+            stopReason: "toolUse",
+            content: [{
+              type: "toolCall",
+              id: `finish-${modelRequests}`,
+              name: "finish",
+              arguments: { status: "success", summary: result.summary, result },
+            }],
+          }) });
+          return stream;
+        },
+      });
+    },
+  });
+  const definition = {
+    name: "owner",
+    description: "Synthetic Task owner",
+    domain: "tests",
+    systemPrompt: "Retain the scheduled review.",
+    projectRoot: managerRoot,
+    tools: [],
+    model: fakeModel(),
+  };
+  manager.register(definition);
+  const agents = createTaskAgentRunner({ manager }, new Map([[definition.name, definition]]));
+  const f = await fixture(
+    async () => ({ state: "waiting", summary: "Retained scheduled review", facts: [] }),
+    "task",
+    async (input) => {
+      beforeAgentRuns++;
+      if (beforeAgentRuns !== 2) return;
+      const validate = input.validateResult!;
+      input.validateResult = (result) => {
+        const problem = validate(result);
+        if (problem === null) setSystemTime(due + 1);
+        return problem;
+      };
+    },
+    undefined,
+    agents,
+  );
+  try {
+    const first = f.admit("ask").item;
+    await f.run(first.executionTaskId!);
+    expect(f.store.readTask(first.executionTaskId!)?.status.reviewAt).toBe(due);
+    const followUpKey = "task:review-at-follow-up";
+    observeAppTaskIntent(
+      appTaskContext({ appDir: "fixture", projectDir: "fixture", agent: "owner", resourceStore: f.store }),
+      {
+        appAgent: "owner",
+        intent: { ...f.store.readTask(first.executionTaskId!)!.spec, id: first.executionTaskId! },
+        admissionKey: followUpKey,
+        trigger: {
+          type: "app.task.requested",
+          source: "fixture",
+          owner: "agent:owner",
+          target: { appId: "sample", taskId: first.executionTaskId! },
+          idempotencyKey: followUpKey,
+          data: {
+            appId: "sample",
+            taskId: first.executionTaskId!,
+            idempotencyKey: followUpKey,
+            request: { id: "review-at-follow-up", source: { kind: "system", id: "fixture" }, input: { kind: "message", data: {} } },
+          },
+        },
+      },
+    );
+    await f.run(first.executionTaskId!);
+    expect(agentRuns).toBe(2);
+    expect(modelRequests).toBe(2);
+    const tree = f.store.readTaskContext({ taskIds: [first.executionTaskId!] });
+    const attempts = Object.values(tree.attempts ?? {});
+    expect(attempts).toHaveLength(2);
+    expect(attempts.at(-1)?.acceptedResult).toMatchObject({ state: "waiting", reviewAt: due });
+    expect(f.store.readTask(first.executionTaskId!)?.status).toMatchObject({ phase: "pending", reviewAt: due });
+  } finally {
+    setSystemTime();
+    await f.close();
+    closeDb(managerRoot);
+    rmSync(managerRoot, { recursive: true, force: true });
+  }
+});
+
+test.each(["retire action", "condition and communication batch"] as const)("managed finish preflight replays a journaled %s before validating the corrected settlement", async (replay) => {
+  const managerRoot = mkdtempSync(join(tmpdir(), "task-managed-action-replay-"));
+  let modelRequests = 0;
+  let usefulFeedback = "";
+  const retained = {
+    id: "retained-review",
+    type: "review.completed",
+    subject: "change:candidate",
+    expected: true,
+    owner: "app:sample",
+  };
+  const replacement = { ...retained, id: "replacement-review", subject: "change:replacement" };
+  const action = {
+    kind: "retire-condition" as const,
+    conditionId: retained.id,
+    expectedConditionGeneration: 1,
+    reason: "The original review route is obsolete",
+  };
+  const original = {
+    conditions: [retained],
+    ...(replay === "condition and communication batch"
+      ? { communication: [{ id: "review-started", inputId: "ask", message: "The review was requested." }] }
+      : {}),
+  };
+  const malformed = {
+    state: "waiting" as const,
+    summary: "The obsolete review was retired",
+    facts: ["review:retired"],
+    ...(replay === "retire action" ? { actions: [action] } : original),
+  };
+  const corrected = {
+    ...malformed,
+    conditions: [replacement],
+  };
+  const manager = new SubagentManager({
+    persistDir: managerRoot,
+    agentRunFactory: (config) => createAgentRun({
+      ...config,
+      streamFn: (_model, context) => {
+        modelRequests++;
+        if (modelRequests > 2) throw new Error("Unexpected extra scripted model request");
+        if (modelRequests === 2) usefulFeedback = JSON.stringify(context.messages);
+        const result = modelRequests === 1 ? malformed : corrected;
+        const stream = createAssistantMessageEventStream();
+        stream.push({ type: "done", reason: "toolUse", message: usageReply({
+          stopReason: "toolUse",
+          content: [{
+            type: "toolCall",
+            id: `finish-${modelRequests}`,
+            name: "finish",
+            arguments: { status: "success", summary: result.summary, result },
+          }],
+        }) });
+        return stream;
+      },
+    }),
+  });
+  const definition = {
+    name: "owner",
+    description: "Synthetic Task owner",
+    domain: "tests",
+    systemPrompt: "Correct a rejected final settlement without restarting the Task.",
+    projectRoot: managerRoot,
+    tools: [],
+    model: fakeModel(),
+  };
+  manager.register(definition);
+  const agents = createTaskAgentRunner({ manager }, new Map([[definition.name, definition]]));
+  const f = await fixture(
+    async () => corrected,
+    "task",
+    async ({ attempt }) => {
+      await attempt.apply(original);
+      await attempt.apply({ actions: [action], facts: ["review:retired"] });
+    },
+    undefined,
+    agents,
+  );
+  try {
+    const input = f.admit("ask").item;
+    await f.run(input.executionTaskId!);
+    expect(modelRequests).toBe(2);
+    expect(usefulFeedback).toContain("finish() error:");
+    expect(usefulFeedback).toContain("requires at least one exact Condition");
+    const tree = f.store.readTaskContext({ taskIds: [input.executionTaskId!] });
+    const attempts = Object.values(tree.attempts ?? {});
+    expect(attempts).toHaveLength(1);
+    expect(attempts[0]?.acceptedResult).toMatchObject({ state: "waiting" });
+    expect(f.store.readTask(input.executionTaskId!)?.status).toMatchObject({
+      phase: "waiting",
+      conditionIds: [replacement.id],
+    });
+    expect(
+      listAppConversationMessages(f.db, "sample", "discussion")
+        .filter(({ author }) => author.kind === "agent")
+        .map(({ text }) => text),
+    ).toEqual(replay === "condition and communication batch" ? ["The review was requested."] : []);
+  } finally {
+    await f.close();
+    closeDb(managerRoot);
+    rmSync(managerRoot, { recursive: true, force: true });
+  }
+});
+
+test("managed finish rejects an undeclared request Condition and accepts a correction in the same execution", async () => {
+  const managerRoot = mkdtempSync(join(tmpdir(), "task-managed-request-condition-"));
+  let modelRequests = 0;
+  let usefulFeedback = "";
+  const replacement = {
+    id: "replacement-review",
+    type: "review.completed",
+    subject: "change:replacement",
+    expected: true,
+    owner: "app:sample",
+  };
+  const malformed = {
+    state: "waiting" as const,
+    summary: "Waiting for an undeclared review request",
+    facts: ["review:pending"],
+    conditions: [{ requestId: "unknown" }],
+  };
+  const corrected = { ...malformed, conditions: [replacement] };
+  const manager = new SubagentManager({
+    persistDir: managerRoot,
+    agentRunFactory: (config) => createAgentRun({
+      ...config,
+      streamFn: (_model, context) => {
+        modelRequests++;
+        if (modelRequests === 2) usefulFeedback = JSON.stringify(context.messages);
+        const result = modelRequests === 1 ? malformed : corrected;
+        const stream = createAssistantMessageEventStream();
+        stream.push({ type: "done", reason: "toolUse", message: usageReply({
+          stopReason: "toolUse",
+          content: [{
+            type: "toolCall",
+            id: `finish-${modelRequests}`,
+            name: "finish",
+            arguments: { status: "success", summary: result.summary, result },
+          }],
+        }) });
+        return stream;
+      },
+    }),
+  });
+  const definition = {
+    name: "owner",
+    description: "Synthetic Task owner",
+    domain: "tests",
+    systemPrompt: "Correct a rejected final settlement without restarting the Task.",
+    projectRoot: managerRoot,
+    tools: [],
+    model: fakeModel(),
+  };
+  manager.register(definition);
+  const agents = createTaskAgentRunner({ manager }, new Map([[definition.name, definition]]));
+  const f = await fixture(async () => corrected, "task", undefined, undefined, agents);
+  try {
+    const input = f.admit("ask").item;
+    await f.run(input.executionTaskId!);
+    expect(modelRequests).toBe(2);
+    expect(usefulFeedback).toContain("finish() error:");
+    expect(usefulFeedback).toContain("Condition refers to undeclared request unknown");
+    const tree = f.store.readTaskContext({ taskIds: [input.executionTaskId!] });
+    const attempts = Object.values(tree.attempts ?? {});
+    expect(attempts).toHaveLength(1);
+    expect(attempts[0]?.acceptedResult).toBeDefined();
+    expect(f.store.readTask(input.executionTaskId!)?.status).toMatchObject({
+      phase: "waiting",
+      conditionIds: [replacement.id],
+    });
+  } finally {
+    await f.close();
+    closeDb(managerRoot);
+    rmSync(managerRoot, { recursive: true, force: true });
+  }
+});
+
 test("final Task acceptance can stay quiet and open without a reason; closure still requires an explanation", async () => {
   const accept = {
     id: "accept",

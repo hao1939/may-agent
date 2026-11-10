@@ -3,11 +3,7 @@ import { TaskExecutionDeferredError } from "../state/task-execution-admission.js
 import { TaskBudgetDeferredError } from "../state/task-budget-admission.js";
 import { listConversationInputRequests } from "../state/conversation-requests.js";
 import { boundedAppRequestConversation } from "../reads/conversation-context.js";
-import {
-  readTaskCommunicationInput,
-  taskResultCommunication,
-  validateTaskCommunication,
-} from "./task-communication.js";
+import { readTaskCommunicationInput, taskResultCommunication } from "./task-communication.js";
 import { readAppConversationResource, readConversationContext } from "../state/conversations.js";
 import { readTaskInputs } from "./app-task-inputs.js";
 import { readTaskEventTarget } from "../events/task-target.js";
@@ -42,6 +38,7 @@ import {
   recordAppTaskAttemptSession,
   renewAppTaskAttemptLease,
   readTaskChangeInputKeys,
+  validateTaskFinalSettlement,
   type AppTaskChildContext,
   type AppTaskClaim,
   type AppTaskLiveSnapshot,
@@ -52,7 +49,7 @@ import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "./result.js"
 import { appTaskConfig, configuredRegistryEntries, type AppTaskRuntimeDescriptor } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
 
-import { applyTaskChanges } from "./task-changes.js";
+import { applyTaskChanges, preflightTaskChanges } from "./task-changes.js";
 
 const APP_TASK_AGENT_TIMEOUT_MS = 15 * 60_000;
 
@@ -74,6 +71,7 @@ export type TaskAttemptInput = {
 export type TaskHandlerInput = TaskAttemptInput & {
   attempt: TaskAttempt;
   taskEvents: AppTaskEvents;
+  acceptedLiveEventIds(): number[];
   fallbackReason?: string;
 };
 
@@ -407,7 +405,11 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
  */
 export async function runTaskExecutorAttempt(
   input: TaskAttemptInput & {
-    execute: (attempt: TaskAttempt, events: AppTaskEvents) => Promise<TaskCapabilityRun>;
+    execute: (
+      attempt: TaskAttempt,
+      events: AppTaskEvents,
+      acceptedLiveEventIds: () => number[],
+    ) => Promise<TaskCapabilityRun>;
   },
 ): Promise<TaskCapabilityRun> {
   const taskAttempt = runtimeTaskAttempt(input);
@@ -423,7 +425,8 @@ export async function runTaskExecutorAttempt(
   );
   leaseTimer.unref();
   try {
-    const result = await input.execute(taskAttempt.attempt, taskAttempt.events);
+    const result = await input.execute(taskAttempt.attempt, taskAttempt.events, taskAttempt.acceptedLiveEventIds);
+    if (result.acceptedLiveEventIds !== undefined) return result;
     const acceptedLiveEventIds = taskAttempt.acceptedLiveEventIds();
     return acceptedLiveEventIds.length > 0 ? { ...result, acceptedLiveEventIds } : result;
   } catch (error) {
@@ -458,7 +461,9 @@ export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabil
       runId: null,
       unavailable: true,
     };
-  return opts.agents.execute({
+  let preflightAcceptedLiveEventIds: number[] | undefined;
+  let preflightReviewAt: number | undefined;
+  const report = await opts.agents.execute({
     ...execution,
     executionTimeoutMs: APP_TASK_AGENT_TIMEOUT_MS,
     descriptor: {
@@ -473,8 +478,29 @@ export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabil
         const config = appTaskConfig(descriptor);
         if (result.inputKeys !== undefined) readTaskChangeInputKeys(config, claim, result.inputKeys);
         if (result.state !== "converged" && result.state !== "waiting") return null;
-        const changes = taskResultCommunication(config, claim, result);
-        return changes?.length ? validateTaskCommunication(config, claim, changes, execution.taskEvents) : null;
+        const acceptedLiveEventIds = execution.acceptedLiveEventIds();
+        // Replay the complete final batch: communication is part of its receipt identity.
+        preflightTaskChanges({
+          opts,
+          descriptor,
+          claim,
+          changes: {
+            requests: result.requests,
+            conditions: result.state === "waiting" ? result.conditions : undefined,
+            actions: result.actions,
+            facts: result.facts,
+            inputKeys: result.inputKeys,
+            communication:
+              result.state === "converged" ? taskResultCommunication(config, claim, result) : result.communication,
+          },
+          acceptedLiveEventIds,
+          settle: () => {
+            const resolved = validateTaskFinalSettlement(config, claim, { ...result, acceptedLiveEventIds });
+            preflightAcceptedLiveEventIds = acceptedLiveEventIds;
+            preflightReviewAt = resolved.reviewAt;
+          },
+        });
+        return null;
       } catch (error) {
         return error instanceof Error ? error.message : String(error);
       }
@@ -483,6 +509,16 @@ export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabil
       recordAppTaskAttemptSession(appTaskConfig(descriptor), claim, id);
     },
   });
+  const settled = report.handlerResult.state === "converged" || report.handlerResult.state === "waiting";
+  return {
+    ...report,
+    ...(settled && preflightAcceptedLiveEventIds !== undefined
+      ? { acceptedLiveEventIds: preflightAcceptedLiveEventIds }
+      : {}),
+    ...(preflightReviewAt !== undefined && report.handlerResult.state === "waiting" && report.handlerResult.reviewAt === undefined
+      ? { handlerResult: { ...report.handlerResult, reviewAt: preflightReviewAt } }
+      : {}),
+  };
 }
 
 export async function runRegisteredTaskExecutor(
