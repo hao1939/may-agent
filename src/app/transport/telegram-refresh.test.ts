@@ -3,6 +3,13 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb, getDb } from "../../lib/requests.js";
+import { DbWriter } from "../../lib/db-writer.js";
+import { addLogSubscriber } from "../../lib/log.js";
+import {
+  prepareConversationDelivery,
+  conversationDeliveryId,
+  settleConversationDelivery,
+} from "../../lib/db/telegram-conversation-deliveries.js";
 import { createAppInboxItem } from "../core/state/app-inbox-store.js";
 import { EventBus } from "../core/events/bus.js";
 import type { EventInput } from "@may-agent/control/events";
@@ -56,10 +63,11 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
   const priorToken = process.env.TELEGRAM_BOT_TOKEN;
   const priorChat = process.env.TELEGRAM_CHAT_ID;
   const bus = new EventBus();
+  bus.setPersistenceSubscriber(new DbWriter(root).handler);
   const published: EventInput[] = [];
   const sent: Send[] = [];
   const errors: string[] = [];
-  const deliveryFailures: Array<Record<string, unknown>> = [];
+  const unsubscribeLog = addLogSubscriber((_level, message) => errors.push(message));
   const reads: string[] = [];
   const listReads: string[] = [];
   const tasks = new Map<string, HumanTaskView>(
@@ -95,7 +103,6 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
   const sendRejections = new Set<string>();
   const unsubscribe = bus.subscribe((event) => {
     if (event.type === "info") errors.push(event.message);
-    if (event.type === "message.delivery_failed") deliveryFailures.push(event.data);
   });
   globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
     const method = String(url).split("/").at(-1);
@@ -127,7 +134,8 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
   process.env.TELEGRAM_CHAT_ID = "123,456";
   const bot = attachTelegramBot({
     bus,
-    interfaceAgent: "may", conversationAppId: "may",
+    interfaceAgent: "may",
+    conversationAppId: "may",
     persistDir: root,
     humanTasks: {
       getTask: ({ taskId, ref }) => {
@@ -158,7 +166,12 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
     sent,
     published,
     errors,
-    deliveryFailures,
+    get deliveryFailures() {
+      return getDb(root)
+        .prepare("SELECT data FROM events WHERE event_type='message.delivery_failed' ORDER BY id")
+        .all()
+        .map((row) => JSON.parse(String(row.data)) as Record<string, unknown>);
+    },
     reads,
     tasks,
     readFailures,
@@ -243,6 +256,7 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
       receive?.([]);
       await Bun.sleep(20);
       unsubscribe();
+      unsubscribeLog();
       closeDb(root);
       if (options.removeOnClose !== false) rmSync(root, { recursive: true, force: true });
       globalThis.fetch = priorFetch;
@@ -281,6 +295,7 @@ describe("Telegram refresh lifecycle", () => {
     const f = fixture({ root });
     try {
       await f.ready();
+      await waitFor(() => f.deliveryFailures.length === 1);
       expect(f.sent).toHaveLength(0);
       expect(f.deliveryFailures[0]).toMatchObject({
         appId: "may",
@@ -357,51 +372,141 @@ describe("Telegram refresh lifecycle", () => {
     }
   });
 
-  it("starts with a readable delivered receipt while another connection holds the writer lock", async () => {
-    const first = fixture({ removeOnClose: false });
-    const { root } = first;
+  it("uses exact delivery evidence when a stable message identity gets a revised answer", async () => {
+    const f = fixture();
     try {
-      first.answer("Already delivered before contention.");
-      first.wakeConversation();
+      f.answer("Original accepted answer.");
+      f.wakeConversation();
       await waitFor(
-        () => getDb(root).prepare("SELECT state FROM telegram_conversation_deliveries").get()?.state === "delivered",
+        () =>
+          getDb(f.root)
+            .prepare("SELECT count(*) AS n FROM telegram_conversation_deliveries WHERE state='delivered'")
+            .get()?.n === 1,
       );
+      f.answer("Revised accepted answer.");
+      f.wakeConversation();
+      await waitFor(
+        () =>
+          getDb(f.root)
+            .prepare("SELECT count(*) AS n FROM telegram_conversation_deliveries WHERE state='delivered'")
+            .get()?.n === 2,
+      );
+      f.answer("Revised accepted answer.");
+      f.answer("A separate caller confirms refresh progress.", "fresh-ask");
+      f.wakeConversation();
+      await waitFor(
+        () =>
+          getDb(f.root)
+            .prepare("SELECT count(*) AS n FROM telegram_conversation_deliveries WHERE state='delivered'")
+            .get()?.n === 3,
+      );
+      expect(f.sent.map((send) => send.text)).toEqual([
+        "Original accepted answer.",
+        "Revised accepted answer.",
+        "A separate caller confirms refresh progress.",
+      ]);
     } finally {
-      await first.close();
+      await f.close();
     }
-    const alias = `${root}/.`;
-    const writer = getDb(alias);
-    getDb(root).exec("PRAGMA busy_timeout = 0");
-    const priorFetch = globalThis.fetch;
-    const priorToken = process.env.TELEGRAM_BOT_TOKEN;
-    const priorChat = process.env.TELEGRAM_CHAT_ID;
-    let restarted: ReturnType<typeof fixture> | undefined;
-    let locked = false;
+  });
+
+  it.each(["missing", "sending", "uncertain", "delivered", "failed"] as const)(
+    "starts and preserves %s delivery evidence under writer contention without replaying unknown history",
+    async (state) => {
+      const root = mkdtempSync(join(tmpdir(), "may-telegram-startup-contention-"));
+      const text = "Historical answer under contention.";
+      saveAddressedAnswer(root, text);
+      const delivery = {
+        appId: "may",
+        conversationId: "may:primary",
+        messageId: "answer:exact-ask",
+        chatId: "123",
+        text,
+      };
+      if (state !== "missing") {
+        expect(prepareConversationDelivery(root, delivery, "fresh")).toEqual({ kind: "send" });
+        if (state !== "sending")
+          settleConversationDelivery(root, conversationDeliveryId(delivery), {
+            state,
+            externalMessageId: state === "delivered" ? 901 : undefined,
+          });
+      }
+      const alias = `${root}/.`;
+      const writer = getDb(alias);
+      getDb(root).exec("PRAGMA busy_timeout = 0");
+      const priorFetch = globalThis.fetch;
+      const priorToken = process.env.TELEGRAM_BOT_TOKEN;
+      const priorChat = process.env.TELEGRAM_CHAT_ID;
+      let restarted: ReturnType<typeof fixture> | undefined;
+      let locked = false;
+      try {
+        writer.exec("BEGIN IMMEDIATE");
+        locked = true;
+        restarted = fixture({ root, removeOnClose: false });
+        await restarted.ready();
+        if (state !== "delivered")
+          await waitFor(() =>
+            restarted!.errors.some((error) => error.includes("exact-ask") && error.includes("locked")),
+          );
+        expect(restarted.sent).toHaveLength(0);
+        expect(restarted.deliveryFailures).toHaveLength(0);
+        expect(getDb(root).prepare("SELECT state FROM telegram_conversation_deliveries").get()?.state).toBe(
+          state === "missing" ? undefined : state,
+        );
+        writer.exec("ROLLBACK");
+        locked = false;
+        restarted.answer("A fresh answer after contention.", "new-ask");
+        restarted.wakeConversation();
+        await waitFor(() => restarted!.sent.some((send) => send.text === "A fresh answer after contention."));
+        expect(restarted.sent.filter((send) => send.text === text)).toHaveLength(state === "failed" ? 1 : 0);
+        expect(
+          getDb(root)
+            .prepare("SELECT state FROM telegram_conversation_deliveries WHERE message_id='answer:exact-ask'")
+            .get()?.state,
+        ).toBe(state === "missing" ? "uncertain" : state === "failed" ? "delivered" : state);
+      } finally {
+        if (locked) writer.exec("ROLLBACK");
+        await restarted?.close();
+        closeDb(alias);
+        closeDb(root);
+        rmSync(root, { recursive: true, force: true });
+        globalThis.fetch = priorFetch;
+        if (priorToken === undefined) delete process.env.TELEGRAM_BOT_TOKEN;
+        else process.env.TELEGRAM_BOT_TOKEN = priorToken;
+        if (priorChat === undefined) delete process.env.TELEGRAM_CHAT_ID;
+        else process.env.TELEGRAM_CHAT_ID = priorChat;
+      }
+    },
+  );
+
+  it("keeps the first successful Conversation snapshot historical after startup reads fail", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-telegram-startup-read-"));
+    saveAddressedAnswer(root, "An answer before the unavailable baseline.");
+    getDb(root).exec("ALTER TABLE conversation_topics RENAME TO fixture_hidden_topics");
+    const f = fixture({ root });
     try {
-      writer.exec("BEGIN IMMEDIATE");
-      locked = true;
-      restarted = fixture({ root, removeOnClose: false });
-      await restarted.ready();
-      expect(restarted.sent).toHaveLength(0);
-      expect(restarted.deliveryFailures).toHaveLength(0);
-      expect(getDb(root).prepare("SELECT state FROM telegram_conversation_deliveries").get()?.state).toBe("delivered");
-      writer.exec("ROLLBACK");
-      locked = false;
-      restarted.answer("A fresh answer after contention.", "new-ask");
-      restarted.wakeConversation();
-      await waitFor(() => restarted!.sent.some((send) => send.text === "A fresh answer after contention."));
-      expect(restarted.sent.some((send) => send.text === "Already delivered before contention.")).toBe(false);
+      await f.ready();
+      f.answer("An answer before baseline recovery.", "during-startup");
+      getDb(root).exec("ALTER TABLE fixture_hidden_topics RENAME TO conversation_topics");
+      f.wakeConversation();
+      await waitFor(
+        () =>
+          getDb(root)
+            .prepare("SELECT count(*) AS n FROM telegram_conversation_deliveries WHERE state='uncertain'")
+            .get()?.n === 2,
+      );
+      expect(f.sent).toHaveLength(0);
+      f.answer("A fresh answer after baseline recovery.", "fresh-ask");
+      f.wakeConversation();
+      await waitFor(
+        () =>
+          getDb(root)
+            .prepare("SELECT state FROM telegram_conversation_deliveries WHERE message_id='answer:fresh-ask'")
+            .get()?.state === "delivered",
+      );
+      expect(f.sent.map((send) => send.text)).toEqual(["A fresh answer after baseline recovery."]);
     } finally {
-      if (locked) writer.exec("ROLLBACK");
-      await restarted?.close();
-      closeDb(alias);
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-      globalThis.fetch = priorFetch;
-      if (priorToken === undefined) delete process.env.TELEGRAM_BOT_TOKEN;
-      else process.env.TELEGRAM_BOT_TOKEN = priorToken;
-      if (priorChat === undefined) delete process.env.TELEGRAM_CHAT_ID;
-      else process.env.TELEGRAM_CHAT_ID = priorChat;
+      await f.close();
     }
   });
 
@@ -410,6 +515,8 @@ describe("Telegram refresh lifecycle", () => {
     try {
       getDb(f.root).exec(`CREATE TRIGGER reject_delivery_claim BEFORE INSERT ON telegram_conversation_deliveries
         WHEN NEW.message_id='answer:exact-ask' BEGIN SELECT RAISE(ABORT, 'fixture claim persistence unavailable'); END`);
+      getDb(f.root).exec(`CREATE TRIGGER reject_delivery_diagnostic BEFORE INSERT ON events
+        WHEN NEW.event_type='message.delivery_failed' BEGIN SELECT RAISE(ABORT, 'fixture diagnostic persistence unavailable'); END`);
       f.answer("Do not send without a claim.");
       f.answer("Another caller has a valid claim.", "other-ask");
       f.wakeConversation();
@@ -421,6 +528,18 @@ describe("Telegram refresh lifecycle", () => {
             .get()?.state === "delivered",
       );
       expect(f.sent.map((send) => send.text)).toEqual(["Another caller has a valid claim."]);
+      expect(f.deliveryFailures).toHaveLength(0);
+      expect(
+        f.errors.some(
+          (error) =>
+            error.includes("fixture diagnostic persistence unavailable") &&
+            error.includes("exact-ask") &&
+            error.includes('"deliveryOperationId":'),
+        ),
+      ).toBe(true);
+      getDb(f.root).exec("DROP TRIGGER reject_delivery_diagnostic");
+      f.wakeConversation();
+      await waitFor(() => f.deliveryFailures.length === 1);
       expect(f.deliveryFailures[0]).toMatchObject({ requestId: "exact-ask", deliveryStatus: "uncertain" });
       expect(
         getDb(f.root)
@@ -438,6 +557,8 @@ describe("Telegram refresh lifecycle", () => {
     try {
       getDb(root).exec(`CREATE TRIGGER reject_delivery_receipt BEFORE UPDATE ON telegram_conversation_deliveries
         WHEN NEW.state='delivered' AND NEW.message_id='answer:exact-ask' BEGIN SELECT RAISE(ABORT, 'fixture receipt persistence unavailable'); END`);
+      getDb(root).exec(`CREATE TRIGGER reject_delivery_diagnostic BEFORE INSERT ON events
+        WHEN NEW.event_type='message.delivery_failed' BEGIN SELECT RAISE(ABORT, 'fixture diagnostic persistence unavailable'); END`);
       first.answer("Sent bytes are not a saved receipt.");
       first.answer("Another caller keeps its receipt.", "other-ask");
       first.wakeConversation();
@@ -452,7 +573,18 @@ describe("Telegram refresh lifecycle", () => {
         "Sent bytes are not a saved receipt.",
         "Another caller keeps its receipt.",
       ]);
-      expect(first.deliveryFailures).toHaveLength(1);
+      expect(first.deliveryFailures).toHaveLength(0);
+      expect(
+        first.errors.some(
+          (error) =>
+            error.includes("fixture diagnostic persistence unavailable") &&
+            error.includes("exact-ask") &&
+            error.includes('"deliveryOperationId":'),
+        ),
+      ).toBe(true);
+      getDb(root).exec("DROP TRIGGER reject_delivery_diagnostic");
+      first.wakeConversation();
+      await waitFor(() => first.deliveryFailures.length === 1);
       expect(first.deliveryFailures[0]).toMatchObject({ requestId: "exact-ask", deliveryStatus: "uncertain" });
       expect(
         getDb(root)
@@ -517,8 +649,11 @@ describe("Telegram refresh lifecycle", () => {
         await restarted.ready();
         restarted.answer("A fresh caller after uncertainty.", "fresh-ask");
         restarted.wakeConversation();
-        await waitFor(() =>
-          getDb(root).prepare("SELECT COUNT(*) AS n FROM telegram_conversation_deliveries WHERE state='delivered'").get()?.n === 2,
+        await waitFor(
+          () =>
+            getDb(root)
+              .prepare("SELECT COUNT(*) AS n FROM telegram_conversation_deliveries WHERE state='delivered'")
+              .get()?.n === 2,
         );
         expect(restarted.sent).toHaveLength(1);
         expect(restarted.sent[0]?.text).toBe("A fresh caller after uncertainty.");
@@ -616,10 +751,7 @@ describe("Telegram refresh lifecycle", () => {
         ).toHaveLength(0);
         expect(
           records
-            .filter(
-              (event) =>
-                (event.data?.metadata as { command?: string } | undefined)?.command === "/watch update",
-            )
+            .filter((event) => (event.data?.metadata as { command?: string } | undefined)?.command === "/watch update")
             .map((event) => event.data?.text),
         ).toEqual([expect.stringContaining("Terminal during bare watch command")]);
       } finally {
@@ -810,9 +942,7 @@ describe("Telegram refresh lifecycle", () => {
           ),
         ).toHaveLength(1);
       }
-      expect(f.sent).toContainEqual(
-        expect.objectContaining({ text: expect.stringContaining("Needs your action") }),
-      );
+      expect(f.sent).toContainEqual(expect.objectContaining({ text: expect.stringContaining("Needs your action") }));
       expect(f.sent.some((send) => send.text.includes("How to respond"))).toBe(true);
     } finally {
       await f.close();
@@ -1034,7 +1164,9 @@ describe("Telegram refresh lifecycle", () => {
       first.wake("first");
       await waitFor(() =>
         ["123", "456"].every((chat) =>
-          first.sent.some((send) => send.chat_id === chat && send.text.includes("Keep the completed receipt suppressed.")),
+          first.sent.some(
+            (send) => send.chat_id === chat && send.text.includes("Keep the completed receipt suppressed."),
+          ),
         ),
       );
     } finally {
@@ -1219,7 +1351,8 @@ describe("Telegram refresh lifecycle", () => {
       task.generation = 2;
       f.wake("first");
       await waitFor(
-        () => f.sent.filter((send) => send.text.includes("Run the fallback operator step.")).length > successfulBaseline,
+        () =>
+          f.sent.filter((send) => send.text.includes("Run the fallback operator step.")).length > successfulBaseline,
       );
 
       task.humanAction = { requestedAction: "Retry the changed fallback step." };
@@ -1232,7 +1365,8 @@ describe("Telegram refresh lifecycle", () => {
       f.sendFailures.clear();
       f.wake("first");
       await waitFor(
-        () => f.sent.filter((send) => send.text.includes("Retry the changed fallback step.")).length >= failedBaseline + 2,
+        () =>
+          f.sent.filter((send) => send.text.includes("Retry the changed fallback step.")).length >= failedBaseline + 2,
       );
     } finally {
       await f.close();
@@ -1270,9 +1404,9 @@ describe("Telegram refresh lifecycle", () => {
       f.tasks.get("first")!.humanAction = { requestedAction: "Use the readable compact action." };
       f.readFailures.add("first");
       await f.command("/todo");
-      expect(f.sent.some((send) => send.chat_id === "123" && send.text.includes("Use the readable compact action."))).toBe(
-        true,
-      );
+      expect(
+        f.sent.some((send) => send.chat_id === "123" && send.text.includes("Use the readable compact action.")),
+      ).toBe(true);
       expect(f.reads).not.toContain("first");
     } finally {
       await f.close();

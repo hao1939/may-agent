@@ -115,7 +115,24 @@ wake or restart. Interrupted, partial or ambiguous sends remain uncertain and ar
 not automatically repeated. Startup does not treat an existing answer as a send
 receipt: legacy answers without complete evidence remain uncertain too. This
 startup check covers the same bounded recent Conversation view as the adapter;
-it is not a historical delivery audit.
+it is not a historical delivery audit. Startup captures a read-only boundary;
+all receipt reconciliation runs through the same per-answer delivery decision:
+
+| Existing evidence | Decision |
+| --- | --- |
+| No receipt; answer first observed in the startup snapshot | Retain uncertainty; never claim it as a new send |
+| No receipt; answer appeared after that snapshot | Commit an exclusive claim before provider I/O |
+| Confirmed rejection before any chunk was delivered | Acquire a new claim before retrying |
+| Sending or uncertain | Retain the operation; require caller/provider evidence before a fresh communication |
+| Delivered | Suppress replay using the exact receipt, including content and destination; presentation caches cannot bypass this check |
+| Receipt read, claim or settlement fails | Send nothing without a claim; preserve incomplete evidence and continue to other callers |
+
+The startup boundary survives failed uncertainty writes for the adapter's lifetime.
+If the initial Conversation read is unavailable, the first successful snapshot is
+treated as historical. That conservative rule can retain a newly saved answer as
+uncertain during a startup outage; it cannot safely be assumed unsent. Recovery
+uses the next existing Conversation wake or restart, without another Task attempt
+or a new retry loop.
 
 The existing `message.delivery_failed` diagnostic identifies the owning App,
 original request, Conversation message, destination and delivery operation. Use
@@ -125,6 +142,10 @@ or caller evidence before authorizing a fresh communication after an uncertain
 send. Preserve the prior uncertainty instead of rerunning accepted Task work or
 rewriting its result. These transport records do not change Task acceptance or
 creator authority, and an unresolved delivery does not block another answer.
+Diagnostic persistence shares the same database and may fail too. In that case,
+the independent system logger logs the caller and operation identity; reporting
+cannot grant send authority or stop later callers. A later wake retries the
+diagnostic from the retained evidence. A log alone is not a provider receipt.
 
 App admission and another route's delivery receipt are independent. A durable
 addressed message with no matching App gets three admission attempts, including

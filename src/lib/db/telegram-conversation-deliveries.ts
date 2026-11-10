@@ -42,8 +42,26 @@ export function readConversationDelivery(persistDir: string, operationId: string
   } | null;
 }
 
+/** One send decision for startup recovery and new answers. A missing historical
+ * receipt is uncertainty, never permission to send. Storage errors grant no claim. */
+export function prepareConversationDelivery(
+  persistDir: string,
+  delivery: ConversationDelivery,
+  origin: "historical" | "fresh",
+): { kind: "send" } | { kind: "retained"; state: "sending" | ConversationDeliveryOutcome["state"] } {
+  const operationId = conversationDeliveryId(delivery);
+  const saved = readConversationDelivery(persistDir, operationId);
+  if (saved && saved.state !== "failed") return { kind: "retained", state: saved.state };
+  if (!saved && origin === "historical") {
+    retainUncertainConversationDelivery(persistDir, delivery);
+  } else if (claimConversationDelivery(persistDir, delivery)) {
+    return { kind: "send" };
+  }
+  return { kind: "retained", state: readConversationDelivery(persistDir, operationId)?.state ?? "uncertain" };
+}
+
 /** Commit before provider I/O; concurrent or restarted adapters cannot claim the same send. */
-export function claimConversationDelivery(persistDir: string, delivery: ConversationDelivery): boolean {
+function claimConversationDelivery(persistDir: string, delivery: ConversationDelivery): boolean {
   const db = getDb(persistDir);
   const operationId = conversationDeliveryId(delivery);
   const inserted = db
@@ -88,7 +106,7 @@ export function settleConversationDelivery(
 }
 
 /** Legacy or interrupted sends need owner evidence, never automatic historical replay. */
-export function retainUncertainConversationDelivery(persistDir: string, delivery: ConversationDelivery): void {
+function retainUncertainConversationDelivery(persistDir: string, delivery: ConversationDelivery): void {
   const db = getDb(persistDir);
   const operationId = conversationDeliveryId(delivery);
   const reason = "No complete delivery outcome is available; verify the caller receipt before resending.";

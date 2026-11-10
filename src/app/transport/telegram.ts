@@ -25,10 +25,8 @@ import { EVENT_DELIVERY_RESULT, eventData, type EventBus } from "../core/events/
 import { loadPersistedEvent } from "../core/events/persisted.js";
 import { getDb } from "../../lib/db/connection.js";
 import {
-  claimConversationDelivery,
+  prepareConversationDelivery,
   conversationDeliveryId,
-  readConversationDelivery,
-  retainUncertainConversationDelivery,
   settleConversationDelivery,
   type ConversationDelivery,
 } from "../../lib/db/telegram-conversation-deliveries.js";
@@ -725,29 +723,30 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       renderedConversationMessages.delete(oldest);
     }
   };
-  let initialMessages: AppConversationMessage[] = [];
-  try {
-    initialMessages = readAppConversationResource(getDb(persistDir), conversationAppId, sharedConversationId, {
-      limit: 200,
-    }).messages;
-  } catch {
-    // The Conversation may not be available until App runtime startup finishes.
+  const historicalDeliveries = new Set<string>();
+  let startupCaptured = false;
+  function captureStartupMessages(messages: AppConversationMessage[]): void {
+    if (startupCaptured) return;
+    for (const message of messages) {
+      const delivery = addressedConversationDelivery(message);
+      if (delivery) historicalDeliveries.add(conversationDeliveryId(delivery));
+      else rememberRenderedConversationMessage(message.id);
+    }
+    // Keep this bounded first-snapshot fence even when a receipt write fails.
+    // Until the first successful read, no answer can be classified as fresh.
+    startupCaptured = true;
   }
-  for (const message of initialMessages) {
-    const delivery = addressedConversationDelivery(message);
-    if (!delivery) {
-      rememberRenderedConversationMessage(message.id);
-      continue;
-    }
-    // Historical presence is not a transport receipt. An interrupted or legacy
-    // send is visible to the owner, but must not be blindly repeated on startup.
-    let saved = readConversationDelivery(persistDir, conversationDeliveryId(delivery));
-    if (!saved) {
-      retainUncertainConversationDelivery(persistDir, delivery);
-      saved = readConversationDelivery(persistDir, conversationDeliveryId(delivery))!;
-    }
-    if (saved.state === "delivered") rememberRenderedConversationMessage(message.id);
-    else reportConversationDelivery(message, delivery, saved.state);
+  try {
+    captureStartupMessages(
+      readAppConversationResource(getDb(persistDir), conversationAppId, sharedConversationId, {
+        limit: 200,
+      }).messages,
+    );
+  } catch (error) {
+    log(
+      "warn",
+      `[telegram] Startup Conversation read unavailable: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 
   // Presentation only: one read in flight per key, with at most one follow-up
@@ -774,10 +773,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         try {
           if (running) await refresh(key);
         } catch (error) {
-          bus.emit({
-            type: "info",
-            message: `[telegram] ${label} failed: ${error instanceof Error ? error.message : String(error)}`,
-          });
+          log("warn", `[telegram] ${label} failed: ${error instanceof Error ? error.message : String(error)}`);
         } finally {
           pending.delete(key);
           if (state.dirty) queue(key);
@@ -954,53 +950,64 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     message: AppConversationMessage,
     delivery: ConversationDelivery,
     state: string,
+    error?: unknown,
   ): void {
     const status = state === "failed" ? "failed" : "uncertain";
     const operationId = conversationDeliveryId(delivery);
-    bus.emit({
-      type: "message.delivery_failed",
-      source: "telegram",
-      owner: `app:${conversationAppId}`,
-      data: {
-        from: conversationAppId,
-        to: delivery.chatId,
-        content: message.text.slice(0, 500),
-        reason:
-          status === "failed"
-            ? "Telegram rejected the answer before any chunk was delivered; the existing answer remains available for delivery."
-            : "No complete Telegram delivery outcome is available; verify the caller receipt before resending the existing answer.",
-        appId: conversationAppId,
-        conversationId: sharedConversationId,
-        requestId: message.metadata?.requestId,
-        conversationMessageId: message.id,
-        deliveryOperationId: operationId,
-        deliveryStatus: status,
-        channelThreadId: message.metadata?.channelThreadId,
-        idempotencyKey: `telegram-conversation-delivery:${operationId}:${status}`,
-      },
-    });
-  }
-
-  function reportConversationDeliveryError(
-    message: AppConversationMessage,
-    delivery: ConversationDelivery,
-    error: unknown,
-  ): void {
-    reportConversationDelivery(message, delivery, "uncertain");
-    bus.emit({
-      type: "info",
-      message: `[telegram] Conversation answer delivery failed: ${error instanceof Error ? error.message : String(error)}`,
-    });
+    const identity = {
+      appId: conversationAppId,
+      conversationId: sharedConversationId,
+      requestId: message.metadata?.requestId,
+      conversationMessageId: message.id,
+      deliveryOperationId: operationId,
+      to: delivery.chatId,
+      channelThreadId: message.metadata?.channelThreadId,
+    };
+    const context = JSON.stringify(identity);
+    if (error !== undefined)
+      log(
+        "warn",
+        `[telegram] Conversation answer delivery failed ${context}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    try {
+      bus.emit({
+        type: "message.delivery_failed",
+        source: "telegram",
+        owner: `app:${conversationAppId}`,
+        data: {
+          from: conversationAppId,
+          ...identity,
+          content: message.text.slice(0, 500),
+          reason:
+            status === "failed"
+              ? "Telegram rejected the answer before any chunk was delivered; the existing answer remains available for delivery."
+              : "No complete Telegram delivery outcome is available; verify the caller receipt before resending the existing answer.",
+          deliveryStatus: status,
+          idempotencyKey: `telegram-conversation-delivery:${operationId}:${status}`,
+        },
+      });
+    } catch (reportingError) {
+      // The journal shares the failing database. Reporting is never send authority
+      // and must not interrupt another caller; the independent logger cannot throw.
+      log(
+        "warn",
+        `[telegram] Delivery diagnostic not persisted ${context}: ${reportingError instanceof Error ? reportingError.message : String(reportingError)}`,
+      );
+    }
   }
 
   async function syncConversation(): Promise<void> {
     const conversation = readAppConversationResource(getDb(persistDir), conversationAppId, sharedConversationId, {
       limit: 200,
     });
+    captureStartupMessages(conversation.messages);
     await syncTurnControls(conversation.activeTurn);
     for (const message of conversation.messages) {
       if (!running) return;
-      if (renderedConversationMessages.has(message.id)) continue;
+      const delivery = addressedConversationDelivery(message);
+      // Addressed answers always use their exact durable operation, including
+      // content/destination revisions under the same Conversation message ID.
+      if (!delivery && renderedConversationMessages.has(message.id)) continue;
       if (
         message.metadata?.channel === "telegram" &&
         (message.author.kind === "human" || message.author.kind === "command")
@@ -1012,23 +1019,20 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       if (!targetChatId) return;
       const topicId = telegramThreadId(message.metadata?.channelThreadId);
       const surface = surfaceKey(targetChatId, topicId);
-      const delivery = addressedConversationDelivery(message);
       const operationId = delivery ? conversationDeliveryId(delivery) : undefined;
-      if (delivery) {
-        try {
-          if (!claimConversationDelivery(persistDir, delivery)) {
-            const saved = readConversationDelivery(persistDir, operationId!);
-            if (saved?.state === "delivered") rememberRenderedConversationMessage(message.id);
-            else reportConversationDelivery(message, delivery, saved?.state ?? "uncertain");
-            continue;
-          }
-        } catch (error) {
-          reportConversationDeliveryError(message, delivery, error);
-          continue;
-        }
-      }
       let delivered: number | undefined;
       try {
+        if (delivery) {
+          const decision = prepareConversationDelivery(
+            persistDir,
+            delivery,
+            historicalDeliveries.has(operationId!) ? "historical" : "fresh",
+          );
+          if (decision.kind === "retained") {
+            if (decision.state !== "delivered") reportConversationDelivery(message, delivery, decision.state);
+            continue;
+          }
+        }
         delivered = await sendMessage(targetChatId, renderTelegramConversationMessage(message), undefined, {
           eventType: "conversation.mirror",
           agent: message.author.kind === "agent" ? opts.interfaceAgent : message.author.id,
@@ -1057,7 +1061,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         });
       } catch (error) {
         if (!delivery) throw error;
-        reportConversationDeliveryError(message, delivery, error);
+        reportConversationDelivery(message, delivery, "uncertain", error);
         continue;
       }
       if (!running) return;
@@ -1065,7 +1069,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         if (delivery) continue; // One unresolved caller must not hide another answer.
         return;
       }
-      rememberRenderedConversationMessage(message.id);
+      if (!delivery) rememberRenderedConversationMessage(message.id);
       const watched = watchedTasks.get(surface);
       if (
         watched &&
