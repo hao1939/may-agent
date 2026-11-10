@@ -72,6 +72,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ### 2026-11-10
 
+- [Human approval must bind the display and the protected effect](./findings/2026-11-10-human-approval-must-bind-display-and-effect.md) — pinned oathline-guard source binds guard-rendered MCP arguments, a separately displayed code, stored arguments, and one later execution; Scout inspected static source and project-authored tests but did not run them, authenticate a human, or establish complete mediation beyond the local stdio proxy.
 - [Agentic manipulation policies need harness and memory ablations](./findings/2026-11-10-agentic-manipulation-policies-need-harness-and-memory-ablations.md) — an abstract-level robotics study reports that one generalist-model harness outperforms specialist VLA and WAM policies on named benchmarks and that persistent memory lowers failures on one bimanual suite; Scout did not inspect the full paper, harness, code, trials, baselines, memory mechanism, or ablations.
 
 ### 2026-11-09
