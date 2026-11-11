@@ -4,7 +4,7 @@
  * Validates the full metric lifecycle: define → record healthy → record
  * breaching → metric.breach event → metric_alerts row → record recovery →
  * metric.recovered and the same alert resolved. Each phase enters through the
- * real daemon's event interface; E1 separately proves recurring timer delivery.
+ * real daemon's event interface and ordinary App Task execution.
  *
  * Spans:
  *   - sdk.metrics.define / sdk.metrics.record
@@ -20,9 +20,9 @@
  * Runs by default; does not require LLM access.
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { emitDaemonEvent } from "../../packages/control/src/client.js";
 import { openSandboxDb, pollUntil, queryEvents } from "./lib/live-daemon.js";
 import { buildSandbox, type Sandbox } from "./lib/sandbox.js";
-import { emitDaemonEvent } from "../../packages/control/src/client.js";
 
 describe("E4: metric breach to alert", () => {
   let sb: Sandbox;
@@ -31,27 +31,10 @@ describe("E4: metric breach to alert", () => {
   beforeAll(async () => {
     sb = await buildSandbox({
       fixtureAgents: ["may"],
-      fixtureHandlers: { may: ["e2e-metric-canary"] },
-      cronJson: {
-        may: [
-          {
-            name: "e2e-metric-canary",
-            handler: "e2e-metric-canary",
-            on: ["e2e.metric.sample"],
-            agent: "may",
-            enabled: true,
-          },
-        ],
-      },
+      fixtureWorkflows: { may: ["e2e-metric-canary"] },
+      fixtureProjects: ["metrics.app"],
     });
     await sb.daemonReady;
-    // The socket opens before handler loading and event subscriptions finish.
-    // This existing activation message is emitted after subscriptions attach.
-    await pollUntil(() => sb.getLogs().includes("[cron:may] Starting 1 job(s)"), {
-      timeoutMs: 10_000,
-      intervalMs: 50,
-      description: "metric handler event subscription ready",
-    });
   }, 60_000);
 
   afterAll(async () => {
@@ -65,7 +48,7 @@ describe("E4: metric breach to alert", () => {
       try {
         const sample = async (phase: string, value: number) => {
           // Use the existing operator fact ingress, as `may --emit` does.
-          const receipt = await emitDaemonEvent(sb.socketPath, "e2e.metric.sample", {}, { timeoutMs: 5_000 });
+          const receipt = await emitDaemonEvent(sb.socketPath, "e2e.metric.sample", { phase, value }, { timeoutMs: 5_000 });
           expect(receipt.type).toBe("ok");
           await pollUntil(
             () =>

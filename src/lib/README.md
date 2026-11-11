@@ -24,7 +24,7 @@ When workload policy is installed, workflows use the same paid Task authority
 and local claim reservation as managed starts, including workflows with no model
 helper. `workflow-tool.ts` checks actual starts and nested methods through
 `app/core/state/task-budget-managed-start.ts`; it does not mint another budget or
-execution place. Unbound direct/live-resume execution fails closed, while saved
+execution place. Unbound direct execution fails closed, while saved
 terminal-result reads remain free. Definition inspection is still a read of
 trusted source; this is neither a code sandbox nor an online activation barrier.
 
@@ -58,7 +58,7 @@ values and keep private worker-role checks separate.
 
 | Change | Start here |
 | --- | --- |
-| Session start, resume, stop and hosted result access | `manager.ts`; `manager-agents-tool.ts` exposes its agent tool |
+| Session start, active steering, stop and hosted result access | `manager.ts`; `manager-agents-tool.ts` exposes its agent tool |
 | Execution exit and descendant cleanup before recovery | `session-cleanup.ts`, shared by startup and Task recovery; `tools/bash.ts` owns process-group draining |
 | Model execution and tool binding | `agent-execution.ts`, then `agent-runner.ts` |
 | Task context supplied to the model | `task-decision-context.ts`; `task-workspace-context.ts` writes the discovery entry |
@@ -70,7 +70,7 @@ values and keep private worker-role checks separate.
 
 | Event persistence | `db-writer.ts`; Task resource operations remain in `app/core/state/` |
 | Coding tools and skills | `tools/`, `skills.ts` |
-| Host maintenance capabilities | `app/adapters/maintenance/context.ts` and `handler-loader.ts` |
+| Fixed Host upkeep | `app/modes/maintenance.ts` and `app/composition/reporting.ts`; configurable duties use App schedules |
 
 Ordinary serving-path SQLite operations use the connection's 50 ms busy wait
 without extra synchronous sleeps. Unsaved input fails to its caller; already

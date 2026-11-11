@@ -13,7 +13,7 @@ describe("App registry", () => {
     const original = entry();
     const registry = new AppRegistry(async () => [original]);
     await registry.reload();
-    expect(registry.entries()[0]?.definition).toMatchObject({ id: "sample", agent: "worker", owner: "worker" });
+    expect(registry.entries()[0]?.definition).toMatchObject({ id: "sample", agent: "worker" });
     expect(original.definition).not.toHaveProperty("owner");
     registry.entries().length = 0;
     expect(registry.entries()).toHaveLength(1);
@@ -88,7 +88,8 @@ describe("App registry", () => {
       definition: {
         ...entry().definition,
         inputSchema: { type: "object", properties: { value: { type: "string", const: name } } },
-        tasks: { resolve: () => ({ id: "sample/task", outcome: name, acceptance: [name] }) },
+        tasks: {},
+        task: () => ({ kind: "desired", intent: { id: "sample/task", parentId: "root", outcome: name, acceptance: [name] } }),
       },
     });
     const accepted = declaration("accepted");
@@ -109,37 +110,9 @@ describe("App registry", () => {
     ).rejects.toThrow("consumer rejected replacement");
     expect(registry.snapshot()).toBe(snapshot);
     expect(registry.entries()[0]?.definition.inputSchema).toEqual(accepted.definition.inputSchema);
-    expect(registry.resolveInstalledTask("sample", { type: "tick", data: {} }).intent?.outcome).toBe("accepted");
+    expect((registry.entries()[0]!.definition.task!({ id: "probe", source: { kind: "system", id: "probe" }, input: { kind: "tick", data: {} } }) as { intent: { outcome: string } }).intent.outcome).toBe("accepted");
     await registry.reload();
-    expect(registry.resolveInstalledTask("sample", { type: "tick", data: {} }).intent?.outcome).toBe("accepted");
-  });
-
-  it("resolves installed Task intent through the same validated definition", async () => {
-    const registry = new AppRegistry(async () => [
-      {
-        ...entry(),
-        definition: {
-          ...entry().definition,
-          tasks: {
-            resolve: (event: { data: Record<string, unknown> }) => ({
-              id: event.data.taskId,
-              outcome: "observe",
-              acceptance: ["done"],
-              input: event.data,
-            }),
-          },
-        },
-      },
-    ]);
-    await registry.reload();
-    const snapshot = registry.snapshot();
-    const data = { taskId: "full-intent", fields: ["one", "two"] };
-    expect(registry.resolveInstalledTask("sample", { type: "project.task.tick", data })).toEqual({
-      snapshot: { id: snapshot.id, generation: 1 },
-      appId: "sample",
-      intent: { id: "full-intent", outcome: "observe", acceptance: ["done"], input: data },
-    });
-    expect(registry.snapshot()).toBe(snapshot);
+    expect((registry.entries()[0]!.definition.task!({ id: "probe", source: { kind: "system", id: "probe" }, input: { kind: "tick", data: {} } }) as { intent: { outcome: string } }).intent.outcome).toBe("accepted");
   });
 
   it("serializes discovery and publication, selecting the default source at execution time", async () => {

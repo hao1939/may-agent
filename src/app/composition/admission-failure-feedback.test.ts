@@ -1,17 +1,17 @@
 import { afterEach, expect, it, spyOn } from "bun:test";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { DbWriter } from "../../lib/db-writer.js";
 import { closeDb, getDb } from "../../lib/db/connection.js";
-import { AppRegistry } from "../core/apps/registry.js";
 import { discoverAppDefinitions } from "../adapters/discovery/app-definitions.js";
+import { AppRegistry } from "../core/apps/registry.js";
 import { EventBus } from "../core/events/bus.js";
-import { admitConversationTaskInput, conversationTaskIntent } from "../core/state/conversation-task-turns.js";
 import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";
+import { admitConversationTaskInput, conversationTaskIntent } from "../core/state/conversation-task-turns.js";
 import { admitTaskInput } from "../core/state/inbox.js";
-import { appTaskTestContext } from "../core/tasks/app-task-test-support.js";
 import { appTaskContext, cancelAppTask, observeAppTaskIntent } from "../core/tasks/app-task-reconciler.js";
+import { appTaskTestContext } from "../core/tasks/app-task-test-support.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 
 async function waitFor(predicate: () => boolean): Promise<void> {
@@ -40,9 +40,9 @@ it("durably routes an orphan admission rejection to App conversation once despit
   writeFileSync(
     join(appDir, "app.js"),
     `export default {
-    id: "sample", version: 1, owner: "owner", inputSchema: { type: "object" }, tasks: {},
+    id: "sample", version: 1, agent: "owner", inputSchema: { type: "object" }, tasks: {},
     task() { return { kind: "existing", taskId: "work" }; },
-    conversation: { mode: "agent", inputKinds: ["message"], conversationId: "sample:primary" },
+    conversation: { mode: "task", inputKinds: ["message"], conversationId: "sample:primary" },
     subscriptions: [{ id: "admission-review", event: { type: "app.input.admission.failed", target: { appId: "sample" } },
       toInput(event) { return { kind: "message", data: { message: "Review rejection", failure: event.data } }; } }]
   };`,

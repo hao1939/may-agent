@@ -2937,8 +2937,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
     const content = (body.content ?? "").trim();
     if (!content) return json({ error: "content required" }, 400);
-    // The daemon owns active/idle/cold routing: active/idle sessions receive
-    // manager.send(); terminal-but-resumable sessions attempt resumeSession().
+    // The daemon validates ownership and steers only live sessions.
+    // New work for an ended execution must go through its owning Task.
     const result = await sendDaemonFrame(
       buildPublishFrame("session.steer.requested", { message: content, channel: "web-ui" }, { target: { sessionId } }),
     );
@@ -2946,19 +2946,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return json({ ok: true, sessionId, deliveredAt: Date.now() });
   }
 
-  /**
-   * Resolve the "default chat session" for an agent. Telegram-style: each
-   * agent has one persistent thread; this endpoint returns its sessionId.
-   *
-   * Strategy: pick the most-recently-active session for this agent
-   * regardless of status (running/idle/done/error/interrupted). The 3b
-   * cold-resume path means even a 'done' session can be woken up by
-   * messaging it. Heartbeat / worker / fork-spawn sessions are NOT chat
-   * threads (they're throwaway task runs) so we exclude them.
-   *
-   * Returns {sessionId: null} if no chat thread exists yet — UI can then
-   * POST /api/agents/:name/message to spawn one.
-   */
   /**
    * GET /api/agents — list all configured agents with rollups for the
    * Agents tab card grid. One row per agent.

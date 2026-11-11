@@ -1,21 +1,14 @@
-import { readFileWritePolicy } from "../../lib/tools/file-write-policy.js";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import type { ModelWithApiKey } from "../../lib/types.js";
-import type { SubagentDefinition } from "../../lib/types.js";
 import type { SubagentManager } from "../../lib/manager.js";
-import type { HostMaintenance } from "../adapters/maintenance/runtime.js";
-import type { EventBus } from "../core/events/bus.js";
+import { readFileWritePolicy } from "../../lib/tools/file-write-policy.js";
+import type { ModelWithApiKey, SubagentDefinition } from "../../lib/types.js";
 import type { AppRegistry } from "../core/apps/registry.js";
+import type { EventBus } from "../core/events/bus.js";
 import { readAgentConfigFile, validateAgentConfig, type AgentConfig, type ValidationError } from "./agent-config.js";
-import {
-  agentProjectRoot,
-  agentsRootForAgentDir,
-  listRuntimeAgentDirectories,
-} from "./agent-discovery.js";
-import { buildTools } from "./toolset-loader.js";
 import { buildAgentDefinition } from "./agent-definition.js";
-import { prepareMaintenance } from "../composition/maintenance.js";
+import { agentProjectRoot, agentsRootForAgentDir, listRuntimeAgentDirectories } from "./agent-discovery.js";
+import { buildTools } from "./toolset-loader.js";
 
 export interface AgentLoaderOptions {
   /** Published App addresses; discovery does not depend on Task scheduling. */
@@ -34,7 +27,6 @@ export interface AgentLoaderOptions {
   models: Record<string, ModelWithApiKey>;
   manager: SubagentManager;
   bus: EventBus;
-  cronEnabled: boolean;
   /** Load only these exact agents in a short-lived execution worker. */
   agentNames?: readonly string[];
 }
@@ -46,7 +38,6 @@ export interface LoadResult {
 
 export interface PreparedAgentGeneration extends LoadResult {
   definitions: readonly SubagentDefinition[];
-  maintenance: ReadonlyMap<string, HostMaintenance>;
   cleanups: ReadonlyMap<string, readonly (() => void)[]>;
   warnings: readonly string[];
 }
@@ -59,10 +50,9 @@ export interface AgentGenerationPublication {
 const discardedGenerations = new WeakSet<object>();
 
 /** Release resources belonging to a generation that was never committed. */
-export function discardAgentGeneration(generation: Pick<PreparedAgentGeneration, "maintenance" | "cleanups">): void {
+export function discardAgentGeneration(generation: Pick<PreparedAgentGeneration, "cleanups">): void {
   if (discardedGenerations.has(generation)) return;
   discardedGenerations.add(generation);
-  for (const cron of generation.maintenance.values()) cron.close();
   for (const cleanups of generation.cleanups.values()) {
     for (const cleanup of cleanups) cleanup();
   }
@@ -97,13 +87,10 @@ function reportInvalidGeneration(bus: EventBus, errors: readonly ValidationError
 
 function preparedResourceRuntime(runtime: AgentRegistryRuntime): {
   runtime: AgentRegistryRuntime;
-  maintenance: Map<string, HostMaintenance>;
   cleanups: Map<string, Array<() => void>>;
 } {
-  const maintenance = new Map<string, HostMaintenance>();
   const cleanups = new Map<string, Array<() => void>>();
   return {
-    maintenance,
     cleanups,
     runtime: {
       getAgentSessionId: runtime.getAgentSessionId,
@@ -126,7 +113,7 @@ function readCandidate(agentDir: string, fallbackName: string, errors: Validatio
 
 /**
  * Discover and build one complete agent generation without changing manager,
- * HostMaintenance, cleanup, or App state. Any validation or skill diagnostic rejects the
+ * cleanup, or App state. Any validation or skill diagnostic rejects the
  * whole generation.
  */
 export async function prepareAgents(
@@ -183,10 +170,9 @@ export async function prepareAgents(
     try {
       const configPath = resolve(source.dir, "cron.json");
       if (existsSync(configPath)) {
-        staged.maintenance.set(
-          config.name,
-          prepareMaintenance({ configPath, persistDir: opts.persistDir, agentName: config.name, bus: opts.bus }),
-        );
+        const entries: unknown = JSON.parse(readFileSync(configPath, "utf8"));
+        if (!Array.isArray(entries) || entries.length)
+          throw new Error("cron.json handlers are retired; move App duties to schedules/observers before upgrading");
       }
       const effectiveProjectRoot = agentProjectRoot(source, projectRoot);
       const definition = await buildAgentDefinition({
@@ -200,7 +186,6 @@ export async function prepareAgents(
           agentsRoot: agentsRootForAgentDir(source),
           agentDir: source.dir,
           getAgentSessionId: staged.runtime.getAgentSessionId,
-          getAgentMaintenance: () => staged.maintenance,
           addCleanup: (agentName, cleanup) => {
             const existing = staged.cleanups.get(agentName);
             if (existing) existing.push(cleanup);
@@ -234,7 +219,6 @@ export async function prepareAgents(
   const names = definitions.map((definition) => definition.name);
   return {
     definitions: Object.freeze(definitions),
-    maintenance: staged.maintenance,
     cleanups: staged.cleanups,
     warnings: Object.freeze(warnings),
     added: names.filter((name) => !manager.hasAgent(name)),

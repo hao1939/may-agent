@@ -16,7 +16,6 @@
  * What this doesn't cover (out of scope for E5):
  *   - Reload of handler/workflow file content at the explicit reload boundary.
  *   - Removing an agent (no delete code path in the registry loader).
- *   - cron.json reload (covered by HostMaintenance.reload() unit tests).
  *
  * Validates documented behavior of:
  *   - user-guide.md § Reload (the `/reload` command, control-channel reload)
@@ -36,7 +35,6 @@ describe("E5: agent reload", () => {
   beforeAll(async () => {
     sb = await buildSandbox({
       fixtureAgents: ["may"],
-      cronJson: { may: [] },
     });
     await sb.daemonReady;
   }, 60_000);
@@ -110,7 +108,7 @@ describe("E5: agent reload", () => {
         description: `Fixture interface agent for e2e tests (updated at ${Date.now()})`,
         domain: "e2e",
         model: "claude-opus-4-6",
-        tools: ["cron"],
+        tools: [],
       };
       writeFileSync(mayConfigPath, JSON.stringify(updated, null, 2));
 

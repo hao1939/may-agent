@@ -2,13 +2,13 @@ import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fakeTaskAttacher } from "../../../test/fixtures/task-attachment.js";
 import { DbWriter } from "../../lib/db-writer.js";
 import { closeDb, getDb } from "../../lib/requests.js";
-import { fakeTaskAttacher } from "../../../test/fixtures/task-attachment.js";
-import { AppRegistry } from "../core/apps/registry.js";
-import { EventBus, EVENT_ROW_ID, type Subscriber } from "../core/events/bus.js";
-import { createEventInterface, getEventView } from "../core/events/interface.js";
 import { discoverAppDefinitions } from "../adapters/discovery/app-definitions.js";
+import { AppRegistry } from "../core/apps/registry.js";
+import { EVENT_ROW_ID, EventBus, type Subscriber } from "../core/events/bus.js";
+import { createEventInterface, getEventView } from "../core/events/interface.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 
 function bus(root: string): EventBus {
@@ -31,7 +31,7 @@ function installRecipient(root: string): void {
   writeFileSync(
     join(dir, "app.js"),
     `export default {
-    id: "recipient", version: 1, owner: "missing-owner",
+    id: "recipient", version: 1, agent: "missing-owner",
     inputSchema: { type: "object", additionalProperties: false, required: ["kind", "data"], properties: {
       kind: { const: "message" }, data: { type: "object", required: ["message"], properties: {
         message: { type: "string" }, context: { type: "object" }

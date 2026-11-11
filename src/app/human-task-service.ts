@@ -1,31 +1,22 @@
-import { taskStatusFromPhase } from "./core/reads/task-status.js";
-import type { TaskStatus } from "@may-agent/sdk";
-import { isHumanActionOwner } from "./core/tasks/human-condition.js";
 import type { ApprovalProposal } from "@may-agent/control/events";
-import type { AppRegistry } from "./core/apps/registry.js";
+import type { TaskStatus } from "@may-agent/sdk";
 import type {
+  ObservationContract,
+  ObserverHealth,
   TaskAcceptedEvidenceNavigation,
   TaskReadOptions,
-  ObserverHealth,
-  ObservationContract,
 } from "@may-agent/sdk/app";
-import { readAppContract } from "./core/reads/app-contract.js";
-import type {
-  AppTaskAttempt,
-  AppTaskCancellation,
-  AppTaskCondition,
-  AppTaskResource,
-} from "./core/tasks/app-task-state.js";
-import type { TaskCompletionReceipt } from "./core/tasks/app-task-store.js";
 import type { SqliteDb } from "../lib/db.js";
-import { storedResultFacts } from "./core/state/result-facts.js";
+import type { AppRegistry } from "./core/apps/registry.js";
 import { readEventTaskTarget } from "./core/events/task-target.js";
-import { taskViewPhaseSql } from "./core/state/task-view-phase.js";
+import { readAppContract } from "./core/reads/app-contract.js";
 import {
+  TASK_ACCEPTED_EVIDENCE_MAX_PAGE_SIZE,
   hasTaskAcceptedEvidence,
   readTaskAcceptedEvidence,
-  TASK_ACCEPTED_EVIDENCE_MAX_PAGE_SIZE,
 } from "./core/reads/app-task-evidence.js";
+import { taskStatusFromPhase } from "./core/reads/task-status.js";
+import { storedResultFacts } from "./core/state/result-facts.js";
 import {
   TaskReferenceError,
   displayTaskReferences,
@@ -34,6 +25,15 @@ import {
   taskReferenceDigest,
   type ResolvedTaskReference,
 } from "./core/state/task-reference-index.js";
+import { taskViewPhaseSql } from "./core/state/task-view-phase.js";
+import type {
+  AppTaskAttempt,
+  AppTaskCancellation,
+  AppTaskCondition,
+  AppTaskResource,
+} from "./core/tasks/app-task-state.js";
+import type { TaskCompletionReceipt } from "./core/tasks/app-task-store.js";
+import { isHumanActionOwner } from "./core/tasks/human-condition.js";
 
 export type HumanTaskStatus = TaskStatus;
 
@@ -1041,7 +1041,7 @@ export class HumanTaskService {
                 ),
               }
             : {}),
-          owner: definition.owner,
+          owner: definition.agent,
           ...(definition.description ? { description: definition.description } : {}),
           activeTasks: Number(count?.active_tasks ?? 0),
           openTasks: Number(count?.open_tasks ?? 0),

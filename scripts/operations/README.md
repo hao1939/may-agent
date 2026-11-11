@@ -567,3 +567,56 @@ a binary predating this protocol cannot honor its receipt and must not reopen
 withdrawn state. Retain the command, receipt and external
 stop/cleanup evidence. Runtime start and App activation remain separate authorized
 operations; portable source checks do not prove live exclusion or model behavior.
+
+
+## Convert retired Task contracts
+
+`convert-task-contracts.ts` is an explicit offline upgrade from the retired
+Conversation executor and `tasks.resolve` admission route to common Task execution.
+It is never called by startup. Use matching current App source, including
+`conversation.mode: "task"` and ordinary event subscriptions, in a reviewed checkout.
+
+Keep the Host, every worker and every launcher stopped and excluded throughout
+inspection, backup, dry run and apply. Use the same external exclusion and
+consistent SQLite/WAL backup procedure documented above. The confirmation flag
+and conservative file/SQL checks cannot establish process exclusion. First use the
+previous Host's normal recovery to confirm cleanup of running attempts, execution
+reservations, session markers and descendants. Pending Conversation settlements or
+frozen Conversation admission commands must be settled with that Host first.
+
+From the new Host checkout, with frozen dependencies:
+
+```sh
+bun scripts/operations/convert-task-contracts.ts \
+  --state-dir /path/to/stopped/state \
+  --projects-root /path/to/matching/new/projects --confirm-quiesced
+```
+
+This defaults to a transaction rolled back after exercising the real conversion.
+Review its Task/route counts and compare the retained inputs, Requests and accepted
+results with the backup. Add `--apply` to commit the same conversion while still
+stopped. Repeating an applied conversion changes nothing.
+
+The transaction translates linked Conversation Tasks from executor `conversation`
+to `agent`, increments resource versions and preserves generation, accepted
+history, readiness, waits, Requests and input identities. It translates unresolved
+legacy event routes through the matching App's ordinary subscriptions using the
+original saved event envelope, preserving exact Condition targets. Missing,
+ambiguous, invalid or orphan state rejects the entire operation; nothing is
+silently dropped. A current subscription returning null deliberately declines an
+event; existing Condition targets still remain. Frozen ordinary Task intents and
+terminal history remain evidence and are not reinterpreted.
+
+Inspect results before separately authorized activation of the matching Host and
+Apps. Convert only while the launcher barrier remains in force. If validation or
+conversion fails, investigate with the prior source and backup. Do not start a
+partially upgraded pair, restore old state after accepting new work, or run this
+operation against a serving installation. Runtime preparation refuses retained
+old contracts before consuming a new execution attempt.
+
+Removed capabilities have no hidden fallback: dynamic `cron.json` handlers and
+the cron tool must move into App schedules/observers; workflow `resume` and helper
+`sessionId` reuse are unavailable. Task retry starts the current method afresh,
+with saved evidence for inspecting prior effects. This is not an exactly-once
+external-effect guarantee. Fixed retention, watchdogs, metrics, active session
+steering, transcripts, cancellation and stale-result fencing remain.

@@ -15,7 +15,7 @@ Read in this order:
    its workspace, opens one attempt around `executeTaskHandler()`, then settles
    the returned report. `attempt-execution.ts: runTaskExecutorAttempt()` owns the
    shared Task context, lease renewal, event observation and cleanup. Agent,
-   workflow, registered-executor and Conversation handlers use that open attempt.
+   workflow and registered-executor handlers use that open attempt.
    `dependency-admission.ts` admits typed delegation and recovers exact waits.
    `app-task-runtime.ts` installs controllers and wires routes; `runtime-definition.ts`
    prepares App descriptors and binds their existing state authority.
@@ -538,17 +538,16 @@ authority still apply. Former shared limits/funding become unavailable in feedba
 Reactivation across the unaccounted interval requires a separate adoption protocol.
 Live activation and active execution import remain separate work.
 See the operations guide for the new-state procedure and unsupported session paths.
-Common manager start admission now charges each separately admitted helper or
-resume, records exact invocation/session/attempt evidence, and covers the primary
+Common manager start admission now charges each separately admitted helper, records exact invocation/session/attempt evidence, and covers the primary
 agent once through its paid attempt. Only an opaque Host adapter capability can
 request that coverage; source labels and nested helpers cannot. Saved-result
-reads are free. A denied resume preserves its transcript and retained session.
+reads are free. Stopped sessions retain their evidence and cannot be resumed.
 Admitted starts remain charged if preparation or later execution fails.
 
 Authored workflow code also passes shared start admission, even when it never
 calls a managed agent. With installed policy it needs the current paid Task
 attempt and its live local execution reservation. Direct, typed, model-tool and
-live-resume paths share this gate before workflow-start publication, run records
+agent-tool paths share this gate before workflow-start publication, run records
 or authored execution; nested methods recheck the same authority without another
 credit or place. Reading an already saved terminal result remains free. Unbound,
 cancelled, released or pre-limit unreserved execution cannot borrow an old Task

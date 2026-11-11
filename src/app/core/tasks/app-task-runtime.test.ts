@@ -1,17 +1,3 @@
-import { TaskBudgetAdmissionStore } from "../state/task-budget-admission.js";
-import { TaskExecutionStore } from "../state/task-execution-store.js";
-import { installTaskExecutionLimit } from "../state/task-execution-admission.js";
-import { normalizeTaskHandlerResult } from "./result.js";
-import { afterEach, describe, expect, it, setSystemTime, spyOn } from "bun:test";
-import { execFile, execFileSync, spawn } from "node:child_process";
-import { once } from "node:events";
-import { spawnFixtureProcess } from "../../../../test/fixtures/owned-process.js";
-import { markStaleSession } from "../../../../test/fixtures/stale-session.js";
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { promisify } from "node:util";
 import {
   Type,
   defineApp,
@@ -20,64 +6,78 @@ import {
   type AppInputContext,
   type TaskExecutor,
 } from "@may-agent/sdk";
-import { addLogSubscriber } from "../../../lib/log.js";
-import { readTaskChecks } from "./task-check-observations.js";
-import { UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY } from "../../metric-source-measurement.js";
-import { DbWriter } from "../../../lib/db-writer.js";
-import { listTerminalTaskSessionBindings, upsertSession } from "../../../lib/db/sessions.js";
-import { openDatabase } from "../../../lib/db.js";
-import { EVENT_DELIVERY_RESULT, EVENT_ROW_ID, EventBus, type AgentEvent } from "../events/bus.js";
-import { loadPersistedEvent } from "../events/persisted.js";
-import { createEventInterface } from "../events/interface.js";
-import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
-import { startBackgroundRuntime } from "../../composition/background-startup.js";
-import { SubagentManager } from "../../../lib/manager.js";
-import { appInputFeedbackEvent } from "../inbox/input-result.js";
-import { AppInboxHost } from "../inbox/app-inbox-host.js";
-import { admitTaskInput } from "../state/inbox.js";
-import { createAppInboxItem, listAppInboxItems } from "../state/app-inbox-store.js";
+import { afterEach, describe, expect, it, setSystemTime, spyOn } from "bun:test";
+import { execFile, execFileSync, spawn } from "node:child_process";
+import { once } from "node:events";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 import { claimAppInboxItem, completeAppInboxClaim, waitAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
-import { AppRegistry } from "../apps/registry.js";
+import { spawnFixtureProcess } from "../../../../test/fixtures/owned-process.js";
+import { markStaleSession } from "../../../../test/fixtures/stale-session.js";
+import { DbWriter } from "../../../lib/db-writer.js";
+import { openDatabase } from "../../../lib/db.js";
+import { listTerminalTaskSessionBindings, upsertSession } from "../../../lib/db/sessions.js";
+import { addLogSubscriber } from "../../../lib/log.js";
+import { SubagentManager } from "../../../lib/manager.js";
 import { discoverAppDefinitions } from "../../adapters/discovery/app-definitions.js";
-import { createAppTaskCapability } from "./app-task-capability.js";
-import { createAppTaskEvents } from "./app-task-emitter.js";
-import { projectAppTaskReconciliationEvents, readAppTaskWaitPromptContext } from "./app-task-context.js";
-import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
-import {
-  admitLoadedCanonicalAppTaskEvent,
-  admitStandaloneCanonicalAppTaskEvent,
-  attachLoadedAppTask,
-  cancelLoadedAppTask,
-  closeInstalledAppTaskRuntimes,
-  installAppTaskRuntimes as installCoreTaskRuntimes,
-  getLoadedAppInputContract,
-  previewLoadedCanonicalAppTaskEvent,
-  previewLoadedCanonicalAppTaskEventRoutes,
-  readLoadedAppTaskView,
-  readLoadedAppTaskInputResult,
-  reconcileLoadedAppTaskOnce,
-  recoverInstalledAppTasks,
-  settleTerminalAppTaskSessions,
-  retryLoadedFailedAppTask,
-  reopenLoadedAppTask,
-} from "./app-task-runtime.js";
-import { createTaskAttemptProcessExecutor } from "../../composition/workers/task-attempt-process.js";
-import { admitTaskAppRequests, recoverTaskConditions } from "./dependency-admission.js";
-import { createTaskExecutionBackends } from "../../composition/task-execution.js";
-import { createGitTaskWorkspaces, gitTaskWorkspaces } from "../../adapters/workspaces/git.js";
-import { readTaskWorkload } from "../reads/task-workload.js";
-import { createTaskSessionRecovery } from "../../adapters/executors/session-recovery.js";
-import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
-import { createAppTaskReadTool } from "../../app-task-read-tool.js";
-import { readTaskOutcomes } from "../../adapters/reporting/task-outcomes.js";
-import type { TaskAgentRunner, TaskWorkflowRunner, TaskSessionRecovery } from "./execution.js";
-import type { NormalizedTaskHandlerResult } from "./result.js";
 import {
   applyCanonicalAgentResidueCleanup,
   beginCanonicalAgentResidueGuard,
   planCanonicalAgentResidueCleanup,
   rejectConvergedDirectAgentResidue,
 } from "../../adapters/executors/agent-workspace.js";
+import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
+import { createTaskSessionRecovery } from "../../adapters/executors/session-recovery.js";
+import { readTaskOutcomes } from "../../adapters/reporting/task-outcomes.js";
+import { createGitTaskWorkspaces, gitTaskWorkspaces } from "../../adapters/workspaces/git.js";
+import { createAppTaskReadTool } from "../../app-task-read-tool.js";
+import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
+import { startBackgroundRuntime } from "../../composition/background-startup.js";
+import { createTaskExecutionBackends } from "../../composition/task-execution.js";
+import { createTaskAttemptProcessExecutor } from "../../composition/workers/task-attempt-process.js";
+import { UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY } from "../../metric-source-measurement.js";
+import { AppRegistry } from "../apps/registry.js";
+import { EVENT_DELIVERY_RESULT, EVENT_ROW_ID, EventBus, type AgentEvent } from "../events/bus.js";
+import { createEventInterface } from "../events/interface.js";
+import { loadPersistedEvent } from "../events/persisted.js";
+import { AppInboxHost } from "../inbox/app-inbox-host.js";
+import { appInputFeedbackEvent } from "../inbox/input-result.js";
+import { readTaskWorkload } from "../reads/task-workload.js";
+import { createAppInboxItem, listAppInboxItems } from "../state/app-inbox-store.js";
+import { admitTaskInput } from "../state/inbox.js";
+import { TaskBudgetAdmissionStore } from "../state/task-budget-admission.js";
+import { installTaskExecutionLimit } from "../state/task-execution-admission.js";
+import { TaskExecutionStore } from "../state/task-execution-store.js";
+import { createAppTaskCapability } from "./app-task-capability.js";
+import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
+import { projectAppTaskReconciliationEvents, readAppTaskWaitPromptContext } from "./app-task-context.js";
+import { createAppTaskEvents } from "./app-task-emitter.js";
+import {
+  admitLoadedCanonicalAppTaskEvent,
+  admitStandaloneCanonicalAppTaskEvent,
+  attachLoadedAppTask,
+  cancelLoadedAppTask,
+  closeInstalledAppTaskRuntimes,
+  getLoadedAppInputContract,
+  installAppTaskRuntimes as installCoreTaskRuntimes,
+  previewLoadedCanonicalAppTaskEvent,
+  previewLoadedCanonicalAppTaskEventRoutes,
+  readLoadedAppTaskInputResult,
+  readLoadedAppTaskView,
+  reconcileLoadedAppTaskOnce,
+  recoverInstalledAppTasks,
+  reopenLoadedAppTask,
+  retryLoadedFailedAppTask,
+  settleTerminalAppTaskSessions,
+} from "./app-task-runtime.js";
+import { admitTaskAppRequests, recoverTaskConditions } from "./dependency-admission.js";
+import type { TaskAgentRunner, TaskSessionRecovery, TaskWorkflowRunner } from "./execution.js";
+import type { NormalizedTaskHandlerResult } from "./result.js";
+import { normalizeTaskHandlerResult } from "./result.js";
+import { readTaskChecks } from "./task-check-observations.js";
 
 // Existing wait regressions use the same submission path and explicitly select every returned Condition.
 function admitTaskAppDependencies(input: Omit<Parameters<typeof admitTaskAppRequests>[0], "requests"> & {
@@ -103,33 +103,33 @@ function installAppTaskRuntimes(
 }
 
 import {
+  addSessionBashProcessGroup,
+  readSessionBashProcessGroups,
+  readSessionMeta,
+  writeSessionMeta,
+} from "../../../lib/persistence.js";
+import { closeDb, getDb } from "../../../lib/requests.js";
+import { HumanTaskService } from "../../human-task-service.js";
+import { HostCapacity } from "../scheduling/host-capacity.js";
+import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
+import { migrateTaskCompletionReceipts } from "../state/task-receipt-cutover.js";
+import {
+  appTaskContext,
   claimObservedAppTask,
   completeAppTask,
   deferAppTask,
   failAppTaskAttempt,
   observeAppTaskIntent,
   readAppTaskAdmissionOutcome,
-  recordAppTaskTrigger,
   recordAppTaskAttemptSession,
+  recordAppTaskTrigger,
   releaseStaleAppTaskResult,
   stopAppTaskAttempt,
-  appTaskContext,
 } from "./app-task-reconciler.js";
-import { readTaskSnapshot, type AppTaskContext } from "./app-task-store.js";
-import { HostCapacity } from "../scheduling/host-capacity.js";
-import { closeDb, getDb } from "../../../lib/requests.js";
-import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
-import { migrateTaskCompletionReceipts } from "../state/task-receipt-cutover.js";
-import { appTaskTestContext as createTaskContext, makeTaskRetryDue } from "./app-task-test-support.js";
 import { projectRuntimePaths } from "./app-task-runtime-state.js";
-import { HumanTaskService } from "../../human-task-service.js";
-import {
-  addSessionBashProcessGroup,
-  readSessionBashProcessGroups,
-  readSessionMeta,
-  writeSessionMeta,
-} from "../../../lib/persistence.js";
+import { readTaskSnapshot, type AppTaskContext } from "./app-task-store.js";
+import { appTaskTestContext as createTaskContext, makeTaskRetryDue } from "./app-task-test-support.js";
 
 const roots: string[] = [];
 const buses: EventBus[] = [];
@@ -192,9 +192,9 @@ function definition(): AppDefinition {
     agent: "sample-owner",
     inputSchema: Type.Object({}, { additionalProperties: true }),
     workspace: { kind: "local", localPath: "." },
-    tasks: {
-      subscriptions: ["sample.work"],
-      resolve(event) {
+    tasks: {},
+ task(admitted) { return {kind: "desired", intent: admitted.input.data}; },
+ subscriptions: (() => { const resolve = function resolve(event) {
         const itemId = String(event.data.itemId ?? "");
         return itemId
           ? {
@@ -205,8 +205,7 @@ function definition(): AppDefinition {
               agent: "sample-owner",
             }
           : null;
-      },
-    },
+      }; return ["sample.work"].map((event, index) => ({id: 'work-' + index, event, toInput(fact) { const intent = resolve(fact); return intent ? {kind: 'work', data: intent} : null; }})); })(),
   });
 }
 
@@ -2804,7 +2803,7 @@ describe("canonical App task runtime", () => {
       version: 1,
       agent: "evaluator",
       tasks: {},
-      conversation: { mode: "agent", inputKinds: ["message"] },
+      conversation: { mode: "task", inputKinds: ["message"] },
       inputSchema: Type.Union([
         Type.Object({
           kind: Type.Literal("review"),
@@ -2888,7 +2887,7 @@ describe("canonical App task runtime", () => {
       const feedback: AgentEvent[] = [];
       const app = defineApp({
         ...definition(),
-        conversation: { mode: "agent", inputKinds: ["message"], conversationId: "sample:primary" },
+        conversation: { mode: "task", inputKinds: ["message"], conversationId: "sample:primary" },
         inputSchema: Type.Union([
           Type.Object({ kind: Type.Literal("message"), data: Type.Object({ text: Type.String() }) }),
           Type.Object({ kind: Type.Literal("review"), data: Type.Object({ text: Type.String() }) }),
@@ -3313,7 +3312,7 @@ describe("canonical App task runtime", () => {
     writeFileSync(
       join(evaluationDir, "app.js"),
       `export default {
-        id: "evaluation", version: 1, owner: "evaluator",
+        id: "evaluation", version: 1, agent: "evaluator",
         inputSchema: {
           type: "object", additionalProperties: false, required: ["kind", "data"],
           properties: {
@@ -3749,7 +3748,7 @@ describe("canonical App task runtime", () => {
     const request = { id: "review", appId: "sample", input: { kind: "message", data: { text: "Review this design" } } };
     const app = defineApp({
       ...definition(),
-      conversation: { mode: "agent", inputKinds: ["message"] },
+      conversation: { mode: "task", inputKinds: ["message"] },
       inputSchema: Type.Object({ kind: Type.Literal("message"), data: Type.Object({ text: Type.String() }) }),
       task: ({ input }) => {
         mappings++;
@@ -6067,7 +6066,7 @@ describe("canonical App task runtime", () => {
     const foreignDefinition = defineApp({
       id: "foreign",
       version: 1,
-      owner: "foreign-owner",
+      agent: "foreign-owner",
       inputSchema: Type.Object({}, { additionalProperties: true }),
       workspace: { kind: "local", localPath: "." },
       tasks: { subscriptions: [] },
@@ -7327,10 +7326,10 @@ describe("canonical App task runtime", () => {
       }),
     ).toMatchObject({ id: "work/attached", status: "pending" });
 
-    const intent = definition().tasks!.resolve!({
-      type: "sample.work",
-      data: { itemId: "event" },
-    })!;
+    const attachment = definition().task!({ id: "event", source: { kind: "system", id: "event:1" },
+      input: definition().subscriptions![0]!.toInput({type:"sample.work",data:{itemId:"event"}})! });
+    if (attachment.kind !== "desired") throw new Error("Expected desired Task");
+    const intent = { ...attachment.intent, id: "work/event" };
     expect(
       admitLoadedCanonicalAppTaskEvent({
         bus,
@@ -11627,7 +11626,7 @@ describe("canonical App task runtime", () => {
       const damaged = JSON.stringify({ ...meta, error: { invalid: true } });
       writeFileSync(path, damaged);
       const manager = new SubagentManager({ persistDir: f.base.persistDir });
-      manager.resumeStaleSessions();
+      manager.cleanupStaleSessions();
       // The attempt belongs to the owner session. It cannot authorize cleanup
       // of a damaged helper just because the helper inherited its binding.
       expect(existsSync(join(directory, "[ACTIVE]"))).toBe(true);
@@ -11637,13 +11636,13 @@ describe("canonical App task runtime", () => {
 
       writeFileSync(path, JSON.stringify(meta));
       getDb(f.base.persistDir).prepare("DELETE FROM sessions WHERE sessionId = ?").run(sessionId);
-      manager.resumeStaleSessions();
+      manager.cleanupStaleSessions();
       // A readable copy alone cannot verify a non-owner session. Restoration
       // of the independent association admits ordinary session cleanup.
       expect(existsSync(join(directory, "[ACTIVE]"))).toBe(true);
       expect(readTaskSnapshot(f.config)).toEqual(before);
       projectSession();
-      manager.resumeStaleSessions();
+      manager.cleanupStaleSessions();
       expect(existsSync(join(directory, "[ACTIVE]"))).toBe(false);
       expect(getDb(f.base.persistDir).prepare("SELECT status FROM sessions WHERE sessionId = ?").get(sessionId))
         .toEqual({ status: "done" });
@@ -11987,17 +11986,12 @@ describe("canonical App task runtime", () => {
       });
       const app = defineApp({
         ...definition(),
-        tasks: {
-          subscriptions: ["handler.failed"],
-          resolve: (event) => event.data.taskId === "owner"
-            ? {
-                id: "recovery",
-                parentId: "operations",
-                outcome: "Assess the unresolved recovery and choose the next action",
-                acceptance: ["Preserve confirmed facts and explicit uncertainty"],
-              }
-            : null,
-        },
+        tasks: {},
+        subscriptions: [{id:"recovery",event:"handler.failed",toInput(event) {
+          return event.data.taskId === "owner" ? {kind:"recovery",data:event.data} : null;
+        }}],
+        task: () => ({kind:"desired",intent:{id:"recovery",parentId:"operations",
+          outcome:"Assess the unresolved recovery and choose the next action",acceptance:["Preserve confirmed facts and explicit uncertainty"]}}),
       });
       const registry = new AppRegistry(async () => [
         { appDir: f.base.appRegistrySnapshot.entries[0].appDir, definition: app },
@@ -12009,10 +12003,10 @@ describe("canonical App task runtime", () => {
         snapshot: () => agents,
         async execute(input) {
           if (input.attempt.task.id !== "recovery") return f.base.agents.execute(input);
-          const failure = input.attempt.events.items.find(({ event }) => event.type === "handler.failed")?.event;
-          expect(failure?.data).toMatchObject({ appId: "sample", taskId: "owner", stage: "task-reconciliation" });
-          expect(failure?.data.error).toContain("session-owner");
-          expect(failure?.data.error).toContain("did not exit");
+          const failure = input.attempt.events.items.find(({ event }) => event.type === "app.task.requested")?.event.data.request as AppInputContext;
+          expect(failure?.input.data).toMatchObject({ appId: "sample", taskId: "owner", stage: "task-reconciliation" });
+          expect((failure?.input.data as Record<string,string>).error).toContain("session-owner");
+          expect((failure?.input.data as Record<string,string>).error).toContain("did not exit");
           decisions++;
           return {
             handlerResult: {
@@ -12046,6 +12040,7 @@ describe("canonical App task runtime", () => {
         registry,
         deferStart: true,
         admitTaskEvent: (input) => admitLoadedCanonicalAppTaskEvent({ ...input, bus: f.base.bus }),
+        attachTask: createAppTaskCapability({ bus: f.base.bus }).attach,
       });
       const settled = Promise.withResolvers<void>();
       f.base.bus.subscribe((event) => {

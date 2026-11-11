@@ -1,13 +1,11 @@
-import { readTaskInputs } from "./app-task-inputs.js";
+import type { TaskChangeReceipt, TaskCommunication, TaskReconcileResult } from "@may-agent/sdk";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import type { TaskCommunication, TaskChangeReceipt, TaskReconcileResult } from "@may-agent/sdk";
-import type { AppTaskContext } from "./app-task-store.js";
-import type { AppTaskClaim } from "./app-task-reconciler.js";
 import { getAppInboxItem } from "../state/app-inbox-store.js";
 import {
   applyConversationRequestUpdates,
   linkConversationRequestInputs,
+  listConversationInputRequests,
   readConversationRequest,
 } from "../state/conversation-requests.js";
 import {
@@ -17,6 +15,9 @@ import {
   readConversationTopic,
 } from "../state/conversations.js";
 import type { AppTaskEvents } from "./app-task-emitter.js";
+import { readTaskInputs } from "./app-task-inputs.js";
+import type { AppTaskClaim } from "./app-task-reconciler.js";
+import type { AppTaskContext } from "./app-task-store.js";
 
 /** Authority follows the accepted input, never a copied Conversation or Task reference. */
 export function readTaskCommunicationInput(config: AppTaskContext, claim: AppTaskClaim, inputId: string) {
@@ -205,6 +206,21 @@ export function applyTaskCommunication(
       });
     return receipt;
   });
+}
+
+/** Convergence cannot silently discard a human promise accepted by these inputs. */
+export function assertCommunicationRequestsSettled(
+  config: AppTaskContext,
+  claim: AppTaskClaim,
+  inputKeys?: string[],
+): void {
+  const inputs = readTaskInputs(config, inputKeys ? { ...claim, events: [], continuedInputKeys: inputKeys } : claim);
+  for (const input of inputs) {
+    if (!input.communication) continue;
+    const open = listConversationInputRequests(config.resourceStore.db, config.resourceStore.appId,
+      input.communication.conversationId, [input.id]).find((request) => request.status === "open");
+    if (open) throw new Error(`Request ${open.id} remains open; retain useful work or a real wait instead of converging`);
+  }
 }
 
 /** Project accepted input coverage, without deriving a chat message from a work result. */

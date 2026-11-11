@@ -1,23 +1,19 @@
 import { afterEach, expect, setSystemTime, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { getDb, closeDb } from "../../../lib/requests.js";
-import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
-import { admitTaskInput, linkTaskInput } from "./inbox.js";
-import {
-  admitConversationTaskInput,
-  completeConversationTaskTurn,
-  conversationTaskId,
-  readConversationTaskInputs,
-} from "./conversation-task-turns.js";
+import { join } from "node:path";
+import { completeCommunicationTask, readCommunicationInputs } from "../../../../test/fixtures/communication.js";
+import { closeDb, getDb } from "../../../lib/requests.js";
 import {
   appTaskContext,
   claimObservedAppTask,
   failAppTaskAttempt,
   observeAppTaskIntent,
 } from "../tasks/app-task-reconciler.js";
+import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
+import { AppTaskResourceStore } from "./app-task-resource-store.js";
+import { admitConversationTaskInput, conversationTaskId } from "./conversation-task-turns.js";
+import { admitTaskInput, linkTaskInput } from "./inbox.js";
 import {
   recoverMalformedConversationInput,
   type MalformedConversationInputRecoveryPlan,
@@ -57,7 +53,7 @@ function fixture(acceptedFollowUp = false) {
     parentId: "root",
     outcome: "Continue the primary conversation",
     acceptance: ["Respond to retained input"],
-    executor: "conversation" as const,
+    executor: "agent" as const,
   };
   const seed = admitConversationTaskInput(context, {
     id: acceptedFollowUp ? "bad-input" : "seed",
@@ -73,11 +69,11 @@ function fixture(acceptedFollowUp = false) {
   const seedClaim = claimObservedAppTask(context, {
     taskId: seed.taskId,
     appAgent: "may",
-    handler: "executor:conversation",
+    handler: "agent:fixture",
     now: 2,
   });
   if (seedClaim.kind !== "claimed") throw new Error(`Seed claim failed: ${seedClaim.kind}`);
-  completeConversationTaskTurn(
+  completeCommunicationTask(
     context,
     seedClaim,
     { summary: "Seed consumed", facts: [], topic: { kind: "none" } },
@@ -149,7 +145,7 @@ function fixture(acceptedFollowUp = false) {
   const failedClaim = claimObservedAppTask(context, {
     taskId: seed.taskId,
     appAgent: "may",
-    handler: "executor:conversation",
+    handler: "agent:fixture",
     now: 5,
   });
   if (failedClaim.kind !== "claimed") throw new Error(`Malformed claim failed: ${failedClaim.kind}`);
@@ -240,8 +236,8 @@ test("atomically rejects one malformed row and admits its retained message throu
     executionRetryAt: taskBefore.status.executionRetryAt,
     summary: taskBefore.status.summary,
     observedAttemptId: taskBefore.status.observedAttemptId,
-    result: taskBefore.status.result,
   });
+  expect(f.store.readTask(f.taskId)?.status.result).toEqual(taskBefore.status.result);
   const tree = f.store.readTaskContext({ taskIds: [f.taskId], admissionIds: ["task:bad-input"] });
   expect(tree.appTaskAdmissions?.["task:bad-input"]).toBeUndefined();
   expect(tree.resources?.[f.taskId]?.status.inputWaits?.["task:bad-input"]).toBeUndefined();
@@ -259,11 +255,11 @@ test("atomically rejects one malformed row and admits its retained message throu
   const claim = claimObservedAppTask(f.context, {
     taskId: f.taskId,
     appAgent: "may",
-    handler: "executor:conversation",
+    handler: "agent:fixture",
   });
   if (claim.kind !== "claimed") throw new Error(`Corrected claim failed: ${claim.kind}`);
-  expect(readConversationTaskInputs(f.context, claim).map((item) => item.id)).toEqual([corrected.id]);
-  completeConversationTaskTurn(
+  expect(readCommunicationInputs(f.context, claim).map((item) => item.id)).toEqual([corrected.id]);
+  completeCommunicationTask(
     f.context,
     claim,
     {
@@ -348,7 +344,7 @@ test("active attempt and preaccepted malformed admission both fail without write
   const claim = claimObservedAppTask(active.context, {
     taskId: active.taskId,
     appAgent: "may",
-    handler: "executor:conversation",
+    handler: "agent:fixture",
   });
   if (claim.kind !== "claimed") throw new Error(`Active claim failed: ${claim.kind}`);
   const activeSnapshot = stateSnapshot(active);
@@ -430,9 +426,9 @@ test("follow-up recovery preserves the accepted Turn and queued human input acro
   });
   expect(recoverMalformedConversationInput(context, f.plan)).toEqual({ ...result, status: "already-repaired" });
   setSystemTime(Date.now() + 3_600_000);
-  const claim = claimObservedAppTask(context, { taskId: f.taskId, appAgent: "may", handler: "executor:conversation" });
+  const claim = claimObservedAppTask(context, { taskId: f.taskId, appAgent: "may", handler: "agent:fixture" });
   if (claim.kind !== "claimed") throw new Error(`Repaired claim failed: ${claim.kind}`);
-  expect(new Set(readConversationTaskInputs(context, claim).map((item) => item.id))).toEqual(
+  expect(new Set(readCommunicationInputs(context, claim).map((item) => item.id))).toEqual(
     new Set([human.id, result.recoveredInputId!]),
   );
   expect(getAppInboxItem(store.db, human.id)?.status).toBe("pending");

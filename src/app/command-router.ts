@@ -1,15 +1,15 @@
+import { isRecord, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
-import { isRecord, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
+import { validateSessionControl } from "./adapters/executors/session-control.js";
 import {
-  childEventTrace,
   EVENT_RECORD_ONLY,
   EVENT_ROW_ID,
+  childEventTrace,
   type DeliveryResult,
   type EventBus,
 } from "./core/events/bus.js";
 import type { RuntimeReloadResult } from "./daemon-lifecycle.js";
-import { validateSessionControl } from "./adapters/executors/session-control.js";
 export { validateSessionControl } from "./adapters/executors/session-control.js";
 
 export interface CommandRouterOptions {
@@ -104,21 +104,16 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       });
   }
 
-  function handleSteer(sessionId: unknown, message: unknown, source?: string, event?: unknown): boolean {
+  function handleSteer(sessionId: unknown, message: unknown, _source?: string, event?: unknown): boolean {
     const id = nonEmptyString(sessionId);
     const text = nonEmptyString(message);
     if (!id || !text) return false;
     try {
       validateSessionControl(manager, "session.steer.requested", id);
-      if (manager.status().some((session) => session.sessionId === id)) {
-        manager.send(id, text, { trace: childEventTrace(event) });
-      } else {
-        manager.resumeSession(id, text, {
-          source: source ?? "human",
-          suppressBenignRaceEvent: true,
-          trace: childEventTrace(event),
-        });
+      if (!manager.status().some((session) => session.sessionId === id)) {
+        throw new Error("This session has ended. Send input to the owning App or Task to start a new attempt.");
       }
+      manager.send(id, text, { trace: childEventTrace(event) });
     } catch (error) {
       log("warn", `[steer] ${error instanceof Error ? error.message : String(error)}`);
       throw error;

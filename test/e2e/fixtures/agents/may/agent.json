@@ -3,5 +3,5 @@
   "description": "Fixture interface agent for e2e tests",
   "domain": "e2e",
   "model": "claude-opus-4-6",
-  "tools": ["cron"]
+  "tools": ["workflow"]
 }

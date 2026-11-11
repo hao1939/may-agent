@@ -1,173 +1,45 @@
 # Human interaction within the Task loop
 
-Conversation describes a Task's interaction with a human. It keeps messages,
-Topics and accepted Requests; the Task owns execution, waits, retry and closure.
-This directory supplies context and agent judgment for that role. It has no
-controller or independent execution claim.
+Conversation retains messages, Topics and accepted human Requests. The same Task
+contract owns execution, waits, retry and results for human and machine input.
+There is no separate Conversation agent, result schema or handoff executor.
 
-## Follow one turn
+Human input is durably admitted onto one stable Task per Conversation.
+`core/tasks/attempt-execution.ts` supplies exact input identities in
+`attempt.events.inputs`, original payloads in events/continuedInputs, and bounded
+history and Requests in `attempt.events.communication`. `attempt.read.communication`
+reads further context through an input accepted by this Task. `context.ts` retains
+bounded context projection for readers; it does not select an execution adapter.
 
-```text
-human input / linked Task outcome / relevant timer-discovered change
-  -> durable input on the same stable Task
-  -> common Task claim and bounded attempt
-  -> prepare human context and invoke the App's agent
-  -> commit answer, Request updates and authorized effects together
-  -> release execution; run again for pending input or paced retry
-```
+Agents publish messages, choose Topics and save accepted requirements through
+`attempt.apply({ communication: [...] })` or the same changes in a Task result.
+`core/tasks/task-communication.ts` derives recipients and authority from saved
+input admission. Sharing a Conversation or citing a Task does not transfer its
+human promise. Save corrections before doing work so failure or Stop cannot lose
+them. Request revisions fence changes; closing a Request requires its own
+explanation. Convergence cannot leave an accepted Request open for a covered input.
 
-[`context.ts`](context.ts) selects bounded messages, Topics, Requests and canonical
-Task observations. [`turn-agent.ts`](turn-agent.ts) presents the whole claimed
-input batch and labels the reply destination separately. Independent asks remain
-visible together; the App judges corrections, accepted Requests and fulfillment.
-It then invokes the model/tool runner
-and supplies the core-selected result schema to the finish tool. The agent can answer, request a handoff,
-or apply an authorized control; it does not manage admission receipts or retry.
-The `conversation_context` tool uses a read capability bound to the admitted
-Conversation, even when the prompt omits its history or identity. The model
-adapter receives no database handle. Its contract is `AppInputResolver` in
-[`core/tasks/execution.ts`](../core/tasks/execution.ts).
+Independent contributions use ordinary `requests` plus `conditions: [{ requestId } ]`.
+The original Task waits and retains its human Request; the contributing Task
+returns evidence through `app.dependency.updated`. New discussion can be answered
+while earlier independent work waits. A message or a Request record alone does
+not schedule work. Tasks use ordinary scoped controls, with no Conversation-only
+control or followUp protocol.
 
-[`composition/conversation-task-turn.ts`](../composition/conversation-task-turn.ts)
-connects context preparation and agent execution to core-owned proposal
-preparation. It binds capabilities to the admitted Conversation, independently
-of the rendered context. [`composition/task-execution.ts`](../composition/task-execution.ts)
-wires this handler into the [Task runtime](../core/tasks/README.md), which owns
-capacity, attempts, session binding, cancellation and backoff for every Task.
-A handler-specific result shape is not a second lifecycle.
+Task result acceptance, communication and input settlement share the existing
+fenced transaction. Failed settlement retains input for normal Task retry.
+Committed messages have stable operation identities, and external transport
+delivery has separate durable receipts. Historical results remain readable.
+Restart cleans old execution and starts a fresh attempt of the same Task; it
+does not resume a saved agent session.
 
-## Durable effects and follow-through
+Detailed communication behavior belongs to `core/tasks/task-communication.test.ts`:
+multiple inputs, Request ownership/revisions, corrections before failure/Stop,
+rollback, Topics, restart and delivery identity. Admission, backlog and Stop
+behavior remains in the `core/state/conversation-task-*` tests. The real worker
+suite covers conversation history, responsive delegation, nested return paths,
+SQLite contention and funded capacity across processes.
 
-[`core/state/conversation-task-turns.ts`](../core/state/conversation-task-turns.ts)
-derives the reply target, reply requirement and control authority from claimed
-input. It validates exact installed Task targets and prepares data-only proposals
-with control target identities and observed versions. A handoff has one target
-authority, `decision.followUp`; core resolves it and invokes the App’s pure Task
-mapping once during settlement. No separately prepared attachment can redirect it. Task references in context help
-discovery; they neither grant authority nor limit authorized exact targets.
-
-The same core module resolves current stores at settlement and commits the
-reply, Topic selection, Request updates, Task result and any admitted
-work or authorized control in one fenced transaction. Failed settlement retains
-the input for normal Task retry. Rejected proposals do not publish a misleading
-reply. Previous-attempt facts let the App correct its decision after backoff,
-including after storage reopen; there is no extra conversational retry loop.
-
-`conversation_request` saves an accepted ask or authorized correction before
-work starts, returning the saved open Request and new revision. Composition
-supplies this narrow capability; core derives its App/Conversation from the
-claimed input and checks the claim in the write transaction. It reuses the
-Request store, cannot close asks or control Tasks, and rejects stale revisions.
-The correction survives later execution failure, Stop or rejected settlement.
-The same effect fence used by other Task actions rejects a save while newer
-input is unreviewed; the next ordinary turn considers that input before saving.
-
-Final `requestUpdates` may omit `scope` to retain the stored ask. A new ask
-requires scope. Closure uses the current revision and commits with its reply;
-it cannot change an existing scope. Simple new asks may still be accepted and
-closed with one answer. No correct-and-close exception is needed. The App
-judges human intent and fulfillment; code checks the stable Conversation creator
-and revision. The bounded Request list prefers
-open asks, then includes recent closed asks so a human can naturally correct one.
-
-A Request represents one accepted intention across multiple inputs. May chooses
-the association through `inputIds` when saving requirements or returning an
-update. Single-input turns can omit it; mixed turns must identify inputs for a
-Request not already associated with that turn. Only inputs in the live claim
-may be linked. The links persist in `conversation_request_inputs`, alongside the
-Request save, and remain after input completion. They do not create work.
-Use the same tool to associate new input before continuing an existing Request.
-Omitted scope retains its exact requirements; creation still needs a scope.
-The returned revision fences final updates. An unaccepted final proposal is not
-a substitute for saving the intention and its associations before work.
-
-Current input links supply `assignedRequests` with full scope and revision,
-independently of the recent Topic/context window. Settlement requires an
-explicit `requestUpdates` entry for each assigned Request, including those saved
-during execution. An open outcome explains remaining work or a wait; a final
-outcome uses the current accepted scope. Each final update requires its own
-nonblank reason in the result schema, allowing the agent to correct a missing
-explanation before finishing. Omission rejects the whole decision and
-keeps the inputs pending through ordinary Task recovery. Related inputs may be
-fulfilled together, and independent Requests may share a turn. No per-message
-execution or automatic conversion of messages into Requests is introduced.
-
-Request `taskRefs` retain relevant Task identities independently of Topic links
-or current Task availability. A reference is metadata, not proof of existence,
-an assignment, a result subscription or control authority. Ordinary handoff
-admission records the actual Task and its return links together; referencing
-research from another Task does not subscribe to that Task's later outcomes.
-
-When newer input defers acceptance or final result settlement fails, the attempt retains `unacceptedResult`
-separately from accepted state, including its originating attempt/session and
-the returned facts. Each repair claim saves that evidence before execution, so
-ordinary failure, interruption and restart retain it. An accepted result retires
-it from future repair context; the original failed attempt remains in history.
-Context preparation also reads the
-current Requests named by the rejected decision, including closed asks. The
-agent judges whether to repair its decision or perform more work; failed
-settlement never automatically replays the proposed effects or establishes
-fulfillment. This is evidence for review, not an exactly-once tool guarantee.
-
-Existing Request rows and input outcomes are preserved when the link table is
-created. Historical associations are not guessed from matching IDs or prose;
-an agent can explicitly associate a current input with an existing Request.
-
-A handoff links the responsible Task to the caller's Topic and, when declared,
-accepted Request. Linked answers, honest failure reports and owner closures
-return as durable input. Intermediate waits remain readable without executing
-the caller. Live events provide prompt return; bounded discovery finds missed
-changes. The agent judges whether the facts resolve the accepted ask.
-Completing an attempt or an inbox item does not itself fulfill a Request.
-
-Task A can discuss with a human while B works, and B can delegate C. All use the
-same Task controller. The App/parent/human owns assignment closure; an accepted
-answer or worker failure report leaves the Task open.
-
-[`core/state/conversations.ts`](../core/state/conversations.ts) owns message and
-Topic reads, including canonical resolution of short Topic references.
-[`core/state/conversation-requests.ts`](../core/state/conversation-requests.ts)
-owns accepted asks, revision checks and exact Task links. These are product
-records and projections, not schedulers or additional work lifecycles.
-
-## Controls and boundaries
-
-Console Esc and interface Stop buttons address an exact observed Turn. Task
-state records the stop before local execution is aborted, rejects late output,
-and preserves newer input and the accepted ask. Delegated Tasks continue.
-Closing the stable Task is a separate authorized owner action.
-
-The Conversation read view derives its active Turn and Stop target from the
-current Task attempt, including a successor after an owner closed earlier work.
-The reader follows retained Task links and selects a running current attempt;
-it does not treat the first historical link as the current owner.
-Retained inbox leases remain historical evidence for inspection and offline
-cutover; they cannot advertise an active Turn. HTTP and Telegram reads use that
-same projection, and Telegram control tests exercise Task admission, claims and
-Stop through the shared Task operations.
-
-For delegated requirement changes, the Conversation agent uses the common
-`tasks update` capability described in the [Task contract](../core/tasks/README.md#adopting-creator-revisions).
-It first saves any accepted human correction in the Request, then revises work
-it created through the responsible App's input contract. Saving the Request alone
-does not change a worker's assignment. Worker feedback uses the same loop; no
-correction-specific handler or mandatory human turn is required. Code enforces
-creator authority, while the agent judges whether the change is within the
-human's agreed scope. Existing direct human cancellation remains supported.
-
-Omitting this handler leaves its input visible and prevents execution through
-an old inbox owner; other Task handlers continue to work. The candidate refuses
-cutover when unfinished legacy input still has a different execution owner.
-The isolated old-to-new daemon fixture verifies shutdown, conversion and fresh
-input after restart. Its [procedure and limits](../../../test/README.md#shared-task-execution-coverage)
-do not certify an installation-specific rollout or rollback.
-
-Start verification at `core/tasks/conversation-runtime.test.ts` for actual
-execution and `core/state/conversation-task-turns.test.ts` for atomic effects and
-reopen. `turn-agent.test.ts` owns context tools and result validation. The
-[test coverage map](../../../test/README.md#shared-task-execution-coverage)
-records migration of old callback tests and its remaining limits.
-
-The canonical design and PoC facts live in the sibling App project's
-`docs/proposals/conversation-input-unification.md`; this guide describes the
-candidate source, not a deployed release.
+Existing execution-bearing Conversation state requires the explicit offline
+[Task contract conversion](../../../scripts/operations/README.md#convert-retired-task-contracts).
+Startup refuses old execution contracts before opening another attempt.

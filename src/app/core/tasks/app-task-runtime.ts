@@ -1,16 +1,10 @@
-import { recoverDeadTaskExecution, taskExecutionRecoveryPage } from "../state/task-execution-cleanup.js";
-import { TaskExecutionStore } from "../state/task-execution-store.js";
-import { EVENT_RECORD_ONLY } from "../events/bus.js";
-import { taskEventPredatesReopening } from "./app-task-state.js";
 import {
   type AppInputContext,
   type AppTaskAttachment,
   type TaskIntent as AppTaskIntent,
-  type TaskRevision,
   type TaskClosure,
+  type TaskRevision,
 } from "@may-agent/sdk";
-import { closeCreatedAppTask } from "./task-closure.js";
-import { reviseAppTask, type TaskRevisionActor } from "./task-revision.js";
 import type {
   TaskDetail,
   TaskListOptions,
@@ -20,17 +14,23 @@ import type {
   TaskReadOptions,
 } from "@may-agent/sdk/app";
 import { resolve } from "node:path";
-import { freezeInputContext } from "../inbox/input-context.js";
-import { assertValidAppInput } from "../apps/definition-validation.js";
 import { getDb } from "../../../lib/db/connection.js";
 import { listTerminalTaskSessionBindings } from "../../../lib/db/sessions.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
-import { EVENT_ROW_ID, eventData, type AgentEvent, type DeliveryResult, type EventBus } from "../events/bus.js";
+import { assertValidAppInput } from "../apps/definition-validation.js";
+import {
+  EVENT_RECORD_ONLY,
+  EVENT_ROW_ID,
+  eventData,
+  type AgentEvent,
+  type DeliveryResult,
+  type EventBus,
+} from "../events/bus.js";
+import { freezeInputContext } from "../inbox/input-context.js";
+import { readInstalledAppContract } from "../reads/app-contract.js";
 import { createRuntimeTaskRead, readRuntimeTaskView } from "../reads/app-read.js";
 import { runtimeWorkloadSource } from "../reads/task-workload.js";
-import { coordinationTaskIds } from "./task-coordination.js";
-import { readInstalledAppContract } from "../reads/app-contract.js";
 import type { AppTurnTarget, CreateAppInboxItem } from "../state/app-inbox-store.js";
 import { getAppInboxItem } from "../state/app-inbox-store.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
@@ -43,6 +43,8 @@ import {
   type ConversationTaskChangeRef,
 } from "../state/conversation-task-turns.js";
 import { admitTaskInput } from "../state/inbox.js";
+import { recoverDeadTaskExecution, taskExecutionRecoveryPage } from "../state/task-execution-cleanup.js";
+import { TaskExecutionStore } from "../state/task-execution-store.js";
 import {
   matchesAppTaskCondition,
   matchingAppTaskConditionTaskIds,
@@ -55,13 +57,13 @@ import {
   associateAppTaskSession,
   cancelAppTask,
   closeAppTask,
-  reopenAppTask,
   observeAppTaskIntent,
   readAppTaskAdmissionOutcome,
   recordAppTaskTrigger,
   recoverableAppTaskAttempts,
   releaseInterruptedAppTaskAttempt,
   releaseLateTerminalWorkflowAppTaskAttempt,
+  reopenAppTask,
   repairPreviousRuntimeRecoveryAttention,
   repairRunningAppTasksWithoutAttempt,
   repairUnadmittedAppDependencyWaits,
@@ -69,6 +71,7 @@ import {
   type AppTaskAttemptRecovery,
 } from "./app-task-reconciler.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
+import { taskEventPredatesReopening } from "./app-task-state.js";
 import { type AppTaskContext } from "./app-task-store.js";
 import { hasLiveAppTaskSession, interruptSupersededAgentSession } from "./attempt-execution.js";
 import { publishTaskCancellation, runTaskAttempt, type AppTaskTiming } from "./attempt-runner.js";
@@ -86,6 +89,9 @@ import {
 } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
 import { appTaskSessionBinding } from "./session-binding.js";
+import { closeCreatedAppTask } from "./task-closure.js";
+import { coordinationTaskIds } from "./task-coordination.js";
+import { reviseAppTask, type TaskRevisionActor } from "./task-revision.js";
 
 function publishAppTaskTiming(
   opts: AppTaskRuntimeOptions,
@@ -125,7 +131,6 @@ function snapshotTaskExecution(opts: AppTaskRuntimeOptions): AppTaskRuntimeOptio
     ...opts,
     appRegistrySnapshot: opts.appRegistrySnapshot ?? opts.appRegistry?.snapshot(),
     agents: opts.agents?.snapshot(),
-    conversations: opts.conversations?.snapshot?.() ?? opts.conversations,
     workflows: opts.workflows?.snapshot?.() ?? opts.workflows,
   };
 }

@@ -1,32 +1,54 @@
+import { StringEnum } from "@earendil-works/pi-ai";
 import { ExecutionDeferredError } from "@may-agent/sdk";
-import { assertTaskWorkflowStart } from "../app/core/state/task-budget-managed-start.js";
-import { getDb } from "./db/connection.js";
-import { Type, type TSchema } from "typebox";
-import type { TaskExecutionContext } from "./task-execution-context.js";
-import { prepareTaskWorkspaceContext } from "./task-workspace-context.js";
-import { ExecutionScope, executionTimeout } from "./execution-scope.js";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, realpathSync } from "node:fs";
 import { isAbsolute, join, relative } from "node:path";
-import { StringEnum } from "@earendil-works/pi-ai";
+import { Type, type TSchema } from "typebox";
+import { assertTaskWorkflowStart } from "../app/core/state/task-budget-managed-start.js";
+import { getDb } from "./db/connection.js";
+import { executionTimeout } from "./execution-scope.js";
+import type { TaskExecutionContext } from "./task-execution-context.js";
+import { prepareTaskWorkspaceContext } from "./task-workspace-context.js";
 
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
-import type { SubagentManager } from "./manager.js";
-import type { SubagentDefinition, TaskResult } from "./types.js";
-import type { TaskBinding } from "./persistence.js";
 import type {
-  WorkflowModule,
-  WorkflowResult,
-  WorkflowEvent,
-  WorkflowToolResult,
-  WorkflowStepSummary,
+  AgentCallOptions,
+  ExecutionResult as AppExecutionResult,
+  AppRead,
+  WorkflowContext as AppWorkflowContext,
+  TaskAttempt,
+  TaskReconciliationContext,
+} from "@may-agent/sdk/app";
+import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
+import { readMetricView } from "../app/adapters/reporting/metric-read.js";
+import { canonicalAppEvent } from "../app/canonical-app-event.js";
+import { EVENT_RECORD_ONLY, type EventTrace } from "../app/core/events/bus.js";
+import { createRuntimeAppRead } from "../app/core/reads/app-read.js";
+import type { AppTaskEvents } from "../app/core/tasks/app-task-emitter.js";
+import { getWorkflowRun, insertWorkflowRun, updateWorkflowRun } from "./db/workflows.js";
+import { agentExecutionResult, deferredExecutionResult, workflowExecutionResult } from "./execution-handoff.js";
+import { log } from "./log.js";
+import type { SubagentManager } from "./manager.js";
+import { createUnavailableMetricService } from "./metrics.js";
+import type { TaskBinding } from "./persistence.js";
+import type { RuntimeCtx } from "./runtime-ctx.js";
+import { importRuntimeModule } from "./runtime-import.js";
+import type { SubagentDefinition, TaskResult } from "./types.js";
+import { createWorkflowDiagnostics } from "./workflow-diagnostics.js";
+import { validateOperationAllowance } from "./workflow-finish-recovery.js";
+import { retainWorkflowResultPayload } from "./workflow-payload.js";
+import type {
   CompletedStep,
+  Demand,
+  WorkflowEvent,
   WorkflowGuard,
   WorkflowGuardEvent,
-  Demand,
+  WorkflowModule,
+  WorkflowResult,
+  WorkflowStepSummary,
+  WorkflowToolResult,
 } from "./workflow.js";
-import { WorkflowInterrupted, WorkflowBlocked } from "./workflow.js";
-import { validateOperationAllowance } from "./workflow-finish-recovery.js";
+import { WorkflowBlocked, WorkflowInterrupted } from "./workflow.js";
 // ── In-memory workflow types (used during execution) ────────────────────
 
 /** In-memory record of a workflow execution. */
@@ -43,7 +65,6 @@ export interface WorkflowRun {
   endedAt?: number;
   status: "running" | "done" | "blocked" | "escalated" | "interrupted" | "error";
   steps: WorkflowStep[];
-  resumedFromRunId?: string;
   sourcePath?: string;
   sourceScope?: "agent" | "project";
   entryContentHash?: string;
@@ -63,28 +84,6 @@ export interface WorkflowStep {
   endedAt: number;
   lastAssistantText: string | null;
 }
-import { insertWorkflowRun, updateWorkflowRun, getWorkflowRun, getWorkflowStepSessions } from "./db/workflows.js";
-import { retainWorkflowResultPayload } from "./workflow-payload.js";
-import { log } from "./log.js";
-import { createWorkflowDiagnostics } from "./workflow-diagnostics.js";
-import type { RuntimeCtx } from "./runtime-ctx.js";
-import { createUnavailableMetricService } from "./metrics.js";
-import type { AppTaskEvents } from "../app/core/tasks/app-task-emitter.js";
-import { importRuntimeModule } from "./runtime-import.js";
-import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
-import { EVENT_RECORD_ONLY, type EventTrace } from "../app/core/events/bus.js";
-import type {
-  AppRead,
-  AgentCallOptions,
-  ExecutionResult as AppExecutionResult,
-  TaskReconciliationContext,
-  TaskAttempt,
-  WorkflowContext as AppWorkflowContext,
-} from "@may-agent/sdk/app";
-import { createRuntimeAppRead } from "../app/core/reads/app-read.js";
-import { readMetricView } from "../app/adapters/reporting/metric-read.js";
-import { canonicalAppEvent } from "../app/canonical-app-event.js";
-import { agentExecutionResult, workflowExecutionResult, deferredExecutionResult } from "./execution-handoff.js";
 
 function normalizeAuthoredWorkflowResult(
   value: unknown,
@@ -129,9 +128,9 @@ function normalizeAuthoredWorkflowResult(
 // ── Tool schema ────────────────────────────────────────────────────────
 
 const WorkflowToolParams: TSchema = Type.Object({
-  action: StringEnum(["list", "run", "resume"] as const, {
+  action: StringEnum(["list", "run"] as const, {
     description:
-      "'list': show available workflows with descriptions. 'run': execute a workflow by name (blocks until complete). 'resume': continue a workflow that was interrupted by a crash (requires workflowRunId).",
+      "'list': show available workflows with descriptions. 'run': execute a workflow by name (blocks until complete).",
   }),
   name: Type.Optional(
     Type.String({
@@ -151,19 +150,13 @@ const WorkflowToolParams: TSchema = Type.Object({
         "Legacy string input (prefer input for new callers). Format depends on the workflow — check the workflow description from 'list' for expected format.",
     }),
   ),
-  workflowRunId: Type.Optional(
-    Type.String({
-      description:
-        "ID of a previous workflow run to resume from (required for 'resume'). The ID is returned when a workflow starts.",
-    }),
-  ),
+
 });
 interface WorkflowInput {
-  action: "list" | "run" | "resume";
+  action: "list" | "run";
   name?: string;
   task?: string;
   input?: unknown;
-  workflowRunId?: string;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -227,22 +220,6 @@ function buildStepSummaries(completedSteps: CompletedStep[]): WorkflowStepSummar
     status: step.result.status,
     output: truncate(step.result.lastAssistantText ?? "(no output)", 2000),
     duration: step.result.duration,
-  }));
-}
-
-function durationSummary(startedAt: unknown, endedAt: unknown): string {
-  if (typeof startedAt !== "number" || typeof endedAt !== "number") return "unknown";
-  if (!Number.isFinite(startedAt) || !Number.isFinite(endedAt) || endedAt < startedAt) return "unknown";
-  return `${((endedAt - startedAt) / 1000).toFixed(1)}s`;
-}
-
-function buildStoredStepSummaries(steps: WorkflowStep[]): WorkflowStepSummary[] {
-  return steps.slice(-MAX_DETAILED_STEPS).map((step) => ({
-    agent: step.agent,
-    sessionId: step.sessionId,
-    status: step.status,
-    output: truncate(step.lastAssistantText ?? "(no output)", 2000),
-    duration: durationSummary(step.startedAt, step.endedAt),
   }));
 }
 
@@ -840,10 +817,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     const db = opts.runtimeCtx?.getDb?.() ?? (persistDir ? getDb(persistDir) : undefined);
     if (db) assertTaskWorkflowStart(db, opts.taskBinding);
   };
-  const runAgent = (agentName: string, task: string, runOptions: Parameters<SubagentManager["run"]>[2]): string => {
-    const definition = opts.agentDefinitions?.get(agentName);
-    return definition ? manager.runDefinition(definition, task, runOptions) : manager.run(agentName, task, runOptions);
-  };
   const callAgent = (agentName: string, task: string, callOptions: Parameters<SubagentManager["callAgent"]>[2]) => {
     const definition = opts.agentDefinitions?.get(agentName);
     return definition
@@ -873,64 +846,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       workflowRunId: active?.workflowRunId ?? persisted?.workflowRunId,
       projectId: active?.projectId ?? persisted?.projectId,
     };
-  };
-
-  const workflowResumeNextAction = (category: string, recoverable = false): string => {
-    if (category === "workflow_definition_missing" || category === "corrupt_state") return "recover";
-    if (recoverable) return "resume";
-    return "blocked";
-  };
-
-  const emitWorkflowResumeFailed = (data: {
-    workflowRunId?: string;
-    workflow?: string;
-    reason: string;
-    category: string;
-    recoverable?: boolean;
-    projectId?: string;
-  }): void => {
-    const event = {
-      type: "workflow.resume_failed",
-      source: "workflow-tool",
-      timestamp: Date.now(),
-      owner: normalizeEventOwner(opts.agentName),
-      data: {
-        workflowRunId: data.workflowRunId,
-        workflow: data.workflow,
-        projectId: data.projectId ?? opts.projectId,
-        reason: data.reason,
-        category: data.category,
-        recoverable: data.recoverable ?? false,
-        nextAction: workflowResumeNextAction(data.category, data.recoverable ?? false),
-      },
-    } as const;
-    emitRuntimeEvent(event);
-    onEvent?.(event);
-  };
-
-  const emitWorkflowResumeSkipped = (data: {
-    workflowRunId: string;
-    workflow: string;
-    status: string;
-    reason: string;
-    projectId?: string;
-  }): void => {
-    const event = {
-      type: "workflow.resume_skipped",
-      source: "workflow-tool",
-      timestamp: Date.now(),
-      owner: normalizeEventOwner(opts.agentName),
-      data: {
-        workflowRunId: data.workflowRunId,
-        workflow: data.workflow,
-        projectId: data.projectId ?? opts.projectId,
-        status: data.status,
-        reason: data.reason,
-        nextAction: "none",
-      },
-    } as const;
-    emitRuntimeEvent(event);
-    onEvent?.(event);
   };
 
   const emitWorkflowBlockedOwnerWake = (data: {
@@ -963,43 +878,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     } as any);
   };
 
-  const workflowResumeError = (data: {
-    workflowRunId?: string;
-    workflow?: string;
-    reason: string;
-    category: string;
-    recoverable?: boolean;
-    projectId?: string;
-  }): AgentToolResult<string> => {
-    emitWorkflowResumeFailed(data);
-    return textResult(
-      JSON.stringify(
-        {
-          type: "error",
-          workflow: data.workflow,
-          workflowRunId: data.workflowRunId,
-          error: data.reason,
-          reason: data.reason,
-          category: data.category,
-          recoverable: data.recoverable ?? false,
-          nextAction: workflowResumeNextAction(data.category, data.recoverable ?? false),
-        },
-        null,
-        2,
-      ),
-    );
-  };
-
   let activeSteeringQueue: string[] | null = null;
   let activeWorkflowName: string | null = null;
 
-  /** Execute a workflow at the given depth, tracking everything in a WorkflowRun.
-   *  If `previousRun` is provided, completed steps are replayed from archived
-   *  session data instead of spawning new sessions. Replay stops (and live
-   *  execution begins) at the first step whose agent name doesn't match the
-   *  previous run — which means the workflow code changed and the old data
-   *  no longer applies.
-   */
   async function executeWorkflow(
     catalog: WorkflowCatalog,
     workflow: WorkflowModule,
@@ -1009,20 +890,14 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     parentWorkflowRunId: string | undefined,
     completedSteps: CompletedStep[],
     steeringQueue: string[],
-    previousRun?: WorkflowRun,
     authoredInput?: { value: unknown },
     runId = generateRunId(),
     parentSignal = opts.signal,
   ): Promise<{ result: WorkflowResult; runId: string; steps: CompletedStep[] }> {
     if (depth > 1) assertWorkflowExecution();
     const localSteps: CompletedStep[] = [];
-    let stepCounter = 0;
     const callerMeta = getCallerSessionMeta(parentSessionId);
-    const effectiveProjectId = previousRun?.projectId ?? opts.projectId ?? callerMeta.projectId;
-    const revisionMatches = Boolean(
-      previousRun?.entryContentHash && previousRun.entryContentHash === workflow.entryContentHash,
-    );
-    let replayExhausted = !revisionMatches;
+    const effectiveProjectId = opts.projectId ?? callerMeta.projectId;
 
     // Create the workflow run record (DB-backed)
     const run: WorkflowRun = {
@@ -1036,7 +911,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       startedAt: Date.now(),
       status: "running",
       steps: [],
-      resumedFromRunId: previousRun?.runId,
       sourcePath: workflow.sourcePath,
       sourceScope: workflow.sourceScope,
       entryContentHash: workflow.entryContentHash,
@@ -1063,11 +937,11 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           endedAt: null,
           result_summary: null,
           result_reason: null,
-          resumedFromRunId: previousRun?.runId ?? null,
           sourcePath: workflow.sourcePath,
           sourceScope: workflow.sourceScope,
           entryContentHash: workflow.entryContentHash,
           taskBinding: opts.taskBinding ?? null,
+          resumedFromRunId: null,
         });
       }
       emitRuntimeEvent({
@@ -1081,31 +955,12 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           projectId: effectiveProjectId,
           parentSessionId,
           parentWorkflowRunId,
-          resumedFromRunId: previousRun?.runId,
-          sourcePath: workflow.sourcePath,
+              sourcePath: workflow.sourcePath,
           sourceScope: workflow.sourceScope,
           entryContentHash: workflow.entryContentHash,
           taskBinding: opts.taskBinding,
         },
       });
-      if (previousRun && !revisionMatches) {
-        emitRuntimeEvent({
-          type: "workflow.resume_restarted",
-          source: `workflow:${workflow.name}`,
-          owner: normalizeEventOwner(opts.agentName),
-          data: {
-            workflowRunId: runId,
-            resumedFromRunId: previousRun.runId,
-            workflow: workflow.name,
-            reason: previousRun.entryContentHash
-              ? "workflow entry revision changed"
-              : "previous run has no workflow revision provenance",
-            previousEntryContentHash: previousRun.entryContentHash,
-            entryContentHash: workflow.entryContentHash,
-          },
-        });
-      }
-
       // ── Load guards ────────────────────────────────────────────────────
       const guards = await loadGuards(opts.guardsDir, opts.sharedGuardsDir);
       const maxInjected = opts.maxInjectedSteps ?? DEFAULT_MAX_INJECTED_STEPS;
@@ -1177,7 +1032,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       const executeAgentStep = async (
         agentName: string,
         agentTask: string,
-        reuseSessionId?: string,
         stepOpts?: AgentCallOptions & { schema?: TSchema },
         repairLabel?: string,
       ): Promise<TaskResult> => {
@@ -1194,50 +1048,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         }
         const label = repairLabel ?? agentName;
         const isRepair = repairLabel !== undefined;
-        const currentStep = isRepair ? -1 : stepCounter++;
-        const sessionToReuse = typeof reuseSessionId === "string" && reuseSessionId.trim() ? reuseSessionId.trim() : "";
-
-        // Replay applies to ordinary workflow steps. Task-bound sessions represent
-        // actual fresh/resumed work and should not be satisfied from replay alone.
-        if (!isRepair && !sessionToReuse && previousRun && !replayExhausted && currentStep < previousRun.steps.length) {
-          const prevStep = previousRun.steps[currentStep];
-          if (prevStep.agent === agentName && prevStep.task === agentTask) {
-            try {
-              const taskResult = enforceStructuredWorkflowResult(
-                manager.result(prevStep.sessionId),
-                !!stepOpts?.schema,
-              );
-              if (taskResult.status === "error") throw new Error(taskResult.error);
-              const step: CompletedStep = { step: agentName, sessionId: prevStep.sessionId, result: taskResult };
-              localSteps.push(step);
-              completedSteps.push(step);
-              pruneCompletedSteps(completedSteps);
-
-              run.steps.push({
-                sessionId: prevStep.sessionId,
-                agent: agentName,
-                task: agentTask,
-                status: taskResult.status,
-                startedAt: prevStep.startedAt,
-                endedAt: prevStep.endedAt,
-                lastAssistantText: taskResult.lastAssistantText,
-              });
-
-              onEvent?.({
-                type: "workflow.step_completed",
-                step: agentName,
-                sessionId: prevStep.sessionId,
-                result: taskResult,
-              });
-              return taskResult;
-            } catch {
-              replayExhausted = true;
-            }
-          } else {
-            replayExhausted = true;
-          }
-        }
-
         const steering = steeringQueue.shift();
         if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
 
@@ -1247,78 +1057,8 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           guardWarnings.length = 0;
         }
 
-        let sid = sessionToReuse;
-        let taskResult: TaskResult | undefined;
-        const waitForStep = async (sessionId: string): Promise<TaskResult> => {
-          const scope = new ExecutionScope(stepTimeoutMs, signal, executionDeadlineAt, () => manager.cancel(sessionId));
-          try {
-            const result = await manager.waitFor(sessionId);
-            scope.signal.throwIfAborted();
-            return result;
-          } finally {
-            scope.close();
-          }
-        };
-        if (sid) {
-          try {
-            onEvent?.({ type: "workflow.step_started", step: agentName, sessionId: sid });
-            if (!manager.hasActiveSession(sid)) {
-              try {
-                taskResult = manager.result(sid);
-              } catch {
-                manager.resumeSession(sid, effectiveTask, {
-                  source: stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
-                  taskBinding: opts.taskBinding,
-                  taskContext: opts.taskContext,
-                  timeoutMs: stepTimeoutMs,
-                  signal,
-                  deadlineAt: executionDeadlineAt,
-                  operationAllowance: stepOpts?.operationAllowance,
-                  suppressBenignRaceEvent: true,
-                  requireFinish: true,
-                  outputSchema: stepOpts?.schema,
-                  toolPolicy: stepOpts?.tools,
-                });
-              }
-            }
-            if (!taskResult) taskResult = await waitForStep(sid);
-            taskResult = { ...taskResult, messages: manager.progress(sid, 1000) };
-          } catch (err) {
-            if (err instanceof ExecutionDeferredError) throw err;
-            const message = err instanceof Error ? err.message : String(err);
-            if (message.includes("not found")) {
-              sid = runAgent(agentName, effectiveTask, {
-                sessionId: sid,
-                parentSessionId,
-                workflowRunId: runId,
-                projectId: effectiveProjectId,
-                taskBinding: opts.taskBinding,
-                taskContext: opts.taskContext,
-                recoveryOwner: opts.recoveryOwner,
-                stepLabel: agentName,
-                source: stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
-                kind: "call",
-                timeoutMs: stepTimeoutMs,
-                signal,
-                deadlineAt: executionDeadlineAt,
-                operationAllowance: stepOpts?.operationAllowance,
-                trace: resolveTrace(),
-                skill: stepOpts?.skill,
-                requireFinish: true,
-                outputSchema: stepOpts?.schema,
-                toolPolicy: stepOpts?.tools,
-                executionRoot: opts.executionPaths?.workspaceDir,
-              });
-              taskResult = await waitForStep(sid);
-              taskResult = { ...taskResult, messages: manager.progress(sid, 1000) };
-            } else {
-              sid = "";
-            }
-          }
-        }
-        if (!taskResult || !sid) {
           onEvent?.({ type: "workflow.step_started", step: label });
-          taskResult = await callAgent(agentName, effectiveTask, {
+        let taskResult = await callAgent(agentName, effectiveTask, {
             parentSessionId,
             source: isRepair ? "guard" : (stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`),
             workflowRunId: runId,
@@ -1338,8 +1078,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             toolPolicy: stepOpts?.tools,
             executionRoot: opts.executionPaths?.workspaceDir,
           });
-          sid = taskResult.sessionId;
-        }
+        let sid = taskResult.sessionId;
 
         assertExecutionActive();
 
@@ -1383,7 +1122,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               completedSteps,
               injectedStepCount,
               maxInjected,
-              (agent, task, label) => runAgentStep(agent, task, undefined, undefined, label),
+              (agent, task, label) => runAgentStep(agent, task, undefined, label),
               guardWarnings,
               emitGuardSignal,
             );
@@ -1424,7 +1163,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           runId,
           completedSteps,
           steeringQueue,
-          undefined,
           nestedInput,
           undefined,
           signal,
@@ -1533,7 +1271,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         agents: {
           call: (agentName: string, agentTask: string, callOptions?: AgentCallOptions & { schema?: TSchema }) =>
             trackStep(
-              runAgentStep(agentName, agentTask, callOptions?.sessionId, callOptions).then(agentExecutionResult),
+              runAgentStep(agentName, agentTask, callOptions).then(agentExecutionResult),
             ),
         },
 
@@ -1658,7 +1396,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             completedSteps,
             injectedStepCount,
             maxInjected,
-            (agent, task, label) => runAgentStep(agent, task, undefined, undefined, label),
+            (agent, task, label) => runAgentStep(agent, task, undefined, label),
             guardWarnings,
             emitGuardSignal,
           );
@@ -1780,16 +1518,15 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     }
   }
 
-  /** Shared logic for both 'run' and 'resume' actions — sets up steering,
+  /** Sets up steering,
    *  executes the workflow, and maps the result to a tool response. */
-  async function runOrResume(
+  async function runWorkflow(
     catalog: WorkflowCatalog,
     workflow: WorkflowModule,
     task: string,
     depth: number,
     parentSessionId: string | undefined,
     parentWorkflowRunId: string | undefined,
-    previousRun?: WorkflowRun,
     authoredInput?: { value: unknown },
   ): Promise<WorkflowToolResult> {
     const completedSteps: CompletedStep[] = [];
@@ -1810,8 +1547,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         parentWorkflowRunId,
         completedSteps,
         steeringQueue,
-        previousRun,
-        authoredInput ?? (!previousRun && opts.workflowInput !== undefined ? { value: opts.workflowInput } : undefined),
+        authoredInput ?? (opts.workflowInput !== undefined ? { value: opts.workflowInput } : undefined),
         runId,
       );
 
@@ -1921,7 +1657,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     }
     const callerSessionId = resolveCallerSessionId();
     const callerMeta = getCallerSessionMeta(callerSessionId);
-    return runOrResume(catalog, workflow, task, 1, callerSessionId, callerMeta.workflowRunId, undefined, authoredInput);
+    return runWorkflow(catalog, workflow, task, 1, callerSessionId, callerMeta.workflowRunId, authoredInput);
   }
 
   const runner: WorkflowRunner = {
@@ -1998,149 +1734,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               : JSON.stringify(params.input)
             : params.task!;
           return workflowModelExecution(() => runTyped(params.name!, task, catalog, hasInput ? { value: params.input } : undefined));
-        }
-
-        case "resume": {
-          if (opts.taskBinding)
-            return textResult(
-              JSON.stringify({
-                type: "error",
-                error:
-                  "Task-owned work recovers through its owning Task. Inspect retained evidence and run against the current input; do not resume a historical attempt.",
-              }),
-            );
-          if (!params.workflowRunId) {
-            return workflowResumeError({
-              reason: "action 'resume' requires 'workflowRunId'",
-              category: "invalid_request",
-            });
-          }
-          if (!persistDir) {
-            return workflowResumeError({
-              workflowRunId: params.workflowRunId,
-              reason: "workflow resume requires persistDir",
-              category: "invalid_request",
-            });
-          }
-
-          const prevRunRecord = getWorkflowRun(persistDir, params.workflowRunId);
-          if (!prevRunRecord) {
-            return workflowResumeError({
-              workflowRunId: params.workflowRunId,
-              reason: `Workflow run "${params.workflowRunId}" not found`,
-              category: "not_found",
-            });
-          }
-
-          if (prevRunRecord.artifact_error) {
-            return workflowResumeError({
-              workflowRunId: params.workflowRunId,
-              workflow: prevRunRecord.workflow,
-              projectId: prevRunRecord.projectId ?? opts.projectId,
-              reason: `Workflow run "${params.workflowRunId}" has incomplete persisted state: ${prevRunRecord.artifact_error}`,
-              category: "corrupt_state",
-            });
-          }
-
-          if (!prevRunRecord.workflow || !prevRunRecord.task || typeof prevRunRecord.depth !== "number") {
-            return workflowResumeError({
-              workflowRunId: params.workflowRunId,
-              workflow: prevRunRecord.workflow,
-              projectId: prevRunRecord.projectId ?? opts.projectId,
-              reason: `Workflow run "${params.workflowRunId}" has incomplete persisted state`,
-              category: "corrupt_state",
-            });
-          }
-
-          if (prevRunRecord.taskBinding)
-            return textResult(
-              JSON.stringify({ type: "error", error: "This workflow belongs to a Task. Recover through that Task." }),
-            );
-          // Reconstruct WorkflowRun with steps from sessions table
-          const stepSessions = getWorkflowStepSessions(persistDir, params.workflowRunId);
-          const prevRun: WorkflowRun = {
-            runId: prevRunRecord.runId,
-            workflow: prevRunRecord.workflow,
-            task: prevRunRecord.task,
-            parentSessionId: prevRunRecord.parentSessionId ?? "unknown",
-            parentWorkflowRunId: prevRunRecord.parentWorkflowRunId ?? undefined,
-            projectId: prevRunRecord.projectId ?? opts.projectId,
-            depth: prevRunRecord.depth,
-            startedAt: prevRunRecord.startedAt,
-            endedAt: prevRunRecord.endedAt ?? undefined,
-            status: prevRunRecord.status as WorkflowRun["status"],
-            resumedFromRunId: prevRunRecord.resumedFromRunId ?? undefined,
-            sourcePath: prevRunRecord.sourcePath ?? undefined,
-            sourceScope: prevRunRecord.sourceScope ?? undefined,
-            entryContentHash: prevRunRecord.entryContentHash ?? undefined,
-            steps: stepSessions.map((s) => ({
-              sessionId: s.sessionId,
-              agent: s.agent,
-              task: s.task,
-              status: s.status === "done" || s.status === "error" || s.status === "interrupted" ? s.status : "done",
-              startedAt: s.startedAt,
-              endedAt: s.endedAt ?? Date.now(),
-              lastAssistantText: s.outcome ?? null,
-            })),
-          };
-
-          if (prevRun.status === "done") {
-            emitWorkflowResumeSkipped({
-              workflowRunId: prevRun.runId,
-              workflow: prevRun.workflow,
-              status: prevRun.status,
-              projectId: prevRun.projectId,
-              reason: "workflow already reached terminal status",
-            });
-            const result: WorkflowToolResult = {
-              type: "done",
-              workflow: prevRun.workflow,
-              workflowRunId: prevRun.runId,
-              summary: prevRunRecord.result_summary ?? "workflow already done",
-              steps: buildStoredStepSummaries(prevRun.steps),
-            };
-            return textResult(JSON.stringify({ ...result, ...workflowExecutionResult(result) }, null, 2));
-          }
-
-          if (prevRun.status === "blocked" || prevRun.status === "escalated") {
-            emitWorkflowResumeSkipped({
-              workflowRunId: prevRun.runId,
-              workflow: prevRun.workflow,
-              status: prevRun.status,
-              projectId: prevRun.projectId,
-              reason: "workflow already reached terminal status",
-            });
-            const result: WorkflowToolResult = {
-              type: "blocked",
-              workflow: prevRun.workflow,
-              workflowRunId: prevRun.runId,
-              reason: prevRunRecord.result_reason ?? "workflow already blocked",
-              steps: buildStoredStepSummaries(prevRun.steps),
-            };
-            return textResult(JSON.stringify({ ...result, ...workflowExecutionResult(result) }, null, 2));
-          }
-
-          const { workflow: resumeWf, error: resumeFindError } = findWorkflow(catalog, prevRun.workflow);
-          if (!resumeWf) {
-            return workflowResumeError({
-              workflowRunId: prevRun.runId,
-              workflow: prevRun.workflow,
-              projectId: prevRun.projectId,
-              reason: resumeFindError ?? `Workflow "${prevRun.workflow}" not found`,
-              category: "workflow_definition_missing",
-              recoverable: true,
-            });
-          }
-
-          return workflowModelExecution(() => runOrResume(
-            catalog,
-            resumeWf,
-            prevRun.task,
-            prevRun.depth,
-            prevRun.parentSessionId === "unknown" ? undefined : prevRun.parentSessionId,
-            prevRun.parentWorkflowRunId,
-            prevRun,
-          ));
         }
 
         default: {

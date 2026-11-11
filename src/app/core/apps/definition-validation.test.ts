@@ -1,5 +1,5 @@
-import { describe, expect, it } from "bun:test";
 import { Type, defineApp } from "@may-agent/sdk";
+import { describe, expect, it } from "bun:test";
 import { assertValidAppInput, validateAppDefinition } from "./definition-validation.js";
 
 const inputSchema = Type.Object({ kind: Type.String(), data: Type.Unknown() });
@@ -193,8 +193,6 @@ describe("canonical App definition validation", () => {
       },
       workspace: { kind: "local", localPath: "." },
       tasks: {
-        subscriptions: ["evaluation.task.requested"],
-        resolve: () => null,
         maxConcurrent: 2,
       },
     });
@@ -202,10 +200,10 @@ describe("canonical App definition validation", () => {
     expect(validateAppDefinition(definition)).toEqual([]);
   });
 
-  it("accepts legacy owner only at the migration boundary and rejects ambiguity", () => {
-    expect(validateAppDefinition({ id: "legacy", version: 1, owner: "worker", inputSchema })).toEqual([]);
+  it("requires the current agent field and rejects retired aliases", () => {
+    expect(validateAppDefinition({ id: "legacy", version: 1, agent: "worker", inputSchema })).toEqual([]);
     expect(validateAppDefinition({ id: "ambiguous", version: 1, agent: "one", owner: "two", inputSchema })).toContain(
-      "App ambiguous declares conflicting agent and legacy owner values",
+      "App ambiguous owner is retired; use agent",
     );
     expect(validateAppDefinition({ id: "missing", version: 1, inputSchema })).toContain(
       "App missing agent must be a non-empty string",
@@ -217,7 +215,7 @@ describe("canonical App definition validation", () => {
       validateAppDefinition({
         id: "broken",
         version: 1,
-        owner: "owner",
+        agent: "owner",
         inputSchema: {},
         inbox: { batch: "single", maxConcurrent: 0 },
         subscriptions: [
@@ -278,7 +276,7 @@ describe("canonical App definition validation", () => {
         "App broken metric same measureInterval must be positive",
         "App broken metric same: mean calculation requires windowMs",
         "App broken metric same cannot declare both sourceQuery and sourceCommand",
-        "App broken task subscriptions require resolve",
+        "App broken tasks.subscriptions/resolve are retired; use subscriptions.toInput and task",
       ]),
     );
   });
@@ -288,7 +286,7 @@ describe("canonical App definition validation", () => {
       validateAppDefinition({
         id: "missing-task-policy",
         version: 1,
-        owner: "owner",
+        agent: "owner",
         inputSchema,
         task: () => ({ kind: "existing", taskId: "work/current" }),
       }),
@@ -310,7 +308,7 @@ describe("canonical App definition validation", () => {
         version: 1,
         agent: "may",
         inputSchema,
-        conversation: { mode: "agent", conversationId: "may:primary" },
+        conversation: { mode: "task", conversationId: "may:primary" },
       }),
     ).toEqual([]);
     expect(
@@ -319,7 +317,7 @@ describe("canonical App definition validation", () => {
         version: 1,
         agent: "may",
         inputSchema,
-        conversation: { mode: "agent", conversationId: "  " },
+        conversation: { mode: "task", conversationId: "  " },
       }),
     ).toContain("App invalid-may conversation conversationId must be a non-empty string");
     expect(
@@ -328,7 +326,7 @@ describe("canonical App definition validation", () => {
         version: 1,
         agent: "may",
         inputSchema,
-        conversation: { mode: "agent" },
+        conversation: { mode: "task" },
         task: () => ({ kind: "existing", taskId: "conversation/duplicate" }),
         tasks: {},
       }),
@@ -339,7 +337,7 @@ describe("canonical App definition validation", () => {
         version: 1,
         agent: "may",
         inputSchema,
-        conversation: { mode: "agent", inputKinds: ["probe"] },
+        conversation: { mode: "task", inputKinds: ["probe"] },
         task: () => ({ kind: "existing", taskId: "goal/current" }),
         tasks: {},
       }),

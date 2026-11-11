@@ -1,45 +1,48 @@
+import { Type, defineApp, type TaskIntent } from "@may-agent/sdk";
 import { expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Type, defineApp, type TaskIntent } from "@may-agent/sdk";
-import { getDb, closeDb } from "../../../lib/requests.js";
+import { assertAppInboxClaim, claimAppInboxItem } from "../../../../test/fixtures/legacy-inbox.js";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
-import { EventBus, EVENT_ROW_ID } from "../events/bus.js";
+import { closeDb, getDb } from "../../../lib/requests.js";
+import { startAppInboxRuntime, type AppInboxRuntime } from "../../composition/app-inbox-runtime.js";
 import { AppRegistry } from "../apps/registry.js";
-import { AppTaskResourceStore } from "./app-task-resource-store.js";
+import { EVENT_ROW_ID, EventBus } from "../events/bus.js";
 import { createAppTaskCapability } from "../tasks/app-task-capability.js";
 import {
-  installAppTaskRuntimes,
-  closeInstalledAppTaskRuntimes,
-  admitStandaloneCanonicalAppTaskEvent,
-
-} from "../tasks/app-task-runtime.js";
-import type { AppTaskRuntimeOptions } from "../tasks/runtime-options.js";
-import { standaloneAppTaskAdmissionDescriptors } from "../tasks/runtime-definition.js";
-import {
   appTaskContext,
-  observeAppTaskIntent,
+  assertAppTaskClaimCurrent,
+  cancelAppTask,
   claimObservedAppTask,
   completeAppTask,
-  cancelAppTask,
-  assertAppTaskClaimCurrent,
+  observeAppTaskIntent,
 } from "../tasks/app-task-reconciler.js";
-import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
-import { claimAppInboxItem, assertAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
-import { createConversationTopic, linkConversationTopicTask, readConversationTopic } from "./conversations.js";
-import { applyConversationRequestUpdates, readConversationRequest } from "./conversation-requests.js";
 import {
+  admitStandaloneCanonicalAppTaskEvent,
+  closeInstalledAppTaskRuntimes,
+  installAppTaskRuntimes,
+} from "../tasks/app-task-runtime.js";
+import type { TaskAgentInput } from "../tasks/execution.js";
+import { standaloneAppTaskAdmissionDescriptors } from "../tasks/runtime-definition.js";
+import type { AppTaskRuntimeOptions } from "../tasks/runtime-options.js";
+import {
+  completeAppEventAdmissionPlan,
   createAppEventAdmissionPlan,
   getAppEventAdmissionPlan,
   markAppEventAdmissionCommandAdmitted,
-  completeAppEventAdmissionPlan,
 } from "./app-event-admission-store.js";
+import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
+import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { migrateConversationInputs } from "./conversation-cutover.js";
+import {
+  applyConversationRequestUpdates,
+  linkConversationRequestInputs,
+  readConversationRequest,
+} from "./conversation-requests.js";
 import { conversationTaskId, listPendingConversationTaskChanges } from "./conversation-task-turns.js";
-import { prepareConversationTaskTurn } from "../../composition/conversation-task-turn.js";
-import { startAppInboxRuntime, type AppInboxRuntime } from "../../composition/app-inbox-runtime.js";
+import { createConversationTopic, linkConversationTopicTask, readConversationTopic } from "./conversations.js";
 
 test("offline cutover drains frozen supervisor admission, closes its owner, and returns missed results through Conversation", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-supervisor-cutover-"));
@@ -52,7 +55,7 @@ test("offline cutover drains frozen supervisor admission, closes its owner, and 
     id: "chat",
     version: 1,
     agent: "chat",
-    conversation: { mode: "agent", inputKinds: ["message"] },
+    conversation: { mode: "task", inputKinds: ["message"] },
     tasks: { maxConcurrent: 2 },
     inputSchema: Type.Object({ kind: Type.String(), data: Type.Object({}, { additionalProperties: true }) }),
   });
@@ -80,41 +83,29 @@ test("offline cutover drains frozen supervisor admission, closes its owner, and 
         throw new Error("Retired supervisor executed");
       },
     },
-    conversations: {
-      execute: (turn) =>
-        prepareConversationTaskTurn({
-          ...turn,
-          resolveConversationInput: async ({ inputContext: request }) => {
-            const outcomes = request.inputs?.filter((item) => item.input.kind === "task-outcome") ?? [];
-            if (!outcomes.length)
-              return {
-                summary: "Continuing discussion",
-                response: "I will bring back the result.",
-                topic: { kind: "existing", id: "measurement" },
-              };
-            expect(outcomes).toHaveLength(1);
-            expect(outcomes[0]!.input.data).toMatchObject({
-              taskId: "measurement",
-              outcome: { result: { value: 17 } },
-            });
-            reportedOutcomes++;
-            return {
-              summary: "Measurement verified",
-              response: "The measurement is 17.",
-              topic: { kind: "existing", id: "measurement" },
-              requestUpdates: [
-                {
-                  id: "measurement",
-                  expectedRevision: 1,
-                  inputIds: outcomes.map(({ id }) => id),
-                  scope: "Measure the sample",
-                  disposition: "fulfilled",
-                  reason: "The measured value is 17",
-                },
-              ],
-            };
-          },
-        }),
+    agents: {
+      available: () => true,
+      role: (agent) => ({ agent, instructions: "Handle the fixture Task" }),
+      prepare: async () => true,
+      snapshot() { return this; },
+      async execute({ attempt }: TaskAgentInput) {
+        const outcomes = attempt.events.items.flatMap(({ event }) => event.type === "app.task.requested"
+          ? [event.data.request as import("@may-agent/sdk").AppTaskInput] : []).filter((item) => item.input.kind === "task-outcome");
+        if (!outcomes.length) return { runId: null, handlerResult: {
+          state: "converged", summary: "Continuing discussion", response: "I will bring back the result.", facts: [],
+        } };
+        expect(outcomes).toHaveLength(1);
+        expect(outcomes[0]!.input.data).toMatchObject({ taskId: "measurement", outcome: { result: { value: 17 } } });
+        reportedOutcomes++;
+        return { runId: null, handlerResult: {
+          state: "converged", summary: "Measurement verified", facts: [],
+          communication: [{ id: "measurement-result", inputId: outcomes[0]!.id,
+            message: "The measurement is 17.", topic: { kind: "existing", id: "measurement" },
+            requestUpdates: [{ id: "measurement", expectedRevision: 1,
+              inputIds: outcomes.map(({ id }) => id), disposition: "fulfilled", reason: "The measured value is 17" }],
+          }],
+        } };
+      },
     },
   });
   const persist = () => {
@@ -201,6 +192,7 @@ test("offline cutover drains frozen supervisor admission, closes its owner, and 
       ],
     });
     const originalWorker = store.readTaskContext({ taskIds: [workerIntent.id] });
+    linkConversationRequestInputs(db, app.id, "primary", "measurement", ["ask"]);
     const originalRequest = readConversationRequest(db, app.id, "primary", "measurement");
     const originalTopic = readConversationTopic(db, app.id, "primary", "measurement");
 
@@ -271,7 +263,7 @@ test("offline cutover drains frozen supervisor admission, closes its owner, and 
       }, 5_000);
       stopWatching = bus.listen((fact) => {
         if (
-          fact.type !== "conversation.updated" ||
+          fact.type !== "conversation.message.created" ||
           readConversationRequest(db, app.id, "primary", "measurement")?.status !== "closed"
         )
           return;

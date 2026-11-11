@@ -1,31 +1,30 @@
-import { afterEach, expect, test } from "bun:test";
 import { Type, defineApp, type ConversationTurnResult } from "@may-agent/sdk";
+import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { getDb, closeDb } from "../../../lib/requests.js";
-import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { appTaskContext, claimObservedAppTask } from "../tasks/app-task-reconciler.js";
-import { AppInboxHost } from "../inbox/app-inbox-host.js";
-import { prepareConversationTaskTurn } from "../../composition/conversation-task-turn.js";
-import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
+import { join } from "node:path";
+import { completeCommunicationTask, readCommunicationInputs } from "../../../../test/fixtures/communication.js";
 import {
-  stopAppInboxTurn,
   assertAppInboxClaim,
   claimAppInboxItem,
   claimNextAppInboxItem,
   completeAppInboxClaim,
   recordAppInboxHandling,
+  stopAppInboxTurn,
 } from "../../../../test/fixtures/legacy-inbox.js";
-import { createConversationTopic } from "./conversations.js";
-import { applyConversationRequestUpdates, readConversationRequest } from "./conversation-requests.js";
-import {
-  admitConversationTaskInput,
-  completeConversationTaskTurn,
-  conversationTaskId,
-  conversationTaskIntent,
-} from "./conversation-task-turns.js";
+import { closeDb, getDb } from "../../../lib/requests.js";
+import { AppInboxHost } from "../inbox/app-inbox-host.js";
+import { appTaskContext, claimObservedAppTask } from "../tasks/app-task-reconciler.js";
+import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
+import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { migrateConversationInputs } from "./conversation-cutover.js";
+import {
+  applyConversationRequestUpdates,
+  linkConversationRequestInputs,
+  readConversationRequest,
+} from "./conversation-requests.js";
+import { admitConversationTaskInput, conversationTaskId, conversationTaskIntent } from "./conversation-task-turns.js";
+import { createConversationTopic } from "./conversations.js";
 
 const roots: string[] = [];
 afterEach(() =>
@@ -38,7 +37,7 @@ const app = defineApp({
   id: "chat",
   version: 1,
   agent: "chat",
-  conversation: { mode: "agent", inputKinds: ["message"] },
+  conversation: { mode: "task", inputKinds: ["message"] },
   inputSchema: Type.Object({ kind: Type.String(), data: Type.Object({ text: Type.String() }) }),
 });
 const decision: ConversationTurnResult = {
@@ -166,6 +165,7 @@ test("offline cutover retains history, fences old claims, and redoes only unfini
     now: Date.now(),
     updates: [{ id: "sample", expectedRevision: 0, scope: "Check the sample", disposition: "open" }],
   });
+  linkConversationRequestInputs(f.db, app.id, "primary", "sample", ["primary:pending"]);
   const ask = readConversationRequest(f.db, app.id, "primary", "sample");
   const cutover = f.migrate();
   expect(cutover).toEqual({ taskId: conversationTaskId(app.id, "primary"), migrated: 6, pending: 4 });
@@ -190,47 +190,22 @@ test("offline cutover retains history, fences old claims, and redoes only unfini
   const claim = claimObservedAppTask(f.config(), {
     taskId: cutover.taskId,
     appAgent: "chat",
-    handler: "executor:conversation",
+    handler: "agent:fixture",
   });
   if (claim.kind !== "claimed") throw new Error(`Expected claim, got ${claim.kind}`);
-  const proposal = await prepareConversationTaskTurn({
-    config: f.config(),
-    claim,
-    app,
-    signal: new AbortController().signal,
-    resolveConversationInput: async ({ inputContext: request }) => {
-      expect(request.inputs?.map((entry) => entry.id)).toEqual([
-        "primary:pending",
-        "primary:executing",
-        "primary:decided",
-        "primary:failed",
-      ]);
-      expect(request.previousAttempt).toMatchObject({
-        sessionId: "session:primary:failed",
-        state: "failed",
-        summary: "Provider unavailable",
-      });
-      return {
-        summary: "Verified after redo",
-        response: "The sample meets the minimum.",
-        topic: { kind: "existing", id: "sample" },
-        requestUpdates: [
-          {
-            id: "sample",
-            expectedRevision: ask!.revision,
-            inputIds: request.inputs!.map(({ id }) => id),
-            scope: ask!.scope,
-            disposition: "fulfilled",
-            reason: "Verified current measurement",
-          },
-        ],
-      };
-    },
-  });
-  expect(completeConversationTaskTurn(f.config(), claim, proposal.decision).status).toBe("applied");
+  const inputs = readCommunicationInputs(f.config(), claim);
+  expect(inputs.map(({ id }) => id)).toEqual([
+    "primary:pending", "primary:executing", "primary:decided", "primary:failed",
+  ]);
+  expect(completeCommunicationTask(f.config(), claim, {
+    summary: "Verified after redo", response: "The sample meets the minimum.",
+    topic: { kind: "existing", id: "sample" },
+    requestUpdates: [{ id: "sample", expectedRevision: ask!.revision,
+      inputIds: inputs.map(({ id }) => id), disposition: "fulfilled", reason: "Verified current measurement" }],
+  }).status).toBe("applied");
   expect(readConversationRequest(f.db, app.id, "primary", "sample")?.status).toBe("closed");
   expect(getAppInboxItem(f.db, "primary:failed")?.handling).toBeUndefined();
-  expect(getAppInboxItem(f.db, "primary:failed")?.result?.response).toBe("The sample meets the minimum.");
+  expect(f.store.readAttempt(claim.attemptId)?.acceptedResult?.response).toBe("The sample meets the minimum.");
   expect(
     f.store.readAttempt(imported.find((attempt) => attempt.sessionId === "session:primary:failed")!.metadata.id)
       ?.events?.[0]?.event.data,
@@ -297,7 +272,7 @@ test("quiet migrated Conversations remain quiet, preserve Stop and accept later 
   });
   expect(input.taskId).toBe(cutover.taskId);
   expect(
-    claimObservedAppTask(f.config(), { taskId: input.taskId, appAgent: "chat", handler: "executor:conversation" }).kind,
+    claimObservedAppTask(f.config(), { taskId: input.taskId, appAgent: "chat", handler: "agent:fixture" }).kind,
   ).toBe("claimed");
   expect(getAppInboxItem(f.db, "primary:stopped")?.handling?.phase).toBe("stopped");
 });

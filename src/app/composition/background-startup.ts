@@ -1,9 +1,8 @@
-import type { EventBus } from "../core/events/bus.js";
-import type { AppArgs } from "../app-args.js";
-import type { SubagentManager } from "../../lib/manager.js";
 import { log } from "../../lib/log.js";
+import type { SubagentManager } from "../../lib/manager.js";
+import type { AppArgs } from "../app-args.js";
+import type { EventBus } from "../core/events/bus.js";
 import { recoverInstalledAppTasks } from "../core/tasks/app-task-runtime.js";
-import { shouldResumeStartupSession } from "../core/tasks/startup-recovery.js";
 
 export interface BackgroundRuntimeOptions {
   manager: SubagentManager;
@@ -42,30 +41,11 @@ export function startBackgroundRuntime(options: BackgroundRuntimeOptions): void 
       bus.emit({ type: "info", message: `[startup] Task recovery will retry: ${message}` });
     })
     .finally(() => options.onTaskRecoverySettled?.());
-  const { resumed, interrupted } = manager.resumeStaleSessions({
-    kinds: ["job", "call"],
-    shouldResume: (_sessionId, session) => shouldResumeStartupSession(session, options.persistDir),
-  });
-  const orphansCleaned: typeof interrupted = [];
-  const { interrupted: chatCleaned } = manager.resumeStaleSessions({ abort: true, kinds: ["chat"] });
-  orphansCleaned.push(...chatCleaned);
-
-  if (resumed.length > 0) {
-    bus.emit({
-      type: "info",
-      message: `[startup] Resumed ${resumed.length} session(s): ${resumed.map((s) => `${s.agent}/${s.sessionId}`).join(", ")}`,
-    });
-  }
+  const { interrupted } = manager.cleanupStaleSessions();
   if (interrupted.length > 0) {
     bus.emit({
       type: "info",
-      message: `[startup] ${interrupted.length} session(s) could not resume: ${interrupted.map((s) => `${s.agent}/${s.sessionId}`).join(", ")}`,
-    });
-  }
-  if (orphansCleaned.length > 0) {
-    bus.emit({
-      type: "info",
-      message: `[startup] Cleaned up ${orphansCleaned.length} orphaned session(s): ${orphansCleaned.map((s) => `${s.agent}/${s.sessionId}`).join(", ")}`,
+      message: `[startup] Cleaned up ${interrupted.length} stopped session(s): ${interrupted.map((s) => `${s.agent}/${s.sessionId}`).join(", ")}`,
     });
   }
 }

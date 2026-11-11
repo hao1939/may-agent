@@ -1,18 +1,18 @@
+export { MAX_CONVERSATION_REQUESTS_PER_TURN, conversationRequestUpdatesSchema } from "./conversation-contract.js";
+export type { AppConversationRequest, AppConversationRequestUpdate } from "./conversation-contract.js";
+export { defineObserver, observationCondition } from "./observer.js";
+export type { ObservationContract, ObservationInterest, ObserverHealth, ResourceObserver } from "./observer.js";
 export { ExecutionDeferredError } from "./workflow.js";
 export type { ExecutionDeferral } from "./workflow.js";
+import { Type, type Static, type TSchema } from "typebox";
+import { appInputSchema } from "./app-input.js";
 import {
   conversationRequestUpdatesSchema,
   type AppConversationRequest,
   type AppConversationRequestUpdate,
 } from "./conversation-contract.js";
-export { conversationRequestUpdatesSchema, MAX_CONVERSATION_REQUESTS_PER_TURN } from "./conversation-contract.js";
-export type { AppConversationRequest, AppConversationRequestUpdate } from "./conversation-contract.js";
-import { Type, type Static, type TSchema } from "typebox";
-import { appInputSchema } from "./app-input.js";
-import type { ResourceObserver, ObservationContract } from "./observer.js";
-export { defineObserver, observationCondition } from "./observer.js";
-export type { ResourceObserver, ObservationContract, ObservationInterest, ObserverHealth } from "./observer.js";
 import type { AppEvent, EventSelector } from "./event.js";
+import type { ObservationContract, ResourceObserver } from "./observer.js";
 import type { Condition, ResourceCreator, TaskAction, TaskIntent, TaskStatus } from "./task.js";
 import type { MetricDefinition, ObserverContext, ObserverSnapshot, TaskAttempt, TaskDetail } from "./workflow.js";
 
@@ -21,46 +21,46 @@ export type { Static, TSchema } from "typebox";
 export { matchesEventSelector } from "./event.js";
 export type { AppEvent, AppEventTarget, EventSelector } from "./event.js";
 export type {
+  AgentCallOptions,
   AppRead,
-  ExecutionResult,
   CliCallFacts,
+  ExecutionResult,
   ExecutionView,
   Logger,
-  MetricDefinition,
   MetricCalculation,
   MetricCalculationOptions,
+  MetricDefinition,
   MetricRecordOptions,
   MetricView,
   ObserverContext,
   ObserverSnapshot,
-  TaskAttempt,
   TaskAcceptedEvidence,
+  TaskAcceptedEvidenceNavigation,
   TaskAcceptedEvidenceOptions,
   TaskAcceptedEvidencePage,
-  TaskAcceptedEvidenceNavigation,
-  TaskReadOptions,
-  TaskInputObligation,
+  TaskAttempt,
   TaskCurrentObligations,
   TaskDetail,
   TaskEventReceipt,
   TaskExecutor,
-  TaskView,
+  TaskInputObligation,
   TaskListOptions,
-  TaskWorkload,
-  TaskWorkloadOptions,
-  TaskPage,
+  TaskOutcomePage,
   TaskOutcomeProjection,
   TaskOutcomeView,
-  TaskOutcomePage,
+  TaskPage,
+  TaskReadOptions,
   TaskReconciliationChild,
   TaskReconciliationContext,
   TaskReconciliationEvent,
   TaskReconciliationEvents,
   TaskReconciliationSnapshotTask,
+  TaskView,
+  TaskWorkload,
+  TaskWorkloadOptions,
   WorkflowContext,
   WorkflowInput,
   WorkflowMetricCapability,
-  AgentCallOptions,
 } from "./workflow.js";
 
 /** Canonical envelope for durable input addressed to an App. */
@@ -245,7 +245,7 @@ export type ConversationDelegation = {
   task?: { appId: string; taskId: string };
 };
 
-/** One interactive Turn's answer/effects; background work is an exact Task handoff. */
+/** Historical storage shape only. @deprecated New execution uses TaskReconcileResult.communication and requests. */
 export type ConversationTurnResult = {
   summary: string;
   /**
@@ -264,7 +264,7 @@ export type ConversationTurnResult = {
 
 const nonEmptyStringSchema = Type.String({ minLength: 1 });
 
-/** Structured output required from an App's direct conversational agent. */
+/** Historical validation only; not an executable App contract. @deprecated Use taskAgentResultSchema. */
 export const conversationTurnResultSchema = Type.Object(
   {
     summary: nonEmptyStringSchema,
@@ -445,8 +445,6 @@ export type AppWorkspace = {
 
 /** Optional durable-task policy. Mechanics and storage remain host-private. */
 export type AppTaskPolicy = {
-  subscriptions?: EventSelector[];
-  resolve?: (event: AppEvent<Record<string, unknown>>) => TaskIntent | null;
   validateAction?: (action: TaskAction) => string | null;
   /** Optional App-specific semantic admission for externally observable waits. */
   validateCondition?: (condition: Condition) => string | null;
@@ -489,8 +487,8 @@ export type AppTaskResultContext = {
 
 /** Conversation input executes through one stable Task per Conversation. */
 export type AppConversationPolicy = {
-  /** Task is the common execution contract. Agent retains the legacy Conversation adapter during migration. */
-  mode: "task" | "agent";
+  /** Conversation uses the common Task attempt contract. */
+  mode: "task";
   /** Input kinds handled as bounded conversation. Omit for legacy all-input behavior. */
   inputKinds?: string[];
   /** Conversation used for event/API requests that do not arrive through a conversation adapter. */
@@ -525,19 +523,9 @@ type AppDefinitionBase<TInputSchema extends TSchema> = {
 };
 
 /** An App extends its owner agent with scoped policy and capabilities; `agent` is its default Task owner. */
-export type AppDefinition<TInputSchema extends TSchema = TSchema> = AppDefinitionBase<TInputSchema> &
-  (
-    | {
-        agent: string;
-        /** @deprecated Use `agent`. Accepted temporarily at the Host definition boundary. */
-        owner?: string;
-      }
-    | {
-        /** @deprecated New Apps must use `agent`. */
-        owner: string;
-        agent?: string;
-      }
-  );
+export type AppDefinition<TInputSchema extends TSchema = TSchema> = AppDefinitionBase<TInputSchema> & {
+  agent: string;
+};
 
 export function defineApp<TInputSchema extends TSchema>(app: AppDefinition<TInputSchema>): AppDefinition<TInputSchema> {
   return app;

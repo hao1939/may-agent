@@ -58,13 +58,8 @@ export function validateAppDefinition(definition: unknown): string[] {
   if (!nonEmpty(app.id)) errors.push("App id must be a non-empty string");
   if (app.version !== 1) errors.push(`App ${appId} must declare version 1`);
   const agent = nonEmpty(app.agent) ? app.agent.trim() : undefined;
-  const legacyOwner = nonEmpty(app.owner) ? app.owner.trim() : undefined;
-  if (!agent && !legacyOwner) errors.push(`App ${appId} agent must be a non-empty string`);
-  if (app.agent !== undefined && !agent) errors.push(`App ${appId} agent must be a non-empty string`);
-  if (app.owner !== undefined && !legacyOwner) errors.push(`App ${appId} legacy owner must be a non-empty string`);
-  if (agent && legacyOwner && agent !== legacyOwner) {
-    errors.push(`App ${appId} declares conflicting agent and legacy owner values`);
-  }
+  if (!agent) errors.push(`App ${appId} agent must be a non-empty string`);
+  if (app.owner !== undefined) errors.push(`App ${appId} owner is retired; use agent`);
   if (!record(app.inputSchema)) errors.push(`App ${appId} inputSchema must be an object schema`);
   if (app.task !== undefined && typeof app.task !== "function") {
     errors.push(`App ${appId} task must be a function`);
@@ -232,16 +227,8 @@ export function validateAppDefinition(definition: unknown): string[] {
       if (tasks.maxConsecutiveFailures !== undefined && tasks.maxConsecutiveFailures !== "unlimited" && !positiveInteger(tasks.maxConsecutiveFailures)) {
         errors.push(`App ${appId} task maxConsecutiveFailures must be a positive safe integer or unlimited`);
       }
-      if (tasks.subscriptions !== undefined) {
-        if (!Array.isArray(tasks.subscriptions) || tasks.subscriptions.some((entry) => !validSelector(entry))) {
-          errors.push(`App ${appId} task subscriptions must contain valid event selectors`);
-        }
-        if (typeof tasks.resolve !== "function") {
-          errors.push(`App ${appId} task subscriptions require resolve`);
-        }
-      }
-      if (tasks.resolve !== undefined && typeof tasks.resolve !== "function") {
-        errors.push(`App ${appId} task resolve must be a function`);
+      if (tasks.subscriptions !== undefined || tasks.resolve !== undefined) {
+        errors.push(`App ${appId} tasks.subscriptions/resolve are retired; use subscriptions.toInput and task`);
       }
       if (tasks.validateAction !== undefined && typeof tasks.validateAction !== "function") {
         errors.push(`App ${appId} task validateAction must be a function`);
@@ -257,8 +244,8 @@ export function validateAppDefinition(definition: unknown): string[] {
     const conversation = record(app.conversation);
     if (!conversation) errors.push(`App ${appId} conversation must be an object`);
     else {
-      if (conversation.mode !== "agent" && conversation.mode !== "task")
-        errors.push(`App ${appId} conversation mode must be task or legacy agent`);
+      if (conversation.mode !== "task")
+        errors.push(`App ${appId} conversation mode must be task`);
       if (
         conversation.inputKinds !== undefined &&
         (!Array.isArray(conversation.inputKinds) ||

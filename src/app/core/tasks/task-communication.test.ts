@@ -1,37 +1,27 @@
-import { makeTaskRetryDue } from "./app-task-test-support.js";
-import type { TaskAgentInput, TaskConversationRunner } from "./execution.js";
-import { expect, test, setSystemTime } from "bun:test";
-import { appTaskContext, observeAppTaskIntent } from "./app-task-reconciler.js";
-import { readConversationTaskInputs } from "../state/conversation-task-turns.js";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { createAssistantMessageEventStream, type ToolCall } from "@earendil-works/pi-ai";
 import {
   Type,
   defineApp,
-  type TaskExecutor,
-  type TaskCommunication,
-  type TaskAttempt,
   type AppTaskPolicy,
+  type TaskAttempt,
+  type TaskCommunication,
+  type TaskExecutor,
 } from "@may-agent/sdk";
-import { createAssistantMessageEventStream, type ToolCall } from "@earendil-works/pi-ai";
-import { prepareConversationTaskTurn } from "../../composition/conversation-task-turn.js";
-import { DbWriter } from "../../../lib/db-writer.js";
-import { createAgentRun } from "../../../lib/agent-runner.js";
-import { SubagentManager } from "../../../lib/manager.js";
-import { getDb, closeDb } from "../../../lib/requests.js";
-import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
-import { fakeModel } from "../../../../test/fixtures/model.js";
+import { expect, setSystemTime, test } from "bun:test";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { usageReply } from "../../../../test/fixtures/execution-usage.js";
-import { EventBus } from "../events/bus.js";
-import { AppRegistry } from "../apps/registry.js";
+import { fakeModel } from "../../../../test/fixtures/model.js";
+import { createAgentRun } from "../../../lib/agent-runner.js";
+import { DbWriter } from "../../../lib/db-writer.js";
+import { SubagentManager } from "../../../lib/manager.js";
+import { closeDb, getDb } from "../../../lib/requests.js";
+import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
 import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
-import { createAppTaskCapability } from "./app-task-capability.js";
-import {
-  installAppTaskRuntimes,
-  closeInstalledAppTaskRuntimes,
-  reconcileLoadedAppTaskOnce,
-} from "./app-task-runtime.js";
+import { AppRegistry } from "../apps/registry.js";
+import { EventBus } from "../events/bus.js";
+import { getAppInboxItem, listAppInboxItems } from "../state/app-inbox-store.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { readConversationRequest } from "../state/conversation-requests.js";
 import {
@@ -40,13 +30,20 @@ import {
   readConversationInputTopicId,
   readConversationMessageTopicId,
 } from "../state/conversations.js";
-import { getAppInboxItem, listAppInboxItems } from "../state/app-inbox-store.js";
+import { createAppTaskCapability } from "./app-task-capability.js";
+import { appTaskContext, observeAppTaskIntent } from "./app-task-reconciler.js";
+import {
+  closeInstalledAppTaskRuntimes,
+  installAppTaskRuntimes,
+  reconcileLoadedAppTaskOnce,
+} from "./app-task-runtime.js";
+import { makeTaskRetryDue } from "./app-task-test-support.js";
+import type { TaskAgentInput } from "./execution.js";
 
 async function fixture(
   execute: TaskExecutor,
-  conversationMode?: "task" | "agent",
+  conversationMode?: "task",
   beforeAgent?: (input: TaskAgentInput) => Promise<void>,
-  conversations?: TaskConversationRunner,
   managedAgents?: ReturnType<typeof createTaskAgentRunner>,
   taskPolicy?: AppTaskPolicy,
 ) {
@@ -96,7 +93,6 @@ async function fixture(
         bus,
         appRegistrySnapshot: registry.snapshot(),
         executors: { fixture: execute },
-        conversations,
         agents: {
           available: (agent) => managedAgents?.available(agent) ?? true,
           prepare: async (input) => managedAgents?.prepare(input) ?? true,
@@ -201,7 +197,7 @@ test("App ending policy atomically closes a finite task, returns its caller answ
     calls++;
     expect((await attempt.read.contract("sample")).taskPolicy).toEqual({ closeOnResult: true });
     return { state: "converged", summary: "Scoped assessment completed", response: "No change is justified", facts: ["Evidence verified"], result: { endAssignment: true } };
-  }, undefined, undefined, undefined, undefined, {
+  }, undefined, undefined, undefined, {
     closeOnResult: ({ acceptedResult }) => acceptedResult.result?.endAssignment === true
       ? { reason: "Finite request answered with verified evidence" } : null,
   });
@@ -230,7 +226,7 @@ test("a failed App ending decision rolls back the answer publication and accepte
   const f = await fixture(async () => ({
     state: "converged", summary: "Scoped assessment completed", response: "No change is justified",
     facts: ["Evidence verified"], result: { endAssignment: true },
-  }), undefined, undefined, undefined, undefined, { closeOnResult: () => ({ reason: " " }) });
+  }), undefined, undefined, undefined, { closeOnResult: () => ({ reason: " " }) });
   try {
     f.admit("ask");
     await f.run();
@@ -244,121 +240,6 @@ test("a failed App ending decision rolls back the answer publication and accepte
     await f.reopen();
     expect(f.store.readCancellation("work")).toBeNull();
   } finally { await f.close(); }
-});
-
-test.each(["task", "agent"] as const)("%s-mode Conversation publishes its App-policy closure after the reply commits, once across restart", async (mode) => {
-  let calls = 0;
-  let policyCalls = 0;
-  const response = "The finite comparison is complete.";
-  const f = await fixture(async () => {
-    calls++;
-    return { state: "converged", summary: "Compared the options", response, facts: ["Both options verified"] };
-  }, mode, undefined, {
-    execute: (input) => prepareConversationTaskTurn({
-      ...input,
-      resolveConversationInput: async () => {
-        calls++;
-        return { summary: "Compared the options", response, facts: ["Both options verified"] };
-      },
-    }),
-  }, undefined, {
-    closeOnResult: ({ acceptedResult }) => {
-      policyCalls++;
-      return acceptedResult.response === response ? { reason: "The finite comparison was delivered" } : null;
-    },
-  });
-  try {
-    const item = f.admit("ask").item;
-    const taskId = item.executionTaskId!;
-    const notifications: Array<{ taskId: string; inputStatus?: string; replyPublished: boolean; closed: boolean }> = [];
-    f.bus.subscribe((event) => {
-      if (event.type !== "app.task.cancelled") return;
-      notifications.push({
-        taskId: event.data.taskId,
-        inputStatus: getAppInboxItem(f.db, item.id)?.status,
-        replyPublished: listAppConversationMessages(f.db, "sample", "discussion").some((message) => message.text === response),
-        closed: f.store.readCancellation(taskId)?.kind === "closed",
-      });
-    });
-    await f.run(taskId);
-    const task = f.store.readTask(taskId)!;
-    const accepted = f.store.readAttempt(task.status.observedAttemptId!)?.acceptedResult;
-    expect(accepted).toMatchObject({ state: "converged", response, facts: ["Both options verified"] });
-    expect(f.store.readCancellation(taskId)).toMatchObject({
-      kind: "closed",
-      acceptedResultAttemptId: task.status.observedAttemptId,
-      decidedBy: { kind: "app-policy" },
-    });
-    expect(notifications).toEqual([{ taskId, inputStatus: "done", replyPublished: true, closed: true }]);
-    await f.reopen();
-    await f.run(taskId);
-    expect(calls).toBe(1);
-    expect(policyCalls).toBe(1);
-    expect(f.store.readAttempt(task.status.observedAttemptId!)?.acceptedResult).toEqual(accepted);
-    expect(f.store.readCancellation(taskId)?.kind).toBe("closed");
-    expect(f.db.prepare("SELECT count(*) AS n FROM events WHERE event_type='app.task.cancelled'").get()).toEqual({ n: 1 });
-  } finally { await f.close(); }
-});
-
-test("a malformed Conversation procedure retains failure and original obligations across paced retry and restart", async () => {
-  let agentCalls = 0;
-  let conversationCalls = 0;
-  const f = await fixture(async () => {
-    agentCalls++;
-    throw new Error("Host must not silently replace the failing procedure");
-  }, "agent", undefined, {
-    async execute({ config, claim }) {
-      conversationCalls++;
-      readConversationTaskInputs(config, claim);
-      throw new Error("The malformed fixture should fail input validation first");
-    },
-  });
-  try {
-    const human = f.admit("ask").item;
-    const taskId = human.executionTaskId!;
-    const config = appTaskContext({ appDir: "fixture", projectDir: "fixture", agent: "owner", resourceStore: f.store });
-    // Retained old-format follow-up: distinct work reused a Conversation input ID.
-    // Current normal admission prevents this, but deployed history can contain it.
-    const admissionKey = "conversation-follow-up:sample:ask";
-    observeAppTaskIntent(config, {
-      appAgent: "owner", intent: { ...f.store.readTask(taskId)!.spec, id: taskId }, admissionKey,
-      trigger: {
-        type: "app.task.requested", source: "fixture", owner: "agent:owner",
-        target: { appId: "sample", taskId }, idempotencyKey: admissionKey,
-        data: { appId: "sample", taskId, idempotencyKey: admissionKey,
-          request: { id: "ask", source: { kind: "system", id: "retained-follow-up" },
-            input: { kind: "goal", data: { outcome: "Check the accompanying evidence" } } } },
-      },
-    });
-    const generation = f.store.readTask(taskId)!.metadata.generation;
-    await f.run(taskId);
-    expect(agentCalls).toBe(0);
-    const failedId = Object.values(f.store.readTaskContext({ taskIds: [taskId] }).attempts!)[0]!.metadata.id;
-    const failure = f.store.readAttempt(failedId);
-    expect(failure?.state).toBe("failed");
-    for (let pass = 0; pass < 2; pass++) {
-      setSystemTime(f.store.readTask(taskId)!.status.executionRetryAt! + 1);
-      await f.reopen();
-      await f.run(taskId);
-    }
-    await f.inbox.host.refreshTaskResults("sample", taskId);
-    expect(agentCalls).toBe(0);
-    expect(conversationCalls).toBe(3);
-    expect(f.store.readAttempt(failedId)).toEqual(failure);
-    expect(f.store.readTask(taskId)).toMatchObject({ metadata: { generation },
-      status: { phase: "attention", retryExhausted: { failures: 3, limit: 3 } } });
-    const admissions = f.store.readTaskContext({ taskIds: [], admissionIds: [
-      "conversation-input:ask", "conversation-follow-up:sample:ask",
-    ] }).appTaskAdmissions!;
-    expect(admissions["conversation-input:ask"]?.resultAttemptId).toBeFalsy();
-    expect(admissions["conversation-follow-up:sample:ask"]?.resultAttemptId).toBeFalsy();
-    expect(listAppInboxItems(f.db, { appId: "sample" }).find(({ id }) => id === "ask")?.status).not.toBe("done");
-    expect(listAppConversationMessages(f.db, "sample", "discussion").filter(({ author }) => author.kind === "agent"))
-      .toEqual([]);
-  } finally {
-    setSystemTime();
-    await f.close();
-  }
 });
 
 test("ordinary Task publishes before failure, reuses the publication after restart, and retains the ask", async () => {
@@ -611,7 +492,7 @@ test("common Conversation execution retains old admissions and can read ordinary
         },
       ],
     };
-  }, "agent");
+  }, "task");
   try {
     const admitted = f.admit("ask").item;
     const taskId = admitted.executionTaskId!;
@@ -970,7 +851,6 @@ test("managed finish corrects invalid input scope in one model execution and pre
         });
       };
     },
-    undefined,
     agents,
   );
   try {
@@ -1112,7 +992,6 @@ test.each([
     async ({ attempt }) => {
       await attempt.apply({ conditions: [retained] });
     },
-    undefined,
     agents,
   );
   try {
@@ -1224,7 +1103,6 @@ test("managed finish preflight rolls back an App request and publishes it exactl
     async ({ attempt }) => {
       await attempt.apply({ conditions: [retained] });
     },
-    undefined,
     agents,
   );
   const f = runtime;
@@ -1339,7 +1217,6 @@ test("managed finish rejects a consumed live-event-only wait before closing the 
       f.bus.emit(liveEvent);
       await accepted.promise;
     },
-    undefined,
     agents,
   );
   try {
@@ -1469,7 +1346,6 @@ test("managed finish refreshes accepted live events when a rejected waiting prop
         return accepted.promise;
       };
     },
-    undefined,
     agents,
   );
   try {
@@ -1573,7 +1449,6 @@ test("managed finish pins an empty accepted-live-event snapshot across executor 
         return null;
       };
     },
-    undefined,
     agents,
   );
   try {
@@ -1653,7 +1528,6 @@ test("managed finish pins retained reviewAt across executor closure", async () =
         return problem;
       };
     },
-    undefined,
     agents,
   );
   try {
@@ -1773,7 +1647,6 @@ test.each(["retire action", "condition and communication batch"] as const)("mana
       await attempt.apply(original);
       await attempt.apply({ actions: [action], facts: ["review:retired"] });
     },
-    undefined,
     agents,
   );
   try {
@@ -1853,7 +1726,7 @@ test("managed finish rejects an undeclared request Condition and accepts a corre
   };
   manager.register(definition);
   const agents = createTaskAgentRunner({ manager }, new Map([[definition.name, definition]]));
-  const f = await fixture(async () => corrected, "task", undefined, undefined, agents);
+  const f = await fixture(async () => corrected, "task", undefined, agents);
   try {
     const input = f.admit("ask").item;
     await f.run(input.executionTaskId!);
@@ -2010,7 +1883,8 @@ test("accepted Topic decisions persist across same-input messages and Request up
     const f = await fixture(async () => {
       if (!replyTo)
         return {
-          state: "converged",
+          state: "waiting",
+          reviewAt: Date.now() + 60_000,
           summary: "Opened the replied-to Topic",
           facts: [],
           communication: [
@@ -2035,7 +1909,8 @@ test("accepted Topic decisions persist across same-input messages and Request up
             ? { kind: "existing" as const, id: "topic-c" }
             : { kind: "none" as const };
       return {
-        state: "converged",
+        state: "waiting",
+          reviewAt: Date.now() + 60_000,
         summary: `Applied ${selection} Topic decision`,
         facts: [],
         communication: [
@@ -2198,7 +2073,7 @@ test("finish preflight and settlement share the communication limit after adding
   const communication: TaskCommunication[] = Array.from({ length: 8 }, (_, index) => ({
     id: `accept-${index}`,
     inputId: "ask",
-    requestUpdates: [{ id: `scope-${index}`, expectedRevision: 0, scope: `Ask ${index}`, disposition: "open" }],
+    topic: { kind: "none" },
   }));
   const proposal = { state: "converged" as const, summary: "Accepted", facts: [], communication, response: "Accepted." };
   const corrected = { ...proposal, communication: communication.slice(0, 7) };
@@ -2218,7 +2093,7 @@ test("finish preflight and settlement share the communication limit after adding
     const input = f.admit("ask").item;
     await f.run(input.executionTaskId!);
     expect(f.store.readTask(input.executionTaskId!)?.status.phase).toBe("converged");
-    expect(f.db.prepare("SELECT COUNT(*) AS n FROM conversation_requests").get()?.n).toBe(7);
+    expect(f.db.prepare("SELECT COUNT(*) AS n FROM conversation_requests").get()?.n).toBe(0);
     expect(
       listAppConversationMessages(f.db, "sample", "discussion")
         .filter(({ author }) => author.kind === "agent")
@@ -2242,4 +2117,44 @@ test("loaded dependency reads resolve exact answers by App identity without an A
   } finally {
     await f.close();
   }
+});
+
+test("an open accepted Request rejects convergence in preflight and settlement without losing the input", async () => {
+  const proposal = {
+    state: "converged" as const, summary: "Premature completion", response: "Still working", facts: [],
+    communication: [{ id: "accept-open", inputId: "ask", requestUpdates: [
+      { id: "promise", expectedRevision: 0, scope: "Implement and verify both cases", disposition: "open" as const },
+    ] }],
+  };
+  let phase: "invalid" | "waiting" | "finished" = "invalid";
+  const f = await fixture(async () => phase === "invalid" ? proposal : phase === "waiting"
+    ? { ...proposal, state: "waiting", response: undefined, summary: "Verification remains", reviewAt: Date.now() + 60_000 }
+    : { state: "converged", summary: "Both cases verified", facts: [], communication: [{
+        id: "finish-promise", inputId: "ask", message: "Both cases passed verification.",
+        requestUpdates: [{ id: "promise", expectedRevision: 1, disposition: "fulfilled", reason: "Both cases verified" }],
+      }] }, "task", async ({ validateResult }) => {
+    if (phase !== "invalid") return;
+    expect(validateResult!(proposal)).toContain("promise remains open");
+    expect(readConversationRequest(f.db, "sample", "discussion", "promise")).toBeNull();
+  });
+  try {
+    const item = f.admit("ask").item;
+    const id = item.executionTaskId!;
+    await f.run(id);
+    expect(f.store.readTask(id)?.status.executionFailures).toBe(1);
+    expect(getAppInboxItem(f.db, "ask")?.status).not.toBe("done");
+    expect(readConversationRequest(f.db, "sample", "discussion", "promise")).toBeNull();
+    expect(listAppConversationMessages(f.db, "sample", "discussion").filter(({ author }) => author.kind === "agent")).toEqual([]);
+    phase = "waiting";
+    makeTaskRetryDue(f.store, id);
+    await f.run(id);
+    expect(readConversationRequest(f.db, "sample", "discussion", "promise")?.status).toBe("open");
+    expect(getAppInboxItem(f.db, "ask")?.status).not.toBe("done");
+    await f.reopen();
+    phase = "finished";
+    setSystemTime(f.store.readTask(id)!.status.reviewAt! + 1);
+    await f.run(id);
+    expect(readConversationRequest(f.db, "sample", "discussion", "promise")?.status).toBe("closed");
+    expect(getAppInboxItem(f.db, "ask")?.status).toBe("done");
+  } finally { setSystemTime(); await f.close(); }
 });

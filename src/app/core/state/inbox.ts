@@ -1,16 +1,16 @@
-import type { SqliteDb } from "../../../lib/db.js";
-import type { AppInputContext, AppTaskAttachment, AppResult, ResourceCreator } from "@may-agent/sdk";
+import type { AppInputContext, AppResult, AppTaskAttachment, ResourceCreator } from "@may-agent/sdk";
 import { isDeepStrictEqual } from "node:util";
+import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
-import { getAppInboxItem, hasConversationExecutionTask, type AppInboxItem } from "./app-inbox-store.js";
 import {
   observeAppTaskIntent,
   readAppTaskIntent,
   type AppTaskObservationResult,
 } from "../tasks/app-task-reconciler.js";
 import type { AppTaskContext } from "../tasks/app-task-store.js";
-import { linkConversationTopicTask } from "./conversations.js";
+import { getAppInboxItem, type AppInboxItem } from "./app-inbox-store.js";
 import { linkConversationRequestTask } from "./conversation-requests.js";
+import { linkConversationTopicTask } from "./conversations.js";
 import { assertResourceCreator } from "./resource-creator.js";
 import { AppTaskAdmissionError } from "./task-admission-error.js";
 
@@ -38,35 +38,10 @@ export type TaskInputAdmission = {
   requestLink?: Omit<Parameters<typeof linkConversationRequestTask>[1], "taskRef">;
 };
 
-/** Conversation execution consumes saved Conversation input, never an ordinary Task handoff. */
-export function assertTaskInputCompatible(config: AppTaskContext, input: TaskInputAdmission): void {
-  if (config.conversationInputMode === "task") return;
-  const taskId = (input.attachment.kind === "existing" ? input.attachment.taskId : input.attachment.intent.id).trim();
-  // Match execution dispatch: retained bindings own Conversation membership.
-  // An ordinary App executor may also be named "conversation".
-  if (!hasConversationExecutionTask(config.resourceStore.db, config.resourceStore.appId, taskId)) return;
-  const item = getAppInboxItem(config.resourceStore.db, input.inputContext.id);
-  if (
-    !item?.conversationId ||
-    item.appId !== input.appId ||
-    item.status === "done" ||
-    item.lease ||
-    item.executionTaskId !== taskId ||
-    item.taskAdmissionKey !== input.idempotencyKey ||
-    input.idempotencyKey !== `conversation-input:${item.id}` ||
-    !isDeepStrictEqual(item.source, input.inputContext.source) ||
-    !isDeepStrictEqual(item.input, input.inputContext.input)
-  )
-    throw new AppTaskAdmissionError(
-      "Conversation Tasks require Conversation input admission; return the current Conversation decision or select an ordinary work Task for follow-up",
-    );
-}
-
 /** Persist resolved Task input and Conversation links. No App mapping, execution or notification calls. */
 export function admitTaskInput(config: AppTaskContext, input: TaskInputAdmission): AppTaskObservationResult {
   return stateTransaction(config.resourceStore.db, () => {
     input.authorize?.();
-    assertTaskInputCompatible(config, input);
     const db = config.resourceStore.db;
     const item = input.inboxInputId ? getAppInboxItem(db, input.inboxInputId) : null;
     if (input.inboxInputId) {

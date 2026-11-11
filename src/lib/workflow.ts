@@ -1,12 +1,14 @@
-import type { TaskResult } from "./types.js";
-import type { WorkflowContext, ExecutionResult, TaskReconcileResult } from "@may-agent/sdk";
-export type { WorkflowContext } from "@may-agent/sdk";
 import type {
+  ExecutionResult,
   Demand as SdkDemand,
   GuardModule as SdkGuardModule,
   WorkflowGuard as SdkWorkflowGuard,
   WorkflowGuardEvent as SdkWorkflowGuardEvent,
+  TaskReconcileResult,
+  WorkflowContext,
 } from "@may-agent/sdk";
+import type { TaskResult } from "./types.js";
+export type { WorkflowContext } from "@may-agent/sdk";
 
 // ── Workflow Lifecycle Callback Events ────────────────────────────────
 // These are local workflow-tool callbacks for logs/guards. They are not
@@ -18,36 +20,7 @@ export type WorkflowEvent =
   | { type: "workflow.step_completed"; step: string; sessionId?: string; result: TaskResult }
   | { type: "workflow.completed"; summary: string }
   | { type: "workflow.blocked"; reason: string }
-  | { type: "workflow.interrupted"; reason?: string }
-  | {
-      type: "workflow.resume_failed";
-      source: string;
-      owner: string;
-      timestamp: number;
-      data: {
-        workflowRunId?: string;
-        workflow?: string;
-        reason: string;
-        category: string;
-        recoverable: boolean;
-        nextAction?: string;
-        projectId?: string;
-      };
-    }
-  | {
-      type: "workflow.resume_skipped";
-      source: string;
-      owner: string;
-      timestamp: number;
-      data: {
-        workflowRunId: string;
-        workflow: string;
-        status: string;
-        reason: string;
-        nextAction?: string;
-        projectId?: string;
-      };
-    };
+  | { type: "workflow.interrupted"; reason?: string };
 
 // ── Guard Events (workflow-level) ──────────────────────────────────────
 

@@ -1,63 +1,24 @@
-/**
- * Crash Recovery Design Verification Tests
- *
- * These tests verify the crash recovery system described in
- * agents/bob/workspace/crash-recovery-design.md.
- *
- * The design specifies:
- * 1. Sentinel files (`[STARTED]`) written on session start, deleted on completion
- * 2. `resumeStaleSessions()` scans for orphan sentinels to detect crashed sessions
- * 3. Crashed sessions are marked "interrupted" or resumed (if agent is registered)
- * 4. Stale workflow runs (status "running") are marked "interrupted"
- * 5. JSONL rehydration: resumed sessions reload messages from disk
- * 6. Mid-tool-call crash repair: inject error tool results for pending tool calls
- * 7. Restart notice injection: "Process restarted. Continue where you left off."
- */
+/** Startup cleanup preserves evidence and marks abandoned execution interrupted. */
 
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtempSync, rmSync, mkdirSync, existsSync, writeFileSync, chmodSync } from "node:fs";
-import { join } from "node:path";
+import type { AgentMessage } from "@earendil-works/pi-agent-core";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { SubagentManager } from "../../src/lib/manager.js";
+import type { PersistedSession } from "../../src/lib/persistence.js";
 import {
-  ensureSessionDir,
   appendSessionMessage,
+  ensureSessionDir,
+  readSessionMeta,
   sessionDir,
   sessionOutputDir,
   writeSessionMeta,
-  readSessionMeta,
 } from "../../src/lib/persistence.js";
-import type { PersistedSession } from "../../src/lib/persistence.js";
-import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import { fakeModel } from "../fixtures/model.js";
 import { markStaleSession } from "../fixtures/stale-session.js";
 
 // ── Helpers ────────────────────────────────────────────────────────────
-
-function userMessage(text: string): AgentMessage {
-  return {
-    role: "user",
-    content: [{ type: "text", text }],
-    timestamp: Date.now(),
-  } as AgentMessage;
-}
-
-function assistantMessage(text: string): AgentMessage {
-  return {
-    role: "assistant",
-    content: [{ type: "text", text }],
-    timestamp: Date.now(),
-  } as AgentMessage;
-}
-
-function toolCallMessage(toolCallId: string, toolName: string): AgentMessage {
-  return {
-    role: "assistant",
-    content: [{ type: "toolCall", id: toolCallId, name: toolName, input: {} }],
-    timestamp: Date.now(),
-    stopReason: "toolUse",
-  } as unknown as AgentMessage;
-}
 
 function registerAgent(manager: SubagentManager, name: string): void {
   manager.register({
@@ -179,85 +140,24 @@ describe("Crash Recovery: Sentinel-Driven Crash Detection", () => {
     rmSync(persistDir, { recursive: true, force: true });
   });
 
-  it("resumeStaleSessions() detects orphan [STARTED] sentinel and resumes session", async () => {
-    // Simulate crash: sentinel exists + registry says "running" + no live process
-    writeRegistryState(persistDir, {
-      s_crashed: {
-        agent: "worker",
-        task: "important task",
-        status: "running",
-        startedAt: Date.now() - 30000,
-      },
-    });
-    setupSession(persistDir, "s_crashed", [userMessage("important task"), assistantMessage("Working on it...")]);
-    writeSentinel(persistDir, "s_crashed");
-
-    const manager = new SubagentManager({ persistDir });
-    registerAgent(manager, "worker");
-
-    const { resumed, interrupted } = manager.resumeStaleSessions();
-
-    // Session should be resumed (agent is registered)
-    expect(resumed).toHaveLength(1);
-    expect(resumed[0].sessionId).toBe("s_crashed");
-    expect(resumed[0].status).toBe("running");
-    expect(interrupted).toHaveLength(0);
-
-    // Sentinel should be cleaned up during resumeStaleSessions()
-    expect(sentinelExists(persistDir, "s_crashed")).toBe(false);
-
-    // Wait for it to finish (will error from fake model)
-    await manager.waitFor("s_crashed");
-  });
-
-  it("resumeStaleSessions() retains an orphan sentinel until ownership evidence is available", () => {
+  it("cleanupStaleSessions() retains an orphan sentinel until ownership evidence is available", () => {
     // A sentinel alone cannot authorize cleanup of an unknown execution.
     writeSentinel(persistDir, "s_orphan");
 
     const manager = new SubagentManager({ persistDir });
-    const { resumed, interrupted } = manager.resumeStaleSessions();
+    const { interrupted } = manager.cleanupStaleSessions();
 
-    expect(resumed).toHaveLength(0);
     expect(interrupted).toHaveLength(0);
 
     expect(sentinelExists(persistDir, "s_orphan")).toBe(true);
     writeRegistryState(persistDir, {
       s_orphan: { agent: "worker", task: "Retained work", status: "done", startedAt: 1, endedAt: 2 },
     });
-    manager.resumeStaleSessions();
+    manager.cleanupStaleSessions();
     expect(sentinelExists(persistDir, "s_orphan")).toBe(false);
   });
 
-  it("resumeStaleSessions() recreates a stale read-only [ACTIVE] marker during resume", async () => {
-    writeRegistryState(persistDir, {
-      s_readonly_active: {
-        agent: "worker",
-        task: "important task",
-        status: "running",
-        startedAt: Date.now() - 30000,
-      },
-    });
-    setupSession(persistDir, "s_readonly_active", [
-      userMessage("important task"),
-      assistantMessage("Working on it..."),
-    ]);
-    chmodSync(join(sessionDir(persistDir, "s_readonly_active"), "[ACTIVE]"), 0o444);
-    writeSentinel(persistDir, "s_readonly_active");
-
-    const manager = new SubagentManager({ persistDir });
-    registerAgent(manager, "worker");
-
-    const { resumed, interrupted } = manager.resumeStaleSessions();
-
-    expect(resumed).toHaveLength(1);
-    expect(resumed[0].sessionId).toBe("s_readonly_active");
-    expect(interrupted).toHaveLength(0);
-    expect(sentinelExists(persistDir, "s_readonly_active")).toBe(false);
-
-    await manager.waitFor("s_readonly_active");
-  });
-
-  it("resumeStaleSessions() interrupts sentinel session with unregistered agent", () => {
+  it("cleanupStaleSessions() interrupts sentinel session with unregistered agent", () => {
     writeRegistryState(persistDir, {
       s_unknown: {
         agent: "nonexistent-agent",
@@ -272,12 +172,11 @@ describe("Crash Recovery: Sentinel-Driven Crash Detection", () => {
     const manager = new SubagentManager({ persistDir });
     // Do NOT register "nonexistent-agent"
 
-    const { resumed, interrupted } = manager.resumeStaleSessions();
+    const { interrupted } = manager.cleanupStaleSessions();
 
-    expect(resumed).toHaveLength(0);
     expect(interrupted).toHaveLength(1);
     expect(interrupted[0].sessionId).toBe("s_unknown");
-    expect(interrupted[0].error).toContain("agent not registered");
+    expect(interrupted[0].error).toContain("recover work through its owning Task");
 
     // Registry should show "interrupted"
     const meta = readSessionMeta(persistDir, "s_unknown");
@@ -285,220 +184,6 @@ describe("Crash Recovery: Sentinel-Driven Crash Detection", () => {
 
     // Sentinel should be cleaned up
     expect(sentinelExists(persistDir, "s_unknown")).toBe(false);
-  });
-
-  it("simulates full crash-restart cycle: start → crash → restart → detect", async () => {
-    // Phase 1: "Start" a session (write what run() would write)
-    const sessionId = "s_crash_cycle";
-    writeRegistryState(persistDir, {
-      [sessionId]: {
-        agent: "worker",
-        task: "build feature X",
-        status: "running",
-        startedAt: Date.now() - 60000,
-      },
-    });
-    setupSession(persistDir, sessionId, [
-      userMessage("build feature X"),
-      assistantMessage("Starting to work on feature X..."),
-    ]);
-    writeSentinel(persistDir, sessionId);
-
-    // Phase 2: Verify pre-crash state
-    expect(sentinelExists(persistDir, sessionId)).toBe(true);
-    expect(readSessionMeta(persistDir, sessionId)!.status).toBe("running");
-
-    // Phase 3: "Restart" — create new manager (simulates new process)
-    const manager = new SubagentManager({ persistDir });
-    registerAgent(manager, "worker");
-
-    // Phase 4: Run crash recovery
-    const { resumed, interrupted: _interrupted } = manager.resumeStaleSessions();
-
-    // Phase 5: Verify recovery
-    expect(resumed).toHaveLength(1);
-    expect(resumed[0].sessionId).toBe(sessionId);
-    expect(resumed[0].agent).toBe("worker");
-    expect(resumed[0].task).toBe("build feature X");
-
-    // Sentinel cleaned
-    expect(sentinelExists(persistDir, sessionId)).toBe(false);
-
-    // Wait for resumed session to settle
-    await manager.waitFor(sessionId);
-
-    // After completion, registry shows terminal status
-    const finalMeta = readSessionMeta(persistDir, sessionId);
-    expect(finalMeta!.status).not.toBe("running");
-  });
-});
-
-describe("Crash Recovery: JSONL Rehydration", () => {
-  let persistDir: string;
-
-  beforeEach(() => {
-    persistDir = mkdtempSync(join(tmpdir(), "crash-recovery-rehydrate-"));
-  });
-
-  afterEach(() => {
-    rmSync(persistDir, { recursive: true, force: true });
-  });
-
-  it("resumed session preserves messages from before the crash", async () => {
-    const sessionId = "s_rehydrate";
-    writeRegistryState(persistDir, {
-      [sessionId]: {
-        agent: "worker",
-        task: "analyze data",
-        status: "running",
-        startedAt: Date.now() - 30000,
-      },
-    });
-    setupSession(persistDir, sessionId, [
-      userMessage("analyze data"),
-      assistantMessage("I found 3 issues in the dataset."),
-    ]);
-
-    const manager = new SubagentManager({ persistDir });
-    registerAgent(manager, "worker");
-
-    manager.resumeStaleSessions();
-
-    // The session should have the original messages rehydrated
-    const messages = manager.progress(sessionId);
-    // At minimum, original user + assistant messages should be present
-    const texts = messages.map((m) => {
-      if (m.content && Array.isArray(m.content)) {
-        return m.content
-          .filter((b: any) => b.type === "text")
-          .map((b: any) => b.text)
-          .join("");
-      }
-      return "";
-    });
-    expect(texts).toContain("analyze data");
-    expect(texts).toContain("I found 3 issues in the dataset.");
-
-    await manager.waitFor(sessionId);
-  });
-
-  it("resumed session gets a restart notice injected", async () => {
-    const sessionId = "s_notice";
-    writeRegistryState(persistDir, {
-      [sessionId]: {
-        agent: "worker",
-        task: "build module",
-        status: "running",
-        startedAt: Date.now() - 30000,
-      },
-    });
-    // Last message is assistant (not user), so resumeSession injects restart notice
-    setupSession(persistDir, sessionId, [userMessage("build module"), assistantMessage("Working on the module...")]);
-
-    const manager = new SubagentManager({ persistDir });
-    registerAgent(manager, "worker");
-
-    manager.resumeStaleSessions();
-
-    // Wait for the session to finish (will error from fake model)
-    await manager.waitFor(sessionId);
-
-    // Check that the restart notice was injected into the message history
-    // The JSONL should contain the restart message
-    // Read from the session's messages (may be in history now)
-    const result = await manager.waitFor(sessionId);
-    const allTexts = result.messages
-      .filter((m) => m.role === "user")
-      .flatMap((m) => (m.content as any[]).filter((b) => b.type === "text").map((b) => b.text));
-    expect(allTexts.some((t) => t.includes("Process restarted"))).toBe(true);
-  });
-
-  it("resumed session with last message=user calls continue() (no extra injection)", async () => {
-    const sessionId = "s_continue";
-    writeRegistryState(persistDir, {
-      [sessionId]: {
-        agent: "worker",
-        task: "fix bug",
-        status: "running",
-        startedAt: Date.now() - 30000,
-      },
-    });
-    // Last message is user — resumeSession calls agent.continue() without injecting a new message
-    setupSession(persistDir, sessionId, [userMessage("fix bug")]);
-
-    const manager = new SubagentManager({ persistDir });
-    registerAgent(manager, "worker");
-
-    manager.resumeStaleSessions();
-    await manager.waitFor(sessionId);
-
-    // The result messages should NOT contain a "Process restarted" user message
-    // because the last message was already a user message (continue() is used)
-    const result = await manager.waitFor(sessionId);
-    const restartMessages = result.messages
-      .filter((m) => m.role === "user")
-      .filter((m) => (m.content as any[]).some((b) => b.type === "text" && b.text.includes("Process restarted")));
-    expect(restartMessages).toHaveLength(0);
-  });
-});
-
-describe("Crash Recovery: Mid-Tool-Call Repair", () => {
-  let persistDir: string;
-
-  beforeEach(() => {
-    persistDir = mkdtempSync(join(tmpdir(), "crash-recovery-tool-"));
-  });
-
-  afterEach(() => {
-    rmSync(persistDir, { recursive: true, force: true });
-  });
-
-  it("injects error tool results for pending tool calls from a crash", async () => {
-    const sessionId = "s_toolcrash";
-    writeRegistryState(persistDir, {
-      [sessionId]: {
-        agent: "worker",
-        task: "run tests",
-        status: "running",
-        startedAt: Date.now() - 30000,
-      },
-    });
-    // Session crashed mid-tool-call: last message is assistant with a toolCall
-    setupSession(persistDir, sessionId, [userMessage("run tests"), toolCallMessage("tc_1", "exec")]);
-
-    const manager = new SubagentManager({ persistDir });
-    registerAgent(manager, "worker");
-
-    manager.resumeStaleSessions();
-
-    // Wait for completion
-    await manager.waitFor(sessionId);
-
-    // Verify: the resumed session should have an error toolResult injected
-    const result = await manager.waitFor(sessionId);
-    const toolResults = result.messages.filter((m) => m.role === "toolResult");
-    expect(toolResults.length).toBeGreaterThanOrEqual(1);
-
-    // The first toolResult should be an error for the crashed tool call
-    const errorResult = toolResults.find((m) => (m as any).toolCallId === "tc_1" && (m as any).isError === true);
-    expect(errorResult).toBeDefined();
-    const errorText = (errorResult!.content as any[])
-      .filter((b) => b.type === "text")
-      .map((b) => b.text)
-      .join("");
-    expect(errorText).toContain("process restarted");
-  });
-});
-
-describe("Crash Recovery: Registry Status Updates", () => {
-  let persistDir: string;
-
-  beforeEach(() => {
-    persistDir = mkdtempSync(join(tmpdir(), "crash-recovery-registry-"));
-  });
-
-  afterEach(() => {
-    rmSync(persistDir, { recursive: true, force: true });
   });
 
   it("interrupted (unregistered agent) sessions get status=interrupted in registry", () => {
@@ -515,35 +200,11 @@ describe("Crash Recovery: Registry Status Updates", () => {
     const manager = new SubagentManager({ persistDir });
     // "gone-agent" is NOT registered
 
-    manager.resumeStaleSessions();
+    manager.cleanupStaleSessions();
 
     const meta = readSessionMeta(persistDir, "s_unreg");
     expect(meta!.status).toBe("interrupted");
-    expect(meta!.error).toContain("agent not registered");
-  });
-
-  it("resumed sessions get status=running in registry during recovery", async () => {
-    writeRegistryState(persistDir, {
-      s_resuming: {
-        agent: "worker",
-        task: "task",
-        status: "running",
-        startedAt: Date.now() - 30000,
-      },
-    });
-    setupSession(persistDir, "s_resuming", [userMessage("task")]);
-
-    const manager = new SubagentManager({ persistDir });
-    registerAgent(manager, "worker");
-
-    const { resumed } = manager.resumeStaleSessions();
-    expect(resumed).toHaveLength(1);
-
-    // During resume, the registry is updated to "running"
-    const meta = readSessionMeta(persistDir, "s_resuming");
-    expect(meta!.status).toBe("running");
-
-    await manager.waitFor("s_resuming");
+    expect(meta!.error).toContain("recover work through its owning Task");
   });
 
   it("does not touch done/error/interrupted sessions during recovery", () => {
@@ -567,9 +228,8 @@ describe("Crash Recovery: Registry Status Updates", () => {
     });
 
     const manager = new SubagentManager({ persistDir });
-    const { resumed, interrupted } = manager.resumeStaleSessions();
+    const { interrupted } = manager.cleanupStaleSessions();
 
-    expect(resumed).toHaveLength(0);
     expect(interrupted).toHaveLength(0);
 
     // Statuses unchanged

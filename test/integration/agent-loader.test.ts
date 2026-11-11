@@ -1,22 +1,17 @@
-import { describe, it, expect } from "bun:test";
+import { describe, expect, it } from "bun:test";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import {
   listConfiguredAgentNames,
   listProjectAgentDirectories,
   loadAgentConfig,
-  loadMaintenanceHandlers,
   loadAgents,
   validateAgentConfig,
   type AgentConfig,
 } from "../../src/app/agent-loader.js";
-import {
-  findFleetToolPresetIssues,
-  VALID_TOOL_PRESETS,
-} from "../../src/lib/tool-preset-registry.js";
 import { createModelRegistry } from "../../src/app/model-registry.js";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { invalidateRuntimeModuleCache } from "../../src/lib/runtime-import.js";
+import { VALID_TOOL_PRESETS, findFleetToolPresetIssues } from "../../src/lib/tool-preset-registry.js";
 
 // Installed catalog policy belongs to the separate deployment check. Portable
 // loader behavior below is exercised with generated temporary fixtures.
@@ -210,8 +205,7 @@ describe("validateAgentConfig", () => {
             if (event.message) messages.push(event.message);
           },
         } as any,
-        cronEnabled: false,
-      });
+        });
 
       expect(registered.sort()).toEqual(expectedAgents.sort());
       expect(messages.filter((message) => message.includes("Unknown tool preset"))).toEqual([]);
@@ -334,8 +328,7 @@ describe("agent loader boundaries", () => {
         models: { "claude-opus-4-6": { id: "claude-opus-4-6", provider: "test", apiKey: "test" } } as any,
         manager: manager as any,
         bus: { emit: () => undefined } as any,
-        cronEnabled: false,
-      });
+        });
 
       expect(result.added).toEqual(["aks-explorer"]);
       expect(registered[0].agentDir).toBe(projectAgentDir);
@@ -347,254 +340,24 @@ describe("agent loader boundaries", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
-  it('prepares maintenance when cron.json exists even without the cron tool', async () => {
-    const root = mkdtempSync(join(tmpdir(), "agent-loader-cron-ignored-"));
-    try {
-      const agentsRoot = join(root, "agents");
-      const sharedRoot = join(root, "shared");
-      const agentDir = join(agentsRoot, "silenced");
-      mkdirSync(agentDir, { recursive: true });
-      mkdirSync(sharedRoot, { recursive: true });
-      writeFileSync(
-        join(agentDir, "agent.json"),
-        JSON.stringify({
-          name: "silenced",
-          description: "agent with cron.json but no cron tool",
-          domain: "test",
-          model: "claude-opus-4-6",
-          tools: ["query_db"], // no "cron"
-        }),
-      );
-      writeFileSync(
-        join(agentDir, "cron.json"),
-        JSON.stringify([{ name: "forgotten", handler: "x", intervalMs: 60000 }]),
-      );
-
-      const events: any[] = [];
-      const manager = { hasAgent: () => false, register: () => undefined };
-
-      await loadAgents({
-        agentsRoot,
-        projectRoot: root,
-        sharedRoot,
-        projectsRoot: join(root, "projects"),
-        persistDir: join(root, ".state"),
-        models: { "claude-opus-4-6": { id: "claude-opus-4-6", provider: "test", apiKey: "test" } } as any,
-        manager: manager as any,
-        bus: { emit: (e: any) => events.push(e) } as any,
-        cronEnabled: false,
-      });
-
-      const warning = events.find(
-        (e) =>
-          e.type === "info" &&
-          typeof e.message === "string" &&
-          e.message.includes("silenced") &&
-          e.message.includes("IGNORED"),
-      );
-      expect(warning).toBeUndefined();
-      const { getAgentMaintenance } = await import("../../src/app/agent-loader.js");
-      expect(getAgentMaintenance().get("silenced")?.getEntries()).toEqual([{ name: "forgotten", handler: "x", intervalMs: 60000 }]);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it('does NOT warn when cron.json exists and "cron" is in tools[]', async () => {
-    const root = mkdtempSync(join(tmpdir(), "agent-loader-cron-ok-"));
-    try {
-      const agentsRoot = join(root, "agents");
-      const sharedRoot = join(root, "shared");
-      const agentDir = join(agentsRoot, "enabled");
-      mkdirSync(agentDir, { recursive: true });
-      mkdirSync(sharedRoot, { recursive: true });
-      writeFileSync(
-        join(agentDir, "agent.json"),
-        JSON.stringify({
-          name: "enabled",
-          description: "agent with cron.json and cron tool",
-          domain: "test",
-          model: "claude-opus-4-6",
-          tools: ["cron"],
-        }),
-      );
-      writeFileSync(join(agentDir, "cron.json"), JSON.stringify([]));
-
-      const events: any[] = [];
-      const manager = { hasAgent: () => false, register: () => undefined };
-
-      await loadAgents({
-        agentsRoot,
-        projectRoot: root,
-        sharedRoot,
-        projectsRoot: join(root, "projects"),
-        persistDir: join(root, ".state"),
-        models: { "claude-opus-4-6": { id: "claude-opus-4-6", provider: "test", apiKey: "test" } } as any,
-        manager: manager as any,
-        bus: { emit: (e: any) => events.push(e) } as any,
-        cronEnabled: false,
-      });
-
-      const warning = events.find(
-        (e) => e.type === "info" && typeof e.message === "string" && e.message.includes("IGNORED"),
-      );
-      expect(warning).toBeUndefined();
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("rejects workflow-backed maintenance entries instead of running a second work path", async () => {
-    const root = mkdtempSync(join(tmpdir(), "agent-loader-workflow-handler-"));
-    try {
-      const handlers = new Map<string, unknown>();
-      const cron = {
-        getEntries: () => [
-          {
-            name: "heartbeat-alpha",
-            enabled: true,
-            handler: {
-              workflow: "alpha-heartbeat",
-              agent: "alpha",
-              task: "[heartbeat] run alpha heartbeat",
-            },
-          },
-        ],
-        registerHandler: (name: string, handler: unknown) => handlers.set(name, handler),
-        setHandlerResolver: () => undefined,
-        triggerNow: () => false,
-      };
-
-      await expect(loadMaintenanceHandlers({
-        agentsRoot: join(root, "agents"),
-        sharedRoot: join(root, "shared"),
-        projectsRoot: join(root, "projects"),
-        persistDir: join(root, ".state"),
-        projectRoot: root,
-        manager: {} as any,
-        bus: { emit: () => undefined } as any,
-        agentMaintenance: new Map([["alpha", cron as any]]),
-      })).rejects.toThrow("requires a named handler");
-      expect(handlers.size).toBe(0);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("installs a dynamic resolver even when no handlers exist at startup", async () => {
-    const root = mkdtempSync(join(tmpdir(), "agent-loader-empty-resolver-"));
-    try {
-      const handlers = new Map<string, unknown>();
-      let resolver: ((entry: any) => Promise<unknown>) | undefined;
-      const cron = {
-        getEntries: () => [],
-        registerHandler: (name: string, handler: unknown) => handlers.set(name, handler),
-        setHandlerResolver: (fn: typeof resolver) => {
-          resolver = fn;
-        },
-        triggerNow: () => false,
-      };
-
-      await loadMaintenanceHandlers({
-        agentsRoot: join(root, "agents"),
-        sharedRoot: join(root, "shared"),
-        projectsRoot: join(root, "projects"),
-        persistDir: join(root, ".state"),
-        projectRoot: root,
-        manager: {} as any,
-        bus: { emit: () => undefined } as any,
-        agentMaintenance: new Map([["alpha", cron as any]]),
-      });
-
-      expect(resolver).toBeDefined();
-      await expect(resolver!({
-        name: "heartbeat-alpha",
-        enabled: true,
-        handler: { workflow: "alpha-heartbeat", agent: "alpha", task: "[heartbeat]" },
-      })).rejects.toThrow("requires a named handler");
-      expect(handlers.has("heartbeat-alpha")).toBe(false);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("reloads handler modules only after the runtime reload boundary", async () => {
-    const root = mkdtempSync(join(tmpdir(), "agent-loader-handlers-"));
-    try {
-      const agentDir = join(root, "agents", "alpha");
-      const handlersDir = join(agentDir, "handlers");
-      mkdirSync(handlersDir, { recursive: true });
-      const handlerPath = join(handlersDir, "sample.ts");
-      writeFileSync(handlerPath, `export function create() { return async () => "v1"; }`);
-
-      const handlers = new Map<string, () => Promise<string>>();
-      const cron = {
-        getEntries: () => [{ name: "sample-entry", handler: "sample" }],
-        registerHandler: (name: string, handler: () => Promise<string>) => handlers.set(name, handler),
-        setHandlerResolver: () => undefined,
-        triggerNow: () => false,
-      };
-
-      const result = await loadMaintenanceHandlers({
-        agentsRoot: join(root, "agents"),
-        persistDir: join(root, ".state"),
-        projectRoot: root,
-        manager: { callAgent: async () => ({}) } as any,
-        bus: { emit: () => undefined } as any,
-        agentMaintenance: new Map([["alpha", cron as any]]),
-      });
-
-      expect(result.errors).toEqual([]);
-      expect(result.registered).toEqual(["alpha:sample-entry"]);
-      expect(await handlers.get("sample-entry")!()).toBe("v1");
-
-      writeFileSync(handlerPath, `export function create() { return async () => "v2"; }`);
-
-      expect(await handlers.get("sample-entry")!()).toBe("v1");
-      invalidateRuntimeModuleCache();
-      expect(await handlers.get("sample-entry")!()).toBe("v2");
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("resolves named handlers beside project-local agent cron files", async () => {
-    const root = mkdtempSync(join(tmpdir(), "agent-loader-project-handlers-"));
-    try {
-      const globalAgentsRoot = join(root, "agents");
-      const projectAgentDir = join(root, "projects", "alpha-project", "agents", "aks-explorer");
-      const handlersDir = join(projectAgentDir, "handlers");
-      mkdirSync(handlersDir, { recursive: true });
-      const cronPath = join(projectAgentDir, "cron.json");
-      const handlerPath = join(handlersDir, "pool-watch.ts");
-      writeFileSync(cronPath, JSON.stringify([{ name: "pool-watch", handler: "pool-watch", enabled: true }]));
-      writeFileSync(handlerPath, `export function create() { return async () => "project-local"; }`);
-
-      const handlers = new Map<string, () => Promise<string>>();
-      const cron = {
-        getConfigPath: () => cronPath,
-        getEntries: () => [{ name: "pool-watch", handler: "pool-watch", enabled: true }],
-        registerHandler: (name: string, handler: () => Promise<string>) => handlers.set(name, handler),
-        setHandlerResolver: () => undefined,
-        triggerNow: () => false,
-      };
-
-      const result = await loadMaintenanceHandlers({
-        agentsRoot: globalAgentsRoot,
-        sharedRoot: join(root, "shared"),
-        projectsRoot: join(root, "projects"),
-        persistDir: join(root, ".state"),
-        projectRoot: join(root, "projects", "alpha-project"),
-        manager: { callAgent: async () => ({}) } as any,
-        bus: { emit: () => undefined } as any,
-        agentMaintenance: new Map([["aks-explorer", cron as any]]),
-      });
-
-      expect(result.errors).toEqual([]);
-      expect(result.registered).toEqual(["aks-explorer:pool-watch"]);
-      expect(await handlers.get("pool-watch")!()).toBe("project-local");
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
+  for (const cron of [[{ name: "duty", handler: "scan" }], { jobs: [] }, "broken"]) {
+    it(`rejects retired cron declarations before publication: ${JSON.stringify(cron)}`, async () => {
+      const root = mkdtempSync(join(tmpdir(), "may-retired-cron-"));
+      try {
+        const dir = join(root, "agents", "fixture");
+        mkdirSync(dir, { recursive: true });
+        writeFileSync(join(dir, "agent.json"), JSON.stringify({
+          name: "fixture", description: "Fixture", domain: "test", model: "gpt-5.4", tools: [],
+        }));
+        writeFileSync(join(dir, "cron.json"), JSON.stringify(cron));
+        const { SubagentManager } = await import("../../src/lib/manager.js");
+        const { EventBus } = await import("../../src/app/core/events/bus.js");
+        const manager = new SubagentManager({ persistDir: join(root, ".state") });
+        await expect(loadAgents({ agentsRoot: join(root, "agents"), projectRoot: root,
+          sharedRoot: join(root, "shared"), projectsRoot: join(root, "projects"),
+          models: fakeModels as any, manager, bus: new EventBus(), persistDir: join(root, ".state") })).rejects.toThrow("cron.json handlers are retired");
+        expect(manager.listAgents()).toHaveLength(0);
+      } finally { rmSync(root, { recursive: true, force: true }); }
+    });
+  }
 });

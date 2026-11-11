@@ -21,7 +21,6 @@ describe("E2: project comment roundtrip", () => {
       fixtureAgents: ["may"],
       fixtureProjects: ["e2e-comment-sandbox", "comment.app"],
       fixtureWorkflows: { may: ["e2e-noop-workflow"] },
-      cronJson: { may: [] },
       daemonArgs: ["--socket"],
     });
     await sb.daemonReady;

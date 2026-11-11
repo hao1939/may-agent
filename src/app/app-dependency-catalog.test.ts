@@ -1,5 +1,5 @@
-import { describe, expect, it } from "bun:test";
 import { Type, defineApp } from "@may-agent/sdk";
+import { describe, expect, it } from "bun:test";
 import { appDependencyCatalog } from "./app-dependency-catalog.js";
 
 describe("App dependency catalog", () => {
@@ -39,7 +39,7 @@ describe("App dependency catalog", () => {
         Type.Object({ kind: Type.Literal("message"), data: Type.Record(Type.String(), Type.Unknown()) }),
         Type.Object({ kind: Type.Literal("goal"), data: Type.Record(Type.String(), Type.Unknown()) }),
       ]),
-      conversation: { mode: "agent" as const, inputKinds: ["message"] },
+      conversation: { mode: "task" as const, inputKinds: ["message"] },
     };
     const catalog = appDependencyCatalog([
       { appDir: "/fixtures/may.app", definition: source },
@@ -78,7 +78,7 @@ describe("App dependency catalog", () => {
     ]);
     expect(
       appDependencyCatalog([
-        { appDir: "/fixtures/may.app", definition: { ...source, conversation: { mode: "agent" } } },
+        { appDir: "/fixtures/may.app", definition: { ...source, conversation: { mode: "task" } } },
       ]),
     ).toEqual([catalog[1]]);
   });

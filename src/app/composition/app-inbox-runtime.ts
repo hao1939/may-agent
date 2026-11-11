@@ -1,15 +1,3 @@
-import { validateIntent } from "../core/tasks/app-task-reconciler.js";
-import { deliverConversationApproval, taskControlAction } from "../core/events/interface.js";
-import { readTaskEventTarget, readEventTaskTarget } from "../core/events/task-target.js";
-import { appInputFeedbackEvent, appInputAdmissionFailureEvent } from "../core/inbox/input-result.js";
-import {
-  conversationTaskId,
-  listPendingConversationTaskChanges,
-  type ConversationTaskChangeRef,
-} from "../core/state/conversation-task-turns.js";
-import type { AppTaskCapability } from "../core/tasks/app-task-capability.js";
-import { createAppScheduleProducer } from "../adapters/producers/app-schedules.js";
-import { OwnedTimer } from "../core/scheduling/timer.js";
 import {
   matchesEventSelector,
   type AppDependencyObservation,
@@ -20,13 +8,21 @@ import {
   type ObserverContext,
   type TaskIntent,
 } from "@may-agent/sdk";
-import { log } from "../../lib/log.js";
 import type { SqliteDb } from "../../lib/db.js";
 import { withSqliteBusyRetry } from "../../lib/db/busy-retry.js";
-import { loadPersistedEvent } from "../core/events/persisted.js";
+import { log } from "../../lib/log.js";
+import { createAppObserverRuntime } from "../adapters/producers/app-observer-runtime.js";
+import { createAppScheduleProducer } from "../adapters/producers/app-schedules.js";
+import { canonicalAppEvent } from "../canonical-app-event.js";
+import type {
+  AppDefinitionSource,
+  AppRegistry,
+  AppRegistrySnapshot,
+  LoadedAppDefinition,
+} from "../core/apps/registry.js";
 import {
-  EVENT_RECORD_ONLY,
   EVENT_DELIVERY_RESULT,
+  EVENT_RECORD_ONLY,
   EVENT_REDELIVERY_REQUIRED,
   EVENT_ROW_ID,
   eventData,
@@ -34,21 +30,19 @@ import {
   type DeliveryResult,
   type EventBus,
 } from "../core/events/bus.js";
+import { deliverConversationApproval, taskControlAction } from "../core/events/interface.js";
+import { loadPersistedEvent } from "../core/events/persisted.js";
+import { readEventTaskTarget, readTaskEventTarget } from "../core/events/task-target.js";
 import {
   AppInboxHost,
   type AdmitAppInput,
   type AppInboxFailure,
-  type AppTaskAttacher,
   type AppInboxHostOptions,
+  type AppTaskAttacher,
 } from "../core/inbox/app-inbox-host.js";
-import { hasConversationExecutionTask } from "../core/state/app-inbox-store.js";
-import { listConversationTaskLinks } from "../core/state/conversation-task-links.js";
-import type {
-  AppDefinitionSource,
-  AppRegistry,
-  AppRegistrySnapshot,
-  LoadedAppDefinition,
-} from "../core/apps/registry.js";
+import { appInputAdmissionFailureEvent, appInputFeedbackEvent } from "../core/inbox/input-result.js";
+import { appObservationSelectors } from "../core/reads/app-contract.js";
+import { OwnedTimer } from "../core/scheduling/timer.js";
 import {
   appEventInboxSubmission,
   completeAppEventAdmissionPlan,
@@ -62,10 +56,15 @@ import {
   type AppEventAdmissionPlan,
   type AppEventAdmissionRoute,
 } from "../core/state/app-event-admission-store.js";
-import { createAppObserverRuntime } from "../adapters/producers/app-observer-runtime.js";
+import { hasConversationExecutionTask } from "../core/state/app-inbox-store.js";
+import { listConversationTaskLinks } from "../core/state/conversation-task-links.js";
+import {
+  conversationTaskId,
+  listPendingConversationTaskChanges,
+  type ConversationTaskChangeRef,
+} from "../core/state/conversation-task-turns.js";
 import { observationDemandReader, readTaskObservationInterests } from "../core/state/observation-demand.js";
-import { appObservationSelectors } from "../core/reads/app-contract.js";
-import { canonicalAppEvent } from "../canonical-app-event.js";
+import type { AppTaskCapability } from "../core/tasks/app-task-capability.js";
 
 export type AppRegistryReloadPreparation = (input: {
   snapshot: AppRegistrySnapshot;
@@ -303,11 +302,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   }
   let appDirById = new Map(loaded.map((entry) => [entry.definition.id, entry.appDir]));
   let loadedById = new Map(loaded.map((entry) => [entry.definition.id, entry]));
-  let taskSubscriptionsByEventType = indexAppEventSelectors(loaded, (definition) => definition.tasks?.subscriptions);
   let observationsByEventType = indexAppEventSelectors(loaded, appObservationSelectors);
   const replaceRouteIndexes = (entries: LoadedAppDefinition[]): void => {
     loadedById = new Map(entries.map((entry) => [entry.definition.id, entry]));
-    taskSubscriptionsByEventType = indexAppEventSelectors(entries, (definition) => definition.tasks?.subscriptions);
     observationsByEventType = indexAppEventSelectors(entries, appObservationSelectors);
   };
   const attachTask: AppTaskAttacher | undefined = options.attachTask
@@ -599,22 +596,16 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       const input = host.translateSubscription(command.appId, subscriptionId, canonical);
       return input === null ? [] : [{ subscriptionId, input }];
     });
-    if (command.resolveTask && !entry.definition.tasks?.resolve) {
-      throw new Error(`App ${command.appId} Task resolver is unavailable`);
+    if (command.resolveTask) {
+      throw new Error("Unresolved legacy Task routing requires explicit offline conversion before upgrading");
     }
-    const intent = command.resolveTask ? entry.definition.tasks!.resolve!(canonical) : null;
-    if (intent) validateIntent(intent);
-    if (inputs.length > 1 || (inputs.length > 0 && intent)) {
-      throw new Error(
-        `Ambiguous App ${command.appId} routing for event:${plan.eventId}: multiple inbox or inbox/task-intent routes`,
-      );
-    }
+    if (inputs.length > 1) throw new Error(`Ambiguous App ${command.appId} routing for event:${plan.eventId}`);
     const common = { appId: command.appId, conditionTaskIds: command.conditionTaskIds };
     const selected = inputs[0];
     const route: Exclude<AppEventAdmissionRoute, { kind: "unresolved" }> = selected
       ? { ...common, kind: "inbox", routeId: selected.subscriptionId, input: selected.input }
-      : intent || command.conditionTaskIds.length > 0
-        ? { ...common, kind: "task", routeId: intent?.id ?? command.routeId, intent: intent ?? null }
+      : command.conditionTaskIds.length > 0
+        ? { ...common, kind: "task", routeId: command.routeId, intent: null }
         : { ...common, kind: "noop", routeId: command.routeId };
     resolveAppEventAdmissionCommand(options.db, {
       eventId: plan.eventId,
@@ -1227,30 +1218,20 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           for (const taskId of match.taskIds) taskIds.add(taskId);
           conditionTaskIdsByApp.set(match.appId, taskIds);
         }
-        const taskCandidates = options.previewTaskEventRoutes
-          ? (taskSubscriptionsByEventType.get(canonical.type) ?? [])
-          : loaded;
-        const resolveTaskApps = new Set<string>();
-        for (const { definition, appDir } of taskCandidates) {
-          if (!definition.tasks) continue;
-          if (
-            definition.tasks.resolve &&
-            definition.tasks.subscriptions?.some((selector) => matchesEventSelector(selector, canonical))
-          ) {
-            resolveTaskApps.add(definition.id);
-          }
-          if (!options.previewTaskEventRoutes) {
+        if (!options.previewTaskEventRoutes) {
+          for (const { definition, appDir } of loaded) {
+            if (!definition.tasks) continue;
             const taskIds = options.previewTaskEvent?.({ appId: definition.id, appDir, event }) ?? [];
             if (taskIds.length) conditionTaskIdsByApp.set(definition.id, new Set(taskIds));
           }
         }
-        const appIds = new Set([...subscriptionIdsByApp.keys(), ...resolveTaskApps, ...conditionTaskIdsByApp.keys()]);
+        const appIds = new Set([...subscriptionIdsByApp.keys(), ...conditionTaskIdsByApp.keys()]);
         const routes: AppEventAdmissionRoute[] = [...appIds].map((appId) => ({
           appId,
           kind: "unresolved",
           routeId: canonical.type,
           subscriptionIds: subscriptionIdsByApp.get(appId) ?? [],
-          resolveTask: resolveTaskApps.has(appId),
+          resolveTask: false,
           conditionTaskIds: [...(conditionTaskIdsByApp.get(appId) ?? [])].sort(),
         }));
         if (routes.length > 0) {

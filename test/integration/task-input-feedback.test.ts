@@ -2,14 +2,14 @@ import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { discoverAppDefinitions } from "../../src/app/adapters/discovery/app-definitions.js";
 import { createAppInputAdmission } from "../../src/app/app-runtime.js";
 import { startAppInboxRuntime } from "../../src/app/composition/app-inbox-runtime.js";
 import { AppRegistry } from "../../src/app/core/apps/registry.js";
-import { discoverAppDefinitions } from "../../src/app/adapters/discovery/app-definitions.js";
-import { EventBus, EVENT_ROW_ID, type AgentEvent } from "../../src/app/core/events/bus.js";
+import { EVENT_ROW_ID, EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
 import { createEventInterface, findEventPublication } from "../../src/app/core/events/interface.js";
-import { createAppTaskEvents } from "../../src/app/core/tasks/app-task-emitter.js";
 import { createAppInboxItem } from "../../src/app/core/state/app-inbox-store.js";
+import { createAppTaskEvents } from "../../src/app/core/tasks/app-task-emitter.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
 import { closeDb, getDb } from "../../src/lib/requests.js";
 import { fakeTaskAttacher } from "../fixtures/task-attachment.js";
@@ -25,7 +25,7 @@ test("public targeted input retains its receipt, attaches once and reaches only 
     inputSchema: { type: "object", required: ["kind", "data"], properties: {
       kind: { const: "message" }, data: { type: "object" }
     } },
-    conversation: { mode: "agent", inputKinds: ["message"], conversationId: "primary" },
+    conversation: { mode: "task", inputKinds: ["message"], conversationId: "primary" },
     task() { throw new Error("An exact Task address must bypass mapping"); }
   };`,
   );

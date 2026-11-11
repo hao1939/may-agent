@@ -1,25 +1,25 @@
-import { taskExecutionContext } from "./task-context.js";
-import { taskPrimaryStart } from "../../core/state/task-budget-managed-start.js";
+import type { TaskAttempt } from "@may-agent/sdk";
+import { taskAgentResultSchema as appTaskAgentResultSchema } from "@may-agent/sdk";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import { taskAgentResultSchema as appTaskAgentResultSchema } from "@may-agent/sdk";
-import type { TaskAttempt } from "@may-agent/sdk";
+import { resolvedExecutionRecipient } from "../../../lib/execution-recipient.js";
 import type { SubagentManager } from "../../../lib/index.js";
 import type { SubagentDefinition } from "../../../lib/types.js";
-import { projectAppTaskChildPromptContext } from "../../core/tasks/app-task-context.js";
-import { APP_TASK_RECOVERY_OWNER } from "../../core/tasks/session-binding.js";
 import { childEventTrace } from "../../core/events/bus.js";
+import { taskPrimaryStart } from "../../core/state/task-budget-managed-start.js";
+import { projectAppTaskChildPromptContext } from "../../core/tasks/app-task-context.js";
+import type { TaskAgentInput, TaskAgentRunner } from "../../core/tasks/execution.js";
 import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "../../core/tasks/result.js";
-import type { TaskAgentRunner, TaskAgentInput } from "../../core/tasks/execution.js";
+import { APP_TASK_RECOVERY_OWNER } from "../../core/tasks/session-binding.js";
 import { localAgentDir } from "../discovery/local-agents.js";
 import { captureAgentDefinitions } from "./agent-definitions.js";
-import { resolvedExecutionRecipient } from "../../../lib/execution-recipient.js";
 import {
+  applyCanonicalAgentResidueCleanup,
   beginCanonicalAgentResidueGuard,
   planCanonicalAgentResidueCleanup,
-  applyCanonicalAgentResidueCleanup,
   rejectConvergedDirectAgentResidue,
 } from "./agent-workspace.js";
+import { taskExecutionContext } from "./task-context.js";
 
 function firstNonEmptyString(...values: unknown[]): string | null {
   for (const v of values) if (typeof v === "string" && v.trim()) return v.trim();
@@ -85,7 +85,7 @@ async function executeTaskAgent(
   const prompt = [
     ...(attempt.events.communication?.length
       ? [
-          "This Task handles communication through saved input context. Use communication changes (in tasks.apply or finish) to publish a message, accept/refine an ask, or record its disposition. Select inputId from events.inputs; infra retains the recipient and delivery route. Keep the original human promise when requesting a contribution from another Task. A message does not imply fulfillment or convergence: use ordinary waiting/continue/requests/Conditions while work remains. Request records alone do not schedule execution. Keep background work quiet unless a useful message is owed.",
+          "This Task handles communication through saved input context. Use communication changes (in tasks.apply or finish) to publish a message, accept/refine an ask, or record its disposition. Select inputId from events.inputs; infra retains the recipient and delivery route. Keep the original human promise when requesting a contribution from another Task. A message does not imply fulfillment or convergence: use ordinary waiting/continue/requests/Conditions while work remains. Request records alone do not schedule execution. Keep background work quiet unless a useful message is owed. Read every assigned Request in events.communication or with tasks communication before working. Save accepted requirements or corrections immediately with tasks.apply, using communication.requestUpdates, so failure or Stop cannot lose them. Close a Request only with its own explanation and evidence. An open Request requires continuing work or a real wait, and prevents convergence. Use requests plus request Conditions to commission independent work and receive its result; the original human promise stays here.",
         ]
       : []),
     "## Reconciliation Task",

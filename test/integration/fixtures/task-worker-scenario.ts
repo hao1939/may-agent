@@ -1,38 +1,30 @@
-import { initializeWorkloadState, type WorkloadStateInitialization } from "../../../src/app/composition/initialize-workload-state.js";
-import { inspectWorkloadConfiguration, withdrawWorkloadEnforcement } from "../../../src/app/composition/withdraw-workload-enforcement.js";
-import { makeTaskRetryDue } from "../../../src/app/core/tasks/app-task-test-support.js";
+import type { TaskWorkload } from "@may-agent/sdk";
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { closeDb, getDb } from "../../../src/lib/requests.js";
-import { AppTaskResourceStore } from "../../../src/app/core/state/app-task-resource-store.js";
-import { TaskBudgetAdmissionStore } from "../../../src/app/core/state/task-budget-admission.js";
-import { adoptTaskBudget } from "../../../src/app/core/state/task-budget-funding.js";
-import { installTaskExecutionLimit } from "../../../src/app/core/state/task-execution-admission.js";
-import { TaskExecutionStore } from "../../../src/app/core/state/task-execution-store.js";
-import type { TaskWorkload } from "@may-agent/sdk";
-import { DefinitionSourceReleaseStore } from "../../../src/app/app-source-release.js";
-import {
-  appTaskContext,
-  cancelAppTask,
-  readAppTaskAdmissionOutcome,
-} from "../../../src/app/core/tasks/app-task-reconciler.js";
-import { admitTaskInput } from "../../../src/app/core/state/inbox.js";
-import { attachEventPersistence } from "../../../src/app/daemon-events.js";
-import { EventBus, EVENT_RECORD_ONLY, EVENT_ROW_ID, type AgentEvent } from "../../../src/app/core/events/bus.js";
-import { loadPersistedEvent } from "../../../src/app/core/events/persisted.js";
-import { DbWriter } from "../../../src/lib/db-writer.js";
-import { UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY } from "../../../src/app/metric-source-measurement.js";
-import { AppRegistry } from "../../../src/app/core/apps/registry.js";
 import { discoverAppDefinitions } from "../../../src/app/adapters/discovery/app-definitions.js";
-import { installAppTaskRuntimes, closeInstalledAppTaskRuntimes } from "../../../src/app/core/tasks/app-task-runtime.js";
-import { HostCapacity } from "../../../src/app/core/scheduling/host-capacity.js";
-import { readExecutionStatus } from "../../../src/app/core/reads/execution-status.js";
-import { observeDaemonLiveness } from "../../../src/app/modes/maintenance.js";
+import { DefinitionSourceReleaseStore } from "../../../src/app/app-source-release.js";
 import { isBundled } from "../../../src/app/bundle-mode.js";
+import {
+  initializeWorkloadState,
+  type WorkloadStateInitialization,
+} from "../../../src/app/composition/initialize-workload-state.js";
+import {
+  inspectWorkloadConfiguration,
+  withdrawWorkloadEnforcement,
+} from "../../../src/app/composition/withdraw-workload-enforcement.js";
 import {
   createTaskAttemptProcessExecutor,
   createTaskRecoveryProcessExecutor,
@@ -40,6 +32,29 @@ import {
   runTaskAttemptWorker,
   type TaskAttemptProcessRequest,
 } from "../../../src/app/composition/workers/task-attempt-process.js";
+import { AppRegistry } from "../../../src/app/core/apps/registry.js";
+import { EVENT_RECORD_ONLY, EVENT_ROW_ID, EventBus, type AgentEvent } from "../../../src/app/core/events/bus.js";
+import { loadPersistedEvent } from "../../../src/app/core/events/persisted.js";
+import { readExecutionStatus } from "../../../src/app/core/reads/execution-status.js";
+import { HostCapacity } from "../../../src/app/core/scheduling/host-capacity.js";
+import { AppTaskResourceStore } from "../../../src/app/core/state/app-task-resource-store.js";
+import { admitTaskInput } from "../../../src/app/core/state/inbox.js";
+import { TaskBudgetAdmissionStore } from "../../../src/app/core/state/task-budget-admission.js";
+import { adoptTaskBudget } from "../../../src/app/core/state/task-budget-funding.js";
+import { installTaskExecutionLimit } from "../../../src/app/core/state/task-execution-admission.js";
+import { TaskExecutionStore } from "../../../src/app/core/state/task-execution-store.js";
+import {
+  appTaskContext,
+  cancelAppTask,
+  readAppTaskAdmissionOutcome,
+} from "../../../src/app/core/tasks/app-task-reconciler.js";
+import { closeInstalledAppTaskRuntimes, installAppTaskRuntimes } from "../../../src/app/core/tasks/app-task-runtime.js";
+import { makeTaskRetryDue } from "../../../src/app/core/tasks/app-task-test-support.js";
+import { attachEventPersistence } from "../../../src/app/daemon-events.js";
+import { UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY } from "../../../src/app/metric-source-measurement.js";
+import { observeDaemonLiveness } from "../../../src/app/modes/maintenance.js";
+import { DbWriter } from "../../../src/lib/db-writer.js";
+import { closeDb, getDb } from "../../../src/lib/requests.js";
 
 const roots: string[] = [];
 const children: Array<{ child: ChildProcess; closed: Promise<void> }> = [];
@@ -72,7 +87,7 @@ export function fixture(agent: string, wait = false, workflow = true, conversati
     join(appDir, "app.ts"),
     `export default {
     id: "sample", version: 1, agent: "owner", inputSchema: { type: "object" },
-    workspace: { kind: "local", localPath: "." }, ${conversation ? 'conversation: { mode: "agent" }' : coordination
+    workspace: { kind: "local", localPath: "." }, ${conversation ? 'conversation: { mode: "task" }' : coordination
       ? 'tasks: { maxConcurrent: 1, coordination: { taskId: "work/one", workflow: "probe", maxAttemptMs: 1000 } }'
       : "tasks: { maxConcurrent: 1 }"}
   };`,

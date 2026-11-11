@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { listAppDefinitionFiles, discoverAppDefinitions } from "./app-definitions.js";
 import { AppRegistry } from "../../core/apps/registry.js";
+import { discoverAppDefinitions, listAppDefinitionFiles } from "./app-definitions.js";
 
 function loadAppDefinitions(projectsRoot: string, canonicalProjectsRoot = projectsRoot) {
   return new AppRegistry(discoverAppDefinitions(projectsRoot, canonicalProjectsRoot)).reload();
@@ -82,11 +82,11 @@ describe("conventional App file discovery", () => {
     expect(loaded).toMatchObject([
       {
         appDir: join(root, "evaluation.app"),
-        definition: { id: "evaluation-canary", agent: "evaluator", owner: "evaluator" },
+        definition: { id: "evaluation-canary", agent: "evaluator" },
       },
       {
         appDir: join(root, "fallback.app"),
-        definition: { id: "fallback", agent: "evaluator", owner: "evaluator" },
+        definition: { id: "fallback", agent: "evaluator" },
       },
     ]);
   });
@@ -102,7 +102,7 @@ describe("conventional App file discovery", () => {
     const loaded = await loadAppDefinitions(sourceRoot, canonicalRoot);
     expect(loaded[0]).toMatchObject({
       appDir: join(canonicalRoot, "evaluation.app"),
-      definition: { id: "evaluation", agent: "evaluator", owner: "evaluator" },
+      definition: { id: "evaluation", agent: "evaluator" },
     });
   });
 
@@ -111,7 +111,7 @@ describe("conventional App file discovery", () => {
     writeFileSync(
       join(root, "evaluation.app", "app.js"),
       `export default {
-        id: "evaluation", version: 1, owner: "evaluator", description: "retired declaration",
+        id: "evaluation", version: 1, agent: "evaluator", description: "retired declaration",
         schedules: [{ id: "evaluation-pipeline-review", enabled: true, intervalMs: 300000,
           emits: [{ type: "evaluation.pipeline.check", project: "evaluation" }]
         }],
@@ -128,7 +128,7 @@ describe("conventional App file discovery", () => {
     for (const directory of ["evaluation.app", "second.app"]) {
       writeFileSync(
         join(root, directory, "app.js"),
-        `export default { id: "duplicate", version: 1, owner: "owner", inputSchema: {} };\n`,
+        `export default { id: "duplicate", version: 1, agent: "owner", inputSchema: {} };\n`,
       );
     }
 

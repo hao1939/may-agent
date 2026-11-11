@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import type { AppEvent, TaskIntent } from "@may-agent/sdk";
 import { normalizeAppAgent, type HostAppDefinition } from "../../app-agent-selection.js";
 import { assertValidAppDefinition } from "./definition-validation.js";
 import { appInputRoute } from "./input-routing.js";
@@ -67,26 +66,6 @@ export class AppRegistry {
       .filter(({ definition }) => appInputRoute(definition, "message") !== null)
       .map(({ definition }) => definition.agent.replace(/^agent:/, ""))
       .filter(Boolean))].sort();
-  }
-
-  resolveInstalledTask(
-    appId: string,
-    event: AppEvent<Record<string, unknown>>,
-  ): {
-    snapshot: { id: string; generation: number };
-    appId: string;
-    intent: TaskIntent | null;
-  } {
-    const snapshot = this.current;
-    const entry = snapshot.entries.find((candidate) => candidate.definition.id === appId);
-    if (!entry) throw new Error(`App ${appId} is not loaded`);
-    const resolver = entry.definition.tasks?.resolve;
-    if (!resolver) throw new Error(`App ${appId} does not declare tasks.resolve`);
-    return {
-      snapshot: { id: snapshot.id, generation: snapshot.generation },
-      appId,
-      intent: resolver(event),
-    };
   }
 
   reload(

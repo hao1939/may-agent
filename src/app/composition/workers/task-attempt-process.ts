@@ -1,14 +1,17 @@
-import { enterTaskWorkerProcess } from "../../../lib/task-worker-context.js";
-import { readEventTaskTarget } from "../../core/events/task-target.js";
 import { spawn, type ChildProcess } from "node:child_process";
 import { basename, resolve } from "node:path";
-import { SubagentManager } from "../../../lib/index.js";
+import { DbWriter } from "../../../lib/db-writer.js";
 import { closeAllDbs, getDb } from "../../../lib/db/connection.js";
-import { AppRegistry } from "../../core/apps/registry.js";
+import { SubagentManager } from "../../../lib/index.js";
+import { enterTaskWorkerProcess } from "../../../lib/task-worker-context.js";
 import { discoverAppDefinitions } from "../../adapters/discovery/app-definitions.js";
+import { readTaskOutcomes } from "../../adapters/reporting/task-outcomes.js";
 import { DefinitionSourceReleaseStore, type DefinitionSourceRelease } from "../../app-source-release.js";
-import type { AppTaskDispatch } from "../../core/tasks/controller.js";
-import { mergeTaskChecks, readTaskChecks } from "../../core/tasks/task-check-observations.js";
+import { isBundled } from "../../bundle-mode.js";
+import { AppRegistry } from "../../core/apps/registry.js";
+import { EVENT_RECORD_ONLY, EVENT_ROW_ID, EventBus, type AgentEvent } from "../../core/events/bus.js";
+import { readEventTaskTarget } from "../../core/events/task-target.js";
+import { HostCapacity } from "../../core/scheduling/host-capacity.js";
 import { AppTaskResourceStore } from "../../core/state/app-task-resource-store.js";
 import { appTaskContext, readAppTaskAgent } from "../../core/tasks/app-task-reconciler.js";
 import {
@@ -16,14 +19,11 @@ import {
   reconcileLoadedAppTaskOnce,
   recoverInstalledAppTasks,
 } from "../../core/tasks/app-task-runtime.js";
+import type { AppTaskDispatch } from "../../core/tasks/controller.js";
 import type { AppTaskRuntimeOptions } from "../../core/tasks/runtime-options.js";
-import { DbWriter } from "../../../lib/db-writer.js";
+import { mergeTaskChecks, readTaskChecks } from "../../core/tasks/task-check-observations.js";
 import { prepareDaemonAgents } from "../../daemon-agents.js";
 import { listConfiguredAgentNames } from "../../loader/agent-discovery.js";
-import { readTaskOutcomes } from "../../adapters/reporting/task-outcomes.js";
-import { EventBus, EVENT_RECORD_ONLY, EVENT_ROW_ID, type AgentEvent } from "../../core/events/bus.js";
-import { HostCapacity } from "../../core/scheduling/host-capacity.js";
-import { isBundled } from "../../bundle-mode.js";
 import type { ModelRegistry } from "../../model-registry.js";
 
 const WORKER_FRAME_LIMIT = 8 * 1024 * 1024;
@@ -543,7 +543,7 @@ async function runTaskWorker(input: {
         .snapshot()
         .entries.filter(({ definition }) => definition.tasks && (!selectedAppIds || selectedAppIds.has(definition.id)))
         .flatMap(({ appDir, definition }) => {
-          const configured = typeof definition.agent === "string" ? definition.agent : definition.owner;
+          const configured = definition.agent;
           const agent = (typeof configured === "string" && configured.trim() ? configured : definition.id).replace(
             /^agent:/,
             "",
@@ -582,7 +582,6 @@ async function runTaskWorker(input: {
       models: input.models,
       manager,
       bus,
-      cronEnabled: false,
       appRegistry: registry,
       hostCapacity,
       taskRuntimeMode: "manual",

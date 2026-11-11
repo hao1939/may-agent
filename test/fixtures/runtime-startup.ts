@@ -1,33 +1,31 @@
 // Run only in a child process: module mocks must not affect other test files.
 // Actual startup, inbox, registry, capacity and socket; external adapters and
 // indefinite loops are stopped at their boundaries. No model call is made.
-import assert from "node:assert/strict";
 import { mock, spyOn } from "bun:test";
+import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fakeModel } from "./model.js";
-import { closeAllDbs } from "../../src/lib/requests.js";
-import { parseAppArgs } from "../../src/app/app-args.js";
-import * as daemon from "../../src/app/daemon.js";
-import * as inbox from "../../src/app/composition/app-inbox-runtime.js";
-import * as interfaces from "../../src/app/interface-startup.js";
-import * as background from "../../src/app/composition/background-startup.js";
-import * as taskCapability from "../../src/app/core/tasks/app-task-capability.js";
-import * as taskWorkers from "../../src/app/composition/workers/task-attempt-process.js";
-import { HostMaintenance } from "../../src/app/adapters/maintenance/runtime.js";
-import { getAgentMaintenance } from "../../src/app/agent-loader.js";
-import * as agentLoader from "../../src/app/agent-loader.js";
-import { DefinitionSourceReleaseStore } from "../../src/app/app-source-release.js";
-import { AppRegistry } from "../../src/app/core/apps/registry.js";
 import { discoverAppDefinitions } from "../../src/app/adapters/discovery/app-definitions.js";
+import * as agentLoader from "../../src/app/agent-loader.js";
+import { parseAppArgs } from "../../src/app/app-args.js";
+import { DefinitionSourceReleaseStore } from "../../src/app/app-source-release.js";
+import * as inbox from "../../src/app/composition/app-inbox-runtime.js";
+import * as background from "../../src/app/composition/background-startup.js";
+import * as taskWorkers from "../../src/app/composition/workers/task-attempt-process.js";
+import { AppRegistry } from "../../src/app/core/apps/registry.js";
+import * as taskCapability from "../../src/app/core/tasks/app-task-capability.js";
 import {
   attachLoadedAppTask,
-  readLoadedAppTaskInputResult,
   closeInstalledAppTaskRuntimes,
+  readLoadedAppTaskInputResult,
   reconcileLoadedAppTaskOnce,
 } from "../../src/app/core/tasks/app-task-runtime.js";
+import * as daemon from "../../src/app/daemon.js";
+import * as interfaces from "../../src/app/interface-startup.js";
+import { closeAllDbs } from "../../src/lib/requests.js";
+import { fakeModel } from "./model.js";
 
 const actualDaemon = { ...daemon };
 const actualInbox = { ...inbox };
@@ -64,7 +62,6 @@ let stopTasks: (() => void) | undefined;
 let sharedCapacity: Parameters<typeof daemon.prepareDaemonAgents>[0]["hostCapacity"];
 let preparedOptions: Parameters<typeof daemon.prepareDaemonAgents>[0];
 let failActivation = false;
-const partiallyAttached: HostMaintenance[] = [];
 let attemptFinished = Promise.withResolvers<void>();
 Object.defineProperty(process.stdin, "isTTY", { value: tty });
 process.env.MAY_HOST_MAX_CONCURRENT = "2";
@@ -122,29 +119,17 @@ if (workerPublication) {
   }));
 }
 
-const subscribeToBus = HostMaintenance.prototype.subscribeToBus;
-const closeCron = HostMaintenance.prototype.close;
-const closedCrons = new Set<HostMaintenance>();
-const retirement = spyOn(HostMaintenance.prototype, "close").mockImplementation(function () {
-  closedCrons.add(this);
-  closeCron.call(this);
-});
-const subscription = spyOn(HostMaintenance.prototype, "subscribeToBus").mockImplementation(function (bus) {
-  assert.ok(order.includes("ingress"), "producers must not activate during definition loading");
-  assert.ok(this.hasHandler("startup-probe"), "handlers must be prepared before their routes attach");
-  order.push("triggers");
-  subscribeToBus.call(this, bus);
-  if (failActivation) {
-    partiallyAttached.push(this);
-    if (partiallyAttached.length === 2) throw new Error("fixture producer activation failed");
-  }
+const originalActivate = DefinitionSourceReleaseStore.prototype.activate;
+const activation = spyOn(DefinitionSourceReleaseStore.prototype, "activate").mockImplementation(function (source) {
+  originalActivate.call(this, source);
+  if (failActivation && readFileSync(join(source.projectsRoot, "fixture.app/app.js"), "utf8").includes("must roll back"))
+    throw new Error("fixture source activation failed");
 });
 
 mock.module("../../src/app/daemon.js", () => ({
   ...actualDaemon,
   prepareDaemonAgents: async (options: Parameters<typeof daemon.prepareDaemonAgents>[0]) => {
     assert.equal(options.taskRuntimeMode, "controllers");
-    assert.equal(options.cronEnabled, schedulesEnabled);
     sharedCapacity = options.hostCapacity;
     preparedOptions = options;
     return actualDaemon.prepareDaemonAgents(
@@ -266,18 +251,11 @@ try {
         description: "Startup fixture",
         domain: "test",
         model: "fixture",
-        tools: ["cron"],
+        tools: [],
       }),
     );
     writeFileSync(join(root, "agents", agent, "AGENTS.md"), "Fixture agent.\n");
-    writeFileSync(
-      join(root, "agents", agent, "cron.json"),
-      JSON.stringify([{ name: "startup-probe", handler: "startup-probe", on: ["fixture.changed"] }]),
-    );
-    writeFileSync(
-      join(root, "agents", agent, "handlers/startup-probe.ts"),
-      `export function create(ctx) { return async () => ctx.sdk.emit("fixture.handler-ran", { agent: ${JSON.stringify(agent)} }); }\n`,
-    );
+
   }
   if (taskExecution) {
     mkdirSync(join(root, "projects/fixture.app/tasks"));
@@ -348,12 +326,11 @@ export async function execute(ctx) {
   assert.deepEqual(
     order,
     tty
-      ? ["console", "routes", "telegram", "ingress", "triggers", "recovered-work", "background", "interactive"]
+      ? ["console", "routes", "telegram", "ingress", "recovered-work", "background", "interactive"]
       : [
           "routes",
           ...(noInterfaces ? [] : ["telegram"]),
           "ingress",
-          ...agentNames.map(() => "triggers"),
           "recovered-work",
           "background",
           ...(startupJob ? ["startup-job"] : []),
@@ -366,17 +343,11 @@ export async function execute(ctx) {
   writeFileSync(appPath, appSource("after"));
   assert.equal(registry!.entries()[0]?.definition.description, "before");
   assert.equal((await lifecycle!.handleReload()).ok, true);
-  assert.equal(
-    subscription.mock.calls.length,
-    agentNames.length * 2,
-    "one activation at startup and one for the committed reload",
-  );
   assert.equal(registry!.entries()[0]?.definition.description, "after");
   assert.ok(runtime!.host.hasApp("fixture"));
   const accepted = registry!.snapshot();
   writeFileSync(appPath, "export default { invalid: true };");
   assert.equal((await lifecycle!.handleReload()).ok, false);
-  assert.equal(subscription.mock.calls.length, agentNames.length * 2, "rejected definitions must not activate");
   assert.equal(registry!.snapshot(), accepted);
   assert.ok(runtime!.host.hasApp("fixture"));
   if (mode === "overlapping-reloads" || mode === "overlapping-preparation") {
@@ -385,7 +356,6 @@ export async function execute(ctx) {
     const queued = Promise.withResolvers<void>();
     const originalReload = registry!.reload.bind(registry);
     const originalPrepare = agentLoader.prepareAgentGeneration;
-    const originalActivate = DefinitionSourceReleaseStore.prototype.activate;
     let reloadCount = 0;
     let prepareCount = 0;
     const reload = spyOn(registry!, "reload").mockImplementation((apply, discover) => {
@@ -549,53 +519,26 @@ export async function execute(ctx) {
       assert.equal(acceptedState(previousTask.taskId), "converged");
       await runTask("work/after");
     } else {
-      const previousCrons = new Map(getAgentMaintenance());
       const previousDefinitions = agentNames.map((name) => manager.getAgentDefinition(name));
       writeFileSync(appPath, appSource("must roll back"));
       failActivation = true;
       const failed = await lifecycle!.handleReload();
       failActivation = false;
       assert.equal(failed.ok, false);
-      assert.equal(partiallyAttached.length, 2, "failure occurs after new producers actually attach");
+      assert.match(failed.summary, /fixture source activation failed/);
       assert.equal(registry!.snapshot(), accepted);
       assert.equal(registry!.entries()[0]?.definition.description, "after");
       assert.deepEqual(
         agentNames.map((name) => manager.getAgentDefinition(name)),
         previousDefinitions,
       );
-      for (const [name, cron] of previousCrons) {
-        assert.equal(getAgentMaintenance().get(name), cron);
-        assert.equal(closedCrons.has(cron), false, "rollback must not retire the previous generation");
-      }
-      for (const cron of partiallyAttached) assert.ok(closedCrons.has(cron), "partial replacements must be retired");
-      const seen: string[] = [];
-      let completed = 0;
-      let settled = Promise.withResolvers<void>();
-      const detach = bus.subscribe((event) => {
-        if (event.type === "fixture.handler-ran") seen.push(String((event.data as { agent: string }).agent));
-        if (event.type === "handler.completed" && (event.data as { handler?: string }).handler === "startup-probe") {
-          if (++completed >= agentNames.length) settled.resolve();
-        }
-      });
-      for (let i = 0; i < 2; i++) {
-        completed = 0;
-        settled = Promise.withResolvers<void>();
-        bus.emit({ type: "fixture.changed", source: "fixture", owner: "agent:may", data: {} });
-        await settled.promise;
-        await Bun.sleep(0);
-      }
-      detach();
-      assert.deepEqual(seen.sort(), [...agentNames, ...agentNames].sort());
-      assert.equal(seen.length, 4, "only the two old producers handle each event, exactly once");
       assert.equal(acceptedState(previousTask.taskId), "converged", "accepted work survives rollback");
       await runTask("work/after");
     }
   }
   console.log("startup-contract-ok");
 } finally {
-  subscription.mockRestore();
-  for (const cron of getAgentMaintenance().values()) cron.close();
-  retirement.mockRestore();
+  activation.mockRestore();
   if (preparedOptions!) await closeInstalledAppTaskRuntimes(preparedOptions.bus);
   stopTasks?.();
   runtime?.close();

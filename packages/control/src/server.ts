@@ -2,15 +2,15 @@ import { chmodSync, existsSync, mkdirSync, unlinkSync } from "node:fs";
 import { connect, createServer, type Server } from "node:net";
 import { dirname } from "node:path";
 import type { Duplex } from "node:stream";
-import { normalizeSocketFrame } from "./protocol.js";
 import {
+  taskCancelRequestedEvent,
   taskCloseRequestedEvent,
   taskReopenRequestedEvent,
-  taskCancelRequestedEvent,
   type EventInput,
   type EventReceipt,
   type EventView,
 } from "./events.js";
+import { normalizeSocketFrame } from "./protocol.js";
 import { isTaskDerivedViewWake, taskUpdateIdentity } from "./task-wake.js";
 
 export type ControlEvent = Record<string, unknown> & { type: string };
@@ -71,7 +71,6 @@ export interface AttachControlSocketOptions {
     taskId: string,
     options?: { acceptedEvidence?: { limit?: number; cursor?: string }; inputKeys?: string[] },
   ) => unknown;
-  resolveAppTask?: (appId: string, event: Record<string, unknown>) => unknown;
   listApps?: (appId?: string) => unknown;
   listTasks?: (options?: {
     appId?: string;
@@ -271,7 +270,6 @@ export interface ControlSocketCoreOptions {
   listAppTasks?: AttachControlSocketOptions["listAppTasks"];
   getAppTaskWorkload?: AttachControlSocketOptions["getAppTaskWorkload"];
   getAppTask?: AttachControlSocketOptions["getAppTask"];
-  resolveAppTask?: AttachControlSocketOptions["resolveAppTask"];
   listApps?: AttachControlSocketOptions["listApps"];
   listTasks?: AttachControlSocketOptions["listTasks"];
   getTask?: AttachControlSocketOptions["getTask"];
@@ -297,7 +295,6 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     listAppTasks,
     getAppTaskWorkload,
     getAppTask,
-    resolveAppTask,
     listApps,
     listTasks,
     getTask,
@@ -974,37 +971,6 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           continue;
         }
 
-        if (normalized.kind === "control" && normalized.command === "app.task.resolve") {
-          const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
-          const event = frame.event;
-          if (!appId || !event || typeof event !== "object" || Array.isArray(event) || !resolveAppTask) {
-            writeFrame(socket, {
-              type: "error",
-              command: normalized.command,
-              message: !appId
-                ? "appId is required"
-                : !event || typeof event !== "object" || Array.isArray(event)
-                  ? "event must be an object"
-                  : "installed App Task resolution is unavailable",
-            });
-            continue;
-          }
-          try {
-            writeFrame(socket, {
-              type: "ok",
-              command: normalized.command,
-              ...(resolveAppTask(appId, event as Record<string, unknown>) as Record<string, unknown>),
-            });
-          } catch (error) {
-            writeFrame(socket, {
-              type: "error",
-              command: normalized.command,
-              message: error instanceof Error ? error.message : String(error),
-            });
-          }
-          continue;
-        }
-
         if (normalized.kind === "control" && normalized.command === "apps.list") {
           if (!listApps) {
             writeFrame(socket, { type: "error", command: normalized.command, message: "App reads are unavailable" });
@@ -1323,7 +1289,6 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
     listAppTasks: opts.listAppTasks,
     getAppTaskWorkload: opts.getAppTaskWorkload,
     getAppTask: opts.getAppTask,
-    resolveAppTask: opts.resolveAppTask,
     listApps: opts.listApps,
     listTasks: opts.listTasks,
     getTask: opts.getTask,

@@ -51,10 +51,10 @@ cross-component and process boundaries.
 | App registration | `core/apps/registry.ts`: `AppDefinitionSource`; validation in `core/apps/definition-validation.ts`; file discovery in `adapters/discovery/app-definitions.ts` | `app-runtime.ts`; `core/apps/registry.test.ts` covers rejected/serialized publication |
 | Events | `core/events/interface.ts` for ingress/reads; `core/events/bus.ts` for persisted admission and bounded observation | `app-runtime.ts` creates the interface; `daemon-events.ts` attaches persistence/subscribers; colocated interface/bus tests and `event-delivery.test.ts` |
 | Input admission | `core/inbox/app-inbox-host.ts`, `core/state/app-inbox-store.ts`, `core/state/app-event-admission-store.ts`; frozen routes and durable input identities | `composition/app-inbox-runtime.ts`; inbox admission, routing and failure tests |
-| Conversation | `conversations/context.ts`, `conversations/turn-agent.ts` | `composition/conversation-task-turn.ts`; turn-agent and Task runtime tests; [guide](conversations/README.md) |
+| Conversation | `core/tasks/task-communication.ts`, `conversations/context.ts` | Common Task attempts and communication tests; [guide](conversations/README.md) |
 | Conversation state | `core/state/conversations.ts`, `core/state/conversation-requests.ts`, `core/state/conversation-task-turns.ts`, `core/state/conversation-outcomes.ts` | Shared database; colocated state tests plus inbox integration tests |
 | Atomic Task attachment | `core/state/inbox.ts`: `admitTaskInput()` | `core/tasks/app-task-capability.ts`; `core/state/inbox.test.ts` |
-| Atomic input completion | `core/state/inbox.ts`: `completeTaskInput()` projects an exact Task answer; Conversation Request closure belongs to fenced Turn settlement | `core/inbox/app-inbox-host.ts`; `core/state/conversation-requests.test.ts` and `core/inbox/app-inbox-host.test.ts` |
+| Atomic input completion | `core/state/inbox.ts`: `completeTaskInput()` projects an exact Task answer; Conversation Request closure belongs to common fenced Task settlement | `core/inbox/app-inbox-host.ts`; `core/state/conversation-requests.test.ts` and `core/inbox/app-inbox-host.test.ts` |
 | Task definition preparation | `core/tasks/runtime-definition.ts`: descriptors, seed authority and project read models | Publication/rollback stay in `core/tasks/app-task-runtime.ts`; [Task lifecycle reading path](core/tasks/README.md#trace-one-task) |
 | Task dispatch | `core/tasks/controller.ts`, `core/tasks/queue.ts`; `core/scheduling/host-capacity.ts`; `core/tasks/app-task-recovery.ts` | `core/tasks/app-task-runtime.ts`; controller/queue/recovery tests |
 | Task transitions | `core/tasks/app-task-reconciler.ts`, `core/tasks/app-task-state.ts`, `core/state/app-task-resource-store.ts` | `core/tasks/app-task-runtime.ts`; reconciler/resource-store, cancellation and restart tests |
@@ -63,7 +63,7 @@ cross-component and process boundaries.
 | Task workspace | `core/tasks/workspace.ts`; `adapters/workspaces/git.ts` | `composition/task-execution.ts`; workspace and Task runtime tests |
 | Timing and observations | `core/scheduling/timer.ts`; [`App schedules and observers`](adapters/producers/README.md) | `composition/app-inbox-runtime.ts`; timer, schedule and observer tests |
 | Canonical reads and optional reports | `core/reads/app-read.ts`, `core/reads/reporting.ts`; `adapters/reporting/` | `composition/reporting.ts`; read/reporting and runtime tests |
-| Host maintenance | `adapters/maintenance/` | `composition/maintenance*.ts`; [maintenance guide](adapters/maintenance/README.md) and colocated tests |
+| Fixed Host upkeep | `modes/maintenance.ts`, `composition/reporting.ts` | Database retention, liveness and metric sampling; App schedules own configurable duties |
 | Human interfaces | `transport/`, `http/`; root `packages/control`, `packages/terminal`, `packages/webui` | `interface-startup.ts`; transport and process/browser tests; [control guide](../../packages/control/README.md) |
 | Agent/tool loading | `agent-loader.ts`, `loader/`; bounded execution under `../lib/` | `daemon-agents.ts`; loader and agent-execution tests |
 
@@ -172,7 +172,7 @@ Keep behavioral detail and change status with their owners:
   reads and resource controls.
 - [Conversation handling](conversations/README.md): saved communication state
   and its relationship to Task execution.
-- [Maintenance](adapters/maintenance/README.md): Host-owned upkeep and its limits.
+- [Offline operations](../../scripts/operations/README.md): stopped-state maintenance and contract conversion.
 - [Verification](../../test/README.md): portable contract coverage and explicit
   installation checks.
 

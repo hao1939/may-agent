@@ -1,63 +1,27 @@
-import { TaskBudgetDeferredError } from "./task-budget-admission.js";
-import { assertValidAppInput } from "../apps/definition-validation.js";
-import { assertResourceCreator } from "./resource-creator.js";
+import type { TaskIntent } from "@may-agent/sdk";
 import { createHash } from "node:crypto";
-import { isDeepStrictEqual } from "node:util";
-import { Check } from "typebox/value";
 import type { SqliteDb } from "../../../lib/db.js";
-import {
-  MAX_CONVERSATION_REQUESTS_PER_TURN,
-  conversationTurnResultSchema,
-  type AppDefinition,
-  type AppTaskAttachment,
-  type AppTaskInput,
-  type AppConversationRequest,
-  type ConversationTurnResult,
-  type TaskAcceptanceBasis,
-  type TaskIntent,
-} from "@may-agent/sdk";
 import { stateTransaction } from "../../../lib/db/transaction.js";
+import { appTaskAttemptReport, stopAppTaskAttempt } from "../tasks/app-task-reconciler.js";
 import type { AppTaskContext } from "../tasks/app-task-store.js";
 import {
-  assertAppTaskClaimCurrent,
-  appTaskAttemptReport,
-  cancelAppTask,
-  completeAppTask,
-  stopAppTaskAttempt,
-  type AppTaskClaim,
-} from "../tasks/app-task-reconciler.js";
-import { admitTaskInput, assertTaskInputCompatible } from "./inbox.js";
-import {
   createAppInboxItem,
-  reuseAppInboxSubmission,
   deferAppInboxTaskFunding,
-  hasAppInboxFundingHold,
   getAppInboxItem,
+  hasAppInboxFundingHold,
   hasConversationExecutionTask,
-  type CreateAppInboxItem,
+  reuseAppInboxSubmission,
   type AppTurnTarget,
+  type CreateAppInboxItem,
 } from "./app-inbox-store.js";
-import {
-  createConversationTopic,
-  hasConversationInputTopicSelection,
-  readConversationTopic,
-  readConversationInputTopicId,
-} from "./conversations.js";
-import { admissionReportIdsSql, conversationTaskLinksSql, listConversationTaskLinks } from "./conversation-task-links.js";
-function stableTopicId(appId: string, conversationId: string, originMessageId: string): string {
-  return `topic_${createHash("sha256").update([appId, conversationId, originMessageId].join("\0")).digest("hex").slice(0, 24)}`;
-}
-import {
-  applyConversationRequestUpdates,
-  prepareConversationRequestUpdates,
-  listConversationInputRequests,
-  linkConversationRequestInputs,
-  ConversationRequestConflict,
-  readConversationRequest,
-  type ConversationRequestChange,
-} from "./conversation-requests.js";
-
 import { conversationTaskId, conversationTaskSuccessorId } from "./conversation-identity.js";
+import {
+  admissionReportIdsSql,
+  conversationTaskLinksSql,
+  listConversationTaskLinks,
+} from "./conversation-task-links.js";
+import { admitTaskInput } from "./inbox.js";
+import { TaskBudgetDeferredError } from "./task-budget-admission.js";
 export { conversationTaskId } from "./conversation-identity.js";
 
 function conversationTaskLineage(
@@ -90,7 +54,7 @@ export function conversationTaskIntent(config: AppTaskContext): Omit<TaskIntent,
   if (!root) throw new Error("Conversation App has no structural root");
   return {
     parentId: root,
-    executor: config.conversationInputMode === "task" ? "agent" : "conversation",
+    executor: "agent",
     outcome: "Handle this Conversation's admitted input and return useful outcomes to the human",
     acceptance: ["Address the considered input and preserve unresolved accepted Requests"],
   };
@@ -98,133 +62,6 @@ export function conversationTaskIntent(config: AppTaskContext): Omit<TaskIntent,
 
 export function isConversationTask(config: AppTaskContext, taskId: string): boolean {
   return hasConversationExecutionTask(config.resourceStore.db, config.resourceStore.appId, taskId);
-}
-
-/** A prepared judgment has no authority to settle or close its executing Task. */
-export type ConversationTaskProposal = {
-  decision: ConversationTurnResult;
-  /** Trusted App mapping retained only when settlement is deferred. */
-  followUpAttachment?: AppTaskAttachment;
-  taskControls?: Array<{
-    appId: string;
-    taskId: string;
-    generation: number;
-    resourceVersion: number;
-  }>;
-};
-
-/** Installed App lookup is a Host dependency, never part of a proposed result. */
-export type ConversationTaskAppResolver = (appId: string) => { app: Readonly<AppDefinition>; config: AppTaskContext };
-
-function resolveConversationTaskApp(config: AppTaskContext, appId: string, getTaskApp?: ConversationTaskAppResolver) {
-  const target = getTaskApp?.(appId);
-  if (
-    !target?.app.tasks ||
-    target.app.id !== appId ||
-    target.config.resourceStore.appId !== appId ||
-    target.config.resourceStore.db !== config.resourceStore.db
-  )
-    throw new Error("Conversation operation requires an installed Task App in the same Host state");
-  return target;
-}
-
-/** Resolve the same Topic at preflight and settlement, without creating it. */
-function conversationResultTopic(
-  config: AppTaskContext,
-  item: ReturnType<typeof readConversationTaskTurn>["replyInput"],
-  decision: ConversationTurnResult,
-): string | undefined {
-  if (decision.topic?.kind === "none") return undefined;
-  if (!decision.topic) return readConversationInputTopicId(config.resourceStore.db, item);
-  const existing = decision.topic.kind === "existing" ? decision.topic.id : undefined;
-  if (existing) {
-    const topic = readConversationTopic(config.resourceStore.db, item.appId, item.conversationId!, existing);
-    if (!topic) throw new Error("Conversation decision selected an unavailable Topic");
-    return topic.id;
-  }
-  return decision.topic?.kind === "new" ? stableTopicId(item.appId, item.conversationId!, item.source.id) : undefined;
-}
-
-/** Read the follow-up target and its effective Request; never run App mapping here. */
-function readConversationFollowUp(
-  config: AppTaskContext,
-  item: ReturnType<typeof readConversationTaskTurn>["replyInput"],
-  desired: NonNullable<ConversationTurnResult["followUp"]>,
-  getTaskApp?: ConversationTaskAppResolver,
-  proposedRequests: readonly AppConversationRequest[] = [],
-) {
-  const { app: targetApp, config: target } = resolveConversationTaskApp(config, desired.appId, getTaskApp);
-  if (!targetApp.task) throw new Error("Conversation follow-up requires an installed Task App");
-  assertValidAppInput(targetApp, desired.input);
-  if (desired.task && (desired.task.appId !== desired.appId || !target.resourceStore.readTask(desired.task.taskId)))
-    throw new Error("Follow-up requires an exact Task in the selected App");
-  if (desired.task)
-    assertTaskInputCompatible(target, {
-      appId: desired.appId,
-      attachment: { kind: "existing", taskId: desired.task.taskId },
-      idempotencyKey: `conversation-follow-up:${item.appId}:${item.id}`,
-      inputContext: { id: item.id, source: item.source, input: desired.input },
-    });
-  const request = desired.requestId
-    ? proposedRequests.find(({ id }) => id === desired.requestId) ??
-      readConversationRequest(config.resourceStore.db, item.appId, item.conversationId!, desired.requestId)
-    : null;
-  if (desired.requestId && request?.status !== "open")
-    throw new Error("Conversation follow-up must serve an open accepted Request");
-  return { targetApp, target, request };
-}
-
-/** Capture exact targets and versions; settlement rechecks them under the Task fence. */
-export function prepareConversationTaskProposal(
-  config: AppTaskContext,
-  claim: AppTaskClaim,
-  decision: ConversationTurnResult,
-  getTaskApp?: ConversationTaskAppResolver,
-): ConversationTaskProposal {
-  const { replyInput: item, hasHumanInput, outputSchema } = readConversationTaskTurn(config, claim);
-  if (!Check(outputSchema, decision))
-    throw new Error("Invalid Conversation decision: result must satisfy the claimed input's result schema");
-  const taskControls: NonNullable<ConversationTaskProposal["taskControls"]> = [];
-  for (const control of decision.taskControls ?? []) {
-    if (control.appId === item.appId && control.taskId === claim.taskId)
-      throw new Error("A Conversation worker cannot close its own Task");
-    if (taskControls.some((prior) => prior.appId === control.appId && prior.taskId === control.taskId))
-      throw new Error("Conversation decision repeats a Task control");
-    const target = resolveConversationTaskApp(config, control.appId, getTaskApp);
-    const task = target.config.resourceStore.readTask(control.taskId);
-    if (!task) throw new Error("Task control requires an exact Task");
-    if (!hasHumanInput) assertResourceCreator(task.metadata.creator, { appId: item.appId, taskId: claim.taskId });
-    taskControls.push({
-      appId: control.appId,
-      taskId: control.taskId,
-      generation: task.metadata.generation,
-      resourceVersion: task.metadata.resourceVersion,
-    });
-  }
-  return { decision, taskControls };
-}
-
-/** Read-only finish feedback. Never map work or persist the proposed effects. */
-export function validateConversationTaskProposal(
-  config: AppTaskContext,
-  claim: AppTaskClaim,
-  decision: ConversationTurnResult,
-  getTaskApp?: ConversationTaskAppResolver,
-): ConversationTaskProposal {
-  const proposal = prepareConversationTaskProposal(config, claim, decision, getTaskApp);
-  const { items, replyInput: item } = readConversationTaskTurn(config, claim);
-  assertConversationRequestsAddressed(config, items, decision);
-  const topicId = conversationResultTopic(config, item, decision);
-  const requests = prepareConversationRequestUpdates(config.resourceStore.db, {
-    actor: { appId: item.appId, taskId: claim.taskId },
-    appId: item.appId, conversationId: item.conversationId!, topicId,
-    topicSelected: Boolean(decision.topic) || hasConversationInputTopicSelection(config.resourceStore.db, item),
-    updates: decision.requestUpdates ?? [], updateKey: `attempt:${claim.attemptId}`, messageId: `result:${item.id}`,
-  });
-  for (const update of decision.requestUpdates ?? []) requestInputIds(config, items, update);
-  if (decision.followUp)
-    readConversationFollowUp(config, item, decision.followUp, getTaskApp, requests.map(({ request }) => request));
-  return proposal;
 }
 
 /** Stop exactly the input considered by this Turn. Newer input remains pending. */
@@ -395,270 +232,6 @@ export function admitConversationTaskInput(
   });
 }
 
-/** Read the exact claimed input batch, including input retained after an unaccepted answer. */
-export function readConversationTaskInputs(config: AppTaskContext, claim: AppTaskClaim) {
-  assertAppTaskClaimCurrent(config, claim);
-  const keys = [...(claim.continuedInputKeys ?? [])];
-  for (const { event } of claim.events) {
-    if (event.type !== "app.task.requested") continue;
-    const request = (event.data as { request?: { id?: unknown; source?: unknown; input?: unknown } } | undefined)
-      ?.request;
-    const item = typeof request?.id === "string" ? getAppInboxItem(config.resourceStore.db, request.id) : null;
-    if (
-      !item ||
-      event.idempotencyKey !== item.taskAdmissionKey ||
-      !isDeepStrictEqual(item.source, request?.source) ||
-      !isDeepStrictEqual(item.input, request?.input)
-    )
-      throw new Error("Conversation input does not belong to this Task attempt");
-    keys.push(item.taskAdmissionKey!);
-  }
-  const items = [...new Set(keys)].map((key) => {
-    const item = key.startsWith("conversation-input:")
-      ? getAppInboxItem(config.resourceStore.db, key.slice("conversation-input:".length))
-      : null;
-    if (
-      !item?.conversationId ||
-      item.appId !== config.resourceStore.appId ||
-      item.executionTaskId !== claim.taskId ||
-      item.taskAdmissionKey !== key ||
-      item.status === "done" ||
-      item.lease
-    )
-      throw new Error("Conversation input does not belong to this Task attempt");
-    return item;
-  });
-  if (!items.length) throw new Error("Conversation attempt has no admitted input");
-  // Presentation order: system facts before human input, including retained input.
-  return items.sort((left, right) => Number(left.source.kind === "human") - Number(right.source.kind === "human"));
-}
-
-/** Derive the execution and settlement contract from the exact claimed inputs. */
-export function conversationTaskResultSchema(inputs: readonly Pick<AppTaskInput, "source">[]) {
-  return inputs.some(({ source }) => source.kind === "human")
-    ? { ...conversationTurnResultSchema, required: [...conversationTurnResultSchema.required!, "response"] }
-    : conversationTurnResultSchema;
-}
-
-/** Reply identity and control authority come from admitted input, independently of presentation. */
-export function readConversationTaskTurn(config: AppTaskContext, claim: AppTaskClaim) {
-  const items = readConversationTaskInputs(config, claim);
-  const humanInput = items.filter((item) => item.source.kind === "human").at(-1);
-  return {
-    items,
-    replyInput: humanInput ?? items.at(-1)!,
-    hasHumanInput: Boolean(humanInput),
-    outputSchema: conversationTaskResultSchema(items),
-  };
-}
-
-function requestInputIds(
-  config: AppTaskContext,
-  items: readonly ReturnType<typeof readConversationTaskInputs>[number][],
-  update: { id: string; inputIds?: string[] },
-): string[] {
-  const first = items[0]!;
-  const assigned = listConversationInputRequests(
-    config.resourceStore.db, first.appId, first.conversationId!, items.map(({ id }) => id),
-  ).find(({ id }) => id === update.id);
-  const ids = update.inputIds ?? (items.length === 1 ? [first.id] : assigned?.inputIds);
-  if (!ids?.length)
-    throw new ConversationRequestConflict(`Request ${update.id} requires inputIds from this mixed input batch`);
-  if (
-    ids.length > 96 || new Set(ids).size !== ids.length || ids.some((id) => !items.some((item) => item.id === id))
-  )
-    throw new ConversationRequestConflict(`Request ${update.id} inputIds must name distinct inputs in this turn`);
-  return ids;
-}
-
-function assertConversationRequestsAddressed(
-  config: AppTaskContext,
-  items: ReturnType<typeof readConversationTaskInputs>,
-  decision: ConversationTurnResult,
-): void {
-  const first = items[0]!;
-  const requests = listConversationInputRequests(
-    config.resourceStore.db, first.appId, first.conversationId!, items.map(({ id }) => id),
-  );
-  for (const request of requests) {
-    const update = decision.requestUpdates?.find(({ id }) => id === request.id);
-    if (!update)
-      throw new ConversationRequestConflict(
-        `Request ${request.id} was not addressed. Review its latest requirements and return requestUpdates with fulfillment, continuing work, or an explained wait.`,
-      );
-  }
-}
-
-/** Save the owner's accepted requirements under the same live claim as its other effects. */
-export function updateConversationTaskRequest(
-  config: AppTaskContext,
-  claim: AppTaskClaim,
-  change: ConversationRequestChange,
-  operationId: string,
-): AppConversationRequest {
-  return stateTransaction(config.resourceStore.db, () => {
-    assertAppTaskClaimCurrent(config, claim);
-    const { items, replyInput: item } = readConversationTaskTurn(config, claim);
-    const inputIds = requestInputIds(config, items, change);
-    applyConversationRequestUpdates(config.resourceStore.db, {
-      actor: { appId: item.appId, taskId: claim.taskId },
-      appId: item.appId,
-      conversationId: item.conversationId!,
-      topicId: item.topicId ?? undefined,
-      updates: [{ id: change.id, expectedRevision: change.expectedRevision, scope: change.scope, disposition: "open" }],
-      updateKey: `request:${claim.attemptId}:${operationId}`,
-      now: Date.now(),
-    });
-    linkConversationRequestInputs(config.resourceStore.db, item.appId, item.conversationId!, change.id, inputIds);
-    const assigned = listConversationInputRequests(
-      config.resourceStore.db, item.appId, item.conversationId!, items.map(({ id }) => id),
-    );
-    if (assigned.length > MAX_CONVERSATION_REQUESTS_PER_TURN)
-      throw new ConversationRequestConflict(
-        `A turn can address at most ${MAX_CONVERSATION_REQUESTS_PER_TURN} accepted Requests`,
-      );
-    return readConversationRequest(config.resourceStore.db, item.appId, item.conversationId!, change.id)!;
-  });
-}
-
-/** Task outcome, Topic, Request decisions and reply share the Task's single fence. */
-export function completeConversationTaskTurn(
-  config: AppTaskContext,
-  claim: AppTaskClaim,
-  decision: ConversationTurnResult,
-  options: {
-    now?: number;
-    taskControls?: ConversationTaskProposal["taskControls"];
-    acceptanceBasis?: TaskAcceptanceBasis;
-    followUpAttachment?: AppTaskAttachment;
-    onFollowUpMapped?: (attachment: AppTaskAttachment) => void;
-    getTaskApp?: ConversationTaskAppResolver;
-  } = {},
-): ReturnType<typeof completeAppTask> & {
-  admittedTasks?: Array<{ appId: string; taskId: string }>;
-} {
-  const db = config.resourceStore.db;
-  const now = options.now ?? Date.now();
-  return stateTransaction(db, () => {
-    const { items, replyInput: item, hasHumanInput, outputSchema } = readConversationTaskTurn(config, claim);
-    if (!Check(outputSchema, decision))
-      throw new Error("Invalid Conversation decision: result must satisfy the claimed input's result schema");
-    if ((decision.taskControls?.length ?? 0) !== (options.taskControls?.length ?? 0))
-      throw new Error("Conversation Task controls must be prepared");
-    assertConversationRequestsAddressed(config, items, decision);
-    const accepted = completeAppTask(config, claim, {
-      summary: decision.summary,
-      response: decision.response,
-      result: { conversation: decision },
-      facts: decision.facts,
-      acceptanceBasis: options.acceptanceBasis,
-    });
-    // Only an admitted result may publish this batch's reply and Request decisions.
-    // Later messages remain queued for the next turn.
-    if (accepted.status !== "applied" || !config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult)
-      return accepted;
-    const conversationId = item.conversationId!;
-    const topicId = conversationResultTopic(config, item, decision);
-    if (decision.topic?.kind === "new") {
-      createConversationTopic(db, {
-        id: topicId!,
-        appId: item.appId,
-        conversationId,
-        title: decision.topic.title,
-        openedBy: item.source.kind,
-        originMessageId: item.source.id,
-        now,
-      });
-    }
-    const result = {
-      summary: decision.summary,
-      response: decision.response,
-      result: { conversation: decision },
-      facts: decision.facts,
-    };
-    applyConversationRequestUpdates(db, {
-      actor: { appId: item.appId, taskId: claim.taskId },
-      appId: item.appId,
-      conversationId,
-      topicId,
-      topicSelected: Boolean(decision.topic) || hasConversationInputTopicSelection(db, item),
-      updates: decision.requestUpdates ?? [],
-      updateKey: `attempt:${claim.attemptId}`,
-      messageId: `result:${item.id}`,
-      now,
-    });
-    for (const update of decision.requestUpdates ?? []) {
-      linkConversationRequestInputs(db, item.appId, conversationId, update.id, requestInputIds(config, items, update));
-    }
-    const admittedTasks: Array<{ appId: string; taskId: string }> = [];
-    for (const [index, control] of (decision.taskControls ?? []).entries()) {
-      const prepared = options.taskControls![index]!;
-      if (
-        prepared.appId !== control.appId ||
-        prepared.taskId !== control.taskId ||
-        (control.appId === item.appId && control.taskId === claim.taskId)
-      )
-        throw new Error("Conversation Task control has a mismatched or self-owned target");
-      (accepted.cancelledTasks ??= []).push(
-        cancelAppTask(resolveConversationTaskApp(config, prepared.appId, options.getTaskApp).config, {
-          ...control,
-          ...(!hasHumanInput ? { actor: { appId: item.appId, taskId: claim.taskId } } : {}),
-          expectedGeneration: prepared.generation,
-          expectedResourceVersion: prepared.resourceVersion,
-          controlKey: `conversation-control:${claim.attemptId}:${index}`,
-        }),
-      );
-    }
-    if (decision.followUp) {
-      const desired = decision.followUp;
-      const { targetApp, target, request } = readConversationFollowUp(
-        config,
-        item,
-        desired,
-        options.getTaskApp,
-      );
-      // Mapping is an execution effect. Run it once, only during settlement.
-      const attachment = options.followUpAttachment ?? (desired.task
-        ? { kind: "existing" as const, taskId: desired.task.taskId }
-        : targetApp.task!({ id: item.id, source: item.source, input: desired.input }));
-      if (!attachment) throw new Error("App selected no Task for Conversation follow-up");
-      options.onFollowUpMapped?.(structuredClone(attachment));
-      const admitted = admitTaskInput(target, {
-        appId: decision.followUp.appId,
-        creator: { appId: item.appId, taskId: claim.taskId },
-        attachment,
-        idempotencyKey: `conversation-follow-up:${item.appId}:${item.id}`,
-        inputContext: { id: item.id, source: item.source, input: decision.followUp.input },
-        ...(request
-          ? { requestLink: { appId: item.appId, conversationId, id: request.id, revision: request.revision } }
-          : {}),
-      });
-      admittedTasks.push({ appId: target.resourceStore.appId, taskId: admitted.taskId });
-    }
-    // Existing Conversation readers render this durable reply. No event sink or
-    // second follow-up worker needs to run for Request closure to be truthful.
-    for (const handled of items) {
-      const changed = db.run(
-        `UPDATE app_inbox_items SET status = 'done', topic_id = ?, result = ?, handling = NULL,
-      completed_at = ?, changed_at = ?, updated_at = ?
-      WHERE id = ? AND execution_task_id = ? AND status != 'done' AND lease_owner IS NULL`,
-        [
-          handled.id === item.id ? (topicId ?? null) : (handled.topicId ?? null),
-          handled.id === item.id ? JSON.stringify(result) : null,
-          now,
-          now,
-          now,
-          handled.id,
-          claim.taskId,
-        ],
-      ).changes;
-      if (changed !== 1) throw new Error("Conversation input changed during settlement");
-    }
-    return { ...accepted, admittedTasks };
-  });
-}
-
-/** An exact saved answer, report or owner closure, never a notification's claimed result. */
 type ConversationTaskChange =
   { attemptId: string; closedGeneration?: never } | { closedGeneration: number; attemptId?: never };
 export type ConversationTaskChangeRef = {

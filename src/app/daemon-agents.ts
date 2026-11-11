@@ -1,21 +1,24 @@
-import { readFileWritePolicy } from "../lib/tools/file-write-policy.js";
 import { existsSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
-import { loadAgentConfig, validateAgentConfig } from "./loader/agent-config.js";
-import { buildTools } from "./loader/toolset-loader.js";
-import { buildAgentDefinition } from "./loader/agent-definition.js";
-import type { EventBus } from "./core/events/bus.js";
+import { getDb } from "../lib/db/connection.js";
 import type { SubagentManager } from "../lib/index.js";
+import { readFileWritePolicy } from "../lib/tools/file-write-policy.js";
 import type { ModelWithApiKey } from "../lib/types.js";
+import {
+  createCodexGoalExecutor,
+  migrateCodexGoalBindingFile,
+} from "./adapters/executors/codex/codex-goal-executor.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
-import { getAgentMaintenance, loadAgents, getAgentSessionId, prepareAgentTriggers } from "./agent-loader.js";
-import { installAppTaskRuntimes, } from "./core/tasks/app-task-runtime.js";
-import type { AppTaskRuntimeOptions } from "./core/tasks/runtime-options.js";
+import { getAgentSessionId, loadAgents } from "./agent-loader.js";
 import { createTaskExecutionBackends } from "./composition/task-execution.js";
 import type { AppRegistry } from "./core/apps/registry.js";
+import type { EventBus } from "./core/events/bus.js";
 import type { HostCapacity } from "./core/scheduling/host-capacity.js";
-import { createCodexGoalExecutor, migrateCodexGoalBindingFile } from "./adapters/executors/codex/codex-goal-executor.js";
-import { getDb } from "../lib/db/connection.js";
+import { installAppTaskRuntimes } from "./core/tasks/app-task-runtime.js";
+import type { AppTaskRuntimeOptions } from "./core/tasks/runtime-options.js";
+import { loadAgentConfig, validateAgentConfig } from "./loader/agent-config.js";
+import { buildAgentDefinition } from "./loader/agent-definition.js";
+import { buildTools } from "./loader/toolset-loader.js";
 
 function hasRetainedCodexGoalTrialTask(persistDir: string): boolean {
   return Boolean(
@@ -48,7 +51,6 @@ export async function prepareDaemonAgents(opts: {
   models: Record<string, ModelWithApiKey>;
   manager: SubagentManager;
   bus: EventBus;
-  cronEnabled: boolean;
   appRegistry: AppRegistry;
   hostCapacity: HostCapacity;
   /** Controllers in the daemon, descriptor-only setup in an attempt worker, or no Task runtime. */
@@ -78,7 +80,6 @@ export async function prepareDaemonAgents(opts: {
     models: opts.models,
     manager: opts.manager,
     bus: opts.bus,
-    cronEnabled: opts.cronEnabled,
     ...(opts.agentNames ? { agentNames: opts.agentNames } : {}),
   };
 
@@ -132,7 +133,6 @@ export async function prepareDaemonAgents(opts: {
         agentsRoot: resolve(appDir, "agents"),
         agentDir,
         getAgentSessionId,
-        getAgentMaintenance: () => getAgentMaintenance(),
         addCleanup: () => {},
       }),
       projectRoot: opts.projectRoot,
@@ -224,10 +224,6 @@ export async function prepareDaemonAgents(opts: {
       });
     }
   }
-
-  // Producer activation is separate from Task recovery and controller startup.
-
-  if (taskRuntimeMode === "controllers") await prepareAgentTriggers(loaderOpts);
 
   return { loaderOpts, appTaskOptions, startAppTaskControllers };
 }

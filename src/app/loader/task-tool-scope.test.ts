@@ -2,9 +2,9 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildTools, type ToolsetLoaderOptions } from "./toolset-loader.js";
-import type { AgentConfig } from "./agent-config.js";
 import { EventBus } from "../core/events/bus.js";
+import type { AgentConfig } from "./agent-config.js";
+import { buildTools, type ToolsetLoaderOptions } from "./toolset-loader.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -20,7 +20,6 @@ function fixtureOptions(root: string): ToolsetLoaderOptions {
     persistDir: root,
     manager: { activeSessions: new Map() },
     bus: new EventBus(),
-    cronEnabled: false,
     getAgentSessionId: () => undefined,
   } as unknown as ToolsetLoaderOptions;
 }
@@ -71,7 +70,6 @@ test("Task-bound workflow tools use their exact binding; unbound workflows get n
       persistDir: root,
       manager: { activeSessions: new Map([["session-test", session]]) },
       bus: new EventBus(),
-      cronEnabled: false,
       getAgentSessionId: () => "session-test",
     } as unknown as ToolsetLoaderOptions,
   );

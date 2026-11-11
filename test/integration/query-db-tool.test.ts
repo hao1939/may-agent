@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { createQueryDbTool } from "../../src/lib/tools/query-db.js";
-import { closeDb, getDb } from "../../src/lib/requests.js";
+import { join } from "node:path";
 import { loadAgents } from "../../src/app/agent-loader.js";
+import { closeDb, getDb } from "../../src/lib/requests.js";
+import { createQueryDbTool } from "../../src/lib/tools/query-db.js";
 
 let persistDir: string;
 
@@ -125,8 +125,7 @@ describe("query_db tool", () => {
         models: { "claude-opus-4-6": { id: "claude-opus-4-6", provider: "test", apiKey: "test" } } as any,
         manager: manager as any,
         bus: { emit: () => undefined } as any,
-        cronEnabled: false,
-      });
+        });
 
       expect(registered).toHaveLength(1);
       expect(registered[0].tools.filter((tool) => tool.name === "query_db")).toHaveLength(1);

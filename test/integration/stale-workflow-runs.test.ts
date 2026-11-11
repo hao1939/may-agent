@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { rmSync, existsSync, mkdtempSync } from "node:fs";
-import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { SubagentManager } from "../../src/lib/manager.js";
-import { insertWorkflowRun, getWorkflowRun } from "../../src/lib/requests.js";
 import type { WorkflowRunRecord } from "../../src/lib/requests.js";
+import { getWorkflowRun, insertWorkflowRun } from "../../src/lib/requests.js";
 import { createWorkflowDiagnostics } from "../../src/lib/workflow-diagnostics.js";
 import { readWorkflowFacts } from "../../src/lib/workflow-facts.js";
 
@@ -43,7 +43,7 @@ describe("stale workflow run cleanup", () => {
     insertWorkflowRun(persistDir, makeStaleRun("wr_stale_1"));
     createWorkflowDiagnostics(persistDir, "wr_stale_1")("info", "prepared before restart");
 
-    manager.resumeStaleSessions();
+    manager.cleanupStaleSessions();
 
     const updated = getWorkflowRun(persistDir, "wr_stale_1");
     expect(updated).not.toBeNull();
@@ -63,7 +63,7 @@ describe("stale workflow run cleanup", () => {
     };
     insertWorkflowRun(persistDir, run);
 
-    manager.resumeStaleSessions();
+    manager.cleanupStaleSessions();
 
     const updated = getWorkflowRun(persistDir, "wr_done");
     expect(updated!.status).toBe("done");
@@ -77,7 +77,7 @@ describe("stale workflow run cleanup", () => {
       startedAt: Date.now(),
     });
 
-    manager.resumeStaleSessions();
+    manager.cleanupStaleSessions();
 
     expect(getWorkflowRun(persistDir, "wr_current")!.status).toBe("running");
   });
@@ -92,7 +92,7 @@ describe("stale workflow run cleanup", () => {
       endedAt: Date.now(),
     });
 
-    manager.resumeStaleSessions();
+    manager.cleanupStaleSessions();
 
     expect(getWorkflowRun(persistDir, "wr_a")!.status).toBe("interrupted");
     expect(getWorkflowRun(persistDir, "wr_b")!.status).toBe("interrupted");
@@ -102,6 +102,6 @@ describe("stale workflow run cleanup", () => {
   it("no-op when no workflow runs exist", () => {
     const manager = new SubagentManager({ persistDir });
     // Should not throw
-    manager.resumeStaleSessions();
+    manager.cleanupStaleSessions();
   });
 });

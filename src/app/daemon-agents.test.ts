@@ -2,18 +2,18 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { closeDb, getDb } from "../lib/requests.js";
-import { daemonAgentInternals, prepareDaemonAgents } from "./daemon-agents.js";
-import { SubagentManager } from "../lib/manager.js";
-import { createAgentRun } from "../lib/agent-runner.js";
-import { readSessionMeta } from "../lib/persistence.js";
-import { createLastSessionWriter } from "../lib/session-subscribers.js";
-import { EventBus } from "./core/events/bus.js";
-import { AppRegistry } from "./core/apps/registry.js";
-import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
-import { closeInstalledAppTaskRuntimes } from "./core/tasks/app-task-runtime.js";
-import { HostCapacity } from "./core/scheduling/host-capacity.js";
 import { fakeModel } from "../../test/fixtures/model.js";
+import { createAgentRun } from "../lib/agent-runner.js";
+import { SubagentManager } from "../lib/manager.js";
+import { readSessionMeta } from "../lib/persistence.js";
+import { closeDb, getDb } from "../lib/requests.js";
+import { createLastSessionWriter } from "../lib/session-subscribers.js";
+import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
+import { AppRegistry } from "./core/apps/registry.js";
+import { EventBus } from "./core/events/bus.js";
+import { HostCapacity } from "./core/scheduling/host-capacity.js";
+import { closeInstalledAppTaskRuntimes } from "./core/tasks/app-task-runtime.js";
+import { daemonAgentInternals, prepareDaemonAgents } from "./daemon-agents.js";
 
 const roots: string[] = [];
 
@@ -84,8 +84,7 @@ describe("daemon Task executor compatibility", () => {
         models: { fixture: fakeModel() },
         manager,
         bus,
-        cronEnabled: false,
-        appRegistry: registry,
+          appRegistry: registry,
         hostCapacity: new HostCapacity(1),
         taskRuntimeMode: "manual",
       });

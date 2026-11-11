@@ -12,9 +12,7 @@
  *
  *   const sb = await buildSandbox({
  *     fixtureAgents: ["may"],
- *     fixtureHandlers: { may: ["e2e-noop"] },
  *     fixtureProjects: [],
- *     cronJson: { may: { jobs: [...] } },
  *   });
  *   try {
  *     // sb.socketPath, sb.stateDir, sb.projectsRoot, sb.agentsRoot, sb.dbPath
@@ -27,15 +25,7 @@
  */
 
 import type { ChildProcess, SpawnOptionsWithoutStdio } from "node:child_process";
-import {
-  cpSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -55,12 +45,8 @@ export function spawnSandboxDaemon(args: string[], options: SpawnOptionsWithoutS
 export interface SandboxSpec {
   /** Fixture agents to copy from test/e2e/fixtures/agents/ into sandbox agents/. */
   fixtureAgents?: string[];
-  /** Per-agent handler fixtures to copy from test/e2e/fixtures/handlers/ into agents/<a>/handlers/. */
-  fixtureHandlers?: Record<string, string[]>;
   /** Per-agent workflow fixtures to copy from test/e2e/fixtures/workflows/ into agents/<a>/workflows/. */
   fixtureWorkflows?: Record<string, string[]>;
-  /** Per-agent cron.json content to write. */
-  cronJson?: Record<string, unknown>;
   /** Fixture project dirs to copy from test/e2e/fixtures/projects/ into sandbox projects/. */
   fixtureProjects?: string[];
   /** Daemon args. Default: ["--cron", "--socket"]. */
@@ -158,7 +144,7 @@ export async function buildSandbox(spec: SandboxSpec = {}): Promise<Sandbox> {
   // Daemon reads this lazily during agent session start; not at boot.
   writeFileSync(join(sharedRoot, "common-sense.md"), "# Test environment\n");
 
-  // Fixture handlers/workflows live under the tmp sandbox and import the public
+  // Fixture workflows live under the tmp sandbox and import the public
   // SDK package name, just like real agent-owned code. Expose the workspace SDK
   // inside the sandbox's module tree so runtime dynamic imports resolve from
   // the fixture file location.
@@ -171,16 +157,6 @@ export async function buildSandbox(spec: SandboxSpec = {}): Promise<Sandbox> {
     copyFixtureFile(join("agents", name), join(agentsRoot, name));
   }
 
-  // Copy fixture handlers into per-agent handlers/.
-  for (const [agent, handlers] of Object.entries(spec.fixtureHandlers ?? {})) {
-    for (const handler of handlers) {
-      copyFixtureFile(
-        join("handlers", `${handler}.ts`),
-        join(agentsRoot, agent, "handlers", `${handler}.ts`),
-      );
-    }
-  }
-
   // Copy fixture workflows into per-agent workflows/.
   for (const [agent, workflows] of Object.entries(spec.fixtureWorkflows ?? {})) {
     for (const wf of workflows) {
@@ -189,13 +165,6 @@ export async function buildSandbox(spec: SandboxSpec = {}): Promise<Sandbox> {
         join(agentsRoot, agent, "workflows", `${wf}.ts`),
       );
     }
-  }
-
-  // Write per-agent cron.json.
-  for (const [agent, cron] of Object.entries(spec.cronJson ?? {})) {
-    const cronPath = join(agentsRoot, agent, "cron.json");
-    mkdirSync(dirname(cronPath), { recursive: true });
-    writeFileSync(cronPath, JSON.stringify(cron, null, 2));
   }
 
   // Copy fixture projects (each becomes projects/<name>/).

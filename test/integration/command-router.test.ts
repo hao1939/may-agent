@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { attachCommandRouter } from "../../src/app/command-router.js";
-import { EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
+import { EVENT_DELIVERY_RESULT, EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
 import type { SubagentManager } from "../../src/lib/index.js";
 import { RegistryStore } from "../../src/lib/persistence.js";
 
@@ -67,30 +67,14 @@ describe("command router integration", () => {
     h.router.close();
   });
 
-  it("resumes cold sessions only through an explicit steer event", () => {
-    const resumed: unknown[] = [];
-    const h = harness({
-      resumeSession: (sessionId: string, message: string, options?: unknown) => {
-        resumed.push({ sessionId, message, options });
-        return sessionId;
-      },
-    } as Partial<SubagentManager>);
-
-    h.manager.registryStore.saveSession("s_cold", { agent: "may", task: "saved conversation", status: "done", startedAt: 1 });
-    h.bus.emit({
-      type: "session.steer.requested",
-      source: "telegram",
-      owner: "agent:may",
-      target: { sessionId: "s_cold" },
-      data: { message: "follow up" },
-    });
-    expect(resumed).toEqual([
-      {
-        sessionId: "s_cold",
-        message: "follow up",
-        options: expect.objectContaining({ source: "telegram", suppressBenignRaceEvent: true }),
-      },
-    ]);
+  it("rejects cold session steering and preserves its history", () => {
+    const h = harness();
+    const saved = { agent: "may", task: "saved conversation", status: "done" as const, startedAt: 1 };
+    h.manager.registryStore.saveSession("s_cold", saved);
+    const event = h.bus.emit({ type: "session.steer.requested", source: "telegram", owner: "agent:may",
+      target: { sessionId: "s_cold" }, data: { message: "follow up" } });
+    expect(event[EVENT_DELIVERY_RESULT]?.accepted).not.toBe(true);
+    expect(h.manager.registryStore.getSession("s_cold")).toMatchObject(saved);
     h.router.close();
   });
 

@@ -1,19 +1,19 @@
-import { Type } from "typebox";
+import { createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
+import type { AppEvent, TaskDetail } from "@may-agent/sdk";
 import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
-import { createAgentRun } from "../../src/lib/agent-runner.js";
-import { SubagentManager } from "../../src/lib/manager.js";
-import { currentAgentSessionId } from "../../src/lib/agent-session-context.js";
-import { buildTools } from "../../src/app/loader/toolset-loader.js";
+import { Type } from "typebox";
 import { EventBus } from "../../src/app/core/events/bus.js";
+import { buildTools } from "../../src/app/loader/toolset-loader.js";
+import { createAgentRun } from "../../src/lib/agent-runner.js";
+import { currentAgentSessionId } from "../../src/lib/agent-session-context.js";
+import { SubagentManager } from "../../src/lib/manager.js";
 import { closeDb } from "../../src/lib/requests.js";
 import type { TaskExecutionContext } from "../../src/lib/task-execution-context.js";
-import type { AppEvent, TaskDetail } from "@may-agent/sdk";
-import { fakeModel } from "../fixtures/model.js";
 import { createFinishTool } from "../../src/lib/tools/lifecycle.js";
+import { fakeModel } from "../fixtures/model.js";
 
 // Real loader/model tools and managed executions. Only the provider is synthetic.
 const routes = ["agent", "workflow", "nested-workflow"] as const;
@@ -149,9 +149,7 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
       sharedRoot: root,
       projectRoot: root,
       persistDir,
-      cronEnabled: false,
       getAgentSessionId: () => "wrong-same-name-session",
-      getAgentMaintenance: () => new Map(),
       addCleanup: () => {},
     });
     manager.register({ name: "owner", description: "Owner", domain: "fixture", model, tools });

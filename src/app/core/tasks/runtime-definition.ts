@@ -39,8 +39,6 @@ type ProjectReadModel = {
 export function configuredAppAgent(app: AppDefinition, appDir: string): string {
   const agent = typeof app.agent === "string" ? app.agent.trim() : "";
   if (agent) return agent.replace(/^agent:/, "");
-  const legacyOwner = typeof app.owner === "string" ? app.owner.trim() : "";
-  if (legacyOwner) return legacyOwner.replace(/^agent:/, "");
   // Registry validation requires an explicit agent. Never infer authority by
   // scanning agent files here, including for standalone admission descriptors.
   throw new Error(`App ${appDir} must declare its agent`);
@@ -102,6 +100,20 @@ export function syncProjectReadModel(
 
 function validatePreparedAppTaskRuntime(descriptor: AppTaskRuntimeDescriptor): void {
   const { app, id } = descriptor;
+  const db = descriptor.resourceStore.db;
+  if (
+    db.prepare(`SELECT 1 FROM app_tasks WHERE app_id = ?
+      AND json_extract(resource_json, '$.spec.executor') = 'conversation' LIMIT 1`).get(id) ||
+    db.prepare(`SELECT 1 FROM app_event_admission_commands WHERE app_id = ? AND status = 'pending'
+      AND ((route_kind = 'unresolved' AND json_extract(payload, '$.resolveTask') = 1)
+        OR (route_kind = 'task' AND json_extract(payload, '$.intent.executor') = 'conversation')) LIMIT 1`).get(id) ||
+    db.prepare(`SELECT 1 FROM app_task_attempts WHERE app_id = ?
+      AND json_extract(attempt_json, '$.pendingSettlement.conversation') IS NOT NULL LIMIT 1`).get(id)
+  ) {
+    throw new Error(
+      `App ${id} requires stopped-runtime Task contract conversion; see scripts/operations/convert-task-contracts.ts`,
+    );
+  }
   new TaskBudgetAdmissionStore(descriptor.resourceStore.db).assertCoordinationPolicy(
     id, descriptor.agent, app.tasks?.coordination,
   );
@@ -262,7 +274,6 @@ export function appTaskConfig(descriptor: AppTaskRuntimeDescriptor): AppTaskCont
     closeOnResult: descriptor.app.tasks?.closeOnResult,
     resourceStore: descriptor.resourceStore,
   });
-  if (descriptor.app.conversation?.mode === "task") config.conversationInputMode = "task";
   cacheTaskSnapshots(config);
   appTaskConfigs.set(descriptor, config);
   return config;

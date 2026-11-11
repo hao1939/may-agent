@@ -1,44 +1,47 @@
+import type { EventInput } from "@may-agent/control/events";
+import type { AppInputContext } from "@may-agent/sdk";
 import { describe, expect, it, spyOn } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { closeDb, getDb } from "../../lib/requests.js";
+import { conversationTaskContext } from "../../../test/fixtures/conversation-task.js";
 import { DbWriter } from "../../lib/db-writer.js";
 import { storeNotificationMessage } from "../../lib/db/notifications.js";
-import { createEventInterface } from "../core/events/interface.js";
+import { closeDb, getDb } from "../../lib/requests.js";
 import { attachCommandRouter } from "../command-router.js";
-import { AppRegistry } from "../core/apps/registry.js";
-import { HostCapacity } from "../core/scheduling/host-capacity.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "../composition/app-inbox-runtime.js";
-import { prepareConversationTaskTurn } from "../composition/conversation-task-turn.js";
-import { createAppTaskCapability } from "../core/tasks/app-task-capability.js";
-import {
-  closeInstalledAppTaskRuntimes,
-  installAppTaskRuntimes,
-  reconcileLoadedAppTaskOnce,
-} from "../core/tasks/app-task-runtime.js";
-import type { AppInputContext } from "@may-agent/sdk";
-import type { EventInput } from "@may-agent/control/events";
-import type { HumanTaskView } from "../human-task-service.js";
-import { resolveTaskReference } from "../core/state/task-reference-index.js";
+import { AppRegistry } from "../core/apps/registry.js";
+import { EVENT_ROW_ID, EventBus } from "../core/events/bus.js";
+import { createEventInterface } from "../core/events/interface.js";
+import { HostCapacity } from "../core/scheduling/host-capacity.js";
 import { createAppInboxItem, getAppInboxItem } from "../core/state/app-inbox-store.js";
 import {
   admitConversationTaskInput,
   conversationTaskIntent,
   stopConversationTaskTurn,
 } from "../core/state/conversation-task-turns.js";
+import {
+  createConversationTopic,
+  linkConversationTopicTask,
+  readAppConversationResource,
+} from "../core/state/conversations.js";
+import { resolveTaskReference } from "../core/state/task-reference-index.js";
+import { createAppTaskCapability } from "../core/tasks/app-task-capability.js";
 import { claimObservedAppTask } from "../core/tasks/app-task-reconciler.js";
-import { conversationTaskContext } from "../../../test/fixtures/conversation-task.js";
-import { createConversationTopic, linkConversationTopicTask, readAppConversationResource } from "../core/state/conversations.js";
-import { EVENT_ROW_ID, EventBus } from "../core/events/bus.js";
+import {
+  closeInstalledAppTaskRuntimes,
+  installAppTaskRuntimes,
+  reconcileLoadedAppTaskOnce,
+} from "../core/tasks/app-task-runtime.js";
+import type { HumanTaskView } from "../human-task-service.js";
 import {
   attachTelegramBot as attachTelegramBotRuntime,
   renderTelegramApps,
   renderTelegramTask,
   renderTelegramTasks,
+  renderTelegramTodos,
   renderTelegramTopic,
   renderTelegramTopics,
-  renderTelegramTodos,
   telegramConversationInputEvent,
 } from "./telegram.js";
 
@@ -224,25 +227,28 @@ describe("Telegram durable input and natural follow-up", () => {
     let runtime: AppInboxRuntime | undefined;
     const held = Promise.withResolvers<void>();
     const registry = new AppRegistry(async () => [{ appDir: f.root, definition: {
-      id: "may", version: 1, owner: "may",
+      id: "may", version: 1, agent: "may",
       inputSchema: { type: "object", required: ["kind", "data"], properties: {
         kind: { const: "message" }, data: { type: "object" },
       } },
-      conversation: { mode: "agent", inputKinds: ["message"], conversationId: "may:primary" },
+      conversation: { mode: "task", inputKinds: ["message"], conversationId: "may:primary" },
     } }]);
     const start = async () => {
       const hostCapacity = new HostCapacity(1);
       await installAppTaskRuntimes({
         projectRoot: f.root, projectsRoot: f.root, persistDir: f.root, bus: f.bus,
         hostCapacity, installControllers: false, appRegistrySnapshot: registry.snapshot(),
-        conversations: {
-          execute: (turn) => prepareConversationTaskTurn({
-            ...turn,
-            resolveConversationInput: async ({ inputContext: request }) => {
-              seen.push(request);
-              return { summary: "Checked", response: "Checked", topic: { kind: "none" } };
-            },
-          }),
+        agents: {
+          available: () => true,
+      role: (agent) => ({ agent, instructions: "Handle the fixture Task" }),
+      prepare: async () => true,
+      snapshot() { return this; },
+          async execute({ attempt }) {
+            seen.push({ conversation: attempt.events.communication![0] } as AppInputContext);
+            return { runId: null, handlerResult: { state: "converged", summary: "Checked", facts: [],
+              communication: [{ id: `checked-${attempt.events.inputs![0]!.id}`, inputId: attempt.events.inputs![0]!.id, message: "Checked", topic: { kind: "none" } }],
+            } };
+          },
         },
       }, { deferRecovery: true });
       const tasks = createAppTaskCapability({ bus: f.bus });

@@ -6,12 +6,8 @@ import { openDatabase } from "../../lib/db.js";
 import { applyDbSchema } from "../../lib/db/schema.js";
 import { closeDb, getDb } from "../../lib/requests.js";
 import { EventBus } from "../core/events/bus.js";
-import { approvalProposalForTask, HumanTaskService, type HumanTaskView } from "../human-task-service.js";
-import {
-  attachTelegramBot,
-  renderTelegramTask,
-  renderTelegramTodos,
-} from "./telegram.js";
+import { HumanTaskService, approvalProposalForTask, type HumanTaskView } from "../human-task-service.js";
+import { attachTelegramBot, renderTelegramTask, renderTelegramTodos } from "./telegram.js";
 
 function proposal(letter: string, revision: number): HumanTaskView {
   return {
@@ -106,7 +102,7 @@ describe("Telegram exact approval presentation", () => {
         entries: [
           {
             appDir: "/tmp/may.app",
-            definition: { id: "may", version: 1, owner: "may", description: "test", inputSchema: {} },
+            definition: { id: "may", version: 1, agent: "may", description: "test", inputSchema: {} },
           },
         ],
       }),
@@ -192,7 +188,7 @@ describe("Telegram exact approval presentation", () => {
             entries: [
               {
                 appDir: "/tmp/may.app",
-                definition: { id: "may", version: 1, owner: "may", description: "test", inputSchema: {} },
+                definition: { id: "may", version: 1, agent: "may", description: "test", inputSchema: {} },
               },
             ],
           }),
