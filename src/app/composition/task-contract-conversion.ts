@@ -21,7 +21,7 @@ export function convertStoppedTaskContracts(input: {
     if (
       db
         .prepare(
-          "SELECT 1 FROM app_task_attempts WHERE json_extract(attempt_json, '$.pendingSettlement.conversation') IS NOT NULL LIMIT 1",
+          "SELECT 1 FROM app_task_attempts WHERE json_extract(attempt_json, '$.pendingSettlement.report.conversation') IS NOT NULL LIMIT 1",
         )
         .get()
     )

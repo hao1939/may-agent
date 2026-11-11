@@ -11,7 +11,7 @@ import { createAppEventAdmissionPlan, getAppEventAdmissionPlan } from "../core/s
 import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";
 import { applyConversationRequestUpdates, linkConversationRequestInputs } from "../core/state/conversation-requests.js";
 import { admitConversationTaskInput } from "../core/state/conversation-task-turns.js";
-import { appTaskContext, claimObservedAppTask, completeAppTask } from "../core/tasks/app-task-reconciler.js";
+import { appTaskContext, claimObservedAppTask, completeAppTask, failAppTaskAttempt } from "../core/tasks/app-task-reconciler.js";
 import { prepareAppTaskRuntimeDescriptors } from "../core/tasks/runtime-definition.js";
 import { convertStoppedTaskContracts } from "./task-contract-conversion.js";
 
@@ -203,6 +203,48 @@ test("runtime refuses old execution contracts before opening another attempt", a
   await expect(prepare()).rejects.toThrow("requires stopped-runtime Task contract conversion");
   expect(f.snapshot()).toEqual(before);
   f.convert();
+  expect(await prepare()).toHaveLength(1);
+});
+
+test("startup and conversion refuse nested retained Conversation settlement proposals without changing state", async () => {
+  const f = fixture();
+  f.convert();
+  const prepare = () => prepareAppTaskRuntimeDescriptors({
+    persistDir: f.root, projectsRoot: f.root,
+    appRegistrySnapshot: { id: "current", generation: 1, entries: [{ appDir: f.root, definition: f.app }] },
+  });
+  expect(await prepare()).toHaveLength(1);
+  const claim = claimObservedAppTask(f.config, {
+    taskId: f.item.taskId, appAgent: f.app.agent, handler: "executor:agent",
+  });
+  if (claim.kind !== "claimed") throw new Error("Expected claim");
+  failAppTaskAttempt(f.config, claim, "Previous Host confirmed execution cleanup");
+  // The retired executor stored the proposal inside report. Reproduce its
+  // persisted shape after cleanup, with no legacy executor or route to mask it.
+  const checkpoint = {
+    claim,
+    report: {
+      runId: null,
+      handlerResult: { state: "converged", summary: "Prepared answer", facts: [], actions: [] },
+      conversation: { decision: { summary: "Prepared answer", response: "Retained reply", topic: { kind: "none" } } },
+    },
+    acceptanceBasis: { method: "agent-judgment", facts: [] },
+  };
+  f.db.prepare(`UPDATE app_task_attempts SET attempt_json = json_set(attempt_json, '$.pendingSettlement', json(?))
+    WHERE app_id = ? AND attempt_id = ?`).run(JSON.stringify(checkpoint), f.app.id, claim.attemptId);
+  const before = f.snapshot();
+  await expect(prepare()).rejects.toThrow("requires stopped-runtime Task contract conversion");
+  expect(f.snapshot()).toEqual(before);
+  f.db.prepare(`UPDATE app_tasks SET resource_json = json_set(resource_json, '$.spec.executor', 'conversation')
+    WHERE app_id = ? AND task_id = ?`).run(f.app.id, f.item.taskId);
+  const beforeConversion = f.snapshot();
+  expect(() => f.convert()).toThrow("Settle retained Conversation proposals with the previous Host");
+  expect(f.snapshot()).toEqual(beforeConversion);
+
+  // Current common Task checkpoints remain supported.
+  f.db.prepare(`UPDATE app_task_attempts SET attempt_json = json_remove(attempt_json, '$.pendingSettlement.report.conversation')
+    WHERE app_id = ? AND attempt_id = ?`).run(f.app.id, claim.attemptId);
+  expect(f.convert()).toEqual({ tasks: 1, routes: 0 });
   expect(await prepare()).toHaveLength(1);
 });
 
