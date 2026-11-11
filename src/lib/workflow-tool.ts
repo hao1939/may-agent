@@ -1,8 +1,12 @@
 import { StringEnum } from "@earendil-works/pi-ai";
 import { ExecutionDeferredError } from "@may-agent/sdk";
-import { createHash } from "node:crypto";
-import { existsSync, readFileSync, readdirSync, realpathSync } from "node:fs";
-import { isAbsolute, join, relative } from "node:path";
+import {
+  runWorkflowInvocation,
+  type WorkflowExecutionAllowance,
+  type WorkflowStepInvocationResult,
+} from "@may-agent/sdk/workflow-kernel";
+import { existsSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { Type, type TSchema } from "typebox";
 import { assertTaskWorkflowStart } from "../app/core/state/task-budget-managed-start.js";
 import { getDb } from "./db/connection.js";
@@ -15,7 +19,6 @@ import type {
   AgentCallOptions,
   ExecutionResult as AppExecutionResult,
   AppRead,
-  WorkflowContext as AppWorkflowContext,
   TaskAttempt,
   TaskReconciliationContext,
 } from "@may-agent/sdk/app";
@@ -34,6 +37,11 @@ import type { TaskBinding } from "./persistence.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
 import { importRuntimeModule } from "./runtime-import.js";
 import type { SubagentDefinition, TaskResult } from "./types.js";
+import {
+  buildWorkflowCatalog,
+  findWorkflow,
+  type WorkflowCatalog,
+} from "./workflow-catalog.js";
 import { createWorkflowDiagnostics } from "./workflow-diagnostics.js";
 import { validateOperationAllowance } from "./workflow-finish-recovery.js";
 import { retainWorkflowResultPayload } from "./workflow-payload.js";
@@ -49,6 +57,8 @@ import type {
   WorkflowToolResult,
 } from "./workflow.js";
 import { WorkflowBlocked, WorkflowInterrupted } from "./workflow.js";
+
+export { inspectWorkflowDefinition } from "./workflow-catalog.js";
 // ── In-memory workflow types (used during execution) ────────────────────
 
 /** In-memory record of a workflow execution. */
@@ -83,46 +93,6 @@ export interface WorkflowStep {
   startedAt: number;
   endedAt: number;
   lastAssistantText: string | null;
-}
-
-function normalizeAuthoredWorkflowResult(
-  value: unknown,
-  taskOwned: boolean,
-): WorkflowResult {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("Workflow returned no terminal execution result");
-  }
-  const result = value as Record<string, unknown>;
-  // A Task workflow reports one Task outcome. Its controller still owns full
-  // result admission; completed execution does not itself establish acceptance.
-  if (taskOwned && typeof result.state === "string" && typeof result.summary === "string") {
-    return { type: "done", summary: result.summary, output: value };
-  }
-  const isExecutionResult =
-    (result.kind === "agent" || result.kind === "workflow") &&
-    typeof result.id === "string" &&
-    typeof result.summary === "string";
-  if (!isExecutionResult) throw new Error("Workflow returned an invalid terminal execution result");
-  const payload = {
-    ...(result.output !== undefined ? { output: result.output } : {}),
-    ...(result.facts !== undefined ? { facts: result.facts } : {}),
-  };
-  if (result.status === "done") {
-    return {
-      type: "done",
-      summary: result.summary as string,
-      ...payload,
-    };
-  }
-  if (result.status === "blocked" || result.status === "error" || result.status === "interrupted") {
-    return {
-      type: result.status,
-      reason: result.summary as string,
-      ...payload,
-      ...(result.status === "blocked" && result.facts !== undefined ? { context: result.facts } : {}),
-    };
-  }
-  throw new Error(`Workflow returned an unknown execution status: ${String(result.status)}`);
 }
 
 // ── Tool schema ────────────────────────────────────────────────────────
@@ -244,177 +214,7 @@ function pruneCompletedSteps(completedSteps: CompletedStep[]): void {
   }
 }
 
-async function loadWorkflow(filePath: string, sourceScope: "agent" | "project"): Promise<WorkflowModule> {
-  const entryContentHash = createHash("sha256").update(readFileSync(filePath)).digest("hex");
-  const mod = await importRuntimeModule<{
-    name?: unknown;
-    description?: unknown;
-    executionTimeoutMs?: unknown;
-    workspace?: unknown;
-    execute?: unknown;
-    verify?: unknown;
-  }>(filePath, { entryContentHash });
-  if (typeof mod.name !== "string" || !mod.name.trim()) {
-    throw new Error(`Workflow file ${filePath} must export a non-empty 'name' string`);
-  }
-  if (typeof mod.description !== "string" || !mod.description.trim()) {
-    throw new Error(`Workflow file ${filePath} must export a non-empty 'description' string`);
-  }
-  const execute = mod.execute;
-  if (typeof execute !== "function") {
-    throw new Error(`Workflow file ${filePath} must export an 'execute' function`);
-  }
-  if (mod.verify !== undefined && typeof mod.verify !== "function") {
-    throw new Error(`Workflow file ${filePath} must export 'verify' as a function when present`);
-  }
-  if (
-    mod.executionTimeoutMs !== undefined &&
-    (!Number.isInteger(mod.executionTimeoutMs) ||
-      Number(mod.executionTimeoutMs) < 1_000 ||
-      Number(mod.executionTimeoutMs) > 2 * 60 * 60_000)
-  ) {
-    throw new Error(
-      `Workflow file ${filePath} must export 'executionTimeoutMs' as an integer from 1000 through 7200000 when present`,
-    );
-  }
-  const taskWorkspace =
-    mod.workspace !== null &&
-    typeof mod.workspace === "object" &&
-    !Array.isArray(mod.workspace) &&
-    (mod.workspace as Record<string, unknown>).kind === "task" &&
-    typeof (mod.workspace as Record<string, unknown>).baseBranch === "string" &&
-    Boolean(String((mod.workspace as Record<string, unknown>).baseBranch).trim());
-  if (mod.workspace !== undefined && mod.workspace !== "shared" && mod.workspace !== "task" && !taskWorkspace) {
-    throw new Error(
-      `Workflow file ${filePath} must export 'workspace' as "shared", "task", or { kind: "task", baseBranch } when present`,
-    );
-  }
-  return {
-    name: mod.name.trim(),
-    description: mod.description.trim(),
-    ...(mod.executionTimeoutMs !== undefined ? { executionTimeoutMs: Number(mod.executionTimeoutMs) } : {}),
-    ...(mod.workspace
-      ? {
-          workspace: taskWorkspace
-            ? {
-                kind: "task" as const,
-                baseBranch: String((mod.workspace as Record<string, unknown>).baseBranch).trim(),
-              }
-            : (mod.workspace as "shared" | "task"),
-        }
-      : {}),
-    execute: execute as WorkflowModule["execute"],
-    ...(typeof mod.verify === "function" ? { verify: mod.verify as WorkflowModule["verify"] } : {}),
-    sourcePath: filePath,
-    sourceScope,
-    entryContentHash,
-  };
-}
-
-function listWorkflowFiles(workflowDir: string | undefined): string[] {
-  if (!workflowDir) return [];
-  try {
-    const trustedRoot = realpathSync(workflowDir);
-    return readdirSync(workflowDir)
-      .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts") && !f.includes("-helpers") && !f.includes("-utils"))
-      .sort()
-      .map((file) => realpathSync(join(workflowDir, file)))
-      .filter((filePath) => {
-        const fromRoot = relative(trustedRoot, filePath);
-        return (
-          fromRoot !== ".." &&
-          !fromRoot.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`) &&
-          !isAbsolute(fromRoot)
-        );
-      });
-  } catch {
-    return [];
-  }
-}
-
-interface WorkflowCatalog {
-  readonly workflows: ReadonlyMap<string, WorkflowModule>;
-  readonly diagnostics: readonly string[];
-}
-
-async function loadWorkflowScope(
-  dir: string | undefined,
-  scope: "agent" | "project",
-): Promise<{ workflows: Map<string, WorkflowModule>; diagnostics: string[] }> {
-  const grouped = new Map<string, WorkflowModule[]>();
-  const diagnostics: string[] = [];
-  for (const filePath of listWorkflowFiles(dir)) {
-    try {
-      const workflow = await loadWorkflow(filePath, scope);
-      const matches = grouped.get(workflow.name) ?? [];
-      matches.push(workflow);
-      grouped.set(workflow.name, matches);
-    } catch (err) {
-      diagnostics.push(`${filePath}: ${err instanceof Error ? err.message : String(err)}`);
-    }
-  }
-
-  const workflows = new Map<string, WorkflowModule>();
-  for (const [name, matches] of grouped) {
-    if (matches.length > 1) {
-      diagnostics.push(
-        `Ambiguous ${scope} workflow name "${name}": ${matches.map((item) => item.sourcePath).join(", ")}`,
-      );
-      continue;
-    }
-    workflows.set(name, matches[0]);
-  }
-  return { workflows, diagnostics };
-}
-
-async function buildWorkflowCatalog(workflowDir: string): Promise<WorkflowCatalog> {
-  const agent = await loadWorkflowScope(workflowDir, "agent");
-  return Object.freeze({
-    workflows: new Map(agent.workflows),
-    diagnostics: Object.freeze([...agent.diagnostics]),
-  });
-}
-
-function findWorkflow(
-  catalog: WorkflowCatalog,
-  name: string,
-): { workflow: WorkflowModule | null; error: string | null } {
-  const workflow = catalog.workflows.get(name) ?? null;
-  if (workflow) return { workflow, error: null };
-  const diagnostics =
-    catalog.diagnostics.length > 0 ? ` Catalog diagnostics:\n  ${catalog.diagnostics.join("\n  ")}` : "";
-  return { workflow: null, error: `Workflow "${name}" not found.${diagnostics}` };
-}
-
-/** Inspect an agent-owned workflow binding without executing the workflow. */
-export async function inspectWorkflowDefinition(
-  workflowDir: string,
-  name: string,
-): Promise<{
-  available: boolean;
-  error: string | null;
-  workspace: "shared" | "task" | { kind: "task"; baseBranch: string };
-  verifier?: { name: string; sourcePath: string; verify: NonNullable<WorkflowModule["verify"]> };
-}> {
-  const resolved = findWorkflow(await buildWorkflowCatalog(workflowDir), name);
-  const verifier = resolved.workflow?.verify
-    ? {
-        name: resolved.workflow.name,
-        sourcePath: resolved.workflow.sourcePath,
-        verify: resolved.workflow.verify,
-      }
-    : undefined;
-  return {
-    available: resolved.workflow !== null,
-    error: resolved.error,
-    workspace: resolved.workflow?.workspace ?? "shared",
-    ...(verifier ? { verifier } : {}),
-  };
-}
-
 // ── Guard Discovery ────────────────────────────────────────────────────
-
-const DEFAULT_MAX_INJECTED_STEPS = 5;
 
 /** Load all guard modules from given directories. */
 export async function loadGuards(...dirs: (string | undefined)[]): Promise<WorkflowGuard[]> {
@@ -483,44 +283,19 @@ export function emitAndCollectDemands(guards: WorkflowGuard[], event: WorkflowGu
   return demands;
 }
 
-type GuardSignalAction =
-  "observed" | "warned" | "blocked" | "injected" | "skipped_duplicate" | "skipped_invalid" | "skipped_limit";
+type GuardSignalAction = "observed" | "warned" | "blocked";
 type GuardSignalEmitter = (demand: Demand, action: GuardSignalAction, extra?: Record<string, unknown>) => void;
 
-/** Resolve a list of demands: run injected steps, emit warnings, or block. */
-async function resolveDemands(
+/** Resolve observational and blocking guard demands (observe, warn, block). */
+function resolveDemands(
   demands: Demand[],
   sourceEvent: WorkflowGuardEvent,
   runId: string,
   completedSteps: CompletedStep[],
-  injectedCount: { value: number },
-  maxInjected: number,
-  runRepair: (agent: string, task: string, label: string) => Promise<TaskResult>,
   warnings: string[],
   emitGuardSignal?: GuardSignalEmitter,
-): Promise<void> {
-  // Gap 3: Deduplicate run_step demands by label
-  const seenRunStepLabels = new Set<string>();
-  const dedupedDemands: Demand[] = [];
+): void {
   for (const demand of demands) {
-    if (demand.type === "run_step" || demand.type === "repair") {
-      const label = demand.step?.label ?? demand.reason;
-      if (seenRunStepLabels.has(label)) {
-        log("info", `[guards] Deduplicating run_step demand with label "${label}" from "${demand.guardName}"`);
-        emitGuardSignal?.(demand, "skipped_duplicate", {
-          sourceEventType: sourceEvent.type,
-          step: "step" in sourceEvent ? sourceEvent.step : undefined,
-          sessionId: "sessionId" in sourceEvent ? sourceEvent.sessionId : undefined,
-          injectedStepLabel: label,
-        });
-        continue;
-      }
-      seenRunStepLabels.add(label);
-    }
-    dedupedDemands.push(demand);
-  }
-
-  for (const demand of dedupedDemands) {
     switch (demand.type) {
       case "observe":
         log("info", `[guards] OBSERVE from "${demand.guardName}": ${demand.reason}`);
@@ -549,46 +324,6 @@ async function resolveDemands(
         });
         warnings.push(`${demand.reason} (from: ${demand.guardName})`);
         break;
-
-      case "repair":
-      case "run_step": {
-        if (!demand.step) {
-          log("warn", `[guards] run_step demand from "${demand.guardName}" missing step config, skipping`);
-          emitGuardSignal?.(demand, "skipped_invalid", {
-            sourceEventType: sourceEvent.type,
-            step: "step" in sourceEvent ? sourceEvent.step : undefined,
-            sessionId: "sessionId" in sourceEvent ? sourceEvent.sessionId : undefined,
-          });
-          break;
-        }
-        if (injectedCount.value >= maxInjected) {
-          log("warn", `[guards] Skipping injected step from "${demand.guardName}": limit ${maxInjected} reached`);
-          emitGuardSignal?.(demand, "skipped_limit", {
-            sourceEventType: sourceEvent.type,
-            step: "step" in sourceEvent ? sourceEvent.step : undefined,
-            sessionId: "sessionId" in sourceEvent ? sourceEvent.sessionId : undefined,
-            injectedStepLabel: demand.step.label ?? `guard:${demand.guardName}`,
-            injectedAgent: demand.step.agent,
-          });
-          break;
-        }
-        injectedCount.value++;
-        const label = demand.step.label ?? `guard:${demand.guardName}`;
-        log(
-          "info",
-          `[guards] Injecting step "${label}" (${injectedCount.value}/${maxInjected}) from guard "${demand.guardName}"`,
-        );
-        emitGuardSignal?.(demand, "injected", {
-          sourceEventType: sourceEvent.type,
-          step: "step" in sourceEvent ? sourceEvent.step : undefined,
-          sessionId: "sessionId" in sourceEvent ? sourceEvent.sessionId : undefined,
-          injectedStepLabel: label,
-          injectedAgent: demand.step.agent,
-        });
-
-        await runRepair(demand.step.agent, demand.step.task, label);
-        break;
-      }
     }
   }
 }
@@ -771,8 +506,6 @@ export interface WorkflowToolOptions {
   sessionSource?: string;
   /** Maximum workflow nesting depth (default: 3). */
   maxDepth?: number;
-  /** Maximum guard-injected steps per workflow run (default: 5). */
-  maxInjectedSteps?: number;
   onEvent?: (event: WorkflowEvent) => void;
   /** Parent session ID for spawned sessions. */
   parentSessionId?: string;
@@ -893,13 +626,13 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     authoredInput?: { value: unknown },
     runId = generateRunId(),
     parentSignal = opts.signal,
+    inheritedAllowance?: WorkflowExecutionAllowance,
   ): Promise<{ result: WorkflowResult; runId: string; steps: CompletedStep[] }> {
     if (depth > 1) assertWorkflowExecution();
     const localSteps: CompletedStep[] = [];
     const callerMeta = getCallerSessionMeta(parentSessionId);
     const effectiveProjectId = opts.projectId ?? callerMeta.projectId;
 
-    // Create the workflow run record (DB-backed)
     const run: WorkflowRun = {
       runId,
       workflow: workflow.name,
@@ -916,12 +649,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       entryContentHash: workflow.entryContentHash,
       taskBinding: opts.taskBinding,
     };
-    const taskEventUnsubscribers = new Set<() => void>();
-    const controller = new AbortController();
-    const signal = controller.signal;
-    const abortFromParent = () => controller.abort(parentSignal?.reason);
-    parentSignal?.addEventListener("abort", abortFromParent, { once: true });
-    if (parentSignal?.aborted) abortFromParent();
+
     try {
       if (persistDir) {
         insertWorkflowRun(persistDir, {
@@ -955,29 +683,21 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           projectId: effectiveProjectId,
           parentSessionId,
           parentWorkflowRunId,
-              sourcePath: workflow.sourcePath,
+          sourcePath: workflow.sourcePath,
           sourceScope: workflow.sourceScope,
           entryContentHash: workflow.entryContentHash,
           taskBinding: opts.taskBinding,
         },
       });
-      // ── Load guards ────────────────────────────────────────────────────
+
       const guards = await loadGuards(opts.guardsDir, opts.sharedGuardsDir);
-      const maxInjected = opts.maxInjectedSteps ?? DEFAULT_MAX_INJECTED_STEPS;
-      const injectedStepCount = { value: 0 };
       const guardWarnings: string[] = [];
       const declaredTimeoutMs = executionTimeout(workflow.executionTimeoutMs ?? opts.executionTimeoutMs);
-      const executionTimeoutMs = opts.executionTimeoutLimitMs === undefined
-        ? declaredTimeoutMs : Math.min(declaredTimeoutMs, executionTimeout(opts.executionTimeoutLimitMs));
-      const executionDeadlineAt = run.startedAt + executionTimeoutMs;
-      const executionTimeoutMessage = `Workflow "${workflow.name}" timed out after ${executionTimeoutMs}ms`;
-      const assertExecutionActive = (): void => {
-        if (!signal.aborted && Date.now() >= executionDeadlineAt) {
-          controller.abort(new Error(executionTimeoutMessage));
-        }
-        signal.throwIfAborted();
-      };
+      const executionTimeoutLimitMs =
+        opts.executionTimeoutLimitMs !== undefined ? executionTimeout(opts.executionTimeoutLimitMs) : undefined;
+
       const cancelActiveStepSessions = (): void => {
+        if (typeof manager.status !== "function") return;
         for (const session of manager.status()) {
           if (session.workflowRunId !== runId) continue;
           try {
@@ -987,6 +707,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           }
         }
       };
+
       const emitGuardSignal: GuardSignalEmitter = (demand, action, extra = {}) => {
         const sourceEventType = typeof extra.sourceEventType === "string" ? extra.sourceEventType : "unknown";
         emitRuntimeEvent({
@@ -1006,229 +727,71 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             reason: demand.reason,
             sourceEventType,
             step: typeof extra.step === "string" ? extra.step : undefined,
-            injectedStepLabel: typeof extra.injectedStepLabel === "string" ? extra.injectedStepLabel : undefined,
-            injectedAgent: typeof extra.injectedAgent === "string" ? extra.injectedAgent : undefined,
           },
         } as any);
       };
 
       if (guards.length > 0) {
         log("info", `[guards] Loaded ${guards.length} guard(s): ${guards.map((g) => g.name).join(", ")}`);
-        // Emit workflow_start to guards
-        const startEvent: WorkflowGuardEvent = { type: "workflow_start", workflow: workflow.name, task };
-        emitAndCollectDemands(guards, startEvent); // start events: collect but don't expect demands (logging only)
+        emitAndCollectDemands(guards, { type: "workflow_start", workflow: workflow.name, task });
       }
 
-      const pendingSteps = new Set<Promise<unknown>>();
-      const trackStep = <T>(execution: Promise<T>): Promise<T> => {
-        pendingSteps.add(execution);
-        // Observe rejection immediately, including an authored unawaited helper.
-        void execution.then(
-          () => pendingSteps.delete(execution),
-          () => pendingSteps.delete(execution),
+      const needsWorktree =
+        workflow.workspace === "task" ||
+        (typeof workflow.workspace === "object" && workflow.workspace.kind === "task");
+      if (
+        needsWorktree &&
+        (!opts.taskBinding ||
+          !opts.executionPaths ||
+          opts.executionPaths.workspaceDir === opts.executionPaths.projectDir)
+      ) {
+        throw new Error(
+          `Workflow "${workflow.name}" requires an allocated Task worktree; use an ordinary Git-backed Task for this work`,
         );
-        return execution;
-      };
-      const executeAgentStep = async (
-        agentName: string,
-        agentTask: string,
-        stepOpts?: AgentCallOptions & { schema?: TSchema },
-        repairLabel?: string,
-      ): Promise<TaskResult> => {
-        assertExecutionActive();
-        validateOperationAllowance(stepOpts?.operationAllowance);
-        const stepTimeoutMs = executionTimeout(stepOpts?.timeoutMs ?? executionTimeoutMs, executionDeadlineAt);
-        // Defensive guard: catch undefined/null agent names before they reach manager.callAgent()
-        // where they'd produce the confusing "Agent \"undefined\" not registered" error.
-        if (!agentName || typeof agentName !== "string" || agentName === "undefined" || agentName === "unknown") {
-          throw new Error(
-            `agents.call called with invalid agent name: ${JSON.stringify(agentName)}. ` +
-              `Pass an explicit agent name or the selected ctx.reconciliation.agent.`,
-          );
-        }
-        const label = repairLabel ?? agentName;
-        const isRepair = repairLabel !== undefined;
-        const steering = steeringQueue.shift();
-        if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
+      }
 
-        let effectiveTask = agentTask;
-        if (!isRepair && guardWarnings.length > 0) {
-          effectiveTask += `\n\n## Guard Warnings\n${guardWarnings.map((w) => "- " + w).join("\n")}`;
-          guardWarnings.length = 0;
-        }
-
-          onEvent?.({ type: "workflow.step_started", step: label });
-        let taskResult = await callAgent(agentName, effectiveTask, {
-            parentSessionId,
-            source: isRepair ? "guard" : (stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`),
-            workflowRunId: runId,
-            projectId: effectiveProjectId,
-            taskBinding: opts.taskBinding,
-            taskContext: opts.taskContext,
-            recoveryOwner: opts.recoveryOwner,
-            stepLabel: label,
-            timeout: stepTimeoutMs,
-            signal,
-            deadlineAt: executionDeadlineAt,
-            operationAllowance: stepOpts?.operationAllowance,
-            trace: resolveTrace(),
-            skill: stepOpts?.skill,
-            requireFinish: true,
-            outputSchema: stepOpts?.schema,
-            toolPolicy: stepOpts?.tools,
-            executionRoot: opts.executionPaths?.workspaceDir,
-          });
-        let sid = taskResult.sessionId;
-
-        assertExecutionActive();
-
-        taskResult = enforceStructuredWorkflowResult(taskResult, !!stepOpts?.schema);
-        sid = taskResult.sessionId || sid;
-
-        const step: CompletedStep = { step: label, sessionId: sid, result: taskResult };
-        localSteps.push(step);
-        completedSteps.push(step);
-        pruneCompletedSteps(completedSteps);
-
-        run.steps.push({
-          sessionId: sid,
-          agent: agentName,
-          task: agentTask,
-          status: taskResult.status,
-          startedAt: taskResult.messages[0]?.timestamp ?? Date.now(),
-          endedAt: Date.now(),
-          lastAssistantText: taskResult.lastAssistantText,
-        });
-
-        onEvent?.({ type: "workflow.step_completed", step: label, sessionId: sid, result: taskResult });
-
-        // Repair is one ordinary bounded call, not another opportunity to inject repairs.
-        if (!isRepair && guards.length > 0) {
-          const guardEvent: WorkflowGuardEvent = {
-            type: "step_done",
-            source: "agent",
-            step: agentName,
-            sessionId: sid,
-            result: taskResult,
-            completedSteps,
-            task: agentTask,
-          };
-          const demands = emitAndCollectDemands(guards, guardEvent);
-          if (demands.length > 0) {
-            await resolveDemands(
-              demands,
-              guardEvent,
-              runId,
-              completedSteps,
-              injectedStepCount,
-              maxInjected,
-              (agent, task, label) => runAgentStep(agent, task, undefined, label),
-              guardWarnings,
-              emitGuardSignal,
-            );
-          }
-        }
-
-        const steeringAfter = steeringQueue.shift();
-        if (steeringAfter) throw new WorkflowInterrupted(steeringAfter, completedSteps, runId);
-
-        return taskResult;
-      };
-
-      const runAgentStep = (...args: Parameters<typeof executeAgentStep>): Promise<TaskResult> =>
-        trackStep(executeAgentStep(...args));
-
-      const runNestedWorkflow = async (
-        workflowName: string,
-        nestedTask: string,
-        nestedInput?: { value: unknown },
-      ): Promise<{ sub: Awaited<ReturnType<typeof executeWorkflow>> } | { reason: string }> => {
-        assertExecutionActive();
-        const steering = steeringQueue.shift();
-        if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
-        if (depth + 1 > maxDepth) {
-          return { reason: `Maximum workflow nesting depth (${maxDepth}) exceeded` };
-        }
-        const { workflow: subWorkflow, error } = findWorkflow(catalog, workflowName);
-        if (!subWorkflow) {
-          return { reason: error ?? `Workflow "${workflowName}" not found` };
-        }
-        onEvent?.({ type: "workflow.started", workflow: subWorkflow.name, task: nestedTask });
-        const sub = await executeWorkflow(
-          catalog,
-          subWorkflow,
-          nestedTask,
-          depth + 1,
-          parentSessionId,
-          runId,
-          completedSteps,
-          steeringQueue,
-          nestedInput,
-          undefined,
-          signal,
-        );
-        assertExecutionActive();
-        if (sub.result.type === "done") {
-          onEvent?.({ type: "workflow.completed", summary: sub.result.summary });
-        } else if (sub.result.type === "blocked") {
-          onEvent?.({ type: "workflow.blocked", reason: sub.result.reason });
-        }
-        return { sub };
-      };
-
-      // Runtime services stay private. Authored workflows get only SDK capabilities.
       const metricService = () =>
         opts.runtimeCtx?.metrics ?? createUnavailableMetricService("No runtimeCtx - metrics unavailable");
       const appRead =
         opts.read ??
         createRuntimeAppRead({
-          getDb: opts.runtimeCtx?.getDb ?? (() => { throw new Error("No runtimeCtx - read unavailable"); }),
+          getDb:
+            opts.runtimeCtx?.getDb ??
+            (() => {
+              throw new Error("No runtimeCtx - read unavailable");
+            }),
           readMetric: async (id) => readMetricView(metricService(), id),
         });
       const recordDiagnostic = createWorkflowDiagnostics(persistDir, runId);
-      const workflowLog = (level: "debug" | "info" | "warn" | "error", message: string) => {
-        // Late asynchronous code must not append facts to a settled attempt.
-        if (run.status !== "running" || signal.aborted) return;
-        const safe = recordDiagnostic(level, message);
-        try {
-          opts.runtimeCtx?.log(`[workflow:${runId}] [${level}] ${safe}`);
-        } catch {
-          // An optional presentation sink cannot fail the workflow.
-        }
-      };
+      const taskBrief =
+        opts.taskContext && persistDir
+          ? prepareTaskWorkspaceContext(
+              opts.taskContext,
+              persistDir,
+              opts.taskContext.agentDefinitions?.values() ?? [],
+            )
+          : undefined;
 
-      const taskBrief = opts.taskContext && persistDir
-        ? prepareTaskWorkspaceContext(opts.taskContext, persistDir, opts.taskContext.agentDefinitions?.values() ?? [])
-        : undefined;
-      const ctx: AppWorkflowContext = {
+      const outcome = await runWorkflowInvocation(workflow, {
+        executionId: runId,
+        startedAt: run.startedAt,
         input: authoredInput ? authoredInput.value : task,
-        signal,
-        ...(opts.reconciliation ? { reconciliation: opts.reconciliation } : {}),
-        read: appRead,
-
-        log: {
-          debug: (message) => workflowLog("debug", message),
-          info: (message) => workflowLog("info", message),
-          warn: (message) => workflowLog("warn", message),
-          error: (message) => workflowLog("error", message),
+        taskOwned: Boolean(opts.taskBinding),
+        signal: parentSignal,
+        timeoutMs: declaredTimeoutMs,
+        timeoutLimitMs: executionTimeoutLimitMs,
+        allowance: inheritedAllowance,
+        availableCapabilities: {
+          ...(opts.agentDefinitions ? { agents: new Set(opts.agentDefinitions.keys()) } : {}),
+          workflows: new Set(catalog.workflows.keys()),
         },
+        read: appRead,
         metrics: {
-          define: (definition) => {
-            assertExecutionActive();
-            metricService().define(definition);
-          },
-          defineMany: (definitions) => {
-            assertExecutionActive();
-            metricService().defineMany(definitions);
-          },
-          record: (id, value, options) => {
-            assertExecutionActive();
-            metricService().record(id, value, typeof options === "string" ? { note: options } : options);
-          },
-          evaluate: (id) => {
-            assertExecutionActive();
-            return metricService().evaluate(id);
-          },
+          define: (definition) => metricService().define(definition),
+          defineMany: (definitions) => metricService().defineMany(definitions),
+          record: (id, value, options) =>
+            metricService().record(id, value, typeof options === "string" ? { note: options } : options),
+          evaluate: (id) => metricService().evaluate(id),
         },
         ...(opts.executionPaths
           ? {
@@ -1241,48 +804,21 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
               },
             }
           : {}),
-        ...(opts.taskBinding && opts.reviseTask
-          ? {
-              reviseTask: (change: Parameters<TaskAttempt["reviseTask"]>[0]) => {
-                assertExecutionActive();
-                return trackStep(opts.reviseTask!(change));
-              },
-            }
-          : {}),
-        ...(opts.taskBinding && opts.closeTask
-          ? {
-              closeTask: (change: Parameters<TaskAttempt["closeTask"]>[0]) => {
-                assertExecutionActive();
-                return trackStep(opts.closeTask!(change));
-              },
-            }
-          : {}),
+        ...(opts.reconciliation ? { reconciliation: opts.reconciliation } : {}),
+        ...(opts.taskBinding && opts.reviseTask ? { reviseTask: opts.reviseTask } : {}),
+        ...(opts.taskBinding && opts.closeTask ? { closeTask: opts.closeTask } : {}),
         ...(opts.taskBinding && opts.taskContext?.readCommunication
           ? { readCommunication: opts.taskContext.readCommunication }
           : {}),
         ...(opts.taskBinding && opts.taskContext?.applyTaskChanges
-          ? {
-              applyTaskChanges: (changes: Parameters<TaskAttempt["apply"]>[0]) => {
-                assertExecutionActive();
-                return trackStep(opts.taskContext!.applyTaskChanges(changes));
-              },
-            }
+          ? { applyTaskChanges: opts.taskContext.applyTaskChanges }
           : {}),
-        agents: {
-          call: (agentName: string, agentTask: string, callOptions?: AgentCallOptions & { schema?: TSchema }) =>
-            trackStep(
-              runAgentStep(agentName, agentTask, callOptions).then(agentExecutionResult),
-            ),
-        },
-
         events: {
           read: async (type, localKey) => {
-            assertExecutionActive();
             if (!opts.taskEmitter) throw new Error("Only a Task-owned workflow can read its published events");
             return opts.taskEmitter.read(type, localKey);
           },
           emit: async (event: { type: string; data: unknown; localKey?: string }) => {
-            assertExecutionActive();
             if (opts.taskEmitter) {
               if (!event.localKey?.trim()) {
                 throw new Error("Task-owned workflow events require a stable localKey");
@@ -1295,123 +831,169 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             onEvent?.(event as WorkflowEvent);
           },
           onEvent: (listener) => {
-            assertExecutionActive();
             if (!opts.taskEmitter) throw new Error("Only a Task-owned workflow can observe Task events");
-            const unsubscribe = opts.taskContext
+            return opts.taskContext
               ? opts.taskContext.observeEvents((event) => listener(event))
               : opts.taskEmitter.onEvent((event) => listener(canonicalAppEvent(event)));
-            const tracked = () => {
-              taskEventUnsubscribers.delete(tracked);
-              unsubscribe();
-            };
-            taskEventUnsubscribers.add(tracked);
-            return tracked;
           },
         },
-
-        workflows: {
-          run: (wfName: string, workflowInput: unknown): Promise<AppExecutionResult> =>
-            trackStep(
-              (async () => {
-                const nestedTask =
-                  typeof workflowInput === "string" ? workflowInput : JSON.stringify(workflowInput ?? null);
-                const nested = await runNestedWorkflow(wfName, nestedTask, { value: workflowInput });
-                if ("reason" in nested) {
-                  throw new Error(nested.reason);
-                }
-                const { sub } = nested;
-                return {
-                  id: sub.runId, kind: "workflow", status: sub.result.type,
-                  summary: sub.result.type === "done" ? sub.result.summary : sub.result.reason,
-                  ...(sub.result.output !== undefined ? { output: sub.result.output } : {}),
-                  ...(sub.result.facts !== undefined ? { facts: sub.result.facts } : {}),
-                };
-              })(),
-            ),
-        },
-
-        done: (summary, output) => ({
-          id: runId,
-          kind: "workflow",
-          status: "done",
-          summary,
-          ...(output !== undefined ? { output } : {}),
-        }),
-        blocked: (reason, facts) => ({
-          id: runId,
-          kind: "workflow",
-          status: "blocked",
-          summary: reason,
-          ...(facts !== undefined ? { facts } : {}),
-        }),
-      };
-
-      assertExecutionActive();
-      const needsWorktree = workflow.workspace === "task" || (typeof workflow.workspace === "object" && workflow.workspace.kind === "task");
-      if (needsWorktree && (!opts.taskBinding || !opts.executionPaths || opts.executionPaths.workspaceDir === opts.executionPaths.projectDir)) {
-        throw new Error(`Workflow "${workflow.name}" requires an allocated Task worktree; use an ordinary Git-backed Task for this work`);
-      }
-      let stopForAbort!: () => void;
-      const stopped = new Promise<never>((_, reject) => {
-        stopForAbort = () => {
+        onLog: ({ level, message }) => {
+          if (run.status !== "running") return;
+          const safe = recordDiagnostic(level, message);
           try {
-            cancelActiveStepSessions();
+            opts.runtimeCtx?.log(`[workflow:${runId}] [${level}] ${safe}`);
           } catch {
-            // Best-effort cleanup must not prevent cancellation from settling.
-          } finally {
-            reject(signal.reason);
+            // Optional presentation sink cannot fail the workflow.
           }
-        };
-        signal.addEventListener("abort", stopForAbort, { once: true });
-      });
-      const executionTimer = executionTimeoutMs
-        ? setTimeout(
-            () => controller.abort(new Error(executionTimeoutMessage)),
-            Math.max(0, executionDeadlineAt - Date.now()),
-          )
-        : undefined;
-      // Register cancellation before invoking authored code, which may itself
-      // synchronously trigger its caller's cancellation.
-      const execution = (async () => {
-        const authoredResult = await workflow.execute(ctx);
-        assertExecutionActive();
-        const result = normalizeAuthoredWorkflowResult(
-          authoredResult,
-          Boolean(opts.taskBinding),
-        );
+        },
+        onCancelActive: cancelActiveStepSessions,
+        callAgent: async (
+          agentName: string,
+          agentTask: string,
+          stepOpts: (AgentCallOptions & { schema?: TSchema }) | undefined,
+          stepControl,
+        ): Promise<WorkflowStepInvocationResult> => {
+          validateOperationAllowance(stepOpts?.operationAllowance);
+          const steering = steeringQueue.shift();
+          if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
 
-        // ── Guard: workflow_done event ──────────────────────────────────
-        if (guards.length > 0 && (result.type === "done" || result.type === "blocked")) {
-          const doneEvent: WorkflowGuardEvent = {
-            type: "workflow_done",
-            workflow: workflow.name,
-            summary: result.type === "done" ? result.summary : result.reason,
-            completedSteps,
+          let effectiveTask = agentTask;
+          if (guardWarnings.length > 0) {
+            effectiveTask += `\n\n## Guard Warnings\n${guardWarnings.map((w) => "- " + w).join("\n")}`;
+            guardWarnings.length = 0;
+          }
+
+          onEvent?.({ type: "workflow.step_started", step: agentName });
+          let taskResult = await callAgent(agentName, effectiveTask, {
+            parentSessionId,
+            source: stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
+            workflowRunId: runId,
+            projectId: effectiveProjectId,
+            taskBinding: opts.taskBinding,
+            taskContext: opts.taskContext,
+            recoveryOwner: opts.recoveryOwner,
+            stepLabel: agentName,
+            timeout: stepControl.timeoutMs,
+            signal: stepControl.signal,
+            deadlineAt: stepControl.deadlineAt,
+            operationAllowance: stepOpts?.operationAllowance,
+            trace: resolveTrace(),
+            skill: stepOpts?.skill,
+            requireFinish: true,
+            outputSchema: stepOpts?.schema,
+            toolPolicy: stepOpts?.tools,
+            executionRoot: opts.executionPaths?.workspaceDir,
+          });
+          let sid = taskResult.sessionId;
+          stepControl.signal.throwIfAborted();
+
+          taskResult = enforceStructuredWorkflowResult(taskResult, !!stepOpts?.schema);
+          sid = taskResult.sessionId || sid;
+
+          const step: CompletedStep = { step: agentName, sessionId: sid, result: taskResult };
+          localSteps.push(step);
+          completedSteps.push(step);
+          pruneCompletedSteps(completedSteps);
+
+          run.steps.push({
+            sessionId: sid,
+            agent: agentName,
+            task: agentTask,
+            status: taskResult.status,
+            startedAt: taskResult.messages[0]?.timestamp ?? Date.now(),
+            endedAt: Date.now(),
+            lastAssistantText: taskResult.lastAssistantText,
+          });
+
+          onEvent?.({ type: "workflow.step_completed", step: agentName, sessionId: sid, result: taskResult });
+
+          if (guards.length > 0) {
+            const guardEvent: WorkflowGuardEvent = {
+              type: "step_done",
+              source: "agent",
+              step: agentName,
+              sessionId: sid,
+              result: taskResult,
+              completedSteps,
+              task: agentTask,
+            };
+            const demands = emitAndCollectDemands(guards, guardEvent);
+            if (demands.length > 0) {
+              resolveDemands(demands, guardEvent, runId, completedSteps, guardWarnings, emitGuardSignal);
+            }
+          }
+
+          const steeringAfter = steeringQueue.shift();
+          if (steeringAfter) throw new WorkflowInterrupted(steeringAfter, completedSteps, runId);
+
+          const mapped = agentExecutionResult(taskResult);
+          return {
+            ...mapped,
+            sessionId: sid,
           };
-          const demands = emitAndCollectDemands(guards, doneEvent);
-          await resolveDemands(
-            demands,
-            doneEvent,
+        },
+        runWorkflow: async (wfName: string, workflowInput: unknown, stepControl): Promise<WorkflowStepInvocationResult> => {
+          const steering = steeringQueue.shift();
+          if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
+          if (depth + 1 > maxDepth) {
+            throw new Error(`Maximum workflow nesting depth (${maxDepth}) exceeded`);
+          }
+          const { workflow: subWorkflow, error } = findWorkflow(catalog, wfName);
+          if (!subWorkflow) {
+            throw new Error(error ?? `Workflow "${wfName}" not found`);
+          }
+          const nestedTask =
+            typeof workflowInput === "string" ? workflowInput : JSON.stringify(workflowInput ?? null);
+          onEvent?.({ type: "workflow.started", workflow: subWorkflow.name, task: nestedTask });
+          const sub = await executeWorkflow(
+            catalog,
+            subWorkflow,
+            nestedTask,
+            depth + 1,
+            parentSessionId,
             runId,
             completedSteps,
-            injectedStepCount,
-            maxInjected,
-            (agent, task, label) => runAgentStep(agent, task, undefined, label),
-            guardWarnings,
-            emitGuardSignal,
+            steeringQueue,
+            { value: workflowInput },
+            undefined,
+            stepControl.signal,
+            stepControl.allowance,
           );
-        }
-        assertExecutionActive();
-        return result;
-      })();
-      const result = await Promise.race([execution, stopped]).finally(async () => {
-        if (executionTimer) clearTimeout(executionTimer);
-        // Fence late calls and stop nested workflows even after a normal return.
-        controller.abort(new Error("Workflow execution finished"));
-        signal.removeEventListener("abort", stopForAbort);
-        // Do not release the owning attempt while a cancelled helper is draining.
-        await Promise.allSettled([...pendingSteps]);
+          stepControl.signal.throwIfAborted();
+          if (sub.result.type === "done") {
+            onEvent?.({ type: "workflow.completed", summary: sub.result.summary });
+          } else if (sub.result.type === "blocked") {
+            onEvent?.({ type: "workflow.blocked", reason: sub.result.reason });
+          }
+          return {
+            id: sub.runId,
+            kind: "workflow",
+            status: sub.result.type,
+            summary: sub.result.type === "done" ? sub.result.summary : sub.result.reason,
+            ...(sub.result.output !== undefined ? { output: sub.result.output } : {}),
+            ...(sub.result.facts !== undefined ? { facts: sub.result.facts } : {}),
+          };
+        },
+        afterReturn: async (result) => {
+          if (guards.length > 0 && (result.type === "done" || result.type === "blocked")) {
+            const doneEvent: WorkflowGuardEvent = {
+              type: "workflow_done",
+              workflow: workflow.name,
+              summary: result.type === "done" ? result.summary : result.reason,
+              completedSteps,
+            };
+            const demands = emitAndCollectDemands(guards, doneEvent);
+            if (demands.length > 0) {
+              resolveDemands(demands, doneEvent, runId, completedSteps, guardWarnings, emitGuardSignal);
+            }
+          }
+        },
       });
+
+      if (!outcome.ok) {
+        throw outcome.error;
+      }
+      const result = outcome.result;
 
       // Finalize the workflow run
       run.endedAt = Date.now();
@@ -1511,10 +1093,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         // Failure notification must not replace the retained execution/setup error.
       }
       throw err;
-    } finally {
-      parentSignal?.removeEventListener("abort", abortFromParent);
-      controller.abort(new Error(`Workflow "${workflow.name}" has ended`));
-      for (const unsubscribe of taskEventUnsubscribers) unsubscribe();
     }
   }
 

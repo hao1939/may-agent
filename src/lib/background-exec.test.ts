@@ -189,4 +189,36 @@ describe("background_exec tool", () => {
     const result = await exec(tool, { action: "output", pid: 999999 });
     expect(result.error).toContain("No tracked process");
   });
+
+  it("cleanupAsync escalates to SIGKILL and confirms exit for SIGTERM-ignoring process groups", async () => {
+    const { tool, cleanupAsync } = createBackgroundExecTool({ cwd: "/tmp" });
+    const spawned = await tool.execute(
+      "tc_term_resist",
+      { action: "spawn", command: "trap '' TERM; sleep 60 & wait" } as any,
+    );
+    const pid = JSON.parse(spawned.content[0].text).pid as number;
+    await new Promise((r) => setTimeout(r, 100));
+
+    const confirmed = await cleanupAsync();
+    expect(confirmed).toBe(true);
+    expect(() => process.kill(-pid, 0)).toThrow();
+  });
+
+  it("cleanupAsync surfaces unconfirmed cleanup honestly when drain returns false", async () => {
+    const { tool, cleanupAsync } = createBackgroundExecTool({
+      cwd: "/tmp",
+      drainProcessGroup: async () => false,
+    });
+    const spawned = await tool.execute("tc_unconfirmed", { action: "spawn", command: "sleep 60" } as any);
+    const pid = JSON.parse(spawned.content[0].text).pid as number;
+    try {
+      expect(await cleanupAsync()).toBe(false);
+    } finally {
+      try {
+        process.kill(-pid, "SIGKILL");
+      } catch {
+        /* ignore */
+      }
+    }
+  });
 });

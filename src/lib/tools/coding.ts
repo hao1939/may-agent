@@ -14,6 +14,8 @@ export interface CodingToolsOptions {
   cwd?: string;
   /** Agent name for cross-edit protection */
   agentName?: string;
+  /** Persist local setsid bash process groups under this session for confirmed cleanup. */
+  processGroupOwner?: { persistDir: string; sessionId: string };
 }
 
 /**
@@ -24,7 +26,7 @@ export function createCodingTools(projectRoot: string, options?: CodingToolsOpti
   const agentName = options?.agentName;
   return [
     createReadTool(projectRoot),
-    createBashTool(projectRoot),
+    createBashTool(projectRoot, options?.processGroupOwner ? { processGroupOwner: options.processGroupOwner } : undefined),
     createEditTool(projectRoot, { agentName, projectRoot, fileWritePolicy: options?.fileWritePolicy }),
     createWriteTool(projectRoot, { agentName, projectRoot, fileWritePolicy: options?.fileWritePolicy }),
   ];
