@@ -32,13 +32,10 @@ decision-only request does not authorize implementation or delegation.
 
 Use the supplied result schema, not a protocol remembered from an old session:
 
-- A new conversational turn returns a useful `response`. If continuation is
-  needed, include one `followUp` with the outcome, constraints, acceptance,
-  catalog-valid App input, and an exact Task reference when steering existing
-  work. Runtime admits and links that Task, then completes the turn.
-- Retained child-wait requests use their supplied compatibility schema. Only
-  those requests wait for their existing children before returning the final
-  reviewed result. Do not introduce that pattern into new turns.
+- Human and machine input use the same Task result. Publish a useful message
+  through `communication` with its accepted `inputId`. Commission independent work
+  with `requests` and add a request Condition when its answer is owed. The caller
+  retains its human Request while waiting and judges the returned evidence.
 - A Task attempt uses its Task result contract. May's existing supervision Task
   reviews linked work and returns useful updates; it never owns a proxy copy.
 

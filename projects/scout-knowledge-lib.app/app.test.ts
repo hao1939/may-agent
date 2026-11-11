@@ -586,16 +586,44 @@ describe("Scout task reconciliation", () => {
     }
   });
 
-  it("declares one scoped resolver and relies on workflow discovery", () => {
-    expect(app.tasks?.subscriptions).toEqual([
-      { type: "scout.explore", project: "scout-knowledge-lib" },
-      { type: "scout.digest", project: "scout-knowledge-lib" },
-      {
-        type: "project.library_health.tick",
-        project: "scout-knowledge-lib",
-      },
-    ]);
-    expect(app.tasks?.resolve).toBe(resolveScoutTask);
+  it("translates scheduled events through the single typed input mapper", () => {
+    expect(app.tasks).not.toHaveProperty("subscriptions");
+    expect(app.tasks).not.toHaveProperty("resolve");
+    for (const [type, source] of [
+      ["scout.explore", "hn"],
+      ["scout.explore", "reddit"],
+      ["scout.digest", undefined],
+      ["project.library_health.tick", undefined],
+    ]) {
+      const event = {
+        type: type!,
+        source: `app:scout-knowledge-lib:schedule:scout-explore-${source}`,
+        target: { project: "scout-knowledge-lib" },
+        data: { project: "scout-knowledge-lib", ...(source ? { source } : {}) },
+      };
+      const subscriptions = app.subscriptions!.filter(({ event: selector }) =>
+        matchesEventSelector(selector, event),
+      );
+      expect(subscriptions).toHaveLength(1);
+      const input = subscriptions[0]!.toInput(event)!;
+      expect(Check(app.inputSchema, input)).toBe(true);
+      expect(
+        taskForScoutInput({
+          id: "scheduled-event",
+          source: { kind: "system", id: "event:1" },
+          input,
+        }),
+      ).toEqual({ kind: "desired", intent: resolveScoutTask(event) });
+      expect(
+        app.subscriptions!.filter(({ event: selector }) =>
+          matchesEventSelector(selector, {
+            ...event,
+            target: { project: "other" },
+            data: { project: "other" },
+          }),
+        ),
+      ).toHaveLength(0);
+    }
     expect(app.agent).toBe("scout");
     expect(app.observers).toContainEqual(
       expect.objectContaining({ id: "xhs-credential", intervalMs: 300_000 }),

@@ -1,13 +1,10 @@
+import { makeTaskRetryDue } from "../../may-agent/src/app/core/tasks/app-task-test-support.js";
+import { AppTaskResourceStore } from "../../may-agent/src/app/core/state/app-task-resource-store.js";
 // Real Host composition; only agent judgment and metric sample production are scripted.
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  defineApp,
-  type Condition,
-  type ConversationTurnResult,
-  type TaskExecutor,
-} from "@may-agent/sdk";
+import { defineApp, type Condition, type TaskExecutor } from "@may-agent/sdk";
 import { AppRegistry } from "../../may-agent/src/app/core/apps/registry.js";
 import {
   EventBus,
@@ -16,7 +13,6 @@ import {
 import { HostCapacity } from "../../may-agent/src/app/core/scheduling/host-capacity.js";
 import { createAppTaskCapability } from "../../may-agent/src/app/core/tasks/app-task-capability.js";
 import { startAppInboxRuntime } from "../../may-agent/src/app/composition/app-inbox-runtime.js";
-import { prepareConversationTaskTurn } from "../../may-agent/src/app/composition/conversation-task-turn.js";
 import { createAppTaskReadTool } from "../../may-agent/src/app/app-task-read-tool.js";
 import { DbWriter } from "../../may-agent/src/lib/db-writer.js";
 import { getDb, closeDb } from "../../may-agent/src/lib/requests.js";
@@ -39,6 +35,7 @@ export function handoffDecision(
   task?: { appId: string; taskId: string },
 ) {
   return metricReviewHandoff(review, {
+    inputId: "poc-message",
     response:
       "I will verify the requested metric recovery against fresh evidence.",
     topic: { kind: "new", title: "Metric follow-through" },
@@ -126,7 +123,7 @@ export async function fixture(execute: TaskExecutor) {
   let readFails = false;
   let publicationFails = false;
   let clockOffset = 0;
-  let conversation: ConversationTurnResult | undefined;
+  let conversation: TaskReconcileResult | undefined;
   let conversationCalls = 0;
   let conversationReturns = 0;
   const attempts: Array<{ id: string; taskId: string; events: string[] }> = [];
@@ -175,7 +172,7 @@ export async function fixture(execute: TaskExecutor) {
       inputSchema: mayApp.inputSchema,
       tasks: { ...mayApp.tasks, maxConcurrent: 1 },
       conversation: {
-        mode: "agent",
+        mode: "task",
         inputKinds: ["message"],
         conversationId: "poc",
       },
@@ -214,39 +211,79 @@ export async function fixture(execute: TaskExecutor) {
             return execute(attempt);
           },
         },
-        conversations: {
-          execute: (input) =>
-            prepareConversationTaskTurn({
-              ...input,
-              resolveConversationInput: async ({ inputContext }) => {
-                if (inputContext.source.kind === "system") {
-                  conversationReturns++;
-                  const request = readConversationRequest(
-                    db,
-                    "may",
-                    "poc",
-                    "metric-concern",
-                  )!;
-                  return {
-                    summary: "Retained the new Task evidence for owner review",
-                    topic: { kind: "none" },
-                    requestUpdates: [
-                      {
-                        id: request.id,
-                        expectedRevision: request.revision,
-                        disposition: "open",
-                        reason:
-                          "Metric evidence alone does not settle the original requirement",
-                      },
-                    ],
-                  };
-                }
-                conversationCalls++;
-                if (!conversation)
-                  throw new Error("No scripted Conversation decision");
-                return conversation;
+        agents: {
+          available: () => true,
+          prepare: async () => true,
+          role: (agent) => ({
+            agent,
+            instructions: "Review the admitted metric concern",
+          }),
+          snapshot() {
+            return this;
+          },
+          async execute({ attempt }) {
+            if (
+              attempt.events.items.some(
+                ({ event }) =>
+                  event.type === "app.dependency.updated" &&
+                  event.data.status === "done",
+              )
+            ) {
+              conversationReturns++;
+              // A contributing metric result is evidence; the human still owns the
+              // decision whether the original, wider requirement has been met.
+              const request = readConversationRequest(
+                db,
+                "may",
+                "poc",
+                "metric-concern",
+              )!;
+              return {
+                runId: null,
+                handlerResult: {
+                  state: "waiting",
+                  summary:
+                    "Await the owner's decision on the returned evidence",
+                  facts: [],
+                  actions: [],
+                  conditions: [
+                    {
+                      id: "owner-decision",
+                      type: "metric.owner.decided",
+                      subject: "request:metric-concern",
+                      expected: true,
+                      owner: "app:may",
+                    },
+                  ],
+                  communication: [
+                    {
+                      id: "retain-human-promise",
+                      inputId: "poc-message",
+                      requestUpdates: [
+                        {
+                          id: request.id,
+                          expectedRevision: request.revision,
+                          disposition: "open",
+                          reason:
+                            "Metric evidence alone does not settle the original requirement",
+                        },
+                      ],
+                    },
+                  ],
+                },
+              };
+            }
+            conversationCalls++;
+            if (!conversation)
+              throw new Error("No scripted common Task decision");
+            return {
+              runId: null,
+              handlerResult: {
+                ...conversation,
+                actions: conversation.actions ?? [],
               },
-            }),
+            };
+          },
         },
       },
     });
@@ -437,7 +474,20 @@ export async function fixture(execute: TaskExecutor) {
         },
       });
     },
-    async handoff(decision: ConversationTurnResult) {
+    get workTaskId() {
+      return String(
+        db
+          .prepare(
+            "SELECT COALESCE(execution_task_id, waiting_on_id) AS task_id FROM app_inbox_items WHERE app_id = 'may' AND source_kind = 'app' AND (execution_task_id IS NOT NULL OR waiting_on_kind = 'task') ORDER BY created_at LIMIT 1",
+          )
+          .get()?.task_id ?? "unadmitted-metric-work",
+      );
+    },
+    elapseRetry(taskId: string) {
+      makeTaskRetryDue(AppTaskResourceStore.fromDb(db, "may"), taskId);
+      tasks.wake({ appId: "may", taskIds: [taskId] });
+    },
+    async handoff(decision: TaskReconcileResult) {
       conversation = decision;
       return tasks.admitConversation({
         id: "poc-message",

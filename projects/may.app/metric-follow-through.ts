@@ -3,7 +3,7 @@ import {
   admitTaskReconcileResult,
   taskAgentResultSchema,
   type Static,
-  type ConversationTurnResult,
+  type TaskCommunication,
   type TaskReconcileResult,
   type TaskReconciliationContext,
   type Condition,
@@ -108,7 +108,10 @@ function composeMetricReview(
     // Host settlement validates actual work/waits. The legacy "observe"
     // spelling stays readable, but cannot install a metric-sample wake.
     const observation = observations.get(decision.metricId);
-    if (decision.reuseScope && (!observation || observation.metricId !== decision.metricId))
+    if (
+      decision.reuseScope &&
+      (!observation || observation.metricId !== decision.metricId)
+    )
       throw new Error(
         "Prepare reuseScope through metric-response with current metric evidence",
       );
@@ -139,23 +142,19 @@ function composeMetricReview(
     throw new Error(
       "Return metric judgments in decisions; code binds their owner and follow-through",
     );
-  const composed = admitTaskReconcileResult(
-    {
-      ...result,
-      facts: [
-        ...result.facts.filter((fact) => !facts.includes(fact)),
-        ...facts,
-      ],
-    },
-  );
+  const composed = admitTaskReconcileResult({
+    ...result,
+    facts: [...result.facts.filter((fact) => !facts.includes(fact)), ...facts],
+  });
   if (!composed.ok) throw new Error(composed.error);
   return composed.result;
 }
 
 export type MetricConversation = Pick<
-  ConversationTurnResult,
-  "topic" | "requestUpdates" | "response"
+  TaskCommunication,
+  "inputId" | "topic" | "requestUpdates"
 > & {
+  response?: string;
   requestId?: string;
   task?: { appId: string; taskId: string };
 };
@@ -165,8 +164,24 @@ export function metricReviewHandoff(
   value: unknown,
   conversation: MetricConversation,
   observations: ReadonlyMap<string, MetricEvidence> = new Map(),
-): ConversationTurnResult {
+): TaskReconcileResult {
+  if (typeof conversation.inputId !== "string" || !conversation.inputId.trim())
+    throw new Error("Metric communication requires an accepted inputId");
   const review = readMetricReview(value);
+  const communication = (response?: string): TaskCommunication[] =>
+    [
+      {
+        id: `metric-review-${conversation.inputId}`,
+        inputId: conversation.inputId,
+        ...(response ? { message: response } : {}),
+        ...(conversation.topic ? { topic: conversation.topic } : {}),
+        ...(conversation.requestUpdates?.length
+          ? { requestUpdates: conversation.requestUpdates }
+          : {}),
+      },
+    ].filter(
+      (change) => change.message || change.topic || change.requestUpdates,
+    );
   assertInvestigationWaits(review.task);
   if (!review.decisions.length || review.task.inputKeys !== undefined)
     throw new Error(
@@ -194,11 +209,10 @@ export function metricReviewHandoff(
       throw new Error("Use one response for the completed Conversation review");
     const response = conversation.response ?? review.task.response;
     return {
+      state: "converged",
       summary: review.task.summary,
       facts: composeMetricReview(review, undefined, observations).facts,
-      ...(response ? { response } : {}),
-      topic: conversation.topic,
-      requestUpdates: conversation.requestUpdates,
+      communication: communication(response),
     };
   }
   if (review.task.state !== "waiting")
@@ -218,27 +232,31 @@ export function metricReviewHandoff(
     throw new Error(
       "Use the owning App's input contract for another App's investigation",
     );
+  const requestId = conversation.requestId ?? "metric-follow-through";
   return {
+    state: "waiting",
     summary: review.task.summary,
-    ...(conversation.response ? { response: conversation.response } : {}),
-    topic: conversation.topic,
-    requestUpdates: conversation.requestUpdates,
-    followUp: {
-      appId: "may",
-      requestId: conversation.requestId,
-      ...(conversation.task ? { task: conversation.task } : {}),
-      input: {
-        kind: "goal",
-        data: {
-          outcome:
-            "Follow the metric concern through an evidence-based owner decision",
-          acceptance: [
-            "Review fresh evidence and retain the owner decision; metric recovery alone does not fulfill original work",
-          ],
-          context: { metricResponse: review },
+    facts: [],
+    communication: communication(conversation.response),
+    requests: [
+      {
+        id: requestId,
+        appId: "may",
+        ...(conversation.task ? { taskId: conversation.task.taskId } : {}),
+        input: {
+          kind: "goal",
+          data: {
+            outcome:
+              "Follow the metric concern through an evidence-based owner decision",
+            acceptance: [
+              "Review fresh evidence and retain the owner decision; metric recovery alone does not fulfill original work",
+            ],
+            context: { metricResponse: review },
+          },
         },
       },
-    },
+    ],
+    conditions: [{ requestId }],
   };
 }
 
@@ -247,9 +265,8 @@ export function metricReviewInput(input: unknown): unknown {
     kind?: string;
     data?: { context?: { metricResponse?: unknown } };
   } | null;
-  const candidate = value?.kind === "goal"
-    ? value.data?.context?.metricResponse
-    : undefined;
+  const candidate =
+    value?.kind === "goal" ? value.data?.context?.metricResponse : undefined;
   // Older ordinary goals used this context field for a workflow reference.
   // Only the structured review packet owned by this module selects the metric
   // workflow; malformed structured packets still fail visibly at admission.

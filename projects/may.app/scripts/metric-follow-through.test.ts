@@ -6,21 +6,32 @@ import {
   handoffDecision,
   until,
 } from "./metric-follow-through.fixture.js";
-import { metricReviewHandoff, type MetricReview } from "../metric-follow-through.js";
+import {
+  metricReviewHandoff,
+  type MetricReview,
+} from "../metric-follow-through.js";
 import { inspectMetricResponse } from "../agents/may/workflows/metric-response.js";
 import { checkMetricDecisionReuse } from "../../alex.app/agents/evaluator/workflows/lib/metric-decision-reuse.js";
-import { resolveMetricResponsibility, type MetricReader } from "../../alex.app/agents/evaluator/workflows/lib/metric-evidence.js";
+import {
+  resolveMetricResponsibility,
+  type MetricReader,
+} from "../../alex.app/agents/evaluator/workflows/lib/metric-evidence.js";
 import { readMetricEvidence } from "../../may-agent/src/app/adapters/reporting/metric-evidence.js";
 import { createMetricService } from "../../may-agent/src/lib/metrics.js";
 
 test("direct custom metric facts remain available in accepted Task evidence", async () => {
   const fact = `metric-disposition:${JSON.stringify({ version: 1, metricId: "test.metric", disposition: "recalibrate-threshold", newThresholdMs: 250, configurationApplied: false })}`;
-  const f = await fixture(async () => ({ state: "converged", summary: "Proposed threshold", facts: [
-    fact,
-  ] }));
+  const f = await fixture(async () => ({
+    state: "converged",
+    summary: "Proposed threshold",
+    facts: [fact],
+  }));
   fixtures.push(f);
   await f.attach("goal/custom-fact");
-  await until(() => f.get("goal/custom-fact")?.status === "done", "accepted original result");
+  await until(
+    () => f.get("goal/custom-fact")?.status === "idle",
+    "accepted original result",
+  );
   expect(f.get("goal/custom-fact")?.acceptedAttempt).toBeDefined();
   expect(f.get("goal/custom-fact")?.facts).toContain(fact);
   // The reader still recognizes only supported dispositions. Its limitation
@@ -29,20 +40,47 @@ test("direct custom metric facts remain available in accepted Task evidence", as
 });
 
 test("a supported decision-only result reaches public metric readback and survives restart", async () => {
-  const f = await fixture(attempt => executeReview(attempt, async () => ({
-    task: { state: "converged", summary: "Recorded recommendation; configuration unchanged", facts: ["report:reviewed"],
-      result: { proposedThresholdMs: 250, configurationApplied: false } },
-    decisions: [{ ...f.subject, disposition: "no-change", reason: "Decision only; no configuration applied", evidence: ["report:reviewed"] }],
-  })));
+  const f = await fixture((attempt) =>
+    executeReview(attempt, async () => ({
+      task: {
+        state: "converged",
+        summary: "Recorded recommendation; configuration unchanged",
+        facts: ["report:reviewed"],
+        result: { proposedThresholdMs: 250, configurationApplied: false },
+      },
+      decisions: [
+        {
+          ...f.subject,
+          disposition: "no-change",
+          reason: "Decision only; no configuration applied",
+          evidence: ["report:reviewed"],
+        },
+      ],
+    })),
+  );
   fixtures.push(f);
   await f.attach("goal/decision-only");
-  await until(() => f.get("goal/decision-only")?.status === "done", "accepted decision");
+  await until(
+    () => f.get("goal/decision-only")?.status === "idle",
+    "accepted decision",
+  );
   const task = f.get("goal/decision-only")!;
-  expect(task.result).toMatchObject({ proposedThresholdMs: 250, configurationApplied: false });
+  expect(task.result).toMatchObject({
+    proposedThresholdMs: 250,
+    configurationApplied: false,
+  });
   const rows = (f.evidence() as any).dispositions;
   expect(rows).toHaveLength(1);
-  expect(rows[0]).toMatchObject({ appId: "may", taskId: task.id, attemptId: task.acceptedAttempt!.id,
-    decision: { ...f.subject, disposition: "no-change", linkedTask: { appId: "may", taskId: task.id } } });
+  expect(rows[0]).toMatchObject({
+    appId: "may",
+    taskId: task.id,
+    attemptId: task.acceptedAttempt!.id,
+    decision: {
+      ...f.subject,
+      disposition: "no-change",
+      linkedTask: { appId: "may", taskId: task.id },
+    },
+  });
   const definition = f.evidence().metric;
   await f.restart();
   expect((f.evidence() as any).dispositions).toEqual(rows);
@@ -68,8 +106,7 @@ async function setup(judge: (prompt: string) => Promise<MetricReview>) {
         ? requested
         : reconciliation.input;
       const saved = initial?.data?.context?.metricResponse as
-        | MetricReview
-        | undefined;
+        MetricReview | undefined;
       if (saved) {
         initialOwnerCalls++;
         return structuredClone(saved);
@@ -139,7 +176,7 @@ test("a completed Conversation review persists its metric decision without a wor
         },
       ],
     },
-    { response: "No further action is needed." },
+    { inputId: "poc-message", response: "No further action is needed." },
   );
   await f.handoff(decision);
   await until(
@@ -148,7 +185,7 @@ test("a completed Conversation review persists its metric decision without a wor
   );
   expect(f.decisions()[0].decision).toMatchObject({ disposition: "no-change" });
   expect(f.decisions()[0].decision.linkedTask).toBeUndefined();
-  expect(f.get("goal/poc-message")).toBeNull();
+  expect(f.get(f.workTaskId)).toBeNull();
   expect(f.attempts).toEqual([]);
   await f.restart();
   expect(f.decisions()).toHaveLength(1);
@@ -198,7 +235,10 @@ test("Host acceptance retains optional scope and current Task reads permit reuse
         },
       ],
     },
-    { response: "The inspected fixture range needs no new intervention." },
+    {
+      inputId: "poc-message",
+      response: "The inspected fixture range needs no new intervention.",
+    },
     new Map([[f.subject.metricId, observed]]),
   );
   await f.handoff(decision);
@@ -253,7 +293,7 @@ test("the receiving owner accepts one breach plan; samples stay quiet and the re
     const plan = investigate(f.subject, repairCondition());
     await f.handoff(handoffDecision(plan));
     await until(
-      () => f.get("goal/poc-message")?.status === "waiting",
+      () => f.get(f.workTaskId)?.status === "waiting",
       "breach decision retained",
     );
     expect(f.initialOwnerCalls()).toBe(1);
@@ -269,11 +309,11 @@ test("the receiving owner accepts one breach plan; samples stay quiet and the re
     expect(f.decisions()).toHaveLength(1);
     expect(f.decisions()[0].decision).toMatchObject({
       disposition: "investigate",
-      linkedTask: { appId: "may", taskId: "goal/poc-message" },
+      linkedTask: { appId: "may", taskId: f.workTaskId },
       followThrough: "task",
     });
     expect(f.decisions()[0].decision.nextReviewAt).toBeUndefined();
-    expect(f.get("goal/poc-message")!.conditions).toHaveLength(1);
+    expect(f.get(f.workTaskId)!.conditions).toHaveLength(1);
     release();
     await until(
       () => f.conversationReturns === 1,
@@ -281,11 +321,11 @@ test("the receiving owner accepts one breach plan; samples stay quiet and the re
     );
     expect(f.request()).toMatchObject({
       status: "open",
-      taskRefs: [{ appId: "may", taskId: "goal/poc-message" }],
+      scope: "Review the metric concern",
     });
     expect(f.attempts.map((a) => a.taskId)).toEqual([
-      "goal/poc-message",
-      "goal/poc-message",
+      f.workTaskId,
+      f.workTaskId,
     ]);
     expect(f.decisions()).toHaveLength(2);
   } finally {
@@ -516,7 +556,7 @@ test("a later episode joins the selected investigation and saves its new decisio
   );
   await until(() => f.decisions().length === 2, "next episode saved");
   expect(f.initialOwnerCalls()).toBe(2);
-  expect(f.get("goal/poc-message")).toBeNull();
+  expect(f.workTaskId).toBe("shared-investigation");
   expect(f.get("shared-investigation")!.conditions).toHaveLength(1);
   expect(
     f
@@ -571,7 +611,7 @@ test("a receiving owner can replace a handed-off wait with useful work on the sa
   plan.task.summary = "Suggested wait without a return route";
   await f.handoff(handoffDecision(plan));
   await until(
-    () => f.get("goal/poc-message")?.status === "done",
+    () => f.get(f.workTaskId)?.status === "idle",
     "owner finishes its investigation",
   );
   expect(calls).toBe(2);
@@ -582,8 +622,8 @@ test("a receiving owner can replace a handed-off wait with useful work on the sa
     expect(prompt).toContain("Suggested wait without a return route");
   }
   expect(f.attempts.map(({ taskId }) => taskId)).toEqual([
-    "goal/poc-message",
-    "goal/poc-message",
+    f.workTaskId,
+    f.workTaskId,
   ]);
   expect(f.decisions().map(({ decision }) => decision.disposition)).toEqual([
     "investigate",
@@ -637,12 +677,20 @@ test("a rejected metric result reaches the owner on retry; the corrected wait su
   delete plan.task.conditions;
   await f.handoff(handoffDecision(plan));
   await until(
-    () => calls === 2 && f.get("goal/poc-message")?.status === "waiting",
+    () =>
+      f
+        .get(f.workTaskId)
+        ?.summary?.includes("requires at least one exact Condition") === true,
+    "first result rejected",
+  );
+  f.elapseRetry(f.workTaskId);
+  await until(
+    () => calls === 2 && f.get(f.workTaskId)?.status === "waiting",
     "owner corrects rejected result",
   );
   expect(f.decisions()).toHaveLength(1);
   expect(f.attempts).toHaveLength(2);
-  expect(f.get("goal/poc-message")!.conditions.map(({ id }) => id)).toEqual([
+  expect(f.get(f.workTaskId)!.conditions.map(({ id }) => id)).toEqual([
     "repair-result",
   ]);
   expect(f.request()!.status).toBe("open");
@@ -652,32 +700,37 @@ test("a rejected metric result reaches the owner on retry; the corrected wait su
   expect(calls).toBe(2);
   f.publishRepair();
   await until(
-    () => calls === 3 && f.get("goal/poc-message")?.status === "done",
+    () => calls === 3 && f.get(f.workTaskId)?.status === "idle",
     "real repair result resumes owner",
   );
   expect(new Set(f.attempts.map(({ taskId }) => taskId))).toEqual(
-    new Set(["goal/poc-message"]),
+    new Set([f.workTaskId]),
   );
   expect(f.decisions()).toHaveLength(2);
   expect(f.request()!.status).toBe("open");
 });
 
-test("missing selected work and invalid Conditions never leave accepted metric dispositions", async () => {
+test("missing work returns an admission failure while the human promise stays open; invalid Conditions reject", async () => {
   const f = await setup(async () => {
     throw new Error("invalid work must not ask another agent");
   });
   const plan = investigate(f.subject, repairCondition());
   await f.handoff(handoffDecision(plan, { appId: "may", taskId: "missing" }));
   await until(
-    () =>
-      !!f.db
-        .prepare(
-          "SELECT 1 FROM app_task_attempts WHERE json_extract(attempt_json,'$.state')='failed'",
-        )
-        .get(),
-    "handoff rejected",
+    () => f.conversationReturns === 1,
+    "target rejection returns through the common request",
   );
-  expect(f.request()).toBeNull();
+  expect(
+    f.db
+      .prepare(
+        "SELECT result FROM app_inbox_items WHERE target_task_id = 'missing'",
+      )
+      .get()?.result,
+  ).toContain("Task missing does not exist");
+  expect(f.request()).toMatchObject({
+    status: "open",
+    scope: "Review the metric concern",
+  });
   expect(f.decisions()).toHaveLength(0);
   if (plan.task.state !== "waiting") throw new Error("waiting plan");
   plan.task.conditions![0].reviewAfterMs = 1;
@@ -1019,7 +1072,7 @@ test("one owner decision retires a retained sample wait, preserves approval, and
   expect(f.attempts).toHaveLength(2);
   f.publishApproval();
   await until(
-    () => calls === 2 && f.get("legacy-monitor")?.status === "done",
+    () => calls === 2 && f.get("legacy-monitor")?.status === "idle",
     "original approval still returns",
   );
 });

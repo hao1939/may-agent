@@ -42,7 +42,7 @@ describe("canonical May conversation App", () => {
       version: 1,
       agent: "may",
       conversation: {
-        mode: "agent",
+        mode: "task",
         inputKinds: ["message"],
         conversationId: "may:primary",
       },

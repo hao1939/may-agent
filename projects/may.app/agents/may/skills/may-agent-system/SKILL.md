@@ -198,9 +198,10 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
 
 - Explicit project HTTP/UI intent may persist `project.comment.created`
   directly as its receipt and trace root. Conversational intent remains one May
-  request; May returns a typed `followUp` when durable work or exact Task
-  feedback is needed. It may target May's own goal input. The bounded turn can
-  finish while independent work continues; accepted Requests remain tracked.
+  request; May uses ordinary Task `requests` when independent work is needed
+  and a request Condition for its result. It may target May's own goal input or
+  an exact existing Task. The caller waits with its accepted human Request and
+  uses scoped `communication` changes to explain and settle the outcome.
 - External actors state intent; they do not choose task IDs, owners, workflows,
   or sessions. The app owner reads current project and task context and decides
   answer, reject, no-op, task change, exact wait, or workflow reuse.

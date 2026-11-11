@@ -219,6 +219,7 @@ const scoutInputSchema = Type.Union([
             Type.Literal("github"),
             Type.Literal("reddit"),
           ]),
+          triggerSource: Type.Optional(Type.String()),
         },
         { additionalProperties: false },
       ),
@@ -332,7 +333,7 @@ function intentForScoutInput(input: AppInput): TaskIntent | null {
       );
     case "explore":
       return resolveScoutTask(
-        scoutEvent("scout.explore", data) as unknown as Record<string, unknown>,
+        { ...scoutEvent("scout.explore", data), source: data.triggerSource } as unknown as Record<string, unknown>,
       );
     default:
       return null;
@@ -419,6 +420,20 @@ export default defineApp({
   inputSchema: scoutInputSchema,
   task: taskForScoutInput,
   subscriptions: [
+    ...[
+      ["explore", "scout.explore"],
+      ["digest", "scout.digest"],
+      ["library-health", "project.library_health.tick"],
+    ].map(([kind, type]) => ({
+      id: `scheduled-${kind}`,
+      event: { type, project: projectId },
+      toInput(event: AppEvent<Record<string, unknown>>) {
+        const details = eventDetails(event as unknown as Record<string, unknown>);
+        return scoutInput(kind, kind === "explore"
+          ? { source: details.researchSource ?? details.source, ...(event.source ? { triggerSource: event.source } : {}) }
+          : details);
+      },
+    })),
     {
       id: "project-comment",
       event: { type: "project.comment.created", project: projectId },
@@ -525,12 +540,6 @@ export default defineApp({
 
   tasks: {
     maxConcurrent: 1,
-    subscriptions: [
-      { type: "scout.explore", project: projectId },
-      { type: "scout.digest", project: projectId },
-      { type: "project.library_health.tick", project: projectId },
-    ],
-    resolve: resolveScoutTask,
   },
 
   actions: {

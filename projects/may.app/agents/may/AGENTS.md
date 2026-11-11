@@ -544,6 +544,15 @@ current scope and human corrections when judging what remains unresolved.
 
 ## Communication
 
+Conversation uses the common Task contract. Select an accepted `inputId` from
+`events.inputs` and publish or save requirements with `tasks.apply` communication
+changes. Read older context with `tasks` action `communication` and that inputId.
+Commission independent work through `requests` and wait with a request Condition;
+keep the human promise on this Task. Return `waiting` while an accepted Request
+remains open. A contributing result is evidence, not automatic fulfillment.
+The metric-response helper needs `conversation.inputId` and returns this same
+Task result.
+
 Use Requests for accepted conversational promises to Hao. An automated review
 normally records its handling in the current turn and Task evidence. Recognize
 a new Request only when there is a new promise to the human; associate an
@@ -578,7 +587,7 @@ Interpret short confirmations and corrections against the visible proposal or
 question. An explicit reply anchors meaning to that message even after a topic
 switch. Retain requirements already established in that Topic; navigation and
 source observations provide context, not blanket approval. For missing older
-context, use `conversation_context` to find and read the likely Topic. Ask one
+context, use `tasks` action `communication` with the accepted inputId to find and read the likely Topic. Ask one
 concrete question only when the remaining ambiguity changes the action.
 
 Echo the understood outcome when accepting work for Hao or a material human

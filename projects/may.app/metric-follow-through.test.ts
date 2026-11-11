@@ -6,7 +6,7 @@ import {
 } from "@may-agent/sdk";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import {
-  metricReviewHandoff,
+  metricReviewHandoff as buildMetricTaskResult,
   metricReviewResult,
   type MetricReview,
 } from "./metric-follow-through.js";
@@ -16,6 +16,17 @@ import { respondToMetric } from "./agents/may/workflows/metric-response.js";
 import { execute } from "./agents/may/workflows/metric-follow-through.js";
 import type { MetricEvidence } from "../alex.app/agents/evaluator/workflows/lib/metric-evidence.js";
 
+function metricReviewHandoff(
+  review: unknown,
+  conversation: Partial<Parameters<typeof buildMetricTaskResult>[1]>,
+  observations?: Parameters<typeof buildMetricTaskResult>[2],
+) {
+  return buildMetricTaskResult(
+    review,
+    { inputId: "poc-message", ...conversation },
+    observations,
+  );
+}
 const decision = {
   metricId: "test.metric",
   alertId: null,
@@ -172,10 +183,10 @@ test("owner composition binds optional scope to fresh evidence through both help
   );
   expect((workflow.output as any).facts).toContain(fact);
   const conversation = await respondToMetric(
-    createTestAppWorkflowContext({ input: { review: plan, conversation: {} } }),
+    createTestAppWorkflowContext({ input: { review: plan, conversation: {inputId:"poc-message"} } }),
     async () => observation,
   );
-  expect((conversation.output as any).followUp).toBeUndefined();
+  expect((conversation.output as any).requests).toBeUndefined();
   expect((conversation.output as any).facts[0]).toContain('"reuseScope"');
   const invalid = await respondToMetric(
     createTestAppWorkflowContext({
@@ -211,7 +222,7 @@ test("owner composition binds optional scope to fresh evidence through both help
       waiting,
       {},
       new Map([[decision.metricId, observation]]),
-    ).followUp,
+    ).requests,
   ).toBeDefined();
 });
 
@@ -225,7 +236,10 @@ test("completed Conversation metric review retains the judgment without commissi
       },
       decisions: [{ ...decision, disposition }],
     };
-    const conversation = { response: "No further action is needed." };
+    const conversation = {
+      inputId: "poc-message",
+      response: "No further action is needed.",
+    };
     const result = await respondToMetric(
       createTestAppWorkflowContext({
         input: { review: complete, conversation },
@@ -240,9 +254,11 @@ test("completed Conversation metric review retains the judgment without commissi
     const output = result.output as ReturnType<typeof metricReviewHandoff>;
     expect(output).toMatchObject({
       summary: "Review is complete",
-      response: conversation.response,
+      communication: [
+        expect.objectContaining({ message: conversation.response }),
+      ],
     });
-    expect(output.followUp).toBeUndefined();
+    expect(output.requests).toBeUndefined();
     expect(output.facts?.[0]).toBe("publication:checked");
     expect(
       JSON.parse(output.facts![1]!.slice("metric-disposition:".length)),
@@ -252,7 +268,7 @@ test("completed Conversation metric review retains the judgment without commissi
       metricReviewHandoff(
         { ...complete, task: { ...complete.task, response: "Reviewed" } },
         {},
-      ).response,
+      ).communication?.[0]?.message,
     ).toBe("Reviewed");
     expect(() =>
       metricReviewHandoff(
@@ -287,17 +303,17 @@ test("completed Conversation metric review retains the judgment without commissi
 
 test("May's real input mapper selects the workflow only for an explicit metric plan, and exposes the observer", () => {
   const handoff = metricReviewHandoff(review(), { topic: { kind: "none" } });
-  expect(handoff.response).toBeUndefined();
+  expect(handoff.communication?.[0]?.message).toBeUndefined();
   expect(
     metricReviewHandoff(review(), {
       topic: { kind: "none" },
       response: "The repair needs a decision.",
-    }).response,
+    }).communication?.[0]?.message,
   ).toBe("The repair needs a decision.");
   const admitted = taskForMayInput({
     id: "input",
     source: { kind: "human", id: "tester" },
-    input: handoff.followUp!.input,
+    input: handoff.requests![0]!.input,
   });
   expect(admitted).toMatchObject({
     kind: "desired",
@@ -404,13 +420,20 @@ test("the direct helper and report Conversation use the same complete result com
       },
     ),
   ).toThrow("Return metric judgments in decisions");
-  const conversation = { topic: { kind: "none" as const } };
+  const conversation = {
+    inputId: "poc-message",
+    topic: { kind: "none" as const },
+  };
   const prepared = await respondToMetric(
     createTestAppWorkflowContext({ input: { review: review(), conversation } }),
     read,
   );
   expect(prepared.output).toEqual(metricReviewHandoff(review(), conversation));
-  expect(prepared.output).not.toHaveProperty("facts");
+  expect(prepared.output).toMatchObject({
+    state: "waiting",
+    facts: [],
+    conditions: [{ requestId: "metric-follow-through" }],
+  });
 });
 
 test("the recorded reviewAt-only counterexample passes composition, helper, and production workflow", async () => {
@@ -753,4 +776,16 @@ test("owner failure blocks and invalid output retains an incomplete result", asy
       expect(result.output).toMatchObject({ state: "incomplete" });
     }
   }
+});
+
+test("metric communication requires the exact accepted input identity", () => {
+  expect(() => buildMetricTaskResult(review(), { inputId: "" })).toThrow(
+    "accepted inputId",
+  );
+  const result = metricReviewHandoff(review(), {});
+  expect(result).toMatchObject({
+    state: "waiting",
+    requests: [{ id: "metric-follow-through", appId: "may" }],
+    conditions: [{ requestId: "metric-follow-through" }],
+  });
 });

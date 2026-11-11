@@ -226,3 +226,13 @@ Scout library, preferences, or Gym policy.
 The current source-assessment iteration makes May’s inferred outcome visible and
 uses Scout’s code-owned source reader and archive procedure. See the linked
 design for the boundary between deployed research handling and proposed learning.
+
+
+May now uses `conversation.mode: "task"`. Messages, Request corrections and replies
+use the common Task communication contract, and independent metric investigations
+use ordinary requests and Conditions. `metric-response` requires the accepted
+`conversation.inputId` when preparing communication. Historical design notes and
+the optional intent-learning model experiment describe the retired adapter; they
+are evidence, not the current runtime contract. That experiment requires a separate
+port before another model-backed run. The ordinary App and metric suites use the
+current Host without live credentials or installed state.

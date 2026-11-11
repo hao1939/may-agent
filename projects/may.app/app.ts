@@ -402,7 +402,7 @@ export default defineApp({
     "Hao's deputy: handles conversation and authorized direct work, owns ongoing Tasks, and involves other Apps when useful or required. Use goal for ongoing work. May chooses available tools, specialists and workflows to meet the outcome; procedure parameters belong in context, not new input kinds. Live GitHub observation routes active PR changes by Task metadata; the github-pull-request observation capability checks exact saved Conditions, including changes missed during downtime. Both supply may.github.pull-request.state facts without watch registration.",
   inputSchema: mayInputSchema,
   conversation: {
-    mode: "agent",
+    mode: "task",
     inputKinds: ["message"],
     conversationId: "may:primary",
   },
