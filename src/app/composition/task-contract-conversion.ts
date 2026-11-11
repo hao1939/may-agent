@@ -1,12 +1,49 @@
 import { matchesEventSelector, type AppDefinition } from "@may-agent/sdk";
+import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync } from "node:fs";
+import { join } from "node:path";
 import type { SqliteDb } from "../../lib/db.js";
 import { advanceTaskResourceRevision } from "../../lib/db/task-resource-schema.js";
 import { stateTransaction } from "../../lib/db/transaction.js";
+import { readSessionMetaRecoveryEvidence } from "../../lib/persistence.js";
+import { hasLiveSessionExecution } from "../../lib/session-cleanup.js";
 import { canonicalAppEvent } from "../canonical-app-event.js";
 import { assertValidAppInput } from "../core/apps/definition-validation.js";
 import { loadPersistedEvent } from "../core/events/persisted.js";
 import { getAppEventAdmissionPlan, resolveAppEventAdmissionCommand } from "../core/state/app-event-admission-store.js";
-import { assertOfflineWorkloadExecution, assertOfflineWorkloadFiles } from "./install-retained-workload-state.js";
+
+function assertConversionSessionFilesClean(persistDir: string, affectedApps: ReadonlySet<string>): void {
+  const sessions = join(persistDir, "sessions");
+  if (!existsSync(sessions)) return;
+  if (!lstatSync(sessions).isDirectory()) throw new Error("Session state requires explicit recovery");
+  for (const entry of readdirSync(sessions, { withFileTypes: true })) {
+    if (!entry.isDirectory()) throw new Error("Unknown session artifact requires explicit recovery");
+    const directory = join(sessions, entry.name);
+    if (["[STARTED]", "bash-process-groups.json"].some((name) => existsSync(join(directory, name)))) {
+      throw new Error("Retained execution markers or descendants require confirmed cleanup");
+    }
+    if (hasLiveSessionExecution({ persistDir, manager: { hasActiveSession: () => false } }, entry.name)) {
+      throw new Error("Retained session execution requires confirmed cleanup");
+    }
+    const activePath = join(directory, "[ACTIVE]");
+    const hasActiveMarker = existsSync(activePath);
+    if (hasActiveMarker && readFileSync(activePath, "utf8").trim().length > 0) {
+      throw new Error("Retained execution markers or descendants require confirmed cleanup");
+    }
+    const evidence = readSessionMetaRecoveryEvidence(persistDir, entry.name);
+    if (evidence.state === "corrupt") {
+      throw new Error("Retained session execution requires confirmed cleanup");
+    }
+    if (evidence.state === "valid") {
+      const boundApp =
+        typeof evidence.meta.taskBinding?.appId === "string"
+          ? evidence.meta.taskBinding.appId
+          : evidence.meta.projectId;
+      if (boundApp && affectedApps.has(boundApp) && (hasActiveMarker || evidence.meta.status === "running")) {
+        throw new Error("Retained session execution requires confirmed cleanup");
+      }
+    }
+  }
+}
 
 /** Explicit offline format conversion. Never called by startup or recovery. */
 export function convertStoppedTaskContracts(input: {
@@ -15,9 +52,54 @@ export function convertStoppedTaskContracts(input: {
   apps: readonly AppDefinition[];
 }) {
   const { db, persistDir } = input;
-  assertOfflineWorkloadFiles(db, persistDir);
+  const mainFile = db.prepare("PRAGMA database_list").all().find((row) => row.name === "main")?.file;
+  if (typeof mainFile !== "string" || !mainFile || realpathSync(mainFile) !== realpathSync(join(persistDir, "may.db"))) {
+    throw new Error("Offline Task contract conversion requires the exact database and session state directory");
+  }
+  const preliminaryAffectedApps = new Set<string>([
+    ...db
+      .prepare(
+        `SELECT DISTINCT app_id FROM app_tasks
+         WHERE json_extract(resource_json, '$.spec.executor') = 'conversation'`,
+      )
+      .all()
+      .map((row) => String(row.app_id)),
+    ...db
+      .prepare(
+        `SELECT DISTINCT app_id FROM app_event_admission_commands
+         WHERE route_kind = 'unresolved' AND status = 'pending'
+           AND json_extract(payload, '$.resolveTask') = 1`,
+      )
+      .all()
+      .map((row) => String(row.app_id)),
+  ]);
+  assertConversionSessionFilesClean(persistDir, preliminaryAffectedApps);
   return stateTransaction(db, () => {
-    assertOfflineWorkloadExecution(db);
+    const affectedApps = new Set<string>([
+      ...db
+        .prepare(
+          `SELECT DISTINCT app_id FROM app_tasks
+           WHERE json_extract(resource_json, '$.spec.executor') = 'conversation'`,
+        )
+        .all()
+        .map((row) => String(row.app_id)),
+      ...db
+        .prepare(
+          `SELECT DISTINCT app_id FROM app_event_admission_commands
+           WHERE route_kind = 'unresolved' AND status = 'pending'
+             AND json_extract(payload, '$.resolveTask') = 1`,
+        )
+        .all()
+        .map((row) => String(row.app_id)),
+    ]);
+    if (db.prepare("SELECT 1 FROM task_execution_reservations WHERE released_at IS NULL LIMIT 1").get()) {
+      throw new Error("Retained execution reservations require confirmed cleanup before converting");
+    }
+    for (const appId of affectedApps) {
+      if (db.prepare("SELECT 1 FROM app_task_attempts WHERE app_id = ? AND state = 'running' LIMIT 1").get(appId)) {
+        throw new Error(`Retained running attempts in App ${appId} require ordinary recovery before converting`);
+      }
+    }
     if (
       db
         .prepare(
