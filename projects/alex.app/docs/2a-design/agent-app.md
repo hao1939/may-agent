@@ -189,9 +189,10 @@ export default defineApp({
 
 The public field is named `agent`. It names the agent representing the App and
 receiving Tasks without a more specific assignment. Each Task's resolved agent
-owns its outcome; an App address selects shared scope and policy. The Host
-temporarily accepts the old `owner` spelling only at compatibility boundaries
-for retained state and older App definitions.
+owns its outcome; an App address selects shared scope and policy. App definitions
+and new Task intents reject the retired `owner` spelling. Historical stored
+assignments remain readable; they do not make older App source callable. See
+the [Task authoring cleanup](../archive/reviews/task-api-cleanup-20261112.md).
 
 Identity, default agent, version, input schema, and Task resolution form the
 App contract. Subscriptions, observation-only selectors, schedules, observers,
@@ -360,9 +361,10 @@ receiving App's pure mapper selects an existing or new Task. The local request
 `id` remains stable within the caller generation; Host owns durable identity,
 idempotency, admission, result correlation and recovery. The source App supplies
 input accepted by the destination schema. It does not publish transport events
-or manage subscriptions. Legacy `dependencies` results are normalized once to
-requests plus caller Conditions for compatibility; the agent schema exposes only
-the new form and rejects combining the two forms.
+or manage subscriptions. New live changes and final results reject the retired
+`dependencies` field, including an empty array. Use `requests` with explicit
+caller Conditions; historical results remain evidence without being replayed
+through a compatibility adapter.
 
 Text and structured input are both eligible for App-to-App Task handling.
 `message` versus `goal` describes the payload, not whether the caller can await

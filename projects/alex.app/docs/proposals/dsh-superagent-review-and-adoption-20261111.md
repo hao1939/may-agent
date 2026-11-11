@@ -8,6 +8,13 @@
 
 ## What the comparison teaches
 
+The later [Task authoring cleanup](../archive/reviews/task-api-cleanup-20261112.md)
+is also merged in [Host #454](https://github.com/hao1939/may-agent/pull/454), with
+companion App callers committed. It removes duplicate authoring forms while
+preserving accepted work and stored identities. That source cleanup is complete;
+the approval-verifier alignment remains a separate follow-up, and the App trials
+below remain proposals.
+
 The useful lesson is focus: one representation of work, one authority for each
 fact, and recovery whose complexity is justified by its cost. DeepSeek's
 prototype is a coding teammate built on DeepSeek Harness; May is a generic Host

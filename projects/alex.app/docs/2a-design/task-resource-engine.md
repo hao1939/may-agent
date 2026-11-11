@@ -529,7 +529,7 @@ stored Conditions remain readable and inert; redeclaring the same supported
 specification preserves the existing wait and observations. Use Task `reviewAt`
 only for a deliberate owner reconsideration. No stored Task migration is needed.
 See the [source cleanup record](../archive/reviews/task-api-cleanup-20261112.md)
-for the companion App changes and verification limits.
+for merged Host #454, committed companion App changes and activation limits.
 
 A watcher reads an external source and publishes a fact. It does not know task
 storage or invoke an agent. The generic Condition tracker atomically updates

@@ -179,23 +179,12 @@ A short Condition `{ "requestId": "review" }` refers to a request named
 and installs the existing durable completion Condition. The agent does not
 manufacture event IDs, inbox IDs or a second tracking registration.
 
-An external Condition retains this shape:
-
-```ts
-type Condition = {
-  id: string;
-  type: string;
-  subject: string;
-  expected: unknown;
-  owner: string;
-  reviewAfterMs: number;
-  requestedAction?: string;
-};
-```
-
-Use a supported namespaced event type, typed subject and canonical owner.
-New Conditions require `reviewAfterMs` of at least 60 seconds under the current
-contract. A named type does not create an observer. `owner` and
+External Conditions use the current [Condition contract](../2a-design/task-resource-engine.md#conditions):
+a supported namespaced event type, typed subject and canonical owner.
+Host #454 retired Condition `reviewAfterMs`; deliberate owner reconsideration
+uses Task `reviewAt`, independently of external observation and code-only
+recovery. This deferred spelling proposal does not restore interval authoring.
+A named type does not create an observer. `owner` and
 `requestedAction` identify responsibility and the needed action; they do not
 send a notification. Sending a request or contacting a human uses the existing
 delivery capability.

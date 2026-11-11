@@ -7,6 +7,35 @@
 Durable request correlation and task state are authoritative. Tasks own App
 work; events trigger review and are not work queues to replay manually.
 
+## Update App source for the current Task contract
+
+The [Task authoring cleanup](../archive/reviews/task-api-cleanup-20261112.md)
+is merged in Host #454; companion App callers are committed. Before releasing
+that Host/SDK with older App source:
+
+1. Use `agent` in App definitions and Task intents. Remove `TaskAppDependency`
+   and `taskOwnerResultSchema` imports; use `TaskAppRequest` and
+   `taskAgentResultSchema` where needed.
+2. Replace `dependencies` results with `requests` and an explicit request
+   Condition for each answer the caller needs. Set `progress: "immediate"` on
+   migrated request Conditions when preserving the old intermediate-report
+   behavior; completion and failure already wake promptly.
+3. Remove Condition and observer-interest `reviewAfterMs`. Use Task `reviewAt`
+   only for deliberate agent reconsideration. Observer polling and code-only
+   recovery keep their existing schedules.
+4. For Host-private callers of the removed `src/lib/requests.ts` facade, import
+   the owning database module. Apps continue using the public SDK.
+5. Check the real App callers against the matching SDK, then release and activate
+   through the normal reviewed path. Read back the selected Host revision and
+   SDK/App definitions separately from the source merge.
+
+Old fields are rejected even when empty. Saved model output submitted again as
+new authoring must use the current contract. Historical stored assignments,
+Conditions, results, admission hashes and Task identities remain readable;
+this cleanup needs no live-state migration. It neither performs nor replaces
+any earlier retired-executor conversion required by an older installation.
+Source verification does not establish deployment.
+
 ## Normal restart
 
 Restart the daemon normally. Startup:

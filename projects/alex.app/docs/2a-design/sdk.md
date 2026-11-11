@@ -11,8 +11,10 @@ Task reconciliation. The shared bounded Task collection is exposed as
 agent. `TaskIntent.mode` is retired for new intent; the reconciler rejects it.
 New Task authoring rejects the old `owner` spelling. Stored `owner` and historical
 mode data remain internal evidence; their retention does not provide another
-authoring API. See the [cleanup record](../archive/reviews/task-api-cleanup-20261112.md)
-for source availability and integration order.
+authoring API. The Task authoring cleanup is merged in
+[Host #454](https://github.com/hao1939/may-agent/pull/454), with companion App
+callers committed. See the [cleanup record](../archive/reviews/task-api-cleanup-20261112.md)
+for exact revisions, checks and release limits.
 The resource-observer facade and installed contract/health reads are implemented
 in the [September 30 candidate](../archive/reviews/task-observation-implementation-20260930.md);
 source checks do not establish deployment.

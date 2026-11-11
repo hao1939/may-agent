@@ -17,6 +17,7 @@ contracts and guides. [Proposals](proposals/README.md) contain remaining choices
 | What does the agent decide and infra execute? | [Host/App boundary](2a-design/system-boundary.md) |
 | How should an agent work with current capabilities? | [Task execution guide](2b-manual/task-execution-guide/SKILL.md) |
 | How do Task state, Conditions and recovery work? | [Task lifecycle](2a-design/task-resource-engine.md) |
+| How do Apps adopt the current Task authoring contract? | [Source upgrade guide](2b-manual/app-operations-recovery.md#update-app-source-for-the-current-task-contract); [merged cleanup evidence](archive/reviews/task-api-cleanup-20261112.md) |
 | Does an idle Task need more work, observation or closure? | [State and continuing responsibility](2a-design/task-resource-engine.md#state-and-continuing-responsibility) |
 | What existing tasks informed the unified lifecycle? | [Task lifecycle review](archive/reviews/task-lifecycle-responsibilities-20261107.md) |
 | What does an attempt receive and return? | [Task attempts](2a-design/task-attempts.md) |

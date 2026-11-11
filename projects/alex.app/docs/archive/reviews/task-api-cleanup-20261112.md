@@ -4,10 +4,14 @@
 Reduces the number of ways App authors express the same work, while preserving
 accepted work and historical evidence.
 
-**Status:** Companion App source is integrated on Apps `main`. Host/SDK removal
-is prepared for PR review; neither half has been activated by this work. Current
-contract text describes the cleanup. Installed schemas remain the authority for
-an older installation. Verification results are recorded below.
+**Status:** Source integration is complete. Host/SDK removal merged in
+[PR #454](https://github.com/hao1939/may-agent/pull/454) as
+`c5c163aafcc16c148c75119d5f9b39dab8c65707` on November 11, 2026 (UTC;
+November 12 in Shanghai). Companion App source is committed on Apps `main` as
+`f6ceb06366d279d9be2e0384228f598e3f7ba21a`. Neither merge establishes runtime
+activation. Installed schemas remain the authority for an older installation.
+Use the [source upgrade guide](../../2b-manual/app-operations-recovery.md#update-app-source-for-the-current-task-contract)
+for adoption; verification results and remaining limits are below.
 
 The first cleanup slice removes the old `dependencies` result form,
 `TaskAppDependency`, `taskOwnerResultSchema`, public `TaskIntent.owner`, Condition
@@ -44,10 +48,11 @@ Apps base: `7d0ef4fe62`.
 Branches: `refactor/retire-task-compat-20261112` and
 `refactor/retire-task-compat-apps-20261112`.
 
-Integrate the companion App callers first: their `agent`, `requests`, explicit
-Conditions and omitted intervals are supported by the Host base. Then integrate
-the Host/SDK removal and activate the matching SDK through the ordinary release
-path. No deployment or restart is part of this source change.
+The companion App callers integrated first: their `agent`, `requests`, explicit
+Conditions and omitted intervals are supported by the Host base. The Host/SDK
+removal is now merged; its tree matches the verified candidate above. Release
+and activation of the matching SDK/App definitions remain separate work through
+the ordinary release path. No deployment or restart is part of this change.
 
 Measured diff: 194 fewer implementation lines across Host and Apps, or 418 fewer
 lines including tests and fixtures. Documentation is counted separately; most
@@ -56,6 +61,8 @@ not measured runtime or token savings.
 
 Verification:
 
+- GitHub **Quality** and **Container** passed on PR #454's final candidate,
+  confirmed after merge. These are source/image checks, not installed-App proof.
 - Full Host `bun run ci` passed with four test shards and Chrome enabled:
   4,158 passed, 3 installation-only fleet checks skipped. Types, SDK exports,
   architectural checks and lint passed.
@@ -77,3 +84,18 @@ Verification:
 All executions use temporary databases and synthetic work; no live state was
 changed, no services restarted and no real model calls or GitHub provider operations performed.
 These checks establish no live adoption or model-quality improvement.
+
+Post-merge documentation alignment (November 12): the App, SDK and attempt
+contracts now reject the retired forms consistently; the source upgrade guide,
+proposal dispositions and navigation reflect completed source integration.
+`bun run check:may-design` passed against the merged source tree, including
+executable App examples, with the existing unclassified `reports` warning.
+`git diff --check` passed. This documentation pass does not resolve or reclassify
+the separate approval-composition failure above.
+
+Shared-workspace verification additionally passed documentation integrity and
+executable examples. Its full gate stops at two ignored, disabled symlinks for
+retired `evaluation.app` and `gym.app` runtime artifacts without `app.ts`; the
+standalone source checkout has neither entry and passes the full gate. The
+shared-workspace model-surface check also passes. No runtime artifacts were
+changed to make the check pass.

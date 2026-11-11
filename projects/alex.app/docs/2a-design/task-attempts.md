@@ -304,8 +304,10 @@ The source [Task types](../../../may-agent/packages/sdk/src/task.ts) and
 [result admission](../../../may-agent/packages/sdk/src/task-contract.ts) define
 the executable contract. A result supplies `state`, `summary`, `facts`, and
 optional bounded `result`, caller `response`, Task `actions`, Conditions, and
-`TaskAppRequest` entries. Legacy `dependencies` normalize to requests and caller
-Conditions at admission; the existing result schema and IDs remain unchanged.
+`TaskAppRequest` entries in `requests`. Live changes and final results reject
+the retired `dependencies` field; add a request Condition explicitly when the
+caller needs the answer. Historical results remain readable evidence. See the
+[Task authoring cleanup](../archive/reviews/task-api-cleanup-20261112.md).
 
 The result union selects how this attempt settles; it does not make stored
 facts mutually exclusive. A waiting result may request `continue: true` while
