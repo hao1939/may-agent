@@ -569,7 +569,7 @@ describe("Telegram durable input and natural follow-up", () => {
       } });
       const config = conversationTaskContext(f.db, f.root);
       const claim = claimObservedAppTask(config, {
-        taskId: getAppInboxItem(f.db, "active")!.executionTaskId!, appAgent: "may", handler: "executor:conversation",
+        taskId: getAppInboxItem(f.db, "active")!.executionTaskId!, appAgent: "may", handler: "executor:agent",
       });
       expect(claim.kind).toBe("claimed");
       f.hold((body) => body.text.startsWith("Task first") ? blocked.promise : Promise.resolve());

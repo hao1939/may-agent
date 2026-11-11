@@ -41,7 +41,7 @@ test.each(["system", "console"] as const)("%s work stays visible without unsolic
     intent: conversationTaskIntent(config),
   });
   const claim = claimObservedAppTask(config, {
-    taskId: admitted.taskId, appAgent: "may", handler: "executor:conversation",
+    taskId: admitted.taskId, appAgent: "may", handler: "executor:agent",
   });
   expect(claim.kind).toBe("claimed");
   const sent: Array<{ text: string; reply_markup?: unknown }> = [];
@@ -168,7 +168,7 @@ test("Telegram Stop buttons retain exact turns, reject old/unauthorized controls
       intent: conversationTaskIntent(config),
     });
     const claim = claimObservedAppTask(config, {
-      taskId: admitted.taskId, appAgent: "may", handler: "executor:conversation",
+      taskId: admitted.taskId, appAgent: "may", handler: "executor:agent",
     });
     if (claim.kind !== "claimed") throw new Error(`Expected Task claim, got ${claim.kind}`);
     return claim;

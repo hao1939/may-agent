@@ -246,7 +246,7 @@ describe("AppTaskResourceStore", () => {
         input: { kind: "message", data: { text: "Discuss the paused work" } },
         intent: {
           parentId: "root",
-          executor: "conversation",
+          executor: "agent",
           outcome: "Discuss",
           acceptance: ["Reply"],
         },
@@ -254,7 +254,7 @@ describe("AppTaskResourceStore", () => {
       const claimed = claimObservedAppTask(config, {
         taskId: human.taskId,
         appAgent: "example",
-        handler: "executor:conversation",
+        handler: "executor:agent",
       });
       expect(claimed.kind).toBe("claimed");
       expect(peer.projectLifecycle()).toBe("paused");
