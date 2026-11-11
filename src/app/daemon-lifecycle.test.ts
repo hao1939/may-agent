@@ -57,7 +57,6 @@ describe("runtime generation reload", () => {
     added: ["new-agent"],
     updated: [],
     definitions: [],
-    maintenance: new Map(),
     cleanups: new Map(),
     warnings: [],
   } as any;
@@ -122,11 +121,9 @@ describe("runtime generation reload", () => {
   });
 
   it("discards prepared resources when App validation fails before publication", async () => {
-    let closed = 0;
     let cleaned = 0;
     const prepared = {
       ...generation,
-      maintenance: new Map([["candidate", { close: () => closed++ }]]),
       cleanups: new Map([["candidate", [() => cleaned++]]]),
     } as any;
     const lifecycle = createDaemonLifecycle(
@@ -140,6 +137,6 @@ describe("runtime generation reload", () => {
 
     const result = await lifecycle.handleReload();
     expect(result.ok).toBe(false);
-    expect({ closed, cleaned }).toEqual({ closed: 1, cleaned: 1 });
+    expect(cleaned).toBe(1);
   });
 });

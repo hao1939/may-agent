@@ -1,10 +1,9 @@
 import { expect, it, spyOn } from "bun:test";
-import { createAppReporting } from "./reporting.js";
-import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
-import { buildMaintenanceAPI } from "../../lib/maintenance-api-impl.js";
 import * as metrics from "../../lib/metrics.js";
 import * as query from "../../lib/query-service.js";
+import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
 import { EventBus } from "../core/events/bus.js";
+import { createAppReporting } from "./reporting.js";
 
 it("does not construct reporting services merely to prepare runtime/SDK capabilities", () => {
   const metricFactory = spyOn(metrics, "createMetricService");
@@ -20,7 +19,6 @@ it("does not construct reporting services merely to prepare runtime/SDK capabili
       projectsRoot: "/unused/projects",
     };
     buildRuntimeCtx(options);
-    buildMaintenanceAPI(options);
     const reports = createAppReporting(() => {
       throw new Error("read was not requested");
     });

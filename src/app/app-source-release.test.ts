@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
-import { AppRegistry } from "./core/apps/registry.js";
 import { DefinitionSourceReleaseStore } from "./app-source-release.js";
+import { AppRegistry } from "./core/apps/registry.js";
 import { loadAgentLocalTools } from "./loader/agent-local-tools.js";
 
 const git = (cwd: string, ...args: string[]) => promisify(execFile)("git", args, { cwd, timeout: 10_000 });
@@ -35,7 +35,7 @@ describe("App source releases", () => {
     mkdirSync(sharedSkillsDir, { recursive: true });
     writeFileSync(
       appPath,
-      `export default { id: "sample-v1", version: 1, owner: "worker", inputSchema: { type: "object" } };\n`,
+      `export default { id: "sample-v1", version: 1, agent: "worker", inputSchema: { type: "object" } };\n`,
     );
     writeFileSync(
       join(agentDir, "agent.json"),
@@ -102,7 +102,7 @@ describe("App source releases", () => {
 
     writeFileSync(
       appPath,
-      `export default { id: "dirty", version: 1, owner: "worker", inputSchema: { type: "object" } };\n`,
+      `export default { id: "dirty", version: 1, agent: "worker", inputSchema: { type: "object" } };\n`,
     );
     expect((await loadAppDefinitions(store.ensureCurrent().projectsRoot))[0]?.definition.id).toBe("sample-v1");
 
@@ -127,7 +127,7 @@ describe("App source releases", () => {
     const approvedHead = String((await git(drifted.root, "rev-parse", "HEAD")).stdout).trim();
     writeFileSync(
       drifted.appPath,
-      `export default { id: "sample-v2", version: 1, owner: "worker", inputSchema: { type: "object" } };\n`,
+      `export default { id: "sample-v2", version: 1, agent: "worker", inputSchema: { type: "object" } };\n`,
     );
     await git(drifted.root, "add", "projects/sample.app/app.js");
     await git(drifted.root, "commit", "-qm", "drift after approval");
@@ -145,7 +145,7 @@ describe("App source releases", () => {
     const pinnedHead = String((await git(root, "rev-parse", "HEAD")).stdout).trim();
     writeFileSync(
       appPath,
-      `export default { id: "dirty", version: 1, owner: "worker", inputSchema: { type: "object" } };\n`,
+      `export default { id: "dirty", version: 1, agent: "worker", inputSchema: { type: "object" } };\n`,
     );
     const untrackedHandler = join(root, "projects", "sample.app", "new-handler.ts");
     writeFileSync(untrackedHandler, "export const handler = true;\n");
@@ -413,7 +413,7 @@ describe("App source releases", () => {
     store.ensureCurrent();
     writeFileSync(
       appPath,
-      `export default { id: "dirty", version: 1, owner: "worker", inputSchema: { type: "object" } };\n`,
+      `export default { id: "dirty", version: 1, agent: "worker", inputSchema: { type: "object" } };\n`,
     );
 
     expect(() => store.stage()).toThrow("commit them before reload");

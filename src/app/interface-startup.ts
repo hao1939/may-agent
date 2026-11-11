@@ -1,8 +1,8 @@
+import type { AttachControlSocketOptions } from "@may-agent/control/server";
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { EventInterface } from "./core/events/interface.js";
 import { attachSocketUI, type SocketUI } from "./transport/socket.js";
-import type { AttachControlSocketOptions } from "@may-agent/control/server";
 
 export interface InterfaceStartupOptions {
   conversationAppId?: string;
@@ -18,7 +18,6 @@ export interface InterfaceStartupOptions {
   listAppTasks?: AttachControlSocketOptions["listAppTasks"];
   getAppTask?: AttachControlSocketOptions["getAppTask"];
   getAppTaskWorkload?: AttachControlSocketOptions["getAppTaskWorkload"];
-  resolveAppTask?: AttachControlSocketOptions["resolveAppTask"];
   listApps?: AttachControlSocketOptions["listApps"];
   listTasks?: AttachControlSocketOptions["listTasks"];
   getTask?: AttachControlSocketOptions["getTask"];
@@ -71,7 +70,6 @@ export async function startInterfaceRuntime(options: InterfaceStartupOptions): P
         listAppTasks: options.listAppTasks,
         getAppTask: options.getAppTask,
         getAppTaskWorkload: options.getAppTaskWorkload,
-        resolveAppTask: options.resolveAppTask,
         listApps: options.listApps,
         listTasks: options.listTasks,
         getTask: options.getTask,

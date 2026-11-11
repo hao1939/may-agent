@@ -5,7 +5,7 @@ import { markStaleSession } from "../../../../test/fixtures/stale-session.js";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineApp } from "@may-agent/sdk";
+import { defineApp, type AppInputContext } from "@may-agent/sdk";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { listTerminalTaskSessionBindings, upsertSession } from "../../../lib/db/sessions.js";
 import { EVENT_ROW_ID, type AgentEvent } from "../events/bus.js";
@@ -14,6 +14,7 @@ import { startBackgroundRuntime } from "../../composition/background-startup.js"
 import { SubagentManager } from "../../../lib/manager.js";
 import { admitTaskInput } from "../state/inbox.js";
 import { AppRegistry } from "../apps/registry.js";
+import { createAppTaskCapability } from "./app-task-capability.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
   admitStandaloneCanonicalAppTaskEvent,
@@ -572,7 +573,7 @@ describe("terminal completion recovery", () => {
     const damaged = JSON.stringify({ ...meta, error: { invalid: true } });
     writeFileSync(path, damaged);
     const manager = new SubagentManager({ persistDir: f.base.persistDir });
-    manager.resumeStaleSessions();
+    manager.cleanupStaleSessions();
     // The attempt belongs to the owner session. It cannot authorize cleanup
     // of a damaged helper just because the helper inherited its binding.
     expect(existsSync(join(directory, "[ACTIVE]"))).toBe(true);
@@ -582,13 +583,13 @@ describe("terminal completion recovery", () => {
 
     writeFileSync(path, JSON.stringify(meta));
     getDb(f.base.persistDir).prepare("DELETE FROM sessions WHERE sessionId = ?").run(sessionId);
-    manager.resumeStaleSessions();
+    manager.cleanupStaleSessions();
     // A readable copy alone cannot verify a non-owner session. Restoration
     // of the independent association admits ordinary session cleanup.
     expect(existsSync(join(directory, "[ACTIVE]"))).toBe(true);
     expect(readTaskSnapshot(f.config)).toEqual(before);
     projectSession();
-    manager.resumeStaleSessions();
+    manager.cleanupStaleSessions();
     expect(existsSync(join(directory, "[ACTIVE]"))).toBe(false);
     expect(getDb(f.base.persistDir).prepare("SELECT status FROM sessions WHERE sessionId = ?").get(sessionId))
       .toEqual({ status: "done" });
@@ -932,17 +933,12 @@ describe("terminal completion recovery", () => {
     });
     const app = defineApp({
       ...definition(),
-      tasks: {
-        subscriptions: ["handler.failed"],
-        resolve: (event) => event.data.taskId === "owner"
-          ? {
-              id: "recovery",
-              parentId: "operations",
-              outcome: "Assess the unresolved recovery and choose the next action",
-              acceptance: ["Preserve confirmed facts and explicit uncertainty"],
-            }
-          : null,
-      },
+      tasks: {},
+      subscriptions: [{id:"recovery",event:"handler.failed",toInput(event) {
+        return event.data.taskId === "owner" ? {kind:"recovery",data:event.data} : null;
+      }}],
+      task: () => ({kind:"desired",intent:{id:"recovery",parentId:"operations",
+        outcome:"Assess the unresolved recovery and choose the next action",acceptance:["Preserve confirmed facts and explicit uncertainty"]}}),
     });
     const registry = new AppRegistry(async () => [
       { appDir: f.base.appRegistrySnapshot.entries[0].appDir, definition: app },
@@ -954,10 +950,10 @@ describe("terminal completion recovery", () => {
       snapshot: () => agents,
       async execute(input) {
         if (input.attempt.task.id !== "recovery") return f.base.agents.execute(input);
-        const failure = input.attempt.events.items.find(({ event }) => event.type === "handler.failed")?.event;
-        expect(failure?.data).toMatchObject({ appId: "sample", taskId: "owner", stage: "task-reconciliation" });
-        expect(failure?.data.error).toContain("session-owner");
-        expect(failure?.data.error).toContain("did not exit");
+        const failure = input.attempt.events.items.find(({ event }) => event.type === "app.task.requested")?.event.data.request as AppInputContext;
+        expect(failure?.input.data).toMatchObject({ appId: "sample", taskId: "owner", stage: "task-reconciliation" });
+        expect((failure?.input.data as Record<string,string>).error).toContain("session-owner");
+        expect((failure?.input.data as Record<string,string>).error).toContain("did not exit");
         decisions++;
         return {
           handlerResult: {
@@ -991,6 +987,7 @@ describe("terminal completion recovery", () => {
       registry,
       deferStart: true,
       admitTaskEvent: (input) => admitLoadedCanonicalAppTaskEvent({ ...input, bus: f.base.bus }),
+      attachTask: createAppTaskCapability({ bus: f.base.bus }).attach,
     });
     const settled = Promise.withResolvers<void>();
     f.base.bus.subscribe((event) => {

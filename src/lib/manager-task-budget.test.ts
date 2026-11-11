@@ -1,32 +1,27 @@
-import { releaseJoinedTaskAttemptExecution } from "../app/core/state/task-execution-cleanup.js";
+import { createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
 import { ExecutionDeferredError, Type, defineApp } from "@may-agent/sdk";
-import { EventBus } from "../app/core/events/bus.js";
-import { createWorkflowRunner, createWorkflowTool } from "./workflow-tool.js";
-import { getWorkflowRun } from "./db/workflows.js";
-import { createTaskAgentRunner } from "../app/adapters/executors/managed-agent.js";
-import { createTaskWorkflowRunner } from "../app/adapters/executors/workflow.js";
-import { runTaskAttempt } from "../app/core/tasks/attempt-runner.js";
-import { admitTaskInput } from "../app/core/state/inbox.js";
 import { afterEach, expect, setSystemTime, spyOn, test } from "bun:test";
 import { execFile } from "node:child_process";
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
 import { fakeModel } from "../../test/fixtures/model.js";
+import { createTaskAgentRunner } from "../app/adapters/executors/managed-agent.js";
+import { createTaskWorkflowRunner } from "../app/adapters/executors/workflow.js";
+import { EventBus } from "../app/core/events/bus.js";
 import { readTaskWorkload } from "../app/core/reads/task-workload.js";
-import * as bashLifecycle from "./tools/bash.js";
-import { createAgentRun } from "./agent-runner.js";
-import { SubagentManager } from "./manager.js";
-import { closeDb, getDb } from "./db/connection.js";
-import { stateTransaction } from "./db/transaction.js";
-import { readSessionMessages, readSessionProcessOwner, type TaskBinding } from "./persistence.js";
 import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
+import { admitTaskInput } from "../app/core/state/inbox.js";
 import { TaskBudgetAdmissionStore, TaskBudgetDeferredError } from "../app/core/state/task-budget-admission.js";
-import { TaskExecutionStore } from "../app/core/state/task-execution-store.js";
-import { installTaskExecutionLimit, releaseTaskExecutionReservation, TaskExecutionDeferredError } from "../app/core/state/task-execution-admission.js";
 import { taskPrimaryStart } from "../app/core/state/task-budget-managed-start.js";
+import {
+  TaskExecutionDeferredError,
+  installTaskExecutionLimit,
+  releaseTaskExecutionReservation,
+} from "../app/core/state/task-execution-admission.js";
+import { releaseJoinedTaskAttemptExecution } from "../app/core/state/task-execution-cleanup.js";
+import { TaskExecutionStore } from "../app/core/state/task-execution-store.js";
 import {
   appTaskContext,
   cancelAppTask,
@@ -36,6 +31,15 @@ import {
   observeAppTaskIntent,
   readAppTaskAdmissionOutcome,
 } from "../app/core/tasks/app-task-reconciler.js";
+import { runTaskAttempt } from "../app/core/tasks/attempt-runner.js";
+import { createAgentRun } from "./agent-runner.js";
+import { closeDb, getDb } from "./db/connection.js";
+import { stateTransaction } from "./db/transaction.js";
+import { getWorkflowRun } from "./db/workflows.js";
+import { SubagentManager } from "./manager.js";
+import { readSessionMessages, readSessionProcessOwner, type TaskBinding } from "./persistence.js";
+import * as bashLifecycle from "./tools/bash.js";
+import { createWorkflowRunner, createWorkflowTool } from "./workflow-tool.js";
 
 const cleanups: Array<() => Promise<void>> = [];
 afterEach(async () => {
@@ -291,7 +295,7 @@ test("funded live continuation and helper correction reuse admission; cancelled 
   expect(f.view()?.rootCharged).toBe(3);
 });
 
-test("paid primary is covered once; repair and resume are distinct charges while saved results are free", async () => {
+test("paid primary is covered once; repair and fresh continuation are distinct charges while saved results are free", async () => {
   const f = fixture();
   const primary = taskPrimaryStart(f.binding);
   const first = await f.manager.callAgent("worker", "Primary", { taskBinding: f.binding, taskPrimaryStart: primary });
@@ -301,15 +305,15 @@ test("paid primary is covered once; repair and resume are distinct charges while
   expect(f.view()?.rootCharged).toBe(2);
   const repair = await f.manager.callAgent("worker", "Repair", { taskBinding: f.binding, taskPrimaryStart: primary });
   expect(f.view()?.rootCharged).toBe(3);
-  f.manager.resumeSession(repair.sessionId, "Continue", { taskBinding: f.binding });
-  expect((await f.manager.waitFor(repair.sessionId)).status).toBe("done");
+  const continuation = await f.manager.callAgent("worker", "Continue", { taskBinding: f.binding });
+  expect(continuation.status).toBe("done");
   expect(f.view()).toMatchObject({ rootCharged: 4, grant: { charged: 4 } });
   const before = readSessionMessages(f.root, repair.sessionId);
   const failures: string[] = [];
   const stop = f.bus.listen((event) => {
     if (event.type === "session.resume_failed") failures.push(event.type);
   });
-  expect(() => f.manager.resumeSession(repair.sessionId, "Denied", { taskBinding: f.binding })).toThrow(
+  expect(() => f.manager.run("worker", "Denied", { taskBinding: f.binding })).toThrow(
     TaskBudgetDeferredError,
   );
   stop();
@@ -321,7 +325,7 @@ test("paid primary is covered once; repair and resume are distinct charges while
   expect(starts).toHaveLength(3);
   expect(starts.filter((row) => row.primary_covered === 1)).toHaveLength(1);
   expect(new Set(starts.map((row) => row.invocation_id)).size).toBe(3);
-  expect(starts.filter((row) => row.session_id === repair.sessionId)).toHaveLength(2);
+  expect(starts.filter((row) => row.session_id === repair.sessionId)).toHaveLength(1);
 });
 
 test("source labels and retained sessions cannot grant a free primary or restore live Task authority", async () => {
@@ -330,7 +334,7 @@ test("source labels and retained sessions cannot grant a free primary or restore
   expect(f.view()?.rootCharged).toBe(3);
   expect(f.db.prepare("SELECT primary_covered FROM task_budget_managed_starts").get()?.primary_covered).toBe(0);
   const before = readSessionMessages(f.root, helper.sessionId);
-  expect(() => f.manager.resumeSession(helper.sessionId, "Without authority")).toThrow("current Task binding");
+  expect(() => f.manager.run("worker", "Without authority", { sessionId: helper.sessionId })).toThrow("already has execution evidence");
   expect(readSessionMessages(f.root, helper.sessionId)).toEqual(before);
   // The actual primary is covered by the original paid attempt even with no spare credits.
   await f.manager.callAgent("worker", "Primary", {
@@ -490,31 +494,6 @@ test("typed and model workflow callers retain blocked execution facts for an unf
   expect(JSON.parse(part.text).id).toBeUndefined();
   expect(f.factories()).toBe(0);
   expect(f.view()?.rootCharged).toBe(2);
-});
-
-test("workflow resume funding denial cannot fall through to a fresh helper call", async () => {
-  const f = fixture(3);
-  const helper = await f.manager.callAgent("worker", "Earlier helper", { taskBinding: f.binding });
-  const messages = readSessionMessages(f.root, helper.sessionId);
-  const stored = spyOn(f.manager, "result").mockImplementation(() => {
-    throw new Error("Saved output requires resume");
-  });
-  const fresh = spyOn(f.manager, "callAgent");
-  const resume = spyOn(f.manager, "resumeSession");
-  try {
-    await expect(
-      createWorkflowRunner(helperWorkflow(f, helper.sessionId)).run("delegate", "Required work"),
-    ).rejects.toBeInstanceOf(ExecutionDeferredError);
-    expect(resume).toHaveBeenCalledTimes(1);
-    expect(fresh).not.toHaveBeenCalled();
-    expect(readSessionMessages(f.root, helper.sessionId)).toEqual(messages);
-    expect(f.manager.registry.getSession(helper.sessionId)?.status).toBe("done");
-    expect(f.factories()).toBe(1);
-  } finally {
-    stored.mockRestore();
-    fresh.mockRestore();
-    resume.mockRestore();
-  }
 });
 
 test.each(["executor", "workflow"] as const)(

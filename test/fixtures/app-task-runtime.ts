@@ -2,7 +2,7 @@ import { afterEach, expect, setSystemTime } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Type, defineApp, type AppDefinition } from "@may-agent/sdk";
+import { Type, defineApp, type AppDefinition, type TaskIntent } from "@may-agent/sdk";
 import { EventBus } from "../../src/app/core/events/bus.js";
 import {
   closeInstalledAppTaskRuntimes,
@@ -99,21 +99,27 @@ export function appTaskRuntimeTestSuite() {
       agent: "sample-owner",
       inputSchema: Type.Object({}, { additionalProperties: true }),
       workspace: { kind: "local", localPath: "." },
-      tasks: {
-        subscriptions: ["sample.work"],
-        resolve(event) {
+      tasks: {},
+      task: ({ input }) => ({ kind: "desired", intent: input.data as TaskIntent }),
+      subscriptions: [{
+        id: "work-0",
+        event: "sample.work",
+        toInput(event) {
           const itemId = String(event.data.itemId ?? "");
           return itemId
             ? {
-                id: `work/${itemId}`,
-                parentId: "operations",
-                outcome: `Process ${itemId}`,
-                acceptance: ["Work converges"],
-                agent: "sample-owner",
+                kind: "work",
+                data: {
+                  id: `work/${itemId}`,
+                  parentId: "operations",
+                  outcome: `Process ${itemId}`,
+                  acceptance: ["Work converges"],
+                  agent: "sample-owner",
+                },
               }
             : null;
         },
-      },
+      }],
     });
   }
 

@@ -247,7 +247,7 @@ describe("system-status tool", () => {
     expect(text).toContain("Active Sessions");
     expect(text).toContain("📈 Last 60m");
     expect(text).toContain("🔄 Recent Delegations");
-    expect(text).toContain("⏱️ HostMaintenance/Jobs");
+    expect(text).toContain("⏱️ Retained Jobs");
     expect(text).toContain("🎯 Strategic Context");
   });
 
@@ -303,7 +303,7 @@ describe("system-status tool", () => {
     const result = await tool.execute("test-call-6", {});
     const text = (result.content[0] as { type: "text"; text: string }).text;
 
-    expect(text).toContain("⏱️ HostMaintenance/Jobs");
+    expect(text).toContain("⏱️ Retained Jobs");
   });
 
   it("shows strategic context", async () => {

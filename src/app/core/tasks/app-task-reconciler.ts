@@ -50,6 +50,7 @@ import type { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { continuedTaskInputKeys, retainTaskInputWait, taskInputAdmissionKeys } from "./app-task-inputs.js";
 import { assertResourceCreator } from "../state/resource-creator.js";
 import { AppTaskAdmissionError } from "../state/task-admission-error.js";
+import { hasConversationExecutionTask } from "../state/app-inbox-store.js";
 
 const MAX_TASK_EVENTS_PER_ATTEMPT = 32;
 const DEFAULT_MAX_CONSECUTIVE_FAILURES = 3;
@@ -1385,6 +1386,8 @@ export function validateIntent(intent: AppTaskIntent): void {
   if (intent.executor !== undefined && !/^[a-z][a-z0-9-]{0,63}$/.test(intent.executor)) {
     throw new Error(`Task ${intent.id} executor must be a lowercase name of at most 64 characters`);
   }
+  if (intent.executor === "conversation")
+    throw new Error('Executor name "conversation" is retired and reserved; use the current Task contract or rename the adapter');
   if (intent.workflow && intent.executor) {
     throw new Error(`Task ${intent.id} cannot configure both workflow and executor`);
   }
@@ -2365,14 +2368,15 @@ export function reopenAppTask(
       throw new Error("Task version changed; read the current Task before reopening");
     if (config.resourceStore.isCancelled(resource.spec.parentId))
       throw new Error("Reopen the closed parent before its child");
-    if (resource.spec.executor === "conversation") throw new Error("Conversation input must use its linked successor");
+    if (resource.spec.executor === "conversation" ||
+      hasConversationExecutionTask(config.resourceStore.db, input.appId, input.taskId))
+      throw new Error("Conversation input must use its linked successor");
     if (input.input !== undefined && !input.intent)
       throw new Error("Task continuation requires the responsible App's mapped requirements");
     const scope = beginResourceMutationScopeForTasks(tree, [input.taskId]);
     if (input.intent) {
       const intent = normalizeTaskAgent({ ...input.intent, id: input.taskId, parentId: resource.spec.parentId });
       validateIntent(intent);
-      if (intent.executor === "conversation") throw new Error("Conversation input must use its linked successor");
       resource.spec = resourceSpec(intent);
     }
     const now = new Date().toISOString();
@@ -3522,7 +3526,7 @@ export function releaseStaleAppTaskResult(
 /** An assigning owner can stop this attempt's input without closing the Task. */
 export function stopAppTaskAttempt(
   config: AppTaskContext,
-  input: { taskId: string; attemptId: string; expectedGeneration: number; reason: string },
+  input: { taskId: string; attemptId: string; expectedGeneration: number; reason: string; retainInputKeys?: readonly string[] },
 ) {
   const tree = config.resourceStore.readTaskContext({ taskIds: [input.taskId] });
   const resource = tree.resources?.[input.taskId];
@@ -3530,6 +3534,8 @@ export function stopAppTaskAttempt(
   if (!resource || !attempt || attempt.taskId !== input.taskId || attempt.taskGeneration !== input.expectedGeneration)
     throw new Error("Attempt stop is stale or mismatched");
   const inputKeys = taskInputAdmissionKeys(attempt.events ?? [], attempt.continuedInputKeys);
+  const retained = input.retainInputKeys ?? [];
+  if (retained.some((key) => !inputKeys.includes(key))) throw new Error("Retained input does not belong to this attempt");
   if (attempt.failureReason === "owner-stopped") return { changed: false, inputKeys };
   if (
     resource.status.currentAttemptId !== input.attemptId ||
@@ -3541,10 +3547,13 @@ export function stopAppTaskAttempt(
   finishAttempt(tree, resource, "interrupted", input.reason, new Date().toISOString());
   current.failureReason = "owner-stopped";
   for (const key of inputKeys) delete resource.status.inputWaits?.[key];
+  retainTaskInputWait(config, resource, retained, {
+    taskGeneration: input.expectedGeneration, conditions: [], pending: true,
+  });
   if (resource.status.inputWaits && Object.keys(resource.status.inputWaits).length === 0)
     delete resource.status.inputWaits;
   touchResource(resource, {
-    phase: "attention",
+    phase: retained.length ? "pending" : "attention",
     observedGeneration: input.expectedGeneration,
     currentAttemptId: undefined,
     executionRetryAt: undefined,

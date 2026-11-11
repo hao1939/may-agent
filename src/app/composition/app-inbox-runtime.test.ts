@@ -1,13 +1,16 @@
-import { fakeTaskAttacher } from "../../../test/fixtures/task-attachment.js";
+import type { AppDependencyObservation } from "@may-agent/sdk";
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AppDependencyObservation } from "@may-agent/sdk";
+import { stateTransaction } from "../../lib/db/transaction.js";
+import { settleTaskCommunicationInputs } from "../core/tasks/task-communication.js";
+import { claimNextAppInboxItem, waitAppInboxClaim } from "../../../test/fixtures/legacy-inbox.js";
+import { fakeTaskAttacher } from "../../../test/fixtures/task-attachment.js";
 import { openDatabase, type SqliteDb } from "../../lib/db.js";
 import { applyDbSchema } from "../../lib/db/schema.js";
-import { createAppEventAdmissionPlan, getAppEventAdmissionPlan } from "../core/state/app-event-admission-store.js";
-import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
+import { discoverAppDefinitions } from "../adapters/discovery/app-definitions.js";
+import { AppRegistry, type AppDefinitionSource } from "../core/apps/registry.js";
 import {
   EVENT_DEDUPLICATED,
   EVENT_DELIVERY_RESULT,
@@ -16,22 +19,28 @@ import {
   EVENT_ROW_ID,
   EventBus,
 } from "../core/events/bus.js";
-import { AppRegistry, type AppDefinitionSource } from "../core/apps/registry.js";
-import { discoverAppDefinitions } from "../adapters/discovery/app-definitions.js";
-import {
-  conversationTaskId, admitConversationTaskInput, completeConversationTaskTurn,
-  admitConversationTaskChange, listPendingConversationTaskChanges,
-} from "../core/state/conversation-task-turns.js";
-import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";
-import { appTaskContext, claimObservedAppTask, completeAppTask, observeAppTaskIntent } from "../core/tasks/app-task-reconciler.js";
-import { conversationTaskSuccessorId } from "../core/state/conversation-identity.js";
+import { createAppEventAdmissionPlan, getAppEventAdmissionPlan } from "../core/state/app-event-admission-store.js";
 import { createAppInboxItem } from "../core/state/app-inbox-store.js";
-import { claimNextAppInboxItem, waitAppInboxClaim } from "../../../test/fixtures/legacy-inbox.js";
+import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";
+import { conversationTaskSuccessorId } from "../core/state/conversation-identity.js";
+import {
+  admitConversationTaskChange,
+  admitConversationTaskInput,
+  conversationTaskId,
+  listPendingConversationTaskChanges,
+} from "../core/state/conversation-task-turns.js";
 import {
   createConversationTopic,
   linkConversationTopicTask,
   readConversationTopic,
 } from "../core/state/conversations.js";
+import {
+  appTaskContext,
+  claimObservedAppTask,
+  completeAppTask,
+  observeAppTaskIntent,
+} from "../core/tasks/app-task-reconciler.js";
+import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 
 async function loadedRegistry(projectsRoot: string): Promise<AppRegistry> {
   const registry = new AppRegistry(discoverAppDefinitions(projectsRoot));
@@ -52,7 +61,7 @@ describe("App inbox runtime", () => {
       `export default {
         id: "evaluation",
         version: 1,
-        owner: "evaluator",
+        agent: "evaluator",
         inputSchema: {
           type: "object",
           additionalProperties: false,
@@ -253,7 +262,7 @@ describe("App inbox runtime", () => {
         inputSchema: { type: "object", required: ["kind", "data"], properties: {
           kind: { const: "message" }, data: { type: "object" }
         } },
-        conversation: { mode: "agent", conversationId: "may:primary" }
+        conversation: { mode: "task", conversationId: "may:primary" }
       };\n`,
     );
     createConversationTopic(db, {
@@ -331,7 +340,7 @@ describe("App inbox runtime", () => {
     writeFileSync(
       join(root, "may.app", "app.js"),
       `export default {
-        id: "may", version: 1, owner: "may",
+        id: "may", version: 1, agent: "may",
         inputSchema: { type: "object", required: ["kind", "data"], properties: {
           kind: { const: "message" }, data: { type: "object", required: ["message"], properties: {
             message: { type: "string" }, context: { type: "object" }
@@ -390,13 +399,13 @@ describe("App inbox runtime", () => {
     writeFileSync(
       join(root, "may.app", "app.js"),
       `export default {
-        id: "may", version: 1, owner: "may",
+        id: "may", version: 1, agent: "may",
         inputSchema: { type: "object", required: ["kind", "data"], properties: {
           kind: { const: "message" }, data: { type: "object", required: ["message"], properties: {
             message: { type: "string" }, context: { type: "object" }
           } }
         } },
-        conversation: { mode: "agent", inputKinds: ["message"] },
+        conversation: { mode: "task", inputKinds: ["message"] },
         task(input) { return { kind: "desired", intent: {
           id: "work/" + input.id, parentId: "may", outcome: "Answer", acceptance: ["Answered"]
         } }; },
@@ -778,9 +787,13 @@ describe("App inbox runtime", () => {
       const input = admitConversationTaskInput(context, {
         id: conversationId, appId: "evaluation", conversationId,
         source: { kind: "human", id: conversationId }, input: { kind: "message", data: { text: "Get evidence" } },
-        intent: { parentId: "root", outcome: "Discuss", acceptance: ["Answer"], executor: "conversation" },
+        intent: { parentId: "root", outcome: "Discuss", acceptance: ["Answer"], executor: "agent" },
       });
-      completeConversationTaskTurn(context, claim(input.taskId), { summary: "Understood", response: "I'll review the evidence." });
+      const considered = claim(input.taskId);
+      stateTransaction(db, () => {
+        completeAppTask(context, considered, { summary: "Understood" });
+        settleTaskCommunicationInputs(context, considered);
+      });
     }
     observeAppTaskIntent(context, { appAgent: "evaluator", intent: {
       id: "worker", parentId: "root", outcome: "Collect evidence", acceptance: ["Measured"],
@@ -885,7 +898,7 @@ describe("App inbox runtime", () => {
     writeFileSync(
       join(root, "other.app", "app.js"),
       `export default {
-        id: "other", version: 1, owner: "other",
+        id: "other", version: 1, agent: "other",
         inputSchema: {
           type: "object", additionalProperties: false, required: ["kind", "data"],
           properties: {
@@ -985,12 +998,11 @@ describe("App inbox runtime", () => {
       writeFileSync(
         join(root, `${appId}.app`, "app.js"),
         `export default {
-          id: ${JSON.stringify(appId)}, version: 1, owner: ${JSON.stringify(appId)},
+          id: ${JSON.stringify(appId)}, version: 1, agent: ${JSON.stringify(appId)},
           inputSchema: { type: "object" },
-          tasks: {
-            subscriptions: [${JSON.stringify(`route.event.${index}`)}],
-            resolve(event) { return { id: ${JSON.stringify(`${appId}/task`)}, parentId: ${JSON.stringify(appId)}, outcome: event.type, acceptance: ["done"] }; }
-          }
+          tasks: {},
+          subscriptions: [{ id: "route", event: ${JSON.stringify(`route.event.${index}`)}, toInput(event) { return {kind: "work", data: {eventType:event.type}}; } }],
+          task(admitted) { return { kind: "desired", intent: {id: ${JSON.stringify(`${appId}/task`)}, parentId: ${JSON.stringify(appId)}, outcome: admitted.input.data.eventType, acceptance: ["done"]} }; }
         };\n`,
       );
     }
@@ -1030,7 +1042,7 @@ describe("App inbox runtime", () => {
     expect(elapsedMs).toBeLessThan(1_500);
   });
 
-  it("runs only the Task resolver indexed for an event type", async () => {
+  it("runs only the input translator indexed for an event type", async () => {
     for (const [appId, eventType, throws] of [
       ["matching", "route.matched", false],
       ["irrelevant", "route.other", true],
@@ -1039,15 +1051,14 @@ describe("App inbox runtime", () => {
       writeFileSync(
         join(root, `${appId}.app`, "app.js"),
         `export default {
-          id: ${JSON.stringify(appId)}, version: 1, owner: ${JSON.stringify(appId)},
+          id: ${JSON.stringify(appId)}, version: 1, agent: ${JSON.stringify(appId)},
           inputSchema: { type: "object" },
-          tasks: {
-            subscriptions: [${JSON.stringify(eventType)}],
-            resolve(event) {
-              ${throws ? 'throw new Error("irrelevant resolver ran")' : ""};
-              return { id: ${JSON.stringify(`${appId}/task`)}, parentId: ${JSON.stringify(appId)}, outcome: event.type, acceptance: ["done"] };
-            }
-          }
+          tasks: {},
+          subscriptions: [{ id: "route", event: ${JSON.stringify(eventType)}, toInput(event) {
+            ${throws ? 'throw new Error("irrelevant translator ran")' : ""};
+            return {kind: "work", data: {eventType:event.type}};
+          } }],
+          task(admitted) { return { kind: "desired", intent: {id: ${JSON.stringify(`${appId}/task`)}, parentId: ${JSON.stringify(appId)}, outcome: admitted.input.data.eventType, acceptance: ["done"]} }; }
         };\n`,
       );
     }
@@ -1058,10 +1069,10 @@ describe("App inbox runtime", () => {
       db,
       bus,
       previewTaskEventRoutes: () => [],
-      admitTaskEvent: ({ appId }) => {
-        admitted.push(appId);
-        return { accepted: true, by: "test-task", route: "direct" };
-      },
+      attachTask: fakeTaskAttacher(db, (input: any) => {
+        admitted.push(input.appId);
+        return { taskId: input.attachment.intent.id };
+      }),
       scanIntervalMs: 10_000,
     });
 
@@ -1077,12 +1088,11 @@ describe("App inbox runtime", () => {
       writeFileSync(
         join(appDir, "app.js"),
         `export default {
-          id: "routing", version: 1, owner: "routing",
+          id: "routing", version: 1, agent: "routing",
           inputSchema: { type: "object" },
-          tasks: {
-            subscriptions: [${JSON.stringify(eventType)}],
-            resolve(event) { return { id: "routing/task", parentId: "routing", outcome: event.type, acceptance: ["done"] }; }
-          }
+          tasks: {},
+          subscriptions: [{ id: "route", event: ${JSON.stringify(eventType)}, toInput(event) { return {kind: "work", data: {eventType:event.type}}; } }],
+          task(admitted) { return { kind: "desired", intent: {id:"routing/task", parentId:"routing", outcome:admitted.input.data.eventType, acceptance:["done"]} }; }
         };\n`,
       );
     writeRoute("route.old");
@@ -1093,10 +1103,10 @@ describe("App inbox runtime", () => {
       db,
       bus,
       previewTaskEventRoutes: () => [],
-      admitTaskEvent: ({ event }) => {
-        admitted.push(event.type);
-        return { accepted: true, by: "test-task", route: "direct" };
-      },
+      attachTask: fakeTaskAttacher(db, (input: any) => {
+        admitted.push(input.attachment.intent.outcome);
+        return { taskId: input.attachment.intent.id };
+      }),
       scanIntervalMs: 10_000,
     });
     bus.emit({ type: "route.old", source: "test", data: {} });
@@ -1121,10 +1131,9 @@ describe("App inbox runtime", () => {
             version: 1,
             agent: "routing",
             inputSchema: { type: "object" },
-            tasks: {
-              subscriptions: [`route.${name}`],
-              resolve: () => ({ id: "routing/task", parentId: "root", outcome: name, acceptance: ["done"] }),
-            },
+            tasks: {},
+ task(admitted) { return {kind: "desired", intent: admitted.input.data}; },
+ subscriptions: (() => { const resolve = () => ({ id: "routing/task", parentId: "root", outcome: name, acceptance: ["done"] }); return [`route.${name}`].map((event, index) => ({id: 'work-' + index, event, toInput(fact) { const intent = resolve(fact); return intent ? {kind: 'work', data: intent} : null; }})); })(),
             schedules:
               name === "rejected" && scheduleChange === "removed"
                 ? []
@@ -1146,10 +1155,10 @@ describe("App inbox runtime", () => {
       db,
       bus,
       previewTaskEventRoutes: () => [],
-      admitTaskEvent: ({ event }) => {
-        admitted.push(event.type);
-        return { accepted: true, by: "test-task", route: "direct" };
-      },
+      attachTask: fakeTaskAttacher(db, (input: any) => {
+        admitted.push(input.attachment.intent.outcome);
+        return { taskId: input.attachment.intent.id };
+      }),
       scanIntervalMs: 60_000,
       now: () => currentTime,
     });
@@ -1185,7 +1194,7 @@ describe("App inbox runtime", () => {
       bus.emit({ type: `route.${name}`, source: "test", data: {} });
     }
     await waitUntil(() => admitted.length > 0);
-    expect(admitted).toEqual(["route.accepted"]);
+    expect(admitted).toEqual(["accepted"]);
     runtime.scanNow();
     runtime.scanNow();
     expect(ticks).toEqual(["tick.accepted"]);
@@ -1578,7 +1587,7 @@ describe("App inbox runtime", () => {
     writeFileSync(
       join(mayDir, "app.js"),
       `export default {
-        id: "may", version: 1, owner: "may",
+        id: "may", version: 1, agent: "may",
         inputSchema: { type: "object", required: ["kind", "data"], properties: {
           kind: { const: "probe" }, data: { type: "object", required: ["value"], properties: { value: { type: "string" } } }
         } },

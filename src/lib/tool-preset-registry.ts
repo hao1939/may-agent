@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 /**
@@ -16,7 +16,6 @@ export const VALID_TOOL_PRESETS = new Set([
   "agents",
   "workflow",
   "background-exec",
-  "cron",
   "scrape",
   "finish",
   "checkpoint",

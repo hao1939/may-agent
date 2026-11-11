@@ -1,19 +1,19 @@
-import { Duplex } from "node:stream";
 import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { Duplex } from "node:stream";
+import { EVENT_INGRESS_SOURCE, EVENT_ROW_ID, EventBus, type AgentEvent } from "../../../src/app/core/events/bus.js";
+import { DbWriter } from "../../../src/lib/db-writer.js";
+import { closeDb, getDb } from "../../../src/lib/requests.js";
 import { getEvent, sendSocketCommand, type SocketEndpoint } from "./client.js";
 import {
-  attachControlSocket,
   CONTROL_SOCKET_LIMITS,
+  attachControlSocket,
   createControlSocketCore,
   type ControlEvent,
   type ControlSocket,
 } from "./server.js";
-import { EVENT_INGRESS_SOURCE, EVENT_ROW_ID, EventBus, type AgentEvent } from "../../../src/app/core/events/bus.js";
-import { DbWriter } from "../../../src/lib/db-writer.js";
-import { closeDb, getDb } from "../../../src/lib/requests.js";
 import { taskUpdateIdentity } from "./task-wake.js";
 
 let sockets: ControlSocket[] = [];
@@ -473,7 +473,7 @@ describe("control socket protocol", () => {
   it("reads a derived App conversation without emitting an event", async () => {
     const conversation = {
       id: "may:primary",
-      owner: "may",
+      agent: "may",
       version: 1,
       messages: [
         {
@@ -802,39 +802,6 @@ describe("control socket protocol", () => {
     });
   });
 
-  it("resolves an installed App Task without emitting an event", async () => {
-    const observation = {
-      snapshot: { id: "boot-1:3", generation: 3 },
-      appId: "alpha-project",
-      intent: { id: "master-validation-compact", input: { fields: ["one", "two"] } },
-    };
-    const core = createCore({
-      resolveAppTask: (appId, event) => {
-        expect({ appId, event }).toEqual({
-          appId: "alpha-project",
-          event: {
-            type: "project.task.tick",
-            action: "master-validation-compact",
-            data: { taskId: "master-validation-compact" },
-          },
-        });
-        return observation;
-      },
-    });
-
-    await expect(
-      sendSocketCommand(core.endpoint, {
-        type: "app.task.resolve",
-        appId: "alpha-project",
-        event: {
-          type: "project.task.tick",
-          action: "master-validation-compact",
-          data: { taskId: "master-validation-compact" },
-        },
-      }),
-    ).resolves.toEqual({ type: "ok", command: "app.task.resolve", ...observation });
-    expect(core.emitted).toEqual([]);
-  });
 
   it("passes the derived human-action filter through the Task resource read", async () => {
     const core = createCore({

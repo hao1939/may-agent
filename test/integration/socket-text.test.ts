@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { spawn } from "node:child_process";
-import { spawnFixtureProcess } from "../fixtures/owned-process.js";
 import { once } from "node:events";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { createServer, type Socket } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { daemonSocketPath } from "../../packages/control/src/client.js";
+import { spawnFixtureProcess } from "../fixtures/owned-process.js";
 
 const message = "继续检查 café 🐑";
 
@@ -126,7 +126,7 @@ describe("socket text through human interfaces", () => {
           command: frame.type,
           conversation: {
             id: "may:primary",
-            owner: "may",
+            agent: "may",
             version: 1,
             topics: [],
             messages: [

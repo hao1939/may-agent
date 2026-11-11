@@ -1,51 +1,52 @@
-import { readConversationReplyContext } from "../../fixtures/conversation-prompt.js";
+import type { TaskAttempt, TaskReconcileResult } from "@may-agent/sdk";
 import assert from "node:assert/strict";
+import { readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
-import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { AppInputContext, ConversationTurnResult } from "@may-agent/sdk";
-import { AppRegistry } from "../../../src/app/core/apps/registry.js";
+import { daemonSocketPath, sendSocketCommand } from "../../../packages/control/src/client.js";
+import { attachControlSocket } from "../../../packages/control/src/server.js";
 import { discoverAppDefinitions } from "../../../src/app/adapters/discovery/app-definitions.js";
-import { installAppTaskRuntimes, closeInstalledAppTaskRuntimes } from "../../../src/app/core/tasks/app-task-runtime.js";
-import { createAppTaskCapability } from "../../../src/app/core/tasks/app-task-capability.js";
-import { HostCapacity } from "../../../src/app/core/scheduling/host-capacity.js";
+import { attachCommandRouter, validateSessionControl } from "../../../src/app/command-router.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "../../../src/app/composition/app-inbox-runtime.js";
-import { readAppConversationResource } from "../../../src/app/core/state/conversations.js";
-import { readConversationRequest } from "../../../src/app/core/state/conversation-requests.js";
-import { fixture, run, cleanup } from "./task-worker-scenario.js";
-import { closeDb, getDb } from "../../../src/lib/requests.js";
-import { AppTaskResourceStore } from "../../../src/app/core/state/app-task-resource-store.js";
+import { AppRegistry } from "../../../src/app/core/apps/registry.js";
 import { EventBus, type AgentEvent } from "../../../src/app/core/events/bus.js";
-import { attachEventPersistence } from "../../../src/app/daemon-events.js";
-import { appTaskContext } from "../../../src/app/core/tasks/app-task-reconciler.js";
+import { createEventInterface } from "../../../src/app/core/events/interface.js";
+import { readExecutionStatus } from "../../../src/app/core/reads/execution-status.js";
+import { HostCapacity } from "../../../src/app/core/scheduling/host-capacity.js";
+import { getAppInboxItem } from "../../../src/app/core/state/app-inbox-store.js";
+import { AppTaskResourceStore } from "../../../src/app/core/state/app-task-resource-store.js";
+import { readConversationRequest } from "../../../src/app/core/state/conversation-requests.js";
 import {
   admitConversationTaskInput,
+  conversationTaskId,
   conversationTaskIntent,
   listPendingConversationTaskChanges,
-  conversationTaskId,
 } from "../../../src/app/core/state/conversation-task-turns.js";
+import { readAppConversationResource } from "../../../src/app/core/state/conversations.js";
 import { TaskBudgetAdmissionStore } from "../../../src/app/core/state/task-budget-admission.js";
 import { installTaskExecutionLimit } from "../../../src/app/core/state/task-execution-admission.js";
 import { TaskExecutionStore } from "../../../src/app/core/state/task-execution-store.js";
-import { getAppInboxItem } from "../../../src/app/core/state/app-inbox-store.js";
-import { claimAppInboxItem } from "../../fixtures/legacy-inbox.js";
-import { attachControlSocket } from "../../../packages/control/src/server.js";
-import { daemonSocketPath, sendSocketCommand } from "../../../packages/control/src/client.js";
-import { readExecutionStatus } from "../../../src/app/core/reads/execution-status.js";
+import { createAppTaskCapability } from "../../../src/app/core/tasks/app-task-capability.js";
+import { appTaskContext } from "../../../src/app/core/tasks/app-task-reconciler.js";
+import { closeInstalledAppTaskRuntimes, installAppTaskRuntimes } from "../../../src/app/core/tasks/app-task-runtime.js";
+import { attachEventPersistence } from "../../../src/app/daemon-events.js";
 import { observeDaemonLiveness } from "../../../src/app/modes/maintenance.js";
-import { readActiveSessionProcessId } from "../../../src/lib/persistence.js";
-import { SubagentManager } from "../../../src/lib/manager.js";
-import { attachCommandRouter, validateSessionControl } from "../../../src/app/command-router.js";
-import { createEventInterface } from "../../../src/app/core/events/interface.js";
 import { openDatabase } from "../../../src/lib/db.js";
+import { SubagentManager } from "../../../src/lib/manager.js";
+import { readActiveSessionProcessId } from "../../../src/lib/persistence.js";
+import { closeDb, getDb } from "../../../src/lib/requests.js";
+import { claimAppInboxItem } from "../../fixtures/legacy-inbox.js";
+import { cleanup, fixture, run } from "./task-worker-scenario.js";
+
+type ProviderContext = Pick<TaskAttempt, "events" | "waits">;
 
 async function withProvider(
   f: ReturnType<typeof fixture>,
-  decide: (context: AppInputContext) => ConversationTurnResult | Promise<ConversationTurnResult>,
-  execute: (contexts: AppInputContext[]) => Promise<void>,
+  decide: (context: ProviderContext) => TaskReconcileResult | Promise<TaskReconcileResult>,
+  execute: (contexts: ProviderContext[]) => Promise<void>,
 ) {
-  const contexts: AppInputContext[] = [];
+  const contexts: ProviderContext[] = [];
   let providerError: unknown;
   const server = createServer(async (request, response) => {
     try {
@@ -58,9 +59,12 @@ async function withProvider(
           ? [message.content]
           : (message.content ?? []).map((part) => part.text ?? ""),
       );
-      const prompt = texts.find((text: string) => text.includes("## Input and context"));
-      assert(prompt, "Worker must send the normal Conversation context to the provider");
-      const context = readConversationReplyContext(prompt);
+      const prompt = texts.find((text: string) => text.startsWith("Task decision brief (source data)."));
+      assert(prompt, "Worker must send the common Task decision brief to the provider");
+      const preview = JSON.parse(prompt.slice(prompt.indexOf('\n{"binding":') + 1));
+      // Follow the same detail link available to an agent when the brief is bounded.
+      const brief = JSON.parse(readFileSync(preview.coverage.detail, "utf8"));
+      const context: ProviderContext = { events: brief.events.attemptInput, waits: brief.waitsAtAttemptStart };
       contexts.push(context);
       const toolError = payload.messages.find((message: { role: string; content: unknown }) => message.role === "tool");
       assert.equal(toolError, undefined, JSON.stringify(toolError));
@@ -214,7 +218,9 @@ async function conversation() {
         } finally {
           router.close();
         }
-        return { summary: "Compared the fixture options", response: `Reply to ${context.id}`, topic: { kind: "none" } };
+        return { state: "converged", summary: "Compared the fixture options", facts: [],
+          communication: [{ id: `reply-${context.events.inputs![0]!.id}`, inputId: context.events.inputs![0]!.id,
+            message: `Reply to ${context.events.inputs![0]!.id}`, topic: { kind: "none" } }] };
       },
       async (contexts) => {
         const first = admit("first");
@@ -223,7 +229,8 @@ async function conversation() {
         await run(f);
         assert.deepEqual(readExecutionStatus(f.persistDir), { sessions: [], activeWork: false });
         assert.equal((await sendSocketCommand(socketPath, { type: "status" })).activeWork, false);
-        assert.equal(getAppInboxItem(f.db, "first")?.result?.response, "Reply to first");
+        assert.equal(getAppInboxItem(f.db, "first")?.status, "done");
+        assert(readAppConversationResource(f.db, "sample", "primary").messages.some(({text}) => text === "Reply to first"));
         assert.equal(f.store.isCancelled(first.taskId), false);
         assert.equal(f.store.readReceipt(first.taskId), null);
         assert.equal(claimAppInboxItem(f.db, "first", "old-inbox", 1_000), null);
@@ -233,10 +240,12 @@ async function conversation() {
         const second = admit("second");
         assert.equal(second.taskId, first.taskId);
         await run(f);
-        assert.equal(getAppInboxItem(f.db, "first")?.result?.response, "Reply to first");
-        assert.equal(getAppInboxItem(f.db, "second")?.result?.response, "Reply to second");
+        assert.equal(getAppInboxItem(f.db, "first")?.status, "done");
+        assert(readAppConversationResource(f.db, "sample", "primary").messages.some(({text}) => text === "Reply to first"));
+        assert.equal(getAppInboxItem(f.db, "second")?.status, "done");
+        assert(readAppConversationResource(f.db, "sample", "primary").messages.some(({text}) => text === "Reply to second"));
         assert.deepEqual(
-          contexts.map(({ id }) => id),
+          contexts.map(({ events }) => events.inputs![0]!.id),
           ["first", "second"],
         );
         assert.notEqual(f.store.readTask(first.taskId)!.status.observedAttemptId, accepted);
@@ -297,7 +306,7 @@ async function delegation(nested = false, contendAdmission = false, onePlace = f
     `export default {
     id: "sample", version: 1, agent: "owner",
     workspace: { kind: "local", localPath: "." },
-    conversation: { mode: "agent", inputKinds: ["message"], conversationId: "primary" },
+    conversation: { mode: "task", inputKinds: ["message"], conversationId: "primary" },
     inputSchema: { anyOf: [
       { type: "object", properties: { kind: { const: "message" }, data: { type: "object" } }, required: ["kind", "data"] },
       { type: "object", properties: { kind: { enum: ["measure", "sample"] }, data: { type: "object" } }, required: ["kind", "data"] }
@@ -317,10 +326,11 @@ async function delegation(nested = false, contendAdmission = false, onePlace = f
       export const description = "Assess an independently measured sample";
       export async function execute(ctx) {
         const returned = ctx.reconciliation.events.items.find(({ event }) =>
-          event.type === "app.dependency.updated" && event.data.kind === "app");
+          event.type === "app.dependency.updated" && event.data.kind === "app" && event.data.status === "done");
         if (!returned) return ctx.done("Requested an independent measurement", {
           state: "waiting", summary: "Waiting for the sample", facts: [],
-          dependencies: [{ id: "sample", appId: "sample", input: { kind: "sample", data: {} } }]
+          requests: [{ id: "sample", appId: "sample", input: { kind: "sample", data: {} } }],
+          conditions: [{ requestId: "sample" }]
         });
         const result = returned.event.data.result;
         if (result?.value !== 17) throw Error("Expected the exact measured result");
@@ -428,70 +438,58 @@ async function delegation(nested = false, contendAdmission = false, onePlace = f
     eventAfter(
       f.bus,
       (event) =>
-        event.type === "conversation.updated" &&
+        event.type === "conversation.message.created" &&
         readAppConversationResource(f.db, "sample", "primary").messages.some((message) => message.text === text),
     );
   let humanTurns = 0;
   try {
     await withProvider(
       f,
-      (context) => {
-        if (context.source.kind === "human") {
-          humanTurns++;
-          if (humanTurns === 1)
-            return {
-              summary: "Measurement accepted",
-              response: "I will measure it and bring back the result.",
-              topic: { kind: "new", title: "Measurement" },
-              requestUpdates: [
-                { id: "measurement", expectedRevision: 0, scope: "Get the sample measurement", disposition: "open",
-                  reason: "Delegating the measurement and waiting for its result" },
-              ],
-              followUp: {
-                appId: "sample",
-                input: { kind: "measure", data: {} },
-                requestId: "measurement",
-              },
-            };
-          if (!onePlace && humanTurns === 2) {
-            assert.equal(f.store.readTask(nested ? "sample" : "measurement")?.status.phase, "running");
-            if (nested) assert.equal(f.store.readTask("measurement")?.status.conditionIds?.length, 1);
-          }
-          if (humanTurns === (onePlace ? 2 : 3))
-            assert(context.conversation?.messages.some((message) => message.text === "The measurement is 17."));
+      ({ events }) => {
+        const returned = events.items.find(({ event }) => event.type === "app.dependency.updated" && event.data.status === "done");
+        const conversation = events.communication![0]!;
+        if (returned) {
+          const data = returned.event.data;
+          assert.equal(data.taskId, "measurement");
+          assert.equal((data.result as { value: number }).value, 17);
+          if (nested) assert.equal((data.result as { assessed: boolean }).assessed, true);
+          assert(events.continuedInputs?.length, "The exact original input must continue on the returned result");
+          const request = conversation.requests!.find(({ id }) => id === "measurement")!;
+          assert.equal(request.status, "open");
           return {
-            summary: "Answered the human",
-            response: !onePlace && humanTurns === 2 ? "We can keep discussing while it runs." : "The earlier result is still 17.",
-            topic: { kind: "existing", id: context.conversation!.topics![0]!.id },
+            state: "converged", summary: "Measurement returned", facts: ["sample:17"],
+            communication: [{ id: "measurement-result", inputId: events.inputs![0]!.id,
+              message: "The measurement is 17.", topic: { kind: "existing", id: conversation.topics![0]!.id },
+              requestUpdates: [{ id: request.id, expectedRevision: request.revision,
+                disposition: "fulfilled", reason: "Returned the measured value" }],
+            }],
           };
         }
-        const inputs = context.inputs!.filter((input) => input.input.kind === "task-outcome");
-        assert.equal(inputs.length, 1);
-        const data = inputs[0]!.input.data as {
-          taskId: string;
-          attemptId: string;
-          outcome: { state: string; result: { value: number; assessed?: boolean } };
+        const input = events.inputs!.filter(({ source }) => source.kind === "human").at(-1)!;
+        assert(input, "The common Task must retain its admitted human input");
+        humanTurns++;
+        if (humanTurns === 1) return {
+          state: "waiting", summary: "Measurement accepted", facts: [],
+          communication: [{ id: "accept-measurement", inputId: input.id,
+            message: "I will measure it and bring back the result.", topic: { kind: "new", title: "Measurement" },
+            requestUpdates: [{ id: "measurement", expectedRevision: 0, scope: "Get the sample measurement",
+              disposition: "open", reason: "Delegating the measurement and waiting for its result" }],
+          }],
+          requests: [{ id: "measurement", appId: "sample", input: { kind: "measure", data: {} } }],
+          conditions: [{ requestId: "measurement" }],
         };
-        assert.equal(data.taskId, "measurement");
-        assert.equal(data.attemptId, f.store.readTask("measurement")!.status.observedAttemptId);
-        assert.equal(data.outcome.state, "converged", JSON.stringify(data.outcome));
-        assert.equal(data.outcome.result.value, 17);
-        if (nested) assert.equal(data.outcome.result.assessed, true);
-        const request = context.conversation!.requests!.find((request) => request.id === "measurement")!;
-        assert.equal(request.status, "open");
+        if (!onePlace && humanTurns === 2) {
+          assert.equal(f.store.readTask(nested ? "sample" : "measurement")?.status.phase, "running");
+          if (nested) assert.equal(f.store.readTask("measurement")?.status.conditionIds?.length, 1);
+        }
+        if (humanTurns === (onePlace ? 2 : 3))
+          assert(conversation.messages.some(({ text }) => text === "The measurement is 17."));
         return {
-          summary: "Measurement returned",
-          response: "The measurement is 17.",
-          topic: { kind: "existing", id: context.conversation!.current!.topicId! },
-          requestUpdates: [
-            {
-              id: request.id,
-              expectedRevision: request.revision,
-              scope: request.scope,
-              disposition: "fulfilled",
-              reason: "Returned the measured value",
-            },
-          ],
+          state: "converged", summary: "Answered the human", facts: [],
+          communication: [{ id: `answer-${input.id}`, inputId: input.id,
+            message: !onePlace && humanTurns === 2 ? "We can keep discussing while it runs." : "The earlier result is still 17.",
+            topic: { kind: "existing", id: conversation.topics![0]!.id },
+          }],
         };
       },
       async (contexts) => {

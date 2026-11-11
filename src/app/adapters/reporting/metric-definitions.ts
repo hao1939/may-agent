@@ -12,7 +12,7 @@ export function syncAppMetricDefinitions(
   metrics: Pick<MetricService, "define">,
 ): void {
   for (const { definition } of entries) {
-    const defaultOwner = definition.agent ?? definition.owner;
+    const defaultOwner = definition.agent;
     for (const declared of definition.metrics ?? []) {
       const metric: MetricDefinition = {
         ...declared,

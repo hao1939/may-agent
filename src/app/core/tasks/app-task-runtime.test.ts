@@ -1638,7 +1638,7 @@ describe("canonical App task runtime", () => {
       version: 1,
       agent: "evaluator",
       tasks: {},
-      conversation: { mode: "agent", inputKinds: ["message"] },
+      conversation: { mode: "task", inputKinds: ["message"] },
       inputSchema: Type.Union([
         Type.Object({
           kind: Type.Literal("review"),
@@ -1722,7 +1722,7 @@ describe("canonical App task runtime", () => {
       const feedback: AgentEvent[] = [];
       const app = defineApp({
         ...definition(),
-        conversation: { mode: "agent", inputKinds: ["message"], conversationId: "sample:primary" },
+        conversation: { mode: "task", inputKinds: ["message"], conversationId: "sample:primary" },
         inputSchema: Type.Union([
           Type.Object({ kind: Type.Literal("message"), data: Type.Object({ text: Type.String() }) }),
           Type.Object({ kind: Type.Literal("review"), data: Type.Object({ text: Type.String() }) }),
@@ -2147,7 +2147,7 @@ describe("canonical App task runtime", () => {
     writeFileSync(
       join(evaluationDir, "app.js"),
       `export default {
-        id: "evaluation", version: 1, owner: "evaluator",
+        id: "evaluation", version: 1, agent: "evaluator",
         inputSchema: {
           type: "object", additionalProperties: false, required: ["kind", "data"],
           properties: {
@@ -2583,7 +2583,7 @@ describe("canonical App task runtime", () => {
     const request = { id: "review", appId: "sample", input: { kind: "message", data: { text: "Review this design" } } };
     const app = defineApp({
       ...definition(),
-      conversation: { mode: "agent", inputKinds: ["message"] },
+      conversation: { mode: "task", inputKinds: ["message"] },
       inputSchema: Type.Object({ kind: Type.Literal("message"), data: Type.Object({ text: Type.String() }) }),
       task: ({ input }) => {
         mappings++;
@@ -4901,7 +4901,7 @@ describe("canonical App task runtime", () => {
     const foreignDefinition = defineApp({
       id: "foreign",
       version: 1,
-      owner: "foreign-owner",
+      agent: "foreign-owner",
       inputSchema: Type.Object({}, { additionalProperties: true }),
       workspace: { kind: "local", localPath: "." },
       tasks: { subscriptions: [] },
@@ -6161,10 +6161,10 @@ describe("canonical App task runtime", () => {
       }),
     ).toMatchObject({ id: "work/attached", status: "pending" });
 
-    const intent = definition().tasks!.resolve!({
-      type: "sample.work",
-      data: { itemId: "event" },
-    })!;
+    const attachment = definition().task!({ id: "event", source: { kind: "system", id: "event:1" },
+      input: definition().subscriptions![0]!.toInput({type:"sample.work",data:{itemId:"event"}})! });
+    if (attachment.kind !== "desired") throw new Error("Expected desired Task");
+    const intent = { ...attachment.intent, id: "work/event" };
     expect(
       admitLoadedCanonicalAppTaskEvent({
         bus,

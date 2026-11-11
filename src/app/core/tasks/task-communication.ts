@@ -1,13 +1,11 @@
-import { readTaskInputs } from "./app-task-inputs.js";
+import type { TaskChangeReceipt, TaskCommunication, TaskReconcileResult } from "@may-agent/sdk";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import type { TaskCommunication, TaskChangeReceipt, TaskReconcileResult } from "@may-agent/sdk";
-import type { AppTaskContext } from "./app-task-store.js";
-import type { AppTaskClaim } from "./app-task-reconciler.js";
 import { getAppInboxItem } from "../state/app-inbox-store.js";
 import {
   applyConversationRequestUpdates,
   linkConversationRequestInputs,
+  listConversationInputRequests,
   readConversationRequest,
 } from "../state/conversation-requests.js";
 import {
@@ -17,6 +15,9 @@ import {
   readConversationTopic,
 } from "../state/conversations.js";
 import type { AppTaskEvents } from "./app-task-emitter.js";
+import { readTaskInputs } from "./app-task-inputs.js";
+import { readTaskChangeInputKeys, type AppTaskClaim } from "./app-task-reconciler.js";
+import type { AppTaskContext } from "./app-task-store.js";
 
 /** Authority follows the accepted input, never a copied Conversation or Task reference. */
 export function readTaskCommunicationInput(config: AppTaskContext, claim: AppTaskClaim, inputId: string) {
@@ -207,6 +208,23 @@ export function applyTaskCommunication(
   });
 }
 
+/** Convergence cannot silently discard a human promise accepted by these inputs. */
+export function assertCommunicationRequestsSettled(
+  config: AppTaskContext,
+  claim: AppTaskClaim,
+  inputKeys?: string[],
+  acceptedLiveEventIds?: number[],
+): void {
+  const keys = readTaskChangeInputKeys(config, claim, inputKeys, acceptedLiveEventIds);
+  const inputs = readTaskInputs(config, { ...claim, events: [], continuedInputKeys: keys });
+  for (const input of inputs) {
+    if (!input.communication) continue;
+    const open = listConversationInputRequests(config.resourceStore.db, config.resourceStore.appId,
+      input.communication.conversationId, [input.id]).find((request) => request.status === "open");
+    if (open) throw new Error(`Request ${open.id} remains open; retain useful work or a real wait instead of converging`);
+  }
+}
+
 /** Project accepted input coverage, without deriving a chat message from a work result. */
 export function settleTaskCommunicationInputs(config: AppTaskContext, claim: AppTaskClaim): void {
   const db = config.resourceStore.db;
@@ -235,13 +253,13 @@ export function taskResultCommunication(
   config: AppTaskContext,
   claim: AppTaskClaim,
   result: Pick<TaskReconcileResult, "response" | "inputKeys" | "communication">,
+  acceptedLiveEventIds?: number[],
 ): TaskCommunication[] | undefined {
   const changes = result.communication;
   if (!result.response) return changes;
-  const inputs = readTaskInputs(
-    config,
-    result.inputKeys ? { ...claim, events: [], continuedInputKeys: result.inputKeys } : claim,
-  ).filter((input) => input.communication);
+  const keys = readTaskChangeInputKeys(config, claim, result.inputKeys, acceptedLiveEventIds);
+  const inputs = readTaskInputs(config, { ...claim, events: [], continuedInputKeys: keys })
+    .filter((input) => input.communication);
   if (!inputs.length) return changes;
   if (changes?.some((change) => change.message))
     throw new Error("Use response or explicit communication messages for this result, not both");

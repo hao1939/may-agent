@@ -4,12 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DbWriter } from "../../lib/db-writer.js";
 import { closeDb, getDb } from "../../lib/db/connection.js";
-import { AppRegistry } from "../core/apps/registry.js";
 import { discoverAppDefinitions } from "../adapters/discovery/app-definitions.js";
-import { EventBus, EVENT_ROW_ID } from "../core/events/bus.js";
+import { AppRegistry } from "../core/apps/registry.js";
+import { EVENT_ROW_ID, EventBus } from "../core/events/bus.js";
+import { createAppEventAdmissionPlan, getAppEventAdmissionPlan } from "../core/state/app-event-admission-store.js";
 import { createAppInboxItem, getAppInboxItem } from "../core/state/app-inbox-store.js";
 import { rejectTaskInput } from "../core/state/inbox.js";
-import { createAppEventAdmissionPlan, getAppEventAdmissionPlan } from "../core/state/app-event-admission-store.js";
 import { AppTaskAdmissionError } from "../core/state/task-admission-error.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 
@@ -28,7 +28,7 @@ test("restart acknowledges an exact settled request without readmitting its form
     writeFileSync(
       join(root, "recipient.app", "app.js"),
       `export default {
-      id: "recipient", version: 1, owner: "worker", inputSchema: { type: "object" },
+      id: "recipient", version: 1, agent: "worker", inputSchema: { type: "object" },
       task() { throw new Error("A settled request must not be remapped"); }, tasks: {}
     };`,
     );
@@ -153,7 +153,7 @@ for (const mode of ["removed", "schema", "condition-wake", "condition-schema"] a
         writeFileSync(
           join(root, "recipient.app", "app.js"),
           `export default {
-          id: "recipient", version: 1, owner: "worker", inputSchema: { not: {} },
+          id: "recipient", version: 1, agent: "worker", inputSchema: { not: {} },
           task() { throw new Error("A received command must not be remapped"); }, tasks: {}
         };`,
         );

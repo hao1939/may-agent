@@ -1,20 +1,23 @@
+import {
+  createAssistantMessageEventStream,
+  getCurrentSystemPrompt,
+  type AssistantMessage,
+} from "@earendil-works/pi-ai";
+import type { TaskDetail } from "@may-agent/sdk";
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { createAssistantMessageEventStream, getCurrentSystemPrompt, type AssistantMessage } from "@earendil-works/pi-ai";
+import { join } from "node:path";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { markStaleSession } from "../../test/fixtures/stale-session.js";
-import { createAgentRun, type AgentRunnerConfig } from "./agent-runner.js";
 import { EventBus } from "../app/core/events/bus.js";
+import { createAgentRun, type AgentRunnerConfig } from "./agent-runner.js";
 import { DbWriter } from "./db-writer.js";
 import { closeDb, getDb } from "./db/connection.js";
-import { createTaskSessionRecovery } from "../app/adapters/executors/session-recovery.js";
 import { SubagentManager } from "./manager.js";
-import { appendSessionMessage, readSessionMeta, readSessionRecoveryEvidence, writeSessionMeta } from "./persistence.js";
+import { appendSessionMessage } from "./persistence.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 import type { SubagentDefinition } from "./types.js";
-import type { TaskDetail } from "@may-agent/sdk";
 
 function definition(version: string) {
   return {
@@ -356,110 +359,6 @@ describe("manager session lifecycle", () => {
     expect(manager.result(sessionId)).toEqual(results[0]);
   });
 
-  it.each(["job", "chat"] as const)("resumes a %s with current instructions and retained work", async (kind) => {
-    const sessionId = manager.run("worker", "Original work", { kind, ...(kind === "chat" ? { autoClose: "never" as const } : {}) });
-    if (kind === "chat") {
-      await manager.waitForIdle(sessionId);
-      manager.close(sessionId);
-    } else {
-      await manager.waitFor(sessionId);
-    }
-    manager.register(definition("new"));
-    started = Promise.withResolvers<void>();
-    manager.resumeSession(sessionId, "Continue the work");
-    await started.promise;
-    await manager.waitForIdle(sessionId);
-
-    expect(requests).toHaveLength(2);
-    expect(requests[1].systemPrompt).toContain("Instructions for new");
-    expect(requests[1].systemPrompt).not.toContain("Instructions for old");
-    expect(requests[1].prompt).toContain("Original work");
-    expect(requests[1].prompt).toContain("Reply from old");
-    expect(requests[1].prompt).toContain("Continue the work");
-  });
-
-  it("retains Host-authored interrupted tool results through resume and recovery", async () => {
-    const sessionId = "resume-pending-tool";
-    writeSessionMeta(persistDir, sessionId, {
-      agent: "worker", agentRelativeDir: null, task: "Original work", status: "interrupted", startedAt: 1, kind: "job",
-    });
-    appendSessionMessage(persistDir, sessionId, {
-      role: "assistant", content: [{ type: "toolCall", id: "pending-call", name: "bash", arguments: {} }],
-    } as never);
-    started = Promise.withResolvers<void>();
-    manager.resumeSession(sessionId, "Inspect the interrupted work");
-    await started.promise;
-    await manager.waitFor(sessionId);
-    const evidence = readSessionRecoveryEvidence(persistDir, sessionId);
-    expect(evidence.state).toBe("valid");
-    expect(evidence.entries).toEqual(expect.arrayContaining([
-      expect.objectContaining({ role: "toolResult", toolCallId: "pending-call", isError: true }),
-    ]));
-    // Simulate a later runtime recovering the resumed session's saved history.
-    writeSessionMeta(persistDir, sessionId, { ...readSessionMeta(persistDir, sessionId)!, status: "running" });
-    const recovery = createTaskSessionRecovery({ persistDir, bus, manager: new SubagentManager({ persistDir }) });
-    expect(recovery.interrupt(sessionId, "Previous worker exited")).toBe(true);
-    expect(readSessionMeta(persistDir, sessionId)?.status).toBe("interrupted");
-    expect(readSessionRecoveryEvidence(persistDir, sessionId).state).toBe("valid");
-  });
-
-  it("fences an explicit programmatic owner before mutating a resumed session", async () => {
-    manager.register({ ...definition("original"), hostIdentity: "installed-worker" });
-    const sessionId = manager.run("worker", "Original assignment");
-    await manager.waitFor(sessionId);
-    const retained = readSessionMeta(persistDir, sessionId);
-    const transcript = readSessionRecoveryEvidence(persistDir, sessionId);
-    manager.register({ ...definition("replacement"), hostIdentity: "another-worker" });
-    expect(() => manager.resumeSession(sessionId, "Continue")).toThrow("refusing cross-owner resume");
-    expect(requests).toHaveLength(1);
-    expect(readSessionMeta(persistDir, sessionId)).toEqual(retained);
-    expect(readSessionRecoveryEvidence(persistDir, sessionId)).toEqual(transcript);
-    // Definition updates remain allowed when they retain the installation owner.
-    manager.register({ ...definition("updated"), hostIdentity: "installed-worker" });
-    manager.resumeSession(sessionId, "Continue with the owner");
-    await manager.waitFor(sessionId);
-    expect(requests).toHaveLength(2);
-    expect(requests[1].systemPrompt).toContain("Instructions for updated");
-  });
-
-  it("records persistent chat replies without recounting retained history on resume", async () => {
-    const taskBinding = { appId: "example", taskId: "conversation", generation: 1, attemptId: "attempt-1" };
-    const sessionId = manager.run("worker", "First chat input", { kind: "chat", autoClose: "never", taskBinding });
-    const rows = () =>
-      getDb(persistDir)
-        .prepare(
-          `SELECT app_id, task_id, attempt_id, outcome,
-      json_extract(data, '$.totals.replies') AS replies,
-      json_extract(data, '$.totals.input') AS input FROM execution_usage ORDER BY started_at, rowid`,
-        )
-        .all();
-    await manager.waitForIdle(sessionId);
-    expect(rows()).toEqual([
-      { app_id: "example", task_id: "conversation", attempt_id: "attempt-1", outcome: null, replies: 1, input: 1 },
-    ]);
-
-    manager.send(sessionId, "Second chat input");
-    await manager.waitForIdle(sessionId);
-    expect(rows()).toHaveLength(1);
-    expect(rows()[0]).toMatchObject({ outcome: null, replies: 2, input: 2 });
-    manager.close(sessionId);
-    expect(rows()[0]).toMatchObject({ outcome: "interrupted", replies: 2 });
-
-    manager.resumeSession(sessionId, "New work after resume", {
-      taskBinding: { ...taskBinding, attemptId: "attempt-2" },
-    });
-    await manager.waitForIdle(sessionId);
-    expect(rows()).toHaveLength(2);
-    expect(rows()[1]).toMatchObject({
-      app_id: "example",
-      task_id: "conversation",
-      attempt_id: "attempt-2",
-      outcome: null,
-      replies: 1,
-      input: 1,
-    });
-  });
-
   it("retains usage when a persistent chat fails", async () => {
     replyFailure = "Synthetic provider failure";
     const sessionId = manager.run("worker", "Fail this chat input", { kind: "chat", autoClose: "never" });
@@ -475,10 +374,9 @@ describe("manager session lifecycle", () => {
   });
 
   it("recovers chat usage after restart without adding activity or recounting completed invocations", async () => {
+    const completed = manager.run("worker", "Complete before restart");
+    await manager.waitFor(completed);
     const sessionId = manager.run("worker", "Chat before restart", { kind: "chat", autoClose: "never" });
-    await manager.waitForIdle(sessionId);
-    manager.close(sessionId);
-    manager.resumeSession(sessionId, "Another invocation before restart");
     await manager.waitForIdle(sessionId);
     const rows = () =>
       getDb(persistDir)
@@ -486,9 +384,9 @@ describe("manager session lifecycle", () => {
         .all();
     const before = rows();
     expect(before).toHaveLength(2);
-    expect(before[0].outcome).toBe("interrupted");
+    expect(before[0].outcome).toBe("done");
     expect(before[1].outcome).toBeNull();
-    expect(manager.resumeStaleSessions({ abort: true, kinds: ["chat"] }).interrupted).toHaveLength(0);
+    expect(manager.cleanupStaleSessions().interrupted).toHaveLength(0);
     expect(rows()).toEqual(before);
 
     // Model the previous owner's exit, not just another manager in the same
@@ -496,11 +394,11 @@ describe("manager session lifecycle", () => {
     markStaleSession(persistDir, sessionId);
     closeDb(persistDir);
     const recovered = new SubagentManager({ persistDir });
-    expect(recovered.resumeStaleSessions({ abort: true, kinds: ["chat"] }).interrupted).toHaveLength(1);
+    expect(recovered.cleanupStaleSessions().interrupted).toHaveLength(1);
     expect(rows()).toEqual([before[0], { ...before[1], outcome: "interrupted" }]);
     expect(before[1].duration_ms).toBeNull();
     expect(JSON.parse(before[1].data as string).totals.replies).toBe(1);
-    recovered.resumeStaleSessions({ abort: true, kinds: ["chat"] });
+    recovered.cleanupStaleSessions();
     expect(rows()).toEqual([before[0], { ...before[1], outcome: "interrupted" }]);
   });
 

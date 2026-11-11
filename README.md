@@ -10,6 +10,15 @@ SDK types, package guides and tests below. Apps maintain their own policy,
 manuals and operating knowledge. Host development does not require a particular
 App checkout or documentation location.
 
+The Host supports one App contract: declare `agent`, translate events with
+`subscriptions.toInput`, and map input with `task`. Conversation uses common Task
+communication. Configurable Host maintenance handlers, workflow crash replay and
+cold session resumption are retired. Fixed upkeep, App schedules and Task recovery
+remain. After a crash, confirmed cleanup precedes a fresh Task attempt; workflows
+must inspect existing effects before repeating them. Retained installations need
+[offline contract conversion](scripts/operations/README.md#convert-retired-task-contracts)
+before activation of the matching Host and Apps.
+
 ## Layout
 
 ```text

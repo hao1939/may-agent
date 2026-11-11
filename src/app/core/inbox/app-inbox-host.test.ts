@@ -1,13 +1,13 @@
-import { createAppInboxItem } from "../state/app-inbox-store.js";
-import { fakeTaskAttacher } from "../../../../test/fixtures/task-attachment.js";
-import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { Type, defineApp, type AppDefinition, type AppInputContext, type AppTaskAttachment } from "@may-agent/sdk";
+import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
+import { fakeTaskAttacher } from "../../../../test/fixtures/task-attachment.js";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
+import { createAppInboxItem } from "../state/app-inbox-store.js";
 import { conversationTaskSuccessorId } from "../state/conversation-identity.js";
-import { AppInboxHost } from "./app-inbox-host.js";
-import { AppTaskAdmissionError } from "../state/task-admission-error.js";
 import { rejectTaskInput } from "../state/inbox.js";
+import { AppTaskAdmissionError } from "../state/task-admission-error.js";
+import { AppInboxHost } from "./app-inbox-host.js";
 
 const probeInput = Type.Object({
   kind: Type.Literal("probe"),
@@ -30,7 +30,7 @@ function app(id = "evaluation"): AppDefinition {
   return defineApp({
     id,
     version: 1,
-    owner: `${id}-owner`,
+    agent: `${id}-owner`,
     inputSchema: probeInput,
     task: (input) => desiredTask(input.id),
     tasks: {},
@@ -72,10 +72,10 @@ describe("App inbox host", () => {
     );
     const conversation = new AppInboxHost({
       db,
-      apps: [{ ...app(), task: undefined, conversation: { mode: "agent", inputKinds: ["probe"] } }],
+      apps: [{ ...app(), task: undefined, conversation: { mode: "task", inputKinds: ["probe"] } }],
     });
     expect(() => conversation.assertAcceptsInput("evaluation", input)).not.toThrow();
-    conversation.replaceApps([{ ...app(), task: undefined, conversation: { mode: "agent", inputKinds: ["message"] } }]);
+    conversation.replaceApps([{ ...app(), task: undefined, conversation: { mode: "task", inputKinds: ["message"] } }]);
     expect(() => conversation.assertAcceptsInput("evaluation", input)).toThrow(
       "App evaluation has no handler for input kind probe",
     );
@@ -251,7 +251,7 @@ describe("App inbox host", () => {
       apps: [
         {
           ...app(),
-          conversation: { mode: "agent", inputKinds: ["probe"] },
+          conversation: { mode: "task", inputKinds: ["probe"] },
           task: () => {
             throw new Error("exact target bypasses mapping");
           },
@@ -309,75 +309,6 @@ describe("App inbox host", () => {
     host.close();
   });
 
-  it("does not admit a Conversation executor target without Conversation identity", () => {
-    const executionTaskId = conversationTaskSuccessorId("evaluation", "primary", 2);
-    const original = createAppInboxItem(db, {
-      id: "original-turn",
-      appId: "evaluation",
-      conversationId: "primary",
-      conversationSequence: 1,
-      source: { kind: "human", id: "original-message" },
-      input: { kind: "probe", data: { value: "original" } },
-      now: 1,
-    });
-    db.prepare("UPDATE app_inbox_items SET execution_task_id = ? WHERE id = ?").run(executionTaskId, original.item.id);
-    const routed: Array<Record<string, unknown>> = [];
-    const host = new AppInboxHost({
-      db,
-      apps: [{ ...app(), conversation: { mode: "agent", inputKinds: ["probe"] } }],
-      admitConversation: (input) => {
-        routed.push(input);
-        return createAppInboxItem(db, input);
-      },
-      attachTask: fakeTaskAttacher(db),
-    });
-
-    expect(() =>
-      host.admit({
-        id: "malformed-feedback",
-        appId: "evaluation",
-        parentId: "caller-request",
-        targetTaskId: `  ${executionTaskId}\t`,
-        source: { kind: "app", id: "caller" },
-        input: { kind: "probe", data: { value: "feedback" } },
-        idempotencyKey: "feedback:malformed",
-      }),
-    ).toThrow("Conversation Task input must use conversationId without targetTaskId");
-    expect(host.get("malformed-feedback")).toBeNull();
-    expect(() =>
-      host.admit({
-        id: "stale-target-feedback",
-        appId: "evaluation",
-        parentId: "caller-request",
-        targetTaskId: executionTaskId,
-        conversationId: "primary",
-        source: { kind: "app", id: "caller" },
-        input: { kind: "probe", data: { value: "feedback" } },
-        idempotencyKey: "feedback:stale-target",
-      }),
-    ).toThrow("Conversation Task input must use conversationId without targetTaskId");
-    expect(host.get("stale-target-feedback")).toBeNull();
-    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
-    expect(routed).toHaveLength(0);
-
-    const untargeted = host.admit({
-      id: "conversation-message",
-      appId: "evaluation",
-      parentId: "caller-request",
-      conversationId: "primary",
-      source: { kind: "app", id: "caller" },
-      input: { kind: "probe", data: { value: "new message" } },
-      idempotencyKey: "message:new",
-    });
-    expect(untargeted.item).toMatchObject({
-      id: "conversation-message",
-      parentId: "caller-request",
-      conversationId: "primary",
-      source: { kind: "app", id: "caller" },
-    });
-    expect(routed).toHaveLength(1);
-  });
-
   it("replays a rejected input before revalidating its old Conversation target or installed schema", () => {
     const executionTaskId = conversationTaskSuccessorId("evaluation", "primary", 2);
     const original = createAppInboxItem(db, {
@@ -409,7 +340,7 @@ describe("App inbox host", () => {
     );
     const host = new AppInboxHost({
       db,
-      apps: [{ ...app(), conversation: { mode: "agent", inputKinds: ["probe"] } }],
+      apps: [{ ...app(), conversation: { mode: "task", inputKinds: ["probe"] } }],
     });
     const before = host.get(request.id)!;
     const replay = host.admit({ ...request, originEventId: 7 });
@@ -512,7 +443,7 @@ describe("App inbox host", () => {
       const host = new AppInboxHost({
         db,
         now: () => 1_000,
-        apps: [{ ...app(), conversation: { mode: "agent", inputKinds: ["probe"] } }],
+        apps: [{ ...app(), conversation: { mode: "task", inputKinds: ["probe"] } }],
         attachTask: () => {
           throw new Error("Historical input must not be attached");
         },
@@ -549,7 +480,7 @@ describe("App inbox host", () => {
     const host = new AppInboxHost({
       db,
       now: () => 1_000,
-      apps: [{ ...app(), conversation: { mode: "agent", inputKinds: ["probe"] } }],
+      apps: [{ ...app(), conversation: { mode: "task", inputKinds: ["probe"] } }],
       attachTask: () => {
         throw new Error("An attached input must not be remapped");
       },

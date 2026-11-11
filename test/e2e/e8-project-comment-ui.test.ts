@@ -32,10 +32,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { getEvent, publishEvent } from "../../packages/control/src/client.js";
 import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
+import { closeDb } from "../../src/lib/db/connection.js";
+import { upsertSession } from "../../src/lib/db/sessions.js";
 import { openSandboxDb, pollUntil, queryEvents } from "./lib/live-daemon.js";
 import { buildSandbox, type Sandbox } from "./lib/sandbox.js";
-import { upsertSession } from "../../src/lib/db/sessions.js";
-import { closeDb } from "../../src/lib/db/connection.js";
 
 const E2E_NO_UI = process.env.E2E_NO_UI === "1";
 
@@ -87,7 +87,6 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
       fixtureAgents: ["may"],
       fixtureProjects: ["input.app", "history.app"],
       fixtureWorkflows: { may: ["e2e-noop-workflow"] },
-      cronJson: { may: [] },
       includePlatformUi: true,
       daemonArgs: ["--cron", "--socket", "--web"],
       prepare: ({ stateDir }) => {

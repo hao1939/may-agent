@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, spyOn } from "bun:test";
+import { execFile } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 import { importRuntimeModule, invalidateRuntimeModuleCache } from "./runtime-import.js";
@@ -110,7 +110,7 @@ describe("importRuntimeModule", () => {
         export default defineApp({
           id: "standalone-canary",
           version: 1,
-          owner: "owner",
+          agent: "owner",
           inputSchema: Type.Object({
             kind: Type.Literal("probe"),
             data: Type.Object({}, { additionalProperties: false }),

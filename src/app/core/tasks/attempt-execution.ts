@@ -1,13 +1,5 @@
-import { ExecutionDeferredError } from "@may-agent/sdk";
-import { TaskExecutionDeferredError } from "../state/task-execution-admission.js";
-import { TaskBudgetDeferredError } from "../state/task-budget-admission.js";
-import { listConversationInputRequests } from "../state/conversation-requests.js";
-import { boundedAppRequestConversation } from "../reads/conversation-context.js";
-import { readTaskCommunicationInput, taskResultCommunication } from "./task-communication.js";
-import { readAppConversationResource, readConversationContext } from "../state/conversations.js";
-import { readTaskInputs } from "./app-task-inputs.js";
-import { readTaskEventTarget } from "../events/task-target.js";
 import {
+  ExecutionDeferredError,
   taskAgentResultSchema as appTaskAgentResultSchema,
   type TaskAttempt,
   type TaskExecutor,
@@ -18,9 +10,15 @@ import type { TaskBinding } from "../../../lib/persistence.js";
 import { appDependencyCatalog } from "../../app-dependency-catalog.js";
 import type { EventEnvelope } from "../events/bus.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent } from "../events/bus.js";
-import { createRuntimeAppRead, readRuntimeTaskView } from "../reads/app-read.js";
+import { readTaskEventTarget } from "../events/task-target.js";
 import { readInstalledAppContract } from "../reads/app-contract.js";
+import { createRuntimeAppRead, readRuntimeTaskView } from "../reads/app-read.js";
+import { boundedAppRequestConversation } from "../reads/conversation-context.js";
 import { readTaskWorkload, runtimeWorkloadSource } from "../reads/task-workload.js";
+import { listConversationInputRequests } from "../state/conversation-requests.js";
+import { readAppConversationResource, readConversationContext } from "../state/conversations.js";
+import { TaskBudgetDeferredError } from "../state/task-budget-admission.js";
+import { TaskExecutionDeferredError } from "../state/task-execution-admission.js";
 import {
   readAppTaskLiveEvent,
   readAppTaskReconciliationEvents,
@@ -32,12 +30,13 @@ import {
   type AppTaskEmission,
   type AppTaskEvents,
 } from "./app-task-emitter.js";
+import { readTaskInputs } from "./app-task-inputs.js";
 import { type AppTaskExecutionPaths } from "./app-task-output-paths.js";
 import {
   APP_TASK_ATTEMPT_LEASE_DURATION_MS,
+  readTaskChangeInputKeys,
   recordAppTaskAttemptSession,
   renewAppTaskAttemptLease,
-  readTaskChangeInputKeys,
   validateTaskFinalSettlement,
   type AppTaskChildContext,
   type AppTaskClaim,
@@ -48,6 +47,11 @@ import type { WorkflowCapability } from "./execution.js";
 import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "./result.js";
 import { appTaskConfig, configuredRegistryEntries, type AppTaskRuntimeDescriptor } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
+import {
+  assertCommunicationRequestsSettled,
+  readTaskCommunicationInput,
+  taskResultCommunication,
+} from "./task-communication.js";
 
 import { applyTaskChanges, preflightTaskChanges } from "./task-changes.js";
 
@@ -491,10 +495,13 @@ export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabil
             facts: result.facts,
             inputKeys: result.inputKeys,
             communication:
-              result.state === "converged" ? taskResultCommunication(config, claim, result) : result.communication,
+              result.state === "converged"
+                ? taskResultCommunication(config, claim, result, acceptedLiveEventIds) : result.communication,
           },
           acceptedLiveEventIds,
           settle: () => {
+            if (result.state === "converged")
+              assertCommunicationRequestsSettled(config, claim, result.inputKeys, acceptedLiveEventIds);
             const resolved = validateTaskFinalSettlement(config, claim, { ...result, acceptedLiveEventIds });
             preflightAcceptedLiveEventIds = acceptedLiveEventIds;
             preflightReviewAt = resolved.reviewAt;

@@ -2,8 +2,8 @@
  * Typed Task admission targets for every Task handler.
  * Summarizes the supplied registry snapshot; does not load or run Apps.
  */
-import type { AppRegistrySnapshot } from "./core/apps/registry.js";
 import { appInputRoute } from "./core/apps/input-routing.js";
+import type { AppRegistrySnapshot } from "./core/apps/registry.js";
 
 function schemaStringLiterals(value: unknown): string[] {
   if (!value || typeof value !== "object" || Array.isArray(value)) return [];
@@ -188,7 +188,7 @@ export function appDependencyCatalog(
     .filter(({ definition }) => definition.task && definition.tasks)
     .map(({ definition }) => ({
       appId: definition.id,
-      agent: (definition.agent ?? definition.owner).trim().replace(/^agent:/, ""),
+      agent: definition.agent.trim().replace(/^agent:/, ""),
       description: definition.description?.trim() || "No description declared.",
       inputs: appInputContracts(definition.inputSchema).filter(
         (input) => appInputRoute(definition, input.kind, undefined, true) === "task",

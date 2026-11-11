@@ -1,6 +1,3 @@
-import { recoverDeadTaskExecution, releaseJoinedTaskAttemptExecution } from "../state/task-execution-cleanup.js";
-import { TaskExecutionStore } from "../state/task-execution-store.js";
-import { TaskBudgetDeferredError } from "../state/task-budget-admission.js";
 import {
   admitTaskVerificationResult as admitAppTaskVerificationResult,
   type TaskAcceptanceBasis as AppTaskAcceptanceBasis,
@@ -12,8 +9,11 @@ import { join } from "node:path";
 import { log } from "../../../lib/log.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import type { EventEnvelope } from "../events/bus.js";
-import { childEventTrace, EVENT_RECORD_ONLY, type AgentEvent, type EventBus } from "../events/bus.js";
-import { completeConversationTaskTurn, isConversationTask } from "../state/conversation-task-turns.js";
+import { EVENT_RECORD_ONLY, childEventTrace, type AgentEvent, type EventBus } from "../events/bus.js";
+import { isConversationTask } from "../state/conversation-task-turns.js";
+import { TaskBudgetDeferredError } from "../state/task-budget-admission.js";
+import { recoverDeadTaskExecution, releaseJoinedTaskAttemptExecution } from "../state/task-execution-cleanup.js";
+import { TaskExecutionStore } from "../state/task-execution-store.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace, type AppTaskExecutionPaths } from "./app-task-output-paths.js";
 import {
   assertAppTaskClaimCurrent,
@@ -21,51 +21,52 @@ import {
   claimObservedAppTask,
   completeAppTask,
   deferAppTask,
-  deferAppTaskSettlement,
   deferAppTaskExecution,
-  refreshTaskWorkspaceConstraint,
+  deferAppTaskSettlement,
   expiredAgentSessionAppTaskAttempt,
   failAppTaskAttempt,
   isAppTaskActionStaleError,
+  readAppTaskAgent,
   readAppTaskChildContext,
   readAppTaskLiveSnapshot,
-  readAppTaskAgent,
+  readTaskChangeInputKeys,
   readPendingAppTaskTrigger,
-  recoverableAppTaskAttempts,
   recordAppTaskAttemptWorkspace,
   recordReleasedAppTaskWorkspace,
+  recoverableAppTaskAttempts,
+  refreshTaskWorkspaceConstraint,
   releaseInterruptedAppTaskAttempt,
   releaseStaleAppTaskResult,
   releaseTerminalSessionExpiredAppTaskAttempt,
   reportAppTaskFailure,
   type AppTaskClaim,
 } from "./app-task-reconciler.js";
-import { appTaskReadinessById, ResourceTaskMutationStaleError, type AppTaskContext } from "./app-task-store.js";
+import { pendingTaskWorkspaceConstraint } from "./app-task-state.js";
+import { ResourceTaskMutationStaleError, appTaskReadinessById, type AppTaskContext } from "./app-task-store.js";
 import {
   hasLiveAppTaskSession,
   interruptSupersededAgentSession,
   runRegisteredTaskExecutor,
   runTaskAgent,
-  runTaskWorkflow,
   runTaskExecutorAttempt,
+  runTaskWorkflow,
   type TaskHandlerInput,
 } from "./attempt-execution.js";
 import { type AppTaskDispatch } from "./controller.js";
 import { recoverTaskConditions } from "./dependency-admission.js";
-import { settleTaskCommunicationInputs, taskResultCommunication } from "./task-communication.js";
-import { applyTaskChanges } from "./task-changes.js";
 import { type TaskCapabilityRun } from "./result.js";
-import {
-  appTaskConfig,
-  standaloneAppTaskAdmissionDescriptors,
-  type AppTaskRuntimeDescriptor,
-} from "./runtime-definition.js";
+import { appTaskConfig, type AppTaskRuntimeDescriptor } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
+import { applyTaskChanges } from "./task-changes.js";
+import { recordTaskCheck } from "./task-check-observations.js";
+import {
+  assertCommunicationRequestsSettled,
+  settleTaskCommunicationInputs,
+  taskResultCommunication,
+} from "./task-communication.js";
+import { isTrustedTaskCoordination } from "./task-coordination.js";
 import type { PreparedTaskWorkspace, TaskWorkspaceAdmission, TaskWorkspaceInput } from "./workspace.js";
 import { TaskWorkspaceDeferredError } from "./workspace.js";
-import { pendingTaskWorkspaceConstraint } from "./app-task-state.js";
-import { recordTaskCheck } from "./task-check-observations.js";
-import { isTrustedTaskCoordination } from "./task-coordination.js";
 
 export type AppTaskTiming = {
   dispatch: AppTaskDispatch;
@@ -84,8 +85,8 @@ async function taskWorkspaceRequirement(
     source: opts, appDir: descriptor.appDir, agent: input.agent, workflow,
   })).workspace : undefined;
   const workflowNeedsWorktree = workspace === "task" || (typeof workspace === "object" && workspace.kind === "task");
-  const required = !(isConversationTask(config, input.intent.id) && descriptor.app.conversation?.mode !== "task") &&
-    (workflowNeedsWorktree || (!workflow && descriptor.app.workspace?.kind === "git"));
+  const required = workflowNeedsWorktree ||
+    (!workflow && !isConversationTask(config, input.intent.id) && descriptor.app.workspace?.kind === "git");
   const preparation: TaskWorkspaceInput | undefined = required && descriptor.app.workspace?.kind === "git" ? {
     repoDir: descriptor.projectDir,
     workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
@@ -283,7 +284,6 @@ async function runClaimedTask(
   let workspaceFinalized = false;
   try {
     executionPaths = appTaskExecutionPaths(descriptor.appDir, descriptor.projectDir);
-    const conversation = isConversationTask(config, claim.taskId);
     const childContext = readAppTaskChildContext(config, claim.taskId);
     const taskSnapshot = readAppTaskLiveSnapshot(config, claim.taskId);
     emit("project.task.reconcile.started", {
@@ -347,7 +347,7 @@ async function runClaimedTask(
       report = await runTaskExecutorAttempt({
         ...execution,
         execute: (attempt, taskEvents, acceptedLiveEventIds) =>
-          executeTaskHandler({ ...execution, attempt, taskEvents, acceptedLiveEventIds, conversation }),
+          executeTaskHandler({ ...execution, attempt, taskEvents, acceptedLiveEventIds }),
       });
     }
     const result = report.handlerResult;
@@ -444,13 +444,14 @@ async function runClaimedTask(
       try {
         const staleWorkspace = await fenceWorkspaceFinalization(report);
         if (staleWorkspace) return staleWorkspace.reconcileTaskIds;
+        if (result.inputKeys !== undefined) readTaskChangeInputKeys(config, claim, result.inputKeys, report.acceptedLiveEventIds);
         const changeInput = {
           opts,
           descriptor,
           claim,
           changes: {
             requests: result.requests,
-            communication: report.conversation ? undefined : taskResultCommunication(config, claim, result),
+            communication: taskResultCommunication(config, claim, result, report.acceptedLiveEventIds),
             actions: result.actions,
             facts: result.facts,
             inputKeys: result.inputKeys,
@@ -467,30 +468,23 @@ async function runClaimedTask(
             [...result.facts, taskWorkspace!.metadata.path],
           );
         }
-        let apply!: ReturnType<typeof completeConversationTaskTurn>;
+        let apply!: ReturnType<typeof completeAppTask>;
         const changes = persistResult(() =>
           applyTaskChanges({
             ...changeInput,
             settle: () => {
-              apply = report.conversation
-                ? completeConversationTaskTurn(config, claim, report.conversation.decision, {
-                    taskControls: report.conversation.taskControls,
-                    followUpAttachment: report.conversation.followUpAttachment,
-                    onFollowUpMapped: (attachment) => { report.conversation!.followUpAttachment = attachment; },
-                    acceptanceBasis,
-                    getTaskApp: (appId) => conversationTaskApp(opts, descriptor, appId),
-                  })
-                : completeAppTask(config, claim, {
-                    summary: result.summary,
-                    response: result.response,
-                    result: result.result,
-                    facts: result.facts,
-                    inputKeys: result.inputKeys,
-                    acceptanceBasis,
-                    workspace: inspected,
-                    acceptedLiveEventIds: report.acceptedLiveEventIds,
-                  });
-              if (!report.conversation && apply.status === "applied") settleTaskCommunicationInputs(config, claim);
+              assertCommunicationRequestsSettled(config, claim, result.inputKeys, report.acceptedLiveEventIds);
+              apply = completeAppTask(config, claim, {
+                summary: result.summary,
+                response: result.response,
+                result: result.result,
+                facts: result.facts,
+                inputKeys: result.inputKeys,
+                acceptanceBasis,
+                workspace: inspected,
+                acceptedLiveEventIds: report.acceptedLiveEventIds,
+              });
+              if (apply.status === "applied") settleTaskCommunicationInputs(config, claim);
             },
           }),
         );
@@ -518,19 +512,6 @@ async function runClaimedTask(
           workflowRunId: report.runId,
         });
         for (const cancelled of apply.cancelledTasks ?? []) publishTaskCancellation(opts.bus, cancelled);
-        if (apply.admittedTasks) {
-          for (const admitted of apply.admittedTasks) {
-            // This post-commit hint also crosses the existing worker event
-            // bridge. Durable readiness remains the recovery authority.
-            opts.bus.emit({
-              type: "app.task.ready",
-              source: `app-task:${descriptor.id}:task-reconciler`,
-              owner: `app:${descriptor.id}`,
-              target: admitted,
-              data: admitted,
-            });
-          }
-        }
         return stale?.reconcileTaskIds ?? apply.dependentTaskIds;
       } catch (error) {
         if (error instanceof TaskBudgetDeferredError)
@@ -689,7 +670,7 @@ async function runClaimedTask(
     persistResult(() => deferAppTaskSettlement(config, claim, error.constraint, {
       claim: originalClaim,
       report: { handlerResult: report.handlerResult, runId: report.runId,
-        conversation: report.conversation, acceptedLiveEventIds: report.acceptedLiveEventIds },
+        acceptedLiveEventIds: report.acceptedLiveEventIds },
       acceptanceBasis,
       ...(workspace ? { workspace } : {}),
     }));
@@ -828,30 +809,11 @@ async function runClaimedTask(
   }
 }
 
-/** Resolve targets from the same pinned installation for preparation and settlement. */
-function conversationTaskApp(opts: AppTaskRuntimeOptions, descriptor: AppTaskRuntimeDescriptor, appId: string, initialize = true) {
-  const registry = opts.appRegistrySnapshot ?? opts.appRegistry?.snapshot();
-  if (!registry) throw new Error("Conversation execution requires an installed App registry");
-  const entry = registry.entries.find(({ definition }) => definition.id === appId);
-  if (!entry?.definition.tasks || !opts.persistDir) throw new Error(`App ${appId} has no installed Task capability`);
-  const target =
-    appId === descriptor.id
-      ? descriptor
-      : standaloneAppTaskAdmissionDescriptors({
-          persistDir: opts.persistDir,
-          projectsRoot: opts.projectsRoot,
-          entries: [entry],
-          initialize,
-        }).get(appId)!;
-  return { app: target.app, config: appTaskConfig(target) };
-}
-
 /** Select the recorded handler. All paths share Task lifetime and result settlement. */
-async function executeTaskHandler(input: TaskHandlerInput & { conversation: boolean }): Promise<TaskCapabilityRun> {
-  const { conversation, ...context } = input;
-  const { opts, descriptor, claim, attempt, taskEvents } = context;
+async function executeTaskHandler(input: TaskHandlerInput): Promise<TaskCapabilityRun> {
+  const { opts, claim } = input;
   const execution = {
-    ...context,
+    ...input,
     ...(claim.handoff
       ? {
           fallbackReason: `${claim.handoff.reason}: ${claim.handoff.summary}${
@@ -862,40 +824,8 @@ async function executeTaskHandler(input: TaskHandlerInput & { conversation: bool
         }
       : {}),
   };
-  if (conversation && descriptor.app.conversation?.mode === "task" && claim.handler === "executor:conversation")
-    return runTaskAgent(execution);
-  if (conversation && claim.handler === "executor:conversation" && descriptor.app.conversation?.mode !== "task") {
-    if (!descriptor.app.conversation || !opts.conversations)
-      throw new Error(`App ${descriptor.id} Conversation executor is unavailable`);
-    const registry = opts.appRegistrySnapshot ?? opts.appRegistry?.snapshot();
-    if (!registry) throw new Error("Conversation execution requires an installed App registry");
-    const proposal = await opts.conversations.execute({
-      config: appTaskConfig(descriptor),
-      claim,
-      app: descriptor.app,
-      registry,
-      signal: attempt.signal,
-      execution: {
-        descriptor,
-        attempt,
-        taskEvents,
-        taskSnapshot: input.taskSnapshot,
-        executionPaths: input.executionPaths,
-      },
-      getTaskApp: (appId) => conversationTaskApp(opts, descriptor, appId, false),
-    });
-    return {
-      handlerResult: {
-        state: "converged",
-        summary: proposal.decision.summary,
-        response: proposal.decision.response,
-        result: { conversation: proposal.decision },
-        facts: proposal.decision.facts ?? [],
-        actions: [],
-      },
-      runId: claim.attemptId,
-      conversation: proposal,
-    };
+  if (claim.handler === "executor:conversation") {
+    throw new Error("Retained Conversation execution requires offline conversion to executor:agent");
   }
   const workflowKey = claim.handler.startsWith("workflow:") ? claim.handler.slice("workflow:".length) : "";
   if (workflowKey) {

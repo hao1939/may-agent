@@ -1,9 +1,9 @@
 // Child-process-only mocks: exercise real orchestration with recovery held
 // pending, then either resolved or rejected. Never start installed workloads.
-import assert from "node:assert/strict";
 import { mock } from "bun:test";
-import { EventBus } from "../../src/app/core/events/bus.js";
+import assert from "node:assert/strict";
 import type { BackgroundRuntimeOptions } from "../../src/app/composition/background-startup.js";
+import { EventBus } from "../../src/app/core/events/bus.js";
 
 const order: string[] = [];
 const bus = new EventBus();
@@ -28,9 +28,9 @@ bus.subscribe((event) => {
 });
 await startBackgroundRuntime({
   manager: {
-    resumeStaleSessions: (options: { abort?: boolean }) => {
-      order.push(options.abort ? "abort-chat" : "resume");
-      return { resumed: [], interrupted: [] };
+    cleanupStaleSessions: () => {
+      order.push("cleanup");
+      return { interrupted: [] };
     },
   } as unknown as BackgroundRuntimeOptions["manager"],
   persistDir: "/fixture/state",
@@ -40,10 +40,10 @@ await startBackgroundRuntime({
     markSettled();
   },
 });
-assert.deepEqual(order, ["recovery", "resume", "abort-chat"]);
+assert.deepEqual(order, ["recovery", "cleanup"]);
 settle();
 await settled;
-assert.deepEqual(order, ["recovery", "resume", "abort-chat", "controllers"]);
+assert.deepEqual(order, ["recovery", "cleanup", "controllers"]);
 assert.equal(
   messages.some((message) => message.includes("fixture recovery failure")),
   process.argv[2] === "reject",

@@ -1,23 +1,28 @@
-import { afterEach, expect, test } from "bun:test";
 import { Type, defineApp } from "@may-agent/sdk";
+import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import {
+  assertAppInboxClaim,
+  claimAppInboxItem,
+  completeAppInboxClaim,
+  waitAppInboxClaim,
+} from "../../../../test/fixtures/legacy-inbox.js";
+import { finishTask, testAttachment } from "../../../../test/fixtures/request-task-state.js";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
-import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { appTaskContext } from "../tasks/app-task-reconciler.js";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
+import { appTaskContext } from "../tasks/app-task-reconciler.js";
 import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
-import { assertAppInboxClaim, claimAppInboxItem, completeAppInboxClaim, waitAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
-import { admitTaskInput } from "./inbox.js";
+import { AppTaskResourceStore } from "./app-task-resource-store.js";
+import { applyConversationRequestUpdates, readConversationRequest } from "./conversation-requests.js";
 import {
   createConversationTopic,
   readAppConversationResource,
   readConversationMessageTopicId,
 } from "./conversations.js";
-import { applyConversationRequestUpdates, readConversationRequest } from "./conversation-requests.js";
-import { finishTask, testAttachment } from "../../../../test/fixtures/request-task-state.js";
+import { admitTaskInput } from "./inbox.js";
 
 const roots: string[] = [];
 const connections: SqliteDb[] = [];
@@ -147,7 +152,7 @@ test("upgrade retires a dormant conversation wait, preserves its ask and Tasks, 
     version: 1,
     agent: "frontend",
     inputSchema: Type.Object({}),
-    conversation: { mode: "agent" },
+    conversation: { mode: "task" },
   });
   const worker = defineApp({
     id: "example",

@@ -1,54 +1,55 @@
-import { TaskBudgetDeferredError } from "../state/task-budget-admission.js";
-import { AppTaskAdmissionError } from "../state/task-admission-error.js";
-import { appInputRoute, assertAppTaskInputRoute } from "../apps/input-routing.js";
-import { stateTransaction } from "../../../lib/db/transaction.js";
-import { createHash } from "node:crypto";
-import { readInputContext, observeTaskDependency, type AppDependencyReader, type TaskInputObservation } from "./input-context.js";
-import {
-  completeTaskInput,
-  recoverTaskInputAdmissionKey,
-  rejectTaskInput,
-} from "../state/inbox.js";
 import {
   matchesEventSelector,
-  type AppDependencyObservation,
   type AppDefinition,
+  type AppDependencyObservation,
   type AppEvent,
   type AppInput,
-  type AppInputSource,
   type AppInputContext,
+  type AppInputSource,
   type AppResult,
   type AppTaskAttachment,
   type EventSelector,
   type ResourceCreator,
 } from "@may-agent/sdk";
+import { createHash } from "node:crypto";
 import { Check } from "typebox/value";
 import type { SqliteDb } from "../../../lib/db.js";
+import { stateTransaction } from "../../../lib/db/transaction.js";
 import {
   assertValidAppDefinition,
   assertValidAppInput,
   assertValidSchemaInput,
 } from "../apps/definition-validation.js";
+import { appInputRoute, assertAppTaskInputRoute } from "../apps/input-routing.js";
+import { appEventInboxSubmission } from "../state/app-event-admission-store.js";
 import {
   createAppInboxItem,
-  readAppInboxSubmission,
-  reuseAppInboxSubmission,
   deferAppInboxTaskFunding,
-  hasAppInboxFundingHold,
   getAppInboxItem,
+  hasAppInboxFundingHold,
   hasConversationExecutionTask,
   listAppInboxItemsWaitingOnTask,
   listAppInboxTaskDependencyKeys,
   markAppInboxRecoveryReported,
+  readAppInboxSubmission,
   recordAppInboxRecoveryFailure,
   resolveAppInboxRecovery,
-  type AppTurnTarget,
+  reuseAppInboxSubmission,
   type AppInboxItem,
   type AppInboxRecoveryStage,
   type AppInboxTaskDependencyKey,
+  type AppTurnTarget,
   type CreateAppInboxItem,
 } from "../state/app-inbox-store.js";
-import { appEventInboxSubmission } from "../state/app-event-admission-store.js";
+import { completeTaskInput, recoverTaskInputAdmissionKey, rejectTaskInput } from "../state/inbox.js";
+import { AppTaskAdmissionError } from "../state/task-admission-error.js";
+import { TaskBudgetDeferredError } from "../state/task-budget-admission.js";
+import {
+  observeTaskDependency,
+  readInputContext,
+  type AppDependencyReader,
+  type TaskInputObservation,
+} from "./input-context.js";
 
 /**
  * The task engine must treat idempotencyKey as stable admission identity.
@@ -349,7 +350,7 @@ export class AppInboxHost {
     return [...this.#apps.values()]
       .filter(
         (app) =>
-          (app.agent ?? app.owner ?? "").trim().replace(/^agent:/, "") === normalizedOwner &&
+          app.agent.trim().replace(/^agent:/, "") === normalizedOwner &&
           Check(app.inputSchema, input),
       )
       .map((app) => app.id)
@@ -378,7 +379,7 @@ export class AppInboxHost {
     return Boolean(
       app &&
       (app.id.trim().replace(/^app:/, "") === normalizedOwner ||
-        (app.agent ?? app.owner ?? "").trim().replace(/^agent:/, "") === normalizedOwner),
+        app.agent.trim().replace(/^agent:/, "") === normalizedOwner),
     );
   }
 
@@ -488,7 +489,7 @@ export class AppInboxHost {
         appId: item.appId,
         requestId: item.id,
         conversationId: item.conversationId,
-        agent: this.#apps.get(item.appId)?.agent ?? this.#apps.get(item.appId)?.owner,
+        agent: this.#apps.get(item.appId)?.agent,
         stage,
         error: message,
         disposition: evidence ? "recovery-pending" : "recovery-evidence-unavailable",

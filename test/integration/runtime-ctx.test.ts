@@ -1,6 +1,5 @@
-import { describe, it, expect, vi } from "bun:test";
+import { describe, expect, it, vi } from "bun:test";
 import { buildRuntimeCtx } from "../../src/lib/runtime-ctx.js";
-import { buildMaintenanceAPI } from "../../src/lib/maintenance-api-impl.js";
 
 // Minimal mock bus
 function mockBus() {
@@ -150,14 +149,13 @@ describe("buildRuntimeCtx", () => {
   it("supplies real Host reads and events without a placeholder command service", () => {
     const opts = baseOpts();
     const rtx = buildRuntimeCtx(opts);
-    const sdk = buildMaintenanceAPI(opts);
-    for (const services of [rtx, sdk]) {
+    for (const services of [rtx]) {
       expect(services).not.toHaveProperty("commands");
       expect(services.query.sql).toBeTypeOf("function");
       expect(services.query.eventDeliveryHealth).toBeTypeOf("function");
       expect(services.metrics.record).toBeTypeOf("function");
     }
-    sdk.emit("host.observed", { healthy: true });
+    rtx.emit({ type: "host.observed", source: "agent:test-agent", owner: "agent:test-agent", data: { healthy: true } });
     expect(opts.bus.emit).toHaveBeenCalledWith({
       type: "host.observed",
       source: "agent:test-agent",

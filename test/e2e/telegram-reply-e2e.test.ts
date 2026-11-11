@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
-import { resolve } from "node:path";
 import { tmpdir } from "node:os";
+import { resolve } from "node:path";
+import { startAppInboxRuntime } from "../../src/app/composition/app-inbox-runtime.js";
+import { AppRegistry } from "../../src/app/core/apps/registry.js";
 import { EVENT_ROW_ID, EventBus } from "../../src/app/core/events/bus.js";
 import { createAppInboxItem } from "../../src/app/core/state/app-inbox-store.js";
-import { admitTaskInput } from "../../src/app/core/state/inbox.js";
 import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
+import { admitTaskInput } from "../../src/app/core/state/inbox.js";
 import {
   claimObservedAppTask,
   completeAppTask,
@@ -14,12 +16,10 @@ import {
   recordAppTaskTrigger,
 } from "../../src/app/core/tasks/app-task-reconciler.js";
 import { appTaskTestContext } from "../../src/app/core/tasks/app-task-test-support.js";
-import { startAppInboxRuntime } from "../../src/app/composition/app-inbox-runtime.js";
-import { claimAppInboxItem, completeAppInboxClaim } from "../fixtures/legacy-inbox.js";
-import { attachTelegramBot as attachTelegramBotRuntime } from "../../src/app/transport/telegram.js";
-import { AppRegistry } from "../../src/app/core/apps/registry.js";
 import { HumanTaskService } from "../../src/app/human-task-service.js";
+import { attachTelegramBot as attachTelegramBotRuntime } from "../../src/app/transport/telegram.js";
 import { getDb } from "../../src/lib/requests.js";
+import { claimAppInboxItem, completeAppInboxClaim } from "../fixtures/legacy-inbox.js";
 
 function attachTelegramBot(
   options: Omit<Parameters<typeof attachTelegramBotRuntime>[0], "publishEvent">,
@@ -185,7 +185,7 @@ describe("telegram reply e2e", () => {
         definition: {
           id: "may",
           version: 1,
-          owner: "may",
+          agent: "may",
           inputSchema: { type: "object" },
           task: (input: any) => {
             const focusedTask = input.input?.data?.context?.focusedTask;

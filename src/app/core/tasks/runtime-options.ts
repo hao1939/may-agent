@@ -4,7 +4,7 @@ import { type EventBus } from "../events/bus.js";
 import type { TaskOutcomeReader } from "../reads/reporting.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";
 import { type AppTaskDispatch } from "./controller.js";
-import type { TaskAgentRunner, TaskConversationRunner, TaskSessionRecovery, TaskWorkflowRunner } from "./execution.js";
+import type { TaskAgentRunner, TaskSessionRecovery, TaskWorkflowRunner } from "./execution.js";
 import { type AppTaskRuntimeDescriptor } from "./runtime-definition.js";
 import type { TaskWorkspaces } from "./workspace.js";
 
@@ -15,7 +15,6 @@ export interface AppTaskRuntimeOptions {
   agentsRoot?: string;
   sharedRoot?: string;
   agents?: TaskAgentRunner;
-  conversations?: TaskConversationRunner;
   sessions?: TaskSessionRecovery;
   bus: EventBus;
   hostCapacity: HostCapacity;

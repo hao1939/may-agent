@@ -1,4 +1,3 @@
-import { describe, expect, it, spyOn } from "bun:test";
 import {
   MAX_OBSERVER_SNAPSHOT_BYTES,
   type AppDefinition,
@@ -6,6 +5,7 @@ import {
   type AppObserverResult,
   type ObserverSnapshot,
 } from "@may-agent/sdk";
+import { describe, expect, it, spyOn } from "bun:test";
 import { EVENT_ROW_ID, EventBus } from "../../core/events/bus.js";
 import { createAppObserverRuntime } from "./app-observer-runtime.js";
 
@@ -83,7 +83,7 @@ describe("canonical App observers", () => {
       entry({
         id: "evaluation",
         version: 1,
-        owner: "evaluator",
+        agent: "evaluator",
         inputSchema: { type: "object" },
         observers: [
           {
@@ -131,7 +131,7 @@ describe("canonical App observers", () => {
       entry({
         id: "evaluation",
         version: 1,
-        owner: "evaluator",
+        agent: "evaluator",
         inputSchema: { type: "object" },
         observers: [
           {
@@ -186,7 +186,7 @@ describe("canonical App observers", () => {
       entry({
         id: "evaluation",
         version: 1,
-        owner: "evaluator",
+        agent: "evaluator",
         inputSchema: { type: "object" },
         observers: [{ id: "pipeline", intervalMs: 100, run: () => pending }],
       }),
@@ -196,7 +196,7 @@ describe("canonical App observers", () => {
       entry({
         id: "evaluation",
         version: 1,
-        owner: "evaluator",
+        agent: "evaluator",
         inputSchema: { type: "object" },
         observers: [
           {

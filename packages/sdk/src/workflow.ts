@@ -1,19 +1,19 @@
-import type { AppResult, AppContract } from "./app.js";
+import type { Static, TSchema } from "typebox";
+import type { AppContract, AppResult } from "./app.js";
 import type { AppEvent } from "./event.js";
 import type {
   Condition,
   ResourceCreator,
   TaskAcceptanceBasis,
-  TaskChanges,
   TaskChangeReceipt,
+  TaskChanges,
+  TaskClosure,
   TaskExecutorName,
   TaskPriority,
   TaskReconcileResult,
   TaskRevision,
   TaskStatus,
-  TaskClosure,
 } from "./task.js";
-import type { Static, TSchema } from "typebox";
 
 export type Logger = {
   debug(message: string): void;
@@ -306,7 +306,6 @@ export type AgentCallOptions = {
   tools?: "full" | "readonly";
   /** Explicit skill used by this bounded call. */
   skill?: string;
-  sessionId?: string;
   timeoutMs?: number;
   /** Finite positive integer tool-operation allowance before bounded completion is requested. */
   operationAllowance?: number;

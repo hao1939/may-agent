@@ -1,37 +1,28 @@
-import { makeTaskRetryDue } from "./app-task-test-support.js";
-import type { TaskAgentInput, TaskConversationRunner } from "./execution.js";
-import { expect, test, setSystemTime } from "bun:test";
-import { appTaskContext, observeAppTaskIntent } from "./app-task-reconciler.js";
-import { readConversationTaskInputs } from "../state/conversation-task-turns.js";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { createAssistantMessageEventStream, type ToolCall } from "@earendil-works/pi-ai";
 import {
   Type,
   defineApp,
-  type TaskExecutor,
-  type TaskCommunication,
-  type TaskAttempt,
+  type AppDefinition,
   type AppTaskPolicy,
+  type TaskAttempt,
+  type TaskCommunication,
+  type TaskExecutor,
 } from "@may-agent/sdk";
-import { createAssistantMessageEventStream, type ToolCall } from "@earendil-works/pi-ai";
-import { prepareConversationTaskTurn } from "../../composition/conversation-task-turn.js";
-import { DbWriter } from "../../../lib/db-writer.js";
-import { createAgentRun } from "../../../lib/agent-runner.js";
-import { SubagentManager } from "../../../lib/manager.js";
-import { getDb, closeDb } from "../../../lib/requests.js";
-import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
-import { fakeModel } from "../../../../test/fixtures/model.js";
+import { expect, setSystemTime, test } from "bun:test";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { usageReply } from "../../../../test/fixtures/execution-usage.js";
-import { EventBus } from "../events/bus.js";
-import { AppRegistry } from "../apps/registry.js";
+import { fakeModel } from "../../../../test/fixtures/model.js";
+import { createAgentRun } from "../../../lib/agent-runner.js";
+import { DbWriter } from "../../../lib/db-writer.js";
+import { SubagentManager } from "../../../lib/manager.js";
+import { closeDb, getDb } from "../../../lib/requests.js";
+import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
 import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
-import { createAppTaskCapability } from "./app-task-capability.js";
-import {
-  installAppTaskRuntimes,
-  closeInstalledAppTaskRuntimes,
-  reconcileLoadedAppTaskOnce,
-} from "./app-task-runtime.js";
+import { AppRegistry } from "../apps/registry.js";
+import { EventBus, type AgentEvent } from "../events/bus.js";
+import { getAppInboxItem, listAppInboxItems } from "../state/app-inbox-store.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { readConversationRequest } from "../state/conversation-requests.js";
 import {
@@ -40,15 +31,25 @@ import {
   readConversationInputTopicId,
   readConversationMessageTopicId,
 } from "../state/conversations.js";
-import { getAppInboxItem, listAppInboxItems } from "../state/app-inbox-store.js";
+import { createAppTaskCapability } from "./app-task-capability.js";
+import { appTaskContext, observeAppTaskIntent } from "./app-task-reconciler.js";
+import {
+  closeInstalledAppTaskRuntimes,
+  installAppTaskRuntimes,
+  reconcileLoadedAppTaskOnce,
+  stopLoadedConversationTurn,
+} from "./app-task-runtime.js";
+import { makeTaskRetryDue } from "./app-task-test-support.js";
+import type { TaskAgentInput } from "./execution.js";
+import type { TaskWorkspaces } from "./workspace.js";
 
 async function fixture(
   execute: TaskExecutor,
-  conversationMode?: "task" | "agent",
+  conversationMode?: "task",
   beforeAgent?: (input: TaskAgentInput) => Promise<void>,
-  conversations?: TaskConversationRunner,
   managedAgents?: ReturnType<typeof createTaskAgentRunner>,
   taskPolicy?: AppTaskPolicy,
+  runtimeOptions?: { workspace?: AppDefinition["workspace"]; workspaces?: TaskWorkspaces; executor?: "agent" },
 ) {
   const root = mkdtempSync(join(tmpdir(), "task-communication-"));
   const appDir = join(root, "sample.app");
@@ -63,6 +64,7 @@ async function fixture(
       : {}),
     id: "sample",
     agent: "owner",
+    ...(runtimeOptions?.workspace ? { workspace: runtimeOptions.workspace } : {}),
     version: 1,
     inputSchema: Type.Object({ kind: Type.String(), data: Type.Unknown() }),
     task: ({ input }) => ({
@@ -71,7 +73,7 @@ async function fixture(
         id: input.kind === "review" ? "reviewer" : "work",
         parentId: "root",
         agent: input.kind === "review" ? "reviewer" : "owner",
-        executor: "fixture",
+        executor: runtimeOptions?.executor ?? "fixture",
         outcome: input.kind === "review" ? "Review the contribution" : "Handle the ask",
         acceptance: ["Address accepted requirements"],
       },
@@ -96,7 +98,7 @@ async function fixture(
         bus,
         appRegistrySnapshot: registry.snapshot(),
         executors: { fixture: execute },
-        conversations,
+        workspaces: runtimeOptions?.workspaces,
         agents: {
           available: (agent) => managedAgents?.available(agent) ?? true,
           prepare: async (input) => managedAgents?.prepare(input) ?? true,
@@ -134,6 +136,7 @@ async function fixture(
   };
   await open();
   return {
+    appDir,
     get db() {
       return db;
     },
@@ -146,17 +149,17 @@ async function fixture(
     get inbox() {
       return inbox;
     },
-    admit(id: string, kind = "message", conversationId: string | undefined = "discussion") {
+    admit(id: string, kind = "message", conversationId: string | undefined = "discussion", conversationSequence = 1) {
       return inbox.host.admit({
         id,
         appId: "sample",
         source: { kind: "human", id },
         input: { kind, data: { message: id } },
         conversationId,
-        ...(conversationId ? { conversationSequence: 1 } : {}),
+        ...(conversationId ? { conversationSequence } : {}),
         channel: "telegram",
         channelTargetId: "synthetic-chat",
-        channelMessageId: 7,
+        channelMessageId: conversationSequence + 6,
       });
     },
     run(taskId = "work") {
@@ -201,7 +204,7 @@ test("App ending policy atomically closes a finite task, returns its caller answ
     calls++;
     expect((await attempt.read.contract("sample")).taskPolicy).toEqual({ closeOnResult: true });
     return { state: "converged", summary: "Scoped assessment completed", response: "No change is justified", facts: ["Evidence verified"], result: { endAssignment: true } };
-  }, undefined, undefined, undefined, undefined, {
+  }, undefined, undefined, undefined, {
     closeOnResult: ({ acceptedResult }) => acceptedResult.result?.endAssignment === true
       ? { reason: "Finite request answered with verified evidence" } : null,
   });
@@ -230,7 +233,7 @@ test("a failed App ending decision rolls back the answer publication and accepte
   const f = await fixture(async () => ({
     state: "converged", summary: "Scoped assessment completed", response: "No change is justified",
     facts: ["Evidence verified"], result: { endAssignment: true },
-  }), undefined, undefined, undefined, undefined, { closeOnResult: () => ({ reason: " " }) });
+  }), undefined, undefined, undefined, { closeOnResult: () => ({ reason: " " }) });
   try {
     f.admit("ask");
     await f.run();
@@ -244,121 +247,6 @@ test("a failed App ending decision rolls back the answer publication and accepte
     await f.reopen();
     expect(f.store.readCancellation("work")).toBeNull();
   } finally { await f.close(); }
-});
-
-test.each(["task", "agent"] as const)("%s-mode Conversation publishes its App-policy closure after the reply commits, once across restart", async (mode) => {
-  let calls = 0;
-  let policyCalls = 0;
-  const response = "The finite comparison is complete.";
-  const f = await fixture(async () => {
-    calls++;
-    return { state: "converged", summary: "Compared the options", response, facts: ["Both options verified"] };
-  }, mode, undefined, {
-    execute: (input) => prepareConversationTaskTurn({
-      ...input,
-      resolveConversationInput: async () => {
-        calls++;
-        return { summary: "Compared the options", response, facts: ["Both options verified"] };
-      },
-    }),
-  }, undefined, {
-    closeOnResult: ({ acceptedResult }) => {
-      policyCalls++;
-      return acceptedResult.response === response ? { reason: "The finite comparison was delivered" } : null;
-    },
-  });
-  try {
-    const item = f.admit("ask").item;
-    const taskId = item.executionTaskId!;
-    const notifications: Array<{ taskId: string; inputStatus?: string; replyPublished: boolean; closed: boolean }> = [];
-    f.bus.subscribe((event) => {
-      if (event.type !== "app.task.cancelled") return;
-      notifications.push({
-        taskId: event.data.taskId,
-        inputStatus: getAppInboxItem(f.db, item.id)?.status,
-        replyPublished: listAppConversationMessages(f.db, "sample", "discussion").some((message) => message.text === response),
-        closed: f.store.readCancellation(taskId)?.kind === "closed",
-      });
-    });
-    await f.run(taskId);
-    const task = f.store.readTask(taskId)!;
-    const accepted = f.store.readAttempt(task.status.observedAttemptId!)?.acceptedResult;
-    expect(accepted).toMatchObject({ state: "converged", response, facts: ["Both options verified"] });
-    expect(f.store.readCancellation(taskId)).toMatchObject({
-      kind: "closed",
-      acceptedResultAttemptId: task.status.observedAttemptId,
-      decidedBy: { kind: "app-policy" },
-    });
-    expect(notifications).toEqual([{ taskId, inputStatus: "done", replyPublished: true, closed: true }]);
-    await f.reopen();
-    await f.run(taskId);
-    expect(calls).toBe(1);
-    expect(policyCalls).toBe(1);
-    expect(f.store.readAttempt(task.status.observedAttemptId!)?.acceptedResult).toEqual(accepted);
-    expect(f.store.readCancellation(taskId)?.kind).toBe("closed");
-    expect(f.db.prepare("SELECT count(*) AS n FROM events WHERE event_type='app.task.cancelled'").get()).toEqual({ n: 1 });
-  } finally { await f.close(); }
-});
-
-test("a malformed Conversation procedure retains failure and original obligations across paced retry and restart", async () => {
-  let agentCalls = 0;
-  let conversationCalls = 0;
-  const f = await fixture(async () => {
-    agentCalls++;
-    throw new Error("Host must not silently replace the failing procedure");
-  }, "agent", undefined, {
-    async execute({ config, claim }) {
-      conversationCalls++;
-      readConversationTaskInputs(config, claim);
-      throw new Error("The malformed fixture should fail input validation first");
-    },
-  });
-  try {
-    const human = f.admit("ask").item;
-    const taskId = human.executionTaskId!;
-    const config = appTaskContext({ appDir: "fixture", projectDir: "fixture", agent: "owner", resourceStore: f.store });
-    // Retained old-format follow-up: distinct work reused a Conversation input ID.
-    // Current normal admission prevents this, but deployed history can contain it.
-    const admissionKey = "conversation-follow-up:sample:ask";
-    observeAppTaskIntent(config, {
-      appAgent: "owner", intent: { ...f.store.readTask(taskId)!.spec, id: taskId }, admissionKey,
-      trigger: {
-        type: "app.task.requested", source: "fixture", owner: "agent:owner",
-        target: { appId: "sample", taskId }, idempotencyKey: admissionKey,
-        data: { appId: "sample", taskId, idempotencyKey: admissionKey,
-          request: { id: "ask", source: { kind: "system", id: "retained-follow-up" },
-            input: { kind: "goal", data: { outcome: "Check the accompanying evidence" } } } },
-      },
-    });
-    const generation = f.store.readTask(taskId)!.metadata.generation;
-    await f.run(taskId);
-    expect(agentCalls).toBe(0);
-    const failedId = Object.values(f.store.readTaskContext({ taskIds: [taskId] }).attempts!)[0]!.metadata.id;
-    const failure = f.store.readAttempt(failedId);
-    expect(failure?.state).toBe("failed");
-    for (let pass = 0; pass < 2; pass++) {
-      setSystemTime(f.store.readTask(taskId)!.status.executionRetryAt! + 1);
-      await f.reopen();
-      await f.run(taskId);
-    }
-    await f.inbox.host.refreshTaskResults("sample", taskId);
-    expect(agentCalls).toBe(0);
-    expect(conversationCalls).toBe(3);
-    expect(f.store.readAttempt(failedId)).toEqual(failure);
-    expect(f.store.readTask(taskId)).toMatchObject({ metadata: { generation },
-      status: { phase: "attention", retryExhausted: { failures: 3, limit: 3 } } });
-    const admissions = f.store.readTaskContext({ taskIds: [], admissionIds: [
-      "conversation-input:ask", "conversation-follow-up:sample:ask",
-    ] }).appTaskAdmissions!;
-    expect(admissions["conversation-input:ask"]?.resultAttemptId).toBeFalsy();
-    expect(admissions["conversation-follow-up:sample:ask"]?.resultAttemptId).toBeFalsy();
-    expect(listAppInboxItems(f.db, { appId: "sample" }).find(({ id }) => id === "ask")?.status).not.toBe("done");
-    expect(listAppConversationMessages(f.db, "sample", "discussion").filter(({ author }) => author.kind === "agent"))
-      .toEqual([]);
-  } finally {
-    setSystemTime();
-    await f.close();
-  }
 });
 
 test("ordinary Task publishes before failure, reuses the publication after restart, and retains the ask", async () => {
@@ -611,7 +499,7 @@ test("common Conversation execution retains old admissions and can read ordinary
         },
       ],
     };
-  }, "agent");
+  }, "task");
   try {
     const admitted = f.admit("ask").item;
     const taskId = admitted.executionTaskId!;
@@ -647,6 +535,56 @@ test("common Conversation execution retains old admissions and can read ordinary
   } finally {
     await f.close();
   }
+});
+
+test("mixed-batch Stop emits interruption, rejects the late answer and completes ordinary input on a fresh attempt", async () => {
+  let stopped = false;
+  let stopEvents = 0;
+  let stopError: unknown;
+  const inputBatches: string[][] = [];
+  const stopObserved = Promise.withResolvers<void>();
+  const f = await fixture(async () => ({ state: "converged", summary: "Evidence handled", facts: [] }), "task",
+    async ({ attempt }) => {
+      inputBatches.push(attempt.events.inputs?.map(({ id }) => id).sort() ?? []);
+      if (stopped) return;
+      stopped = true;
+      try {
+        stopLoadedConversationTurn({ bus: f.bus, target: {
+          appId: "sample", conversationId: "discussion", turnId: attempt.attemptId,
+          expectedRevision: f.store.readTask(attempt.task.id)!.metadata.generation,
+        } });
+        await stopObserved.promise;
+      } catch (error) { stopError = error; throw error; }
+    });
+  const unsubscribe = f.bus.listen((event) => {
+    if (event.type === "app.task.attempt.stopped") { stopEvents++; stopObserved.resolve(); }
+  });
+  try {
+    const ask = f.admit("ask").item;
+    const evidence = f.inbox.host.admit({
+      id: "evidence", appId: "sample", targetTaskId: ask.executionTaskId!,
+      source: { kind: "app", id: "reviewer" }, input: { kind: "evidence", data: { finding: "Verified" } },
+    }).item;
+    await f.run(ask.executionTaskId!);
+    expect(stopError).toBeUndefined();
+    expect(stopped).toBe(true);
+    expect(stopEvents).toBe(1);
+    expect(getAppInboxItem(f.db, "ask")?.handling?.phase).toBe("stopped");
+    await until(() => Object.values(f.store.readTaskContext({ taskIds: [ask.executionTaskId!] }).attempts ?? {})
+      .some(({ acceptedResult }) => acceptedResult?.state === "converged"));
+    const attempts = Object.values(f.store.readTaskContext({ taskIds: [ask.executionTaskId!] }).attempts ?? {});
+    expect(attempts).toHaveLength(2);
+    const interrupted = attempts.find(({ failureReason }) => failureReason === "owner-stopped");
+    expect(interrupted?.state).toBe("interrupted");
+    expect(interrupted?.acceptedResult).toBeUndefined();
+    await f.inbox.host.refreshTaskResults("sample", ask.executionTaskId!);
+    expect(inputBatches).toEqual([["ask", "evidence"], ["evidence"]]);
+    expect(getAppInboxItem(f.db, "evidence")).toMatchObject({
+      status: "done", taskAdmissionKey: "task:evidence", source: evidence.source,
+      targetTaskId: evidence.targetTaskId, result: { summary: "Evidence handled" },
+    });
+    expect(getAppInboxItem(f.db, "ask")?.handling?.phase).toBe("stopped");
+  } finally { unsubscribe(); await f.close(); }
 });
 
 test("Request revisions and ownership are checked before publication, independently of waiting", async () => {
@@ -970,7 +908,6 @@ test("managed finish corrects invalid input scope in one model execution and pre
         });
       };
     },
-    undefined,
     agents,
   );
   try {
@@ -1112,7 +1049,6 @@ test.each([
     async ({ attempt }) => {
       await attempt.apply({ conditions: [retained] });
     },
-    undefined,
     agents,
   );
   try {
@@ -1224,7 +1160,6 @@ test("managed finish preflight rolls back an App request and publishes it exactl
     async ({ attempt }) => {
       await attempt.apply({ conditions: [retained] });
     },
-    undefined,
     agents,
   );
   const f = runtime;
@@ -1339,7 +1274,6 @@ test("managed finish rejects a consumed live-event-only wait before closing the 
       f.bus.emit(liveEvent);
       await accepted.promise;
     },
-    undefined,
     agents,
   );
   try {
@@ -1469,7 +1403,6 @@ test("managed finish refreshes accepted live events when a rejected waiting prop
         return accepted.promise;
       };
     },
-    undefined,
     agents,
   );
   try {
@@ -1573,7 +1506,6 @@ test("managed finish pins an empty accepted-live-event snapshot across executor 
         return null;
       };
     },
-    undefined,
     agents,
   );
   try {
@@ -1653,7 +1585,6 @@ test("managed finish pins retained reviewAt across executor closure", async () =
         return problem;
       };
     },
-    undefined,
     agents,
   );
   try {
@@ -1773,7 +1704,6 @@ test.each(["retire action", "condition and communication batch"] as const)("mana
       await attempt.apply(original);
       await attempt.apply({ actions: [action], facts: ["review:retired"] });
     },
-    undefined,
     agents,
   );
   try {
@@ -1853,7 +1783,7 @@ test("managed finish rejects an undeclared request Condition and accepts a corre
   };
   manager.register(definition);
   const agents = createTaskAgentRunner({ manager }, new Map([[definition.name, definition]]));
-  const f = await fixture(async () => corrected, "task", undefined, undefined, agents);
+  const f = await fixture(async () => corrected, "task", undefined, agents);
   try {
     const input = f.admit("ask").item;
     await f.run(input.executionTaskId!);
@@ -2010,7 +1940,8 @@ test("accepted Topic decisions persist across same-input messages and Request up
     const f = await fixture(async () => {
       if (!replyTo)
         return {
-          state: "converged",
+          state: "waiting",
+          reviewAt: Date.now() + 60_000,
           summary: "Opened the replied-to Topic",
           facts: [],
           communication: [
@@ -2035,7 +1966,8 @@ test("accepted Topic decisions persist across same-input messages and Request up
             ? { kind: "existing" as const, id: "topic-c" }
             : { kind: "none" as const };
       return {
-        state: "converged",
+        state: "waiting",
+          reviewAt: Date.now() + 60_000,
         summary: `Applied ${selection} Topic decision`,
         facts: [],
         communication: [
@@ -2198,7 +2130,7 @@ test("finish preflight and settlement share the communication limit after adding
   const communication: TaskCommunication[] = Array.from({ length: 8 }, (_, index) => ({
     id: `accept-${index}`,
     inputId: "ask",
-    requestUpdates: [{ id: `scope-${index}`, expectedRevision: 0, scope: `Ask ${index}`, disposition: "open" }],
+    topic: { kind: "none" },
   }));
   const proposal = { state: "converged" as const, summary: "Accepted", facts: [], communication, response: "Accepted." };
   const corrected = { ...proposal, communication: communication.slice(0, 7) };
@@ -2218,7 +2150,7 @@ test("finish preflight and settlement share the communication limit after adding
     const input = f.admit("ask").item;
     await f.run(input.executionTaskId!);
     expect(f.store.readTask(input.executionTaskId!)?.status.phase).toBe("converged");
-    expect(f.db.prepare("SELECT COUNT(*) AS n FROM conversation_requests").get()?.n).toBe(7);
+    expect(f.db.prepare("SELECT COUNT(*) AS n FROM conversation_requests").get()?.n).toBe(0);
     expect(
       listAppConversationMessages(f.db, "sample", "discussion")
         .filter(({ author }) => author.kind === "agent")
@@ -2242,4 +2174,126 @@ test("loaded dependency reads resolve exact answers by App identity without an A
   } finally {
     await f.close();
   }
+});
+
+test("an open accepted Request rejects convergence in preflight and settlement without losing the input", async () => {
+  const proposal = {
+    state: "converged" as const, summary: "Premature completion", response: "Still working", facts: [],
+    communication: [{ id: "accept-open", inputId: "ask", requestUpdates: [
+      { id: "promise", expectedRevision: 0, scope: "Implement and verify both cases", disposition: "open" as const },
+    ] }],
+  };
+  let phase: "invalid" | "waiting" | "finished" = "invalid";
+  const f = await fixture(async () => phase === "invalid" ? proposal : phase === "waiting"
+    ? { ...proposal, state: "waiting", response: undefined, summary: "Verification remains", reviewAt: Date.now() + 60_000 }
+    : { state: "converged", summary: "Both cases verified", facts: [], communication: [{
+        id: "finish-promise", inputId: "ask", message: "Both cases passed verification.",
+        requestUpdates: [{ id: "promise", expectedRevision: 1, disposition: "fulfilled", reason: "Both cases verified" }],
+      }] }, "task", async ({ validateResult }) => {
+    if (phase !== "invalid") return;
+    expect(validateResult!(proposal)).toContain("promise remains open");
+    expect(readConversationRequest(f.db, "sample", "discussion", "promise")).toBeNull();
+  });
+  try {
+    const item = f.admit("ask").item;
+    const id = item.executionTaskId!;
+    await f.run(id);
+    expect(f.store.readTask(id)?.status.executionFailures).toBe(1);
+    expect(getAppInboxItem(f.db, "ask")?.status).not.toBe("done");
+    expect(readConversationRequest(f.db, "sample", "discussion", "promise")).toBeNull();
+    expect(listAppConversationMessages(f.db, "sample", "discussion").filter(({ author }) => author.kind === "agent")).toEqual([]);
+    phase = "waiting";
+    makeTaskRetryDue(f.store, id);
+    await f.run(id);
+    expect(readConversationRequest(f.db, "sample", "discussion", "promise")?.status).toBe("open");
+    expect(getAppInboxItem(f.db, "ask")?.status).not.toBe("done");
+    await f.reopen();
+    phase = "finished";
+    setSystemTime(f.store.readTask(id)!.status.reviewAt! + 1);
+    await f.run(id);
+    expect(readConversationRequest(f.db, "sample", "discussion", "promise")?.status).toBe("closed");
+    expect(getAppInboxItem(f.db, "ask")?.status).toBe("done");
+  } finally { setSystemTime(); await f.close(); }
+});
+
+test.each(["default", "original-only"] as const)("live Requests respect %s input scope in preflight, settlement and restart", async (scope) => {
+  const proposal = {
+    state: "converged" as const, summary: "Scoped completion", response: "Finished", facts: [],
+    ...(scope === "original-only" ? { inputKeys: ["task:ask"] } : {}),
+  };
+  const f = await fixture(async () => proposal, undefined, async ({ attempt, validateResult }) => {
+    const accepted = Promise.withResolvers<void>();
+    const unsubscribe = attempt.onEvent((event, accept) => {
+      if (event.type !== "app.task.requested") return;
+      accept();
+      unsubscribe();
+      accepted.resolve();
+    });
+    const live = f.admit("live", "message", "discussion", 2).item;
+    expect(live.taskAdmissionKey).toBe("task:live");
+    const admission = f.store.readTaskContext({ taskIds: [], admissionIds: [live.taskAdmissionKey!] })
+      .appTaskAdmissions![live.taskAdmissionKey!]!;
+    // Deliver the saved input through the real event bus while this attempt is live.
+    f.bus.emit(admission.inputEvent as AgentEvent);
+    await accepted.promise;
+    await attempt.apply({ communication: [{
+      id: "accept-live", inputId: "live", requestUpdates: [{
+        id: "live-promise", expectedRevision: 0, scope: "Verify the additional requirement", disposition: "open",
+      }],
+    }] });
+    const error = validateResult!(proposal);
+    if (scope === "default") expect(error).toContain("live-promise remains open");
+    else expect(error).toBeNull();
+    expect(readConversationRequest(f.db, "sample", "discussion", "live-promise")?.status).toBe("open");
+  }, undefined, undefined, { executor: "agent" });
+  try {
+    f.admit("ask");
+    await f.run();
+    if (scope === "default") {
+      expect(f.store.readTask("work")?.status).toMatchObject({
+        executionFailures: 1, summary: expect.stringContaining("live-promise remains open"),
+      });
+      expect(getAppInboxItem(f.db, "ask")?.status).not.toBe("done");
+      expect(listAppConversationMessages(f.db, "sample", "discussion").filter(({ author }) => author.kind === "agent")).toEqual([]);
+    } else {
+      await f.inbox.host.refreshTaskResults("sample", "work");
+      expect(getAppInboxItem(f.db, "ask")?.status).toBe("done");
+      expect(listAppConversationMessages(f.db, "sample", "discussion").filter(({ author }) => author.kind === "agent")).toMatchObject([
+        { text: "Finished", replyTo: "ask" },
+      ]);
+    }
+    expect(getAppInboxItem(f.db, "live")?.status).not.toBe("done");
+    await f.reopen();
+    expect(readConversationRequest(f.db, "sample", "discussion", "live-promise")?.status).toBe("open");
+    expect(getAppInboxItem(f.db, "live")?.status).not.toBe("done");
+  } finally { await f.close(); }
+});
+
+test.each([false, true])("Conversation on a Git App uses its canonical workspace across restart (backend installed: %s)", async (withBackend) => {
+  let calls = 0;
+  const unexpectedWorktree = async (): Promise<never> => { throw new Error("Conversation must not allocate or inspect a worktree"); };
+  const f = await fixture(async (attempt) => {
+    calls++;
+    expect(attempt.cwd).toBe(f.appDir);
+    expect(readFileSync(join(attempt.cwd, "mounted-sibling", "context.txt"), "utf8")).toBe("Canonical workspace context");
+    return { state: "converged", summary: "Answered with local context", response: "Context retained", facts: [] };
+  }, "task", undefined, undefined, undefined, {
+    workspace: { kind: "git", localPath: "." },
+    ...(withBackend ? { workspaces: {
+      admission: unexpectedWorktree, prepare: unexpectedWorktree,
+      inspect: unexpectedWorktree, finalize: unexpectedWorktree,
+    } } : {}),
+  });
+  try {
+    mkdirSync(join(f.appDir, "mounted-sibling"));
+    writeFileSync(join(f.appDir, "mounted-sibling", "context.txt"), "Canonical workspace context");
+    const first = f.admit("first").item;
+    await f.run(first.executionTaskId!);
+    expect(getAppInboxItem(f.db, "first")?.status).toBe("done");
+    await f.reopen();
+    const second = f.admit("second", "message", "discussion", 2).item;
+    await f.run(second.executionTaskId!);
+    expect(getAppInboxItem(f.db, "second")?.status).toBe("done");
+    expect(calls).toBe(2);
+  } finally { await f.close(); }
 });

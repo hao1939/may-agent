@@ -5,14 +5,10 @@
  * filename still includes the interface agent (`may.sock`).
  */
 
-import type { EventInterface } from "../core/events/interface.js";
-import { readSqlPerformance } from "../../lib/db/query-performance.js";
 import type { EventInput, EventReceipt } from "@may-agent/control/events";
-import {
-  attachControlSocket,
-  type AttachControlSocketOptions,
-  type ControlSocket,
-} from "@may-agent/control/server";
+import { attachControlSocket, type AttachControlSocketOptions, type ControlSocket } from "@may-agent/control/server";
+import { readSqlPerformance } from "../../lib/db/query-performance.js";
+import type { EventInterface } from "../core/events/interface.js";
 export type { SocketFrame } from "@may-agent/control/protocol";
 
 export interface SocketUIOptions {
@@ -33,7 +29,6 @@ export interface SocketUIOptions {
   listAppTasks?: AttachControlSocketOptions["listAppTasks"];
   getAppTask?: AttachControlSocketOptions["getAppTask"];
   getAppTaskWorkload?: AttachControlSocketOptions["getAppTaskWorkload"];
-  resolveAppTask?: AttachControlSocketOptions["resolveAppTask"];
   listApps?: AttachControlSocketOptions["listApps"];
   listTasks?: AttachControlSocketOptions["listTasks"];
   getTask?: AttachControlSocketOptions["getTask"];
@@ -95,7 +90,6 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     listAppTasks: opts.listAppTasks,
     getAppTask: opts.getAppTask,
     getAppTaskWorkload: opts.getAppTaskWorkload,
-    resolveAppTask: opts.resolveAppTask,
     listApps: opts.listApps,
     listTasks: opts.listTasks,
     getTask: opts.getTask,

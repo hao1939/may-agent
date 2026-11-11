@@ -1,33 +1,31 @@
-import type { FileWritePolicy } from "../../lib/tools/file-write-policy.js";
-import { createRuntimeAppRead } from "../core/reads/app-read.js";
-import { getLoadedAppInputContract } from "../core/tasks/app-task-runtime.js";
-import type { AppRegistry } from "../core/apps/registry.js";
-import { readMetricView } from "../adapters/reporting/metric-read.js";
-import type { WorkflowEvent } from "../../lib/workflow.js";
+import type { AgentTool } from "@earendil-works/pi-agent-core";
 import { resolve } from "node:path";
 import { currentAgentSessionId } from "../../lib/agent-session-context.js";
-import type { AgentTool } from "@earendil-works/pi-agent-core";
-import type { SubagentManager } from "../../lib/manager.js";
-import { createCodingTools } from "../../lib/tools/coding.js";
-import { createReadTool } from "../../lib/tools/read.js";
-import { createWorkflowTool } from "../../lib/workflow-tool.js";
 import { createBackgroundExecTool } from "../../lib/background-exec.js";
-import { createScrapeTool } from "../../lib/scrape.js";
-import { createSystemStatusTool } from "../../lib/tools/system-status.js";
-import { readExecutionStatus } from "../core/reads/execution-status.js";
-import { createQueryDbTool } from "../../lib/tools/query-db.js";
-import { createFinishTool } from "../../lib/tools/lifecycle.js";
-import { createCheckpointTool } from "../../lib/tools/checkpoint.js";
-import { createRunCliAgentTool } from "../../lib/tools/run-cli-agent.js";
-import { createMessageTool } from "../../lib/tools/message-tool.js";
+import type { SubagentManager } from "../../lib/manager.js";
 import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
+import { createScrapeTool } from "../../lib/scrape.js";
+import { assertUniqueToolNames } from "../../lib/tool-name-audit.js";
+import { createCheckpointTool } from "../../lib/tools/checkpoint.js";
+import { createCodingTools } from "../../lib/tools/coding.js";
+import type { FileWritePolicy } from "../../lib/tools/file-write-policy.js";
+import { createFinishTool } from "../../lib/tools/lifecycle.js";
+import { createMessageTool } from "../../lib/tools/message-tool.js";
+import { createQueryDbTool } from "../../lib/tools/query-db.js";
+import { createReadTool } from "../../lib/tools/read.js";
+import { createRunCliAgentTool } from "../../lib/tools/run-cli-agent.js";
+import { createSystemStatusTool } from "../../lib/tools/system-status.js";
+import { createWorkflowTool } from "../../lib/workflow-tool.js";
+import type { WorkflowEvent } from "../../lib/workflow.js";
+import { readMetricView } from "../adapters/reporting/metric-read.js";
+import { createAppTaskReadTool } from "../app-task-read-tool.js";
+import type { AppRegistry } from "../core/apps/registry.js";
 import type { EventBus } from "../core/events/bus.js";
-import type { HostMaintenance } from "../adapters/maintenance/runtime.js";
-import { createMaintenanceTool } from "../adapters/maintenance/tool.js";
+import { createRuntimeAppRead } from "../core/reads/app-read.js";
+import { readExecutionStatus } from "../core/reads/execution-status.js";
+import { getLoadedAppInputContract } from "../core/tasks/app-task-runtime.js";
 import type { AgentConfig } from "./agent-config.js";
 import { loadAgentLocalTools } from "./agent-local-tools.js";
-import { createAppTaskReadTool } from "../app-task-read-tool.js";
-import { assertUniqueToolNames } from "../../lib/tool-name-audit.js";
 
 export interface ToolsetLoaderOptions {
   appRegistry?: AppRegistry;
@@ -41,9 +39,7 @@ export interface ToolsetLoaderOptions {
   persistDir: string;
   manager: SubagentManager;
   bus: EventBus;
-  cronEnabled: boolean;
   getAgentSessionId: (agentName: string) => string | undefined;
-  getAgentMaintenance: () => Map<string, HostMaintenance>;
   addCleanup: (agentName: string, fn: () => void) => void;
   agentDir?: string;
 }
@@ -184,20 +180,6 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         opts.addCleanup(config.name, bgExec.cleanup);
         break;
       }
-
-      case "cron":
-        tools.push(
-          createMaintenanceTool({
-            configPath: resolve(agentDir, "cron.json"),
-            cronEnabled: opts.cronEnabled,
-            onConfigChange: () => {
-              const maintenance = opts.getAgentMaintenance().get(config.name);
-              if (!maintenance) throw new Error("Host maintenance is not configured for " + config.name);
-              maintenance.reload();
-            },
-          }),
-        );
-        break;
 
       case "scrape":
         tools.push(createScrapeTool());

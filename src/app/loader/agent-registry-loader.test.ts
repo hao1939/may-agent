@@ -4,8 +4,8 @@ import { mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { DefinitionSourceReleaseStore } from "../app-source-release.js";
 import { invalidateRuntimeModuleCache } from "../../lib/runtime-import.js";
+import { DefinitionSourceReleaseStore } from "../app-source-release.js";
 import {
   loadAgents,
   prepareAgents,
@@ -46,7 +46,6 @@ function makeOpts(root: string, agentsRoot: string, projectsRoot: string): Agent
       emit: mock(() => {}),
       on: mock(() => {}),
     } as any,
-    cronEnabled: false,
   };
 }
 

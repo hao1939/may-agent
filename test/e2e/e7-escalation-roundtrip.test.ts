@@ -13,7 +13,6 @@ describe("E7: escalation lifecycle roundtrip", () => {
   beforeAll(async () => {
     sb = await buildSandbox({
       fixtureAgents: ["may"],
-      cronJson: { may: [] },
     });
     await sb.daemonReady;
   }, 60_000);

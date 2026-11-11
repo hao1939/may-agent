@@ -1,59 +1,13 @@
-import type {
-  AppInputContext,
-  AppConversationRequest,
-  ConversationTurnResult,
-  TSchema,
-  AppDefinition,
-  TaskAttempt,
-  TaskVerifier,
-} from "@may-agent/sdk";
-import type { TaskBinding } from "../../../lib/persistence.js";
+import type { AppDefinition, TaskAttempt, TaskVerifier } from "@may-agent/sdk";
 import type { ExecutionRecipient } from "../../../lib/execution-recipient.js";
-import type { ConversationContextQuery } from "../state/conversations.js";
-import type { ConversationRequestChange } from "../state/conversation-requests.js";
+import type { TaskBinding } from "../../../lib/persistence.js";
+import type { appDependencyCatalog } from "../../app-dependency-catalog.js";
 import type { EventEnvelope } from "../events/bus.js";
 import type { AppTaskEvents } from "./app-task-emitter.js";
 import type { AppTaskExecutionPaths } from "./app-task-output-paths.js";
 import type { AppTaskChildContext, AppTaskClaim, AppTaskLiveSnapshot } from "./app-task-reconciler.js";
-import type { appDependencyCatalog } from "../../app-dependency-catalog.js";
-import type { TaskCapabilityRun } from "./result.js";
 import type { AppTaskAttempt } from "./app-task-state.js";
-import type { AppTaskContext } from "./app-task-store.js";
-import type { ConversationTaskAppResolver, ConversationTaskProposal } from "../state/conversation-task-turns.js";
-import type { AppRegistrySnapshot } from "../apps/registry.js";
-
-/** Model execution receives data and scoped capabilities, never a Task store or claim. */
-export type AppInputResolver = (input: {
-  app: Readonly<AppDefinition>;
-  inputContext: Readonly<AppInputContext>;
-  execution: {
-    outputSchema: TSchema;
-    /** Read-only admission feedback; settlement still rechecks current state. */
-    validateOutput?: (result: unknown) => string | null;
-    readContext: (query: ConversationContextQuery) => unknown;
-    signal: AbortSignal;
-    sessionStarted: (sessionId: string) => void;
-    taskBinding: TaskBinding;
-    updateRequest?: (change: ConversationRequestChange, operationId: string) => AppConversationRequest;
-  };
-}) => Promise<ConversationTurnResult>;
-
-/** Host composition hook: wires context and model capabilities; runtime retains settlement. */
-export type TaskConversationRunner = {
-  execute(input: {
-    config: AppTaskContext;
-    claim: AppTaskClaim;
-    app: Readonly<AppDefinition>;
-    registry: AppRegistrySnapshot;
-    signal: AbortSignal;
-    execution: Pick<
-      TaskAgentInput,
-      "descriptor" | "attempt" | "executionPaths" | "taskEvents" | "taskSnapshot"
-    >;
-    getTaskApp: ConversationTaskAppResolver;
-  }): Promise<ConversationTaskProposal>;
-  snapshot?(): TaskConversationRunner;
-};
+import type { TaskCapabilityRun } from "./result.js";
 
 /** Read-only App declaration, never its mutable Task store. */
 export type TaskExecutionApp = { id: string; appDir: string; projectDir: string; app: AppDefinition };

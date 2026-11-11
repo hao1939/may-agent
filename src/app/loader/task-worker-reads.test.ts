@@ -2,17 +2,17 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildTools, type ToolsetLoaderOptions } from "./toolset-loader.js";
-import type { AgentConfig } from "./agent-config.js";
+import { closeDb, getDb } from "../../lib/requests.js";
 import { AppRegistry } from "../core/apps/registry.js";
 import { EventBus } from "../core/events/bus.js";
 import { HostCapacity } from "../core/scheduling/host-capacity.js";
 import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";
-import { appTaskTestContext } from "../core/tasks/app-task-test-support.js";
 import { observeAppTaskIntent } from "../core/tasks/app-task-reconciler.js";
 import { closeInstalledAppTaskRuntimes, installAppTaskRuntimes } from "../core/tasks/app-task-runtime.js";
-import { closeDb, getDb } from "../../lib/requests.js";
+import { appTaskTestContext } from "../core/tasks/app-task-test-support.js";
 import type { TaskAgentRunner } from "../core/tasks/execution.js";
+import type { AgentConfig } from "./agent-config.js";
+import { buildTools, type ToolsetLoaderOptions } from "./toolset-loader.js";
 
 test("one-App worker tools read exact registered peer Tasks without installing their execution runtimes", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-worker-reads-"));
@@ -91,8 +91,7 @@ test("one-App worker tools read exact registered peer Tasks without installing t
         projectRoot: root,
         persistDir: root,
         bus,
-        cronEnabled: false,
-        getAgentSessionId: () => "session",
+          getAgentSessionId: () => "session",
         manager: {
           activeSessions: new Map([
             [

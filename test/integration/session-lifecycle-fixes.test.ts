@@ -7,31 +7,28 @@ import { Type } from "typebox";
  * Bug 8: resumeSession doesn't restore parentAgentName
  * Bug 10: callDepths map never cleaned for completed root sessions
  */
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtempSync, rmSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { SubagentManager } from "../../src/lib/manager.js";
-import { closeDb } from "../../src/lib/requests.js";
-import {
-  classifyTerminalAssistantFailure,
-  extractLastAssistantError,
-} from "../../src/lib/manager-utils.js";
-import {
-  readSessionMeta,
-  readActiveSessionProcessId,
-  writeSessionMeta,
-  ensureSessionDir,
-  appendSessionMessage,
-} from "../../src/lib/persistence.js";
+import { join } from "node:path";
 import { EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
+import { classifyTerminalAssistantFailure, extractLastAssistantError } from "../../src/lib/manager-utils.js";
+import { SubagentManager } from "../../src/lib/manager.js";
+import {
+  appendSessionMessage,
+  ensureSessionDir,
+  readActiveSessionProcessId,
+  readSessionMeta,
+  writeSessionMeta,
+} from "../../src/lib/persistence.js";
+import { closeDb } from "../../src/lib/requests.js";
 
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
+import { createAgentRun, type AgentRuntimeListener } from "../../src/lib/agent-runner.js";
+import { createLastSessionWriter } from "../../src/lib/session-subscribers.js";
+import { discoverAgentSkills } from "../../src/lib/skills.js";
 import { RESPONSES_STREAM_TERMINAL_ERROR } from "../../src/lib/workflow-finish-recovery.js";
 import { fakeModel } from "../fixtures/model.js";
-import { createAgentRun, type AgentRuntimeListener } from "../../src/lib/agent-runner.js";
-import { discoverAgentSkills } from "../../src/lib/skills.js";
-import { createLastSessionWriter } from "../../src/lib/session-subscribers.js";
 
 function registerAgent(manager: SubagentManager, name = "test-agent") {
   manager.register({
@@ -1040,78 +1037,6 @@ describe("Bug 4: run() duplicate sessionId guard", () => {
     // (We don't re-use completed session IDs in practice, but the guard should not
     // block IDs that are not currently in activeSessions)
     expect(manager.hasActiveSession(sessionId)).toBe(false);
-  });
-});
-
-describe("Bug 8: resumeSession restores parentAgentName", () => {
-  let persistDir: string;
-  let manager: SubagentManager;
-
-  beforeEach(() => {
-    persistDir = mkdtempSync(join(tmpdir(), "may-lifecycle-"));
-    manager = new SubagentManager({ persistDir });
-    registerAgent(manager, "parent-agent");
-    registerAgent(manager, "child-agent");
-  });
-
-  afterEach(() => {
-    closeDb(persistDir);
-    if (existsSync(persistDir)) {
-      rmSync(persistDir, { recursive: true, force: true });
-    }
-  });
-
-  it("restores parentAgentName from parent session meta on resume", async () => {
-    // Create a fake "parent" session in the registry
-    const parentId = "parent-session-123";
-    ensureSessionDir(persistDir, parentId);
-    writeSessionMeta(persistDir, parentId, {
-      agent: "parent-agent",
-      task: "parent task",
-      status: "done",
-      startedAt: Date.now() - 60000,
-    });
-
-    // Create a fake "child" session that looks stale (running but no process)
-    const childId = "child-session-456";
-    ensureSessionDir(persistDir, childId);
-    writeSessionMeta(persistDir, childId, {
-      agent: "child-agent",
-      task: "child task",
-      status: "running",
-      startedAt: Date.now() - 60000,
-      parentSessionId: parentId,
-    });
-
-    // Write minimal JSONL so resume has something to work with
-    appendSessionMessage(persistDir, childId, {
-      role: "user",
-      content: [{ type: "text", text: "child task" }],
-      timestamp: Date.now(),
-    } as any);
-
-    // Resume stale sessions — this should pick up the child
-    const { resumed } = manager.resumeStaleSessions();
-
-    // The child session should be resumed
-    if (resumed.length > 0) {
-      // Check that the child has parentAgentName restored
-      const sessions = manager.sessions("child-agent");
-      expect(sessions.length).toBeGreaterThan(0);
-
-      // The parentAgentName is internal — we verify indirectly by checking
-      // the session was resumed and can be found.
-      // Direct verification would require access to activeSessions internals,
-      // which we test via the escalation path.
-    }
-
-    // Clean up running sessions
-    try {
-      manager.cancel(childId);
-      await manager.waitFor(childId);
-    } catch {
-      // Expected
-    }
   });
 });
 

@@ -1,23 +1,31 @@
-import { randomUUID } from "node:crypto";
-import { assertLegacyCliTasksSettled } from "../lib/cli-agent.js";
-import { basename, dirname, resolve } from "node:path";
-import { SubagentManager } from "../lib/index.js";
-import type { AppEvent, AppInput } from "@may-agent/sdk";
-import type { TaskListOptions } from "@may-agent/sdk";
 import type { AttachControlSocketOptions } from "@may-agent/control/server";
+import type { AppInput, TaskListOptions } from "@may-agent/sdk";
+import { randomUUID } from "node:crypto";
+import { basename, dirname, resolve } from "node:path";
+import { assertLegacyCliTasksSettled } from "../lib/cli-agent.js";
 import { closeAllDbs, getDb } from "../lib/db/connection.js";
-import type { AppReporting } from "./composition/reporting.js";
-import type { AppArgs } from "./app-args.js";
-import { startAppInboxRuntime, type AppInboxRuntime } from "./composition/app-inbox-runtime.js";
-import { AppRegistry } from "./core/apps/registry.js";
+import { SubagentManager } from "../lib/index.js";
 import { discoverAppDefinitions, listAppDefinitionFiles } from "./adapters/discovery/app-definitions.js";
+import { prepareAgentGeneration, publishPreparedAgentGeneration } from "./agent-loader.js";
+import type { AppArgs } from "./app-args.js";
 import { DefinitionSourceReleaseStore, type DefinitionSourceRelease } from "./app-source-release.js";
-import { createRuntimeAppRead } from "./core/reads/app-read.js";
-import { createAppTaskCapability } from "./core/tasks/app-task-capability.js";
-import { readAppConversationResource } from "./core/state/conversations.js";
-import { HostCapacity } from "./core/scheduling/host-capacity.js";
 import { attachCommandRouter, validateSessionControl } from "./command-router.js";
+import { startAppInboxRuntime, type AppInboxRuntime } from "./composition/app-inbox-runtime.js";
 import { runsBackgroundWork, startBackgroundRuntime } from "./composition/background-startup.js";
+import type { AppReporting } from "./composition/reporting.js";
+import { createTaskAdmissionProcess } from "./composition/workers/task-admission-process.js";
+import {
+  createTaskAttemptProcessExecutor,
+  createTaskRecoveryProcessExecutor,
+} from "./composition/workers/task-attempt-process.js";
+import { AppRegistry } from "./core/apps/registry.js";
+import { EventBus } from "./core/events/bus.js";
+import { createEventInterface, type EventInterface } from "./core/events/interface.js";
+import { createRuntimeAppRead } from "./core/reads/app-read.js";
+import { readExecutionStatus } from "./core/reads/execution-status.js";
+import { HostCapacity } from "./core/scheduling/host-capacity.js";
+import { readAppConversationResource } from "./core/state/conversations.js";
+import { createAppTaskCapability } from "./core/tasks/app-task-capability.js";
 import {
   attachDaemonEventSubscribers,
   attachEventPersistence,
@@ -28,25 +36,15 @@ import {
   startInitialTask,
   type InstanceIdentity,
 } from "./daemon.js";
-import { EventBus } from "./core/events/bus.js";
-import { createEventInterface, type EventInterface } from "./core/events/interface.js";
+import { HumanTaskService } from "./human-task-service.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
-import { readExecutionStatus } from "./core/reads/execution-status.js";
 import type { ModelRegistry } from "./model-registry.js";
 import { parseWebPort, startWebMode } from "./modes/web.js";
 import { runRequestedExitMode } from "./runtime-exit-modes.js";
+import { attachTaskControlEventRoute } from "./task-control-events.js";
 import { attachConsoleUI } from "./transport/console.js";
 import { attachDaemonInfoLog } from "./transport/daemon-info-log.js";
 import { attachTelegramBot } from "./transport/telegram.js";
-import { HumanTaskService } from "./human-task-service.js";
-import {
-  createTaskAttemptProcessExecutor,
-  createTaskRecoveryProcessExecutor,
-} from "./composition/workers/task-attempt-process.js";
-import { createTaskAdmissionProcess } from "./composition/workers/task-admission-process.js";
-import { getAgentMaintenance, prepareAgentGeneration, publishPreparedAgentGeneration } from "./agent-loader.js";
-import { activateAgentMaintenance } from "./composition/maintenance-activation.js";
-import { attachTaskControlEventRoute } from "./task-control-events.js";
 
 export function createAppInputAdmission(options: {
   events: Pick<EventInterface, "publish">;
@@ -239,7 +237,6 @@ export async function runAppRuntime(opts: {
     models: opts.models,
     manager,
     bus,
-    cronEnabled: CRON_ENABLED,
     taskRuntimeMode: backgroundEnabled ? "controllers" : "none",
     appRegistry,
     readOutcomes: opts.reporting?.readOutcomes,
@@ -421,16 +418,7 @@ export async function runAppRuntime(opts: {
       preparedSources.set(generation, candidate);
       return generation;
     },
-    publishAgents: (options, generation) => {
-      const publication = publishPreparedAgentGeneration(options, generation);
-      try {
-        if (backgroundEnabled) activateAgentMaintenance(generation.maintenance, bus, CRON_ENABLED);
-        return publication;
-      } catch (error) {
-        publication.rollback();
-        throw error;
-      }
-    },
+    publishAgents: publishPreparedAgentGeneration,
     reloadApps: async ({ agents, publishAgents }) => {
       const candidate = preparedSources.get(agents);
       if (!candidate) throw new Error("Runtime generation has no staged definition source");
@@ -554,8 +542,6 @@ export async function runAppRuntime(opts: {
     },
     getAppTaskWorkload: (appId, options) => appTasks.workload({ appId, options }),
     getAppTask: (appId, taskId, options) => appTasks.get({ appId, taskId, options }),
-    resolveAppTask: (appId, event) =>
-      appRegistry.resolveInstalledTask(appId.trim().replace(/\.app$/, ""), event as AppEvent<Record<string, unknown>>),
     listApps: (appId) => humanTasks.listApps(appId),
     listTasks: (options) => humanTasks.listTasks(options as Parameters<HumanTaskService["listTasks"]>[0]),
     getTask: (input) => humanTasks.getTask(input),
@@ -587,9 +573,6 @@ export async function runAppRuntime(opts: {
   });
 
   if (backgroundEnabled) {
-    // Handlers are prepared before ingress; activate only after its routes and
-    // Conversation adapters are ready. A startup job must not gate core work.
-    activateAgentMaintenance(getAgentMaintenance(), bus, CRON_ENABLED);
     await appInboxRuntime.start();
     startBackgroundRuntime({
       manager,

@@ -768,7 +768,7 @@ describe("May Console", () => {
     let inputBuffer = "";
     const conversation = {
       id: "may:primary",
-      owner: "may",
+      agent: "may",
       version: 1,
       messages: [
         {
@@ -1005,7 +1005,7 @@ describe("May Console", () => {
               `${JSON.stringify({
                 type: "ok",
                 command: "app.conversation.get",
-                conversation: { id: "may:primary", owner: "may", version: 1, topics: [], messages: [] },
+                conversation: { id: "may:primary", agent: "may", version: 1, topics: [], messages: [] },
               })}\n`,
             );
           } else if (frame.type === "apps.list") {

@@ -18,20 +18,17 @@
  * Domain files, skills, lessons, and knowledge indexes are read on demand.
  */
 
-import type { HostMaintenance } from "./adapters/maintenance/runtime.js";
-import { log } from "../lib/log.js";
 import { currentAgentSessionId } from "../lib/agent-session-context.js";
 import {
+  discardAgentGeneration,
   loadAgents as loadAgentsFromRegistry,
   prepareAgents as prepareAgentsFromRegistry,
   publishAgentGeneration as publishAgentGenerationFromRegistry,
   reloadAgents as reloadAgentsFromRegistry,
-  discardAgentGeneration,
   type AgentGenerationPublication,
   type AgentLoaderOptions,
   type PreparedAgentGeneration,
 } from "./loader/agent-registry-loader.js";
-import { loadMaintenanceHandlers } from "./adapters/maintenance/handler-loader.js";
 
 export { loadAgentConfig, validateAgentConfig, type AgentConfig, type ValidationError } from "./loader/agent-config.js";
 export {
@@ -40,9 +37,8 @@ export {
   listProjectAgentDirectories,
   listRuntimeAgentDirectories,
 } from "./loader/agent-discovery.js";
-export { buildTools, loadLocalTools } from "./loader/toolset-loader.js";
-export { loadMaintenanceHandlers } from "./adapters/maintenance/handler-loader.js";
 export type { AgentLoaderOptions, LoadResult } from "./loader/agent-registry-loader.js";
+export { buildTools, loadLocalTools } from "./loader/toolset-loader.js";
 
 // ── Track active session IDs for subagent/workflow tools ────────────────
 
@@ -62,21 +58,10 @@ export function setAgentSessionId(name: string, sid: string): void {
 /** Per-agent cleanup functions. Called when agent sessions end. */
 const agentCleanups = new Map<string, Array<() => void>>();
 
-/** Prepared Host-maintenance instances, independent of agent tool presets. */
-const agentMaintenance = new Map<string, HostMaintenance>();
-
-/** Get all trigger scheduler instances (for starting/stopping from may.ts). */
-export function getAgentMaintenance(): Map<string, HostMaintenance> {
-  return agentMaintenance;
-}
-
 function publishResources(generation: PreparedAgentGeneration): AgentGenerationPublication {
-  const previousCrons = new Map(agentMaintenance);
   const previousCleanups = new Map([...agentCleanups].map(([name, cleanups]) => [name, [...cleanups]]));
 
   try {
-    agentMaintenance.clear();
-    for (const [name, cron] of generation.maintenance) agentMaintenance.set(name, cron);
     // Keep cleanup callbacks for already-running sessions and add the callbacks
     // captured by the new definitions. They are retired naturally when the
     // corresponding session ends.
@@ -87,8 +72,6 @@ function publishResources(generation: PreparedAgentGeneration): AgentGenerationP
     }
   } catch (error) {
     discardAgentGeneration(generation);
-    agentMaintenance.clear();
-    for (const [name, cron] of previousCrons) agentMaintenance.set(name, cron);
     agentCleanups.clear();
     for (const [name, cleanups] of previousCleanups) agentCleanups.set(name, [...cleanups]);
     throw error;
@@ -100,18 +83,12 @@ function publishResources(generation: PreparedAgentGeneration): AgentGenerationP
       if (settled) return;
       settled = true;
       discardAgentGeneration(generation);
-      agentMaintenance.clear();
-      for (const [name, cron] of previousCrons) agentMaintenance.set(name, cron);
       agentCleanups.clear();
       for (const [name, cleanups] of previousCleanups) agentCleanups.set(name, [...cleanups]);
     },
     finalize() {
       if (settled) return;
       settled = true;
-      const retained = new Set(generation.maintenance.values());
-      for (const cron of previousCrons.values()) {
-        if (!retained.has(cron)) cron.close();
-      }
     },
   };
 }
@@ -148,11 +125,7 @@ export async function loadAgents(opts: AgentLoaderOptions) {
 
 /** Prepare every definition and side-effect container without publication. */
 export async function prepareAgentGeneration(opts: AgentLoaderOptions): Promise<PreparedAgentGeneration> {
-  const generation = await prepareAgentsFromRegistry(opts, registryRuntime());
-  const handlers = await loadMaintenanceHandlers({ ...opts, agentMaintenance: generation.maintenance });
-  if (handlers.errors.length === 0) return generation;
-  discardAgentGeneration(generation);
-  throw new Error(`Agent handler preparation failed:\n${handlers.errors.map((error) => `  ${error}`).join("\n")}`);
+  return prepareAgentsFromRegistry(opts, registryRuntime());
 }
 
 /** Publish a prepared generation synchronously; caller finalizes or rolls it back. */
@@ -172,26 +145,4 @@ export async function reloadAgents(
   opts: AgentLoaderOptions,
 ): Promise<{ added: string[]; updated: string[]; errors: string[] }> {
   return reloadAgentsFromRegistry(opts, registryRuntime());
-}
-
-/** Prepare named maintenance handlers without attaching routes or starting timers. */
-export async function prepareAgentTriggers(loaderOpts: AgentLoaderOptions): Promise<void> {
-  const { bus } = loaderOpts;
-  const handlerResult = await loadMaintenanceHandlers({ ...loaderOpts, agentMaintenance });
-  if (handlerResult.registered.length > 0) {
-    bus.emit({
-      type: "info",
-      message: `[handlers] Registered ${handlerResult.registered.length}: ${handlerResult.registered.join(", ")}`,
-    });
-  }
-  if (handlerResult.errors.length > 0) {
-    bus.emit({
-      type: "info",
-      message: `[handlers] ${handlerResult.errors.length} error(s): ${handlerResult.errors.join("; ")}`,
-    });
-    for (const err of handlerResult.errors) {
-      const handlerName = err.match(/"(\w[\w-]*)\.(js|ts)"/)?.[1] ?? err.match(/"([^"]+)"/)?.[1] ?? "unknown";
-      log("warn", `[handlers] Failed to load handler "${handlerName}": ${err}`);
-    }
-  }
 }

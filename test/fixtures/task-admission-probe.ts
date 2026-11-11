@@ -1,15 +1,18 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createTaskAdmissionProcess, runTaskAdmissionWorker } from "../../src/app/composition/workers/task-admission-process.js";
+import { parseAppArgs } from "../../src/app/app-args.js";
+import { DefinitionSourceReleaseStore } from "../../src/app/app-source-release.js";
+import {
+  createTaskAdmissionProcess,
+  runTaskAdmissionWorker,
+} from "../../src/app/composition/workers/task-admission-process.js";
+import { parseTaskWorkerDefinitionSource } from "../../src/app/composition/workers/task-attempt-process.js";
 import { EVENT_ROW_ID, type AgentEvent } from "../../src/app/core/events/bus.js";
+import type { AppEventAdmissionCommand } from "../../src/app/core/state/app-event-admission-store.js";
 import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
 import { closeDb, getDb } from "../../src/lib/db/connection.js";
-import type { AppEventAdmissionCommand } from "../../src/app/core/state/app-event-admission-store.js";
-import { DefinitionSourceReleaseStore } from "../../src/app/app-source-release.js";
-import { parseAppArgs } from "../../src/app/app-args.js";
-import { parseTaskWorkerDefinitionSource } from "../../src/app/composition/workers/task-attempt-process.js";
 
 const scenario = process.env.ADMISSION_TEST_SCENARIO ?? process.argv[2] ?? "healthy";
 if (process.argv.includes("--task-admission-worker")) {
@@ -65,7 +68,7 @@ writeFileSync(
   ` : ""}
   export default {
   id: "sample", version: 1, agent: "sample-owner", inputSchema: { type: "object" },
-  tasks: { subscriptions: ["sample.changed"], maxConcurrent: 1, resolve() { return null; } }
+  tasks: { maxConcurrent: 1 }
 };\n`,
 );
 getDb(persistDir);

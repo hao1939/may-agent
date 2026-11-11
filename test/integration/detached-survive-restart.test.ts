@@ -1,7 +1,7 @@
 /**
  * Test that detached sessions survive parent restart.
  *
- * Root cause: resumeStaleSessions() used to mark ALL running/idle sessions
+ * Root cause: cleanupStaleSessions() used to mark ALL running/idle sessions
  * as "interrupted" on restart — including detached sessions running in a
  * separate OS process.
  *
@@ -9,13 +9,13 @@
  * process (persisted.pid) is still alive.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { SubagentManager } from "../../src/lib/manager.js";
 import { RegistryStore, ensureSessionDir, markSessionActive, sessionOutputDir } from "../../src/lib/persistence.js";
 import type { SubagentDefinition } from "../../src/lib/types.js";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { mkdtempSync, rmSync, mkdirSync } from "node:fs";
 import { fakeModel } from "../fixtures/model.js";
 import { markStaleSession } from "../fixtures/stale-session.js";
 
@@ -48,7 +48,7 @@ describe("detached sessions survive restart", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it("resumeStaleSessions skips detached session with alive process", () => {
+  it("cleanup skips detached session with alive process", () => {
     const registry = new RegistryStore(dir);
     registry.saveSession("s_detached_1", {
       agent: "worker",
@@ -72,25 +72,18 @@ describe("detached sessions survive restart", () => {
     const manager = new SubagentManager({ persistDir: dir });
     manager.register(baseDef("worker"));
 
-    const { resumed, interrupted } = manager.resumeStaleSessions();
+    const { interrupted } = manager.cleanupStaleSessions();
 
-    // The attached session should be resumed (agent is registered)
-    const attachedResumed = resumed.find((s) => s.sessionId === "s_attached_1");
-    expect(attachedResumed).toBeTruthy();
-    expect(attachedResumed!.status).toBe("running");
-
-    // The detached session should NOT appear in either list (process is alive, skipped)
-    const detachedResumed = resumed.find((s) => s.sessionId === "s_detached_1");
-    expect(detachedResumed).toBeUndefined();
-    const detachedInterrupted = interrupted.find((s) => s.sessionId === "s_detached_1");
-    expect(detachedInterrupted).toBeUndefined();
+    expect(interrupted.map(({ sessionId }) => sessionId)).toEqual(["s_attached_1"]);
+    expect(interrupted[0]!.status).toBe("interrupted");
+    expect(manager.status()).toEqual([]);
 
     // Verify the detached session is still "running" in the registry
     const detachedMeta = registry.getSession("s_detached_1");
     expect(detachedMeta?.status).toBe("running");
   });
 
-  it("resumeStaleSessions resumes detached session with dead process", async () => {
+  it("cleanup interrupts detached session with dead process", async () => {
     const registry = new RegistryStore(dir);
     registry.saveSession("s_detached_dead", {
       agent: "worker",
@@ -106,12 +99,11 @@ describe("detached sessions survive restart", () => {
     const manager = new SubagentManager({ persistDir: dir });
     manager.register(baseDef("worker"));
 
-    const { resumed, interrupted: _interrupted } = manager.resumeStaleSessions();
+    const { interrupted } = manager.cleanupStaleSessions();
 
-    // Dead detached process should be resumed (agent is registered)
-    const detachedResumed = resumed.find((s) => s.sessionId === "s_detached_dead");
-    expect(detachedResumed).toBeTruthy();
+    expect(interrupted.map(({ sessionId }) => sessionId)).toEqual(["s_detached_dead"]);
+    expect(manager.status()).toEqual([]);
 
-    await manager.waitFor("s_detached_dead");
+    expect(manager.registryStore.getSession("s_detached_dead")?.status).toBe("interrupted");
   });
 });

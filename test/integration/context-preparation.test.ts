@@ -1,19 +1,19 @@
-import { expect, test } from "bun:test";
 import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
+import { expect, test } from "bun:test";
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { contextUsageQuery, readContextUsage } from "../../src/app/adapters/reporting/context-usage.js";
 import { buildAgentDefinition } from "../../src/app/loader/agent-definition.js";
 import { createAgentRun } from "../../src/lib/agent-runner.js";
+import { closeDb, getDb } from "../../src/lib/db/connection.js";
 import { SubagentManager } from "../../src/lib/manager.js";
-import { createWorkflowRunner } from "../../src/lib/workflow-tool.js";
 import { readSessionMeta } from "../../src/lib/persistence.js";
-import { fakeModel } from "../fixtures/model.js";
+import { createWorkflowRunner } from "../../src/lib/workflow-tool.js";
 import concise from "../fixtures/concise-review-context.js";
-import { getDb, closeDb } from "../../src/lib/db/connection.js";
-import { contextUsageQuery, readContextUsage } from "../../src/app/adapters/reporting/context-usage.js";
 import { usageReply } from "../fixtures/execution-usage.js";
+import { fakeModel } from "../fixtures/model.js";
 
 test("configured preparation uses ordinary workflow execution across corrections and fresh managers", async () => {
   const root = mkdtempSync(join(tmpdir(), "context-workflow-"));
@@ -199,13 +199,8 @@ test("new invocations keep their own usage across reused sessions and preparatio
       const manager = makeManager();
       manager.register(definition);
       const id = manager.run("worker", "Continue", {
-        sessionId: "reused",
-        resumeMessages: [
-          usageReply({
-            usage: { ...usageReply().usage, input: 999999 },
-            content: [{ type: "text", text: "Past work" }],
-          }),
-        ],
+        sessionId: `execution-${i}`,
+
       });
       expect((await manager.waitFor(id)).status).toBe("done");
       // Reading a completed result performs no new execution or accounting.

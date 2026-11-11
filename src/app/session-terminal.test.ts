@@ -18,7 +18,7 @@ describe("canonical session terminal event", () => {
     attachEventPersistence({ bus, persistDir });
     attachDaemonEventSubscribers({
       bus,
-      manager: { resumeSession: () => {} } as any,
+      manager: {} as any,
       persistDir,
       projectRoot: persistDir,
     });

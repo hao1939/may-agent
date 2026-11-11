@@ -1,4 +1,4 @@
-import type { AppDefinition, AppContract, EventSelector } from "@may-agent/sdk";
+import type { AppContract, AppDefinition, EventSelector } from "@may-agent/sdk";
 
 /** Resource observations need no App-authored record-only routing declaration. */
 export function appObservationSelectors(app: Readonly<AppDefinition>): EventSelector[] {
@@ -19,7 +19,7 @@ export function appObservationSelectors(app: Readonly<AppDefinition>): EventSele
 export function readAppContract(app: Readonly<AppDefinition>): AppContract {
   return {
     appId: app.id,
-    agent: (app.agent ?? app.owner)!.trim().replace(/^agent:/, ""),
+    agent: app.agent.trim().replace(/^agent:/, ""),
     inputSchema: structuredClone(app.inputSchema),
     ...(app.tasks || app.conversation ? { taskReads: { workload: 1 as const } } : {}),
     ...(app.tasks?.closeOnResult || app.tasks?.coordination ? { taskPolicy: {

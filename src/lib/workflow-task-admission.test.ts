@@ -1,20 +1,20 @@
 import { afterEach, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { EventBus } from "../app/core/events/bus.js";
-import { TaskBudgetAdmissionStore } from "../app/core/state/task-budget-admission.js";
 import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
+import { TaskBudgetAdmissionStore } from "../app/core/state/task-budget-admission.js";
+import { releaseJoinedTaskAttemptExecution } from "../app/core/state/task-execution-cleanup.js";
+import { TaskExecutionStore } from "../app/core/state/task-execution-store.js";
 import {
   appTaskContext,
-  observeAppTaskIntent,
-  claimObservedAppTask,
   cancelAppTask,
+  claimObservedAppTask,
+  observeAppTaskIntent,
 } from "../app/core/tasks/app-task-reconciler.js";
-import { releaseJoinedTaskAttemptExecution } from "../app/core/state/task-execution-cleanup.js";
-import type { TaskBinding } from "./persistence.js";
-import { TaskExecutionStore } from "../app/core/state/task-execution-store.js";
 import { closeDb, getDb } from "./db/connection.js";
+import type { TaskBinding } from "./persistence.js";
 import { buildRuntimeCtx } from "./runtime-ctx.js";
 import { createWorkflowRunner, createWorkflowTool, runWorkflowDirect } from "./workflow-tool.js";
 
@@ -95,7 +95,7 @@ test.each(["typed", "model", "direct", "typed-context-only"])(
   },
 );
 
-test("limits installed after a legacy failure prevent resume from executing unbound code again", async () => {
+test("retired replay cannot execute a failed historical workflow again", async () => {
   const f = fixture(true);
   const first = await createWorkflowRunner(f.options).run("inspect", "Inspect");
   if (first.type !== "error" || !first.workflowRunId) throw new Error("Expected retained unfinished workflow");
@@ -106,12 +106,12 @@ test("limits installed after a legacy failure prevent resume from executing unbo
     workflowRunId: first.workflowRunId,
   });
   const result = textResult(response);
-  expect(result).toMatchObject({ type: "error", error: expect.stringContaining("Task") });
+  expect(result).toMatchObject({ error: "Unknown action: resume" });
   expect(readFileSync(f.marker, "utf8")).toBe("executed\n");
   expect(f.db.prepare("SELECT count(*) AS n FROM workflow_runs").get()?.n).toBe(1);
 });
 
-test("unconfigured execution and free saved-result reads keep their existing behavior", async () => {
+test("unconfigured execution remains available and history remains readable without replay", async () => {
   const f = fixture();
   const first = await createWorkflowRunner(f.options).run("inspect", "Inspect");
   if (first.type !== "done") throw new Error("Expected initial completion");
@@ -120,7 +120,8 @@ test("unconfigured execution and free saved-result reads keep their existing beh
     action: "resume",
     workflowRunId: first.workflowRunId,
   });
-  expect(textResult(response)).toMatchObject({ type: "done", summary: "Executed code" });
+  expect(textResult(response)).toMatchObject({ error: "Unknown action: resume" });
+  expect(f.db.prepare("SELECT status FROM workflow_runs").get()?.status).toBe("done");
   expect(readFileSync(f.marker, "utf8")).toBe("executed\n");
   expect(f.db.prepare("SELECT count(*) AS n FROM workflow_runs").get()?.n).toBe(1);
 });

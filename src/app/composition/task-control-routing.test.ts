@@ -1,5 +1,5 @@
 import { afterEach, expect, it } from "bun:test";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DbWriter } from "../../lib/db-writer.js";
@@ -15,11 +15,11 @@ import {
   cancelAppTask,
   claimObservedAppTask,
   closeAppTask,
-  reopenAppTask,
   completeAppTask,
   failAppTaskAttempt,
   observeAppTaskIntent,
   recordAppTaskTrigger,
+  reopenAppTask,
   retryFailedAppTask,
 } from "../core/tasks/app-task-reconciler.js";
 import { admitStandaloneCanonicalAppTaskEvent } from "../core/tasks/app-task-runtime.js";
@@ -51,7 +51,7 @@ async function fixture(controlFirst?: boolean) {
   writeFileSync(
     join(appDir, "app.js"),
     `export default {
-    id: "sample", version: 1, owner: "owner", tasks: {},
+    id: "sample", version: 1, agent: "owner", tasks: {},
     inputSchema: { type: "object", required: ["kind", "data"], additionalProperties: false,
       properties: { kind: { const: "probe" }, data: { type: "object" } } },
     task() { return { kind: "existing", taskId: "work" }; }

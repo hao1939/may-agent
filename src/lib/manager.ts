@@ -1,11 +1,15 @@
-import { releaseTaskExecutionReservation } from "../app/core/state/task-execution-admission.js";
-import { drainSessionBashProcessGroups } from "./tools/bash.js";
-import { ExecutionDeferredError } from "@may-agent/sdk";
 import { type TSchema } from "typebox";
+import {
+  admitManagedTaskStart,
+  assertManagedTaskContinuation,
+  type ManagedTaskStartAdmission,
+  type TaskPrimaryStart,
+} from "../app/core/state/task-budget-managed-start.js";
+import { releaseTaskExecutionReservation } from "../app/core/state/task-execution-admission.js";
+import { resolvedExecutionRecipient } from "./execution-recipient.js";
 import { observeTaskFeedback, type TaskExecutionContext } from "./task-execution-context.js";
 import { prepareTaskWorkspaceContext, taskWorkspacePrompt } from "./task-workspace-context.js";
-import { admitManagedTaskStart, assertManagedTaskContinuation, type TaskPrimaryStart, type ManagedTaskStartAdmission } from "../app/core/state/task-budget-managed-start.js";
-import { executionRecipientKey, resolvedExecutionRecipient } from "./execution-recipient.js";
+import { drainSessionBashProcessGroups } from "./tools/bash.js";
 /**
  * Durable agent session runtime.
  *
@@ -17,50 +21,19 @@ import { executionRecipientKey, resolvedExecutionRecipient } from "./execution-r
  * durable session state, recovery, guards, event bridging, and bounded calls.
  */
 
-import type { AgentTool, AgentMessage } from "@earendil-works/pi-agent-core";
-import { readWorkflowFacts } from "./workflow-facts.js";
-import { createAgentRun, restoreAgentMessages, type AgentRun } from "./agent-runner.js";
+import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import { bindToolsToExecutionScope, prepareAgentExecution } from "./agent-execution.js";
-import { observeExecutionUsage, recoverExecutionUsage, type UsageOutcome } from "./db/execution-usage.js";
 import { extractFinishParams } from "./agent-result.js";
+import { createAgentRun, type AgentRun } from "./agent-runner.js";
+import { observeExecutionUsage, recoverExecutionUsage, type UsageOutcome } from "./db/execution-usage.js";
+import { readWorkflowFacts } from "./workflow-facts.js";
 
-import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, realpathSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import {
-  generateId,
-  extractLastAssistantText,
-  extractLastAssistantError,
-  classifyTerminalAssistantFailure,
-  isRetryableEmptyAssistantFailure,
-  trimTerminalEmptyAssistantTurn,
-  formatDuration,
-  truncateForPrompt,
-} from "./manager-utils.js";
-import {
-  boundedWorkflowFinishPrompt,
-  recoverCapturedWorkflowFinish,
-  shouldAttemptWorkflowFinishRecovery,
-  shouldRequestBoundedWorkflowFinish,
-  validateOperationAllowance,
-  workflowFinishRecoveryPrompt,
-} from "./workflow-finish-recovery.js";
-import {
-  ensureSessionDir,
-  appendSessionMessage,
-  sessionOutputDir,
-  readSessionMessages,
-  readSessionMessagesTail,
-  readCompactedMessages,
-  saveCompactedMessages,
-  rewriteSessionMessages,
-  readSessionMetaRecoveryEvidence,
-  listActiveSessionIds,
-  markSessionActive,
-  readActiveSessionProcessId,
-  markSessionInactive,
-  RegistryStore,
-  sessionDir,
-} from "./persistence.js";
+import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
+import { ownsBoundedHelper, validateSessionControl } from "../app/adapters/executors/session-control.js";
+import { EVENT_RECORD_ONLY, EVENT_ROW_ID, type EventBus, type EventTrace } from "../app/core/events/bus.js";
+import { getDb } from "./db/connection.js";
 import { readSessionTaskAttempt, updateSessionDb, updateSessionProgress } from "./db/sessions.js";
 import {
   getWorkflowRun,
@@ -69,34 +42,63 @@ import {
   listRunningWorkflowRunIdsBefore,
   updateWorkflowRun,
 } from "./db/workflows.js";
-import { getDb } from "./db/connection.js";
-import { EVENT_RECORD_ONLY, EVENT_ROW_ID, type EventBus, type EventTrace } from "../app/core/events/bus.js";
-import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
-import type { SessionKind, PersistedSession, TaskBinding } from "./persistence.js";
-import type { ToolPolicy } from "./session-policy.js";
+import { ExecutionScope, ExecutionWorkEnded, executionTimeout } from "./execution-scope.js";
 import { log } from "./log.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
-import { ownsBoundedHelper, validateSessionControl } from "../app/adapters/executors/session-control.js";
-import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
-import { invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
-import { createFinishTool } from "./tools/lifecycle.js";
-import { createCheckpointTool } from "./tools/checkpoint.js";
+import {
+  classifyTerminalAssistantFailure,
+  extractLastAssistantError,
+  extractLastAssistantText,
+  formatDuration,
+  generateId,
+  isRetryableEmptyAssistantFailure,
+  trimTerminalEmptyAssistantTurn,
+  truncateForPrompt,
+} from "./manager-utils.js";
+import type { PersistedSession, SessionKind, TaskBinding } from "./persistence.js";
+import {
+  RegistryStore,
+  appendSessionMessage,
+  ensureSessionDir,
+  listActiveSessionIds,
+  markSessionActive,
+  markSessionInactive,
+  readActiveSessionProcessId,
+  readSessionMessagesTail,
+  readSessionMetaRecoveryEvidence,
+  rewriteSessionMessages,
+  saveCompactedMessages,
+  sessionDir,
+  sessionOutputDir,
+} from "./persistence.js";
 import { confirmSessionExecutionStopped, hasLiveSessionExecution } from "./session-cleanup.js";
+import type { ToolPolicy } from "./session-policy.js";
+import { invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
+import { createCheckpointTool } from "./tools/checkpoint.js";
+import { createFinishTool } from "./tools/lifecycle.js";
+import type { SessionInfo, SubagentDefinition, TaskResult } from "./types.js";
+import {
+  boundedWorkflowFinishPrompt,
+  recoverCapturedWorkflowFinish,
+  shouldAttemptWorkflowFinishRecovery,
+  shouldRequestBoundedWorkflowFinish,
+  validateOperationAllowance,
+  workflowFinishRecoveryPrompt,
+} from "./workflow-finish-recovery.js";
 
 // Re-export utilities that other modules import from manager
-export {
-  generateId,
-  formatDuration,
-  truncateForPrompt,
-  isToolError,
-  computeToolArgsKey,
-  TOOL_PIVOT_LIMIT,
-} from "./manager-utils.js";
-export { classifyError } from "./classify-error.js";
 export { extractFinishParams } from "./agent-result.js";
-export type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
+export { classifyError } from "./classify-error.js";
+export {
+  TOOL_PIVOT_LIMIT,
+  computeToolArgsKey,
+  formatDuration,
+  generateId,
+  isToolError,
+  truncateForPrompt,
+} from "./manager-utils.js";
 export type { RegisteredAgent } from "./manager-utils.js";
-import { ExecutionScope, ExecutionWorkEnded, executionTimeout } from "./execution-scope.js";
+export type { SessionInfo, SubagentDefinition, TaskResult } from "./types.js";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -129,7 +131,6 @@ export interface RunOptions {
   timeoutMs?: number;
   signal?: AbortSignal;
   deadlineAt?: number;
-  resumeMessages?: AgentMessage[];
   trace?: EventTrace;
   /** Explicit primary skill to activate for this turn. */
   skill?: string;
@@ -213,7 +214,6 @@ interface ActiveSession {
   taskBinding?: TaskBinding;
   taskContext?: TaskExecutionContext;
   recoveryOwner?: string;
-  resumeMessages?: AgentMessage[];
   trace?: EventTrace;
   /** Semantic intent traces merged into the currently executing turn. */
   openTurnTraces: EventTrace[];
@@ -226,73 +226,6 @@ interface ActiveSession {
   tools?: AgentTool[];
   toolPolicy: ToolPolicy;
   executionRoot?: string;
-}
-
-type DispatchDedupDb = {
-  records?: Record<string, { agent?: string; lastStatus?: string; taskPrefix?: string }>;
-  version?: number;
-};
-
-function isHeartbeatSession(meta: { source?: string }): boolean {
-  return meta.source === "heartbeat";
-}
-
-function releaseStaleHeartbeatDispatchLease(persistDir: string, agent: string): boolean {
-  const dedupPath = join(persistDir, "dispatch-dedup.json");
-  if (!existsSync(dedupPath)) return false;
-
-  try {
-    const db = JSON.parse(readFileSync(dedupPath, "utf8")) as DispatchDedupDb;
-    const records = db.records ?? {};
-    const record = records[`${agent}::heartbeat`];
-    if (!record || record.lastStatus !== "running") return false;
-
-    record.lastStatus = "interrupted";
-    writeFileSync(dedupPath, JSON.stringify(db, null, 2));
-    return true;
-  } catch (err) {
-    log(
-      "warn",
-      `[manager] Error releasing stale heartbeat dispatch lease for ${agent}: ${err instanceof Error ? err.message : String(err)}`,
-    );
-    return false;
-  }
-}
-
-function releaseOrphanedHeartbeatDispatchLeases(
-  persistDir: string,
-  sessions: Record<string, { agent: string; status: string; source?: string; task?: string }>,
-): string[] {
-  const dedupPath = join(persistDir, "dispatch-dedup.json");
-  if (!existsSync(dedupPath)) return [];
-
-  try {
-    const db = JSON.parse(readFileSync(dedupPath, "utf8")) as DispatchDedupDb;
-    const records = db.records ?? {};
-    const activeHeartbeatAgents = new Set(
-      Object.values(sessions)
-        .filter((session) => (session.status === "running" || session.status === "idle") && isHeartbeatSession(session))
-        .map((session) => session.agent),
-    );
-
-    const released: string[] = [];
-    for (const [key, record] of Object.entries(records)) {
-      if (!key.endsWith("::heartbeat") || record.lastStatus !== "running") continue;
-      const agent = record.agent || key.slice(0, -"::heartbeat".length);
-      if (activeHeartbeatAgents.has(agent)) continue;
-      record.lastStatus = "interrupted";
-      released.push(agent);
-    }
-
-    if (released.length > 0) writeFileSync(dedupPath, JSON.stringify(db, null, 2));
-    return released;
-  } catch (err) {
-    log(
-      "warn",
-      `[manager] Error releasing orphaned heartbeat dispatch leases: ${err instanceof Error ? err.message : String(err)}`,
-    );
-    return [];
-  }
 }
 
 export interface SubagentManagerOptions {
@@ -352,182 +285,6 @@ export class SubagentManager {
       this.completedResults.delete(oldest);
     }
   }
-
-  private emitSessionResumeFailed(
-    sessionId: string,
-    meta: { agent?: string; workflowRunId?: string; projectId?: string } | null | undefined,
-    reason: string,
-    category: string,
-    recoverable: boolean,
-  ): void {
-    this.bus?.emit({
-      type: "session.resume_failed",
-      source: "manager",
-      owner: normalizeEventOwner(meta?.agent),
-      timestamp: Date.now(),
-      data: {
-        sessionId,
-        agent: meta?.agent,
-        workflowRunId: meta?.workflowRunId,
-        projectId: meta?.projectId,
-        reason,
-        category,
-        recoverable,
-        nextAction: category === "already_active" ? "resume" : recoverable ? "resume" : "escalate",
-      },
-    });
-  }
-
-  /**
-   * Resume primitive: rebuild transcript, optionally inject a new user turn,
-   * reset persistence, hand off to `this.run`. All resume entry points
-   * (resumeSession, resumeStaleSessions, auto-resume after interrupt) funnel
-   * through here so behavior stays consistent.
-   *
-   * Preconditions (callers must check before invoking):
-   *  - meta exists and has a registered agent
-   *  - sessionId is not currently in `_sessions` (in-memory live)
-   *
-   * On failure: emits `session.resume_failed` and re-throws. Callers that
-   * need to record an additional registry/DB row update on failure should
-   * catch and do so (resumeStaleSessions does, see below).
-   */
-  private executeResume(
-    sessionId: string,
-    meta: PersistedSession,
-    opts: {
-      source: string;
-      injectUserMessage?: string;
-      resetDbRow?: boolean;
-      timeoutMs?: number;
-      signal?: AbortSignal;
-      deadlineAt?: number;
-      trace?: EventTrace;
-      requireFinish?: boolean;
-      operationAllowance?: number;
-      outputSchema?: TSchema;
-      toolPolicy?: ToolPolicy;
-      executionRoot?: string;
-      taskBinding?: TaskBinding;
-      taskContext?: TaskExecutionContext;
-    },
-  ): void {
-    // A name can now select another App/global folder. Check durable ownership
-    // before changing the transcript, persistence, or starting an agent run.
-    const definition = this.agents.get(meta.agent)?.definition;
-    const savedRecipient = resolvedExecutionRecipient({
-      agentRelativeDir: meta.agentRelativeDir ?? undefined,
-      hostIdentity: meta.agentHostIdentity ?? undefined,
-    });
-    const selectedRecipient = definition ? resolvedExecutionRecipient(definition) : null;
-    if (
-      (savedRecipient ? executionRecipientKey(savedRecipient) : null) !==
-      (selectedRecipient ? executionRecipientKey(selectedRecipient) : null)
-    ) {
-      const directory = savedRecipient?.kind === "directory" || selectedRecipient?.kind === "directory";
-      const unknown = directory ? meta.agentRelativeDir === undefined : meta.agentHostIdentity === undefined;
-      const label = directory ? "agent directory" : "programmatic agent identity";
-      const reason = unknown
-        ? `Session ${sessionId} has no recorded ${label}; cannot verify the resume owner`
-        : `Session ${sessionId} ${label} changed from ${savedRecipient?.id ?? "<unknown>"} to ${selectedRecipient?.id ?? "<unknown>"}; refusing cross-owner resume`;
-      this.emitSessionResumeFailed(
-        sessionId,
-        meta,
-        reason,
-        unknown ? "agent_identity_unknown" : "agent_identity_changed",
-        false,
-      );
-      throw new Error(reason);
-    }
-    const resume = this.buildResumeMessages(sessionId);
-    const resumeMessages = resume.messages;
-
-    if (opts.injectUserMessage) {
-      // buildResumeMessages always ends with a user turn (either the original
-      // last user turn, or a synthetic "Process restarted..." notice). When an
-      // explicit message is provided, replace the synthetic tail so the new
-      // turn lands cleanly.
-      const tail: any = resumeMessages[resumeMessages.length - 1];
-      const isSyntheticRestart =
-        tail?.role === "user" &&
-        Array.isArray(tail.content) &&
-        tail.content[0]?.type === "text" &&
-        /^Process restarted\./.test(String(tail.content[0]?.text ?? ""));
-      if (isSyntheticRestart) {
-        resumeMessages.pop();
-        if (resume.added[resume.added.length - 1] === tail) resume.added.pop();
-      }
-      const newUserTurn: any = {
-        role: "user",
-        content: [{ type: "text", text: opts.injectUserMessage }],
-        timestamp: Date.now(),
-      };
-      resumeMessages.push(newUserTurn);
-      resume.added.push(newUserTurn);
-    }
-
-    const prepareAdmittedResume = () => {
-      // Do not change retained evidence when shared admission denies this start.
-      // Runtime-authored recovery input is persisted after admission.
-      try {
-        for (const message of resume.added) appendSessionMessage(this._persistDir, sessionId, message);
-      } catch (err) {
-        const reason = `Failed to persist session recovery: ${err instanceof Error ? err.message : String(err)}`;
-        this.emitSessionResumeFailed(sessionId, meta, reason, "resume_persistence_failed", true);
-        throw err;
-      }
-      if (opts.resetDbRow) {
-        // Clear stale terminal fields only for an admitted resume.
-        try {
-          const db = getDb(this._persistDir);
-          db.run(`UPDATE sessions SET status = 'running', endedAt = NULL, error = NULL WHERE sessionId = ?`, [sessionId]);
-        } catch {
-          /* best-effort — the admitted start re-saves the registry row */
-        }
-      }
-    };
-
-    const task = opts.injectUserMessage ?? meta.task;
-
-    try {
-      this.startDefinition(definition!, task, {
-        sessionId,
-        parentSessionId: meta.parentSessionId,
-        workflowRunId: meta.workflowRunId,
-        stepLabel: meta.stepLabel,
-        source: opts.source,
-        kind: meta.kind ?? "job",
-        autoClose: meta.autoClose ?? "immediate",
-        requestId: meta.requestId,
-        conversationId: meta.conversationId,
-        channelMessageId: meta.channelMessageId,
-        orderId: meta.orderId,
-        startedAt: meta.startedAt,
-        projectId: meta.projectId,
-        recoveryOwner: meta.recoveryOwner,
-        timeoutMs: opts.timeoutMs,
-        signal: opts.signal,
-        deadlineAt: opts.deadlineAt,
-        resumeMessages,
-        trace: opts.trace,
-        requireFinish: opts.requireFinish ?? meta.requireFinish,
-        operationAllowance: opts.operationAllowance ?? meta.operationAllowance,
-        outputSchema: opts.outputSchema ?? meta.outputSchema,
-        toolPolicy: opts.toolPolicy ?? meta.toolPolicy,
-        executionRoot: opts.executionRoot ?? meta.executionRoot,
-        // Transcript metadata is facts, not authority for a new attempt.
-        taskBinding: opts.taskBinding,
-        taskContext: opts.taskContext,
-      }, prepareAdmittedResume);
-    } catch (err) {
-      if (err instanceof ExecutionDeferredError) throw err;
-      const reason = `Failed to resume session: ${err instanceof Error ? err.message : String(err)}`;
-      this.emitSessionResumeFailed(sessionId, meta, reason, "resume_run_failed", true);
-      throw err;
-    }
-  }
-
-  // ── Registration ──
 
   register(def: SubagentDefinition): void {
     resolvedExecutionRecipient(def);
@@ -643,10 +400,12 @@ export class SubagentManager {
     }
 
     const existingMeta = this._registry.getSession(sessionId);
+    if (existingMeta || existsSync(sessionDir(this._persistDir, sessionId))) {
+      throw new Error(`Session "${sessionId}" already has execution evidence; start a fresh session`);
+    }
     const managedStart = admitManagedTaskStart(getDb(this._persistDir), {
       sessionId,
       binding: opts?.taskBinding,
-      retainedBinding: existingMeta?.taskBinding,
       primary: opts?.taskPrimaryStart,
       persistentChat,
       recipient, agent: def.name,
@@ -794,7 +553,6 @@ export class SubagentManager {
         taskBinding: opts?.taskBinding,
         taskContext: opts?.taskContext,
         recoveryOwner: opts?.recoveryOwner,
-        resumeMessages: opts?.resumeMessages,
         trace: opts?.trace,
         openTurnTraces: opts?.trace ? [opts.trace] : [],
         promptTask: prepared.prompt,
@@ -807,49 +565,39 @@ export class SubagentManager {
         executionRoot: opts?.executionRoot,
       };
 
-      if (!existingMeta && opts?.resumeMessages?.length) {
-        for (const message of opts.resumeMessages) {
-          try {
-            appendSessionMessage(this._persistDir, sessionId, message);
-          } catch {
-            /* best-effort */
-          }
-        }
-      }
       this._registry.saveSession(sessionId, {
-        ...(existingMeta ?? {}),
         agent: def.name,
         agentRelativeDir: def.agentRelativeDir ?? null,
         agentHostIdentity: recipient?.kind === "programmatic" ? recipient.id : null,
         task: sessionTask,
         status: "running",
         startedAt,
-        parentSessionId: opts?.parentSessionId ?? existingMeta?.parentSessionId,
-        workflowRunId: opts?.workflowRunId ?? existingMeta?.workflowRunId,
-        stepLabel: opts?.stepLabel ?? existingMeta?.stepLabel,
-        source: opts?.source ?? existingMeta?.source,
-        requestId: opts?.requestId ?? existingMeta?.requestId,
-        conversationId: opts?.conversationId ?? existingMeta?.conversationId,
-        channelMessageId: opts?.channelMessageId ?? existingMeta?.channelMessageId,
-        projectId: opts?.projectId ?? existingMeta?.projectId,
+        parentSessionId: opts?.parentSessionId,
+        workflowRunId: opts?.workflowRunId,
+        stepLabel: opts?.stepLabel,
+        source: opts?.source,
+        requestId: opts?.requestId,
+        conversationId: opts?.conversationId,
+        channelMessageId: opts?.channelMessageId,
+        projectId: opts?.projectId,
         // Persist the live attempt's exact scope, including an explicit absence.
         // Retained transcript metadata must not resurrect an old fenced binding.
         taskBinding: session.taskBinding,
-        recoveryOwner: opts?.recoveryOwner ?? existingMeta?.recoveryOwner,
+        recoveryOwner: opts?.recoveryOwner,
         kind,
         autoClose,
-        orderId: opts?.orderId ?? existingMeta?.orderId,
+        orderId: opts?.orderId,
         requireFinish,
-        operationAllowance: operationAllowance ?? existingMeta?.operationAllowance,
-        outputSchema: outputSchema ?? existingMeta?.outputSchema,
+        operationAllowance: operationAllowance,
+        outputSchema: outputSchema,
         toolPolicy,
-        executionRoot: opts?.executionRoot ?? existingMeta?.executionRoot,
+        executionRoot: opts?.executionRoot,
       });
 
       // Register before publishing session.start so synchronous subscribers see
       // the same live state as the durable event. Roll back the in-memory and
       // registry state if the required persistence boundary rejects the event.
-      // Reusing a session for a paid resume must wait for the new invocation,
+      // Waiters must observe this invocation,
       // rather than return the previous invocation's cached terminal result.
       this.completedResults.delete(sessionId);
       this._sessions.set(sessionId, session);
@@ -871,9 +619,6 @@ export class SubagentManager {
         this.startChatTurn(
           session,
           async () => {
-            if (session.resumeMessages) {
-              restoreAgentMessages(agent, session.resumeMessages as AgentMessage[]);
-            }
             await agent.prompt(prepared.prompt);
           },
         );
@@ -1216,23 +961,9 @@ export class SubagentManager {
     });
   }
 
-  // ── Session resume (v1 carryover; pi-agent-core has agent.continue() but we don't wire it yet) ──
-
-  /** Resume or interrupt sessions left running by a previous process. */
-  resumeStaleSessions(opts?: {
-    abort?: boolean;
-    kinds?: SessionKind[];
-    shouldResume?: (
-      sessionId: string,
-      session: PersistedSession,
-    ) => { resume: true } | { resume: false; reason?: string };
-  }): {
-    resumed: SessionInfo[];
-    interrupted: SessionInfo[];
-  } {
-    const activeSessions: Record<string, PersistedSession> = {};
-    const kindFilter = opts?.kinds ? new Set(opts.kinds) : null;
-    const stale = new Map<string, (typeof activeSessions)[string]>();
+  /** Confirm stopped execution and retain its evidence. Only Tasks retry obligations. */
+  cleanupStaleSessions(): { interrupted: SessionInfo[] } {
+    const stale = new Map<string, PersistedSession>();
     const cleanup = { manager: this, persistDir: this._persistDir };
     let hasPendingCleanup = false;
     const recoverUsage = (sessionId: string, outcome: UsageOutcome) => {
@@ -1253,8 +984,6 @@ export class SubagentManager {
       }
       const evidence = readSessionMetaRecoveryEvidence(this._persistDir, sessionId);
       const fields = evidence.state !== "absent" ? evidence.meta : undefined;
-      const kind = fields?.kind ?? "job";
-      if (typeof kind === "string" && kindFilter && !kindFilter.has(kind as SessionKind)) continue;
       try {
         // Discovery supplies the retained record; copied scope alone does not
         // authorize cleanup of an incomplete Task execution.
@@ -1266,7 +995,6 @@ export class SubagentManager {
           markSessionInactive(this._persistDir, sessionId);
           continue;
         }
-        activeSessions[sessionId] = persisted;
         if (persisted.status === "done" || persisted.status === "error" || persisted.status === "interrupted") {
           recoverUsage(sessionId, persisted.status);
           updateSessionDb(this._persistDir, sessionId, {
@@ -1285,165 +1013,19 @@ export class SubagentManager {
       }
     }
 
-    const resumed: SessionInfo[] = [];
     const interrupted: SessionInfo[] = [];
     for (const [sessionId, persisted] of stale) {
-      if (isHeartbeatSession(persisted) && releaseStaleHeartbeatDispatchLease(this._persistDir, persisted.agent)) {
-        log("info", `[manager] Released stale heartbeat dispatch lease for ${persisted.agent} from ${sessionId}`);
-      }
-
-      // The old invocation ended even if recovery starts a new one in the same
-      // session. Preserve its saved counters; a resume gets its own usage row.
       recoverUsage(sessionId, "interrupted");
-
-      if (opts?.abort) {
-        const error = "Clean start (fresh)";
-        this._registry.updateSessionStatus(sessionId, "interrupted", error);
-        updateSessionDb(this._persistDir, sessionId, { status: "interrupted", endedAt: Date.now(), error });
-        markSessionInactive(this._persistDir, sessionId);
-        interrupted.push(this.sessionInfoFromMeta(sessionId, { ...persisted, status: "interrupted", error }));
-        continue;
-      }
-
-      const resumeDecision = opts?.shouldResume?.(sessionId, persisted);
-      if (resumeDecision?.resume === false) {
-        const error = resumeDecision.reason ?? "Stale session skipped by startup recovery policy";
-        this._registry.updateSessionStatus(sessionId, "interrupted", error);
-        updateSessionDb(this._persistDir, sessionId, { status: "interrupted", endedAt: Date.now(), error });
-        markSessionInactive(this._persistDir, sessionId);
-        interrupted.push(this.sessionInfoFromMeta(sessionId, { ...persisted, status: "interrupted", error }));
-        continue;
-      }
-
-      if (!this.agents.has(persisted.agent)) {
-        const error = "Process restarted (agent not registered)";
-        this._registry.updateSessionStatus(sessionId, "interrupted", error);
-        updateSessionDb(this._persistDir, sessionId, { status: "interrupted", endedAt: Date.now(), error });
-        markSessionInactive(this._persistDir, sessionId);
-        this.emitSessionResumeFailed(sessionId, persisted, error, "agent_not_registered", false);
-        interrupted.push(this.sessionInfoFromMeta(sessionId, { ...persisted, status: "interrupted", error }));
-        continue;
-      }
-
-      try {
-        this.executeResume(sessionId, persisted, {
-          source: persisted.source ?? "resumeStaleSessions",
-          // No injectUserMessage: keep the synthetic "Process restarted..."
-          // tail injected by buildResumeMessages.
-          // manager.run reuses the permanent session directory and reseats the DB row.
-        });
-        try {
-          unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"));
-        } catch {}
-        resumed.push(this.sessionInfoFromMeta(sessionId, { ...persisted, status: "running" }));
-      } catch (err) {
-        // executeResume already emitted session.resume_failed. We additionally
-        // mark the session interrupted in registry+DB so it is not retried
-        // forever, and surface it via the `interrupted` return slot.
-        const error = `Failed to resume session: ${err instanceof Error ? err.message : String(err)}`;
-        this._registry.updateSessionStatus(sessionId, "interrupted", error);
-        updateSessionDb(this._persistDir, sessionId, { status: "interrupted", endedAt: Date.now(), error });
-        markSessionInactive(this._persistDir, sessionId);
-        interrupted.push(this.sessionInfoFromMeta(sessionId, { ...persisted, status: "interrupted", error }));
-      }
+      const error = "Process restarted; recover work through its owning Task";
+      const endedAt = Date.now();
+      this._registry.updateSessionStatus(sessionId, "interrupted", error);
+      updateSessionDb(this._persistDir, sessionId, { status: "interrupted", endedAt, error });
+      markSessionInactive(this._persistDir, sessionId);
+      interrupted.push(this.sessionInfoFromMeta(sessionId, { ...persisted, status: "interrupted", endedAt, error }));
     }
 
     if (!hasPendingCleanup) this.cleanupStaleWorkflowRuns();
-    const releasedOrphanLeases = hasPendingCleanup
-      ? []
-      : releaseOrphanedHeartbeatDispatchLeases(this._persistDir, activeSessions);
-    for (const agent of releasedOrphanLeases) {
-      log("info", `[manager] Released orphaned heartbeat dispatch lease for ${agent}`);
-    }
-    return { resumed, interrupted };
-  }
-
-  /**
-   * Resume a cold (done/error/interrupted) session with a new user message.
-   *
-   * Reuses the original sessionId so the JSONL transcript grows in place
-   * (Telegram-style: one persistent thread per chat). The new message is
-   * appended after the rebuilt transcript as the next user turn.
-   *
-   * Throws if the session is unknown or already active in memory — callers
-   * should check `_sessions.has(sessionId)` first and use steer/input for
-   * live sessions.
-   */
-  resumeSession(
-    sessionId: string,
-    message: string,
-    opts?: {
-      source?: string;
-      timeoutMs?: number;
-      signal?: AbortSignal;
-      deadlineAt?: number;
-      suppressBenignRaceEvent?: boolean;
-      taskBinding?: TaskBinding;
-      taskContext?: TaskExecutionContext;
-      trace?: EventTrace;
-      requireFinish?: boolean;
-      operationAllowance?: number;
-      outputSchema?: TSchema;
-      toolPolicy?: ToolPolicy;
-    },
-  ): string {
-    if (this._sessions.has(sessionId)) {
-      const reason = `Session "${sessionId}" is already active — use steer/input instead`;
-      if (opts?.suppressBenignRaceEvent) {
-        log(
-          "debug",
-          `[resume] Skipping already-active resume failure for ${sessionId} from ${opts.source ?? "unknown"}`,
-        );
-        throw new Error(reason);
-      }
-      this.emitSessionResumeFailed(sessionId, this._registry.getSession(sessionId), reason, "already_active", true);
-      throw new Error(reason);
-    }
-    const meta = this._registry.getSession(sessionId);
-    if (!meta) {
-      if (opts?.suppressBenignRaceEvent) {
-        let dbStatus: string | null = null;
-        try {
-          const row = getDb(this._persistDir)
-            .prepare("SELECT status FROM sessions WHERE sessionId = ?")
-            .get(sessionId) as { status: string } | null;
-          dbStatus = row?.status ?? null;
-        } catch {
-          /* best-effort DB lookup */
-        }
-        log(
-          "debug",
-          `[resume] Suppressing resume_failed event for dead/missing session ${sessionId} from ${opts?.source ?? "unknown"}; dbStatus=${dbStatus ?? "missing"}`,
-        );
-        throw new Error(`Session "${sessionId}" not found`);
-      }
-
-      const reason = `Session "${sessionId}" not found`;
-      this.emitSessionResumeFailed(sessionId, null, reason, "session_not_found", false);
-      throw new Error(reason);
-    }
-    if (!this.agents.has(meta.agent)) {
-      const reason = `Agent "${meta.agent}" is not registered (cannot resume session ${sessionId})`;
-      this.emitSessionResumeFailed(sessionId, meta, reason, "agent_not_registered", false);
-      throw new Error(reason);
-    }
-
-    this.executeResume(sessionId, meta, {
-      source: opts?.source ?? "resume",
-      injectUserMessage: message,
-      taskBinding: opts?.taskBinding,
-      taskContext: opts?.taskContext,
-      resetDbRow: true,
-      timeoutMs: opts?.timeoutMs,
-      signal: opts?.signal,
-      deadlineAt: opts?.deadlineAt,
-      trace: opts?.trace,
-      requireFinish: opts?.requireFinish,
-      operationAllowance: opts?.operationAllowance,
-      outputSchema: opts?.outputSchema,
-      toolPolicy: opts?.toolPolicy,
-    });
-    return sessionId;
+    return { interrupted };
   }
 
   health() {
@@ -1730,41 +1312,6 @@ export class SubagentManager {
     }
   }
 
-  private buildResumeMessages(sessionId: string): { messages: AgentMessage[]; added: AgentMessage[] } {
-    const messages =
-      readCompactedMessages(this._persistDir, sessionId) ?? readSessionMessages(this._persistDir, sessionId);
-    const repaired = messages.slice();
-    const added: AgentMessage[] = [];
-    const last = repaired[repaired.length - 1] as any;
-    const pendingToolCalls =
-      last?.role === "assistant" && Array.isArray(last.content)
-        ? last.content.filter((block: any) => block?.type === "toolCall")
-        : [];
-    for (const call of pendingToolCalls) {
-      const toolResult = {
-        role: "toolResult",
-        toolCallId: call.id,
-        isError: true,
-        content: [{ type: "text", text: "Tool call interrupted because the process restarted." }],
-        timestamp: Date.now(),
-      } as any;
-      repaired.push(toolResult);
-      added.push(toolResult);
-    }
-
-    const updatedLast = repaired[repaired.length - 1] as any;
-    if (updatedLast?.role && updatedLast.role !== "user") {
-      const restartNotice = {
-        role: "user",
-        content: [{ type: "text", text: "Process restarted. Continue where you left off." }],
-        timestamp: Date.now(),
-      } as any;
-      repaired.push(restartNotice);
-      added.push(restartNotice);
-    }
-    return { messages: repaired, added };
-  }
-
   private sessionInfoFromMeta(sessionId: string, meta: any): SessionInfo {
     return {
       sessionId,
@@ -2012,9 +1559,6 @@ export class SubagentManager {
 
     try {
       await this.withExecutionScope(session, async () => {
-        if (session.resumeMessages) {
-          restoreAgentMessages(agent, session.resumeMessages as AgentMessage[]);
-        }
         let recoveredThrownFailure = false;
         try {
           await agent.prompt(session.promptTask ?? task);

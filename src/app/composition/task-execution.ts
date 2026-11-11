@@ -1,51 +1,21 @@
-import { getDb } from "../../lib/db/connection.js";
-import { taskExecutionContext } from "../adapters/executors/task-context.js";
 import type { SubagentManager } from "../../lib/index.js";
-import type { SubagentDefinition } from "../../lib/types.js";
-import type { EventBus } from "../core/events/bus.js";
-
-import type { AppTaskRuntimeOptions } from "../core/tasks/runtime-options.js";
 import { createTaskAgentRunner } from "../adapters/executors/managed-agent.js";
-import { createTaskWorkflowRunner } from "../adapters/executors/workflow.js";
 import { createTaskSessionRecovery } from "../adapters/executors/session-recovery.js";
+import { createTaskWorkflowRunner } from "../adapters/executors/workflow.js";
 import { gitTaskWorkspaces } from "../adapters/workspaces/git.js";
-import { prepareConversationTaskTurn } from "./conversation-task-turn.js";
-import { createConversationAgentResolver } from "../conversations/turn-agent.js";
-import { createAppTaskCapability } from "../core/tasks/app-task-capability.js";
-import type { TaskConversationRunner } from "../core/tasks/execution.js";
-import { captureAgentDefinitions } from "../adapters/executors/agent-definitions.js";
+import type { EventBus } from "../core/events/bus.js";
+import type { AppTaskRuntimeOptions } from "../core/tasks/runtime-options.js";
 
-/** Shipped backends. The Task engine can also run without these implementations. */
+/** Shipped backends share one Task attempt and result contract. */
 export function createTaskExecutionBackends(input: {
   manager: SubagentManager;
   bus: EventBus;
   persistDir?: string;
   registerLocalAgent?: (agent: string, appDir: string, agentDir?: string) => Promise<boolean>;
   drainPersistedBashProcessGroups?: Parameters<typeof createTaskSessionRecovery>[0]["drainPersistedBashProcessGroups"];
-}): Pick<AppTaskRuntimeOptions, "agents" | "conversations" | "workflows" | "sessions" | "workspaces"> {
-  const conversations = (definitions?: ReadonlyMap<string, SubagentDefinition>): TaskConversationRunner => ({
-    execute: (turn) =>
-      prepareConversationTaskTurn({
-        ...turn,
-        resolveConversationInput: createConversationAgentResolver({
-          manager: input.manager,
-          taskContext: taskExecutionContext(turn.execution, definitions),
-          definitions,
-          registry: { snapshot: () => turn.registry },
-        }),
-        readDependency: async ({ appId, ...dependency }) => {
-          const entry = turn.registry.entries.find(({ definition }) => definition.id === appId);
-          return createAppTaskCapability({
-            bus: input.bus,
-            db: input.persistDir ? getDb(input.persistDir) : undefined,
-          }).readDependency({ appId, appDir: entry?.appDir, ...dependency });
-        },
-      }),
-    snapshot: () => conversations(captureAgentDefinitions(input.manager) ?? definitions),
-  });
+}): Pick<AppTaskRuntimeOptions, "agents" | "workflows" | "sessions" | "workspaces"> {
   return {
     agents: createTaskAgentRunner(input),
-    conversations: conversations(),
     workflows: createTaskWorkflowRunner(input),
     sessions: createTaskSessionRecovery(input),
     workspaces: gitTaskWorkspaces,

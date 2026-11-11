@@ -26,12 +26,10 @@ function fixture(
   const sent: Array<{ sessionId: string; text: string; opts?: Record<string, unknown> }> = [];
   const runs: Array<{ agent: string; text: string; opts?: Record<string, unknown> }> = [];
   const cancelled: string[] = [];
-  const resumed: string[] = [];
   const manager = {
     registryStore: new RegistryStore(root),
     status: () => [{ sessionId: "s_chat", agent: "may", task: "chat", status: "idle", runtime: "1s" }],
     send: (sessionId: string, text: string, opts?: Record<string, unknown>) => sent.push({ sessionId, text, opts }),
-    resumeSession: (sessionId: string) => resumed.push(sessionId),
     run: (agent: string, text: string, opts?: Record<string, unknown>) => {
       runs.push({ agent, text, opts });
       return typeof opts?.sessionId === "string" ? opts.sessionId : `s_new_${runs.length}`;
@@ -54,7 +52,7 @@ function fixture(
     restart: () => undefined,
     shutdown: () => undefined,
   });
-  return { root, bus, router, sent, runs, cancelled, resumed, manager };
+  return { root, bus, router, sent, runs, cancelled, manager };
 }
 
 function cleanup(root: string, router: { close(): void }): void {
@@ -335,13 +333,13 @@ describe("command router", () => {
         }
       }
       expect(f.cancelled).toEqual([]);
-      expect(f.resumed).toEqual([]);
+      expect(f.sent).toEqual([]);
     } finally {
       cleanup(f.root, f.router);
     }
   });
 
-  it("does not resume another manager's live session or partially cancel all sessions", () => {
+  it("does not steer another manager's live session or partially cancel all sessions", () => {
     const f = fixture();
     try {
       writeSessionMeta(f.root, "s_foreign", {
@@ -375,7 +373,7 @@ describe("command router", () => {
         expect(() => validateSessionControl(f.manager as any, type, "s_foreign")).toThrow("another manager");
       }
       expect(f.cancelled).toEqual([]);
-      expect(f.resumed).toEqual([]);
+      expect(f.sent).toEqual([]);
     } finally {
       cleanup(f.root, f.router);
     }

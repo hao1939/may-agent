@@ -1,16 +1,22 @@
-import { pendingTaskFunding, pendingTaskExecutionConstraint, pendingTaskWorkspaceConstraint, taskReviewAt, taskExecutionRetryExhausted } from "./app-task-state.js";
-import type {
-  AppTaskCancellation,
-  AppTaskCondition as AppTaskCondition,
-  AppTaskAcceptanceBasis as AppTaskAcceptanceBasis,
-  AppTaskAttempt as AppTaskAttempt,
-  AppTaskResource as AppTaskResource,
-  AppTaskTrigger as AppTaskTrigger,
-  AppTaskWorkspace as AppTaskWorkspace,
-} from "./app-task-state.js";
-import type { AppTaskResourceMutation, AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import type { AppTaskPolicy, TaskExecutorName } from "@may-agent/sdk";
 import { inStateTransaction } from "../../../lib/db/transaction.js";
+import type { AppTaskResourceMutation, AppTaskResourceStore } from "../state/app-task-resource-store.js";
+import type {
+  AppTaskAcceptanceBasis,
+  AppTaskAttempt,
+  AppTaskCancellation,
+  AppTaskCondition,
+  AppTaskResource,
+  AppTaskTrigger,
+  AppTaskWorkspace,
+} from "./app-task-state.js";
+import {
+  pendingTaskExecutionConstraint,
+  pendingTaskFunding,
+  pendingTaskWorkspaceConstraint,
+  taskExecutionRetryExhausted,
+  taskReviewAt,
+} from "./app-task-state.js";
 
 /** A structural container. It never carries executable Task lifecycle state. */
 export type TaskGroup = {
@@ -174,7 +180,6 @@ export type TaskTree = {
 
 export type AppTaskContext = {
   /** Loaded App selects the common reader; absent retains the legacy admission guard. */
-  conversationInputMode?: "task";
   appDir: string;
   projectDir: string;
   agent: string;

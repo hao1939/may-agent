@@ -1,12 +1,12 @@
 import { isDeepStrictEqual } from "node:util";
+import { canonicalAppEvent } from "../../canonical-app-event.js";
+import type { AgentEvent } from "../events/bus.js";
 import { getAppInboxItem } from "../state/app-inbox-store.js";
 import { listConversationInputRequests } from "../state/conversation-requests.js";
 import { readConversationInputTopicId } from "../state/conversations.js";
-import { canonicalAppEvent } from "../../canonical-app-event.js";
-import type { AgentEvent } from "../events/bus.js";
-import type { AppTaskContext, TaskTree } from "./app-task-store.js";
-import type { AppTaskInputWait, AppTaskResource, AppTaskTriggerEvent } from "./app-task-state.js";
 import { matchesAppTaskConditionFacts } from "./app-task-condition-tracker.js";
+import type { AppTaskInputWait, AppTaskResource, AppTaskTriggerEvent } from "./app-task-state.js";
+import type { AppTaskContext, TaskTree } from "./app-task-store.js";
 
 export function taskInputAdmissionKeys(
   events: readonly AppTaskTriggerEvent[],
@@ -98,6 +98,12 @@ export function readTaskInputs(
     )
       throw new Error("Task input does not belong to this Task admission");
     const original = request.request;
+    for (const { event } of claim.events) {
+      const input = canonicalAppEvent(event as AgentEvent);
+      if (input.type === "app.task.requested" && input.data.idempotencyKey === key &&
+        !isDeepStrictEqual(input.data.request, original))
+        throw new Error("Task input does not belong to this Task admission");
+    }
     // Legacy handoffs used the caller's inbox id with a separate, durable admission.
     // That is contribution context, not authority over the caller's communication.
     const item = key.startsWith("conversation-follow-up:")

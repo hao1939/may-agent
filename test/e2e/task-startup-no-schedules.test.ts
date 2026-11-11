@@ -4,8 +4,8 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
-import { buildSandbox, spawnSandboxDaemon } from "./lib/sandbox.js";
 import { openSandboxDb, pollUntil, socketEmit, socketStatus } from "./lib/live-daemon.js";
+import { buildSandbox, spawnSandboxDaemon } from "./lib/sandbox.js";
 
 // Real daemon, socket, durable admission and isolated workflow workers. No model
 // requests or production installation; restart reuses only this temporary state.
@@ -15,7 +15,6 @@ test.each(["waiting", "running"] as const)(
     const sb = await buildSandbox({
       fixtureAgents: ["may"],
       fixtureWorkflows: { may: ["task-startup-probe"] },
-      cronJson: { may: [] },
       daemonArgs: ["--socket"],
       env: { MAY_TEST_HOLD_STARTUP_ATTEMPT: phase === "running" ? "1" : "0" },
     });

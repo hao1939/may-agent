@@ -1,15 +1,15 @@
+import { Type, defineApp } from "@may-agent/sdk";
 import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { Type, defineApp } from "@may-agent/sdk";
+import { join } from "node:path";
 import { DbWriter } from "../../lib/db-writer.js";
 import { closeDb, getDb } from "../../lib/requests.js";
 import { AppRegistry } from "../core/apps/registry.js";
+import { EVENT_DELIVERY_RESULT, EVENT_ROW_ID, EventBus } from "../core/events/bus.js";
 import { getEventView } from "../core/events/interface.js";
-import { EventBus, EVENT_DELIVERY_RESULT, EVENT_ROW_ID } from "../core/events/bus.js";
-import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";
 import { getAppEventAdmissionPlan } from "../core/state/app-event-admission-store.js";
+import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";
 import { admitTaskInput } from "../core/state/inbox.js";
 import { appTaskContext } from "../core/tasks/app-task-reconciler.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
@@ -22,7 +22,7 @@ async function until(predicate: () => boolean) {
   }
 }
 
-for (const failure of ["throw", "invalid-input", "resolver", "invalid-intent", "ambiguous", "action"] as const) {
+for (const failure of ["throw", "invalid-input", "ambiguous", "action"] as const) {
   test(`recovers ${failure} translation after database reopen without blocking another App or duplicating work`, async () => {
     const root = mkdtempSync(join(tmpdir(), "may-event-translation-"));
     let db = getDb(root);
@@ -43,19 +43,7 @@ for (const failure of ["throw", "invalid-input", "resolver", "invalid-intent", "
             version: 1,
             agent: id,
             inputSchema: Type.Object({ kind: Type.Literal("message"), data: Type.Object({ value: Type.String() }) }),
-            tasks: {
-              ...(id === "broken" && (failure === "resolver" || failure === "invalid-intent")
-                ? {
-                    subscriptions: ["probe.changed"],
-                    resolve: () => {
-                      calls.broken++;
-                      if (broken && failure === "resolver") throw new Error("resolver unavailable");
-                      if (broken) return { id: "invalid", parentId: "root", outcome: "Review", acceptance: [] };
-                      return null;
-                    },
-                  }
-                : {}),
-            },
+            tasks: {},
             task: ({ id: inputId }) => ({
               kind: "desired",
               intent: { id: inputId, parentId: "root", outcome: "Review fact", acceptance: ["Reviewed"] },
@@ -67,7 +55,7 @@ for (const failure of ["throw", "invalid-input", "resolver", "invalid-intent", "
                 toInput(event) {
                   // The responsibility must exist before even the first App callback.
                   expect(db.prepare("SELECT COUNT(*) AS n FROM app_event_admission_commands").get()?.n).toBe(2);
-                  if ((failure !== "resolver" && failure !== "invalid-intent") || id !== "broken") calls[id]++;
+                  calls[id]++;
                   if (id === "broken" && broken && failure === "throw") throw new Error("translation unavailable");
                   if (id === "broken" && failure === "action") {
                     if (broken) throw new Error("translation unavailable");

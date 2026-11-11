@@ -1,14 +1,6 @@
-import type { AppDefinition, AppTaskAttachment, TaskIntent, TSchema } from "@may-agent/sdk";
+import type { AppDefinition, AppTaskAttachment, TSchema, TaskIntent } from "@may-agent/sdk";
 
-export type HostAppDefinition<TInputSchema extends TSchema = TSchema> = Omit<
-  AppDefinition<TInputSchema>,
-  "agent" | "owner"
-> & {
-  /** Canonical public name. */
-  agent: string;
-  /** Private compatibility alias used by retained Host execution state. */
-  owner: string;
-};
+export type HostAppDefinition<TInputSchema extends TSchema = TSchema> = AppDefinition<TInputSchema>;
 
 function optionalName(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
@@ -54,26 +46,13 @@ function normalizeAttachment(attachment: AppTaskAttachment, appId: string): AppT
 export function normalizeAppAgent<TInputSchema extends TSchema>(
   definition: AppDefinition<TInputSchema>,
 ): HostAppDefinition<TInputSchema> {
-  const agent = selectedAgent(definition, `App ${definition.id}`, true)!;
+  if ("owner" in definition) throw new Error(`App ${definition.id} owner is retired; use agent`);
+  const agent = optionalName(definition.agent);
+  if (!agent) throw new Error(`App ${definition.id} agent must be a non-empty string`);
   return {
     ...definition,
     agent,
-    owner: agent,
     ...(definition.task ? { task: (input) => normalizeAttachment(definition.task!(input), definition.id) } : {}),
-    ...(definition.tasks
-      ? {
-          tasks: {
-            ...definition.tasks,
-            ...(definition.tasks.resolve
-              ? {
-                  resolve: (event) => {
-                    const intent = definition.tasks!.resolve!(event);
-                    return intent ? normalizeTaskAgent(intent, `App ${definition.id} Task ${intent.id}`) : null;
-                  },
-                }
-              : {}),
-          },
-        }
-      : {}),
+
   } as HostAppDefinition<TInputSchema>;
 }

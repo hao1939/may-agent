@@ -1,30 +1,30 @@
-import { afterEach, describe, expect, setSystemTime, test } from "bun:test";
 import type { AppSchedule } from "@may-agent/sdk";
+import { afterEach, describe, expect, setSystemTime, test } from "bun:test";
+import { claimNextAppInboxItem, waitAppInboxClaim } from "../../test/fixtures/legacy-inbox.js";
 import { openDatabase, type SqliteDb } from "../lib/db.js";
 import { applyDbSchema } from "../lib/db/schema.js";
-import { HUMAN_TASK_LIST_TEXT_MAX_BYTES, HumanTaskService } from "./human-task-service.js";
-import { AppTaskResourceStore } from "./core/state/app-task-resource-store.js";
-import {
-  cancelAppTask,
-  observeAppTaskIntent,
-  claimObservedAppTask,
-  deferAppTask,
-  completeAppTask,
-  recordAppTaskTrigger,
-} from "./core/tasks/app-task-reconciler.js";
-import { appTaskTestContext } from "./core/tasks/app-task-test-support.js";
-import { migrateTaskCompletionReceipts } from "./core/state/task-receipt-cutover.js";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "./core/reads/app-read.js";
-import type { AppTaskContext } from "./core/tasks/app-task-store.js";
 import { createAppInboxItem } from "./core/state/app-inbox-store.js";
+import { AppTaskResourceStore } from "./core/state/app-task-resource-store.js";
 import { linkTaskInput } from "./core/state/inbox.js";
-import { claimNextAppInboxItem, waitAppInboxClaim } from "../../test/fixtures/legacy-inbox.js";
+import { migrateTaskCompletionReceipts } from "./core/state/task-receipt-cutover.js";
 import {
   ensureTaskReferenceIndex,
   indexTaskReference,
   resolveTaskReference,
   taskReferenceDigest,
 } from "./core/state/task-reference-index.js";
+import {
+  cancelAppTask,
+  claimObservedAppTask,
+  completeAppTask,
+  deferAppTask,
+  observeAppTaskIntent,
+  recordAppTaskTrigger,
+} from "./core/tasks/app-task-reconciler.js";
+import type { AppTaskContext } from "./core/tasks/app-task-store.js";
+import { appTaskTestContext } from "./core/tasks/app-task-test-support.js";
+import { HUMAN_TASK_LIST_TEXT_MAX_BYTES, HumanTaskService } from "./human-task-service.js";
 
 const databases: SqliteDb[] = [];
 
@@ -449,7 +449,7 @@ function registry(...ids: string[]) {
         definition: {
           id,
           version: 1 as const,
-          owner: `${id}-owner`,
+          agent: `${id}-owner`,
           description: `${id} description`,
           inputSchema: {} as never,
         },

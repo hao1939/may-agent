@@ -1,21 +1,21 @@
 import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { buildTools, type ToolsetLoaderOptions } from "../../loader/toolset-loader.js";
-import type { AgentConfig } from "../../loader/agent-config.js";
-import { EventBus } from "../events/bus.js";
+import { join } from "node:path";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
+import type { AgentConfig } from "../../loader/agent-config.js";
+import { buildTools, type ToolsetLoaderOptions } from "../../loader/toolset-loader.js";
+import { EventBus } from "../events/bus.js";
+import { HostCapacity } from "../scheduling/host-capacity.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { TaskBudgetAdmissionStore } from "../state/task-budget-admission.js";
 import { installTaskExecutionLimit, releaseTaskExecutionReservation } from "../state/task-execution-admission.js";
 import { TaskExecutionStore } from "../state/task-execution-store.js";
 import { appTaskContext, claimObservedAppTask, observeAppTaskIntent } from "../tasks/app-task-reconciler.js";
+import type { AppTaskRuntimeOptions } from "../tasks/runtime-options.js";
 import { createRuntimeTaskRead } from "./app-read.js";
 import { runtimeWorkloadSource } from "./task-workload.js";
-import { HostCapacity } from "../scheduling/host-capacity.js";
-import type { AppTaskRuntimeOptions } from "../tasks/runtime-options.js";
 
 const databases: SqliteDb[] = [];
 afterEach(() => {
@@ -119,8 +119,7 @@ test("the production Task tool uses the current attempt workload reader without 
         projectRoot: root,
         persistDir: root,
         bus: new EventBus(),
-        cronEnabled: false,
-        getAgentSessionId: () => active,
+          getAgentSessionId: () => active,
         manager: { activeSessions: sessions },
       } as unknown as ToolsetLoaderOptions,
     );
