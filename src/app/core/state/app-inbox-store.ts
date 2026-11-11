@@ -698,13 +698,37 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
         .get(input.appId, input.idempotencyKey)
     : db.prepare("SELECT * FROM app_inbox_items WHERE id = ?").get(id);
   if (!existing) throw new Error(`App inbox item ${id} conflicted with an unknown row`);
-  let item = rowToItem(existing);
+  return reuseAppInboxItem(db, rowToItem(existing), input);
+}
+
+/** Validate receipt reuse before linking an Event; never re-admit or rewrite its result. */
+export function reuseAppInboxItem(
+  db: SqliteDb,
+  item: AppInboxItem,
+  input: CreateAppInboxItem,
+): { item: AppInboxItem; created: false } {
+  // Conversation routing defaults are assigned at admission, and its Topic can
+  // be selected during settlement. Omission does not request a new identity.
+  if (item.conversationId !== undefined) {
+    input = {
+      ...input,
+      conversationId: input.conversationId === undefined ? item.conversationId : input.conversationId,
+      conversationSequence:
+        input.conversationSequence === undefined ? item.conversationSequence : input.conversationSequence,
+      topicId: input.topicId === undefined ? item.topicId : input.topicId,
+    };
+  }
+  validateCreate(input);
+  const id = input.id ?? item.id;
+  const now = input.now ?? Date.now();
   if (item.appId !== input.appId) {
     throw new Error(`App inbox item ${id} already belongs to App ${item.appId}`);
   }
   if (
     item.parentId !== input.parentId ||
     item.targetTaskId !== input.targetTaskId ||
+    item.conversationId !== input.conversationId ||
+    item.conversationSequence !== input.conversationSequence ||
     item.topicId !== input.topicId ||
     item.source.kind !== input.source.kind ||
     item.source.id !== input.source.id ||

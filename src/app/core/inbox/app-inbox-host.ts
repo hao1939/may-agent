@@ -31,6 +31,7 @@ import {
 } from "../apps/definition-validation.js";
 import {
   createAppInboxItem,
+  reuseAppInboxItem,
   deferAppInboxTaskFunding,
   hasAppInboxFundingHold,
   getAppInboxItem,
@@ -376,7 +377,7 @@ export class AppInboxHost {
     // or installed contract is no longer admissible. The store still checks
     // exact replay identity and links the original Event before acknowledgment.
     if (retained?.status === "done") {
-      return createAppInboxItem(this.#db, { ...input, targetTaskId, now: this.#now() });
+      return reuseAppInboxItem(this.#db, retained, { ...input, targetTaskId, now: this.#now() });
     }
     const app = this.#requiredApp(input.appId);
     assertValidAppInput(app, input.input);

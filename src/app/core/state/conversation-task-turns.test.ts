@@ -135,6 +135,65 @@ function fixture() {
   };
 }
 
+for (const topic of ["new", "none"] as const) {
+  test(`Host replays settled Conversation input with ${topic} Topic without changing its identity`, () => {
+    const f = fixture();
+    let admissions = 0;
+    const createHost = () =>
+      new AppInboxHost({
+        db: f.db,
+        apps: [app],
+        admitConversation: (input) => {
+          admissions++;
+          return admitConversationTaskInput(f.context(), { ...input, intent: f.input().intent });
+        },
+      });
+    const host = createHost();
+    const request = { ...f.input(), idempotencyKey: "original-request" };
+    const first = host.admit(request);
+    completeConversationTaskTurn(f.context(), f.claim(first.item.executionTaskId!), {
+      ...decision,
+      topic: topic === "new" ? decision.topic : { kind: "none" },
+    });
+    const saved = getAppInboxItem(f.db, first.item.id)!;
+    expect(saved.status).toBe("done");
+    if (topic === "new") expect(saved.topicId).toBeString();
+    else expect(saved.topicId).toBeUndefined();
+    const before = f.store.readTaskContext({ taskIds: [first.item.executionTaskId!] });
+    host.close();
+    f.reopen();
+    const recovered = createHost();
+    // Replaying a receipt must not depend on today's installed input contract.
+    recovered.replaceApps([{ ...app, inputSchema: Type.Never() }]);
+
+    expect(recovered.admit(request)).toEqual({ item: saved, created: false });
+    expect(recovered.admit({ ...request, id: "key-alias" })).toEqual({ item: saved, created: false });
+    expect(recovered.admit({ ...request, idempotencyKey: undefined })).toEqual({ item: saved, created: false });
+    for (const conflict of [
+      { conversationId: "another-chat" },
+      { conversationSequence: 2 },
+      { topicId: "another-topic" },
+    ]) {
+      expect(() => recovered.admit({ ...request, ...conflict, originEventId: 7 })).toThrow("reused");
+      expect(() => createAppInboxItem(f.db, { ...request, ...conflict, originEventId: 7 })).toThrow("reused");
+      expect(() => admitConversationTaskInput(f.context(), { ...request, ...conflict, originEventId: 7 })).toThrow(
+        "reused",
+      );
+    }
+    expect(recovered.admit({ ...request, conversationSequence: undefined })).toEqual({ item: saved, created: false });
+    expect(recovered.admit({ ...request, conversationId: undefined, conversationSequence: undefined })).toEqual({
+      item: saved,
+      created: false,
+    });
+    expect(admitConversationTaskInput(f.context(), request).item).toEqual(saved);
+    expect(createAppInboxItem(f.db, request)).toEqual({ item: saved, created: false });
+    expect(getAppInboxItem(f.db, saved.id)).toEqual(saved);
+    expect(f.store.readTaskContext({ taskIds: [first.item.executionTaskId!] })).toEqual(before);
+    expect(admissions).toBe(1);
+    recovered.close();
+  });
+}
+
 for (const target of ["self", "other-conversation", "mapped"] as const) {
   test(`rejects ${target} Conversation follow-up without poisoning later input`, () => {
     const f = fixture();

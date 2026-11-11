@@ -29,6 +29,7 @@ import {
 import { admitTaskInput, assertTaskInputCompatible } from "./inbox.js";
 import {
   createAppInboxItem,
+  reuseAppInboxItem,
   deferAppInboxTaskFunding,
   hasAppInboxFundingHold,
   getAppInboxItem,
@@ -335,18 +336,12 @@ export function admitConversationTaskInput(
         .get(input.appId, input.conversationId);
       input = { ...input, conversationSequence: prior?.conversationSequence ?? Number(latest?.sequence ?? 0) + 1 };
     }
-    if (
-      prior &&
-      (prior.appId !== input.appId ||
-        prior.conversationId !== input.conversationId ||
-        !isDeepStrictEqual(prior.input, input.input) ||
-        !isDeepStrictEqual(prior.source, input.source) ||
-        prior.conversationSequence !== input.conversationSequence ||
-        (input.topicId !== undefined && input.topicId !== prior.topicId))
-    )
-      throw new Error("Conversation input identity was reused for different input");
-    if (prior?.status === "done") {
-      return { item: prior, taskId: prior.executionTaskId ?? conversationTaskId(input.appId, input.conversationId), created: false };
+    const replay = prior ? reuseAppInboxItem(db, prior, input) : undefined;
+    if (replay?.item.status === "done") {
+      return {
+        ...replay,
+        taskId: replay.item.executionTaskId ?? conversationTaskId(input.appId, input.conversationId),
+      };
     }
     const lineage = prior?.executionTaskId
       ? { taskId: prior.executionTaskId, predecessorTaskId: undefined }
@@ -355,7 +350,7 @@ export function admitConversationTaskInput(
     if (predecessorTaskId && !config.resourceStore.readTask(taskId) && input.source.kind !== "human") {
       throw new Error("A terminal Conversation requires fresh human input before system feedback can continue it");
     }
-    const created = prior ? { item: prior, created: false } : createAppInboxItem(db, input);
+    const created = replay ?? createAppInboxItem(db, input);
     const item = created.item;
     const admissionKey = `conversation-input:${item.id}`;
     // This trusted ingress identity distinguishes retained, unstarted demand
