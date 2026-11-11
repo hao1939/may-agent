@@ -31,6 +31,13 @@ does not establish either guarantee.
 
 ## Shared Task execution coverage
 
+`app-task-feedback.test.ts` owns caller feedback, attention, bounded history and
+exact saved-answer delivery. `app-task-terminal-recovery.test.ts` owns retained
+terminal-session evidence and replacement attempts. The installed runtime suite
+keeps dispatch and executor behavior. All three use a suite-local fixture factory
+with per-case databases, buses and teardown; they never share mutable state.
+Separate files let Bun schedule these contracts independently.
+
 Worker `create-task` is retired. `packages/sdk/src/task-contract.test.ts` rejects
 it; action fencing and rollback tests now mutate existing fixture assignments.
 `src/app/task-worker-interaction.test.ts` owns real worker coverage for typed
