@@ -11,5 +11,5 @@
     "types": ["bun", "node"],
     "typeRoots": ["./node_modules/@types", "../../node_modules/@types", "../may-agent/node_modules/@types"]
   },
-  "include": ["src/**/*.ts", "test/**/*.ts"]
+  "include": ["src/**/*.ts", "test/**/*.ts", "../may-agent/src/types/text-assets.d.ts"]
 }
