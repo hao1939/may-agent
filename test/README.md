@@ -212,10 +212,10 @@ Keep policy checks separate from the boundary that makes them durable:
   With recovery timers disabled, the probe runs bounded production admission
   and result recovery after worker exit. Cleanup releases the response barrier
   before draining, so a failed assertion cannot hide behind a hung teardown.
-- The complete gate uses up to eight long-lived Bun processes with built-in file
+- The complete gate uses up to sixteen long-lived Bun processes with built-in file
   sharding. Imports are reused within a process; mutable fixtures are never
   shared between cases. CI uses the measured four-process limit through
-  `MAY_TEST_SHARDS=4`; the local default follows available CPUs, capped at eight.
+  `MAY_TEST_SHARDS=4`; the local default follows available CPUs, capped at sixteen.
   The command's regression verifies every selected file
   runs exactly once, all JUnit reports survive, and any shard's failure
   fails the command. A zero-sized pool cannot silently skip execution.
@@ -237,24 +237,19 @@ Record wall time, JUnit totals, failures and skips. Count setup/teardown in wall
 time. Reduced coverage, disabled browser checks and automatic retries are not
 speed improvements. Avoid overlapping benchmark runs.
 
-The November 2026 audit used Node 24 and Bun 1.3.14, with Chrome enabled:
+The November 2026 audit used Node 24 and Bun 1.3.14, with Chrome enabled.
+The passing local baseline at `946d3ff4` includes the same fixture correctness
+repairs and took 328.96 seconds for tests (349.05 seconds for `bun run ci`),
+with 4,390 passed and three existing installation-only skips. The hosted main
+reference is [run 43001928873](https://github.com/hao1939/may-agent/actions/runs/43001928873):
+266.67 seconds for the same test selection.
 
-| Full portable test phase | Seconds | Pass / fail / skip |
-| --- | ---: | --- |
-| Main (`946d3ff4`), two workers | 494.40 | 4,388 / 2 / 3 |
-| Consolidated fixtures, four isolated file workers | 337.68 | 4,390 / 0 / 3 |
-| Consolidated fixtures, eight isolated file workers | 213.10 | 4,390 / 0 / 3 |
-
-All rows contain the same 4,393 cases. The initial local baseline exposed two
-interaction probe timeouts; the fixture fixes above are part of the change.
-Eight isolated file workers passed locally but were rejected after hosted CI run
+Eight isolated file workers were rejected after hosted CI run
 [43018559976](https://github.com/hao1939/may-agent/actions/runs/43018559976)
-took 227.05 seconds and timed out two worker probes under CPU contention.
-Increasing worker counts is not the final optimization. The clean main CI reference is run
-[43001928873](https://github.com/hao1939/may-agent/actions/runs/43001928873):
-266.67 seconds, 4,390 passed and the same three installation-only skips.
-The final-revision measurements, including the passing baseline with identical
-fixture repairs, belong in [PR #450](https://github.com/hao1939/may-agent/pull/450).
+timed out two worker probes under CPU contention. The final implementation
+reuses imports within each process, keeps CI at four processes, and preserves
+per-case mutable state and real browser/worker/restart coverage. Final passing
+measurements and limitations belong in [PR #450](https://github.com/hao1939/may-agent/pull/450).
 These measurements describe this audit; machine load and filesystem cost vary.
 
 ## SDK export contract

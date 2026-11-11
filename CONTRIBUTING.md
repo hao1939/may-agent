@@ -21,7 +21,7 @@ they are not a clean-type claim. Whole-tree formatting is not yet a merge gate:
 format the lines you change without reformatting unrelated code.
 
 `test` runs source, package, integration, daemon, browser, and build/deploy
-script tests using Bun's built-in file sharding, up to eight processes according
+script tests using Bun's built-in file sharding, up to sixteen processes according
 to the available CPUs. CI pins `MAY_TEST_SHARDS=4` from hosted measurements; use
 that override locally to reproduce its concurrency. Each process
 reuses imports across files and runs cases sequentially. Every case still owns

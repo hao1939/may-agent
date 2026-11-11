@@ -1,9 +1,9 @@
 import { spawn } from "node:child_process";
 import { availableParallelism } from "node:os";
 
-const shardCount = Number(process.env.MAY_TEST_SHARDS ?? Math.min(8, availableParallelism()));
-if (!Number.isInteger(shardCount) || shardCount < 1 || shardCount > 8) {
-  throw new Error("MAY_TEST_SHARDS must be an integer from 1 to 8");
+const shardCount = Number(process.env.MAY_TEST_SHARDS ?? Math.min(16, availableParallelism()));
+if (!Number.isInteger(shardCount) || shardCount < 1 || shardCount > 16) {
+  throw new Error("MAY_TEST_SHARDS must be an integer from 1 to 16");
 }
 
 /** Use Bun's file partitioning, retaining a module cache within each process. */

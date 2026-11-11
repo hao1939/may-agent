@@ -18,7 +18,7 @@ test.each(["success", "failure", "empty"] as const)(
     const root = mkdtempSync(join(tmpdir(), "may-test-command-"));
     roots.push(root);
     const witness = join(root, "visited");
-    const names = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+    const names = Array.from({ length: 17 }, (_, index) => `case-${index}`);
     for (const name of names) {
       writeFileSync(
         join(root, `${name}.test.ts`),
@@ -27,7 +27,7 @@ test.each(["success", "failure", "empty"] as const)(
       import { appendFileSync } from "node:fs";
       test(${JSON.stringify(name)}, () => {
         appendFileSync(${JSON.stringify(witness)}, ${JSON.stringify(name + "\n")});
-        expect(${JSON.stringify(!fail || name !== "two")}).toBe(true);
+        expect(${JSON.stringify(!fail || name !== names[1])}).toBe(true);
       });
     `,
       );
