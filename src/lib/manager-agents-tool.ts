@@ -22,6 +22,7 @@ import type { EventTrace } from "../app/core/events/bus.js";
 
 export interface AgentsToolManagerDeps {
   agents: ReadonlyMap<string, RegisteredAgent>;
+  getAgentDefinition(name: string, callerSessionId?: string): SubagentDefinition | undefined;
   activeSessions: ReadonlyMap<
     string,
     {
@@ -177,7 +178,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
 
   const callerDefinition = (caller?: string, sessionId = getCallerSessionId?.()) =>
     (sessionId ? manager.activeSessions.get(sessionId)?.definition : undefined) ??
-    (caller ? manager.agents.get(caller)?.definition : undefined);
+    (caller ? manager.getAgentDefinition(caller, sessionId) : undefined);
 
   const getCallerLineage = (sessionId?: string): { workflowRunId?: string; projectId?: string; trace?: EventTrace } => {
     if (!sessionId) return {};
@@ -199,7 +200,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
   };
 
   const appBoundaryError = (caller: string | undefined, target: string, sessionId?: string): string | null => {
-    const targetDefinition = manager.agents.get(target)?.definition;
+    const targetDefinition = manager.getAgentDefinition(target, sessionId);
     if (!targetDefinition?.appLocal) return null;
     const definition = callerDefinition(caller, sessionId);
     if (definition?.appLocal && definition.projectId && definition.projectId === targetDefinition.projectId) {
@@ -249,7 +250,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                 }
               }
             }
-            if (!manager.agents.has(params.agent)) {
+            if (!manager.getAgentDefinition(params.agent, getCallerSessionId?.())) {
               return textResult(
                 JSON.stringify({
                   error: `Agent "${params.agent}" not registered. Use 'list' to see available agents.`,
@@ -309,7 +310,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                 }
               }
             }
-            if (!manager.agents.has(params.agent)) {
+            if (!manager.getAgentDefinition(params.agent, getCallerSessionId?.())) {
               return textResult(
                 JSON.stringify({
                   error: `Agent "${params.agent}" not registered. Use 'list' to see available agents.`,

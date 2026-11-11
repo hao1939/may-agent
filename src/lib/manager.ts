@@ -315,8 +315,12 @@ export class SubagentManager {
     }));
   }
 
-  getAgentDefinition(name: string): SubagentDefinition | undefined {
-    return this.agents.get(name)?.definition;
+  /** Resolve the same definition for helper authorization and execution. */
+  getAgentDefinition(name: string, callerSessionId?: string): SubagentDefinition | undefined {
+    return (
+      (callerSessionId ? this._sessions.get(callerSessionId)?.taskContext?.agentDefinitions?.get(name) : undefined) ??
+      this.agents.get(name)?.definition
+    );
   }
 
   // ── Session lifecycle ──
@@ -844,10 +848,7 @@ export class SubagentManager {
   ): Promise<TaskResult & { messages: AgentMessage[] }> {
     const depthError = this.callDepthLimitError(opts?.parentSessionId);
     if (depthError) return depthError;
-    const definition =
-      (opts?.parentSessionId
-        ? this._sessions.get(opts.parentSessionId)?.taskContext?.agentDefinitions?.get(agentName)
-        : undefined) ?? this.getAgentDefinition(agentName);
+    const definition = this.getAgentDefinition(agentName, opts?.parentSessionId);
     if (!definition) throw new Error(`Agent "${agentName}" not registered`);
     return this.callAgentDefinition(definition, task, opts);
   }
@@ -937,7 +938,9 @@ export class SubagentManager {
     if (!opts?.parentSessionId || !this._sessions.get(opts.parentSessionId)?.executionScope) {
       throw new Error("Fork requires a live caller; durable work belongs to a Task");
     }
-    return this.run(agentName, task, {
+    const definition = this.getAgentDefinition(agentName, opts.parentSessionId);
+    if (!definition) throw new Error(`Agent "${agentName}" not registered`);
+    return this.runDefinition(definition, task, {
       parentSessionId: opts?.parentSessionId,
       originSessionId: opts?.originSessionId,
       source: opts?.source ?? "agents.run",

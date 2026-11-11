@@ -45,9 +45,7 @@ let progressTimer;
 if (config.progress) {
   let step = 0;
   progressTimer = setInterval(() => {
-    if (config.progress === "tokens") {
-      emit({ type: "stream_event", event: { type: "content_block_delta", delta: { text: "thinking" } } });
-    } else if (config.tool === "codex") {
+    if (config.tool === "codex") {
       emit({ type: "item.completed", item: { id: String(step++), type: "command_execution", exit_code: 0 } });
     } else {
       emit({
