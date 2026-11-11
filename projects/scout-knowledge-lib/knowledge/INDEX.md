@@ -72,6 +72,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ### 2026-11-11
 
+- [Coordination claims need atomic conflict semantics](./findings/2026-11-11-coordination-claims-need-atomic-conflict-semantics.md) — aisync serializes a shared claim registry and reports overlaps, but records the second overlapping claim before its CLI returns exit 3 and its MCP tool reports the conflict in ordinary text; Scout inspected pinned producer-authored source and tests statically but did not run the software, tests, agents, MCP clients, or live concurrency and recovery paths.
 - [Multi-agent screening requires audit sampling](./findings/2026-11-11-multi-agent-screening-requires-audit-sampling.md) — agreement among screeners shows concurrence rather than correctness, and acceptance among passed items estimates precision without exposing jointly missed relevant items; the abstract identifies random assessment of rejected items as the assumption-light route to recall estimation, but Scout did not inspect the full paper, proofs, estimators, assumptions, examples, simulations, code, or supplementary material.
 
 ### 2026-11-10
