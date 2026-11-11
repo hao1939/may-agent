@@ -1463,3 +1463,7 @@ The [reconstruction audit](../reports/review/scout-provenance-reconstruction-cyc
 ## Recent harness-evaluation findings
 
 - [Harness benchmarks need separate quality and cost resolution verdicts](findings/2026-11-10-harness-benchmarks-separate-quality-cost-resolution.md) — A pinned repository reports saturated public dev tasks that could not separate harness pass rates but did expose metered cost differences; Scout inspected reports and selected artifacts without rerunning trials, graders, analyses, or billing checks.
+
+## Recent agent-context continuity findings
+
+- [Agent compaction needs machine facts as well as a semantic frontier](findings/2026-11-11-agent-compaction-needs-machine-facts-and-semantic-frontiers.md) — Pinned producer-authored source separates a model-written work frontier from typed runtime facts and verbatim later messages, but Scout did not run the plugin or tests, and the reported single-user performance benchmark lacks an inspected raw measurement artifact.
