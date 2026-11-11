@@ -34,14 +34,9 @@ export const RUNTIME_PATTERN_AUDIT_TASK_ID = "runtime/pattern-audit";
 export const runtimePatternAuditOutcome =
   "Periodically audit recurring cross-Task runtime failures and wasted effort, and return bounded evidence for Alex to judge and repair.";
 export const runtimePatternAuditAcceptance = [
-  "Compare the latest fixed three-hour window with the preceding window and check current affected Tasks before judgment.",
-  "Assess repeated failures, no-progress attempts, review or handoff loops, model usage versus delivered progress, recovered failures, and useful behavior worth keeping.",
-  "Return exact evidence, uncertainty, evaluator coverage and model usage, and at most three prioritized actionable patterns; do not score evaluator semantic outputs.",
-  "Read the previous accepted audit when present; retain the exact compared windows and prior finding dispositions in the Task result, and request owner attention only for newly actionable change.",
+  "Compare the latest three-hour window against the preceding window under projects/alex.app/docs/evaluation/systemic-pattern-review-20260927.md, checking current affected Tasks before judgment.",
+  "Return exact evidence, uncertainty, model/evaluator usage, prior finding dispositions, and at most three prioritized newly actionable patterns without scoring evaluator semantic outputs.",
   "For a newly actionable finding, submit one ordinary request to the Alex App in the Task result, naming the exact existing Task or PR to reuse when one exists; context.audit.owner is descriptive and followUp prose alone is not delivery. For no-action or unchanged findings, submit no request.",
-  "Apply the standing audit contract in projects/alex.app/docs/evaluation/systemic-pattern-review-20260927.md under Six-hour cross-Task operational audit.",
-  "Link unresolved findings to existing exact owner Tasks or PRs where possible; unchanged findings must not commission duplicate repairs or full-work-review handoffs.",
-  "Keep ordinary metric movement quiet; breach and status-transition review remain independent.",
 ];
 
 const comparisonData = Type.Object({
@@ -160,10 +155,8 @@ export function evaluationReportInput(event: AppEvent<Record<string, unknown>>):
     kind: "message",
     data: {
       message: [
-        `Own follow-through on the Evaluation ${metric ? "metric" : "Task"} concern for ${metricId ?? `${appId}/${taskId}`} within Alex's improvement scope. Carry worthwhile work through agreed authorized action and verification, or explain a supported decision not to proceed. Honor explicit advice-only, review-only or source-only limits.`,
+        `Own follow-through on the Evaluation ${metric ? "metric" : "Task"} concern for ${metricId ?? `${appId}/${taskId}`}: verify context.publication via evaluation-report-reader, check current linked Task state, and carry justified work through verified resolution or a supported no-action disposition (honoring advice/review/source-only bounds and capping automated review-repair loops at 3 rounds per candidate without new runtime failure evidence).`,
         ...(followUp?.kind === "request" ? [`Evaluator requests follow-up: ${followUp.message}`] : []),
-        'Use evaluation-report-reader with input {operation: "read-publication", publication: context.publication} for identity/hash checks and a bounded preview. Judge the finding using only the current evidence needed; start from linked Tasks and list narrowly only when ownership is missing. Check live receipts before making deployment claims. Verified report bytes establish identity, not truth or current relevance.',
-        "Reuse fitting work. A suggested consultation or delegation is a next step toward resolving the concern; the helper's narrower scope does not narrow your outcome. After a decision returns, continue the agreed work and verify it within existing authority. Recording a recommendation or commissioning a helper alone does not resolve an improvement. Retain remaining work and real blocker return paths on the owning Task.",
       ].join("\n\n"),
       context: {
         publication,

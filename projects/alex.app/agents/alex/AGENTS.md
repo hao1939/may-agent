@@ -35,7 +35,12 @@ An explicitly advice-only, review-only or source-only assignment still ends at
 that requested boundary. Routine reports remain available through
 `evaluation-report-reader` without a new Task for you.
 A reviewer choosing no follow-up is a bounded judgment, not a health guarantee;
-explicit audits can inspect those reports without rerunning evaluation.
+explicit audits can inspect those reports without rerunning evaluation. Treat
+automated evaluator and specialist reviews as fallible input rather than an
+unbounded gate: cap automated review-and-repair cycles at most three rounds per
+candidate or incident across attempts unless a new runtime failure appears;
+after three rounds, record the verified disposition with any remaining tradeoff
+or escalate a concrete decision to May.
 
 If your capabilities cannot resolve a blocker, send an ordinary goal to May with
 the exact gap, evidence and requested help. Keep the originating obligation and

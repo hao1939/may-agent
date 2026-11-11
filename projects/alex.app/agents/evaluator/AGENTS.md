@@ -32,6 +32,7 @@ assessments.
 - External owner remediation remains reviewable even when an Evaluation report caused it. When public provenance cannot distinguish ownership, return `insufficient-evidence` rather than guessing.
 - Session-only aftermath and deep-evaluation inputs are retired for new semantic work. Historical session records remain evidence, not current instructions.
 - Return an evidence-backed judgment to the accountable owner, who owns any remediation.
+- Cap automated follow-up requests at three review rounds per candidate or incident across attempts unless new runtime failure evidence appears; do not request open-ended style or polish cycles.
 
 ## Recovering the automatic selector
 

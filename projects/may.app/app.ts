@@ -275,7 +275,7 @@ export function admissionFailureInput(
   return {
     kind: "message",
     data: {
-      message: `Review input ${requestId}, which could not reach its Task: ${summary}. Read the saved input and current Task, then close the loop with the requester. Transient recovery retains its backoff; permanent rejection needs a reviewed correction. Distinguish observations from new requirements using the request and current scope. Reopen the same Task only when the user explicitly requested continuation, carrying the new normal App input in the version-fenced task.reopen control so reopening and requirements are applied together. An authorized continuation does not need a reject-and-resubmit cycle; previously rejected input remains history. If authority or information is missing, explain the blocker and ask the human for the specific decision needed. A failure notification itself grants no reopening or deployment authority.`,
+      message: `Review input ${requestId} (${summary}): inspect the saved input and target Task, allow transient backoff or ask the human for the specific decision needed, and use task.reopen with the new normal App input only when the user explicitly requested continuation so reopening and requirements are applied together.`,
       context: {
         admissionFailure: structuredClone(data),
         event: structuredClone(event),
@@ -373,7 +373,8 @@ export function evaluationTaskReportInput(
     ...(rubricVersion ? { rubricVersion } : {}),
     ...(validityIdentity ? { validityIdentity } : {}),
   };
-  return evaluationWorkInput(`This is an automated review, not a new human question. Retain the disposition and evidence in summary/facts; omit response for routine findings, unchanged waits, reused work and background delegation. Use response for a requested answer, a new actionable decision or a material change the human needs to know. Review the published Evaluation report for ${metricId ?? `${appId}/${taskId}`}. Run evaluation-report-intake with this exact context.publication before any duplicate or reuse conclusion; the intake checks exact publication identity before reusing a prior intake, and an unrelated prior disposition is not this report. Then verify material concerns against current evidence and record an ordinary Task disposition. Reuse linked work. Settle the immediate incident separately from the population finding: current recovery does not erase recurring failures, cost or uncertainty. A duplicate or harmless one-off can need no change; a supported recurring pattern can justify the smallest investigation even after recovery. Before proposing a candidate, judge practical value versus cost and whether a simpler solution would suffice. For an unresolved metric concern use metric-response with review:{task,decisions} in this Task context to prepare an ordinary Task result; commission useful work through a request or retain its repair-result, exact breach recovery or human-decision Condition. Do not create sample Conditions or a periodic sample-review loop; if only collection remains, record no-change and finish the review. Return its complete result, not just a fact. Reuse the exact existing Task when scope fits. Notification, acknowledgment and a patch are not verified recovery; metrics do not authorize stopping retries or reopening work.`,
+  return evaluationWorkInput(
+    `Review the published Evaluation report for ${metricId ?? `${appId}/${taskId}`} using the evaluation-and-metric-intake skill (stay quiet in response unless human action or a requested answer is owed). Run evaluation-report-intake with this exact context.publication before any duplicate or reuse conclusion; the intake checks exact publication identity before reusing a prior intake, and an unrelated prior disposition is not this report. Then verify material concerns against current evidence, reuse fitting work, and record the Task disposition (using metric-response when a metric concern remains).`,
     {
         publication,
         caller: {
@@ -455,7 +456,8 @@ export default defineApp({
           record(event.data).repeat === true
         )
           return null;
-        return evaluationWorkInput("Review the unfinished Alex-hosted review work identified by this metric. Read current review Tasks, allowance and return paths. Preserve retries and reuse linked owner work. If review remains overdue, use metric-response with a complete review in this Task context; wait for an actual review result or human decision, or commission useful work, then return the ordinary Task result. New samples are evidence, not investigation triggers. This age threshold requests inspection; it is not a promised deadline or authority to stop work.",
+        return evaluationWorkInput(
+          "Review overdue Alex-hosted review work identified by this metric breach using the evaluation-and-metric-intake skill and metric-response; preserve retries, reuse linked owner work, and treat new samples as evidence rather than triggers.",
           { event: structuredClone(event) },
         );
       },
