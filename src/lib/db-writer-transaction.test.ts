@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { DbWriter } from "./db-writer.js";
-import { closeDb, getDb } from "./requests.js";
+import { closeDb, getDb } from "./db/connection.js";
 import { stateTransaction } from "./db/transaction.js";
 import { openDatabase } from "./db.js";
 import { EventBus, EVENT_ROW_ID } from "../app/core/events/bus.js";

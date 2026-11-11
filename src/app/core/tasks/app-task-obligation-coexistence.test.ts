@@ -7,7 +7,7 @@ import { HumanTaskService } from "../../human-task-service.js";
 import { EventBus } from "../events/bus.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
-import { getDb, closeDb } from "../../../lib/requests.js";
+import { getDb, closeDb } from "../../../lib/db/connection.js";
 import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
 import { appTaskTestContext } from "./app-task-test-support.js";
 import {
@@ -33,7 +33,6 @@ const human = {
   subject: "approval:release",
   expected: { candidate: "a", decision: "approved" },
   owner: "human",
-  reviewAfterMs: 60_000,
   requestedAction: "Approve candidate a.",
 };
 const dependency = {
@@ -42,7 +41,6 @@ const dependency = {
   subject: "id:build",
   expected: { field: "status", equals: "done" },
   owner: "app:builder",
-  reviewAfterMs: 60_000,
 };
 const admittedDependency = {
   ...dependency,
@@ -55,7 +53,6 @@ const testResult = {
   subject: "test:release",
   expected: { field: "passed", equals: true },
   owner: "app:tester",
-  reviewAfterMs: 60_000,
 };
 
 function directFixture(databasePath = ":memory:") {
@@ -177,7 +174,6 @@ test("Condition declarations are additive, exact-id updates are fresh, and empty
       subject: updatedHuman.subject,
       expected: updatedHuman.expected,
       owner: updatedHuman.owner,
-      reviewAfterMs: updatedHuman.reviewAfterMs,
       requestedAction: updatedHuman.requestedAction,
     });
     expect(tree.conditions?.[dependency.id]).toEqual(dependencyBefore);

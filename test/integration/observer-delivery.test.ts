@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Type, defineApp } from "@may-agent/sdk";
 import { DbWriter } from "../../src/lib/db-writer.js";
-import { closeDb, getDb } from "../../src/lib/requests.js";
+import { closeDb, getDb } from "../../src/lib/db/connection.js";
 import { EventBus } from "../../src/app/core/events/bus.js";
 import { AppRegistry } from "../../src/app/core/apps/registry.js";
 import { createAppObserverRuntime } from "../../src/app/adapters/producers/app-observer-runtime.js";

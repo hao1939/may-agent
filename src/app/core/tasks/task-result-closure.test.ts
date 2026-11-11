@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AppTaskPolicy, ResourceCreator } from "@may-agent/sdk";
-import { closeDb, getDb } from "../../../lib/requests.js";
+import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { createRuntimeTaskRead } from "../reads/app-read.js";
 import {

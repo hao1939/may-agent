@@ -5,7 +5,8 @@ import { join } from "node:path";
 import { createTaskWorkflowRunner } from "./workflow.js";
 import { EventBus } from "../../core/events/bus.js";
 import type { TaskWorkflowInput } from "../../core/tasks/execution.js";
-import { closeDb, getWorkflowRun } from "../../../lib/requests.js";
+import { closeDb } from "../../../lib/db/connection.js";
+import { getWorkflowRun } from "../../../lib/db/workflows.js";
 
 const roots: string[] = [];
 afterEach(() => {

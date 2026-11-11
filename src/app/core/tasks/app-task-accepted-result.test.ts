@@ -148,7 +148,6 @@ describe("accepted Task outcome facts", () => {
           subject: "sample:first",
           expected: true,
           owner: "app:sampler",
-          reviewAfterMs: 60_000,
         },
       ],
     });

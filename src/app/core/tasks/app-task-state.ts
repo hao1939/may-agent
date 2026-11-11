@@ -74,7 +74,8 @@ export type AppTaskResource = {
     /** Durable pre-reopen events cannot become fresh work in the new generation. */
     reopenedAfterEventId?: number;
   };
-  spec: Omit<TaskIntent, "id">;
+  /** Persisted spelling remains stable; public authoring uses agent. */
+  spec: Omit<TaskIntent, "id"> & { owner?: string };
   status: {
     observedGeneration: number;
     phase: "pending" | "running" | "converged" | "waiting" | "attention";

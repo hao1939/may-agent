@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { defineApp, Type } from "@may-agent/sdk";
 import { DbWriter } from "../../../lib/db-writer.js";
-import { closeDb, getDb } from "../../../lib/requests.js";
+import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { EventBus, type AgentEvent } from "../events/bus.js";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
 import { appInputFeedbackEvent } from "../inbox/input-result.js";

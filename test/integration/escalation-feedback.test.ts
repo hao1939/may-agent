@@ -4,7 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { EventBus, EVENT_ROW_ID } from "../../src/app/core/events/bus.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
-import { closeDb, getDb, upsertSession } from "../../src/lib/requests.js";
+import { closeDb, getDb } from "../../src/lib/db/connection.js";
+import { upsertSession } from "../../src/lib/db/sessions.js";
 import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
 import { appTaskContext, observeAppTaskIntent, claimObservedAppTask, completeAppTask } from "../../src/app/core/tasks/app-task-reconciler.js";
 

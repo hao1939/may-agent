@@ -513,7 +513,6 @@ function deferAppTask(...args: Parameters<typeof deferCanonicalAppTask>): Return
     conditions: input.conditions?.map((condition) => ({
       ...condition,
       owner: condition.owner ?? "app:test-external",
-      reviewAfterMs: condition.reviewAfterMs ?? 60_000,
     })),
   });
 }
@@ -1171,7 +1170,7 @@ describe("App task reconciler state", () => {
       summary: "Update the existing assignment",
       facts: ["inventory:current"],
       conditions: [{ id: "proof", type: "proof.ready", subject: "id:proof", expected: true,
-        owner: "app:sample", reviewAfterMs: 60_000 }],
+        owner: "app:sample" }],
       actions: [{ kind: "unblock-task" as const, taskId: "categorized-task", expectedGeneration: 1, reason: "Reconsider current facts" }],
     };
     const applied = state === "waiting"
@@ -1532,7 +1531,7 @@ describe("App task reconciler state", () => {
     };
     observeAppTaskIntent(config, { intent: agentIntent, appAgent: "app-owner" });
 
-    expect(readAppTaskIntent(config, agentIntent.id)).toMatchObject({ owner: "specialist" });
+    expect(readAppTaskIntent(config, agentIntent.id)).toMatchObject({ agent: "specialist" });
 
     expect(
       claimObservedAppTask(config, {
@@ -1548,10 +1547,10 @@ describe("App task reconciler state", () => {
     const { config } = state;
     expect(() =>
       observeAppTaskIntent(config, {
-        intent: { ...intent(), id: "work/conflict", agent: "one", owner: "two" },
+        intent: { ...intent(), id: "work/conflict", agent: "one", owner: "two" } as never,
         appAgent: "app-owner",
       }),
-    ).toThrow("conflicting agent and legacy owner");
+    ).toThrow("owner is retired; use agent");
     expect(() =>
       observeAppTaskIntent(config, {
         intent: { ...intent(), id: "work/empty-agent", agent: " " },
@@ -2679,7 +2678,7 @@ describe("App task reconciler state", () => {
   it("paces an unavailable agent without losing its input or creating an attempt", () => {
     const { config } = fixture();
     const result = declareAndClaimTask(config, {
-      intent: { ...intent(), owner: "human" },
+      intent: { ...intent(), agent: "human" },
       appAgent: "app-owner",
       handler: "auto",
       trigger: { type: "project.comment.created", data: { comment: "Please retry" } },
@@ -2769,11 +2768,20 @@ describe("App task reconciler state", () => {
       tree: { project: "sample", root_task_id: "root", groups: { root: { id: "root", parent_id: null } } },
     });
     const request = {
-      intent: { id: "work", parentId: "root", outcome: "Deliver the result", acceptance: ["Verified"] },
+      intent: { id: "work", parentId: "root", outcome: "Deliver the result", acceptance: ["Verified"], agent: "specialist" },
       appAgent: "app-owner",
       admissionKey: "original-request",
     };
     const admitted = observeAppTaskIntent(config, request);
+    // Recorded by the pre-cleanup Host e9e88da: public spelling changes must not
+    // revise accepted work or invalidate its durable admission on replay.
+    expect(config.resourceStore.readTaskContext({ taskIds: ["work"], admissionIds: [request.admissionKey] })
+      .appTaskAdmissions?.[request.admissionKey]).toMatchObject({
+        requestHash: "27befdacd0e964c858bb93da300c776e699e5c273e49cace1efd175ed8ca78a5",
+        specHash: "0b56d29e8cab0d95fca200840c54c4d96572a93f3f01b13c324f6ba0dda4dcb5",
+      });
+    expect(config.resourceStore.readTask("work")?.spec).toMatchObject({ owner: "specialist" });
+    expect(readAppTaskIntent(config, "work")).toMatchObject({ agent: "specialist" });
     config.resourceStore.close();
     const store = AppTaskResourceStore.openStandalone(path, "sample");
     stores.push(store);
@@ -3274,7 +3282,7 @@ describe("App task reconciler state", () => {
         parentId: "operations",
         outcome: "Keep one older indexed task visible",
         acceptance: ["The indexed task remains represented"],
-        owner: "app-owner",
+        agent: "app-owner",
       },
       appAgent: "app-owner",
     });
@@ -3285,7 +3293,7 @@ describe("App task reconciler state", () => {
           parentId: index === 0 ? "categorized-task" : "operations",
           outcome: `Review snapshot task ${index}`,
           acceptance: [`The task converges ${"a".repeat(2_000)}`],
-          owner: "app-owner",
+          agent: "app-owner",
           priority: index === 0 ? "P0" : "P2",
           category: index === 0 ? "focus_plan" : "domain",
           input: { index, exactPrivateDetail: `private-${index}-${"x".repeat(4_000)}` },
@@ -3319,7 +3327,7 @@ describe("App task reconciler state", () => {
         parentId: "operations",
         outcome: "Keep one older task running",
         acceptance: ["The running task completes"],
-        owner: "app-owner",
+        agent: "app-owner",
       },
       appAgent: "app-owner",
     });
@@ -3340,7 +3348,7 @@ describe("App task reconciler state", () => {
           parentId: "operations",
           outcome: `Review newer task ${index}`,
           acceptance: ["The newer task converges"],
-          owner: "app-owner",
+          agent: "app-owner",
         },
         appAgent: "app-owner",
       });
@@ -5633,7 +5641,7 @@ describe("App task reconciler state", () => {
         parentId: "operations",
         outcome: "Categorized bounded work",
         acceptance: ["The categorized work converges"],
-        owner: "human",
+        agent: "human",
         workflow: "removed-workflow",
         category: "domain",
       },
@@ -5665,12 +5673,12 @@ describe("App task reconciler state", () => {
     ).toThrow("update-task is retired");
     expect(readTaskSnapshot(config).resources?.["categorized-task"].metadata.generation).toBe(observed.generation);
 
-    const repaired = { ...readAppTaskIntent(config, "categorized-task")!, owner: "scout" };
+    const repaired = { ...readAppTaskIntent(config, "categorized-task")!, agent: "scout" };
     delete repaired.workflow;
     observeAppTaskIntent(config, { appAgent: "app-owner", intent: repaired });
 
     expect(readAppTaskIntent(config, "categorized-task")).toMatchObject({
-      owner: "scout",
+      agent: "scout",
       category: "domain",
     });
     expect(readAppTaskIntent(config, "categorized-task")?.workflow).toBeUndefined();
@@ -5792,7 +5800,7 @@ describe("App task reconciler state", () => {
     observeAppTaskIntent(config, {
       creator: { appId: "sample", taskId: "pipeline-monitor" },
       appAgent: "app-owner",
-      intent: { id: "categorized-task", ...config.resourceStore.readTask("categorized-task")!.spec, outputs: [] },
+      intent: { ...readAppTaskIntent(config, "categorized-task")!, outputs: [] },
     });
     const target = config.resourceStore.readTask("categorized-task")!;
     cancelAppTask(config, {
@@ -5907,28 +5915,10 @@ describe("App task reconciler state", () => {
             type: "session.end",
             subject: "session:s_1",
             expected: "done",
-            reviewAfterMs: 60_000,
           },
         ],
       }),
     ).toThrow("Condition session-terminal:s_1 owner requires a non-empty string");
-
-    expect(() =>
-      deferCanonicalAppTask(config, claim, {
-        disposition: "waiting",
-        summary: "waiting with an invalid legacy interval",
-        conditions: [
-          {
-            id: "session-terminal:s_1",
-            type: "session.end",
-            subject: "session:s_1",
-            expected: "done",
-            owner: "app:test-external",
-            reviewAfterMs: 1,
-          },
-        ],
-      }),
-    ).toThrow("Condition session-terminal:s_1 reviewAfterMs must be an integer");
 
     const result = deferAppTask(config, claim, {
       disposition: "waiting",
@@ -6857,7 +6847,6 @@ describe("App task reconciler state", () => {
           subject: "pipeline-run:run-42",
           expected: { field: "status", equals: "succeeded" },
           owner: "app:pipeline-observer",
-          reviewAfterMs: 31_536_000_000,
         },
       ],
     });

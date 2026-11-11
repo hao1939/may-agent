@@ -13,7 +13,7 @@ import { createTaskExecutionBackends } from "../../src/app/composition/task-exec
 import { appTaskContext } from "../../src/app/core/tasks/app-task-reconciler.js";
 import { readTaskSnapshot, type AppTaskContext } from "../../src/app/core/tasks/app-task-store.js";
 import { HostCapacity } from "../../src/app/core/scheduling/host-capacity.js";
-import { closeDb, getDb } from "../../src/lib/requests.js";
+import { closeDb, getDb } from "../../src/lib/db/connection.js";
 import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
 import { appTaskTestContext as createTaskContext } from "../../src/app/core/tasks/app-task-test-support.js";
 

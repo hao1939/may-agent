@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { describeText } from "../../../lib/artifacts.js";
-import { closeDb, getDb } from "../../../lib/requests.js";
+import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { EVENT_RECORD_ONLY, EVENT_ROW_ID, EventBus, type AgentEvent } from "./bus.js";
 import { loadPersistedEvent } from "./persisted.js";
 import { getEventView } from "./interface.js";

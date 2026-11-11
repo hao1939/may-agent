@@ -94,8 +94,8 @@ Input admission itself consumes no worker capacity.
 
 Internal loaders import owning modules directly: `../lib/index.ts` also exports the loader,
 so importing back through it creates a cycle. The public SDK and control exports
-remain the App/client boundaries. New database callers prefer focused `../lib/db/`
-modules over the historical `../lib/requests.ts` compatibility facade.
+remain the App/client boundaries. Database callers import the owning `../lib/db/` modules directly: connection,
+sessions, workflows, notifications or evaluations.
 
 Use typed calls for local reads, execution and atomic transitions. Use events
 for meaningful inputs/changes and independent observers. App-owned prompts,

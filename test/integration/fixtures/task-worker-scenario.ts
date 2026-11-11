@@ -54,7 +54,7 @@ import { attachEventPersistence } from "../../../src/app/daemon-events.js";
 import { UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY } from "../../../src/app/metric-source-measurement.js";
 import { observeDaemonLiveness } from "../../../src/app/modes/maintenance.js";
 import { DbWriter } from "../../../src/lib/db-writer.js";
-import { closeDb, getDb } from "../../../src/lib/requests.js";
+import { closeDb, getDb } from "../../../src/lib/db/connection.js";
 
 const roots: string[] = [];
 const children: Array<{ child: ChildProcess; closed: Promise<void> }> = [];

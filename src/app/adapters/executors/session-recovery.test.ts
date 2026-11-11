@@ -12,7 +12,7 @@ import { getDb } from "../../../lib/db/connection.js";
 import { upsertSession, updateSessionDb } from "../../../lib/db/sessions.js";
 import { describeText } from "../../../lib/artifacts.js";
 import { appendSessionMessage, markSessionActive, readSessionMeta, writeSessionMeta } from "../../../lib/persistence.js";
-import { closeDb } from "../../../lib/requests.js";
+import { closeDb } from "../../../lib/db/connection.js";
 import { createLastSessionWriter } from "../../../lib/session-subscribers.js";
 import { EventBus, type AgentEvent } from "../../core/events/bus.js";
 import type { AppTaskAttempt } from "../../core/tasks/app-task-state.js";

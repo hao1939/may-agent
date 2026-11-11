@@ -4,7 +4,8 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { SubagentManager } from "./manager.js";
-import { closeDb, getWorkflowRun } from "./requests.js";
+import { closeDb } from "./db/connection.js";
+import { getWorkflowRun } from "./db/workflows.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
 import { runWorkflowDirect, WorkflowHandlerUnavailable } from "./workflow-tool.js";
 

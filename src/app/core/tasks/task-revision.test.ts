@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Type, defineApp } from "@may-agent/sdk";
-import { closeDb, getDb } from "../../../lib/requests.js";
+import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { admitTaskInput } from "../state/inbox.js";
 import { createAppInboxItem, getAppInboxItem } from "../state/app-inbox-store.js";
@@ -312,7 +312,6 @@ test.each(["answer", "wait"])(
                 subject: "proof:beta",
                 expected: true,
                 owner: "app:creator",
-                reviewAfterMs: 60_000,
               },
             ],
           }),
@@ -500,7 +499,6 @@ test.each(["queued", "waiting"])(
             subject: "source:alpha",
             expected: true,
             owner: "app:worker",
-            reviewAfterMs: 60_000,
           },
         ],
       });

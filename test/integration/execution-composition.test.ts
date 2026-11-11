@@ -11,7 +11,7 @@ import { currentAgentSessionId } from "../../src/lib/agent-session-context.js";
 import { createWorkflowRunner } from "../../src/lib/workflow-tool.js";
 import { createRunCliAgentTool } from "../../src/lib/tools/run-cli-agent.js";
 import { drainBashProcessGroup } from "../../src/lib/tools/bash.js";
-import { closeDb } from "../../src/lib/requests.js";
+import { closeDb } from "../../src/lib/db/connection.js";
 import { readSessionBashProcessGroups } from "../../src/lib/persistence.js";
 import { fakeModel } from "../fixtures/model.js";
 

@@ -14,7 +14,6 @@ import { createHash, randomUUID } from "node:crypto";
 import { basename } from "node:path";
 import {
   isTypedConditionSubject as isTypedAppTaskConditionSubject,
-  MIN_CONDITION_REVIEW_AFTER_MS as MIN_APP_TASK_CONDITION_REVIEW_AFTER_MS,
   type Condition as AppTaskConditionSpec,
   type TaskAcceptanceBasis as AppTaskAcceptanceBasis,
   type TaskAction as AppTaskAction,
@@ -474,7 +473,7 @@ function taskSpecHash(intent: AppTaskIntent, effectiveAgent?: string, legacyMode
           acceptance: intent.acceptance,
           ...(legacyMode ? { mode: legacyMode } : {}),
 
-          owner: effectiveAgent ?? intent.owner ?? null,
+          owner: effectiveAgent ?? intent.agent ?? null,
           workflow: intent.workflow ?? null,
           executor: intent.executor ?? "agent",
           input: intent.input ?? {},
@@ -492,7 +491,7 @@ function resourceSpec(intent: AppTaskIntent): AppTaskResource["spec"] {
     outcome: intent.outcome,
     acceptance: [...intent.acceptance],
 
-    ...(intent.owner?.trim() ? { owner: intent.owner.trim() } : {}),
+    ...(intent.agent?.trim() ? { owner: intent.agent.trim() } : {}),
     ...(intent.workflow?.trim() ? { workflow: intent.workflow.trim() } : {}),
     ...(intent.executor ? { executor: intent.executor } : {}),
     ...(intent.input ? { input: stableValue(intent.input) as Record<string, unknown> } : {}),
@@ -510,7 +509,7 @@ function resourceIntent(resource: AppTaskResource): AppTaskIntent {
     outcome: resource.spec.outcome,
     acceptance: [...resource.spec.acceptance],
 
-    ...(resource.spec.owner ? { owner: resource.spec.owner } : {}),
+    ...(resource.spec.owner ? { agent: resource.spec.owner } : {}),
     ...(resource.spec.workflow ? { workflow: resource.spec.workflow } : {}),
     ...(resource.spec.executor ? { executor: resource.spec.executor } : {}),
     ...(resource.spec.input ? { input: { ...resource.spec.input } } : {}),
@@ -832,7 +831,7 @@ export function appTaskContext(input: AppTaskContextInput): AppTaskContext {
 }
 
 function resolvedAgent(tree: TaskTree, intent: AppTaskIntent, appAgent: string): string {
-  if (intent.owner?.trim()) return intent.owner.trim();
+  if (intent.agent?.trim()) return intent.agent.trim();
   let parentId: string | null | undefined = intent.parentId;
   const seen = new Set<string>();
   while (parentId && !seen.has(parentId)) {
@@ -955,18 +954,18 @@ function materializeWaitingConditions(
     const id = raw.id.trim();
     if (!previousIds.has(id)) ids.push(id);
     const current = registry[id];
-    // New producers omit this obsolete field; doing so must not restart a saved wait.
-    const reviewAfterMs = raw.reviewAfterMs ?? current?.spec.reviewAfterMs;
+    // Compare current authoring against the supported fields of historical storage.
     const spec = {
       type: raw.type.trim(),
       subject: raw.subject.trim(),
       expected: raw.expected,
       ...(raw.requestedAction?.trim() ? { requestedAction: raw.requestedAction.trim() } : {}),
       owner: raw.owner!.trim(),
-      ...(reviewAfterMs === undefined ? {} : { reviewAfterMs }),
       ...((raw.progress ?? current?.spec.progress) === undefined ? {} : { progress: raw.progress ?? current?.spec.progress }),
     };
-    const sameSpec = current && JSON.stringify(stableValue(current.spec)) === JSON.stringify(stableValue(spec));
+    const savedSpec = current && { ...current.spec };
+    if (savedSpec) delete (savedSpec as Record<string, unknown>).reviewAfterMs;
+    const sameSpec = current && JSON.stringify(stableValue(savedSpec)) === JSON.stringify(stableValue(spec));
     const linkedToAnotherTask = Object.values(tree.resources ?? {}).some(
       (resource) => resource.metadata.id !== taskId && resource.status.conditionIds?.includes(id),
     );
@@ -974,7 +973,7 @@ function materializeWaitingConditions(
       throw new Error(`Condition ${id} is already linked to another task with a different specification`);
     }
     // Changing when to consider progress does not invalidate the observed fact.
-    const { progress: _oldInterest, ...oldObservationSpec } = current?.spec ?? {};
+    const { progress: _oldInterest, ...oldObservationSpec } = savedSpec ?? {};
     const { progress: _newInterest, ...newObservationSpec } = spec;
     const onlyInterestChanged = current && !sameSpec &&
       JSON.stringify(stableValue(oldObservationSpec)) === JSON.stringify(stableValue(newObservationSpec));
@@ -1435,8 +1434,10 @@ export function observeAppTaskIntent(
     taskIds: [input.intent.id, input.intent.parentId, ...(input.intent.dependsOn ?? [])],
     ...(admissionKey ? { admissionIds: [admissionKey] } : {}),
   });
+  // Preserve the established admission hash encoding while exposing only agent to Apps.
+  const { agent: authoredAgent, ...requirements } = input.intent;
   const requestHash = createHash("sha256")
-    .update(JSON.stringify(stableValue(input.intent)))
+    .update(JSON.stringify(stableValue({ ...requirements, ...(authoredAgent ? { owner: authoredAgent } : {}) })))
     .digest("hex");
   const previousAdmission = admissionKey ? tree.appTaskAdmissions?.[admissionKey] : undefined;
   if (previousAdmission) {
@@ -1722,7 +1723,7 @@ export type AppTaskSnapshotContext = {
   category?: string;
   dependsOn?: string[];
   conditions: Array<
-    Pick<AppTaskConditionSpec, "id" | "type" | "subject" | "requestedAction" | "owner" | "reviewAfterMs">
+    Pick<AppTaskConditionSpec, "id" | "type" | "subject" | "requestedAction" | "owner">
   >;
   readiness?: {
     state: "ready" | "dependency-blocked" | "condition-blocked" | "funding-blocked" | "capacity-blocked" | "resource-blocked" | "paused" | "not-applicable";
@@ -1828,7 +1829,6 @@ function liveTaskSnapshotContext(
           subject: condition.spec.subject,
           ...(condition.spec.requestedAction ? { requestedAction: condition.spec.requestedAction } : {}),
           ...(condition.spec.owner ? { owner: condition.spec.owner } : {}),
-          ...(condition.spec.reviewAfterMs === undefined ? {} : { reviewAfterMs: condition.spec.reviewAfterMs }),
         },
       ];
     }),
@@ -3877,15 +3877,6 @@ function validateConditions(
     const owner = requireNonEmptyString(condition.owner, `Handler result Condition ${identity} owner`);
     if (owner !== "human" && !/^[a-z][a-z0-9-]*:[^\s:]+$/.test(owner)) {
       throw new Error(`Handler result Condition ${identity} owner must be a canonical kind:identity`);
-    }
-    if (
-      condition.reviewAfterMs !== undefined &&
-      (!Number.isInteger(condition.reviewAfterMs) ||
-        Number(condition.reviewAfterMs) < MIN_APP_TASK_CONDITION_REVIEW_AFTER_MS)
-    ) {
-      throw new Error(
-        `Handler result Condition ${identity} reviewAfterMs must be an integer of at least ${MIN_APP_TASK_CONDITION_REVIEW_AFTER_MS}`,
-      );
     }
   }
 }

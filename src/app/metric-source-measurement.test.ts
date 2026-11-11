@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DbWriter } from "../lib/db-writer.js";
 import { applyDbSchema } from "../lib/db/schema.js";
-import { closeDb, getDb } from "../lib/requests.js";
+import { closeDb, getDb } from "../lib/db/connection.js";
 import { createMetricService } from "../lib/metrics.js";
 import { attachEventPersistence } from "./daemon-events.js";
 import { EventBus, EVENT_ROW_ID, EVENT_RECORD_ONLY } from "./core/events/bus.js";

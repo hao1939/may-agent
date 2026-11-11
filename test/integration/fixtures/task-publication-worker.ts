@@ -1,7 +1,7 @@
 import { defineApp, Type } from "@may-agent/sdk";
 import { join } from "node:path";
 import { DbWriter } from "../../../src/lib/db-writer.js";
-import { closeAllDbs } from "../../../src/lib/requests.js";
+import { closeAllDbs } from "../../../src/lib/db/connection.js";
 import { EventBus, EVENT_ROW_ID, type AgentEvent } from "../../../src/app/core/events/bus.js";
 import { HostCapacity } from "../../../src/app/core/scheduling/host-capacity.js";
 import {

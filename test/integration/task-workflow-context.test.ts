@@ -10,7 +10,7 @@ import { buildTools } from "../../src/app/loader/toolset-loader.js";
 import { createAgentRun } from "../../src/lib/agent-runner.js";
 import { currentAgentSessionId } from "../../src/lib/agent-session-context.js";
 import { SubagentManager } from "../../src/lib/manager.js";
-import { closeDb } from "../../src/lib/requests.js";
+import { closeDb } from "../../src/lib/db/connection.js";
 import type { TaskExecutionContext } from "../../src/lib/task-execution-context.js";
 import { createFinishTool } from "../../src/lib/tools/lifecycle.js";
 import { fakeModel } from "../fixtures/model.js";

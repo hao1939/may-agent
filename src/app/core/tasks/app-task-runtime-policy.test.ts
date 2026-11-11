@@ -16,7 +16,6 @@ describe("App Task Condition admission", () => {
             subject: "id:approval",
             expected: true,
             owner: "human:operator",
-            reviewAfterMs: 60_000,
           },
         ],
       },
@@ -43,7 +42,7 @@ describe("Task Condition reconciliation authority", () => {
 
   it("keeps the explicit compatible specification after a generated dependency echo", () => {
     const dependencyEcho = structuredClone(canonical);
-    const explicit = { ...canonical, reviewAfterMs: 60_000 };
+    const explicit = { ...canonical };
     expect(mergeTaskConditions([canonical, dependencyEcho, explicit], new Set([canonical.id]))).toEqual([explicit]);
   });
 

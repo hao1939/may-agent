@@ -11,6 +11,7 @@ import {
   completeAppTask,
   observeAppTaskIntent,
   readAppTaskAdmissionOutcome,
+  readAppTaskIntent,
   recordAppTaskTrigger,
 } from "../tasks/app-task-reconciler.js";
 import type { AppTaskAdmission, TaskCompletionReceipt, TaskTree } from "../tasks/app-task-store.js";
@@ -151,7 +152,7 @@ test("historical completed work becomes a closed Task with exact result and call
   expect(() =>
     observeAppTaskIntent(f.config, {
       appAgent: "worker",
-      intent: { id: "measurement", ...f.store.readTask("measurement")!.spec },
+      intent: readAppTaskIntent(f.config, "measurement")!,
     }),
   ).toThrow("cancelled task");
 });

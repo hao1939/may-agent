@@ -928,7 +928,6 @@ describe("AppTaskResourceStore", () => {
             subject: "example:later",
             expected: "done",
             owner: "app:example-observer",
-            reviewAfterMs: 60_000,
           },
         ],
       }).status,
@@ -1239,7 +1238,6 @@ describe("AppTaskResourceStore", () => {
           subject: "task:review",
           expected: "done",
           owner: "human",
-          reviewAfterMs: 60_000,
         },
       ],
     });

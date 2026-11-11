@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { Duplex } from "node:stream";
 import { EVENT_INGRESS_SOURCE, EVENT_ROW_ID, EventBus, type AgentEvent } from "../../../src/app/core/events/bus.js";
 import { DbWriter } from "../../../src/lib/db-writer.js";
-import { closeDb, getDb } from "../../../src/lib/requests.js";
+import { closeDb, getDb } from "../../../src/lib/db/connection.js";
 import { getEvent, sendSocketCommand, type SocketEndpoint } from "./client.js";
 import {
   CONTROL_SOCKET_LIMITS,

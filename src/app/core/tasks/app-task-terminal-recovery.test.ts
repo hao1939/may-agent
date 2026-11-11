@@ -38,7 +38,7 @@ import {
 } from "./app-task-reconciler.js";
 import { readTaskSnapshot } from "./app-task-store.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";
-import { closeDb, getDb } from "../../../lib/requests.js";
+import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import {
   addSessionBashProcessGroup,
@@ -1092,7 +1092,6 @@ describe("terminal completion recovery", () => {
             subject: "id:proof-1",
             expected: "ready",
             owner: "app:sample",
-            reviewAfterMs: 60_000,
           },
         ];
       }
@@ -1168,7 +1167,6 @@ describe("terminal completion recovery", () => {
           subject: "id:proof-1",
           expected: "ready",
           owner: "app:sample",
-          reviewAfterMs: 60_000,
         },
       ];
       const claim = f.saveTerminalSession("external-wait");
@@ -1237,7 +1235,6 @@ describe("terminal completion recovery", () => {
       subject: "id:proof-1",
       expected: "ready",
       owner: "app:sample",
-      reviewAfterMs: 60_000,
     };
     f.terminalResult.conditions = [condition];
     const fact = sourceBus.emit({

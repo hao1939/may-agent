@@ -177,7 +177,6 @@ test("old Condition waits retain their facts and review deadline, then continue 
         subject: "task:measurement",
         expected: "done",
         owner: "app:sampler",
-        reviewAfterMs: 60_000,
       },
     ],
   });
@@ -488,7 +487,7 @@ test("offline cutover renames caller waits and retains their identity across rep
   const id = "app-request:child-input";
   deferAppTask(f.config, old, { disposition: "waiting", summary: "Waiting for child", conditions: [{
     id, type: "app.dependency.completed", subject: "id:child-input",
-    expected: { field: "status", equals: "done" }, owner: "app:sample", reviewAfterMs: 300_000,
+    expected: { field: "status", equals: "done" }, owner: "app:sample",
   }] });
   const before = f.store.readTaskConditions("caller")[0]!;
   f.migrate();
@@ -539,7 +538,6 @@ test("offline structural-wait retirement replays the original ask once, preserve
         subject: "sample:one",
         expected: true,
         owner: "app:sample",
-        reviewAfterMs: 60_000,
       },
     ],
   });
@@ -619,7 +617,6 @@ test("structural-wait replay keeps admission order across bounded claims and res
         subject: "sample:one",
         expected: true,
         owner: "app:sample",
-        reviewAfterMs: 60_000,
       },
     ],
   });

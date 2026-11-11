@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "./manager.js";
 import { fakeModel } from "../../test/fixtures/model.js";
-import { closeDb } from "./requests.js";
+import { closeDb } from "./db/connection.js";
 
 describe("cascading cancel", () => {
   let persistDir: string;

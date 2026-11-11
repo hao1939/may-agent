@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { DbWriter, findPersistedEventId } from "./db-writer.js";
-import { closeDb, getDb } from "./requests.js";
+import { closeDb, getDb } from "./db/connection.js";
 import { EventBus } from "../app/core/events/bus.js";
 import {
   createAppInboxItem,

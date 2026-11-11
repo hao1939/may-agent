@@ -35,7 +35,7 @@ import { observeDaemonLiveness } from "../../../src/app/modes/maintenance.js";
 import { openDatabase } from "../../../src/lib/db.js";
 import { SubagentManager } from "../../../src/lib/manager.js";
 import { readActiveSessionProcessId } from "../../../src/lib/persistence.js";
-import { closeDb, getDb } from "../../../src/lib/requests.js";
+import { closeDb, getDb } from "../../../src/lib/db/connection.js";
 import { claimAppInboxItem } from "../../fixtures/legacy-inbox.js";
 import { cleanup, fixture, run } from "./task-worker-scenario.js";
 

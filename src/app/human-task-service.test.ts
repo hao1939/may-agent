@@ -64,7 +64,6 @@ test("retains waits through a queued and running pass and respects static gates"
       subject: `pipeline-run:${id}`,
       expected: "completed",
       owner: "app:ci",
-      reviewAfterMs: 60_000,
     })),
   });
   expect(view().status).toBe("waiting");
@@ -856,7 +855,6 @@ function insertCondition(
     state?: "unknown" | "false" | "true";
     type?: string;
     subject?: string;
-    reviewAfterMs?: number;
   },
 ): void {
   const state = input.state ?? "unknown";
@@ -868,7 +866,6 @@ function insertCondition(
       expected: input.type === "time.reached" ? true : { field: "decision", anyOf: ["approve", "reject"] },
       ...(input.requestedAction ? { requestedAction: input.requestedAction } : {}),
       ...(input.owner ? { owner: input.owner } : {}),
-      ...(input.reviewAfterMs ? { reviewAfterMs: input.reviewAfterMs } : {}),
     },
     status: { observedGeneration: 2, state, ...(input.createdAt ? { createdAt: input.createdAt } : {}) },
   };
@@ -1242,7 +1239,6 @@ describe("Human Task service", () => {
         subject: "id:dependency-request",
         expected: { field: "status", equals: "done" },
         owner: "app:may-agent",
-        reviewAfterMs: 60_000,
       },
       status: { observedGeneration: 1, state: "unknown" },
     };
@@ -1499,7 +1495,6 @@ describe("Human Task service", () => {
       type: "time.reached",
       subject: "time:2026-09-19T13:53:00.000Z",
       owner: "app:may",
-      reviewAfterMs: 60_000,
     });
     const service = new HumanTaskService(db, registryWithInputSchedule("may", "hygiene", 14_400_000));
 
@@ -1528,7 +1523,6 @@ describe("Human Task service", () => {
       type: "time.reached",
       subject: "time:2026-09-19T13:53:00.000Z",
       owner: "app:may",
-      reviewAfterMs: 60_000,
     });
     const service = new HumanTaskService(
       db,
@@ -1683,7 +1677,6 @@ describe("Human Task service", () => {
       type: "time.reached",
       subject: "time:2026-09-19T13:53:00.000Z",
       owner: "app:may",
-      reviewAfterMs: 60_000,
     });
 
     const service = new HumanTaskService(db, registry("may"));

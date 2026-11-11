@@ -3,8 +3,8 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SubagentManager } from "../../src/lib/manager.js";
-import type { WorkflowRunRecord } from "../../src/lib/requests.js";
-import { getWorkflowRun, insertWorkflowRun } from "../../src/lib/requests.js";
+import type { WorkflowRunRecord } from "../../src/lib/db/workflows.js";
+import { getWorkflowRun, insertWorkflowRun } from "../../src/lib/db/workflows.js";
 import { createWorkflowDiagnostics } from "../../src/lib/workflow-diagnostics.js";
 import { readWorkflowFacts } from "../../src/lib/workflow-facts.js";
 

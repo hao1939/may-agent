@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { AgentEvent } from "../app/core/events/bus.js";
-import { closeDb, getDb } from "./requests.js";
+import { closeDb, getDb } from "./db/connection.js";
 import { rewriteSessionMessages } from "./persistence.js";
 import { createCheckpointDigest, createStartDigest, getLastDigest, upsertDigest } from "./session-digest.js";
 import { createDigestWriter } from "./session-subscribers.js";

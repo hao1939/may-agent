@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { Type, defineApp } from "@may-agent/sdk";
 import { fakeTaskAttacher } from "../../../../test/fixtures/task-attachment.js";
 import { DbWriter } from "../../../lib/db-writer.js";
-import { closeDb, getDb } from "../../../lib/requests.js";
+import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { EventBus, EVENT_ROW_ID } from "../events/bus.js";
 import type { AppInboxItem } from "../state/app-inbox-store.js";
 import { AppInboxHost } from "./app-inbox-host.js";

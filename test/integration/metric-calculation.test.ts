@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { closeDb, getDb } from "../../src/lib/requests.js";
+import { closeDb, getDb } from "../../src/lib/db/connection.js";
 import { createMetricService } from "../../src/lib/metrics.js";
 import { readMetricView } from "../../src/app/adapters/reporting/metric-read.js";
 

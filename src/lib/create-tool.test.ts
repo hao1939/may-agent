@@ -7,7 +7,8 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "./manager.js";
-import { closeDb, upsertSession } from "./requests.js";
+import { closeDb } from "./db/connection.js";
+import { upsertSession } from "./db/sessions.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 
 function registerTestAgents(manager: SubagentManager) {

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createWorkflowTool, runWorkflowDirect, WorkflowExecutionFailure } from "./workflow-tool.js";
 import { readWorkflowFacts } from "./workflow-facts.js";
-import { closeDb } from "./requests.js";
+import { closeDb } from "./db/connection.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
 
 const cases = (["done", "blocked", "error", "interrupted"] as const)

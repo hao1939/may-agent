@@ -123,7 +123,6 @@ describe("prepared completion contract", () => {
             subject: "source:sample",
             expected: true,
             owner: "human requester",
-            reviewAfterMs: 60_000,
           },
         ],
       },
@@ -248,7 +247,6 @@ describe("prepared completion contract", () => {
           subject: "review:candidate",
           expected: true,
           owner: "human",
-          reviewAfterMs: 60_000,
         },
       ],
     } as const;

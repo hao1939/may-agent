@@ -1,4 +1,4 @@
-import { MIN_CONDITION_REVIEW_AFTER_MS, type Condition } from "./task.js";
+import type { Condition } from "./task.js";
 
 /** App-owned source semantics; the Host supplies demand, identity and delivery. */
 export type ResourceObserver = {
@@ -17,8 +17,6 @@ export type ObservationInterest = {
   id: string;
   resource: string;
   expected: Record<string, unknown>;
-  /** @deprecated Retained for compatibility; use Task reviewAt for agent reconsideration. */
-  reviewAfterMs?: number;
 };
 
 /** Current runtime evidence, not proof that a Task consumed the observation. */
@@ -44,18 +42,12 @@ export function observationCondition(capability: ObservationContract, interest: 
   if (!interest.id?.trim() || !interest.resource?.trim()) throw new Error("Observation requires id and resource");
   if (!interest.expected || typeof interest.expected !== "object" || Array.isArray(interest.expected))
     throw new Error("Observation requires an expectation object");
-  const reviewAfterMs = interest.reviewAfterMs;
-  if (
-    reviewAfterMs !== undefined &&
-    (!Number.isSafeInteger(reviewAfterMs) || reviewAfterMs < MIN_CONDITION_REVIEW_AFTER_MS)
-  )
-    throw new Error(`reviewAfterMs must be an integer of at least ${MIN_CONDITION_REVIEW_AFTER_MS}`);
+  if ("reviewAfterMs" in interest) throw new Error("reviewAfterMs is retired; use Task reviewAt");
   return {
     id: interest.id,
     type: capability.type,
     subject: `resource:${interest.resource}`,
     expected: { ...interest.expected, source: `app:${capability.appId}:observer:${capability.id}` },
     owner: `app:${capability.appId}`,
-    ...(reviewAfterMs === undefined ? {} : { reviewAfterMs }),
   };
 }

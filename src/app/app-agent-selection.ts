@@ -6,35 +6,12 @@ function optionalName(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
-function selectedAgent(
-  value: { agent?: unknown; owner?: unknown },
-  label: string,
-  required: boolean,
-): string | undefined {
-  if (value.agent !== undefined && !optionalName(value.agent)) {
-    throw new Error(`${label} agent must be a non-empty string when present`);
-  }
-  if (value.owner !== undefined && !optionalName(value.owner)) {
-    throw new Error(`${label} legacy owner must be a non-empty string when present`);
-  }
-  const agent = optionalName(value.agent);
-  const owner = optionalName(value.owner);
-  if (agent && owner && agent !== owner) {
-    throw new Error(`${label} declares conflicting agent and legacy owner values`);
-  }
-  const selected = agent ?? owner;
-  if (required && !selected) throw new Error(`${label} agent must be a non-empty string`);
-  return selected;
-}
-
-/** Translate public Task intent to retained Host storage vocabulary. */
+/** Validate current Task authoring without accepting retired aliases. */
 export function normalizeTaskAgent(intent: TaskIntent, label = `Task ${intent.id}`): TaskIntent {
-  const owner = selectedAgent(intent, label, false);
-  const normalized = { ...intent };
-  delete normalized.agent;
-  if (owner) normalized.owner = owner;
-  else delete normalized.owner;
-  return normalized;
+  if ("owner" in intent) throw new Error(`${label} owner is retired; use agent`);
+  if (intent.agent !== undefined && !optionalName(intent.agent))
+    throw new Error(`${label} agent must be a non-empty string when present`);
+  return { ...intent, ...(intent.agent !== undefined ? { agent: intent.agent.trim() } : {}) };
 }
 
 function normalizeAttachment(attachment: AppTaskAttachment, appId: string): AppTaskAttachment {
@@ -42,7 +19,7 @@ function normalizeAttachment(attachment: AppTaskAttachment, appId: string): AppT
   return { ...attachment, intent: normalizeTaskAgent(attachment.intent, `App ${appId} Task ${attachment.intent.id}`) };
 }
 
-/** Normalize one loaded App once; Runtime keeps its retained `owner` alias private. */
+/** Validate the loaded App and normalize its Task authoring. */
 export function normalizeAppAgent<TInputSchema extends TSchema>(
   definition: AppDefinition<TInputSchema>,
 ): HostAppDefinition<TInputSchema> {
@@ -53,6 +30,5 @@ export function normalizeAppAgent<TInputSchema extends TSchema>(
     ...definition,
     agent,
     ...(definition.task ? { task: (input) => normalizeAttachment(definition.task!(input), definition.id) } : {}),
-
   } as HostAppDefinition<TInputSchema>;
 }

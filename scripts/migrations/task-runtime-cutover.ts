@@ -12,7 +12,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import type { AddressInfo } from "node:net";
 import type { AppDefinition, AppInputContext, ConversationTurnResult } from "@may-agent/sdk";
-import { getDb, closeDb } from "../../src/lib/requests.js";
+import { getDb, closeDb } from "../../src/lib/db/connection.js";
 import { stateTransaction } from "../../src/lib/db/transaction.js";
 import { DefinitionSourceReleaseStore } from "../../src/app/app-source-release.js";
 import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";

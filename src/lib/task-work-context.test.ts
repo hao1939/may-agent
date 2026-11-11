@@ -198,7 +198,6 @@ test("a waiting result's scope is not completion; genuine waits do not keep the 
         subject: "draft:v1",
         expected: true,
         owner: "app:reviewer",
-        reviewAfterMs: 60_000,
       },
     ],
   });

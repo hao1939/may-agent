@@ -5,7 +5,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDatabase } from "../src/lib/db.js";
-import { closeDb, getDb } from "../src/lib/requests.js";
+import { closeDb, getDb } from "../src/lib/db/connection.js";
 
 const script = new URL("./event-graph-check.ts", import.meta.url).pathname;
 const run = (root: string, ...args: string[]) =>

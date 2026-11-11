@@ -903,7 +903,6 @@ export async function execute(ctx) {
         subject: "candidate:revision-2",
         expected: true,
         owner: "human:reviewer",
-        reviewAfterMs: 3600000,
       }],
     };
     const taskContext = {

@@ -3,7 +3,7 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { closeDb, getDb } from "../../../lib/requests.js";
+import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { applyConversationRequestUpdates, readConversationRequest } from "./conversation-requests.js";
 const app = { id: "sample" };
 const owner = { id: "owner" };

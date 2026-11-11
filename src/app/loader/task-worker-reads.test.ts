@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { closeDb, getDb } from "../../lib/requests.js";
+import { closeDb, getDb } from "../../lib/db/connection.js";
 import { AppRegistry } from "../core/apps/registry.js";
 import { EventBus } from "../core/events/bus.js";
 import { HostCapacity } from "../core/scheduling/host-capacity.js";

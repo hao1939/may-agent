@@ -89,12 +89,7 @@ const parameters = Type.Object(
           id: Type.String({ minLength: 1 }),
           resource: Type.String({ minLength: 1 }),
           expected: Type.Record(Type.String(), Type.Unknown()),
-          reviewAfterMs: Type.Optional(
-            Type.Integer({
-              minimum: 60_000,
-              description: "Legacy field; use Task reviewAt for deliberate agent reconsideration.",
-            }),
-          ),
+
         },
         {
           additionalProperties: false,

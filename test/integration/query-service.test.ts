@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { closeDb, getDb } from "../../src/lib/requests.js";
+import { closeDb, getDb } from "../../src/lib/db/connection.js";
 import { createQueryService } from "../../src/lib/query-service.js";
 
 describe("QueryService", () => {

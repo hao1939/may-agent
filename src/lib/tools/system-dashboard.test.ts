@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { applyDbSchema } from "../db/schema.js";
-import { closeDb, getDb } from "../requests.js";
+import { closeDb, getDb } from "../db/connection.js";
 import { printSystemStatus } from "./system-dashboard.js";
 
 test("status keeps ordinary agent evidence without promoting a named learning process", () => {

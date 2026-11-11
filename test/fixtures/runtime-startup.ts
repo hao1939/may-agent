@@ -24,7 +24,7 @@ import {
 } from "../../src/app/core/tasks/app-task-runtime.js";
 import * as daemon from "../../src/app/daemon.js";
 import * as interfaces from "../../src/app/interface-startup.js";
-import { closeAllDbs } from "../../src/lib/requests.js";
+import { closeAllDbs } from "../../src/lib/db/connection.js";
 import { fakeModel } from "./model.js";
 
 const actualDaemon = { ...daemon };

@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { conversationTaskContext } from "../../../test/fixtures/conversation-task.js";
 import { DbWriter } from "../../lib/db-writer.js";
 import { storeNotificationMessage } from "../../lib/db/notifications.js";
-import { closeDb, getDb } from "../../lib/requests.js";
+import { closeDb, getDb } from "../../lib/db/connection.js";
 import { attachCommandRouter } from "../command-router.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "../composition/app-inbox-runtime.js";
 import { AppRegistry } from "../core/apps/registry.js";

@@ -3,7 +3,7 @@ import { mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DbWriter } from "../../src/lib/db-writer.js";
-import { closeDb, getDb } from "../../src/lib/requests.js";
+import { closeDb, getDb } from "../../src/lib/db/connection.js";
 
 const TEST_DIR = join(tmpdir(), "may-agent-db-writer-test");
 

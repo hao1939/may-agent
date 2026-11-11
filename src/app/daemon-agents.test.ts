@@ -6,7 +6,7 @@ import { fakeModel } from "../../test/fixtures/model.js";
 import { createAgentRun } from "../lib/agent-runner.js";
 import { SubagentManager } from "../lib/manager.js";
 import { readSessionMeta } from "../lib/persistence.js";
-import { closeDb, getDb } from "../lib/requests.js";
+import { closeDb, getDb } from "../lib/db/connection.js";
 import { createLastSessionWriter } from "../lib/session-subscribers.js";
 import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
 import { AppRegistry } from "./core/apps/registry.js";

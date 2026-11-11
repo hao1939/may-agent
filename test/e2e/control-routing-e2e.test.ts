@@ -7,7 +7,7 @@ import { sendSocketCommand, type SocketEndpoint } from "../../packages/control/s
 import { createControlSocketCore, type ControlEvent, type ControlSocket } from "../../packages/control/src/server.js";
 import { EVENT_ROW_ID, EventBus } from "../../src/app/core/events/bus.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
-import { closeDb, getDb } from "../../src/lib/requests.js";
+import { closeDb, getDb } from "../../src/lib/db/connection.js";
 
 const roots: string[] = [];
 const stateDirs: string[] = [];

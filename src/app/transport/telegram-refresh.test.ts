@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { closeDb, getDb } from "../../lib/requests.js";
+import { closeDb, getDb } from "../../lib/db/connection.js";
 import { DbWriter } from "../../lib/db-writer.js";
 import { addLogSubscriber } from "../../lib/log.js";
 import {
