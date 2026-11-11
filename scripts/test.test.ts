@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
 import { execFile } from "node:child_process";
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,13 +11,15 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
-test.each([false, true])(
+test.each(["success", "failure", "empty"] as const)(
   "the full-suite command runs every selected file once and propagates failure (%s)",
-  async (fail) => {
+  async (mode) => {
+    const fail = mode === "failure";
     const root = mkdtempSync(join(tmpdir(), "may-test-command-"));
     roots.push(root);
     const witness = join(root, "visited");
-    for (const name of ["one", "two", "three", "four", "five"]) {
+    const names = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+    for (const name of names) {
       writeFileSync(
         join(root, `${name}.test.ts`),
         `
@@ -40,16 +42,23 @@ test.each([false, true])(
     ];
     let code = 0;
     try {
-      await promisify(execFile)(process.execPath, args, { timeout: 10_000 });
+      await promisify(execFile)(process.execPath, args, {
+        timeout: 10_000,
+        env: mode === "empty" ? { ...process.env, MAY_TEST_SHARDS: "0" } : process.env,
+      });
     } catch (error) {
       code = (error as { code: number }).code;
     }
-    expect(code).toBe(fail ? 1 : 0);
-    expect(readFileSync(witness, "utf8").trim().split("\n").sort()).toEqual(["five", "four", "one", "three", "two"]);
+    expect(code).toBe(mode === "success" ? 0 : 1);
+    if (mode === "empty") {
+      expect(existsSync(witness)).toBe(false);
+      return;
+    }
+    expect(readFileSync(witness, "utf8").trim().split("\n").sort()).toEqual(names.toSorted());
     const reports = readdirSync(root).filter((name) => /^results\.\d+\.xml$/.test(name));
-    expect(reports).toHaveLength(4);
-    expect(reports.flatMap((name) => [...readFileSync(join(root, name), "utf8").matchAll(/<testcase /g)])).toHaveLength(
-      5,
+    const reported = reports.flatMap((name) =>
+      [...readFileSync(join(root, name), "utf8").matchAll(/<testcase name="([^"]+)"/g)].map((match) => match[1]),
     );
+    expect(reported.sort()).toEqual(names.toSorted());
   },
 );

@@ -205,11 +205,14 @@ Keep policy checks separate from the boundary that makes them durable:
   With recovery timers disabled, the probe runs bounded production admission
   and result recovery after worker exit. Cleanup releases the response barrier
   before draining, so a failed assertion cannot hide behind a hung teardown.
-- The complete gate uses four long-lived Bun processes with built-in file
+- The complete gate uses up to eight long-lived Bun processes with built-in file
   sharding. Imports are reused within a process; mutable fixtures are never
-  shared between cases. The command's regression verifies every selected file
+  shared between cases. CI uses the measured four-process limit through
+  `MAY_TEST_SHARDS=4`; the local default follows available CPUs, capped at eight.
+  The command's regression verifies every selected file
   runs exactly once, all JUnit reports survive, and any shard's failure
-  fails the command. No test discovery or ordering algorithm is maintained here.
+  fails the command. A zero-sized pool cannot silently skip execution.
+  No test discovery or ordering algorithm is maintained here.
 - Maintenance subscription tests close their scheduler generations in teardown.
   Metric sampling uses a fresh diagnostic observer when asserting a real plan;
   unrelated tests may already have filled the process-wide query catalog.
@@ -232,12 +235,12 @@ The November 2026 audit used Node 24 and Bun 1.3.14, with Chrome enabled:
 | Full portable test phase | Seconds | Pass / fail / skip |
 | --- | ---: | --- |
 | Main (`946d3ff4`), two workers | 494.40 | 4,388 / 2 / 3 |
-| Consolidated fixtures, four workers | 337.68 | 4,390 / 0 / 3 |
-| Consolidated fixtures, eight workers | 213.10 | 4,390 / 0 / 3 |
+| Consolidated fixtures, four isolated file workers | 337.68 | 4,390 / 0 / 3 |
+| Consolidated fixtures, eight isolated file workers | 213.10 | 4,390 / 0 / 3 |
 
 All rows contain the same 4,393 cases. The initial local baseline exposed two
 interaction probe timeouts; the fixture fixes above are part of the change.
-Eight workers passed locally but were rejected after hosted CI run
+Eight isolated file workers passed locally but were rejected after hosted CI run
 [43018559976](https://github.com/hao1939/may-agent/actions/runs/43018559976)
 took 227.05 seconds and timed out two worker probes under CPU contention.
 Increasing worker counts is not the final optimization. The clean main CI reference is run
