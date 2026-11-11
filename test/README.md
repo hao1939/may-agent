@@ -205,6 +205,16 @@ Keep policy checks separate from the boundary that makes them durable:
   With recovery timers disabled, the probe runs bounded production admission
   and result recovery after worker exit. Cleanup releases the response barrier
   before draining, so a failed assertion cannot hide behind a hung teardown.
+- The complete gate uses two long-lived Bun processes with built-in file
+  sharding. Imports are reused within a process; mutable fixtures are never
+  shared between cases. The command's regression verifies every selected file
+  runs exactly once, both JUnit reports survive, and either shard's failure
+  fails the command. No test discovery or ordering algorithm is maintained here.
+- Maintenance subscription tests close their scheduler generations in teardown.
+  Metric sampling tests require correct costs and failures even when optional
+  process-wide diagnostic evidence has filled its bounded query catalog.
+  `db/query-performance.test.ts` owns real plan capture and catalog limits;
+  `metric-query-metrics.test.ts` owns the bounded plan projection.
 
 A speed comparison must use the complete `bun run test` selection on the same
 machine, with the same Node/Bun versions, browser and Docker Compose prerequisites.
@@ -222,13 +232,13 @@ The November 2026 audit used Node 24 and Bun 1.3.14, with Chrome enabled:
 
 All rows contain the same 4,393 cases. The initial local baseline exposed two
 interaction probe timeouts; the fixture fixes above are part of the change.
-The final test phase is 56.9% shorter, or 54.1% after subtracting the entire
-30.23 seconds spent in those failed probes from the baseline. This arithmetic
-is not a measured passing baseline. The clean main CI reference is run
+Eight workers passed locally but were rejected after hosted CI run
+[43018559976](https://github.com/hao1939/may-agent/actions/runs/43018559976)
+took 227.05 seconds and timed out two worker probes under CPU contention.
+Increasing worker counts is not the final optimization. The clean main CI reference is run
 [43001928873](https://github.com/hao1939/may-agent/actions/runs/43001928873):
 266.67 seconds, 4,390 passed and the same three installation-only skips.
-Keep the final-revision hosted comparison in the PR evidence. The complete local
-`bun run ci`, including type/architecture/lint checks, took 240.45 seconds.
+Keep the final-revision hosted comparison in the PR evidence.
 These measurements describe this audit; machine load and filesystem cost vary.
 
 ## SDK export contract

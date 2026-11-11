@@ -3,7 +3,7 @@
  *
  * Bellwether for the whole cron → handler-loader → event-persistence pipeline.
  * Spawns a sandboxed daemon with a single fixture agent ("may") owning a single
- * fixture handler ("e2e-noop") on a 10-second interval. Waits for handler.started
+ * fixture handler ("e2e-noop") on a 100ms interval. Waits for handler.started
  * + handler.completed + the handler's own emitted e2e.tick events to materialize
  * in the events table.
  *
@@ -34,7 +34,7 @@ describe("E1: handler loop liveness", () => {
           {
             name: "e2e-noop",
             handler: "e2e-noop",
-            intervalMs: 10000,
+            intervalMs: 100,
             offsetMs: 1, // No random startup jitter in the fixture; keep real recurring timers.
             agent: "may",
             enabled: true,
@@ -54,7 +54,7 @@ describe("E1: handler loop liveness", () => {
     async () => {
       const db = openSandboxDb(sb.dbPath);
       try {
-        // Wait for ≥2 real fires, 10s apart. The generous deadline tolerates
+        // Wait for ≥2 real scheduled fires. The generous deadline tolerates
         // runner load; polling returns as soon as both cycles are persisted.
         const result = await pollUntil(
           () => {
@@ -68,7 +68,7 @@ describe("E1: handler loop liveness", () => {
             }
             return null;
           },
-          { timeoutMs: 45_000, intervalMs: 500, description: "≥2 handler fire-cycles" },
+          { timeoutMs: 45_000, intervalMs: 20, description: "≥2 handler fire-cycles" },
         );
 
         // Invariants:

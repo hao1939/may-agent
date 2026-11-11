@@ -21,12 +21,15 @@ they are not a clean-type claim. Whole-tree formatting is not yet a merge gate:
 format the lines you change without reformatting unrelated code.
 
 `test` runs source, package, integration, daemon, browser, and build/deploy
-script tests using eight isolated Bun workers. One bounded file-worker pool also
-schedules the separate Task interaction, workload and worker-recovery suites;
-individual cases do not add another concurrency pool. Keep mutable state isolated,
-including each scenario's parent and workers. Measure the complete suite and
-hosted job before increasing this bound. No automatic test retries hide a
-failure. Reproduce and explain flaky results.
+script tests in two processes using Bun's built-in file sharding. Each process
+reuses imports across files and runs cases sequentially. Every case still owns
+fresh mutable state, including each Task scenario's parent, workers and database.
+Close runtimes, restore spies/clocks/environment, and unsubscribe listeners in
+teardown; a fresh VM must not substitute for cleanup. Module-replacement mocks
+belong in subprocess probes. Use `bun test --isolate <path>` when diagnosing
+process-local state. Measure the complete suite and hosted job before changing
+concurrency. No automatic test retries hide a failure. Reproduce and explain
+flaky results.
 Use bounded asynchronous subprocess calls in test fixtures; synchronous calls
 can block the event loop and prevent the test runner's timeout from firing.
 Scheduled daemon fixtures use the existing explicit startup offset to avoid
@@ -75,6 +78,8 @@ served JavaScript may not be inferred. Run their owning tests explicitly.
 `test:components` selects `src/` and `packages/`; it includes real Git, worker,
 and build tests, not just unit tests. `test:unit` remains a compatibility alias.
 The complete `bun run ci` remains the PR gate. See [test coverage ownership](test/README.md).
+JUnit output is written separately for each shard: `--reporter-outfile=results.xml`
+produces `results.1.xml` and `results.2.xml`. Inspect both, including failed runs.
 
 Measure JUnit and CI timings before optimizing; test count is not the target.
 Use the smallest test that exercises real behavior, with integration tests for
