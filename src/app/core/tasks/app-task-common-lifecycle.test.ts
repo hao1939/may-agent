@@ -106,7 +106,7 @@ function earlyInputFixture() {
   admit("approval");
   deferAppTask(f.config, f.claim(), {
     disposition: "waiting", summary: "Await approval", conditions: [{ id: "approval", type: "review.completed",
-      subject: "candidate:independent", expected: true, owner: "human", reviewAfterMs: 300_000 }],
+      subject: "candidate:independent", expected: true, owner: "human" }],
   });
   f.reopen();
   admit("correction");
@@ -518,7 +518,6 @@ describe("common Task lifecycle", () => {
           subject: "task:measurement",
           expected: "done",
           owner: "app:sampler",
-          reviewAfterMs: 60_000,
         },
       ],
     });
@@ -568,7 +567,6 @@ describe("common Task lifecycle", () => {
           subject: "task:measurement",
           expected: "done",
           owner: "app:fixture",
-          reviewAfterMs: 60_000,
         },
       ],
     });
@@ -627,7 +625,6 @@ describe("common Task lifecycle", () => {
               subject: "task:measurement",
               expected: "done",
               owner: "app:fixture",
-              reviewAfterMs: 60_000,
             },
           ],
         });
@@ -671,7 +668,6 @@ describe("common Task lifecycle", () => {
           subject: "sample:one",
           expected: true,
           owner: "app:sampler",
-          reviewAfterMs: 60_000,
         },
       ],
     });
@@ -829,7 +825,6 @@ describe("common Task lifecycle", () => {
           subject: "sample:one",
           expected: true,
           owner: "app:sampler",
-          reviewAfterMs: 60_000,
         },
       ],
     });
@@ -864,7 +859,6 @@ describe("common Task lifecycle", () => {
           subject: "pipeline-run:123",
           expected: "success",
           owner: "app:sample",
-          reviewAfterMs: 60_000,
         },
         {
           id: "review",
@@ -872,7 +866,6 @@ describe("common Task lifecycle", () => {
           subject: "pull-request:123",
           expected: "approved",
           owner: "app:reviewer",
-          reviewAfterMs: 60_000,
         },
       ],
     });
@@ -891,7 +884,6 @@ describe("common Task lifecycle", () => {
           subject: "pipeline-run:123",
           expected: "success",
           owner: "app:sample",
-          reviewAfterMs: 60_000,
         },
       ],
     });
@@ -940,7 +932,6 @@ describe("common Task lifecycle", () => {
           subject: "pipeline-run:old",
           expected: "success",
           owner: "app:sample",
-          reviewAfterMs: 60_000,
         },
         {
           id: "remaining",
@@ -948,7 +939,6 @@ describe("common Task lifecycle", () => {
           subject: "pipeline-run:new",
           expected: "success",
           owner: "app:sample",
-          reviewAfterMs: 60_000,
         },
       ],
     });
@@ -991,7 +981,6 @@ describe("common Task lifecycle", () => {
             subject: "pull-request:123",
             expected: "approved",
             owner: "app:sample",
-            reviewAfterMs: 60_000,
           },
         ],
       });
@@ -1192,7 +1181,6 @@ describe("common Task lifecycle", () => {
           subject: "sample:one",
           expected: true,
           owner: "app:sampler",
-          reviewAfterMs: 60_000,
         },
       ],
     });
@@ -1295,7 +1283,6 @@ describe("common Task lifecycle", () => {
           subject: "sample:conversation",
           expected: true,
           owner: "app:sampler",
-          reviewAfterMs: 60_000,
         },
       ],
     });
@@ -1413,7 +1400,7 @@ describe("common Task lifecycle", () => {
           ask(id);
           deferAppTask(f.config, f.claim(), { disposition: "waiting", summary: `Await ${id}`,
             conditions: [{ id, type: "sample.ready", subject: `sample:${id}`, expected: true,
-              owner: "app:source", reviewAfterMs: 60_000 }] });
+              owner: "app:source" }] });
         }
         ask("c");
         let answer = f.claim();

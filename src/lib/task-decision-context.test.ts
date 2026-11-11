@@ -54,7 +54,6 @@ function fixture(root: string) {
         expected: true,
         owner: "human:reviewer",
         requestedAction: "Approve exact version",
-        reviewAfterMs: 3600000,
         observation: { generation: 1, resourceVersion: 1, observedGeneration: 0, state: "unknown" },
       },
     ],

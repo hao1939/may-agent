@@ -17,7 +17,7 @@ import { fakeModel } from "../../../../test/fixtures/model.js";
 import { createAgentRun } from "../../../lib/agent-runner.js";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { SubagentManager } from "../../../lib/manager.js";
-import { closeDb, getDb } from "../../../lib/requests.js";
+import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
 import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
 import { AppRegistry } from "../apps/registry.js";

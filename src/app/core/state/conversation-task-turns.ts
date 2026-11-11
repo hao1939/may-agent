@@ -2,7 +2,7 @@ import type { TaskIntent } from "@may-agent/sdk";
 import { createHash } from "node:crypto";
 import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
-import { appTaskAttemptReport, stopAppTaskAttempt } from "../tasks/app-task-reconciler.js";
+import { appTaskAttemptReport, readAppTaskIntent, stopAppTaskAttempt } from "../tasks/app-task-reconciler.js";
 import { readTaskInputs } from "../tasks/app-task-inputs.js";
 import type { AppTaskContext } from "../tasks/app-task-store.js";
 import {
@@ -556,7 +556,7 @@ export function admitConversationTaskChange(
       ...(topicIds.length === 1 ? { topicId: topicIds[0] } : {}),
       source: { kind: "system", id },
       input: fact,
-      intent: task.spec,
+      intent: readAppTaskIntent(target, task.metadata.id)!,
       conversationInputKinds,
     });
   });

@@ -30,7 +30,7 @@ import {
   recordAppTaskTrigger,
   appTaskContext,
 } from "./app-task-reconciler.js";
-import { closeDb, getDb } from "../../../lib/requests.js";
+import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { appTaskRuntimeTestSuite } from "../../../../test/fixtures/app-task-runtime.js";
 
@@ -652,9 +652,9 @@ describe("caller feedback", () => {
               state: "waiting",
               summary: "Requested independent measurement",
               facts: [],
-              dependencies: [
+              requests: [
                 { id: "measurement", appId: "sample", input: { kind: "measure", data: { level: level + 1 } } },
-              ],
+              ], conditions: [{ requestId: "measurement", progress: "immediate" as const }],
             };
           },
         },
@@ -821,7 +821,8 @@ describe("caller feedback", () => {
               return {
                 state: "waiting", summary: "Waiting for the original sample", facts: [],
                 ...(callerInputs.length === 1 ? {
-                  dependencies: [{ id: "sample", appId: "sample", input: { kind: "collect", data: { sample: "one" } } }],
+                  requests: [{ id: "sample", appId: "sample", input: { kind: "collect", data: { sample: "one" } } }],
+                  conditions: [{ requestId: "sample", progress: "immediate" as const }],
                 } : {}),
               };
             },
@@ -847,7 +848,7 @@ describe("caller feedback", () => {
                   !(scenario === "report-continue" && workerCalls > 1) ? { report: true as const } : {}),
                 ...(scenario === "report-continue" && workerCalls === 1 ? { continue: true as const } : {}),
                 conditions: [{ id: "sample-access", type: "sample.access.changed", subject: "resource:sample",
-                  expected: { field: "available", equals: true }, owner: "app:sample", reviewAfterMs: 300_000 }],
+                  expected: { field: "available", equals: true }, owner: "app:sample" }],
               };
             },
           },

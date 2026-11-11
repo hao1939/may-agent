@@ -1,4 +1,5 @@
-import type { TaskReconcileResult } from "../src/task.js";
+import type { ObservationInterest } from "../src/observer.js";
+import type { Condition, TaskIntent, TaskReconcileResult } from "../src/task.js";
 
 // Checked by SDK tsc and its declaration-export test; never executed.
 declare function accepts(result: TaskReconcileResult): void;
@@ -10,7 +11,7 @@ accepts({ state: "incomplete", ...report });
 // @ts-expect-error Workflows call agents directly; results do not select execution.
 accepts({ state: "needs-agent", ...report });
 accepts({ ...incomplete, result: { partial: "Retained observation" } });
-accepts({ ...report, state: "waiting", dependencies: [] });
+accepts({ ...report, state: "waiting", requests: [], conditions: [] });
 accepts({ ...report, state: "converged", response: "Observed", actions: [] });
 accepts({ ...report, state: "waiting", report: true });
 accepts({ ...incomplete, report: true });
@@ -50,3 +51,17 @@ accepts({ ...report, state: "waiting", requests: [request], conditions: [{ reque
 accepts({ ...report, state: "converged", requests: [request], conditions: [{ requestId: "review" }] });
 // @ts-expect-error Incomplete preserves existing work; new submissions need a waiting or converged decision.
 accepts({ ...incomplete, requests: [request] });
+
+
+// @ts-expect-error Use requests and an explicit caller Condition.
+accepts({ ...report, state: "waiting", dependencies: [request] });
+const task: TaskIntent = { id: "work", parentId: "root", outcome: "Review", acceptance: ["Reviewed"],
+  // @ts-expect-error Public Task assignment uses agent.
+  owner: "reviewer" };
+const wait: Condition = { id: "review", type: "review.done", subject: "review:draft", expected: true,
+  // @ts-expect-error Task reviewAt owns reconsideration; Conditions have no interval.
+  reviewAfterMs: 60_000 };
+const interest: ObservationInterest = { observerId: "review", id: "review", resource: "draft", expected: {},
+  // @ts-expect-error Observer interests have no agent-review interval.
+  reviewAfterMs: 60_000 };
+void [task, wait, interest];

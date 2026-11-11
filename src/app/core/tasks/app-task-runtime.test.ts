@@ -76,6 +76,7 @@ import {
   failAppTaskAttempt,
   observeAppTaskIntent,
   readAppTaskAdmissionOutcome,
+  readAppTaskIntent,
   recordAppTaskTrigger,
   recordAppTaskAttemptSession,
   releaseStaleAppTaskResult,
@@ -84,7 +85,7 @@ import {
 } from "./app-task-reconciler.js";
 import { readTaskSnapshot, type AppTaskContext } from "./app-task-store.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";
-import { closeDb, getDb } from "../../../lib/requests.js";
+import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { migrateTaskCompletionReceipts } from "../state/task-receipt-cutover.js";
@@ -438,7 +439,6 @@ it("retains closed-Task observations as history without treating desired work as
         subject: "build:current",
         expected: { field: "status", equals: "build finished" },
         owner: "app:sample",
-        reviewAfterMs: 60_000,
       },
     ],
   });
@@ -460,7 +460,6 @@ it("retains closed-Task observations as history without treating desired work as
         subject: "build:current",
         expected: { field: "status", equals: "build finished" },
         owner: "app:sample",
-        reviewAfterMs: 60_000,
       },
     ],
   });
@@ -680,7 +679,7 @@ export async function execute(ctx) {
   else deferAppTask(config, child, {
     disposition: "waiting", summary: "Await source",
     conditions: [{ id: "source-ready", type: "source.ready", subject: "source:fixture", expected: true,
-      owner: "app:source", reviewAfterMs: 60_000 }],
+      owner: "app:source" }],
   });
   recordAppTaskTrigger(config, "work/child", { type: "source.changed", data: { revision: 2 } });
   await reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId: "work/parent",
@@ -981,7 +980,7 @@ it("settles report and useful continuation equivalently for agent and workflow a
     state: "waiting", continue: true as const, report: true as const,
     summary: "Review is blocked while independent checks continue", facts: ["checks:started"],
     conditions: [{ id: `review-${taskId.split("/").at(-1)}`, type: "review.completed", subject: `review:${taskId}`,
-      expected: true, owner: "human", reviewAfterMs: 60_000 }],
+      expected: true, owner: "human" }],
   });
   await installCoreTaskRuntimes({
     ...options(f, bus), installControllers: false,
@@ -1384,7 +1383,6 @@ describe("App Task persisted prompt context", () => {
             subject: "id:existing-proof",
             expected: { field: "status", equals: "done" },
             owner: "app:gym",
-            reviewAfterMs: 300_000,
           },
         ],
       }),
@@ -1466,7 +1464,6 @@ describe("canonical App task runtime", () => {
           subject: "time:2030-01-01T00:00:00.000Z",
           expected: true,
           owner: "app:sample",
-          reviewAfterMs: 14_400_000,
         },
       ],
     });
@@ -1626,7 +1623,6 @@ describe("canonical App task runtime", () => {
           subject: "id:release",
           expected: { field: "approved", equals: true },
           owner: "human",
-          reviewAfterMs: 300_000,
         },
       ],
     });
@@ -1835,7 +1831,6 @@ describe("canonical App task runtime", () => {
               subject: "id:saved-help",
               expected: { field: "status", equals: "done" },
               owner: "app:sample",
-              reviewAfterMs: 300_000,
             },
           ],
         });
@@ -2082,7 +2077,6 @@ describe("canonical App task runtime", () => {
           subject: "credential:xhs",
           expected: { field: "state", equals: "ready" },
           owner: "app:credential-provider",
-          reviewAfterMs: 300_000,
         },
       ],
     });
@@ -2217,7 +2211,6 @@ describe("canonical App task runtime", () => {
           subject: "session:original-decision",
           expected: "done",
           owner: "human:operator",
-          reviewAfterMs: 300_000,
         },
       ],
     });
@@ -2937,7 +2930,6 @@ describe("canonical App task runtime", () => {
                 subject: "review:change",
                 expected: true,
                 owner: "human",
-                reviewAfterMs: 60_000,
               },
             ],
           });
@@ -2993,7 +2985,6 @@ describe("canonical App task runtime", () => {
       subject: "review:change",
       expected: true,
       owner: "human",
-      reviewAfterMs: 60_000,
     };
     const action = {
       kind: "retire-condition" as const,
@@ -3109,7 +3100,6 @@ describe("canonical App task runtime", () => {
               expected: { field: "status", equals: "done" },
               requestedAction: "Review the exact submitted change",
               owner: "app:sample",
-              reviewAfterMs: 3_600_000,
             };
             await attempt.apply({ conditions: [condition] });
             if (satisfied) {
@@ -3209,8 +3199,9 @@ describe("canonical App task runtime", () => {
       executors: { worker: async () => {
         calls++;
         return { state: "waiting", summary: "Review in progress", facts: [],
-          dependencies: calls <= 2 ? [{ id: `review-${calls}`, appId: "sample",
-            input: { kind: "review", data: { sample: calls === 1 ? 1 : secondSample } } }] : [] };
+          requests: calls <= 2 ? [{ id: `review-${calls}`, appId: "sample",
+            input: { kind: "review", data: { sample: calls === 1 ? 1 : secondSample } } }] : [],
+          conditions: calls <= 2 ? [{ requestId: `review-${calls}`, progress: "immediate" }] : [] };
       } },
       appRegistrySnapshot: { id: "additive-work", generation: 1, entries: [{ appDir: f.appDir,
         definition: { ...definition(), task: () => ({ kind: "existing", taskId: "review" }) } }] },
@@ -3299,7 +3290,7 @@ describe("canonical App task runtime", () => {
               facts: ["target-admission-blocked"] };
           }
           return { state: "waiting", summary: "Waiting for the target review", facts: [],
-            dependencies: [{ id: "review", appId: "target", input: { kind: "review", data: {} } }] };
+            requests: [{ id: "review", appId: "target", input: { kind: "review", data: {} } }], conditions: [{ requestId: "review", progress: "immediate" as const }] };
         },
       },
     });
@@ -3607,7 +3598,7 @@ describe("canonical App task runtime", () => {
                   state: "waiting",
                   summary: "Waiting for the sample review",
                   facts: [],
-                  dependencies: [{ id: "review", appId: "sample", input: { kind: "review", data: { sample: 1 } } }],
+                  requests: [{ id: "review", appId: "sample", input: { kind: "review", data: { sample: 1 } } }], conditions: [{ requestId: "review", progress: "immediate" as const }],
                 };
               const answer = attempt.events.items.find(({ event }) => event.type === "app.dependency.updated");
               expect(answer?.event.data).toMatchObject({
@@ -3761,7 +3752,6 @@ describe("canonical App task runtime", () => {
             subject: "id:later-input",
             expected: { field: "status", equals: "done" },
             owner: "app:sample",
-            reviewAfterMs: 300_000,
           },
         ],
       });
@@ -3874,7 +3864,7 @@ describe("canonical App task runtime", () => {
               state: "waiting",
               summary: "Waiting for the exact first review",
               facts: [],
-              dependencies: [{ id: "review", appId: "sample", input: { kind: "review", data: { sample: 1 } } }],
+              requests: [{ id: "review", appId: "sample", input: { kind: "review", data: { sample: 1 } } }], conditions: [{ requestId: "review", progress: "immediate" as const }],
             };
           },
           reviewer: async () => {
@@ -3901,7 +3891,6 @@ describe("canonical App task runtime", () => {
                   subject: "sample:independent",
                   expected: true,
                   owner: "app:sample",
-                  reviewAfterMs: 300_000,
                 },
               ],
             };
@@ -4203,7 +4192,7 @@ describe("canonical App task runtime", () => {
               inputs.push(structuredClone(attempt.events));
               if (inputs.length === 1) return {
                 state: "waiting", summary: "Waiting for the assigned sample", facts: [],
-                dependencies: [{ id: "sample", appId: "sample", input: { kind: "collect", data: { sample: 1 } } }],
+                requests: [{ id: "sample", appId: "sample", input: { kind: "collect", data: { sample: 1 } } }], conditions: [{ requestId: "sample", progress: "immediate" as const }],
               };
               if (inputs.length === 2)
                 return { state: "incomplete", summary: "Need the owner to restore the source", facts: ["HTTP:503"] };
@@ -5575,7 +5564,7 @@ describe("canonical App task runtime", () => {
       const taskId = "work/facts-during-attempt";
       const condition = {
         id: "run:42", type: "sample.run.finished", subject: "run:42",
-        expected: { field: "status", equals: "done" }, owner: "app:sample", reviewAfterMs: 60_000,
+        expected: { field: "status", equals: "done" }, owner: "app:sample",
       };
       let config: AppTaskContext;
       let calls = 0;
@@ -5648,7 +5637,7 @@ describe("canonical App task runtime", () => {
             ...(change === "action" ? { actions: [{ kind: "unblock-task" as const, taskId: "work/persistence-target",
               expectedGeneration: 1, reason: "Reconsider current facts" }] } : {}),
             facts: ["run:42"], conditions: [{ id: "run:42", type: "sample.run.done", subject: "run:42",
-              expected: "done", owner: "app:sample", reviewAfterMs: 60_000 }] };
+              expected: "done", owner: "app:sample" }] };
         },
       },
       appRegistrySnapshot: { id: "boot:persistence-contention", generation: 1,
@@ -6652,7 +6641,6 @@ describe("canonical App task runtime", () => {
                     subject: "pipeline-run:42",
                     expected: "completed",
                     owner: "app:sample",
-                    reviewAfterMs: 60_000,
                   },
                 ],
               }
@@ -7831,7 +7819,7 @@ describe("canonical App task runtime", () => {
           if (waits.length) return { state: "converged", summary: "Answered another input", facts: ["saved-wait"], result: { waits } };
           const receipt = await ctx.applyTaskChanges({ conditions: [{
             id: "source", type: "source.available", subject: "source:sample", expected: true,
-            owner: "app:source", reviewAfterMs: 60000,
+            owner: "app:source",
           }] });
           const current = await ctx.read.tasks.get(ctx.reconciliation.taskId);
           if (current.status !== "running" || receipt.conditionIds[0] !== "source") throw new Error("Live changes ended the attempt");
@@ -9515,7 +9503,7 @@ describe("canonical App task runtime", () => {
       [
         "--eval",
         `
-      import { getDb, closeDb } from ${JSON.stringify(new URL("../../../lib/requests.ts", import.meta.url).pathname)};
+      import { getDb, closeDb } from ${JSON.stringify(new URL("../../../lib/db/connection.ts", import.meta.url).pathname)};
       import { AppTaskResourceStore } from ${JSON.stringify(new URL("../state/app-task-resource-store.ts", import.meta.url).pathname)};
       import { appTaskContext, claimObservedAppTask } from ${JSON.stringify(new URL("./app-task-reconciler.ts", import.meta.url).pathname)};
       const persistDir = ${JSON.stringify(join(f.root, "state"))};
@@ -9638,7 +9626,6 @@ describe("canonical App task runtime", () => {
         subject: "pipeline-run:42",
         expected: "completed",
         owner: "app:ci",
-        reviewAfterMs: 60_000,
       },
       {
         id: "review",
@@ -9646,7 +9633,6 @@ describe("canonical App task runtime", () => {
         subject: "task:review",
         expected: "done",
         owner: "app:review",
-        reviewAfterMs: 120_000,
       },
     ];
     const batches: string[][] = [];
@@ -9950,7 +9936,7 @@ describe("canonical App task runtime", () => {
 // This exercises the production attempt boundary: persisted waits, generated
 // dependency echoes, and owner-authored deltas all meet in attempt-runner.
 describe("dependency Condition specification updates", () => {
-  it("keeps compatible legacy fields through generated echoes and new input without timer-driven attempts", async () => {
+  it("keeps requested action updates through generated echoes and new input without timer-driven attempts", async () => {
     setSystemTime(new Date("2030-01-01T00:00:00.000Z"));
     const f = fixture();
     const bus = eventBus();
@@ -9962,7 +9948,6 @@ describe("dependency Condition specification updates", () => {
       subject: `id:${requestId}`,
       expected: { field: "status", equals: "done" },
       owner: "app:sample",
-      reviewAfterMs: 300_000,
     };
     const peer = {
       id: "human:decision",
@@ -9970,7 +9955,6 @@ describe("dependency Condition specification updates", () => {
       subject: "id:human-decision",
       expected: true,
       owner: "human:operator",
-      reviewAfterMs: 60_000,
     };
     let calls = 0;
     const { installed } = await installAppTaskRuntimes({
@@ -9991,10 +9975,10 @@ describe("dependency Condition specification updates", () => {
             state: "waiting",
             summary: "Dependency cannot progress for an hour",
             facts: [],
-            dependencies: [
+            requests: [
               { id: requestId, appId: "sample", taskId: "review/current", input: { kind: "review", data: {} } },
             ],
-            conditions: [{ ...original, reviewAfterMs: 3_600_000 }],
+            conditions: [{ ...original, requestedAction: "Review the completed result" }, { requestId: requestId, progress: "immediate" as const }],
           };
         },
       },
@@ -10051,11 +10035,10 @@ describe("dependency Condition specification updates", () => {
     recordAppTaskTrigger(config, taskId, { type: "sample.owner-review", eventId: 1001 });
     await run();
     let after = readTaskSnapshot(config);
-    expect(after.conditions?.[original.id]?.spec.reviewAfterMs).toBe(3_600_000);
+    expect(after.conditions?.[original.id]?.spec.requestedAction).toBe("Review the completed result");
     expect(after.conditions?.[peer.id]).toEqual(before?.[peer.id]);
 
-    const peerDueAt = Date.parse(after.conditions![peer.id]!.status.observedAt!) + peer.reviewAfterMs;
-    setSystemTime(new Date(peerDueAt));
+    setSystemTime(new Date("2030-01-02T00:00:00.000Z"));
     await run();
     expect(calls).toBe(1);
     expect(readTaskSnapshot(config).conditions).toEqual(after.conditions);
@@ -10064,7 +10047,7 @@ describe("dependency Condition specification updates", () => {
     after = readTaskSnapshot(config);
     expect(calls).toBe(2);
     expect(after.resources?.[taskId]?.status.phase).toBe("waiting");
-    expect(after.conditions?.[original.id]?.spec.reviewAfterMs).toBe(3_600_000);
+    expect(after.conditions?.[original.id]?.spec.requestedAction).toBe("Review the completed result");
     expect(after.resources?.[taskId]?.status.conditionIds).toEqual([original.id, peer.id]);
 
     const feedback = {
@@ -10095,12 +10078,11 @@ describe("dependency Condition specification updates", () => {
       subject: peer.subject,
       expected: peer.expected,
       owner: peer.owner,
-      reviewAfterMs: peer.reviewAfterMs,
     });
     expect(completed.conditions?.[peer.id]?.status.state).toBe("unknown");
   });
 
-  it.each(["type", "subject", "expected", "duplicate-cadence"] as const)(
+  it.each(["type", "subject", "expected"] as const)(
     "rejects a same-ID dependency %s conflict at the attempt boundary",
     async (conflict) => {
       const f = fixture();
@@ -10116,16 +10098,13 @@ describe("dependency Condition specification updates", () => {
         subject: `id:appdep_conflict_${conflict}`,
         expected: { field: "status", equals: "done" },
         owner: "app:sample",
-        reviewAfterMs: 300_000,
       };
       const changed =
         conflict === "type"
           ? { type: "sample.other" }
           : conflict === "subject"
             ? { subject: "id:other" }
-            : conflict === "expected"
-              ? { expected: { field: "status", equals: "blocked" } }
-              : { reviewAfterMs: 7_200_000 };
+            : { expected: { field: "status", equals: "blocked" } };
       await installAppTaskRuntimes({
         ...options(f, bus),
         installControllers: false,
@@ -10134,11 +10113,9 @@ describe("dependency Condition specification updates", () => {
             state: "waiting",
             summary: "Invalid retarget",
             facts: [],
-            dependencies: [{ id: "must-not-publish", appId: "sample", input: { kind: "review", data: {} } }],
+            requests: [{ id: "must-not-publish", appId: "sample", input: { kind: "review", data: {} } }],
             conditions:
-              conflict === "duplicate-cadence"
-                ? [original, { ...original, ...changed }]
-                : [{ ...original, ...changed }],
+              [{ ...original, ...changed }, { requestId: "must-not-publish", progress: "immediate" as const }],
           }),
         },
         appRegistrySnapshot: {
@@ -10178,7 +10155,6 @@ describe("dependency Condition specification updates", () => {
         subject: original.subject,
         expected: original.expected,
         owner: original.owner,
-        reviewAfterMs: original.reviewAfterMs,
       });
       expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({
         phase: "pending",
@@ -10198,7 +10174,6 @@ describe("dependency Condition specification updates", () => {
       subject: "id:appdep_stale",
       expected: { field: "status", equals: "done" },
       owner: "app:sample",
-      reviewAfterMs: 300_000,
     };
     let config: AppTaskContext;
     await installAppTaskRuntimes({
@@ -10206,16 +10181,16 @@ describe("dependency Condition specification updates", () => {
       installControllers: false,
       executors: {
         worker: async () => {
-          const current = config.resourceStore.readTask(taskId)!;
+          const current = readAppTaskIntent(config, taskId)!;
           observeAppTaskIntent(config, {
             appAgent: "sample-owner",
-            intent: { ...current.spec, id: taskId, outcome: "Revised current generation" },
+            intent: { ...current, outcome: "Revised current generation" },
           });
           return {
             state: "waiting",
-            summary: "Stale cadence proposal",
+            summary: "Stale requested action proposal",
             facts: [],
-            conditions: [{ ...original, reviewAfterMs: 3_600_000 }],
+            conditions: [{ ...original, requestedAction: "Stale proposed action" }],
           };
         },
       },
@@ -10250,6 +10225,6 @@ describe("dependency Condition specification updates", () => {
       metadata: { generation: 2 },
       spec: { outcome: "Revised current generation" },
     });
-    expect(readTaskSnapshot(config).conditions?.[original.id]?.spec.reviewAfterMs).toBe(300_000);
+    expect(readTaskSnapshot(config).conditions?.[original.id]?.spec.requestedAction).toBeUndefined();
   });
 });

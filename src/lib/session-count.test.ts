@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mkdtempSync, rmSync } from "node:fs";
 import { SubagentManager } from "./manager.js";
-import { closeDb } from "./requests.js";
+import { closeDb } from "./db/connection.js";
 import { eventData, EventBus } from "../app/core/events/bus.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 

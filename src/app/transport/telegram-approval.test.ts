@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDatabase } from "../../lib/db.js";
 import { applyDbSchema } from "../../lib/db/schema.js";
-import { closeDb, getDb } from "../../lib/requests.js";
+import { closeDb, getDb } from "../../lib/db/connection.js";
 import { EventBus } from "../core/events/bus.js";
 import { HumanTaskService, approvalProposalForTask, type HumanTaskView } from "../human-task-service.js";
 import { attachTelegramBot, renderTelegramTask, renderTelegramTodos } from "./telegram.js";
@@ -274,7 +274,6 @@ describe("Telegram exact approval presentation", () => {
           expected: { answer: true },
           owner: "human",
           requestedAction: "Clarify the preferred rollback observation window.",
-          reviewAfterMs: 60_000,
         },
         status: { state: "false" },
       },
@@ -289,7 +288,6 @@ describe("Telegram exact approval presentation", () => {
           expected: { merged: true },
           owner: "human:github-maintainer",
           requestedAction: "Run checks, obtain review, and merge the May-owned change.",
-          reviewAfterMs: 60_000,
         },
         status: { state: "false" },
       },
@@ -304,7 +302,6 @@ describe("Telegram exact approval presentation", () => {
           expected: { answer: true },
           owner: "Hao",
           requestedAction: "Approve the legacy Hao-owned rollout wait.",
-          reviewAfterMs: 60_000,
         },
         status: { state: "false" },
       },

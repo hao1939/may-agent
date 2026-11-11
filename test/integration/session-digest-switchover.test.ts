@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { closeDb, getDb } from "../../src/lib/requests.js";
+import { closeDb, getDb } from "../../src/lib/db/connection.js";
 import { getLastDigest } from "../../src/lib/session-digest.js";
 
 // ── Helpers ────────────────────────────────────────────────────────────

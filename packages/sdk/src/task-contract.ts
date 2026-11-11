@@ -12,7 +12,6 @@ import type {
   TaskVerificationResult,
 } from "./task.js";
 
-export const MIN_CONDITION_REVIEW_AFTER_MS = 60_000;
 export const MAX_TASK_RESULT_BYTES = 16 * 1024;
 
 const nonEmptyStringSchema = Type.String({ minLength: 1 });
@@ -77,12 +76,6 @@ export const conditionSchema = Type.Object(
       Type.String({ minLength: 1, description: "Action needed; contact the owner separately to deliver the ask." }),
     ),
     owner: conditionOwnerSchema,
-    reviewAfterMs: Type.Optional(
-      Type.Integer({
-        minimum: MIN_CONDITION_REVIEW_AFTER_MS,
-        description: "Legacy field; prefer Task reviewAt.",
-      }),
-    ),
   },
   {
     additionalProperties: false,
@@ -248,9 +241,6 @@ export const taskChangesSchema = Type.Object(
   { additionalProperties: false },
 );
 
-/** @deprecated Use `taskAgentResultSchema`. */
-export const taskOwnerResultSchema = taskAgentResultSchema;
-
 export const taskVerificationResultSchema = Type.Object(
   {
     accepted: Type.Boolean(),
@@ -367,13 +357,7 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
        (value.progress !== "immediate" && value.progress !== "next-wake"))) {
     return `conditions[${index}].progress requires an App request Condition and immediate or next-wake`;
   }
-  const reviewAfterMs = value.reviewAfterMs;
-  if (
-    reviewAfterMs !== undefined &&
-    (!Number.isInteger(reviewAfterMs) || Number(reviewAfterMs) < MIN_CONDITION_REVIEW_AFTER_MS)
-  ) {
-    return `conditions[${index}].reviewAfterMs must be an integer of at least ${MIN_CONDITION_REVIEW_AFTER_MS}`;
-  }
+  if ("reviewAfterMs" in value) return `conditions[${index}].reviewAfterMs is retired; use Task reviewAt`;
   return {
     id,
     type,
@@ -381,7 +365,6 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
     expected: structuredClone(value.expected),
     ...(requestedAction.value ? { requestedAction: requestedAction.value } : {}),
     owner,
-    ...(reviewAfterMs === undefined ? {} : { reviewAfterMs: Number(reviewAfterMs) }),
     ...(value.progress === undefined ? {} : { progress: value.progress as "immediate" | "next-wake" }),
   };
 }
@@ -389,24 +372,7 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
 /** The single production admission and normalization boundary for task handlers. */
 export function admitTaskReconcileResult(output: unknown): TaskReconcileAdmission {
   if (!isRecord(output)) return { ok: false, error: "expected an object" };
-  if (output.dependencies !== undefined) {
-    if (output.requests !== undefined) return { ok: false, error: "use requests or legacy dependencies, not both" };
-    if (output.state !== "waiting") return { ok: false, error: "dependencies are valid only for waiting" };
-    if (!Array.isArray(output.dependencies)) return { ok: false, error: "dependencies must be an array" };
-    const { dependencies, ...rest } = output;
-    if (rest.conditions !== undefined && !Array.isArray(rest.conditions))
-      return { ok: false, error: "conditions must be an array" };
-    output = {
-      ...rest,
-      requests: dependencies,
-      conditions: [
-        ...(Array.isArray(rest.conditions) ? rest.conditions : []),
-        // Legacy callers requested every intermediate report; retain that choice.
-        ...dependencies.map((dependency) => ({ requestId: isRecord(dependency) ? dependency.id : undefined, progress: "immediate" })),
-      ],
-    };
-  }
-  if (!isRecord(output)) return { ok: false, error: "expected an object" };
+  if ("dependencies" in output) return { ok: false, error: "dependencies is retired; use requests and request Conditions" };
   if (!nonEmptyString(output.summary)) return { ok: false, error: "summary must be a non-empty string" };
   const facts = normalizedStringArray(output.facts, true);
   if (!facts) return { ok: false, error: "facts must be a string array" };

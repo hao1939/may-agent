@@ -91,7 +91,6 @@ test("current Task context reaches a late helper and survives settlement into a 
           expected: true,
           owner: "human:reviewer",
           requestedAction: "Approve exact version",
-          reviewAfterMs: 3600000,
         },
       ],
     });
@@ -344,7 +343,7 @@ export async function execute(ctx) {
     deferAppTask(config, claim(), { disposition: "waiting", continue: true, summary: "Draft v3",
       result: { version: "v3", day: "Wednesday" },
       conditions: [{ id: "approval", type: "approval.observed", subject: "publication:draft",
-        expected: true, owner: "human:reviewer", reviewAfterMs: 3600000 }] });
+        expected: true, owner: "human:reviewer" }] });
     const read = createRuntimeAppRead({ getDb: () => store.db, taskStateConfig: config }).tasks;
     const attempts: string[] = [];
     for (const round of [1, 2]) {

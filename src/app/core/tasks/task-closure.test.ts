@@ -2,7 +2,7 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { closeDb, getDb } from "../../../lib/requests.js";
+import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { createRuntimeTaskRead } from "../reads/app-read.js";
 import { closeCreatedAppTask } from "./task-closure.js";
@@ -171,7 +171,7 @@ test.each([
   deferAppTask(f.target, f.claim(), {
     disposition: "waiting",
     summary: "Await exact evidence",
-    conditions: [{ ...condition, expected: true, reviewAfterMs: 60_000 }],
+    conditions: [{ ...condition, expected: true }],
   });
   recordAppTaskTrigger(f.target, "child", { type: "provider.completed", data: { status: "done" } });
   const next = f.claim();

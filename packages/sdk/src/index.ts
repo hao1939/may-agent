@@ -7,7 +7,6 @@ export { MAX_OBSERVER_SNAPSHOT_BYTES, MAX_CONVERSATION_REQUESTS_PER_TURN } from 
 export { defineObserver, observationCondition } from "./observer.js";
 export type { ResourceObserver, ObservationContract, ObservationInterest, ObserverHealth } from "./observer.js";
 export {
-  MIN_CONDITION_REVIEW_AFTER_MS,
   admitTaskReconcileResult,
   admitTaskChanges,
   taskChangesSchema,
@@ -17,7 +16,6 @@ export {
   isTypedConditionSubject,
   taskActionSchema,
   taskAgentResultSchema,
-  taskOwnerResultSchema,
   taskReconcileResultSchema,
   taskVerificationResultSchema,
 } from "./task.js";
@@ -102,7 +100,6 @@ export type {
   TaskRevision,
   TaskAcceptanceBasis,
   TaskAction,
-  TaskAppDependency,
   TaskAppRequest,
   TaskCondition,
   TaskRequestCondition,

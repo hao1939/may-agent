@@ -12,7 +12,7 @@ import {
   type EventGraphResponse,
 } from "./http/read-model/event-graph.js";
 import { backfillEventPairTraces, checkEventTraceIntegrity } from "../lib/db/event-traces.js";
-import { closeDb, getDb } from "../lib/requests.js";
+import { closeDb, getDb } from "../lib/db/connection.js";
 import { createQueryService } from "../lib/query-service.js";
 
 function tempRoot(): string {

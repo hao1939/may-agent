@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { closeDb, getDb } from "../../../lib/requests.js";
+import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { createAppTaskEmitter, createAppTaskEvents, subscribeAppTaskPublications } from "./app-task-emitter.js";

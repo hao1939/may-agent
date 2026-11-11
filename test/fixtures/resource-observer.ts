@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Type, defineApp, type Condition, type ResourceObserver, observationCondition } from "@may-agent/sdk";
 import { DbWriter } from "../../src/lib/db-writer.js";
-import { getDb, closeDb } from "../../src/lib/requests.js";
+import { getDb, closeDb } from "../../src/lib/db/connection.js";
 import { EventBus, EVENT_ROW_ID } from "../../src/app/core/events/bus.js";
 import { AppRegistry } from "../../src/app/core/apps/registry.js";
 import { normalizeAppAgent } from "../../src/app/app-agent-selection.js";
@@ -207,10 +207,10 @@ export async function fixture(detector: ResourceObserver) {
       return observers.health("builds")[0]!;
     },
     capability: {
-      waitFor(id: string, resource: string, expected: Record<string, unknown>, reviewAfterMs?: number) {
+      waitFor(id: string, resource: string, expected: Record<string, unknown>) {
         return observationCondition(
           { ...detector, appId: "builds" },
-          { observerId: detector.id, id, resource, expected, reviewAfterMs },
+          { observerId: detector.id, id, resource, expected },
         );
       },
     },

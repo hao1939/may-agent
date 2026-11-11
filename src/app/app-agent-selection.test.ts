@@ -5,7 +5,7 @@ import { normalizeAppAgent, normalizeTaskAgent } from "./app-agent-selection.js"
 const inputSchema = Type.Object({ kind: Type.String(), data: Type.Unknown() });
 
 describe("App agent selection boundary", () => {
-  it("keeps the canonical App agent and normalizes Task storage", () => {
+  it("keeps the canonical App agent and keeps Task authoring canonical", () => {
     const definition = normalizeAppAgent({
       id: "sample",
       version: 1,
@@ -30,11 +30,11 @@ describe("App agent selection boundary", () => {
       definition.task?.({ id: "input", source: { kind: "system", id: "test" }, input: { kind: "x", data: {} } }),
     ).toMatchObject({
       kind: "desired",
-      intent: { owner: "specialist" },
+      intent: { agent: "specialist" },
     });
   });
 
-  it("rejects the retired App alias and conflicting Task selections", () => {
+  it("rejects the retired App alias and retired Task alias", () => {
     expect(normalizeAppAgent({ id: "legacy", version: 1, agent: "worker", inputSchema })).toMatchObject({
       agent: "worker",
     });
@@ -49,8 +49,8 @@ describe("App agent selection boundary", () => {
         acceptance: ["x"],
         agent: "one",
         owner: "two",
-      }),
-    ).toThrow("conflicting agent and legacy owner");
+      } as any),
+    ).toThrow("owner is retired");
     expect(() => normalizeAppAgent({ id: "empty", version: 1, agent: "", inputSchema })).toThrow(
       "agent must be a non-empty string",
     );

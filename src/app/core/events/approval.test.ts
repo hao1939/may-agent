@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { closeDb, getDb } from "../../../lib/requests.js";
+import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { applyAppTaskConditionEvent } from "../tasks/app-task-condition-tracker.js";
@@ -41,7 +41,6 @@ function fixture(additionalExpected: Record<string, unknown> = {}) {
       subject: "candidate:release",
       owner: "human",
       requestedAction: "Apply reviewed candidate",
-      reviewAfterMs: 60_000,
       expected: { allowedDecisions: ["approve", "reject", "defer"], ...additionalExpected },
     },
     status: { state: "unknown", observedGeneration: 0 },
@@ -74,7 +73,6 @@ function fixture(additionalExpected: Record<string, unknown> = {}) {
           subject: "suite:all",
           expected: "passed",
           owner: "app:tester",
-          reviewAfterMs: 60_000,
         },
         status: { state: "unknown", observedGeneration: 0 },
       },

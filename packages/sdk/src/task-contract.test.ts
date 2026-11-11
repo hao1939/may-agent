@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { Type } from "typebox";
+import { observationCondition } from "./observer.js";
 import { Check } from "typebox/value";
 import { conversationTurnResultSchema } from "./app.js";
 import {
@@ -154,7 +155,6 @@ describe("project task handler contract", () => {
           subject: "review:candidate",
           expected: true,
           owner: "human",
-          reviewAfterMs: 60_000,
         },
       ],
     };
@@ -212,7 +212,6 @@ describe("project task handler contract", () => {
             subject: "source:sample",
             expected: true,
             owner,
-            reviewAfterMs: 60_000,
           },
         ],
       };
@@ -373,70 +372,27 @@ describe("project task handler contract", () => {
     expect(Check(taskAgentResultSchema, { ...submitted, requests: [{ ...request, waitForResult: true }] })).toBe(false);
     expect(admitTaskReconcileResult({ ...waiting, dependencies: [request] })).toEqual({
       ok: false,
-      error: "use requests or legacy dependencies, not both",
+      error: "dependencies is retired; use requests and request Conditions",
     });
     expect(Check(taskAgentResultSchema, { ...waiting, requests: undefined, dependencies: [request] })).toBe(false);
   });
 
-  it("admits typed App dependencies only while waiting", () => {
-    const dependency = {
-      id: "review",
-      appId: "evaluation",
-      taskId: "review/current",
+  it("uses explicit requests and caller Conditions for App work", () => {
+    const request = {
+      id: "review", appId: "evaluation", taskId: "review/current",
       input: { kind: "deep-scan", data: { reason: "caller-review" } },
     };
-    expect(
-      admitTaskReconcileResult(
-        {
-          state: "waiting",
-          summary: "Waiting for independent review",
-          facts: ["dependency:evaluation/review"],
-          dependencies: [dependency],
-        },
-      ),
-    ).toEqual({
-      ok: true,
-      result: {
-        state: "waiting",
-        summary: "Waiting for independent review",
-        facts: ["dependency:evaluation/review"],
-        actions: [],
-        requests: [dependency],
-        conditions: [{ requestId: "review", progress: "immediate" }],
-      },
-    });
-    expect(
-      admitTaskReconcileResult(
-        {
-          state: "converged",
-          summary: "Invalid early completion",
-          facts: [],
-          dependencies: [dependency],
-        },
-      ),
-    ).toEqual({ ok: false, error: "dependencies are valid only for waiting" });
-    const waitingWithResponse = {
-      state: "waiting",
-      summary: "The dependency is still running",
-      response: "I will tell you when it finishes.",
-      facts: [],
-      dependencies: [dependency],
+    const waiting = {
+      state: "waiting", summary: "Waiting for independent review", facts: ["review:requested"],
+      requests: [request], conditions: [{ requestId: request.id, progress: "immediate" }],
     };
-    expect(Check(taskAgentResultSchema, waitingWithResponse)).toBe(false);
-    expect(admitTaskReconcileResult(waitingWithResponse)).toEqual({
-      ok: false,
-      error: "waiting cannot include response; put operational progress in summary",
-    });
-    expect(
-      admitTaskReconcileResult(
-        {
-          state: "waiting",
-          summary: "Invalid target",
-          facts: [],
-          dependencies: [{ ...dependency, taskId: " " }],
-        },
-      ),
-    ).toEqual({ ok: false, error: "requests[0].taskId must be a non-empty string when present" });
+    expect(Check(taskAgentResultSchema, waiting)).toBe(true);
+    expect(admitTaskReconcileResult(waiting)).toMatchObject({ ok: true,
+      result: { requests: [request], conditions: waiting.conditions } });
+    expect(admitTaskReconcileResult({ ...waiting, response: "I will tell you when it finishes." }))
+      .toEqual({ ok: false, error: "waiting cannot include response; put operational progress in summary" });
+    expect(admitTaskReconcileResult({ ...waiting, requests: [{ ...request, taskId: " " }] }))
+      .toEqual({ ok: false, error: "requests[0].taskId must be a non-empty string when present" });
   });
 
   it("rejects raw child specifications in both schema and admission", () => {
@@ -466,7 +422,6 @@ describe("project task handler contract", () => {
           subject: "credential:provider",
           expected: { status: "valid" },
           owner: "human",
-          reviewAfterMs: 300_000,
         },
       ],
     };
@@ -587,7 +542,6 @@ describe("project task handler contract", () => {
               expected: { field: "state", equals: "ready" },
               owner: "app:credential-provider",
               requestedAction: "Restore the xhs credential or confirm that it should remain disabled.",
-              reviewAfterMs: 300000,
             },
           ],
         },
@@ -617,7 +571,7 @@ describe("project task handler contract", () => {
       admitTaskReconcileResult(
         {
           state: "waiting",
-          summary: "Waiting with an invalid busy review loop",
+          summary: "Waiting with a retired Condition interval",
           facts: [],
           conditions: [
             {
@@ -654,7 +608,7 @@ describe("project task handler contract", () => {
       admitTaskReconcileResult(
         {
           ...incompleteCondition,
-          conditions: [{ ...incompleteCondition.conditions[0], owner: "Hao", reviewAfterMs: 60_000 }],
+          conditions: [{ ...incompleteCondition.conditions[0], owner: "Hao" }],
         },
       ),
     ).toEqual({ ok: false, error: "conditions[0].owner must be a canonical kind:identity" });
@@ -741,4 +695,25 @@ describe("project task handler contract", () => {
       expect(Check(taskAgentResultSchema, disallowed)).toBe(false);
     }
   });
+});
+
+
+it("rejects retired result and Condition fields at both authoring entry points", () => {
+  const condition = { id: "approval", type: "approval.submitted", subject: "approval:draft",
+    expected: true, owner: "human:reviewer", reviewAfterMs: 60_000 };
+  const result = { state: "waiting", summary: "Await approval", facts: [], conditions: [condition] };
+  expect(Check(taskAgentResultSchema, result)).toBe(false);
+  expect(admitTaskReconcileResult(result)).toEqual({ ok: false,
+    error: "conditions[0].reviewAfterMs is retired; use Task reviewAt" });
+  expect(Check(taskChangesSchema, { conditions: [condition] })).toBe(false);
+  expect(admitTaskChanges({ conditions: [condition] }).ok).toBe(false);
+  for (const dependencies of [[], undefined]) {
+    const retired = { state: "waiting", summary: "Await review", facts: [], dependencies };
+    expect(Check(taskAgentResultSchema, retired)).toBe(false);
+    expect(admitTaskReconcileResult(retired)).toEqual({ ok: false,
+      error: "dependencies is retired; use requests and request Conditions" });
+  }
+  expect(() => observationCondition({ id: "approval", appId: "reviews", type: "approval.submitted", description: "Read approval", intervalMs: 60_000, timeoutMs: 100 },
+    { observerId: "approval", id: "approval", resource: "draft", expected: { approved: true }, reviewAfterMs: 60_000 } as never))
+    .toThrow("reviewAfterMs is retired; use Task reviewAt");
 });

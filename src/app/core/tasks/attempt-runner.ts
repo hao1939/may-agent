@@ -27,6 +27,7 @@ import {
   failAppTaskAttempt,
   isAppTaskActionStaleError,
   readAppTaskAgent,
+  readAppTaskIntent,
   readAppTaskChildContext,
   readAppTaskLiveSnapshot,
   readTaskChangeInputKeys,
@@ -134,7 +135,7 @@ export async function runTaskAttempt(input: {
       let observation: TaskWorkspaceAdmission = { kind: "unavailable" };
       try {
         const method = await taskWorkspaceRequirement(opts, descriptor, config, {
-          intent: { ...pending.spec, id: input.taskId }, generation: pending.metadata.generation,
+          intent: readAppTaskIntent(config, input.taskId)!, generation: pending.metadata.generation,
           agent: readAppTaskAgent(config, input.taskId, snapshot) ?? descriptor.agent,
         });
         observation = !method.required ? { kind: "ready" }
@@ -497,7 +498,7 @@ async function runClaimedTask(
           ...(workspaceCleanupError ? { workspaceCleanupError } : {}),
           outcome: intent.outcome,
 
-          owner: intent.owner ?? descriptor.agent,
+          owner: intent.agent ?? descriptor.agent,
           ...(intent.workflow ? { workflow: intent.workflow } : {}),
           ...(intent.executor ? { executor: intent.executor } : {}),
           acceptance: intent.acceptance,
@@ -523,7 +524,7 @@ async function runClaimedTask(
             disposition: "stale",
             outcome: intent.outcome,
 
-            owner: intent.owner ?? descriptor.agent,
+            owner: intent.agent ?? descriptor.agent,
             ...(intent.workflow ? { workflow: intent.workflow } : {}),
             ...(intent.executor ? { executor: intent.executor } : {}),
             input: intent.input ?? {},

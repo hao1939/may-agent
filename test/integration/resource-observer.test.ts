@@ -39,7 +39,6 @@ test("one source read serves two Apps; quiet polls use no Task attempts; unrelat
     subject: "approval:v1",
     expected: { field: "decision", equals: "approve" },
     owner: "human:operator",
-    reviewAfterMs: 3_600_000,
   };
   f.add("a", [wait, approval]);
   f.add("b", [wait], "peer");
@@ -179,7 +178,6 @@ test("new evidence survives an active attempt; there is no second simultaneous c
       subject: "approval:v2",
       expected: "approved",
       owner: "human:operator",
-      reviewAfterMs: 3_600_000,
     },
   ]);
 });

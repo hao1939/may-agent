@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { SubagentManager } from "../../src/lib/manager.js";
 import { createIdentityWriter } from "../../src/lib/instance-identity.js";
 import { appendSessionMessage } from "../../src/lib/persistence.js";
-import { closeAllDbs } from "../../src/lib/requests.js";
+import { closeAllDbs } from "../../src/lib/db/connection.js";
 
 describe("retained detached instance control", () => {
   let root: string;

@@ -9,7 +9,9 @@ import {
   writeSessionMeta,
   type PersistedSession,
 } from "../../src/lib/persistence.js";
-import { closeDb, insertWorkflowRun, upsertSession } from "../../src/lib/requests.js";
+import { closeDb } from "../../src/lib/db/connection.js";
+import { insertWorkflowRun } from "../../src/lib/db/workflows.js";
+import { upsertSession } from "../../src/lib/db/sessions.js";
 import { fakeModel } from "../fixtures/model.js";
 
 function registerTestAgents(manager: SubagentManager) {

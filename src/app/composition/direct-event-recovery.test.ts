@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Type, defineApp } from "@may-agent/sdk";
 import { DbWriter } from "../../lib/db-writer.js";
-import { closeDb, getDb } from "../../lib/requests.js";
+import { closeDb, getDb } from "../../lib/db/connection.js";
 import { fakeTaskAttacher } from "../../../test/fixtures/task-attachment.js";
 import { AppRegistry } from "../core/apps/registry.js";
 import {

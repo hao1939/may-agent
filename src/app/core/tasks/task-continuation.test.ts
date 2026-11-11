@@ -55,7 +55,6 @@ test.each(["finish", "close"])("continuation survives reopen and retains the ori
       subject: "id:42",
       expected: "complete",
       owner: "app:ci",
-      reviewAfterMs: 60_000,
     };
     expect(
       deferAppTask(config, first, {
@@ -167,7 +166,7 @@ test("continuation can outlive a wait while sleeping still requires a return rou
     deferAppTask(config, claim("with-wait"), {
       disposition: "waiting", summary: "Review requested",
       conditions: [{ id: "review", type: "review.completed", subject: "review:candidate",
-        expected: true, owner: "human", reviewAfterMs: 60_000 }],
+        expected: true, owner: "human" }],
     });
     admit("with-wait", "progress");
     const progress = claim("with-wait");
@@ -247,7 +246,6 @@ test("omitted declarations preserve deadlines without attaching unrelated Condit
     subject: "id:independent",
     expected: "accepted",
     owner: "app:reviewer",
-    reviewAfterMs: 600_000,
   };
   try {
     setSystemTime(now);
@@ -319,7 +317,6 @@ test("converged review preserves retained observations and their independent wai
     subject: "id:publication",
     expected: { field: "status", equals: "done" },
     owner: "app:library",
-    reviewAfterMs: 60_000,
   };
   const future = {
     id: "independent",
@@ -327,7 +324,6 @@ test("converged review preserves retained observations and their independent wai
     subject: "id:independent",
     expected: "done",
     owner: "human",
-    reviewAfterMs: 3_600_000,
   };
   const satisfied = {
     id: "already-reviewed",
@@ -335,7 +331,6 @@ test("converged review preserves retained observations and their independent wai
     subject: "id:accepted",
     expected: "done",
     owner: "human",
-    reviewAfterMs: 3_600_000,
   };
   try {
     setSystemTime(startedAt);
@@ -363,7 +358,7 @@ test("converged review preserves retained observations and their independent wai
     const futureBefore = structuredClone(before.conditions?.[future.id]);
     const overdueBefore = structuredClone(before.conditions?.[overdue.id]);
 
-    setSystemTime(startedAt + overdue.reviewAfterMs + 1);
+    setSystemTime(startedAt + 600_001);
     completeAppTask(config, review, {
       summary: "Current source review is complete; publication remains pending",
       facts: ["source:unchanged", "publication:pending"],
@@ -417,7 +412,7 @@ test.each(["changed-spec", "replaced-id"])("reconsiders inputs with %s waits aft
     inputContext: { id: key, source: { kind: "human", id: "operator" }, input: { kind: "message", data: { text: key } } },
   });
   const wait = (id: string, expected = "complete") => ({
-    id, type: "review.completed", subject: `id:${id}`, expected, owner: "human", reviewAfterMs: 60_000,
+    id, type: "review.completed", subject: `id:${id}`, expected, owner: "human",
   });
   try {
     observeAppTaskIntent(config, { appAgent: "owner", intent: {

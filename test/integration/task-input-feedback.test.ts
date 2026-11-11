@@ -11,7 +11,7 @@ import { createEventInterface, findEventPublication } from "../../src/app/core/e
 import { createAppInboxItem } from "../../src/app/core/state/app-inbox-store.js";
 import { createAppTaskEvents } from "../../src/app/core/tasks/app-task-emitter.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
-import { closeDb, getDb } from "../../src/lib/requests.js";
+import { closeDb, getDb } from "../../src/lib/db/connection.js";
 import { fakeTaskAttacher } from "../fixtures/task-attachment.js";
 
 test("public targeted input retains its receipt, attaches once and reaches only its live Task", async () => {

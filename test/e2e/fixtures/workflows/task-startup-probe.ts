@@ -27,7 +27,6 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult<Tas
               expected: { artifact: "fixture", allowedDecisions: ["approve", "reject", "defer"] },
               owner: "human",
               requestedAction: "Approve the fixture result after restart.",
-              reviewAfterMs: 60000,
             },
           ],
         },

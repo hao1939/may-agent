@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { completeCommunicationTask, readCommunicationInputs } from "../../../../test/fixtures/communication.js";
 import { claimAppInboxItem } from "../../../../test/fixtures/legacy-inbox.js";
-import { closeDb, getDb } from "../../../lib/requests.js";
+import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
 import {
   appTaskContext,

@@ -591,7 +591,7 @@ export type TaskReconciliationSnapshotTask = {
   priority?: TaskPriority;
   category?: string;
   dependsOn?: string[];
-  conditions: Array<Pick<Condition, "id" | "type" | "subject" | "requestedAction" | "owner" | "reviewAfterMs">>;
+  conditions: Array<Pick<Condition, "id" | "type" | "subject" | "requestedAction" | "owner">>;
   readiness?: TaskReconciliationChild["readiness"];
   hasLiveChildren: boolean;
   updatedAt?: string;

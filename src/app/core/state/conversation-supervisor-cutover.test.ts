@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { assertAppInboxClaim, claimAppInboxItem } from "../../../../test/fixtures/legacy-inbox.js";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
-import { closeDb, getDb } from "../../../lib/requests.js";
+import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "../../composition/app-inbox-runtime.js";
 import { AppRegistry } from "../apps/registry.js";
 import { EVENT_ROW_ID, EventBus } from "../events/bus.js";

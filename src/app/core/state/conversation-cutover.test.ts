@@ -12,7 +12,7 @@ import {
   recordAppInboxHandling,
   stopAppInboxTurn,
 } from "../../../../test/fixtures/legacy-inbox.js";
-import { closeDb, getDb } from "../../../lib/requests.js";
+import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
 import { appTaskContext, claimObservedAppTask } from "../tasks/app-task-reconciler.js";
 import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";

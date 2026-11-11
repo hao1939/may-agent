@@ -3,7 +3,8 @@ import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DbWriter } from "../lib/db-writer.js";
-import { closeDb, getDb, upsertSession } from "../lib/requests.js";
+import { closeDb, getDb } from "../lib/db/connection.js";
+import { upsertSession } from "../lib/db/sessions.js";
 import { markSessionActive, RegistryStore, writeSessionMeta } from "../lib/persistence.js";
 import { attachCommandRouter, validateSessionControl } from "./command-router.js";
 import { EVENT_REDELIVERY_REQUIRED, EVENT_ROW_ID, EventBus } from "./core/events/bus.js";

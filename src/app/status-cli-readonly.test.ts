@@ -7,7 +7,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { EventBus } from "./core/events/bus.js";
 import { attachEventPersistence } from "./daemon-events.js";
-import { closeDb } from "../lib/requests.js";
+import { closeDb } from "../lib/db/connection.js";
 
 const PROJECT_ROOT = resolve(import.meta.dir, "../..");
 const DEV_ENTRY = resolve(import.meta.dir, "may.ts");

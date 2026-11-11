@@ -9,7 +9,7 @@ import { HostCapacity } from "../../src/app/core/scheduling/host-capacity.js";
 import { createAppTaskCapability } from "../../src/app/core/tasks/app-task-capability.js";
 import { startAppInboxRuntime } from "../../src/app/composition/app-inbox-runtime.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
-import { getDb, closeDb } from "../../src/lib/requests.js";
+import { getDb, closeDb } from "../../src/lib/db/connection.js";
 import { until } from "../fixtures/resource-observer.js";
 
 async function observationSmoke(mode: "prompt" | "periodic") {

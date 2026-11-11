@@ -4,7 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { SubagentManager } from "./manager.js";
 import type { SubagentDefinition, TaskResult } from "./types.js";
-import { closeDb, getWorkflowRun } from "./requests.js";
+import { closeDb } from "./db/connection.js";
+import { getWorkflowRun } from "./db/workflows.js";
 import { createWorkflowRunner } from "./workflow-tool.js";
 
 type CallOptions = Parameters<SubagentManager["callAgent"]>[2];

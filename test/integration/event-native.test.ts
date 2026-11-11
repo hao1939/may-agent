@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { getDb, closeDb } from "../../src/lib/requests.js";
+import { getDb, closeDb } from "../../src/lib/db/connection.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
 
 let TEST_DIR: string;

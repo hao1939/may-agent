@@ -21,7 +21,7 @@ import {
   readSessionMeta,
   writeSessionMeta,
 } from "../../src/lib/persistence.js";
-import { closeDb } from "../../src/lib/requests.js";
+import { closeDb } from "../../src/lib/db/connection.js";
 
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import { createAgentRun, type AgentRuntimeListener } from "../../src/lib/agent-runner.js";

@@ -18,7 +18,7 @@ import {
 import { appTaskTestContext } from "../../src/app/core/tasks/app-task-test-support.js";
 import { HumanTaskService } from "../../src/app/human-task-service.js";
 import { attachTelegramBot as attachTelegramBotRuntime } from "../../src/app/transport/telegram.js";
-import { getDb } from "../../src/lib/requests.js";
+import { getDb } from "../../src/lib/db/connection.js";
 import { claimAppInboxItem, completeAppInboxClaim } from "../fixtures/legacy-inbox.js";
 
 function attachTelegramBot(
@@ -234,7 +234,6 @@ describe("telegram reply e2e", () => {
       },
       owner: "human",
       requestedAction: "Reply with blue or green.",
-      reviewAfterMs: 60_000,
     };
     createWait("answer", answerCondition);
 
@@ -487,7 +486,6 @@ describe("telegram reply e2e", () => {
         expected: { state: "done" },
         owner: "human",
         requestedAction: "Deploy release 42, then wait for independent deployment observation.",
-        reviewAfterMs: 60_000,
       };
       createWait("external", externalCondition);
       notify("external");
@@ -546,7 +544,6 @@ describe("telegram reply e2e", () => {
             expected: { field: "window", anyOf: ["now", "later"] },
             owner: "human",
             requestedAction: "Choose now or later for the rollout window.",
-            reviewAfterMs: 60_000,
           },
         ],
       });
@@ -609,7 +606,6 @@ describe("telegram reply e2e", () => {
         },
         owner: "human",
         requestedAction: `Review proposal ${letter}.`,
-        reviewAfterMs: 60_000,
       });
       createWait("mixed", [
         approvalCondition("a"),
@@ -626,7 +622,6 @@ describe("telegram reply e2e", () => {
           },
           owner: "human",
           requestedAction: "Clarify the preferred proposal before approval.",
-          reviewAfterMs: 60_000,
         },
       ]);
       const mixedRef = service.getTask({ appId: "may", taskId: "mixed" })!.ref;

@@ -8,7 +8,8 @@ import { createAssistantMessageEventStream, type AssistantMessage, type Model } 
 import { createAgentRun } from "./agent-runner.js";
 import { createRunCliAgentTool } from "./tools/run-cli-agent.js";
 import { SubagentManager } from "./manager.js";
-import { closeAllDbs, getDb, upsertSession } from "./requests.js";
+import { closeAllDbs, getDb } from "./db/connection.js";
+import { upsertSession } from "./db/sessions.js";
 import { readSessionBashProcessGroups } from "./persistence.js";
 import { EventBus } from "../app/core/events/bus.js";
 import { drainBashProcessGroup } from "./tools/bash.js";

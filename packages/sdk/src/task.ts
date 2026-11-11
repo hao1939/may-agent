@@ -42,8 +42,6 @@ export type TaskIntent = {
   /** Agent responsible for the outcome across attempts; creator controls requirements.
    * Omit to inherit the parent assignment, then the App's default agent. */
   agent?: string;
-  /** @deprecated Use `agent`. Retained temporarily for source compatibility. */
-  owner?: string;
   /** App procedure for each eligible attempt; nested agent calls do not replace it. */
   workflow?: string;
   /** Registered bounded executor adapter. Omit or use `agent` for the managed agent. */
@@ -65,8 +63,6 @@ export type Condition = {
   requestedAction?: string;
   /** Required on newly admitted waits; optional here so historical Conditions remain readable. */
   owner?: string;
-  /** @deprecated Retained for compatibility; use Task reviewAt to request agent reconsideration. */
-  reviewAfterMs?: number;
   /** Caller interest in intermediate progress on an App request. Completion and failures still wake. */
   progress?: "immediate" | "next-wake";
 };
@@ -97,9 +93,6 @@ export type TaskRequestCondition = {
   progress?: "immediate" | "next-wake";
 };
 export type TaskCondition = Condition | TaskRequestCondition;
-
-/** @deprecated Return requests and caller Conditions instead. */
-export type TaskAppDependency = TaskAppRequest;
 
 /** Reconsider an existing wait through a fenced attempt. Revise requirements with TaskAttempt.reviseTask. */
 export type TaskAction =
@@ -156,7 +149,6 @@ export type TaskReconcileResult = {
       result?: Record<string, unknown>;
       actions?: TaskAction[];
       conditions?: never;
-      dependencies?: never;
       requests?: TaskAppRequest[];
       communication?: TaskCommunication[];
     }
@@ -173,8 +165,6 @@ export type TaskReconcileResult = {
       /** Submit work; add a request Condition only when its answer is needed. */
       requests?: TaskAppRequest[];
       communication?: TaskCommunication[];
-      /** @deprecated Use requests and conditions: [{ requestId: id }]. */
-      dependencies?: TaskAppDependency[];
     } & (
       | { report?: never }
       | {
@@ -194,7 +184,6 @@ export type TaskReconcileResult = {
       result?: Record<string, unknown>;
       actions?: never;
       conditions?: never;
-      dependencies?: never;
       requests?: never;
       communication?: never;
     }
@@ -249,7 +238,6 @@ export type TaskVerifier = (
 
 /** Runtime validation is opt-in so the App declaration entry point stays lightweight. */
 export {
-  MIN_CONDITION_REVIEW_AFTER_MS,
   admitTaskReconcileResult,
   admitTaskChanges,
   taskChangesSchema,
@@ -259,7 +247,6 @@ export {
   isTypedConditionSubject,
   taskActionSchema,
   taskAgentResultSchema,
-  taskOwnerResultSchema,
   taskReconcileResultSchema,
   taskVerificationResultSchema,
 } from "./task-contract.js";

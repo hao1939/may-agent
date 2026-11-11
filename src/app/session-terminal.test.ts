@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { attachDaemonEventSubscribers, attachEventPersistence } from "./daemon-events.js";
 import { EventBus } from "./core/events/bus.js";
 import { applyDbSchema } from "../lib/db/schema.js";
-import { getDb } from "../lib/requests.js";
+import { getDb } from "../lib/db/connection.js";
 
 describe("canonical session terminal event", () => {
   let persistDir: string;

@@ -55,8 +55,6 @@ export default [
                 "**/event-bus.*",
                 "**/core/events/**",
                 "**/core/tasks/**",
-                "**/requests",
-                "**/requests.*",
                 "**/persistence",
                 "**/persistence.*",
                 "**/app-task*",
@@ -107,7 +105,7 @@ export default [
               message: "Core depends on contracts; select adapters and conversational handlers in composition.",
             },
             {
-              group: ["**/app-input-event", "**/app-input-event.*", "**/lib/requests", "**/lib/requests.*"],
+              group: ["**/app-input-event", "**/app-input-event.*"],
               message: "Core uses focused state primitives; App input policy belongs outside core.",
             },
           ],

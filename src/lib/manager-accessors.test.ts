@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { SubagentManager } from "./manager.js";
-import { closeDb } from "./requests.js";
+import { closeDb } from "./db/connection.js";
 
 describe("manager agent registry", () => {
   let root: string;

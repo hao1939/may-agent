@@ -113,9 +113,9 @@ describe("App read projections", () => {
     deferAppTask(config, claim, { disposition: "waiting", summary: "Draft v3 prepared", result: { version: "v3" },
       conditions: [
         { id: "approval", type: "approval.observed", subject: "draft:v3", expected: { field: "approved", equals: true },
-          owner: "human:reviewer", requestedAction: "Approve v3", reviewAfterMs: 3600000 },
+          owner: "human:reviewer", requestedAction: "Approve v3" },
         { id: "check", type: "check.observed", subject: "draft:v3", expected: { field: "passed", equals: true },
-          owner: "agent:reviewer", requestedAction: "Check v3", reviewAfterMs: 3600000 },
+          owner: "agent:reviewer", requestedAction: "Check v3" },
       ] });
     const before = readRuntimeTaskView({ taskStateConfig: config }, taskId)!;
     expect(before.conditions.every((c) => c.observation?.state === "unknown")).toBe(true);

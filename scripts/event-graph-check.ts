@@ -4,7 +4,7 @@ import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { openReadOnlyDatabase } from "../src/lib/db.js";
 import { backfillEventPairTraces, checkEventTraceIntegrity } from "../src/lib/db/event-traces.js";
-import { closeDb, getDb } from "../src/lib/requests.js";
+import { closeDb, getDb } from "../src/lib/db/connection.js";
 
 function argValue(name: string): string | undefined {
   const prefix = `${name}=`;

@@ -7,7 +7,8 @@ import {
   attachDaemonEventSubscribers,
   attachEventPersistence,
 } from "../../src/app/daemon-events.js";
-import { closeDb, getDb, insertWorkflowRun } from "../../src/lib/requests.js";
+import { closeDb, getDb } from "../../src/lib/db/connection.js";
+import { insertWorkflowRun } from "../../src/lib/db/workflows.js";
 import { createEventInterface } from "../../src/app/core/events/interface.js";
 
 describe("daemon event subscribers", () => {

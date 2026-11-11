@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DbWriter } from "../../lib/db-writer.js";
 import { stateTransaction } from "../../lib/db/transaction.js";
-import { closeDb, getDb } from "../../lib/requests.js";
+import { closeDb, getDb } from "../../lib/db/connection.js";
 import { EVENT_ROW_ID, EventBus } from "../core/events/bus.js";
 import { createAppEventAdmissionPlan, getAppEventAdmissionPlan } from "../core/state/app-event-admission-store.js";
 import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";

@@ -5,7 +5,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DbWriter } from "../../../lib/db-writer.js";
-import { closeDb, getDb } from "../../../lib/requests.js";
+import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
 import { createAppInboxItem } from "../state/app-inbox-store.js";
 import { claimAppInboxItem, completeAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";

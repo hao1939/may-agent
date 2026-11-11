@@ -4,7 +4,7 @@ import { join } from "node:path";
 import type { AppDefinition, AppObserver, TaskAttempt, TaskReconcileResult } from "@may-agent/sdk";
 import { createTestAppRead, createTestAppLogger } from "@may-agent/sdk/testing";
 import { DbWriter } from "../../src/lib/db-writer.js";
-import { closeDb, getDb } from "../../src/lib/requests.js";
+import { closeDb, getDb } from "../../src/lib/db/connection.js";
 import { EventBus } from "../../src/app/core/events/bus.js";
 import { AppRegistry } from "../../src/app/core/apps/registry.js";
 import { HostCapacity } from "../../src/app/core/scheduling/host-capacity.js";

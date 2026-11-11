@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { EventBus } from "../../src/app/core/events/bus.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
 import { SubagentManager } from "../../src/lib/manager.js";
-import { closeDb, getDb } from "../../src/lib/requests.js";
+import { closeDb, getDb } from "../../src/lib/db/connection.js";
 import { createWorkflowTool } from "../../src/lib/workflow-tool.js";
 import type { WorkflowToolResult } from "../../src/lib/workflow.js";
 

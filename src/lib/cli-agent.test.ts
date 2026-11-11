@@ -33,7 +33,7 @@ import { cliCallFacts, createRunCliAgentTool } from "./tools/run-cli-agent.js";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import { EventBus, EVENT_DELIVERY_RESULT, type AgentEvent } from "../app/core/events/bus.js";
 import { attachEventPersistence } from "../app/daemon-events.js";
-import { closeAllDbs } from "./requests.js";
+import { closeAllDbs } from "./db/connection.js";
 
 const fixture = fileURLToPath(new URL("../../test/fixtures/native-cli.cjs", import.meta.url));
 let root: string;

@@ -29,7 +29,7 @@ it("enforces bounded imports with and without extensions, but allows neutral hel
   ]) {
     const forbidden: string[] = [];
     if (filePath.startsWith("src/lib/")) {
-      const libModules = ["requests", "persistence", "metrics", "manager"];
+      const libModules = ["persistence", "metrics", "manager"];
       const appModules = ["core/events/bus", "core/tasks/app-task-runtime", "cron"];
       forbidden.push(...libModules.flatMap((name) => ["", ".js", ".ts"].map((ext) => `./${name}${ext}`)));
       forbidden.push(...appModules.flatMap((name) => ["", ".js", ".ts"].map((ext) => `../app/${name}${ext}`)));
@@ -68,8 +68,8 @@ it("keeps capability implementations out of core, but allows wiring and boundary
     'import type { TaskWorkspaces } from "./workspace.js"; export type Contract = TaskWorkspaces;',
     'import { appOwnerReviewEvent } from "../../app-input-event.js"; void appOwnerReviewEvent;',
     'export { appOwnerReviewEvent } from "../../app-input-event";',
-    'import { getDb } from "../../../lib/requests.js"; void getDb;',
-    'export { closeDb } from "../../../lib/requests";',
+    'import { getDb } from "../../../lib/db/connection.js"; void getDb;',
+    'export { closeDb } from "../../../lib/db/connection";',
     'import { getDb as connection } from "../../../lib/db/connection.js"; void connection;',
     'import type { DaemonStatus } from "../../../../packages/control/src/server.js"; export type Status = DaemonStatus;',
     'export { attachHttpServer } from "../../http/server.js";',
@@ -92,8 +92,6 @@ it("keeps capability implementations out of core, but allows wiring and boundary
       ["no-restricted-imports", 5],
       ["no-restricted-imports", 7],
       ["no-restricted-imports", 8],
-      ["no-restricted-imports", 9],
-      ["no-restricted-imports", 10],
       ["no-restricted-imports", 12],
       ["no-restricted-imports", 13],
       ["no-restricted-imports", 14],

@@ -4,7 +4,7 @@ import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import type { AgentEvent } from "../events/bus.js";
-import { preferredTriggerFromEvents } from "../tasks/app-task-reconciler.js";
+import { preferredTriggerFromEvents, readAppTaskIntent } from "../tasks/app-task-reconciler.js";
 import type { AppTaskContext } from "../tasks/app-task-store.js";
 import type { AppTaskTriggerEvent } from "../tasks/app-task-state.js";
 import { getAppInboxItem, listAppInboxItems, type AppInboxItem } from "./app-inbox-store.js";
@@ -343,7 +343,7 @@ export function recoverMalformedConversationInput(
         input: structuredClone(malformed.input),
         originEventId: malformed.originEventId,
         idempotencyKey: recovery.idempotencyKey,
-        intent: structuredClone(repairedTask.spec),
+        intent: readAppTaskIntent(context, malformed.taskId)!,
         now,
       });
       if (recovered.taskId !== malformed.taskId) throw new Error("Recovery resolved a different Conversation Task");

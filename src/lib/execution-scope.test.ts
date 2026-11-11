@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SubagentManager } from "./manager.js";
 import { executionTimeout } from "./execution-scope.js";
-import { closeDb } from "./requests.js";
+import { closeDb } from "./db/connection.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { runOneshotMode } from "../app/modes/oneshot.js";
 import { fileURLToPath } from "node:url";

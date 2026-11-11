@@ -4,7 +4,7 @@ import { createAppScheduleProducer } from "./adapters/producers/app-schedules.js
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { getDb, closeDb } from "../lib/requests.js";
+import { getDb, closeDb } from "../lib/db/connection.js";
 import { createMetricService } from "../lib/metrics.js";
 import { EventBus } from "./core/events/bus.js";
 import { attachEventPersistence } from "./daemon-events.js";

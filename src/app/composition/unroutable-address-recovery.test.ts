@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fakeTaskAttacher } from "../../../test/fixtures/task-attachment.js";
 import { DbWriter } from "../../lib/db-writer.js";
-import { closeDb, getDb } from "../../lib/requests.js";
+import { closeDb, getDb } from "../../lib/db/connection.js";
 import { discoverAppDefinitions } from "../adapters/discovery/app-definitions.js";
 import { AppRegistry } from "../core/apps/registry.js";
 import { EVENT_ROW_ID, EventBus, type Subscriber } from "../core/events/bus.js";

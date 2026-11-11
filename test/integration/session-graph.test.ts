@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../../src/lib/manager.js";
 import { createWorkflowTool } from "../../src/lib/workflow-tool.js";
-import { getWorkflowRun, listWorkflowRunIds } from "../../src/lib/requests.js";
+import { getWorkflowRun, listWorkflowRunIds } from "../../src/lib/db/workflows.js";
 import type { WorkflowToolResult } from "../../src/lib/workflow.js";
 import { fakeModel } from "../fixtures/model.js";
 

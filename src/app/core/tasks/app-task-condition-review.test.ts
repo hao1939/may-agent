@@ -212,7 +212,7 @@ describe("App task Condition recovery and explicit review", () => {
       deferAppTask(config, claim(config), {
         disposition: "waiting", summary: "Await the sample",
         conditions: [{ id, type: "app.dependency.updated", subject: "id:sample",
-          expected: { field: "status", equals: "done" }, owner: "app:sample", reviewAfterMs: 60_000 }],
+          expected: { field: "status", equals: "done" }, owner: "app:sample" }],
       });
       const feedback = (reportRevision?: number) => ({ type: "app.dependency.updated", data: {
         id: "sample", kind: "app", status: "blocked", summary: "Access is missing",
@@ -235,7 +235,7 @@ describe("App task Condition recovery and explicit review", () => {
     }
   });
 
-  it.each(["redeclared", "retained", "without-legacy-interval"])("preserves independent %s waits and observations across input and restart", (route) => {
+  it.each(["redeclared", "retained", "stored-legacy"])("preserves independent %s waits and observations across input and restart", (route) => {
     const config = fixture();
     const conditions = [
       {
@@ -244,7 +244,6 @@ describe("App task Condition recovery and explicit review", () => {
         subject: "pipeline-run:42",
         expected: "completed",
         owner: "app:ci",
-        reviewAfterMs: 60_000,
       },
       {
         id: "decision",
@@ -252,16 +251,19 @@ describe("App task Condition recovery and explicit review", () => {
         subject: "task:decision",
         expected: "done",
         owner: "app:review",
-        reviewAfterMs: 120_000,
       },
     ];
     const wait = { disposition: "waiting" as const, summary: "Still waiting for both facts", conditions };
-    const unchangedWait = route === "redeclared"
+    const unchangedWait = route !== "retained"
       ? wait
-      : route === "without-legacy-interval"
-        ? { ...wait, conditions: conditions.map(({ reviewAfterMs: _legacyInterval, ...condition }) => condition) }
-        : { disposition: "waiting" as const, summary: wait.summary };
+      : { disposition: "waiting" as const, summary: wait.summary };
     deferAppTask(config, claim(config), wait);
+    if (route === "stored-legacy") {
+      config.resourceStore.db.run(
+        "UPDATE app_task_conditions SET condition_json = json_set(condition_json, '$.spec.reviewAfterMs', 60000) WHERE app_id = ?",
+        [config.resourceStore.appId],
+      );
+    }
     const before = readTaskSnapshot(config).conditions;
     const update = { type: "sample.unexpected-update", eventId: 401, data: { revision: 2 } };
     expect(recordAppTaskTrigger(config, "human-request", update)).toEqual({ kind: "recorded" });
@@ -331,7 +333,6 @@ describe("App task Condition recovery and explicit review", () => {
           subject: "task:review",
           expected: "done",
           owner: "human",
-          reviewAfterMs: 60_000,
         },
       ],
     });
@@ -378,7 +379,6 @@ describe("App task Condition recovery and explicit review", () => {
             subject: "credential:pilot",
             expected: { field: "state", equals: "ready" },
             owner: "human",
-            reviewAfterMs: 60_000,
           },
         ],
       });
@@ -412,7 +412,6 @@ describe("App task Condition recovery and explicit review", () => {
         subject: "approval:draft",
         expected: { field: "decision", equals: "approved" },
         owner: "human:reviewer",
-        ...(legacy ? { reviewAfterMs: 60_000 } : {}),
       };
       try {
         deferAppTask(config, claim(config), {
@@ -420,6 +419,13 @@ describe("App task Condition recovery and explicit review", () => {
           summary: "Await approval",
           conditions: [condition],
         });
+        if (legacy) {
+          // Historical storage remains readable, but new authoring no longer accepts this field.
+          config.resourceStore.db.run(
+            "UPDATE app_task_conditions SET condition_json = json_set(condition_json, '$.spec.reviewAfterMs', 60000) WHERE app_id = ? AND condition_id = ?",
+            [config.resourceStore.appId, condition.id],
+          );
+        }
         const before = readTaskSnapshot(config);
         // Old persisted indexes may still say the Condition review is due.
         config.resourceStore.setRecoveryState("human-request", { nextCheckAt: startedAt - 1 });
@@ -479,7 +485,6 @@ describe("App task Condition recovery and explicit review", () => {
             subject: "approval:draft",
             expected: true,
             owner: "human:reviewer",
-            reviewAfterMs: 60_000,
           },
         ],
       });
@@ -521,7 +526,6 @@ describe("App task Condition recovery and explicit review", () => {
           subject: "approval:may-ground-truth",
           expected: { field: "status", equals: "submitted" },
           owner: "human:operator",
-          reviewAfterMs: 60_000,
         },
       ],
     });
