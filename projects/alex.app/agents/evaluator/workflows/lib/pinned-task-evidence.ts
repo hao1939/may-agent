@@ -161,7 +161,7 @@ export async function readPinnedTaskEvidence(
         )
           throw new Error("generation mismatch");
         const evidence = meaningfulTaskDetail(detail);
-        const validity = taskReviewValidity(appTask, evidence);
+        const validity = taskReviewValidity(appTask);
         const bytes = Buffer.byteLength(
           JSON.stringify({ appTask, detail: evidence, validity }),
         );

@@ -111,12 +111,7 @@ describe("pinned Task evidence read-back", () => {
       {
         getAppTask: async () => ({
           id: "child",
-          conditions: [
-            {
-              id: "approval",
-              observation: { state: "unknown", reviewAt },
-            },
-          ],
+          currentObligations: { available: true, reviewAt },
         }),
         getTask: async () => ({ acceptedEvidence: { page: { items: [] } } }),
       },
@@ -130,7 +125,7 @@ describe("pinned Task evidence read-back", () => {
           phase: "before-due",
           dueAt: reviewAt,
           boundaries: [
-            { conditionId: "approval", dueAt: reviewAt, phase: "before-due" },
+            { taskReviewAt: true, dueAt: reviewAt, phase: "before-due" },
           ],
         },
       }),

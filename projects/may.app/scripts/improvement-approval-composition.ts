@@ -53,7 +53,7 @@ const { AppInboxHost } = await import(
 const { appInputFeedbackEvent } = await import(
   join(host, "src/app/core/inbox/input-result.ts")
 );
-const { admitTaskAppDependencies } = await import(
+const { admitTaskAppRequests } = await import(
   join(host, "src/app/core/tasks/dependency-admission.ts")
 );
 const { admitTaskInput } = await import(
@@ -113,7 +113,7 @@ const { attachTelegramBot } = await import(
   join(host, "src/app/transport/telegram.ts")
 );
 const { DbWriter } = await import(join(host, "src/lib/db-writer.ts"));
-const { closeDb, getDb } = await import(join(host, "src/lib/requests.ts"));
+const { closeDb, getDb } = await import(join(host, "src/lib/db/connection.ts"));
 const { openDatabase } = await import(join(host, "src/lib/db.ts"));
 const { applyDbSchema } = await import(join(host, "src/lib/db/schema.ts"));
 
@@ -328,7 +328,7 @@ async function main() {
           definition: {
             id: "may",
             version: 1 as const,
-            owner: "may",
+            agent: "may",
             description: "synthetic",
             inputSchema: {} as never,
           },
@@ -894,7 +894,7 @@ async function main() {
           "actual operation result",
         );
         equal(
-          Boolean(second.output?.dependencies?.length),
+          Boolean(second.output?.requests?.length),
           false,
           "no premature Evaluation dependency",
         );
@@ -904,7 +904,7 @@ async function main() {
         )
       ) {
         equal(
-          Boolean(second.output?.dependencies?.length),
+          Boolean(second.output?.requests?.length),
           false,
           "old/pre-activation execution cannot authorize follow-up",
         );
@@ -919,7 +919,7 @@ async function main() {
           "post-adoption-evaluation-requested",
           "follow-up stage",
         );
-        const pinned = second.output?.dependencies?.[0]?.input?.data;
+        const pinned = second.output?.requests?.[0]?.input?.data;
         equal(pinned?.appId, "scout", "cross-App subject app");
         equal(pinned?.taskId, subjectId, "cross-App subject task");
         equal(pinned?.subjectGeneration, 1, "pinned generation");
@@ -1039,7 +1039,7 @@ async function main() {
               resourceStore: store,
               reconciliationPaused: false,
             };
-            const conditions = admitTaskAppDependencies({
+            const conditions = [...admitTaskAppRequests({
               opts: {
                 bus,
                 persistDir: f.root,
@@ -1051,24 +1051,24 @@ async function main() {
               },
               descriptor,
               claim: c2,
-              dependencies:
+              requests:
                 process.env.SCENARIO === "different-review-return"
                   ? [
-                      second.output.dependencies[0],
+                      second.output.requests[0],
                       {
-                        ...second.output.dependencies[0],
+                        ...second.output.requests[0],
                         id: "unrelated-other-review",
                         input: {
                           kind: "review-task-outcome",
                           data: {
-                            ...second.output.dependencies[0].input.data,
+                            ...second.output.requests[0].input.data,
                             evidenceHash: otherEvidenceHash,
                           },
                         },
                       },
                     ]
-                  : second.output.dependencies,
-            } as any);
+                  : second.output.requests,
+            } as any).values()].map((condition) => ({ ...condition, progress: "immediate" as const }));
             deferAppTask(config, c2, {
               disposition: "waiting",
               summary: second.output.summary,
@@ -1215,7 +1215,7 @@ async function main() {
                 "surface exact independent evidence limitation for May's judgment",
               );
               equal(
-                Boolean(third.output?.dependencies?.length),
+                Boolean(third.output?.requests?.length),
                 false,
                 "do not silently select replacement evidence",
               );
@@ -1232,7 +1232,7 @@ async function main() {
                 "retain original selected evidence while waiting",
               );
               equal(
-                Boolean(third.output?.dependencies?.length),
+                Boolean(third.output?.requests?.length),
                 false,
                 "do not silently replace selected review",
               );
@@ -1243,7 +1243,7 @@ async function main() {
                 "exact independent review received",
               );
               equal(
-                Boolean(third.output?.dependencies?.length),
+                Boolean(third.output?.requests?.length),
                 false,
                 "no replacement review for already received outcome",
               );

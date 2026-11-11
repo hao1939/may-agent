@@ -211,7 +211,6 @@ function context(
     },
     owner: "human",
     requestedAction: f.proposal.text,
-    reviewAfterMs: 1,
   };
   const owner = {
     appId: "may",
@@ -567,7 +566,7 @@ describe("approved activation and independent follow-up", () => {
     expect(output(result)).toMatchObject({
       state: "waiting",
       result: { stage: "post-adoption-evaluation-requested" },
-      dependencies: [
+      requests: [
         {
           appId: "alex",
           input: {
@@ -576,9 +575,10 @@ describe("approved activation and independent follow-up", () => {
           },
         },
       ],
+      conditions: [{ requestId: output(result).requests[0].id, progress: "immediate" }],
     });
 
-    const evidenceHash = output(result).dependencies[0].input.data.evidenceHash;
+    const evidenceHash = output(result).requests[0].input.data.evidenceHash;
     const completed = context(f, {
       ok: true,
       sourceCommit: f.packet.candidateCommit,

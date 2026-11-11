@@ -50,7 +50,6 @@ const condition = {
   subject: "request:verification",
   expected: { done: true },
   owner: "app:may",
-  reviewAfterMs: 3_600_000,
 };
 function review(): MetricReview {
   return {
@@ -62,7 +61,6 @@ function review(): MetricReview {
         {
           ...condition,
           owner: condition.owner!,
-          reviewAfterMs: condition.reviewAfterMs!,
         },
       ],
     },

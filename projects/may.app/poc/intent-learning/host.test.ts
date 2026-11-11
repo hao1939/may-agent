@@ -14,7 +14,7 @@ test.skipIf(!host)(
   async () => {
     const load = (path: string) =>
       import(pathToFileURL(join(host!, path)).href);
-    const { getDb, closeDb } = await load("src/lib/requests.ts");
+    const { getDb, closeDb } = await load("src/lib/db/connection.ts");
     const { AppTaskResourceStore } = await load(
       "src/app/core/state/app-task-resource-store.ts",
     );

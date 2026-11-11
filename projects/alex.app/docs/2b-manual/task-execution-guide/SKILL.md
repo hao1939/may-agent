@@ -317,10 +317,10 @@ not a default or a recurring schedule.
 
 The Host separately chooses the missed-result recovery cadence; the Task result
 does not customize it. Normal result events wake work as they arrive, without
-waiting for that periodic check. Legacy Condition `reviewAfterMs` controls
-neither clock. Check the installed schema and the
-[Host availability note](../../2a-design/task-resource-engine.md#conditions)
-before relying on omitted legacy fields.
+waiting for that periodic check. New authoring rejects Condition `reviewAfterMs`;
+remove it and choose Task `reviewAt` only for deliberate reconsideration. Historical
+stored waits remain evidence. See [Host availability](../../2a-design/task-resource-engine.md#conditions)
+and the [cleanup record](../../archive/reviews/task-api-cleanup-20261112.md).
 
 Read the whole supplied input batch and handle related updates together. One
 wake can bring several messages, results or requirements; it does not require

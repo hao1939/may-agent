@@ -117,14 +117,13 @@ async function setup(judge: (prompt: string) => Promise<MetricReview>) {
   fixtures.push(f);
   return Object.assign(f, { initialOwnerCalls: () => initialOwnerCalls });
 }
-function repairCondition(reviewAfterMs?: number): Condition {
+function repairCondition(): Condition {
   return {
     id: "repair-result",
     type: "repair.finished",
     subject: "request:verification",
     expected: { done: true },
     owner: "app:may",
-    ...(reviewAfterMs === undefined ? {} : { reviewAfterMs }),
   };
 }
 function investigate(
@@ -400,7 +399,6 @@ test("repair publication recovery retains the independent approval and ignores n
     subject: "decision:implementation",
     expected: { approved: true },
     owner: "human",
-    reviewAfterMs: 3_600_000,
   });
   await f.attach("investigation", { context: { metricResponse: plan } });
   await until(
@@ -438,7 +436,6 @@ test("Host accepts an investigation's ordinary waits and rejects settling withou
     subject: "decision:implementation",
     expected: { approved: true },
     owner: "human",
-    reviewAfterMs: 3_600_000,
   };
   const plan: MetricReview = {
     task: {
@@ -733,10 +730,10 @@ test("missing work returns an admission failure while the human promise stays op
   });
   expect(f.decisions()).toHaveLength(0);
   if (plan.task.state !== "waiting") throw new Error("waiting plan");
-  plan.task.conditions![0].reviewAfterMs = 1;
+  Object.assign(plan.task.conditions![0], { reviewAfterMs: 1 });
   await expect(
     f.attach("invalid", { context: { metricResponse: plan } }),
-  ).rejects.toThrow("reviewAfterMs must be an integer of at least 60000");
+  ).rejects.toThrow("reviewAfterMs is retired; use Task reviewAt");
   expect(f.decisions()).toHaveLength(0);
 });
 
@@ -891,13 +888,13 @@ test("an investigation commissions ordinary dependent work and its result wakes 
     };
   });
   try {
-    // Retained reviews may still contain the SDK's supported dependencies spelling.
+    // Retained reviews submit work and install an explicit caller wait.
     const plan = {
       task: {
         state: "waiting",
         summary: "Commission diagnosis",
         facts: [],
-        dependencies: [
+        requests: [
           {
             id: "diagnosis",
             appId: "may",
@@ -909,7 +906,7 @@ test("an investigation commissions ordinary dependent work and its result wakes 
               },
             },
           },
-        ],
+        ], conditions: [{ requestId: "diagnosis", progress: "immediate" as const }],
       },
       decisions: [
         {
@@ -988,7 +985,6 @@ test("one owner decision retires a retained sample wait, preserves approval, and
     subject: "decision:implementation",
     expected: { approved: true },
     owner: "human",
-    reviewAfterMs: 3_600_000,
   };
   const f = await fixture(async (attempt) => {
     if (seedLegacyWait) {
@@ -1042,7 +1038,7 @@ test("one owner decision retires a retained sample wait, preserves approval, and
     });
   });
   fixtures.push(f);
-  sample = await f.condition(3_600_000, {
+  sample = await f.condition({
     field: "measuredAt",
     gt: Date.now(),
     freshness: "fresh",
@@ -1104,7 +1100,6 @@ test("a recovery status change updates the exact existing investigation; ordinar
     subject: `metric:${f.subject.metricId}`,
     expected: { alertId: f.subject.alertId },
     owner: "app:may",
-    reviewAfterMs: 3_600_000,
   });
   plan.task.conditions!.push({
     id: "approval",
@@ -1112,7 +1107,6 @@ test("a recovery status change updates the exact existing investigation; ordinar
     subject: "decision:implementation",
     expected: { approved: true },
     owner: "human",
-    reviewAfterMs: 3_600_000,
   });
   await f.attach("status-owner", { context: { metricResponse: plan } });
   await until(

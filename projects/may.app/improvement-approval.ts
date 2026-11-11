@@ -88,7 +88,6 @@ export interface ApprovalCondition {
   };
   owner: "human" | `human:${string}`;
   requestedAction: string;
-  reviewAfterMs: number;
 }
 
 export interface TrustedApprovalEvent {
@@ -211,7 +210,6 @@ export function approvalCondition(
     // The exact Condition is the durable proposal presentation. HumanTaskService
     // may derive a compact /todo summary, but exact cards must render these bytes.
     requestedAction: proposal.text,
-    reviewAfterMs: 86_400_000,
   };
 }
 

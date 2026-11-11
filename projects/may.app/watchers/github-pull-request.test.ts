@@ -30,7 +30,6 @@ const condition: Condition = {
     notEquals: null,
   },
   owner: "app:may",
-  reviewAfterMs: 1000,
 };
 function task(id: string, status: TaskDetail["status"] = "done"): TaskDetail {
   return {
@@ -241,7 +240,6 @@ describe("May GitHub pull-request resource ownership", () => {
 
     const wait = {
       ...condition,
-      reviewAfterMs: undefined,
       expected: { ...condition.expected, notEquals: fingerprint },
       observation: { generation: 1 },
     } as Condition;
@@ -842,13 +840,11 @@ describe("GitHub live observation and saved Condition recovery", () => {
     const original = {
       ...condition,
       requestedAction: "Review a changed PR",
-      reviewAfterMs: 3600000,
     };
     const upgraded = upgradeGitHubPullRequestCondition(original);
     expect(upgraded).toMatchObject({
       id: original.id,
       requestedAction: original.requestedAction,
-      reviewAfterMs: original.reviewAfterMs,
       subject: "resource:github:hao1939/may-agent#215",
       expected: {
         ...(original.expected as object),

@@ -29,7 +29,7 @@ const {
 } = await import(`${app}/projects/may.app/watchers/github-pull-request.ts`);
 const { openDatabase } = await import(`${host}/src/lib/db.ts`);
 const { applyDbSchema } = await import(`${host}/src/lib/db/schema.ts`);
-const { getDb, closeDb } = await import(`${host}/src/lib/requests.ts`);
+const { getDb, closeDb } = await import(`${host}/src/lib/db/connection.ts`);
 const { DbWriter } = await import(`${host}/src/lib/db-writer.ts`);
 const { EventBus, EVENT_ROW_ID } = await import(
   `${host}/src/app/core/events/bus.ts`
@@ -41,9 +41,10 @@ const { startAppInboxRuntime } = await import(
   `${host}/src/app/composition/app-inbox-runtime.ts`
 );
 const { AppRegistry } = await import(`${host}/src/app/core/apps/registry.ts`);
-const { admitConversationTaskInput, readConversationTaskInputs } = await import(
+const { admitConversationTaskInput } = await import(
   `${host}/src/app/core/state/conversation-task-turns.ts`
 );
+const { readTaskInputs } = await import(`${host}/src/app/core/tasks/app-task-inputs.ts`);
 const { AppTaskResourceStore } = await import(
   `${host}/src/app/core/state/app-task-resource-store.ts`
 );
@@ -108,7 +109,6 @@ const human = {
   expected: { field: "text", equals: "independent-decision" },
   owner: "human",
   requestedAction: "A separate fixture decision",
-  reviewAfterMs: 21600000,
 };
 const dependency = {
   id: "independent-dependency",
@@ -116,7 +116,6 @@ const dependency = {
   subject: "fixture:independent",
   expected: { field: "status", equals: "done" },
   owner: "app:other",
-  reviewAfterMs: 21600000,
 };
 const claim = () => {
   const c = claimObservedAppTask(config, {
@@ -392,7 +391,7 @@ try {
   assert.equal(failureClaim.kind, "claimed");
   if (failureClaim.kind !== "claimed")
     throw new Error("expected admitted observer failure continuation");
-  const failureInputs = readConversationTaskInputs(config, failureClaim);
+  const failureInputs = readTaskInputs(config, failureClaim);
   assert.equal(failureInputs.length, 1);
   assert.deepEqual(failureInputs[0].input.data.context.observerFailure, {
     observerId: exactFailure.observerId,

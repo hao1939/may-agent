@@ -88,7 +88,8 @@ operator-invented identity; supported recovery begins with fresh human input.
    closed, what remains, and current counts. Do not delete Task history or
    rewrite prior receipts.
 
-For a recurring review, return the current cycle's evidence and an exact wait
-with `reviewAfterMs` through the supplied result schema. Runtime stores and
-schedules the next check. Do not add a sleeping shell, private cron, or detached
+For a recurring review, return the current cycle's evidence and a deliberate Task
+`reviewAt` through the supplied result schema. Runtime schedules one owner review;
+the next accepted result must choose any further review. Conditions name external
+facts independently. Do not add a sleeping shell, private cron, or detached
 loop. A timestamp in prose alone does not schedule work.

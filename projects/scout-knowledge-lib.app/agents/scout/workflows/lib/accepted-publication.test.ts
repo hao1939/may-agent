@@ -35,7 +35,6 @@ describe("accepted publication ownership", () => {
       expected: { state: "ready" },
       owner: "human:operator",
       requestedAction: "Restore source access",
-      reviewAfterMs: 60_000,
     };
     const waiting = {
       state: "waiting",
@@ -119,7 +118,6 @@ describe("accepted publication ownership", () => {
           expected: { decision: "provided" },
           owner: "human",
           requestedAction: "Choose a suitable writable integration",
-          reviewAfterMs: 60_000,
         },
       ],
     } satisfies TaskReconcileResult;

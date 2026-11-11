@@ -357,7 +357,6 @@ export function xhsWaitResult(
         owner: "human:operator",
         requestedAction:
           "Sign in to Xiaohongshu in the container browser; the current page inspection found a login screen. Scout will recheck access and resume the same Task.",
-        reviewAfterMs: 3_600_000,
       },
     ],
   };

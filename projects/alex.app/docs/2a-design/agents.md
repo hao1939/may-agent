@@ -62,8 +62,9 @@ original obligation and applies the returned evidence.
 explicit Task assignment, then the nearest parent assignment, then
 `AppDefinition.agent`. The latter is the App's owner agent. `workflow` and
 `executor` select how an attempt runs, independently of who owns the outcome.
-The old `owner` spelling remains a compatibility alias; no new field is needed
-to express Task ownership. An omitted assignment still inherits current
+New authoring uses only `agent`; the old `owner` spelling remains in stored
+Task records and is rejected as new input. See the
+[cleanup record](../archive/reviews/task-api-cleanup-20261112.md) for availability. An omitted assignment still inherits current
 configuration; pin `agent` when a fixed assignment is required. This clarification
 does not change assignment, creator authority or closure permissions.
 

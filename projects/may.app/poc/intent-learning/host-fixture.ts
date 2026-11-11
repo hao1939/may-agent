@@ -18,7 +18,7 @@ import {
 
 export async function createHarness(host: string, root: string) {
   const load = (path: string) => import(pathToFileURL(join(host, path)).href);
-  const { getDb, closeDb } = await load("src/lib/requests.ts");
+  const { getDb, closeDb } = await load("src/lib/db/connection.ts");
   const { SubagentManager } = await load("src/lib/manager.ts");
   const { createModelRegistry } = await load("src/app/model-registry.ts");
   const { createFinishTool } = await load("src/lib/tools/lifecycle.ts");

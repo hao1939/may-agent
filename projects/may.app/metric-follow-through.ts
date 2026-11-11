@@ -52,7 +52,7 @@ function assertInvestigationWaits(
 export function readMetricReview(
   value: unknown,
 ): MetricReview & { task: TaskReconcileResult } {
-  // Saved reviews can use dependencies; reuse SDK admission to resolve that spelling.
+  // Validate saved reviews against the same current Task contract as new results.
   const input = value as { task?: unknown } | null;
   const admitted = admitTaskReconcileResult(input?.task);
   if (!admitted.ok) throw new Error(admitted.error);

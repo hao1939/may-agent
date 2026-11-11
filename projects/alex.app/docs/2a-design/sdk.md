@@ -9,8 +9,10 @@
 Task reconciliation. The shared bounded Task collection is exposed as
 `read.tasks.list/get`. Public App and Task intent use `agent` to select a managed
 agent. `TaskIntent.mode` is retired for new intent; the reconciler rejects it.
-The Host accepts the old `owner` spelling and retained mode data only at explicit
-compatibility boundaries.
+New Task authoring rejects the old `owner` spelling. Stored `owner` and historical
+mode data remain internal evidence; their retention does not provide another
+authoring API. See the [cleanup record](../archive/reviews/task-api-cleanup-20261112.md)
+for source availability and integration order.
 The resource-observer facade and installed contract/health reads are implemented
 in the [September 30 candidate](../archive/reviews/task-observation-implementation-20260930.md);
 source checks do not establish deployment.
@@ -417,30 +419,33 @@ tokens, or free-form failure reasons.
 stores it with the accepted task result and Infra projects it to those requests;
 an App never names console, Telegram, web, or delivery receipts in the result.
 
-A [`TaskAppDependency`](../../../may-agent/packages/sdk/src/task.ts) names a
-stable dependency ID, target App, optional exact Task and typed input. It is
-valid only with `state: "waiting"`.
+A [`TaskAppRequest`](../../../may-agent/packages/sdk/src/task.ts) names a stable
+request ID, target App, optional exact Task and typed input. Return it in
+`requests` with either `waiting` or `converged`. Submitting work does not by itself
+make the caller wait. Add `conditions: [{ requestId: "review" }]` when its answer
+is needed. New request Conditions defer intermediate progress to the next normal
+wake; use `progress: "immediate"` when each report needs prompt attention.
+Completion and failure still wake the caller.
 
-Runtime derives the initial child request ID from the parent App, task
-generation, dependency ID, target App, optional target Task, and input. It admits the request
-idempotently and adds the exact completion Condition. Later attempts retain
-every open child-request Condition. They reuse a request by returning its
-durable request ID, or by repeating the exact target input; changed prose does
-not create another request when the durable ID is named. To add genuinely new
-work for the same target App, return both the existing durable request and a
-new stable dependency ID and input. A replacement that omits the open request
-fails before publication. The completion Event is part of a later
-`reconciliation.events` batch, including the child summary, optional response,
-and evidence. `taskId` attaches the typed input to that Task's existing lineage
-and wakes it once; omitting it uses the target App's normal new-work resolver.
-There is no imperative `delegate()` capability.
+Runtime derives a durable request ID from the caller App, Task, generation and
+authored request ID, and admits it idempotently. `taskId` attaches the input to
+that Task's existing lineage; omitting it uses the target App's normal resolver.
+Existing request Conditions survive omission on later attempts. Repeating an
+exact request reuses its admission; a genuinely new request adds work without
+requiring the caller to repeat all earlier submissions. Ambiguous reuse or a
+changed target for an existing request fails before publication. There is no
+imperative `delegate()` capability.
 
-Retry does not create a new dependency declaration. A rejected attempt retains
-the previous Condition links, so the next attempt receives their durable
-request IDs. As a final safety fence, Runtime must also reject a new request
-when an unresolved request from the same parent Task generation and target App
-still exists but its Condition link is temporarily unavailable. Recovery
-reattaches or reports that request; it never silently publishes a sibling.
+The caller receives the exact answer or selected progress report as later Task
+input. A rejected attempt preserves earlier links. Recovery reads the saved
+answer when its notification was lost, preserving the original request identity.
+An unresolved saved request whose meaning is unavailable must be recovered or
+reported before the Host can safely classify additional work.
+
+`dependencies` and `TaskAppDependency` are retired authoring names. Migrate to
+`requests` plus explicit request Conditions; retain `progress: "immediate"` when
+migrating a caller that previously consumed every report. This source cleanup
+is tracked in the [implementation record](../archive/reviews/task-api-cleanup-20261112.md).
 
 Apps may supply pure task-change validation and bounded verification policy.
 They do not save task state, acquire locks, edit projections, or manufacture

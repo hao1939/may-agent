@@ -24,7 +24,7 @@ export const dependencyResult = {
   state: "waiting",
   summary: "Waiting for release governance",
   facts: ["verification/report.json"],
-  dependencies: [{
+  requests: [{
     id: "release-governance-v4",
     appId: "release-governance",
     input: {
@@ -37,5 +37,5 @@ export const dependencyResult = {
         correlationKey: "sample:production-rollout:v4",
       },
     },
-  }],
+  }], conditions: [{ requestId: "release-governance-v4", progress: "immediate" as const }],
 } satisfies TaskReconcileResult;

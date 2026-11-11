@@ -15,7 +15,7 @@ import { createAppTaskCapability } from "../../may-agent/src/app/core/tasks/app-
 import { startAppInboxRuntime } from "../../may-agent/src/app/composition/app-inbox-runtime.js";
 import { createAppTaskReadTool } from "../../may-agent/src/app/app-task-read-tool.js";
 import { DbWriter } from "../../may-agent/src/lib/db-writer.js";
-import { getDb, closeDb } from "../../may-agent/src/lib/requests.js";
+import { getDb, closeDb } from "../../may-agent/src/lib/db/connection.js";
 import { createMetricService } from "../../may-agent/src/lib/metrics.js";
 import { readMetricEvidence } from "../../may-agent/src/app/adapters/reporting/metric-evidence.js";
 import { readConversationRequest } from "../../may-agent/src/app/core/state/conversation-requests.js";
@@ -402,7 +402,6 @@ export async function fixture(execute: TaskExecutor) {
       } as unknown as AgentEvent);
     },
     async condition(
-      reviewAfterMs = 3_600_000,
       expected: Record<string, unknown> = {
         field: "value",
         equals: 0,
@@ -420,7 +419,6 @@ export async function fixture(execute: TaskExecutor) {
           id: "recovery-observation",
           resource: metricId,
           expected,
-          reviewAfterMs,
         },
       });
       const text = reply.content[0];

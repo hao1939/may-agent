@@ -39,24 +39,11 @@ function fixture(
     generation: 3,
     status: "running",
     result: null,
-    diagnostics: {
-      conditions: ongoing
-        ? [
-            {
-              id: "review",
-              condition: {
-                spec: { reviewAfterMs: 60_000 },
-                status: {
-                  state: "false",
-                  observedAt: "2026-09-18T12:00:00.000Z",
-                },
-              },
-            },
-          ]
-        : [],
-    },
+    diagnostics: { conditions: [] },
   };
-  const subjectTask = { appTask: { id: detail.taskId, generation: 3 }, detail };
+  const subjectTask = { appTask: { id: detail.taskId, generation: 3,
+    ...(ongoing ? { currentObligations: { available: true, reviewAt: Date.parse("2026-09-18T12:01:00.000Z") } } : {}),
+  }, detail };
   const subject = {
     disposition: "eligible" as const,
     reason: "verified",

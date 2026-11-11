@@ -355,7 +355,6 @@ export async function runActivationFollowUp(
             subject: `requestId:${requestId}`,
             expected: { requestId },
             owner: "app:may-agent",
-            reviewAfterMs: 60_000,
           },
         ],
       } satisfies TaskReconcileResult);
@@ -617,7 +616,7 @@ export async function runActivationFollowUp(
         nextOwner: "app:alex",
         nextAction: "Independently review the new subject outcome.",
       },
-      dependencies: [followUp],
+      requests: [followUp], conditions: [{ requestId: followUp.id, progress: "immediate" as const }],
     } satisfies TaskReconcileResult);
   } catch (error) {
     return ctx.blocked(`Activation composition failed: ${String(error)}`);

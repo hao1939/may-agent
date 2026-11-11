@@ -730,7 +730,6 @@ describe("scout-explore workflow prompt", () => {
             source: "app:scout-knowledge-lib:observer:xhs-credential",
           },
           owner: "human:operator",
-          reviewAfterMs: 3_600_000,
         },
       ],
     });
@@ -744,7 +743,7 @@ describe("scout-explore workflow prompt", () => {
       ok: true,
       result: {
         state: "waiting",
-        conditions: [{ owner: "human:operator", reviewAfterMs: 3_600_000 }],
+        conditions: [{ owner: "human:operator" }],
       },
     });
   });

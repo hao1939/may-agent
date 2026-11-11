@@ -524,10 +524,12 @@ external result or human decision can make useful work possible.
 There is no default recurring agent review. The agent or App chooses a useful
 review deadline based on the decision needed, urgency and execution cost.
 
-Legacy `reviewAfterMs` remains readable and optional at admission (if supplied,
-an integer of at least 60,000), but does not schedule agent execution. New
-producers should omit it. Redeclaring the same Condition without this field
-preserves its stored compatibility value, identity and observation timestamps; no state rewrite or timer renewal masquerades as a new observation.
+New Condition authoring rejects the retired `reviewAfterMs` field. Historical
+stored Conditions remain readable and inert; redeclaring the same supported
+specification preserves the existing wait and observations. Use Task `reviewAt`
+only for a deliberate owner reconsideration. No stored Task migration is needed.
+See the [source cleanup record](../archive/reviews/task-api-cleanup-20261112.md)
+for the companion App changes and verification limits.
 
 A watcher reads an external source and publishes a fact. It does not know task
 storage or invoke an agent. The generic Condition tracker atomically updates
@@ -695,13 +697,10 @@ Task and input-level explicit review decisions, and canonical Task/Condition
 state remain intact. This repairs derived indexes without a manual state
 migration or invented input. Human waits remain visible between checks.
 
-**Source availability:** merged in Host/SDK
-[PR #293](https://github.com/hao1939/may-agent/pull/293), commit
-[`b595f65a9`](https://github.com/hao1939/may-agent/commit/b595f65a98134dd677241a60b8769839a2206538).
-Earlier Hosts invoke agents for Condition
-checkpoints and require `reviewAfterMs` on new explicit Conditions. Integrate and
-activate the Host before App producers rely on omitted intervals. This contract
-update is not deployment evidence.
+Code-only Condition recovery was introduced in Host/SDK
+[PR #293](https://github.com/hao1939/may-agent/pull/293). The later authoring cleanup
+and App integration order are recorded [above](#conditions); neither source
+change establishes deployment.
 
 Provider observation time and monotonic source revision, when
 available, prevent known older facts from replacing newer Condition state.

@@ -292,7 +292,6 @@ describe("Task outcome review", () => {
               field: "state",
               equals: "passed",
             },
-            reviewAfterMs: 3_600_000,
             observation: { state: "unknown" },
           },
         ],
@@ -470,115 +469,27 @@ describe("Task outcome review", () => {
     ]);
     expect(payload.freshness.status).toBe("stale");
   });
-  test("uses current Host checkpoints instead of stale creation or diagnostic timestamps", () => {
-    const observedAt = "2026-09-27T01:55:22.616Z";
-    const reviewAt = Date.parse("2026-09-28T01:55:22.616Z");
-    const subject = assessmentSubject({
-      ...detail,
-      diagnostics: {
-        conditions: [
-          condition("approval", "2026-09-25T01:55:22.616Z", 86400000),
-        ],
-      },
+  test("ignores retired Condition intervals and diagnostic deadlines", () => {
+    const subject = assessmentSubject({ ...detail, diagnostics: {
+      conditions: [condition("approval", "2026-09-25T01:55:22.616Z", 86400000)],
+    } });
+    Object.assign(subject.task.appTask, { conditions: [{
+      id: "approval", reviewAfterMs: 60_000,
+      observation: { state: "unknown", observedAt: "2026-09-25T01:55:22.616Z", reviewAt: 1 },
+    }] });
+    expect(assessmentContext(subject, "ongoing", VALIDITY_NOW).validity)
+      .toEqual({ phase: "unknown", dueAt: null, boundaries: [] });
+    Object.assign(subject.task.appTask, { currentObligations: {
+      available: true, reviewAt: VALIDITY_NOW + 60_000,
+    } });
+    expect(assessmentContext(subject, "ongoing", VALIDITY_NOW).validity).toEqual({
+      phase: "before-due", dueAt: VALIDITY_NOW + 60_000,
+      boundaries: [{ taskReviewAt: true, dueAt: VALIDITY_NOW + 60_000, phase: "before-due" }],
     });
-    Object.assign(subject.task.appTask, {
-      conditions: [
-        {
-          id: "approval",
-          reviewAfterMs: 86400000,
-          observation: {
-            state: "unknown",
-            createdAt: "2026-09-25T01:55:22.616Z",
-            observedAt,
-            reviewAt,
-          },
-        },
-      ],
-    });
-    expect(
-      assessmentContext(subject, "ongoing", Date.parse("2026-09-27T14:00:00Z"))
-        .validity,
-    ).toEqual({
-      phase: "before-due",
-      dueAt: reviewAt,
-      boundaries: [
-        { conditionId: "approval", dueAt: reviewAt, phase: "before-due" },
-      ],
-    });
-    expect(assessmentContext(subject, "ongoing", reviewAt).validity.phase).toBe(
-      "due",
-    );
-    Object.assign(subject.task.appTask, { conditions: [] });
-    expect(assessmentContext(subject, "ongoing", reviewAt).validity.phase).toBe(
-      "unknown",
-    );
+    expect(assessmentContext(subject, "ongoing", VALIDITY_NOW + 60_000).validity.phase).toBe("due");
   });
 
-  test("derives every unresolved review boundary from the production task.get envelope", () => {
-    const observedAt = "2026-09-18T12:00:00.000Z";
-    const subject = assessmentSubject({
-      ...detail,
-      // Guessed lookalikes outside diagnostics must never become deadlines.
-      conditions: [{ dueAt: 1 }],
-      diagnostics: {
-        ...detail.diagnostics,
-        conditions: [
-          condition("later", observedAt, 120_000),
-          condition("first", observedAt, 60_000, "false"),
-          condition("resolved", observedAt, 60_000, "true"),
-        ],
-      },
-    });
-    const before = assessmentContext(
-      subject,
-      "ongoing",
-      Date.parse(observedAt) + 30_000,
-    );
-    const afterFirst = assessmentContext(
-      subject,
-      "ongoing",
-      Date.parse(observedAt) + 90_000,
-    );
-    const afterBoth = assessmentContext(
-      subject,
-      "ongoing",
-      Date.parse(observedAt) + 150_000,
-    );
-
-    expect(before.validity).toEqual({
-      phase: "before-due",
-      dueAt: Date.parse(observedAt) + 60_000,
-      boundaries: [
-        {
-          conditionId: "first",
-          dueAt: Date.parse(observedAt) + 60_000,
-          phase: "before-due",
-        },
-        {
-          conditionId: "later",
-          dueAt: Date.parse(observedAt) + 120_000,
-          phase: "before-due",
-        },
-      ],
-    });
-    expect(afterFirst.validity.boundaries.map(({ phase }) => phase)).toEqual([
-      "due",
-      "before-due",
-    ]);
-    expect(afterBoth.validity.boundaries.map(({ phase }) => phase)).toEqual([
-      "due",
-      "due",
-    ]);
-    expect(
-      new Set([
-        before.validityIdentity,
-        afterFirst.validityIdentity,
-        afterBoth.validityIdentity,
-      ]).size,
-    ).toBe(3);
-  });
-
-  test("combines Task, input-wait, and independent later Condition deadlines from real public endpoint shapes", async () => {
+  test("keeps Task and later input-wait deadlines independent through real public reads", async () => {
     const first = VALIDITY_NOW + 60_000;
     const later = VALIDITY_NOW + 180_000;
     const subject = await readSubjectTask(
@@ -624,22 +535,12 @@ describe("Task outcome review", () => {
       dueAt: first,
       boundaries: [
         { taskReviewAt: true, dueAt: first, phase: "before-due" },
-        {
-          conditionId: "middle-condition",
-          dueAt: VALIDITY_NOW + 120_000,
-          phase: "before-due",
-        },
         { inputWaitKey: "later-input", dueAt: later, phase: "before-due" },
       ],
     });
     expect(afterFirst.validity.phase).toBe("due");
     expect(afterFirst.validity.boundaries).toEqual([
       { taskReviewAt: true, dueAt: first, phase: "due" },
-      {
-        conditionId: "middle-condition",
-        dueAt: VALIDITY_NOW + 120_000,
-        phase: "before-due",
-      },
       { inputWaitKey: "later-input", dueAt: later, phase: "before-due" },
     ]);
     expect(afterFirst.validityIdentity).not.toBe(before.validityIdentity);
@@ -716,7 +617,7 @@ describe("Task outcome review", () => {
         },
         emit: async (event) => events.push(event as Record<string, any>),
       }),
-      reader(() => ongoingDetail),
+      reader(() => ongoingDetail, () => ({ ...appTask, currentObligations: { available: true, reviewAt: Date.parse(observedAt) + 60_000 } })),
       root,
     );
     const facts = factsOf(result);
@@ -730,7 +631,7 @@ describe("Task outcome review", () => {
         purpose: "ongoing",
         validity: {
           phase: "due",
-          boundaries: [{ conditionId: "review", phase: "due" }],
+          boundaries: [{ taskReviewAt: true, phase: "due" }],
         },
       },
     });

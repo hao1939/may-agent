@@ -308,7 +308,7 @@ it("concurrent edits prevent a successful save and preserve the existing content
       expect.stringContaining("accepted-publication:pending:"),
       expect.stringContaining("candidate-ref:refs/archive/scout-publication/"),
     ]),
-    dependencies: [expect.objectContaining({ appId: "scout-knowledge-lib" })],
+    requests: [expect.objectContaining({ appId: "scout-knowledge-lib" })], conditions: [{ requestId: (result.output as any).requests[0].id }],
   });
   expect(readFileSync(record.path, "utf8")).toContain("Human correction");
   expect(readFileSync(record.path, "utf8")).not.toContain(draft.assessment);
@@ -588,7 +588,7 @@ it("an unsafe canonical target never produces a successful result or a claimed s
       expect.stringContaining("accepted-publication:pending:"),
       expect.stringContaining("candidate-ref:refs/archive/scout-publication/"),
     ]),
-    dependencies: [expect.objectContaining({ appId: "scout-knowledge-lib" })],
+    requests: [expect.objectContaining({ appId: "scout-knowledge-lib" })], conditions: [{ requestId: (result.output as any).requests[0].id }],
   });
   expect(result.output).toHaveProperty(
     "facts",

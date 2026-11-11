@@ -402,10 +402,11 @@ The [September behavior review](../../alex.app/docs/proposals/app-behavior-conve
 records the tested contrasts and remaining live-verification limits.
 
 Human-required XHS credential waits name `human:operator`, show the concrete action,
-and set an hourly `reviewAfterMs`. The existing five-minute credential observer
-can satisfy the wait sooner. Source retrieval starts after readiness is verified;
-the owner can diagnose setup before that point. The review deadline schedules
-reconsideration. Tests admit this wait through the current Host result contract.
+and wait for the credential observer. The existing five-minute observer can
+satisfy the wait without another model call. Source retrieval starts after readiness is verified;
+the owner can diagnose setup before that point. A deliberate Task `reviewAt` can request reconsideration when useful;
+Condition `reviewAfterMs` is retired. Tests admit the wait through the current
+Host result contract.
 
 XHS uses the common resource observer contract. Scout declares how to inspect
 `xhs` and what `state=ready` means; the Host discovers open Conditions, runs the
