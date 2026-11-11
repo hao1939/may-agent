@@ -251,7 +251,7 @@ test("plan capture respects the slow threshold, tracking capacity and window lim
   expect(first.capturedAt).toBe(0);
 });
 
-test("a failed plan capture cannot change a successful slow read", () => {
+test.each(["prepare", "read"])("a failed plan %s cannot change a successful slow read", (failure) => {
   let start = true;
   let now = 123_456;
   const profile = new SqlPerformance(
@@ -264,16 +264,28 @@ test("a failed plan capture cannot change a successful slow read", () => {
   );
   const underlying = openDatabase(":memory:");
   let planAttempts = 0;
+  let finalized = 0;
   const db = profileDatabase(
     {
       exec: (sql) => underlying.exec(sql),
       run: (sql, params) => underlying.run(sql, params),
-      prepare(sql) {
+      prepare(sql, options) {
         if (sql.startsWith("EXPLAIN QUERY PLAN ")) {
           planAttempts++;
-          throw new Error("plan unavailable");
+          if (failure === "prepare") throw new Error("plan unavailable");
+          const plan = underlying.prepare(sql, options);
+          return {
+            ...plan,
+            all() {
+              throw new Error("plan unavailable");
+            },
+            finalize() {
+              finalized++;
+              plan.finalize?.();
+            },
+          };
         }
-        return underlying.prepare(sql);
+        return underlying.prepare(sql, options);
       },
       close: () => underlying.close(),
     },
@@ -283,10 +295,14 @@ test("a failed plan capture cannot change a successful slow read", () => {
     const read = db.prepare("SELECT ? AS value");
     for (let i = 0; i < 25; i++) expect(read.get("still returned")).toEqual({ value: "still returned" });
     expect(planAttempts).toBe(1);
-    expect(profile.snapshot().queries.topByWorstTime.find((row) => row.operation === "get")?.plan).toBeUndefined();
+    expect(finalized).toBe(failure === "read" ? 1 : 0);
+    expect(
+      profile.snapshot().queries.topByWorstTime.find((row) => row.operation === "get")?.plan,
+    ).toBeUndefined();
     now += 300_000;
     expect(read.get("still returned")).toEqual({ value: "still returned" });
     expect(planAttempts).toBe(2);
+    expect(finalized).toBe(failure === "read" ? 2 : 0);
   } finally {
     db.close();
   }

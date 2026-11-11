@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { runDbMaintenancePass } from "../../lib/db/maintenance.js";
+import { describeMaintenanceError, runDbMaintenancePass } from "../../lib/db/maintenance.js";
 import { closeAllDbs, getDb } from "../../lib/db/connection.js";
 import { DbWriter, EVENT_DELIVERY_HOUSEKEEPING_INTERVAL_MS } from "../../lib/db-writer.js";
 import { sendSocketCommand } from "@may-agent/control/client";
@@ -203,9 +203,10 @@ export async function runMaintenanceMode(opts: { persistDir: string; socketPath:
       const startedAt = Date.now();
       try {
         const result = runDbMaintenancePass(opts.persistDir);
-        console.log(
+        const failed = result.checkpoint === "failed";
+        console[failed ? "error" : "log"](
           JSON.stringify({
-            type: "db.maintenance.completed",
+            type: failed ? "db.maintenance.failed" : "db.maintenance.completed",
             startedAt,
             durationMs: Date.now() - startedAt,
             ...result,
@@ -217,7 +218,7 @@ export async function runMaintenanceMode(opts: { persistDir: string; socketPath:
             type: "db.maintenance.failed",
             startedAt,
             durationMs: Date.now() - startedAt,
-            error: error instanceof Error ? error.message : String(error),
+            ...describeMaintenanceError(error),
           }),
         );
       }

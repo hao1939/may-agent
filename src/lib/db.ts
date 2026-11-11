@@ -19,11 +19,14 @@ export interface Statement {
   get(...params: unknown[]): Record<string, unknown> | null;
   all(...params: unknown[]): Record<string, unknown>[];
   run(...params: unknown[]): RunResult;
+  /** Release a statement explicitly on runtimes that expose this operation. */
+  finalize?(): void;
 }
 
 export interface SqliteDb {
   exec(sql: string): void;
-  prepare(sql: string): Statement;
+  /** One-shot diagnostic statements must opt out of the shared query cache. */
+  prepare(sql: string, options?: { cache?: boolean }): Statement;
   /** Shorthand: prepare + run (for INSERT/UPDATE/DELETE with params). */
   run(sql: string, params?: unknown[]): RunResult;
   close(): void;
@@ -49,8 +52,8 @@ function openBun(path: string, readonly = false): SqliteDb {
     exec(sql: string) {
       db.exec(sql);
     },
-    prepare(sql: string): Statement {
-      const stmt = db.query(sql);
+    prepare(sql: string, options?: { cache?: boolean }): Statement {
+      const stmt = options?.cache === false ? db.prepare(sql) : db.query(sql);
       return {
         get(...params: unknown[]) {
           return (stmt.get as (...args: unknown[]) => Record<string, unknown> | null)(...params);
@@ -60,6 +63,9 @@ function openBun(path: string, readonly = false): SqliteDb {
         },
         run(...params: unknown[]) {
           return (stmt.run as (...args: unknown[]) => RunResult)(...params);
+        },
+        finalize() {
+          stmt.finalize();
         },
       };
     },
@@ -74,10 +80,12 @@ function openBun(path: string, readonly = false): SqliteDb {
 
 interface BunDatabase {
   exec(sql: string): void;
+  prepare(sql: string): ReturnType<BunDatabase["query"]>;
   query(sql: string): {
     get: (...args: unknown[]) => unknown;
     all: (...args: unknown[]) => unknown[];
     run: (...args: unknown[]) => unknown;
+    finalize(): void;
   };
   run(sql: string, params: unknown[]): { changes: number; lastInsertRowid: number | bigint };
   close(): void;
