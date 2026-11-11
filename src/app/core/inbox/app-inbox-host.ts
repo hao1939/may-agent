@@ -365,10 +365,21 @@ export class AppInboxHost {
 
   admit(input: AdmitAppInput): { item: AppInboxItem; created: boolean } {
     if (this.#closed) throw new Error("App input admission is closed");
-    const app = this.#requiredApp(input.appId);
-    assertValidAppInput(app, input.input);
     const targetTaskId =
       input.targetTaskId === undefined ? undefined : requiredText(input.targetTaskId, "targetTaskId");
+    const retained = input.idempotencyKey
+      ? listAppInboxItems(this.#db, { appId: input.appId, idempotencyKey: input.idempotencyKey, limit: 1 })[0]
+      : input.id
+        ? this.get(input.id)
+        : null;
+    // A settled request is its own admission receipt, even if its old target
+    // or installed contract is no longer admissible. The store still checks
+    // exact replay identity and links the original Event before acknowledgment.
+    if (retained?.status === "done") {
+      return createAppInboxItem(this.#db, { ...input, targetTaskId, now: this.#now() });
+    }
+    const app = this.#requiredApp(input.appId);
+    assertValidAppInput(app, input.input);
     if (
       app.conversation?.mode !== "task" &&
       targetTaskId &&
@@ -380,11 +391,6 @@ export class AppInboxHost {
       appInputRoute(app, input.input.kind, targetTaskId, input.source.kind === "app" && !input.conversationId) ===
       "conversation";
     if (conversationInput) {
-      const retained = input.idempotencyKey
-        ? listAppInboxItems(this.#db, { appId: app.id, idempotencyKey: input.idempotencyKey, limit: 1 })[0]
-        : input.id
-          ? this.get(input.id)
-          : null;
       if (retained && isUnattachedTaskRequest(retained)) {
         // A replay cannot turn saved delegated work into a Conversation. Check
         // the exact input before using the same Task attachment path as recovery.
@@ -539,7 +545,6 @@ export class AppInboxHost {
             .run(item.id, item.lease.owner, item.lease.generation, this.#now());
         return;
       }
-      if (isUnattachedTaskRequest(item)) assertAppTaskInputRoute(app, item.input.kind, item.targetTaskId);
       if (appInputRoute(app, item.input.kind, item.targetTaskId, isUnattachedTaskRequest(item)) === "conversation") {
         if (!this.#admitConversation || !item.conversationId)
           throw new Error("Conversation input requires offline cutover to its Task execution owner");
@@ -547,7 +552,8 @@ export class AppInboxHost {
         resolveAppInboxRecovery(this.#db, item.id, "input-admission", now);
         return;
       }
-      if (!app.tasks || !app.task) throw new Error(`App ${app.id} does not resolve input to Task work`);
+      assertAppTaskInputRoute(app, item.input.kind, item.targetTaskId);
+      if (!app.task) throw new Error(`App ${app.id} task resolver is unavailable`);
       if (!this.#attachTask) throw new Error("App task admission is not configured");
       assertValidAppInput(app, item.input);
       const inputContext = readInputContext(this.#db, item);

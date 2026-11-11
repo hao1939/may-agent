@@ -7,6 +7,7 @@ import { applyDbSchema } from "../../../lib/db/schema.js";
 import { conversationTaskSuccessorId } from "../state/conversation-identity.js";
 import { AppInboxHost } from "./app-inbox-host.js";
 import { AppTaskAdmissionError } from "../state/task-admission-error.js";
+import { rejectTaskInput } from "../state/inbox.js";
 
 const probeInput = Type.Object({
   kind: Type.Literal("probe"),
@@ -330,6 +331,81 @@ describe("App inbox host", () => {
       source: { kind: "app", id: "caller" },
     });
     expect(routed).toHaveLength(1);
+  });
+
+  it("replays a rejected input before revalidating its old Conversation target or installed schema", () => {
+    const executionTaskId = conversationTaskSuccessorId("evaluation", "primary", 2);
+    const original = createAppInboxItem(db, {
+      id: "original-conversation",
+      appId: "evaluation",
+      conversationId: "primary",
+      source: { kind: "human", id: "original" },
+      input: { kind: "probe", data: { value: "original" } },
+      conversationSequence: 1,
+    });
+    db.prepare("UPDATE app_inbox_items SET execution_task_id = ? WHERE id = ?").run(
+      executionTaskId,
+      original.item.id,
+    );
+    const request = {
+      id: "rejected-feedback",
+      appId: "evaluation",
+      targetTaskId: executionTaskId,
+      source: { kind: "app" as const, id: "caller" },
+      input: { kind: "probe", data: { value: "feedback" } },
+      idempotencyKey: "feedback:rejected",
+    };
+    const retained = createAppInboxItem(db, request).item;
+    rejectTaskInput(
+      db,
+      retained,
+      new AppTaskAdmissionError("Conversation Task input must use conversationId without targetTaskId"),
+      100,
+    );
+    const host = new AppInboxHost({
+      db,
+      apps: [{ ...app(), conversation: { mode: "agent", inputKinds: ["probe"] } }],
+    });
+    const before = host.get(request.id)!;
+    const replay = host.admit({ ...request, originEventId: 7 });
+    expect(replay).toMatchObject({
+      created: false,
+      item: { status: "done", originEventId: 7, result: before.result, handling: before.handling },
+    });
+    host.replaceApps([{ ...app(), inputSchema: Type.Never() }]);
+    expect(host.admit({ ...request, originEventId: 7 }).item.result).toEqual(before.result);
+    expect(() => host.admit({ ...request, input: { kind: "probe", data: { value: "changed" } } })).toThrow(
+      "reused with different input",
+    );
+    expect(() => host.admit({ ...request, originEventId: 8 })).toThrow("already belongs to event 7");
+    expect(host.get(request.id)?.completedAt).toBe(100);
+  });
+
+  it("returns one durable rejection for retained input whose installed App has no Task handler", async () => {
+    const saved = createAppInboxItem(db, {
+      id: "unsupported-retained",
+      appId: "evaluation",
+      source: { kind: "system", id: "old-producer" },
+      input: { kind: "probe", data: { value: "old request" } },
+      now: 1,
+    });
+    let feedback = 0;
+    const host = new AppInboxHost({
+      db,
+      apps: [{ ...app(), task: undefined, tasks: undefined }],
+      onRequestUpdated: () => {
+        feedback++;
+        return true;
+      },
+    });
+    await host.recoverAdmissions();
+    expect(host.get(saved.item.id)).toMatchObject({
+      status: "done",
+      handling: { phase: "failed" },
+      result: { result: { disposition: "admission-rejected" } },
+    });
+    await host.recoverAdmissions();
+    expect(feedback).toBe(1);
   });
 
   it("contains mapping failure, admits unrelated input, and retries the saved input after repair", async () => {
