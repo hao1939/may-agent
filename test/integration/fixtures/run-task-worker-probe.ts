@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 /** Keep real process/pipe lifetimes outside Bun's reused test VM. */
-export async function runTaskWorkerProbe(script: string, scenario: string): Promise<void> {
+export async function runTaskWorkerProbe(script: string, scenario: string, timeoutMs = 15_000): Promise<void> {
   const child = spawn(process.execPath, [fileURLToPath(new URL(script, import.meta.url)), scenario], {
     stdio: ["ignore", "pipe", "pipe"],
     detached: true,
@@ -22,13 +22,20 @@ export async function runTaskWorkerProbe(script: string, scenario: string): Prom
       if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
     }
   };
-  const timeout = setTimeout(killGroup, 15_000);
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    killGroup();
+  }, timeoutMs);
   try {
     const exit = await new Promise<number | null>((resolve, reject) => {
       child.once("error", reject);
       child.once("close", resolve);
     });
-    if (exit !== 0) throw new Error(`${scenario} exited with ${exit}:\n${output}`);
+    if (exit !== 0)
+      throw new Error(
+        `${scenario} ${timedOut ? `exceeded ${timeoutMs}ms` : `exited with ${exit} (${child.signalCode})`}:\n${output}`,
+      );
   } finally {
     clearTimeout(timeout);
     killGroup();

@@ -31,10 +31,22 @@ does not establish either guarantee.
 
 ## Shared Task execution coverage
 
+`app-task-feedback.test.ts` owns caller feedback, attention, bounded history and
+exact saved-answer delivery. `app-task-terminal-recovery.test.ts` owns retained
+terminal-session evidence and replacement attempts. The installed runtime suite
+keeps dispatch and executor behavior. All three use a suite-local fixture factory
+with per-case databases, buses and teardown; they never share mutable state.
+Separate files let Bun schedule these contracts independently.
+
 Worker `create-task` is retired. `packages/sdk/src/task-contract.test.ts` rejects
 it; action fencing and rollback tests now mutate existing fixture assignments.
-`src/app/task-worker-integration.test.ts` owns real worker coverage for typed
+`src/app/task-worker-interaction.test.ts` owns real worker coverage for typed
 App delegation, nested A → B → C → B → A, continued human input, and reopen.
+`task-worker-workload.test.ts` owns cross-process funding, shared capacity,
+protected coordination and workload observations. `task-worker-integration.test.ts`
+keeps worker loss, recovery, source pinning, event delivery and compiled-command
+coverage. Every scenario still has its own parent, children and database; separate
+files let the bounded suite worker pool schedule these contracts independently.
 Hierarchy-specific reconciler/state fixtures declare their children through App
 intent; they prove retained parent/child behavior, not typed delegation.
 Completed model harnesses are retired. Their versioned reproduction references
@@ -176,6 +188,69 @@ Human Task detail reads include structured results from retained Task state and
 historical receipts. Their tests keep those results out of compact cards and
 hide old observations while a newer attempt is running; runtime checks verify
 that failure evidence remains readable after a later accepted answer.
+
+## Test cost and fixture boundaries
+
+Keep policy checks separate from the boundary that makes them durable:
+
+- Retirement rules use a fresh in-memory SQLite database per case. CLI checks
+  retain file-backed state, real subprocesses, concurrent reads and reopen.
+- Caller feedback crosses bounded event/history windows with 54 reports once.
+  The explicit attention modes use three reports each, retaining lost feedback,
+  restart, review, first failure, quiet repeated failure and final-answer checks.
+- Comment recovery drops a real socket after the command is sent. The daemon
+  must retain and recover the exact receipt; a colliding receipt must fail.
+  `packages/control/src/client.test.ts` owns actual socket deadline expiration;
+  `http-event-ingress.test.ts` checks the HTTP retry deadlines and disposition.
+- Telegram's stalled-body check observes the real HTTP body read, asserts that
+  its production deadline is still armed, and invokes that deadline. It must
+  abort the real fetch without a second uncertain send. The separate close test
+  retains real transport cancellation and the longer polling deadline.
+- Interaction probes deliberately hold an HTTP response while other worker
+  and human turns run. Their attempt/scenario bounds allow those sequential
+  operations; worker timeout/drain tests keep their own short deadlines.
+  With recovery timers disabled, the probe runs bounded production admission
+  and result recovery after worker exit. Cleanup releases the response barrier
+  before draining, so a failed assertion cannot hide behind a hung teardown.
+- The complete gate uses up to sixteen long-lived Bun processes with built-in file
+  sharding. Imports are reused within a process; mutable fixtures are never
+  shared between cases. CI uses the measured four-process limit through
+  `MAY_TEST_SHARDS=4`; the local default follows available CPUs, capped at sixteen.
+  The command's regression verifies every selected file
+  runs exactly once, all JUnit reports survive, and any shard's failure
+  fails the command. A zero-sized pool cannot silently skip execution.
+  No test discovery or ordering algorithm is maintained here.
+- Maintenance subscription tests close their scheduler generations in teardown.
+  Metric sampling uses a fresh diagnostic observer when asserting a real plan;
+  unrelated tests may already have filled the process-wide query catalog.
+  The end-to-end sampling assertion still requires the actual plan to reach
+  its report, alongside exact costs and failures.
+  `db/query-performance.test.ts` owns real plan capture and catalog limits;
+  `metric-query-metrics.test.ts` owns the bounded plan projection.
+- The browser's saved-session fixture is seeded before daemon startup, with
+  its connection closed before launch. Browser assertions do not race a live
+  daemon writer just to arrange their input.
+
+A speed comparison must use the complete `bun run test` selection on the same
+machine, with the same Node/Bun versions, browser and Docker Compose prerequisites.
+Record wall time, JUnit totals, failures and skips. Count setup/teardown in wall
+time. Reduced coverage, disabled browser checks and automatic retries are not
+speed improvements. Avoid overlapping benchmark runs.
+
+The November 2026 audit used Node 24 and Bun 1.3.14, with Chrome enabled.
+The passing local baseline at `946d3ff4` includes the same fixture correctness
+repairs and took 328.96 seconds for tests (349.05 seconds for `bun run ci`),
+with 4,390 passed and three existing installation-only skips. The hosted main
+reference is [run 43001928873](https://github.com/hao1939/may-agent/actions/runs/43001928873):
+266.67 seconds for the same test selection.
+
+Eight isolated file workers were rejected after hosted CI run
+[43018559976](https://github.com/hao1939/may-agent/actions/runs/43018559976)
+timed out two worker probes under CPU contention. The final implementation
+reuses imports within each process, keeps CI at four processes, and preserves
+per-case mutable state and real browser/worker/restart coverage. Final passing
+measurements and limitations belong in [PR #450](https://github.com/hao1939/may-agent/pull/450).
+These measurements describe this audit; machine load and filesystem cost vary.
 
 ## SDK export contract
 

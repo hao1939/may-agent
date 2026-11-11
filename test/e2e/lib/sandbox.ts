@@ -61,6 +61,8 @@ export interface SandboxSpec {
   startupTimeoutMs?: number;
   /** Capture daemon stdout/stderr to a file in sandbox dir. Default: true. */
   captureLogs?: boolean;
+  /** Seed fixture state before the daemon can contend for its database. */
+  prepare?: (paths: Pick<Sandbox, "root" | "stateDir" | "projectsRoot" | "agentsRoot">) => void;
   /**
    * Include the platform UI under projects/platform/ui by copying the repo's
    * canonical packages/webui/static tree into the sandbox. Required for
@@ -194,6 +196,13 @@ export async function buildSandbox(spec: SandboxSpec = {}): Promise<Sandbox> {
     if (!existsSync(discussionMd)) {
       writeFileSync(discussionMd, `# discussion\n\n`);
     }
+  }
+
+  try {
+    spec.prepare?.({ root, stateDir, projectsRoot, agentsRoot });
+  } catch (error) {
+    rmSync(root, { recursive: true, force: true });
+    throw error;
   }
 
   // ── 2. Spawn daemon ────────────────────────────────────────────────

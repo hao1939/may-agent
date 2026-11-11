@@ -8,6 +8,7 @@ import { createTelegramClient, splitTelegramMessage } from "./telegram-client.js
 function networkFixture(handler?: (request: Request, call: number) => Response | Promise<Response>) {
   const persistDir = mkdtempSync(join(tmpdir(), "telegram-network-"));
   const arrived = Promise.withResolvers<void>();
+  const readingBody = Promise.withResolvers<void>();
   const held = Promise.withResolvers<Response>();
   let calls = 0;
   const server = Bun.serve({
@@ -26,13 +27,22 @@ function networkFixture(handler?: (request: Request, call: number) => Response |
     token: "fixture-token",
     persistDir,
     emitInfo: (message) => messages.push(message),
-    fetchImpl: ((url, init) => nativeFetch(new URL(new URL(String(url)).pathname, server.url), init)) as typeof fetch,
+    fetchImpl: (async (url, init) => {
+      const response = await nativeFetch(new URL(new URL(String(url)).pathname, server.url), init);
+      const readJson = response.json.bind(response);
+      response.json = () => {
+        readingBody.resolve();
+        return readJson();
+      };
+      return response;
+    }) as typeof fetch,
   });
   return {
     client,
     persistDir,
     messages,
     arrived: arrived.promise,
+    readingBody: readingBody.promise,
     calls: () => calls,
     close() {
       client.close();
@@ -52,16 +62,27 @@ describe("telegram client", () => {
       },
     });
     const fixture = networkFixture(() => new Response(stream));
+    const timers = spyOn(globalThis, "setTimeout");
+    const cleared = spyOn(globalThis, "clearTimeout");
     try {
       const result = fixture.client.sendMessage("chat-1", "*hello*", "Markdown");
-      await fixture.arrived;
+      await fixture.readingBody;
+      // Verify the production deadline, then expire it at the exact stalled-body
+      // boundary. The real fetch must abort; no wall-clock wait is needed.
+      const deadlineIndex = timers.mock.calls.findIndex(([, delay]) => delay === 15_000);
+      expect(deadlineIndex).toBeGreaterThanOrEqual(0);
+      const handle = timers.mock.results[deadlineIndex]!.value;
+      expect(cleared.mock.calls.some(([timer]) => timer === handle)).toBe(false);
+      (timers.mock.calls[deadlineIndex]![0] as () => void)();
       await expect(result).resolves.toBeUndefined();
       expect(fixture.calls()).toBe(1);
       expect(fixture.messages.join("\n")).toContain("timed out");
     } finally {
+      timers.mockRestore();
+      cleared.mockRestore();
       fixture.close();
     }
-  }, 25_000);
+  });
 
   it("gives long polling more than the server wait and aborts it on close", async () => {
     const fixture = networkFixture();

@@ -392,12 +392,17 @@ async function delegation(nested = false, contendAdmission = false, onePlace = f
         hostCapacity,
         appRegistry: registry,
         executeAttempt: async (request) => {
-          const result = await run({ ...f, request });
+          // This scenario deliberately holds a real workflow while additional
+          // human/worker turns execute; it is not the worker-timeout regression.
+          const result = await run({ ...f, request }, false, 15_000);
           assert(Array.isArray(result));
           // Exercise ordinary recovery at this exact process boundary instead
           // of waiting for the production 60-second scan. A relayed input can
           // encounter the worker's final SQLite writes and remain pending.
+          // Result projection can encounter the same contention. Timers are
+          // disabled here, so advance both bounded production recovery paths.
           await runtime!.host.recoverAdmissions();
+          await runtime!.host.recoverTaskResults();
           return result;
         },
       },
@@ -558,6 +563,9 @@ async function delegation(nested = false, contendAdmission = false, onePlace = f
           assert.deepEqual(Object.keys(f.store.readSnapshot().resources!).sort(), ids);
           assert.equal(listPendingConversationTaskChanges(f.db, "sample").length, 0);
         } finally {
+          // Release the fixture's HTTP barrier before draining its workers,
+          // including when an assertion or event wait fails while it is held.
+          measurement.resolve();
           runtime?.close();
           await closeInstalledAppTaskRuntimes(f.bus);
         }

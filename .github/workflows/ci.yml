@@ -47,6 +47,8 @@ jobs:
       - name: Verify browser prerequisites
         run: google-chrome --version
       - name: Unit, integration, daemon, browser, and script tests
+        env:
+          MAY_TEST_SHARDS: "4"
         run: |
           mkdir -p test-results
           bun run test --reporter=junit --reporter-outfile=test-results/junit.xml

@@ -1,7 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import type { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import {
   claimObservedAppTask,
   completeAppTask,
@@ -15,60 +13,39 @@ import {
 import { appTaskTestContext } from "./app-task-test-support.js";
 import { readTaskSnapshot } from "./app-task-store.js";
 
-const roots: string[] = [];
+const stores: AppTaskResourceStore[] = [];
 
 function fixture() {
-  const root = join(tmpdir(), `app-task-parent-semantics-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-  roots.push(root);
-  const appDir = join(root, "projects", "sample.app");
-  mkdirSync(join(appDir, "tasks"), { recursive: true });
-  writeFileSync(
-    join(appDir, "tasks", "seed.json"),
-    `${JSON.stringify(
-      {
-        root_task_id: "root",
-        groups: {
-          root: { id: "root", parent_id: null, owner: "app-owner" },
-        },
-        resources: {
-          parent: {
-            metadata: { id: "parent", generation: 1, resourceVersion: 1 },
-            spec: {
-              parentId: "root",
-              outcome: "Keep the parent responsibility healthy",
-              acceptance: ["The parent is healthy"],
-            },
-            status: {
-              observedGeneration: 1,
-              phase: "waiting",
-              updatedAt: "2026-07-20T00:00:00.000Z",
-            },
-          },
-          child: {
-            metadata: { id: "child", generation: 1, resourceVersion: 1 },
-            spec: {
-              parentId: "parent",
-              outcome: "Finish one bounded child",
-              acceptance: ["The child is finished"],
-            },
-            status: {
-              observedGeneration: 0,
-              phase: "pending",
-              updatedAt: "2026-07-20T00:00:00.000Z",
-            },
-          },
-        },
-      },
-      null,
-      2,
-    )}\n`,
-  );
-  return appTaskTestContext({
-    appDir,
+  const config = appTaskTestContext({
+    appDir: "/fixture/sample.app",
     agent: "app-owner",
     maxConcurrent: 2,
-    databasePath: join(root, "host.sqlite"),
+    databasePath: ":memory:",
+    tree: {
+      root_task_id: "root",
+      groups: { root: { id: "root", parent_id: null, owner: "app-owner" } },
+      resources: Object.fromEntries(
+        ["parent", "child"].map((id) => [
+          id,
+          {
+            metadata: { id, generation: 1, resourceVersion: 1 },
+            spec: {
+              parentId: id === "parent" ? "root" : "parent",
+              outcome: `Finish ${id}`,
+              acceptance: ["Verified result"],
+            },
+            status: {
+              observedGeneration: id === "parent" ? 1 : 0,
+              phase: id === "parent" ? "waiting" : "pending",
+              updatedAt: "2026-07-20T00:00:00.000Z",
+            },
+          },
+        ]),
+      ),
+    },
   });
+  stores.push(config.resourceStore);
+  return config;
 }
 
 function claimChild(config: ReturnType<typeof appTaskContext>) {
@@ -83,7 +60,7 @@ function claimChild(config: ReturnType<typeof appTaskContext>) {
 }
 
 afterEach(() => {
-  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+  for (const store of stores.splice(0)) store.close();
 });
 
 describe("Task hierarchy is context, not a return protocol", () => {
@@ -109,7 +86,6 @@ describe("Task hierarchy is context, not a return protocol", () => {
     expect(readAppTaskTrigger(config, "parent")).toBeUndefined();
     expect(listRunnableAppTaskIds(config)).not.toContain("parent");
     expect(readTaskSnapshot(config).resources?.child?.spec.parentId).toBe("parent");
-    config.resourceStore.close();
   });
 
   it("rejects waiting without a Condition even when a child is pending", () => {
@@ -120,6 +96,5 @@ describe("Task hierarchy is context, not a return protocol", () => {
       "requires at least one exact Condition",
     );
     expect(config.resourceStore.readTask("parent")?.status.currentAttemptId).toBe(parent.attemptId);
-    config.resourceStore.close();
   });
 });
