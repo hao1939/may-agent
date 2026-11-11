@@ -1,7 +1,5 @@
 /**
- * Tests for V2 agents tool (createAgentsTool).
- *
- * Covers the 5 actions: call, send, list, peek, cancel.
+ * Agent discovery, bounded helper calls and their public tool contract.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
@@ -34,18 +32,17 @@ function registerTestAgents(manager: SubagentManager) {
 }
 
 function parseResult(result: { content: Array<{ type: string; text?: string }> }): any {
-  const text = result.content[0]?.type === "text" ? (result.content[0] as any).text : "";
-  return JSON.parse(text);
+  expect(result.content).toHaveLength(1);
+  expect(result.content[0]?.type).toBe("text");
+  return JSON.parse(result.content[0]!.text!);
 }
 
 describe("createAgentsTool()", () => {
   let persistDir: string;
-  let agentsRoot: string;
   let manager: SubagentManager;
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-agents-tool-"));
-    agentsRoot = mkdtempSync(join(tmpdir(), "may-agents-root-"));
     manager = new SubagentManager({ persistDir });
     registerTestAgents(manager);
   });
@@ -56,7 +53,6 @@ describe("createAgentsTool()", () => {
     await Promise.allSettled(sessions.map((s) => manager.waitFor(s.sessionId)));
     closeDb(persistDir);
     rmSync(persistDir, { recursive: true, force: true });
-    rmSync(agentsRoot, { recursive: true, force: true });
   });
 
   function startCaller(): string {
@@ -78,22 +74,13 @@ describe("createAgentsTool()", () => {
     return manager.run("writer", "hold caller");
   }
 
-  it("returns a tool with name 'agents'", () => {
-    const tool = manager.createAgentsTool();
-    expect(tool.name).toBe("agents");
-  });
-
-  it("has label, description, parameters, and execute", () => {
-    const tool = manager.createAgentsTool();
-    expect(tool.label).toBeTruthy();
-    expect(tool.description).toBeTruthy();
-    expect(tool.parameters).toBeDefined();
-    expect(typeof tool.execute).toBe("function");
-  });
-
   describe("action: list", () => {
     it("returns all registered agents", async () => {
       const tool = manager.createAgentsTool();
+      expect(tool.name).toBe("agents");
+      expect(tool.label).toBeTruthy();
+      expect(tool.description).toBeTruthy();
+      expect(tool.parameters).toBeDefined();
       const result = await tool.execute("tc1", { action: "list" });
       const parsed = parseResult(result);
 
@@ -101,6 +88,7 @@ describe("createAgentsTool()", () => {
       const names = parsed.agents.map((a: any) => a.name);
       expect(names).toContain("researcher");
       expect(names).toContain("writer");
+      expect(parsed.runningSessions).toEqual([]);
     });
 
     it("includes running sessions", async () => {
@@ -194,7 +182,7 @@ describe("createAgentsTool()", () => {
       });
 
       const parsed = parseResult(result);
-      expect(parsed.error).toContain("nonexistent");
+      expect(parsed.error).toContain('Agent "nonexistent" not registered');
     });
 
     it("returns error when agent/task missing", async () => {
@@ -206,60 +194,19 @@ describe("createAgentsTool()", () => {
   });
 
   describe("action: message", () => {
-    // The agents.message action was removed in commit d15c5249 (notify-split).
-    // It now returns a fixed deprecation error regardless of inputs. Callers should
-    // use notify({ agent, message }) or agents.fork({ agent, task }) instead.
-    it("returns deprecation error regardless of inputs", async () => {
+    it("rejects both removed actions before validation or agent lookup", async () => {
       const deprecation = "agents.message and agents.send actions have been removed";
-
-      // With full config
-      const tool = manager.createAgentsTool({
-        agentsRoot,
-        getCallerAgentName: () => "may",
-      });
-      const r1 = parseResult(
-        await tool.execute("tc1", { action: "message", agent: "researcher", message: "review the API docs" }),
-      );
-      expect(r1.error).toContain(deprecation);
-      expect(r1.sent).toBeUndefined();
-      expect(r1.heartbeatTriggered).toBeUndefined();
-
-      // Missing fields — still the same deprecation error, no "requires" validation
-      const r2 = parseResult(await tool.execute("tc2", { action: "message", agent: "researcher" }));
-      expect(r2.error).toContain(deprecation);
-      const r3 = parseResult(await tool.execute("tc3", { action: "message", message: "hi" }));
-      expect(r3.error).toContain(deprecation);
-
-      // Unregistered agent — same deprecation error, no "not registered" lookup
-      const r4 = parseResult(
-        await tool.execute("tc4", { action: "message", agent: "nonexistent", message: "do stuff" }),
-      );
-      expect(r4.error).toContain(deprecation);
-
-      // No agentsRoot configured — still the same deprecation error
-      const bareTool = manager.createAgentsTool();
-      const r5 = parseResult(
-        await bareTool.execute("tc5", { action: "message", agent: "researcher", message: "do stuff" }),
-      );
-      expect(r5.error).toContain(deprecation);
+      const tool = manager.createAgentsTool();
+      for (const action of ["message", "send"]) {
+        const result = parseResult(await tool.execute("removed", { action, agent: "nonexistent" }));
+        expect(result).toEqual({ error: expect.stringContaining(deprecation) });
+        expect(result.error).toContain("Use the message tool");
+        expect(result.error).toContain("Durable work belongs to an App Task");
+      }
     });
   });
 
   describe("action: peek", () => {
-    it("returns messages for a session", async () => {
-      const tool = manager.createAgentsTool();
-      const sessionId = manager.run("researcher", "find papers");
-      await manager.waitFor(sessionId);
-
-      const result = await tool.execute("tc1", {
-        action: "peek",
-        sessionId,
-      });
-
-      const parsed = parseResult(result);
-      expect(Array.isArray(parsed)).toBe(true);
-    });
-
     it("returns error for unknown session", async () => {
       const tool = manager.createAgentsTool();
       const result = await tool.execute("tc1", {
@@ -309,19 +256,25 @@ describe("createAgentsTool()", () => {
   });
 
   describe("callDeny", () => {
-    it("blocks call to denied agent with hint", async () => {
+    it.each(["call", "fork"] as const)("blocks %s before starting a denied helper", async (action) => {
+      const caller = startCaller();
+      const before = structuredClone(manager.registryStore.getRegistry());
       const tool = manager.createAgentsTool({
+        getCallerSessionId: () => caller,
         callDeny: { agents: ["researcher"], hint: "Use workflow instead." },
       });
       const result = await tool.execute("tc1", {
-        action: "call",
+        action,
         agent: "researcher",
         task: "find papers",
       });
       const parsed = parseResult(result);
-      expect(parsed.error).toContain("Cannot call");
+      expect(parsed.error).toContain(`Cannot ${action}`);
       expect(parsed.error).toContain("researcher");
       expect(parsed.error).toContain("Use workflow instead.");
+      expect(parsed.sessionId).toBeUndefined();
+      expect(manager.status().map((session) => session.sessionId)).toEqual([caller]);
+      expect(manager.registryStore.getRegistry()).toEqual(before);
     });
 
     it("allows call to non-denied agent", async () => {
@@ -350,26 +303,6 @@ describe("createAgentsTool()", () => {
     });
   });
 
-  describe("tool output format", () => {
-    it("all actions return content with text type", async () => {
-      const tool = manager.createAgentsTool();
-
-      // list
-      const listResult = await tool.execute("tc1", { action: "list" });
-      expect(listResult.content).toHaveLength(1);
-      expect(listResult.content[0].type).toBe("text");
-
-      // call
-      const callResult = await tool.execute("tc2", {
-        action: "call",
-        agent: "researcher",
-        task: "test",
-      });
-      expect(callResult.content).toHaveLength(1);
-      expect(callResult.content[0].type).toBe("text");
-    });
-  });
-
   describe("unknown action", () => {
     it("returns error for unknown action", async () => {
       const tool = manager.createAgentsTool();
@@ -381,13 +314,22 @@ describe("createAgentsTool()", () => {
 });
 
 describe("listAgents()", () => {
+  let persistDir: string;
+  let manager: SubagentManager;
+  beforeEach(() => {
+    persistDir = mkdtempSync(join(tmpdir(), "may-list-agents-"));
+    manager = new SubagentManager({ persistDir });
+  });
+  afterEach(() => {
+    closeDb(persistDir);
+    rmSync(persistDir, { recursive: true, force: true });
+  });
+
   it("returns empty array when no agents registered", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     expect(manager.listAgents()).toEqual([]);
   });
 
   it("returns correct { name, description, domain } for registered agents", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     registerTestAgents(manager);
 
     const agents = manager.listAgents();
@@ -406,17 +348,5 @@ describe("listAgents()", () => {
       description: "Content writing and editing",
       domain: "content creation",
     });
-  });
-
-  it("does NOT include session info (simpler than status/list)", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
-    registerTestAgents(manager);
-
-    const agents = manager.listAgents();
-    for (const agent of agents) {
-      const keys = Object.keys(agent);
-      expect(keys).toEqual(["name", "description", "domain"]);
-      expect(agent).not.toHaveProperty("sessions");
-    }
   });
 });

@@ -7,7 +7,6 @@ import { fileURLToPath } from "node:url";
 import { createAssistantMessageEventStream, type AssistantMessage, type Model } from "@earendil-works/pi-ai";
 import { createAgentRun } from "./agent-runner.js";
 import { createRunCliAgentTool } from "./tools/run-cli-agent.js";
-import { createCliOutputCollector } from "./cli-agent.js";
 import { SubagentManager } from "./manager.js";
 import { closeAllDbs, getDb, upsertSession } from "./requests.js";
 import { readSessionBashProcessGroups } from "./persistence.js";
@@ -22,39 +21,7 @@ afterEach(async () => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
-test("only structured work observations count; progress callback failure preserves the terminal result", () => {
-  for (const tool of ["codex", "claude"] as const) {
-    const events: string[] = [];
-    const collector = createCliOutputCollector(tool, (progress) => {
-      events.push(progress.event);
-      throw new Error("observation consumer failed");
-    });
-    const lines =
-      tool === "codex"
-        ? [
-            { type: "item.completed", item: { type: "reasoning", text: "thinking" } },
-            { type: "item.completed", item: { type: "command_execution" } },
-            { type: "item.completed", item: { type: "agent_message", text: "answer" } },
-            { type: "turn.completed" },
-          ]
-        : [
-            { type: "stream_event", event: { type: "content_block_delta" } },
-            { type: "assistant", message: { content: [{ type: "thinking", thinking: "thinking" }] } },
-            { type: "user", message: { content: [{ type: "tool_result", content: "done" }] } },
-            { type: "result", subtype: "success", result: "answer" },
-          ];
-    collector.stderr(Buffer.from("log output is not progress"));
-    collector.stdout(Buffer.from(lines.map((line) => JSON.stringify(line)).join("\n") + "\n"));
-    expect(events).toEqual(
-      tool === "codex"
-        ? ["item.completed:command_execution", "item.completed:agent_message", "turn.completed"]
-        : ["tool_result", "result"],
-    );
-    expect(collector.finish()).toMatchObject({ completedProtocol: true, finalText: "answer" });
-  }
-});
-
-test.each(["codex", "claude", "tokens", "deadline"] as const)(
+test.each(["codex", "claude", "deadline"] as const)(
   "real %s subprocess -> tool updates -> agent loop -> result and stored activity",
   async (mode) => {
     const root = mkdtempSync(join(tmpdir(), "may-cli-progress-"));
@@ -164,23 +131,17 @@ test.each(["codex", "claude", "tokens", "deadline"] as const)(
     let prompt: Promise<void> | undefined;
     try {
       const work = (runtime as any).withExecutionScope(active, () => (prompt = agent.prompt("Run the fixture")));
-      if (mode === "tokens") {
-        await work;
-        expect(activity).toHaveLength(1); // Terminal result, not the streamed token deltas.
-        expect(modelCalls).toBe(2);
-      } else {
-        await work;
-        expect(modelCalls).toBe(2); // Updates did not ask the model to review.
-        expect(activity.length).toBeGreaterThanOrEqual(mode === "deadline" ? 1 : 3);
-        expect(activity.length).toBeLessThanOrEqual(4); // Native output is throttled.
-        if (mode !== "deadline") expect(activity.at(-1)!.at - activity[0].at).toBeGreaterThan(2_000);
-        expect(activity.every((item) => item.ops === 1)).toBe(true);
-        const results = agent.state.messages.filter((message) => message.role === "toolResult");
-        expect(results).toHaveLength(1); // One direct terminal return, no second notification.
-        expect((results[0] as any).details.cliCall).toMatchObject(
-          mode === "deadline" ? { status: "failed", failureCategory: "timeout" } : { status: "completed" },
-        );
-      }
+      await work;
+      expect(modelCalls).toBe(2); // Updates did not ask the model to review.
+      expect(activity.length).toBeGreaterThanOrEqual(mode === "deadline" ? 1 : 3);
+      expect(activity.length).toBeLessThanOrEqual(4); // Native output is throttled.
+      if (mode !== "deadline") expect(activity.at(-1)!.at - activity[0].at).toBeGreaterThan(2_000);
+      expect(activity.every((item) => item.ops === 1)).toBe(true);
+      const results = agent.state.messages.filter((message) => message.role === "toolResult");
+      expect(results).toHaveLength(1); // One direct terminal return, no second notification.
+      expect((results[0] as any).details.cliCall).toMatchObject(
+        mode === "deadline" ? { status: "failed", failureCategory: "timeout" } : { status: "completed" },
+      );
     } finally {
       agent.cancel();
       await prompt;

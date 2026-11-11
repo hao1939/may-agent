@@ -60,23 +60,6 @@ describe("agents tool", () => {
     } catch {}
   });
 
-  it("list returns registered agents and no running sessions", async () => {
-    manager.register({
-      name: "coder",
-      description: "Writes code",
-      domain: "coding",
-      model: mockModel(),
-      tools: [echoTool()],
-    });
-
-    const tool = manager.createAgentsTool();
-    const result = await callTool(tool, { action: "list" });
-
-    expect(result.agents).toHaveLength(1);
-    expect(result.agents[0].name).toBe("coder");
-    expect(result.runningSessions).toHaveLength(0);
-  });
-
   it("exposes persisted execution as sessions without a request lifecycle action", async () => {
     const tool = manager.createAgentsTool();
     const result = await callTool(tool, { action: "sessions", filter: "all" });
@@ -111,36 +94,6 @@ describe("agents tool", () => {
       ]);
     }
     expect((await callTool(tool, { action: "sessions", filter: "all", limit: 1 })).sessions).toHaveLength(1);
-  });
-
-  it("call without agent/task returns error", async () => {
-    const tool = manager.createAgentsTool();
-    const result = await callTool(tool, { action: "call" });
-    expect(result.error).toContain("requires");
-  });
-
-  it("call to unregistered agent returns error", async () => {
-    const tool = manager.createAgentsTool();
-    const result = await callTool(tool, { action: "call", agent: "nonexistent", task: "test" });
-    expect(result.error).toContain("not registered");
-  });
-
-  it("call with denied agent returns error", async () => {
-    manager.register({
-      name: "coder",
-      description: "Writes code",
-      domain: "coding",
-      model: mockModel(),
-      tools: [echoTool()],
-    });
-
-    const tool = manager.createAgentsTool({
-      callDeny: { agents: ["coder"], hint: "Use tech-lead instead" },
-    });
-
-    const result = await callTool(tool, { action: "call", agent: "coder", task: "test" });
-    expect(result.error).toContain("Cannot call");
-    expect(result.error).toContain("Use tech-lead instead");
   });
 
   it.each(["call", "fork"] as const)("%s shares a readable guide without selecting the receiver's skill", async (action) => {
@@ -235,13 +188,6 @@ describe("agents tool", () => {
     manager.activeSessions.clear();
   });
 
-  it("cancel on non-existent session reports an unknown owner", async () => {
-    const tool = manager.createAgentsTool();
-    const result = await callTool(tool, { action: "cancel", sessionId: "s_nonexistent" });
-    expect(result.error).toContain("not known");
-    expect(result.cancelled).toBeUndefined();
-  });
-
   it("rejects Task sessions but allows the caller's live bounded helper", async () => {
     const binding = { appId: "sample", taskId: "work", generation: 1, attemptId: "attempt" };
     const cancelled: string[] = [];
@@ -310,25 +256,6 @@ describe("agents tool", () => {
         { id: "standalone-child", message: { role: "user", content: [{ type: "text", text: "Continue" }] } },
       ]);
     } finally { manager.activeSessions.clear(); }
-  });
-
-  it("peek without sessionId returns error", async () => {
-    const tool = manager.createAgentsTool();
-    const result = await callTool(tool, { action: "peek" });
-    expect(result.error).toContain("requires");
-  });
-
-  it.each(["message", "send"])("directs retired %s calls to the supported tools", async (action) => {
-    const result = await callTool(manager.createAgentsTool(), { action, agent: "worker", message: "Review" });
-    expect(result.error).toContain("Use the message tool");
-    expect(result.error).toContain("Durable work belongs to an App Task");
-    expect(result.sent).toBeUndefined();
-  });
-
-  it("unknown action returns error", async () => {
-    const tool = manager.createAgentsTool();
-    const result = await callTool(tool, { action: "unknown" as any });
-    expect(result.error).toContain("Unknown action");
   });
 
   it("call rejects when target matches a tool in caller's toolset", async () => {
@@ -519,6 +446,7 @@ describe("callAgent depth limit", () => {
   });
 
   afterEach(() => {
+    closeDb(persistDir);
     try {
       rmSync(persistDir, { recursive: true, force: true });
     } catch {}
