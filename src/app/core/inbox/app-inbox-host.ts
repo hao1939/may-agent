@@ -434,6 +434,17 @@ export class AppInboxHost {
     return getAppInboxItem(this.#db, id);
   }
 
+  /** Progress received input through the same guarded operation as bounded recovery. */
+  recoverAdmission(id: string): void {
+    if (this.#closed) return;
+    const item = this.get(id);
+    if (!item || !this.#apps.has(item.appId)) return;
+    if (item.waitingOn?.kind === "task" && !item.lease) return;
+    if (item.status === "done") {
+      if (item.reviewAt === undefined || item.reviewAt <= this.#now()) this.#reportRejection(item);
+    } else this.#admitTask(item);
+  }
+
   stopTurn(target: AppTurnTarget): void {
     this.#requiredApp(target.appId);
     if (!this.#stopConversationTurn) throw new Error("Conversation Task control is not configured");
@@ -661,11 +672,7 @@ export class AppInboxHost {
     this.#admissionCursor = rows.length === 64 ? String(rows.at(-1)!.id) : undefined;
     for (const row of rows) {
       if (this.#closed) return;
-      const item = this.get(String(row.id));
-      if (item && this.#apps.has(item.appId)) {
-        if (item.status === "done") this.#reportRejection(item);
-        else this.#admitTask(item);
-      }
+      this.recoverAdmission(String(row.id));
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
     }
   }

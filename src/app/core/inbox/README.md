@@ -11,6 +11,10 @@ original Event; it neither runs the mapper nor advances admission. Conflicting
 payload, explicit destination or provenance fails before Event correlation.
 A received input is not proof of Task creation, fulfillment, caller delivery or
 creator closure. Ordinary recovery advances pending admission independently.
+Event receivers acknowledge the receipt and then request guarded admission
+progress through the same operation as recovery. Delegated input saved by its
+caller therefore progresses on first delivery; funding, retry deadlines and
+committed attachment still apply. Receipt lookup alone does not run admission.
 Public Event ingress also recognizes exact saved input publications before
 current App validation. Canonical source and payload must match. Submission
 receipt replay is declared by the ingress definition; Task and Session controls

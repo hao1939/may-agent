@@ -221,6 +221,8 @@ describe("App inbox host", () => {
       expect(saved.status).toBe("pending");
       host.replaceApps([{ ...installed, inputSchema: Type.Never() }]);
       expect(admit(host, "retained")).toEqual(saved);
+      host.recoverAdmission(saved.id);
+      expect(host.get(saved.id)).toEqual(saved);
       expect(mappings).toBe(1);
       expect(() => admit(host, "new-invalid")).toThrow("Invalid input");
       host.replaceApps([installed]);
@@ -231,6 +233,7 @@ describe("App inbox host", () => {
       expect(attached.waitingOn?.id).toBe("probe/retained");
       host.replaceApps([{ ...installed, inputSchema: Type.Never() }]);
       expect(admit(host, "retained")).toEqual(attached);
+      host.recoverAdmission(saved.id);
       await host.recoverAdmissions();
       expect(mappings).toBe(2);
     } finally {

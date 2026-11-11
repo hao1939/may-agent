@@ -36,6 +36,7 @@ import {
 } from "../core/events/bus.js";
 import {
   AppInboxHost,
+  type AdmitAppInput,
   type AppInboxFailure,
   type AppTaskAttacher,
   type AppInboxHostOptions,
@@ -424,6 +425,13 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       );
     },
   });
+  const receiveInput = (input: AdmitAppInput) => {
+    const receipt = host.admit(input);
+    // Delegating callers save input before publication. Receipt reuse alone
+    // must not postpone first receiver processing until the recovery timer.
+    if (!receipt.created) host.recoverAdmission(receipt.item.id);
+    return receipt;
+  };
   let closed = false;
   let started = false;
   let startPromise: Promise<void> | null = null;
@@ -624,7 +632,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     const identity = `event:${plan.eventId}`;
     try {
       if (command.kind === "inbox") {
-        host.admit(appEventInboxSubmission(plan.eventId, command));
+        receiveInput(appEventInboxSubmission(plan.eventId, command));
       }
       if (command.kind === "task" || command.kind === "exact-task" || command.conditionTaskIds.length > 0) {
         const entry = loadedById.get(command.appId);
@@ -919,7 +927,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         }
         const candidates = host.matchingAppIds(message.targetOwner, message.input);
         if (candidates.length === 1) {
-          const admitted = host.admit({
+          const admitted = receiveInput({
             appId: candidates[0]!,
             source:
               message.sourceAppId && host.isOwnedApp(message.sourceAppId, message.sender)
@@ -993,7 +1001,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           const focusedConversationTask = Boolean(
           focusedAppId === appId && focusedTaskId && hasConversationExecutionTask(options.db, appId, focusedTaskId),
           );
-          const admitted = host.admit({
+          const admitted = receiveInput({
             appId,
             ...(focusedAppId === appId && focusedTaskId && !focusedConversationTask
               ? { targetTaskId: focusedTaskId }
@@ -1084,7 +1092,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       if (event.type === "app.input.requested") {
         const appId = typeof data.appId === "string" ? data.appId.trim() : "";
         const identity = eventIdentity(event);
-        const admitted = host.admit({
+        const admitted = receiveInput({
           id: typeof data.requestId === "string" ? data.requestId.trim() || undefined : undefined,
           appId,
           source: inputSource(data.source, identity ?? `event:${event.type}`),
