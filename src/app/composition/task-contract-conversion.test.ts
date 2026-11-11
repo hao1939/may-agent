@@ -283,6 +283,86 @@ test("conversion refuses orphan execution or frozen old settlement without parti
   expect(f.snapshot()).toEqual(frozen);
 });
 
+test("conversion tolerates inert pre-metadata session directories and unaffected sibling App history while fencing converted Apps", () => {
+  const f = fixture();
+  mkdirSync(join(f.root, "sessions/s_legacy_pre_meta"), { recursive: true });
+  writeFileSync(join(f.root, "sessions/s_legacy_pre_meta/session.jsonl"), "");
+  mkdirSync(join(f.root, "sessions/s_legacy_empty_active"), { recursive: true });
+  writeFileSync(join(f.root, "sessions/s_legacy_empty_active/[ACTIVE]"), "");
+  mkdirSync(join(f.root, "sessions/s_sibling_helper"), { recursive: true });
+  writeFileSync(
+    join(f.root, "sessions/s_sibling_helper/meta.json"),
+    JSON.stringify({
+      sessionId: "s_sibling_helper",
+      agent: "scout",
+      task: "scan",
+      status: "running",
+      startedAt: 1,
+      taskBinding: { appId: "unaffected-sibling", taskId: "scan", generation: 1, attemptId: "r_1" },
+    }),
+  );
+
+  const siblingStore = AppTaskResourceStore.fromDb(f.db, "unaffected-sibling");
+  siblingStore.bootstrapSnapshot(
+    { project: "unaffected-sibling", root_task_id: "root", groups: { root: { id: "root", parent_id: null } } },
+    "seed",
+  );
+  const siblingConfig = appTaskContext({
+    appDir: f.root,
+    projectDir: f.root,
+    agent: "scout",
+    resourceStore: siblingStore,
+  });
+  const siblingItem = admitConversationTaskInput(siblingConfig, {
+    appId: "unaffected-sibling",
+    id: "sibling-work",
+    conversationId: "sibling-chat",
+    source: { kind: "human", id: "user" },
+    input: { kind: "message", data: { text: "Already current" } },
+    intent: {
+      executor: "agent",
+      parentId: "root",
+      outcome: "Sibling task",
+      acceptance: ["Keep isolated"],
+    },
+  });
+  const siblingClaim = claimObservedAppTask(siblingConfig, {
+    taskId: siblingItem.taskId,
+    appAgent: "scout",
+    handler: "executor:agent",
+  });
+  expect(siblingClaim.kind).toBe("claimed");
+
+  // Converted App ("sample") still rejects its own running session metadata.
+  mkdirSync(join(f.root, "sessions/s_sample_running"), { recursive: true });
+  writeFileSync(
+    join(f.root, "sessions/s_sample_running/meta.json"),
+    JSON.stringify({
+      sessionId: "s_sample_running",
+      agent: "worker",
+      task: "turn",
+      status: "running",
+      startedAt: 1,
+      taskBinding: { appId: f.app.id, taskId: f.item.taskId, generation: 1, attemptId: "r_sample" },
+    }),
+  );
+  expect(() => f.convert()).toThrow("confirmed cleanup");
+
+  writeFileSync(
+    join(f.root, "sessions/s_sample_running/meta.json"),
+    JSON.stringify({
+      sessionId: "s_sample_running",
+      agent: "worker",
+      task: "turn",
+      status: "interrupted",
+      startedAt: 1,
+      endedAt: 2,
+      taskBinding: { appId: f.app.id, taskId: f.item.taskId, generation: 1, attemptId: "r_sample" },
+    }),
+  );
+  expect(f.convert()).toEqual({ tasks: 1, routes: 1 });
+});
+
 test.each(["inline", "artifact", "pre-envelope"])(
   "conversion restores the exact %s event payload for object selectors and input mapping",
   (format) => {
