@@ -457,6 +457,41 @@ describe("bounded native CLI call", () => {
 });
 
 describe("native protocol collector", () => {
+  it("only structured work observations count; progress callback failure preserves the terminal result", () => {
+    for (const tool of ["codex", "claude"] as const) {
+      const events: string[] = [];
+      const collector = createCliOutputCollector(tool, (progress) => {
+        events.push(progress.event);
+        throw new Error("observation consumer failed");
+      });
+      const lines =
+        tool === "codex"
+          ? [
+              { type: "item.updated", item: { type: "reasoning", text: "thinking" } },
+              { type: "item.completed", item: { type: "reasoning", text: "thinking" } },
+              { type: "item.completed", item: { type: "command_execution" } },
+              { type: "item.completed", item: { type: "agent_message", text: "answer" } },
+              { type: "turn.completed" },
+            ]
+          : [
+              {
+                type: "stream_event",
+                event: { type: "content_block_delta", delta: { type: "text_delta", text: "thinking" } },
+              },
+              { type: "assistant", message: { content: [{ type: "thinking", thinking: "thinking" }] } },
+              { type: "user", message: { content: [{ type: "tool_result", content: "done" }] } },
+              { type: "result", subtype: "success", result: "answer" },
+            ];
+      collector.stderr(Buffer.from("log output is not progress"));
+      collector.stdout(Buffer.from(lines.map((line) => JSON.stringify(line)).join("\n") + "\n"));
+      expect(events).toEqual(
+        tool === "codex"
+          ? ["item.completed:command_execution", "item.completed:agent_message", "turn.completed"]
+          : ["tool_result", "result"],
+      );
+      expect(collector.finish()).toMatchObject({ completedProtocol: true, finalText: "answer" });
+    }
+  });
   it("keeps Unicode intact and diagnostics bounded while parsing verbose output", () => {
     const collector = createCliOutputCollector("codex");
     collector.stderr(Buffer.from("permission denied"));

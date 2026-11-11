@@ -172,6 +172,11 @@ a provider name.
 `manager-agents-tool.ts` offers bounded `call` and `fork` using a `task`
 description, optional context files and success criteria.
 A fork remains owned by its live caller. Durable outcomes use App Tasks.
+Call and fork resolve helper definitions from the owning Task's captured catalog
+when present, falling back to the registry for uncaptured names and direct
+sessions. App-boundary checks use that same resolved definition. Replacing or
+unregistering a captured name cannot silently change an attempt's helper or its
+App ownership. The caller's accepted definition still controls caller authority.
 `sessions` returns full session IDs usable by `peek` and permitted `cancel`
 operations; only display text is shortened.
 

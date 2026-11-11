@@ -12,6 +12,9 @@ import { closeDb, getDb } from "./db/connection.js";
 import { createTaskSessionRecovery } from "../app/adapters/executors/session-recovery.js";
 import { SubagentManager } from "./manager.js";
 import { appendSessionMessage, readSessionMeta, readSessionRecoveryEvidence, writeSessionMeta } from "./persistence.js";
+import type { TaskExecutionContext } from "./task-execution-context.js";
+import type { SubagentDefinition } from "./types.js";
+import type { TaskDetail } from "@may-agent/sdk";
 
 function definition(version: string) {
   return {
@@ -22,6 +25,42 @@ function definition(version: string) {
     model: { ...fakeModel(), id: version },
     tools: [],
   };
+}
+
+function taskContext(root: string, definitions: ReadonlyMap<string, SubagentDefinition>): TaskExecutionContext {
+  const task: TaskDetail = {
+    id: "review",
+    parentId: "root",
+    generation: 1,
+    resourceVersion: 1,
+    status: "running",
+    outcome: "Review the candidate",
+    acceptance: [],
+    input: {},
+    conditions: [],
+    acceptedEvidence: { available: true, maxPageSize: 8 },
+    currentObligations: { available: false },
+  };
+  return {
+    taskBinding: { appId: "sample", taskId: task.id, generation: 1, attemptId: "attempt-1" },
+    recoveryOwner: "app-task",
+    executionPaths: { appDir: root, projectDir: root, workspaceDir: root },
+    reconciliation: {
+      task,
+      appId: "sample",
+      taskId: task.id,
+      generation: 1,
+      resourceVersion: 1,
+      agent: "worker",
+      outcome: task.outcome,
+      acceptance: [],
+      input: {},
+      events: { items: [], truncated: false },
+    },
+    taskRead: { get: async () => task },
+    observeEvents: () => () => {},
+    agentDefinitions: definitions,
+  } as unknown as TaskExecutionContext;
 }
 
 describe("manager session lifecycle", () => {
@@ -232,6 +271,75 @@ describe("manager session lifecycle", () => {
       systemPrompt: expect.stringContaining("Instructions for captured"),
     });
   });
+
+  it.each(["call", "fork"] as const)(
+    "%s executes the Task's captured helper after registry replacement",
+    async (action) => {
+      const captured = { ...definition("captured"), name: "helper" };
+      manager.register(captured);
+      const context = taskContext(persistDir, new Map([[captured.name, captured]]));
+      holdReplies = true;
+      const caller = manager.run("worker", "Coordinate the review", { taskContext: context });
+      await started.promise;
+      manager.register({ ...definition("replacement"), name: "helper" });
+      holdReplies = false;
+
+      for (const replacement of ["public", "private", "removed"] as const) {
+        if (replacement === "private")
+          manager.register({
+            ...definition("replacement"),
+            name: "helper",
+            appLocal: true,
+            projectId: "another-app",
+          });
+        if (replacement === "removed") manager.unregister("helper");
+        const response = await manager.createAgentsTool({ getCallerSessionId: () => caller }).execute("delegate", {
+          action,
+          agent: "helper",
+          task: "Inspect the candidate",
+        });
+        const result = JSON.parse((response.content[0] as { text: string }).text);
+        expect(result.error).toBeUndefined();
+        expect(await manager.waitFor(result.sessionId)).toMatchObject({
+          status: "done",
+          lastAssistantText: "Reply from captured",
+        });
+        expect(requests.at(-1)).toMatchObject({
+          model: "captured",
+          systemPrompt: expect.stringContaining("Instructions for captured"),
+        });
+      }
+    },
+  );
+
+  it.each(["call", "fork"] as const)(
+    "%s checks the captured helper's App boundary before any execution",
+    async (action) => {
+      const captured = { ...definition("private"), name: "helper", appLocal: true, projectId: "another-app" };
+      manager.register(captured);
+      const context = taskContext(persistDir, new Map([[captured.name, captured]]));
+      holdReplies = true;
+      const caller = manager.run("worker", "Coordinate the review", { taskContext: context });
+      await started.promise;
+      // Reloading the same name as a public agent cannot grant access to the
+      // private definition retained by this attempt.
+      manager.register({ ...definition("replacement"), name: "helper" });
+      holdReplies = false;
+      const before = structuredClone(manager.registryStore.getRegistry());
+
+      const response = await manager.createAgentsTool({ getCallerSessionId: () => caller }).execute("delegate", {
+        action,
+        agent: "helper",
+        task: "Inspect the candidate",
+      });
+      const result = JSON.parse((response.content[0] as { text: string }).text);
+      expect(result.error).toContain('app-local to "another-app"');
+      expect(result.sessionId).toBeUndefined();
+      expect(requests).toHaveLength(1);
+      expect(manager.status().map((session) => session.sessionId)).toEqual([caller]);
+      expect(manager.registryStore.getRegistry()).toEqual(before);
+    },
+  );
 
   it("rejects a premature result and resolves concurrent waiters to the completed result", async () => {
     holdReplies = true;

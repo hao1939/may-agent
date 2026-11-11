@@ -53,6 +53,44 @@ Completed model harnesses are retired. Their versioned reproduction references
 and findings are linked from the [script guide](../scripts/README.md#retired-experiments).
 Portable runtime tests do not claim to reproduce model judgment.
 
+## Cooperation and native execution contracts
+
+Use the execution design in [the hosted source map](../src/lib/README.md) to
+choose a test's boundary. A helper contributes within a live attempt; its
+session/result is evidence, not a second Task or closure authority.
+
+| Contract | Owning evidence |
+| --- | --- |
+| Public agent-tool discovery, argument errors and denied calls/forks | `src/lib/create-tool.test.ts`: invoke the tool, check meaningful results and reject helper identities/state changes on denial; exact `listAgents()` objects also reject private fields |
+| Exact helper identity, App access, follow-up, cancellation and truthful contributions | `src/lib/agents-tool.test.ts`; `manager-lifecycle.test.ts` additionally observes real model requests using captured definitions after registry replacement/removal |
+| Live caller, inherited allowance, cancellation and joined cleanup | `execution-scope.test.ts`, `cascading-cancel.test.ts`, and `manager-task-budget.test.ts`; these retain real lifecycle and resource ownership checks |
+| Native protocol progress vs reasoning/token noise | `cli-agent.test.ts` invokes the production collector with each provider's own envelopes and a throwing observer |
+| Native process → tool update → model loop → stored activity | `cli-progress.test.ts` retains Codex, Claude and timeout processes, throttling, one terminal return and process-group cleanup |
+| Managed Codex startup config | `test/integration/codex-startup-config.test.ts` executes setup in isolated homes, parses generated TOML and checks defaults, overrides, endpoint normalization and trusted-hook replay |
+
+The contract cleanup removes duplicate list, argument, deprecation and unknown
+session/action checks from `agents-tool.test.ts`; their detailed owner is
+`create-tool.test.ts`. Tool metadata and response-shape assertions run with
+meaningful invocations, rather than separate manager fixtures. The old peek
+array-only check yields to exact persisted messages read by full session ID.
+Exact list objects replace property-order assertions. Removed-action correction
+still covers both `message` and `send` before lookup/validation.
+
+The retired token-only subprocess fed Claude envelopes to the Codex collector.
+It could pass without proving either protocol's noise filtering; the owning
+collector test now checks valid envelopes directly. Both real protocol pipelines
+remain. Source-string startup cases yield to generated-output assertions, with
+bounded asynchronous setup and no inherited credentials or installation paths.
+
+This audit also exposed an implementation gap: fork selected the live registry,
+while call could execute a captured helper after authorizing its replacement.
+Both now use the same definition lookup for authorization and execution. Four
+real-execution regressions cover call/fork version retention and forbidden App
+access without a model request, session identity or saved-state change. Existing
+caller-definition tests remain a separate authority boundary. Recovery, real
+worker/restart, concurrent storage and browser cases are not duplicates of these
+checks and remain in the portable gate.
+
 
 Conversation is a Task's human-facing role. Tests exercise its handler through
 the same Task claim, attempt and recovery used for delegated work.
