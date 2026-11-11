@@ -85,7 +85,8 @@ async function taskWorkspaceRequirement(
     source: opts, appDir: descriptor.appDir, agent: input.agent, workflow,
   })).workspace : undefined;
   const workflowNeedsWorktree = workspace === "task" || (typeof workspace === "object" && workspace.kind === "task");
-  const required = workflowNeedsWorktree || (!workflow && descriptor.app.workspace?.kind === "git");
+  const required = workflowNeedsWorktree ||
+    (!workflow && !isConversationTask(config, input.intent.id) && descriptor.app.workspace?.kind === "git");
   const preparation: TaskWorkspaceInput | undefined = required && descriptor.app.workspace?.kind === "git" ? {
     repoDir: descriptor.projectDir,
     workspaceRoot: join(opts.projectRoot, "worktrees", descriptor.id),
@@ -283,7 +284,6 @@ async function runClaimedTask(
   let workspaceFinalized = false;
   try {
     executionPaths = appTaskExecutionPaths(descriptor.appDir, descriptor.projectDir);
-    const conversation = isConversationTask(config, claim.taskId);
     const childContext = readAppTaskChildContext(config, claim.taskId);
     const taskSnapshot = readAppTaskLiveSnapshot(config, claim.taskId);
     emit("project.task.reconcile.started", {
@@ -347,7 +347,7 @@ async function runClaimedTask(
       report = await runTaskExecutorAttempt({
         ...execution,
         execute: (attempt, taskEvents, acceptedLiveEventIds) =>
-          executeTaskHandler({ ...execution, attempt, taskEvents, acceptedLiveEventIds, conversation }),
+          executeTaskHandler({ ...execution, attempt, taskEvents, acceptedLiveEventIds }),
       });
     }
     const result = report.handlerResult;
@@ -451,7 +451,7 @@ async function runClaimedTask(
           claim,
           changes: {
             requests: result.requests,
-            communication: taskResultCommunication(config, claim, result),
+            communication: taskResultCommunication(config, claim, result, report.acceptedLiveEventIds),
             actions: result.actions,
             facts: result.facts,
             inputKeys: result.inputKeys,
@@ -473,7 +473,7 @@ async function runClaimedTask(
           applyTaskChanges({
             ...changeInput,
             settle: () => {
-              assertCommunicationRequestsSettled(config, claim, result.inputKeys);
+              assertCommunicationRequestsSettled(config, claim, result.inputKeys, report.acceptedLiveEventIds);
               apply = completeAppTask(config, claim, {
                 summary: result.summary,
                 response: result.response,
@@ -810,11 +810,10 @@ async function runClaimedTask(
 }
 
 /** Select the recorded handler. All paths share Task lifetime and result settlement. */
-async function executeTaskHandler(input: TaskHandlerInput & { conversation: boolean }): Promise<TaskCapabilityRun> {
-  const { conversation, ...context } = input;
-  const { opts, claim } = context;
+async function executeTaskHandler(input: TaskHandlerInput): Promise<TaskCapabilityRun> {
+  const { opts, claim } = input;
   const execution = {
-    ...context,
+    ...input,
     ...(claim.handoff
       ? {
           fallbackReason: `${claim.handoff.reason}: ${claim.handoff.summary}${
@@ -825,7 +824,7 @@ async function executeTaskHandler(input: TaskHandlerInput & { conversation: bool
         }
       : {}),
   };
-  if (conversation && claim.handler === "executor:conversation") {
+  if (claim.handler === "executor:conversation") {
     throw new Error("Retained Conversation execution requires offline conversion to executor:agent");
   }
   const workflowKey = claim.handler.startsWith("workflow:") ? claim.handler.slice("workflow:".length) : "";

@@ -1,8 +1,10 @@
-import { matchesEventSelector, type AppDefinition, type AppEvent } from "@may-agent/sdk";
+import { matchesEventSelector, type AppDefinition } from "@may-agent/sdk";
 import type { SqliteDb } from "../../lib/db.js";
 import { advanceTaskResourceRevision } from "../../lib/db/task-resource-schema.js";
 import { stateTransaction } from "../../lib/db/transaction.js";
+import { canonicalAppEvent } from "../canonical-app-event.js";
 import { assertValidAppInput } from "../core/apps/definition-validation.js";
+import { loadPersistedEvent } from "../core/events/persisted.js";
 import { getAppEventAdmissionPlan, resolveAppEventAdmissionCommand } from "../core/state/app-event-admission-store.js";
 import { assertOfflineWorkloadExecution, assertOfflineWorkloadFiles } from "./install-retained-workload-state.js";
 
@@ -77,11 +79,13 @@ export function convertStoppedTaskContracts(input: {
       const plan = getAppEventAdmissionPlan(db, Number(eventId))!;
       for (const command of plan.commands) {
         if (command.kind !== "unresolved" || command.status !== "pending" || !command.resolveTask) continue;
+        if (command.subscriptionIds.length)
+          throw new Error(`Settle mixed subscription/Task admission for ${command.appId}/${eventId} with the previous Host`);
         const app = apps.get(command.appId);
         if (!app) throw new Error(`Missing App ${command.appId} for retained event ${eventId}`);
-        const row = db.prepare("SELECT envelope_json FROM events WHERE id = ?").get(eventId);
-        if (typeof row?.envelope_json !== "string") throw new Error(`Missing original envelope for event ${eventId}`);
-        const event = JSON.parse(row.envelope_json) as AppEvent<Record<string, unknown>>;
+        const saved = loadPersistedEvent(db, Number(eventId), persistDir);
+        if (!saved) throw new Error(`Missing or invalid original event ${eventId}`);
+        const event = canonicalAppEvent(saved);
         const subscriptions = (app.subscriptions ?? []).filter(({ event: selector }) =>
           matchesEventSelector(selector, event),
         );

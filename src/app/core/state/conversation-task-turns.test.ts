@@ -17,6 +17,7 @@ import {
   failAppTaskAttempt,
   observeAppTaskIntent,
   readAppTaskAdmissionOutcome,
+  reopenAppTask,
 } from "../tasks/app-task-reconciler.js";
 import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
@@ -976,3 +977,39 @@ test("unfunded first Conversation input survives replay and storage reopen, then
     expect(budget.view({ appId: app.id, taskId: admitted.executionTaskId! }, Date.now())?.rootCharged).toBe(1);
   } finally { host.close(); }
 });
+
+test.each(["cancelled", "closed"] as const)(
+  "an agent-backed %s Conversation retains immutable lineage and requires a successor across restart",
+  (ending) => {
+    const f = fixture();
+    const admitted = f.admit();
+    const claim = f.claim(admitted.taskId);
+    completeAppTask(f.context(), claim, { summary: "Discussion result retained" });
+    const current = f.store.readTask(admitted.taskId)!;
+    expect(current.spec.executor).toBe("agent");
+    const control = {
+      appId: app.id, taskId: admitted.taskId,
+      expectedGeneration: current.metadata.generation,
+      expectedResourceVersion: current.metadata.resourceVersion,
+      decision: "app-policy" as const, reason: "Owner ended the discussion",
+    };
+    if (ending === "cancelled") cancelAppTask(f.context(), control);
+    else closeAppTask(f.context(), { ...control, afterResult: claim.attemptId });
+    const ended = f.store.readTask(admitted.taskId);
+    const closure = f.store.readCancellation(admitted.taskId);
+    const reopen = () => reopenAppTask(f.context(), {
+      ...control,
+      expectedGeneration: ended!.metadata.generation,
+      expectedResourceVersion: ended!.metadata.resourceVersion,
+      controlKey: "explicit-continuation", reason: "Human requested another discussion",
+    });
+    expect(reopen).toThrow("Conversation input must use its linked successor");
+    f.reopen();
+    expect(reopen).toThrow("Conversation input must use its linked successor");
+    expect(f.store.readTask(admitted.taskId)).toEqual(ended);
+    expect(f.store.readCancellation(admitted.taskId)).toEqual(closure);
+    const successor = f.admit("next-discussion", 2);
+    expect(successor.taskId).toBe(`${admitted.taskId}_successor_2`);
+    expect(f.store.readTask(admitted.taskId)).toEqual(ended);
+  },
+);

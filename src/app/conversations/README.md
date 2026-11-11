@@ -4,6 +4,10 @@ Conversation retains messages, Topics and accepted human Requests. The same Task
 contract owns execution, waits, retry and results for human and machine input.
 There is no separate Conversation agent, result schema or handoff executor.
 
+Conversation turns use the App's existing workspace, including on Git Apps, so
+local mounts and ignored context stay available without remote Git admission.
+An explicitly selected workflow can still require its own Task worktree.
+
 Human input is durably admitted onto one stable Task per Conversation.
 `core/tasks/attempt-execution.ts` supplies exact input identities in
 `attempt.events.inputs`, original payloads in events/continuedInputs, and bounded

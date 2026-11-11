@@ -2,13 +2,14 @@ import { createAssistantMessageEventStream, type ToolCall } from "@earendil-work
 import {
   Type,
   defineApp,
+  type AppDefinition,
   type AppTaskPolicy,
   type TaskAttempt,
   type TaskCommunication,
   type TaskExecutor,
 } from "@may-agent/sdk";
 import { expect, setSystemTime, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { usageReply } from "../../../../test/fixtures/execution-usage.js";
@@ -20,7 +21,7 @@ import { closeDb, getDb } from "../../../lib/requests.js";
 import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
 import { startAppInboxRuntime } from "../../composition/app-inbox-runtime.js";
 import { AppRegistry } from "../apps/registry.js";
-import { EventBus } from "../events/bus.js";
+import { EventBus, type AgentEvent } from "../events/bus.js";
 import { getAppInboxItem, listAppInboxItems } from "../state/app-inbox-store.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { readConversationRequest } from "../state/conversation-requests.js";
@@ -39,6 +40,7 @@ import {
 } from "./app-task-runtime.js";
 import { makeTaskRetryDue } from "./app-task-test-support.js";
 import type { TaskAgentInput } from "./execution.js";
+import type { TaskWorkspaces } from "./workspace.js";
 
 async function fixture(
   execute: TaskExecutor,
@@ -46,6 +48,7 @@ async function fixture(
   beforeAgent?: (input: TaskAgentInput) => Promise<void>,
   managedAgents?: ReturnType<typeof createTaskAgentRunner>,
   taskPolicy?: AppTaskPolicy,
+  runtimeOptions?: { workspace?: AppDefinition["workspace"]; workspaces?: TaskWorkspaces; executor?: "agent" },
 ) {
   const root = mkdtempSync(join(tmpdir(), "task-communication-"));
   const appDir = join(root, "sample.app");
@@ -60,6 +63,7 @@ async function fixture(
       : {}),
     id: "sample",
     agent: "owner",
+    ...(runtimeOptions?.workspace ? { workspace: runtimeOptions.workspace } : {}),
     version: 1,
     inputSchema: Type.Object({ kind: Type.String(), data: Type.Unknown() }),
     task: ({ input }) => ({
@@ -68,7 +72,7 @@ async function fixture(
         id: input.kind === "review" ? "reviewer" : "work",
         parentId: "root",
         agent: input.kind === "review" ? "reviewer" : "owner",
-        executor: "fixture",
+        executor: runtimeOptions?.executor ?? "fixture",
         outcome: input.kind === "review" ? "Review the contribution" : "Handle the ask",
         acceptance: ["Address accepted requirements"],
       },
@@ -93,6 +97,7 @@ async function fixture(
         bus,
         appRegistrySnapshot: registry.snapshot(),
         executors: { fixture: execute },
+        workspaces: runtimeOptions?.workspaces,
         agents: {
           available: (agent) => managedAgents?.available(agent) ?? true,
           prepare: async (input) => managedAgents?.prepare(input) ?? true,
@@ -130,6 +135,7 @@ async function fixture(
   };
   await open();
   return {
+    appDir,
     get db() {
       return db;
     },
@@ -142,17 +148,17 @@ async function fixture(
     get inbox() {
       return inbox;
     },
-    admit(id: string, kind = "message", conversationId: string | undefined = "discussion") {
+    admit(id: string, kind = "message", conversationId: string | undefined = "discussion", conversationSequence = 1) {
       return inbox.host.admit({
         id,
         appId: "sample",
         source: { kind: "human", id },
         input: { kind, data: { message: id } },
         conversationId,
-        ...(conversationId ? { conversationSequence: 1 } : {}),
+        ...(conversationId ? { conversationSequence } : {}),
         channel: "telegram",
         channelTargetId: "synthetic-chat",
-        channelMessageId: 7,
+        channelMessageId: conversationSequence + 6,
       });
     },
     run(taskId = "work") {
@@ -2157,4 +2163,86 @@ test("an open accepted Request rejects convergence in preflight and settlement w
     expect(readConversationRequest(f.db, "sample", "discussion", "promise")?.status).toBe("closed");
     expect(getAppInboxItem(f.db, "ask")?.status).toBe("done");
   } finally { setSystemTime(); await f.close(); }
+});
+
+test.each(["default", "original-only"] as const)("live Requests respect %s input scope in preflight, settlement and restart", async (scope) => {
+  const proposal = {
+    state: "converged" as const, summary: "Scoped completion", response: "Finished", facts: [],
+    ...(scope === "original-only" ? { inputKeys: ["task:ask"] } : {}),
+  };
+  const f = await fixture(async () => proposal, undefined, async ({ attempt, validateResult }) => {
+    const accepted = Promise.withResolvers<void>();
+    const unsubscribe = attempt.onEvent((event, accept) => {
+      if (event.type !== "app.task.requested") return;
+      accept();
+      unsubscribe();
+      accepted.resolve();
+    });
+    const live = f.admit("live", "message", "discussion", 2).item;
+    expect(live.taskAdmissionKey).toBe("task:live");
+    const admission = f.store.readTaskContext({ taskIds: [], admissionIds: [live.taskAdmissionKey!] })
+      .appTaskAdmissions![live.taskAdmissionKey!]!;
+    // Deliver the saved input through the real event bus while this attempt is live.
+    f.bus.emit(admission.inputEvent as AgentEvent);
+    await accepted.promise;
+    await attempt.apply({ communication: [{
+      id: "accept-live", inputId: "live", requestUpdates: [{
+        id: "live-promise", expectedRevision: 0, scope: "Verify the additional requirement", disposition: "open",
+      }],
+    }] });
+    const error = validateResult!(proposal);
+    if (scope === "default") expect(error).toContain("live-promise remains open");
+    else expect(error).toBeNull();
+    expect(readConversationRequest(f.db, "sample", "discussion", "live-promise")?.status).toBe("open");
+  }, undefined, undefined, { executor: "agent" });
+  try {
+    f.admit("ask");
+    await f.run();
+    if (scope === "default") {
+      expect(f.store.readTask("work")?.status).toMatchObject({
+        executionFailures: 1, summary: expect.stringContaining("live-promise remains open"),
+      });
+      expect(getAppInboxItem(f.db, "ask")?.status).not.toBe("done");
+      expect(listAppConversationMessages(f.db, "sample", "discussion").filter(({ author }) => author.kind === "agent")).toEqual([]);
+    } else {
+      await f.inbox.host.refreshTaskResults("sample", "work");
+      expect(getAppInboxItem(f.db, "ask")?.status).toBe("done");
+      expect(listAppConversationMessages(f.db, "sample", "discussion").filter(({ author }) => author.kind === "agent")).toMatchObject([
+        { text: "Finished", replyTo: "ask" },
+      ]);
+    }
+    expect(getAppInboxItem(f.db, "live")?.status).not.toBe("done");
+    await f.reopen();
+    expect(readConversationRequest(f.db, "sample", "discussion", "live-promise")?.status).toBe("open");
+    expect(getAppInboxItem(f.db, "live")?.status).not.toBe("done");
+  } finally { await f.close(); }
+});
+
+test.each([false, true])("Conversation on a Git App uses its canonical workspace across restart (backend installed: %s)", async (withBackend) => {
+  let calls = 0;
+  const unexpectedWorktree = async (): Promise<never> => { throw new Error("Conversation must not allocate or inspect a worktree"); };
+  const f = await fixture(async (attempt) => {
+    calls++;
+    expect(attempt.cwd).toBe(f.appDir);
+    expect(readFileSync(join(attempt.cwd, "mounted-sibling", "context.txt"), "utf8")).toBe("Canonical workspace context");
+    return { state: "converged", summary: "Answered with local context", response: "Context retained", facts: [] };
+  }, "task", undefined, undefined, undefined, {
+    workspace: { kind: "git", localPath: "." },
+    ...(withBackend ? { workspaces: {
+      admission: unexpectedWorktree, prepare: unexpectedWorktree,
+      inspect: unexpectedWorktree, finalize: unexpectedWorktree,
+    } } : {}),
+  });
+  try {
+    mkdirSync(join(f.appDir, "mounted-sibling"));
+    writeFileSync(join(f.appDir, "mounted-sibling", "context.txt"), "Canonical workspace context");
+    const first = f.admit("first").item;
+    await f.run(first.executionTaskId!);
+    expect(getAppInboxItem(f.db, "first")?.status).toBe("done");
+    await f.reopen();
+    const second = f.admit("second", "message", "discussion", 2).item;
+    await f.run(second.executionTaskId!);
+    expect(getAppInboxItem(f.db, "second")?.status).toBe("done");
+    expect(calls).toBe(2);
+  } finally { await f.close(); }
 });

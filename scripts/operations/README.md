@@ -601,7 +601,9 @@ The transaction translates linked Conversation Tasks from executor `conversation
 to `agent`, increments resource versions and preserves generation, accepted
 history, readiness, waits, Requests and input identities. It translates unresolved
 legacy event routes through the matching App's ordinary subscriptions using the
-original saved event envelope, preserving exact Condition targets. Missing,
+original saved event envelope and verified inline or artifact payload, preserving
+exact Condition targets. Mixed pending subscription/Task routes must be settled
+with the previous Host first. Missing,
 ambiguous, invalid or orphan state rejects the entire operation; nothing is
 silently dropped. A current subscription returning null deliberately declines an
 event; existing Condition targets still remain. Frozen ordinary Task intents and
@@ -613,6 +615,13 @@ conversion fails, investigate with the prior source and backup. Do not start a
 partially upgraded pair, restore old state after accepting new work, or run this
 operation against a serving installation. Runtime preparation refuses retained
 old contracts before consuming a new execution attempt.
+
+The retired executor name `conversation` is reserved, including for custom
+adapters. New Task admission and runtime registration reject it. Installations
+that used that name for a custom adapter must rename the adapter and explicitly
+migrate its retained Task specifications through their owning App before this
+upgrade; the Conversation converter refuses unlinked Tasks rather than guessing
+whether they were custom execution or damaged legacy Conversation state.
 
 Removed capabilities have no hidden fallback: dynamic `cron.json` handlers and
 the cron tool must move into App schedules/observers; workflow `resume` and helper

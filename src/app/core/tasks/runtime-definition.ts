@@ -185,7 +185,10 @@ export async function prepareAppTaskRuntimeDescriptors(opts: {
   agentsRoot?: string;
   sharedRoot?: string;
   workflows?: AppTaskRuntimeOptions["workflows"];
+  executors?: AppTaskRuntimeOptions["executors"];
 }): Promise<AppTaskRuntimeDescriptor[]> {
+  if (opts.executors && Object.hasOwn(opts.executors, "conversation"))
+    throw new Error('Executor name "conversation" is retired and reserved; rename the adapter');
   const descriptors: AppTaskRuntimeDescriptor[] = [];
   const ids = new Set<string>();
   const selectedIds = opts.taskAppIds ? new Set(opts.taskAppIds.map((id) => id.trim().replace(/\.app$/, ""))) : null;

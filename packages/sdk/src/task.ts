@@ -12,7 +12,8 @@ export type TaskPriority = "P0" | "P1" | "P2" | "P3";
  * Idle has no runnable work and retains responsibility. Attempt result
  * judgments (`converged`, `waiting`, `incomplete`) remain execution evidence. */
 export type TaskStatus = "pending" | "running" | "waiting" | "attention" | "idle" | "closed" | "cancelled" | "done";
-/** Stable executor adapter name selected by durable Task intent. */
+/** Stable executor adapter name selected by durable Task intent.
+ * The retired built-in name `conversation` is reserved and cannot name a custom adapter. */
 export type TaskExecutorName = string;
 
 /** Stable creating context, assigned by the Host; never a session or execution selector. */

@@ -16,7 +16,7 @@ import {
 } from "../state/conversations.js";
 import type { AppTaskEvents } from "./app-task-emitter.js";
 import { readTaskInputs } from "./app-task-inputs.js";
-import type { AppTaskClaim } from "./app-task-reconciler.js";
+import { readTaskChangeInputKeys, type AppTaskClaim } from "./app-task-reconciler.js";
 import type { AppTaskContext } from "./app-task-store.js";
 
 /** Authority follows the accepted input, never a copied Conversation or Task reference. */
@@ -213,8 +213,10 @@ export function assertCommunicationRequestsSettled(
   config: AppTaskContext,
   claim: AppTaskClaim,
   inputKeys?: string[],
+  acceptedLiveEventIds?: number[],
 ): void {
-  const inputs = readTaskInputs(config, inputKeys ? { ...claim, events: [], continuedInputKeys: inputKeys } : claim);
+  const keys = readTaskChangeInputKeys(config, claim, inputKeys, acceptedLiveEventIds);
+  const inputs = readTaskInputs(config, { ...claim, events: [], continuedInputKeys: keys });
   for (const input of inputs) {
     if (!input.communication) continue;
     const open = listConversationInputRequests(config.resourceStore.db, config.resourceStore.appId,
@@ -251,13 +253,13 @@ export function taskResultCommunication(
   config: AppTaskContext,
   claim: AppTaskClaim,
   result: Pick<TaskReconcileResult, "response" | "inputKeys" | "communication">,
+  acceptedLiveEventIds?: number[],
 ): TaskCommunication[] | undefined {
   const changes = result.communication;
   if (!result.response) return changes;
-  const inputs = readTaskInputs(
-    config,
-    result.inputKeys ? { ...claim, events: [], continuedInputKeys: result.inputKeys } : claim,
-  ).filter((input) => input.communication);
+  const keys = readTaskChangeInputKeys(config, claim, result.inputKeys, acceptedLiveEventIds);
+  const inputs = readTaskInputs(config, { ...claim, events: [], continuedInputKeys: keys })
+    .filter((input) => input.communication);
   if (!inputs.length) return changes;
   if (changes?.some((change) => change.message))
     throw new Error("Use response or explicit communication messages for this result, not both");

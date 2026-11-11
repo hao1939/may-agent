@@ -50,6 +50,7 @@ import type { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { continuedTaskInputKeys, retainTaskInputWait, taskInputAdmissionKeys } from "./app-task-inputs.js";
 import { assertResourceCreator } from "../state/resource-creator.js";
 import { AppTaskAdmissionError } from "../state/task-admission-error.js";
+import { hasConversationExecutionTask } from "../state/app-inbox-store.js";
 
 const MAX_TASK_EVENTS_PER_ATTEMPT = 32;
 const DEFAULT_MAX_CONSECUTIVE_FAILURES = 3;
@@ -1385,6 +1386,8 @@ export function validateIntent(intent: AppTaskIntent): void {
   if (intent.executor !== undefined && !/^[a-z][a-z0-9-]{0,63}$/.test(intent.executor)) {
     throw new Error(`Task ${intent.id} executor must be a lowercase name of at most 64 characters`);
   }
+  if (intent.executor === "conversation")
+    throw new Error('Executor name "conversation" is retired and reserved; use the current Task contract or rename the adapter');
   if (intent.workflow && intent.executor) {
     throw new Error(`Task ${intent.id} cannot configure both workflow and executor`);
   }
@@ -2365,14 +2368,15 @@ export function reopenAppTask(
       throw new Error("Task version changed; read the current Task before reopening");
     if (config.resourceStore.isCancelled(resource.spec.parentId))
       throw new Error("Reopen the closed parent before its child");
-    if (resource.spec.executor === "conversation") throw new Error("Conversation input must use its linked successor");
+    if (resource.spec.executor === "conversation" ||
+      hasConversationExecutionTask(config.resourceStore.db, input.appId, input.taskId))
+      throw new Error("Conversation input must use its linked successor");
     if (input.input !== undefined && !input.intent)
       throw new Error("Task continuation requires the responsible App's mapped requirements");
     const scope = beginResourceMutationScopeForTasks(tree, [input.taskId]);
     if (input.intent) {
       const intent = normalizeTaskAgent({ ...input.intent, id: input.taskId, parentId: resource.spec.parentId });
       validateIntent(intent);
-      if (intent.executor === "conversation") throw new Error("Conversation input must use its linked successor");
       resource.spec = resourceSpec(intent);
     }
     const now = new Date().toISOString();

@@ -495,11 +495,13 @@ export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabil
             facts: result.facts,
             inputKeys: result.inputKeys,
             communication:
-              result.state === "converged" ? taskResultCommunication(config, claim, result) : result.communication,
+              result.state === "converged"
+                ? taskResultCommunication(config, claim, result, acceptedLiveEventIds) : result.communication,
           },
           acceptedLiveEventIds,
           settle: () => {
-            if (result.state === "converged") assertCommunicationRequestsSettled(config, claim, result.inputKeys);
+            if (result.state === "converged")
+              assertCommunicationRequestsSettled(config, claim, result.inputKeys, acceptedLiveEventIds);
             const resolved = validateTaskFinalSettlement(config, claim, { ...result, acceptedLiveEventIds });
             preflightAcceptedLiveEventIds = acceptedLiveEventIds;
             preflightReviewAt = resolved.reviewAt;
