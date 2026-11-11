@@ -11,6 +11,10 @@ original Event; it neither runs the mapper nor advances admission. Conflicting
 payload, explicit destination or provenance fails before Event correlation.
 A received input is not proof of Task creation, fulfillment, caller delivery or
 creator closure. Ordinary recovery advances pending admission independently.
+Public Event ingress also recognizes exact saved input publications before
+current App validation. Canonical source and payload must match. Submission
+receipt replay is declared by the ingress definition; Task and Session controls
+retain live authorization, and formal approval attribution remains trusted.
 
 Start at [`app-inbox-host.ts`](app-inbox-host.ts): validate input, resolve its
 Task, persist attachment and expose the correlated result. Declared human-facing

@@ -47,6 +47,58 @@ function fixture(conversationAppId?: string) {
 }
 
 describe("simple event interface", () => {
+  for (const type of ["app.input.requested", "conversation.message.created"] as const) {
+    it(`reuses an exact ${type} publication after App configuration changes`, () => {
+      const { bus, db } = fixture();
+      let loaded = true;
+      let valid = true;
+      let effects = 0;
+      const events = createEventInterface({
+        bus,
+        db,
+        hasApp: () => loaded,
+        validateAppInput: () => {
+          if (!valid) throw new Error("Changed schema");
+        },
+        hasAgent: () => false,
+        hasSession: () => false,
+      });
+      bus.subscribeDurableRoute(() => {
+        effects++;
+        return { accepted: true, by: "fixture-receiver", route: "direct" };
+      });
+      const request = {
+        type,
+        target: { appId: "sample" },
+        idempotencyKey: "original-request",
+        data:
+          type === "app.input.requested"
+            ? { input: { kind: "message", data: { message: "hello" } } }
+            : { conversationId: "chat", text: "hello", author: { kind: "human", id: "human" } },
+      };
+      const context = { source: "control-socket", inputSource: { kind: "human" as const, id: "human" } };
+      const first = events.publish(request, context);
+      expect(first.delivery).toBe("accepted");
+      loaded = false;
+      expect(events.publish(request, context)).toEqual(first);
+      loaded = true;
+      valid = false;
+      expect(events.publish(request, context)).toEqual(first);
+      const changed = {
+        ...request,
+        data:
+          type === "app.input.requested"
+            ? { input: { kind: "message", data: { message: "different" } } }
+            : { conversationId: "chat", text: "different", author: { kind: "human", id: "human" } },
+      };
+      expect(() => events.publish(changed, context)).toThrow();
+      loaded = false;
+      expect(() => events.publish({ ...request, idempotencyKey: "fresh-request" }, context)).toThrow("not loaded");
+      expect(effects).toBe(1);
+      expect(db.prepare("SELECT count(*) n FROM events").get()).toEqual({ n: 1 });
+    });
+  }
+
   it("validates continuation input before publication and forwards it only through trusted Task control", () => {
     const { bus, db, events } = fixture();
     const received: unknown[] = [];
