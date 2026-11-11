@@ -205,10 +205,10 @@ Keep policy checks separate from the boundary that makes them durable:
   With recovery timers disabled, the probe runs bounded production admission
   and result recovery after worker exit. Cleanup releases the response barrier
   before draining, so a failed assertion cannot hide behind a hung teardown.
-- The complete gate uses two long-lived Bun processes with built-in file
+- The complete gate uses four long-lived Bun processes with built-in file
   sharding. Imports are reused within a process; mutable fixtures are never
   shared between cases. The command's regression verifies every selected file
-  runs exactly once, both JUnit reports survive, and either shard's failure
+  runs exactly once, all JUnit reports survive, and any shard's failure
   fails the command. No test discovery or ordering algorithm is maintained here.
 - Maintenance subscription tests close their scheduler generations in teardown.
   Metric sampling tests require correct costs and failures even when optional

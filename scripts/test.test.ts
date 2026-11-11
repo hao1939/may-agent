@@ -17,7 +17,7 @@ test.each([false, true])(
     const root = mkdtempSync(join(tmpdir(), "may-test-command-"));
     roots.push(root);
     const witness = join(root, "visited");
-    for (const name of ["one", "two", "three"]) {
+    for (const name of ["one", "two", "three", "four", "five"]) {
       writeFileSync(
         join(root, `${name}.test.ts`),
         `
@@ -45,11 +45,11 @@ test.each([false, true])(
       code = (error as { code: number }).code;
     }
     expect(code).toBe(fail ? 1 : 0);
-    expect(readFileSync(witness, "utf8").trim().split("\n").sort()).toEqual(["one", "three", "two"]);
+    expect(readFileSync(witness, "utf8").trim().split("\n").sort()).toEqual(["five", "four", "one", "three", "two"]);
     const reports = readdirSync(root).filter((name) => /^results\.\d+\.xml$/.test(name));
-    expect(reports).toHaveLength(2);
+    expect(reports).toHaveLength(4);
     expect(reports.flatMap((name) => [...readFileSync(join(root, name), "utf8").matchAll(/<testcase /g)])).toHaveLength(
-      3,
+      5,
     );
   },
 );

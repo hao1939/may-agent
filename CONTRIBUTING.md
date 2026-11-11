@@ -21,7 +21,7 @@ they are not a clean-type claim. Whole-tree formatting is not yet a merge gate:
 format the lines you change without reformatting unrelated code.
 
 `test` runs source, package, integration, daemon, browser, and build/deploy
-script tests in two processes using Bun's built-in file sharding. Each process
+script tests in four processes using Bun's built-in file sharding. Each process
 reuses imports across files and runs cases sequentially. Every case still owns
 fresh mutable state, including each Task scenario's parent, workers and database.
 Close runtimes, restore spies/clocks/environment, and unsubscribe listeners in
@@ -79,7 +79,7 @@ served JavaScript may not be inferred. Run their owning tests explicitly.
 and build tests, not just unit tests. `test:unit` remains a compatibility alias.
 The complete `bun run ci` remains the PR gate. See [test coverage ownership](test/README.md).
 JUnit output is written separately for each shard: `--reporter-outfile=results.xml`
-produces `results.1.xml` and `results.2.xml`. Inspect both, including failed runs.
+produces `results.1.xml` through `results.4.xml`. Inspect all four, including failed runs.
 
 Measure JUnit and CI timings before optimizing; test count is not the target.
 Use the smallest test that exercises real behavior, with integration tests for

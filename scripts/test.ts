@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 
-const shardCount = 2;
+const shardCount = 4;
 
 /** Use Bun's file partitioning, retaining a module cache within each process. */
 export function shardArguments(args: string[], shard: number): string[] {
