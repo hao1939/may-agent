@@ -34,9 +34,13 @@ describe("bounded DB maintenance", () => {
         // Reusing a plan in a later observation window must be safe too.
         observedAt += 300_000;
       }
-      expect(
-        db.prepare("SELECT count(*) count FROM events WHERE event_type = 'fixture.concurrent'").get(),
-      ).toEqual({ count: 2 });
+      const readSql = "SELECT count(*) count FROM events WHERE event_type = 'fixture.concurrent'";
+      const retainedPlan = db.prepare(`EXPLAIN QUERY PLAN ${readSql}`);
+      expect(db.prepare(readSql).get()).toEqual({ count: 2 });
+      // Disposing the one-shot diagnostic must not finalize another caller's
+      // reusable statement for the same plan SQL.
+      expect(retainedPlan.all().length).toBeGreaterThan(0);
+      retainedPlan.finalize?.();
     } finally {
       spy.mockRestore();
       writer.close();
