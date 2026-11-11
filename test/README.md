@@ -33,8 +33,13 @@ does not establish either guarantee.
 
 Worker `create-task` is retired. `packages/sdk/src/task-contract.test.ts` rejects
 it; action fencing and rollback tests now mutate existing fixture assignments.
-`src/app/task-worker-integration.test.ts` owns real worker coverage for typed
+`src/app/task-worker-interaction.test.ts` owns real worker coverage for typed
 App delegation, nested A → B → C → B → A, continued human input, and reopen.
+`task-worker-workload.test.ts` owns cross-process funding, shared capacity,
+protected coordination and workload observations. `task-worker-integration.test.ts`
+keeps worker loss, recovery, source pinning, event delivery and compiled-command
+coverage. Every scenario still has its own parent, children and database; separate
+files let the bounded suite worker pool schedule these contracts independently.
 Hierarchy-specific reconciler/state fixtures declare their children through App
 intent; they prove retained parent/child behavior, not typed delegation.
 Completed model harnesses are retired. Their versioned reproduction references
@@ -176,6 +181,55 @@ Human Task detail reads include structured results from retained Task state and
 historical receipts. Their tests keep those results out of compact cards and
 hide old observations while a newer attempt is running; runtime checks verify
 that failure evidence remains readable after a later accepted answer.
+
+## Test cost and fixture boundaries
+
+Keep policy checks separate from the boundary that makes them durable:
+
+- Retirement rules use a fresh in-memory SQLite database per case. CLI checks
+  retain file-backed state, real subprocesses, concurrent reads and reopen.
+- Caller feedback crosses bounded event/history windows with 54 reports once.
+  The explicit attention modes use three reports each, retaining lost feedback,
+  restart, review, first failure, quiet repeated failure and final-answer checks.
+- Comment recovery drops a real socket after the command is sent. The daemon
+  must retain and recover the exact receipt; a colliding receipt must fail.
+  `packages/control/src/client.test.ts` owns actual socket deadline expiration;
+  `http-event-ingress.test.ts` checks the HTTP retry deadlines and disposition.
+- Telegram's stalled-body check observes the real HTTP body read, asserts that
+  its production deadline is still armed, and invokes that deadline. It must
+  abort the real fetch without a second uncertain send. The separate close test
+  retains real transport cancellation and the longer polling deadline.
+- Interaction probes deliberately hold an HTTP response while other worker
+  and human turns run. Their attempt/scenario bounds allow those sequential
+  operations; worker timeout/drain tests keep their own short deadlines.
+  With recovery timers disabled, the probe runs bounded production admission
+  and result recovery after worker exit. Cleanup releases the response barrier
+  before draining, so a failed assertion cannot hide behind a hung teardown.
+
+A speed comparison must use the complete `bun run test` selection on the same
+machine, with the same Node/Bun versions, browser and Docker Compose prerequisites.
+Record wall time, JUnit totals, failures and skips. Count setup/teardown in wall
+time. Reduced coverage, disabled browser checks and automatic retries are not
+speed improvements. Avoid overlapping benchmark runs.
+
+The November 2026 audit used Node 24 and Bun 1.3.14, with Chrome enabled:
+
+| Full portable test phase | Seconds | Pass / fail / skip |
+| --- | ---: | --- |
+| Main (`946d3ff4`), two workers | 494.40 | 4,388 / 2 / 3 |
+| Consolidated fixtures, four workers | 337.68 | 4,390 / 0 / 3 |
+| Consolidated fixtures, eight workers | 213.10 | 4,390 / 0 / 3 |
+
+All rows contain the same 4,393 cases. The initial local baseline exposed two
+interaction probe timeouts; the fixture fixes above are part of the change.
+The final test phase is 56.9% shorter, or 54.1% after subtracting the entire
+30.23 seconds spent in those failed probes from the baseline. This arithmetic
+is not a measured passing baseline. The clean main CI reference is run
+[43001928873](https://github.com/hao1939/may-agent/actions/runs/43001928873):
+266.67 seconds, 4,390 passed and the same three installation-only skips.
+Keep the final-revision hosted comparison in the PR evidence. The complete local
+`bun run ci`, including type/architecture/lint checks, took 240.45 seconds.
+These measurements describe this audit; machine load and filesystem cost vary.
 
 ## SDK export contract
 

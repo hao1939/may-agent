@@ -845,10 +845,15 @@ it.each(["converged", "waiting", "incomplete"] as const)("carries explicit earli
   if (state !== "converged") expect(readAppTaskAdmissionOutcome(config, taskId, "earlier")).toBeNull();
 });
 
-describe("caller feedback PoC", () => {
-  it.each([undefined, "next-wake", "immediate"] as const)(
-    "retains 54 progress reports with caller-selected attention, then delivers failure and completion (%s)",
-    async (progress) => {
+describe("caller feedback", () => {
+  // Cross the event/history bounds once; attention modes share that storage path.
+  it.each([
+    [undefined, 54],
+    ["next-wake", 3],
+    ["immediate", 3],
+  ] as const)(
+    "retains progress with attention=%s across %i reports, then delivers failure and completion",
+    async (progress, reports) => {
       const f = fixture();
       const persistDir = join(f.root, "state");
       let bus = eventBus();
@@ -941,8 +946,8 @@ describe("caller feedback PoC", () => {
         await install();
         host!.admit({ id: "original-ask", appId: "sample", source: { kind: "system", id: "fixture" }, input: { kind: "review", data: {} } });
         await run("work/caller");
-        for (let revision = 1; revision <= 54; revision++) {
-          loseFeedback = revision === 27;
+        for (let revision = 1; revision <= reports; revision++) {
+          loseFeedback = revision === Math.ceil(reports / 2);
           await run("work/collector");
           await host!.refreshTaskResults("sample", "work/collector");
           if (loseFeedback) {
@@ -958,7 +963,7 @@ describe("caller feedback PoC", () => {
           });
         }
         const progressCalls = callerInputs.length - 1;
-        expect(workerCalls).toBe(54);
+        expect(workerCalls).toBe(reports);
         // A deliberate review runs on time and receives retained progress after restart.
         await restart();
         setSystemTime(reviewAt + 1);
@@ -966,7 +971,7 @@ describe("caller feedback PoC", () => {
         await run("work/caller");
         expect(callerInputs).toHaveLength(progressCalls + 2);
         expect(callerInputs.at(-1)?.waits.open[0]?.dependency?.reports?.progress).toMatchObject({
-          state: "progress", reportRevision: 54, result: { observations: 54 },
+          state: "progress", reportRevision: reports, result: { observations: reports },
         });
         stage = "failure";
         loseFeedback = true;
@@ -984,8 +989,8 @@ describe("caller feedback PoC", () => {
         expect(callerInputs).toHaveLength(progressCalls + 3);
         expect(callerInputs.at(-1)?.events.items.some(({ event }) => event.data.status === "blocked")).toBe(true);
         expect(callerInputs.at(-1)?.waits.open[0]?.dependency?.reports).toMatchObject({
-          failure: { state: "blocked", reportRevision: 55 },
-          progress: { state: "progress", reportRevision: 56 },
+          failure: { state: "blocked", reportRevision: reports + 1 },
+          progress: { state: "progress", reportRevision: reports + 2 },
         });
         const beforeRetry = callerInputs.length;
         stage = "failure";
@@ -1002,8 +1007,6 @@ describe("caller feedback PoC", () => {
         expect(callerInputs).toHaveLength(beforeRetry + 1);
         expect(host!.get(requestId)?.status).toBe("done");
         expect(config().resourceStore.readTask("work/caller")?.status.phase).toBe("converged");
-        console.log(JSON.stringify({ poc: "caller-progress-interest", progress: progress ?? "default", reports: 54, progressCalls,
-          reviewReceivedLatest: true, firstFailureDelivered: true, repeatedFailureQuiet: true, completionDelivered: true }));
       } finally { host!.close(); }
     },
   );

@@ -13,20 +13,6 @@ const execFileAsync = promisify(execFile);
 // This keeps the parent-loss probe from touching another test's database or IPC.
 describe("real Task worker boundary", () => {
   it.each([
-    ["conversation", "handles human input on the same Task across worker and storage reopen"],
-    ["delegation", "runs A and B through the common loop and returns B's result while A remains responsive"],
-    ["nested", "returns C's facts through B to A using typed Task admission within one App"],
-    ["nestedRecovery", "recovers C's durable input after parent-side SQLite contention"],
-    ["nestedOnePlace", "returns C through B to A across real workers sharing one funded execution place"],
-  ])("%s: %s", (scenario) => runTaskWorkerProbe("./task-interaction-scenario.ts", scenario), 20_000);
-
-  it.each([
-    ["coordination", "runs shared coordination with an installed timeout ceiling in a real worker"],
-    ["protectedCoordination", "runs protected coordination across the worker boundary with exhausted ordinary funding"],
-    ["sharedCoordination", "can make its bounded model judgment when ordinary shared execution is full"],
-    ["freshWorkloadState", "starts from exclusively published policy and funds protected workflow/helper execution before ordinary admission"],
-    ["withdrawnWorkloadState", "observes offline withdrawal across workflow and managed helper execution without new charges"],
-    ["workloadFeedback", "preserves parent capacity and queue observations in real workflow attempts"],
     ["observationWithoutConsumer", "accepts worker observations after parent routing without another journal row"],
     ["observationAccepted", "records the parent consumer's acceptance of worker observations"],
     ["observationFailed", "keeps failed parent delivery visible after restart without losing the accepted Task result"],
