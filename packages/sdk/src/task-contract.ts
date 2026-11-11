@@ -21,14 +21,13 @@ const typedConditionSubjectPattern = new RegExp(TYPED_CONDITION_SUBJECT_PATTERN)
 const typedConditionSubjectSchema = Type.String({
   minLength: 3,
   pattern: TYPED_CONDITION_SUBJECT_PATTERN,
-  description: "Typed resource identity in kind:value form, for example credential:xhs or pipeline-run:42",
+  description: "Typed resource identity in kind:value form (e.g. credential:xhs or pipeline-run:42).",
 });
 const CONDITION_OWNER_PATTERN = "^\\s*(?:human|[a-z][a-z0-9-]*:[^\\s:]+)\\s*$";
 const conditionOwnerPattern = new RegExp(CONDITION_OWNER_PATTERN);
 const conditionOwnerSchema = Type.String({
   pattern: CONDITION_OWNER_PATTERN,
-  description:
-    "Who can supply the awaited fact: human or kind:identity, e.g. human:requester or app:measurement. Use a lowercase kind and an identity without spaces or colons, not a display name or sentence. This field does not send a message or grant authority.",
+  description: "Awaited fact supplier: human or lowercase kind:identity (e.g. human:requester, app:measurement).",
 });
 const objectSchema = Type.Unsafe<Record<string, unknown>>({
   type: "object",
@@ -54,13 +53,13 @@ export const taskActionSchema = Type.Union([
     },
     {
       additionalProperties: false,
-      description: "Withdraw only this Task’s wait link; external facts and approvals are unchanged.",
+      description: "Withdraw this Task's wait link.",
     },
   ),
 ]);
 
 const progressInterestSchema = Type.Union([Type.Literal("immediate"), Type.Literal("next-wake")], {
-  description: "When to consider intermediate progress: immediately or at the next wake. New request waits default to next-wake; omission preserves existing interest. Completion and failures still wake promptly. Use reviewAt if consideration has a deadline.",
+  description: "Intermediate progress delivery timing (default next-wake; completion/failure always wake promptly).",
 });
 
 export const conditionSchema = Type.Object(
@@ -69,26 +68,25 @@ export const conditionSchema = Type.Object(
     type: Type.String({
       minLength: 1,
       pattern: "\\.",
-      description:
-        "Namespaced event type from a known producer, e.g. review.completed. Naming a type does not register its producer or ingress.",
+      description: "Namespaced event type from a known producer (e.g. review.completed).",
     }),
     subject: typedConditionSubjectSchema,
     expected: Type.Unknown(),
     progress: Type.Optional(progressInterestSchema),
     requestedAction: Type.Optional(
-      Type.String({ minLength: 1, description: "Needed action; use a delivery capability to contact its owner." }),
+      Type.String({ minLength: 1, description: "Action needed; contact the owner separately to deliver the ask." }),
     ),
     owner: conditionOwnerSchema,
     reviewAfterMs: Type.Optional(
       Type.Integer({
         minimum: MIN_CONDITION_REVIEW_AFTER_MS,
-        description: "Legacy field; does not schedule agent execution. Use Task reviewAt for deliberate reconsideration.",
+        description: "Legacy field; prefer Task reviewAt.",
       }),
     ),
   },
   {
     additionalProperties: false,
-    description: "Known observable fact. Host recovers missed observations without invoking the agent.",
+    description: "External observable fact wait.",
   },
 );
 
@@ -118,8 +116,7 @@ const communicationSchema = Type.Array(
   ),
   {
     maxItems: 8,
-    description:
-      "Publish or update an ask through an input accepted by this Task. Reuse id and exact content on retry. Publication, Request disposition and execution state are independent.",
+    description: "Publish messages or update Requests via an accepted inputId (reuse id and content on retry).",
   },
 );
 
@@ -131,7 +128,7 @@ const resultFields = {
       maxItems: 64,
       uniqueItems: true,
       description:
-        "Exact outstanding requests on this Task that you considered and cover with this result, including input received during execution. Read originals with tasks.get({inputKeys}) as needed. Omit to use the saved assignment; [] covers none. Converged answers only this set; waiting/incomplete keep it open. Other requests and Conditions remain.",
+        "Exact outstanding input keys covered by this result (omit for saved assignment; [] covers none; converged settles only this set).",
     }),
   ),
   result: Type.Optional(objectSchema),
@@ -147,8 +144,7 @@ const resultFields = {
           { requestId: nonEmptyStringSchema, progress: Type.Optional(progressInterestSchema) },
           {
             additionalProperties: false,
-            description:
-              "Caller waits for this local or durable request id, submitted here or already admitted in the caller generation. Host resolves the exact result and creates the durable Condition.",
+            description: "Wait for a request id submitted here or already admitted in this caller generation.",
           },
         ),
       ]),
@@ -175,77 +171,60 @@ const resultFields = {
 const TASK_AGENT_RESULT_SCHEMA_ID = "may.task-agent-result.v1";
 const TASK_RECONCILE_RESULT_SCHEMA_ID = "may.task-reconcile-result.v1";
 
-/** Model-output schema for a resolved agent. */
-export const taskAgentResultSchema = Type.Union(
-  [
-    Type.Object(
-      { state: Type.Literal("converged"), ...resultFields, response: Type.Optional(nonEmptyStringSchema) },
-      {
-        additionalProperties: false,
-        description:
-          "Facts support an answer or completed work for the considered input. Include response when owed. Convergence is not closure; unrelated open children need not prevent an answer.",
-      },
+/**
+ * Single-object Task attempt schema. Defining shared fields once with compact
+ * per-state `anyOf` constraints preserves exact validation while avoiding 3x
+ * inline schema duplication across every model call.
+ */
+export const taskAgentResultSchema = Type.Object(
+  {
+    state: Type.Union([Type.Literal("converged"), Type.Literal("waiting"), Type.Literal("incomplete")]),
+    ...resultFields,
+    response: Type.Optional(nonEmptyStringSchema),
+    continue: Type.Optional(
+      Type.Literal(true, {
+        description: "With state=waiting and non-empty facts: queue one more bounded pass for independent work.",
+      }),
     ),
-    Type.Object(
-      {
-        state: Type.Literal("waiting"),
-        ...resultFields,
-        continue: Type.Optional(
-          Type.Literal(true, {
-            description:
-              "Queue one more bounded pass for useful work. Keeps the input unanswered; omit to sleep until feedback or review.",
-          }),
-        ),
-      },
-      {
-        additionalProperties: false,
-        description:
-          "Keep input open. Continue useful work or sleep on a saved wait, exact Condition, App request or review time. Omit unchanged waits; existing obligations remain.",
-      },
+    report: Type.Optional(
+      Type.Literal(true, {
+        description: "With state=waiting or incomplete and non-empty facts: emit a caller progress or failure update.",
+      }),
     ),
-    Type.Object(
-      {
-        state: Type.Literal("waiting"),
-        ...resultFields,
-        report: Type.Literal(true, {
-          description:
-            "Share informative progress: changes, checks, uncertainty, remaining work and evidence. The caller chooses when to consider it. Ask for guidance or approval through requests; reporting progress alone does not ask for action. Existing independent waits remain.",
-        }),
-        continue: Type.Optional(
-          Type.Literal(true, {
-            description:
-              "Queue one more bounded pass for useful work. This may coexist with a report or an independent wait.",
-          }),
-        ),
-        facts: Type.Array(nonEmptyStringSchema, { minItems: 1, maxItems: 32 }),
-      },
-      { additionalProperties: false },
-    ),
-    Type.Object(
-      {
-        state: Type.Literal("incomplete"),
-        inputKeys: resultFields.inputKeys,
-        report: Type.Optional(
-          Type.Literal(true, {
-            description: "Return a new caller-relevant update after an earlier report; omit for unchanged failure.",
-          }),
-        ),
-        summary: nonEmptyStringSchema,
-        response: Type.Optional(nonEmptyStringSchema),
-        result: resultFields.result,
-        facts: Type.Array(nonEmptyStringSchema, { minItems: 1, maxItems: 32 }),
-      },
-      {
-        additionalProperties: false,
-        description:
-          "An unsuccessful attempt. Include partial work, failure evidence and unresolved effects. The assignment remains pending under paced recovery until its owner revises or closes it. Existing saved obligations are preserved.",
-      },
-    ),
-  ],
+  },
   {
     $id: TASK_AGENT_RESULT_SCHEMA_ID,
+    additionalProperties: false,
     description:
-      "Report one Task attempt against its goal and acceptance. Put supported progress, limitations and exact evidence links in facts; partial output may be retained in result. Existing independent obligations survive omitted fields. Supported observations settle Conditions; authorized decisions supply approval. Feedback is evidence to assess. The Host persists and delivers results; the App judges outcomes. Waiting may set reviewAt (Unix milliseconds) for deliberate agent reconsideration. Conditions recover missed observations in code without periodic agent calls. Requests submit independently owned work: reuse stable id and exact taskId when applicable. The receiver handles the request independently. To wait for its result, return conditions:[{requestId: id}] and state waiting; Host resolves the reference into an ordinary Condition. continue:true permits independent work. Requests without Conditions may accompany convergence. Omission never retires an existing wait; use retire-condition for that decision. Host publishes and correlates independent progress, failure (blocked), and answer/owner closure (done) facts. New request Conditions default to progress: next-wake; choose immediate for eager progress or a separate Condition for a needed partial fact. Failure and completion still wake promptly. Omission preserves saved interest. Progress does not erase failure or ask for help. Parent links organize work; dependsOn gates execution. Use ordinary helper calls for bounded contributions.",
+      "Report one Task attempt: converged (answer/completed scope; omit reviewAt/Conditions), waiting (keep input open on saved waits, Conditions, requests, reviewAt, or continue:true; no response), or incomplete (unsuccessful attempt with non-empty facts; no waits/requests/actions). Omitting unchanged Conditions preserves existing waits; use retire-condition to withdraw one. Delegate work via requests (stable id) and add conditions:[{requestId}] with waiting to await its result.",
+    anyOf: [
+      {
+        properties: { state: { const: "converged" } },
+        not: { anyOf: [{ required: ["continue"] }, { required: ["report"] }] },
+      },
+      {
+        properties: { state: { const: "waiting" } },
+        not: { anyOf: [{ required: ["response"] }, { required: ["report"] }] },
+      },
+      {
+        required: ["report"],
+        properties: { state: { const: "waiting" }, facts: { minItems: 1 } },
+        not: { required: ["response"] },
+      },
+      {
+        properties: { state: { const: "incomplete" }, facts: { minItems: 1 } },
+        not: {
+          anyOf: [
+            { required: ["communication"] },
+            { required: ["reviewAt"] },
+            { required: ["actions"] },
+            { required: ["conditions"] },
+            { required: ["requests"] },
+            { required: ["continue"] },
+          ],
+        },
+      },
+    ],
   },
 );
 

@@ -41,21 +41,19 @@ export const conversationRequestUpdatesSchema = Type.Array(
           maxItems: 96,
           uniqueItems: true,
           description:
-            "Current input IDs establishing or refining this same intention. Several inputs may belong to one Request. Omit for a single input or to retain this turn's existing Request associations; choose explicitly for a new Request in a mixed batch.",
+            "Input IDs establishing or refining this ask; omit for a single input or unchanged associations, and set explicitly for a new Request in a mixed batch.",
         }),
       ),
       expectedRevision: Type.Integer({
         minimum: 0,
         maximum: Number.MAX_SAFE_INTEGER - 1,
-        description:
-          "Observed Request revision, or 0 for a new ask. Use the revision from a scoped read or accepted update receipt; reread after a conflict.",
+        description: "Observed Request revision, or 0 for a new ask.",
       }),
       scope: Type.Optional(
         Type.String({
           minLength: 1,
           maxLength: 2000,
-          description:
-            "Complete accepted ask for creation or authorized revision. Omit to retain existing scope. Closing cannot change the scope.",
+          description: "Complete accepted ask on creation or revision; omit when unchanged or closing.",
         }),
       ),
       disposition: Type.Union([
@@ -70,7 +68,7 @@ export const conversationRequestUpdatesSchema = Type.Array(
           maxLength: 2000,
           pattern: "\\S",
           description:
-            "Required to close a Request; explain fulfillment, withdrawal or the unfulfilled outcome. Optional for an open Request in live and final Task changes; use it for useful context about remaining work. Closure also needs an accepted explanation to the human. A reply about another Request is not its explanation.",
+            "Required when closing (fulfilled, withdrawn, or unfulfilled) alongside a human-facing explanation; optional context when open.",
         }),
       ),
       taskRefs: Type.Optional(
@@ -81,8 +79,7 @@ export const conversationRequestUpdatesSchema = Type.Array(
           ),
           {
             maxItems: 32,
-            description:
-              "Record relevant Task references without assigning work or subscribing to results. A handoff naming this Request in followUp.requestId adds its Task automatically. Empty or omitted lists retain existing references; at most 32 distinct references in total.",
+            description: "Relevant Task references to add (omitted/empty retains existing; max 32 distinct).",
           },
         ),
       ),
@@ -92,7 +89,7 @@ export const conversationRequestUpdatesSchema = Type.Array(
   {
     maxItems: MAX_CONVERSATION_REQUESTS_PER_TURN,
     description:
-      "Accept, revise, link or close conversational promises to the human. Routine automated handling belongs in turn/Task evidence; an automated result can advance an existing human promise. A simple ask may be accepted and fulfilled in one answer. After saving a Request, retain its returned revision and omit unchanged scope. Read omitted/truncated Requests before changing them. Close only with an explanatory response and a fulfillment, withdrawal or unfulfilled disposition; Task completion alone is not Request closure.",
+      "Accept, revise, link or close human promises. Omit unchanged scope after creation, and close only with an explanatory response.",
   },
 );
 
