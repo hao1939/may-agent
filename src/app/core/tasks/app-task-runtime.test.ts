@@ -922,8 +922,9 @@ describe("caller feedback PoC", () => {
         bus.subscribe((event) => {
           if (event.type !== "app.input.requested") return;
           requestId = String(event.data.requestId);
-          host.admit({ id: requestId, appId: "sample", source: { kind: "app", id: "sample" },
+          const received = host.admit({ id: requestId, appId: "sample", source: { kind: "app", id: "sample" },
             input: event.data.input as { kind: string; data: unknown }, idempotencyKey: String(event.data.idempotencyKey) });
+          host.recoverAdmission(received.item.id);
           return { accepted: true, by: "fixture-inbox", route: "direct" };
         });
       };
@@ -1474,13 +1475,14 @@ describe("caller feedback PoC", () => {
       });
       bus.subscribe((event) => {
         if (event.type !== "app.input.requested") return;
-        host.admit({
+        const received = host.admit({
           id: String(event.data.requestId),
           appId: "sample",
           source: { kind: "app", id: "sample" },
           input: event.data.input as { kind: string; data: unknown },
           idempotencyKey: String(event.data.idempotencyKey),
         });
+        host.recoverAdmission(received.item.id);
         return { accepted: true, by: "fixture", route: "direct" };
       });
     };
@@ -1666,8 +1668,9 @@ describe("caller feedback PoC", () => {
         bus.subscribe((event) => {
           if (event.type !== "app.input.requested") return;
           requestId = String(event.data.requestId);
-          host.admit({ id: requestId, appId: "sample", source: { kind: "app", id: "sample" },
+          const received = host.admit({ id: requestId, appId: "sample", source: { kind: "app", id: "sample" },
             input: event.data.input as { kind: string; data: unknown }, idempotencyKey: String(event.data.idempotencyKey) });
+          host.recoverAdmission(received.item.id);
           return { accepted: true, by: "fixture", route: "direct" };
         });
       };
@@ -2935,13 +2938,14 @@ describe("canonical App task runtime", () => {
         });
         bus.subscribe((event) => {
           if (event.type !== "app.input.requested") return;
-          host.admit({
+          const received = host.admit({
             id: String(event.data.requestId),
             appId: "sample",
             source: { kind: "app", id: "sample" },
             input: event.data.input as { kind: string; data: unknown },
             idempotencyKey: String(event.data.idempotencyKey),
           });
+          host.recoverAdmission(received.item.id);
           return { accepted: true, by: "fixture-inbox", route: "direct" };
         });
       };
@@ -3022,6 +3026,8 @@ describe("canonical App task runtime", () => {
               originEventId: 1001,
             }).created,
           ).toBe(false);
+          expect(host.get(saved.id)?.status).toBe("pending");
+          host.recoverAdmission(saved.id);
         } else await host.recoverAdmissions();
         expect(host.get(saved.id)).toMatchObject({
           id: saved.id,
@@ -3819,13 +3825,14 @@ describe("canonical App task runtime", () => {
       });
       bus.subscribe((event) => {
         if (event.type !== "app.input.requested") return;
-        host.admit({
+        const received = host.admit({
           id: String(event.data.requestId),
           appId: "sample",
           source: { kind: "app", id: "sample" },
           input: event.data.input as typeof request.input,
           idempotencyKey: String(event.data.idempotencyKey),
         });
+        host.recoverAdmission(received.item.id);
         return { accepted: true, by: "fixture", route: "direct" };
       });
     };
@@ -4030,13 +4037,14 @@ describe("canonical App task runtime", () => {
         const saved = config.resourceStore.readTask("work/caller")!;
         // Condition is durable before receiver delivery, including a synchronous fast receiver.
         expect(saved.status.conditionIds).toContain(`app-request:${event.data.requestId}`);
-        host.admit({
+        const received = host.admit({
           id: String(event.data.requestId),
           appId: "sample",
           source: { kind: "app", id: "sample" },
           input: event.data.input as typeof request.input,
           idempotencyKey: String(event.data.idempotencyKey),
         });
+        host.recoverAdmission(received.item.id);
         return { accepted: true, by: "fixture", route: "direct" };
       });
       observeAppTaskIntent(config, {
@@ -4598,13 +4606,14 @@ describe("canonical App task runtime", () => {
             return;
           }
           if (event.type !== "app.input.requested") return;
-          host.admit({
+          const received = host.admit({
             id: String(event.data.requestId),
             appId: "sample",
             source: { kind: "app", id: "sample" },
             input: event.data.input as { kind: string; data: unknown },
             idempotencyKey: String(event.data.idempotencyKey),
           });
+          host.recoverAdmission(received.item.id);
           return { accepted: true, by: "fixture", route: "direct" };
         });
       };
@@ -4802,13 +4811,14 @@ describe("canonical App task runtime", () => {
           if (event.type !== "app.input.requested") return;
           const data = event.data;
           requestId = String(data.requestId);
-          host.admit({
+          const received = host.admit({
             id: requestId,
             appId: "sample",
             source: { kind: "app", id: "sample" },
             input: data.input as { kind: string; data: unknown },
             idempotencyKey: String(data.idempotencyKey),
           });
+          host.recoverAdmission(received.item.id);
           return { accepted: true, by: "fixture-admission", route: "direct" };
         });
       };
@@ -5383,8 +5393,9 @@ describe("canonical App task runtime", () => {
         bus.subscribe((event) => {
           if (event.type !== "app.input.requested") return;
           requestId = String(event.data.requestId);
-          host.admit({ id: requestId, appId: "sample", source: { kind: "app", id: "sample" },
+          const received = host.admit({ id: requestId, appId: "sample", source: { kind: "app", id: "sample" },
             input: event.data.input as { kind: string; data: unknown }, idempotencyKey: String(event.data.idempotencyKey) });
+          host.recoverAdmission(received.item.id);
           return { accepted: true, by: "fixture", route: "direct" };
         });
       };

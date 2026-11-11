@@ -29,11 +29,11 @@ import {
 import { admitTaskInput, assertTaskInputCompatible } from "./inbox.js";
 import {
   createAppInboxItem,
+  reuseAppInboxSubmission,
   deferAppInboxTaskFunding,
   hasAppInboxFundingHold,
   getAppInboxItem,
   hasConversationExecutionTask,
-  listAppInboxItems,
   type CreateAppInboxItem,
   type AppTurnTarget,
 } from "./app-inbox-store.js";
@@ -298,11 +298,14 @@ export function admitConversationTaskInput(
   return stateTransaction(db, () => {
     if (input.appId !== config.resourceStore.appId) throw new Error("Conversation belongs to another App");
     if (!input.conversationId.trim()) throw new Error("Conversation identity is required");
-    const prior = input.idempotencyKey
-      ? listAppInboxItems(db, { appId: input.appId, idempotencyKey: input.idempotencyKey, limit: 1 })[0]
-      : input.id
-        ? getAppInboxItem(db, input.id)
-        : null;
+    const replay = reuseAppInboxSubmission(db, input);
+    const prior = replay?.item;
+    if (replay?.item.status === "done") {
+      return {
+        ...replay,
+        taskId: replay.item.executionTaskId ?? conversationTaskId(input.appId, input.conversationId),
+      };
+    }
     // An expired legacy lease is not proof that its executor stopped. Cut over
     // only a drained Conversation; do not layer a Task over old execution.
     if (
@@ -335,19 +338,6 @@ export function admitConversationTaskInput(
         .get(input.appId, input.conversationId);
       input = { ...input, conversationSequence: prior?.conversationSequence ?? Number(latest?.sequence ?? 0) + 1 };
     }
-    if (
-      prior &&
-      (prior.appId !== input.appId ||
-        prior.conversationId !== input.conversationId ||
-        !isDeepStrictEqual(prior.input, input.input) ||
-        !isDeepStrictEqual(prior.source, input.source) ||
-        prior.conversationSequence !== input.conversationSequence ||
-        (input.topicId !== undefined && input.topicId !== prior.topicId))
-    )
-      throw new Error("Conversation input identity was reused for different input");
-    if (prior?.status === "done") {
-      return { item: prior, taskId: prior.executionTaskId ?? conversationTaskId(input.appId, input.conversationId), created: false };
-    }
     const lineage = prior?.executionTaskId
       ? { taskId: prior.executionTaskId, predecessorTaskId: undefined }
       : conversationTaskLineage(config, input.appId, input.conversationId);
@@ -355,7 +345,7 @@ export function admitConversationTaskInput(
     if (predecessorTaskId && !config.resourceStore.readTask(taskId) && input.source.kind !== "human") {
       throw new Error("A terminal Conversation requires fresh human input before system feedback can continue it");
     }
-    const created = prior ? { item: prior, created: false } : createAppInboxItem(db, input);
+    const created = replay ?? createAppInboxItem(db, input);
     const item = created.item;
     const admissionKey = `conversation-input:${item.id}`;
     // This trusted ingress identity distinguishes retained, unstarted demand

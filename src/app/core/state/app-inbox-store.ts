@@ -649,6 +649,8 @@ export function listAppInboxHealth(db: SqliteDb, query: { appId?: string; now?: 
 }
 
 export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { item: AppInboxItem; created: boolean } {
+  const replay = reuseAppInboxSubmission(db, input);
+  if (replay) return replay;
   validateCreate(input);
   const now = input.now ?? Date.now();
   const id = input.id ?? `app_${randomUUID()}`;
@@ -692,19 +694,44 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
     return { item, created: true };
   }
 
-  const existing = input.idempotencyKey
+  const retained = reuseAppInboxSubmission(db, input);
+  if (!retained) throw new Error(`App inbox item ${id} conflicted with an unknown row`);
+  return retained;
+}
+
+/** Read and verify an existing submission without requiring today's App contract or writing state. */
+export function readAppInboxSubmission(db: SqliteDb, input: CreateAppInboxItem): AppInboxItem | null {
+  requiredText(input.appId, "appId");
+  const row = input.idempotencyKey
     ? db
         .prepare("SELECT * FROM app_inbox_items WHERE app_id = ? AND idempotency_key = ? AND idempotency_key != ''")
         .get(input.appId, input.idempotencyKey)
-    : db.prepare("SELECT * FROM app_inbox_items WHERE id = ?").get(id);
-  if (!existing) throw new Error(`App inbox item ${id} conflicted with an unknown row`);
-  let item = rowToItem(existing);
+    : input.id
+      ? db.prepare("SELECT * FROM app_inbox_items WHERE id = ?").get(input.id)
+      : null;
+  if (!row) return null;
+  const item = rowToItem(row);
+  // Conversation routing defaults are assigned at admission, and its Topic can
+  // be selected during settlement. Omission does not request a new identity.
+  if (item.conversationId !== undefined) {
+    input = {
+      ...input,
+      conversationId: input.conversationId === undefined ? item.conversationId : input.conversationId,
+      conversationSequence:
+        input.conversationSequence === undefined ? item.conversationSequence : input.conversationSequence,
+      topicId: input.topicId === undefined ? item.topicId : input.topicId,
+    };
+  }
+  validateCreate(input);
+  const id = input.id ?? item.id;
   if (item.appId !== input.appId) {
     throw new Error(`App inbox item ${id} already belongs to App ${item.appId}`);
   }
   if (
     item.parentId !== input.parentId ||
     item.targetTaskId !== input.targetTaskId ||
+    item.conversationId !== input.conversationId ||
+    item.conversationSequence !== input.conversationSequence ||
     item.topicId !== input.topicId ||
     item.source.kind !== input.source.kind ||
     item.source.id !== input.source.id ||
@@ -717,17 +744,29 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
     if (item.originEventId !== undefined && item.originEventId !== input.originEventId) {
       throw new Error(`App inbox item ${item.id} already belongs to event ${item.originEventId}`);
     }
-    if (item.originEventId === undefined) {
-      db.run(
-        `UPDATE app_inbox_items
+  }
+  return item;
+}
+
+/** Reuse any retained submission; Event correlation is the only allowed write. */
+export function reuseAppInboxSubmission(
+  db: SqliteDb,
+  input: CreateAppInboxItem,
+): { item: AppInboxItem; created: false } | null {
+  let item = readAppInboxSubmission(db, input);
+  if (!item) return null;
+  if (input.originEventId !== undefined && item.originEventId === undefined) {
+    db.run(
+      `UPDATE app_inbox_items
          SET origin_event_id = ?, updated_at = ?
          WHERE id = ? AND origin_event_id IS NULL`,
-        [input.originEventId, now, item.id],
-      );
-      const linked = getAppInboxItem(db, item.id);
-      if (!linked) throw new Error(`Linked App inbox item ${item.id} is missing`);
-      item = linked;
-    }
+      [input.originEventId, input.now ?? Date.now(), item.id],
+    );
+    // A competing link must still belong to this exact Event. The conditional
+    // write never replaces another receipt's provenance.
+    const linked = readAppInboxSubmission(db, input);
+    if (!linked) throw new Error(`Linked App inbox item ${item.id} is missing`);
+    item = linked;
   }
   return { item, created: false };
 }

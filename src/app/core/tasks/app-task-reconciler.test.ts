@@ -27,6 +27,7 @@ import {
   deferAppTask as deferCanonicalAppTask,
   failAppTaskAttempt,
   observeAppTaskIntent,
+  appTaskContext,
   listRunnableAppTaskQueueEntries,
   listRunnableAppTaskIds,
   isAppTaskConverged,
@@ -2753,6 +2754,65 @@ describe("App task reconciler state", () => {
       }),
     ).toMatchObject({ kind: "completed", taskId: claim.taskId, generation: 1 });
     expect(readFileSync(join(appDir, "tasks", "seed.json"), "utf8")).not.toContain("evaluate:session-1");
+  });
+
+  it("replays a saved admission after restart, revision, cancellation and changed agent defaults", () => {
+    const root = join(tmpdir(), `task-admission-replay-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    roots.push(root);
+    mkdirSync(root, { recursive: true });
+    const path = join(root, "state.sqlite");
+    let config = appTaskTestContext({
+      appDir: root,
+      databasePath: path,
+      agent: "app-owner",
+      maxConcurrent: 1,
+      tree: { project: "sample", root_task_id: "root", groups: { root: { id: "root", parent_id: null } } },
+    });
+    const request = {
+      intent: { id: "work", parentId: "root", outcome: "Deliver the result", acceptance: ["Verified"] },
+      appAgent: "app-owner",
+      admissionKey: "original-request",
+    };
+    const admitted = observeAppTaskIntent(config, request);
+    config.resourceStore.close();
+    const store = AppTaskResourceStore.openStandalone(path, "sample");
+    stores.push(store);
+    config = appTaskContext({
+      appDir: root,
+      projectDir: root,
+      resourceStore: store,
+      agent: "new-default",
+      maxConcurrent: 1,
+    });
+    observeAppTaskIntent(config, {
+      ...request,
+      admissionKey: "revision",
+      intent: { ...request.intent, outcome: "Revised delivery" },
+    });
+    const resource = store.readTask(request.intent.id)!;
+    expect(resource.metadata.generation).toBeGreaterThan(admitted.generation);
+    cancelAppTask(config, {
+      appId: "sample",
+      taskId: request.intent.id,
+      expectedGeneration: resource.metadata.generation,
+      expectedResourceVersion: resource.metadata.resourceVersion,
+      reason: "No longer required",
+    });
+    const before = store.readTaskContext({ taskIds: [request.intent.id], admissionIds: [request.admissionKey] });
+    expect(observeAppTaskIntent(config, { ...request, appAgent: "new-default" })).toEqual({
+      ...admitted,
+      changed: false,
+    });
+    expect(store.readTaskContext({ taskIds: [request.intent.id], admissionIds: [request.admissionKey] })).toEqual(
+      before,
+    );
+    expect(store.isCancelled(request.intent.id)).toBe(true);
+    expect(() =>
+      observeAppTaskIntent(config, { ...request, intent: { ...request.intent, outcome: "Different work" } }),
+    ).toThrow("different desired work");
+    expect(() => observeAppTaskIntent(config, { ...request, admissionKey: "new-request" })).toThrow(
+      "closed or cancelled",
+    );
   });
 
   it("owner-closed work stays closed under repeated admission", () => {

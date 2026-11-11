@@ -6,8 +6,49 @@ import { closeDb, getDb } from "./connection.js";
 import { runDbMaintenancePass } from "./maintenance.js";
 import { openDatabase } from "../db.js";
 import { createAppInboxItem } from "../../app/core/state/app-inbox-store.js";
+import { SqlPerformance, profileDatabase } from "./query-performance.js";
 
 describe("bounded DB maintenance", () => {
+  it("releases captured slow-read plans before checkpointing and later concurrent writes", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-maintenance-slow-read-"));
+    const db = getDb(root);
+    const writer = openDatabase(join(root, "may.db"));
+    let elapsed = 0;
+    let observedAt = 0;
+    // Force only the diagnostic timing boundary, never the SQL or its result.
+    const profile = new SqlPerformance(
+      512,
+      () => observedAt,
+      () => (elapsed += 1_001),
+    );
+    const measured = profileDatabase({ ...db }, profile);
+    const spy = spyOn(db, "prepare").mockImplementation(measured.prepare);
+    try {
+      for (let pass = 0; pass < 2; pass++) {
+        const result = runDbMaintenancePass(root);
+        expect(result.checkpoint).toBe("ok");
+        expect(profile.snapshot().queries.topByWorstTime.some((query) => query.plan)).toBe(true);
+        writer
+          .prepare("INSERT INTO events(event_type, timestamp) VALUES ('fixture.concurrent', ?)")
+          .run(Date.now());
+        // Reusing a plan in a later observation window must be safe too.
+        observedAt += 300_000;
+      }
+      const readSql = "SELECT count(*) count FROM events WHERE event_type = 'fixture.concurrent'";
+      const retainedPlan = db.prepare(`EXPLAIN QUERY PLAN ${readSql}`);
+      expect(db.prepare(readSql).get()).toEqual({ count: 2 });
+      // Disposing the one-shot diagnostic must not finalize another caller's
+      // reusable statement for the same plan SQL.
+      expect(retainedPlan.all().length).toBeGreaterThan(0);
+      retainedPlan.finalize?.();
+    } finally {
+      spy.mockRestore();
+      writer.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it.each([
     { table: "event_traces", key: "event_id", counter: "event_traces" },
     { table: "event_trace_links", key: "id", counter: "event_trace_links_orphaned" },

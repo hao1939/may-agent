@@ -31,10 +31,11 @@ import {
 } from "../apps/definition-validation.js";
 import {
   createAppInboxItem,
+  readAppInboxSubmission,
+  reuseAppInboxSubmission,
   deferAppInboxTaskFunding,
   hasAppInboxFundingHold,
   getAppInboxItem,
-  listAppInboxItems,
   hasConversationExecutionTask,
   listAppInboxItemsWaitingOnTask,
   listAppInboxTaskDependencyKeys,
@@ -47,6 +48,7 @@ import {
   type AppInboxTaskDependencyKey,
   type CreateAppInboxItem,
 } from "../state/app-inbox-store.js";
+import { appEventInboxSubmission } from "../state/app-event-admission-store.js";
 
 /**
  * The task engine must treat idempotencyKey as stable admission identity.
@@ -271,7 +273,7 @@ export class AppInboxHost {
     }
     const pendingAdmissions = this.#db
       .prepare(
-        `SELECT app_id, route_kind, payload
+        `SELECT event_id, app_id, route_id, route_kind, payload_version, payload
          FROM app_event_admission_commands
          WHERE status = 'pending'
          ORDER BY event_id, app_id`,
@@ -280,6 +282,24 @@ export class AppInboxHost {
     for (const command of pendingAdmissions) {
       const appId = requiredText(command.app_id, "Pending App event admission app id");
       const routeKind = requiredText(command.route_kind, "Pending App event admission route kind");
+      const payload = JSON.parse(String(command.payload)) as { input?: AppInput; conditionTaskIds?: unknown };
+      const received =
+        routeKind === "inbox" && payload.input
+          ? readAppInboxSubmission(
+              this.#db,
+              appEventInboxSubmission(Number(command.event_id), {
+                appId,
+                routeId: String(command.route_id),
+                input: payload.input,
+              }),
+            )
+          : null;
+      const noConditionWakes = Array.isArray(payload.conditionTaskIds)
+        ? payload.conditionTaskIds.length === 0
+        : Number(command.payload_version) === 1 && payload.conditionTaskIds === undefined;
+      // Receipt acknowledgment needs no new App capability. Independent Task
+      // wakes still require their current execution owner below.
+      if (received && noConditionWakes) continue;
       const app = next.get(appId);
       if (!app) {
         if (this.#apps.has(appId)) {
@@ -293,8 +313,7 @@ export class AppInboxHost {
           `Cannot remove task capability from App ${appId} while it owns pending event admission commands`,
         );
       }
-      const payload = JSON.parse(String(command.payload)) as { input?: unknown; conditionTaskIds?: unknown };
-      if (routeKind === "inbox" && !Check(app.inputSchema, payload.input)) {
+      if (routeKind === "inbox" && !received && !Check(app.inputSchema, payload.input)) {
         throw new Error(
           `Cannot install an input schema incompatible with pending event admission commands for App ${appId}`,
         );
@@ -365,10 +384,14 @@ export class AppInboxHost {
 
   admit(input: AdmitAppInput): { item: AppInboxItem; created: boolean } {
     if (this.#closed) throw new Error("App input admission is closed");
-    const app = this.#requiredApp(input.appId);
-    assertValidAppInput(app, input.input);
     const targetTaskId =
       input.targetTaskId === undefined ? undefined : requiredText(input.targetTaskId, "targetTaskId");
+    // Submission acknowledgment is independent of Task admission progress.
+    // Ordinary recovery advances retained input using its saved ownership.
+    const replay = reuseAppInboxSubmission(this.#db, { ...input, targetTaskId, now: this.#now() });
+    if (replay) return replay;
+    const app = this.#requiredApp(input.appId);
+    assertValidAppInput(app, input.input);
     if (
       app.conversation?.mode !== "task" &&
       targetTaskId &&
@@ -379,20 +402,6 @@ export class AppInboxHost {
     const conversationInput =
       appInputRoute(app, input.input.kind, targetTaskId, input.source.kind === "app" && !input.conversationId) ===
       "conversation";
-    if (conversationInput) {
-      const retained = input.idempotencyKey
-        ? listAppInboxItems(this.#db, { appId: app.id, idempotencyKey: input.idempotencyKey, limit: 1 })[0]
-        : input.id
-          ? this.get(input.id)
-          : null;
-      if (retained && isUnattachedTaskRequest(retained)) {
-        // A replay cannot turn saved delegated work into a Conversation. Check
-        // the exact input before using the same Task attachment path as recovery.
-        const admitted = createAppInboxItem(this.#db, { ...input, targetTaskId, now: this.#now() });
-        this.#admitTask(admitted.item);
-        return { ...admitted, item: this.get(admitted.item.id)! };
-      }
-    }
     const defaultConversationId = app.conversation?.conversationId?.trim();
     const useDefaultConversation =
       conversationInput &&
@@ -423,6 +432,17 @@ export class AppInboxHost {
 
   get(id: string): AppInboxItem | null {
     return getAppInboxItem(this.#db, id);
+  }
+
+  /** Progress received input through the same guarded operation as bounded recovery. */
+  recoverAdmission(id: string): void {
+    if (this.#closed) return;
+    const item = this.get(id);
+    if (!item || !this.#apps.has(item.appId)) return;
+    if (item.waitingOn?.kind === "task" && !item.lease) return;
+    if (item.status === "done") {
+      if (item.reviewAt === undefined || item.reviewAt <= this.#now()) this.#reportRejection(item);
+    } else this.#admitTask(item);
   }
 
   stopTurn(target: AppTurnTarget): void {
@@ -539,7 +559,6 @@ export class AppInboxHost {
             .run(item.id, item.lease.owner, item.lease.generation, this.#now());
         return;
       }
-      if (isUnattachedTaskRequest(item)) assertAppTaskInputRoute(app, item.input.kind, item.targetTaskId);
       if (appInputRoute(app, item.input.kind, item.targetTaskId, isUnattachedTaskRequest(item)) === "conversation") {
         if (!this.#admitConversation || !item.conversationId)
           throw new Error("Conversation input requires offline cutover to its Task execution owner");
@@ -547,10 +566,13 @@ export class AppInboxHost {
         resolveAppInboxRecovery(this.#db, item.id, "input-admission", now);
         return;
       }
-      if (!app.tasks || !app.task) throw new Error(`App ${app.id} does not resolve input to Task work`);
+      assertAppTaskInputRoute(app, item.input.kind, item.targetTaskId);
+      if (!app.task) throw new Error(`App ${app.id} task resolver is unavailable`);
       if (!this.#attachTask) throw new Error("App task admission is not configured");
       assertValidAppInput(app, item.input);
       const inputContext = readInputContext(this.#db, item);
+      // Mapping is a proposal until the exact Task/input link commits. Failed
+      // admission may be reconsidered; a committed attachment is never remapped.
       const attachment = item.targetTaskId
         ? { kind: "existing" as const, taskId: item.targetTaskId }
         : app.task(inputContext);
@@ -650,11 +672,7 @@ export class AppInboxHost {
     this.#admissionCursor = rows.length === 64 ? String(rows.at(-1)!.id) : undefined;
     for (const row of rows) {
       if (this.#closed) return;
-      const item = this.get(String(row.id));
-      if (item && this.#apps.has(item.appId)) {
-        if (item.status === "done") this.#reportRejection(item);
-        else this.#admitTask(item);
-      }
+      this.recoverAdmission(String(row.id));
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
     }
   }

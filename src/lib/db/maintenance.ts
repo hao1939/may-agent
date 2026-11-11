@@ -6,6 +6,19 @@ import { getDb } from "./connection.js";
 export interface DbMaintenanceResult {
   deleted: Record<string, number>;
   checkpoint: "ok" | "busy" | "failed";
+  checkpointError?: MaintenanceErrorDetails;
+}
+
+type MaintenanceErrorDetails = { error: string; code?: string; errno?: number };
+
+/** Keep SQLite's extended failure identity without exporting SQL or parameters. */
+export function describeMaintenanceError(error: unknown): MaintenanceErrorDetails {
+  const details = error as { code?: unknown; errno?: unknown } | null;
+  return {
+    error: error instanceof Error ? error.message : String(error),
+    ...(typeof details?.code === "string" ? { code: details.code } : {}),
+    ...(typeof details?.errno === "number" ? { errno: details.errno } : {}),
+  };
 }
 
 const DAY_MS = 86_400_000;
@@ -268,12 +281,14 @@ export function runDbMaintenancePass(
   );
 
   let checkpoint: DbMaintenanceResult["checkpoint"] = "failed";
+  let checkpointError: MaintenanceErrorDetails | undefined;
   try {
     const result = db.prepare("PRAGMA wal_checkpoint(PASSIVE)").get() as { busy?: number } | undefined;
     checkpoint = result?.busy ? "busy" : "ok";
-  } catch {
+  } catch (error) {
     checkpoint = "failed";
+    checkpointError = describeMaintenanceError(error);
   }
 
-  return { deleted, checkpoint };
+  return { deleted, checkpoint, ...(checkpointError ? { checkpointError } : {}) };
 }

@@ -578,6 +578,56 @@ test("creation shortage retains exact input without failure or admission polling
   reopened.close();
 });
 
+test("an unfunded mapping stays provisional until atomic attachment and replay spends nothing", async () => {
+  setSystemTime(new Date("2026-11-09T12:00:00Z"));
+  const f = fixture(1, 5);
+  f.add("spent");
+  const definition = inboxApp();
+  let mappings = 0;
+  let target = "initial-proposal";
+  const host = new AppInboxHost({
+    db: f.db,
+    apps: [
+      {
+        ...definition,
+        task: (input) => {
+          mappings++;
+          const proposal = definition.task!(input);
+          if (proposal.kind !== "desired") throw new Error("Expected desired work");
+          return { ...proposal, intent: { ...proposal.intent, id: target } };
+        },
+      },
+    ],
+    attachTask: (input) => admitTaskInput(f.config, input),
+  });
+  try {
+    const request = workInput("proposal");
+    const saved = host.admit(request).item;
+    expect(saved.handling?.phase).toBe("deferred");
+    const operations = f.db.prepare("SELECT count(*) n FROM task_budget_operations").get();
+    target = "revised-proposal";
+    expect(host.admit(request)).toEqual({ item: saved, created: false });
+    expect(mappings).toBe(1);
+    expect(f.db.prepare("SELECT count(*) n FROM task_budget_operations").get()).toEqual(operations);
+    if (saved.handling?.phase !== "deferred" || saved.handling.funding.retryAt === null)
+      throw new Error("Expected due grant");
+    setSystemTime(saved.handling.funding.retryAt);
+    await host.recoverAdmissions();
+    const committed = host.get(saved.id)!;
+    expect(committed.waitingOn).toEqual({ kind: "task", id: "revised-proposal" });
+    expect(f.store.readTask("initial-proposal")).toBeNull();
+    expect(f.view("sample", "revised-proposal")?.rootCharged).toBe(1);
+    target = "another-proposal";
+    expect(host.admit(request)).toEqual({ item: committed, created: false });
+    await host.recoverAdmissions();
+    expect(mappings).toBe(2);
+    expect(f.store.readTask("another-proposal")).toBeNull();
+    expect(f.view("sample", "revised-proposal")?.rootCharged).toBe(1);
+  } finally {
+    host.close();
+  }
+});
+
 test("indefinite funding holds do not occupy the admission recovery page ahead of eligible input", async () => {
   const f = fixture(5, 0);
   const other = f.app("other");

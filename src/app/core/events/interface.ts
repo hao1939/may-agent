@@ -56,6 +56,8 @@ export type EventInterface = {
 };
 
 type EventDefinition = {
+  /** Exact saved submissions retain their receipt independently of current App policy. */
+  receiptReplay?: true;
   taskControl?: "retry" | "close" | "cancel" | "reopen";
   /** Payload aliases that this contract defines as the addressed resource. */
   addressFields?: readonly (keyof EventTarget)[];
@@ -70,6 +72,7 @@ type EventDefinition = {
  */
 const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
   "conversation.message.created": {
+    receiptReplay: true,
     addressFields: ["appId"],
     delivery: "required",
     validate: (input, options) => {
@@ -133,6 +136,7 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
     },
   },
   "app.input.requested": {
+    receiptReplay: true,
     addressFields: ["appId", "taskId"],
     delivery: "required",
     validate: (input, options) => {
@@ -302,6 +306,7 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
     },
   },
   "project.approval.submitted": {
+    receiptReplay: true,
     addressFields: ["appId", "taskId"],
     delivery: "record",
     validate: (input, options) => {
@@ -797,10 +802,10 @@ export function createEventInterface(options: CreateEventInterfaceOptions): Even
       if (input.type === "app.task.reopen.requested" && context.source !== "control-socket")
         throw new Error("Task reopening requires explicit operator control");
       const event = canonicalEvent(input, context);
-      // A recorded decision keeps its receipt after the Condition changes.
-      // Still use normal publication so the bus can finish interrupted routing.
-      const savedApproval = input.type === "project.approval.submitted" && findPersistedEventId(options.db, event);
-      if (!savedApproval) definition?.validate(input, options);
+      // Canonical source and payload must match before reusing a submission.
+      // Normal publication still lets the bus finish interrupted delivery.
+      const savedSubmission = definition?.receiptReplay && findPersistedEventId(options.db, event);
+      if (!savedSubmission) definition?.validate(input, options);
       if (definition?.delivery !== "required") {
         Object.defineProperty(event, EVENT_RECORD_ONLY, { value: true, configurable: true });
       }

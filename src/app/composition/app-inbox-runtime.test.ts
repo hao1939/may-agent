@@ -585,7 +585,7 @@ describe("App inbox runtime", () => {
     });
   });
 
-  it("admits live input directly while deferring recovery until explicitly started", async () => {
+  it.each([false, true])("admits live input directly while deferring recovery until explicitly started (saved=%s)", async (saved) => {
     const bus = persistentBus();
     const task = capabilities(bus);
     createAppInboxItem(db, {
@@ -604,7 +604,16 @@ describe("App inbox runtime", () => {
       deferStart: true,
     });
 
-    bus.emit({
+    if (saved) {
+      createAppInboxItem(db, {
+        id: "live-request",
+        appId: "evaluation",
+        source: { kind: "system", id: "test" },
+        input: { kind: "probe", data: { value: "live" } },
+        idempotencyKey: "live-input",
+      });
+    }
+    const publication = {
       type: "app.input.requested",
       source: "test",
       owner: "app:evaluation",
@@ -613,9 +622,11 @@ describe("App inbox runtime", () => {
         requestId: "live-request",
         input: { kind: "probe", data: { value: "live" } },
         source: { kind: "system", id: "test" },
+        idempotencyKey: "live-input",
       },
-    });
-    await Bun.sleep(20);
+    };
+    bus.emit(publication);
+    bus.emit(publication);
     expect(task.attached).toEqual(["probe/live-request"]);
     expect(runtime.host.get("recovered-request")?.status).toBe("pending");
     expect(runtime.host.get("live-request")?.status).toBe("handling");

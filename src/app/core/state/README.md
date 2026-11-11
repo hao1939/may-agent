@@ -22,6 +22,19 @@ The Task runtime decides transitions; these operations enforce their storage
 boundaries. Events announce meaningful changes and accelerate discovery, while
 durable state remains authoritative. There is no extra server or storage queue.
 
+Submission identity belongs to `app-inbox-store.ts`. Its verified read and reuse
+operations serve creation, Host submission, Conversation admission and frozen
+Event commands. Receipt acknowledgment does not require the current App schema;
+independent Task/Condition effects still require their execution owner. Registry
+reload validation uses the same canonical Event-to-submission identity as dispatch.
+
+A keyed desired-Task admission retains a hash of the original request separately
+from its resolved specification. Exact replay returns its recorded generation
+through later revisions, changed agent defaults and owner closure without a new
+mutation or debit. Fresh work still passes current authority, funding and closure
+checks. Older admissions retain their existing specification comparison; missing
+original request metadata is never reconstructed from today's defaults.
+
 Budget admission uses the Task's immutable creator as well as its recipient App
 to identify retained work requiring explicit attribution. Unconfigured independent
 services keep their own scope. Standing allowances match the full App/Task identity.

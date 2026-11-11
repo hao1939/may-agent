@@ -1424,9 +1424,6 @@ export function observeAppTaskIntent(
 ): AppTaskObservationResult {
   input = { ...input, intent: normalizeTaskAgent(input.intent) };
   validateIntent(input.intent);
-  if (config.resourceStore.isCancelled(input.intent.id)) {
-    throw new AppTaskAdmissionError(`Cannot admit input for closed or cancelled task ${input.intent.id}; explicit reopening is required`);
-  }
   const admissionKey = input.admissionKey?.trim();
   if (input.admissionKey !== undefined && !admissionKey) {
     throw new Error("Task admission key must be non-empty when provided");
@@ -1435,16 +1432,19 @@ export function observeAppTaskIntent(
     taskIds: [input.intent.id, input.intent.parentId, ...(input.intent.dependsOn ?? [])],
     ...(admissionKey ? { admissionIds: [admissionKey] } : {}),
   });
-  const reopened = tree.resources?.[input.intent.id];
-  if (taskEventPredatesReopening(reopened, input.trigger)) {
-    return { kind: "observed", taskId: input.intent.id, generation: reopened!.metadata.generation, changed: false };
-  }
-  validateParentReference(tree, input.intent.id, input.intent.parentId);
-  const agent = resolvedAgent(tree, input.intent, input.appAgent);
-  const specHash = appTaskSpecHash(input.intent, agent);
+  const requestHash = createHash("sha256")
+    .update(JSON.stringify(stableValue(input.intent)))
+    .digest("hex");
   const previousAdmission = admissionKey ? tree.appTaskAdmissions?.[admissionKey] : undefined;
   if (previousAdmission) {
-    if (previousAdmission.taskId !== input.intent.id || !matchesAppTaskSpecHash(input.intent, agent, previousAdmission.specHash)) {
+    const sameRequest = previousAdmission.requestHash
+      ? previousAdmission.requestHash === requestHash
+      : matchesAppTaskSpecHash(
+          input.intent,
+          resolvedAgent(tree, input.intent, input.appAgent),
+          previousAdmission.specHash,
+        );
+    if (previousAdmission.taskId !== input.intent.id || !sameRequest) {
       throw new Error(`Task admission key ${admissionKey} was already used for different desired work`);
     }
     const current = tree.resources?.[previousAdmission.taskId];
@@ -1452,12 +1452,24 @@ export function observeAppTaskIntent(
       return {
         kind: "observed",
         taskId: current.metadata.id,
-        generation: current.metadata.generation,
+        generation: previousAdmission.taskGeneration,
         changed: false,
       };
     }
-    delete tree.appTaskAdmissions?.[admissionKey!];
+    throw new Error(`Admitted Task ${previousAdmission.taskId} is missing`);
   }
+  if (config.resourceStore.isCancelled(input.intent.id)) {
+    throw new AppTaskAdmissionError(
+      `Cannot admit input for closed or cancelled task ${input.intent.id}; explicit reopening is required`,
+    );
+  }
+  const reopened = tree.resources?.[input.intent.id];
+  if (taskEventPredatesReopening(reopened, input.trigger)) {
+    return { kind: "observed", taskId: input.intent.id, generation: reopened!.metadata.generation, changed: false };
+  }
+  validateParentReference(tree, input.intent.id, input.intent.parentId);
+  const agent = resolvedAgent(tree, input.intent, input.appAgent);
+  const specHash = appTaskSpecHash(input.intent, agent);
 
   const recordAdmission = (taskId: string, taskGeneration: number): void => {
     if (!admissionKey) return;
@@ -1467,6 +1479,7 @@ export function observeAppTaskIntent(
         taskId,
         taskGeneration,
         specHash,
+        requestHash,
         admittedAt: new Date().toISOString(),
         ...(input.trigger ? { inputEvent: structuredClone(input.trigger) } : {}),
       },

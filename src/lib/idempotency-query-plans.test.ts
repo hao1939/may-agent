@@ -52,14 +52,20 @@ test("keyed Event and inbox reads use their existing partial indexes", () => {
     }
     const input = { appId: "sample", source: { kind: "app" as const, id: "caller" },
       input: { kind: "message", data: {} }, idempotencyKey: "parent:receipt" };
+    const expectIndexedInboxReads = () => {
+      expect(plans.length).toBeGreaterThan(0);
+      for (const plan of plans.splice(0)) {
+        expect(plan.some((step) => step.includes("idx_app_inbox_idempotency (app_id=? AND idempotency_key"))).toBe(true);
+      }
+    };
     const first = createAppInboxItem(db, input);
+    expectIndexedInboxReads();
     expect(createAppInboxItem(db, input).item.id).toBe(first.item.id);
+    expectIndexedInboxReads();
     expect(listAppInboxItems(db, { appId: "sample", idempotencyKey: input.idempotencyKey })).toHaveLength(1);
+    expectIndexedInboxReads();
     expect(listOpenAppInboxItemsByIdempotencyPrefix(db, { appId: "sample", sourceAppId: "caller", prefix: "parent:" })).toHaveLength(1);
-    expect(plans).toHaveLength(3);
-    for (const plan of plans) {
-      expect(plan.some((step) => step.includes("idx_app_inbox_idempotency (app_id=? AND idempotency_key"))).toBe(true);
-    }
+    expectIndexedInboxReads();
   } finally {
     spy.mockRestore();
   }

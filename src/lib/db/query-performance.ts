@@ -208,13 +208,23 @@ export function profileDatabase(db: SqliteDb, profile = performanceByProcess): S
     run(sql, params) {
       return profile.statement(sql)("run", () => db.run(sql, params));
     },
-    prepare(sql): Statement {
-      const measure = profile.statement(sql, (params) => db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...params));
-      const statement = measure("prepare", () => db.prepare(sql));
+    prepare(sql, options): Statement {
+      const measure = profile.statement(sql, (params) => {
+        const plan = db.prepare(`EXPLAIN QUERY PLAN ${sql}`, { cache: false });
+        try {
+          return plan.all(...params);
+        } finally {
+          // Bun can retain a read snapshot after materializing a complex
+          // EXPLAIN. Diagnostic statements must not outlive their observation.
+          plan.finalize?.();
+        }
+      });
+      const statement = measure("prepare", () => db.prepare(sql, options));
       return {
         get: (...params) => measure("get", () => statement.get(...params), params),
         all: (...params) => measure("all", () => statement.all(...params), params),
         run: (...params) => measure("run", () => statement.run(...params), params),
+        ...(statement.finalize ? { finalize: () => statement.finalize!() } : {}),
       };
     },
     close() {
