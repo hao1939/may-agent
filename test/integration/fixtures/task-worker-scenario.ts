@@ -166,12 +166,12 @@ export function fixture(agent: string, wait = false, workflow = true, conversati
   };
 }
 
-export function run(f: ReturnType<typeof fixture>, recovery = false): Promise<unknown> {
+export function run(f: ReturnType<typeof fixture>, recovery = false, timeoutMs = 5_000): Promise<unknown> {
   let diagnostics = "";
   const worker = recovery ? "runTaskRecoveryWorker" : "runTaskAttemptWorker";
   const workerOptions = {
     bus: f.bus,
-    timeoutMs: 5_000,
+    timeoutMs,
     spawnWorker: () => {
       const child = spawn(
         process.execPath,

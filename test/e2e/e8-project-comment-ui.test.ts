@@ -80,6 +80,7 @@ if (!probe.ok) console.warn(`[E8] skipped: ${probe.reason}`);
 describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () => {
   let sb: Sandbox;
   const retainedDiscussion = "# Retained discussion\n\nKeep the previous owner's decision visible.\n";
+  const sessionId = "s_review_notes";
 
   beforeEach(async () => {
     sb = await buildSandbox({
@@ -89,6 +90,17 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
       cronJson: { may: [] },
       includePlatformUi: true,
       daemonArgs: ["--cron", "--socket", "--web"],
+      prepare: ({ stateDir }) => {
+        const sessionDir = join(stateDir, "sessions", sessionId);
+        mkdirSync(sessionDir, { recursive: true });
+        writeFileSync(join(sessionDir, "session.jsonl"), '{"role":"user","content":"Inspect this result"}\n');
+        try {
+          upsertSession(stateDir, { sessionId, agent: "may", task: "Inspect this result",
+            status: "done", startedAt: 1, endedAt: 2 });
+        } finally {
+          closeDb(stateDir);
+        }
+      },
     });
     await sb.daemonReady;
     writeFileSync(join(sb.projectsRoot, "platform", "discussion.md"), retainedDiscussion);
@@ -469,12 +481,7 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
       });
 
       // Saved notes are a read-only view, including when no notes exist yet.
-      const sessionId = "s_review_notes";
       const sessionDir = join(sb.stateDir, "sessions", sessionId);
-      mkdirSync(sessionDir, { recursive: true });
-      writeFileSync(join(sessionDir, "session.jsonl"), '{"role":"user","content":"Inspect this result"}\n');
-      upsertSession(sb.stateDir, { sessionId, agent: "may", task: "Inspect this result",
-        status: "done", startedAt: 1, endedAt: 2 });
       const noteRequests: string[] = [];
       page.on("request", (req) => {
         if (req.url().includes(`/api/sessions/${sessionId}/eval`)) noteRequests.push(req.method());

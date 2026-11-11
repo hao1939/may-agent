@@ -7,8 +7,16 @@ import { EventBus, type SystemEvent } from "../../src/app/core/events/bus.js";
 
 describe("HostMaintenance event subscriptions", () => {
   const tempDirs: string[] = [];
+  const runtimes: HostMaintenance[] = [];
+
+  function maintenance(options: ConstructorParameters<typeof HostMaintenance>[0]) {
+    const runtime = new HostMaintenance(options);
+    runtimes.push(runtime);
+    return runtime;
+  }
 
   afterEach(() => {
+    for (const runtime of runtimes.splice(0)) runtime.close();
     for (const dir of tempDirs.splice(0)) rmSync(dir, { recursive: true, force: true });
   });
 
@@ -30,7 +38,7 @@ describe("HostMaintenance event subscriptions", () => {
     const bus = new EventBus();
     const emitted: SystemEvent[] = [];
     let handled = 0;
-    const cron = new HostMaintenance({ configPath: configPath, projectRoot: dir, emitEvent: (event) => {
+    const cron = maintenance({ configPath: configPath, projectRoot: dir, emitEvent: (event) => {
       emitted.push(event);
     } });
     cron.load();
@@ -76,7 +84,7 @@ describe("HostMaintenance event subscriptions", () => {
 
     const bus = new EventBus();
     let handled = 0;
-    const cron = new HostMaintenance({ configPath: configPath, projectRoot: dir });
+    const cron = maintenance({ configPath: configPath, projectRoot: dir });
     const entries = cron.load();
     cron.registerHandler("metric-alert-reactor", async () => {
       handled++;
@@ -121,7 +129,7 @@ describe("HostMaintenance event subscriptions", () => {
 
     const bus = new EventBus();
     let handled = 0;
-    const cron = new HostMaintenance({ configPath: configPath, projectRoot: dir });
+    const cron = maintenance({ configPath: configPath, projectRoot: dir });
     cron.load();
     cron.registerHandler("metric-alert-reactor", async () => {
       handled++;
@@ -156,7 +164,7 @@ describe("HostMaintenance event subscriptions", () => {
     const bus = new EventBus();
     let handled = 0;
     let handledEvent: any;
-    const cron = new HostMaintenance({ configPath: configPath, projectRoot: dir });
+    const cron = maintenance({ configPath: configPath, projectRoot: dir });
     const entries = cron.load();
     cron.registerHandler("evaluator-aftermath", async (event) => {
       handled++;
@@ -203,7 +211,7 @@ describe("HostMaintenance event subscriptions", () => {
 
     const bus = new EventBus();
     let handledEvent: any;
-    const cron = new HostMaintenance({ configPath: configPath, projectRoot: dir });
+    const cron = maintenance({ configPath: configPath, projectRoot: dir });
     cron.load();
     cron.registerHandler("canonical-session-handler", async (event) => {
       handledEvent = event;
@@ -250,7 +258,7 @@ describe("HostMaintenance event subscriptions", () => {
     const secondStarted = Promise.withResolvers<void>();
     const finished = Promise.withResolvers<void>();
     let completed = 0;
-    const cron = new HostMaintenance({
+    const cron = maintenance({
       configPath,
       projectRoot: dir,
       emitEvent: (event) => {
@@ -310,7 +318,7 @@ describe("HostMaintenance event subscriptions", () => {
     const bus = new EventBus();
     const started: string[] = [];
     const resolvers: Array<() => void> = [];
-    const cron = new HostMaintenance({ configPath: configPath, projectRoot: dir });
+    const cron = maintenance({ configPath: configPath, projectRoot: dir });
     cron.load();
     cron.registerHandler("default-queue-handler", async (event) => {
       started.push(String(event?.data.reason));
@@ -354,7 +362,7 @@ describe("HostMaintenance event subscriptions", () => {
     const bus = new EventBus();
     const errors: string[] = [];
     let callCount = 0;
-    const cron = new HostMaintenance({ configPath: configPath, projectRoot: dir, notify: (msg) => errors.push(msg) });
+    const cron = maintenance({ configPath: configPath, projectRoot: dir, notify: (msg) => errors.push(msg) });
     cron.load();
     cron.registerHandler("error-backoff-handler", async () => {
       callCount++;

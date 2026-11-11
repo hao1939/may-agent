@@ -12,7 +12,8 @@ import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.
 import { TASK_FAILOVER_METRIC } from "./adapters/reporting/task-failover-metrics.js";
 import { METRIC_QUERY_DURATION_METRIC } from "./adapters/reporting/metric-query-metrics.js";
 import * as database from "../lib/db.js";
-import { profileDatabase } from "../lib/db/query-performance.js";
+import { profileDatabase, SqlPerformance } from "../lib/db/query-performance.js";
+import * as queryPerformance from "../lib/db/query-performance.js";
 import { TASK_SKIPPED_CHECK_METRIC } from "./adapters/reporting/task-check-metrics.js";
 import { readTaskChecks, recordTaskCheck, resetTaskChecks } from "./core/tasks/task-check-observations.js";
 import {
@@ -64,6 +65,11 @@ describe("source-query metric measurement", () => {
     bus.subscribe(event => events.push(event.type));
     let elapsed = 0;
     const clock = spyOn(performance, "now").mockImplementation(() => elapsed);
+    // This assertion owns a real query plan. Give its observer fresh state;
+    // unrelated tests may already have filled the process-wide query catalog.
+    const diagnostics = new SqlPerformance();
+    const evidence = spyOn(queryPerformance, "readSqlQueryEvidence")
+      .mockImplementation(sql => diagnostics.queryEvidence(sql));
     const open = database.openReadOnlyDatabase;
     const read = spyOn(database, "openReadOnlyDatabase").mockImplementation(path => {
       const actual = open(path);
@@ -74,7 +80,7 @@ describe("source-query metric measurement", () => {
           elapsed += sql.includes("metric_cost_witness") ? 1_500 : 1;
           return result;
         } };
-      } });
+      } }, diagnostics);
     });
     try {
       const result = await measureSourceMetrics({ bus, persistDir, isDue: row => row.id.includes("-cost-") });
@@ -101,6 +107,7 @@ describe("source-query metric measurement", () => {
       await measureSourceMetrics({ bus, persistDir, isDue: row => row.id === "c-cost-fast" });
       expect(metrics.get(preserved.id)!.observation).toEqual(observation);
     } finally {
+      evidence.mockRestore();
       read.mockRestore();
       clock.mockRestore();
     }

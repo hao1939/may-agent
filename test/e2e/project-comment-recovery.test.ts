@@ -44,13 +44,16 @@ test.each([
           if (scenario === "collision" && frame.type === "app.input.admit") {
             // Simulate an unknown transport outcome before this publication
             // reaches persistence. An unrelated receipt must not stand in for it.
+            socket.destroy();
             return;
           }
           const response = await sendSocketCommand(upstreamPath, frame);
           if (frame.type === "app.input.admit") {
             // Persistence and routing happen in the real daemon. Only its reply
-            // is lost; keep the connection open for both real client timeouts.
+            // is lost. Disconnect after sending: the result is still unknown
+            // to the HTTP caller. Control-client tests own timer expiration.
             dropped.push({ key: frame.idempotencyKey, eventId: response.eventId });
+            socket.destroy();
             return;
           }
           socket.end(`${JSON.stringify(response)}\n`);

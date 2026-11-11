@@ -41,16 +41,18 @@ function snapshot(db: SqliteDb) {
         .sort(),
     ]);
 }
-function databaseFixture() {
+type Storage = "memory" | "file";
+
+function databaseFixture(storage: Storage = "memory") {
   const root = mkdtempSync(join(tmpdir(), "may-retirement-"));
   roots.push(root);
-  const db = openDatabase(join(root, "may.db"));
+  const db = openDatabase(storage === "file" ? join(root, "may.db") : ":memory:");
   connections.push(db);
   applyDbSchema(db);
   return { root, db };
 }
-function fixture() {
-  const { root, db } = databaseFixture();
+function fixture(storage: Storage = "memory") {
+  const { root, db } = databaseFixture(storage);
   const contextFor = (appId: string) => {
     const store = AppTaskResourceStore.fromDb(db, appId);
     store.bootstrapSnapshot(
@@ -137,8 +139,8 @@ function fixture() {
   return { root, db, context, other, store: context.resourceStore, plan };
 }
 
-function admittedFixture() {
-  const f = fixture();
+function admittedFixture(storage: Storage = "memory") {
+  const f = fixture(storage);
   const item = getAppInboxItem(f.db, "parent")!;
   const admit = (taskId: string, key: string) =>
     admitTaskInput(f.context, {
@@ -940,7 +942,7 @@ test("withdrawal evidence cannot be removed or silently acquire an answer on rep
 });
 
 test("CLI withdraws an explicitly reviewed admitted caller and replays after reopening", async () => {
-  const { root, db, plan } = admittedFixture();
+  const { root, db, plan } = admittedFixture("file");
   const before = snapshot(db);
   const dryRun = await runCli(root, plan, true);
   expect({ code: dryRun.code, stderr: dryRun.stderr }).toEqual({ code: 0, stderr: "" });
@@ -1126,7 +1128,7 @@ for (const change of ["mixed", "foreign", "reopened-input", "resource-version"] 
   });
 
 test("CLI applies the reviewed file offline and replays after reopening the database", async () => {
-  const { root, db, plan } = fixture();
+  const { root, db, plan } = fixture("file");
   db.close();
   connections.splice(connections.indexOf(db), 1);
   const run = async (dryRun = false) => {
@@ -1244,7 +1246,7 @@ test("replays unchanged withdrawal reasons ending in spaces and a newline", () =
 });
 
 test("CLI retires only legacy inputs without creating or activating Task resource authority", async () => {
-  const { root, db } = databaseFixture();
+  const { root, db } = databaseFixture("file");
   createAppInboxItem(db, {
     id: "legacy-input",
     appId: "never-activated",
@@ -1284,7 +1286,7 @@ test("CLI retires only legacy inputs without creating or activating Task resourc
 
 for (const includeTasks of [true, false])
   test(`CLI preserves inactive Task state when plan includes Tasks: ${includeTasks}`, async () => {
-    const { root, db, plan } = fixture();
+    const { root, db, plan } = fixture("file");
     db.prepare("DELETE FROM app_task_store_meta WHERE app_id=?").run(plan.appId);
     if (!includeTasks) plan.tasks = [];
     const before = snapshot(db);
@@ -1297,8 +1299,9 @@ for (const includeTasks of [true, false])
 function legacyObservationFixture(
   phase: "pending" | "waiting" | "attention" | "converged" = "waiting",
   reference: "absent" | "dangling" | "unaccepted" = "absent",
+  storage: Storage = "memory",
 ) {
-  const f = fixture();
+  const f = fixture(storage);
   const task = f.store.readTask("waiting")!;
   if (reference === "unaccepted")
     f.db
@@ -1434,7 +1437,7 @@ test("legacy observation does not substitute for settlement of a Task-only calle
 });
 
 test("CLI retains legacy bytes through database reopen and rejects changed archival evidence", async () => {
-  const f = legacyObservationFixture("attention", "unaccepted");
+  const f = legacyObservationFixture("attention", "unaccepted", "file");
   const before = snapshot(f.db);
   expect((await runCli(f.root, f.plan, true)).code).toBe(0);
   expect(snapshot(f.db)).toEqual(before);
