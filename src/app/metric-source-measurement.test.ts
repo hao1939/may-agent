@@ -12,7 +12,8 @@ import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.
 import { TASK_FAILOVER_METRIC } from "./adapters/reporting/task-failover-metrics.js";
 import { METRIC_QUERY_DURATION_METRIC } from "./adapters/reporting/metric-query-metrics.js";
 import * as database from "../lib/db.js";
-import { profileDatabase } from "../lib/db/query-performance.js";
+import { profileDatabase, SqlPerformance } from "../lib/db/query-performance.js";
+import * as queryPerformance from "../lib/db/query-performance.js";
 import { TASK_SKIPPED_CHECK_METRIC } from "./adapters/reporting/task-check-metrics.js";
 import { readTaskChecks, recordTaskCheck, resetTaskChecks } from "./core/tasks/task-check-observations.js";
 import {
@@ -53,7 +54,7 @@ describe("source-query metric measurement", () => {
     else process.env.APP_ROOT = originalAppRoot;
   });
 
-  it("retains actual query cost quietly, including failed sources, and does not fabricate idle recovery", async () => {
+  it("retains actual query cost and plans quietly, including failed sources, and does not fabricate idle recovery", async () => {
     const db = getDb(persistDir);
     const metrics = createMetricService({ getDb: () => db });
     db.exec("CREATE TABLE metric_cost_witness (value INTEGER)");
@@ -64,6 +65,11 @@ describe("source-query metric measurement", () => {
     bus.subscribe(event => events.push(event.type));
     let elapsed = 0;
     const clock = spyOn(performance, "now").mockImplementation(() => elapsed);
+    // This assertion owns a real query plan. Give its observer fresh state;
+    // unrelated tests may already have filled the process-wide query catalog.
+    const diagnostics = new SqlPerformance();
+    const evidence = spyOn(queryPerformance, "readSqlQueryEvidence")
+      .mockImplementation(sql => diagnostics.queryEvidence(sql));
     const open = database.openReadOnlyDatabase;
     const read = spyOn(database, "openReadOnlyDatabase").mockImplementation(path => {
       const actual = open(path);
@@ -74,7 +80,7 @@ describe("source-query metric measurement", () => {
           elapsed += sql.includes("metric_cost_witness") ? 1_500 : 1;
           return result;
         } };
-      } });
+      } }, diagnostics);
     });
     try {
       const result = await measureSourceMetrics({ bus, persistDir, isDue: row => row.id.includes("-cost-") });
@@ -84,10 +90,8 @@ describe("source-query metric measurement", () => {
       expect(observation).toMatchObject({ value: 1_500, sampleSize: 3 });
       const note = JSON.parse(observation.note!);
       expect(note).toMatchObject({ queries: 3, failures: 1, totalMs: 1_502 });
-      // Plans are optional: the process-wide diagnostic collector has a bounded
-      // number of query shapes. Its real plan capture and the report projection
-      // have detailed owners in query-performance and metric-query-metrics tests.
-      expect(note.examples[0]).toMatchObject({ metricId: "a-cost-slow", durationMs: 1_500, failed: false });
+      expect(note.examples[0]).toMatchObject({ metricId: "a-cost-slow", durationMs: 1_500,
+        query: { plan: { rows: expect.arrayContaining([expect.objectContaining({ detail: expect.stringContaining("metric_cost_witness") })]) } } });
       expect(metrics.get("c-cost-fast")!.observation!.value).toBe(42);
       expect(metrics.get("b-cost-invalid")!.observation).toBeNull();
       expect(events).toEqual(["metric.measurement.failed"]);
@@ -103,6 +107,7 @@ describe("source-query metric measurement", () => {
       await measureSourceMetrics({ bus, persistDir, isDue: row => row.id === "c-cost-fast" });
       expect(metrics.get(preserved.id)!.observation).toEqual(observation);
     } finally {
+      evidence.mockRestore();
       read.mockRestore();
       clock.mockRestore();
     }

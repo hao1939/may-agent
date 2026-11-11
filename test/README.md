@@ -211,10 +211,15 @@ Keep policy checks separate from the boundary that makes them durable:
   runs exactly once, all JUnit reports survive, and any shard's failure
   fails the command. No test discovery or ordering algorithm is maintained here.
 - Maintenance subscription tests close their scheduler generations in teardown.
-  Metric sampling tests require correct costs and failures even when optional
-  process-wide diagnostic evidence has filled its bounded query catalog.
+  Metric sampling uses a fresh diagnostic observer when asserting a real plan;
+  unrelated tests may already have filled the process-wide query catalog.
+  The end-to-end sampling assertion still requires the actual plan to reach
+  its report, alongside exact costs and failures.
   `db/query-performance.test.ts` owns real plan capture and catalog limits;
   `metric-query-metrics.test.ts` owns the bounded plan projection.
+- The browser's saved-session fixture is seeded before daemon startup, with
+  its connection closed before launch. Browser assertions do not race a live
+  daemon writer just to arrange their input.
 
 A speed comparison must use the complete `bun run test` selection on the same
 machine, with the same Node/Bun versions, browser and Docker Compose prerequisites.
@@ -238,7 +243,8 @@ took 227.05 seconds and timed out two worker probes under CPU contention.
 Increasing worker counts is not the final optimization. The clean main CI reference is run
 [43001928873](https://github.com/hao1939/may-agent/actions/runs/43001928873):
 266.67 seconds, 4,390 passed and the same three installation-only skips.
-Keep the final-revision hosted comparison in the PR evidence.
+The final-revision measurements, including the passing baseline with identical
+fixture repairs, belong in [PR #450](https://github.com/hao1939/may-agent/pull/450).
 These measurements describe this audit; machine load and filesystem cost vary.
 
 ## SDK export contract
