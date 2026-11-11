@@ -49,6 +49,7 @@ import type {
   LoadedAppDefinition,
 } from "../core/apps/registry.js";
 import {
+  appEventInboxSubmission,
   completeAppEventAdmissionPlan,
   createAppEventAdmissionPlan,
   getAppEventAdmissionPlan,
@@ -622,22 +623,16 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   ): Promise<void> => {
     const identity = `event:${plan.eventId}`;
     try {
-      const entry = loadedById.get(command.appId);
-      if (!entry) {
-        throw new Error(
-          `Frozen ${admissionRouteLabel(command)} for ${identity} names an App unavailable after registry snapshot ${plan.registrySnapshotId} (generation ${plan.registryGeneration})`,
-        );
-      }
       if (command.kind === "inbox") {
-        host.admit({
-          appId: command.appId,
-          source: { kind: "system", id: identity },
-          input: command.input,
-          originEventId: plan.eventId,
-          idempotencyKey: `subscription:${command.appId}:${command.routeId}:${identity}`,
-        });
+        host.admit(appEventInboxSubmission(plan.eventId, command));
       }
       if (command.kind === "task" || command.kind === "exact-task" || command.conditionTaskIds.length > 0) {
+        const entry = loadedById.get(command.appId);
+        if (!entry) {
+          throw new Error(
+            `Frozen ${admissionRouteLabel(command)} for ${identity} names an App unavailable after registry snapshot ${plan.registrySnapshotId} (generation ${plan.registryGeneration})`,
+          );
+        }
         if (!entry.definition.tasks) {
           throw new Error(
             `Frozen ${admissionRouteLabel(command)} for ${identity} names an App without its selected task capability`,

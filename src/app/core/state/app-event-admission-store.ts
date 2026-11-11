@@ -1,5 +1,6 @@
 import type { AppInput, TaskIntent } from "@may-agent/sdk";
 import type { SqliteDb } from "../../../lib/db.js";
+import type { CreateAppInboxItem } from "./app-inbox-store.js";
 
 export type AppEventAdmissionRoute =
   | {
@@ -62,6 +63,20 @@ export type AppEventAdmissionPlan = {
 type Row = Record<string, unknown>;
 
 export const APP_EVENT_ADMISSION_PAYLOAD_VERSION = 2;
+
+/** The frozen command owns the same submission identity during dispatch and registry validation. */
+export function appEventInboxSubmission(
+  eventId: number,
+  command: Pick<Extract<AppEventAdmissionRoute, { kind: "inbox" }>, "appId" | "routeId" | "input">,
+): CreateAppInboxItem {
+  return {
+    appId: command.appId,
+    source: { kind: "system", id: `event:${eventId}` },
+    input: command.input,
+    originEventId: eventId,
+    idempotencyKey: `subscription:${command.appId}:${command.routeId}:event:${eventId}`,
+  };
+}
 
 function requiredText(value: unknown, field: string): string {
   if (typeof value !== "string" || !value.trim()) {

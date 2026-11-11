@@ -4,11 +4,22 @@ An inbox item records accepted input and its result correlation. The owning
 Task executes it through the [Task runtime](../tasks/README.md). Conversation
 is a Task's human-facing role; this directory does not run a second agent loop.
 
+Submission and admission are separate. Every entry point uses the Inbox store's
+verified submission lookup before applying today's App schema or routing defaults.
+An identical retry returns the saved receipt in any status and may link its exact
+original Event; it neither runs the mapper nor advances admission. Conflicting
+payload, explicit destination or provenance fails before Event correlation.
+A received input is not proof of Task creation, fulfillment, caller delivery or
+creator closure. Ordinary recovery advances pending admission independently.
+
 Start at [`app-inbox-host.ts`](app-inbox-host.ts): validate input, resolve its
 Task, persist attachment and expose the correlated result. Declared human-facing
 input goes directly to its stable Task through `admitConversation`. Other typed
 App input resolves synchronously through `app.task`; Task admission commits its
 exact input link. There is no inbox execution claim, lease or capacity queue.
+Mapping proposals remain provisional until Task admission atomically commits the
+exact input link. Funding or transient failure may leave the input pending for
+reconsideration; a committed attachment is never remapped.
 Mapping failures retain the input for the bounded recovery scan. Accepted Task
 outcomes are projected by exact admission identity, using events and a recovery
 scan; failure of that projection cannot roll back the Task outcome.

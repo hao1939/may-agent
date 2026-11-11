@@ -186,7 +186,14 @@ for (const topic of ["new", "none"] as const) {
       created: false,
     });
     expect(admitConversationTaskInput(f.context(), request).item).toEqual(saved);
-    expect(createAppInboxItem(f.db, request)).toEqual({ item: saved, created: false });
+    for (const replay of [request, { ...request, conversationSequence: undefined }]) {
+      expect(createAppInboxItem(f.db, replay)).toEqual({ item: saved, created: false });
+      expect(createAppInboxItem(f.db, { ...replay, id: "key-alias" })).toEqual({ item: saved, created: false });
+      expect(createAppInboxItem(f.db, { ...replay, idempotencyKey: undefined })).toEqual({
+        item: saved,
+        created: false,
+      });
+    }
     expect(getAppInboxItem(f.db, saved.id)).toEqual(saved);
     expect(f.store.readTaskContext({ taskIds: [first.item.executionTaskId!] })).toEqual(before);
     expect(admissions).toBe(1);

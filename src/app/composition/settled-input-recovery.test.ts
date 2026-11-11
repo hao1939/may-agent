@@ -9,6 +9,7 @@ import { discoverAppDefinitions } from "../adapters/discovery/app-definitions.js
 import { EventBus, EVENT_ROW_ID } from "../core/events/bus.js";
 import { createAppInboxItem, getAppInboxItem } from "../core/state/app-inbox-store.js";
 import { rejectTaskInput } from "../core/state/inbox.js";
+import { createAppEventAdmissionPlan, getAppEventAdmissionPlan } from "../core/state/app-event-admission-store.js";
 import { AppTaskAdmissionError } from "../core/state/task-admission-error.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./app-inbox-runtime.js";
 
@@ -101,3 +102,101 @@ test("restart acknowledges an exact settled request without readmitting its form
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+for (const mode of ["removed", "schema", "condition-wake", "condition-schema"] as const) {
+  test(`restart recovers a received Event command with ${mode} configuration`, async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-frozen-receipt-"));
+    let runtime: AppInboxRuntime | undefined;
+    const createBus = () => {
+      const bus = new EventBus();
+      const writer = new DbWriter(root);
+      bus.setPersistenceSubscriber(writer.handler);
+      bus.setDeliveryRecorder(writer.recordDelivery);
+      return bus;
+    };
+    try {
+      let db = getDb(root);
+      const eventId = createBus().emit({
+        type: "provider.requested",
+        source: "fixture",
+        owner: "app:recipient",
+        data: {},
+      })[EVENT_ROW_ID]!;
+      const input = { kind: "message", data: { message: "received" } };
+      const item = createAppInboxItem(db, {
+        id: "received",
+        appId: "recipient",
+        source: { kind: "system", id: `event:${eventId}` },
+        input,
+        originEventId: eventId,
+        idempotencyKey: `subscription:recipient:inbox:event:${eventId}`,
+      }).item;
+      rejectTaskInput(db, item, new AppTaskAdmissionError("Explicit rejection"), 100);
+      const saved = getAppInboxItem(db, item.id)!;
+      createAppEventAdmissionPlan(db, {
+        eventId,
+        registrySnapshotId: "original",
+        registryGeneration: 1,
+        routes: [
+          {
+            kind: "inbox",
+            appId: "recipient",
+            routeId: "inbox",
+            input,
+            conditionTaskIds: mode.startsWith("condition-") ? ["unfulfilled"] : [],
+          },
+        ],
+      });
+      closeDb(root);
+      if (mode === "schema" || mode === "condition-schema") {
+        mkdirSync(join(root, "recipient.app"));
+        writeFileSync(
+          join(root, "recipient.app", "app.js"),
+          `export default {
+          id: "recipient", version: 1, owner: "worker", inputSchema: { not: {} },
+          task() { throw new Error("A received command must not be remapped"); }, tasks: {}
+        };`,
+        );
+      }
+      db = getDb(root);
+      const registry = new AppRegistry(discoverAppDefinitions(root));
+      await registry.reload();
+      let conditionWakes = 0;
+      runtime = await startAppInboxRuntime({
+        registry,
+        db,
+        bus: createBus(),
+        schedulesEnabled: false,
+        admitTaskEvent: ({ conditionTaskIds }) => {
+          expect(conditionTaskIds).toEqual(["unfulfilled"]);
+          conditionWakes++;
+          return { accepted: true, by: "fixture-task-admission", route: "direct" };
+        },
+      });
+      const deadline = Date.now() + 3_000;
+      while (true) {
+        const plan = getAppEventAdmissionPlan(db, eventId)!;
+        if (mode === "condition-wake" ? Boolean(plan.lastError) : plan.status === "completed") break;
+        if (Date.now() >= deadline) throw new Error("Event command did not reach its expected disposition");
+        await Bun.sleep(5);
+      }
+      expect(getAppInboxItem(db, item.id)).toEqual(saved);
+      const plan = getAppEventAdmissionPlan(db, eventId)!;
+      if (mode === "condition-wake") {
+        expect(plan.status).toBe("pending");
+        expect(plan.commands[0]!.status).toBe("pending");
+        expect(plan.lastError).toContain("unavailable");
+      } else {
+        expect(plan.status).toBe("completed");
+        expect(plan.commands[0]!.status).toBe("admitted");
+      }
+      expect(conditionWakes).toBe(mode === "condition-schema" ? 1 : 0);
+      expect(db.prepare("SELECT count(*) count FROM app_tasks").get()).toEqual({ count: 0 });
+      expect(db.prepare("SELECT count(*) count FROM app_inbox_items").get()).toEqual({ count: 1 });
+    } finally {
+      runtime?.close();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+}

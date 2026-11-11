@@ -649,6 +649,8 @@ export function listAppInboxHealth(db: SqliteDb, query: { appId?: string; now?: 
 }
 
 export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { item: AppInboxItem; created: boolean } {
+  const replay = reuseAppInboxSubmission(db, input);
+  if (replay) return replay;
   validateCreate(input);
   const now = input.now ?? Date.now();
   const id = input.id ?? `app_${randomUUID()}`;
@@ -692,21 +694,23 @@ export function createAppInboxItem(db: SqliteDb, input: CreateAppInboxItem): { i
     return { item, created: true };
   }
 
-  const existing = input.idempotencyKey
+  const retained = reuseAppInboxSubmission(db, input);
+  if (!retained) throw new Error(`App inbox item ${id} conflicted with an unknown row`);
+  return retained;
+}
+
+/** Read and verify an existing submission without requiring today's App contract or writing state. */
+export function readAppInboxSubmission(db: SqliteDb, input: CreateAppInboxItem): AppInboxItem | null {
+  requiredText(input.appId, "appId");
+  const row = input.idempotencyKey
     ? db
         .prepare("SELECT * FROM app_inbox_items WHERE app_id = ? AND idempotency_key = ? AND idempotency_key != ''")
         .get(input.appId, input.idempotencyKey)
-    : db.prepare("SELECT * FROM app_inbox_items WHERE id = ?").get(id);
-  if (!existing) throw new Error(`App inbox item ${id} conflicted with an unknown row`);
-  return reuseAppInboxItem(db, rowToItem(existing), input);
-}
-
-/** Validate receipt reuse before linking an Event; never re-admit or rewrite its result. */
-export function reuseAppInboxItem(
-  db: SqliteDb,
-  item: AppInboxItem,
-  input: CreateAppInboxItem,
-): { item: AppInboxItem; created: false } {
+    : input.id
+      ? db.prepare("SELECT * FROM app_inbox_items WHERE id = ?").get(input.id)
+      : null;
+  if (!row) return null;
+  const item = rowToItem(row);
   // Conversation routing defaults are assigned at admission, and its Topic can
   // be selected during settlement. Omission does not request a new identity.
   if (item.conversationId !== undefined) {
@@ -720,7 +724,6 @@ export function reuseAppInboxItem(
   }
   validateCreate(input);
   const id = input.id ?? item.id;
-  const now = input.now ?? Date.now();
   if (item.appId !== input.appId) {
     throw new Error(`App inbox item ${id} already belongs to App ${item.appId}`);
   }
@@ -741,17 +744,29 @@ export function reuseAppInboxItem(
     if (item.originEventId !== undefined && item.originEventId !== input.originEventId) {
       throw new Error(`App inbox item ${item.id} already belongs to event ${item.originEventId}`);
     }
-    if (item.originEventId === undefined) {
-      db.run(
-        `UPDATE app_inbox_items
+  }
+  return item;
+}
+
+/** Reuse any retained submission; Event correlation is the only allowed write. */
+export function reuseAppInboxSubmission(
+  db: SqliteDb,
+  input: CreateAppInboxItem,
+): { item: AppInboxItem; created: false } | null {
+  let item = readAppInboxSubmission(db, input);
+  if (!item) return null;
+  if (input.originEventId !== undefined && item.originEventId === undefined) {
+    db.run(
+      `UPDATE app_inbox_items
          SET origin_event_id = ?, updated_at = ?
          WHERE id = ? AND origin_event_id IS NULL`,
-        [input.originEventId, now, item.id],
-      );
-      const linked = getAppInboxItem(db, item.id);
-      if (!linked) throw new Error(`Linked App inbox item ${item.id} is missing`);
-      item = linked;
-    }
+      [input.originEventId, input.now ?? Date.now(), item.id],
+    );
+    // A competing link must still belong to this exact Event. The conditional
+    // write never replaces another receipt's provenance.
+    const linked = readAppInboxSubmission(db, input);
+    if (!linked) throw new Error(`Linked App inbox item ${item.id} is missing`);
+    item = linked;
   }
   return { item, created: false };
 }

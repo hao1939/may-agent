@@ -196,6 +196,48 @@ describe("App inbox host", () => {
     ).toThrow("different input");
   });
 
+  it("returns pending and attached receipts before current schema validation or mapping", async () => {
+    let now = 1_000;
+    let mappings = 0;
+    let ready = false;
+    const installed = {
+      ...app(),
+      task: (input: Readonly<AppInputContext>) => {
+        mappings++;
+        if (!ready) throw new Error("Temporary mapping failure");
+        return desiredTask(input.id);
+      },
+    };
+    const host = new AppInboxHost({
+      db,
+      apps: [installed],
+      now: () => now,
+      attachTask: fakeTaskAttacher(db, ({ attachment }) => ({
+        taskId: attachment.kind === "existing" ? attachment.taskId : attachment.intent.id,
+      })),
+    });
+    try {
+      const saved = admit(host, "retained");
+      expect(saved.status).toBe("pending");
+      host.replaceApps([{ ...installed, inputSchema: Type.Never() }]);
+      expect(admit(host, "retained")).toEqual(saved);
+      expect(mappings).toBe(1);
+      expect(() => admit(host, "new-invalid")).toThrow("Invalid input");
+      host.replaceApps([installed]);
+      ready = true;
+      now = saved.availableAt!;
+      await host.recoverAdmissions();
+      const attached = host.get(saved.id)!;
+      expect(attached.waitingOn?.id).toBe("probe/retained");
+      host.replaceApps([{ ...installed, inputSchema: Type.Never() }]);
+      expect(admit(host, "retained")).toEqual(attached);
+      await host.recoverAdmissions();
+      expect(mappings).toBe(2);
+    } finally {
+      host.close();
+    }
+  });
+
   it("uses the exact target before Conversation routing and recovers that same attachment", async () => {
     let received: Readonly<AppInputContext> | undefined;
     let available = false;
