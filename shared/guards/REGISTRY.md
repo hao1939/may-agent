@@ -40,9 +40,9 @@ export const guard: WorkflowGuard = {
   events: ["step_done"],  // optional: filter events
   handle(event: WorkflowGuardEvent): Demand[] {
     // Return [] for no objection
-    // Return [{ type: "warn", reason: "..." }] to log a warning
+    // Return [{ type: "observe", reason: "..." }] to record an observation only
+    // Return [{ type: "warn", reason: "..." }] to log a warning for the next step
     // Return [{ type: "block", reason: "..." }] to stop the workflow
-    // Return [{ type: "run_step", reason: "...", step: { agent: "...", task: "..." } }] to inject a step
     return [];
   },
 };
@@ -50,9 +50,10 @@ export const guard: WorkflowGuard = {
 
 ## Demand Types
 
-- **warn**: Logs a warning but allows the workflow to continue.
+- **observe**: Records `guard.triggered` without interrupting or modifying prompts.
+- **warn**: Logs a warning and appends it to the next workflow agent step prompt.
 - **block**: Stops the workflow immediately with a `WorkflowBlocked` error.
-- **run_step**: Injects an additional agent step into the workflow (max 5 per run).
+  (Multi-step repair belongs explicitly in workflow TypeScript; `run_step` injection is retired.)
 
 ## Hard Gate Design Rules (KE-182)
 

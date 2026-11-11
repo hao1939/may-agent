@@ -34,6 +34,9 @@ contracts; Tier-2 design governs when wording conflicts.
 
 ## Reviews
 
+- [Agent workflow frameworks: reuse and May's boundary — 2026-11-12](reviews/workflow-framework-comparison-20261112.md)
+  — pinned GitHub comparison, reusable runner patterns and the narrower case for
+  May's Task integration; source investigation, without runtime benchmarks.
 - [Agent workload: source and running-system gaps — 2026-11-08](reviews/agent-workload-gap-review-20261108.md)
   — idle versus usable capacity, shared blockers, protected coordination and
   missing shared accounting; evidence for the workload proposal's refinements.

@@ -8,6 +8,9 @@ This manual describes the canonical App workflow surface. See
 [Workflows](../2a-design/workflows.md), [SDK](../2a-design/sdk.md), and
 [App](../2a-design/agent-app.md) for the governing contracts.
 
+For the shared Unit/Gym/Host invocation kernel and offline step-fixture workflow,
+see [Workflow as an executable skill](../proposals/workflow-business-host-boundary.md#2-three-execution-modes-over-one-host-free-kernel-unblocking-gym).
+
 The [enforcement table](../2a-design/workflows.md#enforcement-infrastructure-and-guidance)
 identifies what shared code enforces, what it only supports, and known gaps.
 The best practices below guide author decisions; uncertain choices stay advisory
@@ -49,9 +52,11 @@ reports even when findings are incomplete or the verdict asks for changes.
 Its `reviewer` is an example team capability, not a universal role or an installed
 agent guaranteed by the Host. Its description states the promised result and scope.
 
-Procedure input types belong to that module. Validate their shape and limits
-before use; a TypeScript generic does not validate incoming JSON at runtime.
-Adding a recipe does not require a new public App input variant.
+Procedure input types belong to that module. Export `inputSchema` (and optional
+`outputSchema` / `requires`) so the shared runner validates incoming JSON and
+required capabilities before entering `execute(ctx)`; a TypeScript generic alone
+does not validate runtime data. Adding a recipe does not require a new public
+App input variant.
 
 Workflows are bounded and ordered. They may use `await`, but every awaited
 agent, nested workflow, read, metric write, or fact publication must finish in
@@ -491,19 +496,24 @@ workflow or expose it as a live service.
 
 Workflow guards are pure event-to-demand functions authored through the stable
 `WorkflowGuard` contract. Add one only for a repeated, precise mechanical risk
-or an immediate high-impact boundary. Guards observe, warn, run a bounded step,
-or block under explicit policy; they do not own retries, App requests, or task
-state.
+or an immediate high-impact boundary. Guards `observe`, `warn`, or `block` under
+explicit policy; multi-step verification and bounded repair belong explicitly in
+workflow TypeScript rather than hidden guard step injection. Guards do not own
+retries, App requests, or task state.
 
 Guard evidence should remain observable through canonical trace/metric facts.
 Do not add App-specific domain routing to a shared guard.
 
 ## Testing
 
-Use `createTestAppWorkflowContext` from `@may-agent/sdk/testing` with supplied
-agent/workflow results to test domain decisions without a daemon or model. Its
-default agent reply has no domain output; supply the evidence needed for the
-branch being checked. A status-membership assertion alone proves little.
+Use `runWorkflowTest` from `@may-agent/sdk/testing` to execute a workflow module
+through the shared invocation kernel with scripted `agents` / `workflows`
+responses, symmetric `inputSchema` / step `schema` / `outputSchema` checks,
+inherited cancellation/deadlines, and strict fixture-consumption checks—with
+zero SQLite or daemon setup. `createTestAppWorkflowContext` remains available
+for passive context unit stubs. For end-to-end prompt and workflow trials
+without booting the Host, `runDirectWorkflow` composes the same kernel with
+`runDirectAgent` and emits a bounded `WorkflowRunReport` (`run.json`).
 
 For the review example, useful checks would include a complete negative review
 remaining a completed review, incomplete findings surviving in a blocker, and a

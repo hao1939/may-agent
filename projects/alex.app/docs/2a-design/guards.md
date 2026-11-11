@@ -6,7 +6,8 @@
 
 **Design status:** Accepted.
 **Implementation status:** Implemented; the runtime and public SDK recognize
-observe, warn, repair/run-step, and block.
+`observe`, `warn`, and `block` (hidden `run_step` / `repair` step injection was
+retired after `EXP-216` in favor of explicit workflow TypeScript repair loops).
 
 Guards are detection signals first. Blocking is only one intervention mode.
 
@@ -64,7 +65,6 @@ a false positive.
 |---|---|---|
 | `observe` | Emit a guard event only. Do not interrupt the agent. | Proven metric/eval signal that needs near-action visibility but should not affect work. |
 | `warn` | Emit event and inject warning/context into the current session or next workflow step. | Likely issue but agent may self-correct. |
-| `repair` | Emit event and inject/run a recovery step. | Mechanically recoverable issue such as missing verification. |
 | `block` | Stop the action/session/workflow and emit event. | High-confidence, high-impact risk. |
 
 Use `block` sparingly. Good blocking cases include secret leakage, destructive
@@ -104,9 +104,8 @@ each trigger. Agents, evaluator, and owners judge and improve the system.
 ```ts
 type GuardTriggeredData = {
   guard: string;
-  demandType: "observe" | "warn" | "repair" | "run_step" | "block";
-  action: "observed" | "warned" | "blocked" | "injected"
-    | "skipped_duplicate" | "skipped_invalid" | "skipped_limit";
+  demandType: "observe" | "warn" | "block";
+  action: "observed" | "warned" | "blocked";
   sessionId?: string;
   workflowRunId?: string;
   projectId?: string;
@@ -114,8 +113,6 @@ type GuardTriggeredData = {
   step?: string;
   reason: string;
   sourceEventType: string;
-  injectedStepLabel?: string;
-  injectedAgent?: string;
 };
 
 type GuardTriggeredEvent = {

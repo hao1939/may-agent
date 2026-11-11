@@ -42,6 +42,11 @@ owns only one bounded execution attempt.
 A workflow may ask an agent to apply a skill. The workflow controls sequence;
 the skill guides judgment inside one step. Neither owns the enclosing App/task.
 
+The [executable-skill and runner proposal](../proposals/workflow-business-host-boundary.md)
+routes Unit (`runWorkflowTest`), Host-free Direct/Gym (`runDirectWorkflow`), and
+Hosted execution through one shared portable invocation kernel while keeping
+`@may-agent/sdk` as the single authoring contract.
+
 ### Procedural evidence and agent judgment
 
 For a stable domain procedure, the owning App can fetch bounded source material,
@@ -93,7 +98,9 @@ reviewed change or settle the enclosing Task.
 
 Rules:
 
-- export explicit `name`, `description`, and `execute`;
+- export explicit `name`, `description`, and `execute` (plus optional declarative
+  `inputSchema`, `outputSchema`, and `requires` metadata validated by the shared
+  invocation kernel before or around `execute(ctx)`);
 - receive procedure parameters through typed `ctx.input`; for Task-bound work,
   read the authoritative outcome, acceptance and admitted input through the
   supplied Task context and scoped reads;

@@ -1,6 +1,11 @@
-import { Type, type ExecutionResult, type WorkflowContext } from "@may-agent/sdk";
+import { Type, type ExecutionResult, type Static, type WorkflowContext } from "@may-agent/sdk";
 
-type Input = { subjectRef: string };
+export const inputSchema = Type.Object(
+  { subjectRef: Type.String({ minLength: 1 }) },
+  { additionalProperties: false },
+);
+type Input = Static<typeof inputSchema>;
+
 const ReviewSchema = Type.Object({
   subjectRef: Type.String({ minLength: 1 }),
   verdict: Type.Optional(Type.Union([Type.Literal("pass"), Type.Literal("changes-needed")])),
