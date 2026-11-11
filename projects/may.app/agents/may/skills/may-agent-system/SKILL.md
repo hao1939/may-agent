@@ -1,6 +1,6 @@
 ---
 name: may-agent-system
-description: Guide for the agent investigating or changing May Host or Apps. Read the owning design, diagnose the affected boundary, and verify the smallest justified change.
+description: Investigate or change May Host and Apps by reading the owning design and verifying the smallest fix.
 ---
 
 # May Host System
@@ -144,9 +144,9 @@ reacts to belong in state, logs, traces, metrics, or knowledge.
   `target`/`urgency`/`ttl_ms`/`timestamp`/`trace`, and `data`.
 - Put domain fields in `data`, not on the envelope. Do not duplicate `owner`
   as `data.owner`.
-- Route only through an explicit App subscription, task subscription, exact
-  task target, or host-internal maintenance consumer. `owner` is diagnostic
-  accountability metadata, never a generic routing fallback.
+- Route only through an explicit App subscription, exact task target, or
+  host-internal maintenance consumer. `owner` is diagnostic accountability
+  metadata, never a generic routing fallback.
 - Ensure each actionable event has a declared consumer and every unaddressed
   fact has an intentional observation/unhandled disposition. Pair bookkeeping
   alone is not domain delivery.
@@ -330,7 +330,7 @@ Treat metrics as signals, not decisions.
 - Inspect the metric row, recent snapshots, related events/sessions, project
   context, and current value before acting.
 - Resolve ownership by runtime convention: explicit `metrics.owner` first;
-  project-scoped metrics enter an explicit App/task subscription;
+  project-scoped metrics enter an explicit App subscription;
   unscoped metrics fall back through a valid agent-like metric-id prefix, then
   May. The project owner remains the accountability backstop for project
   judgment.

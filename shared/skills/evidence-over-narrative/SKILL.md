@@ -1,11 +1,6 @@
 ---
 name: evidence-over-narrative
-description: >
-  When narrative cues (code comments, task descriptions, prior beliefs) conflict
-  with runtime evidence (test results, file contents, system state), trust the
-  evidence. This skill enforces an explicit evidence-gathering-then-reconciliation
-  protocol that prevents phantom fixes, stale-state busywork, and comment-driven
-  development.
+description: Reconcile comments, descriptions, and assumptions against actual runtime, file, and test evidence before acting.
 ---
 
 # Evidence Over Narrative

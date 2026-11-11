@@ -1,9 +1,6 @@
 ---
 name: system-investigation
-description: >
-  Debug may-agent runtime, metrics, alerts, handlers, workflows, and session
-  failures with a repeatable evidence loop. Use this when investigating why the
-  autonomous system is not closing the loop, not when doing normal feature work.
+description: Debug runtime, metric, alert, workflow, and session failures with a repeatable primary-evidence loop.
 ---
 
 # Skill: System Investigation

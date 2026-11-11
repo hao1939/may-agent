@@ -1,6 +1,6 @@
 ---
 name: bounded-cleanup
-description: Act on bounded cleanup when local project state proves one item is obsolete, fully superseded, unused, stale, or legacy while other work must be preserved.
+description: Prune or archive items proven obsolete or superseded while preserving active, paused, or owned work.
 ---
 
 # Bounded Cleanup

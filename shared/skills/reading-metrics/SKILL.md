@@ -1,6 +1,6 @@
 ---
 name: reading-metrics
-description: Interpret May-agent metrics as investigation signals, validate their source and trend, act on evidence, and re-measure. Use when a task, project, heartbeat, or alert includes a metric or claims a health change.
+description: Interpret metrics as investigation signals, validate their source and trend, act on evidence, and re-measure.
 ---
 
 # Reading And Reacting To Metrics

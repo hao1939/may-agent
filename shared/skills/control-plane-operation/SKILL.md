@@ -24,7 +24,7 @@ Use the control plane first.
 ```text
 conversation message -> Conversation may:primary -> fenced May App request -> result -> delivery
 project comment fact -> declared App subscription -> correlated App inbox request
-system fact -> task subscription, exact task wake, App subscription, or observation
+system fact -> declared App subscription, exact task wake, or observation
 ```
 
 The App inbox item is the commitment for an addressed result. A task is the
@@ -48,8 +48,8 @@ only, and should normally live behind SDK/query/metrics helpers.
 | Normal project request | Project comment ingress -> declared App subscription -> correlated App request |
 | Repeated stable app automation | Discover a typed App action -> validate -> App input admission |
 | Conversational human input | Publish a human Conversation message; Host admits one fenced `may` request |
-| Task-enabled project judgment | App `tasks.resolve` -> stable task -> resolved owner or owner-owned workflow |
-| Runtime maintenance callback | Narrow internal handler with no domain work authority |
+| Task-enabled project judgment | Declared App `subscriptions.toInput` + `app.task` -> stable Task -> agent or workflow |
+| Runtime maintenance callback | Fixed Host housekeeping with no domain work authority |
 | App workflow live reads | Scoped `ctx.read` or workflow-collected context |
 | Metric creation/update | Scoped `ctx.metrics.*` |
 | Agent-facing live data | `query_db` tool or workflow-injected facts |
@@ -99,7 +99,7 @@ Do not add socket candidate scanning unless there is a concrete product need.
 Default task-enabled shape:
 
 ```text
-semantic event -> tasks.resolve -> stable task key -> owner/workflow -> reconciler result
+semantic event -> subscriptions.toInput + app.task -> stable Task -> agent/workflow -> reconciler result
 ```
 
 The queue carries task keys, not copied work. The owner or workflow returns a

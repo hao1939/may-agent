@@ -1,11 +1,6 @@
 ---
 name: obstacle-pivot
-description: >
-  Structured fallback strategy when an approach fails. Instead of retrying the same
-  thing or giving up, agents classify the obstacle, select an alternative from a
-  pre-planned fallback ladder, and execute it — all within one turn. Targets FM-2.2
-  (dead-end non-recovery) and the gap between error-handling's "don't retry blindly"
-  principle and actually knowing what to do instead.
+description: Classify failed approaches and switch to a concrete fallback strategy instead of repeating blocked steps.
 ---
 
 # Obstacle Pivot: When Plan A Fails, Execute Plan B

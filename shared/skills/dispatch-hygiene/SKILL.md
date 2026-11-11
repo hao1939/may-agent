@@ -1,6 +1,6 @@
 ---
 name: dispatch-hygiene
-description: Prevent duplicate, completed, blocked, or already-running work before direct agent call/fork or proposed task actions by checking canonical task resources, receipts, attempts, Conditions, active sessions, and owner disposition.
+description: Check canonical Task state, receipts, Conditions, and active sessions before calling agents or proposing Task work.
 ---
 
 # Dispatch Hygiene — Pre-Dispatch Completion Check

@@ -1,9 +1,6 @@
 ---
 name: project-loop-driver
-description: >
-  Drive a V3 May-agent Agent App toward its goal through owner review,
-  task-tree judgment, evidence, exact waits, and canonical project events. Use
-  when judging whether a project is moving, blocked, ready for work, or terminal.
+description: Drive an Agent App toward its goal through owner review, Task-tree judgment, evidence, and exact waits.
 ---
 
 # Skill: Project Loop Driver

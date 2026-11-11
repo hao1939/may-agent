@@ -1,6 +1,6 @@
 ---
 name: provider-proof-approval
-description: Diagnose provider, credential, model, or API failures when local evidence compares a failing path against a healthy control. Prepare bounded proof and a remediation proposal before any credential, provider, routing, or production configuration mutation.
+description: Compare failing provider/credential/model paths against a healthy control and prepare a bounded remediation proposal.
 ---
 
 # Provider Proof Approval

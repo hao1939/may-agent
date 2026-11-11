@@ -1,11 +1,6 @@
 ---
 name: budget-before-act
-description: >
-  Turn-budget awareness and delivery assurance. Before starting work, agents estimate
-  how many turns each requirement costs, scope down if over budget, create deliverable
-  skeletons early, and checkpoint progress at 50% and 75% marks. Targets FM-3.1
-  (premature termination / non-delivery) — the #1 uncovered failure mode at 31
-  occurrences across all agents.
+description: Estimate turn cost up front, scope to budget, scaffold deliverables early, and checkpoint progress before limits hit.
 ---
 
 # Budget-Before-Act: Estimate Turns, Guarantee Delivery

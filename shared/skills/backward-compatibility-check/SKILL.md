@@ -1,9 +1,6 @@
 ---
 name: backward-compatibility-check
-description: >
-  When changing data formats, APIs, or schemas, always verify what happens to
-  existing data. New code must handle both old and new formats, or include a
-  migration step for existing data.
+description: Verify existing persisted data and callers remain supported or explicitly migrated when changing schemas or APIs.
 ---
 
 # Backward Compatibility Check

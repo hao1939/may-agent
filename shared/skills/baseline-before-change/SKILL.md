@@ -1,10 +1,6 @@
 ---
 name: baseline-before-change
-description: >
-  Establish a verifiable baseline of the current state before making changes.
-  Without a baseline, post-change verification is meaningless — you can't tell
-  whether failures are caused by your changes or were pre-existing. This skill
-  closes the most common gap in verification: the "pre-existing excuse" (AP-3).
+description: Record a verifiable baseline before editing so post-change checks distinguish new regressions from prior state.
 ---
 
 # Skill: Baseline Before Change

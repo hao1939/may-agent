@@ -1,9 +1,6 @@
 ---
 name: context-verification
-description: >
-  When session context or prior work claims say "X is already done" or "Y was
-  completed previously," verify against the filesystem before trusting. Context
-  can be stale, incorrect, or from a failed session.
+description: Verify prior session or context claims ("already done") against actual files and state before relying on them.
 ---
 
 # Context Claim Verification

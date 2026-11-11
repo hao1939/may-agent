@@ -60,8 +60,7 @@ describe("shared system skills", () => {
   it("control-plane-operation keeps agents on the event/app/workflow boundary", () => {
     const content = readSkill("shared/skills/control-plane-operation/SKILL.md");
     expect(content).toContain("project comment fact -> declared App subscription -> correlated App inbox request");
-    expect(content).toContain("system fact -> task subscription, exact task wake, App subscription, or observation");
-    expect(content).toContain("runtime fact -> internal handler -> bounded maintenance operation");
+    expect(content).toContain("system fact -> declared App subscription, exact task wake, or observation");
     expect(content).toContain("Discover a typed App action -> validate -> App input admission");
     expect(content).toContain("Do not add per-task handlers, assignment events, or another request queue");
     expect(content).toContain("docker exec may-agent may-agent --emit");

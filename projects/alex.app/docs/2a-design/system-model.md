@@ -284,6 +284,20 @@ reads, execution and atomic state changes. No broker, API server or event for
 every storage operation is required. [Architecture](architecture.md) owns the
 component boundaries, absence behavior and code organization.
 
+## Rejected and retired mechanisms
+
+Keep one owner and one current contract for each responsibility. Do not
+reintroduce these retired or rejected mechanisms in new Host or App designs:
+
+| Rejected or retired mechanism | Why it is excluded | Supported replacement |
+| --- | --- | --- |
+| Standalone cold session resurrection (`agents.resume`) | Turns execution history into a competing work lifecycle | Recover unfinished durable obligations through their owning Task; steer only live sessions |
+| Crash workflow step-replay (`workflow` `resume`) | Replays cached steps without proving external effect safety | Re-attempt the owning Task; inspect existing operation receipts or destination state before writes |
+| Configurable Host `cron.json` maintenance handlers | Duplicates scheduling and reload state inside Host | Fixed Host housekeeping for DB/liveness upkeep; App schedules and observers for domain work |
+| Parallel App event/Task resolvers (`tasks.subscriptions` / `tasks.resolve`, `owner` alias, dedicated Conversation executor) | Splits admission and settlement across competing code paths | Explicit App `agent`, `subscriptions.toInput`, `app.task`, and unified Task `communication` |
+| Worker self-closure or PR-close auto-completion | Conflates one attempt's convergence or PR merge with fulfilling the caller's obligation | Worker returns `converged`; only the authorized creator or opted-in App policy closes the Task |
+| Unbounded runbooks or repeated schema copies in every model call | Taxes model attention and hides skills behind catalog truncation | Single-definition tool schemas, concise `AGENTS.md`, on-demand skills, and `check:model-surface` budgets |
+
 ## Names and detailed contracts
 
 In this workspace, **May** is `app:may`, with policy in `projects/may.app`.

@@ -1,9 +1,6 @@
 ---
 name: primary-source-analysis
-description: >
-  When analyzing failures or drawing conclusions, always read primary sources
-  (logs, code, data) before accepting summaries or reports. Summaries can be
-  wrong, biased, or incomplete.
+description: Read primary logs, code, and data directly before trusting summaries or secondary reports.
 ---
 
 # Primary Source Analysis

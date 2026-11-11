@@ -1,9 +1,6 @@
 ---
 name: verification
-description: >
-  Mandatory verification protocols for agent work products. Ensures agents confirm
-  their outputs are correct before claiming completion. Leverages P61 Ops Receipts
-  (structured evidence) to prevent hallucination.
+description: Verify work products with concrete command, file, or state receipts before claiming completion.
 ---
 
 # Skill: Verification

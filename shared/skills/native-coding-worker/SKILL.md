@@ -1,6 +1,6 @@
 ---
 name: native-coding-worker
-description: Run a bounded investigation, review, comparison, or patch with Codex CLI or Claude Code through May's awaited run_cli_agent tool. Use when an independent coding worker adds useful capacity or a second opinion.
+description: Run a bounded investigation, review, or patch with Codex CLI or Claude Code via run_cli_agent.
 ---
 
 # Native Coding Worker

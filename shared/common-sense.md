@@ -14,8 +14,6 @@ controls requirements. An App extends its owner agent with a scoped address,
 policy, shared context and knowledge, capabilities and collaborating agents.
 Addressing the App normally addresses that agent; its input policy can select
 a specialist. A bounded helper contributes without taking over the Task.
-Current durable admission still requires an App route; standalone Task support
-is planned, not an available API.
 
 ### Projects
 Projects hold source, knowledge, and documentation. They are not a second work
@@ -24,9 +22,6 @@ Task retains an independent outcome that must survive attempts. Continue its exa
 after a retry, correction, or external update. Do not create a replacement Task
 just because progress is slow. Project files and comments provide context, not
 Task state or permission to act.
-
-### Evaluator Feedback (Learning Loop)
-If `projects/alex.app/generated/agent-feedback/<you>.md` exists, read it at session start. It contains the evaluator's critique of your most recent session. Adapt your approach to avoid repeating flagged issues. Acknowledge relevant feedback in your plan.
 
 ### Heartbeats (Autonomy)
 A scheduled wake supplies an opportunity to review the current outcome, not

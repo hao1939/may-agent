@@ -1,9 +1,6 @@
 ---
 name: absent-information-discovery
-description: >
-  After fixing all visible/test-caught issues, cross-reference authoritative source
-  documents (models, schemas, specs) to discover requirements that no test reveals.
-  Tests are a subset of correctness, not the full definition.
+description: Cross-reference authoritative specs, schemas, and models after tests pass to catch unasserted requirements.
 ---
 
 # Absent Information Discovery

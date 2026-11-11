@@ -335,6 +335,21 @@ reads; agents choose what to explore. A summary must expose its identity and
 limits, so omitted detail remains discoverable. Continuity lives in durable
 App/project/task state and session evidence, not an ever-growing default prompt.
 
+Apply four model-surface rules when authoring prompts, skills, and tool schemas:
+
+- **Do not lecture what code already enforces:** When Host or tool validation
+  deterministically enforces an invariant and returns an actionable error on
+  violation, keep prompt guidance to at most one sentence.
+- **Keep situational runbooks in skills:** Always-loaded `AGENTS.md` files own
+  role identity, authority, delegation boundaries, and communication defaults;
+  domain- or trigger-specific procedures belong in on-demand skills.
+- **Select information rather than compressing logs:** Human-facing replies
+  state the decision, user-visible outcome, material limitation, and artifact
+  or PR link; keep exhaustive step logs and check inventories in Task evidence.
+- **Ratchet the model-facing surface:** Bound combined prompt, skill-catalog,
+  and tool-schema growth with automated checks, zero silent skill omissions,
+  and referential checks against retired contracts.
+
 See [sessions.md](../2a-design/sessions.md) and
 [skills.md](../2a-design/skills.md).
 
