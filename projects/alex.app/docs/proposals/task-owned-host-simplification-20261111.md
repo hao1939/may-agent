@@ -42,7 +42,19 @@ Apps and people rely on. It does not introduce another operating mode.
   results, exact process/attempt ownership, descendant cleanup, usage accounting,
   cancellation, atomic settlement and stale-result fencing. Common settlement
   rejects substituted input payloads and refuses to converge covered input while
-  its accepted human Request remains open.
+  its accepted human Request remains open, including live inputs acknowledged
+  during the attempt. Explicit result input scope remains supported.
+- Preserve Conversation lineage using its saved input binding: cancelled or
+  closed Conversations require a successor even though their executor is now
+  `agent`. Conversation turns retain the App's canonical workspace; an explicit
+  workflow may still request a Task worktree.
+- Reserve the retired executor name `conversation` at Task admission, custom
+  adapter registration and dispatch. Custom adapters using that name must rename
+  and migrate their retained specifications before upgrading. The offline
+  converter restores verified saved event bodies, including artifact-backed and
+  pre-envelope rows, and refuses mixed pending subscription/Task routes.
+- Update the companion Apps checks to use only `app.agent` and reject nonempty
+  retired cron declarations, including disabled entries, in the ordinary gate.
 
 Historical SDK Conversation types/schemas remain deprecated for validating saved
 history. They are not an executable compatibility contract. No startup format
@@ -57,11 +69,11 @@ tests and fixtures are counted separately.
 
 | Area | Added | Deleted | Net reduction |
 | --- | ---: | ---: | ---: |
-| Host implementation / SDK / operations | 805 | 3,955 | 3,150 |
-| Companion App implementation | 73 | 50 | -23 |
-| Combined implementation | 878 | 4,005 | **3,127** |
-| Host tests / fixtures | 1,472 | 13,179 | 11,707 |
-| Companion App tests / fixtures | 276 | 110 | -166 |
+| Host implementation / SDK / operations | 833 | 3,968 | 3,135 |
+| Companion App implementation / checks | 81 | 76 | -5 |
+| Combined implementation | 914 | 4,044 | **3,130** |
+| Host tests / fixtures | 1,660 | 13,187 | 11,527 |
+| Companion App tests / fixtures | 310 | 110 | -200 |
 
 The large test deletion retires suites for removed adapters; it is not runtime
 code savings. Enduring contracts are exercised through the common production
@@ -72,22 +84,27 @@ has been benchmarked.
 
 - Final Host gate: `bun run ci` passed, including Host/SDK typechecks, canonical
   App-boundary validation, ESLint errors and the complete portable suite:
-  **4,098 passed, 3 skipped, 0 failed**, across 351 files (370.43 seconds).
+  **4,109 passed, 3 skipped, 0 failed**, across 351 files.
   The three skips are optional installed-agent/configuration checks. Real browser,
   daemon, process and scripted worker tests executed; none was disabled for this
   change. Earlier failures in retired fixtures and status-label assertions were
   corrected before this successful full run.
 - Affected Apps: **84 passed, 0 failed** across both App definitions, May's metric
   helper, scripted metric integration and metric-response workflow tests.
+- Apps checker regressions: **7 passed, 0 failed**, covering missing/empty,
+  nonempty, disabled, malformed and nonarray retired cron declarations. The
+  complete `check:may-design` gate passes with one pre-existing root-layout
+  warning for `reports/`.
 - Both full affected App TypeScript projects pass against the paired current
   Host/SDK. Validation uses local source links, not a deployed bundle.
 - Coverage includes real scripted Task workers, direct answers and multiple
   asks, delegated/nested work, corrections before failure/Stop, restart history,
   SQLite contention, shared funding, exact input scope, failed delegation and
   retained open Requests.
-- Five offline conversion regressions cover retained identity/history, atomic
+- Ten offline conversion/contract regressions cover retained identity/history, atomic
   dry-run/refusal, idempotency, unsafe/orphan/frozen state and startup rejection
-  before another execution attempt.
+  before another execution attempt, exact inline/artifact/pre-envelope payloads,
+  corrupt or mixed-route refusal and the reserved executor name.
 - The actual conversion CLI also passes dry-run and apply smoke checks against
   isolated empty state. This checks command wiring, not a retained-state upgrade;
   retained transformations are covered by the regressions above.
@@ -98,6 +115,8 @@ Source preparation and integration:
 
 - Host: `refactor/task-owned-simplification`, based on
   `946d3ff4ad314394714e3a196d0f95a7ac8e4914`.
+  Review fixes and both GitHub checks passed at
+  `3c1522e162b758c7d8ab6cae13b81b0278e92930`.
 - Apps: `refactor/task-owned-app-contract`, based on
   `d8ab97cd7ae28e0cd4a2273867a08c2c34b1f90e`.
 

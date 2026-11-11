@@ -42,7 +42,7 @@ try {
   if (store.rootTaskId() !== first.intent.parentId) {
     throw new Error("The example seed must establish the Task's structural root");
   }
-  const agent = app.agent ?? app.owner!;
+  const agent = app.agent;
   const context = appTaskContext({
     appDir: resolve(root, "projects/alex.app/docs/examples"),
     projectDir: resolve(root, "projects/alex.app/docs/examples"),

@@ -9,7 +9,6 @@ const projectsRoot = join(root, "projects");
 const finalRuntimeGate = process.argv.includes("--final-runtime");
 const errors: string[] = [];
 let checkedWorkflows = 0;
-let checkedHandlers = 0;
 const ignoredDirectories = new Set([
   ".git",
   ".state",
@@ -84,8 +83,7 @@ function discoverAppWorkflows(): string[] {
   return workflows;
 }
 
-function discoverEnabledHandlers(): string[] {
-  const handlers = new Set<string>();
+function checkRetiredCronDeclarations(): void {
   for (const appEntry of readdirSync(projectsRoot).sort()) {
     if (!appEntry.endsWith(".app")) continue;
     const agentsDir = join(projectsRoot, appEntry, "agents");
@@ -107,25 +105,10 @@ function discoverEnabledHandlers(): string[] {
         errors.push(`${relative(root, cronPath)}: expected a JSON array`);
         continue;
       }
-      for (const entry of entries) {
-        if (!entry || typeof entry !== "object") continue;
-        const record = entry as Record<string, unknown>;
-        if (record.enabled === false || typeof record.handler !== "string")
-          continue;
-        const handlerName = record.handler.trim();
-        if (!handlerName) continue;
-        const handlerPath = join(agentDir, "handlers", `${handlerName}.ts`);
-        if (!existsSync(handlerPath)) {
-          errors.push(
-            `${relative(root, cronPath)}: enabled handler ${handlerName} has no ${relative(root, handlerPath)}`,
-          );
-          continue;
-        }
-        handlers.add(handlerPath);
-      }
+      if (entries.length > 0)
+        errors.push(`${relative(root, cronPath)}: retired agent cron declarations must be empty; use App schedules`);
     }
   }
-  return [...handlers].sort();
 }
 
 function checkTypescriptCompatibility(
@@ -197,11 +180,9 @@ async function checkWorkflowCompatibility(runtimeRoot: string): Promise<void> {
   };
 
   const workflows = discoverAppWorkflows();
-  const handlers = discoverEnabledHandlers();
   checkedWorkflows = workflows.length;
-  checkedHandlers = handlers.length;
-  checkTypescriptCompatibility(runtimeRoot, [...workflows, ...handlers]);
-  for (const workflowPath of [...workflows, ...handlers]) {
+  checkTypescriptCompatibility(runtimeRoot, workflows);
+  for (const workflowPath of workflows) {
     let result: Awaited<ReturnType<typeof Bun.build>>;
     try {
       result = await Bun.build({
@@ -237,6 +218,7 @@ for (const entry of readdirSync(projectsRoot).sort()) {
   if (entry.endsWith(".app") && statSync(appDir).isDirectory())
     checkApp(appDir);
 }
+checkRetiredCronDeclarations();
 
 if (finalRuntimeGate) {
   const configuredRuntimeRoot = process.env.MAY_AGENT_RUNTIME_ROOT;
@@ -282,6 +264,6 @@ if (finalRuntimeGate) {
 
 for (const error of errors) console.error(`ERROR ${error}`);
 console.log(
-  `Canonical Agent App integrity: ${errors.length} error(s); ${finalRuntimeGate ? `Apps + final Runtime (${checkedWorkflows} workflows and ${checkedHandlers} enabled handlers checked)` : "Apps"}`,
+  `Canonical Agent App integrity: ${errors.length} error(s); ${finalRuntimeGate ? `Apps + final Runtime (${checkedWorkflows} workflows checked)` : "Apps"}`,
 );
 if (errors.length > 0) process.exitCode = 1;
