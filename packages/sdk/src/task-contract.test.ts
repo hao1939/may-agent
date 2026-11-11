@@ -722,4 +722,23 @@ describe("project task handler contract", () => {
       }),
     ).toEqual({ ok: false, error: "verifier accepted must be boolean" });
   });
+
+  it("keeps serialized Task result and change schemas within ratcheted model-surface budgets without duplicating fields", () => {
+    const resultJson = JSON.stringify(taskAgentResultSchema);
+    const changesJson = JSON.stringify(taskChangesSchema);
+    expect(resultJson.length).toBeLessThanOrEqual(8_400);
+    expect(changesJson.length).toBeLessThanOrEqual(6_500);
+    expect(resultJson.match(/"expectedConditionGeneration":\{/g)?.length).toBe(1);
+    expect(resultJson.match(/"requestUpdates":\{/g)?.length).toBe(1);
+
+    for (const disallowed of [
+      { state: "converged", summary: "Done", facts: [], continue: true },
+      { state: "converged", summary: "Done", facts: ["ok"], report: true },
+      { state: "incomplete", summary: "Blocked", facts: ["err"], continue: true },
+      { state: "incomplete", summary: "Blocked", facts: ["err"], requests: [] },
+      { state: "incomplete", summary: "Blocked", facts: ["err"], communication: [] },
+    ]) {
+      expect(Check(taskAgentResultSchema, disallowed)).toBe(false);
+    }
+  });
 });

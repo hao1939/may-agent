@@ -350,4 +350,14 @@ describe("App Task read tool", () => {
       ),
     ).toEqual({ error: "No current fenced Task attempt" });
   });
+
+  it("keeps the serialized tasks tool surface within its ratcheted model-surface budget", () => {
+    const tool = createAppTaskReadTool({ bus: new EventBus() });
+    const serialized = JSON.stringify({
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.parameters,
+    });
+    expect(serialized.length).toBeLessThanOrEqual(11_400);
+  });
 });
