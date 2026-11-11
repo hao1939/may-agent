@@ -30,6 +30,10 @@ while earlier independent work waits. A message or a Request record alone does
 not schedule work. Tasks use ordinary scoped controls, with no Conversation-only
 control or followUp protocol.
 
+Turn Stop interrupts the current attempt and stops its considered chat inputs.
+Ordinary inputs in the same batch retain their admission and return links for a
+fresh attempt of the same Task. Newer chat input remains pending.
+
 Task result acceptance, communication and input settlement share the existing
 fenced transaction. Failed settlement retains input for normal Task retry.
 Committed messages have stable operation identities, and external transport

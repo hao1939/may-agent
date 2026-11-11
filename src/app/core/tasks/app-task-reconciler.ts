@@ -3526,7 +3526,7 @@ export function releaseStaleAppTaskResult(
 /** An assigning owner can stop this attempt's input without closing the Task. */
 export function stopAppTaskAttempt(
   config: AppTaskContext,
-  input: { taskId: string; attemptId: string; expectedGeneration: number; reason: string },
+  input: { taskId: string; attemptId: string; expectedGeneration: number; reason: string; retainInputKeys?: readonly string[] },
 ) {
   const tree = config.resourceStore.readTaskContext({ taskIds: [input.taskId] });
   const resource = tree.resources?.[input.taskId];
@@ -3534,6 +3534,8 @@ export function stopAppTaskAttempt(
   if (!resource || !attempt || attempt.taskId !== input.taskId || attempt.taskGeneration !== input.expectedGeneration)
     throw new Error("Attempt stop is stale or mismatched");
   const inputKeys = taskInputAdmissionKeys(attempt.events ?? [], attempt.continuedInputKeys);
+  const retained = input.retainInputKeys ?? [];
+  if (retained.some((key) => !inputKeys.includes(key))) throw new Error("Retained input does not belong to this attempt");
   if (attempt.failureReason === "owner-stopped") return { changed: false, inputKeys };
   if (
     resource.status.currentAttemptId !== input.attemptId ||
@@ -3545,10 +3547,13 @@ export function stopAppTaskAttempt(
   finishAttempt(tree, resource, "interrupted", input.reason, new Date().toISOString());
   current.failureReason = "owner-stopped";
   for (const key of inputKeys) delete resource.status.inputWaits?.[key];
+  retainTaskInputWait(config, resource, retained, {
+    taskGeneration: input.expectedGeneration, conditions: [], pending: true,
+  });
   if (resource.status.inputWaits && Object.keys(resource.status.inputWaits).length === 0)
     delete resource.status.inputWaits;
   touchResource(resource, {
-    phase: "attention",
+    phase: retained.length ? "pending" : "attention",
     observedGeneration: input.expectedGeneration,
     currentAttemptId: undefined,
     executionRetryAt: undefined,

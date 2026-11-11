@@ -32,6 +32,7 @@ import {
 } from "./conversation-task-turns.js";
 import { createConversationTopic, linkConversationTopicTask, readAppConversationResource } from "./conversations.js";
 import { admitTaskInput } from "./inbox.js";
+import { readTaskInputs } from "../tasks/app-task-inputs.js";
 import { TaskBudgetAdmissionStore } from "./task-budget-admission.js";
 
 const roots: string[] = [];
@@ -278,6 +279,58 @@ test("Stop responds to the latest considered human input after a mixed-input ret
   expect(getAppInboxItem(f.db, correction.item.id)?.result?.response).toContain("Stopped this turn");
   expect(getAppInboxItem(f.db, first.item.id)?.result).toBeUndefined();
   expect(getAppInboxItem(f.db, "review")?.result).toBeUndefined();
+  expect(getAppInboxItem(f.db, newer.item.id)?.status).not.toBe("done");
+});
+
+test.each([false, true])("mixed-batch Stop retains ordinary input and its return link across restart (continued: %s)", (continued) => {
+  const f = fixture();
+  const chat = f.admit();
+  const evidence = createAppInboxItem(f.db, {
+    id: "evidence", appId: app.id, source: { kind: "app", id: "reviewer" },
+    targetTaskId: chat.taskId, input: { kind: "evidence", data: { finding: "Verified" } },
+    channel: "agent:reviewer", idempotencyKey: "review-result",
+  }).item;
+  admitTaskInput(f.context(), {
+    appId: app.id, attachment: { kind: "existing", taskId: chat.taskId },
+    idempotencyKey: "task:evidence", inboxInputId: evidence.id,
+    inputContext: { id: evidence.id, source: evidence.source, input: evidence.input },
+  });
+  let claim = f.claim(chat.taskId);
+  if (continued) {
+    deferAppTask(f.context(), claim, { disposition: "waiting", continue: true, summary: "Continue verification" });
+    claim = f.claim(chat.taskId);
+    expect(claim.continuedInputKeys).toContain("task:evidence");
+  }
+  const newer = f.admit("newer", 2);
+  const before = getAppInboxItem(f.db, evidence.id);
+  const target = { appId: app.id, conversationId: "chat", turnId: claim.attemptId, expectedRevision: claim.generation };
+  const taskBefore = f.store.readTask(chat.taskId);
+  f.db.exec(`CREATE TRIGGER refuse_mixed_stop BEFORE UPDATE OF handling ON app_inbox_items
+    BEGIN SELECT RAISE(ABORT, 'cannot record mixed Stop'); END`);
+  expect(() => stopConversationTaskTurn(f.context(), target)).toThrow("cannot record mixed Stop");
+  expect(f.store.readTask(chat.taskId)).toEqual(taskBefore);
+  expect(f.store.readAttempt(claim.attemptId)?.state).toBe("running");
+  expect(getAppInboxItem(f.db, evidence.id)).toEqual(before);
+  f.db.exec("DROP TRIGGER refuse_mixed_stop");
+  expect(stopConversationTaskTurn(f.context(), target).changed).toBe(true);
+  expect(f.store.readAttempt(claim.attemptId)).toMatchObject({ state: "interrupted", failureReason: "owner-stopped" });
+  expect(getAppInboxItem(f.db, chat.item.id)?.handling?.phase).toBe("stopped");
+  expect(getAppInboxItem(f.db, chat.item.id)?.result?.response).toContain("Stopped this turn");
+  expect(getAppInboxItem(f.db, evidence.id)).toEqual(before);
+  expect(getAppInboxItem(f.db, newer.item.id)?.status).not.toBe("done");
+  expect(readAppTaskAdmissionOutcome(f.context(), chat.taskId, "task:evidence")).toBeNull();
+  f.reopen();
+  expect(stopConversationTaskTurn(f.context(), target).changed).toBe(false);
+  expect(getAppInboxItem(f.db, evidence.id)).toEqual(before);
+  const next = f.claim(chat.taskId);
+  expect(readTaskInputs(f.context(), next).map(({ key }) => key).sort()).toEqual([
+    "conversation-input:newer", "task:evidence",
+  ]);
+  completeAppTask(f.context(), next, { summary: "Evidence accepted", inputKeys: ["task:evidence"] });
+  expect(readAppTaskAdmissionOutcome(f.context(), chat.taskId, "task:evidence")).toMatchObject({
+    state: "converged", summary: "Evidence accepted",
+  });
+  expect(getAppInboxItem(f.db, chat.item.id)?.handling?.phase).toBe("stopped");
   expect(getAppInboxItem(f.db, newer.item.id)?.status).not.toBe("done");
 });
 

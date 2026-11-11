@@ -37,6 +37,7 @@ import {
   closeInstalledAppTaskRuntimes,
   installAppTaskRuntimes,
   reconcileLoadedAppTaskOnce,
+  stopLoadedConversationTurn,
 } from "./app-task-runtime.js";
 import { makeTaskRetryDue } from "./app-task-test-support.js";
 import type { TaskAgentInput } from "./execution.js";
@@ -534,6 +535,56 @@ test("common Conversation execution retains old admissions and can read ordinary
   } finally {
     await f.close();
   }
+});
+
+test("mixed-batch Stop emits interruption, rejects the late answer and completes ordinary input on a fresh attempt", async () => {
+  let stopped = false;
+  let stopEvents = 0;
+  let stopError: unknown;
+  const inputBatches: string[][] = [];
+  const stopObserved = Promise.withResolvers<void>();
+  const f = await fixture(async () => ({ state: "converged", summary: "Evidence handled", facts: [] }), "task",
+    async ({ attempt }) => {
+      inputBatches.push(attempt.events.inputs?.map(({ id }) => id).sort() ?? []);
+      if (stopped) return;
+      stopped = true;
+      try {
+        stopLoadedConversationTurn({ bus: f.bus, target: {
+          appId: "sample", conversationId: "discussion", turnId: attempt.attemptId,
+          expectedRevision: f.store.readTask(attempt.task.id)!.metadata.generation,
+        } });
+        await stopObserved.promise;
+      } catch (error) { stopError = error; throw error; }
+    });
+  const unsubscribe = f.bus.listen((event) => {
+    if (event.type === "app.task.attempt.stopped") { stopEvents++; stopObserved.resolve(); }
+  });
+  try {
+    const ask = f.admit("ask").item;
+    const evidence = f.inbox.host.admit({
+      id: "evidence", appId: "sample", targetTaskId: ask.executionTaskId!,
+      source: { kind: "app", id: "reviewer" }, input: { kind: "evidence", data: { finding: "Verified" } },
+    }).item;
+    await f.run(ask.executionTaskId!);
+    expect(stopError).toBeUndefined();
+    expect(stopped).toBe(true);
+    expect(stopEvents).toBe(1);
+    expect(getAppInboxItem(f.db, "ask")?.handling?.phase).toBe("stopped");
+    await until(() => Object.values(f.store.readTaskContext({ taskIds: [ask.executionTaskId!] }).attempts ?? {})
+      .some(({ acceptedResult }) => acceptedResult?.state === "converged"));
+    const attempts = Object.values(f.store.readTaskContext({ taskIds: [ask.executionTaskId!] }).attempts ?? {});
+    expect(attempts).toHaveLength(2);
+    const interrupted = attempts.find(({ failureReason }) => failureReason === "owner-stopped");
+    expect(interrupted?.state).toBe("interrupted");
+    expect(interrupted?.acceptedResult).toBeUndefined();
+    await f.inbox.host.refreshTaskResults("sample", ask.executionTaskId!);
+    expect(inputBatches).toEqual([["ask", "evidence"], ["evidence"]]);
+    expect(getAppInboxItem(f.db, "evidence")).toMatchObject({
+      status: "done", taskAdmissionKey: "task:evidence", source: evidence.source,
+      targetTaskId: evidence.targetTaskId, result: { summary: "Evidence handled" },
+    });
+    expect(getAppInboxItem(f.db, "ask")?.handling?.phase).toBe("stopped");
+  } finally { unsubscribe(); await f.close(); }
 });
 
 test("Request revisions and ownership are checked before publication, independently of waiting", async () => {

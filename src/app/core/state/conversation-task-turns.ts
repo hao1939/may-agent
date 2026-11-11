@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { appTaskAttemptReport, stopAppTaskAttempt } from "../tasks/app-task-reconciler.js";
+import { readTaskInputs } from "../tasks/app-task-inputs.js";
 import type { AppTaskContext } from "../tasks/app-task-store.js";
 import {
   createAppInboxItem,
@@ -75,26 +76,27 @@ export function stopConversationTaskTurn(config: AppTaskContext, target: AppTurn
   const taskId = conversationTaskLineage(config, target.appId, target.conversationId).taskId;
   const reason = "Human stopped this turn";
   return stateTransaction(config.resourceStore.db, () => {
+    const attempt = config.resourceStore.readAttempt(target.turnId);
+    const inputs = attempt ? readTaskInputs(config, {
+      taskId, generation: target.expectedRevision,
+      events: attempt.events ?? [], continuedInputKeys: attempt.continuedInputKeys,
+    }) : [];
+    const items = inputs.filter(({ key }) => key.startsWith("conversation-input:")).map((input) => {
+      const item = getAppInboxItem(config.resourceStore.db, input.id);
+      if (!item || item.taskAdmissionKey !== input.key || item.executionTaskId !== taskId ||
+        item.conversationId !== target.conversationId || item.appId !== target.appId)
+        throw new Error("Stopped input does not belong to the Conversation");
+      return item;
+    });
     const result = stopAppTaskAttempt(config, {
       taskId,
       attemptId: target.turnId,
       expectedGeneration: target.expectedRevision,
       reason,
+      // Stopping the human Turn does not withdraw independently admitted work.
+      retainInputKeys: inputs.filter(({ key }) => !key.startsWith("conversation-input:")).map(({ key }) => key),
     });
     if (result.changed) {
-      const items = result.inputKeys.map((key) => {
-        const item = key.startsWith("conversation-input:")
-          ? getAppInboxItem(config.resourceStore.db, key.slice("conversation-input:".length))
-          : null;
-        if (
-          !item ||
-          item.executionTaskId !== taskId ||
-          item.conversationId !== target.conversationId ||
-          item.appId !== target.appId
-        )
-          throw new Error("Stopped input does not belong to the Conversation");
-        return item;
-      });
       const responseItem = items.filter((item) => item.source.kind === "human").at(-1) ?? items.at(-1);
       for (const item of items) {
         config.resourceStore.db.run(
