@@ -91,7 +91,9 @@ proposal dispositions and navigation reflect completed source integration.
 `bun run check:may-design` passed against the merged source tree, including
 executable App examples, with the existing unclassified `reports` warning.
 `git diff --check` passed. This documentation pass does not resolve or reclassify
-the separate approval-composition failure above.
+the separate approval-composition failure above. Its later source fix and
+synthetic verification are recorded in the
+[approval-contract cleanup](improvement-approval-contract-cleanup-20261112.md).
 
 Shared-workspace verification additionally passed documentation integrity and
 executable examples. Its full gate stops at two ignored, disabled symlinks for

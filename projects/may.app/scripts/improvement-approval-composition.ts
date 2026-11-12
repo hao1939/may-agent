@@ -65,7 +65,7 @@ const { readAppTaskAdmissionOutcome } = await import(
 const { createTestAppWorkflowContext } = await import(
   join(host, "packages/sdk/src/testing.ts")
 );
-const { default: evaluationApp, taskIntentForInput } = await import(
+const { default: evaluationApp } = await import(
   join(app, "projects/alex.app/app.ts")
 );
 const { reviewTaskOutcome } = await import(
@@ -90,7 +90,7 @@ const { completeAppTask } = await import(
   join(host, "src/app/core/tasks/app-task-reconciler.ts")
 );
 const { EventBus } = await import(join(host, "src/app/core/events/bus.ts"));
-const { createEventInterface } = await import(
+const { createEventInterface, deliverConversationApproval } = await import(
   join(host, "src/app/core/events/interface.ts")
 );
 const { loadPersistedEvent } = await import(
@@ -392,16 +392,24 @@ async function main() {
   const writer = new DbWriter(f.root);
   bus.setPersistenceSubscriber(writer.handler);
   bus.setDeliveryRecorder(writer.recordDelivery);
-  const conversationRoute = bus.subscribeDurableRoute(
-    (event: { type: string }) =>
-      event.type === "conversation.message.created"
-        ? {
-            accepted: true,
-            by: "synthetic-conversation",
-            route: "direct" as const,
-          }
-        : undefined,
-  );
+  let approvalEventId = 0;
+  let conversationInputs = 0;
+  const conversationRoute = bus.subscribeDurableRoute((event: any) => {
+    if (event.type !== "conversation.message.created") return;
+    const approval = deliverConversationApproval(event, db, bus);
+    if (approval?.eventId) {
+      approvalEventId = approval.eventId;
+      const fact = loadPersistedEvent(db, approvalEventId, f.root)!;
+      const taskIds = matchingAppTaskConditionTaskIds(config, fact);
+      trackAppTaskConditionEventForTasks(config, fact, taskIds);
+    }
+    conversationInputs++;
+    return {
+      accepted: true,
+      by: "synthetic-conversation",
+      route: "direct" as const,
+    };
+  });
   const events = createEventInterface({
     bus,
     db,
@@ -410,32 +418,17 @@ async function main() {
     hasAgent: () => true,
     hasSession: () => false,
   });
-  let approvalEventId = 0;
   const bot = attachTelegramBot({
     persistDir: f.root,
     bus,
     interfaceAgent: "may",
+    conversationAppId: "may",
     humanTasks,
-    publishEvent(input: {
-      type: string;
-      data?: Record<string, unknown>;
-      target?: Record<string, unknown>;
-    }) {
-      const receipt = events.publish(input, { source: "telegram" });
-      if (input.type === "project.approval.submitted") {
-        approvalEventId = receipt.eventId!;
-        const canonical = {
-          ...input.data,
-          type: input.type,
-          source: "telegram",
-          target: input.target,
-          data: input.data,
-          eventId: approvalEventId,
-        };
-        const taskIds = matchingAppTaskConditionTaskIds(config, canonical);
-        trackAppTaskConditionEventForTasks(config, canonical, taskIds);
-      }
-      return receipt;
+    publishEvent(input: any, approvalAuthorization: any) {
+      return events.publish(input, {
+        source: "telegram",
+        approvalAuthorization,
+      });
     },
   });
   const until = async (predicate: () => boolean) => {
@@ -465,6 +458,29 @@ async function main() {
       taskGeneration: 1,
       conditionId: prepared.condition.id,
     });
+    // A plausible copied stamp is still caller JSON without trusted ingress.
+    await expect(
+      Promise.resolve().then(() =>
+        events.publish(
+          {
+            type: "project.approval.submitted",
+            target: { appId: "may", taskId },
+            data: {
+              decision: "approve",
+              proposal: JSON.parse(card.data).approvalAnchor,
+              hostApproval: {
+                version: 1,
+                ingressSource: "telegram",
+                actor: { kind: "human", id: "7" },
+                authorization: { reference: "copied", evidence: {} },
+              },
+            },
+          },
+          { source: "telegram" },
+        ),
+      ),
+    ).rejects.toThrow("requires trusted ingress authorization");
+    expect(approvalEventId).toBe(0);
 
     const readTask = async () =>
       humanTasks.getTask({ appId: "may", taskId }) as unknown as Record<
@@ -498,11 +514,29 @@ async function main() {
       expect(f.git("rev-parse", "HEAD")).toBe(baseline);
     }
 
+    const scenario = process.env.SCENARIO || "positive";
+    if (scenario === "stale-approval") {
+      observeAppTaskIntent(config, {
+        appAgent: "may",
+        intent: {
+          id: taskId,
+          parentId: "root",
+          agent: "may",
+          outcome: "Review a replacement improvement",
+          acceptance: ["Require a new approval"],
+        },
+      });
+      expect((await readTask()).generation).toBe(2);
+    }
     updates.push({
       update_id: 501,
       message: {
         message_id: 501,
-        text: "approve",
+        text: ["reject", "defer"].includes(scenario)
+          ? scenario
+          : scenario === "conditional-approval"
+            ? "approve if checks pass"
+            : "approve",
         chat: { id: 123, type: "private" },
         from: { id: 7 },
         reply_to_message: {
@@ -512,6 +546,28 @@ async function main() {
       },
     });
     releasePoll?.();
+    await until(() => conversationInputs > 0);
+    if (["stale-approval", "conditional-approval"].includes(scenario)) {
+      expect(approvalEventId).toBe(0);
+      expect(f.git("rev-parse", "HEAD")).toBe(baseline);
+      expect(f.git("status", "--porcelain")).toBe("");
+      const report = {
+        sourcesBefore,
+        scenario,
+        pass: true,
+        syntheticOnly: true,
+        conversationInputs,
+        approvalEventId,
+        sourceUnchanged: true,
+      };
+      if (process.env.RESULT_PATH)
+        writeFileSync(
+          process.env.RESULT_PATH,
+          JSON.stringify(report, null, 2) + "\n",
+        );
+      console.log(JSON.stringify(report, null, 2));
+      return;
+    }
     await until(() => approvalEventId > 0);
     const afterView = humanTasks.getTask({ appId: "may", taskId })!;
     expect(afterView.status).toBe("pending");
@@ -527,6 +583,30 @@ async function main() {
       readEvent,
       readTask,
     );
+    if (["reject", "defer"].includes(scenario)) {
+      expect(result).toMatchObject({
+        applied: false,
+        decision: scenario === "reject" ? "rejected" : "deferred",
+      });
+      expect(f.git("rev-parse", "HEAD")).toBe(baseline);
+      expect(f.git("status", "--porcelain")).toBe("");
+      const report = {
+        sourcesBefore,
+        scenario,
+        pass: true,
+        syntheticOnly: true,
+        approvalEventId,
+        result,
+        sourceUnchanged: true,
+      };
+      if (process.env.RESULT_PATH)
+        writeFileSync(
+          process.env.RESULT_PATH,
+          JSON.stringify(report, null, 2) + "\n",
+        );
+      console.log(JSON.stringify(report, null, 2));
+      return;
+    }
     expect(result).toMatchObject({
       applied: true,
       appliedCommit: f.packet.candidateCommit,
@@ -538,9 +618,8 @@ async function main() {
     );
     expect(f.git("status", "--porcelain")).toBe("");
 
-    // Reviewer extension: actual Task transitions, Task event emitter, journal,
-    // public read socket, and command router. Runtime reload callback is synthetic;
-    // reviewer-pinned-activation-corrected.json separately exercises the real daemon.
+    // Continue through actual Task transitions, the journal, public reads and
+    // command router. The runtime reload callback is synthetic; no live activation.
     const receiptPath = join(f.root, "source-receipt.json");
     writeFileSync(
       receiptPath,
@@ -574,9 +653,9 @@ async function main() {
           });
         else if (command.type === "apps.list")
           response.apps = [
-            { id: "scout", owner: "may" },
-            { id: "may", owner: "may" },
-            { id: "evaluation", owner: "evaluator" },
+            { id: "scout", agent: "may" },
+            { id: "may", agent: "may" },
+            { id: evaluationApp.id, agent: evaluationApp.agent },
           ];
         else if (command.type === "app.task.get") {
           response.appId = command.appId;
@@ -624,7 +703,7 @@ async function main() {
           };
         return {
           ok: true,
-          summary: "Synthetic runtime callback; real daemon covered separately",
+          summary: "Synthetic runtime callback; no live activation",
           sourceCommit: f.packet.candidateCommit,
         };
       },
@@ -936,18 +1015,18 @@ async function main() {
             "subject-advances-before-review",
           ].includes(process.env.SCENARIO || "")
         ) {
-          const evalStore = AppTaskResourceStore.fromDb(db, "evaluation");
+          const evalStore = AppTaskResourceStore.fromDb(db, evaluationApp.id);
           const evalConfig = appTaskTestContext({
             appDir: f.root,
-            appId: "evaluation",
+            appId: evaluationApp.id,
             agent: "evaluator",
             maxConcurrent: 1,
             resourceStore: evalStore,
             tree: {
-              root_task_id: "evaluation-system",
+              root_task_id: "root",
               groups: {
-                "evaluation-system": {
-                  id: "evaluation-system",
+                root: {
+                  id: "root",
                   parent_id: null,
                 },
               },
@@ -1103,7 +1182,7 @@ async function main() {
               bus,
               db,
               persistDir: f.root,
-              appId: "evaluation",
+              appId: evaluationApp.id,
               claim: ec,
             });
             if (process.env.SCENARIO === "subject-advances-before-review")
@@ -1121,7 +1200,7 @@ async function main() {
               createTestAppWorkflowContext({
                 input: evalTask.input,
                 reconciliation: {
-                  appId: "evaluation",
+                  appId: evaluationApp.id,
                   taskId: evalTaskId,
                   generation: ec.generation,
                   resourceVersion: ec.resourceVersion,
@@ -1137,7 +1216,7 @@ async function main() {
                 read: evalRead,
                 workspace: {
                   root: f.root,
-                  appRoot: f.root,
+                  appRoot: join(app, "projects/alex.app"),
                   projectRoot: f.root,
                   output: f.root,
                 },
@@ -1153,6 +1232,7 @@ async function main() {
                     findings: [],
                     verification: ["Actual temporary Task read"],
                     delivery: "Fixture result retained",
+                    followUp: { kind: "none" },
                   },
                 }),
                 emit: async (event: any) => {
@@ -1166,7 +1246,7 @@ async function main() {
             equal(
               evaluation.output?.state,
               "converged",
-              "accepted Evaluation output",
+              `accepted Evaluation output: ${JSON.stringify(evaluation)}`,
             );
             completeAppTask(evalConfig, ec, {
               summary: evaluation.output.summary,
@@ -1183,7 +1263,7 @@ async function main() {
                   },
                 },
               });
-            await inbox.refreshTaskResults("evaluation", evalTaskId);
+            await inbox.refreshTaskResults(evaluationApp.id, evalTaskId);
             equal(
               inbox.get(requestId)?.status,
               "done",
@@ -1288,7 +1368,7 @@ async function main() {
         pass: success,
         syntheticOnly: true,
         scope:
-          "Real source approval + Task wait/wake + Task emitter + public views + command router + cross-App accepted subject; runtime callback synthetic, real daemon tested separately",
+          "Real source approval + Task wait/wake + Task emitter + public views + command router + cross-App accepted subject; runtime callback synthetic; no live activation",
         reloads,
         observed,
       };

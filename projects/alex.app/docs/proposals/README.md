@@ -12,7 +12,9 @@ Implemented rules belong in their owning chapter. Dated trials and completed
 reviews are in [the archive](../archive/README.md#implementation-and-trial-records).
 The [Task authoring cleanup](../archive/reviews/task-api-cleanup-20261112.md)
 is merged in Host #454 with companion App callers committed. It is completed
-source work, not a pending proposal. Approval-verifier alignment remains separate.
+source work, not a pending proposal. The separate
+[approval-verifier alignment](../archive/reviews/improvement-approval-contract-cleanup-20261112.md)
+is now verified in App source; live adoption remains separate.
 For mixed documents, use the remaining scope below and the record's explicit
 implementation limits. Resolve a fresh implementation question against source
 before acting on an old checklist.

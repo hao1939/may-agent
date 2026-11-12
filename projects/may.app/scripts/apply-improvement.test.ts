@@ -1,3 +1,4 @@
+import { approvalEventFixture } from "../test-fixtures/improvement-approval";
 import { afterEach, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
@@ -11,6 +12,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  approvalCondition,
   buildApprovalProposal,
   packetHash,
   type CandidateJudgment,
@@ -149,19 +151,7 @@ function waitingTask(proposal: {
         {
           id: proposal.conditionId,
           condition: {
-            spec: {
-              type: "project.approval.submitted",
-              owner: "human:Hao",
-              requestedAction: proposal.text,
-              expected: {
-                approvalId: proposal.approvalId,
-                packetHash: proposal.packetHash,
-                proposalHash: proposal.proposalHash,
-                proposalRevision: proposal.proposalRevision,
-                taskGeneration: proposal.task.generation,
-                conditionId: proposal.conditionId,
-              },
-            },
+            spec: approvalCondition(proposal),
             status: { state: "false" },
           },
         },
@@ -201,27 +191,7 @@ test("trusted journal decision and exact packet apply despite unrelated later di
     finding,
     candidate,
   });
-  const event = {
-    id: 77,
-    type: "project.approval.submitted",
-    source: "telegram",
-    target: { appId: "may", taskId: "goal/improvement" },
-    data: {
-      approvalId: proposal.approvalId,
-      packetHash: proposal.packetHash,
-      proposalHash: proposal.proposalHash,
-      proposalRevision: 1,
-      taskGeneration: proposal.task.generation,
-      conditionId: proposal.conditionId,
-      decision: "approve",
-      provenance: {
-        provider: "telegram",
-        authenticatedSenderId: "hao",
-        sourceMessageId: 22,
-        replyToMessageId: 21,
-      },
-    },
-  };
+  const event = approvalEventFixture(proposal, 77, "approve");
   let reads = 0;
   const first = await applyImprovementFromTrustedEvent(
     f.files,
@@ -284,27 +254,7 @@ test("trusted event rejection and stale proposal make zero Git mutation", async 
     task: { appId: "may", taskId: "goal/improvement", generation: 1 },
     text: "review exactly this",
   };
-  const baseEvent = {
-    id: 78,
-    type: "project.approval.submitted",
-    source: "telegram",
-    target: proposal.task,
-    data: {
-      approvalId: proposal.approvalId,
-      packetHash: proposal.packetHash,
-      proposalHash: proposal.proposalHash,
-      proposalRevision: 1,
-      taskGeneration: proposal.task.generation,
-      conditionId: proposal.conditionId,
-      decision: "reject",
-      provenance: {
-        provider: "telegram",
-        authenticatedSenderId: "hao",
-        sourceMessageId: 23,
-        replyToMessageId: 21,
-      },
-    },
-  };
+  const baseEvent = approvalEventFixture(proposal, 78, "reject");
   expect(
     await applyImprovementFromTrustedEvent(
       f.files,
@@ -314,6 +264,15 @@ test("trusted event rejection and stale proposal make zero Git mutation", async 
       async () => waitingTask(proposal),
     ),
   ).toMatchObject({ applied: false, decision: "rejected" });
+  expect(
+    await applyImprovementFromTrustedEvent(
+      f.files,
+      proposal,
+      78,
+      async () => approvalEventFixture(proposal, 78, "defer"),
+      async () => waitingTask(proposal),
+    ),
+  ).toMatchObject({ applied: false, decision: "deferred" });
   await expect(
     applyImprovementFromTrustedEvent(
       f.files,
@@ -323,13 +282,43 @@ test("trusted event rejection and stale proposal make zero Git mutation", async 
         ...baseEvent,
         data: {
           ...baseEvent.data,
-          proposalHash: "0".repeat(64),
+          proposal: {
+            ...baseEvent.data.proposal,
+            expected: {
+              ...baseEvent.data.proposal.expected,
+              proposalHash: "0".repeat(64),
+            },
+          },
           decision: "approve",
         },
       }),
       async () => waitingTask(proposal),
     ),
   ).rejects.toThrow("not the exact trusted");
+  for (const change of [
+    (spec: any) => {
+      spec.subject = "approvalId:replacement";
+    },
+    (spec: any) => {
+      spec.expected.allowedDecisions = ["approve"];
+    },
+  ]) {
+    let taskReads = 0;
+    await expect(
+      applyImprovementFromTrustedEvent(
+        f.files,
+        proposal,
+        78,
+        async () => approvalEventFixture(proposal, 78),
+        async () => {
+          const task = waitingTask(proposal);
+          if (++taskReads === 2)
+            change(task.diagnostics.conditions[0].condition.spec);
+          return task;
+        },
+      ),
+    ).rejects.toThrow("proposal changed before source application");
+  }
   expect(f.git("rev-parse", "HEAD")).toBe(f.packet.baselineCommit);
 });
 

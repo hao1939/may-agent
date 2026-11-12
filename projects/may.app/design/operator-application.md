@@ -7,9 +7,17 @@ on the ordinary human-owned Condition. A score, worker claim, or JSON containing
 The primary plain-text path uses the exact proposal shown by Telegram and the
 Host journal event id. After approval, May may invoke this bounded path; before
 approval it has no mutation authority. The command rereads that event through
-public `event.get`, checks Host-stamped Telegram provenance, the current owning
-Task generation/Condition and the exact packet/proposal, then runs the same
-Git/evidence guard:
+public `event.get`, parses the current Host stamp with the SDK's
+`readVerifiedApprovalDecision`, and checks the exact owning Task generation,
+Condition subject, expected contract and displayed proposal before running the
+Git/evidence guard. The journal's nested `proposal` carries that binding;
+`hostApproval` records trusted ingress and actor authorization. Flat legacy
+fields and Telegram `provenance` cannot authorize this path. Its policy still
+requires a human reply; a Host-verified operator event does not become approval
+through this command. The packet-hash operator fallback below remains available.
+
+Current source is verified by the [approval cleanup trial](../../alex.app/docs/archive/reviews/improvement-approval-contract-cleanup-20261112.md).
+That synthetic trial does not establish installed activation.
 
 ```sh
 bun projects/may.app/scripts/apply-improvement.ts \

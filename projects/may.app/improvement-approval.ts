@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
+import { readVerifiedApprovalDecision } from "@may-agent/sdk";
 
 export interface ActivationAuthorization {
   appId: string;
@@ -214,9 +216,9 @@ export function approvalCondition(
 }
 
 /**
- * Re-read one Host journal event by id. Payload provenance alone is never
- * trusted: only the Host-stamped Telegram source plus the exact target and
- * proposal association can become a mechanical decision.
+ * Re-read one Host journal event by id and use the SDK's approval contract.
+ * This App accepts human replies only, bound to the exact target and displayed
+ * Condition. Caller/model JSON is never an authorized journal read.
  */
 export async function trustedDecisionFromEvent(
   packet: ApprovalPacket,
@@ -234,36 +236,26 @@ export async function trustedDecisionFromEvent(
   if (!Number.isSafeInteger(eventId) || eventId < 1)
     throw new Error("trusted approval requires a positive event id");
   const event = await readEvent(eventId);
-  const data = event?.data ?? {};
-  const provenance =
-    data.provenance &&
-    typeof data.provenance === "object" &&
-    !Array.isArray(data.provenance)
-      ? (data.provenance as Record<string, unknown>)
-      : {};
+  const approval =
+    event && readVerifiedApprovalDecision({ ...event, data: event.data ?? {} });
+  const condition = approvalCondition(proposal);
   if (
     event?.id !== eventId ||
-    event.type !== "project.approval.submitted" ||
-    event.source !== "telegram" ||
+    !approval ||
+    approval.hostApproval.actor.kind !== "human" ||
     event.target?.appId !== proposal.task.appId ||
     event.target?.taskId !== proposal.task.taskId ||
-    data.approvalId !== proposal.approvalId ||
-    data.packetHash !== proposal.packetHash ||
-    data.proposalHash !== proposal.proposalHash ||
-    data.proposalRevision !== proposal.proposalRevision ||
-    data.taskGeneration !== proposal.task.generation ||
-    data.conditionId !== proposal.conditionId ||
-    provenance.provider !== "telegram" ||
-    typeof provenance.authenticatedSenderId !== "string" ||
-    !provenance.authenticatedSenderId.trim() ||
-    typeof provenance.sourceMessageId !== "number" ||
-    typeof provenance.replyToMessageId !== "number"
+    approval.proposal.taskGeneration !== proposal.task.generation ||
+    approval.proposal.conditionId !== proposal.conditionId ||
+    approval.proposal.subject !== condition.subject ||
+    approval.proposal.requestedAction !== proposal.text ||
+    !isDeepStrictEqual(approval.proposal.expected, condition.expected)
   ) {
     throw new Error(
       "approval event is not the exact trusted Telegram proposal decision",
     );
   }
-  const decision = data.decision;
+  const decision = approval.decision;
   if (decision !== "approve" && decision !== "reject" && decision !== "defer")
     throw new Error("approval event decision is invalid");
   return {

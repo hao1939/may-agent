@@ -1,3 +1,4 @@
+import { approvalEventFixture } from "../../../test-fixtures/improvement-approval";
 import { describe, expect, test } from "bun:test";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -6,6 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import {
+  approvalCondition,
   buildApprovalProposal,
   packetHash,
   type ApprovalPacket,
@@ -139,26 +141,7 @@ function context(
   const approval = {
     eventId: 42,
     observedAt: new Date(0).toISOString(),
-    event: {
-      type: "project.approval.submitted",
-      source: "telegram",
-      target: { appId: "may", taskId: "goal/improvement" },
-      data: {
-        approvalId: f.proposal.approvalId,
-        packetHash: f.proposal.packetHash,
-        proposalHash: f.proposal.proposalHash,
-        proposalRevision: f.proposal.proposalRevision,
-        taskGeneration: 2,
-        conditionId: f.proposal.conditionId,
-        decision: "approve",
-        provenance: {
-          provider: "telegram",
-          authenticatedSenderId: "7",
-          sourceMessageId: 10,
-          replyToMessageId: 9,
-        },
-      },
-    },
+    event: approvalEventFixture(f.proposal),
   };
   const items: any[] = [approval];
   if (reload)
@@ -198,20 +181,7 @@ function context(
           }
         : null,
   });
-  const conditionSpec = {
-    type: "project.approval.submitted",
-    subject: `approvalId:${f.proposal.approvalId}`,
-    expected: {
-      approvalId: f.proposal.approvalId,
-      packetHash: f.proposal.packetHash,
-      proposalHash: f.proposal.proposalHash,
-      proposalRevision: 1,
-      taskGeneration: 2,
-      conditionId: f.proposal.conditionId,
-    },
-    owner: "human",
-    requestedAction: f.proposal.text,
-  };
+  const conditionSpec = approvalCondition(f.proposal);
   const owner = {
     appId: "may",
     taskId: "goal/improvement",

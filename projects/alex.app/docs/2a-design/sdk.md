@@ -175,6 +175,14 @@ All reach the same persistence path after the App boundary accepts them, but
 App code cannot forge provenance, control sessions, or publish arbitrary
 required event types.
 
+`readVerifiedApprovalDecision` parses the current approval contract from a
+trusted Host journal read: nested `proposal` plus `hostApproval` ingress, actor
+and authorization evidence. It does not authenticate caller/model JSON. The App
+still checks its permitted actor, exact current Task/Condition and proposal,
+candidate, evidence and scope at the mutation boundary. See
+[exact decisions](human-control-surfaces.md#exact-plain-text-decisions) and
+the [App application guide](../../../may.app/design/operator-application.md).
+
 There is one App declaration function: `defineApp`. The former
 `defineProjectApp` declaration and `@may-agent/sdk/legacy` entry point have been
 removed.

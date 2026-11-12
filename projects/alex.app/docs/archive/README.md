@@ -155,6 +155,7 @@ than interpreting archival as completion. Relative links were updated on move.
 
 | Record | Owning need or contract |
 | --- | --- |
+| [Improvement approval contract cleanup](reviews/improvement-approval-contract-cleanup-20261112.md) | [SDK](../2a-design/sdk.md), [source application](../../../may.app/design/operator-application.md); current Host evidence and synthetic approval-to-follow-up verification |
 | [Task authoring cleanup — merged #454](reviews/task-api-cleanup-20261112.md) | [SDK](../2a-design/sdk.md), [Task lifecycle](../2a-design/task-resource-engine.md); source integration, preserved state and remaining approval-path limit |
 | [Workspace hygiene and unmerged design review](reviews/workspace-hygiene-review-20261003.md) | [App Root Layout](../2a-design/app-root-layout.md) |
 | [Task execution surface: retained trials](reviews/task-executor-surface-20260928.md) | [Execution Boundary](../2a-design/system-boundary.md) |

@@ -1,3 +1,4 @@
+import { approvalEventFixture } from "./test-fixtures/improvement-approval";
 import { describe, expect, test } from "bun:test";
 import {
   approvalCondition,
@@ -73,29 +74,7 @@ function proposalFixture() {
     finding,
     candidate,
   });
-  const event = {
-    id: 42,
-    type: "project.approval.submitted",
-    source: "telegram",
-    owner: "app:may",
-    target: { appId: "may", taskId: "goal/improve" },
-    data: {
-      approvalId: proposal.approvalId,
-      packetHash: proposal.packetHash,
-      proposalHash: proposal.proposalHash,
-      proposalRevision: proposal.proposalRevision,
-      taskGeneration: proposal.task.generation,
-      conditionId: proposal.conditionId,
-      decision: "approve",
-      provenance: {
-        provider: "telegram",
-        authenticatedSenderId: "123",
-        chatId: "456",
-        sourceMessageId: 10,
-        replyToMessageId: 9,
-      },
-    },
-  };
+  const event = approvalEventFixture(proposal);
   return { packet, current, proposal, event };
 }
 
@@ -231,18 +210,158 @@ describe("exact human approval boundary", () => {
 });
 
 describe("trusted decision, source application and follow-up composition", () => {
-  test("rejects caller-authored provenance, wrong sender source, stale proposal and unbound events", async () => {
+  test.each([
+    ["approve", "approved"],
+    ["reject", "rejected"],
+    ["defer", "deferred"],
+  ])("reads the current Host contract for %s", async (input, decision) => {
+    const { packet, proposal } = proposalFixture();
+    const result = await trustedDecisionFromEvent(
+      packet,
+      proposal,
+      42,
+      async () => approvalEventFixture(proposal, 42, input),
+    );
+    expect(result).toMatchObject({
+      decision,
+      trustedHumanControl: true,
+      packetHash: packet.packetHash,
+      candidateCommit: packet.candidateCommit,
+      candidateTreeHash: packet.candidateTreeHash,
+      activation: packet.activation,
+    });
+  });
+
+  test.each([
+    [
+      "wrong journal id",
+      (e: any) => {
+        e.id = 41;
+      },
+    ],
+    [
+      "wrong source",
+      (e: any) => {
+        e.source = "app:may";
+      },
+    ],
+    [
+      "missing Host stamp",
+      (e: any) => {
+        delete e.data.hostApproval;
+      },
+    ],
+    [
+      "operator approval",
+      (e: any) => {
+        e.source = e.data.hostApproval.ingressSource = "control-socket";
+        e.data.hostApproval.actor.kind = "operator";
+      },
+    ],
+    [
+      "wrong App",
+      (e: any) => {
+        e.target.appId = "other";
+      },
+    ],
+    [
+      "wrong Task",
+      (e: any) => {
+        e.target.taskId = "goal/other";
+      },
+    ],
+    [
+      "old Task generation",
+      (e: any) => {
+        e.data.proposal.taskGeneration = 2;
+      },
+    ],
+    [
+      "wrong Condition",
+      (e: any) => {
+        e.data.proposal.conditionId = "other";
+      },
+    ],
+    [
+      "wrong subject",
+      (e: any) => {
+        e.data.proposal.subject = "approvalId:other";
+      },
+    ],
+    [
+      "changed displayed text",
+      (e: any) => {
+        e.data.proposal.requestedAction += "\nchanged";
+      },
+    ],
+    [
+      "different packet",
+      (e: any) => {
+        e.data.proposal.expected.packetHash = "other";
+      },
+    ],
+    [
+      "different approval",
+      (e: any) => {
+        e.data.proposal.expected.approvalId = "other";
+      },
+    ],
+    [
+      "old proposal revision",
+      (e: any) => {
+        e.data.proposal.expected.proposalRevision = 1;
+      },
+    ],
+    [
+      "missing proposal hash",
+      (e: any) => {
+        delete e.data.proposal.expected.proposalHash;
+      },
+    ],
+    [
+      "widened decisions",
+      (e: any) => {
+        e.data.proposal.expected.allowedDecisions.push("anything");
+      },
+    ],
+  ])("rejects %s", async (_label, change) => {
     const { packet, proposal, event } = proposalFixture();
-    for (const changed of [
-      { ...event, source: "control-socket" },
-      { ...event, target: { ...event.target, taskId: "goal/other" } },
-      { ...event, data: { ...event.data, proposalRevision: 1 } },
-      { ...event, data: { ...event.data, proposalHash: undefined } },
-    ]) {
-      await expect(
-        trustedDecisionFromEvent(packet, proposal, 42, async () => changed),
-      ).rejects.toThrow("not the exact trusted");
-    }
+    change(event);
+    await expect(
+      trustedDecisionFromEvent(packet, proposal, 42, async () => event),
+    ).rejects.toThrow("not the exact trusted");
+  });
+
+  test("legacy Telegram provenance cannot replace Host authorization", async () => {
+    const { packet, proposal, event } = proposalFixture();
+    const legacy = {
+      ...event,
+      data: {
+        ...event.data.proposal.expected,
+        decision: "approve",
+        provenance: {
+          provider: "telegram",
+          authenticatedSenderId: "7",
+          sourceMessageId: 10,
+          replyToMessageId: 9,
+        },
+      },
+    };
+    await expect(
+      trustedDecisionFromEvent(packet, proposal, 42, async () => legacy),
+    ).rejects.toThrow("not the exact trusted");
+    await expect(
+      trustedDecisionFromEvent(packet, proposal, 42, async () => undefined),
+    ).rejects.toThrow("not the exact trusted");
+  });
+
+  test("rejects an unrecognized decision even with a valid stamp", async () => {
+    const { packet, proposal } = proposalFixture();
+    await expect(
+      trustedDecisionFromEvent(packet, proposal, 42, async () =>
+        approvalEventFixture(proposal, 42, "approve if tests pass"),
+      ),
+    ).rejects.toThrow("decision is invalid");
   });
 
   test("rejects a proposal whose displayed text changed without a new identity", async () => {

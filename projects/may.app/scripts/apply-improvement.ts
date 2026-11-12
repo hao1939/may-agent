@@ -3,7 +3,9 @@ import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import {
+  approvalCondition,
   applicationDenial,
   trustedDecisionFromEvent,
   type ApprovalPacket,
@@ -184,6 +186,7 @@ export function currentProposalMatches(
   task: Record<string, unknown>,
   proposal: ApprovalProposal,
 ): boolean {
+  const expectedCondition = approvalCondition(proposal);
   const diagnostics = task.diagnostics as Record<string, unknown> | undefined;
   const conditions = Array.isArray(diagnostics?.conditions)
     ? diagnostics.conditions
@@ -200,13 +203,9 @@ export function currentProposalMatches(
       (status?.state === "false" || status?.state === "true") &&
       (spec?.owner === "human" ||
         String(spec?.owner ?? "").startsWith("human:")) &&
+      spec?.subject === expectedCondition.subject &&
       spec?.requestedAction === proposal.text &&
-      expected?.approvalId === proposal.approvalId &&
-      expected?.packetHash === proposal.packetHash &&
-      expected?.proposalHash === proposal.proposalHash &&
-      expected?.proposalRevision === proposal.proposalRevision &&
-      expected?.taskGeneration === proposal.task.generation &&
-      expected?.conditionId === proposal.conditionId
+      isDeepStrictEqual(expected, expectedCondition.expected)
     );
   });
   return (
