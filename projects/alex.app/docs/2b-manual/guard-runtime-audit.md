@@ -33,6 +33,11 @@ ORDER BY rows DESC;
 
 High volume alone is not proof of agent failure. It is a signal to review
 composition, repeat rate, and whether the guard is interrupting work.
+In particular, current tool-hook `warned` rows record nonblocking diagnostics;
+their reason is not injected into the model context. Workflow warnings can
+inject guidance. Check the emitting path before inferring an intervention from
+the action label. Retirement preserves existing rows, so recent volume can
+include detectors removed from a newer source revision.
 
 ## Repeated Per-Session Signals
 
@@ -56,8 +61,9 @@ event, dedup will not help; fix the workflow, prompt, or tool surface.
 
 ## Tool-Level Guard Composition
 
-Tool-level guards may share `guard: "beforeToolCall"`. When that happens,
-bucket by reason prefix:
+Current Host tool diagnostics identify the guard in structured data. Use the
+guard/action query above. Historical rows may share `guard: "beforeToolCall"`;
+for those retained rows, bucket by reason prefix:
 
 ```sql
 SELECT substr(json_extract(data, '$.reason'), 1, 40) AS reason_prefix,
@@ -71,8 +77,8 @@ GROUP BY reason_prefix
 ORDER BY rows DESC;
 ```
 
-If an operational workflow depends on parsing reason text, consider improving
-the emitted schema so the specific guard id is available as structured data.
+Use this fallback for historical evidence, not as a second identity scheme for
+current diagnostics. Do not rewrite retained rows to match a newer detector set.
 
 ## Threshold Quality
 

@@ -8,6 +8,9 @@
 **Implementation status:** Implemented; the runtime and public SDK recognize
 `observe`, `warn`, and `block` (hidden `run_step` / `repair` step injection was
 retired after `EXP-216` in favor of explicit workflow TypeScript repair loops).
+Retirement of the three Host path/read heuristics is accepted and prepared for
+review; see [the selected reduction](../proposals/external-components-simplification.md#retire-host-path-and-read-heuristics).
+Source merge and installed adoption remain unverified.
 
 Guards are detection signals first. Blocking is only one intervention mode.
 
@@ -52,6 +55,11 @@ A guard is justified when at least one condition holds:
 - The signal will be reviewed and used to fix workflow, tooling, or context.
 - Repeated incidents show the issue is systemic and softer feedback did not
   close it.
+
+Historical usefulness does not make a detector permanent. Retire a detector
+when its assumptions no longer fit the supported execution contract or its
+signals add little value compared with the state and exceptions it requires.
+Do not replace it with a more elaborate detector merely to preserve coverage.
 
 If the team hesitates, do not add a guard yet. Add a metric, evaluator check,
 or review task first. Promote to an `observe` or `warn` guard only after the
@@ -147,12 +155,26 @@ leakage, or hallucinated paths in workflow evidence.
 
 Tool-level guards live under `projects/may-agent/src/lib/tools/*.ts`. They are
 composed by `compose-guards.ts` and wired into the `beforeToolCall` hook in
-`manager.ts`.
+`agent-execution.ts`; `manager.ts` records their reported diagnostics.
 
-They fire on tool invocation, not workflow transitions. Use tool guards for
-mechanical checks near the action boundary: empty arguments, schema misuse,
-path hallucination, protected-file edits, session-log reads, repetitive reads,
-and finish/commit evidence checks.
+They fire on tool invocation, not workflow transitions. The selected Host
+contract keeps finish write-activity and commit diagnostics, and retires the
+path-prefix, repeated-read and raw-transcript-read detectors. Those detectors
+guess whether work is mistaken or wasteful; they do not enforce a declared
+permission or result contract. App workflow detectors are a separate scope.
+
+The current Pi tool hook consumes `block: true` as a tool rejection. A
+`block: false` result records a diagnostic through the Host callback; it does
+not inject its reason into the model context. Existing tool diagnostics are
+recorded with `demandType: "warn"` and `action: "warned"`; that label alone is
+not evidence of an intervention. Workflow `warn` demands can inject context.
+
+Required-result checks, tool argument validation and file-write permissions
+belong to their concrete capability boundaries. Execution cancellation and
+read/Bash output limits bound resource use. Output truncation limits a single
+response, not the number of wasteful calls. File errors and saved tool evidence
+remain available to the agent and App; no replacement heuristic, detector
+configuration, hash tracking or new observation service is required.
 
 Tool-level guard events should identify the specific guard as structured data.
 If many guards emit only `guard: "beforeToolCall"` and hide the real detector in

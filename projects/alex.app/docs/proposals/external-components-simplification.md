@@ -52,6 +52,56 @@ owns the separately reproduced checkpoint-before-publication gap and a first
 convention-based provider integration. It does not reopen general observer
 cancellation or precise restart recovery from this milestone.
 
+## Retire Host path and read heuristics
+
+**Design status:** Accepted on November 13, 2026.
+**Implementation status:** [Host PR 470](https://github.com/hao1939/may-agent/pull/470)
+is prepared at `e5a3dbcbbb52`. Source merge and installed adoption are unverified.
+This supersedes the earlier guard wording-only choice below.
+
+The user prioritizes internal complexity over line count. Remove three default
+Host detectors without building replacements:
+
+- `path-hallucination`: assumes home-directory prefixes cannot exist and carries
+  exceptions for search commands and inline scripts. The generic Host cannot
+  make that installation assumption; even a shell string argument can match.
+- `read-dedup`: tracks counts by path and thresholds, ignoring which page was
+  read and whether the file changed. Following the read tool's own pagination
+  instructions can trigger its warning.
+- `session-read`: classifies transcript access using file names and shell
+  patterns, ignoring bounded `read()` ranges and some output limiters.
+
+These rules were responses to historical cost/path incidents. At reviewed Host
+baseline `b7db445b62b9`, all three return `block: false`. The Pi runner proceeds
+without injecting the reason, while the Host records `guard.triggered` with a
+warning label. They provide diagnostics, not enforced loop prevention or path
+protection. Removing them gives up those automatic signals; it does not prove
+that agent quality or model-token cost improves.
+
+The gain is fewer assumptions, mutable counters, threshold decisions and shell
+exceptions in shared execution preparation. Keep ordinary filesystem errors,
+read/Bash output limits, cancellation, declared file-write permissions,
+required-result validation and App Task acceptance. Truncation limits each
+response; a sequence of wasteful calls can still consume the execution budget.
+Keep the existing finish and commit diagnostics and App-authored workflow guards
+in this scope. Saved tool evidence and historical guard events remain readable.
+No migration, runtime toggle or replacement detector is needed.
+
+Verification should exercise supported pagination and refreshed transcript reads
+through shared execution preparation, confirm retained diagnostics still report,
+and run the Host's required portable checks. Use synthetic files and shell
+arguments, without provider calls or installation state. Documentation can land
+first with candidate status; the Host PR changes no App SDK or event schema.
+
+Candidate verification: 184 focused tests passed across eight files, including
+supported pagination/current transcript reads, retained finish diagnostics,
+file permissions, lifecycle and Bash limits. App `check:may-design` passed with
+zero errors and one existing root-layout warning. Full Host CI is pending;
+the PR owns its current validation status and review evidence.
+
+Unused legacy dashboard HTTP API retirement is deferred. Prompt/schema work and
+Telegram PR 468 belong to other workstreams and are not bundled here.
+
 ## Project metadata reader: merged
 
 The user selected this consolidation. [Host PR 460](https://github.com/hao1939/may-agent/pull/460)
@@ -94,7 +144,7 @@ The narrower decisions are:
 
 | Area | Smallest worthwhile choice | Capability or guarantee we can give up |
 | --- | --- | --- |
-| Guard | Correct the unsupported sentence | No file-change detection to justify a warning |
+| Guard | Retire the three Host path/read heuristics (supersedes the wording-only correction) | Automatic diagnostic signals for guessed paths, repeat reads and transcript access |
 | Observer | Fix the actual blocking provider call first | No new general cancellation API, seamless hot replacement, or precise observation recovery |
 | Telegram | Bound each request and cancel owned I/O on close | Delayed/missed display and occasional duplicates; no guaranteed delivery |
 | Evaluation UI | Prefer viewing retained evidence; keep only operations the App actually supports | Automatic line-trail generation and inline feedback may be disabled instead of rebuilt |
@@ -144,6 +194,10 @@ planning exercise.
 ## First milestone
 
 ### 1. Correct misleading guard guidance
+
+This historical first-milestone correction is complete. The later
+[selected retirement](#retire-host-path-and-read-heuristics) supersedes keeping
+the detector; it does not reopen the original milestone.
 
 Remove the claim that file content has not changed. Keep the observed read count
 and advisory meaning in `src/lib/tools/read-dedup-guard.ts`. Do not add hashing,
