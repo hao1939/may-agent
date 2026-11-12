@@ -10,7 +10,6 @@
     "agents",
     "message",
     "cli-delegation",
-    "system-status",
     "finish"
   ]
 }
