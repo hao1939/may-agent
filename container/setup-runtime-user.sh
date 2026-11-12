@@ -35,6 +35,9 @@ if [ "$(id -u)" = "0" ]; then
   if [ "${current_uid}" != "${configured_uid}" ] || [ "${current_gid}" != "${configured_gid}" ]; then
     usermod --non-unique --uid "${configured_uid}" --gid "${configured_gid}" "${runtime_user}"
   fi
+elif [ "$(id -u)" != "${configured_uid}" ] || [ "$(id -g)" != "${configured_gid}" ]; then
+  echo "May runtime is already non-root as $(id -u):$(id -g), but mounted ownership requires ${configured_uid}:${configured_gid}. Start as root so the entrypoint can align mayagent, or set matching MAY_RUNTIME_UID/MAY_RUNTIME_GID." >&2
+  return 1
 fi
 
 export MAY_RUNTIME_UID="${configured_uid}"
@@ -51,8 +54,13 @@ if [ "$(id -u)" = "0" ]; then
   chown -R "${runtime_user}:${runtime_user}" "${state_dir}/runtime-logs" 2>/dev/null || true
 fi
 
+if [ "$(id -u)" = "0" ]; then
+  path_accessible() { runuser -u "${runtime_user}" -- test -r "$1" -a -w "$1" -a -x "$1"; }
+else
+  path_accessible() { test -r "$1" -a -w "$1" -a -x "$1"; }
+fi
 for path in "${project_root}" "${state_dir}" "${agents_root}" "${projects_root}" "${shared_root}"; do
-  if ! runuser -u "${runtime_user}" -- test -r "${path}" -a -w "${path}" -a -x "${path}"; then
+  if ! path_accessible "${path}"; then
     echo "May runtime user ${runtime_user} (${configured_uid}:${configured_gid}) cannot use ${path}. Set MAY_RUNTIME_UID/MAY_RUNTIME_GID to the mounted installation owner." >&2
     return 1
   fi

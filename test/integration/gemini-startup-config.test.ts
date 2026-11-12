@@ -54,10 +54,25 @@ describe("Gemini startup configuration", () => {
     expect(policy).toContain("allowRedirection = true");
   });
 
+  test("resolves GEMINI_CLI_HOME as the parent of the managed .gemini directory", async () => {
+    const fixtureRoot = mkdtempSync(join(tmpdir(), "may-gemini-config-"));
+    const cliHome = join(fixtureRoot, "isolated-home");
+    tempDirs.push(fixtureRoot);
+    await execute("bash", [setupScript], {
+      timeout: 10_000,
+      env: { PATH: process.env.PATH, HOME: fixtureRoot, GEMINI_CLI_HOME: cliHome },
+      encoding: "utf8",
+    });
+
+    expect(JSON.parse(readFileSync(join(cliHome, ".gemini/settings.json"), "utf8")))
+      .toHaveProperty("model.name", "gemini-3.5-flash");
+  });
+
   test("the shipped command wrapper forces YOLO, trust bypass and host execution", () => {
     const source = readFileSync(wrapper, "utf8");
     expect(source).toContain('GEMINI_API_KEY="${GEMINI_API_KEY:-${MODEL_API_KEY}}"');
     expect(source).toContain('GOOGLE_GEMINI_BASE_URL="${GOOGLE_GEMINI_BASE_URL:-${MODEL_BASE_URL%/}}"');
+    expect(source).toContain('${GEMINI_CLI_HOME:-${HOME}}/.gemini/settings.json');
     expect(source).toContain("/usr/local/bin/gemini-cli --yolo --skip-trust --no-sandbox");
   });
 });

@@ -71,6 +71,23 @@ docker run --rm --network none --read-only --user mayagent \
     '\''
   ' | tee test-results/cli-tools.txt
 
+# The image entrypoint is normally root so it can align a remote mount owner,
+# but an explicitly non-root launch with already-matching ownership must remain
+# usable instead of invoking root-only runuser.
+docker run --rm --network none --user mayagent --tmpfs /tmp:mode=1777 \
+  --env PROJECT_ROOT=/tmp/may-nonroot-app \
+  --env STATE_DIR=/tmp/may-nonroot-app/.state \
+  --env AGENTS_ROOT=/tmp/may-nonroot-app/agents \
+  --env PROJECTS_ROOT=/tmp/may-nonroot-app/projects \
+  --env SHARED_ROOT=/tmp/may-nonroot-app/shared \
+  --entrypoint /bin/bash \
+  "$image_ref" -ec '
+    mkdir -p "$STATE_DIR" "$AGENTS_ROOT" "$PROJECTS_ROOT" "$SHARED_ROOT"
+    source /usr/local/bin/setup-runtime-user.sh
+    test "$MAY_RUNTIME_UID:$MAY_RUNTIME_GID" = "$(id -u):$(id -g)"
+    test -w "$PROJECT_ROOT"
+  '
+
 # Match the image user to an arbitrary installation owner, configure every
 # managed CLI against one endpoint, and prove the resulting user can work from
 # /app without recursively rewriting the installation.

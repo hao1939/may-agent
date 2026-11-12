@@ -8,7 +8,8 @@ export MODEL_API_KEY="${MODEL_API_KEY:-not-needed}"
 export GEMINI_API_KEY="${GEMINI_API_KEY:-${MODEL_API_KEY}}"
 export GOOGLE_GEMINI_BASE_URL="${GOOGLE_GEMINI_BASE_URL:-${MODEL_BASE_URL%/}}"
 
-gemini_home="${GEMINI_CLI_HOME:-${HOME}/.gemini}"
+# GEMINI_CLI_HOME replaces the OS home; Gemini then appends `.gemini`.
+gemini_home="${GEMINI_CLI_HOME:-${HOME}}/.gemini"
 gemini_model="${GEMINI_MODEL:-gemini-3.5-flash}"
 policy_dir="${gemini_home}/policies"
 
