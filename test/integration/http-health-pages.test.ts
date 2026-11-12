@@ -597,6 +597,7 @@ describe("served workflow and metric health pages", () => {
         for (const route of ["/", "/metrics", "/agents", "/sessions/other-session"]) {
           await page.goto(base + "/sessions/step-upload", { waitUntil: "domcontentloaded" });
           await page.waitForSelector("#session-detail-panel .session-inspector");
+          await page.evaluate("chatTranscript.read");
           const result = await page.evaluate(async route => {
             const ui = window as unknown as {
               scheduleSessionConversationRefresh(delay: number): void;

@@ -327,7 +327,7 @@ async function openSessionEval(sessionId) {
     if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
     if (!r.ok) throw new Error(data.error || r.statusText);
     currentSessionEval = data;
-    await loadSessionDetail(sessionId, { evalData: data, preserveScroll: true });
+    await loadSessionDetail(sessionId);
   } catch (e) {
     if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
     alert('Could not load review notes: ' + (e.message || String(e)));
@@ -387,22 +387,30 @@ function fmtTime(epoch) {
          d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
-async function loadSessionDetail(sessionId, opts = {}) {
+async function loadSessionDetail(sessionId) {
   if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
-  if (currentInspectedSession !== sessionId) currentSessionEval = null;
+  if (chatTranscript?.sessionId !== sessionId) return switchSession(sessionId);
+  return refreshChatTranscript();
+}
+
+async function readSessionDetail(sessionId, opts = {}) {
+  if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
+  const changed = currentInspectedSession !== sessionId;
+  if (changed) currentSessionEval = null;
   currentInspectedSession = sessionId;
   const panel = getSessionDetailPanel();
   restoreChatComposer();
-  panel.innerHTML = '<div class="panel">Loading...</div>';
+  if (changed || !panel.querySelector('.session-inspector')) panel.innerHTML = '<div class="panel">Loading...</div>';
 
   try {
     const [sessRes, transRes] = await Promise.all([
-      fetch(`/api/sessions/${sessionId}`),
-      fetch(`/api/sessions/${sessionId}/transcript`),
+      fetch(`/api/sessions/${sessionId}`, { signal: AbortSignal.timeout(5000) }),
+      fetch(`/api/sessions/${sessionId}/transcript`, { signal: AbortSignal.timeout(5000) }),
     ]);
     const sessData = await sessRes.json();
     const transData = await transRes.json();
     if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
+    if (opts.isCurrent && !opts.isCurrent()) return;
 
     if (sessData.error) { panel.innerHTML = `<div class="panel">${sessData.error}</div>`; return; }
 
@@ -505,6 +513,7 @@ async function loadSessionDetail(sessionId, opts = {}) {
     if (!opts.preserveScroll) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch(e) {
     if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
+    if (opts.isCurrent && !opts.isCurrent()) return;
     panel.innerHTML = `<div class="panel">Error loading session: ${e.message}</div>`;
   }
 }

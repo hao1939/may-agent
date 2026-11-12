@@ -60,7 +60,7 @@ Overview has one presentation: workflow outcomes, current Tasks and Liveness.
 The folded legacy health summary/charts, agent grid/drawer, activity timeline,
 live feed and session statistics are retired. The old drawer's evaluation
 summary, seven-day delegation totals and workspace file list have no replacement
-view. Their backend reads remain supported; this is a browser-only retirement.
+view. Their backend reads remain supported.
 Session links open `/sessions/:id`, using one inspector and follow-up composer;
 the session's agent link opens `/agents/:name`. The shared WebSocket transport,
 event subscriptions and current-page refresh remain. Retained history and metric
@@ -83,6 +83,27 @@ its exact session, and unbound direct-agent chat subscribes to no sessions.
 Only generic Sessions chat uses the configured interface-agent `chat` alias.
 May's Conversation retains global diagnostics and its configured Conversation
 updates. Agent Overview/About tabs release their chat connection.
+
+The selected direct thread and routed inspector share one session-read owner.
+Returning to Chat restores an existing binding independently of default metadata;
+reconnect refreshes the visible transcript and inspector outcome. Lifecycle
+notifications request a fresh status snapshot rather than constructing session
+inventory from incomplete event payloads. Background inspector reads retain
+the current content and composer until a replacement is ready.
+
+Fresh direct-chat HTTP input may supply `requestId` with `content`. It is the
+creation command's existing request and publication identity. The existing
+`/api/agents/:name/default-session?requestId=...` read then selects only that
+agent's chat for that request; an absent match never falls back to its latest
+session. Legacy reads without the parameter keep their default selection.
+Lookup failures cannot admit a new chat. Retrying a created request republishes
+its original start, with the same publication identity, instead of steering a
+different thread. The browser uses its active view's read/timer for discovery,
+bounded to 30 seconds with 500 ms gaps. Leaving the view cancels discovery;
+returning to Chat can check the retained request again. Reset selects a new
+request. A draft typed while creation is pending waits for the exact session.
+No additional lifecycle, database schema, event type or notification scope is
+introduced. Server and browser assets should be released together.
 
 Direct chat renders only saved transcript turns, refreshed at turn/session end
 and after reconnect. An update during a history read causes a follow-up read;

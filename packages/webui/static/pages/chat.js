@@ -40,8 +40,8 @@ let currentSessionId = null;
 // Routes, subtabs, resets and explicit selections invalidate pending chat work.
 let chatSelectionVersion = 0;
 let chatTranscript = null;
+let agentChatRequestId = null;
 let chatPendingInput = null;
-let sessionRefreshTimer = null;
 let chatAutoScroll = true;
 
 function clearChatTranscript() {
@@ -91,8 +91,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function setSessionPageMode(enabled) {
   clearChatTranscript();
-  clearTimeout(sessionRefreshTimer);
-  sessionRefreshTimer = null;
   const chat = document.getElementById('chat');
   if (chat) chat.classList.toggle('session-page-mode', !!enabled);
   const status = document.getElementById('chat-status');
@@ -120,14 +118,7 @@ function placeSessionComposer() {
 }
 
 function scheduleSessionConversationRefresh(delay = 600) {
-  const sessionId = currentRouteParams.id;
-  if (!isSessionPageMode() || currentInspectedSession !== sessionId) return;
-  clearTimeout(sessionRefreshTimer);
-  sessionRefreshTimer = setTimeout(() => {
-    if (isSessionPageMode() && currentRouteParams.id === sessionId) {
-      loadSessionDetail(sessionId, { preserveScroll: true });
-    }
-  }, delay);
+  if (isSessionPageMode()) scheduleChatTranscriptRefresh(delay);
 }
 
 function initChat(deepLinkSessionId) {
@@ -140,13 +131,8 @@ function initChat(deepLinkSessionId) {
   if (banner) banner.style.display = 'none';
   // Honor deep-link first. The inspector is the visible conversation stream;
   // switchSession only binds input/subscription and its message list is hidden in session-page mode.
-  if (deepLinkSessionId && deepLinkSessionId !== currentSessionId) {
-    switchSession(deepLinkSessionId);
-    loadSessionDetail(deepLinkSessionId);
-    return;
-  } else if (deepLinkSessionId) {
-    renderSessionPicker();
-    loadSessionDetail(deepLinkSessionId);
+  if (deepLinkSessionId) {
+    void switchSession(deepLinkSessionId);
     return;
   } else {
     const sessionDetailPanel = document.getElementById('session-detail-panel');
@@ -243,14 +229,18 @@ function syncRealtimeSubscriptions() {
   }));
 }
 
-async function switchSession(sessionId) {
+async function switchSession(sessionId, requestId = null) {
   chatSelectionVersion++;
   currentSessionId = sessionId;
+  agentChatRequestId = requestId;
   if (currentAgentChat) setAgentChatSessionId(sessionId);
   const messages = document.getElementById('chat-messages');
   messages.innerHTML = '';
   clearChatTranscript();
-  if (sessionId && !isSessionPageMode()) chatTranscript = { sessionId, read: null, dirty: false, timer: null };
+  if (sessionId || requestId) chatTranscript = {
+    sessionId, requestId, agent: currentAgentChat,
+    read: null, dirty: false, timer: null, resolveUntil: Date.now() + 30000,
+  };
   renderSessionPicker();
   syncRealtimeSubscriptions();
   return refreshChatTranscript();
@@ -267,6 +257,26 @@ function refreshChatTranscript() {
     do {
       view.dirty = false;
       try {
+        if (!view.sessionId) {
+          const response = await fetch(`/api/agents/${encodeURIComponent(view.agent)}/default-session?requestId=${encodeURIComponent(view.requestId)}`, { signal: AbortSignal.timeout(5000) });
+          const data = await response.json();
+          if (!selected()) return;
+          if (!response.ok) throw new Error(data.error || 'Thread lookup unavailable');
+          if (!data.sessionId) {
+            document.getElementById('chat-status').textContent = 'Message accepted; waiting for its session';
+            return;
+          }
+          if (data.requestId !== view.requestId) throw new Error('Thread lookup returned another request');
+          view.sessionId = currentSessionId = data.sessionId;
+          agentChatRequestId = null;
+          setAgentChatSessionId(data.sessionId);
+          renderSessionPicker();
+          syncRealtimeSubscriptions();
+        }
+        if (isSessionPageMode()) {
+          await readSessionDetail(view.sessionId, { preserveScroll: true, isCurrent: selected });
+          continue;
+        }
         const response = await fetch(`/api/sessions/${encodeURIComponent(view.sessionId)}/transcript`, { signal: AbortSignal.timeout(5000) });
         const data = await response.json();
         if (!selected()) return;
@@ -281,18 +291,24 @@ function refreshChatTranscript() {
         if (selected()) document.getElementById('chat-status').textContent = error.message;
       }
     } while (view.dirty && selected());
-  })().finally(() => { view.read = null; });
+  })().finally(() => {
+    view.read = null;
+    if (selected() && !view.sessionId) {
+      if (Date.now() < view.resolveUntil) scheduleChatTranscriptRefresh(500);
+      else document.getElementById('chat-status').textContent = 'Session is still unavailable. Select Chat to check again.';
+    }
+  });
   return view.read;
 }
 
-function scheduleChatTranscriptRefresh() {
+function scheduleChatTranscriptRefresh(delay = 300) {
   const view = chatTranscript;
   if (!view) return;
   if (view.read) { view.dirty = true; return; }
   clearTimeout(view.timer);
   view.timer = setTimeout(() => {
     if (chatTranscript === view) void refreshChatTranscript();
-  }, 300);
+  }, delay);
 }
 
 function setRealtimeEnabled(enabled) {
@@ -311,10 +327,13 @@ function setRealtimeEnabled(enabled) {
   if (socket && socket.readyState < WebSocket.CLOSING) socket.close();
 }
 
+function refreshSessionStatus() {
+  if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'status' }));
+}
+
 function connectWs() {
   if (!realtimeEnabled) return;
   if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
-  const reconnecting = !!wsReconnectTimer;
   wsReconnectTimer = null;
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   const socket = new WebSocket(`${proto}//${location.host}/ws`);
@@ -327,14 +346,12 @@ function connectWs() {
     syncRealtimeSubscriptions();
     if (isMayConversation()) {
       void refreshMayConversation();
-    } else if (reconnecting) {
+    } else {
       if (currentTab === 'live') scheduleLivenessRefresh();
       else void refreshChatTranscript();
     }
     // Poll for active sessions periodically
-    const pollSessions = () => {
-      if (ws === socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: 'status' }));
-    };
+    const pollSessions = refreshSessionStatus;
     pollSessions();
     clearInterval(wsPollTimer);
     wsPollTimer = setInterval(pollSessions, 15000);
@@ -395,15 +412,8 @@ function connectWs() {
           }
           break;
         case 'session_start':
-          if (data.sessionId && !activeSessions.some(s => s.sessionId === data.sessionId)) {
-            activeSessions.push(data);
-            renderSessionPicker();
-          }
-          scheduleLivenessRefresh();
-          break;
         case 'session_end':
-          activeSessions = activeSessions.filter(s => s.sessionId !== data.sessionId);
-          renderSessionPicker();
+          refreshSessionStatus();
           scheduleLivenessRefresh();
           break;
         case 'message_created':
@@ -427,6 +437,10 @@ async function sendChat() {
   const route = currentRouteParams;
   const name = isAgentChatActive(currentAgentChat) ? currentAgentChat : null;
   const sessionId = isSessionPageMode() ? currentRouteParams.id : currentSessionId;
+  if (name && agentChatRequestId) {
+    toast('Waiting for this chat to start. Your draft is kept.');
+    return;
+  }
   if (!sessionId && (!name || name === humanInterface.agent) && !humanInterface.appId) {
     toast('No Conversation App is configured');
     return;
@@ -456,7 +470,7 @@ async function sendChat() {
       selection = ++chatSelectionVersion;
       const response = await fetch('/api/agents/' + encodeURIComponent(name) + '/message' + (forceNewAgentChat ? '?new=true' : ''), {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: message }), signal: AbortSignal.timeout(10000),
+        body: JSON.stringify({ content: message, requestId: pending.id }), signal: AbortSignal.timeout(10000),
       });
       const result = await response.json();
       if (!response.ok || !result.ok) throw new Error(result.error || 'Message admission failed');
@@ -476,9 +490,7 @@ async function sendChat() {
     if (name && !sessionId && name !== humanInterface.agent) {
       forceNewAgentChat = false;
       if (admittedSession) void switchSession(admittedSession);
-      else setTimeout(() => {
-        if (selection === chatSelectionVersion && isAgentChatActive(name)) void loadAgentChatThread(name);
-      }, 800);
+      else void switchSession(null, pending.id);
     }
   } catch (error) {
     if (selected()) toast('Message was not confirmed: ' + error.message);
@@ -493,6 +505,7 @@ function resetAgentChat(name) {
   chatSelectionVersion++;
   clearChatTranscript();
   currentSessionId = null;
+  agentChatRequestId = null;
   forceNewAgentChat = true;
   syncRealtimeSubscriptions();
   setAgentChatSessionId(null);

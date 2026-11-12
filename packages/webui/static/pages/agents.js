@@ -40,6 +40,7 @@ async function initAgentChat(name) {
   }
   currentAgentChat = name;
   currentSessionId = null;
+  agentChatRequestId = null;
   forceNewAgentChat = false;
   updateConversationStop();
   // Update the chat header to show the agent name.
@@ -126,7 +127,8 @@ function switchAgentSubTab(tab) {
     if (chatPane) chatPane.classList.remove('hidden');
     if (body) body.innerHTML = '';
     // Resolve & load the chat thread (same as before).
-    void loadAgentChatThread(currentAgentChat);
+    if (currentSessionId || agentChatRequestId) void switchSession(currentSessionId, agentChatRequestId);
+    else void loadAgentChatThread(currentAgentChat);
   } else {
     if (chatPane) chatPane.classList.add('hidden');
     if (body) body.innerHTML = '<div style="color:var(--fg2);padding:24px">Loading…</div>';
@@ -141,6 +143,7 @@ function switchAgentSubTab(tab) {
 
 async function loadAgentChatThread(name) {
   if (!name || !isAgentChatActive(name) || forceNewAgentChat) return;
+  if (agentChatRequestId) return refreshChatTranscript();
   const selection = ++chatSelectionVersion;
   if (name === humanInterface.agent) {
     currentSessionId = null;
@@ -153,6 +156,7 @@ async function loadAgentChatThread(name) {
     const r = await fetch(`/api/agents/${encodeURIComponent(name)}/default-session`);
     const d = await r.json();
     if (selection !== chatSelectionVersion || !isAgentChatActive(name)) return;
+    if (!r.ok) throw new Error(d.error || 'Default thread unavailable');
     if (d.sessionId) {
       setAgentChatSessionId(d.sessionId);
       await switchSession(d.sessionId);

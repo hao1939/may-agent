@@ -38,6 +38,7 @@ describe("HTTP human Task reads and board", () => {
   let rejectConversationRead: boolean;
   let rejectAppRead: boolean;
   let listeners: Set<(event: ControlEvent) => void>;
+  let activeStatus: any[];
 
   beforeEach(async () => {
     conversation = { messages: [], activeTurn: { id: "turn-one", revision: 7 } };
@@ -47,6 +48,7 @@ describe("HTTP human Task reads and board", () => {
     rejectConversationRead = false;
     rejectAppRead = false;
     listeners = new Set();
+    activeStatus = [];
     root = mkdtempSync(join(tmpdir(), "may-http-tasks-"));
     db = openStateDb(join(root, "may.db"));
     const projects = join(root, "projects");
@@ -63,7 +65,7 @@ describe("HTTP human Task reads and board", () => {
     control = await attachControlSocket({
       socketPath: daemonSocketPath(root, { instance: "task-test", interfaceAgent: "helper" }),
       getSessionId: () => "fixture",
-      getStatus: () => [],
+      getStatus: () => activeStatus,
       emitEvent: () => {},
       subscribeEvents: (listener) => { listeners.add(listener); return () => listeners.delete(listener); },
       getAppConversation: (appId, conversationId, options) => {
@@ -420,6 +422,229 @@ describe("HTTP human Task reads and board", () => {
     } finally { await browser.close(); }
   }, 30000);
 
+  test.skipIf(skipBrowser).each(["abort", "500"])(
+    "returning to Chat retains and refreshes its thread after a %s default lookup failure",
+    async (failure) => {
+      const sessionId = seedChat("worker");
+      ensureSessionDir(root, sessionId);
+      appendSessionMessage(root, sessionId, { role: "user", content: "Retained thread", timestamp: Date.now() });
+      const browser = await puppeteer.launch({
+        executablePath: chrome!,
+        headless: true,
+        args: ["--no-sandbox", "--disable-dev-shm-usage"],
+      });
+      try {
+        const page = await browser.newPage();
+        page.setDefaultTimeout(5000);
+        await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
+        await page.waitForFunction(() =>
+          document.querySelector("#chat-messages")?.textContent?.includes("Retained thread"),
+        );
+        await page.setRequestInterception(true);
+        page.on("request", (request) => {
+          if (new URL(request.url()).pathname !== "/api/agents/worker/default-session") return void request.continue();
+          if (failure === "abort") void request.abort("failed");
+          else
+            void request.respond({
+              status: 500,
+              contentType: "application/json",
+              body: '{"error":"fixture metadata unavailable"}',
+            });
+        });
+        await page.evaluate("loadAgentChatThread('worker')");
+        expect(await page.evaluate("currentSessionId")).toBe(sessionId);
+        expect(await page.$eval("#chat-status", (el) => el.textContent)).toContain("Default thread unavailable");
+        await page.click("#agents-content button[onclick=\"switchAgentSubTab('about')\"]");
+        await page.click("#agents-content button[onclick=\"switchAgentSubTab('chat')\"]");
+        await notificationBarrier(page);
+        appendSessionMessage(root, sessionId, {
+          role: "assistant",
+          content: [{ type: "text", text: "Saved after returning" }],
+          timestamp: Date.now(),
+        });
+        for (const listener of listeners) listener({ type: "turn.end", data: { sessionId } });
+        await page.waitForFunction(() =>
+          document.querySelector("#chat-messages")?.textContent?.includes("Saved after returning"),
+        );
+        expect(await page.evaluate("currentSessionId")).toBe(sessionId);
+      } finally {
+        await browser.close();
+      }
+    },
+    30000,
+  );
+
+  test.skipIf(skipBrowser)(
+    "routed inspector reloads saved transcript and outcome after an offline completion",
+    async () => {
+      const sessionId = seedChat("worker");
+      ensureSessionDir(root, sessionId);
+      appendSessionMessage(root, sessionId, {
+        role: "user",
+        content: "Initial inspector transcript",
+        timestamp: Date.now(),
+      });
+      const browser = await puppeteer.launch({
+        executablePath: chrome!,
+        headless: true,
+        args: ["--no-sandbox", "--disable-dev-shm-usage"],
+      });
+      try {
+        const page = await browser.newPage();
+        page.setDefaultTimeout(7000);
+        await page.goto(`${base}/sessions/${sessionId}`, { waitUntil: "domcontentloaded" });
+        await page.waitForFunction(() =>
+          document.querySelector("#session-detail-panel")?.textContent?.includes("Initial inspector transcript"),
+        );
+        await page.waitForFunction("ws?.readyState === WebSocket.OPEN");
+        await page.evaluate("ws.close()");
+        await page.waitForFunction("ws === null");
+        db.prepare("UPDATE sessions SET status='done', endedAt=?, outcome=? WHERE sessionId=?").run(
+          Date.now(),
+          "Completed while offline",
+          sessionId,
+        );
+        appendSessionMessage(root, sessionId, {
+          role: "assistant",
+          content: [{ type: "text", text: "Saved offline answer" }],
+          timestamp: Date.now(),
+        });
+        await page.waitForFunction(() => {
+          const text = document.querySelector("#session-detail-panel")?.textContent || "";
+          return text.includes("Saved offline answer") && text.includes("Completed while offline");
+        });
+        expect(await page.evaluate("currentSessionId")).toBe(sessionId);
+      } finally {
+        await browser.close();
+      }
+    },
+    30000,
+  );
+
+  test.skipIf(skipBrowser)(
+    "a session-start notification refreshes the picker from authoritative status immediately",
+    async () => {
+      const browser = await puppeteer.launch({
+        executablePath: chrome!,
+        headless: true,
+        args: ["--no-sandbox", "--disable-dev-shm-usage"],
+      });
+      try {
+        const page = await browser.newPage();
+        page.setDefaultTimeout(5000);
+        await page.goto(`${base}/sessions`, { waitUntil: "domcontentloaded" });
+        await notificationBarrier(page);
+        activeStatus = [
+          {
+            sessionId: "started-session",
+            agent: "worker",
+            task: "Started chat",
+            status: "running",
+            kind: "chat",
+            startedAt: Date.now(),
+          },
+        ];
+        for (const listener of listeners)
+          listener({
+            type: "session.start",
+            data: { sessionId: "started-session", agent: "worker", kind: "chat", parentSessionId: "fixture" },
+          });
+        await page.waitForFunction(() =>
+          document.querySelector("#session-picker")?.textContent?.includes("worker (ession)"),
+        );
+        expect(await page.evaluate("activeSessions[0].status")).toBe("running");
+      } finally {
+        await browser.close();
+      }
+    },
+    30000,
+  );
+
+  test.skipIf(skipBrowser)(
+    "fresh chat discovers its admitted request after the first lookup, excluding older and concurrent threads",
+    async () => {
+      seedChat("worker");
+      const browser = await puppeteer.launch({
+        executablePath: chrome!,
+        headless: true,
+        args: ["--no-sandbox", "--disable-dev-shm-usage"],
+      });
+      try {
+        const page = await browser.newPage();
+        page.setDefaultTimeout(5000);
+        await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
+        await page.waitForFunction("currentSessionId === 'worker-old-session'");
+        await page.click("#agents-content button[onclick=\"resetAgentChat('worker')\"]");
+        let firstLookup = true;
+        let observed: () => void;
+        const lookup = new Promise<void>((done) => {
+          observed = done;
+        });
+        await page.setRequestInterception(true);
+        page.on("request", (request) => {
+          if (firstLookup && new URL(request.url()).pathname === "/api/agents/worker/default-session") {
+            firstLookup = false;
+            void request.respond({ status: 200, contentType: "application/json", body: '{"sessionId":null}' });
+            observed();
+          } else void request.continue();
+        });
+        await page.type("#chat-input", "Start the requested thread");
+        await page.evaluate("sendChat()");
+        await lookup;
+        await page.$eval("#chat-input", (el) => {
+          (el as HTMLInputElement).value = "Next draft while starting";
+        });
+        await page.evaluate("sendChat()");
+        expect(published).toHaveLength(1);
+        expect(await page.$eval("#chat-input", (el) => (el as HTMLInputElement).value)).toBe(
+          "Next draft while starting",
+        );
+        await page.click("#agents-content button[onclick=\"switchAgentSubTab('about')\"]");
+        await page.click("#agents-content button[onclick=\"switchAgentSubTab('chat')\"]");
+        const requestId = published[0].data.requestId;
+        db.prepare(
+          "INSERT INTO sessions(sessionId,agent,task,status,kind,source,startedAt,requestId) VALUES(?,?,?,?,?,?,?,?)",
+        ).run(
+          "requested-new-session",
+          "worker",
+          "Requested",
+          "idle",
+          "chat",
+          "web-ui",
+          Date.now(),
+          requestId || "missing-correlation",
+        );
+        db.prepare(
+          "INSERT INTO sessions(sessionId,agent,task,status,kind,source,startedAt,requestId) VALUES(?,?,?,?,?,?,?,?)",
+        ).run(
+          "concurrent-newer-session",
+          "worker",
+          "Concurrent",
+          "idle",
+          "chat",
+          "web-ui",
+          Date.now() + 1000,
+          "another-request",
+        );
+        ensureSessionDir(root, "requested-new-session");
+        appendSessionMessage(root, "requested-new-session", {
+          role: "assistant",
+          content: [{ type: "text", text: "The exact requested answer" }],
+          timestamp: Date.now(),
+        });
+        await page.waitForFunction(() =>
+          document.querySelector("#chat-messages")?.textContent?.includes("The exact requested answer"),
+        );
+        expect(await page.evaluate("currentSessionId")).toBe("requested-new-session");
+        expect(typeof requestId).toBe("string");
+        expect(published[0].idempotencyKey).toBe(requestId);
+      } finally {
+        await browser.close();
+      }
+    },
+    30000,
+  );
+
   test.skipIf(skipBrowser)("rejected fresh chat keeps its draft and Reset intent", async () => {
     seedChat("worker");
     const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
@@ -439,6 +664,74 @@ describe("HTTP human Task reads and board", () => {
       expect(published).toMatchObject([{ type: "chat.start.requested", data: { agent: "worker", forceNew: true } }]);
     } finally { await browser.close(); }
   }, 30000);
+
+  test("request-scoped thread reads never fall back to an older or another agent's session", async () => {
+    const sessionId = seedChat("worker");
+    seedChat("other");
+    db.prepare("UPDATE sessions SET requestId=? WHERE sessionId=?").run("requested-thread", sessionId);
+    db.prepare(
+      "INSERT INTO sessions(sessionId,agent,task,status,kind,source,startedAt,requestId) VALUES(?,?,?,?,?,?,?,?)",
+    ).run(
+      "newer-worker-evidence",
+      "worker",
+      "Other execution",
+      "done",
+      "job",
+      "web-ui",
+      Date.now() + 1000,
+      "requested-thread",
+    );
+    expect(await read("/api/agents/worker/default-session?requestId=requested-thread")).toMatchObject({
+      sessionId,
+      requestId: "requested-thread",
+    });
+    expect(await read("/api/agents/worker/default-session?requestId=not-started")).toMatchObject({ sessionId: null });
+    expect(await read("/api/agents/other/default-session?requestId=requested-thread")).toMatchObject({
+      sessionId: null,
+    });
+    expect(await read("/api/agents/worker/default-session?requestId=", 400)).toMatchObject({
+      error: "invalid requestId",
+    });
+  });
+
+  test("failed thread storage reads cannot admit an accidental fresh chat", async () => {
+    seedChat("worker");
+    db.exec("ALTER TABLE sessions RENAME COLUMN agent TO unavailable_agent");
+    expect(await read("/api/agents/worker/default-session", 500)).toHaveProperty("error");
+    const response = await fetch(base + "/api/agents/worker/message", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: "Keep the selected conversation" }),
+    });
+    expect(response.status).toBe(500);
+    expect(published).toEqual([]);
+  });
+
+  test("retrying a created request retains its original start publication instead of steering the latest thread", async () => {
+    const requestId = "original-creation";
+    const response = await fetch(base + "/api/agents/worker/message", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: "Original input", requestId }),
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ sessionId: null, requestId });
+    const sessionId = seedChat("worker");
+    db.prepare("UPDATE sessions SET requestId=? WHERE sessionId=?").run(requestId, sessionId);
+    const retry = await fetch(base + "/api/agents/worker/message", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: "Original input", requestId }),
+    });
+    expect(retry.status).toBe(200);
+    expect(published).toHaveLength(2);
+    expect(published[0]).toEqual(published[1]);
+    expect(published[1]).toMatchObject({
+      type: "chat.start.requested",
+      idempotencyKey: requestId,
+      data: { requestId },
+    });
+  });
 
   test.each([false, true])("interface-agent HTTP input retains its Conversation with existing session=%s", async (existing) => {
     if (existing) {
@@ -636,64 +929,91 @@ describe("HTTP human Task reads and board", () => {
     } finally { await browser.close(); }
   }, 30000);
 
-  test.skipIf(skipBrowser).each([false, true])("late direct-chat admission with existing session=%s cannot rebind a routed session", async (existing) => {
-    if (existing) seedChat("worker");
-    seedChat("selected");
-    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
-    try {
-      const page = await browser.newPage();
-      page.setDefaultTimeout(5000);
-      await page.goto(`${base}/sessions/selected-old-session`, { waitUntil: "domcontentloaded" });
-      await page.waitForFunction("ws?.readyState === WebSocket.OPEN");
-      // Capture the actual retry callback; release it after the user has navigated.
-      await page.evaluate(`(() => {
-        const schedule = window.setTimeout;
+  test.skipIf(skipBrowser).each([false, true])(
+    "late direct-chat admission with existing session=%s cannot rebind a routed session",
+    async (existing) => {
+      if (existing) seedChat("worker");
+      seedChat("selected");
+      const browser = await puppeteer.launch({
+        executablePath: chrome!,
+        headless: true,
+        args: ["--no-sandbox", "--disable-dev-shm-usage"],
+      });
+      try {
+        const page = await browser.newPage();
+        page.setDefaultTimeout(5000);
+        await page.goto(`${base}/sessions/selected-old-session`, { waitUntil: "domcontentloaded" });
+        await page.waitForFunction("ws?.readyState === WebSocket.OPEN");
+        // Hold both initial default resolution and the admitted request lookup.
+        await page.evaluate(`(() => {
         const load = loadAgentChatThread;
         loadAgentChatThread = name => window.pendingAgentChat = load(name);
-        window.chatRetry = null;
-        window.setTimeout = (callback, delay, ...args) => {
-          if (delay === 800) { window.chatRetry = callback; return 0; }
-          return schedule(callback, delay, ...args);
-        };
       })()`);
-      let capture: (request: HTTPRequest) => void;
-      let captureDefault: (request: HTTPRequest) => void;
-      const intercepted = new Promise<HTTPRequest>(resolveRequest => { capture = resolveRequest; });
-      const defaultRead = new Promise<HTTPRequest>(resolveRequest => { captureDefault = resolveRequest; });
-      await page.setRequestInterception(true);
-      page.on("request", request => {
-        if (new URL(request.url()).pathname === "/api/agents/worker/message") capture(request);
-        else if (new URL(request.url()).pathname === "/api/agents/worker/default-session") captureDefault(request);
-        else void request.continue();
-      });
-      await page.evaluate("routeTo('/agents/worker')");
-      const defaultHeld = await defaultRead;
-      const pending = page.evaluate("document.getElementById('chat-input').value = 'Message worker'; sendChat()");
-      const held = await intercepted;
-      if (existing) await page.evaluate("routeTo('/sessions/selected-old-session')");
-      await held.continue();
-      await pending;
-      if (!existing) {
-        expect(await page.evaluate("typeof window.chatRetry")).toBe("function");
-        await page.evaluate("routeTo('/sessions/selected-old-session')");
+        let capture: (request: HTTPRequest) => void;
+        let captureDefault: (request: HTTPRequest) => void;
+        let captureDiscovery: (request: HTTPRequest) => void;
+        const intercepted = new Promise<HTTPRequest>((resolveRequest) => {
+          capture = resolveRequest;
+        });
+        const defaultRead = new Promise<HTTPRequest>((resolveRequest) => {
+          captureDefault = resolveRequest;
+        });
+        const discoveryRead = new Promise<HTTPRequest>((resolveRequest) => {
+          captureDiscovery = resolveRequest;
+        });
+        await page.setRequestInterception(true);
+        page.on("request", (request) => {
+          if (new URL(request.url()).pathname === "/api/agents/worker/message") capture(request);
+          else if (new URL(request.url()).pathname === "/api/agents/worker/default-session") {
+            if (new URL(request.url()).searchParams.has("requestId")) captureDiscovery(request);
+            else captureDefault(request);
+          } else void request.continue();
+        });
+        await page.evaluate("routeTo('/agents/worker')");
+        const defaultHeld = await defaultRead;
+        const pending = page.evaluate("document.getElementById('chat-input').value = 'Message worker'; sendChat()");
+        const held = await intercepted;
+        if (existing) await page.evaluate("routeTo('/sessions/selected-old-session')");
+        await held.continue();
+        await pending;
+        if (!existing) {
+          const discoveryHeld = await discoveryRead;
+          await page.evaluate("routeTo('/sessions/selected-old-session')");
+          await discoveryHeld.respond({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({ sessionId: "obsolete-session", requestId: published[0].data.requestId }),
+          });
+        }
+        await page.waitForFunction(
+          () => document.querySelector("#session-detail-panel h3")?.textContent === "selected-old-session",
+        );
+        await defaultHeld.continue();
+        await page.evaluate("window.pendingAgentChat");
+        expect(await page.evaluate("currentSessionId")).toBe("selected-old-session");
+        expect(await page.evaluate("currentAgentChat")).toBeNull();
+        expect(published).toMatchObject([
+          existing
+            ? { type: "session.steer.requested", target: { sessionId: "worker-old-session" } }
+            : { type: "chat.start.requested", data: { agent: "worker" } },
+        ]);
+        const submitted = new Promise<void>((done) => {
+          onPublish = done;
+        });
+        await page.type("#chat-input", "Follow up on selected session");
+        await page.click("#chat-send");
+        await submitted;
+        expect(published).toHaveLength(2);
+        expect(published[1]).toMatchObject({
+          type: "session.steer.requested",
+          target: { sessionId: "selected-old-session" },
+        });
+      } finally {
+        await browser.close();
       }
-      await page.waitForFunction(() => document.querySelector("#session-detail-panel h3")?.textContent === "selected-old-session");
-      await defaultHeld.continue();
-      await page.evaluate("window.pendingAgentChat");
-      await page.evaluate("window.chatRetry?.()");
-      expect(await page.evaluate("currentSessionId")).toBe("selected-old-session");
-      expect(await page.evaluate("currentAgentChat")).toBeNull();
-      expect(published).toMatchObject([existing
-        ? { type: "session.steer.requested", target: { sessionId: "worker-old-session" } }
-        : { type: "chat.start.requested", data: { agent: "worker" } }]);
-      const submitted = new Promise<void>(done => { onPublish = done; });
-      await page.type("#chat-input", "Follow up on selected session");
-      await page.click("#chat-send");
-      await submitted;
-      expect(published).toHaveLength(2);
-      expect(published[1]).toMatchObject({ type: "session.steer.requested", target: { sessionId: "selected-old-session" } });
-    } finally { await browser.close(); }
-  }, 30000);
+    },
+    30000,
+  );
 
   test.skipIf(skipBrowser)("unbound interface chat rejects HTTP and browser input without steering an old session", async () => {
     seedChat();
