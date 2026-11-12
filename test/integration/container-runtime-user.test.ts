@@ -17,8 +17,9 @@ describe("container runtime identity and working directory", () => {
 
     const source = read("container/setup-runtime-user.sh");
     expect(source).toContain('ownership_path="${MAY_RUNTIME_OWNERSHIP_PATH:-${projects_root}}"');
-    expect(source).toContain("groupmod --non-unique --gid");
-    expect(source).toContain("usermod --non-unique --uid");
+    expect(source).toContain("/usr/sbin/groupmod --non-unique --gid");
+    expect(source).toContain("/usr/sbin/usermod --non-unique --uid");
+    expect(source).toContain("/usr/sbin/runuser -u");
     expect(source).toContain("cannot use ${path}");
     expect(source).not.toContain("chown -R \"${runtime_user}:${runtime_user}\" \"${project_root}\"");
   });
