@@ -1,7 +1,8 @@
 # Explicit Condition freshness — November 12, 2026
 
-**Status:** Implemented and checked in [Host PR 456](https://github.com/hao1939/may-agent/pull/456),
-pending merge and installation. This is source evidence, not deployed behavior.
+**Status:** Merged in [Host PR 456](https://github.com/hao1939/may-agent/pull/456)
+as `da9b9fb85aee` on November 12, 2026. Installation and live upgrade have not
+been verified by this work. This is source evidence, not deployed behavior.
 
 **Owns:** Follow-up to finding 2 in the
 [resource/Event boundary review](resource-event-boundary-20260927.md) and the
@@ -38,7 +39,7 @@ Upgrade with the old runtime stopped; raw App declarations relying on the old
 name rule need explicit expectations. Subsequent reopen does not reapply name policy.
 
 Source baselines: Host `c5c163aafcc1` (#454), Apps `f1f2af58292d`.
-Candidate Host: `211c5fb2b8`. Apps companion changes are docs and regression
+Initial candidate Host: `211c5fb2b8`. Apps companion changes are docs and regression
 updates for May's GitHub wait and Scout's credential wait; production callers
 already use the SDK helper. Install matching Host/SDK together. Old installed
 source and existing live state were not converted for this work.
@@ -87,3 +88,20 @@ May typecheck and all 187 tests passed against this candidate, as did the comple
 Apps design check and both fixture-backed GitHub compositions. Final full Host
 CI and hosted check results are recorded in the linked PR. This follow-up adds no
 SDK API, freshness mechanism or broader replay scope, and performs no deployment.
+
+## Merged outcome
+
+The final reviewed head `7209c1b987` includes main `52ff184177` (#455) and has
+the same source tree as merged Host `da9b9fb85aee`. Hosted Quality passed 4,141
+tests with zero failures and three installation-only skips; browser coverage
+executed. Container passed. Apps design checks and May typecheck plus 187 tests
+also passed against that head.
+
+The final local four-shard run hit one five-second `restoredHandler` worker-fixture
+timeout. That case passed unchanged independently and in hosted CI. This local
+failure remains part of the evidence; it is not a passing full local gate.
+Earlier candidates and the recovery correction above retain their own baselines.
+
+The source gap is closed. Installing matching Host/SDK, applying the one-time
+stored-wait upgrade with the old runtime stopped, and verifying adopted App waits
+remain separate operator work. No installation or live state was changed here.

@@ -15,8 +15,9 @@ rechecked those two findings on `de59c8dae9`: translation recovery is repaired;
 the freshness-policy coupling remains. Other rows below retain their original
 review baseline.
 **November 12 follow-up:** [Host PR 456](https://github.com/hao1939/may-agent/pull/456)
-implements explicit freshness using existing comparisons, with a one-time stored
-wait upgrade. It is pending merge and installation. The
+merged as Host `da9b9fb85aee`, closing the event-name freshness coupling through
+existing comparisons and a one-time stored-wait upgrade. Installation and adopted
+App wait verification remain separate. The
 [freshness review](../archive/reviews/condition-freshness-20261112.md) records the
 regressions and limits; the September findings above retain their historical baseline.
 
@@ -28,7 +29,6 @@ and their linked owners.
 
 | Gap | Evidence and contract owner | Smallest next proof |
 | --- | --- | --- |
-| Condition freshness depended on event spelling and one named domain event | [Freshness review](../archive/reviews/condition-freshness-20261112.md); [observation validity](../2a-design/events.md#changes-that-already-happened) | Host PR 456 removes runtime name rules and preserves stored boundaries; merge/install matching Host and SDK, then verify adopted App waits. Source tests are not deployment proof. |
 | HTTP embeds session-evaluation policy and directly writes human annotation | `src/app/http/server.ts`; [HTTP boundary](../2a-design/http-boundary.md), [Session trail](../2a-design/session-eval-trail.md) | Preserve the current API while routing the requested judgment/write to its owner; prove exact session/line/input correlation |
 | Requested session line/instructions are lost at the Evaluation mapping | `evaluation.app/app.ts`, `evaluate-session` mapping and `evaluator-aftermath`; [Session trail](../2a-design/session-eval-trail.md) | Either implement the accepted annotation capability end to end or explicitly revise/remove that advertised capability; do not claim a whole-session assessment answered the line request |
 | Some Task-board text equates convergence with recurring work | `packages/webui/static/pages/project-kanban.js`; [Default UI](../2a-design/default-project-ui.md) | Explain open accepted outcomes independently of recurrence and closure; check the rendered board |
@@ -49,6 +49,12 @@ here. Apply the value/cost review before extending the contract.
 | Skill-level regression comparison | Catalog pinning is intentional. The [skill contract](../2a-design/skills.md#current-implementation-and-remaining-work) records identity, but hash-to-outcome comparison needs distinct evaluation evidence. |
 
 ## Resolved source drift
+
+Condition freshness no longer depends on event spelling in merged Host #456
+(`da9b9fb85aee`). Existing expectations express time boundaries; Condition recovery
+uses the saved envelope and verified complete body through the canonical loader.
+The [freshness review](../archive/reviews/condition-freshness-20261112.md) records
+the stored-wait upgrade, review correction and checks. Installation is not claimed.
 
 App translation now persists unresolved routing before invocation. A failing
 translator leaves other App routes usable and is retried through the same

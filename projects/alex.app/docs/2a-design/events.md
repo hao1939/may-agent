@@ -13,8 +13,8 @@ handles linked Task facts through the same input path as human discussion;
 there is no separate current supervision Task or proxy for destination work.
 Unresolved App translation is retained before invocation and retried through
 admission recovery. Explicit Condition freshness is implemented in
-[Host PR 456](https://github.com/hao1939/may-agent/pull/456), pending merge
-and installation; the installed Host must not be assumed to have that change.
+[Host PR 456](https://github.com/hao1939/may-agent/pull/456), merged as
+`da9b9fb85aee`. Installation and live upgrade verification remain separate.
 The [freshness review](../archive/reviews/condition-freshness-20261112.md) records
 the contract, upgrade boundary and portable checks.
 The [boundary review](../archive/reviews/resource-event-boundary-20260927.md)
