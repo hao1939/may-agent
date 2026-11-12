@@ -324,14 +324,15 @@ async function openSessionEval(sessionId) {
   try {
     const r = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/eval`);
     const data = await r.json();
+    if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
     if (!r.ok) throw new Error(data.error || r.statusText);
     currentSessionEval = data;
     await loadSessionDetail(sessionId, { evalData: data, preserveScroll: true });
   } catch (e) {
+    if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
     alert('Could not load review notes: ' + (e.message || String(e)));
   } finally {
-    const nextBtn = document.getElementById('session-eval-btn');
-    if (nextBtn) { nextBtn.textContent = 'Review notes'; nextBtn.disabled = false; }
+    if (btn?.isConnected) { btn.textContent = 'Review notes'; btn.disabled = false; }
   }
 }
 
@@ -402,9 +403,14 @@ function verdictColor(verdict) {
 }
 
 async function loadSessionDetail(sessionId, opts = {}) {
+  if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) {
+    routeTo('/sessions/' + encodeURIComponent(sessionId));
+    return;
+  }
   if (currentInspectedSession !== sessionId) currentSessionEval = null;
   currentInspectedSession = sessionId;
   const panel = getSessionDetailPanel();
+  restoreChatComposer();
   panel.innerHTML = '<div class="panel">Loading...</div>';
 
   try {
@@ -414,6 +420,7 @@ async function loadSessionDetail(sessionId, opts = {}) {
     ]);
     const sessData = await sessRes.json();
     const transData = await transRes.json();
+    if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
 
     if (sessData.error) { panel.innerHTML = `<div class="panel">${sessData.error}</div>`; return; }
 
@@ -439,7 +446,7 @@ async function loadSessionDetail(sessionId, opts = {}) {
         <span class="badge ${s.status}">${s.status}</span>
       </div>
       <div class="header-row" style="margin-top:8px">
-        <span style="font-size:14px"><a href="#" style="color:var(--accent);text-decoration:none" onclick="event.preventDefault();loadAgentDeepDive('${esc(s.agent)}')">${esc(s.agent)}</a></span>
+        <span style="font-size:14px"><a href="/agents/${attrEsc(encodeURIComponent(s.agent))}" style="color:var(--accent);text-decoration:none">${esc(s.agent)}</a></span>
         <span style="color:var(--fg2);font-size:13px">· ${durStr} · ${s.opCount || 0} ops</span>
         <button class="ask-btn" style="margin-left:auto" onclick='openLoopTrace({sessionId:${sessionIdArg}})'>trace</button>
         <button class="ask-btn" id="session-eval-btn" onclick="openSessionEval('${esc(s.sessionId)}')">Review notes</button>
@@ -551,6 +558,7 @@ async function loadSessionDetail(sessionId, opts = {}) {
     }
 
     html += '</div>';
+    restoreChatComposer();
     panel.innerHTML = html;
     if (isSessionPageMode()) placeSessionComposer();
 
@@ -562,14 +570,13 @@ async function loadSessionDetail(sessionId, opts = {}) {
 
     if (!opts.preserveScroll) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch(e) {
+    if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
     panel.innerHTML = `<div class="panel">Error loading session: ${e.message}</div>`;
   }
 }
 
 function getSessionDetailPanel() {
-  const routePanel = document.getElementById('session-detail-panel');
-  if (currentTab === 'sessions' && routePanel) return routePanel;
-  return document.getElementById('detail-panel') || routePanel;
+  return document.getElementById('session-detail-panel');
 }
 
 function goBackSession() {

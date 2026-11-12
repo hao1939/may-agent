@@ -39,10 +39,7 @@ let activeSessions = [];
 let currentSessionId = null;
 let sessionRefreshTimer = null;
 let renderMd = true; // markdown rendering on by default
-let feedPaused = false;
 let chatAutoScroll = true;
-let feedAutoScroll = true;
-let feedItems = [];
 
 function sendIntent(type, data, extra) {
   const target = extra?.target;
@@ -95,75 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-
-  // Smart auto-scroll for activity feed: pause when user scrolls up, resume at bottom
-  const feedList = document.getElementById('feed-list');
-  if (feedList) {
-    feedList.addEventListener('scroll', () => {
-      const atBottom = feedList.scrollHeight - feedList.scrollTop - feedList.clientHeight < 40;
-      if (atBottom && !feedAutoScroll) {
-        feedAutoScroll = true;
-        const btn = document.getElementById('feed-scroll-toggle');
-        if (btn) { btn.textContent = '⬇ Auto-scroll'; btn.classList.remove('off'); }
-      } else if (!atBottom && feedAutoScroll) {
-        feedAutoScroll = false;
-        const btn = document.getElementById('feed-scroll-toggle');
-        if (btn) { btn.textContent = '⏸ Scroll paused'; btn.classList.add('off'); }
-      }
-    });
-  }
 });
-
-function toggleFeedPause() {
-  feedPaused = !feedPaused;
-  document.getElementById('feed-pause-btn').textContent = feedPaused ? '▶ Resume' : '⏸ Pause';
-}
-
-function toggleFeedScroll() {
-  feedAutoScroll = !feedAutoScroll;
-  const btn = document.getElementById('feed-scroll-toggle');
-  if (feedAutoScroll) {
-    btn.textContent = '⬇ Auto-scroll';
-    btn.classList.remove('off');
-    // Immediately scroll to bottom when re-enabled
-    const feedList = document.getElementById('feed-list');
-    if (feedList) feedList.scrollTop = feedList.scrollHeight;
-  } else {
-    btn.textContent = '⏸ Scroll paused';
-    btn.classList.add('off');
-  }
-}
-
-function addFeedItem(agent, text, type) {
-  const now = new Date();
-  const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0') + ':' + now.getSeconds().toString().padStart(2, '0');
-  const agentClass = 'feed-agent-' + (agent || '').replace(/[^a-z0-9-]/gi, '-').toLowerCase();
-  const typeClass = 'feed-type-' + (type || '').replace(/[^a-z0-9-]/gi, '-');
-
-  const item = { agent, text, type, time: timeStr };
-  feedItems.push(item);
-
-  const feedList = document.getElementById('feed-list');
-  if (!feedList) return;
-
-  const div = document.createElement('div');
-  div.className = 'feed-item ' + typeClass;
-  div.innerHTML = '<span class="feed-time">' + esc(timeStr) + '</span>' +
-    '<span class="feed-agent ' + agentClass + '">' + esc(agent || '') + '</span>' +
-    '<span class="feed-text">' + esc(text || '') + '</span>';
-  feedList.appendChild(div);
-
-  // Trim to max 50 items
-  while (feedItems.length > 50) {
-    feedItems.shift();
-    if (feedList.firstChild) feedList.removeChild(feedList.firstChild);
-  }
-
-  // Auto-scroll if enabled and not paused
-  if (feedAutoScroll && !feedPaused) {
-    feedList.scrollTop = feedList.scrollHeight;
-  }
-}
 
 function setSessionPageMode(enabled) {
   const chat = document.getElementById('chat');
@@ -175,9 +104,9 @@ function setSessionPageMode(enabled) {
   if (!enabled) {
     clearTimeout(sessionRefreshTimer);
     currentInspectedSession = null;
+    restoreChatComposer();
     const panel = document.getElementById('session-detail-panel');
     if (panel) panel.innerHTML = '';
-    restoreChatComposer();
   }
 }
 
@@ -444,7 +373,7 @@ function connectWs() {
         } else if (event.type === 'conversation.updated' && data.appId === humanInterface.appId && data.conversationId === humanInterface.conversationId) {
           void refreshMayConversation();
         }
-        // Keep global status/feed current while rendering only canonical
+        // Keep global status current while rendering only canonical
         // messages in May's Conversation pane.
         currentAssistant = null;
         currentAssistantRaw = '';
@@ -521,7 +450,6 @@ function connectWs() {
             });
             renderSessionPicker();
           }
-          addFeedItem(data.agent, 'started session: ' + (data.task || '').slice(0, 80), 'start');
           scheduleLivenessRefresh();
           break;
         }
@@ -538,27 +466,13 @@ function connectWs() {
           // Update session picker
           activeSessions = activeSessions.filter(s => s.sessionId !== data.sessionId);
           renderSessionPicker();
-          addFeedItem(data.agent, 'finished (' + (data.status || '?') + (data.duration ? ', ' + data.duration : '') + ')', data.status === 'error' ? 'end-error' : 'end-good');
           scheduleLivenessRefresh();
           break;
         }
         case 'message_created':
-          {
-            const message = event.data || event;
-            addFeedItem(message.from || event.source || 'message', (message.content || message.message || '').slice(0, 120), 'notification');
-          }
-          scheduleLivenessRefresh();
-          break;
         case 'metric_breach':
-          addFeedItem(event.owner || 'metric', (event.metricId || 'metric') + ' breached', 'notification');
-          scheduleLivenessRefresh();
-          break;
         case 'metric_recovered':
-          addFeedItem('metric', (event.metricId || 'metric') + ' recovered', 'end-good');
-          scheduleLivenessRefresh();
-          break;
         case 'handler_failed':
-          addFeedItem(data.appId || data.agent || data.handler || 'handler', [data.taskId || data.requestId, data.stage, data.error || 'handler failed', data.disposition].filter(Boolean).join(' · ').slice(0, 240), 'end-error');
           scheduleLivenessRefresh();
           break;
         case 'notification': {
@@ -572,7 +486,6 @@ function connectWs() {
             messages.appendChild(div);
             chatScrollToBottom(messages);
           }
-          addFeedItem(event.agent, event.text?.slice(0, 120) || '', 'notification');
           break;
         }
         case 'connected':

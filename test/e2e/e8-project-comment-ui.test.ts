@@ -504,9 +504,10 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
         const ui = window as typeof window & { loadSessionDetail: (id: string) => Promise<void> };
         await ui.loadSessionDetail(id);
       }, sessionId);
+      await page.waitForSelector("#session-eval-btn");
       expect(await page.$eval("#session-eval-btn", (el) => el.textContent)).toBe("Review notes");
       await page.$eval("#session-eval-btn", (el) => (el as HTMLButtonElement).click());
-      await page.waitForFunction(() => document.getElementById("detail-panel")?.textContent?.includes("No saved review notes for this session."));
+      await page.waitForFunction(() => document.getElementById("session-detail-panel")?.textContent?.includes("No saved review notes for this session."));
       writeFileSync(join(sessionDir, "session.eval.jsonl"), JSON.stringify({
         type: "line", line: 1, source: "human-feedback", comment: "Saved note from a previous review",
       }) + "\n");

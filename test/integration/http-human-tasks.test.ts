@@ -406,12 +406,13 @@ describe("HTTP human Task reads and board", () => {
         socket.addEventListener("message", onMessage);
         socket.send(JSON.stringify({ type: "status", diagnostics: true }));
       }));
+      await page.evaluate("window.fixtureDiagnostics = []; busSubscribe('handler.failed', event => window.fixtureDiagnostics.push(event))");
       for (const listener of listeners) {
         listener({ type: "status", activeAgents: [{ agent: "worker", sessionId: "other-session", status: "running" }] });
         listener({ type: "text", data: { sessionId: "other-session" }, text: "Other session text" });
         listener({ type: "handler.failed", data: { appId: "other-app", taskId: "work", stage: "execute", error: "Diagnostic survives May chat", disposition: "not-retrying" } });
       }
-      await page.waitForFunction(() => document.querySelector("#feed-list")!.textContent!.includes("Diagnostic survives May chat"));
+      await page.waitForFunction("window.fixtureDiagnostics.some(event => event.data.error === 'Diagnostic survives May chat')");
       expect(await page.evaluate("activeSessions.some(s => s.sessionId === 'other-session')")).toBe(true);
       expect(await page.$eval("#chat-messages", el => el.textContent)).not.toContain("Other session text");
       await page.type("#chat-input", "Discuss costs before implementing");

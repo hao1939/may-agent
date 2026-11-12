@@ -18,11 +18,8 @@ const humanInterfaceReady = fetch('/api/interface').then(async response => {
 // ── State ─────────────────────────────────────────────────────────────
 let currentTab = 'live';
 let currentRouteParams = {};
-let offset = 0;
-const limit = 30;
 let _currentProjectDetail = null;
 let liveInitialized = false;
-let legacyDashboardInitialized = false;
 
 // ── Router ────────────────────────────────────────────────────────────
 // Real routes: / /agents /agents/<name> /projects /projects/:id
@@ -148,16 +145,6 @@ function projectPathOf(id) {
   return 'projects/' + id;
 }
 
-function initializeLegacyDashboard() {
-  if (legacyDashboardInitialized) return;
-  legacyDashboardInitialized = true;
-  loadHealth();
-  loadHealthGraphs();
-  loadAgentGrid();
-  loadTimeline();
-  loadStats();
-}
-
 function render() {
   const previousTab = currentTab;
   const { tab, params } = parseRoute();
@@ -195,7 +182,6 @@ function render() {
     loadLiveness();
     loadWorkflowOverview();
     loadOverviewTasks();
-    if (document.getElementById('legacy-dashboard')?.open) initializeLegacyDashboard();
   }
   if (tab === 'sessions') initChat(params.id || null);
   if (tab !== 'agents' || !inAgentChat) currentAgentChat = null;
@@ -395,9 +381,6 @@ async function verbCancelSession(sessionId, ev) {
 }
 
 // Apply initial route from URL/hash. Each surface initializes its own data.
-document.getElementById('legacy-dashboard')?.addEventListener('toggle', event => {
-  if (event.currentTarget.open) initializeLegacyDashboard();
-});
 humanInterfaceReady.then(() => render()).catch(error => {
   console.error(error);
   render(); // Read-only inspection remains available without a conversation binding.
