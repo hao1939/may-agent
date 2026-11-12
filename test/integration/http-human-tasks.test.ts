@@ -341,10 +341,11 @@ describe("HTTP human Task reads and board", () => {
       await page.waitForFunction(() => document.querySelector("#chat-messages")?.textContent?.includes("Keep this saved history"));
       let capturePublish: ((request: HTTPRequest) => void) | null = null;
       let publishRequests = 0;
+      let rejectDefaultRead = true;
       await page.setRequestInterception(true);
       page.on("request", request => {
         const path = new URL(request.url()).pathname;
-        if (path === "/api/agents/worker/default-session") return void request.abort("failed");
+        if (rejectDefaultRead && path === "/api/agents/worker/default-session") return void request.abort("failed");
         if (path === "/api/events") {
           publishRequests++;
           if (capturePublish) { capturePublish(request); capturePublish = null; return; }
@@ -380,6 +381,17 @@ describe("HTTP human Task reads and board", () => {
       expect(published).toHaveLength(3);
       expect(published[2].idempotencyKey).not.toBe(published[1].idempotencyKey);
       expect(published[2].data.message).toBe("A different next draft");
+      const metadataAdmission = new Promise<HTTPRequest>(resolveRequest => { capturePublish = resolveRequest; });
+      await page.$eval("#chat-input", el => { (el as HTMLInputElement).value = "Accepted during same-thread reload"; });
+      const pending = page.evaluate("sendChat()");
+      const heldAdmission = await metadataAdmission;
+      rejectDefaultRead = false;
+      await page.evaluate("loadAgentChatThread('worker')");
+      await heldAdmission.continue();
+      await pending;
+      expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("");
+      expect(published).toHaveLength(4);
+      expect(published[3]).toMatchObject({ type: "session.steer.requested", target: { sessionId } });
     } finally { await browser.close(); }
   }, 30000);
 

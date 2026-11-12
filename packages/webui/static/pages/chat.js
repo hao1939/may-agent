@@ -437,6 +437,9 @@ async function sendChat() {
   pending.sending = true;
   let selection = chatSelectionVersion;
   let admittedSession = null;
+  const selected = () => currentRouteParams === route && (sessionId
+    ? sessionId === (isSessionPageMode() ? currentRouteParams.id : currentSessionId)
+    : selection === chatSelectionVersion);
   try {
     if (sessionId) {
       await publishChatEvent({
@@ -460,7 +463,7 @@ async function sendChat() {
       });
     }
     if (chatPendingInput === pending) chatPendingInput = null;
-    if (currentRouteParams !== route || selection !== chatSelectionVersion) return;
+    if (!selected()) return;
     if (input.value === draft) input.value = '';
     if (!chatAutoScroll) toggleChatScroll();
     document.getElementById('chat-status').textContent = 'Message accepted; waiting for the saved turn';
@@ -472,7 +475,7 @@ async function sendChat() {
       }, 800);
     }
   } catch (error) {
-    if (currentRouteParams === route && selection === chatSelectionVersion) toast('Message was not confirmed: ' + error.message);
+    if (selected()) toast('Message was not confirmed: ' + error.message);
   } finally {
     pending.sending = false;
   }
