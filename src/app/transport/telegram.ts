@@ -1,64 +1,79 @@
 /**
- * Telegram Bot UI — native Telegram bot integration for May.
+ * Telegram Bot transport and surface adapter for May.
  *
- * Uses the Telegram Bot API directly via fetch (no external dependencies).
- * Long-polling for incoming messages and rendering the shared Conversation.
- *
- * Configuration (env vars):
- *   TELEGRAM_BOT_TOKEN  — Bot token from @BotFather (required to enable)
- *   TELEGRAM_CHAT_ID    — Allowed chat ID(s), comma-separated (required for security)
- *
- * Features:
- *   - Incoming messages → May Conversation events
- *   - Unseen Conversation messages → Telegram messages
- *   - Long messages split at 4096 char Telegram limit
- *   - Task-focused /apps, /tasks, /task, /watch, and /cancel commands
- *   - Authentication: only accepts messages from allowed chat IDs
+ * Shares the same control-plane contract as `may-console`:
+ *   - Reads through `getAppConversation` and `humanTasks` (`listApps`, `listTasks`, `getTask`)
+ *   - Writes through `publishEvent`
+ *   - Subscribes to `conversation.updated`, `runtime.reload.finished`, and `TASK_UPDATE_EVENT_TYPES`
+ *   - Maintains one `SurfaceSession` per `(chatId, topicId)` coordinate
+ *   - Uses `telegram-format.ts` for pure rendering and `telegram-client.ts` for Bot API I/O and delivery receipts
  */
 
 import { randomUUID } from "node:crypto";
-import { log } from "../../lib/log.js";
 import { setDefaultAutoSelectFamily } from "node:net";
-import type { AppConversationMessage, AppConversationTopic, AppConversationResource } from "@may-agent/sdk";
+import type { AppConversationResource, AppConversationTopic } from "@may-agent/sdk";
 import type { ApprovalProposal, EventInput, EventReceipt } from "@may-agent/control/events";
-import { EVENT_DELIVERY_RESULT, EVENT_RECORD_ONLY, eventData, type EventBus } from "../core/events/bus.js";
-import { loadPersistedEvent } from "../core/events/persisted.js";
-import { getDb } from "../../lib/db/connection.js";
-import {
-  prepareConversationDelivery,
-  conversationDeliveryId,
-  readConversationDelivery,
-  settleConversationDelivery,
-  type ConversationDelivery,
-} from "../../lib/db/telegram-conversation-deliveries.js";
-import {
-  getNotificationMessage,
-  hasCompletedHumanActionDelivery,
-  storeNotificationMessage,
-} from "../../lib/db/notifications.js";
-import { readAppConversationResource, readConversationTopic } from "../core/state/conversations.js";
-import { TaskReferenceError } from "../core/state/task-reference-index.js";
-import { createTelegramClient } from "./telegram-client.js";
+import type { EventBus } from "../core/events/bus.js";
+import { readPersistedTelegramReloadCompletion, resumeRecordedTelegramInput } from "../core/events/persisted.js";
+import { log } from "../../lib/log.js";
 import {
   isTaskDerivedViewWake,
   TASK_UPDATE_EVENT_TYPES,
   taskUpdateIdentity,
 } from "../../../packages/control/src/task-wake.js";
 import {
-  isHumanActionOwner,
+  TaskReferenceError,
   approvalProposalForTask,
-  type HumanAppView,
+  humanConditionAnchorForTask as humanConditionAnchor,
+  readHumanConversation,
+  readHumanConversationTopic,
+  todoActionSignatureForTask as todoActionSignature,
   type HumanTaskService,
   type HumanTaskView,
 } from "../human-task-service.js";
 import { taskCancelRequestedEvent } from "../task-control-events.js";
+import { createTelegramClient, telegramThreadId } from "./telegram-client.js";
+import {
+  TELEGRAM_HELP_MARKDOWN,
+  primaryConversationId,
+  renderTelegramApps,
+  renderTelegramConversationMessage,
+  renderTelegramSingleTodoNotification,
+  renderTelegramTask,
+  renderTelegramTaskUpdate,
+  renderTelegramTasks,
+  renderTelegramTodos,
+  renderTelegramTopic,
+  renderTelegramTopics,
+  representedTaskIdentities,
+  resolveConversationTopic,
+  singleTaskReference,
+  taskButtons,
+  taskPresentationRevision,
+  telegramConversationInputEvent,
+  topicReference,
+  type TelegramApprovalAnchor,
+} from "./telegram-format.js";
+
+export {
+  primaryConversationId,
+  renderTelegramApps,
+  renderTelegramConversationMessage,
+  renderTelegramTask,
+  renderTelegramTasks,
+  renderTelegramTodos,
+  renderTelegramTopic,
+  renderTelegramTopics,
+  taskPresentationRevision,
+  telegramConversationInputEvent,
+  type TelegramApprovalAnchor,
+};
 
 const TASK_PAGE_SIZE = 10;
 const TODO_PAGE_SIZE = 50;
 
 // Non-text content in https://core.telegram.org/bots/api#message (reviewed 2026-09-12).
 // Also acknowledge explicit user shares/Web App data; passive service notices stay quiet.
-// Keep this provider list current when adding Telegram content support, not another work route.
 const TELEGRAM_CONTENT_FIELDS = [
   "animation",
   "audio",
@@ -93,12 +108,13 @@ function hasTelegramContent(message: Record<string, unknown>): boolean {
   return TELEGRAM_CONTENT_FIELDS.some((field) => message[field] != null);
 }
 
-// Stored channel coordinates are transport-neutral text. Use the same
-// no-thread fallback for delivery, controls and watch bookkeeping.
-function telegramThreadId(value?: string): number | undefined {
-  if (!value || !/^[1-9]\d*$/.test(value)) return undefined;
-  const id = Number(value);
-  return Number.isSafeInteger(id) ? id : undefined;
+function telegramMessageText(message: any): string {
+  const text = message?.text ?? message?.caption ?? "";
+  return typeof text === "string" ? text.trim() : "";
+}
+
+function surfaceKey(chatId: string, topicId?: number): string {
+  return `${chatId}:${topicId ?? 0}`;
 }
 
 // Force IPv4 for fetch — Node 22's undici tries IPv6 first which times out
@@ -109,12 +125,41 @@ try {
   /* noop — bun may not support */
 }
 
+interface WatchedTaskTarget {
+  appId: string;
+  taskId: string;
+  ref: string;
+  chatId: string;
+  topicId?: number;
+}
+
+/** Unified per-surface session state (one per `chatId:topicId` coordinate). */
+interface SurfaceSession {
+  readonly key: string;
+  readonly chatId: string;
+  readonly topicId?: number;
+  selectedApp?: string;
+  selectedTopic?: AppConversationTopic;
+  watchedTask?: WatchedTaskTarget;
+  shownWatchRevision?: string;
+  shownTodoActions: Map<string, string>;
+  nextTaskPage?: { appId?: string; includeDone: boolean; cursor: string };
+  nextTopicCursor?: string;
+  nextTodoPage?: { appId?: string; cursor: string };
+  turnControl?: { token: string; turnId: string; revision: number; messageId: number };
+}
+
 export interface TelegramBotOptions {
   persistDir?: string;
   bus: EventBus;
   interfaceAgent: string;
   conversationAppId?: string;
   conversationId?: string;
+  getAppConversation?: (
+    appId: string,
+    conversationId: string,
+    options?: { limit?: number; topicId?: string; topicLimit?: number; topicCursor?: string },
+  ) => AppConversationResource;
   humanTasks: Pick<HumanTaskService, "getTask" | "listApps" | "listTasks">;
   publishEvent: (
     input: EventInput,
@@ -130,510 +175,6 @@ export interface TelegramBot {
   close: () => void;
 }
 
-/** One logical human conversation; provider chat/topic IDs are coordinates. */
-export function primaryConversationId(agent: string): string {
-  return `${agent.trim() || "host"}:primary`;
-}
-
-export function renderTelegramApps(apps: HumanAppView[], selectedApp?: string): string {
-  if (apps.length === 0) return "No Apps found.";
-  return [
-    "Apps:",
-    ...apps.map((app) => {
-      const states = [
-        `${app.openTasks ?? app.activeTasks} open`,
-        `${app.activeTasks} active`,
-        ...(app.idleTasks ? [`${app.idleTasks} idle`] : []),
-        ...(app.queuedTasks ? [`${app.queuedTasks} queued`] : []),
-        ...(app.runningTasks ? [`${app.runningTasks} running`] : []),
-        ...(app.waitingTasks ? [`${app.waitingTasks} waiting`] : []),
-        ...(app.attentionTasks ? [`${app.attentionTasks} attention`] : []),
-      ];
-      return `• ${app.id === selectedApp ? "✓ " : ""}${app.id} — ${states.join(" · ")}`;
-    }),
-  ].join("\n");
-}
-
-function topicReference(topic: AppConversationTopic): string {
-  const value = topic.id.startsWith("topic_") ? topic.id.slice("topic_".length) : topic.id;
-  return value.slice(0, 8) || "????????";
-}
-
-function resolveConversationTopic(topics: AppConversationTopic[], ref: string): AppConversationTopic | undefined {
-  const normalized = ref.trim().toLowerCase();
-  const matches = topics.filter((topic) => {
-    const id = topic.id.toLowerCase();
-    return id === normalized || id === `topic_${normalized}` || topicReference(topic).toLowerCase() === normalized;
-  });
-  return matches.length === 1 ? matches[0] : undefined;
-}
-
-export function renderTelegramTopics(
-  topics: AppConversationTopic[],
-  selectedTopicId?: string,
-  options: { older?: boolean; hasMore?: boolean } = {},
-): string {
-  if (topics.length === 0) return options.older ? "No older Topics." : "No recent Topics.";
-  return [
-    options.older ? "Older Topics:" : "Recent Topics:",
-    ...topics.map(
-      (topic) =>
-        `• ${topic.id === selectedTopicId ? "✓ " : ""}${topicReference(topic)} · ${topic.title}${
-          topic.taskRefs.length ? ` · ${topic.taskRefs.length} Task${topic.taskRefs.length === 1 ? "" : "s"}` : ""
-        }`,
-    ),
-    ...(options.hasMore ? ["More Topics are available; use /topics more."] : []),
-    "",
-    "Use /topic <ref> to continue one Topic. Task progress remains under /task and /watch.",
-  ].join("\n");
-}
-
-export function renderTelegramTopic(topic: AppConversationTopic, messages: AppConversationMessage[]): string {
-  const tasks = topic.taskRefs.map((task) => `• ${task.ref ?? "????????"} · ${task.appId}`);
-  const recent = messages
-    .filter((message) => message.metadata?.topicId === topic.id)
-    .slice(-8)
-    .flatMap((message) => {
-      const text = message.text.trim().replace(/\s+/g, " ");
-      if (!text) return [];
-      const speaker = message.author.kind === "human" ? "You" : message.author.kind === "agent" ? "May" : "View";
-      return [`${speaker}: ${text.length > 180 ? `${text.slice(0, 177)}...` : text}`];
-    });
-  return [
-    `Following ${topicReference(topic)} · ${topic.title}`,
-    "Tasks:",
-    ...(tasks.length ? tasks : ["• None"]),
-    ...(recent.length ? ["", "Recent conversation:", ...recent] : []),
-  ].join("\n");
-}
-
-function escapeTelegramHtml(value: string): string {
-  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-}
-
-function compactDuration(milliseconds: number): string {
-  const minutes = Math.max(1, Math.round(milliseconds / 60_000));
-  if (minutes % (24 * 60) === 0) return `${minutes / (24 * 60)}d`;
-  if (minutes % 60 === 0) return `${minutes / 60}h`;
-  return `${minutes}m`;
-}
-
-function recurrenceLine(task: Pick<HumanTaskView, "recurring" | "recurrence">): string | null {
-  if (!task.recurring) return null;
-  const cadence = task.recurrence?.cadenceMs ? ` · every ${compactDuration(task.recurrence.cadenceMs)}` : "";
-  const parsedNextRun = task.recurrence?.nextRunAt ? Date.parse(task.recurrence.nextRunAt) : Number.NaN;
-  const nextRun = Number.isFinite(parsedNextRun)
-    ? ` · next ${new Date(parsedNextRun).toISOString().replace("T", " ").slice(0, 16)} UTC`
-    : "";
-  return `  🔁 <b>Recurring</b>${cadence}${nextRun}`;
-}
-
-function taskSection(task: HumanTaskView): string {
-  if (task.humanAction) return "Needs you";
-  if (task.status === "pending" || task.status === "running") return "Working";
-  if (task.status === "waiting") return "Waiting";
-  if (task.status === "idle") return "Idle";
-  if (task.status === "closed") return "Closed";
-  if (task.status === "cancelled") return "Cancelled";
-  if (task.terminal) return "Completed";
-  return "Attention";
-}
-
-function taskStateMarker(task: Pick<HumanTaskView, "status" | "humanAction" | "terminal">): string {
-  if (task.humanAction) return "🔴";
-  if (task.status === "pending" || task.status === "running") return "🔵";
-  if (task.status === "waiting") return "🟡";
-  if (task.status === "idle") return "🟢";
-  if (task.terminal) return "⚪";
-  return "🟠";
-}
-
-function renderTaskCard(task: HumanTaskView): string {
-  const result = task.response?.trim() || task.summary?.trim();
-  return [
-    `${taskStateMarker(task)} <b>${escapeTelegramHtml(task.outcome)}</b>`,
-    `  ${escapeTelegramHtml(task.appId)} · <code>${escapeTelegramHtml(task.ref)}</code> · updated ${updatedAgeText(task.updatedAt)}`,
-    ...(task.humanAction ? [`  ${escapeTelegramHtml(humanActionText(task))}`] : []),
-    ...(recurrenceLine(task) ? [recurrenceLine(task)!] : []),
-    ...(task.terminal && result ? [`  ${escapeTelegramHtml(result)}`] : []),
-  ].join("\n");
-}
-
-export function renderTelegramTasks(tasks: HumanTaskView[], includeDone: boolean, hasMore = false): string {
-  if (tasks.length === 0) return includeDone ? "No Tasks." : "No open Tasks.";
-  const sections = ["Needs you", "Working", "Waiting", "Idle", "Attention", "Closed", "Cancelled", "Completed"];
-  return [
-    `<b>${includeDone ? "Tasks · open and history" : "Tasks · open"}</b>`,
-    ...sections.flatMap((section) => {
-      const matching = tasks.filter((task) => taskSection(task) === section);
-      return matching.length > 0
-        ? ["", `<b>${section}</b>`, ...matching.flatMap((task) => [renderTaskCard(task), ""]).slice(0, -1)]
-        : [];
-    }),
-    ...(hasMore ? ["", "More Tasks are available; use /tasks more for the next page."] : []),
-  ].join("\n");
-}
-
-function taskStatusLabel(task: Pick<HumanTaskView, "status" | "humanAction">): string {
-  switch (task.status) {
-    case "pending":
-      return "queued";
-    case "running":
-      return "working";
-    case "waiting":
-      return "waiting";
-    case "attention":
-      return task.humanAction ? "needs you" : "needs review";
-    case "idle":
-      return "idle";
-    case "done":
-      return "done";
-    case "closed":
-      return "closed";
-    case "cancelled":
-      return "cancelled";
-  }
-}
-
-function currentTaskText(task: HumanTaskView): string {
-  const observed = task.terminal
-    ? task.response?.trim() || task.summary?.trim()
-    : task.progress?.message?.trim() || task.response?.trim() || task.summary?.trim();
-  if (observed) return observed;
-  switch (task.status) {
-    case "pending":
-      return "No attempt has started yet.";
-    case "running":
-      return "Work is active; no detailed progress has been reported yet.";
-    case "waiting":
-      return "No new progress has been reported while the Task waits.";
-    case "attention":
-      return "No recovery update has been reported yet.";
-    case "idle":
-      return "No work is runnable. The owner must retain a specific next responsibility or close this assignment.";
-    case "done":
-      return "No result summary was recorded.";
-    case "cancelled":
-    case "closed":
-      return "The Task will not continue.";
-  }
-}
-
-function humanActionText(task: HumanTaskView): string {
-  return task.humanAction?.requestedAction.trim() || task.summary?.trim() || task.outcome;
-}
-
-function replyInstruction(_task: HumanTaskView, _conditionId?: string): string {
-  return "Reply to this message with an exact response requested above, or with the requested completion evidence. A question, qualification, or requested change is feedback, not completion.";
-}
-
-function humanActionLine(task: HumanTaskView): string {
-  const owner = task.humanAction?.task;
-  const approval = approvalProposalForTask(task);
-  const decisionAction = approval?.requestedAction ?? null;
-  const otherActions = decisionAction ? humanConditionActions(task, approval?.conditionId) : [];
-  const text = decisionAction
-    ? [
-        `Decision needed\n${decisionAction}`,
-        `How to respond\n${replyInstruction(task, approval?.conditionId)}`,
-        ...(otherActions.length > 0
-          ? [`Other action needed (separate from this decision)\n${otherActions.join("\n\n")}`]
-          : []),
-      ].join("\n\n")
-    : [`Action needed\n${fullHumanActionText(task)}`, `How to respond\n${replyInstruction(task)}`].join("\n\n");
-  return owner ? `On Task ${owner.ref} · ${owner.appId}: ${text}` : text;
-}
-
-function elapsedText(value: number): string {
-  const minutes = Math.floor(Math.max(0, Date.now() - value) / 60_000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  return hours < 48 ? `${hours}h` : `${Math.floor(hours / 24)}d`;
-}
-
-function updatedAgeText(value: number): string {
-  const age = elapsedText(value);
-  return age === "just now" ? age : `${age} ago`;
-}
-
-export function renderTelegramTodos(
-  tasks: HumanTaskView[],
-  total = tasks.length,
-  appId?: string,
-  hasMore = false,
-): string {
-  const scope = appId ? ` for ${appId}` : " across all Apps";
-  if (tasks.length === 0) return `Nothing needs your action${scope}.`;
-  return [
-    `<b>Needs you${escapeTelegramHtml(scope)}</b>`,
-    "",
-    ...tasks
-      .flatMap((task) => {
-        const since = task.humanAction?.since;
-        return [
-          [
-            `🔴 <b>Action: ${escapeTelegramHtml(humanActionText(task))}</b>`,
-            `  Purpose: ${escapeTelegramHtml(task.outcome)}`,
-            ...(recurrenceLine(task) ? [recurrenceLine(task)!] : []),
-            `  ${escapeTelegramHtml(task.appId)} · <code>${escapeTelegramHtml(task.ref)}</code>${since === undefined ? "" : ` · waiting ${elapsedText(since)}`}`,
-          ].join("\n"),
-          "",
-        ];
-      })
-      .slice(0, -1),
-    ...(total > tasks.length
-      ? ["", `${total - tasks.length} more action(s) are not shown.${hasMore ? " Use /todo more." : ""}`]
-      : []),
-  ].join("\n");
-}
-
-export function renderTelegramTask(task: HumanTaskView): string {
-  const acceptance = (task.acceptance ?? []).filter((item) => item.trim());
-  const currentHeading =
-    !task.terminal && task.progress ? `Current · ${formatWorkTime(task.progress.updatedAt)}` : "Current";
-  return [
-    `Task ${task.ref} · ${task.appId}`,
-    "",
-    `Goal\n${task.outcome}`,
-    "",
-    `State\n${taskStatusLabel(task)}. ${task.statusDetail ?? ""}`.trimEnd(),
-    "",
-    `${currentHeading}\n${currentTaskText(task)}`,
-    ...(task.waitingOn ?? []).map((wait) =>
-      wait.kind === "task"
-        ? `Waiting on ${wait.ref} · ${wait.appId} · ${taskStatusLabel(wait)}\n${wait.outcome}`
-        : wait.kind === "app"
-          ? `Waiting on App ${wait.appId} · ${wait.status}`
-          : `Waiting for ${wait.type}\n${wait.subject}`,
-    ),
-    "",
-    "Expected result",
-    ...(acceptance.length > 0
-      ? acceptance.map((item) => `• ${item}`)
-      : ["No separate completion criteria were recorded."]),
-    "",
-    `You\n${task.humanAction ? humanActionLine(task) : "Nothing needed right now."}`,
-    ...(task.requestedBy
-      ? ["", `Related\nRequested by ${task.requestedBy.ref} · ${task.requestedBy.appId}\n${task.requestedBy.outcome}`]
-      : []),
-    "",
-    `Updated\n${formatWorkTime(task.updatedAt)}`,
-    "",
-    `Details\nID: ${task.taskId}`,
-    ...(task.execution?.sessionId ? [`Session: ${task.execution.sessionId}`] : []),
-  ].join("\n");
-}
-
-function renderedWaits(task: HumanTaskView): string[] {
-  return (task.waitingOn ?? []).map((wait) =>
-    wait.kind === "task"
-      ? `Waiting on ${wait.ref} · ${wait.appId} · ${taskStatusLabel(wait)}: ${wait.outcome}`
-      : wait.kind === "app"
-        ? `Waiting on App ${wait.appId} · ${wait.status}`
-        : `Waiting for ${wait.type}: ${wait.subject}`,
-  );
-}
-
-function taskPresentationRevision(task: HumanTaskView): string {
-  const decision = (approvalProposalForTask(task)?.requestedAction ?? null);
-  return JSON.stringify({
-    outcome: task.outcome,
-    status: taskStatusLabel(task),
-    current: currentTaskText(task),
-    waits: renderedWaits(task),
-    decision,
-    action: task.humanAction ? fullHumanActionText(task) : null,
-    otherActions: decision ? humanConditionActions(task, approvalProposalForTask(task)?.conditionId) : [],
-    approvalAnchor: approvalProposalForTask(task),
-    humanCondition: humanConditionAnchor(task),
-  });
-}
-
-function representedTaskIdentities(task: HumanTaskView): Array<{ appId: string; taskId: string }> {
-  return [
-    { appId: task.appId, taskId: task.taskId },
-    ...(task.requestedBy ? [{ appId: task.requestedBy.appId, taskId: task.requestedBy.taskId }] : []),
-    ...(task.waitingOn ?? []).flatMap((wait) =>
-      wait.kind === "task" ? [{ appId: wait.appId, taskId: wait.taskId }] : [],
-    ),
-  ];
-}
-
-function formatWorkTime(value: number): string {
-  return new Date(value)
-    .toISOString()
-    .replace("T", " ")
-    .replace(/\.\d{3}Z$/, " UTC");
-}
-
-function renderTelegramTaskUpdate(task: HumanTaskView): string {
-  const decisionAction = (approvalProposalForTask(task)?.requestedAction ?? null);
-  const otherActions = decisionAction ? humanConditionActions(task, approvalProposalForTask(task)?.conditionId) : [];
-  return [
-    task.outcome,
-    taskStatusLabel(task),
-    "",
-    currentTaskText(task),
-    ...renderedWaits(task).flatMap((wait) => ["", wait]),
-    ...(task.humanAction
-      ? decisionAction
-        ? [
-            "",
-            `Decision needed\n${decisionAction}`,
-            `How to respond\n${replyInstruction(task, approvalProposalForTask(task)?.conditionId)}`,
-            ...(otherActions.length > 0
-              ? [
-                  "",
-                  `Other action needed (separate from this decision)\n${otherActions.join("\n\n")}`,
-                  "Reply separately with the requested answer or completion evidence.",
-                ]
-              : []),
-          ]
-        : [
-            "",
-            `Action needed\n${fullHumanActionText(task)}`,
-            `How to respond\n${replyInstruction(task)}`,
-          ]
-      : []),
-  ].join("\n");
-}
-
-function taskReferences(value: unknown): Array<{ appId: string; taskId: string }> {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap((task) =>
-    task && typeof task.appId === "string" && task.appId && typeof task.taskId === "string" && task.taskId
-      ? [{ appId: task.appId, taskId: task.taskId }]
-      : [],
-  );
-}
-
-function singleTaskReference(value: unknown): { appId: string; taskId: string } | undefined {
-  const tasks = taskReferences(value);
-  return tasks.length === 1 ? tasks[0] : undefined;
-}
-
-function taskButtons(taskRefs: unknown) {
-  const tasks = taskReferences(taskRefs);
-  if (tasks.length === 0) return undefined;
-  if (tasks.length === 1)
-    return {
-      inline_keyboard: [
-        [
-          { text: "Details", callback_data: "task:details" },
-          { text: "Follow updates", callback_data: "task:follow" },
-        ],
-      ],
-    };
-  return {
-    inline_keyboard: tasks.map((task, index) => [
-      {
-        text: `Details · ${task.appId}/${task.taskId}`.slice(0, 64),
-        callback_data: `task:details:${index}`,
-      },
-    ]),
-  };
-}
-
-function renderTelegramConversationMessage(message: AppConversationMessage): string {
-  const channel = message.metadata?.channel?.trim() || "another surface";
-  const text = message.text;
-  if (channel === "telegram" && message.author.kind === "agent") return text;
-  if (message.author.kind === "tool" && message.metadata?.command === "task-admitted") {
-    return `Background work accepted\n${message.text.replace(/^Accepted durable work:\s*/, "")}`;
-  }
-  const surface = channel === "may-console" ? "Console" : channel;
-  const speaker =
-    message.author.kind === "human"
-      ? "You"
-      : message.author.kind === "agent"
-        ? "May"
-        : message.author.kind === "command"
-          ? "View"
-          : "Tool";
-  return `${surface} · ${speaker}\n${text}`;
-}
-
-export type TelegramApprovalAnchor = ApprovalProposal;
-
-type TelegramHumanConditionAnchor = {
-  taskGeneration: number;
-  conditionId: string;
-  conditionGeneration: number;
-};
-
-/** Correlate one ordinary help reply without turning it into approval or proof. */
-function humanConditionAnchor(task: HumanTaskView | null): TelegramHumanConditionAnchor | null {
-  if (!task || task.terminal || !["pending", "waiting", "running", "attention"].includes(task.status)) return null;
-  const matches = (task.diagnostics?.conditions ?? []).filter((item) => {
-    const condition = item.condition;
-    return condition?.status.state !== "true" && isHumanActionOwner(condition?.spec.owner);
-  });
-  if (matches.length !== 1) return null;
-  const match = matches[0]!;
-  if (match.condition?.spec.type === "project.approval.submitted") return null;
-  return {
-    taskGeneration: task.generation,
-    conditionId: match.id,
-    conditionGeneration: match.condition!.metadata.generation,
-  };
-}
-
-function humanConditionActions(task: HumanTaskView | null, exclude?: string): string[] {
-  if (!task || task.terminal) return [];
-  return (task.diagnostics?.conditions ?? [])
-    .map((item) => item.condition)
-    .filter(
-      (condition) =>
-        condition?.metadata.id !== exclude && condition?.status?.state !== "true" && isHumanActionOwner(condition?.spec.owner),
-    )
-    .map((condition) => condition!.spec.requestedAction?.trim())
-    .filter((action): action is string => Boolean(action));
-}
-
-function fullHumanActionText(task: HumanTaskView): string {
-  const actions = humanConditionActions(task);
-  return actions.length > 0 ? actions.join("\n\n") : humanActionText(task);
-}
-
-export function telegramConversationInputEvent(input: {
-  appId: string;
-  message: string;
-  chatId: string;
-  messageId: number;
-  conversationId: string;
-  topicId?: string | number;
-  conversationTopicId?: string;
-  replyToMessageId?: number;
-  replyToSourceId?: string;
-  context?: Record<string, unknown>;
-}): EventInput {
-  const sourceId = `telegram:${input.chatId}:${input.messageId}`;
-  return {
-    type: "conversation.message.created",
-    target: { appId: input.appId },
-    data: {
-      conversationId: input.conversationId,
-      author: { kind: "human", id: sourceId },
-      text: input.message,
-      ...(input.context ? { context: input.context } : {}),
-      ...(input.replyToSourceId
-        ? { replyTo: input.replyToSourceId }
-        : input.replyToMessageId === undefined
-          ? {}
-          : { replyTo: `telegram:${input.chatId}:${input.replyToMessageId}` }),
-      metadata: {
-        channel: "telegram",
-        channelTargetId: input.chatId,
-        ...(input.topicId === undefined ? {} : { channelThreadId: String(input.topicId) }),
-        channelMessageId: input.messageId,
-        ...(input.conversationTopicId ? { topicId: input.conversationTopicId } : {}),
-      },
-    },
-    idempotencyKey: sourceId,
-  };
-}
-
 export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   const { bus } = opts;
 
@@ -642,8 +183,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     .split(",")
     .map((id) => id.trim())
     .filter(Boolean);
-  // Approval is narrower than conversation access. When unset, Telegram remains
-  // conversational and cannot authorize a mutation.
   const allowedApproverIds = (process.env.TELEGRAM_APPROVER_ID || "")
     .split(",")
     .map((id) => id.trim())
@@ -664,15 +203,52 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     return { close: () => {} };
   }
 
+  const conversationAppId = opts.conversationAppId?.trim() || "";
+  if (!conversationAppId) throw new Error("Telegram requires CONVERSATION_APP");
+  const sharedConversationId = opts.conversationId ?? primaryConversationId(conversationAppId);
+  const getConversation =
+    opts.getAppConversation ??
+    ((appId, conversationId, options) => readHumanConversation(persistDir, appId, conversationId, options));
+
   bus.emit({ type: "info", message: `[telegram] Bot enabled (${allowedChatIds.length} allowed chat(s))` });
   let running = true;
   let offset = 0;
+
   const telegramClient = createTelegramClient({
     token,
-    persistDir: opts.persistDir ?? ".state",
+    persistDir,
+    bus,
+    conversationAppId,
+    sharedConversationId,
+    interfaceAgent: opts.interfaceAgent,
     emitInfo: (message) => bus.emit({ type: "info", message }),
   });
   const { apiCall, sendMessage } = telegramClient;
+
+  // Single map of surface sessions indexed by `chatId:topicId`
+  const sessions = new Map<string, SurfaceSession>();
+  function ensureSession(chatId: string, topicId?: number): SurfaceSession {
+    const key = surfaceKey(chatId, topicId);
+    let session = sessions.get(key);
+    if (!session) {
+      session = {
+        key,
+        chatId,
+        ...(topicId === undefined ? {} : { topicId }),
+        shownTodoActions: new Map(),
+      };
+      sessions.set(key, session);
+    }
+    return session;
+  }
+
+  function stopWatching(session: SurfaceSession | undefined): boolean {
+    if (!session?.watchedTask) return false;
+    delete session.watchedTask;
+    delete session.shownWatchRevision;
+    return true;
+  }
+
   // Order immediate command replies, including help/errors, without blocking input or updates.
   const commandDeliveries = new Map<string, Promise<void>>();
   function queueCommandDelivery(surface: string, deliver: () => Promise<unknown>): void {
@@ -687,61 +263,25 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       });
     commandDeliveries.set(surface, next);
   }
-  const watchedTasks = new Map<
-    string,
-    { appId: string; taskId: string; ref: string; chatId: string; topicId?: number }
-  >();
-  const selectedApps = new Map<string, string>();
-  const selectedTopics = new Map<string, AppConversationTopic>();
-  const turnControls = new Map<string, { token: string; turnId: string; revision: number; messageId: number }>();
-  const surfaces = new Map<string, { chatId: string; topicId?: number }>();
-  const shownTodoActions = new Map<string, Map<string, string>>();
-  const nextTaskPageBySurface = new Map<string, { appId?: string; includeDone: boolean; cursor: string }>();
-  const nextTopicPageBySurface = new Map<string, string>();
+
   const pendingReloads = new Map<
     string,
     { chatId: string; topicId?: number; conversationId: string; command: string }
   >();
-  const shownWatchRevisions = new Map<string, string>();
-  const stopWatching = (surface: string): boolean => {
-    shownWatchRevisions.delete(surface);
-    return watchedTasks.delete(surface);
-  };
-  const surfaceKey = (chatId: string, topicId?: number) => `${chatId}:${topicId ?? 0}`;
-  const conversationAppId = opts.conversationAppId?.trim() || "";
-  if (!conversationAppId) throw new Error("Telegram requires CONVERSATION_APP");
-  const sharedConversationId = opts.conversationId ?? primaryConversationId(conversationAppId);
-  const nextTodoPageBySurface = new Map<string, { appId?: string; cursor: string }>();
   const renderedConversationMessages = new Set<string>();
-  const rememberRenderedConversationMessage = (messageId: string): void => {
+  function rememberRenderedConversationMessage(messageId: string): void {
     renderedConversationMessages.add(messageId);
-    // Conversation reads contain at most 200 messages. Keeping more than two
-    // windows prevents replay without letting an append-only Conversation grow
-    // this adapter's heap forever.
     while (renderedConversationMessages.size > 512) {
       const oldest = renderedConversationMessages.values().next().value;
       if (typeof oldest !== "string") break;
       renderedConversationMessages.delete(oldest);
     }
-  };
-  const historicalDeliveries = new Set<string>();
-  let startupCaptured = false;
-  function captureStartupMessages(messages: AppConversationMessage[]): void {
-    if (startupCaptured) return;
-    for (const message of messages) {
-      const delivery = addressedConversationDelivery(message);
-      if (delivery) historicalDeliveries.add(conversationDeliveryId(delivery));
-      else rememberRenderedConversationMessage(message.id);
-    }
-    // Keep this bounded first-snapshot fence even when a receipt write fails.
-    // Until the first successful read, no answer can be classified as fresh.
-    startupCaptured = true;
   }
+
   try {
-    captureStartupMessages(
-      readAppConversationResource(getDb(persistDir), conversationAppId, sharedConversationId, {
-        limit: 200,
-      }).messages,
+    telegramClient.captureStartupMessages(
+      getConversation(conversationAppId, sharedConversationId, { limit: 200 }).messages,
+      rememberRenderedConversationMessage,
     );
   } catch (error) {
     log(
@@ -750,8 +290,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     );
   }
 
-  // Presentation only: one read in flight per key, with at most one follow-up
-  // for updates observed during I/O. Errors do not schedule retries; new events do.
   function createRefreshQueue(label: string, refresh: (key: string) => Promise<void>, delayMs = 0) {
     const pending = new Map<string, { timer: ReturnType<typeof setTimeout> | null; dirty: boolean }>();
     function queue(key: string): void {
@@ -763,8 +301,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           return;
         }
         if (delayMs === 0) return;
-        // Conversation wakes drain over several EventBus turns. Preserve its
-        // short debounce window, rather than rereading each partial burst.
         clearTimeout(existing.timer);
       }
       const state = { timer: null as ReturnType<typeof setTimeout> | null, dirty: false };
@@ -792,19 +328,17 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     };
   }
 
-  async function clearTurnControl(surface: string): Promise<void> {
-    const control = turnControls.get(surface);
-    const coordinates = surfaces.get(surface);
-    turnControls.delete(surface);
-    if (!control || !coordinates) return;
+  async function clearTurnControl(session: SurfaceSession): Promise<void> {
+    const control = session.turnControl;
+    delete session.turnControl;
+    if (!control) return;
     try {
       await apiCall("editMessageReplyMarkup", {
-        chat_id: coordinates.chatId,
+        chat_id: session.chatId,
         message_id: control.messageId,
         reply_markup: { inline_keyboard: [] },
       });
     } catch (error) {
-      // The token is already invalid locally even if Telegram cannot update it.
       log("warn", `[telegram] Could not clear turn button: ${String(error)}`);
     }
   }
@@ -813,266 +347,52 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const sourceChatId = turn?.channel === "telegram" ? turn.channelTargetId : undefined;
     const topicId = telegramThreadId(turn?.channelThreadId);
     const sourceSurface = sourceChatId ? surfaceKey(sourceChatId, topicId) : undefined;
-    if (sourceChatId && sourceSurface && allowedChatIds.includes(sourceChatId)) {
-      surfaces.set(sourceSurface, {
-        chatId: sourceChatId,
-        ...(topicId === undefined ? {} : { topicId }),
-      });
+    if (sourceChatId && allowedChatIds.includes(sourceChatId)) {
+      ensureSession(sourceChatId, topicId);
     }
-    for (const [surface, coordinates] of surfaces) {
+    for (const session of sessions.values()) {
       if (!running) return;
-      const previous = turnControls.get(surface);
-      const relevant = surface === sourceSurface;
-      if (!relevant) {
-        if (previous) await clearTurnControl(surface);
+      const previous = session.turnControl;
+      if (session.key !== sourceSurface) {
+        if (previous) await clearTurnControl(session);
         continue;
       }
       if (previous?.turnId === turn?.id && previous?.revision === turn?.revision) continue;
-      if (previous) await clearTurnControl(surface);
+      if (previous) await clearTurnControl(session);
       if (!turn) continue;
       const token = `stop:${randomUUID()}`;
       const messageId = await sendMessage(
-        coordinates.chatId,
+        session.chatId,
         "May is working on this message.",
         undefined,
         {
-          messageThreadId: coordinates.topicId,
+          messageThreadId: session.topicId,
           ...(sourceChatId ? { replyToMessageId: turn.channelMessageId } : {}),
           replyMarkup: { inline_keyboard: [[{ text: "Stop this turn", callback_data: token }]] },
         },
       );
-      if (messageId && running)
-        turnControls.set(surface, { token, turnId: turn.id, revision: turn.revision, messageId });
-    }
-  }
-
-  function handleTurnControl(query: any): void {
-    const chatId = query.message?.chat?.id;
-    const surface = surfaceKey(String(chatId), query.message?.message_thread_id);
-    const control = turnControls.get(surface);
-    let text = "This Stop button has expired. Refresh the conversation.";
-    let admissionFailure: unknown;
-    try {
-      if (!isAllowed(chatId)) text = "Unauthorized.";
-      else if (control && query.data === control.token && query.message?.message_id === control.messageId) {
-        const active = readAppConversationResource(getDb(persistDir), conversationAppId, sharedConversationId, {
-          limit: 1,
-        }).activeTurn;
-        if (!active || active.id !== control.turnId || active.revision !== control.revision) {
-          text = "That turn already ended. Current work is unchanged.";
-        } else {
-          let receipt: EventReceipt;
-          try {
-            receipt = opts.publishEvent({
-              type: "conversation.turn.stop.requested",
-              target: { appId: conversationAppId },
-              data: {
-                conversationId: sharedConversationId,
-                turnId: control.turnId,
-                expectedRevision: control.revision,
-              },
-              idempotencyKey: `telegram-stop:${control.turnId}:${control.revision}`,
-            });
-            requireAdmission(receipt);
-          } catch (error) {
-            admissionFailure = error;
-            throw error;
-          }
-          text = "Stop request accepted. Background Tasks continue.";
-        }
-        void clearTurnControl(surface);
-        conversationRefresh.queue(sharedConversationId);
+      if (messageId && running) {
+        session.turnControl = { token, turnId: turn.id, revision: turn.revision, messageId };
       }
-    } catch (error) {
-      text = `Stop was not confirmed: ${error instanceof Error ? error.message : String(error)}`;
-    }
-    void apiCall("answerCallbackQuery", { callback_query_id: query.id, text: text.slice(0, 200) }).catch((error) =>
-      log("warn", `[telegram] Could not acknowledge Stop: ${String(error)}`),
-    );
-    if (admissionFailure) throw admissionFailure;
-  }
-
-  function handleCallback(query: any): void {
-    if (typeof query.data === "string" && query.data.startsWith("stop:")) {
-      handleTurnControl(query);
-      return;
-    }
-    const chatId = String(query.message?.chat?.id ?? "");
-    let text = "This control is unavailable. Ask May for the current status.";
-    if (!isAllowed(query.message?.chat?.id)) text = "Unauthorized.";
-    else if (/^task:(details(?::\d+)?|follow)$/.test(query.data)) {
-      const stored = getNotificationMessage(persistDir, chatId, query.message?.message_id);
-      let data: Record<string, unknown> | undefined;
-      try {
-        data = JSON.parse(stored?.data ?? "null") ?? undefined;
-      } catch {
-        /* legacy facts */
-      }
-      const indexedDetails = /^task:details:(\d+)$/.exec(query.data);
-      const refs = taskReferences(data?.followTask ? [data.followTask] : data?.taskRefs);
-      const target = indexedDetails ? refs[Number(indexedDetails[1])] : singleTaskReference(refs);
-      if (target && opts.humanTasks.getTask(target)) {
-        handleTelegramCommand(
-          query.data === "task:follow" ? "/watch linked" : "/task linked",
-          chatId,
-          query.message,
-          sharedConversationId,
-          query.message?.message_thread_id,
-          { task: target, topicId: typeof data?.topicId === "string" ? data.topicId : undefined },
-        );
-        text =
-          query.data === "task:follow" ? "Showing this Task. Other work is unchanged." : "Showing current details.";
-      }
-    }
-    void apiCall("answerCallbackQuery", { callback_query_id: query.id, text }).catch((error) =>
-      log("warn", `[telegram] Could not acknowledge control: ${String(error)}`),
-    );
-  }
-
-  function addressedConversationDelivery(message: AppConversationMessage): ConversationDelivery | undefined {
-    if (
-      message.author.kind !== "agent" ||
-      message.metadata?.channel !== "telegram" ||
-      !message.metadata.channelTargetId ||
-      !message.metadata.requestId
-    )
-      return undefined;
-    return {
-      appId: conversationAppId,
-      conversationId: sharedConversationId,
-      messageId: message.id,
-      chatId: message.metadata.channelTargetId,
-      threadId: telegramThreadId(message.metadata.channelThreadId),
-      text: renderTelegramConversationMessage(message),
-    };
-  }
-
-  function reportConversationDelivery(
-    message: AppConversationMessage,
-    delivery: ConversationDelivery,
-    state: string,
-    error?: unknown,
-  ): void {
-    const status = state === "failed" ? "failed" : "uncertain";
-    const operationId = conversationDeliveryId(delivery);
-    const identity = {
-      appId: conversationAppId,
-      conversationId: sharedConversationId,
-      requestId: message.metadata?.requestId,
-      conversationMessageId: message.id,
-      deliveryOperationId: operationId,
-      to: delivery.chatId,
-      channelThreadId: message.metadata?.channelThreadId,
-    };
-    const context = JSON.stringify(identity);
-    if (error !== undefined)
-      log(
-        "warn",
-        `[telegram] Conversation answer delivery failed ${context}: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    try {
-      bus.emit({
-        [EVENT_RECORD_ONLY]: true,
-        type: "message.delivery_failed",
-        source: "telegram",
-        owner: `app:${conversationAppId}`,
-        data: {
-          from: conversationAppId,
-          ...identity,
-          content: message.text.slice(0, 500),
-          reason:
-            status === "failed"
-              ? "Telegram rejected the answer before any chunk was delivered; the existing answer remains available for delivery."
-              : "No complete Telegram delivery outcome is available; verify the caller receipt before resending the existing answer.",
-          deliveryStatus: status,
-          idempotencyKey: `telegram-conversation-delivery:${operationId}:${status}`,
-        },
-      });
-    } catch (reportingError) {
-      // The journal shares the failing database. Reporting is never send authority
-      // and must not interrupt another caller; the independent logger cannot throw.
-      log(
-        "warn",
-        `[telegram] Delivery diagnostic not persisted ${context}: ${reportingError instanceof Error ? reportingError.message : String(reportingError)}`,
-      );
     }
   }
 
   async function syncConversation(): Promise<void> {
-    const conversation = readAppConversationResource(getDb(persistDir), conversationAppId, sharedConversationId, {
-      limit: 200,
-    });
-    captureStartupMessages(conversation.messages);
+    const conversation = getConversation(conversationAppId, sharedConversationId, { limit: 200 });
+    telegramClient.captureStartupMessages(conversation.messages, rememberRenderedConversationMessage);
     await syncTurnControls(conversation.activeTurn);
     for (const message of conversation.messages) {
       if (!running) return;
-      const delivery = addressedConversationDelivery(message);
-      // Addressed answers always use their exact durable operation, including
-      // content/destination revisions under the same Conversation message ID.
-      if (!delivery && renderedConversationMessages.has(message.id)) continue;
-      if (
-        message.metadata?.channel === "telegram" &&
-        (message.author.kind === "human" || message.author.kind === "command")
-      ) {
-        rememberRenderedConversationMessage(message.id);
-        continue;
-      }
-      const targetChatId = message.metadata?.channelTargetId ?? pendingChatId;
-      if (!targetChatId) return;
-      const topicId = telegramThreadId(message.metadata?.channelThreadId);
-      const surface = surfaceKey(targetChatId, topicId);
-      const operationId = delivery ? conversationDeliveryId(delivery) : undefined;
-      let delivered: number | undefined;
-      try {
-        if (delivery) {
-          const decision = prepareConversationDelivery(
-            persistDir,
-            delivery,
-            historicalDeliveries.has(operationId!) ? "historical" : "fresh",
-          );
-          if (decision.kind === "retained") {
-            if (decision.state !== "delivered") reportConversationDelivery(message, delivery, decision.state);
-            continue;
-          }
-        }
-        delivered = await sendMessage(targetChatId, renderTelegramConversationMessage(message), undefined, {
-          eventType: "conversation.mirror",
-          agent: message.author.kind === "agent" ? opts.interfaceAgent : message.author.id,
-          messageThreadId: topicId,
-          ...(operationId
-            ? {
-                onDelivery: (outcome) => {
-                  settleConversationDelivery(persistDir, operationId, outcome);
-                  if (outcome.state !== "delivered") reportConversationDelivery(message, delivery!, outcome.state);
-                },
-              }
-            : {}),
-          ...(message.metadata?.channelMessageId ? { replyToMessageId: message.metadata.channelMessageId } : {}),
-          replyMarkup: taskButtons(
-            message.metadata?.followTask ? [message.metadata.followTask] : message.metadata?.taskRefs,
-          ),
-          data: JSON.stringify({
-            direction: "mirror",
-            conversationId: sharedConversationId,
-            conversationMessageId: message.id,
-            sourceChannel: message.metadata?.channel,
-            text: message.text.slice(0, 500),
-            taskRefs: message.metadata?.followTask ? [message.metadata.followTask] : message.metadata?.taskRefs,
-            topicId: message.metadata?.topicId,
-          }),
-        });
-      } catch (error) {
-        if (!delivery) throw error;
-        reportConversationDelivery(message, delivery, "uncertain", error);
-        continue;
-      }
-      if (!running) return;
-      if (!delivered) {
-        if (delivery) continue; // One unresolved caller must not hide another answer.
-        return;
-      }
-      if (!delivery) rememberRenderedConversationMessage(message.id);
-      const watched = watchedTasks.get(surface);
+      const outcome = await telegramClient.deliverConversationMessage(
+        message,
+        pendingChatId,
+        renderedConversationMessages,
+        rememberRenderedConversationMessage,
+      );
+      if (!running || outcome.status === "halted") return;
+      if (outcome.status === "skipped" || !outcome.targetChatId) continue;
+      const session = sessions.get(surfaceKey(outcome.targetChatId, outcome.topicId));
+      const watched = session?.watchedTask;
       if (
         watched &&
         message.author.kind === "agent" &&
@@ -1080,41 +400,45 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       ) {
         const task = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
         if (task?.terminal && (task.response?.trim() || task.summary?.trim()) === message.text.trim()) {
-          stopWatching(surface);
+          stopWatching(session);
         }
       }
     }
   }
 
-  function selectedTaskTopicId(surface: string, task: { appId: string; taskId: string }): string | undefined {
-    const selected = selectedTopics.get(surface);
-    if (!selected) return undefined;
-    // Admission can append Task links after selection. Read the current Topic
-    // before deciding whether this Task belongs to it.
-    const topic = readConversationTopic(getDb(persistDir), conversationAppId, sharedConversationId, selected.id);
-    if (topic) selectedTopics.set(surface, topic);
-    else selectedTopics.delete(surface);
+  function selectedTaskTopicId(
+    session: SurfaceSession | undefined,
+    task: { appId: string; taskId: string },
+  ): string | undefined {
+    const selected = session?.selectedTopic;
+    if (!session || !selected) return undefined;
+    const topic = readHumanConversationTopic(persistDir, conversationAppId, sharedConversationId, selected.id);
+    if (topic) session.selectedTopic = topic;
+    else delete session.selectedTopic;
     return topic?.taskRefs.some((ref) => ref.appId === task.appId && ref.taskId === task.taskId) ? topic.id : undefined;
   }
 
+  const todoTaskKey = (task: HumanTaskView): string => `${task.appId}\0${task.taskId}`;
+  const presentedTodoActionRevision = (signature: { value: string; exact: boolean }) =>
+    JSON.stringify({ value: signature.value, exact: signature.exact });
+
   async function refreshWatch(surface: string): Promise<void> {
-    const watched = watchedTasks.get(surface);
-    if (!watched) return;
+    const session = sessions.get(surface);
+    const watched = session?.watchedTask;
+    if (!session || !watched) return;
     const task = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
     if (!task) {
-      stopWatching(surface);
+      stopWatching(session);
       await sendMessage(watched.chatId, `Task ${watched.ref} is no longer available; watch ended.`, undefined, {
         messageThreadId: watched.topicId,
       });
       return;
     }
     const revision = taskPresentationRevision(task);
-    if (shownWatchRevisions.get(surface) === revision) return;
+    if (session.shownWatchRevision === revision) return;
     if (task.terminal) {
       const result = task.response?.trim() || task.summary?.trim();
-      const conversation = readAppConversationResource(getDb(persistDir), conversationAppId, sharedConversationId, {
-        limit: 40,
-      });
+      const conversation = getConversation(conversationAppId, sharedConversationId, { limit: 40 });
       const equivalent =
         result &&
         conversation.messages.find(
@@ -1128,12 +452,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             message.metadata?.taskRefs?.some((ref) => ref.appId === task.appId && ref.taskId === task.taskId),
         );
       if (equivalent) {
-        const delivery = addressedConversationDelivery(equivalent);
-        const presented = delivery
-          ? readConversationDelivery(persistDir, conversationDeliveryId(delivery))?.state === "delivered"
-          : renderedConversationMessages.has(equivalent.id);
-        if (presented) stopWatching(surface);
-        else conversationRefresh.queue(sharedConversationId);
+        if (telegramClient.isConversationMessageDelivered(equivalent, renderedConversationMessages)) {
+          stopWatching(session);
+        } else {
+          conversationRefresh.queue(sharedConversationId);
+        }
         return;
       }
     }
@@ -1143,8 +466,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const displayedAction = task.humanAction
       ? { key: todoTaskKey(task), signature: todoActionSignature(task) }
       : null;
-    // Keep the card's context consistent even if selection changes during I/O.
-    const conversationTopicId = selectedTaskTopicId(surface, task);
+    const conversationTopicId = selectedTaskTopicId(session, task);
     const delivered = await sendMessage(watched.chatId, rendered, undefined, {
       eventType: "task.watch",
       agent: opts.interfaceAgent,
@@ -1168,27 +490,17 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       }),
       bindToCompleteDelivery: Boolean(displayedApproval || displayedHumanCondition || displayedAction?.signature.exact),
     });
-    // Telegram cannot recall an in-flight send, but its late acknowledgement
-    // must not commit stale progress to the Conversation or suppress the fresh
-    // terminal presentation. Re-read after provider I/O even when no wake was
-    // observed; a provider call is not a Task-state fence.
     if (!delivered || !running) return;
-    if (watchedTasks.get(surface) !== watched) {
-      // A replacement watch can be displayed while this provider send is
-      // stalled. Restore it after the older send lands and becomes Telegram's
-      // latest message; an ended watch has nothing to restore.
-      if (watchedTasks.has(surface)) {
-        shownWatchRevisions.delete(surface);
+    if (session.watchedTask !== watched) {
+      if (session.watchedTask) {
+        delete session.shownWatchRevision;
         watchRefresh.queue(surface);
       }
       return;
     }
     const currentTask = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
     if (!currentTask || taskPresentationRevision(currentTask) !== revision) {
-      // The replacement may return to a presentation shown before this send.
-      // Invalidate that cache so the queued refresh still restores the latest
-      // canonical state after this stale message reached Telegram.
-      shownWatchRevisions.delete(surface);
+      delete session.shownWatchRevision;
       watchRefresh.queue(surface);
       return;
     }
@@ -1202,68 +514,27 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       taskRefs: [{ appId: task.appId, taskId: task.taskId }],
       conversationTopicId,
     });
-    shownWatchRevisions.set(surface, revision);
+    session.shownWatchRevision = revision;
     if (displayedAction) {
-      const current = shownTodoActions.get(surface);
-      if (current) current.set(displayedAction.key, presentedTodoActionRevision(displayedAction.signature));
-      else
-        shownTodoActions.set(
-          surface,
-          new Map([[displayedAction.key, presentedTodoActionRevision(displayedAction.signature)]]),
-        );
+      session.shownTodoActions.set(displayedAction.key, presentedTodoActionRevision(displayedAction.signature));
     }
-    if (task.terminal) stopWatching(surface);
+    if (task.terminal) stopWatching(session);
   }
 
-  const todoTaskKey = (task: HumanTaskView): string => `${task.appId}\0${task.taskId}`;
-  const todoActionSignature = (task: HumanTaskView): { value: string; exact: boolean } => {
-    const conditionItems = task.diagnostics?.conditions ?? [];
-    const conditions = conditionItems
-      .flatMap((item) => {
-        const condition = item.condition;
-        if (!condition || condition.status?.state === "true" || !isHumanActionOwner(condition.spec.owner)) return [];
-        return [
-          {
-            id: item.id,
-            generation: condition.metadata.generation,
-            type: condition.spec.type,
-            subject: condition.spec.subject,
-            owner: condition.spec.owner,
-            requestedAction: condition.spec.requestedAction,
-            expected: condition.spec.expected,
-          },
-        ];
-      })
-      .sort((left, right) => left.id.localeCompare(right.id));
-    return {
-      value: JSON.stringify({
-        generation: task.generation,
-        conditions,
-        fallback: conditions.length === 0 ? humanActionText(task) : undefined,
-      }),
-      exact:
-        conditions.length > 0 &&
-        conditionItems.every((item) => item.condition !== null) &&
-        task.diagnostics?.conditionsTruncated !== true,
-    };
-  };
-  const presentedTodoActionRevision = (signature: { value: string; exact: boolean }) =>
-    JSON.stringify({ value: signature.value, exact: signature.exact });
-
   async function refreshTodos(surface: string): Promise<void> {
-    const coordinates = surfaces.get(surface);
-    if (!coordinates) return;
-    const appId = selectedApps.get(surface) ?? conversationAppId;
+    const session = sessions.get(surface);
+    if (!session) return;
+    const appId = session.selectedApp ?? conversationAppId;
     const page = opts.humanTasks.listTasks({ appId, humanActionOnly: true, limit: TODO_PAGE_SIZE });
     const actions = page.items.map((task) => {
       const owner = task.humanAction?.task ?? { appId: task.appId, taskId: task.taskId };
       const detail = opts.humanTasks.getTask?.(owner) ?? task;
       return { task, detail, signature: todoActionSignature(detail) };
     });
-    const prior = shownTodoActions.get(surface) ?? new Map<string, string>();
+    const prior = session.shownTodoActions;
     const currentKeys = new Set(actions.map(({ task }) => todoTaskKey(task)));
     const next = new Map([...prior].filter(([key]) => currentKeys.has(key)));
-    const watched = watchedTasks.get(surface);
+    const watched = session.watchedTask;
     const changed = actions.filter(({ task, detail, signature }) => {
       if (watched?.appId === task.appId && watched.taskId === task.taskId) return false;
       const key = todoTaskKey(task);
@@ -1271,7 +542,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       if (prior.get(key) === revision) return false;
       if (!signature.exact) return true;
       if (
-        hasCompletedHumanActionDelivery(persistDir, coordinates.chatId, coordinates.topicId, {
+        telegramClient.hasDeliveredHumanAction(session.chatId, session.topicId, {
           appId: detail.appId,
           taskId: detail.taskId,
           signature: signature.value,
@@ -1282,12 +553,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       }
       return true;
     });
-    shownTodoActions.set(surface, next);
+    session.shownTodoActions = next;
     if (changed.length === 0) return;
     const first = changed[0]!;
     const single = changed.length === 1;
-    // The detail was read once above, so displayed text and immutable approval
-    // anchor share the same snapshot without a list/detail race.
     const proposal = first.detail;
     const taskRefs = changed.map(({ detail }) => ({ appId: detail.appId, taskId: detail.taskId }));
     const completedHumanActions = changed.flatMap(({ detail, signature }) =>
@@ -1297,42 +566,17 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     );
     const displayedApproval = single ? approvalProposalForTask(proposal) : null;
     const displayedHumanCondition = single && !displayedApproval ? humanConditionAnchor(proposal) : null;
-    const decisionAction = displayedApproval ? displayedApproval.requestedAction : null;
-    const otherActions = displayedApproval
-      ? humanConditionActions(proposal, approvalProposalForTask(proposal)?.conditionId)
-      : [];
     const text = single
-      ? decisionAction
-        ? [
-            "Needs your decision",
-            `Purpose\n${proposal.outcome}`,
-            `Decision needed\n${decisionAction}`,
-            `How to respond\n${replyInstruction(proposal, displayedApproval?.conditionId)}`,
-            ...(otherActions.length > 0
-              ? [
-                  "Other action needed (separate from this decision)",
-                  otherActions.join("\n\n"),
-                  "Reply separately with the requested answer or completion evidence.",
-                ]
-              : []),
-            "Use Details for the current state and evidence.",
-          ].join("\n\n")
-        : [
-            "Needs your action",
-            `Purpose\n${proposal.outcome}`,
-            `Action needed\n${fullHumanActionText(proposal)}`,
-            `How to respond\n${replyInstruction(proposal)}`,
-            "Use Details for the current state and evidence.",
-          ].join("\n\n")
+      ? renderTelegramSingleTodoNotification(proposal)
       : renderTelegramTodos(
           changed.map(({ detail }) => detail),
           changed.length,
           appId,
         );
-    const messageId = await sendMessage(coordinates.chatId, text, single ? undefined : "HTML", {
+    const messageId = await sendMessage(session.chatId, text, single ? undefined : "HTML", {
       eventType: "task.human-action",
       agent: opts.interfaceAgent,
-      messageThreadId: coordinates.topicId,
+      messageThreadId: session.topicId,
       replyMarkup: taskButtons(taskRefs),
       data: JSON.stringify({
         taskRefs,
@@ -1349,27 +593,24 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       ),
     });
     if (!messageId || !running) return;
-    if ((selectedApps.get(surface) ?? conversationAppId) === appId) {
+    if ((session.selectedApp ?? conversationAppId) === appId) {
       for (const { task, signature } of changed) {
         next.set(todoTaskKey(task), presentedTodoActionRevision(signature));
       }
-      shownTodoActions.set(surface, next);
+      session.shownTodoActions = next;
     }
-    // Record what was actually shown, even if the user selected another App
-    // during the send; only the current App's notification cache is protected.
     recordConversationMessage({
       conversationId: sharedConversationId,
       text,
       command: "/todo notification",
       messageId,
-      chatId: coordinates.chatId,
-      topicId: coordinates.topicId,
+      chatId: session.chatId,
+      topicId: session.topicId,
       taskRefs,
       idempotencyKey: `todo-notification:telegram:${surface}:${first.task.appId}:${first.task.taskId}:${first.task.resourceVersion}`,
     });
   }
 
-  // Allow the EventBus's asynchronous FIFO to drain before reading Conversation.
   const conversationRefresh = createRefreshQueue("Conversation sync", syncConversation, 5);
   const watchRefresh = createRefreshQueue("Watch refresh", refreshWatch);
   const todoRefresh = createRefreshQueue("Todo refresh", refreshTodos);
@@ -1413,13 +654,14 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       }
       const wake = taskUpdateIdentity(event);
       if (!wake) return;
-      for (const [surface, watched] of watchedTasks) {
-        if (watched.appId === wake.appId && watched.taskId === wake.taskId) watchRefresh.queue(surface);
-      }
-      if (isTaskDerivedViewWake(event)) {
-        for (const surface of surfaces.keys()) {
-          const selected = selectedApps.get(surface) ?? conversationAppId;
-          if (selected === wake.appId) todoRefresh.queue(surface);
+      for (const session of sessions.values()) {
+        const watched = session.watchedTask;
+        if (watched?.appId === wake.appId && watched.taskId === wake.taskId) {
+          watchRefresh.queue(session.key);
+        }
+        if (isTaskDerivedViewWake(event)) {
+          const selected = session.selectedApp ?? conversationAppId;
+          if (selected === wake.appId) todoRefresh.queue(session.key);
         }
       }
     },
@@ -1468,27 +710,116 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     });
   }
 
+  function isAllowed(chatId: number): boolean {
+    return allowedChatIds.includes(String(chatId));
+  }
+
+  function resumeRecordedInput(type: string, key: string, requireAccepted = true): number | undefined {
+    return resumeRecordedTelegramInput(persistDir, bus, {
+      type,
+      idempotencyKey: key,
+      requireAccepted,
+    });
+  }
+
+  function requireAdmission(receipt: EventReceipt): void {
+    if (receipt.delivery !== "accepted") throw new Error("Telegram input is recorded but not yet admitted");
+  }
+
+  function handleTurnControl(query: any): void {
+    const chatId = query.message?.chat?.id;
+    const session = sessions.get(surfaceKey(String(chatId), query.message?.message_thread_id));
+    const control = session?.turnControl;
+    let text = "This Stop button has expired. Refresh the conversation.";
+    let admissionFailure: unknown;
+    try {
+      if (!isAllowed(chatId)) text = "Unauthorized.";
+      else if (session && control && query.data === control.token && query.message?.message_id === control.messageId) {
+        const active = getConversation(conversationAppId, sharedConversationId, { limit: 1 }).activeTurn;
+        if (!active || active.id !== control.turnId || active.revision !== control.revision) {
+          text = "That turn already ended. Current work is unchanged.";
+        } else {
+          try {
+            const receipt = opts.publishEvent({
+              type: "conversation.turn.stop.requested",
+              target: { appId: conversationAppId },
+              data: {
+                conversationId: sharedConversationId,
+                turnId: control.turnId,
+                expectedRevision: control.revision,
+              },
+              idempotencyKey: `telegram-stop:${control.turnId}:${control.revision}`,
+            });
+            requireAdmission(receipt);
+          } catch (error) {
+            admissionFailure = error;
+            throw error;
+          }
+          text = "Stop request accepted. Background Tasks continue.";
+        }
+        void clearTurnControl(session);
+        conversationRefresh.queue(sharedConversationId);
+      }
+    } catch (error) {
+      text = `Stop was not confirmed: ${error instanceof Error ? error.message : String(error)}`;
+    }
+    void apiCall("answerCallbackQuery", { callback_query_id: query.id, text: text.slice(0, 200) }).catch((error) =>
+      log("warn", `[telegram] Could not acknowledge Stop: ${String(error)}`),
+    );
+    if (admissionFailure) throw admissionFailure;
+  }
+
+  function handleCallback(query: any): void {
+    if (typeof query.data === "string" && query.data.startsWith("stop:")) {
+      handleTurnControl(query);
+      return;
+    }
+    const chatId = String(query.message?.chat?.id ?? "");
+    let text = "This control is unavailable. Ask May for the current status.";
+    if (!isAllowed(query.message?.chat?.id)) text = "Unauthorized.";
+    else if (/^task:(details(?::\d+)?|follow)$/.test(query.data)) {
+      const lookup = telegramClient.readMessageContext(chatId, query.message?.message_id);
+      const indexedDetails = /^task:details:(\d+)$/.exec(query.data);
+      const target = indexedDetails
+        ? lookup.taskRefs[Number(indexedDetails[1])]
+        : singleTaskReference(lookup.taskRefs);
+      if (target && opts.humanTasks.getTask(target)) {
+        const session = ensureSession(chatId, query.message?.message_thread_id);
+        handleTelegramCommand(
+          query.data === "task:follow" ? "/watch linked" : "/task linked",
+          session,
+          query.message,
+          sharedConversationId,
+          { task: target, topicId: lookup.replyTopicId },
+        );
+        text =
+          query.data === "task:follow" ? "Showing this Task. Other work is unchanged." : "Showing current details.";
+      }
+    }
+    void apiCall("answerCallbackQuery", { callback_query_id: query.id, text }).catch((error) =>
+      log("warn", `[telegram] Could not acknowledge control: ${String(error)}`),
+    );
+  }
+
   function emitChatStart(
     message: string,
-    channelMessageId?: number,
-    context?: Record<string, unknown>,
-    chatId?: string,
-    topicId?: string | number,
-    conversationId?: string,
+    channelMessageId: number,
+    context: Record<string, unknown> | undefined,
+    session: SurfaceSession,
+    conversationId: string,
     replyToMsgId?: number,
     replyToSourceId?: string,
     conversationTopicId?: string,
     approvalReply?: { target: { appId: string; taskId: string }; proposal: ApprovalProposal },
     approvalAuthorization?: Parameters<TelegramBotOptions["publishEvent"]>[1],
   ): void {
-    if (!channelMessageId || !chatId || !conversationId) return;
     const input = telegramConversationInputEvent({
       appId: conversationAppId,
       message,
-      chatId,
+      chatId: session.chatId,
       messageId: channelMessageId,
       conversationId,
-      topicId,
+      topicId: session.topicId,
       conversationTopicId,
       replyToMessageId: replyToMsgId,
       replyToSourceId,
@@ -1500,71 +831,24 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     requireAdmission(received);
     if (received.approval) {
       const result = received.approval;
-      queueCommandDelivery(surfaceKey(chatId, topicId === undefined ? undefined : Number(topicId)), () =>
+      queueCommandDelivery(session.key, () =>
         sendMessage(
-          chatId,
+          session.chatId,
           "reason" in result ? result.reason : `${result.decision} recorded for the exact proposal.`,
           undefined,
-          { replyToMessageId: channelMessageId, messageThreadId: topicId === undefined ? undefined : Number(topicId) },
+          { replyToMessageId: channelMessageId, messageThreadId: session.topicId },
         ),
       );
     }
-    const rowId = received.eventId;
-    try {
-      storeNotificationMessage(persistDir, {
-        chat_id: chatId,
-        telegram_msg_id: channelMessageId,
-        event_type: "conversation.message.created",
-        agent: opts.interfaceAgent,
-        session_id: null,
-        project_id: null,
-        data: JSON.stringify({
-          direction: "inbound",
-          conversationId,
-          chatId,
-          topicId: topicId ?? 0,
-          replyToMsgId,
-          traceId: rowId ? `event:${rowId}` : undefined,
-          sourceEventId: rowId,
-          text: message.slice(0, 500),
-        }),
-      });
-    } catch {
-      /* best-effort transport index; canonical input is already durable */
-    }
-  }
-
-  // ── Incoming message handling ────────────────────────────────────
-
-  function isAllowed(chatId: number): boolean {
-    return allowedChatIds.includes(String(chatId));
-  }
-
-  function resumeRecordedInput(type: string, key: string, requireAccepted = true): number | undefined {
-    // Provider redelivery may follow restart or a lost publication receipt.
-    // Do not rebuild an accepted input using today's focus and cause a hash
-    // conflict. The existing event journal/recovery owns its original payload.
-    const db = getDb(persistDir);
-    const row = db
-      .prepare(
-        "SELECT id, delivery_status FROM events WHERE event_type = ? AND source = 'telegram' AND idempotency_key = ? LIMIT 1",
-      )
-      .get(type, key);
-    if (!row) return undefined;
-    // Reload acceptance only starts an asynchronous operation. Its caller has
-    // already checked for completion; reenter the route after a crash, while
-    // the router shares any execution still in flight in this process.
-    if (requireAccepted && (row.delivery_status !== "accepted" || type === "runtime.reload.requested")) {
-      const event = loadPersistedEvent(db, Number(row.id), persistDir);
-      if (!event) throw new Error("Original Telegram event is unavailable; input remains unacknowledged");
-      const retried = bus.redeliverPersisted(event, Number(row.id));
-      if (!retried[EVENT_DELIVERY_RESULT]?.accepted) throw new Error("Telegram input is recorded but not yet admitted");
-    }
-    return Number(row.id);
-  }
-
-  function requireAdmission(receipt: EventReceipt): void {
-    if (receipt.delivery !== "accepted") throw new Error("Telegram input is recorded but not yet admitted");
+    telegramClient.recordInboundMessage({
+      chatId: session.chatId,
+      messageId: channelMessageId,
+      topicId: session.topicId,
+      conversationId,
+      replyToMsgId,
+      eventId: received.eventId,
+      text: message,
+    });
   }
 
   function handleMessage(msg: any): void {
@@ -1580,7 +864,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
 
     if (!text) {
-      // Reject unsupported content honestly; delivery is not input acceptance.
       if (hasTelegramContent(msg)) {
         void sendMessage(
           String(chatId),
@@ -1597,8 +880,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     const chatIdStr = String(chatId);
     const topicId = msg.message_thread_id as number | undefined;
-    const surface = surfaceKey(chatIdStr, topicId);
-    surfaces.set(surface, { chatId: chatIdStr, ...(topicId === undefined ? {} : { topicId }) });
+    const session = ensureSession(chatIdStr, topicId);
     const conversationId = sharedConversationId;
     const recordedConversationId = !text.startsWith("/")
       ? resumeRecordedInput("conversation.message.created", `telegram:${chatIdStr}:${msg.message_id}`)
@@ -1606,55 +888,27 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     conversationRefresh.queue(sharedConversationId);
     bus.emit({ type: "info", message: `[telegram] ← ${text.slice(0, 80)}` });
 
-    // Keep the human text authoritative. A reply contributes only its provider
-    // anchor and bounded quoted text; Conversation and Task resources own the
-    // semantic context.
-    let inputContext: Record<string, unknown> | undefined;
     const replyToMsg = msg.reply_to_message;
-    const replyToMsgId = replyToMsg?.message_id;
-    let replyToSourceId: string | undefined;
-    let replyTopicId: string | undefined;
-    let replyTask: { appId: string; taskId: string } | undefined;
-    let replyApprovalAnchor: TelegramApprovalAnchor | null = null;
-    let replyHumanCondition: TelegramHumanConditionAnchor | null = null;
-    if (replyToMsgId) {
-      try {
-        const notification = getNotificationMessage(persistDir, chatIdStr, replyToMsgId);
-        const data = notification?.data ? (JSON.parse(notification.data) as Record<string, unknown>) : undefined;
-        replyTask = singleTaskReference(data?.followTask ? [data.followTask] : data?.taskRefs);
-        replyTopicId = typeof data?.topicId === "string" ? data.topicId : undefined;
-        replyApprovalAnchor =
-          data?.approvalAnchor && typeof data.approvalAnchor === "object" && !Array.isArray(data.approvalAnchor)
-            ? (data.approvalAnchor as TelegramApprovalAnchor)
-            : null;
-        replyHumanCondition =
-          data?.humanCondition && typeof data.humanCondition === "object" && !Array.isArray(data.humanCondition)
-            ? (data.humanCondition as TelegramHumanConditionAnchor)
-            : null;
-        replyToSourceId =
-          typeof data?.conversationMessageId === "string" && data.conversationMessageId.trim()
-            ? data.conversationMessageId.trim()
-            : `telegram:${chatIdStr}:${replyToMsgId}`;
-      } catch {
-        replyToSourceId = `telegram:${chatIdStr}:${replyToMsgId}`;
-      }
-      const quotedText = telegramMessageText(replyToMsg).slice(0, 2_000);
-      inputContext = {
-        reply: {
-          channel: "telegram",
-          messageId: replyToMsgId,
-          ...(quotedText ? { quotedText } : {}),
-        },
-      };
-    }
+    const replyToMsgId = replyToMsg?.message_id as number | undefined;
+    const lookup = replyToMsgId ? telegramClient.readMessageContext(chatIdStr, replyToMsgId) : undefined;
+    const quotedText = replyToMsgId ? telegramMessageText(replyToMsg).slice(0, 2_000) : "";
+    let inputContext: Record<string, unknown> | undefined = replyToMsgId
+      ? {
+          reply: {
+            channel: "telegram",
+            messageId: replyToMsgId,
+            ...(quotedText ? { quotedText } : {}),
+          },
+        }
+      : undefined;
 
     const approverId = String(msg.from?.id ?? "");
 
     try {
-      if (handleTelegramCommand(text, chatIdStr, msg, conversationId, topicId)) return;
+      if (handleTelegramCommand(text, session, msg, conversationId)) return;
     } catch (error) {
       if (!(error instanceof TaskReferenceError)) throw error;
-      queueCommandDelivery(surface, () =>
+      queueCommandDelivery(session.key, () =>
         sendMessage(chatIdStr, `${error.message}. Ask May to find the work, or use /tasks.`, undefined, {
           replyToMessageId: msg.message_id,
           messageThreadId: topicId,
@@ -1663,12 +917,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       return;
     }
 
-    // Every ordinary turn becomes one durable May request.
-    const focusedTask = replyToMsgId ? replyTask : watchedTasks.get(surfaceKey(chatIdStr, topicId));
+    const replyTask = lookup?.replyTask;
+    const focusedTask = replyToMsgId ? replyTask : session.watchedTask;
     const focusedApp = replyToMsgId
       ? (replyTask?.appId ?? conversationAppId)
-      : (selectedApps.get(surface) ?? conversationAppId);
-    const conversationTopic = replyToMsgId ? undefined : selectedTopics.get(surface);
+      : (session.selectedApp ?? conversationAppId);
+    const conversationTopic = replyToMsgId ? undefined : session.selectedTopic;
     inputContext = {
       ...(inputContext ?? {}),
       focusedApp,
@@ -1684,7 +938,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       inputContext = {
         ...(inputContext ?? {}),
         focusedTask: { appId: focusedTask.appId, taskId: focusedTask.taskId },
-        ...(replyHumanCondition ? { displayedHumanCondition: replyHumanCondition } : {}),
+        ...(lookup?.replyHumanCondition ? { displayedHumanCondition: lookup.replyHumanCondition } : {}),
       };
     }
     if (!recordedConversationId) {
@@ -1692,25 +946,25 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         text,
         msg.message_id,
         inputContext,
-        chatIdStr,
-        topicId,
+        session,
         conversationId,
         replyToMsgId,
-        replyToSourceId,
-        replyTopicId ?? conversationTopic?.id,
-        replyTask && replyApprovalAnchor ? { target: replyTask, proposal: replyApprovalAnchor } : undefined,
-        allowedApproverIds.includes(approverId) ? {
-          actor: { kind: "human", id: approverId },
-          reference: `telegram:${chatIdStr}:${msg.message_id}`,
-          evidence: { chatId: chatIdStr, sourceMessageId: msg.message_id, replyToMessageId: replyToMsgId },
-        } : undefined,
+        lookup?.replyToSourceId,
+        lookup?.replyTopicId ?? conversationTopic?.id,
+        replyTask && lookup?.replyApprovalAnchor
+          ? { target: replyTask, proposal: lookup.replyApprovalAnchor }
+          : undefined,
+        allowedApproverIds.includes(approverId)
+          ? {
+              actor: { kind: "human", id: approverId },
+              reference: `telegram:${chatIdStr}:${msg.message_id}`,
+              evidence: { chatId: chatIdStr, sourceMessageId: msg.message_id, replyToMessageId: replyToMsgId },
+            }
+          : undefined,
       );
     }
-    // Presentation after durable recording cannot turn a saved input into a retry.
     try {
-      const active = readAppConversationResource(getDb(persistDir), conversationAppId, conversationId, {
-        limit: 1,
-      }).activeTurn;
+      const active = getConversation(conversationAppId, conversationId, { limit: 1 }).activeTurn;
       if (
         active &&
         !(
@@ -1733,22 +987,20 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
   function handleTelegramCommand(
     text: string,
-    chatIdStr: string,
+    session: SurfaceSession,
     msg: any,
     conversationId: string,
-    topicId?: number,
     linked?: { task: { appId: string; taskId: string }; topicId?: string },
   ): boolean {
     if (!text.startsWith("/")) return false;
 
     const [cmd = "", ...rest] = text.split(/\s+/);
     const command = cmd.split("@")[0];
-    const surface = surfaceKey(chatIdStr, topicId);
+    const { key: surface, chatId: chatIdStr, topicId } = session;
 
     const taskTopicId = (task: { appId: string; taskId: string }): string | undefined => {
-      // A clicked message supplies its own context, never today's selection.
       if (linked) return linked.topicId;
-      return selectedTaskTopicId(surface, task);
+      return selectedTaskTopicId(session, task);
     };
 
     const deliverCommandView = (
@@ -1759,7 +1011,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       approvalTask?: HumanTaskView,
       parseMode?: string,
     ): void => {
-      const conversationTopicId = followTask ? taskTopicId(followTask) : selectedTopics.get(surface)?.id;
+      const conversationTopicId = followTask ? taskTopicId(followTask) : session.selectedTopic?.id;
       const displayedApproval = approvalProposalForTask(approvalTask ?? null);
       queueCommandDelivery(surface, async () => {
         const deliveredMessageId = await sendMessage(chatIdStr, rendered, parseMode, {
@@ -1804,14 +1056,13 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         let selectedChanged = false;
         if (rest[0] && apps.length === 1) {
           const nextApp = apps[0]!.id;
-          selectedApps.set(surface, nextApp);
-          shownTodoActions.delete(surface);
-          nextTodoPageBySurface.delete(surface);
-          const watched = watchedTasks.get(surface);
-          if (watched && watched.appId !== nextApp) stopWatching(surface);
+          session.selectedApp = nextApp;
+          session.shownTodoActions.clear();
+          delete session.nextTodoPage;
+          if (session.watchedTask && session.watchedTask.appId !== nextApp) stopWatching(session);
           selectedChanged = true;
         }
-        const selected = selectedApps.get(surface) ?? conversationAppId;
+        const selected = session.selectedApp ?? conversationAppId;
         deliverCommandView(
           apps.length === 0
             ? `App ${rest[0]} was not found.`
@@ -1826,19 +1077,19 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       const more = rest.length === 1 && rest[0]?.toLowerCase() === "more";
       if (rest.length > 1 || (rest.length === 1 && !more)) deliverCommandView("Use: /topics, or /topics more");
       else {
-        const cursor = more ? nextTopicPageBySurface.get(surface) : undefined;
+        const cursor = more ? session.nextTopicCursor : undefined;
         if (more && !cursor) {
           deliverCommandView("No next page. Use /topics first.");
           return true;
         }
-        const conversation = readAppConversationResource(getDb(persistDir), conversationAppId, conversationId, {
+        const conversation = getConversation(conversationAppId, conversationId, {
           limit: 30,
           ...(cursor ? { topicCursor: cursor } : {}),
         });
-        if (conversation.nextTopicCursor) nextTopicPageBySurface.set(surface, conversation.nextTopicCursor);
-        else nextTopicPageBySurface.delete(surface);
+        if (conversation.nextTopicCursor) session.nextTopicCursor = conversation.nextTopicCursor;
+        else delete session.nextTopicCursor;
         deliverCommandView(
-          renderTelegramTopics(conversation.topics ?? [], selectedTopics.get(surface)?.id, {
+          renderTelegramTopics(conversation.topics ?? [], session.selectedTopic?.id, {
             older: more,
             hasMore: Boolean(conversation.nextTopicCursor),
           }),
@@ -1853,8 +1104,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         return true;
       }
       if (rest[0]?.toLowerCase() === "clear") {
-        const prior = selectedTopics.get(surface);
-        selectedTopics.delete(surface);
+        const prior = session.selectedTopic;
+        delete session.selectedTopic;
         deliverCommandView(
           prior
             ? `Stopped following Topic ${topicReference(prior)}. Its Tasks continue unchanged.`
@@ -1862,12 +1113,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         );
         return true;
       }
-      const exactTopicId = rest[0] ?? selectedTopics.get(surface)?.id;
-      const conversation = readAppConversationResource(getDb(persistDir), conversationAppId, conversationId, {
+      const exactTopicId = rest[0] ?? session.selectedTopic?.id;
+      const conversation = getConversation(conversationAppId, conversationId, {
         limit: 30,
         ...(exactTopicId ? { topicId: exactTopicId } : {}),
       });
-      const selectedTopic = selectedTopics.get(surface);
+      const selectedTopic = session.selectedTopic;
       const topic = rest[0]
         ? resolveConversationTopic(conversation.topics ?? [], rest[0])
         : conversation.topics?.find((candidate) => candidate.id === selectedTopic?.id);
@@ -1878,10 +1129,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         return true;
       }
       if (rest[0]) {
-        const linked = new Set(topic.taskRefs.map((task) => `${task.appId}\0${task.taskId}`));
-        const watched = watchedTasks.get(surface);
-        if (watched && !linked.has(`${watched.appId}\0${watched.taskId}`)) stopWatching(surface);
-        selectedTopics.set(surface, topic);
+        const linkedTasks = new Set(topic.taskRefs.map((task) => `${task.appId}\0${task.taskId}`));
+        const watched = session.watchedTask;
+        if (watched && !linkedTasks.has(`${watched.appId}\0${watched.taskId}`)) stopWatching(session);
+        session.selectedTopic = topic;
       }
       deliverCommandView(renderTelegramTopic(topic, conversation.messages), topic.taskRefs);
       return true;
@@ -1890,7 +1141,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     if (command === "/todo") {
       const tokens = rest.map((part) => part.toLowerCase());
       const more = tokens.length === 1 && tokens[0] === "more";
-      const prior = more ? nextTodoPageBySurface.get(surface) : undefined;
+      const prior = more ? session.nextTodoPage : undefined;
       if (more && !prior) {
         deliverCommandView("No next page. Use /todo first.");
         return true;
@@ -1903,7 +1154,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         ? prior!.appId
         : tokens.includes("all")
           ? undefined
-          : (selectedApps.get(surface) ?? conversationAppId);
+          : (session.selectedApp ?? conversationAppId);
       const page = opts.humanTasks.listTasks({
         ...(appId ? { appId } : {}),
         humanActionOnly: true,
@@ -1911,11 +1162,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         ...(prior?.cursor ? { cursor: prior.cursor } : {}),
       });
       if (page.nextCursor) {
-        nextTodoPageBySurface.set(surface, { ...(appId ? { appId } : {}), cursor: page.nextCursor });
+        session.nextTodoPage = { ...(appId ? { appId } : {}), cursor: page.nextCursor };
       } else {
-        nextTodoPageBySurface.delete(surface);
+        delete session.nextTodoPage;
       }
-      // Manual list reads do not claim or suppress automatic action delivery.
       deliverCommandView(
         renderTelegramTodos(page.items, page.total ?? page.items.length, appId, Boolean(page.nextCursor)),
         page.items.map((task) => ({ appId: task.appId, taskId: task.taskId })),
@@ -1928,8 +1178,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
 
     if (command === "/tasks") {
-      const more = rest.length === 1 && rest[0].toLowerCase() === "more";
-      const prior = more ? nextTaskPageBySurface.get(surface) : undefined;
+      const more = rest.length === 1 && rest[0]!.toLowerCase() === "more";
+      const prior = more ? session.nextTaskPage : undefined;
       if (more && !prior) {
         deliverCommandView("No next page. Use /tasks first.");
         return true;
@@ -1944,7 +1194,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         ? prior!.appId
         : tokens.includes("all")
           ? undefined
-          : (selectedApps.get(surface) ?? conversationAppId);
+          : (session.selectedApp ?? conversationAppId);
       const page = opts.humanTasks.listTasks({
         ...(appId ? { appId } : {}),
         includeDone,
@@ -1952,9 +1202,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         ...(prior?.cursor ? { cursor: prior.cursor } : {}),
       });
       if (page.nextCursor) {
-        nextTaskPageBySurface.set(surface, { ...(appId ? { appId } : {}), includeDone, cursor: page.nextCursor });
+        session.nextTaskPage = { ...(appId ? { appId } : {}), includeDone, cursor: page.nextCursor };
       } else {
-        nextTaskPageBySurface.delete(surface);
+        delete session.nextTaskPage;
       }
       deliverCommandView(
         renderTelegramTasks(page.items, includeDone, Boolean(page.nextCursor)),
@@ -1989,7 +1239,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         return true;
       }
       if (rest.length === 0) {
-        const watched = watchedTasks.get(surface);
+        const watched = session.watchedTask;
         if (!watched) deliverCommandView("No Task is watched. Use /watch <ref>.");
         else {
           const task = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
@@ -1997,12 +1247,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             task ? renderTelegramTask(task) : `Task ${watched.ref} was not found; watch ended.`,
             task ? representedTaskIdentities(task) : [],
             () => {
-              // Missing and already-terminal snapshots intentionally end the watch
-              // before delivery; their direct command reply is still canonical.
               if (!task || task.terminal) return;
-              if (watchedTasks.get(surface) !== watched) {
-                if (watchedTasks.has(surface)) {
-                  shownWatchRevisions.delete(surface);
+              if (session.watchedTask !== watched) {
+                if (session.watchedTask) {
+                  delete session.shownWatchRevision;
                   watchRefresh.queue(surface);
                 }
                 return false;
@@ -2010,17 +1258,19 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
               const revision = taskPresentationRevision(task);
               const currentTask = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
               if (!currentTask || taskPresentationRevision(currentTask) !== revision) {
-                shownWatchRevisions.delete(surface);
+                delete session.shownWatchRevision;
                 watchRefresh.queue(surface);
                 return false;
               }
-              return () => shownWatchRevisions.set(surface, revision);
+              return () => {
+                session.shownWatchRevision = revision;
+              };
             },
             task ? { appId: task.appId, taskId: task.taskId } : undefined,
             task ?? undefined,
           );
           if (!task || task.terminal) {
-            stopWatching(surface);
+            stopWatching(session);
           }
         }
         return true;
@@ -2039,26 +1289,26 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       } else {
         const topicRef = taskTopicId(task);
         const topic = topicRef
-          ? readConversationTopic(getDb(persistDir), conversationAppId, conversationId, topicRef)
+          ? readHumanConversationTopic(persistDir, conversationAppId, conversationId, topicRef)
           : null;
-        if (topic) selectedTopics.set(surface, topic);
-        else selectedTopics.delete(surface);
-        selectedApps.set(surface, task.appId);
-        watchedTasks.set(surface, {
+        if (topic) session.selectedTopic = topic;
+        else delete session.selectedTopic;
+        session.selectedApp = task.appId;
+        const watched: WatchedTaskTarget = {
           appId: task.appId,
           taskId: task.taskId,
           ref: task.ref,
           chatId: chatIdStr,
           ...(topicId === undefined ? {} : { topicId }),
-        });
-        const watched = watchedTasks.get(surface);
+        };
+        session.watchedTask = watched;
         deliverCommandView(
           `${renderTelegramTaskUpdate(task)}\n\nFollowing updates. Reply here to discuss this work. Other Tasks continue unchanged.`,
           [{ appId: task.appId, taskId: task.taskId }],
           () => {
-            if (!watched || watchedTasks.get(surface) !== watched) {
-              if (watchedTasks.has(surface)) {
-                shownWatchRevisions.delete(surface);
+            if (session.watchedTask !== watched) {
+              if (session.watchedTask) {
+                delete session.shownWatchRevision;
                 watchRefresh.queue(surface);
               }
               return false;
@@ -2066,11 +1316,13 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             const revision = taskPresentationRevision(task);
             const currentTask = opts.humanTasks.getTask({ appId: watched.appId, taskId: watched.taskId });
             if (!currentTask || taskPresentationRevision(currentTask) !== revision) {
-              shownWatchRevisions.delete(surface);
+              delete session.shownWatchRevision;
               watchRefresh.queue(surface);
               return false;
             }
-            return () => shownWatchRevisions.set(surface, revision);
+            return () => {
+              session.shownWatchRevision = revision;
+            };
           },
           { appId: task.appId, taskId: task.taskId },
           task,
@@ -2081,7 +1333,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     if (command === "/unwatch") {
       if (rest.length > 0) deliverCommandView("Use: /unwatch");
-      else if (stopWatching(surface)) {
+      else if (stopWatching(session)) {
         deliverCommandView("Stopped watching. The Task is unchanged.");
       } else deliverCommandView("No Task is watched.");
       return true;
@@ -2094,7 +1346,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         deliverCommandView("Use: /cancel [ref]");
         return true;
       }
-      const watched = watchedTasks.get(surface);
+      const watched = session.watchedTask;
       if (!rest[0] && !watched) {
         deliverCommandView("Use: /cancel <ref>, or watch a Task first.");
         return true;
@@ -2111,8 +1363,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         deliverCommandView("Task was not found; nothing was cancelled.");
         return true;
       }
-      // Persistence failures reach polling before its acknowledgment advances.
-      // After persistence, uncertain presentation must never replay the mutation.
       const receipt = opts.publishEvent({
         ...taskCancelRequestedEvent(selected, "human requested cancellation from Telegram"),
         idempotencyKey: cancellationKey,
@@ -2121,7 +1371,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       try {
         const task = opts.humanTasks.getTask({ appId: selected.appId, taskId: selected.taskId });
         if (!task) throw new Error("Task disappeared after cancellation");
-        stopWatching(surface);
+        stopWatching(session);
         deliverCommandView(renderTelegramTask(task), representedTaskIdentities(task), undefined, {
           appId: task.appId,
           taskId: task.taskId,
@@ -2134,29 +1384,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     if (command === "/start" || command === "/help") {
       queueCommandDelivery(surface, () =>
-        sendMessage(
-          chatIdStr,
-          "🤖 *May*\n\n" +
-            "Tell May what you need. Reply to an update to follow up.\n" +
-            "You can ask ‘What's still running?’ or ‘Where were we?’ without remembering IDs.\n" +
-            "Background work continues when you close Telegram.\n\n" +
-            "*Optional shortcuts:*\n" +
-            "/apps \[app\] — List or select an App\n" +
-            "/topics — List Topics; use /topics more for older pages\n" +
-            "/topic \[ref\|clear\] — Show, follow, or leave a Topic\n" +
-            "/tasks \[all\] \[history\], /tasks more — Show Tasks\n" +
-            "/todo \[all\], /todo more — Show Tasks that need your action\n" +
-            "/task <ref> — Show one Task\n" +
-            "/watch \[ref\] — Watch or show one Task\n" +
-            "/unwatch — Stop watching without changing the Task\n" +
-            "/cancel \[ref\] — Cancel a Task\n" +
-            "/help — Show this message\n\n" +
-            "Use Stop this turn to interrupt the current turn; background Tasks continue. New messages wait their turn.\n\n" +
-            "*Host administration (all Apps):*\n" +
-            "/reload — Reload Host definitions",
-          "Markdown",
-          { messageThreadId: topicId },
-        ),
+        sendMessage(chatIdStr, TELEGRAM_HELP_MARKDOWN, "Markdown", { messageThreadId: topicId }),
       );
       return true;
     }
@@ -2169,26 +1397,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         conversationId,
         command: text,
       });
-      // Completion can be durable even if recording acceptance failed. Check
-      // the exact request's result before redelivery can repeat the reload.
-      const db = getDb(persistDir);
-      const completion = db
-        .prepare(
-          `
-        SELECT e.id FROM events request
-        JOIN event_traces t ON t.parent_event_id = request.id
-        JOIN events e ON e.id = t.event_id
-        WHERE request.event_type = 'runtime.reload.requested'
-          AND request.source = 'telegram' AND request.idempotency_key = ?
-          AND e.event_type = 'runtime.reload.finished'
-        ORDER BY e.id DESC LIMIT 1
-      `,
-        )
-        .get(requestId);
+      const completion = readPersistedTelegramReloadCompletion(persistDir, {
+        idempotencyKey: requestId,
+      });
       if (completion) {
-        const event = loadPersistedEvent(db, Number(completion.id), persistDir);
-        if (!event) throw new Error("Saved reload result is unavailable");
-        showReloadResult(requestId, String(eventData(event).summary || "[reload] Finished"));
+        showReloadResult(requestId, completion.summary);
         return true;
       }
       if (resumeRecordedInput("runtime.reload.requested", requestId)) return true;
@@ -2213,30 +1426,19 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     return true;
   }
 
-  function telegramMessageText(message: any): string {
-    const text = message?.text ?? message?.caption ?? "";
-    return typeof text === "string" ? text.trim() : "";
-  }
-
-  // ── Long-polling loop ───────────────────────────────────────────
-
   async function pollLoop(): Promise<void> {
     bus.emit({
       type: "info",
       message: `[telegram] Bot started (polling). Allowed chats: ${allowedChatIds.join(", ")}`,
     });
 
-    // Verify token
     try {
       const me = await apiCall("getMe");
       if (!running) return;
       bus.emit({ type: "info", message: `[telegram] Bot: @${me.username} (${me.first_name})` });
-      // Configured chats are valid notification surfaces immediately after a
-      // restart; receiving a new message is not a prerequisite for alerts.
       for (const chatId of allowedChatIds) {
-        const surface = surfaceKey(chatId);
-        surfaces.set(surface, { chatId });
-        todoRefresh.queue(surface);
+        const session = ensureSession(chatId);
+        todoRefresh.queue(session.key);
       }
       conversationRefresh.queue(sharedConversationId);
     } catch (err) {
@@ -2261,11 +1463,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
               handleCallback(update.callback_query);
             }
             if (update.message) {
-              // Recording and local selection are synchronous, in provider order.
-              // Sends and model work never hold up another input or Stop callback.
               handleMessage(update.message);
             }
-            // A failure above leaves this update and its suffix unacknowledged.
             offset = update.update_id + 1;
           }
         }
@@ -2273,25 +1472,21 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         if (!running) break;
         const msg = err instanceof Error ? err.message : String(err);
         bus.emit({ type: "info", message: `[telegram] Poll error: ${msg}` });
-        // Back off on error
         await new Promise((r) => setTimeout(r, 5000));
       }
     }
   }
 
-  // Start polling in background
   pollLoop().catch((err) => {
     const msg = err instanceof Error ? err.message : String(err);
     bus.emit({ type: "info", message: `[telegram] Poll loop crashed: ${msg}` });
   });
 
-  // ── Cleanup ─────────────────────────────────────────────────────
-
   return {
     close: () => {
       running = false;
       telegramClient.close();
-      turnControls.clear();
+      sessions.clear();
       conversationRefresh.close();
       watchRefresh.close();
       todoRefresh.close();
