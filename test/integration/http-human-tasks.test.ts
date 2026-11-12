@@ -485,6 +485,8 @@ describe("HTTP human Task reads and board", () => {
           );
         }
         expect(await page.$$eval(".kanban-card", (cards) => cards.length)).toBe(30);
+        expect(await page.$('[data-tab="learning"]')).toBeNull();
+        expect(await page.$$eval(".tab-btn", (buttons) => buttons.map((button) => button.textContent))).not.toContain("Learning");
         await page.type("#project-task-filter", "work/34");
         expect(
           await page.$$eval(

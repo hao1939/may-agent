@@ -286,7 +286,6 @@ async function showProjectDetail(path, initialTab) {
   const totalSessionLink = (detail.sessionCount || 0) + (detail.mentionCount || 0);
   html += projectTabButton('lineage', 'Lineage', defaultProjectTab);
   html += projectTabButton('sessions', `Sessions${totalSessionLink ? ` <span style="font-size:10px;background:var(--bg);padding:1px 6px;border-radius:8px;margin-left:4px">${totalSessionLink}</span>` : ''}`, defaultProjectTab);
-  html += projectTabButton('learning', 'Learning', defaultProjectTab);
   html += `</div>`;
   html += `<div id="project-tab-content" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px"></div>`;
 
@@ -356,8 +355,6 @@ async function loadProjectTab(tab) {
       el.style.whiteSpace = 'normal'; el.style.fontFamily = 'inherit'; el.style.fontSize = '13px';
       if (window.marked?.parse) { el.innerHTML = window.marked.parse(data.content || 'No discussion yet'); el.classList.add('md-rendered'); }
       else { el.style.whiteSpace = 'pre-wrap'; el.style.fontFamily = 'monospace'; el.textContent = data.content || 'No discussion yet'; }
-    } else if (tab === 'learning') {
-      await renderProjectLearning(el);
     } else if (tab === 'kanban') {
       el.style.whiteSpace = 'normal'; el.style.fontFamily = 'inherit'; el.style.fontSize = '13px';
       await renderProjectKanban(el);

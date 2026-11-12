@@ -628,48 +628,4 @@
 .copy-btn { background: none; border: none; cursor: pointer; color: var(--fg2); font-size: 14px; }
 .copy-btn:hover { color: var(--fg); }
 
-  /* Learning dashboard */
-  .learning-toolbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
-  .learning-toolbar select { background:var(--bg2); color:var(--fg); border:1px solid var(--border); border-radius:6px; padding:6px 10px; font-size:13px; }
-  .learning-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(145px, 1fr)); gap:10px; margin-bottom:14px; }
-  .learning-card { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:11px 12px; min-width:0; }
-  .learning-card.warn { border-color:rgba(210,153,34,.55); }
-  .learning-card.bad { border-color:rgba(248,81,73,.55); }
-  .learning-card .label { color:var(--fg2); font-size:10px; text-transform:uppercase; letter-spacing:.04em; }
-  .learning-card .value { font-size:22px; line-height:1.15; font-weight:650; margin-top:3px; }
-  .learning-card .sub { color:var(--fg2); font-size:11px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .learning-layout { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:14px; align-items:start; }
-  .learning-panel { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:14px; min-width:0; }
-  .learning-panel h3 { margin:0 0 10px; font-size:13px; color:var(--fg2); text-transform:uppercase; letter-spacing:.04em; }
-  .learning-breakdown { display:grid; gap:7px; }
-  .learning-bar-row { display:grid; grid-template-columns:minmax(0,1fr) 42px; gap:8px; align-items:center; font-size:12px; }
-  .learning-bar-label { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--fg); }
-  .learning-bar-track { grid-column:1 / 2; height:5px; background:var(--bg); border-radius:999px; overflow:hidden; }
-  .learning-bar-fill { height:100%; background:var(--accent); border-radius:999px; }
-  .learning-table { width:100%; border-collapse:collapse; font-size:12px; }
-  .learning-table th { text-align:left; color:var(--fg2); font-size:10px; text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid var(--border); padding:7px 6px; }
-  .learning-table td { border-bottom:1px solid var(--border); padding:8px 6px; vertical-align:top; }
-  .learning-finding-list { display:grid; gap:10px; }
-  .learning-finding-row { display:grid; grid-template-columns:minmax(0,1fr) 230px; gap:14px; padding:12px 0; border-bottom:1px solid var(--border); }
-  .learning-finding-row:last-child { border-bottom:0; padding-bottom:0; }
-  .learning-finding-main { min-width:0; line-height:1.4; }
-  .learning-finding-main .finding-text { font-size:13px; color:var(--fg); overflow-wrap:anywhere; }
-  .learning-finding-meta { display:grid; gap:7px; align-content:start; font-size:12px; min-width:0; }
-  .learning-meta-line { display:flex; justify-content:space-between; gap:10px; min-width:0; }
-  .learning-meta-line b { color:var(--fg2); font-weight:500; white-space:nowrap; }
-  .learning-meta-line span { text-align:right; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  @media (max-width: 760px) { .learning-finding-row { grid-template-columns:1fr; } .learning-meta-line span { text-align:left; } }
-  .learning-muted { color:var(--fg2); }
-  .learning-chip { display:inline-flex; align-items:center; gap:4px; border:1px solid var(--border); border-radius:999px; padding:3px 7px; background:var(--bg); color:var(--fg2); font-size:11px; line-height:1.5; white-space:nowrap; }
   .model-chip { display:inline-flex; align-items:center; max-width:100%; background:var(--bg3,#222); color:var(--fg2); padding:3px 7px; border-radius:8px; font-size:11px; line-height:1.5; white-space:nowrap; }
-  .learning-chip.high { color:var(--red); border-color:rgba(248,81,73,.55); background:rgba(248,81,73,.08); }
-  .learning-chip.medium { color:var(--yellow); border-color:rgba(210,153,34,.5); background:rgba(210,153,34,.08); }
-  .learning-chip.low { color:var(--fg2); }
-  .learning-chip.ok { color:var(--green); border-color:rgba(63,185,80,.45); background:rgba(63,185,80,.08); }
-  .learning-actions { margin:5px 0 0; color:var(--fg2); font-size:11px; line-height:1.35; }
-  .learning-timeline { display:grid; grid-template-columns:repeat(auto-fit, minmax(44px, 1fr)); gap:5px; align-items:end; height:72px; margin-top:8px; }
-  .learning-day { display:flex; flex-direction:column; justify-content:flex-end; gap:2px; min-width:0; height:72px; }
-  .learning-day-bar { background:rgba(88,166,255,.45); border-radius:3px 3px 0 0; min-height:2px; }
-  .learning-day-bar.high { background:rgba(248,81,73,.65); }
-  .learning-day-label { color:var(--fg2); font-size:9px; text-align:center; overflow:hidden; white-space:nowrap; }
-  @media (max-width: 980px) { .learning-layout { grid-template-columns:1fr; } }
