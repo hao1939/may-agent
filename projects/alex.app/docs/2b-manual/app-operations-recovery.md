@@ -117,6 +117,9 @@ The [disposable Alex trial](../archive/reviews/connected-recovery-trial-20261112
 checks independent startup, original-result return and an owned blocker delivered
 to the caller. Its scripted choices and local source commit do not establish
 installed activation.
+The [selected installation activation](../archive/reviews/connected-recovery-trial-20261112.md#selected-installation-activation)
+records the accepted source and quiet observation; a real repair chain remains
+a separate behavior check.
 
 ## Rejected input and explicit Task reopening
 

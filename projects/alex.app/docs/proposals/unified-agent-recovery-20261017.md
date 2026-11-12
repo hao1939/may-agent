@@ -5,6 +5,12 @@
 **Choice basis:** [Understandable recovery](../1-principles/work-model.md#prefer-understandable-recovery), [simple first](../1-principles/core-principles.md#simple-first), and [recovery ownership](../2a-design/system-boundary.md#retry-and-recovery-ownership): agents judge; infra executes their decisions and records what happened.
 
 **Design status:** Hierarchical ownership agreed in review, 2026-10-17; implementation gaps and trials below remain proposed.
+**Activation, 2026-11-12:** The selected installation accepts App source
+`a886e25354`, including Alex's controller-failure correction. The
+[activation observation](../archive/reviews/connected-recovery-trial-20261112.md#selected-installation-activation)
+was quiet; installed repair judgment and the original caller outcome await a
+real failure. Disposable routing and outcome evidence remain distinct.
+
 **Implementation status:** Mechanical recovery, caller feedback and addressed escalation exist. A live incident demonstrates agent correction, Alex-to-May repair, restart continuation and result return. A scripted trial now demonstrates repair of a worker's Git setup through its saved caller with real worker subprocesses, ordinary App loading and agent tools. A second subprocess trial demonstrates a declared operational route without a caller, addressed repair return and explicit retry after exhaustion. Installed route coverage, isolation from broken App/module bootstrap, autonomous diagnosis of a startup failure, and the complete human escalation loop remain unproven. This document changes no runtime behavior.
 
 **Host foundation:** [#381](https://github.com/hao1939/may-agent/pull/381) merged

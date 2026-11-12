@@ -644,3 +644,54 @@ honest caller feedback; it does not prove sustained quietness under unchanged
 notices, arbitrary catalog/Git/storage failure repair or installed adoption.
 The next adoption check must use the selected accepted App release and verify
 its original work and caller result, preserving the shared-catalog limitation.
+
+## Selected installation activation
+
+Hao explicitly approved **Activate and observe** after the candidate preflight.
+The trusted control interface accepted reload request Event **6710084**;
+`runtime.reload.finished` Event **6710086** records `ok: true` and exact App source
+`a886e253541a1327251247f61b8aa3d6b9ca2602`. The accepted release pointer and ordinary
+App reads confirm that source with Alex, May and Scout installed. Eight profiles
+were refreshed by the complete generation; no Host restart, injected incident or
+business request was issued by this activation work.
+
+The disposable preflight staged the exact Git tree, excluding uncommitted edits.
+It loaded the selected catalog and checked retrying, non-retrying and older
+controller notices against one investigation identity. May and Scout manifests
+were unchanged; Alex's route is the only changed production TypeScript module.
+Authored documentation and tests also changed. Generated runtime-module caches
+inside the older snapshot were excluded from the authored-source comparison.
+The first attempt used an unsupported `reload` socket frame and received a
+confirmed rejection; activation then used the documented, keyed
+`runtime.reload.requested` publication. Only the accepted publication initiated
+reload, and its result was read back rather than inferred from admission.
+
+The Host initially reported **v5.6.0 / `0fc8ceba`**. A separate rollout subsequently
+ran the existing supervisor restarter, briefly removed the control socket and
+changed the binary to **v5.6.0 / `51cb1867`** (Host #463). The App source remained
+accepted. Observation resumed against one stable daemon after that restart;
+this extension did not issue or authorize that separate Host operation. The
+new revision leaves the Task/SDK recovery contracts intact; its nearby runtime
+change lets a caller supply already-read project metadata.
+
+Seven read-only samples over **190.52 seconds** confirmed the same App
+source and daemon process, with zero queued or running Tasks, no new agent
+starts, reconciliations, controller/subscriber failures or operational recovery
+Tasks, and zero reported process SQL failures. The affected App suites also
+passed against Host `51cb1867`: **34 tests / 291 assertions / zero failures** in
+**35.58 seconds**. The complete original repair chain did not occur naturally
+in this quiet window, so activation is established but installed repair judgment
+and original caller delivery remain unobserved.
+
+Ordinary reads still show **six Scout attention Tasks** from November 7 blocked
+by XHS login access. They are business prerequisites outside this controller
+route correction, not new work from activation or execution queue pressure.
+Their existing owner/caller must decide whether to obtain authorized access or
+accept a supported disposition for the finite request. This observation neither
+retries nor closes them.
+
+`activation-preflight-summary.json`, keyed reload receipt/result, the interrupted
+and final observation records, supervisor output, attention reads and the
+post-rollout App test log remain in the external evidence directory. The next
+behavior acceptance uses a real future failure and its original caller; no
+historical diagnostic is replayed as new work solely to demonstrate the route.
