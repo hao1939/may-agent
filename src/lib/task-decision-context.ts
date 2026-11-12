@@ -48,16 +48,35 @@ function previewTaskInputEvent(value: unknown, pointer: string): unknown {
   const item = record(value);
   const event = record(item?.event);
   const data = record(event?.data);
+  if (!item || !event || !data) return preview(value, INPUT_EVENT_BYTES, pointer);
+
   const request = record(data?.request);
   const input = record(request?.input ?? data?.input);
-  if (!item || !event || !data || !input) return preview(value, INPUT_EVENT_BYTES, pointer);
+  if (!input) {
+    // Non-request events (e.g. dependency returns, review reports, observations)
+    // still preserve their envelope identity and a dedicated data budget/pointer.
+    const candidate = {
+      omitted: true,
+      pointer,
+      preview: {
+        ...(item.eventId === undefined ? {} : { eventId: item.eventId }),
+        observedAt: item.observedAt,
+        event: {
+          type: event.type,
+          ...(event.target === undefined ? {} : { target: event.target }),
+          data: preview(data, INPUT_CONTENT_BYTES, `${pointer}/event/data`),
+        },
+      },
+    };
+    return bytes(candidate) <= INPUT_EVENT_BYTES ? candidate : preview(value, INPUT_EVENT_BYTES, pointer);
+  }
 
   const inputPointer = `${pointer}/event/data/${request ? "request/input" : "input"}`;
   const inputPreview = {
     kind: input.kind,
     data: preview(input.data, INPUT_CONTENT_BYTES, `${inputPointer}/data`),
   };
-  return {
+  const candidate = {
     omitted: true,
     pointer,
     preview: {
@@ -74,6 +93,7 @@ function previewTaskInputEvent(value: unknown, pointer: string): unknown {
       },
     },
   };
+  return bytes(candidate) <= INPUT_EVENT_BYTES ? candidate : preview(value, INPUT_EVENT_BYTES, pointer);
 }
 
 function previewTaskInputItems(value: unknown, pointer: string): unknown {

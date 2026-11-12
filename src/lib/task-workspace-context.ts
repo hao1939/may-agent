@@ -10,6 +10,56 @@ export type TaskWorkspaceBrief = { taskFile: string } | { error: string };
 
 const key = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const pathRef = (path: string) => `${JSON.stringify(path)}${existsSync(path) ? "" : " (not present)"}`;
+const asRecord = (value: unknown): Record<string, unknown> | undefined =>
+  value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
+
+const cleanLabel = (value: string, max = 96): string =>
+  value.replace(/[\r\n`]+/g, " ").trim().slice(0, max) || "empty";
+
+function summarizeInputEntry(entry: unknown, pointer: string): string {
+  const item = asRecord(entry);
+  const event = asRecord(item?.event);
+  const data = asRecord(event?.data);
+  const request = asRecord(data?.request);
+  const input = asRecord(request?.input ?? data?.input);
+  const eventType = typeof event?.type === "string" ? cleanLabel(event.type, 80) : "unknown";
+  const rawId =
+    (typeof request?.id === "string" && request.id) ||
+    (typeof data?.idempotencyKey === "string" && data.idempotencyKey) ||
+    (typeof data?.requestId === "string" && data.requestId) ||
+    (typeof item?.eventId === "number" ? `eventId:${item.eventId}` : "unidentified");
+  const id = cleanLabel(rawId, 96);
+  const kind = typeof input?.kind === "string" ? ` (kind: ${cleanLabel(input.kind, 48)})` : "";
+  return `- \`${pointer}\` — ${eventType} \`${id}\`${kind}`;
+}
+
+function renderInputScopeSection(
+  contextJsonPath: string,
+  rec: TaskExecutionContext["reconciliation"],
+): string[] {
+  const items = rec.events.items ?? [];
+  const continued = rec.events.continuedInputs ?? [];
+  const pendingWindow = rec.task.pendingEvents;
+  const pendingSummary = pendingWindow
+    ? `${pendingWindow.items.length}${pendingWindow.truncated ? " (truncated)" : ""}`
+    : "unavailable";
+  const lines = [
+    "## Assigned vs. pending input",
+    `Full bodies live in ${JSON.stringify(contextJsonPath)}. Assigned events were already claimed out of pendingEvents, so \`pendingEvents: []\` on a fresh Task read does NOT mean assigned work is empty:`,
+    `- Assigned new events (\`/reconciliation/events/items\`): ${items.length}${rec.events.truncated ? " (truncated)" : ""}`,
+    ...items.slice(0, 8).map((entry, idx) => summarizeInputEntry(entry, `/reconciliation/events/items/${idx}`)),
+    ...(items.length > 8 ? [`- ...and ${items.length - 8} more in \`/reconciliation/events/items\``] : []),
+    `- Assigned continuing inputs (\`/reconciliation/events/continuedInputs\`): ${continued.length}`,
+    ...continued
+      .slice(0, 8)
+      .map((entry, idx) => summarizeInputEntry(entry, `/reconciliation/events/continuedInputs/${idx}`)),
+    ...(continued.length > 8
+      ? [`- ...and ${continued.length - 8} more in \`/reconciliation/events/continuedInputs\``]
+      : []),
+    `- Unclaimed pending input at attempt start (\`/reconciliation/task/pendingEvents/items\`): ${pendingSummary}`,
+  ];
+  return lines;
+}
 
 /** A per-attempt navigation projection. No state transitions or live capability serialization. */
 export function prepareTaskWorkspaceContext(
@@ -66,6 +116,8 @@ export function prepareTaskWorkspaceContext(
       "## Current work at attempt start",
       taskWorkGuidance(work),
       JSON.stringify(work, null, 2),
+      "",
+      ...renderInputScopeSection(join(root, "context.json"), rec),
       ...(rec.workload ? ["", "## Workload at attempt start", taskWorkloadGuidance(rec.workload), "Read reconciliation.workload in context.json for the scoped observation supplied to this attempt."] : []),
       "",
       "## Full context and discovery",

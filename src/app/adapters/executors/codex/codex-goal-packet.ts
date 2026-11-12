@@ -2,7 +2,7 @@ import type { TaskAttempt } from "@may-agent/sdk/app";
 import { join } from "node:path";
 import { writeContentAddressedJson } from "../../../../lib/artifacts.js";
 import { taskDecisionState, previewTaskDecisionSections } from "../../../../lib/task-decision-context.js";
-import { taskWorkloadGuidance } from "../../../../lib/task-work-context.js";
+import { taskWorkContext, taskWorkGuidance, taskWorkloadGuidance } from "../../../../lib/task-work-context.js";
 
 export const MAX_CODEX_GOAL_OBJECTIVE_CHARS = 4_000;
 const CODEX_ATTEMPT_PACKET_MARKER = "## Canonical May Task Attempt\n";
@@ -21,6 +21,7 @@ export function projectCanonicalTaskAttempt(attempt: TaskAttempt) {
     },
     observed: { snapshot: "attempt-start", resourceVersion: attempt.task.resourceVersion },
     ...taskDecisionState(attempt.task, attempt.events, attempt.workload),
+    work: taskWorkContext(attempt.task, attempt.events, attempt.previousAttempt),
     role: attempt.role,
     related: { childrenAtAttemptStart: attempt.children },
     waitsAtAttemptStart: attempt.waits,
@@ -40,7 +41,7 @@ export function renderCodexGoalTaskAttempt(
   const prefix = `Achieve May Task ${packet.identity.appId}/${packet.identity.taskId} generation ${packet.identity.generation}: `;
   const outcomeChars = Math.max(0, MAX_CODEX_GOAL_OBJECTIVE_CHARS - prefix.length);
   const goalObjective = `${prefix}${packet.assignment.outcome.slice(0, outcomeChars)}`;
-  const { identity, observed, role, contract, ...full } = packet;
+  const { identity, observed, role, work, contract, ...full } = packet;
   const sections = previewTaskDecisionSections(full);
   // Only omitted context needs a file. Fail visibly before starting a provider
   // if its required detail cannot be saved, rather than sending unusable pointers.
@@ -52,6 +53,7 @@ export function renderCodexGoalTaskAttempt(
     identity,
     observed,
     role,
+    work,
     ...sections,
     contract,
     coverage: {
@@ -68,6 +70,7 @@ export function renderCodexGoalTaskAttempt(
       "Return only after acceptance is supported or an exact external wait is identified.",
       "Return only a result accepted by the supplied resultSchema.",
       "Follow the Task's authorized scope and the installation's execution permissions; available tools do not grant additional authority.",
+      taskWorkGuidance(packet.work),
       ...(packet.workloadAtAttemptStart ? [taskWorkloadGuidance(packet.workloadAtAttemptStart)] : []),
       "Progress commentary may become a durable Task event, so omit secret values, raw command output, tool payloads, and diffs.",
       "",

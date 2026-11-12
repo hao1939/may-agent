@@ -177,6 +177,9 @@ describe("Codex goal Task context", () => {
     expect(packet.coverage.detail).toBeUndefined();
     expect(packet.assignment.outcome).toBe(attempt().task.outcome);
     expect(packet.assignment.agent).toBe("evaluator");
+    expect(packet.work.assignedAtStart).toEqual({ newEvents: 0, continuingInputs: 0, moreEvents: false });
+    expect(packet.work.pendingUnclaimed).toEqual({ available: false });
+    expect(small.developerInstructions).toContain("empty pendingEvents / pendingInput window NEVER means");
   });
 });
 

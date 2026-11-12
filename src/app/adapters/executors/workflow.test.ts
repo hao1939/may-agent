@@ -82,3 +82,61 @@ export function execute() { throw new Error("Must not execute during lookup"); }
   writeFileSync(path, 'export const name = "verify";');
   expect((await inspect()).available).toBeFalse();
 });
+
+it("includes carried-over continuedInputs under Assigned Attempt Input even when new items is empty", async () => {
+  const root = mkdtempSync(join(tmpdir(), "task-workflow-continued-"));
+  roots.push(root);
+  const workflowDir = join(root, "owner", "workflows");
+  mkdirSync(workflowDir, { recursive: true });
+  let observedPrompt = "";
+  writeFileSync(
+    join(workflowDir, "check-input.ts"),
+    `
+export const name = "check-input";
+export const description = "Reads legacy task string and reconciliation events";
+export async function execute(ctx) {
+  return ctx.done("checked", { state: "converged", summary: "checked", facts: [String(ctx.reconciliation?.events.continuedInputs?.length ?? 0)] });
+}`,
+  );
+  const bus = new EventBus();
+  const runner = createTaskWorkflowRunner({ manager: {} as never, bus });
+  await runner.execute({
+    source: { projectsRoot: root, projectRoot: root, persistDir: root, agentsRoot: root, sharedRoot: join(root, "shared") },
+    descriptor: { id: "fixture", appDir: join(root, "sample.app"), projectDir: root, app: {} },
+    capability: { workflow: "check-input", task: "Check carried input" },
+    handler: "workflow:check-input",
+    executionPaths: { appDir: root, projectDir: root, workspaceDir: root },
+    childContext: { live: [], completed: [] },
+    taskSnapshot: { live: [], truncated: false },
+    taskEvents: {},
+    executionTimeoutMs: 5000,
+    attempt: {
+      read: { tasks: {} },
+      task: {
+        id: "review",
+        generation: 1,
+        status: "running",
+        outcome: "Review",
+        acceptance: ["Checked"],
+        input: {},
+        pendingEvents: { items: [], truncated: false },
+      },
+      attemptId: "attempt-continued",
+      role: { agent: "owner" },
+      resourceVersion: 2,
+      events: {
+        items: [],
+        truncated: false,
+        continuedInputs: [{ observedAt: "2026-11-12T00:00:00Z", event: { type: "app.input.requested", data: { id: "c1" } } }],
+      },
+      waits: { open: [], note: "none" },
+      children: { live: [], completed: [] },
+      declaredOutputPaths: [],
+      signal: new AbortController().signal,
+      onEvent: () => () => {},
+    },
+  } as unknown as TaskWorkflowInput);
+  observedPrompt = getWorkflowRun(root, (await import("../../../lib/db/workflows.js")).listWorkflowRunIds(root)[0]!)!.task;
+  expect(observedPrompt).toContain("## Assigned Attempt Input");
+  expect(observedPrompt).toContain('"continuedInputs"');
+});

@@ -148,6 +148,19 @@ export type TaskDetail = TaskView & {
     startedAt: string;
     finishedAt?: string;
   };
+  /** Running attempt that already claimed its initial batch from pendingEvents. */
+  activeAttempt?: {
+    id: string;
+    generation: number;
+    startedAt: string;
+    assignedInput: {
+      newEvents: number;
+      continuingInputs: number;
+      truncated: boolean;
+      continuedInputKeys?: string[];
+      continuedInputKeysTruncated?: true;
+    };
+  };
   parentId: string;
 
   acceptance: string[];

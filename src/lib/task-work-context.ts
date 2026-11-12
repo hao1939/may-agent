@@ -20,6 +20,13 @@ export function taskWorkContext(
       continuingInputs: events.continuedInputs?.length ?? 0,
       moreEvents: events.truncated,
     },
+    pendingUnclaimed: task.pendingEvents
+      ? {
+          available: true as const,
+          newEvents: task.pendingEvents.items.length,
+          moreEvents: task.pendingEvents.truncated,
+        }
+      : { available: false as const },
     retainedInputs: obligations?.available
       ? {
           available: true,
@@ -49,9 +56,13 @@ export function taskWorkContext(
 }
 
 export function taskWorkGuidance(work: ReturnType<typeof taskWorkContext>): string {
+  const unclaimedSummary = work.pendingUnclaimed.available
+    ? `Unclaimed pendingEvents currently has ${work.pendingUnclaimed.newEvents} arrived event(s).`
+    : "Unclaimed pendingEvents is unavailable in this snapshot.";
   return [
-    `This attempt's starting assignment includes ${work.assignedAtStart.newEvents} new events and ${work.assignedAtStart.continuingInputs} earlier unanswered inputs.`,
-    "Both belong to the owning Task's work; your call still defines your contribution. Empty new events do not make earlier unanswered inputs history-only. Read relevant content and judge what remains against accepted work; reuse verified work without repeating its effects.",
+    `This attempt's starting assignment includes ${work.assignedAtStart.newEvents} new events and ${work.assignedAtStart.continuingInputs} earlier unanswered inputs. ${unclaimedSummary}`,
+    "Assigned input (attemptInput / reconciliation.events) was claimed for this attempt and removed from pendingEvents; an empty pendingEvents / pendingInput window NEVER means this attempt has no assigned review, correction or continuing input.",
+    "Both new events and earlier unanswered inputs belong to the owning Task's work; your call still defines your contribution. Read relevant content (following detail/context.json pointers when omitted) and judge what remains against accepted work; reuse verified work without repeating its effects.",
     "Previous result coverage applies only to that result. Converged answers its covered inputs; waiting/incomplete retain them. Missing coverage is unknown, not zero. An empty scope can retain useful partial work; remaining pending inputs can schedule another attempt.",
     "Retained input counts describe the current read and may be truncated or unavailable. They are not a progress score or a total including unclaimed input. An accepted attempt is not completion of every Task obligation.",
   ].join("\n");
