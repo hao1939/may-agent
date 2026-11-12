@@ -127,12 +127,14 @@ node -e '
   if (pi.providers["may-openai"].baseUrl !== "https://models.example.test/v1") process.exit(1);
   if (settings.defaultProvider !== "may-openai") process.exit(1);
   if (gemini.model.name !== "gemini-fixture" || gemini.tools.sandbox !== false) process.exit(1);
+  if (gemini.modelConfigs.modelIdResolutions.gemini4.default !== "gemini-4-argon") process.exit(1);
 '
 grep -q 'decision = "allow"' "$HOME/.gemini/policies/full-access.toml"
 RUNTIME_CHECK
 chmod 755 "$runtime_root/runtime-check.sh"
 runtime_container_id=$(docker create --network none --user root \
   --tmpfs /tmp:mode=1777 \
+  --env PATH=/usr/local/bin:/usr/bin:/bin \
   --env MODEL_BASE_URL=https://models.example.test \
   --env MODEL_API_KEY=ci-fixture-key \
   --env GEMINI_MODEL=gemini-fixture \
@@ -144,7 +146,7 @@ runtime_container_id=$(docker create --network none --user root \
     source /usr/local/bin/setup-codex-config.sh
     source /usr/local/bin/setup-pi-config.sh
     source /usr/local/bin/setup-gemini-config.sh
-    runuser -u mayagent -- /runtime-check.sh
+    /usr/sbin/runuser -u mayagent -- /runtime-check.sh
   ')
 docker cp "$runtime_root/runtime-check.sh" "$runtime_container_id:/runtime-check.sh"
 docker start --attach "$runtime_container_id" | tee test-results/runtime-user.txt

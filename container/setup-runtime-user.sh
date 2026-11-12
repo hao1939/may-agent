@@ -30,10 +30,10 @@ if [ "$(id -u)" = "0" ]; then
   current_uid="$(id -u "${runtime_user}")"
   current_gid="$(id -g "${runtime_user}")"
   if [ "${current_gid}" != "${configured_gid}" ]; then
-    groupmod --non-unique --gid "${configured_gid}" "${runtime_user}"
+    /usr/sbin/groupmod --non-unique --gid "${configured_gid}" "${runtime_user}"
   fi
   if [ "${current_uid}" != "${configured_uid}" ] || [ "${current_gid}" != "${configured_gid}" ]; then
-    usermod --non-unique --uid "${configured_uid}" --gid "${configured_gid}" "${runtime_user}"
+    /usr/sbin/usermod --non-unique --uid "${configured_uid}" --gid "${configured_gid}" "${runtime_user}"
   fi
 elif [ "$(id -u)" != "${configured_uid}" ] || [ "$(id -g)" != "${configured_gid}" ]; then
   echo "May runtime is already non-root as $(id -u):$(id -g), but mounted ownership requires ${configured_uid}:${configured_gid}. Start as root so the entrypoint can align mayagent, or set matching MAY_RUNTIME_UID/MAY_RUNTIME_GID." >&2
@@ -55,7 +55,7 @@ if [ "$(id -u)" = "0" ]; then
 fi
 
 if [ "$(id -u)" = "0" ]; then
-  path_accessible() { runuser -u "${runtime_user}" -- test -r "$1" -a -w "$1" -a -x "$1"; }
+  path_accessible() { /usr/sbin/runuser -u "${runtime_user}" -- test -r "$1" -a -w "$1" -a -x "$1"; }
 else
   path_accessible() { test -r "$1" -a -w "$1" -a -x "$1"; }
 fi

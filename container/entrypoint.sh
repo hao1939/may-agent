@@ -61,7 +61,7 @@ source /usr/local/bin/setup-gemini-config.sh
 # their config files. The hooks record native conversation IDs so Herdr can
 # resume Codex, Claude, and Pi panes after its server (or container) restarts.
 if [ "$(id -u)" = "0" ] && id mayagent >/dev/null 2>&1; then
-  runuser -u mayagent -- env \
+  /usr/sbin/runuser -u mayagent -- env \
     HOME="${HOME}" \
     PI_CODING_AGENT_DIR="${PI_CODING_AGENT_DIR}" \
     /usr/local/bin/setup-herdr-integrations.sh
