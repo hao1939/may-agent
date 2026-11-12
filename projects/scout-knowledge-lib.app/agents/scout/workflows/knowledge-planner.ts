@@ -405,7 +405,9 @@ Operating rules:
 - Do not create ceremonial project/control tasks.
 - The Host is the sole task-state mutation authority. Never edit task JSON,
   call private task mutation commands, or write task state through a database.
-  Return changes to existing child Tasks through typed actions in \`finish\`.
+  Revise existing child requirements through \`tasks update\`, not result actions.
+  After consuming a finite child's accepted result, use \`tasks close\` with a
+  current exact read, generation, resource version and accepted attempt ID.
   For independent work, return at most one bounded Scout goal in \`requests\`:
   {id: "stable-purpose", appId: "scout-knowledge-lib", input: {kind: "goal",
   data: {outcome: "bounded result", acceptance: ["proof required"], context: "relevant facts and constraints"}}}.
@@ -450,7 +452,9 @@ Operating rules:
   the agent call unsuccessful and causes handler-blocked retries.
   This exception does not make unresolved work successful. If acceptance still
   requires the external work, retain a real \`waiting\` result with a supported
-  Condition or known return route; with no return route, return \`incomplete\`
+  exact Condition, or \`continue: true\` when another bounded pass has useful work.
+  A caller route described only in prose is not a durable wait. With neither,
+  return \`incomplete\`
   with evidence and the help needed. Never infer permission to converge merely
   from a blocker, repeated retries, or a lack of available tools.
   Otherwise use \`converged\` only after fulfilling the bounded work. Runtime
@@ -470,7 +474,22 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
     timeoutMs: 1_800_000,
     schema: taskAgentResultSchema,
   });
-  if (result.status !== "done") {
+  const admitted = admitTaskReconcileResult(result.output);
+  const finish = result.facts;
+  const partialFinish =
+    finish &&
+    typeof finish === "object" &&
+    "status" in finish &&
+    finish.status === "partial";
+  // A partial call can return a valid contribution without fulfilling the Task.
+  // Preserve its ordinary wait/incomplete decision; never promote partial work
+  // to convergence or accept an output from a failed execution.
+  const partialContribution =
+    partialFinish &&
+    (result.status === "done" || result.status === "blocked") &&
+    admitted.ok &&
+    admitted.result.state !== "converged";
+  if (result.status !== "done" && !partialContribution) {
     return ctx.blocked("Scout owner maintenance session failed", {
       executionId: result.id,
       status: result.status,
@@ -479,13 +498,7 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
     });
   }
 
-  const finish = result.facts;
-  if (
-    finish &&
-    typeof finish === "object" &&
-    "status" in finish &&
-    finish.status === "partial"
-  ) {
+  if (partialFinish && !partialContribution) {
     return ctx.blocked("Scout owner maintenance is incomplete", {
       executionId: result.id,
       summary: result.summary,
@@ -493,7 +506,6 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
       ...candidateFailureDetails(),
     });
   }
-  const admitted = admitTaskReconcileResult(result.output);
   if (!admitted.ok) {
     return ctx.blocked("Scout owner maintenance returned an invalid result", {
       executionId: result.id,
@@ -541,7 +553,13 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
           });
     if (retained) return ctx.done(retained.summary, retained);
     if (recovery && error instanceof KnowledgePublicationError) {
-      return reviewPublicationFailure(ctx, error, result.id, recovery, agentResult);
+      return reviewPublicationFailure(
+        ctx,
+        error,
+        result.id,
+        recovery,
+        agentResult,
+      );
     }
     return ctx.blocked("Scout maintenance was not published", {
       executionId: result.id,

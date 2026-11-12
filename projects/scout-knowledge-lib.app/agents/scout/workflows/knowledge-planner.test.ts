@@ -119,7 +119,7 @@ describe("Scout owner reconciliation boundary", () => {
           "do not claim it was applied, activated, or verified",
         );
         expect(guidance).toContain(
-          "If acceptance still requires the external work, retain a real `waiting` result with a supported Condition or known return route; with no return route, return `incomplete`",
+          "If acceptance still requires the external work, retain a real `waiting` result with a supported exact Condition, or `continue: true` when another bounded pass has useful work",
         );
         expect(guidance).toContain(
           "Never infer permission to converge merely from a blocker, repeated retries, or a lack of available tools",
@@ -951,7 +951,76 @@ describe("Scout owner reconciliation boundary", () => {
   });
 
   it.each([
+    { status: "blocked", state: "waiting" },
+    { status: "done", state: "waiting" },
+    { status: "blocked", state: "incomplete" },
+    { status: "done", state: "incomplete" },
+  ] as const)(
+    "retains an ordinary partial contribution without claiming fulfillment: %j",
+    async ({ status, state }) => {
+      const fixture = publicationTestFixture();
+      const head = fixture.git("rev-parse", "HEAD");
+      const emitted: unknown[] = [];
+      const output = {
+        state,
+        summary: "Child assignments corrected; their results are still owed.",
+        inputKeys: ["task:original-owner-request"],
+        facts: ["same child identities revised; original caller retained"],
+        ...(state === "waiting" ? { continue: true } : {}),
+      };
+      try {
+        const result = await execute(
+          createTestAppWorkflowContext({
+            reconciliation: {
+              appId: "scout-knowledge-lib",
+              taskId: "goal/owner-follow-through",
+              generation: 1,
+              resourceVersion: 1,
+              agent: "scout",
+              outcome:
+                "Consume child results and perform guarded creator closure",
+              acceptance: ["Return all original child results"],
+              input: { kind: "goal", data: {} },
+              children: { live: [], completed: [] },
+              events: { items: [], truncated: false },
+            },
+            workspace: fixture.workspace,
+            callAgent: (async () => ({
+              id: "s_owner_partial",
+              kind: "agent",
+              status,
+              facts: { status: "partial", next_steps: "Consume child results" },
+              output,
+            })) as WorkflowContext["agents"]["call"],
+            emit: async (event) => {
+              emitted.push(event);
+            },
+          }),
+        );
+        expect(result).toMatchObject({
+          status: "done",
+          output: { ...output, facts: expect.arrayContaining(output.facts) },
+        });
+        expect(emitted).toEqual([
+          expect.objectContaining({
+            type: "project.knowledge.maintained",
+            data: expect.objectContaining({
+              state,
+              facts: expect.arrayContaining(output.facts),
+            }),
+          }),
+        ]);
+        expect(fixture.git("rev-parse", "HEAD")).toBe(head);
+        expect(fixture.git("status", "--porcelain")).toBe("");
+      } finally {
+        rmSync(fixture.repositoryRoot, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it.each([
     { status: "blocked", facts: undefined },
+    { status: "error", facts: { status: "partial" } },
     {
       status: "done",
       facts: { status: "partial", next_steps: "Finish the review" },
@@ -997,8 +1066,8 @@ describe("Scout owner reconciliation boundary", () => {
       expect(result.status).toBe("blocked");
       expect(result.facts).toMatchObject({
         executionId: "s_blocked",
-        ...(execution.status === "blocked"
-          ? { status: "blocked" }
+        ...(execution.status !== "done"
+          ? { status: execution.status }
           : { finish: execution.facts }),
       });
       expect(emitted).toEqual([]);
