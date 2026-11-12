@@ -310,7 +310,7 @@ describe("HTTP human Task reads and board", () => {
       await submitted;
       expect(published[0]).toMatchObject({ type: "session.steer.requested", target: { sessionId }, data: { message: "Intervening input" } });
       expect(await page.$eval("#chat-messages", el => el.textContent)).not.toContain("Intervening input");
-      expect(await page.$eval("#chat-status", el => el.textContent)).toContain("Message sent");
+      await page.waitForFunction(() => document.querySelector("#chat-status")?.textContent?.includes("Message accepted"));
       appendSessionMessage(root, sessionId, { role: "user", content: published[0].data.message, timestamp: Date.now() });
       appendSessionMessage(root, sessionId, { role: "assistant", content: [{ type: "text", text: "Saved response" }], timestamp: Date.now() });
       for (const listener of listeners) listener({ type: "turn_end", data: { sessionId } });
@@ -326,6 +326,80 @@ describe("HTTP human Task reads and board", () => {
       await reconnect(page);
       await page.waitForFunction(() => document.querySelector("#chat-messages")?.textContent?.includes("Next saved turn"));
       expect(await page.$$eval("#chat-messages .assistant-text", els => els.map(el => el.textContent))).toEqual(["Saved response", "Next saved turn"]);
+    } finally { await browser.close(); }
+  }, 30000);
+
+  test.skipIf(skipBrowser)("direct chat keeps saved history and rejected drafts, and publishes without its notification socket", async () => {
+    const sessionId = seedChat("worker");
+    ensureSessionDir(root, sessionId);
+    appendSessionMessage(root, sessionId, { role: "user", content: "Keep this saved history", timestamp: Date.now() });
+    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    try {
+      const page = await browser.newPage();
+      page.setDefaultTimeout(5000);
+      await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction(() => document.querySelector("#chat-messages")?.textContent?.includes("Keep this saved history"));
+      let capturePublish: ((request: HTTPRequest) => void) | null = null;
+      let publishRequests = 0;
+      await page.setRequestInterception(true);
+      page.on("request", request => {
+        const path = new URL(request.url()).pathname;
+        if (path === "/api/agents/worker/default-session") return void request.abort("failed");
+        if (path === "/api/events") {
+          publishRequests++;
+          if (capturePublish) { capturePublish(request); capturePublish = null; return; }
+        }
+        void request.continue();
+      });
+      await page.evaluate("loadAgentChatThread('worker')");
+      expect(await page.$eval("#chat-status", el => el.textContent)).toContain("Default thread unavailable");
+      expect(await page.$eval("#chat-messages", el => el.textContent)).toContain("Keep this saved history");
+      await page.evaluate("setRealtimeEnabled(false)");
+      expect(await page.evaluate("ws")).toBeNull();
+      rejectPublish = true;
+      await page.type("#chat-input", "Keep this draft until acceptance");
+      await page.click("#chat-send");
+      await page.waitForFunction(() => document.body.textContent?.includes("Message was not confirmed"));
+      expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("Keep this draft until acceptance");
+      rejectPublish = false;
+      const intercepted = new Promise<HTTPRequest>(resolveRequest => { capturePublish = resolveRequest; });
+      await page.click("#chat-send");
+      const held = await intercepted;
+      await page.click("#chat-send"); // An unchanged draft already awaiting admission.
+      await page.$eval("#chat-input", el => { (el as HTMLInputElement).value = "A different next draft"; });
+      await held.continue();
+      await page.waitForFunction(() => document.querySelector("#chat-status")?.textContent?.includes("Message accepted"));
+      expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("A different next draft");
+      expect(publishRequests).toBe(2);
+      expect(published).toHaveLength(2); // A failed admission attempt, then acceptance.
+      expect(published[0].idempotencyKey).toBe(published[1].idempotencyKey);
+      expect(published[1]).toMatchObject({ type: "session.steer.requested", target: { sessionId } });
+      expect(await page.$eval("#chat-messages", el => el.textContent)).not.toContain("Keep this draft until acceptance");
+      await page.click("#chat-send");
+      await page.waitForFunction(() => document.querySelector<HTMLInputElement>("#chat-input")?.value === "");
+      expect(published).toHaveLength(3);
+      expect(published[2].idempotencyKey).not.toBe(published[1].idempotencyKey);
+      expect(published[2].data.message).toBe("A different next draft");
+    } finally { await browser.close(); }
+  }, 30000);
+
+  test.skipIf(skipBrowser)("rejected fresh chat keeps its draft and Reset intent", async () => {
+    seedChat("worker");
+    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    try {
+      const page = await browser.newPage();
+      page.setDefaultTimeout(5000);
+      await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction("currentSessionId === 'worker-old-session'");
+      await page.click('#agents-content button[onclick="resetAgentChat(\'worker\')"]');
+      rejectPublish = true;
+      await page.type("#chat-input", "Fresh chat draft");
+      await page.click("#chat-send");
+      await page.waitForFunction(() => document.body.textContent?.includes("Message was not confirmed"));
+      expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("Fresh chat draft");
+      expect(await page.evaluate("forceNewAgentChat")).toBe(true);
+      expect(await page.evaluate("currentSessionId")).toBeNull();
+      expect(published).toMatchObject([{ type: "chat.start.requested", data: { agent: "worker", forceNew: true } }]);
     } finally { await browser.close(); }
   }, 30000);
 

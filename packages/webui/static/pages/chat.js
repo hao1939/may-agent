@@ -40,25 +40,13 @@ let currentSessionId = null;
 // Routes, subtabs, resets and explicit selections invalidate pending chat work.
 let chatSelectionVersion = 0;
 let chatTranscript = null;
+let chatPendingInput = null;
 let sessionRefreshTimer = null;
 let chatAutoScroll = true;
 
 function clearChatTranscript() {
   clearTimeout(chatTranscript?.timer);
   chatTranscript = null;
-}
-
-function sendIntent(type, data, extra) {
-  const target = extra?.target;
-  ws.send(JSON.stringify({
-    type: 'publish',
-    event: {
-      type,
-      ...(target ? { target } : {}),
-      data,
-      idempotencyKey: `web-ui:${crypto.randomUUID()}`,
-    },
-  }));
 }
 
 function toggleChatScroll() {
@@ -425,62 +413,69 @@ function connectWs() {
   };
 }
 
-function sendChat() {
-  if (currentAgentChat === humanInterface.agent && !isSessionPageMode() && !humanInterface.appId) {
-    toast("No Conversation App is configured");
+async function sendChat() {
+  if (isMayConversation()) return sendMayConversation();
+  const input = document.getElementById('chat-input');
+  const draft = input.value;
+  const message = draft.trim();
+  if (!message) return;
+  const route = currentRouteParams;
+  const name = isAgentChatActive(currentAgentChat) ? currentAgentChat : null;
+  const sessionId = isSessionPageMode() ? currentRouteParams.id : currentSessionId;
+  if (!sessionId && (!name || name === humanInterface.agent) && !humanInterface.appId) {
+    toast('No Conversation App is configured');
     return;
   }
-  if (isMayConversation()) { void sendMayConversation(); return; }
-  const input = document.getElementById('chat-input');
-  const msg = input.value.trim();
-  if (!msg || !ws || ws.readyState !== 1) return;
-  let pending;
-
-  // Show transport feedback separately from the saved transcript. Local
-  // echoes and event payloads must not create a second conversation history.
-  if (!chatAutoScroll) toggleChatScroll();
-
-  const sessionId = isSessionPageMode() ? currentRouteParams.id : currentSessionId;
-  if (sessionId) {
-    // Steer the selected session (works for running, idle, and — via 3b
-    // cold-resume — done/error/interrupted sessions too).
-    sendIntent(
-      'session.steer.requested',
-      { message: msg },
-      { target: { sessionId } },
-    );
-  } else if (currentAgentChat && currentAgentChat !== humanInterface.agent) {
-    // Telegram-style: agent chat with no session yet. POST spawns one.
-    const newParam = forceNewAgentChat ? '?new=true' : '';
-    const name = currentAgentChat;
-    const selection = ++chatSelectionVersion;
-    forceNewAgentChat = false;
-    pending = fetch('/api/agents/' + encodeURIComponent(name) + '/message' + newParam, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ content: msg }),
-    }).then(r => r.json()).then(d => {
-      if (selection !== chatSelectionVersion || !isAgentChatActive(name)) return;
-      // After spawn, re-resolve default session so the WS subscribes properly.
-      if (d.sessionId) switchSession(d.sessionId);
+  const target = sessionId ? `session:${sessionId}` : name ? `agent:${name}` : `app:${humanInterface.appId}`;
+  // Retrying an unchanged explicit-target draft after an unknown HTTP outcome
+  // retains publication identity. A different target or draft is a new input.
+  if (chatPendingInput?.draft !== draft || chatPendingInput?.target !== target) {
+    chatPendingInput = { draft, target, id: `web-ui:${crypto.randomUUID()}`, sending: false };
+  }
+  const pending = chatPendingInput;
+  if (pending.sending) return;
+  pending.sending = true;
+  let selection = chatSelectionVersion;
+  let admittedSession = null;
+  try {
+    if (sessionId) {
+      await publishChatEvent({
+        type: 'session.steer.requested', target: { sessionId },
+        data: { message }, idempotencyKey: pending.id,
+      });
+    } else if (name && name !== humanInterface.agent) {
+      selection = ++chatSelectionVersion;
+      const response = await fetch('/api/agents/' + encodeURIComponent(name) + '/message' + (forceNewAgentChat ? '?new=true' : ''), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: message }), signal: AbortSignal.timeout(10000),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.ok) throw new Error(result.error || 'Message admission failed');
+      admittedSession = result.sessionId;
+    } else {
+      await publishChatEvent({
+        type: 'app.input.requested', target: { appId: humanInterface.appId },
+        data: { input: { kind: 'message', data: { message } }, channel: 'web-ui', conversationId: humanInterface.conversationId },
+        idempotencyKey: pending.id,
+      });
+    }
+    if (chatPendingInput === pending) chatPendingInput = null;
+    if (currentRouteParams !== route || selection !== chatSelectionVersion) return;
+    if (input.value === draft) input.value = '';
+    if (!chatAutoScroll) toggleChatScroll();
+    document.getElementById('chat-status').textContent = 'Message accepted; waiting for the saved turn';
+    if (name && !sessionId && name !== humanInterface.agent) {
+      forceNewAgentChat = false;
+      if (admittedSession) void switchSession(admittedSession);
       else setTimeout(() => {
         if (selection === chatSelectionVersion && isAgentChatActive(name)) void loadAgentChatThread(name);
       }, 800);
-    }).catch(e => {
-      if (selection === chatSelectionVersion && isAgentChatActive(name)) toast('Failed: ' + e.message);
-    });
-  } else {
-    if (!humanInterface.appId) { toast("No Conversation App is configured"); return; }
-    // Chat mode — input to the interface agent
-    sendIntent(
-      'app.input.requested',
-      { input: { kind: 'message', data: { message: msg } }, channel: 'web-ui', conversationId: humanInterface.conversationId },
-      { target: { appId: humanInterface.appId } },
-    );
+    }
+  } catch (error) {
+    if (currentRouteParams === route && selection === chatSelectionVersion) toast('Message was not confirmed: ' + error.message);
+  } finally {
+    pending.sending = false;
   }
-  input.value = '';
-  document.getElementById('chat-status').textContent = 'Message sent; waiting for the saved turn';
-  return pending;
 }
 
 document.getElementById('chat-send').addEventListener('click', sendChat);

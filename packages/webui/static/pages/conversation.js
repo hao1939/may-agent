@@ -60,7 +60,7 @@ function refreshMayConversation() {
   return mayConversationRead;
 }
 
-async function publishMayConversationEvent(event) {
+async function publishChatEvent(event) {
   const response = await fetch('/api/events', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(event),
     signal: AbortSignal.timeout(10000),
@@ -78,7 +78,7 @@ async function stopMayConversation() {
   mayStopPending = true;
   updateConversationStop();
   try {
-    await publishMayConversationEvent({
+    await publishChatEvent({
       type: 'conversation.turn.stop.requested', target: { appId: humanInterface.appId },
       data: { conversationId: humanInterface.conversationId, turnId: turn.id, expectedRevision: turn.revision },
       idempotencyKey: `web-stop:${turn.id}:${turn.revision}`,
@@ -103,7 +103,7 @@ async function sendMayConversation() {
   if (mayUnconfirmedInput?.text !== text) mayUnconfirmedInput = { text, id: `web-ui:${crypto.randomUUID()}` };
   const { id } = mayUnconfirmedInput;
   try {
-    await publishMayConversationEvent({
+    await publishChatEvent({
       type: 'conversation.message.created', target: { appId: humanInterface.appId },
       data: { conversationId: humanInterface.conversationId, author: { kind: 'human', id }, text: text.trim(), metadata: { channel: 'web-ui' } },
       idempotencyKey: id,

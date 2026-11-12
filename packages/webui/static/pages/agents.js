@@ -166,8 +166,7 @@ async function loadAgentChatThread(name) {
     }
   } catch (e) {
     if (selection !== chatSelectionVersion || !isAgentChatActive(name)) return;
-    const messages = document.getElementById('chat-messages');
-    if (messages) messages.innerHTML = '<div style="color:var(--red);padding:16px">Failed: ' + esc(e.message) + '</div>';
+    document.getElementById('chat-status').textContent = 'Default thread unavailable: ' + e.message;
   }
 }
 
