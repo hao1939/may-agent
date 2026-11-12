@@ -38,6 +38,13 @@ import { isHumanActionOwner } from "./core/tasks/human-condition.js";
 export type HumanTaskStatus = TaskStatus;
 
 export { isHumanActionOwner } from "./core/tasks/human-condition.js";
+export { TaskReferenceError } from "./core/state/task-reference-index.js";
+
+export type HumanConditionAnchor = {
+  taskGeneration: number;
+  conditionId: string;
+  conditionGeneration: number;
+};
 
 export type HumanTaskProgress = {
   stage: string;
@@ -1348,3 +1355,76 @@ export function approvalProposalForTask(task: HumanTaskView | null): ApprovalPro
     requestedAction: displayedAction,
   };
 }
+
+/** Correlate one ordinary help reply without turning it into approval or proof. */
+export function humanConditionAnchorForTask(task: HumanTaskView | null): HumanConditionAnchor | null {
+  if (!task || task.terminal || !["pending", "waiting", "running", "attention"].includes(task.status)) return null;
+  const matches = (task.diagnostics?.conditions ?? []).filter((item) => {
+    const condition = item.condition;
+    return condition?.status.state !== "true" && isHumanActionOwner(condition?.spec.owner);
+  });
+  if (matches.length !== 1) return null;
+  const match = matches[0]!;
+  if (match.condition?.spec.type === "project.approval.submitted") return null;
+  return {
+    taskGeneration: task.generation,
+    conditionId: match.id,
+    conditionGeneration: match.condition!.metadata.generation,
+  };
+}
+
+export function humanConditionActionsForTask(task: HumanTaskView | null, exclude?: string): string[] {
+  if (!task || task.terminal) return [];
+  return (task.diagnostics?.conditions ?? [])
+    .map((item) => item.condition)
+    .filter(
+      (condition) =>
+        condition?.metadata.id !== exclude &&
+        condition?.status?.state !== "true" &&
+        isHumanActionOwner(condition?.spec.owner),
+    )
+    .map((condition) => condition!.spec.requestedAction?.trim())
+    .filter((action): action is string => Boolean(action));
+}
+
+export function humanActionSummaryText(task: HumanTaskView): string {
+  return task.humanAction?.requestedAction.trim() || task.summary?.trim() || task.outcome;
+}
+
+export function fullHumanActionTextForTask(task: HumanTaskView): string {
+  const actions = humanConditionActionsForTask(task);
+  return actions.length > 0 ? actions.join("\n\n") : humanActionSummaryText(task);
+}
+
+export function todoActionSignatureForTask(task: HumanTaskView): { value: string; exact: boolean } {
+  const conditionItems = task.diagnostics?.conditions ?? [];
+  const conditions = conditionItems
+    .flatMap((item) => {
+      const condition = item.condition;
+      if (!condition || condition.status?.state === "true" || !isHumanActionOwner(condition.spec.owner)) return [];
+      return [
+        {
+          id: item.id,
+          generation: condition.metadata.generation,
+          type: condition.spec.type,
+          subject: condition.spec.subject,
+          owner: condition.spec.owner,
+          requestedAction: condition.spec.requestedAction,
+          expected: condition.spec.expected,
+        },
+      ];
+    })
+    .sort((left, right) => left.id.localeCompare(right.id));
+  return {
+    value: JSON.stringify({
+      generation: task.generation,
+      conditions,
+      fallback: conditions.length === 0 ? humanActionSummaryText(task) : undefined,
+    }),
+    exact:
+      conditions.length > 0 &&
+      conditionItems.every((item) => item.condition !== null) &&
+      task.diagnostics?.conditionsTruncated !== true,
+  };
+}
+

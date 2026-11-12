@@ -143,6 +143,30 @@ export default [
   },
 
   {
+    files: ["src/app/transport/**/*.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "**/core/tasks/**",
+                "**/app-task-*",
+                "**/task-reference-index",
+                "**/task-reference-index.*",
+                "**/migrations/**",
+              ],
+              message: "Transport adapters must use HumanTaskService and EventInterface/persisted event helpers, not core Task runtime or store internals.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
     files: ["src/app/agent-loader.ts", "src/app/loader/**/*.ts"],
     ignores: ["**/*.test.ts"],
     rules: {

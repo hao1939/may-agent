@@ -1,7 +1,14 @@
 import type { SqliteDb } from "../../../lib/db.js";
 import { describeText, readJsonArtifactWithDescriptor } from "../../../lib/artifacts.js";
 import { readEventTraceMetadata } from "../../../lib/db/event-traces.js";
-import { EVENT_RECORD_ONLY, EVENT_ROW_ID, type AgentEvent } from "./bus.js";
+import {
+  EVENT_DELIVERY_RESULT,
+  EVENT_RECORD_ONLY,
+  EVENT_ROW_ID,
+  eventData,
+  type AgentEvent,
+  type EventBus,
+} from "./bus.js";
 
 function parseStoredEventData(value: unknown): Record<string, unknown> | null {
   if (typeof value !== "string" || !value.trim()) return null;
@@ -112,3 +119,55 @@ export function loadPersistedEvent(db: SqliteDb, eventId: number, persistDir?: s
   Object.defineProperty(event, EVENT_RECORD_ONLY, { value: row.record_only === 1, configurable: true });
   return event;
 }
+
+/** Resume a previously recorded Telegram input without rebuilding its payload from current focus. */
+export function resumeRecordedTelegramInput(
+  db: SqliteDb,
+  bus: EventBus,
+  options: { type: string; idempotencyKey: string; persistDir?: string; requireAccepted?: boolean },
+): number | undefined {
+  const row = db
+    .prepare(
+      "SELECT id, delivery_status FROM events WHERE event_type = ? AND source = 'telegram' AND idempotency_key = ? LIMIT 1",
+    )
+    .get(options.type, options.idempotencyKey);
+  if (!row) return undefined;
+  const requireAccepted = options.requireAccepted ?? true;
+  if (requireAccepted && (row.delivery_status !== "accepted" || options.type === "runtime.reload.requested")) {
+    const event = loadPersistedEvent(db, Number(row.id), options.persistDir);
+    if (!event) throw new Error("Original Telegram event is unavailable; input remains unacknowledged");
+    const retried = bus.redeliverPersisted(event, Number(row.id));
+    if (!retried[EVENT_DELIVERY_RESULT]?.accepted) {
+      throw new Error("Telegram input is recorded but not yet admitted");
+    }
+  }
+  return Number(row.id);
+}
+
+/** Read a durable reload completion summary for a previously recorded Telegram reload request. */
+export function readPersistedTelegramReloadCompletion(
+  db: SqliteDb,
+  options: { idempotencyKey: string; persistDir?: string },
+): { id: number; summary: string } | undefined {
+  const completion = db
+    .prepare(
+      `
+      SELECT e.id FROM events request
+      JOIN event_traces t ON t.parent_event_id = request.id
+      JOIN events e ON e.id = t.event_id
+      WHERE request.event_type = 'runtime.reload.requested'
+        AND request.source = 'telegram' AND request.idempotency_key = ?
+        AND e.event_type = 'runtime.reload.finished'
+      ORDER BY e.id DESC LIMIT 1
+    `,
+    )
+    .get(options.idempotencyKey);
+  if (!completion) return undefined;
+  const event = loadPersistedEvent(db, Number(completion.id), options.persistDir);
+  if (!event) throw new Error("Saved reload result is unavailable");
+  return {
+    id: Number(completion.id),
+    summary: String(eventData(event).summary || "[reload] Finished"),
+  };
+}
+

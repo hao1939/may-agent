@@ -21,8 +21,8 @@ import { log } from "../../lib/log.js";
 import { setDefaultAutoSelectFamily } from "node:net";
 import type { AppConversationMessage, AppConversationTopic, AppConversationResource } from "@may-agent/sdk";
 import type { ApprovalProposal, EventInput, EventReceipt } from "@may-agent/control/events";
-import { EVENT_DELIVERY_RESULT, EVENT_RECORD_ONLY, eventData, type EventBus } from "../core/events/bus.js";
-import { loadPersistedEvent } from "../core/events/persisted.js";
+import { EVENT_RECORD_ONLY, type EventBus } from "../core/events/bus.js";
+import { readPersistedTelegramReloadCompletion, resumeRecordedTelegramInput } from "../core/events/persisted.js";
 import { getDb } from "../../lib/db/connection.js";
 import {
   prepareConversationDelivery,
@@ -37,7 +37,6 @@ import {
   storeNotificationMessage,
 } from "../../lib/db/notifications.js";
 import { readAppConversationResource, readConversationTopic } from "../core/state/conversations.js";
-import { TaskReferenceError } from "../core/state/task-reference-index.js";
 import { createTelegramClient } from "./telegram-client.js";
 import {
   isTaskDerivedViewWake,
@@ -45,8 +44,14 @@ import {
   taskUpdateIdentity,
 } from "../../../packages/control/src/task-wake.js";
 import {
-  isHumanActionOwner,
+  TaskReferenceError,
   approvalProposalForTask,
+  fullHumanActionTextForTask as fullHumanActionText,
+  humanActionSummaryText as humanActionText,
+  humanConditionActionsForTask as humanConditionActions,
+  humanConditionAnchorForTask as humanConditionAnchor,
+  todoActionSignatureForTask as todoActionSignature,
+  type HumanConditionAnchor as TelegramHumanConditionAnchor,
   type HumanAppView,
   type HumanTaskService,
   type HumanTaskView,
@@ -319,10 +324,6 @@ function currentTaskText(task: HumanTaskView): string {
   }
 }
 
-function humanActionText(task: HumanTaskView): string {
-  return task.humanAction?.requestedAction.trim() || task.summary?.trim() || task.outcome;
-}
-
 function replyInstruction(_task: HumanTaskView, _conditionId?: string): string {
   return "Reply to this message with an exact response requested above, or with the requested completion evidence. A question, qualification, or requested change is feedback, not completion.";
 }
@@ -555,46 +556,6 @@ function renderTelegramConversationMessage(message: AppConversationMessage): str
 }
 
 export type TelegramApprovalAnchor = ApprovalProposal;
-
-type TelegramHumanConditionAnchor = {
-  taskGeneration: number;
-  conditionId: string;
-  conditionGeneration: number;
-};
-
-/** Correlate one ordinary help reply without turning it into approval or proof. */
-function humanConditionAnchor(task: HumanTaskView | null): TelegramHumanConditionAnchor | null {
-  if (!task || task.terminal || !["pending", "waiting", "running", "attention"].includes(task.status)) return null;
-  const matches = (task.diagnostics?.conditions ?? []).filter((item) => {
-    const condition = item.condition;
-    return condition?.status.state !== "true" && isHumanActionOwner(condition?.spec.owner);
-  });
-  if (matches.length !== 1) return null;
-  const match = matches[0]!;
-  if (match.condition?.spec.type === "project.approval.submitted") return null;
-  return {
-    taskGeneration: task.generation,
-    conditionId: match.id,
-    conditionGeneration: match.condition!.metadata.generation,
-  };
-}
-
-function humanConditionActions(task: HumanTaskView | null, exclude?: string): string[] {
-  if (!task || task.terminal) return [];
-  return (task.diagnostics?.conditions ?? [])
-    .map((item) => item.condition)
-    .filter(
-      (condition) =>
-        condition?.metadata.id !== exclude && condition?.status?.state !== "true" && isHumanActionOwner(condition?.spec.owner),
-    )
-    .map((condition) => condition!.spec.requestedAction?.trim())
-    .filter((action): action is string => Boolean(action));
-}
-
-function fullHumanActionText(task: HumanTaskView): string {
-  const actions = humanConditionActions(task);
-  return actions.length > 0 ? actions.join("\n\n") : humanActionText(task);
-}
 
 export function telegramConversationInputEvent(input: {
   appId: string;
@@ -1216,37 +1177,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   }
 
   const todoTaskKey = (task: HumanTaskView): string => `${task.appId}\0${task.taskId}`;
-  const todoActionSignature = (task: HumanTaskView): { value: string; exact: boolean } => {
-    const conditionItems = task.diagnostics?.conditions ?? [];
-    const conditions = conditionItems
-      .flatMap((item) => {
-        const condition = item.condition;
-        if (!condition || condition.status?.state === "true" || !isHumanActionOwner(condition.spec.owner)) return [];
-        return [
-          {
-            id: item.id,
-            generation: condition.metadata.generation,
-            type: condition.spec.type,
-            subject: condition.spec.subject,
-            owner: condition.spec.owner,
-            requestedAction: condition.spec.requestedAction,
-            expected: condition.spec.expected,
-          },
-        ];
-      })
-      .sort((left, right) => left.id.localeCompare(right.id));
-    return {
-      value: JSON.stringify({
-        generation: task.generation,
-        conditions,
-        fallback: conditions.length === 0 ? humanActionText(task) : undefined,
-      }),
-      exact:
-        conditions.length > 0 &&
-        conditionItems.every((item) => item.condition !== null) &&
-        task.diagnostics?.conditionsTruncated !== true,
-    };
-  };
   const presentedTodoActionRevision = (signature: { value: string; exact: boolean }) =>
     JSON.stringify({ value: signature.value, exact: signature.exact });
 
@@ -1544,23 +1474,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     // Provider redelivery may follow restart or a lost publication receipt.
     // Do not rebuild an accepted input using today's focus and cause a hash
     // conflict. The existing event journal/recovery owns its original payload.
-    const db = getDb(persistDir);
-    const row = db
-      .prepare(
-        "SELECT id, delivery_status FROM events WHERE event_type = ? AND source = 'telegram' AND idempotency_key = ? LIMIT 1",
-      )
-      .get(type, key);
-    if (!row) return undefined;
-    // Reload acceptance only starts an asynchronous operation. Its caller has
-    // already checked for completion; reenter the route after a crash, while
-    // the router shares any execution still in flight in this process.
-    if (requireAccepted && (row.delivery_status !== "accepted" || type === "runtime.reload.requested")) {
-      const event = loadPersistedEvent(db, Number(row.id), persistDir);
-      if (!event) throw new Error("Original Telegram event is unavailable; input remains unacknowledged");
-      const retried = bus.redeliverPersisted(event, Number(row.id));
-      if (!retried[EVENT_DELIVERY_RESULT]?.accepted) throw new Error("Telegram input is recorded but not yet admitted");
-    }
-    return Number(row.id);
+    return resumeRecordedTelegramInput(getDb(persistDir), bus, {
+      type,
+      idempotencyKey: key,
+      persistDir,
+      requireAccepted,
+    });
   }
 
   function requireAdmission(receipt: EventReceipt): void {
@@ -2171,24 +2090,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       });
       // Completion can be durable even if recording acceptance failed. Check
       // the exact request's result before redelivery can repeat the reload.
-      const db = getDb(persistDir);
-      const completion = db
-        .prepare(
-          `
-        SELECT e.id FROM events request
-        JOIN event_traces t ON t.parent_event_id = request.id
-        JOIN events e ON e.id = t.event_id
-        WHERE request.event_type = 'runtime.reload.requested'
-          AND request.source = 'telegram' AND request.idempotency_key = ?
-          AND e.event_type = 'runtime.reload.finished'
-        ORDER BY e.id DESC LIMIT 1
-      `,
-        )
-        .get(requestId);
+      const completion = readPersistedTelegramReloadCompletion(getDb(persistDir), {
+        idempotencyKey: requestId,
+        persistDir,
+      });
       if (completion) {
-        const event = loadPersistedEvent(db, Number(completion.id), persistDir);
-        if (!event) throw new Error("Saved reload result is unavailable");
-        showReloadResult(requestId, String(eventData(event).summary || "[reload] Finished"));
+        showReloadResult(requestId, completion.summary);
         return true;
       }
       if (resumeRecordedInput("runtime.reload.requested", requestId)) return true;
