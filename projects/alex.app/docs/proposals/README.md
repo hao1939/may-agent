@@ -20,6 +20,9 @@ is merged in Host #456 (`da9b9fb85aee`), and the
 [Learning dashboard retirement](../archive/reviews/learning-dashboard-retirement-20261112.md)
 is merged in Host #457 (`a84c6918ed40`). Both source cuts are complete;
 installed adoption remains unverified.
+The [project Lineage retirement](../archive/reviews/project-lineage-retirement-20261112.md)
+is merged in Host #458 (`2a762206dd52`). Its source cut is complete;
+installed adoption remains unverified.
 For mixed documents, use the remaining scope below and the record's explicit
 implementation limits. Resolve a fresh implementation question against source
 before acting on an old checklist.

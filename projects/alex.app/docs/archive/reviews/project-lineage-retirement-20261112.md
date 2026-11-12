@@ -1,7 +1,8 @@
 # Project Lineage retirement — November 12, 2026
 
-**Status:** Implemented in [Host PR 458](https://github.com/hao1939/may-agent/pull/458),
-pending merge and installation. The user approved this feature reduction.
+**Status:** Merged in [Host PR 458](https://github.com/hao1939/may-agent/pull/458)
+as `2a762206dd5291c0c3106dd4bd27b063aade2ee7`. Installed adoption is unverified.
+The user approved this feature reduction.
 
 **Owns:** Source evidence for the reduced [Web UI](../../2a-design/webui.md) and
 [HTTP boundary](../../2a-design/http-boundary.md). Recorded
@@ -9,8 +10,9 @@ pending merge and installation. The user approved this feature reduction.
 
 ## Decision and scope
 
-Baseline Host `a84c6918ed40` (#457); candidate
-`9d8e0068abcec4e1c3eeabc07be80538256304af`. The project detail page had two history
+Baseline Host `a84c6918ed40` (#457); tested PR head
+`9d8e0068abcec4e1c3eeabc07be80538256304af`. The merged source tree matches that head.
+The project detail page had two history
 tabs with separate readers: Sessions and Lineage. The only checked-in caller of
 `/api/projects/lineage` was the Lineage tab in `pages/projects.js`; this is a
 source audit, not a census of live usage. The checked-in companion Apps source
@@ -50,7 +52,9 @@ asset and browser cases pass against the candidate. Full
 installation-only skips; browser coverage executed. The Host diff including
 guide and existing regression updates is 40 additions and 302 deletions.
 Paired Apps `check:may-design` passed in isolation with zero errors and the
-existing root-layout warning for `reports`. Hosted checks are linked from the PR.
+existing root-layout warning for `reports`. Hosted Quality and Container passed
+on the tested head ([run 43168886311](https://github.com/hao1939/may-agent/actions/runs/43168886311)).
+The companion Apps source/documentation commit is `9e07039dd0`.
 
 No deployment, service restart, live-state conversion or provider/model call is
 part of this change. Install the paired server and staged UI assets together;

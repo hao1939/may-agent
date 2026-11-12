@@ -212,9 +212,10 @@ The default project page owns the generic control readout:
 - structured steering with an honest async receipt.
 
 The project Lineage tab is retired in
-[Host PR 458](https://github.com/hao1939/may-agent/pull/458), pending merge
-and installation. The project Sessions tab remains, with its existing
-tagged/mention associations and historical workflow-file fallback. Open an exact session for its transcript,
+[Host PR 458](https://github.com/hao1939/may-agent/pull/458), merged as
+`2a762206dd52`. Installed adoption is unverified. The project Sessions tab
+remains, with its existing tagged/mention associations and historical workflow-file
+fallback. Open an exact session for its transcript,
 result and recorded parent/child links. The removed project-wide timeline also
 combined workflow references, historical file reads and child associations with
 inline checkpoint summaries; that combined investigation view has no replacement.

@@ -23,10 +23,10 @@ owns scope and checks. Source removal is complete; installed adoption is unverif
 
 **November 12 project-history reduction:** The user also selected retirement
 of the project Lineage tab and `/api/projects/lineage` aggregate in
-[Host PR 458](https://github.com/hao1939/may-agent/pull/458), pending merge
-and installation. The
+[Host PR 458](https://github.com/hao1939/may-agent/pull/458), merged as
+`2a762206dd52`. Installed adoption is unverified. The
 [retirement record](../archive/reviews/project-lineage-retirement-20261112.md)
-tracks this implementation candidate, the deliberately lost combined timeline
+records the merged removal, the deliberately lost combined timeline
 and inline summaries, retained Sessions/exact evidence reads, and verification.
 This removes a view; it does not change session ancestry or Task execution.
 
@@ -51,6 +51,33 @@ The later [observer feedback proposal](observer-feedback-and-resource-convention
 owns the separately reproduced checkpoint-before-publication gap and a first
 convention-based provider integration. It does not reopen general observer
 cancellation or precise restart recovery from this milestone.
+
+## Next verified cleanup: one project metadata reader
+
+**Status:** Proposed; no implementation or feature retirement selected yet.
+Source reviewed at merged Host #458 (`2a762206dd52`). A temporary local HTTP
+fixture with an isolated database reproduced three disagreements:
+
+- An App's `project.json` says `active` and its saved runtime project state says
+  `blocked`: `/api/projects` reports `active`, while project detail reports `blocked`.
+- A historical Markdown project ends its frontmatter with `owner: worker`:
+  detail reports `worker/legacy-project`, while its Sessions lookup misses a
+  retained session tagged with that same identity.
+- One agent owns that Markdown project and a JSON-only project: the agent
+  project counter reports one project because its independent scan reads only Markdown.
+
+The project list, detail, session correlation and agent counts parse the same
+metadata separately in `src/app/http/server.ts`. JSON detail already uses
+`loadProjectReadModel`, which includes the saved runtime project projection;
+the other reads disagree about formats, frontmatter and projection use.
+
+Use the existing project read model and one small metadata reader across those
+consumers. Keep historical Markdown readable and preserve stored identities,
+correlation and unavailable-evidence behavior. Verify current and historical
+links through real HTTP before changing lookup rules. There is no need for a
+new service, cache, storage migration or dashboard. Measure the actual code
+reduction after consolidation; this review does not promise a line count or
+claim a live installation incident.
 
 ## What changed after reviewing the plan
 
