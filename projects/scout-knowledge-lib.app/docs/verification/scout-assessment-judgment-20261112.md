@@ -214,8 +214,11 @@ No implementation changes were required by these live checks.
 
 Five real hosted requests now demonstrate source retrieval/extraction, bounded
 semantic judgment, archived publication, unchanged-record reuse, access-failure
-classification and saved caller follow-through. These examples do not establish
-broad model accuracy. A required-reading incomplete outcome and delegated creator
-consumption/closure still need suitable live cases; their code guards remain
-covered by the local regressions. Operator closure of the finite validation roots
-does not establish autonomous owner follow-through for delegated obligations.
+classification and saved caller follow-through. The subsequent
+[creator follow-through check](scout-owner-publication-follow-through-20261113.md)
+demonstrated that the exact standing creators consumed and closed two real
+published recovery children using existing accepted results. That check used
+routed reminders; discovery and closure during ordinary wakes remain unproven.
+These examples do not establish broad model accuracy. A required-reading
+incomplete outcome still needs a suitable live case; its guards remain covered
+by the local regressions.
