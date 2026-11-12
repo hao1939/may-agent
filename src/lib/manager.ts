@@ -463,25 +463,6 @@ export class SubagentManager {
             persistDir: this._persistDir,
           }),
         bashProcessGroupOwner: { persistDir: this._persistDir, sessionId },
-        onGuard: ({ context, guard, block, reason }) => {
-          this.bus?.emit({
-            [EVENT_RECORD_ONLY]: true,
-            type: "guard.triggered",
-            source: "tool",
-            owner: normalizeEventOwner(def.name),
-            data: {
-              workflowRunId: opts?.workflowRunId,
-              projectId: opts?.projectId,
-              parentSessionId: opts?.parentSessionId,
-              sessionId,
-              guard,
-              demandType: block ? "block" : "warn",
-              action: block ? "blocked" : "warned",
-              reason,
-              sourceEventType: `tool.${context.toolCall.name}`,
-            },
-          });
-        },
         onCompact: (info, messages) => {
           log(
             "info",
