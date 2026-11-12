@@ -9,10 +9,12 @@
 human Task and App-ID Task reads forward through the daemon's shared read
 capabilities. The default Task board uses paged human Task reads. Source entry:
 `src/app/http/task-read-routes.ts` and the HTTP source guide.
-Session evaluation generation still embeds evaluator instructions in HTTP, and
-evaluation comments still append feedback files directly. These are known gaps
-in the thin-adapter boundary, not exceptions to the contract below; their paired
-Host/Evaluation change is tracked in the convergence tracker.
+Session review notes are read-only; HTTP generation and comment-write routes
+are retired. The legacy `/api/learning` aggregate and its UI are retired in
+[Host PR 457](https://github.com/hao1939/may-agent/pull/457), pending merge and
+installation. Exact session detail, retained note reads and agent evaluation
+trends remain available; the adapter does not reconstruct the old finding and
+notification summaries. See the [retirement record](../archive/reviews/learning-dashboard-retirement-20261112.md).
 
 ## Purpose
 

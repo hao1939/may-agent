@@ -11,6 +11,11 @@ Some presentation copy still describes convergence as recurring work; the
 [Task contract](task-resource-engine.md#one-lifecycle-baseline) applies to every
 Task. The [documentation review](../archive/reviews/design-doc-hygiene-20260927.md)
 records remaining presentation and authority gaps. Deployment is separate.
+The legacy Learning dashboard and project-detail Learning tab are retired in
+[Host PR 457](https://github.com/hao1939/may-agent/pull/457), pending merge and
+installation. Session evidence and saved review notes remain inspectable; the
+[retirement record](../archive/reviews/learning-dashboard-retirement-20261112.md)
+defines the deliberately reduced scope.
 
 ## Purpose
 
@@ -89,7 +94,6 @@ The platform uses real browser paths and `history.pushState`:
 | `/metrics` and `/metrics/:id`    | Metric/alert detail and evidence                                |
 | `/sessions/:id`                  | Transcript, result, lineage, tools, and steering                |
 | `/events` and `/events/:eventId` | Event list, admission health, and trace graph                   |
-| `/learning`                      | Evaluation and learning readouts                                |
 | `/knowledge`                     | Searchable durable knowledge                                    |
 | `/terminal`                      | Full-window ttyd terminal attached to Herdr                                       |
 

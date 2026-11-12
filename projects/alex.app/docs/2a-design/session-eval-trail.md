@@ -5,29 +5,27 @@
 **Choice basis:** [Core Principles](../1-principles/core-principles.md#simple-first).
 
 **Design status:** Accepted.
-**Implementation status:** Partially aligned. Summary evaluation and its SQLite
-projection, historical trail reads, and direct HTTP human-feedback append are
-present. The current Evaluation Task drops an HTTP review's selected line and
-instructions; its aftermath executor does not generate the requested line
-trail. HTTP-owned policy and feedback writes also remain a boundary gap. See
-[the authority proposal](../proposals/authority-boundary-simplification.md#remaining-work).
-The write boundary below describes the accepted trail behavior, not proof that every
-step currently runs. Calibration remains an ongoing evaluation concern.
+**Implementation status:** Summary evaluation and its SQLite projection, exact
+session reads and read-only historical trail reads are supported. HTTP generation
+and human-feedback writes are retired. The legacy Learning dashboard is retired
+in [Host PR 457](https://github.com/hao1939/may-agent/pull/457), pending merge and
+installation; see the [retirement record](../archive/reviews/learning-dashboard-retirement-20261112.md).
+The row formats below describe retained evidence, not an available HTTP annotation
+writer. App-owned review and calibration remain separate from this history view.
 **Aligned with:** [Sessions](sessions.md), [Web UI](webui.md),
 [Runtime](runtime.md), [SDK](sdk.md).
 
 ## Purpose
 
-When a session annotation is requested, its summary and line trail provide two
-views of the judgment. This is separate from the current Evaluation App's
+Retained session annotations provide summary and line views of a judgment.
+This is separate from Alex's current
 primary [Task-outcome review](../evaluation/task-outcome-evaluation.md):
 
 - session-level summary for querying, metrics, and overview cards
 - turn/line-level evidence for investigation and human correction
 
 The raw `session.jsonl` remains execution evidence, not Task acceptance. The
-accepted annotation contract writes an append-only sibling trail when producing
-that requested view; the implementation gaps above remain unresolved:
+historical annotations remain readable in their append-only sibling trail:
 
 ```text
 .state/sessions/<id>/session.eval.jsonl
@@ -39,7 +37,7 @@ The `evaluations` database table is a projection/index of the latest session-lev
 
 `session.eval.jsonl` is append-only. Each row has `sessionId`, `source`, `author`, and `createdAt`. Evaluation rows are evidence, not commands; owner-routed findings name who should decide the fix.
 
-Illustrative session summary row (the owning Evaluation schema governs emitted fields):
+Illustrative retained session summary row (the owning App schema governs emitted fields):
 
 ```json
 {
@@ -128,7 +126,7 @@ A later evaluator pass appends new rows instead of rewriting old rows. That pres
 
 ## Write boundary
 
-The Evaluation App reads session evidence, judges it and emits
+The owning App reads session evidence, judges it and emits
 `evaluation.recorded`. The Host projection validates that fact and writes the
 bounded evaluations summary. Trail generation separately appends artifact
 annotations through the granted execution/file boundary. App code does not write
@@ -143,19 +141,18 @@ The trail preserves append-only summary and line annotations, including later
 reviews and human feedback. HTTP and Web UI expose those records; they do not
 own scoring or turn raw detector output into accepted learning.
 
-## Convenience API
+## Read API
 
 The UI uses:
 
 ```http
 GET /api/sessions/:id/eval
-POST /api/sessions/:id/eval
-POST /api/sessions/:id/eval/comment
 ```
 
-`POST /api/sessions/:id/eval` is a convenience dispatcher. With an empty body, it asks evaluator to generate/review the whole session trail. With `{ "line": 12 }`, it asks evaluator to focus on that raw line and related feedback. There is no separate mode. This is the accepted dispatch contract. Current source loses the selected line
-and instructions at the Evaluation mapping boundary and still writes human
-feedback in HTTP. Those are implementation gaps, not supported thin-adapter behavior.
+This reads saved rows without generating a review or changing evidence. A session
+without saved notes returns `exists: false` and an empty row list. The retired
+POST generation/comment routes return 404. New review work uses the owning App's
+ordinary Task input; the history viewer does not promise a line-annotation writer.
 
 ## UI Model
 
