@@ -119,15 +119,44 @@ from the current route and cancels pending refreshes on navigation; each queued
 refresh captures its session ID and checks it again before reading. A hidden
 pane's CSS class does not establish an active session.
 
-The session URL is also the authority for Send and the WebSocket subscription.
-Agent-chat responses may bind a thread only while that agent's Chat subtab is
-active. Route/subtab changes, Reset and newer selections invalidate pending
-default-thread, transcript and chat-admission callbacks, including delayed
-retries. An obsolete response cannot change the displayed conversation or the next
-message's destination. Subscriptions change when selection changes and are
-restored on connection, without waiting for transcript history. Entering an
-agent's chat clears the previous session binding; input while its default
-thread loads addresses that selected agent.
+The session URL is the authority for Send. Agent-chat responses may bind a
+thread only while that agent's Chat subtab is active. Navigation, subtab changes,
+Reset and newer selections invalidate older default-thread and unbound admission
+callbacks, including delayed retries. An explicit-session receipt belongs to
+its still-active target; reloading the same thread does not invalidate it.
+Entering an agent's chat clears the previous session binding; input while its
+default thread loads addresses that selected agent.
+
+One route-based owner selects the notification subscription, independently of
+message rendering. It applies the same plan on entry, selection and reconnect:
+
+| Visible surface | Notification scope | Message source |
+| --- | --- | --- |
+| Overview | Global lifecycle events | Workflow, Task and Liveness reads |
+| Routed session | Exact routed session ID | Session inspector reads |
+| Bound direct-agent chat | Exact selected session ID | Saved session transcript |
+| Unbound direct-agent chat | No session events | No saved thread yet |
+| Generic Sessions chat | Selected session or configured interface-agent `chat` alias | Saved session transcript once bound |
+| Main May Conversation | Global diagnostics and the configured Conversation updates | Canonical Conversation read |
+
+An unbound worker never uses the interface-agent `chat` alias. Direct chat
+renders saved turns on initial selection, turn/session end and reconnect;
+WebSocket text/tool payloads and local input echoes do not create another
+message list. Sends use HTTP admission independently of the notification
+socket. A confirmed receipt clears only the unchanged draft while its target
+is still active; a late receipt cannot change another route or a hidden Chat
+composer. Failed/unknown publication keeps it, and retrying the same
+explicit-target draft retains its publication identity. Send feedback is
+separate from saved messages. Each transcript view owns one in-flight read;
+a completed turn during that read requests a
+follow-up read. Replacing the view cancels its queued refresh and prevents old
+responses from rendering. This read ownership is separate from the selection
+guard used by default-thread and unbound admission callbacks.
+
+Live text/tool appends and their exclusive Raw/Markdown toggle are retired.
+Saved text, tool details and raw transcript evidence remain inspectable. The
+main May Conversation keeps its canonical read/render behavior. Default-thread
+read errors belong in the status area and cannot replace saved messages.
 
 ## Route Ownership and Bounded Reads
 
@@ -136,6 +165,9 @@ visible surface. In particular, direct `/terminal` navigation must not load the
 hidden Live dashboard or open its event websocket. Live initializes on entry;
 chat/session routes open realtime transport when they need it and release it
 when the active route no longer does.
+Agent Overview/About subtabs also release their chat connection. Reconnecting
+Overview reloads its retained panels so work changed during disconnection does
+not require another lifecycle event to become visible.
 
 Operator read models are bounded summaries. Timeline and liveness APIs return
 the newest fixed-size row set in display order and report when it was

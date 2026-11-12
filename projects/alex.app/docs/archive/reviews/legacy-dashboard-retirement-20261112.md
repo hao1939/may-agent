@@ -2,11 +2,18 @@
 
 **Status:** Approved by the user; implemented in
 [Host PR 462](https://github.com/hao1939/may-agent/pull/462), pending review/merge.
-Current candidate `2ad2b2d30212acfa95d9e00a600903202203d198` includes chat
-selection corrections `ccbfff76b3`, `1fb2af90ad` and `2ad2b2d302`, earlier
-review correction `908ebc4cce` and main through `46fba0f89edc` (#465). The
+Current candidate `5cb8c5d1a4fe0604c2eb68d21982fe47df04b428` includes route-owned subscriptions and
+saved-turn rendering, earlier chat selection corrections `ccbfff76b3`,
+`1fb2af90ad` and `2ad2b2d302`, and review correction `908ebc4cce`.
+Main is integrated through `f35786268f` (#466), including #463's retirement of
+the separate evaluation database. The prior candidate was `2ad2b2d302`, based
+on `46fba0f89edc` (#465). The
 earlier reviewed head was `75dc17794def8dff3aee09934e95232df7ebecdd`, based on
 `bdaba7d0ee263871ce83d6ef583027936745e1e0` (#460). Installed adoption is unverified.
+The redesign follows the user's choice of saved transcript refresh at turn
+boundaries for direct-agent chat. Receipt corrections `39fb27878d` and
+`5cb8c5d1a4` retain accepted-draft handling during same-thread reloads while
+preventing callbacks from changing a hidden Chat composer.
 
 **Owns:** Source evidence for the reduced [Web UI](../../2a-design/webui.md) and
 [HTTP boundary](../../2a-design/http-boundary.md).
@@ -47,8 +54,11 @@ reading, so a late callback cannot reopen a hidden session.
 Send and subscription use the routed session identity. Agent-chat callbacks
 belong to the selected agent's Chat subtab; navigation, subtab changes, Reset
 and newer selections invalidate older default-thread, transcript and admission
-work. Subscriptions update synchronously on selection and reconnect, separately
-from asynchronous history rendering. Entering an agent's chat clears the prior
+work. One route-based subscription owner serves Overview, session inspection
+and chat independently of message rendering. Direct chat now renders only
+saved turns on initial selection, turn/session end and reconnect. Transcript
+views own their reads and queued refreshes; notifications and local input do
+not write another conversation history. Entering an agent's chat clears the prior
 session binding so a message sent during default-thread resolution addresses
 that agent. This is one browser selection counter, not another work lifecycle.
 
@@ -57,8 +67,8 @@ workflow artifacts or retention policy changes. No replacement dashboard,
 configuration switch, cache or migration is introduced. Backend API retirement
 would be a separate consumer/compatibility decision.
 
-The cut removes 586 production lines net across eight browser source files.
-The Host change totals 557 additions and 693 deletions across twelve files;
+The cut removes 664 production lines net across eight browser source files.
+The Host change totals 977 additions and 965 deletions across twelve files;
 documentation and browser regression coverage account for the difference.
 
 ## Verification and release boundary
@@ -169,6 +179,110 @@ unclassified `reports` root-layout warning. Earlier local runs belong to their
 recorded snapshots or the intermediate edit loop; the final gate ran after
 all corrections were committed on this clean revision. No automatic test
 retries or timeout-policy changes were introduced.
+
+## Subscription and message ownership redesign
+
+Three further review comments on `2ad2b2d302` exposed responsibilities that the
+selection guard could not settle:
+
+- [Unbound worker chat](https://github.com/hao1939/may-agent/pull/462#discussion_r4549557637)
+  subscribed to `['chat']`, which the control adapter interprets as the configured
+  interface agent. A fresh worker chat displayed that other agent's output.
+- [History replacement](https://github.com/hao1939/may-agent/pull/462#discussion_r4549557683)
+  erased live output and local input received during a transcript read. Its
+  assistant accumulator still referenced the removed node, so later output
+  remained invisible.
+- [Overview](https://github.com/hao1939/may-agent/pull/462#discussion_r4549557720)
+  inherited a chat-only subscription guard and remained unsubscribed on a fresh
+  connection. Lifecycle notifications did not reach its retained panels.
+
+All three failures were reproduced against that exact head with real browser,
+HTTP and control-socket fixtures. An ordered status response served as a
+notification barrier; these were delivery/content assertions, not copied
+subscription logic or fixed sleeps. Earlier passing gates did not cover these
+contracts sufficiently. The PR was returned to draft while its approach was
+revised.
+
+The user selected saved transcript refresh at turn boundaries for direct-agent
+chat, keeping the main May Conversation behavior. This removes the second
+message renderer instead of reconciling two message histories. Direct chat
+no longer appends WebSocket text/tool payloads, delegation/closure prose or
+optimistic user-message bubbles. Its exclusive Raw/Markdown toggle is removed;
+saved text, paired tool details and raw JSONL evidence remain in the retained
+transcript renderer. Transport feedback does not claim saved-message completion.
+
+One subscription function derives scope from the visible route and binding:
+Overview receives global events, routed/bound sessions receive their exact ID,
+unbound worker chat receives no session events, and only generic Sessions chat
+uses the interface-agent `chat` alias. May keeps global diagnostic delivery plus
+its configured Conversation updates. Route entry, selection and reconnect use
+this same owner; Agent Overview/About subtabs release the chat connection.
+
+Transcript views own one in-flight read and one queued refresh. Turn/session-end
+notifications mark a pending read dirty, causing a follow-up read that includes
+the newly saved turn. Replacing the view invalidates its reads and cancels its
+timer. The transcript reader no longer depends on the global selection counter;
+that guard remains for default-thread and admission callbacks. Overview and
+bound transcript reads reload on reconnect to recover changes missed offline.
+No new event cursor, replay store, message merge framework or Host protocol is
+introduced.
+
+Removing local echoes also requires preserving drafts when admission fails.
+Explicit-target sends use the existing HTTP Event publication helper and
+acceptance receipt, independently of the notification socket. Unknown or failed
+publication retains the unchanged draft and its publication identity; duplicate
+clicks while that draft is pending are ignored. A changed draft or target is a
+new input. The existing default-agent HTTP adapter still resolves unbound chat;
+failure retains its draft and Reset intent. Default-thread read failures now
+update status without replacing saved messages. May's publication helper is
+shared without changing its Conversation behavior.
+
+Portable coverage now checks real notification delivery for six scopes on
+fresh connections and production-timer reconnects: Overview, unbound worker,
+worker with a pending default lookup, routed session, generic Sessions chat and
+May Conversation. Another test proves that lifecycle changes refresh all three
+Overview reads and that reconnect reveals work changed while disconnected.
+The history test writes real session JSONL, submits through the actual control
+socket, ends a turn during a held history response, and checks exact saved
+messages without duplicate output. It also checks later completed turns and
+reconnect. The initial history fixture omitted its session directory; fixing
+fixture setup did not require a production change. The test of the removed
+standalone live Markdown renderer is retired with its owning implementation;
+saved review-note and project-comment coverage remain.
+Receipt coverage also exercises a rejected send with the notification socket
+closed, an unchanged explicit-target retry, a second click while admission is
+held, a different draft typed before the receipt, and rejected fresh-chat Reset
+intent. It verifies actual admitted event targets and publication identities.
+
+An explicit-session receipt follows the still-active target rather than the
+selection counter used by default-thread resolution. Reloading the same thread
+while admission is pending must clear its accepted, unchanged draft. Changing
+to another route, resetting the thread or leaving the Chat subtab must prevent
+the old callback from changing the newly selected view. A browser regression
+reproduced the hidden-composer failure on `39fb27878d`, where a receipt still
+cleared input after Chat → About because the session ID remained bound. The
+active-surface guard fixes it without another counter or pending-message store.
+The same browser coverage checks that generic Sessions restores its saved
+transcript after returning from the routed inspector and that a hidden Chat
+composer cannot publish input.
+
+Final frozen install and full local `MAY_TEST_SHARDS=4 bun run ci` passed on
+`406f138c5c`: 4,150 tests, zero failures and three installation-only skips
+across 358 files. Browser coverage executed, including all 44 affected cases.
+Hosted Quality and Container passed on that implementation head in
+[CI run 43211547875](https://github.com/hao1939/may-agent/actions/runs/43211547875),
+with the same test totals and an actual image build/isolated smoke test.
+These results certify the earlier implementation. Final frozen install and
+full local `MAY_TEST_SHARDS=4 bun run ci` passed on `5cb8c5d1a4`:
+4,150 tests, zero failures and three installation-only skips across 358 files.
+Browser coverage executed, including the 44 affected cases and the additional
+same-thread/inactive-subtab assertions. Hosted Quality and Container passed on
+the same head in
+[CI run 43214747652](https://github.com/hao1939/may-agent/actions/runs/43214747652),
+including the actual image build and isolated smoke test. Companion Apps
+`check:may-design` passed with zero errors and the existing root-layout warning.
+The clean committed revision was verified without automatic retries or
+timeout-policy changes.
 
 The new browser navigation regression initially caught a composer-deletion bug
 when following session/agent links; the final source preserves the shared
