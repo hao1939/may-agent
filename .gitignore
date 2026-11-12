@@ -8,6 +8,7 @@ dist/
 !.env.*.example
 .codex/
 .pi/
+.gemini/
 .ssh/
 .azure/
 .aws/

@@ -22,6 +22,8 @@ describe("publication privacy", () => {
       ".env.production",
       ".codex/auth.json",
       ".pi/agent/auth.json",
+      ".gemini/.env",
+      ".gemini/settings.json",
       ".ssh/id_ed25519",
       ".azure/accessTokens.json",
       ".aws/credentials",
