@@ -4,7 +4,7 @@ import { spawnFixtureProcess } from "../fixtures/owned-process.js";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import puppeteer from "puppeteer-core";
+import puppeteer, { type HTTPRequest } from "puppeteer-core";
 import { attachControlSocket, type ControlSocket, type ControlEvent } from "../../packages/control/src/server.js";
 import { daemonSocketPath } from "../../packages/control/src/client.js";
 import { HumanTaskService, type HumanTaskStatus } from "../../src/app/human-task-service.js";
@@ -32,6 +32,7 @@ describe("HTTP human Task reads and board", () => {
   let registry: AppRegistry;
   let conversation: { messages: any[]; activeTurn?: { id: string; revision: number } };
   let published: any[];
+  let onPublish: (() => void) | undefined;
   let rejectPublish: boolean;
   let rejectConversationRead: boolean;
   let rejectAppRead: boolean;
@@ -40,6 +41,7 @@ describe("HTTP human Task reads and board", () => {
   beforeEach(async () => {
     conversation = { messages: [], activeTurn: { id: "turn-one", revision: 7 } };
     published = [];
+    onPublish = undefined;
     rejectPublish = false;
     rejectConversationRead = false;
     rejectAppRead = false;
@@ -70,6 +72,7 @@ describe("HTTP human Task reads and board", () => {
       },
       publishEvent: (event) => {
         published.push(event);
+        onPublish?.();
         if (rejectPublish) throw new Error("fixture persistence unavailable");
         if (event.type === "conversation.turn.stop.requested") {
           conversation.activeTurn = { id: "turn-two", revision: 8 };
@@ -204,6 +207,194 @@ describe("HTTP human Task reads and board", () => {
       { type: "chat.start.requested", data: { agent: "new-worker" } },
     ]);
   });
+
+  test.skipIf(skipBrowser).each(["session", "empty", "error"])("late agent default-session %s cannot redirect a routed session follow-up", async (result) => {
+    seedChat("worker");
+    db.prepare("INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt) VALUES (?, ?, ?, ?, ?, ?)")
+      .run("selected-session", "worker", "Selected report", "done", Date.now() - 2000, Date.now() - 1000);
+    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    try {
+      const page = await browser.newPage();
+      page.setDefaultTimeout(5000);
+      const errors: string[] = [];
+      page.on("pageerror", error => errors.push(String(error)));
+      await page.goto(`${base}/sessions/selected-session`, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction("ws?.readyState === WebSocket.OPEN");
+      // Retain the shipped loader's promise to await its success/catch after release.
+      await page.evaluate(`(() => {
+        const load = loadAgentChatThread;
+        loadAgentChatThread = name => window.pendingAgentChat = load(name);
+      })()`);
+      let capture: (request: HTTPRequest) => void;
+      const intercepted = new Promise<HTTPRequest>(resolveRequest => { capture = resolveRequest; });
+      await page.setRequestInterception(true);
+      page.on("request", request => {
+        if (new URL(request.url()).pathname === "/api/agents/worker/default-session") capture(request);
+        else void request.continue();
+      });
+      await page.evaluate("routeTo('/agents/worker')");
+      const held = await intercepted;
+      await page.click('#agents-content button[onclick="switchAgentSubTab(\'overview\')"]');
+      await page.waitForSelector('#agent-subtab-body [onclick*="selected-session"]');
+      await page.click('#agent-subtab-body [onclick*="selected-session"]');
+      await page.waitForFunction(() => document.querySelector("#session-detail-panel h3")?.textContent === "selected-session");
+      if (result === "session") await held.continue();
+      else if (result === "empty") await held.respond({ status: 200, contentType: "application/json", body: '{"sessionId":null}' });
+      else await held.abort("failed");
+      await page.evaluate("window.pendingAgentChat");
+      expect(new URL(page.url()).pathname).toBe("/sessions/selected-session");
+      await page.type("#chat-input", "Follow up on the selected report");
+      const submitted = new Promise<void>(done => { onPublish = done; });
+      await page.click("#chat-send");
+      await submitted;
+      expect(published).toHaveLength(1);
+      expect(published[0]).toMatchObject({
+        type: "session.steer.requested", target: { sessionId: "selected-session" },
+        data: { message: "Follow up on the selected report" },
+      });
+      expect(await page.evaluate("currentSessionId")).toBe("selected-session");
+      expect(await page.$eval("#chat-messages", el => el.textContent)).not.toContain("Failed:");
+      expect(errors).toEqual([]);
+    } finally { await browser.close(); }
+  }, 30000);
+
+  test.skipIf(skipBrowser)("agent Chat discards older loads after a subtab change, newer load or Reset", async () => {
+    seedChat("worker");
+    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    try {
+      const page = await browser.newPage();
+      page.setDefaultTimeout(5000);
+      await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction("currentSessionId === 'worker-old-session' && ws?.readyState === WebSocket.OPEN");
+      let capture: ((request: HTTPRequest) => void) | null = null;
+      await page.setRequestInterception(true);
+      page.on("request", request => {
+        if (capture && new URL(request.url()).pathname === "/api/agents/worker/default-session") capture(request);
+        else void request.continue();
+      });
+      for (const transition of ["overview", "newer", "reset"]) {
+        const intercepted = new Promise<HTTPRequest>(resolveRequest => { capture = resolveRequest; });
+        const pending = page.evaluate("loadAgentChatThread('worker')");
+        const held = await intercepted;
+        capture = null;
+        if (transition === "overview") await page.click('#agents-content button[onclick="switchAgentSubTab(\'overview\')"]');
+        else if (transition === "newer") await page.evaluate("loadAgentChatThread('worker')");
+        else await page.click('#agents-content button[onclick="resetAgentChat(\'worker\')"]');
+        await held.respond({ status: 200, contentType: "application/json", body: '{"sessionId":"obsolete-session"}' });
+        await pending;
+        expect(await page.evaluate("currentSessionId")).toBe(transition === "reset" ? null : "worker-old-session");
+        if (transition === "overview") {
+          expect(await page.$eval("#chat", el => el.classList.contains("hidden"))).toBe(true);
+          await page.click('#agents-content button[onclick="switchAgentSubTab(\'chat\')"]');
+          await page.waitForFunction("currentSessionId === 'worker-old-session'");
+        }
+      }
+      expect(await page.$eval("#chat-messages", el => el.textContent)).toContain("Chat cleared.");
+      const submitted = new Promise<void>(done => { onPublish = done; });
+      await page.type("#chat-input", "Start fresh with worker");
+      await page.click("#chat-send");
+      await submitted;
+      expect(published).toMatchObject([{ type: "chat.start.requested", data: { agent: "worker", forceNew: true } }]);
+    } finally { await browser.close(); }
+  }, 30000);
+
+  test.skipIf(skipBrowser)("a late agent transcript cannot replace or resubscribe a newer session", async () => {
+    seedChat("worker");
+    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    try {
+      const page = await browser.newPage();
+      page.setDefaultTimeout(5000);
+      await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction("currentSessionId === 'worker-old-session' && ws?.readyState === WebSocket.OPEN");
+      await page.evaluate(`(() => {
+        window.sentSubscriptions = [];
+        const send = ws.send.bind(ws);
+        ws.send = frame => {
+          const data = JSON.parse(frame);
+          if (data.type === 'subscribe') window.sentSubscriptions.push(data.sessions);
+          send(frame);
+        };
+      })()`);
+      let capture: (request: HTTPRequest) => void;
+      const intercepted = new Promise<HTTPRequest>(resolveRequest => { capture = resolveRequest; });
+      await page.setRequestInterception(true);
+      page.on("request", request => {
+        const path = new URL(request.url()).pathname;
+        if (path === "/api/sessions/worker-old-session/transcript") capture(request);
+        else if (path === "/api/sessions/newer-session/transcript") void request.respond({ status: 200, contentType: "application/json", body: JSON.stringify({ messages: [{ role: "user", text: "New selected transcript" }] }) });
+        else void request.continue();
+      });
+      const pending = page.evaluate("switchSession('worker-old-session')");
+      const held = await intercepted;
+      await page.evaluate("switchSession('newer-session')");
+      await held.respond({ status: 200, contentType: "application/json", body: JSON.stringify({ messages: [{ role: "user", text: "Obsolete transcript" }] }) });
+      await pending;
+      expect(await page.evaluate("currentSessionId")).toBe("newer-session");
+      const text = await page.$eval("#chat-messages", el => el.textContent);
+      expect(text).toContain("New selected transcript");
+      expect(text).not.toContain("Obsolete transcript");
+      expect(await page.evaluate("window.sentSubscriptions.at(-1)")).toEqual(["newer-session"]);
+    } finally { await browser.close(); }
+  }, 30000);
+
+  test.skipIf(skipBrowser).each([false, true])("late direct-chat admission with existing session=%s cannot rebind a routed session", async (existing) => {
+    if (existing) seedChat("worker");
+    seedChat("selected");
+    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    try {
+      const page = await browser.newPage();
+      page.setDefaultTimeout(5000);
+      await page.goto(`${base}/sessions/selected-old-session`, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction("ws?.readyState === WebSocket.OPEN");
+      // Capture the actual retry callback; release it after the user has navigated.
+      await page.evaluate(`(() => {
+        const schedule = window.setTimeout;
+        const load = loadAgentChatThread;
+        loadAgentChatThread = name => window.pendingAgentChat = load(name);
+        window.chatRetry = null;
+        window.setTimeout = (callback, delay, ...args) => {
+          if (delay === 800) { window.chatRetry = callback; return 0; }
+          return schedule(callback, delay, ...args);
+        };
+      })()`);
+      let capture: (request: HTTPRequest) => void;
+      let captureDefault: (request: HTTPRequest) => void;
+      const intercepted = new Promise<HTTPRequest>(resolveRequest => { capture = resolveRequest; });
+      const defaultRead = new Promise<HTTPRequest>(resolveRequest => { captureDefault = resolveRequest; });
+      await page.setRequestInterception(true);
+      page.on("request", request => {
+        if (new URL(request.url()).pathname === "/api/agents/worker/message") capture(request);
+        else if (new URL(request.url()).pathname === "/api/agents/worker/default-session") captureDefault(request);
+        else void request.continue();
+      });
+      await page.evaluate("routeTo('/agents/worker')");
+      const defaultHeld = await defaultRead;
+      const pending = page.evaluate("document.getElementById('chat-input').value = 'Message worker'; sendChat()");
+      const held = await intercepted;
+      if (existing) await page.evaluate("routeTo('/sessions/selected-old-session')");
+      await held.continue();
+      await pending;
+      if (!existing) {
+        expect(await page.evaluate("typeof window.chatRetry")).toBe("function");
+        await page.evaluate("routeTo('/sessions/selected-old-session')");
+      }
+      await page.waitForFunction(() => document.querySelector("#session-detail-panel h3")?.textContent === "selected-old-session");
+      await defaultHeld.continue();
+      await page.evaluate("window.pendingAgentChat");
+      await page.evaluate("window.chatRetry?.()");
+      expect(await page.evaluate("currentSessionId")).toBe("selected-old-session");
+      expect(await page.evaluate("currentAgentChat")).toBeNull();
+      expect(published).toMatchObject([existing
+        ? { type: "session.steer.requested", target: { sessionId: "worker-old-session" } }
+        : { type: "chat.start.requested", data: { agent: "worker" } }]);
+      const submitted = new Promise<void>(done => { onPublish = done; });
+      await page.type("#chat-input", "Follow up on selected session");
+      await page.click("#chat-send");
+      await submitted;
+      expect(published).toHaveLength(2);
+      expect(published[1]).toMatchObject({ type: "session.steer.requested", target: { sessionId: "selected-old-session" } });
+    } finally { await browser.close(); }
+  }, 30000);
 
   test.skipIf(skipBrowser)("unbound interface chat rejects HTTP and browser input without steering an old session", async () => {
     seedChat();

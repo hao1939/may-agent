@@ -146,6 +146,7 @@ function projectPathOf(id) {
 }
 
 function render() {
+  chatSelectionVersion++;
   const previousTab = currentTab;
   const { tab, params } = parseRoute();
   currentTab = tab;

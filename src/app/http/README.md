@@ -70,6 +70,13 @@ cannot open a session. The router owns session-page mode and cancels queued
 refreshes on navigation. A queued refresh captures its original session ID and
 checks the active route before reading. Workflow summary cards retain their
 shared health-card styles, including mobile layout.
+The routed session ID also determines follow-up publication and subscription.
+Agent-chat reads and new-chat callbacks belong to the active agent's Chat
+subtab; route/subtab changes, Reset and newer selections invalidate them.
+Transcript reads cannot replace newer messages. Subscription changes happen
+at selection time and are restored on connection, without waiting for history.
+Entering another agent's chat clears the previous binding while its default
+thread loads; input during that read addresses the selected agent.
 
 [`http-human-tasks.test.ts`](../../../test/integration/http-human-tasks.test.ts)
 exercises these routes through a real HTTP process and control socket, including

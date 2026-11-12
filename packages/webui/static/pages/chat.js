@@ -37,6 +37,8 @@ let wsReconnectTimer = null;
 let chatInitialized = false;
 let activeSessions = [];
 let currentSessionId = null;
+// Routes, subtabs, resets and explicit selections invalidate pending chat work.
+let chatSelectionVersion = 0;
 let sessionRefreshTimer = null;
 let renderMd = true; // markdown rendering on by default
 let chatAutoScroll = true;
@@ -258,11 +260,21 @@ function renderSessionPicker() {
     : 'Type a message...';
 }
 
+function subscribeChatSession() {
+  if (ws?.readyState !== WebSocket.OPEN) return;
+  if (currentTab !== 'sessions' && !isAgentChatActive(currentAgentChat)) return;
+  const sessionId = isSessionPageMode() ? currentRouteParams.id : currentSessionId;
+  ws.send(JSON.stringify({ type: 'subscribe', sessions: [sessionId || 'chat'] }));
+}
+
 async function switchSession(sessionId) {
+  const selection = ++chatSelectionVersion;
   currentSessionId = sessionId;
   if (currentAgentChat) setAgentChatSessionId(sessionId);
   const messages = document.getElementById('chat-messages');
   messages.innerHTML = '';
+  renderSessionPicker();
+  subscribeChatSession();
 
   if (sessionId && !isSessionPageMode()) {
     // Load transcript history for chat/agent-chat mode. On #/sessions/:id, the
@@ -272,6 +284,7 @@ async function switchSession(sessionId) {
       const resp = await fetch(`/api/sessions/${sessionId}/transcript`);
       if (resp.ok) {
         const data = await resp.json();
+        if (selection !== chatSelectionVersion) return;
         const transcript = data.messages || data;
         const transData = Array.isArray(transcript)
           ? { sessionId, messageCount: transcript.length, messages: transcript }
@@ -279,18 +292,8 @@ async function switchSession(sessionId) {
         messages.innerHTML = renderSessionConversation(transData, { embedded: true, showTitle: false });
       }
     } catch {}
+    if (selection !== chatSelectionVersion) return;
     chatScrollToBottom(messages);
-  }
-
-  renderSessionPicker();
-  // Tell the server to switch subscription
-  if (ws && ws.readyState === 1) {
-    if (sessionId) {
-      ws.send(JSON.stringify({ type: 'subscribe', sessions: [sessionId] }));
-    } else {
-      // Chat mode — server auto-tracks the active chat session + children
-      ws.send(JSON.stringify({ type: 'subscribe', sessions: ['chat'] }));
-    }
   }
 }
 
@@ -494,8 +497,9 @@ function connectWs() {
           if (!mayConversation) status.textContent = `Connected — ${event.agent} (${event.instance})`;
           activeSessions = event.activeAgents || [];
           renderSessionPicker();
+          if (!mayConversation) subscribeChatSession();
           // Auto-attach to existing chat session (preserves conversation across refreshes)
-          if (!mayConversation && !currentSessionId) {
+          if (currentTab === 'sessions' && !currentRouteParams.id && !currentSessionId) {
             const chatSession = activeSessions.find(s => s.agent === humanInterface.agent && (s.status === 'running' || (s.status === 'idle' && s.kind === 'chat')));
             if (chatSession) {
               switchSession(chatSession.sessionId);
@@ -511,7 +515,7 @@ function connectWs() {
             activeSessions = event.activeAgents;
             renderSessionPicker();
             // Auto-attach to chat session if we don't have one
-            if (!mayConversation && !currentSessionId) {
+            if (currentTab === 'sessions' && !currentRouteParams.id && !currentSessionId) {
               const chatSession = activeSessions.find(s => s.agent === humanInterface.agent && (s.status === 'running' || (s.status === 'idle' && s.kind === 'chat')));
               if (chatSession) {
                 switchSession(chatSession.sessionId);
@@ -533,6 +537,7 @@ function sendChat() {
   const input = document.getElementById('chat-input');
   const msg = input.value.trim();
   if (!msg || !ws || ws.readyState !== 1) return;
+  let pending;
 
   // Show user message
   const messages = document.getElementById('chat-messages');
@@ -549,27 +554,35 @@ function sendChat() {
     btn.classList.remove('off');
   }
 
-  if (currentSessionId) {
+  const sessionId = isSessionPageMode() ? currentRouteParams.id : currentSessionId;
+  if (sessionId) {
     // Steer the selected session (works for running, idle, and — via 3b
     // cold-resume — done/error/interrupted sessions too).
     sendIntent(
       'session.steer.requested',
       { message: msg },
-      { target: { sessionId: currentSessionId } },
+      { target: { sessionId } },
     );
   } else if (currentAgentChat && currentAgentChat !== humanInterface.agent) {
     // Telegram-style: agent chat with no session yet. POST spawns one.
     const newParam = forceNewAgentChat ? '?new=true' : '';
+    const name = currentAgentChat;
+    const selection = ++chatSelectionVersion;
     forceNewAgentChat = false;
-    fetch('/api/agents/' + encodeURIComponent(currentAgentChat) + '/message' + newParam, {
+    pending = fetch('/api/agents/' + encodeURIComponent(name) + '/message' + newParam, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ content: msg }),
     }).then(r => r.json()).then(d => {
+      if (selection !== chatSelectionVersion || !isAgentChatActive(name)) return;
       // After spawn, re-resolve default session so the WS subscribes properly.
       if (d.sessionId) switchSession(d.sessionId);
-      else setTimeout(() => initAgentChat(currentAgentChat), 800);
-    }).catch(e => toast('Failed: ' + e.message));
+      else setTimeout(() => {
+        if (selection === chatSelectionVersion && isAgentChatActive(name)) void loadAgentChatThread(name);
+      }, 800);
+    }).catch(e => {
+      if (selection === chatSelectionVersion && isAgentChatActive(name)) toast('Failed: ' + e.message);
+    });
   } else {
     if (!humanInterface.appId) { toast("No Conversation App is configured"); return; }
     // Chat mode — input to the interface agent
@@ -580,11 +593,13 @@ function sendChat() {
     );
   }
   input.value = '';
+  return pending;
 }
 
 document.getElementById('chat-send').addEventListener('click', sendChat);
 
 function resetAgentChat(name) {
+  chatSelectionVersion++;
   currentSessionId = null;
   forceNewAgentChat = true;
   setAgentChatSessionId(null);

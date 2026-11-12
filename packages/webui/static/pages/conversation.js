@@ -8,7 +8,7 @@ let maySendPending = false;
 let mayUnconfirmedInput = null;
 
 function isMayConversation() {
-  return Boolean(humanInterface.appId) && currentAgentChat === humanInterface.agent && !isSessionPageMode();
+  return Boolean(humanInterface.appId) && isAgentChatActive(humanInterface.agent);
 }
 
 function updateConversationStop() {

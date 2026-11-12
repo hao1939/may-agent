@@ -3,6 +3,11 @@ let currentAgentSubTab = 'chat';
 let currentAgentChat = null;
 let forceNewAgentChat = false;
 
+function isAgentChatActive(name) {
+  return currentTab === 'agents' && currentRouteParams.name === name
+    && currentAgentChat === name && currentAgentSubTab === 'chat';
+}
+
 function setAgentChatSessionId(sessionId) {
   const el = document.querySelector('#chat-agent-banner .banner-session');
   if (!el) return;
@@ -29,10 +34,13 @@ function setAgentChatSessionId(sessionId) {
  * agent-chat from arbitrary-session view.
  */
 async function initAgentChat(name) {
+  const selection = chatSelectionVersion;
   if (!chatInitialized) {
     chatInitialized = true;
   }
   currentAgentChat = name;
+  currentSessionId = null;
+  forceNewAgentChat = false;
   updateConversationStop();
   // Update the chat header to show the agent name.
   const header = document.getElementById('chat-agent-banner');
@@ -47,11 +55,13 @@ async function initAgentChat(name) {
   // Metrics, Projects, Sessions. Switching sub-tab toggles whether the
   // #chat pane is visible vs. the detail body in #agents-content.
   await renderAgentDetail(name);
+  if (selection !== chatSelectionVersion || currentTab !== 'agents' || currentRouteParams.name !== name) return;
   // Default sub-tab is chat; load the thread.
   switchAgentSubTab(currentAgentSubTab || 'chat');
 }
 
 async function renderAgentDetail(name) {
+  const selection = chatSelectionVersion;
   const el = document.getElementById('agents-content');
   if (!el) return;
   // Fetch summary stats from /api/agents (same source as list view).
@@ -61,6 +71,7 @@ async function renderAgentDetail(name) {
     const all = await r.json();
     summary = (all || []).find(a => a.name === name) || null;
   } catch {}
+  if (selection !== chatSelectionVersion || currentTab !== 'agents' || currentRouteParams.name !== name) return;
 
   const dotColor = summary && summary.lastSessionAt && (Date.now() - summary.lastSessionAt < 4*3600*1000)
     ? (summary.errors4h > 0 ? 'var(--red)' : 'var(--green)')
@@ -94,6 +105,7 @@ async function renderAgentDetail(name) {
 }
 
 function switchAgentSubTab(tab) {
+  chatSelectionVersion++;
   currentAgentSubTab = tab;
   // Update sub-tab nav highlight.
   const nav = document.querySelector('#agents-content > div:nth-child(3)');
@@ -125,7 +137,8 @@ function switchAgentSubTab(tab) {
 }
 
 async function loadAgentChatThread(name) {
-  if (!name) return;
+  if (!name || !isAgentChatActive(name) || forceNewAgentChat) return;
+  const selection = ++chatSelectionVersion;
   if (name === humanInterface.agent) {
     currentSessionId = null;
     renderSessionPicker();
@@ -135,9 +148,10 @@ async function loadAgentChatThread(name) {
   try {
     const r = await fetch(`/api/agents/${encodeURIComponent(name)}/default-session`);
     const d = await r.json();
+    if (selection !== chatSelectionVersion || !isAgentChatActive(name)) return;
     if (d.sessionId) {
       setAgentChatSessionId(d.sessionId);
-      if (d.sessionId !== currentSessionId) switchSession(d.sessionId);
+      if (d.sessionId !== currentSessionId) await switchSession(d.sessionId);
     } else {
       currentSessionId = null;
       setAgentChatSessionId(null);
@@ -145,6 +159,7 @@ async function loadAgentChatThread(name) {
       if (messages) messages.innerHTML = '<div style="color:var(--fg2);font-size:13px;padding:24px;text-align:center">No conversation with <b>' + esc(name) + '</b> yet. Send a message to start one.</div>';
     }
   } catch (e) {
+    if (selection !== chatSelectionVersion || !isAgentChatActive(name)) return;
     const messages = document.getElementById('chat-messages');
     if (messages) messages.innerHTML = '<div style="color:var(--red);padding:16px">Failed: ' + esc(e.message) + '</div>';
   }
