@@ -94,15 +94,22 @@ but lacked the planner's explicit finite-result consume-and-close procedure.
 This establishes a missing starting discovery path; it does not establish what
 Scout saw in earlier dependency-return attempts or prove autonomous closure.
 
-The candidate Host change adds a bounded, read-only creator page across Apps,
-independent of structural parent and finished waits. It supplies that page to
-every Task executor and exposes the same attempt-bound read for continuation.
-Scout's native guidance now asks it to review returned work before discretionary
-expansion and judge closure from exact acceptance/publication evidence. These
+The candidate Host change adds a bounded, read-only creator query across Apps,
+independent of structural parent and finished waits. Every Task executor shares
+the same attempt-bound read; the simplified design adds no automatic snapshot
+or prompt propagation. Scout's native guidance explicitly calls that read on
+ordinary wakes, reviews returned work before discretionary expansion and judges
+closure from exact acceptance/publication evidence. These
 source changes still require Host review/release and separate App activation.
-The Host candidate is [PR #472](https://github.com/hao1939/may-agent/pull/472)
-at `13c4a66b4b53820da52ec61701e7cdeb1921588b`; final local CI passed
-4,043 tests with zero failures and three optional installation skips. The
+The Host candidate is [PR #472](https://github.com/hao1939/may-agent/pull/472).
+Its first revision `13c4a66b4b` passed 4,043 local tests with zero failures and
+three optional installation skips, plus GitHub Quality/Container. The smaller
+explicit-read revision, integrated with current Host main `07148372f9`, is
+`a1b582327e3bac131cf7d0bf47da506f8af6fef0`. It passed full local CI: 4,021 tests,
+23,901 assertions, zero failures and three existing optional installation skips;
+browser coverage executed. Exact-head GitHub Quality and Container are pending.
+Scout's companion instruction change is Apps local-main commit `f0391f842c`.
+The
 [design refinement](../../../alex.app/docs/archive/reviews/creator-owned-task-discovery-20261113.md)
 records the paired contracts, regressions, failed first checks and remaining gates.
 The acceptance gate remains an ordinary wake discovering and disposing existing
