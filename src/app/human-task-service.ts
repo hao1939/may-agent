@@ -16,6 +16,7 @@ import {
   readTaskAcceptedEvidence,
 } from "./core/reads/app-task-evidence.js";
 import { taskStatusFromPhase } from "./core/reads/task-status.js";
+import { readAppConversationResource, readConversationTopic } from "./core/state/conversations.js";
 import { storedResultFacts } from "./core/state/result-facts.js";
 import {
   TaskReferenceError,
@@ -34,11 +35,31 @@ import type {
 } from "./core/tasks/app-task-state.js";
 import type { TaskCompletionReceipt } from "./core/tasks/app-task-store.js";
 import { isHumanActionOwner } from "./core/tasks/human-condition.js";
+import { getDb } from "../lib/db/connection.js";
+import type { AppConversationResource, AppConversationTopic } from "@may-agent/sdk";
 
 export type HumanTaskStatus = TaskStatus;
 
 export { isHumanActionOwner } from "./core/tasks/human-condition.js";
 export { TaskReferenceError } from "./core/state/task-reference-index.js";
+
+export function readHumanConversation(
+  persistDir: string,
+  appId: string,
+  conversationId: string,
+  options?: { limit?: number; topicId?: string; topicLimit?: number; topicCursor?: string },
+): AppConversationResource {
+  return readAppConversationResource(getDb(persistDir), appId, conversationId, options);
+}
+
+export function readHumanConversationTopic(
+  persistDir: string,
+  appId: string,
+  conversationId: string,
+  topicIdOrRef: string,
+): AppConversationTopic | null {
+  return readConversationTopic(getDb(persistDir), appId, conversationId, topicIdOrRef);
+}
 
 export type HumanConditionAnchor = {
   taskGeneration: number;

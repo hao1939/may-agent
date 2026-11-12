@@ -500,6 +500,8 @@ export async function runAppRuntime(opts: {
         interfaceAgent,
         conversationAppId,
         conversationId: humanInterface.conversationId,
+        getAppConversation: (appId, conversationId, options) =>
+          readAppConversationResource(getDb(opts.persistDir), appId, conversationId, options),
         humanTasks: {
           getTask: (input) => humanTasks.getTask(input),
           listApps: (appId) => humanTasks.listApps(appId),

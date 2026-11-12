@@ -153,12 +153,17 @@ export default [
             {
               group: [
                 "**/core/tasks/**",
+                "**/core/state/**",
+                "**/core/inbox/**",
+                "**/core/scheduling/**",
+                "**/lib/db/connection",
+                "**/lib/db/connection.*",
                 "**/app-task-*",
                 "**/task-reference-index",
                 "**/task-reference-index.*",
                 "**/migrations/**",
               ],
-              message: "Transport adapters must use HumanTaskService and EventInterface/persisted event helpers, not core Task runtime or store internals.",
+              message: "Transport adapters must use HumanTaskService and EventInterface/persisted event helpers, not core state/task internals or raw DB connections.",
             },
           ],
         },
