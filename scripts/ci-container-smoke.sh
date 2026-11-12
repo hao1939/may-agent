@@ -133,6 +133,7 @@ RUNTIME_CHECK
 chmod 755 "$runtime_root/runtime-check.sh"
 runtime_container_id=$(docker create --network none --user root \
   --tmpfs /tmp:mode=1777 \
+  --env PATH=/usr/local/bin:/usr/bin:/bin \
   --env MODEL_BASE_URL=https://models.example.test \
   --env MODEL_API_KEY=ci-fixture-key \
   --env GEMINI_MODEL=gemini-fixture \
@@ -144,7 +145,7 @@ runtime_container_id=$(docker create --network none --user root \
     source /usr/local/bin/setup-codex-config.sh
     source /usr/local/bin/setup-pi-config.sh
     source /usr/local/bin/setup-gemini-config.sh
-    runuser -u mayagent -- /runtime-check.sh
+    /usr/sbin/runuser -u mayagent -- /runtime-check.sh
   ')
 docker cp "$runtime_root/runtime-check.sh" "$runtime_container_id:/runtime-check.sh"
 docker start --attach "$runtime_container_id" | tee test-results/runtime-user.txt

@@ -56,7 +56,7 @@ describe("Herdr integration startup configuration", () => {
     expect(integrationOffset).toBeGreaterThan(entrypoint.indexOf("source /usr/local/bin/setup-claude-config.sh"));
     expect(integrationOffset).toBeGreaterThan(entrypoint.indexOf("source /usr/local/bin/setup-pi-config.sh"));
     expect(integrationOffset).toBeGreaterThan(entrypoint.indexOf("source /usr/local/bin/setup-gemini-config.sh"));
-    expect(entrypoint).toContain("runuser -u mayagent");
+    expect(entrypoint).toContain("/usr/sbin/runuser -u mayagent");
     expect(entrypoint).not.toContain("herdr-agent-state");
   });
 
