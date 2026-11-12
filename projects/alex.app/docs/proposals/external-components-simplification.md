@@ -112,7 +112,8 @@ Telegram PR 468 belong to other workstreams and are not bundled here.
 
 **Design status:** Accepted on November 13, 2026.
 **Implementation status:** [Host PR 471](https://github.com/hao1939/may-agent/pull/471)
-is prepared at `c92f7eea5a87`; source merge and installed adoption are unverified.
+merged as `e5f373cc459d` on November 13, 2026. Source removal is complete;
+installed adoption remains unverified. Its tree matches tested head `c92f7eea5a87`.
 This extends the completed path/read reduction without reopening its merged scope.
 
 Simplify the completion boundary by retiring the two remaining default Host
@@ -154,9 +155,12 @@ dirty Git repository without writing or committing it. Full Host CI and the App
 design checks own validation; use synthetic files/processes without provider
 calls, installation state or a deployment.
 
-Candidate verification: 130 focused tests passed across eight files. App
+Premerge verification: full local `MAY_TEST_SHARDS=4 bun run ci` passed at
+`c92f7eea5a87`: 3,956 passed, zero failures, three installation-only skips across
+346 files. The focused run also passed 130 tests across eight files. App
 `check:may-design` passed with zero errors and one existing root-layout warning.
-The Host PR owns full local CI, final-revision GitHub checks and review evidence.
+[GitHub Quality and Container](https://github.com/hao1939/may-agent/actions/runs/43269824030)
+both passed on that final head. These checks do not establish installed behavior.
 
 ## Project metadata reader: merged
 
@@ -200,7 +204,7 @@ The narrower decisions are:
 
 | Area | Smallest worthwhile choice | Capability or guarantee we can give up |
 | --- | --- | --- |
-| Guard | Retire default Host tool heuristics: path/read removal merged in #470; completion diagnostics selected next | Automatic tool signals for guessed paths, repeat/transcript reads, missing write activity and uncommitted source |
+| Guard | Default Host tool heuristics retired in #470 and #471 | Automatic tool signals for guessed paths, repeat/transcript reads, missing write activity and uncommitted source |
 | Observer | Fix the actual blocking provider call first | No new general cancellation API, seamless hot replacement, or precise observation recovery |
 | Telegram | Bound each request and cancel owned I/O on close | Delayed/missed display and occasional duplicates; no guaranteed delivery |
 | Evaluation UI | Prefer viewing retained evidence; keep only operations the App actually supports | Automatic line-trail generation and inline feedback may be disabled instead of rebuilt |

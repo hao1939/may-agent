@@ -11,11 +11,12 @@ retired after `EXP-216` in favor of explicit workflow TypeScript repair loops).
 The three Host path/read heuristics were retired in
 [Host PR 470](https://github.com/hao1939/may-agent/pull/470), merged as
 `c5b9b9a70f47`; see [the selected reduction](../proposals/external-components-simplification.md#retire-host-path-and-read-heuristics).
-Source removal is complete; installed adoption remains unverified.
-Retirement of the remaining default finish/commit diagnostics and their
-tool-guard composition is accepted and prepared for review; see
+The remaining default finish/commit diagnostics and their tool-guard
+composition were retired in
+[Host PR 471](https://github.com/hao1939/may-agent/pull/471), merged as
+`e5f373cc459d`; see
 [the completion reduction](../proposals/external-components-simplification.md#retire-default-tool-completion-diagnostics).
-That source merge and installed adoption remain unverified.
+Source removal is complete; installed adoption remains unverified.
 
 Guards are detection signals first. Blocking is only one intervention mode.
 

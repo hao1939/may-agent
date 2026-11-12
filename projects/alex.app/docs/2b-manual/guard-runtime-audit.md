@@ -61,8 +61,8 @@ event, dedup will not help; fix the workflow, prompt, or tool surface.
 
 ## Historical Tool Diagnostics
 
-The selected Host contract retires default tool diagnostics and their
-composition; workflow guards continue to emit current signals. Check source
+Merged Host source has no default tool diagnostics or their composition;
+workflow guards continue to emit current signals. Check source
 revision and installed adoption before interpreting tool rows as current work.
 Retained newer tool rows identify the guard in structured data; use the
 guard/action query above. Older rows may share `guard: "beforeToolCall"`;
