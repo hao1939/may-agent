@@ -108,6 +108,56 @@ issues. These checks do not establish installed behavior.
 Unused legacy dashboard HTTP API retirement is deferred. Prompt/schema work and
 Telegram PR 468 belong to other workstreams and are not bundled here.
 
+## Retire default tool completion diagnostics
+
+**Design status:** Accepted on November 13, 2026.
+**Implementation status:** [Host PR 471](https://github.com/hao1939/may-agent/pull/471)
+is prepared at `c92f7eea5a87`; source merge and installed adoption are unverified.
+This extends the completed path/read reduction without reopening its merged scope.
+
+Simplify the completion boundary by retiring the two remaining default Host
+detectors: `finish-evidence` and `commit`. Remove their composition, context
+conversion, naming wrappers, and internal `onGuard` callback/event plumbing.
+Keep the Pi completion hooks that fence later calls after an accepted finish.
+There is no replacement detector, configuration option or new review service.
+
+At reviewed baseline `c5b9b9a70f47`, both detectors return `block: false` and
+only record a signal. They neither reject completion nor inject guidance into
+the model. The finish detector treats tool names and shell patterns as write
+activity, including failed write calls, while missing some scripted writes.
+The commit detector runs Git status at completion and carries repository-layout
+fallbacks, path aliases, generated-file exceptions, and inferred write ownership.
+These are diagnostic heuristics, not concrete acceptance or permission checks.
+
+The gain is removing a whole default diagnostic path and its assumptions from
+shared execution preparation. The deliberate loss is automatic tool events for
+suspected missing write activity and uncommitted source. Do not claim improved
+model quality, lower token cost or measured completion latency from deletion.
+
+Required result/schema validation, caller admission, missing-deliverable
+rejection, the accepted-finish fence, file-write permissions, execution budgets
+and cancellation remain. Apps own their acceptance criteria, including verified
+or committed source when required. App-authored workflow guards retain their
+SDK/runtime path; they may still implement explicit App Git/process checks.
+Historical tool events and the shared `guard.triggered` schema remain readable.
+
+The scoped current App and Host source search found no App consumers of the
+retired callback or detector IDs. One App repository workflow independently
+checks dirty source; it does not depend on the Host detector. No App runtime or
+SDK event-schema migration is needed. Docs may land first with candidate status.
+
+Verification uses existing completion and mixed-batch/queued-input fixtures,
+invalid-schema and caller-admission correction, missing-file rejection, concrete
+file permissions, workflow guard events and historical HTTP evidence reads.
+The updated completion regression reports an existing deliverable in a temporary
+dirty Git repository without writing or committing it. Full Host CI and the App
+design checks own validation; use synthetic files/processes without provider
+calls, installation state or a deployment.
+
+Candidate verification: 130 focused tests passed across eight files. App
+`check:may-design` passed with zero errors and one existing root-layout warning.
+The Host PR owns full local CI, final-revision GitHub checks and review evidence.
+
 ## Project metadata reader: merged
 
 The user selected this consolidation. [Host PR 460](https://github.com/hao1939/may-agent/pull/460)
@@ -150,7 +200,7 @@ The narrower decisions are:
 
 | Area | Smallest worthwhile choice | Capability or guarantee we can give up |
 | --- | --- | --- |
-| Guard | Retire the three Host path/read heuristics (supersedes the wording-only correction) | Automatic diagnostic signals for guessed paths, repeat reads and transcript access |
+| Guard | Retire default Host tool heuristics: path/read removal merged in #470; completion diagnostics selected next | Automatic tool signals for guessed paths, repeat/transcript reads, missing write activity and uncommitted source |
 | Observer | Fix the actual blocking provider call first | No new general cancellation API, seamless hot replacement, or precise observation recovery |
 | Telegram | Bound each request and cancel owned I/O on close | Delayed/missed display and occasional duplicates; no guaranteed delivery |
 | Evaluation UI | Prefer viewing retained evidence; keep only operations the App actually supports | Automatic line-trail generation and inline feedback may be disabled instead of rebuilt |

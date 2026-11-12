@@ -33,8 +33,8 @@ ORDER BY rows DESC;
 
 High volume alone is not proof of agent failure. It is a signal to review
 composition, repeat rate, and whether the guard is interrupting work.
-In particular, current tool-hook `warned` rows record nonblocking diagnostics;
-their reason is not injected into the model context. Workflow warnings can
+Historical tool-hook `warned` rows record nonblocking diagnostics;
+their reason was not injected into the model context. Workflow warnings can
 inject guidance. Check the emitting path before inferring an intervention from
 the action label. Retirement preserves existing rows, so recent volume can
 include detectors removed from a newer source revision.
@@ -59,10 +59,13 @@ If one session emits many repeated guard events for the same condition, prefer
 per-session dedup or a narrower detector. If many sessions each emit one guard
 event, dedup will not help; fix the workflow, prompt, or tool surface.
 
-## Tool-Level Guard Composition
+## Historical Tool Diagnostics
 
-Current Host tool diagnostics identify the guard in structured data. Use the
-guard/action query above. Historical rows may share `guard: "beforeToolCall"`;
+The selected Host contract retires default tool diagnostics and their
+composition; workflow guards continue to emit current signals. Check source
+revision and installed adoption before interpreting tool rows as current work.
+Retained newer tool rows identify the guard in structured data; use the
+guard/action query above. Older rows may share `guard: "beforeToolCall"`;
 for those retained rows, bucket by reason prefix:
 
 ```sql
@@ -77,8 +80,9 @@ GROUP BY reason_prefix
 ORDER BY rows DESC;
 ```
 
-Use this fallback for historical evidence, not as a second identity scheme for
-current diagnostics. Do not rewrite retained rows to match a newer detector set.
+Use this fallback for historical evidence. Current workflow signals use their
+structured guard identity. Do not rewrite retained rows to match a newer
+detector set.
 
 ## Threshold Quality
 

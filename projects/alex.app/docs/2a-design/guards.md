@@ -12,6 +12,10 @@ The three Host path/read heuristics were retired in
 [Host PR 470](https://github.com/hao1939/may-agent/pull/470), merged as
 `c5b9b9a70f47`; see [the selected reduction](../proposals/external-components-simplification.md#retire-host-path-and-read-heuristics).
 Source removal is complete; installed adoption remains unverified.
+Retirement of the remaining default finish/commit diagnostics and their
+tool-guard composition is accepted and prepared for review; see
+[the completion reduction](../proposals/external-components-simplification.md#retire-default-tool-completion-diagnostics).
+That source merge and installed adoption remain unverified.
 
 Guards are detection signals first. Blocking is only one intervention mode.
 
@@ -126,6 +130,7 @@ type GuardTriggeredData = {
 
 type GuardTriggeredEvent = {
   type: "guard.triggered";
+  // "tool" remains accepted for retained historical evidence.
   source: "workflow" | "tool";
   owner: string;
   data: GuardTriggeredData;
@@ -136,12 +141,15 @@ Target invariant: every guard trigger emits `guard.triggered`.
 
 ## Architecture
 
-Guards operate at two levels, both emitting `guard.triggered` events.
+App-authored workflow guards emit `guard.triggered` events. Concrete tool
+contracts are enforced by their capability boundaries rather than a default
+Host diagnostic layer. Historical tool guard events remain readable.
 
 ### Workflow Guards
 
-Workflow guards live under `shared/guards/*.ts` and are loaded by
-`shared/guards/loader.ts`. They fire on workflow step transitions such as
+Workflow guards are App/shared modules exporting `guard: WorkflowGuard`.
+`loadGuards()` in Host `src/lib/workflow-tool.ts` discovers the supplied guard
+directories. They fire on workflow step transitions such as
 `step_done` or `step_started`.
 
 Each guard exports `guard: WorkflowGuard` with a `handle()` method. The guard
@@ -152,35 +160,31 @@ Workflow guards are best for process-level expectations: read before edit,
 verify after write, build after code changes, milestone quality, secret
 leakage, or hallucinated paths in workflow evidence.
 
-### Tool-Level Guards
+### Tool Contracts And Completion
 
-Tool-level guards live under `projects/may-agent/src/lib/tools/*.ts`. They are
-composed by `compose-guards.ts` and wired into the `beforeToolCall` hook in
-`agent-execution.ts`; `manager.ts` records their reported diagnostics.
-
-They fire on tool invocation, not workflow transitions. The selected Host
-contract keeps finish write-activity and commit diagnostics, and retires the
-path-prefix, repeated-read and raw-transcript-read detectors. Those detectors
-guess whether work is mistaken or wasteful; they do not enforce a declared
-permission or result contract. App workflow detectors are a separate scope.
-
-The current Pi tool hook consumes `block: true` as a tool rejection. A
-`block: false` result records a diagnostic through the Host callback; it does
-not inject its reason into the model context. Existing tool diagnostics are
-recorded with `demandType: "warn"` and `action: "warned"`; that label alone is
-not evidence of an intervention. Workflow `warn` demands can inject context.
+The selected Host contract has no default tool-guard composition or diagnostic
+callback. Path/read heuristics, finish write-activity guessing and automatic Git
+scans at completion are retired. No replacement detector or toggle is required.
+This gives up automatic tool diagnostic signals; App workflow guards retain
+their separate SDK/runtime path and may enforce explicit App expectations.
 
 Required-result checks, tool argument validation and file-write permissions
-belong to their concrete capability boundaries. Execution cancellation and
-read/Bash output limits bound resource use. Output truncation limits a single
-response, not the number of wasteful calls. File errors and saved tool evidence
-remain available to the agent and App; no replacement heuristic, detector
-configuration, hash tracking or new observation service is required.
+remain at their concrete capability boundaries. A success report claiming a
+missing deliverable is rejected by the finish tool. Invalid result/schema or
+caller admission stays correctable before completion. An accepted finish ends
+the invocation and fences later tool calls from the same batch; the existing
+Pi `beforeToolCall` fence remains for this exact authority check.
 
-Tool-level guard events should identify the specific guard as structured data.
-If many guards emit only `guard: "beforeToolCall"` and hide the real detector in
-free-form `reason`, downstream metrics and review must parse text, which is a
-schema smell to fix.
+The Host does not require a Git commit or infer successful work from a tool
+name. Apps judge their acceptance criteria, including verified/committed source
+when required. Execution cancellation and read/Bash output limits bound
+resource use. Output truncation limits one response, not the number of wasteful
+calls. File errors and saved tool evidence remain available to the agent and App.
+
+Historical tool diagnostics used `demandType: "warn"` and `action: "warned"`,
+but their `block: false` reason was not injected into model context. That label
+alone is not proof of an intervention. Retained tool rows and their event schema
+remain available; workflow `warn` demands can inject context.
 
 ## Runtime Audit
 
@@ -201,7 +205,8 @@ Stable lessons from prior incidents:
   events from the same session.
 - Dedup does not help one-event-per-session patterns; those need workflow,
   prompt, or tool-surface fixes.
-- Tool-level guard names should be specific enough for metrics.
+- Use structured detector identities when reviewing current workflow signals;
+  reason-prefix parsing is only a fallback for historical tool rows.
 
 ## Ownership
 
