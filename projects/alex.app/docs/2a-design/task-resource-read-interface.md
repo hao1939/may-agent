@@ -86,7 +86,12 @@ and observations; absence does not establish satisfaction.
 
 `pendingEvents` shows up to 32 currently unclaimed inputs, with exact Event
 identities and explicit truncation. The active attempt's input remains separately
-available in its supplied context. This is a bounded current-input window, not a
+available in its supplied context, and while a current-generation attempt is
+`running`, `TaskDetail.activeAttempt` reports that attempt's identity and
+bounded `assignedInput` counts (`newEvents`, `continuingInputs`, `truncated` and
+up to eight `continuedInputKeys`) within the same SQLite read snapshot so an
+empty `pendingEvents` window is never mistaken for an input-less attempt (Host
+PR #459). `pendingEvents` is a bounded current-input window, not a
 complete history or a fulfillment flag. Remaining input keeps its existing later
 reconciliation opportunity. Reading the window does not consume it.
 

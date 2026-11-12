@@ -5,9 +5,7 @@
 **Choice basis:** [One authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource); [agent judgment and code mechanics](../1-principles/code-vs-data.md); [compare value and cost](../1-principles/design-philosophy.md#value-and-cost).
 
 **Design status:** Proposed entry/read refinements; existing storage remains authoritative.
-**Implementation status:** Existing facilities plus unproved usability improvements.
-Reviewed October 3 from unmerged September drafts `dc46463cca` and `274e67697a`.
-This document does not introduce a new SDK field or change installed behavior.
+**Implementation status:** Host PR #459 implements the read/entry separation (`TaskDetail.activeAttempt.assignedInput` during running attempts, `TASK.md` `## Assigned vs. pending input` pointers, non-request event envelope/data previews in the per-turn decision brief, workflow `continuedInputs`-only prompt parity, and Codex native `work` + `taskWorkGuidance`). Source status is not deployment evidence until merged and rolled out; real-model comparison remains open.
 
 ## Decision
 
