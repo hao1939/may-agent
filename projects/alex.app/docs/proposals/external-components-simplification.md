@@ -58,6 +58,8 @@ The user selected this consolidation. [Host PR 460](https://github.com/hao1939/m
 shares project metadata parsing/discovery across the list, detail, session lookup
 and agent counts, replacing the independently reproduced disagreements. Source
 implementation is complete; merge and installation remain pending.
+Review corrections separate identity-only control lookup from strict display
+reads and keep disappearing-file failures local to the affected listing record.
 
 The [implementation record](../archive/reviews/shared-project-metadata-20261112.md)
 retains the original findings, exact revisions, historical-tag compatibility and

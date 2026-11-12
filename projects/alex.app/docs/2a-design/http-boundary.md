@@ -112,6 +112,12 @@ Session reads include exact tags recognized by the former parser alongside the
 current identity; no stored tags are rewritten. Ingress retains its previous
 single target. Missing metadata still permits an exact retained session-tag
 read; malformed JSON fails detail and is omitted from saved-project listings.
+Collection discovery captures timestamps inside each guarded metadata read;
+a file disappearing before that read completes removes only its own record.
+Controls use an identity-only reader sharing the source parser, without loading
+display posture. JSON syntax errors retain the previous path/frontmatter
+identity fallback for project comments and event ingress. Existing file-access
+checks remain; the daemon owns validation and admission of the addressed target.
 See the [reader consolidation record](../archive/reviews/shared-project-metadata-20261112.md)
 for compatibility and verification limits.
 

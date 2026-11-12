@@ -229,7 +229,9 @@ installation. Saved runtime posture is read consistently without changing source
 identity. Historical session-tag aliases preserve inspection; they do not prove
 current Task ownership or retarget steering. Malformed JSON is unavailable in
 detail and omitted from saved-context listings. Loaded Apps remain independently
-visible. See the [consolidation record](../archive/reviews/shared-project-metadata-20261112.md).
+visible. Display parsing errors do not block project comments or explicitly
+targeted events through an existing project path. Disappearing metadata removes
+only its own listing record. See the [consolidation record](../archive/reviews/shared-project-metadata-20261112.md).
 
 Browser inference stays light. Stable project/task classifications belong in a
 server read model or project-owned state. Domain-specific feature/test/run
