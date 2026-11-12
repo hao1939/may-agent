@@ -298,7 +298,7 @@ describe("HTTP human Task reads and board", () => {
     } finally { await browser.close(); }
   }, 30000);
 
-  test.skipIf(skipBrowser)("a late agent transcript cannot replace or resubscribe a newer session", async () => {
+  test.skipIf(skipBrowser).each(["newer-session", "worker-old-session"])("a late agent transcript cannot replace the latest selection of %s", async (selectedSession) => {
     seedChat("worker");
     const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
     try {
@@ -316,24 +316,28 @@ describe("HTTP human Task reads and board", () => {
         };
       })()`);
       let capture: (request: HTTPRequest) => void;
+      let heldFirstTranscript = false;
       const intercepted = new Promise<HTTPRequest>(resolveRequest => { capture = resolveRequest; });
       await page.setRequestInterception(true);
       page.on("request", request => {
         const path = new URL(request.url()).pathname;
-        if (path === "/api/sessions/worker-old-session/transcript") capture(request);
-        else if (path === "/api/sessions/newer-session/transcript") void request.respond({ status: 200, contentType: "application/json", body: JSON.stringify({ messages: [{ role: "user", text: "New selected transcript" }] }) });
+        if (path === "/api/sessions/worker-old-session/transcript" && !heldFirstTranscript) {
+          heldFirstTranscript = true;
+          capture(request);
+        } else if (path === `/api/sessions/${selectedSession}/transcript`) void request.respond({ status: 200, contentType: "application/json", body: JSON.stringify({ messages: [{ role: "user", text: "New selected transcript" }] }) });
         else void request.continue();
       });
       const pending = page.evaluate("switchSession('worker-old-session')");
       const held = await intercepted;
-      await page.evaluate("switchSession('newer-session')");
+      if (selectedSession === "worker-old-session") await page.evaluate("loadAgentChatThread('worker')");
+      else await page.evaluate("switchSession('newer-session')");
       await held.respond({ status: 200, contentType: "application/json", body: JSON.stringify({ messages: [{ role: "user", text: "Obsolete transcript" }] }) });
       await pending;
-      expect(await page.evaluate("currentSessionId")).toBe("newer-session");
+      expect(await page.evaluate("currentSessionId")).toBe(selectedSession);
       const text = await page.$eval("#chat-messages", el => el.textContent);
       expect(text).toContain("New selected transcript");
       expect(text).not.toContain("Obsolete transcript");
-      expect(await page.evaluate("window.sentSubscriptions.at(-1)")).toEqual(["newer-session"]);
+      expect(await page.evaluate("window.sentSubscriptions.at(-1)")).toEqual([selectedSession]);
     } finally { await browser.close(); }
   }, 30000);
 

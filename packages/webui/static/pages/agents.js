@@ -151,7 +151,7 @@ async function loadAgentChatThread(name) {
     if (selection !== chatSelectionVersion || !isAgentChatActive(name)) return;
     if (d.sessionId) {
       setAgentChatSessionId(d.sessionId);
-      if (d.sessionId !== currentSessionId) await switchSession(d.sessionId);
+      await switchSession(d.sessionId);
     } else {
       currentSessionId = null;
       setAgentChatSessionId(null);
