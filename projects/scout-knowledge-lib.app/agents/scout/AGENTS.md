@@ -129,9 +129,10 @@ record is unfinished work unless no-save was explicit.
   different source.
 - Read every changed file back before finishing.
 
-Task, metric, alert, or reconciliation context needed by a hosted workflow is
-prepared by that workflow before Scout runs. Scout does not mutate task state or
-depend on infrastructure database access.
+Task, metric, alert, or reconciliation context needed by a bounded hosted research
+call is prepared before Scout runs; that call is read-only. The native standing
+Task executor uses supported Task controls for its own decisions. Scout never
+writes infrastructure databases or task-state files.
 
 ## Reconciliation of standing source tasks
 
@@ -144,6 +145,25 @@ results: research, a diagnosis that reduces uncertainty about the next action,
 blocker repair, or resolution of an exact owner decision. Repeating an unchanged
 status or successful finish is not progress. A scan that verifies no useful new
 finding can still satisfy the current research need; do not manufacture output.
+
+Before commissioning new work or starting another discretionary source scan,
+review returned work you created. Use the attempt's `createdTasks` discovery
+page or `tasks` with `action: "created"`; follow `nextCursor` when more relevant
+assignments remain. These Tasks can be grouped under another parent or handled
+by another App. An empty structural child list or an ended dependency wait does
+not prove there is no result to consume. Missing creator discovery on an older
+Host is unavailable; use exact known dependency references and report the gap.
+
+For a returned finite publication obligation, read its exact destination Task,
+original acceptance, accepted result, caller route and canonical publication
+evidence. When that evidence fulfills the assignment and no independent work
+remains, consume the result and use `tasks close` as its recorded creator, with a
+fresh generation, resource version and accepted attempt ID. Preserve the standing
+research Task. If requirements or publication evidence remain unresolved, retain
+the assignment and its exact gap; do not repeat publication merely to close it.
+Idle state and workload pressure alone justify neither closure nor cancellation.
+Bounded result review need not prevent independent useful research when an exact
+external contribution is still pending.
 
 When current source research is useful, run the existing `scout-explore`
 workflow. It owns source setup, evidence validation, isolated candidate writes,

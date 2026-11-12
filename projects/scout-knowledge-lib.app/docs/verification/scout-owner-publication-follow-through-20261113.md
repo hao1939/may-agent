@@ -76,6 +76,34 @@ explicitly routed reminders with exact child references; it does not establish
 that ordinary research wakes will discover and close old fulfilled children
 without that reminder. That discovery and owner-guidance question remains open.
 
+## Ordinary-wake diagnosis
+
+The later read-only comparison found a discovery gap. Ordinary GitHub attempt
+`r_3_741d8366-d5ff-448f-8a88-741436e172db` and HN attempt
+`r_3_976a121b-0932-4b31-9156-98a482c841cf` both received
+`children: {live: [], completed: []}` and no open waits. Their input batches
+contained the scheduled source requests, without the old publication Task
+identities. Both prompted closure attempts also had empty structural child lists;
+the addressed follow-through requests supplied the missing exact identities.
+
+Both publication Tasks recorded their source Task as immutable creator, while
+their grouping parent was `library-operations`. Host `readAppTaskChildContext`
+selected by `spec.parentId`, so its empty result did not describe creator-owned
+work. The native standing Scout instructions preserved publication obligations
+but lacked the planner's explicit finite-result consume-and-close procedure.
+This establishes a missing starting discovery path; it does not establish what
+Scout saw in earlier dependency-return attempts or prove autonomous closure.
+
+The candidate Host change adds a bounded, read-only creator page across Apps,
+independent of structural parent and finished waits. It supplies that page to
+every Task executor and exposes the same attempt-bound read for continuation.
+Scout's native guidance now asks it to review returned work before discretionary
+expansion and judge closure from exact acceptance/publication evidence. These
+source changes still require Host review/release and separate App activation.
+The acceptance gate remains an ordinary wake discovering and disposing existing
+finite work without an operator naming its children. These two already closed
+Tasks must not be reopened or replaced merely to create that demonstration.
+
 Commands, before/after Task reads, native session metadata, closure records,
 caller answers and byte comparisons are retained under
 `/home/hao/workspace-archive/scout-owner-publication-follow-through-20261113/`.
