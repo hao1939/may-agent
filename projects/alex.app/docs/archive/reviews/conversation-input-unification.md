@@ -681,7 +681,7 @@ and tests do not replace an installation-specific rollout procedure.
 
 ## Acceptance and cost evidence
 
-Reuse [PR #149's follow-through fixtures](../../proposals/task-runtime-organization.md#request-follow-through-review)
+Reuse [PR #149's follow-through fixtures](task-runtime-organization.md#request-follow-through-review)
 and existing controller/dependency tests. Those prove current mechanics, not
 this lifecycle. Verify the target at its actual boundaries:
 

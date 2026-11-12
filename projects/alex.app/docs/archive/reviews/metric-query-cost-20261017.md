@@ -12,7 +12,7 @@ responsive and steerable while avoiding unnecessary machinery and model calls.
 **Choice basis:** [Simple first](../../1-principles/core-principles.md#simple-first)
 and [Host mechanics, App meaning](../../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics).
 The [Metrics contract](../../2a-design/metrics.md) owns source execution; the
-[Host proposal](../../proposals/host-contract-improvements-20261016.md#5-measure-metric-query-cost-before-adding-isolation)
+[Host proposal](host-contract-improvements-20261016.md#5-measure-metric-query-cost-before-adding-isolation)
 tracks the remaining monitoring and containment work.
 
 ## What was measured

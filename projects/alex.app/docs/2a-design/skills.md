@@ -214,8 +214,8 @@ Relative paths then resolve inside the captured release; live source edits do
 not change its cataloged skill bodies or captured references. This does not
 parse Markdown links or validate external URLs; authors must check those references.
 
-**Availability:** Implemented in companion Host source on
-`feat/skill-discovery-paths`; merge and deployment remain pending. Older Hosts
+**Availability:** Merged in [Host #291](https://github.com/hao1939/may-agent/pull/291).
+This source status does not establish activation in an installation. Older Hosts
 ignore this optional file and discover only the conventional roots.
 
 ## Discovery Lifecycle

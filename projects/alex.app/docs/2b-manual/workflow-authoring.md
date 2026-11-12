@@ -481,7 +481,7 @@ For a repository-changing workflow:
 The shared agent guidance supplies these practices for direct work as well.
 Workflow implementation must still make the paths and result contract agree;
 adding a worktree sentence to a prompt is not end-to-end proof. The
-[workflow review](../proposals/workflow-practices-review.md) tracks the installed
+[workflow review](../archive/reviews/workflow-practices-review.md) tracks the installed
 Apps that have not yet met this contract.
 
 ## Shared Mechanics

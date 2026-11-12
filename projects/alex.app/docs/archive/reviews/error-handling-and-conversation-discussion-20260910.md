@@ -8,7 +8,7 @@ This is a discussion summary, not a new accepted subsystem contract.
 
 > “let's archive our discussion, we need more time. now let's focus keep the core simple and robust”
 
-Current work follows the [simple and robust core focus](../../proposals/task-runtime-organization.md#current-focus-simple-and-robust-core).
+Current work follows the [simple and robust core focus](task-runtime-organization.md#current-focus-simple-and-robust-core).
 The [design philosophy](../../1-principles/design-philosophy.md) remains the guide:
 what value does a choice provide, what does it cost, and is it worthwhile over
 its expected lifetime and risk? More recovery machinery is not automatically

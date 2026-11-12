@@ -368,9 +368,9 @@ starts a concurrent attempt. See [input during execution](execution-contribution
 
 An App subscription has a stable ID and produces input only when its pure
 translator returns a valid value. App admission passes addressed input through
-the App's pure `task(input)` mapping and atomically attaches its Task/input link. A direct Task
-subscription may use pure `tasks.resolve(event)` during exact admission. The
-Runtime persists the resulting intent and one ordered canonical task-event
+the App's pure `task(input)` mapping and atomically attaches its Task/input link.
+Selected facts enter through that same typed input contract; the retired direct
+Task resolver has no runtime fallback. The Runtime persists the resulting intent and one ordered canonical task-event
 link, then coalesces the stable task ID in its ready set. A targeted task or
 Condition wake stores the same kind of link without broad resolution.
 

@@ -652,7 +652,7 @@ Broader owner follow-through remains in the
 - [Task resource contract](../2a-design/task-resource-engine.md#resource-authority): existing Task authority and versions.
 - [Event contract](../2a-design/events.md): publication, admission and observation boundaries.
 - [Core principles](../1-principles/core-principles.md) and [system boundary](../2a-design/system-boundary.md).
-- [Controller proposal](../archive/reviews/task-controller-pattern.md) and [core organization proposal](task-runtime-organization.md).
+- [Controller proposal](../archive/reviews/task-controller-pattern.md) and [core organization proposal](../archive/reviews/task-runtime-organization.md).
 - [Task transitions and claims at the reviewed revision](https://github.com/hao1939/may-agent/blob/350552a4ba9a4278fe30897430619667bb7bb7f3/src/app/app-task-reconciler.ts).
 - [Request attachment and delegation](https://github.com/hao1939/may-agent/blob/350552a4ba9a4278fe30897430619667bb7bb7f3/src/app/app-inbox-host.ts#L1256), [request/Conversation claims](https://github.com/hao1939/may-agent/blob/350552a4ba9a4278fe30897430619667bb7bb7f3/src/app/app-inbox-store.ts#L660).
 - [Transactional Task store](https://github.com/hao1939/may-agent/blob/350552a4ba9a4278fe30897430619667bb7bb7f3/src/app/app-task-resource-store.ts#L1207), [fenced event persistence](https://github.com/hao1939/may-agent/blob/350552a4ba9a4278fe30897430619667bb7bb7f3/src/lib/db-writer.ts#L638), [Host capacity](https://github.com/hao1939/may-agent/blob/350552a4ba9a4278fe30897430619667bb7bb7f3/src/app/host-capacity.ts).

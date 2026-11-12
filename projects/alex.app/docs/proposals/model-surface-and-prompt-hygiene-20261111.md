@@ -4,7 +4,7 @@
 
 **Choice basis:** [Simple first](../1-principles/core-principles.md#simple-first), [Code vs Data](../1-principles/code-vs-data.md), [Evidence-First Process](../1-principles/evidence-first.md), and lessons from DeepSeek's [`dsh-superagent-prototype`](https://github.com/deepseek-ai/dsh-superagent-prototype) (`tests/model-surface.spec.ts`, `tests/docs.spec.ts`, and `000-philosophy.md`).
 
-**Status:** Implemented in initial slices (2026-11-11): Host/SDK schema deduplication and tool surface budgets are proposed in [Host PR #452](https://github.com/hao1939/may-agent/pull/452); prompt hygiene, skill extraction, zero-omission skill catalog tuning, Rejected Mechanisms documentation, and `scripts/check-model-surface.ts` are integrated in `/app`. Remaining items: `TaskIntent` SOP checklist trimming in App mappers and Gym A/B transfer runs.
+**Status:** Implemented in initial slices (2026-11-11): Host/SDK schema deduplication and tool surface budgets merged in [Host PR #452](https://github.com/hao1939/may-agent/pull/452) at `6bacfaa3eb7d041257020a858ab4047c88c18bb4`; prompt hygiene, skill extraction, zero-omission skill catalog tuning, Rejected Mechanisms documentation, and `scripts/check-model-surface.ts` are integrated in `/app`. Remaining items: `TaskIntent` SOP checklist trimming in App mappers and Gym A/B transfer runs.
 
 ---
 
@@ -80,7 +80,7 @@ Measured directly via `prepareAgents` + `prepareAgentExecution(..., { requireFin
 
 - **Mechanism:**
   1. Refactor `taskAgentResultSchema` in [`packages/sdk/src/task-contract.ts`](../../../may-agent/packages/sdk/src/task-contract.ts) from a 4-branch `Type.Union` that copies `...resultFields` 3 times into **one flat `Type.Object`** (`state: Type.Union([Literal("converged"), Literal("waiting"), Literal("incomplete")])` + single definitions of `summary`, `facts`, `response`, `result`, `inputKeys`, `communication`, `conditions`, `requests`, `actions`, `continue`, `report`, `reviewAt`).
-  2. Enforce state-specific field exclusions (`incomplete` cannot carry `conditions`/`requests`/`actions`/`continue`; `report: true` with `waiting` requires non-empty `facts`; etc.) inside `admitTaskResultForSchema`—which `createWorkflowFinishTool` **already executes on every `finish()` call** and returns actionable `finish() error:` messages for!
+  2. Retain compact per-state `anyOf` constraints in the schema as well as semantic admission through `admitTaskResultForSchema`. `Check`, `Compile`, persisted-schema callers and `finish()` must share the accepted JSON shapes. Semantic admission supplies additional meaning and authority checks; it does not replace structural validation.
   3. Compress schema `description` fields from multi-paragraph lectures (`14,167` chars) to crisp 1-sentence field contracts: if `admitTaskResultForSchema` or `tasks` validation already rejects invalid combinations with an exact message, do not spend 250 words per property explaining Host internals.
 - **Expected impact:** Cuts `finish` + `tasks` from **`47,926` chars -> ~`20,000` chars**, saving **~27,000 chars (~7,000 tokens) on every model step of every agent** (`may`, `alex`, `scout`, `bob`, `tech-lead`, `evaluator`, `judge`, `gym`) with identical runtime validation.
 
@@ -146,6 +146,6 @@ Per [Evidence-First Process](../1-principles/evidence-first.md), structural size
 
 ## 6. Review Questions
 
-1. **Slice 1 (`taskAgentResultSchema` deduplication):** Approve collapsing the 4-branch `anyOf` copy of `resultFields` into a single object schema while keeping all per-`state` semantic checks in `admitTaskResultForSchema`?
+1. **Slice 1 (`taskAgentResultSchema` deduplication):** Completed in #452 with shared object properties, compact structural state constraints and semantic admission. Serialized `finish` + `tasks` definitions fell from 47,926 to 23,427 characters. This is not a token, billing or behavior result.
 2. **Slice 2 (`may/AGENTS.md` decomposition):** Approve extracting the 3 situational runbooks (*Evaluation/metric intake*, *GitHub PR waits*, *Research link curation & Bob adoption*) from always-loaded `may/AGENTS.md` into `may`-local `SKILL.md` packages?
 3. **Slice 3 (`check:model-surface` budgets):** Are `<=68,000` chars for `may` and `<=58,000` chars for specialists good initial hard CI ceilings (ratcheting down as we shrink further)?

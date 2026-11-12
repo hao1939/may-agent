@@ -176,7 +176,7 @@ The execution choices differ in method, not Task ownership:
 | Managed agent | A model/tool loop with the selected agent's instructions and current Task brief | `runTaskAgent()` → `adapters/executors/managed-agent.ts` → `manager.ts` |
 | Workflow | An authored bounded procedure, which can call agents and tools | `runTaskWorkflow()` → `adapters/executors/workflow.ts` → `workflow-tool.ts` |
 | Registered executor | An installed function accepting `TaskAttempt`, including native CLI adapters | `runRegisteredTaskExecutor()` → the entry in `opts.executors`; `daemon-agents.ts` installs `codex-goal` |
-| Conversation | Human context and a decision proposal for the same Task settlement | `opts.conversations.execute()` → `composition/task-execution.ts` → `conversations/turn-agent.ts` |
+| Conversation | An ordinary agent attempt with saved human/system input and communication context | `core/tasks/attempt-execution.ts` → managed-agent execution; `core/tasks/task-communication.ts` applies scoped effects |
 
 These are alternatives for an attempt. A workflow calling an agent as a helper
 retains its enclosing execution scope; it does not claim another Task merely
@@ -206,7 +206,7 @@ Back in `runClaimedTask()`, follow the branch matching the returned state:
 
 | Report | Follow |
 | --- | --- |
-| `converged` | `establishTaskAcceptance()`, workspace finalization, then `completeAppTask()` or `completeConversationTaskTurn()` |
+| `converged` | `establishTaskAcceptance()`, workspace finalization, then `completeAppTask()` with common communication/input settlement |
 | `waiting` | Fence/finalize workspace, `admitWaitingConditions()`, `deferAppTask()`, then recover already-saved feedback |
 | `incomplete` | `reportAppTaskFailure()` retains partial facts and unfinished work |
 | Failure or rejected result | `finishUnsuccessfulAttempt()` and `failAppTaskAttempt()` |
@@ -348,11 +348,11 @@ A change to a shared guarantee belongs in infrastructure and its common design.
 
 | Area | Reading path and central question |
 | --- | --- |
-| Conversation | [Source guide](../../../may-agent/src/app/conversations/README.md) → `core/tasks/execution.ts` (`AppInputResolver`) → `composition/conversation-task-turn.ts` → `conversations/context.ts` and `turn-agent.ts` → `core/state/conversation-task-turns.ts`. Core derives the input contract, prepares data-only targets and settles effects; context and model execution supply evidence and judgment. Does the answer fulfill the saved ask? |
+| Conversation | [Source guide](../../../may-agent/src/app/conversations/README.md) → `core/tasks/attempt-execution.ts` → common managed-agent execution and `task-communication.ts`; `conversations/context.ts` projects reads, and `core/state/conversation-task-turns.ts` owns admission/Stop. Does the accepting Task preserve and fulfill the saved ask? |
 | Workflow and cooperation | SDK `TaskAttempt`/`WorkflowContext` → [workflow adapter](../../../may-agent/src/app/adapters/executors/workflow.ts) → `runWorkflowDirect()`/`createWorkflowRunner()` in [workflow-tool.ts](../../../may-agent/src/lib/workflow-tool.ts). Which operations are bounded helpers, and which require durable delegated work? |
 | Delegation and return | [dependency-admission.ts](../../../may-agent/src/app/core/tasks/dependency-admission.ts) → [input-result.ts](../../../may-agent/src/app/core/inbox/input-result.ts). Follow the exact input answer; a parent link alone creates no wait or feedback subscription. |
 | Event admission | [events/interface.ts](../../../may-agent/src/app/core/events/interface.ts) → [events/bus.ts](../../../may-agent/src/app/core/events/bus.ts) → [app-inbox-runtime.ts](../../../may-agent/src/app/composition/app-inbox-runtime.ts). What is saved before translation, and what remains if translation fails? |
-| Task recovery | [app-task-recovery.ts](../../../may-agent/src/app/core/tasks/app-task-recovery.ts) → [startup-recovery.ts](../../../may-agent/src/app/core/tasks/startup-recovery.ts) → [session-recovery.ts](../../../may-agent/src/app/adapters/executors/session-recovery.ts). What restores eligibility without mistaking session evidence for accepted work? |
+| Task recovery | [app-task-recovery.ts](../../../may-agent/src/app/core/tasks/app-task-recovery.ts) → [background-startup.ts](../../../may-agent/src/app/composition/background-startup.ts) → [session-recovery.ts](../../../may-agent/src/app/adapters/executors/session-recovery.ts). What restores eligibility without mistaking session evidence for accepted work? |
 | Startup and interfaces | `runAppRuntime()` in [app-runtime.ts](../../../may-agent/src/app/app-runtime.ts) → [composition guide](../../../may-agent/src/app/composition/README.md) → [HTTP](../../../may-agent/src/app/http/README.md)/[control](../../../may-agent/packages/control/README.md). Do all surfaces read and change the same resource? |
 | Release and activation | [Scripts](../../../may-agent/scripts/README.md) and [CONTRIBUTING](../../../may-agent/CONTRIBUTING.md). Which source, binary, image and captured App definition are actually active? |
 
@@ -382,7 +382,7 @@ examples exercise the boundaries above:
 | Question | Executable example |
 | --- | --- |
 | Can translation failure recover through the same route? | [app-event-translation.test.ts](../../../may-agent/src/app/composition/app-event-translation.test.ts): translation failures followed by database reopen and repair |
-| Does saved human input survive a missed wake? | [conversation-runtime.test.ts](../../../may-agent/src/app/core/tasks/conversation-runtime.test.ts): `Conversation admission survives reopen and runs without an ingress wake` |
+| Does saved human input survive a missed wake? | [task-communication.test.ts](https://github.com/hao1939/may-agent/blob/7d32fa337890e2ec04e0d7de8a026637952c0b2b/src/app/core/tasks/task-communication.test.ts): saved Conversation input and Request state across restart |
 | Do new dependencies preserve older waits? | [app-task-runtime.test.ts](../../../may-agent/src/app/core/tasks/app-task-runtime.test.ts): `explains rejected dependencies, preserves existing waits, and admits a corrected input` |
 | Can App preparation change the brief while retaining execution controls? | [agent-execution.test.ts](../../../may-agent/src/lib/agent-execution.test.ts): `replaces only the task brief, retaining current execution controls and original input` |
 | What reaches the model after compaction and refresh failure? | [task-decision-context.test.ts](../../../may-agent/src/lib/task-decision-context.test.ts) and [integration coverage](../../../may-agent/test/integration/task-decision-context.test.ts) |

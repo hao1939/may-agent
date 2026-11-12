@@ -412,7 +412,7 @@ There is no per-source metric registry or additional schedule.
 records the deployed Host and activated App policy; deployment alone does not
 establish improved performance. If execution moves to a worker
 later, the same query declaration should continue to work without App-managed
-process wiring. See the [measurement and remaining work](../proposals/host-contract-improvements-20261016.md#5-measure-metric-query-cost-before-adding-isolation)
+process wiring. See the [measurement and remaining work](../proposals/host-contract-improvements-20261016.md#query-cost-and-control-responsiveness)
 and the [operator guide](../2b-manual/metric-alerts.md#investigating-query-cost).
 
 A command may also return

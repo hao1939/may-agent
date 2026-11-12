@@ -216,9 +216,10 @@ selected by historical mode data. Public `status: idle` means no runnable work;
 answer, while replaying the same admission must not run another cycle. Closed
 Tasks and historical immutable receipts are not reopened by this rule.
 
-For a conversational handoff, the App names the accepted ask in
-`followUp.requestId`. The Host records the admitted Task reference and its
-return links together. Request references require no prior Topic attachment.
+Use Task `requests` and request Conditions for independent contributions. The
+accepting Task retains the human Request, updating it through `communication`.
+Saved admission preserves return links; Task references alone neither submit
+work nor transfer the human promise.
 [Message Lifecycle](message-lifecycle.md#requests-acceptance-and-closure)
 owns this distinction between reference metadata and work admission.
 
@@ -250,7 +251,7 @@ If replacement publication is rejected, rollback reinstalls the accepted runtime
 options with its descriptors and does not invoke the previous publication callback.
 If no runtime was previously installed, rollback leaves no selected options;
 later session events and recovery calls cannot use the rejected adapters.
-The [lifecycle review](../proposals/task-runtime-organization.md#task-lifecycle-review)
+The [lifecycle review](../archive/reviews/task-runtime-organization.md#task-lifecycle-review)
 records the reproduced listener gap and its source fix separately from this contract.
 
 An explicitly blocked workflow retains its bounded diagnostic context in Task

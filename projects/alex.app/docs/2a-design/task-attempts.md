@@ -275,8 +275,8 @@ inside an unavailable Host cannot guarantee its repair.
 **Migration:** workflows, registered executors and agents share one result
 contract. `needs-agent` and `needs-owner` outputs are rejected with a visible
 failure and ordinary backoff. Migrate callers to ordinary agent calls and
-activate the Host, candidate SDK and companion Apps together. Saved legacy workflow handoffs resume the declared
-procedure with their retained inputs; owner cancellation still prevents execution.
+activate the Host, candidate SDK and companion Apps together. Saved legacy workflow handoffs retry the declared
+procedure in a fresh attempt with their retained inputs; owner cancellation still prevents execution.
 Historical `failoverFromAttemptId` records are evidence, not routing authority.
 
 **Status:** candidate revision of Host [PR #344](https://github.com/hao1939/may-agent/pull/344).

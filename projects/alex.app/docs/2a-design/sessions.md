@@ -7,7 +7,9 @@
 **Design status:** Accepted.
 **Implementation status:** Implemented, including per-turn trace propagation,
 fail-closed start persistence, and terminal error persistence. Shared execution
-limits, scoped helpers and caller-driven standalone resume are implemented.
+limits and scoped helpers remain. Ended sessions cannot be resumed or have their
+execution identities reused. Unfinished obligations recover through their Tasks;
+native CLI `resumeSessionId` is a separate supported thread-continuity feature.
 The [earlier trial](../archive/reviews/execution-consolidation-poc-20260914.md)
 retains its original scope and limits; source status does not establish the
 deployed artifact.
@@ -155,9 +157,10 @@ tool batch, earlier effects remain evidence; calls after accepted completion are
 reported as unexecuted. The runner stops before another model request or queued
 input can prolong that contribution. Pending input remains available for later
 work, and finishing a helper does not fulfill its parent's Task. A later admitted
-invocation can use the same session. The October 2 candidate repairs the ordinary
+invocation can use the same session only while a direct chat is still live/idle;
+ended helpers or jobs require a fresh execution identity. The October 2 candidate repairs the ordinary
 helper gap and mixed-batch handling; see the
-[timeout investigation](../proposals/responsive-host-recovery-20261002.md#implementation-trials-october-2)
+[timeout investigation](../archive/reviews/responsive-host-recovery-20261002.md#implementation-trials-october-2)
 for source/trial status, separate from deployment.
 
 Agent tool calls must also have a bounded lifecycle. A shell command is not
@@ -196,8 +199,9 @@ bounded attempt using current state. Otherwise a timed-out call can keep editing
 after its workflow settled, outside Task capacity and result fencing. Explicit
 cancellation is likewise not an automatic retry request. The startup policy omits
 automatic standalone `job` resume: durable obligations belong to Tasks; local
-invocations return to their caller. Explicit permitted user resume and
-stale-state/process cleanup remain, without inventing another work owner.
+invocations return to their caller. Live steering and confirmed stale-state/process
+cleanup remain. A replacement execution starts a fresh session under its owning
+Task; ended standalone sessions remain evidence.
 
 ## Data Retention
 
@@ -263,8 +267,9 @@ the design does not move full sessions into SQLite.
 ### Permanent path invariant
 
 For session `s_123`, every artifact stays below `.state/sessions/s_123/`.
-Closing, resuming, process recovery, evaluation, and retention must not rename
-that directory. `[ACTIVE]` marks sessions that the runtime may resume; status
+Closing, process recovery, evaluation, and retention must not rename that
+directory. `[ACTIVE]` records execution-lifetime evidence for cleanup; it is not
+authority to resume an ended session. Status
 in `meta.json` and SQLite records the lifecycle. `[STARTED]` is only a turn/crash
 sentinel. Neither marker changes the artifact path.
 

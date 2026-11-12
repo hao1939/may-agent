@@ -156,10 +156,10 @@ manual is the human reference. Important examples include:
 - `coding` for read/write/edit/bash;
 - `agents` for call/fork/list/peek/cancel;
 - `message` for durable notifications;
-- `workflow` for list/run/resume;
+- `workflow` for list/run;
 - `cli-delegation` for native-worker execution records inside a bounded caller
   attempt, never as App/task ownership;
-- `system-status`, `cron`, `checkpoint`, `scrape`, and `finish` where needed.
+- `system-status`, `checkpoint`, `scrape`, and `finish` where needed.
 
 Local domain tools live under the owning global or app-local agent's `tools/`
 directory. Discovery of a file is not proof of a supported contract; verify the
@@ -222,7 +222,7 @@ resume path, and a stable deduplication key.
 | High-confidence secret pattern appears in writes                 | Add an observable guard, then validate blocking |
 | Required API/action does not exist                               | Add or extend a tool/SDK capability             |
 | Existing App outcome should be reconsidered daily                | Add an App input or task-wake schedule          |
-| Runtime-owned ledgers need a deterministic hourly health packet  | Add a host-private maintenance handler          |
+| Runtime-owned ledgers need deterministic upkeep | Extend fixed Host housekeeping or an explicit offline operation |
 | Improvement needs rollout, calibration, and later outcome review | Track it as project work                        |
 
 ## Retirement

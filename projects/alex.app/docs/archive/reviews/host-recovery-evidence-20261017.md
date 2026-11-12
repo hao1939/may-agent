@@ -11,7 +11,7 @@ accountable through failures without requiring people to reconstruct what happen
 **Choice basis:** [Agents judge; code executes and brings back evidence](../../1-principles/core-principles.md#code-executes-and-brings-back-evidence-agents-judge)
 and [simple first](../../1-principles/core-principles.md#simple-first).
 The [runtime contract](../../2a-design/runtime.md#recovery) owns this behavior;
-the [Host plan](../../proposals/host-contract-improvements-20261016.md#4-give-execution-recovery-one-mechanical-meaning)
+the [Host plan](host-contract-improvements-20261016.md#4-give-execution-recovery-one-mechanical-meaning)
 tracks broader recovery coverage.
 
 ## What was broken

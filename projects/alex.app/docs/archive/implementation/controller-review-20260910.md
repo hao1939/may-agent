@@ -578,7 +578,7 @@ truthful non-success stop remain separate from this verified retry route.
 
 Host [PR #111](https://github.com/hao1939/may-agent/pull/111), candidate `fc74eb46`
 on `feat/app-task-stop`, includes #110's reviewed proof atop `4afaaafb` and implements the
-[finite-leaf stop slice](../../proposals/task-runtime-organization.md#first-stop-slice-the-current-finite-task-only).
+[finite-leaf stop slice](../reviews/task-runtime-organization.md#first-stop-slice-the-current-finite-task-only).
 An App-authorized handler may return `stopped` with a reason and evidence.
 The existing cancellation transaction retains partial findings, ends execution
 and readies the caller and executable parent without a success receipt. Normal
@@ -610,7 +610,7 @@ or a generic controller framework.
 - [controller-runtime reconciliation contract](https://github.com/kubernetes-sigs/controller-runtime/blob/main/pkg/reconcile/reconcile.go): identity-based requests, level-based reads and error backoff.
 - [Kubernetes Job failure policy](https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy): finite work, retry limits and duplicate-execution caveat.
 - [Core review and reproducible evidence](../reviews/core-simplicity-review-20260910.md).
-- [Existing core boundary proposal](../../proposals/task-runtime-organization.md).
+- [Existing core boundary proposal](../reviews/task-runtime-organization.md).
 
 [normal]: https://github.com/hao1939/may-agent/blob/350552a4ba9a4278fe30897430619667bb7bb7f3/src/app/app-task-runtime.ts#L1290
 [startup]: https://github.com/hao1939/may-agent/blob/350552a4ba9a4278fe30897430619667bb7bb7f3/src/app/app-task-runtime.ts#L2962

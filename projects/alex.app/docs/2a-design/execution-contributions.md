@@ -59,8 +59,9 @@ already carry valid incomplete reports. Host #373 removed hidden requirements
 for optional finish diagnostics. Its deployment and Alex's shared judgment
 schema activation are recorded in the [October 17 rollout](../archive/reviews/judgment-contract-20261017.md).
 [Host #374](https://github.com/hao1939/may-agent/pull/374) checks original reports before conversion.
-That follow-up is not deployed; broader App adoption remains App-owned. The
-[implementation proposal](../proposals/host-contract-improvements-20261016.md#return-unresolved-work-to-agent-judgment)
+Its [dated activation record](../archive/reviews/recovery-contract-20261017.md#host-374-and-activation-boundary)
+identifies the installation verified then; broader App adoption remains App-owned. The
+[implementation proposal](../proposals/host-contract-improvements-20261016.md#app-result-admission-and-owner-follow-through)
 owns that work and the comparison trials; these rules do not establish rollout.
 
 ### A valid report can describe incomplete work
@@ -598,7 +599,7 @@ declares `result`. Honor each declaration as supplied. Omit an unavailable
 optional field; a supplied `null` is a value and must be permitted by the schema.
 The supported pre-validation hook checks the model-visible schema before tool
 coercion. Direct finish execution and captured-finish recovery use that same
-check. This is a source candidate;
+check. This is implemented in merged Host #374;
 see the [validation trial](../archive/reviews/agent-judgment-and-code-paths-20261016.md#october-17-report-validation).
 
 Correction feedback names the failing paths and expected shapes, with bounded
@@ -649,11 +650,12 @@ with code and agent output; other App readers still need their own alignment.
 Public workflow agent
 calls expose a schema but not the direct Task agent's pure completion callback.
 The pinned model tool validator can coerce values before ordinary App checks
-run. The follow-up Host candidate uses its supported pre-validation hook for
-structured finish reports; source verification does not establish activation. The
-[implementation proposal](../proposals/host-contract-improvements-20261016.md#return-unresolved-work-to-agent-judgment)
-specifies the remaining changes; callers must use installed contracts until
-activation. Optional report fields are already supported by the schema surface.
+run. Merged Host #374 uses its supported pre-validation hook for
+structured finish reports. The linked dated rollout records identify the
+installation verified then; they do not identify today's active binary. The
+[implementation proposal](../proposals/host-contract-improvements-20261016.md#app-result-admission-and-owner-follow-through)
+specifies the remaining questions; callers must verify support in their installed
+Host. Optional report fields are already supported by the schema surface.
 
 For a direct Task agent, Host supplies the App's pure action/Condition admission
 checks to `finish` alongside the shared result schema. A correctable shape or
@@ -669,9 +671,9 @@ verification retain their own boundaries.
 [Host `7b416af40`](https://github.com/hao1939/may-agent/commit/7b416af40); older Hosts validate it only after the invocation ends.
 Source validation and App integration are recorded in the [repeat-pattern follow-up](../../../may.app/design/token-efficiency-proposal-20261002.md#october-3-source-follow-up).
 Conversation uses the same callback for read-only Topic, Request and input checks
-in the [Conversation feedback candidate](conversation-execution.md#correct-a-proposed-result-before-ending-the-turn).
-That section owns its coverage and deployment status; #295 alone does not supply
-those checks to the Conversation resolver.
+in the [common Conversation execution contract](conversation-execution.md#correct-a-proposed-result-before-ending-the-turn).
+That section owns its coverage and deployment status; #449 replaced the separate
+Conversation resolver with ordinary Task attempts.
 
 The App/task boundary separately validates the workflow's terminal output,
 generation, allowed actions, Conditions, and evidence. An execution status of
@@ -694,7 +696,7 @@ For task-owned work:
 
 The shared recovery rule is **read the current requirement, inspect retained
 evidence, validate its applicability, and continue unfinished work on the same
-Task**. It applies to a resumed executor and to a replacement agent. Neither
+Task**. It applies to a fresh Task attempt and to a replacement agent. Neither
 agent identity nor remembered conversation is the work's authority.
 
 The [shared recovery rule](system-boundary.md#recovery-uses-evidence-before-repetition)

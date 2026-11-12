@@ -251,7 +251,7 @@ Use an isolated checkout based on current main for source work; preserve
 concurrent changes. Read the repository's current AGENTS and CONTRIBUTING
 instructions. A workflow named `verified-coder` is not proof that isolation,
 verification and integration occur; the
-[workflow review](workflow-practices-review.md) records those boundaries.
+[workflow review](../archive/reviews/workflow-practices-review.md) records those boundaries.
 
 Write the smallest useful change, update the owning contract when behavior
 changes, and test the failure or scenario that motivated it. Run required
@@ -418,7 +418,7 @@ bounded case without supplying its diagnosis in advance.
 | Repeated deterministic operation | Maintained test, tool or workflow at its actual owner |
 | One-off scripts, raw transcripts and fetched PR packets | Temporary/ignored research data; retire after extracting useful facts |
 
-The [script retirement proposal](poc-retirement-and-knowledge-20260912.md)
+The [script retirement proposal](../archive/implementation/poc-retirement-and-knowledge-20260912.md)
 already owns the detailed disposition of PoCs and reusable scripts. This task
 should follow that decision rather than create another archive of runnable
 experiments. A regression belongs with the maintained code it protects; a

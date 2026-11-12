@@ -5,14 +5,11 @@
 **Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
 
 **Design status:** Accepted.
-**Implementation status:** Daemon Task
-activation and startup recovery are independent of `--cron`. Shared timing
-serves core duties and optional registrations. App schedules publish input or
-facts; named Host maintenance has no standalone workflow execution path.
-The maintenance App source declares metric snapshots in an agent-local
-Cron job; Runtime samples App-defined sources on that event and applies each
-source's cadence. This source configuration is a remaining coupling, not a required
-named owner in the [accepted boundary](../proposals/app-policy-and-host-boundary-cleanup.md).
+**Implementation status:** Daemon Task activation and recovery are independent
+of `--cron`, which enables optional App schedules. Input/event schedules and
+observers use the canonical App runtime. Fixed retention, watchdog/liveness
+checks and metric sampling remain Host code. Configurable `cron.json` handlers,
+maintenance reload/API wiring and the cron editing tool are retired.
 
 ## Purpose
 
@@ -31,27 +28,15 @@ compatibility evidence.
 due slot -> publish required App-input event
          -> publish record-only fact
          -> bounded observer run -> facts
-         -> host-private maintenance job -> evidence/facts/repair
+fixed Host timers -> retention/liveness/metrics
 ```
 
-Canonical App schedules never directly launch an agent or workflow. Model
-execution begins only after an admitted App request or persisted task
-reconciliation requires it. A Host maintenance job invokes only its explicitly configured deterministic
-handler; it is not an alternative App execution route.
-
-The private adapter is `HostMaintenance`; its conventional file remains
-`cron.json`, and the long-running CLI flag remains `--cron`. Those names do not
-make maintenance handlers the canonical App authoring model.
-
-Merged [#236](https://github.com/hao1939/may-agent/pull/236)
-removes an unused private workflow-launch method and the wrapper that hid it
-from handlers. `MaintenanceAPI` directly describes the capabilities supplied
-to named handlers. This repairs implementation drift without changing the
-accepted scheduling boundary. Merged
-[#240](https://github.com/hao1939/may-agent/pull/240) also preserves every
-declared event-envelope field through the existing canonical builder, including
-trace links and visibility; the adapter must not narrow that contract by
-copying only a subset.
+Canonical App schedules never directly launch an agent or workflow. Execution
+begins only after durable input is admitted to a Task and a bounded attempt is
+claimed. Fixed Host upkeep has no App authoring or reload surface. There is no
+`HostMaintenance` adapter or public cron tool; nonempty or malformed retired
+`cron.json` declarations fail loading. The `--cron` flag controls App schedules,
+while Task recovery and required housekeeping remain independent.
 
 ## Shared timing, separate responsibilities
 
@@ -186,34 +171,17 @@ recovery remains with App requests/tasks.
 
 ## Host-private scheduled maintenance
 
-Some system duties cannot be honest App observers because their inputs are
-Runtime-owned ledgers rather than a bounded external provider. Use an explicit
-host-private scheduled handler only when the job:
+Fixed retention, watchdog/liveness checks and metric sampling are implemented
+in Host composition. They have explicit code owners, bounded/non-overlapping
+runs and visible failure. Changes to these duties go through Host source review.
+They do not load agent-local handlers, own domain Tasks or gain an App workflow
+interface to raw SQL and runtime paths.
 
-- needs Runtime-private query, path, recovery, or operational-delivery ports;
-- is deterministic observation, reporting, or mechanical repair rather than
-  domain judgment;
-- has one named owner, bounded execution, idempotent output, and observable
-  failure; and
-- hands any resulting domain work to a canonical App route by publishing a
-  fact, never by mutating App inbox/task state.
-
-These handlers are configured by `cron.json` and typed against a local
-structural host contract. They are not `WorkflowContext` consumers, are not
-exported through `@may-agent/sdk`, and cannot be invoked as App workflows.
-Enabled handlers are compiled and bundled against the paired Runtime alongside
-the canonical workflow compatibility gate.
-
-`cron.json` is read at startup. The Cron tool applies an authorized edit by
-calling the scheduler's explicit `reload()` boundary immediately; an external
-file edit takes effect after an explicit process restart. The Host does not
-poll or hash every Cron configuration in the background.
-
-The May operations health packet and daily operations digest are current
-examples: both read host-owned operational ledgers; the digest may use the host
-delivery adapter; both emit facts when App-agent judgment is needed. Their
-former App schedules/task routes were removed so there is only one timer and
-one execution authority for each duty.
+Domain periodic work belongs in App schedules and observers. A duty requiring
+private ledger mutation belongs in fixed Host upkeep or a reviewed offline
+operation. Inventory old configured duties before upgrade: move needed domain
+work to its App, retain a justified Host duty in code, or deliberately retire it.
+Do not silently drop a duty because the old loader is gone.
 
 ## Choosing the route
 
@@ -224,7 +192,7 @@ one execution authority for each duty.
 | Time publishes a diagnostic/lifecycle fact                    | Event schedule -> observation only                |
 | Time checks for missed conversational follow-up                | Event schedule -> bounded state query -> eligible conversation input |
 | Time must first read an external provider                     | Observer -> facts                                 |
-| Time inspects Runtime-owned ledgers or repairs host mechanics | Host-private scheduled maintenance handler        |
+| Time inspects Runtime-owned ledgers or repairs host mechanics | Fixed Host housekeeping or an explicit offline operation        |
 | Time repairs generic runtime mechanics                        | Internal runtime maintenance, not an App schedule |
 
 A scheduled “owner request” that deterministically selects the same standing
@@ -283,37 +251,15 @@ does not claim to eliminate database contention or accept an unpersisted fact.
 
 ## Host maintenance boundary
 
-The Host retains `cron.json` only for named deterministic handlers.
-Workflow-backed jobs and automatic heartbeat discovery are removed: model work
-uses App schedules and Tasks. App schedules, observers, and task recovery are
-hosted directly by the canonical App runtime; maintenance handlers cannot own
-App requests or Task acceptance. When upgrading an older installation, reject
-or convert obsolete declarations explicitly; do not silently drop configured work.
+Apps supply meaning and periodic demand; Host code owns storage retention,
+liveness and scheduling mechanics. App code cannot add `cron.json`, dispatch
+agents from a handler, or create a parallel timer/recovery owner. No retired
+handler runs beside its replacement.
 
-Composition prepares these duties independently of agent tool presets and
-activates them after publication. The narrowed `cron` tool lists/statuses and
-updates existing enabled/interval declarations; it does not create jobs or
-author prompts. Passive maintenance buffers are bounded, best-effort observations,
-never a durable-work acknowledgement. Single-flight ownership remains until a
-timed-out callback actually settles. Failure diagnostics remain visible.
-
-The message tool records `message.created` for declared routes. Priority does
-not launch a heartbeat, and a recorded fact does not prove work acceptance.
-
-Each App migration classifies every legacy entry as:
-
-- input schedule;
-- event schedule;
-- observer;
-- shared runtime maintenance;
-- explicit offline maintenance CLI; or
-- deletion because another canonical route already owns it.
-
-No legacy handler may run in parallel with its canonical replacement. Domain
-App code must not add `cron.json`, direct handler-to-agent dispatch, or
-`createWorkflowHandler` routes. A new host-maintenance entry is acceptable only
-under the explicit boundary above; co-location beside an App operations agent
-does not make it an App route.
+The explicit stopped-runtime conversion procedure is owned by
+[Operations and Recovery](../2b-manual/app-operations-recovery.md#upgrade-retired-task-contracts).
+It preserves saved obligations; it is not a configurable maintenance service.
+A recorded message or fact alone still does not prove work acceptance.
 
 ## Metrics
 
@@ -336,6 +282,5 @@ normal App/task/observation classification; it is not a second scheduler.
   are durable.
 - Reload is atomic and cannot duplicate timers, observers, or subscriptions.
 - Only the long-running host fires schedules.
-- Legacy cron handlers never dual-consume work with canonical routes.
-- Host-private maintenance handlers are separately typed, bounded, and hand
-  domain work to canonical App routes rather than owning it.
+- Retired cron declarations reject loading rather than silently losing duties.
+- Fixed Host upkeep never becomes a configurable App execution route.

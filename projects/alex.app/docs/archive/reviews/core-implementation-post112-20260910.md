@@ -3,7 +3,7 @@
 **Historical context:** [Architecture](../../2a-design/architecture.md). Retained rationale and evidence; this record does not define the current contract.
 
 **Status:** Dated source review, retained as evidence. The
-[active improvement plan](../../proposals/task-runtime-organization.md) owns next
+[active improvement plan](task-runtime-organization.md) owns next
 steps and the [human-control design](../../2a-design/human-control-surfaces.md#current-turn-control)
 owns the accepted Esc/button interface.
 

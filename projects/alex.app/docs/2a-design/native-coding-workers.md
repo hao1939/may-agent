@@ -147,13 +147,12 @@ and fails on any denial. Task start and resume follow that same installed policy
 an explicit caller sandbox remains supported. The App still owns authorized
 intent and acceptance, so available executor permissions do not authorize extra
 work. These checks belong to installation verification, not every Task attempt.
-PR #284 is merged and active: installation-owned permissions and the actual
-installed execution/protocol check are the current behavior. PR #288 is a
-reviewed candidate, not live behavior. It bounds resume history retrieval and
-stops reading after a terminal transport failure; until it is merged and deployed,
-the active Host does not have those corrections. Its same-thread oversized-item
-trial proves transport recovery only. It does not prove that a model noticed,
-judged, or corrected the failure autonomously.
+Host #284 and #288 are merged. They preserve installation-owned execution
+permissions, bound native resume history retrieval and stop reading after a
+terminal transport failure. The [dated recovery record](../archive/reviews/reliable-recovery-and-independent-oversight-20261002.md)
+records installation observations at that time; it does not identify today's
+active binary. The same-thread oversized-item trial proves transport recovery,
+not autonomous model diagnosis or correction.
 
 Later failures still use normal bounded execution, retained attempt evidence,
 caller feedback and independent operational review. A failed tool command may

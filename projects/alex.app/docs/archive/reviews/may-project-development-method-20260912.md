@@ -189,7 +189,7 @@ separate observations.
 | [Owner workflow](../../../agents/tech-lead/workflows/platform-owner-review.ts) | A packet-building workflow exists, but ordinary owner-review mapping does not select a workflow. | Do not fix this file and assume the live task now follows it. Trace the actual executor first. |
 | [Owner guidance](../../../knowledge/retired-maintenance/tech-lead/AGENTS.md) and shared `project-loop-driver`, `system-investigation`, `verification` skills | Useful project judgment and verification guidance already exists. Some shared wording still mentions immutable completed Tasks, `needs-owner`, or `app.dependency.completed`. | Align only the guidance used by this path with the current Task contract. Avoid another duplicate all-purpose skill. |
 | [Skill contract](../../2a-design/skills.md) and [learning loop](../../2a-design/practice-learning-loop.md) | Saved source, selected guidance, activation and later useful behavior are distinct. Existing sessions retain definition snapshots. | Validate discovery and a fresh execution, then later behavior; file presence is insufficient. |
-| [Workflow practices review](../../proposals/workflow-practices-review.md) | Candidate isolation and integration have their own remaining gaps. | Do not assume `verified-coder` automatically supplies a safe end-to-end implementation path. |
+| [Workflow practices review](workflow-practices-review.md) | Candidate isolation and integration have their own remaining gaps. | Do not assume `verified-coder` automatically supplies a safe end-to-end implementation path. |
 
 A read-only lookup found the retained owner-review Task pending, last updated
 September 10 at 06:32 UTC, with no current attempt. A daemon status request at

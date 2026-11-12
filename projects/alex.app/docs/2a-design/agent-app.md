@@ -110,8 +110,8 @@ typed input -> TaskIntent -> task <--- durable event
   before work can continue.
 - Queue coalescing happens only after the latest desired intent and trigger are
   persisted.
-- A simple durable Task can converge in its first attempt. Bounded
-  conversational input can finish directly under `conversation` policy instead.
+- A simple Task, including a bounded Conversation turn, can converge in its
+  first attempt through the same accepted-result contract.
 
 ## Package layout
 
@@ -207,6 +207,16 @@ export, or second loader grants autonomous behavior. Another App's outcome is
 requested through a typed Runtime-managed task dependency; shared facts cross
 through declared event routes.
 
+Keep optional business prerequisites out of App-module initialization, including
+its transitive imports. Check service access, credentials or workspace setup at
+the owned operation that needs them, so the App can still declare work when that
+operation is unavailable. This is an authoring boundary, not runtime isolation:
+current Task workers import the accepted App catalog before selecting their
+target. The [bootstrap trial](../archive/reviews/recovery-bootstrap-trial-20261112.md)
+demonstrates how a fragile top-level prerequisite can block another recipient.
+Invalid new definitions still reject the complete candidate generation and
+retain the previous accepted one.
+
 ## Addressed work
 
 The Host records a stable request identity, source and validated input. For
@@ -223,7 +233,7 @@ silently revise either obligation.
 
 The destination App input is the single executable handoff: its pure mapper
 creates the Task specification, and creator-authorized `tasks update` supplies a
-complete revised input when requirements change. Conversation `followUp` carries
+complete revised input when requirements change. Ordinary Task `requests` carry
 `appId`, `input`, optional `requestId`, and optional exact `task` identity. There
 is no second outer outcome/constraints/acceptance payload for the Host to merge.
 The App's declared operation can supply fixed meaning: an input such as
@@ -296,11 +306,11 @@ execution evidence; they are not replayed as new executable handoffs. Deployment
 and the real-source trial are recorded in May's
 [iteration evidence](../../../may.app/docs/research-handoff-iteration-20260916.md).
 
-`tasks.resolve(event)` is a separate pure callback for declared fact
-subscriptions. It returns `TaskIntent | null`. It can decide a fact creates no
-work; it does not replace addressed-input validation. Neither callback performs
-I/O, invokes an agent, or mutates state. See the
-[source types](../../../may-agent/packages/sdk/src/app.ts).
+All actionable fact subscriptions use a pure `subscriptions.toInput(event)`
+translator. A null result declines the fact; a non-null result enters the same
+validated input and `task(request)` mapping as addressed work. Neither mapping
+performs I/O, invokes an agent or mutates state. `tasks.subscriptions` and
+`tasks.resolve` are retired; there is one current admission contract.
 
 Addressed ingress uses `app.input.requested`. Admission persists the event and
 caller correlation, then maps and attaches the Task input before returning
@@ -308,11 +318,13 @@ where possible. Failed attachment remains durable for recovery. Execution runs
 asynchronously; caller completion projects the exact accepted result.
 See [Events](events.md) for admission guarantees.
 
-An App may declare `conversation: { mode: "agent", inputKinds: [...] }` for bounded
-conversational input. That turn can finish authorized work directly or admit
-durable intent. Other input kinds use normal Task mapping. May's policy is owned
-by [Message Lifecycle](message-lifecycle.md). This is not a second durable work
-loop.
+An App may declare `conversation: { mode: "task", inputKinds: [...] }`.
+Conversation input uses a stable Task with executor `agent`, common Task results,
+`communication`, `requests` and Conditions. A turn can finish authorized work
+directly or admit independent work. Other input kinds use normal Task mapping.
+May's policy is owned by [Message Lifecycle](message-lifecycle.md). There is no
+Conversation-specific result or execution adapter. The retired executor name
+`conversation` is reserved, including for custom adapters.
 
 Conversation routing and exact-Task routing are mutually exclusive at
 admission. Callers send Conversation input with `conversationId` and without
@@ -436,12 +448,11 @@ Address constraints and payload subjects have independent meanings. Follow the
 [Event matching contract](events.md#subject-and-address-matching) when authoring
 selectors; translation receives the same supported event fields after recovery.
 
-`subscriptions` translates a fact into correlated App input;
-`tasks.subscriptions` directly resolves a callerless fact to Task intent. The
-forms serve different admission semantics but converge on the same Task store
-and reconciler, and one App cannot claim both actionable forms for the same
-fact. There is no generic `events` route or imperative `onEvent` execution
-path.
+`subscriptions` translates a selected fact into typed App input. Source and
+saved caller correlation determine whether a return is owed; producing input
+from a fact does not invent a human Request. A translator returning null creates
+no actionable input. There is no second Task resolver or imperative `onEvent`
+execution path.
 
 An App may declare exact `observations` selectors for reviewed facts that
 intentionally create no work. After actionable route evaluation selects no
@@ -718,10 +729,10 @@ App input path. It is never an alternate work authority.
 
 ## Input handling and compatibility
 
-Task-based input uses the shared Task controller and accepted-result path.
-Bounded conversational turns use the frontend described in
-[Message Lifecycle](message-lifecycle.md). Both reuse bounded execution; neither
-creates a parallel authority for the same work.
+All execution uses the shared Task controller and accepted-result path.
+Conversation uses the agent and communication policy described in
+[Message Lifecycle](message-lifecycle.md), with the same bounded execution and
+no parallel authority for that work.
 
 The [migration notes](../archive/implementation/app-contract-migration-20260910.md)
 are historical. Preserve retained callers and unfinished child obligations when
@@ -732,8 +743,8 @@ removing compatibility; new declarations use the current SDK.
 1. One App has one `defineApp` declaration, one registry identity, and one
    default agent selection.
 2. Every addressed input has one authoritative Host handling record and a
-   correlated handling result. Task-based input links its responsible Task;
-   a conversational answer need not create one. Handling completion alone
+   correlated handling result. Input links its responsible Task; Conversation
+   uses its stable Task without creating another just to answer. Completion alone
    does not close an outstanding conversational Request.
 3. Every durable assigned outcome has one authoritative Task identity and a responsible agent.
 4. Events, metrics, logs, and projections never become work authorities.

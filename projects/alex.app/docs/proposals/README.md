@@ -1,15 +1,17 @@
-# Proposals and implementation follow-up
+# Proposals: pending decisions, adoption and history
 
-**Supports:** [Design authoring and review](../2b-manual/design-authoring/SKILL.md). Keeps unresolved choices visible without making readers reconstruct current behavior from old PR discussions.
+**Supports:** [Design authoring and review](../2b-manual/design-authoring/SKILL.md). Keep the next useful decisions visible without reopening completed implementation plans.
 
-For supported behavior, use [the current contract index](../INDEX.md). These
-documents hold remaining choices, adoption questions or implementation follow-up.
-Their source findings are dated; inclusion is not a claim that every old defect
-still exists or that a candidate is currently deployed. A merged proposal can
-remain unimplemented.
+Use [INDEX](../INDEX.md) for current behavior. This catalogue separates remaining
+questions, implemented source awaiting specific adoption evidence, deferred
+redesigns and historical records. A source merge does not prove deployment, and
+an unanswered trial question is not automatically a new implementation task.
+The [November 11 review](../archive/reviews/design-and-proposal-status-review-20261111.md)
+records evidence, the full disposition and the reasons for these priorities.
+Recovery plans were consolidated on November 12 into one
+[connected acceptance proposal](unified-agent-recovery-20261017.md); its earlier
+reasoning and trials remain in the archive.
 
-Implemented rules belong in their owning chapter. Dated trials and completed
-reviews are in [the archive](../archive/README.md#implementation-and-trial-records).
 The [Task authoring cleanup](../archive/reviews/task-api-cleanup-20261112.md)
 is merged in Host #454 with companion App callers committed. It is completed
 source work, not a pending proposal. The separate
@@ -23,72 +25,85 @@ installed adoption remains unverified.
 The [project Lineage retirement](../archive/reviews/project-lineage-retirement-20261112.md)
 is merged in Host #458 (`2a762206dd52`). Its source cut is complete;
 installed adoption remains unverified.
-For mixed documents, use the remaining scope below and the record's explicit
-implementation limits. Resolve a fresh implementation question against source
-before acting on an old checklist.
 
-## Agent access and execution
+## Best next candidates
 
-| Proposal | Owning need or contract | Remaining review scope |
-| --- | --- | --- |
-| [Tasks and communication resources](tasks-and-communication-resources.md) | [Understand intent and close the loop](../2a-design/system-model.md#understand-intent-and-close-the-loop) | Shared input admission/reader and results, accepting-Task reply responsibility and quiet communication; route operational reports through ordinary work before contract consolidation. |
-| [Agent capability guidance and infra contract](task-execution-capabilities-20261002.md) | [Host And App Boundary](../2a-design/system-boundary.md) | Proposed common discovery using existing requests and separate Conditions; current use has a separate guide. |
-| [Task execution capability contracts](task-execution-capability-contracts-20261003.md) | [Agent capability guidance and infra contract](task-execution-capabilities-20261002.md) | Existing calling and return contracts, proposed discovery improvements and verification cases. |
-| [Explicit attempt decision (deferred)](task-attempt-decision-schema-20261002.md) | [Task attempts](../2a-design/task-attempts.md) | Deferred output spelling only; current state/continue behavior stays in the attempt contract. |
-| [Make progress while input keeps arriving](progress-under-burst-input.md) | [Task attempts](../2a-design/task-attempts.md) | Scoped acceptance implemented in a source candidate; remaining review, deployment, real-agent progress/cost and steering evidence. |
-| [Reduce context cost through App knowledge and agent methods](focused-session-continuation.md) | [Agent Cooperation](../2a-design/agents.md) | Experimental context reduction; weigh behavior regressions alongside token savings. |
-| [Model-surface ratchet, schema deduplication, and prompt hygiene](model-surface-and-prompt-hygiene-20261111.md) | [Context is discovered, not dumped](../1-principles/core-principles.md#context-is-discovered-not-dumped) | Empirical audit and phased plan cutting tool-schema duplication and always-loaded runbooks while enforcing zero omitted skills and surface budgets. |
-| [Workflow as an executable skill](workflow-business-host-boundary.md) | [Workflow Discovery And Execution](../2a-design/workflows.md) | Shared invocation kernel on `@may-agent/sdk` for Unit, Host-free Gym (`runDirectWorkflow` + `workflow_entry`/`allow_workflow`) and Host, merged in Host #455 (`52ff184177`) and wired in Gym; incremental per-workflow adoption remains. |
-| [Host simplification and targeted adoption from dsh-superagent-prototype](dsh-superagent-review-and-adoption-20261111.md) | [Host And App Boundary](../2a-design/system-boundary.md) | Host simplification is merged and archived; only bounded App initiative, provenance, attention views and connector retry-safety trials remain proposed. |
-| [Task resource entry and evidence access](task-resource-layout-20260929.md) | [Task Reads](../2a-design/task-resource-read-interface.md) | Remaining entry/read usability changes need evidence beyond existing Task facilities. |
-| [App environment and improvement review](app-environment-review-20260928.md) | [App Contract](../2a-design/agent-app.md) | Remaining App environment and improvement responsibilities; reuse the established runtime. |
+1. **Task entry clarity:** distinguish assigned input from pending unclaimed
+   input using current reads and evidence links.
+2. **Recovery adoption:** real-model diagnosis and the scripted human-reply path
+   have evidence. The accepted-release probe identifies missing generic
+   pre-attempt controller routes. The App correction now has a real-controller
+   regression through repair and original return; independent recipient startup
+   and activation in the selected installation remain.
 
-## Recovery and observation
+These are recommendations for bounded work, not approvals or a mandatory sequence.
+Prompt/checker cleanup is already assigned elsewhere.
 
-| Proposal | Owning need or contract | Remaining review scope |
-| --- | --- | --- |
-| [Hierarchical recovery](unified-agent-recovery-20261017.md) | [Task recovery](../2a-design/task-resource-engine.md#pause-reload-and-recovery) | Owner handles what it can, then escalates through declared responsibility. Reuses existing execution, limits and returns; recipient-startup and uncovered delivery trials remain proposed. #381 stays a separate mechanical recovery fix. |
-| [Strengthen Host contracts while keeping Apps free to evolve](host-contract-improvements-20261016.md) | [Host stability and App extensibility](host-stability-and-app-extensibility-20261005.md) | Shared code/agent contract and ordered gaps: App validation, actual tool admission, completion, reachable recovery and audit verification. #370/#372 merged; #371 open. Rollout, private recovery semantics and query profiling remain. |
-| [Earlier recovery and independent oversight review](reliable-recovery-and-independent-oversight-20261002.md) | [Host/App Boundary](../2a-design/system-boundary.md) | Dated implementation/trial evidence; the unified recovery proposal owns the next recovery mechanism. Existing independent evaluation remains useful without a mandatory handoff for each failure. |
-| [Keep recovery from blocking ordinary Host requests](responsive-host-recovery-20261002.md) | [Host Runtime](../2a-design/runtime.md) | Remaining recovery isolation and responsiveness proof; merged query fixes are dated evidence. |
-| [Recover current work from execution evidence](recovery-from-execution-evidence-20260922.md) | [Host And App Boundary](../2a-design/system-boundary.md) | Adoption and behavioral verification of recovery using retained evidence. |
-| [Reliable observer feedback without a subscription system](observer-feedback-and-resource-conventions.md) | [Events And Task Admission](../2a-design/events.md) | Observation feedback and convention refinements; distinguish implemented routes from remaining coverage. |
-| [Workflow tracing by default and useful health metrics](workflow-tracing-and-health-metrics.md) | [Metrics And Alerts](../2a-design/metrics.md) | Remaining tracing/metric coverage after the recorded initial source slice. |
+## Focused pending questions
 
-## Ownership and implementation follow-up
+| Record | Current status and remaining scope |
+| --- | --- |
+| [Teaching agents](agent-behavior-and-capability-extension.md) | Use existing instructions/skills/workflows; the remaining question is one discover-author-activate-fresh-use path with useful outcomes, not a new trainer. |
+| [App author usability](app-environment-review-20260928.md) | Choose one concrete author/worker discovery failure and compare the smallest correction. Avoid another capability inventory. |
+| [Current gaps and historical leads](design-implementation-convergence.md) | Host #456 closed freshness-by-event-name. Other September rows are historical leads requiring reproduction, not confirmed current defects. |
+| [DeepSeek adoption candidates](dsh-superagent-review-and-adoption-20261111.md) | Approved cuts landed in #449. Attention views, connector retry safety and App initiative are conditional trials; choose a recurring need before adding behavior. |
+| [Host/App release compatibility](host-stability-and-app-extensibility-20261005.md) | Use the smallest real-App compatibility and boundary checks that catch a current gap; several named earlier defects are already repaired. |
+| [Observation ownership and freshness](observer-feedback-and-resource-conventions.md) | Publication/observer-accounting foundations exist, including #371. Explicit Condition freshness merged in #456; installed adoption is unverified and provider convention trials stay conditional. |
+| [Task entry and evidence readability](task-resource-layout-20260929.md) | Clarify assigned/considered inputs versus pending unclaimed input using current readers and artifacts. One missed-review/correction comparison can bound the change. |
+| [Recovery to the original outcome](unified-agent-recovery-20261017.md) | Single active recovery proposal. Connected, restart, timer, real-model and human-reply trials have bounded evidence. The accepted-release probe confirms selected admission and missing controller routes; capable execution and original return through the actual App correction remain, alongside broader reliability. |
+| [Workflow as an executable skill](workflow-business-host-boundary.md) | Shared invocation kernel on `@may-agent/sdk` for Unit, Host-free Gym (`runDirectWorkflow`) and Host, with inherited limits, confirmed adapter cleanup, retired `run_step` guard injection, Task-owned admission and offline fixtures; merged in Host #455 (`52ff184177`) and wired in Gym. Incremental per-workflow adoption remains. |
 
-| Proposal | Owning need or contract | Remaining review scope |
-| --- | --- | --- |
-| [Keep the Host boring and let Apps change](host-stability-and-app-extensibility-20261005.md) | [Host And App Boundary](../2a-design/system-boundary.md) | Adopt the smallest release boundary suite, paired real-App compatibility check, and current-design status correction; broader capability unification is explicitly deferred. |
-| [Alex: an App for useful system improvement](alex-improvement-app.md) | [Improvement through ordinary App work](../2a-design/practice-learning-loop.md) | May–Alex–Scout installation; App `alex` and owner agent `alex` consolidate improvement capabilities, carrying ongoing work through a breaking migration. Not implemented or activated. |
-| [Durable Tasks for agents without an App](standalone-agent-tasks.md) | [Agent ownership and App scope](../2a-design/agents.md#task-ownership-and-app-scope) | Accepted direction; direct admission, identity compatibility, authority and restart proof remain unimplemented. App addressing stays supported. |
-| [Agents, Tasks and workload feedback](agent-task-workload-model.md) | [Agent Task ownership](../2a-design/agents.md#task-ownership-and-app-scope) | First resolve existing idle responsibilities and complete finite-result disposition using existing controls. Resource prerequisites, protected coordination, feedback and shared credits follow; these mechanisms remain unimplemented. |
-| [Workload implementation approach](agent-task-workload-implementation.md) | [Agents, Tasks and workload feedback](agent-task-workload-model.md) | Source-grounded stages: scoped feedback, reachable coordination, atomic root/sponsor credits and shared execution admission. Existing-target sponsorship, non-charged checks and helper deadlock handling are explicit; no workload capability is implemented here. |
-| [Keep domain policy in Apps, keep the Host generic](app-policy-and-host-boundary-cleanup.md) | [Host And App Boundary](../2a-design/system-boundary.md) | Broader App-policy cleanup beyond the recorded implemented slices. |
-| [Simplify the system: fewer paths, clear owners](authority-boundary-simplification.md) | [Host And App Boundary](../2a-design/system-boundary.md) | Remaining simplification decisions; completed slices are context, not a second current contract. |
-| [External components: simple, solid, and clearly organized](external-components-simplification.md) | [Host And App Boundary](../2a-design/system-boundary.md) | Follow-up component boundaries beyond the accepted first milestone. |
-| [Storage: a state service backed by SQLite](storage-state-service.md) | [Runtime Storage](../2a-design/storage.md) | Further state-operation boundaries beyond integrated request-to-Task work. |
-| [Core review: simple, robust, replaceable](task-runtime-organization.md) | [Architecture](../2a-design/architecture.md) | Retained source/interaction follow-up; recheck dated findings before treating them as current defects. |
-| [Design and implementation gaps](design-implementation-convergence.md) | [Host And App Boundary](../2a-design/system-boundary.md) | Dated gap tracker; current contracts own requirements, and source evidence must be refreshed for a new fix. |
-| [App behavior convergence review](app-behavior-convergence-20260925.md) | [Host And App Boundary](../2a-design/system-boundary.md) | App adoption and behavioral gaps; source and actual agent behavior are separate evidence. |
-| [Telegram: a natural conversation with reliable follow-through](telegram-conversation-experience.md) | [Human Control Surfaces](../2a-design/human-control-surfaces.md) | Interaction and follow-through adoption; the shared Conversation contract owns execution. |
-| [Workflow practices review](workflow-practices-review.md) | [Workflow Discovery And Execution](../2a-design/workflows.md) | Workflow behavior and rollout follow-up; the common contract remains independent of a specific procedure. |
+## Implemented foundation; specific adoption remains
 
-## Learning and useful recurring work
+| Record | Current status and remaining scope |
+| --- | --- |
+| [Workload implementation](agent-task-workload-implementation.md) | Host #443 merged the consolidated stack; retain its candidate history. Complete selected installation/result-disposition acceptance before broader activation. |
+| [Workload model](agent-task-workload-model.md) | Shared budgets, limits and feedback exist. Remaining work concerns funded scope, caller disposition and observed choices; standalone admission remains separate. |
+| [Alex organization and migration](alex-improvement-app.md) | The source migration is complete; dated handover records report activation. Residual retained-state withdrawal and end-to-end improvement acceptance are separate work. |
+| [Earlier simplification review](authority-boundary-simplification.md) | Many cuts landed, and #449 retired crash replay/configurable upkeep. Recheck only provider delivery or a concrete remaining consumer; no generic cleanup backlog. |
+| [External-component cleanup](external-components-simplification.md) | The three first-milestone fixes and Learning dashboard retirement (#457) landed. Broader feedback/reporting changes remain conditional on a demonstrated consumer and provider evidence. |
+| [Host adoption and performance follow-up](host-contract-improvements-20261016.md) | Preserves independent query/control performance and App result-adoption questions. Old fixes and trials are archived; connected recovery acceptance belongs to the single recovery proposal. |
+| [Progress under arriving input](progress-under-burst-input.md) | Scoped acceptance exists in current source. Useful progress, correction latency and cost under representative bursts remain behavioral questions. |
+| [Task communication and operational routing](tasks-and-communication-resources.md) | Common admission/results/communication landed in #449. Keep only the App operational-route and quiet-follow-through questions active; original design is archived. |
+| [Telegram interaction](telegram-conversation-experience.md) | Host #157 is merged; later common Conversation and delivery fixes are current. Representative installed interaction remains separate from that old candidate. |
+| [Workflow evidence and health](workflow-tracing-and-health-metrics.md) | Both #143 and #147 merged. Extra artifact/health presentation and provider adoption need actual reader value; avoid adding metrics solely to finish the old plan. |
 
-| Proposal | Owning need or contract | Remaining review scope |
-| --- | --- | --- |
-| [Review Host scripts, preserve reusable tools and retire completed PoCs](poc-retirement-and-knowledge-20260912.md) | [App Root Layout](../2a-design/app-root-layout.md) | Retire completed harnesses while preserving reusable tools and evidence; refresh the remaining inventory before deleting source. |
-| [Teaching agents: from a correction to dependable behavior](agent-behavior-and-capability-extension.md) | [Agent improvement: an optional App integration](../2a-design/practice-learning-loop.md) | Proposed improvement approach; completed adoption trials are archived separately. |
-| [A recurring task to review and improve May](may-project-review-loop-20260912.md) | [Agent improvement: an optional App integration](../2a-design/practice-learning-loop.md) | Pilot and recurring-review value; a standing loop needs evidence of useful outcomes. |
+## Work already assigned
 
-## Related App proposal
+| Record | Current status and remaining scope |
+| --- | --- |
+| [Prompt and schema size](model-surface-and-prompt-hygiene-20261111.md) | Host #452 is merged and Apps prompt/skill changes are committed. Accurate prepared-payload measurement and remaining prompt work are already assigned; do not duplicate them. |
+
+## Deferred redesigns
+
+| Record | Current status and remaining scope |
+| --- | --- |
+| [Context preparation experiment](focused-session-continuation.md) | Supporting hooks/measurements merged in #192/#193; default adoption remains unproven. Reconsider after current prompt work with a concrete context-use failure. |
+| [Standing project-review loop](may-project-review-loop-20260912.md) | A bounded pilot exists. A standing review loop needs evidence that its decisions and resulting outcomes justify continuing attention/model cost. |
+| [Durable work without an App](standalone-agent-tasks.md) | Accepted direction; direct durable admission and identity compatibility remain unimplemented. Existing Apps do not demonstrate urgency for this storage/addressing change. |
+| [Broader storage extraction](storage-state-service.md) | Atomic attachment and shared state operations exist. A new service/API deployment or wider extraction needs a concrete coupling or operating problem. |
+| [Alternative result spelling](task-attempt-decision-schema-20261002.md) | Keep state/continue and current schema identities. A spelling migration alone has no demonstrated outcome or maintenance benefit. |
+| [Broad capability discovery](task-execution-capabilities-20261002.md) | Current SDK/tools already expose callable work, requests and Conditions. Start with one demonstrated missing capability rather than a universal facade. |
+| [Capability-discovery reference](task-execution-capability-contracts-20261003.md) | Supporting reference for the preceding deferred design, not another implementation track. Existing calling/return contracts remain current. |
+
+## Historical records and forwarding entries
+
+| Record | Current status and remaining scope |
+| --- | --- |
+| [September App behavior review](app-behavior-convergence-20260925.md) | Archived evidence and contrasting failure cases; do not treat its old App/file inventory as a current implementation queue. |
+| [Installation-policy migration](app-policy-and-host-boundary-cleanup.md) | Host #326 source slice is complete. Dated rollout and remaining retained-state limits are archived; current installation declarations own behavior. |
+| [PoC source retirement](poc-retirement-and-knowledge-20260912.md) | Host #174 merged; current source has no tracked scripts/poc tree. Preserve the supported-tool/evidence convention without rerunning the old deletion inventory. |
+| [Earlier recovery/oversight record](reliable-recovery-and-independent-oversight-20261002.md) | Archived implementation and trial evidence. Unified recovery owns the remaining availability/diagnosis question; the old ordering is superseded. |
+| [Execution-evidence recovery](recovery-from-execution-evidence-20260922.md) | Forwarding entry to archived reasoning, retained-effect examples and automatic-versus-manual trial limits. Remaining recovery acceptance is consolidated. |
+| [Responsive recovery](responsive-host-recovery-20261002.md) | Forwarding entry to archived measurements and rollout evidence. Current performance questions stay in the Host follow-up; the old isolation plan is not a pending implementation queue. |
+| [Task-owned Host cuts](task-owned-host-simplification-20261111.md) | Forwarding page to #449 implementation evidence. Accepted cuts are complete in source; stopped upgrade and deployment remain separate. |
+| [Earlier core/runtime roadmap](task-runtime-organization.md) | Archived dated source review. Architecture and current Task contracts own the system; old candidate steps require revalidation before new work. |
+| [September workflow rollout](workflow-practices-review.md) | Archived dated source/behavior observations. Current workflow authoring rules apply; the old per-workflow rollout inventory is not a current backlog. |
+
+## Related App design
 
 [Token efficiency](../../../may.app/design/token-efficiency-proposal-20261002.md)
-retains its audit and remaining App-owned changes. Evaluate cost together with
-fulfilled requirements and recovered failures; a smaller prompt alone is not
-an improved outcome.
-
-When a remaining choice lands, follow the [proposal lifecycle](../2b-manual/design-authoring/SKILL.md#keep-status-and-history-honest):
-update its owning contract and guide, retain useful evidence, and remove it from
-this active reading path. Archiving does not silently close unresolved work.
+retains App-specific findings. Measure useful outcomes and correction cost as
+well as size. When a pending choice lands, update its contract and guide, retain
+its evidence in [the archive](../archive/README.md), and remove the completed
+implementation step from the active reading path.

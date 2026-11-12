@@ -33,7 +33,7 @@ retains each original path, blob, source branch/commit and decision.
 
 | Material | Decision | Value and choice rationale |
 | --- | --- | --- |
-| Recovery and independent oversight | Merge the [refined proposal](../../proposals/reliable-recovery-and-independent-oversight-20261002.md); mark #284 source repairs merged and connected recovery/oversight unproved | Keep the original requirement accountable; infra executes retry and delivery, the agent selects intervention |
+| Recovery and independent oversight | Merge the [refined proposal](reliable-recovery-and-independent-oversight-20261002.md); mark #284 source repairs merged and connected recovery/oversight unproved | Keep the original requirement accountable; infra executes retry and delivery, the agent selects intervention |
 | Token efficiency | Merge the [updated audit/proposal](../../../../may.app/design/token-efficiency-proposal-20261002.md) | #281 completion and the App review clock are already integrated; avoid implementing them twice or adding a second clock field. Remaining policy/context/monitoring work needs evidence |
 | App environment and Task resources | Merge shorter [adoption](../../proposals/app-environment-review-20260928.md) and [resource entry](../../proposals/task-resource-layout-20260929.md) proposals; preserve full originals in the archive | One durable Task and existing reads suffice; compare usability before adding context or improvement machinery |
 | #285 companion contract text | Merge selected current design/manual updates, checked against the merged SDK | Requests belong to the receiver; Conditions express the caller's interest; live actions and final declarations use shared admission. Agent judgment is trusted by default, without a correctness guarantee |

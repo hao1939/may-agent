@@ -14,18 +14,17 @@ without multiplying budgets or making every observation a new assignment.
 
 **Design status:** Accepted direction for the mental model and workload behavior.
 The initial charging, renewal and coordination choices below are proposed refinements.
-**Implementation status:** Incremental source implementation underway. Agent
-ownership, creator-controlled revision and closure, bounded attempts and Host
-concurrency exist. The shared accounting foundation merged; admission, seed and
-managed starts, caller deferrals, authorized funding changes and protected
-coordination integration are under verification/review,
-as recorded in the implementation approach. Production budget activation and
+**Implementation status:** The supported accounting, execution-limit, feedback
+and coordination paths merged in [Host #443](https://github.com/hao1939/may-agent/pull/443)
+at `01ba70398c7b5a0454bf663115c9f758901d3dc6`. They remain in current Host
+source after #449. Agent ownership, creator-controlled revision and closure,
+bounded attempts and Host concurrency retain their existing meaning. Production budget activation and
 behavioral acceptance remain pending. Fresh-state initialization and a conditional
 offline installation path for already cleaned retained state have source evidence.
 The [completion audit](../archive/reviews/workload-completion-audit-20261109.md)
 maps the supported first path to its implementation owners and records the
 remaining review, result-disposition adoption and behavioral acceptance gates.
-A one-way offline withdrawal path has verified draft source; it preserves history and
+A one-way offline withdrawal path is included in that merged source; it preserves history and
 obligations and refuses automatic reactivation across unaccounted work. None of
 these source checks establishes a live cutover or online start exclusion.
 Current durable admission still requires an App. The
@@ -37,9 +36,9 @@ Its observations are dated evidence, not proof of improved agent behavior.
 The [implementation approach](agent-task-workload-implementation.md) maps this
 direction to current source, narrows the first delivery and records the remaining
 contract changes. Direct agent addressing is not a prerequisite for that work.
-**First priority:** finish the existing idle-Task disposition work and prevent
-new finite results from accumulating without a decision. This precedes the new
-feedback, budget and coordination mechanisms below; use the existing lifecycle,
+**First operational priority:** finish the existing idle-Task disposition work
+and prevent new finite results from accumulating without a decision before
+broader workload activation. Use the existing lifecycle,
 bounded reader and guarded controls first.
 
 ## The mental model

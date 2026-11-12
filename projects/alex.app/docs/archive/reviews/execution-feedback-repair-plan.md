@@ -365,7 +365,7 @@ now specifies the consumer inventory, scoped-helper preservation and deletion ga
 
 | Finding | Treatment and reason |
 | --- | --- |
-| Name-based privileges | Follow the existing [App-policy cleanup](../../proposals/app-policy-and-host-boundary-cleanup.md). Replace actual privileges with narrow trusted installation/tool scope, one consumer at a time, with allow/deny tests. Keep protection until replacement works; no new permission framework. |
+| Name-based privileges | Follow the existing [App-policy cleanup](../implementation/app-policy-and-host-boundary-cleanup-20261005.md). Replace actual privileges with narrow trusted installation/tool scope, one consumer at a time, with allow/deny tests. Keep protection until replacement works; no new permission framework. |
 | Hung observers beyond Scout | Bound I/O in each affected adapter and expose failure. A generic promise timeout cannot stop abandoned work. Add a common cancellation primitive only when a real consumer requires it. |
 | Missing owner/supervisor | Retain original identity and failure evidence; use existing operator handling. If unattended use proves the need, add one installation-selected problem-report route, then human attention. No recursive handler selection or automatic ownership transfer. |
 | Legacy project mutation, provider Event catalogs and May labels | Inventory callers, move domain decisions into their owning App, and delete unused paths. Cosmetic renaming or folder moves are not prerequisites for the repairs. |

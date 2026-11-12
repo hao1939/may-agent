@@ -140,7 +140,7 @@ explanation for human input and explicitly permits quiet background delegation.
 No additional merge-blocking source defect was found. Full local CI results above
 apply to these unchanged heads; they were not rerun merely to repeat the review.
 
-The [timeout investigation](../../../alex.app/docs/proposals/responsive-host-recovery-20261002.md)
+The [timeout investigation](../../../alex.app/docs/archive/reviews/responsive-host-recovery-20261002.md)
 now separately measures the Conversation recovery query and documents a proposed
 repair. The earlier limits below remain relevant to the metric PR's claims.
 

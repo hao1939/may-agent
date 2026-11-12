@@ -187,7 +187,8 @@ vocabulary and its current code-name mismatches.
 
 A Request can span turns and link Tasks. Ending a turn, starting a Task, and
 fulfilling the ask are different outcomes. Host `AppInboxItem` rows
-track input handling, which can finish at handoff. Separate `conversation_requests`
+track input handling under common Task result coverage. Independent handoff
+retains a needed return through a request Condition. Separate `conversation_requests`
 records retain the accepted scope, revision, exact Task links and closure.
 The App judges [acceptance and closure](message-lifecycle.md#requests-acceptance-and-closure);
 the Host checks revisions and persists closure with its explanation.

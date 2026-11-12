@@ -20,7 +20,8 @@ can run bounded calls today; durable Tasks still require App admission.
 [Agents, Tasks and workload feedback](agent-task-workload-model.md) records the
 accepted direction for workload judgment and the proposed shared-budget policy.
 Business need establishes the assignment; workload guides priorities, scope and
-discretionary expansion. That behavior and accounting remain unimplemented.
+discretionary expansion. Shared accounting and feedback merged in Host #443;
+operational acceptance remains separate from this unimplemented addressing change.
 This document retains ownership of direct addressing and compatibility.
 
 ## Intended behavior

@@ -142,7 +142,7 @@ responsibilities (`8303a9b310`); August 23 defined replaceable Task executors
 (`d4d97f3d3a`). Changing how an attempt executes must preserve durable work
 identity and result authority.
 
-The [stable-core proposal](../../proposals/task-runtime-organization.md) makes
+The [stable-core proposal](task-runtime-organization.md) makes
 two separate tests explicit: extension should not rewrite core rules; absence
 should preserve accepted obligations. It also distinguishes the Host/App
 responsibility split from core/adapter replaceability. Full implementation

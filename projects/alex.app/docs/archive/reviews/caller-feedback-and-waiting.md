@@ -417,7 +417,7 @@ used to fake successful completion.
 Run at the retained experiment checkpoint `2433b88c` on
 `poc/caller-feedback-wait-20260912`, with explicit model authority and configured
 endpoint. These are experiment-branch commands, not a supported main surface
-after [PoC retirement](../../proposals/poc-retirement-and-knowledge-20260912.md). Keep this source
+after [PoC retirement](../implementation/poc-retirement-and-knowledge-20260912.md). Keep this source
 for audit; a later production rebase must not restore `scripts/poc/` on main:
 
 ```sh
@@ -628,7 +628,7 @@ its current status belongs to the PR, not a deployment claim.
 `6b1e49d0`. The final Copilot review generated no new comments. Human review
 and source promotion do not establish installed adoption.
 
-[Retirement #174](../../proposals/poc-retirement-and-knowledge-20260912.md) removes
+[Retirement #174](../implementation/poc-retirement-and-knowledge-20260912.md) removes
 `scripts/poc/caller-feedback/README.md` and the updated managed-conversation
 harness from main. Their final source remains at `b1c7cbef`; the bounded live
 trials above retain their actual earlier revisions and prerequisites. Use those

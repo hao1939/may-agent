@@ -7,7 +7,8 @@
 **Design status:** Accepted.
 **Implementation status:** Bounded calls/forks and durable cross-App Task
 dependencies are implemented. Helpers retain their live caller's scope and
-cancellation; standalone sessions require an explicit caller to resume. The
+cancellation. Ended Host sessions cannot resume; unfinished work starts a fresh
+Task attempt. Supported native CLI thread continuation remains separate. The
 [execution review](../archive/reviews/execution-consolidation-poc-20260914.md)
 retains the trials and their limits.
 
@@ -90,7 +91,8 @@ in agent instructions. Use current declared App routes until that path exists.
 
 ### Intended workload behavior
 
-**Accepted direction; feedback and shared-budget integration are unimplemented.**
+**Accepted direction; shared accounting, scoped feedback and protected
+coordination are implemented in source. Operational adoption remains separate.**
 Business need establishes the assignment. Workload guides priorities, timing,
 scope and whether discretionary expansion justifies delaying existing work.
 Required work can remain pending while execution capacity is full; Task count
@@ -107,11 +109,13 @@ connects feedback to useful next actions and makes consequential deferral visibl
 through existing Task and caller paths. Workload situations guide judgment;
 they introduce no new Task states or automatic admission and closure thresholds.
 The [lifecycle integration](../proposals/agent-task-workload-model.md#integrate-with-the-existing-lifecycle)
-places proposed accounting and feedback at shared admission, execution start,
+places accounting and feedback at shared admission, execution start,
 settlement/cleanup and agent decision context, preserving the existing engine.
-Its proposed protected coordination path lets existing responsible agents make
-bounded decisions under ordinary resource stress; this reserve extension,
-resource admission and shared credit renewal are unimplemented.
+Protected coordination lets explicitly eligible agents make bounded decisions
+under resource stress. Host #443 integrated that support; the
+[completion audit](../archive/reviews/workload-completion-audit-20261109.md)
+records its supported paths and remaining acceptance. Source integration does
+not establish installed funding, activation or improved judgment.
 The [implementation approach](../proposals/agent-task-workload-implementation.md)
 maps these changes to current Host owners and staged verification; current App
 admission can support that work without waiting for standalone Task addressing.

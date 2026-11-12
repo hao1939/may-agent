@@ -2,7 +2,7 @@
 
 **Status:** Commit-history and selected implementation review. No new runtime
 trial, deployment or live token measurement was performed for this extension.
-**Supports:** [Host contract improvement proposal](../../proposals/host-contract-improvements-20261016.md).
+**Supports:** [Host contract improvement proposal](host-contract-improvements-20261016.md).
 Current rules belong to the [principles](../../1-principles/core-principles.md)
 and [Host/App contract](../../2a-design/system-boundary.md).
 

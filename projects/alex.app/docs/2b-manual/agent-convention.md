@@ -11,8 +11,6 @@ agents/<name>/
   agent.json              # Required. Operational config: model, tools, limits.
   AGENTS.md               # Required. Identity and stable operating contract.
   heartbeat.md            # Historical convention; loaded only by an explicit App consumer.
-  cron.json               # Optional. Cron job definitions (top-level JSON array).
-                          # Requires `"cron"` in agent.json tools[]; otherwise ignored.
 
   knowledge/              # On-demand reference material.
     INDEX.md              # Routing table for references.
@@ -27,7 +25,6 @@ agents/<name>/
     <name>/scripts/        # Optional; prefer TypeScript/JavaScript + Bun.
 
   tools/<capability>.ts   # Optional default-exported local tool factory.
-  handlers/               # JS cron/event handlers.
   workflows/              # Executable TypeScript orchestration.
     <name>.ts              # Canonical flat workflow entrypoint.
   last-session.md         # Generated runtime memory, not system prompt.
@@ -219,7 +216,7 @@ Native CLI workers and the Codex Task executor construct their own packets; they
 the managed per-request transform. Their supplied packet and the CLI's own
 instruction discovery must be checked separately.
 
-For source review, follow `managed-agent.ts` or `conversations/turn-agent.ts`
+For source review, follow common Task `attempt-execution.ts` and `managed-agent.ts`
 into `manager.runDefinition`, `prepareAgentExecution`, and the runner's
 `transformContext`/`streamFn` boundary. Inspect the actual system text, message
 view and tool schemas there. Definition/session metadata, transcripts and Task

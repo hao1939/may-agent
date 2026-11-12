@@ -8,7 +8,7 @@ its words “current”, “candidate”, and “next” refer to the recorded r
 They do not establish current implementation or deployment.
 
 Use [Architecture](../../2a-design/architecture.md) for the accepted boundaries,
-[the core review plan](../../proposals/task-runtime-organization.md) for remaining
+[the core review plan](../reviews/task-runtime-organization.md) for remaining
 work, and [the controller proposal](../reviews/task-controller-pattern.md#candidate-stop-without-claiming-success)
 for the active non-success stop specification. Historical evidence below is unchanged
 apart from link relocation.

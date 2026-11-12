@@ -2,7 +2,7 @@
 
 **Status:** Merged as [Host PR #370](https://github.com/hao1939/may-agent/pull/370) at `a0b153b45`; current-head local CI and GitHub Quality/Container passed. Deployment not established.
 **Supports:** [Responsive storage](../../2a-design/storage.md) and the
-[Host improvement plan](../../proposals/host-contract-improvements-20261016.md).
+[Host improvement plan](host-contract-improvements-20261016.md).
 
 ## Question and value
 
@@ -150,7 +150,7 @@ observe recovery volume and pending age after any later rollout.
 
 Observer publication/replay, restart-independent receipt expiry, private
 execution-recovery semantics and installed metric-query profiling remain in the
-[implementation plan](../../proposals/host-contract-improvements-20261016.md).
+[implementation plan](host-contract-improvements-20261016.md).
 The observer follow-up also found a missing persistence boundary: the private
 `EVENT_RECORD_ONLY` Symbol survives worker relay but is not serialized/restored
 by the journal. Preserve that intent with the Event when fixing ordinary

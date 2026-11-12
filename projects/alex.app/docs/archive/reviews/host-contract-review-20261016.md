@@ -1,7 +1,7 @@
 # Host contract review — 2026-10-16
 
 **Status:** Dated source review and isolated trials; no runtime changes or rollout.
-**Supports:** [Host improvement proposal](../../proposals/host-contract-improvements-20261016.md).
+**Supports:** [Host improvement proposal](host-contract-improvements-20261016.md).
 Current authority remains the [Host/App boundary](../../2a-design/system-boundary.md)
 and its linked contracts. This record preserves why the follow-ups were proposed.
 

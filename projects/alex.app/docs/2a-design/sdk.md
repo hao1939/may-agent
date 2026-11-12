@@ -216,11 +216,12 @@ declaration has no `inbox` or `resyncIntervalMs` tuning surface.
 
 `task(request)` receives `{ id, source, input }` after input validation and
 returns an `AppTaskAttachment`: an existing Task reference or a desired intent
-wrapped with `kind: "desired"`. `tasks.resolve(event)` instead receives a
-selected fact and returns `TaskIntent | null`. Both are pure mappings.
-[App Contract](agent-app.md#addressed-work) owns this distinction.
+wrapped with `kind: "desired"`. Selected facts first pass through a pure
+`subscriptions.toInput(event)` translator, returning typed input or null. There
+is one input-to-Task mapping. The retired `tasks.resolve` and `tasks.subscriptions`
+contracts are rejected. [App Contract](agent-app.md#addressed-work) owns admission.
 
-A conversational App declares `conversation: { mode: "agent", inputKinds: [...] }`
+A conversational App declares `conversation: { mode: "task", inputKinds: [...] }`
 for the input kinds handled in a bounded turn. It may finish authorized work
 using supplied tools or admit durable intent. An optional `conversationId`
 sets the Conversation for non-channel requests; those inputs are not presented
@@ -537,6 +538,6 @@ composition remains Host-private.
 - Execution results are bounded claims admitted against the owning task.
 - No App/workflow receives raw SQL, global paths, task storage, scheduler,
   queue, lease, delivery, or recovery access.
-- Host-private maintenance handlers remain outside the public SDK and cannot
-  provide a parallel App work lifecycle.
+- Fixed Host housekeeping and explicit offline operations remain outside the
+  public SDK; configurable maintenance handlers are retired.
 - No application or runtime package exposes or imports a legacy SDK entry point.

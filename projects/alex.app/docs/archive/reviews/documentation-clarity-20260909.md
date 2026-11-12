@@ -298,7 +298,7 @@ Host code and still be replaceable. An executor implementation can be optional
 even though completing a particular Task requires a suitable executor.
 
 The agreed direction in
-[Stable Core and Replaceable Capabilities](../../proposals/task-runtime-organization.md) keeps
+[Stable Core and Replaceable Capabilities](task-runtime-organization.md) keeps
 events, authoritative state, generic Task/attempt control, and shared timing
 mechanics in the core. Schedule declarations, observers, execution adapters,
 interfaces, and reporting are capabilities around it. Events connect changes

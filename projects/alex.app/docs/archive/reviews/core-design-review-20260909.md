@@ -186,7 +186,7 @@ it needs a concrete correctness or cost argument.
 
 ## Organization and next steps
 
-Keep the [existing organization proposal](../../proposals/task-runtime-organization.md):
+Keep the [existing organization proposal](task-runtime-organization.md):
 `core/` owns stable mechanics, `adapters/` owns concrete capabilities, and
 `composition/` wires ordinary modules. Task lifecycle code still lives partly
 in `app-task-*.ts`; changing that name alone would not fix the acceptance split.

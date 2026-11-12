@@ -5,14 +5,13 @@
 **Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#convention-over-configuration); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
 
 **Design status:** Accepted for implementation, September 11, 2026.
-**Implementation status:** Candidate source on Host branch
-`fix/telegram-conversation-experience`, based on `a8f65188`, in
-[Host PR #157](https://github.com/hao1939/may-agent/pull/157) at `ed1192c1`, with
-the simplicity correction below following the verified `7bfb7f08` checkpoint.
-The five reproduced
-defects and existing-context presentation changes are implemented locally;
-verification results are recorded below. Not merged or deployed. The separately
-authorized live Telegram/model experience trial remains pending.
+**Implementation status:** The source corrections merged in
+[Host #157](https://github.com/hao1939/may-agent/pull/157) at
+`6fbc49a6c3d79df52655c8a97ec8277782337770`. The branch, candidate checks
+and old merge-status statements below are dated implementation evidence.
+Current execution and delivery rules belong to [Conversation execution](../2a-design/conversation-execution.md)
+and [Telegram notifications](../2a-design/telegram-notifications.md).
+Representative interaction and installed delivery still need their own evidence.
 
 ## Outcome
 

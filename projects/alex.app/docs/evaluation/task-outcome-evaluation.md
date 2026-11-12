@@ -6,7 +6,12 @@ finds worthwhile corrections without turning every observation into more work.
 The reviewer chooses whether a finding needs attention; App code retains and
 routes that decision using the existing Host contract.
 
-**Current operating profile (September 21):** The installed App uses the existing
+Assessment is packaged in App `alex`; its evaluator and selection workflows
+own this capability. [The improvement contract](../2a-design/practice-learning-loop.md)
+owns that organization. The September operating and rollout observations below
+describe their recorded releases, not today's installed reviewer or cadence.
+
+**Historical operating profile (September 21):** The installed App used the existing
 single selector and serialized Evaluation lifecycle. Routine sampling explicitly
 selects `evaluator-deepseek` at a five-minute selector/allowance cadence; Sol keeps
 its hourly allowance for explicit and retained Sol reviews. Original caller waits

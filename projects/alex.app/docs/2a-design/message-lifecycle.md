@@ -89,9 +89,9 @@ alive while the child works. Conversation and maintenance usually remain open;
 ordinary work is usually closed by its caller/App after accepting its outcome.
 These are conventions around the same lifecycle, with no core mode switch.
 
-Follow-through belongs to the conversation handler. It reads the exact linked
-Task, explains a useful result or human decision, and updates the accepted
-Request. The conversation Task actually runs this handler; there is no separate
+Follow-through belongs to the accepting Task's agent. It reads exact linked
+evidence, explains a useful result or human decision, and updates the accepted
+Request through common communication. There is no separate
 supervisor or independently executing inbox owner. Requests and Topic links
 preserve the obligation and context; input records preserve pending handling.
 The owning App keeps responsibility for Task execution and mechanical recovery stays with the Host.
@@ -121,7 +121,7 @@ The SDK currently uses these names; this clarification does not rename them:
 
 | API location | Refers to |
 | --- | --- |
-| `AppConversationRequest`, `requestUpdates`, `communication.requestUpdates`, `followUp.requestId` | The accepted human promise and its scope, associations or closure. |
+| `AppConversationRequest`, `communication.requestUpdates` | The accepted human promise and its scope, associations or closure. |
 | `TaskAppRequest`, ordinary Task `requests`, `TaskChangeReceipt.requests[].requestId` | Work/input submitted to an App and its admission identity. |
 | `conditions: [{ requestId }]` | Interest in the result of an App submission, using its local or admitted identity under the caller-generation rules. |
 | `TaskInput.communication.requestIds` | Conversation Requests associated with that input, when communication context exists. |
@@ -192,9 +192,10 @@ it; closure follows the accepted ask.
 One Request represents one human promise across inputs. Clarifications refine
 the accepted scope; independent intentions remain
 distinct even when one Turn addresses them together. May chooses those
-associations and judges fulfillment. The Host preserves the associations and
-requires a disposition for the Requests assigned to a Turn; completing a batch
-must not silently discard an accepted obligation that its answer omitted.
+associations and judges fulfillment. The Host preserves them and rejects
+convergence that would consume input while its accepted Request remains open.
+A waiting or incomplete result retains the obligation; an unrelated answer
+cannot silently fulfill it.
 
 An open Request carries the current accepted ask, relevant Conversation/Topic
 references, exact Task references when present, and an eventual closure message
@@ -213,23 +214,19 @@ unavailable work; its presence is not proof that the Task exists or succeeded.
 Read current Task evidence when that matters to the answer. Omitted or empty
 reference updates retain earlier references.
 
-`followUp` submits durable Task work; `requestUpdates` records human promises; `response` communicates with the human.
-Reply requirements belong to `response`; delegation alone requires neither a new Request nor a reply.
-The agent chooses the work. On accepted settlement, the Host saves the input, Task reference and return association together.
-Existing Topic-to-Task links return results through [Routing and authority](conversation-execution.md#routing-and-authority).
+Ordinary Task `requests` submit independent work; `conditions: [{ requestId }]`
+retain a needed return. `communication` publishes human messages, selects Topics
+and saves accepted Request scope or closure through an input admitted to this
+Task. These effects have different identities and responsibilities. A Request
+`taskRefs` update records evidence; it does not submit work or create a wait.
 
-A review that needs no further work finishes with its summary and facts in the
-current Conversation result. Unrelated open Requests or waits do not require a
-follow-up for that review. When work remains, `followUp` targets an ordinary work
-Task. A Conversation executor consumes input admitted through Conversation;
-attaching ordinary Task work to it bypasses that input contract. Host admission
-identifies Conversation Tasks by their saved Conversation input bindings, using
-the same rule as execution dispatch. An ordinary App executor may also be named
-`conversation`; its name alone does not change its input contract. Admission
-rejects incompatible input before saving effects. An explicit incompatible
-follow-up gets the same feedback during `finish` validation, so the agent can
-correct it in the current attempt. An App
-mapper still runs only once, during settlement, under the same atomic check.
+The original accepting Task keeps the human promise while a contributing Task
+returns evidence. A review needing no further work can finish quietly; unrelated
+open asks do not require new delegation. Ordinary admitted inputs can coexist
+with chat input in one Task batch, retaining their payload and return identities.
+The executor name `conversation` is retired and reserved, including for custom
+adapters. Saved Conversation input bindings identify lineage and ownership;
+executor labels never grant human authority.
 
 Closure must match the latest accepted scope and explain the outcome in
 Conversation. Persist its message and closure decision consistently, so retry
@@ -259,41 +256,35 @@ exact links and any Request updates. The Host checks the claim and revisions,
 then commits the input outcome, response and closure consistently. A quiet
 system review records handled evidence without an empty chat message.
 
-The shared result schema requires a nonblank response for any considered human
-input, Request closure or Task control. Automated observations, background
-delegation and updates retaining an open Request may stay quiet. Delegating
-work and announcing work are independent decisions: retain summary, facts,
-Topic links and the exact follow-up even when no response is published. The finish
-tool validates the same input-specific schema as settlement, so a missing explanation can be
-corrected inside the current execution. Settlement still checks current identity,
-revisions and authority transactionally; tool validation cannot replace those
-checks. A mixed input batch retains its human reply requirement even when a
-system fact is its most recent input. The public result schema owns requirements
-attached to proposed actions; the core Conversation boundary derives the human
-reply requirement from the exact claimed inputs and supplies the schema to the
-executor. Settlement derives it again from those persisted inputs. Executors
-consume that contract without interpreting context hints as validation policy.
-`humanRequested` describes provenance, including a human parent input; it does
-not turn a later automated observation into a new human ask or grant authority.
+Human-facing policy requires a useful answer or explanation when the ask calls
+for one; quiet system observations need no empty message. This is agent judgment
+carried through the common Task result, not a second Conversation result schema.
+Use `communication: [{ id, inputId, message, requestUpdates, topic }]` for the
+relevant effects; the optional fields are supplied only as needed. `inputId`
+selects saved recipient context, never an arbitrary destination. Communication
+operation IDs are stable within the Task generation and cannot change content
+on replay.
 
-Core selects the last considered direct human input as the reply destination,
-or the last considered input when the batch contains no direct human input.
-Context ordering, shortened history and rendered source hints cannot change
-that choice, the reply requirement or control authority. Conversation history
-reads are bound to the admitted App/Conversation even if those fields are absent
-from the prompt.
+Request changes use current revision fences and exact saved input associations.
+Closure requires a message in that communication operation or a valid `replyId`
+to an explanation already published by the same Task generation. Shared
+Conversation membership or a Task reference does not transfer the promise.
+Save accepted asks and corrections before work with `attempt.apply`; accepted
+updates survive later failure or Stop. Use `attempt.read.communication` for more
+history or current Request records through an input admitted to this Task.
 
-Task references in context help the agent discover work; they are not an
-allowlist. An exact installed Task can be used outside the bounded context.
-Automated Task cancellation still requires the recorded creator; direct human
-input carries human authority. The agent judges whether the action fits the ask.
-Core rejects missing/mismatched targets, self-cancellation, duplicate controls,
-stale claims and changed target versions. Delegation uses normal Task admission.
-The prepared result is data only. Settlement resolves its exact App identities
-and checks current state; no Task store or callback travels inside the result.
-`decision.followUp` is the single handoff authority. An explicit Task is used
-directly; otherwise the attempt’s captured App declaration maps the input once
-at settlement. A separately supplied attachment cannot redirect the decision.
+A result's `inputKeys` names its covered work. Convergence cannot consume those
+inputs while an associated accepted Request remains open. This check includes
+live inputs incorporated into the result using the same snapshot as settlement.
+Retain a real wait or unfinished work instead, or accept an independent input
+scope without consuming an older promise. Unrelated open Requests do not block
+useful answers. Communication, result acceptance and input coverage settle in
+one fenced transaction; the agent still judges whether the explanation is true.
+
+Task controls use ordinary scoped actions with current target identity, creator
+or human authority and revision checks. Independent work uses normal typed App
+admission. There is no `decision.followUp`, Conversation-only control field or
+separately supplied attachment that can redirect a handoff.
 
 Duplicate inputs reuse stable admission/result identities. A human Turn may
 already have explained a result before its queued system input runs; reread
@@ -403,56 +394,37 @@ A Request reference requires no prior Conversation Topic link. The
 [reference contract](#requests-acceptance-and-closure) applies independently
 of optional Topic organization.
 
-May returns `requestUpdates` in its bounded decision. `expectedRevision: 0`
-accepts a new ask; a correction uses the same ID and observed revision. A
-`followUp.requestId` links the actual admitted Task to that ask atomically.
-Acceptance/refinement is stored before handoff. Fulfilled, withdrawn and
-unfulfilled dispositions preserve the accepted scope and commit with the
-Conversation explanation. A simple answer can accept and close an ask in one
-turn without creating a Task. A failed or stopped turn never closes it.
+May saves accepted asks and corrections through common Task `communication`,
+either in `attempt.apply` or the final Task result. `expectedRevision: 0` accepts
+a new ask; later updates retain its ID and use the observed revision. Input
+associations and exact Task references preserve its scope across turns. A direct
+answer can accept and close an ask in one Turn without creating another Task.
+Stopping or failing execution does not itself close an accepted Request.
 
-The existing `conversation_context` read tool lists open asks in pages of 12
-(`requests`, then `afterId`) and reads a full exact ask (`request`, `id`). Bounded
-prompt context retains whole records, never truncated scopes; omitted asks
-remain discoverable. Request updates use at most eight records per decision,
-2,000 characters per scope and 32 exact Task links per ask. These are explicit
-bounded-context limits, not a guarantee of bounded total SQL query cost.
+The common `attempt.events.communication` projection supplies bounded history
+and Requests. `attempt.read.communication` discovers further context through
+an input already admitted to the Task. Full accepted scopes remain in storage;
+omitted records are discoverable rather than treated as absent.
 
-Linked results and missed-change discovery enter the same Conversation Task.
-The handler receives current Request records and returns `requestUpdates` through
-`ConversationTurnResult`. Accepted updates and the reply settle together; stale
-revisions reject. There is no separate supervisor result protocol.
+Closure carries its explanation through the same communication or a `replyId`
+to a previously published explanation in this Task generation. Request changes
+are claim- and revision-fenced. A correction accepted during execution remains
+saved if final settlement fails. Convergence rejects an open Request associated
+with a covered input; waiting/incomplete results preserve outstanding work.
+The [storage contract](storage.md#request-input-associations) owns exact linkage.
 
-The `conversation_request` tool can save a new ask, accepted scope correction,
-or association with current input before work starts. An existing ask can omit
-unchanged scope. Its write is fenced by the current claim and Request revision.
-That saved correction survives a later failed or stopped attempt. Final closure
-still requires a current decision and explanation; it cannot silently revise scope.
-
-The [Request input associations](storage.md#request-input-associations) change
-adds agent-chosen `inputIds` and presents their Requests as `assignedRequests`.
-Each assigned Request, including one saved during execution, needs an explicit
-final disposition. Omission rejects settlement and retains the input for ordinary
-Task recovery. An open outcome explains continuing work or the remaining gap and
-actual wait in that Request's own nonblank reason, as required by the result schema.
-New input defers a proposal as `unacceptedResult` for reconsideration;
-its effects are never automatically replayed. These additions require the matching
-Host change; source changes alone do not establish installed behavior.
-
-Core tests prove storage, fencing and context availability. They do not prove
-that a model recognizes every ask or closes it truthfully. Historical messages
-are not automatically converted into accepted Requests.
+These checks preserve accepted promises; they cannot prove that the agent
+recognized every ask or judged fulfillment correctly. Historical messages are
+not automatically converted into accepted Requests.
 
 ### Input handling remains separate
 
-The Host uses `AppInputContext` and `app_inbox_items` for accepted input
-handling. These rows are
-created before May understands the input. The
-[request handler](../../../may-agent/src/app/core/inbox/app-inbox-host.ts) completes a
-frontend row after a direct answer or durable follow-up admission; Task-based
-caller rows may instead wait for a Task result. Neither row's `done` status is
-proof of human fulfillment. The separate accepted Request stores that judgment
-and its Conversation explanation; it adds no execution controller or queue.
+The Host uses `AppInputContext` and `app_inbox_items` for admitted input. These
+records exist before the agent understands the ask. Accepted Task results settle
+only their exact covered inputs; waiting/incomplete results keep independent
+obligations and return links available. An input's `done` status is not proof
+that the human promise was fulfilled. The separate accepted Request stores that
+judgment and explanation without an execution controller or queue.
 
 ### Current response projection
 
@@ -461,34 +433,32 @@ projection. Input correlation and Topic/Task links preserve their origin; missin
 required identity is a failed projection, not successful communication. The input
 result can be projected again without accepting another Task outcome.
 
-Direct replies use `result:<inputId>` as their stable message identity. Historical
-fallback reads prefer an explicit message when one exists. Failed handling uses
-`failure:<inputId>` so an acknowledgment cannot hide a later failure. Neither a
-receipt nor a rendered message independently establishes Request fulfillment.
+Common communication operations have stable message identities derived from
+the Task generation and operation ID. Historical `result:<inputId>` and failure
+projections remain readable. A transport receipt or rendered message alone never
+establishes Request fulfillment.
 
 ### Naming and organization
 
-Use `AppInputContext` for admitted input context, `ConversationTurnResult` and
-`conversationTurnResultSchema` for the decision, and `modelStepCount` for internal
-cycles. Retired `AppRequest`, `AppRequestDecision` and
-`appRequestAgentResultSchema` aliases are no longer current exports. Existing
-`turn_start` execution events and retained counters describe model activity,
-not a new human Turn lifecycle.
+Use `AppInputContext` for admission, `TaskInput` for exact assigned input,
+`TaskCommunication` for scoped messages/Request changes, and the common
+`TaskReconcileResult` for execution outcomes. Retired `ConversationTurnResult`
+and its schemas decode historical data only; `conversation_context` and
+`conversation_request` are not current tools.
 
-Use `inboxId` for input correlation, the exact observed Turn identity for Stop,
-and `requestId` for the accepted ask. Preserve durable IDs and published events
-at compatibility boundaries rather than migrating stored data just for spelling.
-The [source reading guide](../2b-manual/source-reading-guide.md) identifies the
-current context, decision, state and transport modules.
+Use `inboxId` for input correlation, the exact observed attempt/generation for
+Stop, and the accepted human Request ID for scope and closure. Task request IDs
+and human Request IDs remain distinct. The [source reading guide](../2b-manual/source-reading-guide.md)
+locates current context, state, communication and transport modules.
 
 ### Live validation and remaining checks
 
-The [Task runtime tests](../../../may-agent/src/app/core/tasks/conversation-runtime.test.ts) and
+The [common communication tests](https://github.com/hao1939/may-agent/blob/7d32fa337890e2ec04e0d7de8a026637952c0b2b/src/app/core/tasks/task-communication.test.ts) and
 [state tests](../../../may-agent/src/app/core/state/conversation-task-turns.test.ts) exercise admission,
 handoff, scoped Stop, accepted Requests and recovery across storage reopen. The
 [test guide](../../../may-agent/test/README.md) separates these checks from process-loss and browser coverage.
-Earlier model trials remain in the [Request follow-through review](../proposals/task-runtime-organization.md#request-follow-through-review)
-and [workflow review](../proposals/workflow-practices-review.md).
+Earlier model trials remain in the [Request follow-through review](../archive/reviews/task-runtime-organization.md#request-follow-through-review)
+and [workflow review](../archive/reviews/workflow-practices-review.md).
 
 Remaining proof is behavioral: multi-turn discussion should not create unnecessary
 work; clear authorization should not prompt repeated approval; corrections should
@@ -502,6 +472,6 @@ current-turn steering remains a distinct interface gap.
 Old execution identities and receipts remain history. Migration must preserve
 accepted Requests, messages, Task links and outcomes while fencing retired
 writers. An unfinished ask does not become fulfilled because an old execution
-path was retired. The [cutover record](../archive/reviews/conversation-input-unification.md#retained-state-compatibility)
-retains the version-specific behavior; [Operations and Recovery](../2b-manual/app-operations-recovery.md)
+path was retired. The [simplification record](../archive/implementation/task-owned-host-simplification-20261111.md)
+retains the merged-source evidence; [Operations and Recovery](../2b-manual/app-operations-recovery.md)
 owns operating procedures.

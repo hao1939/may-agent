@@ -99,7 +99,7 @@ mechanisms. Reachability beyond the demonstrated selector case and actual audit
 coverage need connected verification; neither justifies a new Host model router
 or another audit scheduler.
 
-The [ordered gap plan](../../proposals/host-contract-improvements-20261016.md#remaining-gaps-and-fix-order)
+The [ordered gap plan](host-contract-improvements-20261016.md#remaining-gaps-and-fix-order)
 separates confirmed implementation differences from those verification gaps.
 
 ### Follow-up: compare both implementations against one contract
@@ -130,7 +130,7 @@ partial evidence and existing settlement fences rather than drop the output or
 automatically execute it. These are source findings and required trials, not a
 measured production-loss claim. The
 [common contract](../../2a-design/execution-contributions.md#common-contract-for-code-and-agents)
-and [implementation plan](../../proposals/host-contract-improvements-20261016.md#return-unresolved-work-to-agent-judgment)
+and [implementation plan](host-contract-improvements-20261016.md#return-unresolved-work-to-agent-judgment)
 own the resulting requirements.
 
 ### 1. A second validator can reject work after its author has finished

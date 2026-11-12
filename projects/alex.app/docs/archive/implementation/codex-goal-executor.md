@@ -373,7 +373,7 @@ native-worker design own current behavior. Protocol drift verification remains
 supported directly under `scripts/` and in the container smoke gate.
 
 The resource sampler and manual model smoke are retired by the
-[scripts decision](../../proposals/poc-retirement-and-knowledge-20260912.md).
+[scripts decision](poc-retirement-and-knowledge-20260912.md).
 Their final main source remains at Host `38a048da5c105bea91dc7163010d94483a60b747`,
 under `scripts/poc/codex-goal-smoke.ts` and `codex-goal-resources.ts`.
 No maintained diagnostic consumed the sampler independently. The original

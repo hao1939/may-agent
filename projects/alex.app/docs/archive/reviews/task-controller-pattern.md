@@ -609,7 +609,7 @@ or a generic controller framework.
 - [controller-runtime reconciliation contract](https://github.com/kubernetes-sigs/controller-runtime/blob/main/pkg/reconcile/reconcile.go): identity-based requests, level-based reads and error backoff.
 - [Kubernetes Job failure policy](https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy): finite work, retry limits and duplicate-execution caveat.
 - [Core review and reproducible evidence](core-simplicity-review-20260910.md).
-- [Existing core boundary proposal](../../proposals/task-runtime-organization.md).
+- [Existing core boundary proposal](task-runtime-organization.md).
 
 [normal]: https://github.com/hao1939/may-agent/blob/b81a5d622bd1d2990d483d1b536a228b4f9b3157/src/app/app-task-runtime.ts#L1446
 [startup]: https://github.com/hao1939/may-agent/blob/b81a5d622bd1d2990d483d1b536a228b4f9b3157/src/app/app-task-runtime.ts#L3084

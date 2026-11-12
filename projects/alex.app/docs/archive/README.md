@@ -35,9 +35,20 @@ contracts; Tier-2 design governs when wording conflicts.
 ## Reviews
 
 - [Connected recovery to the original human promise — 2026-11-12](reviews/connected-recovery-trial-20261112.md)
-  — independent Alex startup, actual repair and caller return, retained authority
-  blockers, human-reply and restart contrasts; source and disposable evidence.
-
+  — disposable HTTP/control ingress, real tool repair, normal retry and exact
+  caller return fulfill the original promise; an unresolved contrast preserves
+  it. Orderly process restart and normal-timer admission recovery also have
+  evidence. A bounded real-model follow-up covers diagnosis, authorized repair,
+  one human answer and a missing-authority blocker; preserves failed runs and
+  their guidance refinements. Human receipt correlation now has a connected
+  scripted trial; an accepted-release admission probe records missing generic
+  controller routes. A source correction now passes an actual-controller
+  regression through tool repair and original return; independent recipient
+  startup and installed activation remain separate.
+- [Recovery bootstrap boundary — 2026-11-12](reviews/recovery-bootstrap-trial-20261112.md)
+  — real disposable workers reproduce a shared App-import prerequisite and
+  pre-attempt controller feedback; a workflow-local contrast keeps the recipient
+  executable. No live incident or complete recovery outcome is established.
 - [Agent workflow frameworks: reuse and May's boundary — 2026-11-12](reviews/workflow-framework-comparison-20261112.md)
   — pinned GitHub comparison, reusable runner patterns and the narrower case for
   May's Task integration; source investigation, without runtime benchmarks.
@@ -151,6 +162,15 @@ See [V2 archive](v2/README.md) for the retired V2 specification, migration
 plan, implementation notes, and review.
 
 ## Implementation and trial records
+
+- [Earlier connected recovery plan](reviews/unified-agent-recovery-20261017.md) and [execution-evidence recovery](reviews/recovery-from-execution-evidence-20260922.md): historical reasoning, failure cases and trial limits. The [single active recovery proposal](../proposals/unified-agent-recovery-20261017.md) owns remaining connected acceptance.
+- [Responsive recovery](reviews/responsive-host-recovery-20261002.md) and [Host-contract improvements](reviews/host-contract-improvements-20261016.md): dated implementation, measurements and rollout records. Independent query/control and App-adoption questions remain in the [Host follow-up](../proposals/host-contract-improvements-20261016.md); archival does not establish a fix or deployment.
+- [Design clarity and proposal dispositions — 2026-11-11](reviews/design-and-proposal-status-review-20261111.md): 36 proposal entries, source-status corrections, deferred choices and next candidates.
+- [Installation-policy migration](implementation/app-policy-and-host-boundary-cleanup-20261005.md) and [PoC source retirement](implementation/poc-retirement-and-knowledge-20260912.md): completed source slices with their dated evidence and limits.
+- [Earlier recovery/oversight](reviews/reliable-recovery-and-independent-oversight-20261002.md), [workflow practices](reviews/workflow-practices-review.md), [App behavior](reviews/app-behavior-convergence-20260925.md), and [core/runtime review](reviews/task-runtime-organization.md): historical findings, not a current implementation queue.
+- [Original Task communication design](decisions/tasks-and-communication-resources-20261004.md): common execution/communication boundary now implemented in #449; only its linked App adoption questions remain active.
+
+- [Task-owned Host simplification — 2026-11-11](implementation/task-owned-host-simplification-20261111.md): merged cuts, paired revisions, measured reduction, review fixes and source-validation limits.
 
 These records were separated from active proposals during the readability
 cleanup. Their status statements describe the recorded revision or trial. Read

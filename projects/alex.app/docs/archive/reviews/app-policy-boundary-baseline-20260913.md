@@ -1,5 +1,5 @@
 > Historical September 2026 review. Current status and decisions are in the
-> [boundary cleanup](../../proposals/app-policy-and-host-boundary-cleanup.md).
+> [boundary cleanup](../implementation/app-policy-and-host-boundary-cleanup-20261005.md).
 > The evidence below does not describe the October installation.
 
 # Keep domain policy in Apps, keep the Host generic
@@ -183,7 +183,7 @@ Keep useful evaluation summaries and historical evidence. Do not remove Gym
 adapters while Gym still imports them, move App state into a new database, or
 weaken exact-artifact approval/protected-test rules as a side effect of naming
 cleanup. Reuse the existing [extension proposal](../../proposals/agent-behavior-and-capability-extension.md)
-and [scripts retirement boundary](../../proposals/poc-retirement-and-knowledge-20260912.md).
+and [scripts retirement boundary](../implementation/poc-retirement-and-knowledge-20260912.md).
 
 ### 6. Give each description one clear meaning
 

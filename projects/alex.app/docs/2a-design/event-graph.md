@@ -121,7 +121,7 @@ session.steer.requested
 The terminal `session.idle` or `session.end` event belongs to the triggering
 turn trace and closes the semantic intent, not the lifetime of the persistent
 chat session. Session input queues therefore carry trace context per input.
-`manager.send()`, cold resume, forks, workflows, CLI delegation, and outbound
+live session steering, forks, workflows, CLI delegation, and outbound
 notification paths must propagate that turn context explicitly; long-lived
 sessions must not rely only on ambient async context or one session-wide trace.
 

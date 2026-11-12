@@ -181,8 +181,9 @@ May results require no delivery receipt to enter Conversation.
 
 Trace tests should cover new May requests, later/corrective requests, approval,
 cancellation, cross-App Task dependencies and results, failure, and recovery. Compatibility
-execution tests separately cover async fork/workflow/CLI events and direct-chat
-cold resume.
+execution tests cover async fork/workflow/CLI events, live steering, ended-session
+rejection and fresh Task attempts after confirmed cleanup. Native CLI thread
+continuity remains a separate adapter contract.
 
 ## Post-rollout state reconciliation
 

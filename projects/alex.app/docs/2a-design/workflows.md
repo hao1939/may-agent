@@ -138,21 +138,23 @@ command surface.
 
 ### Workflow or host-private maintenance handler
 
-The absence of raw SQL and host paths is an authoring boundary, not a missing
-workflow feature. If a timed job must inspect runtime-owned ledgers, repair
-host mechanics, or produce an operational report from global runtime state, it
-is a host-private maintenance handler rather than an App workflow.
+App workflows use the public scoped execution contract. Runtime-ledger repair
+requiring raw SQL, private paths or recovery control belongs in fixed Host code
+or an explicit offline operation, never an App workflow. The former configurable
+maintenance-handler mechanism is retired; it is not an alternative extension API.
 
-That handler may use an explicitly supplied host query/path/delivery adapter,
-record its mechanical output, and publish a fact such as an owner request. It
-cannot become a second App inbox or task controller, and it cannot duplicate a
-canonical App schedule/subscription for the same obligation. Any judgment or
-durable domain continuation still enters the App through a declared input,
-subscription, task trigger, or exact target.
+### Crash recovery
 
-Placement beside an App-local operations agent does not make a host handler a
-public App capability. Host-handler modules use a local structural contract and
-are checked against the paired Runtime separately from workflow authoring.
+A workflow run records execution evidence; its Task owns unfinished work. After
+confirmed process and descendant cleanup, recovery starts a fresh bounded
+attempt of the current method. Workflow `resume` and historical step replay are
+unavailable. The method must inspect saved operation receipts or destination
+state before repeating external writes. Repeated work is an accepted cost;
+exactly-once external effects are not guaranteed.
+
+Ordinary workflow guards, bounded automatic repair, cancellation and result
+validation remain supported. Removing crash replay did not remove local repair
+within an executing workflow.
 
 ### Task reconciliation input
 
@@ -470,8 +472,8 @@ explains when to promote a practice to a workflow or retain agent judgment.
 - No workflow imports raw SQL, task storage, global paths, scheduler, queue,
   lease, delivery, or recovery mechanics.
 - Runtime-ledger observation or repair that needs those capabilities is
-  explicitly classified as a host-private maintenance handler, never disguised
-  as a workflow.
+  implemented in fixed Host code or an explicit offline operation, never
+  disguised as an App workflow or configurable handler.
 - Result `done` never implies enclosing task/project completion without App
   admission and evidence.
 

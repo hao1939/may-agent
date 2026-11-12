@@ -34,7 +34,7 @@ report missing context instead of guessing another owner.
 
 Use the [term clarification](../../2a-design/message-lifecycle.md#task-request-input-and-human-action)
 when working across Conversation and ordinary Tasks. Task `requests` submits App
-input; `requestUpdates` changes accepted promises to the human. Their IDs have
+input; `communication.requestUpdates` changes accepted promises to the human. Their IDs have
 different meanings. Declare a request Condition only when you need the returned
 answer, and a human-owned Condition when you need the human's action or decision.
 An automated escalation does not itself create a Conversation Request.
@@ -337,14 +337,25 @@ A Conversation may receive one Task outcome with several `topicIds`. Read the
 relevant asks and judge each separately; shared evidence does not mean that all
 Requests are fulfilled. You do not need to arrange the return deliveries.
 
-For a Conversation result, select an existing Topic from current context or
-read it with `conversation_context` first. Use an assigned open Request for
-`followUp.requestId`, or save its current scope and input associations through
-`conversation_request` before linking it. Historical IDs and a rejected previous
-proposal are not proof that a Topic is available or a Request is open. Only omit
-the optional Request link when that follow-up does not serve an accepted ask.
-The [Conversation contract](../../2a-design/conversation-execution.md) records
-the prompt's selection aid and its limits.
+For human communication, use an input already admitted to your Task.
+`attempt.read.communication` reads its current Requests and Topic context.
+Publish messages, Topic choices and `requestUpdates` through common
+`attempt.apply({ communication: [...] })` or the same field in a Task result.
+Save accepted asks/corrections before work and reuse returned revisions. A
+closure needs its explanation; a shared Conversation or Task reference does
+not transfer another Task's promise.
+
+A final `response` sends another human message. When you have already delivered
+the answer through `attempt.apply({ communication: [...] })`, finish with its
+accepted delivery recorded in `summary` or `facts` and omit `response`. Reuse
+the same communication identity when replaying an uncertain delivery.
+
+Use ordinary `requests` and request Conditions for independent contributions.
+Keep the human Request open while its promised result is outstanding. Accept
+only the intended `inputKeys`: convergence cannot consume an input with an open
+accepted Request, including live input you incorporated during execution. You
+can answer later independent input while older work waits. The
+[Conversation contract](../../2a-design/conversation-execution.md) owns this path.
 
 If `finish` returns a validation error, correct the named fields within the
 current invocation. Use any representation the schema accepts; the App's shared
@@ -533,6 +544,14 @@ and a usable recipient before claiming that escalation worked.
 4. **May cannot resolve it:** May asks Hao for the missing help through the
    supported human Condition/Conversation path. Put the short ask in
    `Condition.requestedAction`. May does not need another May Task to ask Hao.
+
+When a human reply arrives, compare its saved Task and Condition generations
+with the current ask, then judge whether it answers the question. A directly
+admitted reply can carry the exact receipt while the Condition is still
+`unknown`; that state alone is not a reason to ignore the input. Retire the
+answered Condition with its current generation, or retain/revise an unanswered
+ask. Verify any requested external effect separately. See
+[human actions](../../2a-design/human-control-surfaces.md#human-actions).
 
 These are responsibilities, not required extra Tasks or model calls. Skip any
 step already filled by the same agent. For example, Bob can ask Alex as his App

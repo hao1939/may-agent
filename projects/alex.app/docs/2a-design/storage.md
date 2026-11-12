@@ -287,35 +287,26 @@ reference.
 
 ### Request input associations
 
-Requirement saves and final updates accept `inputIds` identifying the current
-inputs that establish or refine an intention. May chooses those associations.
-Single-input turns infer that sole input; mixed turns retain existing
-associations or require explicit IDs. The Host verifies that the IDs belong to
-the current claim and stores them in `conversation_request_inputs` atomically
-with the Request update. Several inputs can share one Request, and one input
-can establish distinct Requests. The links retain history without execution state.
-The same requirement-save tool can associate a new input with an existing Request
-without copying its scope. Omitted scope retains the saved requirements; a new
-Request still requires its complete scope. Use the returned revision for settlement.
+Common Task `communication.requestUpdates` accepts `inputIds` identifying
+admitted inputs that establish or refine an intention. Omission uses the
+communication operation's own `inputId`. The agent chooses the association;
+the Host validates saved admission, Task ownership and Conversation identity,
+then stores it atomically in `conversation_request_inputs` with the Request
+update. Several inputs can share one Request, and one input can establish
+several Requests. A Task reference or shared Conversation alone grants no
+ownership of the promise.
 
-Current input links supply `assignedRequests` with full accepted scope and
-revision, independent of the recent-Topic context window. Every assigned Request,
-including one saved during execution, needs an explicit final `requestUpdates`
-entry with its own nonblank reason, including for an open disposition. The result
-schema checks the reason before the agent finishes; an unrelated reply cannot
-stand in for it. Omission rejects the whole settlement; reply, Request changes,
-handoff and input completion stay atomic. The agent owns semantic completeness; the Host
-detects missing dispositions, not incorrect explanations. A turn admits at most
-eight assigned Requests, matching the existing final-update bound.
-Recognition and association must happen before work on an accepted intention;
-the Host cannot enforce obligations the agent has not saved or associated.
+Save accepted scope and corrections through `attempt.apply` before doing work.
+Use the returned revision for subsequent changes. A failed or stopped attempt
+does not erase accepted updates. Closure needs a published explanation from the
+owning Task generation. Final result acceptance and communication share the
+claim-fenced transaction.
 
-New input defers a proposed result as `unacceptedResult` for reconsideration
-against current requirements. No automatic replay, Request executor, sweep or
-retry loop is added. Stopped input remains stopped. Schema creation preserves
-historical Requests without inventing associations from message IDs or prose;
-previously stranded obligations need an explicit current review. The matching
-Host change must be installed before these fields and checks are available.
+A converged result may settle only its covered inputs, and none may retain an
+open accepted Request. The same coverage calculation includes accepted live
+input in preflight and final settlement. Waiting/incomplete work preserves its
+obligation; unrelated input can be answered independently. The agent owns
+semantic completeness: the Host cannot enforce an ask never accepted or saved.
 
 ### Operations
 
@@ -332,8 +323,9 @@ input and caller correlation remain; an inbox row must not hold a second
 independent execution claim. Fenced Task settlement composes typed conversation
 operations so the input outcome, explanation and Request closure commit together.
 This does not require one table or a generic CRUD/settlement API.
-`core/state/conversation-task-turns.ts` composes the current operations; the
-historical inbox claim fields are retained evidence, not live authority.
+`core/tasks/task-communication.ts` composes common communication and settlement;
+`core/state/conversation-task-turns.ts` owns Conversation admission and Stop.
+Historical inbox claim fields are retained evidence, not live authority.
 
 Task reads distinguish accepted outcomes, pending work and explicit closure.
 A caller waits for its exact assignment's outcome, not resource closure; stored
@@ -350,7 +342,7 @@ Group the API by what the caller needs to accomplish:
 | Read Conversation | Return bounded messages, active Turn with its human/system origin, and related context; paging must use stable identities |
 | Read/list accepted Requests | Scope by App/Conversation; page open asks and read an exact full scope, revision, links and closure |
 | Find/read Topics | Return bounded context and exact Task references; Topic has no work status |
-| Accept a Turn decision | Check the Conversation Task attempt fence; save the validated decision, Topic changes and accepted/refined Request versions together before handoff |
+| Apply scoped communication | Check the owning Task claim, saved input and Request revision; commit message/Topic/Request changes atomically |
 | Admit Task with conversation links | Commit Task admission and supplied Topic/Request links together, checking current authority and Request revision |
 | Complete a Turn | Commit input result, completion and any Request closure with durable answer evidence; failure/Stop never implies fulfillment |
 | Admit a linked Task review | Validate saved links and source; reuse identity for the same Task change and Conversation/Topic, distinguishing a newly linked or revised Request |
@@ -358,12 +350,11 @@ Group the API by what the caller needs to accomplish:
 | Find missed follow-up | Return a bounded, progressing page of unhandled linked outcomes/decisions; honor pending, handled, stopped and exhausted input dispositions |
 
 These are operation families. `admitConversationTaskInput` attaches input to
-its Task; `updateConversationTaskRequest` and `completeConversationTaskTurn`
-fence updates through the current attempt. `listPendingConversationTaskChanges`
-and `admitConversationTaskChange` recover linked outcomes through the same
-input route. Completion commits Request updates, durable explanations and
-handled-change evidence together. There is no separate supervision Task or
-`recordConversationTaskOutcome` completion path.
+its Task; `applyTaskCommunication` fences communication and Request changes,
+and common Task result settlement covers the exact accepted inputs.
+`listPendingConversationTaskChanges` and `admitConversationTaskChange` discover
+linked outcomes through that same input route. There is no separate Conversation
+completion adapter, supervision Task or outcome protocol.
 
 Stop keeps its exact-turn meaning; `stopConversationTaskTurn` enforces it through the common
 Task attempt/input fence instead of a separate inbox execution authority. Topic

@@ -29,8 +29,7 @@ see [Message Lifecycle](../2a-design/message-lifecycle.md).
 | Need | Declaration or convention |
 | --- | --- |
 | Translate selected facts to input | `subscriptions` and pure `toInput` |
-| Resolve desired work directly from a fact | `tasks.subscriptions` and pure `tasks.resolve` |
-| Retain observation without work | `observations`, or a resolver returning `null` |
+| Retain observation without work | `observations`, or `subscriptions.toInput` returning `null` |
 | Admit input or publish a fact on a cadence | `schedules` |
 | Collect external facts | Bounded `observers` |
 | Expose a typed command | `actions` with schema and pure `toInput` |

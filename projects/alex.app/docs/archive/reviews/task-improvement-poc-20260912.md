@@ -11,7 +11,7 @@
 **Choice basis:** [Applicable philosophy and convention](../../1-principles/evolution.md#promotion-tests); [compare competing choices](../../1-principles/core-principles.md#resolve-conflicting-designs).
 
 **Harness status:** Retired from the current Host candidate by the
-[scripts retirement decision](../../proposals/poc-retirement-and-knowledge-20260912.md).
+[scripts retirement decision](../implementation/poc-retirement-and-knowledge-20260912.md).
 The source remains at the exact trial revisions recorded below; its final
 main copy is at Host `38a048da5c105bea91dc7163010d94483a60b747`.
 Historical invocations require that isolated source, not current main.

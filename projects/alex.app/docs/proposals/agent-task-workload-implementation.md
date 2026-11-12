@@ -7,9 +7,11 @@ Keep its business rules and implement them through existing Host boundaries.
 and [one authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource).
 
 **Design status:** Proposed implementation approach.
-**Implementation status:** The Host candidate is consolidated in
-[PR #443](https://github.com/hao1939/may-agent/pull/443), targeting main and ready
-for independent review. Review fixes at Host
+**Implementation status:** The consolidated implementation merged in
+[Host #443](https://github.com/hao1939/may-agent/pull/443) at
+`01ba70398c7b5a0454bf663115c9f758901d3dc6`. The candidate and stacked-PR
+statements below are dated development history, not open merge dependencies.
+Review fixes at Host
 `403c6f39a46aad420acf01c14491a54c451475ca` passed final Host and paired App verification.
 It includes scoped feedback, protected coordination,
 creation/claim/helper accounting, authorized funding changes, shared execution
@@ -18,7 +20,8 @@ workspace prerequisites and bounded retained-session continuations. Fresh-state
 initialization, offline retained-state installation and one-way enforcement
 withdrawal have verified implementations. Retained installation requires
 externally excluded, already cleaned execution; it does not import live work.
-Independent review, integration and operational acceptance remain outstanding.
+Source integration is complete. Installed result disposition, selected funding
+and operational acceptance remain separate; this document records no new activation.
 
 The 37 earlier PR heads are included in the consolidated candidate. The earlier
 validated baseline was `97cbfdf9748297501f21ab2bff2047041997ceef`. Their branches, original descriptions

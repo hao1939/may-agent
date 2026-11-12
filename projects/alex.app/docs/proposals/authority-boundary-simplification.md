@@ -51,7 +51,7 @@ The historical sections below explain prior decisions. The table above and
 | How do conversation, exact Task links and follow-through work? | [Message Lifecycle](../2a-design/message-lifecycle.md) |
 | Who owns domain policy and acceptance? | [Host/App Boundary](../2a-design/system-boundary.md) |
 | How do attempts, waits, cancellation and recovery preserve work? | [Task Resource Engine](../2a-design/task-resource-engine.md) |
-| Which capabilities can be replaced or removed? | [Stable core proposal](task-runtime-organization.md) |
+| Which capabilities can be replaced or removed? | [Stable core proposal](../archive/reviews/task-runtime-organization.md) |
 
 May may investigate, edit, verify and answer in an authorized bounded turn.
 Continuation uses an ordinary Task. The responsible App accepts its own
@@ -218,7 +218,7 @@ Update [workflows](../2a-design/workflows.md) and the
 **Status:** Original findings at #164, now triaged by the
 [current implementation plan](#current-implementation-plan). The original review
 changed no Host source; the independent implementation is recorded below.
-This extends the [48-file scripts review](poc-retirement-and-knowledge-20260912.md)
+This extends the [48-file scripts review](../archive/implementation/poc-retirement-and-knowledge-20260912.md)
 to `src/`, `packages/`, `test/` and `container/` at Host #164. These areas contain
 614 tracked files, including 284 test files. Inventory, relative-import and
 identifier searches covered those areas; manual review focused on runtime/state
@@ -301,7 +301,7 @@ only where they reduce shared context or duplicate decisions. The current Task
 and inbox READMEs already identify those owners; use their tests and source map.
 Do not recreate the removed inbox executor, or unify dispatch backoff with
 attempt backoff: one retries dispatch/storage, the other may execute model work.
-The [existing runtime plan](task-runtime-organization.md) owns these extractions.
+The [existing runtime plan](../archive/reviews/task-runtime-organization.md) owns these extractions.
 
 ### Retain until the relevant evidence exists
 

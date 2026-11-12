@@ -7,8 +7,7 @@
 **Design status:** Accepted.
 **Implementation status:** Task reconciliation owns durable App work. Bounded
 Conversation turns perform self-contained authorized work within their Task
-attempt. Small pure mappings (`subscription.toInput`, `task(request)`, and
-`tasks.resolve`) select durable work during admission; they cannot execute it.
+attempt. Small pure mappings (`subscription.toInput` and `task(request)`) select durable work during admission; they cannot execute it.
 The owner/disposition worker, analysis attachment, delegation publisher, and
 request delivery gate have been removed. Scoped Task list/get reads share one
 Runtime implementation across SDK, agent tool, control socket, and HTTP.
@@ -55,8 +54,8 @@ records the merged implementation and validation, not a deployment claim.
 
 ## Startup
 
-Execution/recovery adapters are selected in composition; named Host maintenance
-cannot launch standalone workflow jobs; reporting is optional and observes
+Execution/recovery adapters and fixed Host housekeeping are selected in composition;
+reporting is optional and observes
 committed App generations outside publication. Basic Task/request/result reads
 remain available without reporting. Source tests run Tasks with all human
 interfaces omitted. See
@@ -160,23 +159,26 @@ validation, pure mapping and result projection do not reserve another agent
 execution slot. There is no request-decision capacity queue.
 
 Conversation input uses the existing lanes by admitted input origin: a
-Conversation Task handling human input may use the reserve; automated review and
-independently delegated work use background capacity. This adds no capacity
-service or preemption; a single-slot Host cannot reserve a second slot for human
-execution. The dated [conversation input unification
-proposal](../archive/reviews/conversation-input-unification.md) retains the migration
+Conversation Task handling human input may use the reserve; ordinary automated
+review and independently delegated work use background capacity. Trusted,
+bounded coordination may also share the reserve under explicit installed
+policy, with bounded preference for human work. This adds no preemption; a
+single-slot Host cannot reserve a second slot for human execution. The dated
+[conversation input unification proposal](../archive/reviews/conversation-input-unification.md) retains the migration
 tradeoff that led to this implementation.
 
 Capacity is backpressure, not policy. It decides when work may start, never
 which work matters or whether the result is acceptable.
 
-**Intended extension, unimplemented:** the [workload proposal](../proposals/agent-task-workload-model.md#coordination-that-can-run-under-stress)
-would share the existing reserve between human interaction and trusted, bounded
-agent coordination, with protected credits and a path that needs no new worktree
-for review. It preserves human responsiveness, pause/stop controls and creator
-authority. Current automated reviews still use background capacity; a name or
-priority grants no reserve eligibility. Operation-specific resource prerequisites
-and shared accounting also remain unimplemented.
+The [workload model](../proposals/agent-task-workload-model.md#coordination-that-can-run-under-stress)
+describes protected coordination, resource feedback and shared accounting.
+Source support for these mechanisms exists and remains after the Host
+simplification. Coordination eligibility requires the installed policy's exact
+Task, workflow, owner and creator provenance; a name or priority grants no reserve
+access. Coordination respects App pause and does not change creator authority.
+The [completion audit](../archive/reviews/workload-completion-audit-20261109.md)
+and linked implementation evidence record the supported paths and remaining
+acceptance. Source support does not establish production funding or activation.
 
 ## Pausing
 
@@ -189,8 +191,8 @@ Pause has one meaning:
 - resume queues retained background work from durable state.
 
 The Host does not reject task intent merely because the App is paused. Foreground
-eligibility comes from pending admitted human input, not App identity, Task
-priority, or arbitrary system feedback. This preserves human Conversation across
+eligibility while paused comes from pending admitted human input, not App
+identity, Task priority, or arbitrary system feedback. This preserves human Conversation across
 restart while background work waits. Pausing one App is not a global runtime
 pause. Exact Turn Stop and explicit Task closure remain separate controls.
 
@@ -208,10 +210,10 @@ The execution path owns prompt preparation, tool policy, cancellation,
 transcript evidence, and provider interaction. It does not own an App request
 or task outcome.
 
-Sessions are attempt records. An explicitly controlled unbound session may
-resume when the same bounded request can safely continue. A task-owned session
-does not resume independently after process restart: its owning Task is
-requeued and any replacement attempt passes through normal Host capacity.
+Sessions record execution. Live sessions may be steered; ended sessions cannot
+resume or reuse their execution identity. After confirmed cleanup, the owning
+Task may start a fresh attempt through normal Host capacity. An ended standalone
+invocation returns evidence to its caller, which can explicitly start new work.
 
 Task attempts and startup Task repair run outside the interface process. Their
 durable events return as identity-bearing observations, one potentially
@@ -336,13 +338,11 @@ replaced atomically with their App generation.
 
 ## Host maintenance
 
-Some scheduled code must inspect Host-owned storage, such as session cleanup or
-metric collection. File handlers receive only Host maintenance capabilities:
-queries, metrics, fact publication, logging, delivery, and explicit paths.
-
-They cannot start an App agent/workflow or create App task state. When repair
-needs App judgment, the handler publishes a typed fact and the App resolves or
-wakes its task. Session recovery follows this path:
+Fixed Host code owns retention, session/process cleanup, watchdog/liveness
+checks and metric collection. Configurable file handlers, their private API and
+cron editing are retired. When a mechanical failure needs App judgment, existing
+typed facts enter ordinary App input; housekeeping never acquires an App work
+lifecycle. Session recovery follows this path:
 
 ```text
 Host detects failed session
@@ -357,12 +357,13 @@ The Host does not call a model to decide mechanical recovery. It preserves
 failures and the exact owner, applies execution bounds, drains owned processes
 and returns work to the Task's normal retry path. Error counts and silence are
 observations; they do not authorize an independent agent revival or an escalation
-assignment. Standalone execution requires an explicit caller to resume.
+assignment. Ended standalone execution remains evidence; its caller may start
+a fresh bounded invocation.
 
 Maintenance retains bounded database, retention and lifecycle-evidence repair.
 Those operations do not create an input-delivery lifecycle or replace Task
-admission/result recovery. Read the selected handlers in composition before
-inferring that a legacy timer or source file runs in the daemon.
+admission/result recovery. Read fixed composition and the selected App schedules
+before inferring that a historical timer or source file runs in the daemon.
 
 ## Task execution isolation
 
@@ -511,15 +512,15 @@ decision is scripted; this does not prove autonomous diagnosis or isolation
 from a broken shared App/module bootstrap.
 This does not install an App investigation policy or prove live agent judgment;
 see the remaining coverage in the
-[Host improvement plan](../proposals/host-contract-improvements-20261016.md#4-give-execution-recovery-one-mechanical-meaning).
+[connected recovery proposal](../proposals/unified-agent-recovery-20261017.md).
 
 After opening its interfaces, the Host starts an isolated recovery worker that:
 
 - releases or repairs stale claims and leases;
 - repairs request correlation and requeues runnable tasks;
 - preserves completed results and event-admission evidence;
-- recovers Task-owned execution through its Task; standalone sessions require
-  an explicit caller to resume; and
+- recovers Task-owned work through fresh attempts after cleanup; ended standalone
+  sessions stay evidence for their caller; and
 - leaves paused task work retained but unqueued.
 
 The interface process does not await this work. A recovery failure is logged

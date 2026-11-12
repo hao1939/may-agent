@@ -29,7 +29,7 @@ daemon or trigger its own immediate retry loop. Required event persistence still
 fails closed; this boundary does not turn unsaved work into accepted work.
 
 The Host includes compact cumulative SQLite counters in this existing observation
-(see the [SQL measurement design](../proposals/responsive-host-recovery-20261002.md#sql-visibility-and-routine-review)).
+(see the [SQL measurement design](../archive/reviews/responsive-host-recovery-20261002.md#sql-visibility-and-routine-review)).
 App metric collection can compare retained samples without a new timer or model call per
 heartbeat. Detailed query rankings remain an on-demand diagnostic read. The Host
 measures; the App chooses review cadence, thresholds and follow-through.
@@ -53,8 +53,8 @@ The Host owns timing, durable admission, bounded execution and recovery.
 Host-private cleanup is not a recurring agent responsibility. Required runtime
 recovery remains independent of optional App schedules. Operations digests and
 domain health reviews belong to their App even when their code is deterministic.
-The remaining private-handler coupling is tracked in the
-[boundary cleanup](../proposals/app-policy-and-host-boundary-cleanup.md).
+Configurable private Host handlers were retired in #449;
+[fixed housekeeping and App schedules](cron.md) own the current split.
 
 ## Existing names and safe retirement
 

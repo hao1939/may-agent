@@ -354,9 +354,15 @@ saves the exact Task, Task generation, Condition ID and Condition
 generation only after a complete Telegram card delivery, then projects that
 receipt identity into the existing ordinary human input event. An exact reply
 receipt Condition can therefore match `source: human` plus those four saved
-fields before or during an attempt; broad `source: human` means any human input
+fields in the admitted input; broad `source: human` means any human input
 and must not be presented as exact-question correlation. Missing, ambiguous or
 stale display identity remains ordinary input and cannot match the exact receipt.
+For directly admitted Task input, the receipt can be present in the attempt while
+the saved Condition remains `unknown`; admission does not automatically observe
+that Condition. The owner consumes the exact reply, judges its content and retires
+or revises the Condition with its current generation. The
+[connected human-reply trial](../archive/reviews/connected-recovery-trial-20261112.md#human-reply-follow-up)
+exercises this path through the original work's result.
 This transport fact still requires worker judgment about answer sufficiency and
 never proves an external action or approval. Other adapters need equivalent
 production-tested receipt correlation before claiming the same guarantee. Do

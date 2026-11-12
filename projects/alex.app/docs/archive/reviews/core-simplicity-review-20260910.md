@@ -15,7 +15,7 @@ boundaries. Larger restructuring should follow a concrete simplification, not
 file size or a desire to introduce more services.
 
 This applies the [design philosophy](../../1-principles/design-philosophy.md)
-and [current core focus](../../proposals/task-runtime-organization.md#current-focus-simple-and-robust-core).
+and [current core focus](task-runtime-organization.md#current-focus-simple-and-robust-core).
 The [error/metric and App discussion](error-handling-and-conversation-discussion-20260910.md)
 remains paused; this review does not restart that feature work.
 

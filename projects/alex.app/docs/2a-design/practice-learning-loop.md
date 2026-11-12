@@ -5,16 +5,17 @@
 **Choice basis:** [Agent Evolution](../1-principles/evolution.md#promotion-tests).
 
 **Design status:** Accepted as an App integration, not a required Host subsystem.
-**Implementation status:** Evaluation reviews external App Tasks; May receives
-published findings; Gym provides bounded comparisons. These App contracts are
-implemented in source. A complete installed improvement cycle requires separate
+**Implementation status:** Alex owns system-improvement work, including its
+assessment, engineering and Gym comparison specialists. May retains human
+requests and cross-domain priorities; Scout owns research and shared knowledge.
+These App contracts exist in source. The [Alex handover record](../proposals/alex-improvement-app.md)
+retains the dated migration and installation evidence. A complete improvement cycle requires separate
 proof of report consumption, candidate preparation, comparison, approval,
 application and fresh behavior. This document does not certify that cycle.
 
-The [Alex proposal](../proposals/alex-improvement-app.md) introduces App `alex`
-and owner agent `alex` as the intended home for new system-improvement
-coordination. Its responsibility and migration details are under review and
-unimplemented. The May-led source behavior below remains the current reference.
+Evaluation and Gym name specialist responsibilities and capabilities within
+Alex. Their older standalone App names in trial records are historical
+provenance. App membership does not transfer an existing Task or human promise.
 
 ## Purpose
 
@@ -25,11 +26,11 @@ investigation, whether a change is worthwhile and who may approve it.
 
 ```text
 work produces evidence
-  -> Evaluation reviews selected external Task evidence
-  -> May verifies the finding and decides whether investigation is worthwhile
-  -> an assigned worker prepares an isolated candidate
-  -> Gym compares the candidate with a frozen baseline
-  -> May judges value, cost and simpler alternatives
+  -> Alex's evaluator reviews selected eligible Task evidence
+  -> the receiving owner verifies the finding and chooses useful follow-through
+  -> Alex or an assigned specialist prepares an isolated candidate
+  -> Alex's Gym capability compares it with a frozen baseline when needed
+  -> the responsible owner judges value, cost and simpler alternatives
   -> required human approval binds the exact proposed change
   -> an authorized worker applies and verifies it
   -> later work and evaluation test the claimed benefit
@@ -45,10 +46,10 @@ An improvement is justified by useful evidence and value, not by report volume.
 | Responsibility | Owner | What its output establishes |
 | --- | --- | --- |
 | Original work | Responsible App/Task | Its accepted result and outstanding obligations |
-| Assessment | Evaluation | An evidence-backed judgment with stated scope and limits |
-| Investigation and candidate preparation | May's assigned worker/team | A concrete proposed change and why it fits |
-| Frozen comparison | Gym | Comparison evidence under declared objectives and constraints |
-| Pursuit and readiness decision | May | Whether the candidate is worth its total cost and ready to propose |
+| Assessment | Alex's evaluator | An evidence-backed judgment with stated scope and limits |
+| Investigation and candidate preparation | Alex or its assigned specialist | A concrete proposed change and why it fits |
+| Frozen comparison | Alex's Gym capability | Comparison evidence under declared objectives and constraints |
+| Pursuit and readiness decision | Responsible owner within accepted scope; May or the creator for wider priority/scope decisions | Whether the candidate is worth its total cost and ready to propose |
 | Required final approval | Human through the exact approval contract | Permission for the identified change and scope |
 | Application and activation | Authorized worker/operator | What source/artifact was applied and what became active |
 | Later verification | Relevant work and Evaluation | Whether observed behavior supports the claimed improvement |
@@ -60,12 +61,13 @@ change live behavior, and a successful comparison is not an approval.
 ## Evaluation
 
 [Evaluation's contract](../evaluation/task-outcome-evaluation.md)
-owns eligibility, evidence identity, rubrics and report publication. Current
-review targets exact external App Tasks, including bounded current obligations
-and historical outcomes. It excludes its own App. Session scoring and annotation
+owns eligibility, evidence identity, rubrics and report publication. Review
+targets exact eligible Task evidence, including bounded current obligations
+and historical outcomes, under Alex's declared selection and self-exclusion
+policy. Session scoring and annotation
 remain compatibility capabilities; a session ending does not require a new review.
 
-Automatic sampling is configured by Evaluation and may be disabled. A report
+Automatic sampling is configured by Alex and may be disabled. A report
 with no finding does not certify system health. Missing evidence is uncertainty,
 not failure of the target or evidence of success. May's
 [report intake](../../../may.app/agents/may/workflows/evaluation-report-intake.ts)
@@ -77,11 +79,11 @@ it. Retained session annotation has its own [trail contract](session-eval-trail.
 
 ## Gym intake
 
-[Gym](../comparison/README.md) accepts ordinary `goal` and `message` inputs.
-Its owner can select the `compare-candidate` workflow, which invokes frozen
-baseline/verification primitives and returns evidence. Current Gym has no
-automatic Evaluation subscriptions or schedules. It does not prepare, approve,
-apply, merge or deploy candidates.
+[Candidate comparison](../comparison/README.md) is an Alex capability. Alex
+accepts its structured comparison input or selects the `gym` specialist and
+`compare-candidate` workflow. That workflow invokes frozen baseline/verification
+primitives and returns evidence. Its contribution is comparison; preparation,
+approval, application, merge and deployment keep their own owners and authority.
 
 The [comparison contract](../comparison/frozen-comparison-service.md)
 owns quality gates, declared performance objectives, input/evidence identity and
@@ -89,7 +91,7 @@ invalid-run handling. The
 [report-driven improvement design](../comparison/report-driven-improvement.md)
 connects it to May and the preparing worker. Keep those domain rules there.
 Older May-only intake and automatic-promotion descriptions are historical records,
-not the active Gym contract.
+not the current Alex comparison input contract.
 
 ## Choosing the mechanism
 

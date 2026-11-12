@@ -56,6 +56,82 @@ Replaceable interfaces / producers
           committed change -> Events -> exact wakes / observers / interfaces
 ```
 
+### Top-down component graph
+
+```mermaid
+flowchart TB
+    %% 1. Human & External Surfaces
+    subgraph Surfaces["1. Human & External Surfaces (Adapters & Producers)"]
+        direction LR
+        UI["Human Interfaces<br/>Console / Telegram / WebUI / Control CLI<br/>(src/app/transport, src/app/http, packages/*)"]
+        Obs["App Observers & Schedules<br/>GitHub PRs, Timers, Metric Samplers<br/>(adapters/producers/*, adapters/reporting/*)"]
+    end
+
+    %% 2. App Declarations Layer
+    subgraph Apps["2. Declarative Apps Layer (defineApp via @may-agent/sdk)"]
+        direction LR
+        MayApp["may.app (agent: 'may')<br/>conversation: { mode: 'task' }<br/>Goals, PR & Metric Oversight"]
+        ScoutApp["scout-knowledge-lib.app (agent: 'scout')<br/>Source Exploration, Assessment,<br/>Knowledge Library Maintenance"]
+        AlexApp["alex.app (agent: 'alex' + 'bob'/'evaluator'/'gym')<br/>Task/Metric Evaluation, Pattern Audit,<br/>Research Adoption & Candidate Comparison"]
+    end
+
+    %% 3. Admission & Routing Layer
+    subgraph Admission["3. Event Bus & Single-Route Inbox Admission (src/app/composition & src/app/core/inbox)"]
+        direction TB
+        EventBus["Durable EventBus (events table)<br/>(core/events/interface.ts -> bus.ts)"]
+        InboxRuntime["AppInboxRuntime & Frozen Admission Plan<br/>(composition/app-inbox-runtime.ts)"]
+        InboxHost["AppInboxHost (app_inbox_items)<br/>(core/inbox/app-inbox-host.ts)<br/>subscriptions[].toInput -> app.task(input)"]
+    end
+
+    %% 4. Canonical Resource & State Engine
+    subgraph Engine["4. Canonical Task Resource Engine (src/app/core/tasks & state)"]
+        direction TB
+        Store["SQLite Resource Store<br/>(app-task-resource-store.ts)<br/>• Tasks (spec, status, generation, resourceVersion)<br/>• Conversation Requests (conversation_requests)<br/>• Attempts, Conditions (timestamp-fenced), Emissions"]
+        Controller["AppTaskController, Queue & HostCapacity<br/>(core/tasks/controller.ts, queue.ts)"]
+        Runner["Attempt Runner & Reconciler<br/>(attempt-runner.ts / app-task-reconciler.ts)<br/>claimObservedAppTask -> runClaimedTask -> settle"]
+    end
+
+    %% 5. Bounded Execution Backends
+    subgraph Executors["5. Pluggable Attempt Executors (src/app/adapters/executors & src/lib)"]
+        direction LR
+        ManagedAgent["Managed Agent Executor<br/>(managed-agent.ts -> src/lib/manager.ts)<br/>AGENTS.md + Skills + Tools + Decision Brief<br/>@earendil-works/pi-agent-core loop"]
+        WorkflowExec["Workflow Executor & Portable Kernel<br/>(workflow.ts -> workflow-tool.ts /<br/>@may-agent/sdk workflow-kernel.ts / direct-workflow.ts)"]
+        NativeExec["Registered / CLI Executor<br/>(codex-goal / claude / custom)<br/>Isolated git worktrees (adapters/workspaces/git.ts)"]
+    end
+
+    %% Relations
+    UI -->|"conversation.message.created / Stop / Control"| EventBus
+    Obs -->|"AppEvent (PRs, schedules, metric transitions)"| EventBus
+    EventBus -->|"subscribeDurableRoute ('app-inbox-route')"| InboxRuntime
+    Apps -.->|"AppRegistry: inputSchema, subscriptions[].toInput,<br/>task(input) mapping, tasks policy"| InboxRuntime
+    InboxRuntime -->|"validate inputSchema & record app_inbox_items"| InboxHost
+    InboxHost -->|"attachTask (existing or desired TaskIntent)<br/>admitConversation / admitTaskInput"| Store
+    Store -->|"app.task.ready / wakeAdmittedTasks"| Controller
+    Controller -->|"runTaskAttempt (bounded lease & capacity)"| Runner
+    Runner <-->|"Optimistic concurrency fence<br/>(generation + resourceVersion + attemptId)"| Store
+    Runner -->|"runTaskExecutorAttempt()"| Executors
+    ManagedAgent & WorkflowExec & NativeExec -->|"TaskReconcileResult<br/>(converged | waiting | incomplete)"| Runner
+    Runner -->|"completeAppTask / deferAppTask / reportFailure<br/>+ task-communication.ts"| Store
+    Store -->|"refreshTaskResults -> app.dependency.updated<br/>admitConversationTaskChanges"| InboxRuntime
+    InboxRuntime -->|"conversation.updated"| UI
+```
+
+### End-to-end execution walkthrough
+
+1. **Ingress and durable Event (`core/events/bus.ts`, `composition/app-inbox-runtime.ts`):**
+   A human message from Console/Telegram/WebUI or an external fact from an `AppObserver`/`AppSchedule` is persisted in the SQLite `events` table (`app_admission_pending = 1`). `AppInboxRuntime` records a frozen `AppEventAdmissionPlan` bound to the current `AppRegistry` generation.
+2. **Single-route App translation and inbox admission (`core/inbox/app-inbox-host.ts`):**
+   Every App uses one canonical admission path: `subscriptions[].toInput(event)` produces an `AppInput` validated against `inputSchema`, `AppInboxHost.admit()` persists an `app_inbox_items` row (`inboxId`, caller correlation, channel coordinates), and `app.task(input)` attaches the input to either the Conversation's stable Task (`conversation: { mode: "task" }`) or an existing/desired `TaskIntent`.
+3. **Task claim and workspace preparation (`core/tasks/controller.ts`, `attempt-runner.ts`):**
+   `AppTaskController` schedules ready Tasks within `HostCapacity` limits and calls `runTaskAttempt()`. `recoverTaskConditions()` checks whether timestamp-fenced `Conditions` or awaited child results have already arrived; `claimObservedAppTask()` atomically claims an execution lease fenced by `(generation, resourceVersion, attemptId)` (recording `assigned` attempt inputs distinct from `pending` unclaimed inputs) and prepares an isolated Git worktree (`worktrees/<appId>/<taskId>`) when required.
+4. **Bounded attempt execution (`attempt-execution.ts`):**
+   `runClaimedTask()` opens `runTaskExecutorAttempt()` (managing lease renewal, live event observation, and confirmed descendant cleanup via `session-cleanup.ts`) and dispatches to the selected executor:
+   - **Managed agent (`agent:<name>`):** assembles system instructions (`shared/` + `agents/<name>/AGENTS.md` + skills + Host `execution-instructions.md`), injects a fresh `TaskDecisionContext` brief, and runs the `@earendil-works/pi-agent-core` model/tool loop.
+   - **Workflow (`workflow:<name>`):** runs a bounded TypeScript procedure built on the portable invocation kernel (`packages/sdk/src/workflow-kernel.ts` and `src/lib/workflow-tool.ts`, also runnable Host-free via `src/app/direct-workflow.ts`).
+   - **Registered executor (`codex-goal`, etc.):** invokes a native CLI coding adapter in the prepared worktree.
+5. **Fenced settlement and loop closure (`app-task-reconciler.ts`, `task-communication.ts`):**
+   `runClaimedTask()` validates the returned `TaskReconcileResult` (`converged` | `waiting` | `incomplete`) against the claim fence. `task-communication.ts` applies human-facing replies, updates or closes `conversation_requests` (rejecting convergence if covered `inputKeys` leave an associated human Request open without a wait), submits delegated `requests` to target Apps, and commits atomically in SQLite before calling `refreshTaskResults()` (`app.dependency.updated`) to wake waiting callers or Conversations.
+
 This is a flow of responsibility, not a service deployment or an instruction
 to wrap every arrow in an event. Events carry meaningful inputs and changes;
 local reads, executor invocation and atomic transitions use typed calls.
@@ -106,10 +182,11 @@ Worker Events are persisted once and relayed by identity to the parent.
 Conversational turns execute as bounded attempts of the stable Task lineage described above.
 
 One `HostCapacity` limit governs execution with App limits and an interactive
-reserve. Pending human Conversation input selects foreground capacity; ordinary
-background reviews use the normal lane. Reads and admission need no execution
-slot. Durable input ordering remains with the common Task controller. See
-[Runtime](runtime.md#capacity) for scheduling detail.
+reserve. Pending human Conversation input selects foreground capacity; trusted
+coordination may share that reserve under explicit installed policy. Ordinary
+background reviews use the normal lane. [Runtime](runtime.md#capacity) owns the
+eligibility and pause rules. Reads and admission need no execution slot. Durable
+input ordering remains with the common Task controller.
 
 Reload publishes one validated definition generation. A rejected reload retains
 the previous generation; running attempts keep their captured definitions.
@@ -123,11 +200,11 @@ uses the existing four core responsibilities; it is not a fifth core component.
 
 | Core guarantee | Replaceable capability using it |
 | --- | --- |
-| Durable input admission, ordering, claims and caller correlation | The selected handler for conversational input |
+| Durable input admission, ordering, claims and caller correlation | The App's selected agent and tools |
 | Bounded execution, cancellation and failure containment | The agent/model, tools and conversational prompt |
 | Conversation/Request/Topic reads and consistent writes in State and storage | Context selection, Topic choice and presentation |
 | Version-checked Request acceptance/closure with evidence and exact Task links | May's judgment of scope, fulfillment, repair and stopping |
-| Task execution and declared event routing | Linked Task facts routed to the selected conversation handler; May judges the response |
+| Task execution and declared event routing | Linked Task facts admitted to the Conversation Task; May judges the response |
 
 Core owns the stored fact that an ask is open and rejects a stale closure; May
 judges whether the ask has been addressed. State operations validate a proposed
@@ -135,32 +212,25 @@ decision without reading chat text to infer intent or calling a model.
 
 The execution boundary keeps three responsibilities separate:
 
-- Core reads the exact claimed input, derives reply requirements and control
+- Core reads exact admitted input, derives reply destinations and control
   authority, prepares exact Task targets and commits accepted effects.
 - Context preparation selects bounded evidence, including current records named
   by a rejected result. It supplies information, never authorization.
 - The model adapter consumes the supplied result schema and scoped read/write
   capabilities, then returns a decision. It receives no database or Task store.
 
-`AppInputResolver` is the Host execution contract in `core/tasks/execution.ts`.
-Composition binds its Conversation read capability to admitted identity and
-connects the context builder and adapter. `TaskConversationRunner` is the
-Host composition hook around that adapter; its Host configuration is not passed
-through to model execution. Prepared proposals carry only the decision and
-observed versions for exact cancellation targets. A handoff is represented once,
-in the decision; core resolves that target and applies the App’s pure Task mapping
-once at settlement. It uses the attempt’s captured App declaration and current
-stored state in the same transaction as the reply and Request changes. There is
-no second prepared handoff, serialized store handle or new registry.
+Common `TaskAttempt`, `TaskCommunication` and Task result contracts carry
+execution and effects. `core/tasks/attempt-execution.ts` prepares input and
+context; `core/tasks/task-communication.ts` derives communication authority
+from saved admission and composes it with result settlement. Ordinary Task
+requests and actions carry delegation/control. There is no Conversation-only
+runner, result schema or prepared handoff contract.
 
-Changing context selection or replacing the model adapter does not change
-identity, authority, revision checks or settlement. Changing an App's Task
-mapping uses its existing declaration. Changing accepted state rules belongs in
-core and requires review of that contract. These are dependency boundaries,
-not a guarantee that every feature change touches only one file.
-Host [#262](https://github.com/hao1939/may-agent/pull/262) contains this boundary
-cleanup and its replacement, reopen and settlement checks; source validation
-does not establish deployment.
+Changing context projection, the selected agent or its tools does not change
+input identity, Request ownership, revisions or settlement. An App changes its
+input mapping through its own captured declaration. Accepted state rules belong
+in core; domain judgment remains in the App. The [simplification record](../archive/implementation/task-owned-host-simplification-20261111.md)
+retains source evidence and the separate deployment boundary.
 
 Without a conversational frontend, new chat handling is unavailable but unrelated
 Tasks and Events continue. Retained messages, Requests and Task links remain
@@ -174,9 +244,9 @@ Conversation-specific records and links are used only when present. Generic Task
 admission must not require a Conversation, Topic or Request. A required store
 failure remains a failure; optional capability does not mean optional integrity.
 
-The frontend may live in the same Host process and repository while remaining
-outside the stable core. Composition selects it through a narrow input-handler
-contract; core storage imports neither that frontend nor May policy. The
+Conversation context projection and transports can live in the Host repository
+without owning another execution contract. The App's selected agent runs through
+common Task execution; core storage imports neither a concrete UI nor May policy. The
 [storage contract](storage.md#conversation-state-api) owns the small local API,
 and [Message Lifecycle](message-lifecycle.md) owns interactive behavior.
 
@@ -186,11 +256,10 @@ facts. A scheduled signal performs a bounded pending-follow-up query before
 admitting review. Inputs wake the Conversation's execution Task; reuse durable
 input and state evidence without a separate execution authority.
 No dedicated adapter service, supervisor lifecycle or database is needed.
-The current discovery query limits returned results but can still perform seconds
-of synchronous historical work. Its result limit is not an execution-time bound;
-the [responsiveness investigation](../proposals/responsive-host-recovery-20261002.md)
-records this implementation gap and the proposed repair of existing queries and
-background execution.
+A discovery query's result limit does not bound its synchronous historical work;
+the [dated responsiveness investigation](../archive/reviews/responsive-host-recovery-20261002.md)
+records the earlier query and background-execution findings. Current performance
+questions remain in the [Host follow-up](../proposals/host-contract-improvements-20261016.md#query-cost-and-control-responsiveness).
 Generic Task mechanics remain independent of conversational policy. The
 [unification review](../archive/reviews/conversation-input-unification.md)
 records the code changes and retirement of the former separate consumer.
@@ -210,7 +279,7 @@ resources must have an owner and cleanup path.
 | Observer | Its external facts are not discovered | Waits stay unsatisfied until actual evidence arrives; unrelated work proceeds |
 | Selected executor | Affected work cannot execute | Exact Task/evidence remain in visible attention; no false completion, silent substitution or retry storm |
 | App | New work for its responsibility is unavailable | Reject newly addressed input; preserve existing obligations and identities |
-| Conversation handler or its Task-event route | Chat handling or automatic follow-through is unavailable | Retained asks and links remain visible; unrelated Tasks continue; no false closure |
+| Conversation App agent or its Task-event route | Chat handling or automatic follow-through is unavailable | Retained asks and links remain visible; unrelated Tasks continue; no false closure |
 | Optional conversation review schedule | Missed-event follow-up may wait for another relevant input | Normal event-driven responses and required Task/inbox recovery continue; no false closure |
 
 App removal is currently rejected while unfinished Tasks exist. Drain those
@@ -244,12 +313,11 @@ src/app/
       codex/              Codex goal client, packet, progress and result handling
     producers/            App schedule and observer production
     workspaces/           worktree backends
-    maintenance/          named, bounded Host maintenance
     reporting/            optional projections
   composition/            inbox orchestration, capability selection and cleanup
     workers/              concrete admission, attempt and recovery process entry points
   app-runtime.ts          main composition, reload and shutdown
-  conversations/         replaceable context, turn handler and agent integration
+  conversations/         bounded context projection; common Task communication owns effects
   transport/, http/      existing interface adapter homes
 src/lib/db/              shared schema and transaction primitives
 
@@ -289,5 +357,5 @@ need no move just to acquire an `adapters/` label.
 Move a module and its tests when that move clarifies a verified dependency
 boundary. Avoid empty directories, forwarding wrappers, a service locator or
 a universal plugin base. Use [Host/App Boundary](system-boundary.md) for detailed
-ownership rules and the [core review plan](../proposals/task-runtime-organization.md)
-for the remaining work.
+ownership rules. The [earlier core review](../archive/reviews/task-runtime-organization.md)
+retains dated findings; recheck them against current source before choosing work.

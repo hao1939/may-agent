@@ -128,7 +128,7 @@ commands. A CLI override is local to its invocation, so a separately started
 probe needs the same flag or shared environment. The container's supervisor
 and restarter use the shared installation environment. Host #326 and its paired
 installation declarations were activated and checked on October 5; the
-[rollout record](../proposals/app-policy-and-host-boundary-cleanup.md#adoption-and-remaining-work)
+[rollout record](../archive/implementation/app-policy-and-host-boundary-cleanup-20261005.md#adoption-and-remaining-work)
 records the exact source and verification limits.
 
 ```bash
@@ -288,7 +288,8 @@ and durable desired work uses a task.
 The [execution consolidation record](../archive/reviews/execution-consolidation-poc-20260914.md)
 keeps helpers under their live caller and joins their cleanup. Finishing the
 caller stops unfinished forks; work owed afterward needs an accepted Task.
-Standalone sessions require explicit resume. A CLI used directly by a human is
+Ended standalone sessions cannot resume; a caller starts a fresh invocation
+using retained evidence when continuation is needed. A CLI used directly by a human is
 not automatically supervised by May. The execution boundary uses a 30-minute default
 invocation allowance, preserves the one-shot five-minute default, and returns
 the exact one-shot result and error. These source defaults do not identify an installed release.
@@ -381,15 +382,12 @@ The long-running host enables scheduling with `--cron`. Apps declare
 input/event schedules and observers in `app.ts`; these routes are owned by the
 same atomic App registry generation.
 
-The historical `cron.json` and handler loader is restricted to standalone
-global-agent or host-internal system duties:
-
-- **Workflow-backed handlers**: Run a workflow directly (`handler: { "workflow": "...", "agent": "...", "task": "..." }`)
-- **JS handlers**: Run deterministic in-process functions (`handler: "evaluate-sessions"`)
-
-Internal handlers may live under the runtime/standalone agent conventions, but
-they cannot dispatch App judgment, own domain work, or duplicate an App
-subscription/schedule/task route.
+Configurable `cron.json` handlers and the cron editing tool are retired.
+Needed domain duties use App schedules/observers and ordinary Tasks; fixed
+retention, liveness checks and metric collection remain Host housekeeping.
+Nonempty or malformed retired declarations reject loading rather than being
+silently ignored. `--cron` enables optional App schedules, not Task recovery.
+Inspect and migrate old duties before activating the paired Host and Apps.
 
 See [cron.md](../2a-design/cron.md) for details.
 

@@ -6,9 +6,10 @@
 
 **Design status:** Accepted.
 **Implementation status:** The shared Task boundary is implemented for current
-Apps. Installation declarations replaced named-agent policy in Host #326;
-remaining [domain-policy follow-up](../proposals/app-policy-and-host-boundary-cleanup.md)
-must be checked against current source rather than old candidate labels.
+Apps. Installation declarations replaced the reviewed named-agent policy in Host
+#326; its [implementation record](../archive/implementation/app-policy-and-host-boundary-cleanup-20261005.md)
+retains dated rollout evidence. New domain-policy findings need current source
+evidence; that completed migration is not an open implementation task.
 Task runtimes and test fixtures use resource authority; the legacy JSON
 store and completed offline cutover path have been removed. The retired inbox
 delivery table is retained only as historical schema evidence. Incident-shaped public
@@ -71,7 +72,7 @@ metric label or invents a domain request merely from an App ID. Reports describe
 observed activity; App policy decides whether absent activity needs action.
 
 **Source status:** merged in Host #326. See the
-[boundary cleanup](../proposals/app-policy-and-host-boundary-cleanup.md) for
+[boundary cleanup](../archive/implementation/app-policy-and-host-boundary-cleanup-20261005.md) for
 recorded adoption evidence, enforcement limits and remaining obligations.
 Installed revision and current behavior require their own deployment receipt.
 
@@ -362,8 +363,9 @@ return, wake or decision if that chain fails; repair only its owning boundary.
 A harness failure, model failure and safe unresolved escalation are different
 results, and none is verified restoration.
 
-The [recovery review and trial plan](../proposals/recovery-from-execution-evidence-20260922.md)
-separates tested mechanics, observed agent behavior and remaining gaps.
+The [connected recovery proposal](../proposals/unified-agent-recovery-20261017.md)
+separates tested mechanics, observed agent behavior and the remaining
+unavailable-owner-to-original-outcome trial.
 
 ## Plain names
 
@@ -712,7 +714,7 @@ retries must remain observable without making an agent administer each one.
 attempts and owner feedback already support this flow. Some App readers reject
 results only after their agent has finished; caller-specific completion feedback
 and concise validation diagnostics still have gaps. The
-[implementation proposal](../proposals/host-contract-improvements-20261016.md#return-unresolved-work-to-agent-judgment)
+[implementation proposal](../proposals/host-contract-improvements-20261016.md#app-result-admission-and-owner-follow-through)
 tracks these gaps. This contract does not promise that every installed procedure
 already returns control correctly.
 

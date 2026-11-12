@@ -5,7 +5,7 @@
 with Host `14491241d`. Live collection, breach and recovery reached the same
 Evaluation Task; its completed report reached May and was handed to the existing
 investigation. Sustained repair verification remains separate; see the
-[live verification](../proposals/responsive-host-recovery-20261002.md#october-3-merged-host-and-metric-loop-rollout).
+[live verification](../archive/reviews/responsive-host-recovery-20261002.md#october-3-merged-host-and-metric-loop-rollout).
 
 **October 16 refinement, verified October 17:** Transition-only automatic
 selection is active. The source and loaded release were compared in the

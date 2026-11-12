@@ -243,9 +243,10 @@ Domain policy can be deterministic code. A rule selecting a maintenance agent
 or a benchmark is still App policy; a rule rejecting an obsolete attempt result
 is generic Host mechanics. Agent names do not inherently grant privileges.
 Trusted installation/tool policy supplies operational scope and execution code
-enforces it. Existing name-based exceptions remain an
-[implementation gap](../proposals/app-policy-and-host-boundary-cleanup.md), not
-a reason to weaken current safeguards before their replacement is verified.
+enforces it. Host #326 replaced the reviewed name-based exceptions with
+[installation declarations](../2a-design/system-boundary.md#installation-declarations).
+Preserve the generic safeguards and verify any newly found exception against
+its actual consumer before changing it.
 
 Changing execution method must preserve the installation-provided environment
 and authorized capabilities. A worker boundary must not silently remove an App

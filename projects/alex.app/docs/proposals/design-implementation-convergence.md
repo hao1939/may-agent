@@ -25,7 +25,21 @@ Current contracts live in
 [System Model](../2a-design/system-model.md), [Architecture](../2a-design/architecture.md)
 and their linked owners.
 
-## Confirmed implementation gaps
+## Closed freshness finding
+
+Host #452 (`6bacfaa3eb7d041257020a858ab4047c88c18bb4`) still selected freshness
+from a named domain event and event-name suffixes. Host #456 (`da9b9fb85aee`)
+removed that policy, preserved stored waits, and unified saved-event recovery.
+See the [freshness review](../archive/reviews/condition-freshness-20261112.md);
+this is completed source work, with installed adoption still unverified.
+
+## September source findings requiring revalidation
+
+The table below retains its September baseline. These are historical leads,
+not confirmed current defects. HTTP generation/annotation writes were retired
+in #173; the Learning aggregate was retired in #457. The standalone
+`evaluation.app` inventory is historical; current evaluator source lives in Alex.
+Reproduce a remaining finding against current source before opening implementation work.
 
 | Gap | Evidence and contract owner | Smallest next proof |
 | --- | --- | --- |

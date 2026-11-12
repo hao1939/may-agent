@@ -10,8 +10,8 @@ remaining expansion below is for review, September 11, 2026.
 `939698ad`, from reviewed head `1526e063`. It implements the evidence foundation and basic
 outcome observations, not the complete proposal or deployed behavior. The
 [first candidate](#first-implementation-candidate) records that evidence. The
-page refinement is implemented in Host #147 (`374a99db`), not yet merged or
-deployed; [page candidate](#page-refinement-candidate) records its verification
+page refinement merged in Host #147 at `3e9db1422764736d9751e4ffc1255092e533e25d`;
+[page candidate](#page-refinement-candidate) records its dated verification
 and remaining scope.
 
 ## The idea

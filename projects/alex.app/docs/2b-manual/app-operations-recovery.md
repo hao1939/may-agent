@@ -79,8 +79,8 @@ selection with the matching source snapshot. Later marker edits must not
 change those workers, including after a rejected reload. The selection is
 internal generation data, not another installation configuration file.
 
-**Availability:** Implemented on `feat/app-disable-marker`, not in `v0.2.0`.
-Use a Host build containing the change before relying on the marker.
+**Availability:** Merged in [Host #116](https://github.com/hao1939/may-agent/pull/116).
+Verify the installed Host contains this behavior before relying on the marker.
 
 ## Failed App reload
 
@@ -183,8 +183,23 @@ that alone does not prove its owner was notified or acted. Inspect the reason
 and existing declared owner/parent route, then repair the prerequisite or obtain
 an authorized decision for that same Task. Do not create a replacement Task or
 invent an owner-inbox event merely because it is waiting for attention. The
-[controller proposal](../archive/reviews/task-controller-pattern.md) tracks the
-remaining end-to-end decision-route proof.
+[connected recovery proposal](../proposals/unified-agent-recovery-20261017.md)
+tracks the remaining end-to-end decision-route proof.
+
+If the worker fails before it claims an attempt, inspect the controller's
+`handler.failed` evidence and its declared recipient. The Task can remain
+pending with a scheduled dispatch retry and no `project.task.reconciled` event;
+attempt exhaustion is not the notification path for this failure. A saved fact
+alone does not establish that a responsible agent received it.
+
+For module-loading failures, inspect the failing import and its runtime
+prerequisites. Workers load the accepted App catalog, so another App's fragile
+top-level initialization can prevent the recipient from starting. Keep optional
+business setup at the [owned operation](../2a-design/agent-app.md#canonical-declaration).
+The [disposable bootstrap trial](../archive/reviews/recovery-bootstrap-trial-20261112.md)
+records this limitation and the working workflow-local contrast. Preserve
+accepted source and routing identities when choosing a repair; source correction
+and actual activation remain separate.
 
 For a state-shape migration:
 
@@ -433,7 +448,7 @@ releases omit this file. During rollout, keep execution under maintenance until
 the new Host has activated the companion Apps revision. Shell/native CLI
 access requires its own authority and is not enforced by this file-tool guard.
 
-Use the [boundary cleanup](../proposals/app-policy-and-host-boundary-cleanup.md)
+Use the [boundary cleanup](../archive/implementation/app-policy-and-host-boundary-cleanup-20261005.md)
 for integration order, the dated adoption record and limitations. Check the
 current installation's receipt before deciding another rollout is needed.
 Renaming an App does not rename saved
@@ -473,3 +488,56 @@ reviewable and replayable; do not re-enable the App, mutate rows directly, or
 invent an accepted agent result. This is an operator capability gap, not a
 reason for agents to run bookkeeping. Trial the plan against a database copy
 before applying a large historical repair.
+
+## Upgrade retired Task contracts
+
+The merged [Host simplification](../archive/implementation/task-owned-host-simplification-20261111.md)
+requires matching Host/SDK and App source. Review or merge is separate from
+runtime activation. Use the Host's [conversion procedure](https://github.com/hao1939/may-agent/blob/7d32fa337890e2ec04e0d7de8a026637952c0b2b/scripts/operations/README.md#convert-retired-task-contracts)
+for exact command behavior.
+
+1. Inventory removed `cron.json` duties. Move needed domain work to App
+   schedules/observers, retain justified fixed Host upkeep in Host code, or
+   explicitly retire it. Check workflow methods for safe fresh attempts.
+2. With the previous Host, finish confirmed execution/descendant cleanup and
+   settle pending old Conversation proposals and frozen admission commands.
+   Never delete markers, reservations, accepted state or obligations to make
+   a prerequisite pass.
+3. Stop and exclude ingress, Host processes, workers, descendants and every
+   launcher/restart path. Keep that exclusion through inspection, backup,
+   dry run and apply. App pause and an empty queue cannot establish exclusion.
+4. Take and verify a consistent offline SQLite/WAL backup. From a reviewed new
+   Host checkout with matching App source, run:
+
+   ```sh
+   bun scripts/operations/convert-task-contracts.ts \
+     --state-dir /path/to/stopped/state \
+     --projects-root /path/to/matching/new/projects --confirm-quiesced
+   ```
+
+5. The default exercises real conversion and rolls back. Inspect Task/route
+   counts and retained input, Request, accepted-result and Condition identities.
+   Add `--apply` only while the same launcher exclusion remains in force. Inspect
+   the committed result before separately authorized activation.
+
+Conversion translates linked legacy Conversation executor Tasks to `agent` and
+unresolved event routes through current `subscriptions.toInput`, using the
+verified original payload. It preserves generation, readiness, waits, accepted
+history and exact return/Condition links. Corrupt, orphaned, ambiguous or mixed
+pending routes reject atomically. Retained proposals at
+`pendingSettlement.report.conversation` and frozen Conversation admissions must
+be settled using the previous Host first. The operation is idempotent and is
+never called by startup; startup refuses retired execution contracts before
+starting another attempt.
+
+The executor name `conversation` is reserved, including for custom adapters.
+Such adapters need a new name and an explicit owning-App migration of retained
+specifications; the converter refuses unlinked Tasks rather than guessing.
+Nonempty or malformed retired `cron.json` declarations reject loading. Historical
+Conversation schemas remain decoders, not an executable fallback.
+
+`--confirm-quiesced` and conservative file/SQL checks cannot prove the external
+start barrier. On refusal, keep the installation stopped and investigate with
+its prior source and backup. After newer work is accepted, never blindly restore
+an old snapshot. This procedure does not provide exactly-once external effects,
+restore workflow replay, resume ended sessions or authorize deployment.

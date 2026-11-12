@@ -2,7 +2,7 @@
 
 **Status:** Published as [Host PR #371](https://github.com/hao1939/may-agent/pull/371); revised after the combined expiry trial; revised full local CI and focused checks passed; current hosted checks pending. Not deployed.
 **Supports:** [Event admission](../../2a-design/events.md#admission-state) and
-[Host contract improvements](../../proposals/host-contract-improvements-20261016.md).
+[Host contract improvements](host-contract-improvements-20261016.md).
 
 ## Question and value
 

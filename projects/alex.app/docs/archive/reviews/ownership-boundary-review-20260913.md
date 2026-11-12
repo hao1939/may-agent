@@ -195,7 +195,7 @@ caller can forge the trusted metadata without further evidence.
 and tools enforce it. A supervisor role grants no blanket access. Migrate actual
 privileges with positive and negative tests before removing protections.
 Moving a name to a constant would not repair the authority boundary. Existing
-[App-policy cleanup](../../proposals/app-policy-and-host-boundary-cleanup.md)
+[App-policy cleanup](../implementation/app-policy-and-host-boundary-cleanup-20261005.md)
 owns the wider migration; no competing permissions framework is needed here.
 
 ## 7. Periodic checks and fallback have honest limits
