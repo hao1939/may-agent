@@ -2,6 +2,7 @@ import type {
   ExecutionResult,
   Demand as SdkDemand,
   GuardModule as SdkGuardModule,
+  TSchema,
   WorkflowGuard as SdkWorkflowGuard,
   WorkflowGuardEvent as SdkWorkflowGuardEvent,
   TaskReconcileResult,
@@ -51,6 +52,8 @@ export type WorkflowResult = ({ type: "done"; summary: string }
 export interface WorkflowModule {
   name: string;
   description: string;
+  inputSchema?: TSchema;
+  outputSchema?: TSchema;
   /** Optional bounded wall-clock budget for workflows that run long evaluations. */
   executionTimeoutMs?: number;
   /** Filesystem isolation convention interpreted by the embedding app runtime. */

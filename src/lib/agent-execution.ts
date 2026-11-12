@@ -38,6 +38,7 @@ import {
   recoverCapturedWorkflowFinish,
   shouldAttemptWorkflowFinishRecovery,
   shouldRequestBoundedWorkflowFinish,
+  validateOperationAllowance,
   workflowFinishRecoveryPrompt,
 } from "./workflow-finish-recovery.js";
 import { runWithAgentSessionContext } from "./agent-session-context.js";
@@ -284,6 +285,7 @@ export type DirectAgentExecutionOptions = {
   timeoutMs?: number;
   signal?: AbortSignal;
   deadlineAt?: number;
+  operationAllowance?: number;
   onObservation?: AgentRuntimeListener;
 };
 
@@ -662,6 +664,7 @@ export async function executePreparedAgent(
   prepared: PreparedAgentExecution,
   options: DirectAgentExecutionOptions = {},
 ): Promise<DirectAgentExecutionResult> {
+  const operationAllowance = validateOperationAllowance(options.operationAllowance);
   const startedAt = Date.now();
   let scope: ExecutionScope | undefined;
   const tools = bindToolsToExecutionScope(prepared.tools, () => scope);
@@ -691,6 +694,7 @@ export async function executePreparedAgent(
           !shouldRequestBoundedWorkflowFinish(true, toolCalls, boundedFinishRequested, {
             admittedTimeoutMs: options.timeoutMs,
             elapsedMs: Date.now() - startedAt,
+            operationAllowance,
           })
         )
           return;

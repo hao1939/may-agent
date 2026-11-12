@@ -896,13 +896,11 @@ export type SystemEvent =
         parentSessionId?: string;
         sessionId?: string;
         guard: string;
-        demandType: "warn" | "block" | "run_step";
-        action: "warned" | "blocked" | "injected" | "skipped_duplicate" | "skipped_invalid" | "skipped_limit";
+        demandType: "observe" | "warn" | "block";
+        action: "observed" | "warned" | "blocked";
         reason: string;
         sourceEventType: string;
         step?: string;
-        injectedStepLabel?: string;
-        injectedAgent?: string;
       };
     }
   | {

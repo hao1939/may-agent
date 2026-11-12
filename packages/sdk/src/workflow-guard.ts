@@ -62,16 +62,11 @@ export type WorkflowGuardEvent<
       completedSteps: WorkflowGuardCompletedStep<TResult>[];
     };
 
-/** A bounded request from a guard to the workflow engine. */
+/** A bounded observational or blocking request from a guard to the workflow runner. */
 export type Demand = {
-  type: "observe" | "repair" | "run_step" | "block" | "warn";
+  type: "observe" | "block" | "warn";
   reason: string;
   guardName?: string;
-  step?: {
-    agent: string;
-    task: string;
-    label?: string;
-  };
 };
 
 /** Pure workflow policy: callback in, bounded demands out. */

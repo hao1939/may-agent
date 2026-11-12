@@ -13,6 +13,7 @@ import { StringEnum } from "@earendil-works/pi-ai";
 
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import { spawn, type ChildProcess } from "node:child_process";
+import { drainBashProcessGroup } from "./tools/bash.js";
 import { isMetaRecursionCommand } from "./tools/may-utils.js";
 
 function textResult(text: string): AgentToolResult<string> {
@@ -84,6 +85,8 @@ export interface BackgroundExecToolOptions {
    * Enable this for the coach agent, which legitimately needs to spawn coachee processes.
    */
   allowAgentSpawn?: boolean;
+  /** Optional override for process-group draining (used in tests). */
+  drainProcessGroup?: (pgid: number) => Promise<boolean>;
 }
 
 const BackgroundExecParams: TSchema = Type.Object({
@@ -115,25 +118,85 @@ interface BackgroundExecInput {
  * Returns the tool and a cleanup function. The cleanup function kills all
  * tracked processes — call it when the agent's session ends.
  */
-export function createBackgroundExecTool(opts?: BackgroundExecToolOptions): { tool: AgentTool; cleanup: () => void } {
+export function createBackgroundExecTool(
+  opts?: BackgroundExecToolOptions,
+): { tool: AgentTool; cleanup: () => void; cleanupAsync: () => Promise<boolean> } {
   const cwd = opts?.cwd ?? process.cwd();
   const denyPatterns = opts?.denyPatterns ?? [];
   const denyMessage = opts?.denyMessage ?? "Command blocked by deny pattern.";
   const allowAgentSpawn = opts?.allowAgentSpawn ?? false;
+  const drainGroup = opts?.drainProcessGroup ?? drainBashProcessGroup;
 
   const processes = new Map<number, ProcessEntry>();
+  const trackedPgids = new Set<number>();
+
+  function signalEntry(entry: ProcessEntry, sig: NodeJS.Signals): void {
+    try {
+      process.kill(-entry.pid, sig);
+      return;
+    } catch {
+      // Fallback if process group does not exist or on non-POSIX.
+    }
+    try {
+      entry.process.kill(sig);
+    } catch {
+      /* ignore */
+    }
+  }
 
   function cleanup(): void {
-    for (const entry of processes.values()) {
-      if (entry.alive) {
-        try {
-          entry.process.kill("SIGTERM");
-        } catch {
-          /* ignore */
-        }
+    for (const pgid of trackedPgids) {
+      try {
+        process.kill(-pgid, "SIGTERM");
+      } catch {
+        /* ignore */
       }
     }
-    processes.clear();
+    for (const entry of processes.values()) {
+      if (entry.alive) {
+        signalEntry(entry, "SIGTERM");
+      }
+    }
+    // Retain groups whose leader or background descendants have not yet confirmed
+    // exit through cleanupAsync(); only clear already-dead entries with no live group.
+    for (const [pid, entry] of processes) {
+      if (!entry.alive) {
+        processes.delete(pid);
+      }
+    }
+    for (const pgid of [...trackedPgids]) {
+      try {
+        process.kill(-pgid, 0);
+      } catch {
+        trackedPgids.delete(pgid);
+      }
+    }
+  }
+
+  async function cleanupAsync(): Promise<boolean> {
+    const pgids = new Set<number>(trackedPgids);
+    for (const entry of processes.values()) pgids.add(entry.pid);
+    if (pgids.size === 0) return true;
+    // Drain every tracked PGID regardless of whether the shell leader already exited,
+    // and retain any group whose drain fails or rejects so subsequent cleanup retries it.
+    const results = await Promise.all(
+      [...pgids].map(async (pgid) => {
+        try {
+          const drained = await drainGroup(pgid);
+          if (drained) {
+            trackedPgids.delete(pgid);
+            processes.delete(pgid);
+            return true;
+          }
+          trackedPgids.add(pgid);
+          return false;
+        } catch {
+          trackedPgids.add(pgid);
+          return false;
+        }
+      }),
+    );
+    return results.every(Boolean);
   }
 
   function getProcess(pid: number): ProcessEntry {
@@ -178,7 +241,7 @@ export function createBackgroundExecTool(opts?: BackgroundExecToolOptions): { to
             const child = spawn("sh", ["-c", command], {
               cwd,
               stdio: ["pipe", "pipe", "pipe"],
-              detached: false,
+              detached: true,
             });
 
             if (!child.pid) {
@@ -213,6 +276,7 @@ export function createBackgroundExecTool(opts?: BackgroundExecToolOptions): { to
             });
 
             processes.set(child.pid, entry);
+            trackedPgids.add(child.pid);
 
             return textResult(JSON.stringify({ pid: child.pid, label }));
           }
@@ -276,7 +340,11 @@ export function createBackgroundExecTool(opts?: BackgroundExecToolOptions): { to
             const signal = (params.signal ?? "SIGTERM") as NodeJS.Signals;
             if (entry.alive) {
               try {
-                entry.process.kill(signal);
+                try {
+                  process.kill(-entry.pid, signal);
+                } catch {
+                  entry.process.kill(signal);
+                }
               } catch (err) {
                 const msg = err instanceof Error ? err.message : String(err);
                 return textResult(JSON.stringify({ error: `Failed to kill process ${params.pid}: ${msg}` }));
@@ -306,5 +374,5 @@ export function createBackgroundExecTool(opts?: BackgroundExecToolOptions): { to
     },
   };
 
-  return { tool, cleanup };
+  return { tool, cleanup, cleanupAsync };
 }
