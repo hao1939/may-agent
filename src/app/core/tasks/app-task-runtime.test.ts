@@ -581,11 +581,11 @@ it("a Task-owned workflow closes a reviewed child through the common creator cap
 export const name = "dispose";
 export const description = "Review and dispose a child assignment";
 export async function execute(ctx) {
-  const start = ctx.reconciliation.createdTasks;
-  if (ctx.reconciliation.children.live.length !== 0 || start.items.length !== 1)
+  if (ctx.reconciliation.children.live.length !== 0)
     throw new Error("Creator discovery must be independent of structural children");
-  const discovered = (await ctx.read.tasks.created()).items[0];
-  if (JSON.stringify(discovered) !== JSON.stringify(start.items[0])) throw new Error("Inconsistent creator discovery");
+  const page = await ctx.read.tasks.created();
+  if (page.items.length !== 1) throw new Error("Expected exactly one creator-owned assignment");
+  const discovered = page.items[0];
   const child = await ctx.read.tasks.get(discovered.taskId);
   const result = await ctx.closeTask({appId: "sample", taskId: child.id,
     expectedGeneration: child.generation, expectedResourceVersion: child.resourceVersion,

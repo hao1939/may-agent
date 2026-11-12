@@ -49,14 +49,14 @@ to fit. The rule creates no extra place, budget or authority.
 
 ## Workload observations
 
-Each attempt receives `createdTasks`, an eight-item starting discovery page of
-open assignments whose immutable creator is this exact App/Task. The same
-attempt-bound read is `read.tasks.created({limit?, cursor?})`, or the model
-`tasks` action `created`. It spans Apps and grouping parents, preserves both
-App and Task identities, and excludes closed/cancelled assignments and retired
-completion receipts. Follow `nextCursor`; a partial page is not the full workload.
-Older Hosts may omit this optional read and starting page; absence is unavailable,
-not an empty list. Discovery uses an indexed creator read and makes no state change.
+`read.tasks.created({limit?, cursor?})`, or the model `tasks` action `created`,
+discovers open assignments whose immutable creator is this exact App/Task.
+It returns eight items by default, spans Apps and grouping parents, preserves
+both App and Task identities, and excludes closed/cancelled assignments and
+retired completion receipts. Follow `nextCursor`; a partial page is not the
+full workload. The App's executor decides when to read and review returned work.
+Older Hosts may omit this optional read; absence is unavailable, not an empty
+list. Discovery uses an indexed creator read and makes no state change.
 
 Previews and accepted-attempt identities only identify work to inspect. Read
 the exact destination Task, its acceptance, Conditions, original caller route

@@ -678,8 +678,6 @@ export type TaskAttempt = {
   };
   /** Snapshot at attempt start. Use read.tasks.get(task.id) for current facts. */
   task: TaskDetail;
-  /** Bounded creator-owned discovery at attempt start. Use read.tasks.created for later pages/current reads. */
-  createdTasks?: TaskCreatedPage;
   /** Opt-in starting observation; current reads remain available separately. */
   workload?: TaskWorkload | { available: false };
   /**
@@ -812,7 +810,6 @@ export type TaskReconciliationContext<TInput = unknown> = {
   acceptance: string[];
   input: TInput;
   children: TaskAttempt["children"];
-  createdTasks?: TaskCreatedPage;
   /** Same exact saved waits supplied to registered executors. */
   waits: TaskAttempt["waits"];
   previousAttempt?: TaskAttempt["previousAttempt"];

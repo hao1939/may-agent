@@ -125,9 +125,6 @@ export function prepareTaskWorkspaceContext(
       "- This preserves the supplied snapshot, including any upstream truncation flags. It is not a complete historical event archive.",
       `- Current authoritative Task: use the tasks tool with ${currentRead}; workflows use ctx.read.tasks.get(${JSON.stringify(binding.taskId)}).`,
       '- Related Task discovery: tasks {"action":"list","limit":50}; continue with each returned nextCursor. Read exact linked Tasks with get. Workflows use ctx.read.tasks.list({limit:50}).',
-      ...(rec.createdTasks ? [
-        '- Creator-owned assignments: read reconciliation.createdTasks in context.json. For current pages use tasks {"action":"created"}, or ctx.read.tasks.created(); follow nextCursor. These open assignments can be grouped elsewhere or execute in another App. Previews identify work to inspect; use exact get with target.appId before a guarded decision.',
-      ] : []),
       "- Read catalog.json beside this file for installed agent profiles, tools, full skill references and workflow source roots, including skills omitted from prompts. List/search those roots for entries not individually mentioned. Invocation remains subject to the available tools and existing scope.",
       ...(selected?.instructions ? [`- Responsible agent instructions: ${pathRef(selected.instructions)}. Loaded definition root: ${pathRef(selected.sourceRoot!)}.`] : []),
       "- Loaded definitions can be newer than the working checkout. Use catalog source paths for agent instructions, skills and workflows; do not assume they exist at the corresponding worktree-relative path.",

@@ -190,7 +190,6 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
     created: async (options?: import("@may-agent/sdk").TaskCreatedOptions) =>
       readCreatedTasks(descriptor.resourceStore.db, creator, options),
   };
-  const createdTasks = readCreatedTasks(descriptor.resourceStore.db, creator);
   let workload: TaskAttempt["workload"];
   if (opts.workloadFeedbackAppId === descriptor.id) {
     try { workload = readTaskWorkload(taskReadOptions, { agent: claim.agent }); }
@@ -206,7 +205,6 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
       instructions: `Act as the selected May agent ${claim.agent}.`,
     },
     task: structuredClone(task),
-    createdTasks,
     ...(workload ? { workload } : {}),
     read: {
       async communication(inputId, query) {

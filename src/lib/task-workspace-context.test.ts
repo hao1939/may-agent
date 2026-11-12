@@ -28,11 +28,6 @@ test("Task entry preserves discovery, scopes attempts and excludes provider/live
   const root = mkdtempSync(join(tmpdir(), "may-task-entry-"));
   try {
     const c = context(root);
-    c.reconciliation.createdTasks = {
-      creator: { appId: "example", taskId: "../same/task" }, observedAt: "2026-11-13T00:00:00Z",
-      items: [{ appId: "contributor", taskId: "result", status: "idle", generation: 1, resourceVersion: 3,
-        outcomePreview: "Return evidence" }], nextCursor: "more-created-work",
-    };
     const definition = {
       name: "reviewer", description: "Review", domain: "code", tools: [],
       apiKey: "provider-secret-must-not-appear", model: { apiKey: "also-private" },
@@ -47,8 +42,6 @@ test("Task entry preserves discovery, scopes attempts and excludes provider/live
     expect(entry).toContain("context.json");
     expect(entry).toContain("nextCursor");
     expect(entry).toContain('"action":"get"');
-    expect(entry).toContain('"action":"created"');
-    expect(JSON.parse(snapshot).reconciliation.createdTasks).toEqual(c.reconciliation.createdTasks);
     expect(entry).toContain(join(root, "agents", "reviewer", "AGENTS.md"));
     expect(entry).toContain("Loaded definitions can be newer than the working checkout");
     expect(snapshot).toContain("retained-full-input");
