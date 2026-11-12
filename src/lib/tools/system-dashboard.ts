@@ -5,7 +5,7 @@
  * live databases during normal closed or daemon-active operation.
  */
 
-import { copyFileSync, existsSync, mkdtempSync, rmSync, statSync } from "node:fs";
+import { constants as fsConstants, copyFileSync, existsSync, mkdtempSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -69,8 +69,8 @@ function queryStatusDb<T>(
   const snapshotDir = mkdtempSync(join(tmpdir(), "may-status-crash-wal-"));
   try {
     const snapDb = join(snapshotDir, "may.db");
-    copyFileSync(dbPath, snapDb);
-    if (existsSync(walPath)) copyFileSync(walPath, `${snapDb}-wal`);
+    copyFileSync(dbPath, snapDb, fsConstants.COPYFILE_FICLONE);
+    if (existsSync(walPath)) copyFileSync(walPath, `${snapDb}-wal`, fsConstants.COPYFILE_FICLONE);
     const recoveredDb = openReadOnlyDatabase(snapDb);
     try {
       return run(recoveredDb);
@@ -86,24 +86,29 @@ export function chunkStatusMessage(status: string, maxLen = TELEGRAM_CHUNK_LIMIT
   if (status.length <= maxLen) return [status];
   const chunks: string[] = [];
   let current = "";
+  let hasLines = false;
   for (const rawLine of status.split("\n")) {
     let line = rawLine;
     while (line.length > maxLen) {
-      if (current) {
+      if (hasLines) {
         chunks.push(current);
         current = "";
+        hasLines = false;
       }
       chunks.push(line.slice(0, maxLen));
       line = line.slice(maxLen);
     }
-    if (current.length + line.length + (current ? 1 : 0) > maxLen) {
+    const nextLen = current.length + line.length + (hasLines ? 1 : 0);
+    if (hasLines && nextLen > maxLen) {
       chunks.push(current);
       current = line;
+      hasLines = true;
     } else {
-      current += (current ? "\n" : "") + line;
+      current += (hasLines ? "\n" : "") + line;
+      hasLines = true;
     }
   }
-  if (current) chunks.push(current);
+  if (hasLines) chunks.push(current);
   return chunks;
 }
 
