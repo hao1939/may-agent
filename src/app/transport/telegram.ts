@@ -6,27 +6,15 @@
  *   - Writes through `publishEvent`
  *   - Subscribes to `conversation.updated`, `runtime.reload.finished`, and `TASK_UPDATE_EVENT_TYPES`
  *   - Maintains one `SurfaceSession` per `(chatId, topicId)` coordinate
- *   - Uses `telegram-format.ts` for pure rendering and `telegram-client.ts` for Bot API I/O
+ *   - Uses `telegram-format.ts` for pure rendering and `telegram-client.ts` for Bot API I/O and delivery receipts
  */
 
 import { randomUUID } from "node:crypto";
 import { setDefaultAutoSelectFamily } from "node:net";
-import type { AppConversationMessage, AppConversationResource, AppConversationTopic } from "@may-agent/sdk";
+import type { AppConversationResource, AppConversationTopic } from "@may-agent/sdk";
 import type { ApprovalProposal, EventInput, EventReceipt } from "@may-agent/control/events";
-import { EVENT_RECORD_ONLY, type EventBus } from "../core/events/bus.js";
+import type { EventBus } from "../core/events/bus.js";
 import { readPersistedTelegramReloadCompletion, resumeRecordedTelegramInput } from "../core/events/persisted.js";
-import {
-  conversationDeliveryId,
-  prepareConversationDelivery,
-  readConversationDelivery,
-  settleConversationDelivery,
-  type ConversationDelivery,
-} from "../../lib/db/telegram-conversation-deliveries.js";
-import {
-  getNotificationMessage,
-  hasCompletedHumanActionDelivery,
-  storeNotificationMessage,
-} from "../../lib/db/notifications.js";
 import { log } from "../../lib/log.js";
 import {
   isTaskDerivedViewWake,
@@ -40,12 +28,11 @@ import {
   readHumanConversation,
   readHumanConversationTopic,
   todoActionSignatureForTask as todoActionSignature,
-  type HumanConditionAnchor as TelegramHumanConditionAnchor,
   type HumanTaskService,
   type HumanTaskView,
 } from "../human-task-service.js";
 import { taskCancelRequestedEvent } from "../task-control-events.js";
-import { createTelegramClient } from "./telegram-client.js";
+import { createTelegramClient, telegramThreadId } from "./telegram-client.js";
 import {
   TELEGRAM_HELP_MARKDOWN,
   primaryConversationId,
@@ -63,7 +50,6 @@ import {
   singleTaskReference,
   taskButtons,
   taskPresentationRevision,
-  taskReferences,
   telegramConversationInputEvent,
   topicReference,
   type TelegramApprovalAnchor,
@@ -125,12 +111,6 @@ function hasTelegramContent(message: Record<string, unknown>): boolean {
 function telegramMessageText(message: any): string {
   const text = message?.text ?? message?.caption ?? "";
   return typeof text === "string" ? text.trim() : "";
-}
-
-function telegramThreadId(value?: string): number | undefined {
-  if (!value || !/^[1-9]\d*$/.test(value)) return undefined;
-  const id = Number(value);
-  return Number.isSafeInteger(id) ? id : undefined;
 }
 
 function surfaceKey(chatId: string, topicId?: number): string {
@@ -237,6 +217,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   const telegramClient = createTelegramClient({
     token,
     persistDir,
+    bus,
+    conversationAppId,
+    sharedConversationId,
+    interfaceAgent: opts.interfaceAgent,
     emitInfo: (message) => bus.emit({ type: "info", message }),
   });
   const { apiCall, sendMessage } = telegramClient;
@@ -294,20 +278,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
   }
 
-  const historicalDeliveries = new Set<string>();
-  let startupCaptured = false;
-  function captureStartupMessages(messages: AppConversationMessage[]): void {
-    if (startupCaptured) return;
-    for (const message of messages) {
-      const delivery = addressedConversationDelivery(message);
-      if (delivery) historicalDeliveries.add(conversationDeliveryId(delivery));
-      else rememberRenderedConversationMessage(message.id);
-    }
-    startupCaptured = true;
-  }
-
   try {
-    captureStartupMessages(getConversation(conversationAppId, sharedConversationId, { limit: 200 }).messages);
+    telegramClient.captureStartupMessages(
+      getConversation(conversationAppId, sharedConversationId, { limit: 200 }).messages,
+      rememberRenderedConversationMessage,
+    );
   } catch (error) {
     log(
       "warn",
@@ -402,145 +377,21 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
   }
 
-  function addressedConversationDelivery(message: AppConversationMessage): ConversationDelivery | undefined {
-    if (
-      message.author.kind !== "agent" ||
-      message.metadata?.channel !== "telegram" ||
-      !message.metadata.channelTargetId ||
-      !message.metadata.requestId
-    )
-      return undefined;
-    return {
-      appId: conversationAppId,
-      conversationId: sharedConversationId,
-      messageId: message.id,
-      chatId: message.metadata.channelTargetId,
-      threadId: telegramThreadId(message.metadata.channelThreadId),
-      text: renderTelegramConversationMessage(message),
-    };
-  }
-
-  function reportConversationDelivery(
-    message: AppConversationMessage,
-    delivery: ConversationDelivery,
-    state: string,
-    error?: unknown,
-  ): void {
-    const status = state === "failed" ? "failed" : "uncertain";
-    const operationId = conversationDeliveryId(delivery);
-    const identity = {
-      appId: conversationAppId,
-      conversationId: sharedConversationId,
-      requestId: message.metadata?.requestId,
-      conversationMessageId: message.id,
-      deliveryOperationId: operationId,
-      to: delivery.chatId,
-      channelThreadId: message.metadata?.channelThreadId,
-    };
-    const context = JSON.stringify(identity);
-    if (error !== undefined) {
-      log(
-        "warn",
-        `[telegram] Conversation answer delivery failed ${context}: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-    try {
-      bus.emit({
-        [EVENT_RECORD_ONLY]: true,
-        type: "message.delivery_failed",
-        source: "telegram",
-        owner: `app:${conversationAppId}`,
-        data: {
-          from: conversationAppId,
-          ...identity,
-          content: message.text.slice(0, 500),
-          reason:
-            status === "failed"
-              ? "Telegram rejected the answer before any chunk was delivered; the existing answer remains available for delivery."
-              : "No complete Telegram delivery outcome is available; verify the caller receipt before resending the existing answer.",
-          deliveryStatus: status,
-          idempotencyKey: `telegram-conversation-delivery:${operationId}:${status}`,
-        },
-      });
-    } catch (reportingError) {
-      log(
-        "warn",
-        `[telegram] Delivery diagnostic not persisted ${context}: ${reportingError instanceof Error ? reportingError.message : String(reportingError)}`,
-      );
-    }
-  }
-
   async function syncConversation(): Promise<void> {
     const conversation = getConversation(conversationAppId, sharedConversationId, { limit: 200 });
-    captureStartupMessages(conversation.messages);
+    telegramClient.captureStartupMessages(conversation.messages, rememberRenderedConversationMessage);
     await syncTurnControls(conversation.activeTurn);
     for (const message of conversation.messages) {
       if (!running) return;
-      const delivery = addressedConversationDelivery(message);
-      if (!delivery && renderedConversationMessages.has(message.id)) continue;
-      if (
-        message.metadata?.channel === "telegram" &&
-        (message.author.kind === "human" || message.author.kind === "command")
-      ) {
-        rememberRenderedConversationMessage(message.id);
-        continue;
-      }
-      const targetChatId = message.metadata?.channelTargetId ?? pendingChatId;
-      if (!targetChatId) return;
-      const topicId = telegramThreadId(message.metadata?.channelThreadId);
-      const surface = surfaceKey(targetChatId, topicId);
-      const operationId = delivery ? conversationDeliveryId(delivery) : undefined;
-      let delivered: number | undefined;
-      try {
-        if (delivery) {
-          const decision = prepareConversationDelivery(
-            persistDir,
-            delivery,
-            historicalDeliveries.has(operationId!) ? "historical" : "fresh",
-          );
-          if (decision.kind === "retained") {
-            if (decision.state !== "delivered") reportConversationDelivery(message, delivery, decision.state);
-            continue;
-          }
-        }
-        delivered = await sendMessage(targetChatId, renderTelegramConversationMessage(message), undefined, {
-          eventType: "conversation.mirror",
-          agent: message.author.kind === "agent" ? opts.interfaceAgent : message.author.id,
-          messageThreadId: topicId,
-          ...(operationId
-            ? {
-                onDelivery: (outcome) => {
-                  settleConversationDelivery(persistDir, operationId, outcome);
-                  if (outcome.state !== "delivered") reportConversationDelivery(message, delivery!, outcome.state);
-                },
-              }
-            : {}),
-          ...(message.metadata?.channelMessageId ? { replyToMessageId: message.metadata.channelMessageId } : {}),
-          replyMarkup: taskButtons(
-            message.metadata?.followTask ? [message.metadata.followTask] : message.metadata?.taskRefs,
-          ),
-          data: JSON.stringify({
-            direction: "mirror",
-            conversationId: sharedConversationId,
-            conversationMessageId: message.id,
-            sourceChannel: message.metadata?.channel,
-            text: message.text.slice(0, 500),
-            taskRefs: message.metadata?.followTask ? [message.metadata.followTask] : message.metadata?.taskRefs,
-            topicId: message.metadata?.topicId,
-          }),
-        });
-      } catch (error) {
-        if (!delivery) throw error;
-        reportConversationDelivery(message, delivery, "uncertain", error);
-        continue;
-      }
-      if (!running) return;
-      if (!delivered) {
-        if (delivery) continue;
-        return;
-      }
-      if (!delivery) rememberRenderedConversationMessage(message.id);
-      const session = sessions.get(surface);
+      const outcome = await telegramClient.deliverConversationMessage(
+        message,
+        pendingChatId,
+        renderedConversationMessages,
+        rememberRenderedConversationMessage,
+      );
+      if (!running || outcome.status === "halted") return;
+      if (outcome.status === "skipped" || !outcome.targetChatId) continue;
+      const session = sessions.get(surfaceKey(outcome.targetChatId, outcome.topicId));
       const watched = session?.watchedTask;
       if (
         watched &&
@@ -555,7 +406,10 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     }
   }
 
-  function selectedTaskTopicId(session: SurfaceSession | undefined, task: { appId: string; taskId: string }): string | undefined {
+  function selectedTaskTopicId(
+    session: SurfaceSession | undefined,
+    task: { appId: string; taskId: string },
+  ): string | undefined {
     const selected = session?.selectedTopic;
     if (!session || !selected) return undefined;
     const topic = readHumanConversationTopic(persistDir, conversationAppId, sharedConversationId, selected.id);
@@ -598,12 +452,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             message.metadata?.taskRefs?.some((ref) => ref.appId === task.appId && ref.taskId === task.taskId),
         );
       if (equivalent) {
-        const delivery = addressedConversationDelivery(equivalent);
-        const presented = delivery
-          ? readConversationDelivery(persistDir, conversationDeliveryId(delivery))?.state === "delivered"
-          : renderedConversationMessages.has(equivalent.id);
-        if (presented) stopWatching(session);
-        else conversationRefresh.queue(sharedConversationId);
+        if (telegramClient.isConversationMessageDelivered(equivalent, renderedConversationMessages)) {
+          stopWatching(session);
+        } else {
+          conversationRefresh.queue(sharedConversationId);
+        }
         return;
       }
     }
@@ -689,7 +542,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       if (prior.get(key) === revision) return false;
       if (!signature.exact) return true;
       if (
-        hasCompletedHumanActionDelivery(persistDir, session.chatId, session.topicId, {
+        telegramClient.hasDeliveredHumanAction(session.chatId, session.topicId, {
           appId: detail.appId,
           taskId: detail.taskId,
           signature: signature.value,
@@ -925,16 +778,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     let text = "This control is unavailable. Ask May for the current status.";
     if (!isAllowed(query.message?.chat?.id)) text = "Unauthorized.";
     else if (/^task:(details(?::\d+)?|follow)$/.test(query.data)) {
-      const stored = getNotificationMessage(persistDir, chatId, query.message?.message_id);
-      let data: Record<string, unknown> | undefined;
-      try {
-        data = JSON.parse(stored?.data ?? "null") ?? undefined;
-      } catch {
-        /* legacy facts */
-      }
+      const lookup = telegramClient.readMessageContext(chatId, query.message?.message_id);
       const indexedDetails = /^task:details:(\d+)$/.exec(query.data);
-      const refs = taskReferences(data?.followTask ? [data.followTask] : data?.taskRefs);
-      const target = indexedDetails ? refs[Number(indexedDetails[1])] : singleTaskReference(refs);
+      const target = indexedDetails
+        ? lookup.taskRefs[Number(indexedDetails[1])]
+        : singleTaskReference(lookup.taskRefs);
       if (target && opts.humanTasks.getTask(target)) {
         const session = ensureSession(chatId, query.message?.message_thread_id);
         handleTelegramCommand(
@@ -942,7 +790,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           session,
           query.message,
           sharedConversationId,
-          { task: target, topicId: typeof data?.topicId === "string" ? data.topicId : undefined },
+          { task: target, topicId: lookup.replyTopicId },
         );
         text =
           query.data === "task:follow" ? "Showing this Task. Other work is unchanged." : "Showing current details.";
@@ -992,29 +840,15 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         ),
       );
     }
-    const rowId = received.eventId;
-    try {
-      storeNotificationMessage(persistDir, {
-        chat_id: session.chatId,
-        telegram_msg_id: channelMessageId,
-        event_type: "conversation.message.created",
-        agent: opts.interfaceAgent,
-        session_id: null,
-        project_id: null,
-        data: JSON.stringify({
-          direction: "inbound",
-          conversationId,
-          chatId: session.chatId,
-          topicId: session.topicId ?? 0,
-          replyToMsgId,
-          traceId: rowId ? `event:${rowId}` : undefined,
-          sourceEventId: rowId,
-          text: message.slice(0, 500),
-        }),
-      });
-    } catch {
-      /* best-effort transport index; canonical input is already durable */
-    }
+    telegramClient.recordInboundMessage({
+      chatId: session.chatId,
+      messageId: channelMessageId,
+      topicId: session.topicId,
+      conversationId,
+      replyToMsgId,
+      eventId: received.eventId,
+      text: message,
+    });
   }
 
   function handleMessage(msg: any): void {
@@ -1054,44 +888,19 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     conversationRefresh.queue(sharedConversationId);
     bus.emit({ type: "info", message: `[telegram] ← ${text.slice(0, 80)}` });
 
-    let inputContext: Record<string, unknown> | undefined;
     const replyToMsg = msg.reply_to_message;
-    const replyToMsgId = replyToMsg?.message_id;
-    let replyToSourceId: string | undefined;
-    let replyTopicId: string | undefined;
-    let replyTask: { appId: string; taskId: string } | undefined;
-    let replyApprovalAnchor: TelegramApprovalAnchor | null = null;
-    let replyHumanCondition: TelegramHumanConditionAnchor | null = null;
-    if (replyToMsgId) {
-      try {
-        const notification = getNotificationMessage(persistDir, chatIdStr, replyToMsgId);
-        const data = notification?.data ? (JSON.parse(notification.data) as Record<string, unknown>) : undefined;
-        replyTask = singleTaskReference(data?.followTask ? [data.followTask] : data?.taskRefs);
-        replyTopicId = typeof data?.topicId === "string" ? data.topicId : undefined;
-        replyApprovalAnchor =
-          data?.approvalAnchor && typeof data.approvalAnchor === "object" && !Array.isArray(data.approvalAnchor)
-            ? (data.approvalAnchor as TelegramApprovalAnchor)
-            : null;
-        replyHumanCondition =
-          data?.humanCondition && typeof data.humanCondition === "object" && !Array.isArray(data.humanCondition)
-            ? (data.humanCondition as TelegramHumanConditionAnchor)
-            : null;
-        replyToSourceId =
-          typeof data?.conversationMessageId === "string" && data.conversationMessageId.trim()
-            ? data.conversationMessageId.trim()
-            : `telegram:${chatIdStr}:${replyToMsgId}`;
-      } catch {
-        replyToSourceId = `telegram:${chatIdStr}:${replyToMsgId}`;
-      }
-      const quotedText = telegramMessageText(replyToMsg).slice(0, 2_000);
-      inputContext = {
-        reply: {
-          channel: "telegram",
-          messageId: replyToMsgId,
-          ...(quotedText ? { quotedText } : {}),
-        },
-      };
-    }
+    const replyToMsgId = replyToMsg?.message_id as number | undefined;
+    const lookup = replyToMsgId ? telegramClient.readMessageContext(chatIdStr, replyToMsgId) : undefined;
+    const quotedText = replyToMsgId ? telegramMessageText(replyToMsg).slice(0, 2_000) : "";
+    let inputContext: Record<string, unknown> | undefined = replyToMsgId
+      ? {
+          reply: {
+            channel: "telegram",
+            messageId: replyToMsgId,
+            ...(quotedText ? { quotedText } : {}),
+          },
+        }
+      : undefined;
 
     const approverId = String(msg.from?.id ?? "");
 
@@ -1108,6 +917,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       return;
     }
 
+    const replyTask = lookup?.replyTask;
     const focusedTask = replyToMsgId ? replyTask : session.watchedTask;
     const focusedApp = replyToMsgId
       ? (replyTask?.appId ?? conversationAppId)
@@ -1128,7 +938,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       inputContext = {
         ...(inputContext ?? {}),
         focusedTask: { appId: focusedTask.appId, taskId: focusedTask.taskId },
-        ...(replyHumanCondition ? { displayedHumanCondition: replyHumanCondition } : {}),
+        ...(lookup?.replyHumanCondition ? { displayedHumanCondition: lookup.replyHumanCondition } : {}),
       };
     }
     if (!recordedConversationId) {
@@ -1139,9 +949,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         session,
         conversationId,
         replyToMsgId,
-        replyToSourceId,
-        replyTopicId ?? conversationTopic?.id,
-        replyTask && replyApprovalAnchor ? { target: replyTask, proposal: replyApprovalAnchor } : undefined,
+        lookup?.replyToSourceId,
+        lookup?.replyTopicId ?? conversationTopic?.id,
+        replyTask && lookup?.replyApprovalAnchor
+          ? { target: replyTask, proposal: lookup.replyApprovalAnchor }
+          : undefined,
         allowedApproverIds.includes(approverId)
           ? {
               actor: { kind: "human", id: approverId },
