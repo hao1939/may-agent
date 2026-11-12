@@ -100,8 +100,9 @@ for source status and checks; installed adoption is unverified.
 
 Saved project list/detail, session lookup and agent project counts share one
 HTTP metadata reader and discovery path in
-[Host PR 460](https://github.com/hao1939/may-agent/pull/460), pending merge and
-installation. JSON display posture uses the existing saved project read model;
+[Host PR 460](https://github.com/hao1939/may-agent/pull/460), merged as
+`bdaba7d0ee26`. Installed adoption is unverified. JSON display posture uses the
+existing saved project read model;
 identity comes from source metadata. A runtime posture projection cannot change
 the HTTP project ID or owner. These project counts describe saved context, not
 loaded Apps or Task execution.

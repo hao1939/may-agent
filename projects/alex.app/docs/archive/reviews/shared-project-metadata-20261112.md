@@ -1,12 +1,18 @@
 # Shared project metadata reads — November 12, 2026
 
-**Status:** Implemented in [Host PR 460](https://github.com/hao1939/may-agent/pull/460),
-pending merge and installation. The user selected this source simplification.
+**Status:** [Host PR 460](https://github.com/hao1939/may-agent/pull/460) merged as
+`bdaba7d0ee263871ce83d6ef583027936745e1e0` on November 12, 2026.
+Installed adoption is unverified. The user selected this source simplification.
 
 **Owns:** Source evidence for the [HTTP read boundary](../../2a-design/http-boundary.md#read-boundary)
 and [project UI](../../2a-design/webui.md#project-surface).
 
-Baseline Host `8fa6b18caa` (#459); candidate `c99e7f5f250e049798176ab959628e94330396ba`.
+Baseline Host `8fa6b18caa` (#459); tested candidate `c99e7f5f250e049798176ab959628e94330396ba`.
+The six files changed by #460 match that candidate in the merge commit. Main
+advanced through #461's separate container changes before the merge; the retained
+candidate checks below do not certify those additional changes. The
+[merge CI run](https://github.com/hao1939/may-agent/actions/runs/43182372615)
+tracks the combined source separately.
 The original audit was against merged #458 (`2a762206dd52`); its disagreements
 also reproduce on this baseline. Temporary local HTTP fixtures found:
 

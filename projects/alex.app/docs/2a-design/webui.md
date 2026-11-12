@@ -224,8 +224,9 @@ for source status, scope and checks. Installation is unverified.
 
 Project list/detail, Sessions correlation and agent project counts consume the
 [shared HTTP metadata reader](http-boundary.md#read-boundary) in
-[Host PR 460](https://github.com/hao1939/may-agent/pull/460), pending merge and
-installation. Saved runtime posture is read consistently without changing source
+[Host PR 460](https://github.com/hao1939/may-agent/pull/460), merged as
+`bdaba7d0ee26`. Installed adoption is unverified. Saved runtime posture is read
+consistently without changing source
 identity. Historical session-tag aliases preserve inspection; they do not prove
 current Task ownership or retarget steering. Malformed JSON is unavailable in
 detail and omitted from saved-context listings. Loaded Apps remain independently
