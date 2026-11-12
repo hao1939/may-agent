@@ -323,6 +323,14 @@ recovery. Persistence supplies publication time when a producer omits it and
 preserves valid explicit producer time. A missing envelope time cannot satisfy
 the boundary. Provider `measuredAt`, sample identity and revision remain separate
 expectations.
+
+Condition recovery uses the same persisted-event loader as admission recovery.
+SQL columns select bounded candidates; the saved envelope and verified complete
+body supply the matching facts. The SQL `events.timestamp` is publication time,
+not a replacement for saved producer time. Pre-envelope history retains its known
+fields; a damaged current envelope or body cannot prove a wait. Keyed retries
+also validate the saved envelope before restoring its time.
+
 The default state/status comparison can also be combined with constraints as
 `{ equals: "done", timestamp: { gte: requestedAt } }`, retaining scalar status
 normalization. A named `field` comparison keeps its existing exact semantics.

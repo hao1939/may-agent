@@ -5,6 +5,7 @@ import { assertValidAppInput } from "../apps/definition-validation.js";
 import { assertAppTaskInputRoute } from "../apps/input-routing.js";
 import { getDb } from "../../../lib/db/connection.js";
 import { EVENT_DELIVERY_RESULT, EVENT_ROW_ID } from "../events/bus.js";
+import { loadPersistedEvent } from "../events/persisted.js";
 import { appInputFeedbackEvent } from "../inbox/input-result.js";
 import {
   createAppInboxItem,
@@ -407,7 +408,7 @@ export function recoverTaskConditions(
   const db = getDb(opts.persistDir);
   const rows = db
     .prepare(
-      `SELECT id, event_type, source, timestamp, data
+      `SELECT id
        FROM events
        WHERE (
          project_id = ?
@@ -424,31 +425,14 @@ export function recoverTaskConditions(
        ORDER BY id DESC
        LIMIT 2000`,
     )
-    .all(descriptor.id, `app:${descriptor.id}`, descriptor.id, descriptor.id, ...eventTypes) as Array<{
-    id: number;
-    event_type?: unknown;
-    source?: unknown;
-    timestamp?: unknown;
-    data?: unknown;
-  }>;
+    .all(descriptor.id, `app:${descriptor.id}`, descriptor.id, descriptor.id, ...eventTypes) as Array<{ id: number }>;
 
   const events: Record<string, unknown>[] = [];
   for (const row of rows.reverse()) {
-    if (typeof row.data !== "string" || !row.data.trim()) continue;
-    try {
-      const parsed = JSON.parse(row.data);
-      if (!isRecord(parsed)) continue;
-      const event: Record<string, unknown> = {
-        ...parsed,
-        eventId: row.id,
-        type: typeof row.event_type === "string" ? row.event_type : parsed.type,
-        ...(typeof row.source === "string" && row.source.trim() ? { source: row.source } : {}),
-        ...(typeof row.timestamp === "number" ? { timestamp: row.timestamp } : {}),
-      };
-      events.push(event);
-    } catch {
-      // Ignore malformed persisted events; they cannot prove a Condition.
-    }
+    // The columns select candidates; the saved envelope and verified full body
+    // supply matching facts, exactly as they do during admission recovery.
+    const event = loadPersistedEvent(db, row.id, opts.persistDir);
+    if (event) events.push({ ...event, eventId: row.id });
   }
 
   // A feedback notification can be lost before it reaches the journal.
@@ -483,8 +467,4 @@ export function recoverTaskConditions(
     return trackAppTaskConditionEventForTasks(config, event, taskIds);
   });
   return [...new Set([...recoveredTaskIds, ...wakes.map((wake) => wake.taskId)])];
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
 }

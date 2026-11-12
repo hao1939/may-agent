@@ -305,7 +305,7 @@ test("upgrade retains pending settlement effects and unchanged waits with their 
   }
 });
 
-test("live routing and recovered observations share the durable Host publication time", () => {
+test("live routing, persisted reads and keyed retries share the saved envelope time", () => {
   const root = mkdtempSync(join(tmpdir(), "condition-publication-"));
   roots.push(root);
   setSystemTime(new Date(3000));
@@ -342,6 +342,10 @@ test("live routing and recovered observations share the durable Host publication
     expect(retry[EVENT_ROW_ID]).toBe(explicit[EVENT_ROW_ID]);
     expect(retry.timestamp).toBe(1000);
     expect(matchesAppTaskCondition(wait, retry)).toBe(false);
+    getDb(root)
+      .prepare("UPDATE events SET envelope_json = json_set(envelope_json, '$.timestamp', 'damaged') WHERE id = ?")
+      .run(explicit[EVENT_ROW_ID]!);
+    expect(() => bus.emit({ ...explicit, timestamp: 9000 })).toThrow("Stored event envelope timestamp must be finite");
   } finally {
     closeDb(root);
   }
