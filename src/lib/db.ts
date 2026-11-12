@@ -44,10 +44,16 @@ function detectRuntime(): Runtime {
 // ── Bun adapter ────────────────────────────────────────────────────────
 
 function openBun(path: string, readonly = false): SqliteDb {
-  const { Database } = require("bun:sqlite") as {
-    Database: new (path: string, options?: { readonly?: boolean; create?: boolean }) => BunDatabase;
+  const { Database, constants } = require("bun:sqlite") as {
+    Database: new (path: string, options?: number | { readonly?: boolean; create?: boolean }) => BunDatabase;
+    constants: { SQLITE_OPEN_READONLY: number; SQLITE_OPEN_URI: number };
   };
-  const db = new Database(path, readonly ? { readonly: true, create: false } : undefined);
+  const openOpts = readonly
+    ? path.startsWith("file:")
+      ? constants.SQLITE_OPEN_READONLY | constants.SQLITE_OPEN_URI
+      : { readonly: true, create: false }
+    : undefined;
+  const db = new Database(path, openOpts);
   return {
     exec(sql: string) {
       db.exec(sql);

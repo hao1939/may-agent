@@ -7,6 +7,7 @@
 
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { openReadOnlyDatabase } from "../db.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -16,14 +17,18 @@ export function printSystemStatus(
   _opts?: { includeProcessHealth?: boolean },
 ): string {
   const dbPath = join(persistDir, "may.db");
-  const lines = ["MAY-AGENT STATUS", "═".repeat(62)];
+  const lines = ["may-agent status", "═".repeat(62)];
 
   if (!existsSync(dbPath)) {
     lines.push("  No runtime database found.", "");
     return lines.join("\n");
   }
 
-  const db = openReadOnlyDatabase(dbPath);
+  // When no active WAL sidecar exists, open with immutable=1 so a read-only
+  // status probe never creates -wal/-shm sidecars in a settled state directory;
+  // when a live daemon has -wal open, read directly without copying gigabytes.
+  const target = existsSync(`${dbPath}-wal`) ? dbPath : `${pathToFileURL(dbPath).href}?immutable=1`;
+  const db = openReadOnlyDatabase(target);
   try {
     const since = Date.now() - DAY_MS;
 
