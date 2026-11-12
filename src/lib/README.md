@@ -54,6 +54,23 @@ synthetic credentials and empty values through definition loading, workflow
 execution, Bash and native CLI descendants. They read back only those synthetic
 values and keep private worker-role checks separate.
 
+## Tool checks and diagnostic signals
+
+The Host checks declared capabilities, file-write permissions and required
+results, and bounds execution and tool output. File access reports the actual
+filesystem result; read pagination is an ordinary supported operation.
+
+Execution preparation installs the finish write-activity and commit diagnostic
+guards. They record possible problems for review; they do not establish result
+correctness. Required-result validation belongs to the finish capability and
+caller, while Task acceptance belongs to the App's declared policy.
+
+The Host does not guess invalid paths from home-directory prefixes, track
+repeated reads by file name, or classify transcript reads through shell-command
+patterns. Apps judge whether the retained tool requests and results were useful.
+Read and Bash output truncation limits each response; it does not prevent a
+sequence of unnecessary calls from consuming the execution budget.
+
 ## Find the owner
 
 | Change | Start here |
