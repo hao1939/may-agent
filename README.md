@@ -166,6 +166,18 @@ The base Compose file does not forward shell binding variables or inject
 identity defaults: `AGENT` takes precedence over legacy `DAEMON_AGENT`, and
 the runtime defaults to `host` only when both are empty or absent.
 
+The image configures plain `codex`, `pi`, and `gemini` commands to use
+`MODEL_BASE_URL` and `MODEL_API_KEY`. Codex defaults to no approvals and
+`danger-full-access`; Pi runs its tools directly as the container user; Gemini
+runs in YOLO mode with folder trust and its process sandbox disabled. Their
+normal working root is `/app`. Preserve the image entrypoint when supplying a
+custom supervisor configuration: it prepares these settings and aligns the
+`mayagent` uid/gid with the mounted installation. Ownership is detected from
+`PROJECTS_ROOT` (falling back to `PROJECT_ROOT`); mixed-owner installations can
+set `MAY_RUNTIME_UID`, `MAY_RUNTIME_GID`, or `MAY_RUNTIME_OWNERSHIP_PATH`
+explicitly. Startup changes only bounded top-level runtime paths, not the whole
+installation recursively.
+
 The installation may commit `shared/file-write-policy.json`:
 
 ```json

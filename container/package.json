@@ -6,6 +6,7 @@
   "dependencies": {
     "@anthropic-ai/claude-code": "2.1.318",
     "@earendil-works/pi-coding-agent": "1.5.0",
+    "@google/gemini-cli": "0.68.0",
     "@openai/codex": "0.166.0"
   },
   "engines": {

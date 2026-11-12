@@ -154,8 +154,8 @@ There is no macOS/Windows matrix: the released deployment is Linux/container.
 Dependabot checks `bun.lock`, the container CLI npm lock, Actions, and base
 images weekly. Keep root Pi runtime libraries and TypeBox together, separate
 from routine tooling updates; a pre-1.0 minor release can change runtime
-contracts. The three container CLI packages update independently so a Codex
-protocol review does not hold unrelated Claude or Pi updates. Major tooling
+contracts. The container CLI packages update independently so a Codex
+protocol review does not hold unrelated Claude, Pi, or Gemini updates. Major tooling
 changes also need an explicit compatibility review. Check peer ranges before
 upgrading TypeScript; a newer compiler may not yet be supported by the lint
 parser.
@@ -187,9 +187,9 @@ The shipped agent CLI versions live as exact dependencies in
 files locked by `container/package-lock.json`; terminal checksums remain in
 `container/Dockerfile`, and the Bun version lives in `.bun-version`. The image
 uses `npm ci --omit=dev` and keeps the resulting production tree outside
-`/app`, where installation bind mounts cannot hide it. Three image-owned links
-in `/usr/local/bin` make `claude`, `codex`, and `pi` ordinary commands from any
-working directory and login shell, with no caller PATH setup, activation,
+`/app`, where installation bind mounts cannot hide it. Image-owned commands
+in `/usr/local/bin` make `claude`, `codex`, `pi`, and `gemini` ordinary commands
+from any working directory and login shell, with no caller PATH setup, activation,
 `npm install`, or `npx`. Do not disable install scripts or optional dependencies:
 Claude's installer and the native/platform packages are part of the executable
 runtime. Review CLI manifest and lockfile

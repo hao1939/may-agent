@@ -93,7 +93,7 @@ describe("Pi startup configuration", () => {
       .toHaveProperty("providers.may-openai.models.0.id", "gpt-5.6-sol");
   });
 
-  test("preserves existing Pi preferences while filling missing defaults", async () => {
+  test("preserves unrelated Pi preferences while restoring the managed endpoint defaults", async () => {
     const fixtureRoot = mkdtempSync(join(tmpdir(), "may-pi-config-"));
     const configDir = join(fixtureRoot, ".pi/agent");
     tempDirs.push(fixtureRoot);
@@ -110,8 +110,8 @@ describe("Pi startup configuration", () => {
       encoding: "utf8",
     });
     expect(JSON.parse(readFileSync(join(configDir, "settings.json"), "utf8"))).toEqual({
-      defaultProvider: "may-anthropic",
-      defaultModel: "claude-custom",
+      defaultProvider: "may-openai",
+      defaultModel: "gpt-5.6-sol",
       theme: "light",
       defaultThinkingLevel: "high",
     });

@@ -156,20 +156,23 @@ RUN node /usr/local/share/ttyd/patch-ttyd-index.cjs \
 
 # Install the locked CLI agent tools outside /app so an installation bind mount
 # cannot hide them. Keep install scripts and optional dependencies enabled:
-# Claude materializes its executable in postinstall, and all three tools ship
+# Claude materializes its executable in postinstall, and the agent tools ship
 # platform-specific runtime files.
 COPY container/package.json container/package-lock.json /opt/may-agent-cli/
 RUN npm ci --prefix /opt/may-agent-cli --omit=dev --no-audit --no-fund \
     && ln -s /opt/may-agent-cli/node_modules/.bin/claude /usr/local/bin/claude \
     && ln -s /opt/may-agent-cli/node_modules/.bin/codex /usr/local/bin/codex \
     && ln -s /opt/may-agent-cli/node_modules/.bin/pi /usr/local/bin/pi \
+    && ln -s /opt/may-agent-cli/node_modules/.bin/gemini /usr/local/bin/gemini-cli \
     && claude_version="$(node -p "require('/opt/may-agent-cli/package.json').dependencies['@anthropic-ai/claude-code']")" \
     && codex_version="$(node -p "require('/opt/may-agent-cli/package.json').dependencies['@openai/codex']")" \
     && pi_version="$(node -p "require('/opt/may-agent-cli/package.json').dependencies['@earendil-works/pi-coding-agent']")" \
+    && gemini_version="$(node -p "require('/opt/may-agent-cli/package.json').dependencies['@google/gemini-cli']")" \
     && test -x "$(command -v claude)" \
     && test "$(claude --version | awk '{print $1}')" = "$claude_version" \
     && test "$(codex --version | awk '{print $2}')" = "$codex_version" \
     && test "$(pi --version)" = "$pi_version" \
+    && test "$(gemini-cli --version)" = "$gemini_version" \
     && claude --help | grep -q -- '--output-format' \
     && claude --help | grep -q -- '--model' \
     && claude --help | grep -q -- '--resume' \
@@ -179,6 +182,8 @@ RUN npm ci --prefix /opt/may-agent-cli --omit=dev --no-audit --no-fund \
     && pi --help | grep -q -- '--model' \
     && pi --help | grep -q -- '--continue' \
     && pi --help | grep -q -- '--list-models' \
+    && gemini-cli --help | grep -q -- '--approval-mode' \
+    && gemini-cli --help | grep -q -- '--skip-trust' \
     && npm cache clean --force
 
 # Copy compiled runtime tools from builder. The service runs from the standalone
@@ -197,10 +202,11 @@ RUN nginx -t -c /etc/may-agent-nginx.conf && \
     chown -R mayagent:mayagent /app/.state/runtime-logs
 
 # Copy entrypoints and helpers
-COPY container/entrypoint.sh container/start-chrome.sh container/setup-claude-config.sh container/setup-codex-config.sh container/setup-pi-config.sh container/setup-herdr-integrations.sh container/may-agent-supervisor-restart.sh /usr/local/bin/
+COPY container/entrypoint.sh container/start-chrome.sh container/setup-runtime-user.sh container/setup-claude-config.sh container/setup-codex-config.sh container/setup-pi-config.sh container/setup-gemini-config.sh container/setup-herdr-integrations.sh container/gemini-wrapper.sh container/may-agent-supervisor-restart.sh /usr/local/bin/
+RUN mv /usr/local/bin/gemini-wrapper.sh /usr/local/bin/gemini
 COPY container/may-herdr.sh /usr/local/bin/may-herdr
 COPY packages/terminal/bin/may-console.cjs /usr/local/bin/may-console
-RUN chmod 755 /usr/local/bin/may-agent /usr/local/bin/entrypoint.sh /usr/local/bin/start-chrome.sh /usr/local/bin/setup-claude-config.sh /usr/local/bin/setup-codex-config.sh /usr/local/bin/setup-pi-config.sh /usr/local/bin/setup-herdr-integrations.sh /usr/local/bin/may-herdr /usr/local/bin/may-agent-supervisor-restart.sh /usr/local/bin/may-console && \
+RUN chmod 755 /usr/local/bin/may-agent /usr/local/bin/entrypoint.sh /usr/local/bin/start-chrome.sh /usr/local/bin/setup-runtime-user.sh /usr/local/bin/setup-claude-config.sh /usr/local/bin/setup-codex-config.sh /usr/local/bin/setup-pi-config.sh /usr/local/bin/setup-gemini-config.sh /usr/local/bin/setup-herdr-integrations.sh /usr/local/bin/gemini /usr/local/bin/may-herdr /usr/local/bin/may-agent-supervisor-restart.sh /usr/local/bin/may-console && \
     ln -sf /usr/local/bin/may-agent-supervisor-restart.sh /usr/local/bin/may-agent-supervisor-restart
 
 # Virtual display

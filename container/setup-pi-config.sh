@@ -59,8 +59,11 @@ let settings = {};
 try {
   settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
 } catch {}
-settings.defaultProvider ??= "may-openai";
-settings.defaultModel ??= openaiModel;
+// The container-managed endpoint is authoritative for plain `pi` launches.
+// Preserve unrelated UI preferences, but do not retain a stale external
+// provider or model from an older persisted state directory.
+settings.defaultProvider = "may-openai";
+settings.defaultModel = openaiModel;
 settings.defaultThinkingLevel ??= "high";
 fs.writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`, { mode: 0o600 });
 NODE
