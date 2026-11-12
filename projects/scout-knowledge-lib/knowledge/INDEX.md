@@ -384,7 +384,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 - [Design-system agent evaluation layer separation](./findings/2026-08-26-design-system-agent-eval-layer-separation.md) — a Phyll follow-up distinguishes source rules, rendered-state evidence, and first-user task-path evidence.
 - [Hook policy enforcement boundaries](./findings/2026-08-27-hook-policy-enforcement-boundaries.md) — a Stop That Shit follow-up separates task authority from host permission and requires attempted-path evidence before calling a forbidden action blocked.
 - [Cross-vendor agent messaging still needs a coordination plane](./findings/2026-08-28-cross-vendor-agent-messaging-needs-coordination-plane.md) — an agmsg follow-up requires atomic role handoff, inconclusive-liveness preservation, and observable delivery failure.
-- [Audit integrity needs a capture boundary and an external tail anchor](./findings/2026-09-14-audit-integrity-needs-external-tail-anchor.md) — current follow-ups separate anchored content commitment, semantic validity, and write-settlement semantics.
+- [Audit integrity needs a capture boundary and an external tail anchor](./findings/2026-09-14-audit-integrity-needs-external-tail-anchor.md) — current follow-ups separate anchored content commitment, semantic validity, write settlement, and omission findings reconciled against an independent off-host event stream; evidence remains producer-authored and deployment-unverified.
 
 ### 2026-09-23
 
