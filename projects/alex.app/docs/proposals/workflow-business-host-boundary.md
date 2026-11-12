@@ -201,9 +201,11 @@ Authoring rules that keep workflows readable:
   `outputSchema` is exported, the kernel validates them automatically so
   `execute(ctx)` starts with clean typed data instead of repetitive parsing
   boilerplate. Existing modules without `inputSchema` remain valid.
-- **Optional `requires` only when static preflight adds value:** `export const
-  requires = { agents: ["reviewer"] }` is optional metadata for preflight/catalog
-  inspection, never mandatory boilerplate when agent names are dynamic.
+- **No duplicate `requires` string lists or new SDK subpaths:** Missing agents
+  or nested workflows fail explicitly when called (recording a failed step trace
+  with `id: null`), avoiding triplicate capability-registry maintenance across
+  Unit, Direct/Gym and Host. Keep the kernel internal to `packages/sdk/src/`
+  and re-exported through existing `@may-agent/sdk/testing`.
 - **Explicit domain checkpoints instead of VM replay:** Multi-stage workflows
   that want to skip already-verified work on a fresh Task attempt check explicit
   workspace/evidence state at the top of `execute(ctx)` (as `develop-change.ts`
@@ -351,9 +353,9 @@ effect and cleanup guarantees; the kernel cannot infer them from settled promise
    awaited and expose failure to their caller. Finalization drains already-started
    required effects and retains their outcomes. Required lifecycle writes use a
    separate awaited runner boundary; failed terminal persistence cannot establish
-   accepted execution. Optional hooks (`ctx.log`, `onStep`) isolate both throws
-   and asynchronous rejection under finite delivery limits, recording bounded
-   `report.observerErrors` without replaying business work.
+   accepted execution. Optional hooks (`ctx.log`, `onStep`) are synchronous,
+   recording bounded `report.observerErrors` without blocking completion or
+   replaying business work.
 
 Current [direct-run cleanup](../../../may-agent/src/app/direct-agent.ts) calls
 [background cleanup](../../../may-agent/src/lib/background-exec.ts), which sends
@@ -364,7 +366,7 @@ that exact boundary; do not hang forever or silently release the resource.
 
 | Boundary failure | Mechanical behavior |
 | --- | --- |
-| Invalid input or missing declared required binding | Reject before `execute(ctx)` runs; start no child work. An unavailable dynamic capability fails explicitly when called |
+| Invalid input | Reject before `execute(ctx)` runs; start no child work. An unavailable capability fails explicitly when called and records a failed step trace (`id: null`) |
 | Child agent returns invalid structured `output` for `options.schema` | Return an explicit step validation failure and retain raw evidence separately from typed output in Unit, Gym and Host alike |
 | Parent abort or inherited deadline expires | Fence new calls, abort active children and confirm cleanup before releasing resources; return `interrupted` when cleanup succeeds |
 | Unhandled throw inside `execute(ctx)` | Abort active sibling children, wait for settlement, preserve `steps[]` trace up to the throw, surface `error` |
@@ -392,10 +394,6 @@ existing Host, SDK and Gym packages—no new package publish or migration flag:
 | **2. Route Host entry points through kernel** | Wire `runWorkflowDirect`, `createWorkflowTool`, and `createTaskWorkflowRunner` ([workflow.ts](../../../may-agent/src/app/adapters/executors/workflow.ts)) as Host bindings. Preserve current guards, exact source capture, admission and result settlement. | Existing owning suites plus contrasts for required-write failure, pre-start denial, adapter cleanup confirmation and retention after unconfirmed cleanup. |
 | **3. Direct / Gym workflow runner** | Add `runDirectWorkflow` composing the kernel with `runDirectAgent`, shared root limits and optional `<traceDir>/run.json`. Fix direct adapter cleanup confirmation before claiming safe workspace disposal. Wire Gym to run workflow scenarios without Host services. | Multi-step Gym scenario with `--lab` overlay and trace output; verify a slow or TERM-resistant descendant and failed cleanup keep the workspace retained. Use explicit workspace/evidence fixtures for a development slice. |
 | **4. Authoring manual & exemplar** | Update [workflow-authoring.md](../2b-manual/workflow-authoring.md) and [review-change.ts](../examples/review-change.ts) with declarations, strict fixture testing and offline debugging guidance. | Documentation/example checks and Gym type/scenario checks; a stateful reproduction requires its declared workspace fixture. |
-
-Guard-injection retirement follows separately: inventory actual consumers, move
-business repair into explicit workflow code, and verify equivalent intended
-behavior before deprecating/removing injection. It is not part of kernel routing.
 
 ## 7. Acceptance criteria
 

@@ -53,10 +53,9 @@ Its `reviewer` is an example team capability, not a universal role or an install
 agent guaranteed by the Host. Its description states the promised result and scope.
 
 Procedure input types belong to that module. Export `inputSchema` (and optional
-`outputSchema` / `requires`) so the shared runner validates incoming JSON and
-required capabilities before entering `execute(ctx)`; a TypeScript generic alone
-does not validate runtime data. Adding a recipe does not require a new public
-App input variant.
+`outputSchema`) so the shared runner validates incoming JSON before entering
+`execute(ctx)`; a TypeScript generic alone does not validate runtime data.
+Adding a recipe does not require a new public App input variant.
 
 Workflows are bounded and ordered. They may use `await`, but every awaited
 agent, nested workflow, read, metric write, or fact publication must finish in

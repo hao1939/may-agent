@@ -99,8 +99,8 @@ reviewed change or settle the enclosing Task.
 Rules:
 
 - export explicit `name`, `description`, and `execute` (plus optional declarative
-  `inputSchema`, `outputSchema`, and `requires` metadata validated by the shared
-  invocation kernel before or around `execute(ctx)`);
+  `inputSchema` and `outputSchema` metadata validated by the shared invocation
+  kernel before or around `execute(ctx)`);
 - receive procedure parameters through typed `ctx.input`; for Task-bound work,
   read the authoritative outcome, acceptance and admitted input through the
   supplied Task context and scoped reads;
