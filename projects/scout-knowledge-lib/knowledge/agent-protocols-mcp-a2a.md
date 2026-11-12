@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend), AHP (host→multi-client session state), and practical ACP implementation evidence. Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, research findings, and how protocol roadmaps and implementations are splitting transport/tool shells from identity, discovery, and runtime control layers. Current HN discourse sharpens the MCP-versus-CLI choice into a deployment and authority decision; Google's cross-product Workspace search shows why a read-only tool still needs corpus-level disclosure controls; A2M shows that tool discovery metadata and tool returns form a coupled semantic supply-chain surface; Android Studio's ACP integration shows that agent replaceability depends on a host-owned context and tool plane, while continuity and effect identity remain separate contracts. PeerTalk supplies a concrete WebRTC P2P prototype while making clear that transport encryption does not establish peer trust or tool authority."
-triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy", "stateless MCP", "requestState", "mcp-use v2", "ACP backend rail", "entwurf", "garden id", "Android Studio", "Bring Your Own Agent", "replaceable agent", "host-owned context plane", "progressive discovery", "capability-conditioned discovery", "Ripwire", "mcp-assert", "MCP fuzzing", "fault classification", "MCP versus CLI", "shell authority", "workload identity federation", "DPoP", "MCP roadmap", "Universal Search MCP", "Workspace search", "cross-product search", "read-only disclosure", "A2M", "agent hijacking", "malicious tool metadata", "semantic supply chain", "PeerTalk", "WebRTC agent transport", "P2P agent transport"]
-last_updated: "2026-09-27"
-source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June-Sep 2026 (incl. scan #33 and HN items 49131438, 49198472, 49399591, 49453910, 49779329, 49794043, and 49862920), arXiv 2606.30317 (MCP Architecture Patterns), scan #262, Simon Willison's stateless MCP write-up (2026-07-31), Manufact's mcp-use v2 stateless-MCP rebuild write-up (2026-07-29), the current GitHub repo junghan0611/entwurf checked 2026-08-06 for ACP/backend-rail implementation evidence, the official MCP roadmap published 2026-08-22, VS Code's first-party Agent Host launch post (2026-08-26), redhat-et/ripwire inspected at commit 5c4235b9befd4cd5b6f9f3a489940d7b79f86520 for capability-conditioned MCP catalog evidence (2026-09-11), blackwell-systems/mcp-assert inspected at commit f2389c6511fdd205bc8732b0529e90eb1d25dd4b for transport-level fuzzing and fault-classification evidence (2026-09-19), Maharshi Patel's MCP critique plus its HN discussion (2026-09-20), Google's Universal Search MCP documentation (2026-09-18 page update, reviewed 2026-09-22), the abstract of arXiv 2609.26761v1 (A2M, reviewed 2026-09-24), Reddit post t3_1wpqdl1 plus its linked Android Developers announcement (reviewed 2026-09-25), and PeerTalk's HN launch plus published protocol/security pages (reviewed 2026-09-27). See source declarations below."
+summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend), AHP (host→multi-client session state), and practical ACP implementation evidence. Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, research findings, and how protocol roadmaps and implementations are splitting transport/tool shells from identity, discovery, and runtime control layers. Current HN evidence sharpens the MCP-versus-CLI choice into a deployment and authority decision and separates two context budgets: tool definitions and returned data; progressive discovery reduces the first but does not control the second. Google's cross-product Workspace search shows why a read-only tool still needs corpus-level disclosure controls; A2M shows that tool discovery metadata and tool returns form a coupled semantic supply-chain surface; Android Studio's ACP integration shows that agent replaceability depends on a host-owned context and tool plane, while continuity and effect identity remain separate contracts. PeerTalk supplies a concrete WebRTC P2P prototype while making clear that transport encryption does not establish peer trust or tool authority."
+triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy", "stateless MCP", "requestState", "mcp-use v2", "ACP backend rail", "entwurf", "garden id", "Android Studio", "Bring Your Own Agent", "replaceable agent", "host-owned context plane", "progressive discovery", "capability-conditioned discovery", "deferred tool loading", "tool result projection", "Ripwire", "mcp-assert", "MCP fuzzing", "fault classification", "MCP versus CLI", "shell authority", "workload identity federation", "DPoP", "MCP roadmap", "Universal Search MCP", "Workspace search", "cross-product search", "read-only disclosure", "A2M", "agent hijacking", "malicious tool metadata", "semantic supply chain", "PeerTalk", "WebRTC agent transport", "P2P agent transport"]
+last_updated: "2026-11-12"
+source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June-Nov 2026 (incl. scan #33 and HN items 49131438, 49198472, 49399591, 49453910, 49779329, 49794043, 49862920, and 50473390), arXiv 2606.30317 (MCP Architecture Patterns), scan #262, Simon Willison's stateless MCP write-up (2026-07-31), Manufact's mcp-use v2 stateless-MCP rebuild write-up (2026-07-29), the current GitHub repo junghan0611/entwurf checked 2026-08-06 for ACP/backend-rail implementation evidence, the official MCP roadmap published 2026-08-22, VS Code's first-party Agent Host launch post (2026-08-26), redhat-et/ripwire inspected at commit 5c4235b9befd4cd5b6f9f3a489940d7b79f86520 for capability-conditioned MCP catalog evidence (2026-09-11), blackwell-systems/mcp-assert inspected at commit f2389c6511fdd205bc8732b0529e90eb1d25dd4b for transport-level fuzzing and fault-classification evidence (2026-09-19), Maharshi Patel's MCP critique plus its HN discussion (2026-09-20), Google's Universal Search MCP documentation (2026-09-18 page update, reviewed 2026-09-22), the abstract of arXiv 2609.26761v1 (A2M, reviewed 2026-09-24), Reddit post t3_1wpqdl1 plus its linked Android Developers announcement (reviewed 2026-09-25), PeerTalk's HN launch plus published protocol/security pages (reviewed 2026-09-27), and OpenRouter's single-task MCP-versus-CLI-versus-skill context benchmark discovered through HN (published 2026-11-11, reviewed 2026-11-12). See source declarations below."
 </ai_context>
 
 # Agent Protocols: MCP, A2A, and the Emerging Stack
@@ -1338,6 +1338,68 @@ deployment.
 were read. The Developer Preview was not enrolled in or executed, and no
 runtime result schema, audit log, search-quality behavior, or enforcement
 beyond the documentation was independently tested.
+
+### §8a.8. HN Measurement Signal (2026-11-12): Tool Definitions and Tool Results Are Separate Context Budgets
+
+OpenRouter published a small producer-run comparison of the GitHub MCP server,
+the `gh` CLI, and a CLI skill on one repository question. Each configuration
+was run three times on October 20, with median input-token totals reported. On
+Claude Sonnet 5.5, all baseline approaches answered correctly, but the reported
+input totals were 1,421 tokens for the CLI, 3,315 for the skill, 23,228 for a
+two-tool MCP surface, 59,417 for the server's 46 default tools, and 101,351 for
+all 91 tools. The article also measured the 46 default definitions alone at
+19,436 prompt tokens on Claude, versus 8,903 on GPT-6 Luna and 8,525 on Gemini
+3.8 Flash through Google Vertex. The provider path mattered: the same Gemini
+tools reportedly counted as 13,010 tokens through Google AI Studio.
+
+The useful update to the earlier authority-first decision rule is that MCP has
+**two independent context budgets**:
+
+1. **Discovery budget:** names, descriptions, and schemas exposed before a
+   call. Tool scoping or deferred discovery can reduce this budget.
+2. **Observation budget:** the data returned after a call. Discovery controls
+   do not reduce it; clients or servers must project exact fields, bound
+   cardinality, and preserve typed errors.
+
+The article's GitHub release example makes the split concrete. A full MCP
+release object was 42,182 characters and reportedly added about 20,400 tokens
+after the call, mostly for download-file metadata. The equivalent CLI command
+selected only `tagName` and `publishedAt`. Scoping MCP from 46 definitions to
+two reduced the first request substantially, yet the complete task still used
+23,228 tokens until result handling was changed. A crude 4,000-character cap
+lowered that route to 5,357 tokens, but later combinations lost correctness
+because truncation depended on useful fields appearing early. The safer pattern
+is schema-aware field projection, not byte clipping.
+
+Deferred Tool Search further shows why progressive discovery is an optimization,
+not a reliability guarantee. It reduced the up-front 46-tool definition cost to
+under 600 tokens in the article's measurements and roughly halved Sonnet's
+whole-task total. But search behavior varied by model: some runs performed
+several searches, GPT-6 Luna once gave up without calling the tool, Gemini's
+total rose, and Haiku's 46-tool deferred route exceeded the fully loaded route
+after argument errors and retries. The implementation rule is therefore:
+**measure per model and provider, cap loop iterations, retain a small hot set,
+and audit definition cost, search/retry cost, and result cost separately**.
+Prompt caching may lower billing but does not remove occupied context.
+
+This does not reverse the deployment conclusion in §8a.6. A CLI still requires
+shell and credential authority that some principals should not grant; MCP may
+remain the correct brokered surface. But once that choice is made, "use MCP"
+is not a complete context policy. Admission should include measured schema
+mass and enforced result projection for the actual model, provider, server
+version, and workload.
+
+**Sources:** [OpenRouter, “MCP vs CLI vs Skills: What Each Costs in Context”](https://openrouter.ai/blog/insights/mcp-vs-cli-vs-skills/),
+[HN item 50473390](https://news.ycombinator.com/item?id=50473390).
+
+**Evidence boundary:** Scout read the complete public article and current HN
+item, which had no comments at retrieval. The benchmark is producer-authored,
+uses one GitHub task and one MCP server, reports three-run medians but no raw
+traces or uncertainty intervals, and mixes model-specific behavior with the
+interface comparison. Scout did not run the scripts, inspect OpenRouter's
+private request logs, reproduce token counts, or independently verify answer
+quality. The numbers support workload-specific measurement and the two-budget
+distinction, not a universal MCP-versus-CLI ranking.
 
 ---
 
