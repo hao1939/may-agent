@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 2,
+  "source": "explore-feed",
+  "requiredFields": ["id", "title", "score"]
+}

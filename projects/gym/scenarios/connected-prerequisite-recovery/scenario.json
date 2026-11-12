@@ -1,0 +1,17 @@
+{
+  "name": "connected-prerequisite-recovery",
+  "description": "Unscripted operational recovery scenario: diagnose an exhausted standing collector Task from retained failure evidence, restore its schema-lock prerequisite via the authorized runbook without mutating the collector or source sample, verify the original job succeeds, and record a generation-preserving recovery receipt.",
+  "categories": [
+    "recovery",
+    "bug-fixing"
+  ],
+  "tags": [
+    "connected-recovery",
+    "operational-route",
+    "prerequisite-repair"
+  ],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "alex",
+  "workflow": false
+}

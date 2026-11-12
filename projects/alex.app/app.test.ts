@@ -352,3 +352,60 @@ test("selector failures reach one executable repair Task even when automatic sam
     else process.env.EVALUATION_AUTO_REVIEW_ENABLED = enabled;
   }
 });
+
+test("exhausted Tasks and non-retrying controller failures route to one stable Alex recovery Task per subject without self-looping", () => {
+  const enabled = process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+  process.env.EVALUATION_AUTO_REVIEW_ENABLED = "false";
+  try {
+    // Transient retries stay quiet when automatic sampling is off
+    expect(taskInputForEvent({
+      type: "project.task.reconciled",
+      data: { project: "scout-knowledge-lib", taskId: "explore-xhs", attemptId: "r_1", disposition: "retrying" },
+    } as never)).toBeNull();
+    expect(taskInputForEvent({
+      type: "handler.failed",
+      source: "app-task-controller",
+      data: { appId: "scout-knowledge-lib", taskId: "explore-xhs", stage: "task-reconciliation", willRetry: true },
+    } as never)).toBeNull();
+
+    // Exhausted attempt and non-retrying controller failure join one stable recovery Task per subject
+    const exhausted = taskInputForEvent({
+      type: "project.task.reconciled",
+      data: { project: "scout-knowledge-lib", taskId: "explore-xhs", attemptId: "r_3", disposition: "exhausted", summary: "ENOSPC" },
+    } as never)!;
+    const preAttempt = taskInputForEvent({
+      type: "handler.failed",
+      source: "app-task-controller",
+      data: { appId: "scout-knowledge-lib", taskId: "explore-xhs", stage: "task-reconciliation", willRetry: false, error: "ENOSPC" },
+    } as never)!;
+    expect(exhausted.kind).toBe("message");
+    expect(preAttempt.kind).toBe("message");
+    const firstRecovery = taskForInput({ id: "ex-1", input: exhausted } as never);
+    const secondRecovery = taskForInput({ id: "ex-2", input: preAttempt } as never);
+    expect(secondRecovery).toEqual(firstRecovery);
+    expect(firstRecovery.intent.id).toStartWith("runtime/recovery/scout-knowledge-lib-explore-xhs-");
+    expect(firstRecovery.intent).toMatchObject({
+      agent: "alex",
+      parentId: "root",
+      input: { appId: "scout-knowledge-lib", taskId: "explore-xhs" },
+    });
+
+    // Recovery and review tasks never self-loop
+    expect(taskInputForEvent({
+      type: "project.task.reconciled",
+      data: { project: "alex", taskId: firstRecovery.intent.id, attemptId: "r_rec", disposition: "exhausted" },
+    } as never)).toBeNull();
+    expect(taskInputForEvent({
+      type: "handler.failed",
+      source: "app-task-controller",
+      data: { appId: "alex", taskId: firstRecovery.intent.id, stage: "task-reconciliation", willRetry: false },
+    } as never)).toBeNull();
+    expect(taskInputForEvent({
+      type: "project.task.reconciled",
+      data: { project: "alex", taskId: "runtime/selector-recovery", attemptId: "r_sel", disposition: "exhausted" },
+    } as never)).toBeNull();
+  } finally {
+    if (enabled === undefined) delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+    else process.env.EVALUATION_AUTO_REVIEW_ENABLED = enabled;
+  }
+});

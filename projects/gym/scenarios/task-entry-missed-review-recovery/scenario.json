@@ -1,0 +1,17 @@
+{
+  "name": "task-entry-missed-review-recovery",
+  "description": "Missed-review entry regression scenario (#459): when a live attempt already claimed its review and carried-over input out of pendingEvents (so pendingEvents is empty and an earlier draft + independent approval Condition already exist), the worker must follow TASK.md's assigned-vs-pending pointers into context.json rather than concluding work is empty.",
+  "categories": [
+    "bug-fixing",
+    "task-entry"
+  ],
+  "tags": [
+    "missed-review",
+    "assigned-input",
+    "task-entry-clarity"
+  ],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "tech-lead",
+  "workflow": false
+}

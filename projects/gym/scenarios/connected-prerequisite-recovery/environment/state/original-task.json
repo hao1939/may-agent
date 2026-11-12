@@ -1,0 +1,15 @@
+{
+  "appId": "scout-knowledge-lib",
+  "taskId": "scout-knowledge-lib/explore-feed",
+  "generation": 2,
+  "resourceVersion": 14,
+  "status": "attention",
+  "retryExhausted": {
+    "attemptId": "r_2_exhausted_03",
+    "failures": 3,
+    "limit": 3,
+    "exhaustedAt": "2026-11-12T04:00:45.000Z"
+  },
+  "summary": "Automatic retries exhausted; owner repair or explicit retry required. Task handler failed: Collector prerequisite unavailable: state/schema-lock.json is missing or does not match config/schema.json",
+  "entrypoint": "node run-collector.cjs"
+}

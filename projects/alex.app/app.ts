@@ -167,9 +167,61 @@ export function evaluationReportInput(event: AppEvent<Record<string, unknown>>):
   } as AppInput;
 }
 
+function isAlexOperationalRecoveryTask(appId: string, taskId: string): boolean {
+  return (
+    appId === "alex" &&
+    (taskId === "runtime/selector-recovery" || taskId.startsWith("runtime/recovery/"))
+  );
+}
+
+function operationalRecoveryInput(
+  appId: string,
+  taskId: string,
+  reason: "exhausted" | "handler-failed",
+  data: Record<string, unknown>,
+): AppInput {
+  return {
+    kind: "message",
+    data: {
+      message: `Investigate the ${reason === "exhausted" ? "exhausted" : "non-retrying"} Task ${appId}/${taskId}. Read the exact affected Task and its current evidence before acting. Preserve its original assignment, inputs and caller return links. Repair within Alex's authorized scope and verify recovery on the original Task, or escalate any unresolved domain or human blocker to May.`,
+      context: {
+        taskRecovery: {
+          appId,
+          taskId,
+          reason,
+          evidence: structuredClone(data),
+        },
+      },
+    },
+  } as AppInput;
+}
+
 /** Route selected reviews and qualified Scout findings into executable Alex work. */
 export function taskInputForEvent(event: AppEvent<Record<string, unknown>>): AppInput | null {
   const data = record(event.data);
+  if (event.type === "handler.failed") {
+    if (
+      event.source !== "app-task-controller" ||
+      data.stage !== "task-reconciliation" ||
+      data.willRetry !== false
+    ) {
+      return null;
+    }
+    const appId = String(data.appId ?? data.project ?? "").trim();
+    const taskId = String(data.taskId ?? "").trim();
+    if (!appId || !taskId || isAlexOperationalRecoveryTask(appId, taskId)) return null;
+    if (appId === "alex" && taskId === "runtime/task-outcome-selector") {
+      return {
+        kind: "message",
+        data: {
+          message: "Investigate the automatic selector failure. Read the exact affected Task and its current evidence before acting. Preserve its pending inputs, cursor and configured reviewer. Normal retries run the declared workflow; verify a successful workflow attempt before claiming recovery. Repair within Alex or escalate an unresolved blocker to May.",
+          context: { selectorFailure: structuredClone(data) },
+        },
+      } as AppInput;
+    }
+    if (taskId.startsWith("review/") || taskId.startsWith("runtime/task-outcome/")) return null;
+    return operationalRecoveryInput(appId, taskId, "handler-failed", data);
+  }
   if (event.type === "workflow.owner.requested") {
     if (data.projectId !== "alex" || data.reason !== "workflow-blocked") return null;
     const workflowRunId = typeof data.workflowRunId === "string" ? data.workflowRunId.trim() : "";
@@ -250,7 +302,13 @@ export function taskInputForEvent(event: AppEvent<Record<string, unknown>>): App
     const evaluationExecution =
       (taskId.startsWith("review/") || taskId.startsWith("runtime/task-outcome/")) &&
       data.handler === "workflow:task-outcome-review";
-    if (!automatic.enabled || !appId || !taskId || evaluationExecution) return null;
+    if (!appId || !taskId || evaluationExecution) return null;
+    if (!automatic.enabled) {
+      if (String(data.disposition) !== "exhausted" || isAlexOperationalRecoveryTask(appId, taskId)) {
+        return null;
+      }
+      return operationalRecoveryInput(appId, taskId, "exhausted", data);
+    }
     return { kind: "review-task-outcome", data: { appId, taskId, assessmentPurpose: "ongoing", automatic: true, ...(automatic.reviewer === "evaluator-deepseek" ? { reviewer: automatic.reviewer } : {}) } } as AppInput;
   }
   if (event.type !== "evaluation.task.review.requested") return null;
@@ -295,6 +353,23 @@ export function taskForInput(admitted: Readonly<AppTaskInput>) {
         "Return verified recovery evidence or the exact remaining blocker to the affected Task and assigning owner.",
       ],
       input: { appId: "alex", taskId: "runtime/task-outcome-selector" },
+      priority: "P1" as const,
+    }};
+  }
+  const taskRecovery = record(context.taskRecovery);
+  const recoveryAppId = typeof taskRecovery.appId === "string" ? taskRecovery.appId.trim() : "";
+  const recoveryTaskId = typeof taskRecovery.taskId === "string" ? taskRecovery.taskId.trim() : "";
+  if (admitted.input.kind === "message" && recoveryAppId && recoveryTaskId) {
+    return { kind: "desired" as const, intent: {
+      id: `runtime/recovery/${safe(`${recoveryAppId}/${recoveryTaskId}`)}`,
+      parentId: "root",
+      agent: "alex",
+      outcome: `Diagnose and recover ${recoveryAppId}/${recoveryTaskId} within authorized scope, or escalate the remaining blocker to May.`,
+      acceptance: [
+        "Read current Task evidence and account for each admitted exhaustion or controller-failure notice.",
+        "Preserve original Task identity, generation, inputs and caller return links; repair prerequisites within authorized scope and verify recovery on the original Task, or escalate any unresolved domain or human blocker to May.",
+      ],
+      input: { appId: recoveryAppId, taskId: recoveryTaskId },
       priority: "P1" as const,
     }};
   }
@@ -474,6 +549,11 @@ export default defineApp({
       event,
       toInput: taskInputForEvent,
     })),
+    {
+      id: "task-controller-failure-recovery",
+      event: { type: "handler.failed", source: "app-task-controller" },
+      toInput: taskInputForEvent,
+    },
     {
       id: "qualified-scout-research",
       event: "scout.research.qualified",

@@ -1,0 +1,44 @@
+{
+  "id": "parser/parse-limit",
+  "status": "running",
+  "generation": 1,
+  "resourceVersion": 6,
+  "outcome": "Deliver parseLimit(raw) satisfying all assigned review findings and carried-over input requirements.",
+  "summary": "Draft v1 prepared",
+  "acceptedAttempt": {
+    "id": "r_1_draft_v1",
+    "generation": 1,
+    "startedAt": "2026-09-29T09:00:00.000Z",
+    "finishedAt": "2026-09-29T09:05:00.000Z"
+  },
+  "activeAttempt": {
+    "id": "r_1_92ecbe1e-cee1-4d96-b750-bb06b490577f",
+    "generation": 1,
+    "startedAt": "2026-09-29T10:00:01.000Z",
+    "assignedInput": {
+      "newEvents": 1,
+      "continuingInputs": 1,
+      "truncated": false,
+      "continuedInputKeys": ["input:keep-zero-rejected"]
+    }
+  },
+  "pendingEvents": {
+    "items": [],
+    "truncated": false
+  },
+  "conditions": [
+    {
+      "id": "release-signoff",
+      "type": "approval.observed",
+      "subject": "release:v2",
+      "expected": true,
+      "observation": {
+        "generation": 1,
+        "resourceVersion": 6,
+        "observedGeneration": 1,
+        "state": "true",
+        "facts": ["approved-by:operator"]
+      }
+    }
+  ]
+}

@@ -1456,13 +1456,20 @@ async function runScenario(
 ): Promise<RunResult> {
   const scenarioDir = join(SCENARIOS_DIR, scenarioName);
   const meta = loadScenarioMeta(scenarioDir);
+  const requestedAgent =
+    agentName || meta?.workflow_entry?.agent || meta?.agent_type || "tech-lead";
+  const resolvedAgentName =
+    !agentName &&
+    !resolveGymAgentDir(APP_AGENTS_ROOT, requestedAgent, join(REPO_ROOT, "projects"))
+      ? "tech-lead"
+      : requestedAgent;
 
   // Multi-session scenarios use a separate code path
   if (meta?.sessions && meta.sessions.length > 0) {
     return runMultiSessionScenario(
       scenarioName,
       adapter,
-      agentName,
+      resolvedAgentName,
       labFork,
       timeoutOverride,
       commonSensePath,
@@ -1492,7 +1499,7 @@ async function runScenario(
 
   // Setup adapter
   adapter.setup(PROJECT_ROOT, {
-    agentName,
+    agentName: resolvedAgentName,
     labFork,
     gymRoot,
     sandboxAgents: learnBetween,
@@ -1561,7 +1568,7 @@ async function runScenario(
         return {
           scenario: scenarioName,
           adapter: adapter.name,
-          agent: agentName,
+          agent: resolvedAgentName,
           lab_fork: labFork || null,
           workflow: isWorkflow,
           passed: false,
@@ -1618,9 +1625,9 @@ async function runScenario(
               .filter(Boolean);
 
             // Write to the sandbox agents dir (where AGENTS_ROOT points)
-            const sandboxAgentDir = join(gymRoot, "agents-sandbox", agentName);
+            const sandboxAgentDir = join(gymRoot, "agents-sandbox", resolvedAgentName);
             // Also write to workDir agents dir (for success_criteria to inspect)
-            const workAgentDir = join(workDir, "agents", agentName);
+            const workAgentDir = join(workDir, "agents", resolvedAgentName);
 
             for (const dir of [sandboxAgentDir, workAgentDir]) {
               if (existsSync(dir)) {
@@ -1669,7 +1676,7 @@ async function runScenario(
     return {
       scenario: scenarioName,
       adapter: adapter.name,
-      agent: agentName,
+      agent: resolvedAgentName,
       lab_fork: labFork || null,
       workflow: isWorkflow,
       passed: false,
@@ -1753,14 +1760,14 @@ async function runScenario(
       ? join(gymRoot, "agents-sandbox")
       : APP_AGENTS_ROOT;
   const frameworkSha = computeFrameworkSha();
-  const model = readAgentModel(effectiveAgentsRoot, agentName);
-  const prompt = observedPrompt(lastResult, effectiveAgentsRoot, agentName);
+  const model = readAgentModel(effectiveAgentsRoot, resolvedAgentName);
+  const prompt = observedPrompt(lastResult, effectiveAgentsRoot, resolvedAgentName);
   const execution = terminalExecution(isWorkflow ? allPhaseResults : [lastResult]);
 
   return {
     scenario: scenarioName,
     adapter: adapter.name,
-    agent: agentName,
+    agent: resolvedAgentName,
     lab_fork: labFork || null,
     workflow: isWorkflow,
     passed: gatedScore.passed,
@@ -1811,7 +1818,10 @@ function computeFrameworkSha(): string | null {
  */
 function readAgentModel(agentsRoot: string, agentName: string): string | null {
   try {
-    const agentJson = join(agentsRoot, agentName, "agent.json");
+    const agentDir =
+      resolveGymAgentDir(agentsRoot, agentName, join(REPO_ROOT, "projects")) ??
+      join(agentsRoot, agentName);
+    const agentJson = join(agentDir, "agent.json");
     if (!existsSync(agentJson)) return null;
     const parsed = JSON.parse(readFileSync(agentJson, "utf-8"));
     return typeof parsed.model === "string" ? parsed.model : null;
@@ -1916,7 +1926,7 @@ function parseArgs(argv: string[]) {
   const args = {
     scenario: "",
     adapter: "may-agent",
-    agent: "coder",
+    agent: "",
     lab: "",
     commonSense: "",
     timeout: undefined as number | undefined,
