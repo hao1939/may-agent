@@ -8,23 +8,15 @@ let maySendPending = false;
 let mayUnconfirmedInput = null;
 
 function isMayConversation() {
-  return Boolean(humanInterface.appId) && currentAgentChat === humanInterface.agent && !isSessionPageMode();
+  return Boolean(humanInterface.appId) && isAgentChatActive(humanInterface.agent);
 }
 
 function updateConversationStop() {
   const button = document.getElementById('chat-stop');
   if (!button) return;
-  document.getElementById('md-toggle').hidden = isMayConversation();
   document.querySelector('#chat-agent-banner .banner-session').hidden = isMayConversation();
   button.hidden = !isMayConversation();
   button.disabled = !isMayConversation() || !mayActiveTurn || mayStopPending;
-}
-
-function subscribeMayConversation() {
-  if (ws?.readyState === WebSocket.OPEN && isMayConversation()) {
-    ws.send(JSON.stringify({ type: 'subscribe', sessions: ['*'], conversations: [humanInterface.conversationId] }));
-  }
-  updateConversationStop();
 }
 
 function refreshMayConversation() {
@@ -68,7 +60,7 @@ function refreshMayConversation() {
   return mayConversationRead;
 }
 
-async function publishMayConversationEvent(event) {
+async function publishChatEvent(event) {
   const response = await fetch('/api/events', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(event),
     signal: AbortSignal.timeout(10000),
@@ -86,7 +78,7 @@ async function stopMayConversation() {
   mayStopPending = true;
   updateConversationStop();
   try {
-    await publishMayConversationEvent({
+    await publishChatEvent({
       type: 'conversation.turn.stop.requested', target: { appId: humanInterface.appId },
       data: { conversationId: humanInterface.conversationId, turnId: turn.id, expectedRevision: turn.revision },
       idempotencyKey: `web-stop:${turn.id}:${turn.revision}`,
@@ -111,7 +103,7 @@ async function sendMayConversation() {
   if (mayUnconfirmedInput?.text !== text) mayUnconfirmedInput = { text, id: `web-ui:${crypto.randomUUID()}` };
   const { id } = mayUnconfirmedInput;
   try {
-    await publishMayConversationEvent({
+    await publishChatEvent({
       type: 'conversation.message.created', target: { appId: humanInterface.appId },
       data: { conversationId: humanInterface.conversationId, author: { kind: 'human', id }, text: text.trim(), metadata: { channel: 'web-ui' } },
       idempotencyKey: id,

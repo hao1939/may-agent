@@ -454,11 +454,18 @@ describe("served workflow and metric health pages", () => {
           await page.goto(base, { waitUntil: "domcontentloaded" });
           const vitalCard = `.vital-card[title^="${id}"]`;
           const projectChip = `.project-metric-chip[title^="${id}"]`;
-          await page.waitForSelector(vitalCard);
-          await page.waitForSelector(projectChip);
-          expect(await page.$eval(vitalCard, (el) => el.classList.contains("alerting"))).toBe(expectedWarning);
-          expect(await page.$eval(projectChip, (el) => el.classList.contains("alerting"))).toBe(expectedWarning);
-          expect(await page.$eval("#liveness-projects", (el) => !!el.querySelector(".project-health-alert"))).toBe(expectedWarning);
+          // Reconnect may refresh this panel between browser calls. Capture one
+          // rendered snapshot instead of crossing separate redraws with $eval.
+          const health = await page.waitForFunction((vitalSelector, chipSelector) => {
+            const vital = document.querySelector(vitalSelector);
+            const chip = document.querySelector(chipSelector);
+            const projects = document.querySelector("#liveness-projects");
+            if (!vital || !chip || !projects) return null;
+            return { vital: vital.classList.contains("alerting"), chip: chip.classList.contains("alerting"),
+              project: !!projects.querySelector(".project-health-alert") };
+          }, {}, vitalCard, projectChip);
+          expect(await health.jsonValue()).toEqual({ vital: expectedWarning, chip: expectedWarning, project: expectedWarning });
+          await health.dispose();
           if (disabled) {
             await page.goto(base + "/metrics/" + id, { waitUntil: "domcontentloaded" });
             await page.waitForSelector("#metrics-recent h2");
@@ -522,6 +529,261 @@ describe("served workflow and metric health pages", () => {
         await page.evaluate(`routeTo('/events/${event.id}?workflowRunId=wr_7#loop-trace')`);
         await page.waitForSelector("[data-workflow-facts]");
         expect(await page.$eval("#loop-trace-content", (el) => el.textContent)).toContain("workflow:wr_7");
+      } finally { await browser.close(); }
+    }, 30000,
+  );
+
+  test.skipIf(skipBrowser)(
+    "Overview and Agents open the routed session inspector and its agent link survives dashboard retirement",
+    async () => {
+      const db = getDb(root);
+      db.prepare(`INSERT INTO sessions(sessionId, agent, task, status, startedAt, endedAt)
+        VALUES ('retained-parent', 'worker', 'Prepare report', 'done', ?, ?)`)
+        .run(now - 2000, now - 1500);
+      db.prepare("UPDATE sessions SET parentSessionId = 'retained-parent' WHERE sessionId = 'step-upload'").run();
+      const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+      try {
+        const page = await browser.newPage();
+        const errors: string[] = [];
+        const requests: string[] = [];
+        page.on("pageerror", error => errors.push(String(error)));
+        await page.setRequestInterception(true);
+        page.on("request", request => {
+          if (!request.url().startsWith(base)) return void request.abort();
+          requests.push(new URL(request.url()).pathname);
+          void request.continue();
+        });
+        await page.goto(base, { waitUntil: "domcontentloaded" });
+        await page.waitForSelector("#workflow-overview [data-workflow-outcomes]");
+        await page.waitForSelector("#liveness-panel .heartbeat-dot.error");
+        expect(await page.$("#legacy-dashboard")).toBeNull();
+        await page.click("#liveness-panel .heartbeat-dot.error");
+        await page.waitForSelector("#session-detail-panel .session-inspector");
+        expect(new URL(page.url()).pathname).toBe("/sessions/step-upload");
+        expect(await page.evaluate("currentSessionId")).toBe("step-upload");
+        expect(await page.$eval("#chat", el => el.classList.contains("hidden"))).toBe(false);
+        expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
+        await page.click('#session-detail-panel .meta-grid a[href="/sessions/retained-parent"]');
+        await page.waitForFunction(() => document.querySelector("#session-detail-panel h3")?.textContent === "retained-parent");
+        expect(new URL(page.url()).pathname).toBe("/sessions/retained-parent");
+        expect(await page.evaluate("currentSessionId")).toBe("retained-parent");
+        expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
+        await page.click('#session-detail-panel a[href="/agents/worker"]');
+        await page.waitForSelector("#agents-content #agent-subtab-body");
+        expect(new URL(page.url()).pathname).toBe("/agents/worker");
+        expect(await page.$("#chat-composer-host .chat-container")).not.toBeNull();
+        await page.click('#agents-content button[onclick="switchAgentSubTab(\'overview\')"]');
+        await page.waitForSelector('#agent-subtab-body [onclick*="step-upload"]');
+        await page.click('#agent-subtab-body [onclick*="step-upload"]');
+        await page.waitForFunction(() => document.querySelector("#session-detail-panel h3")?.textContent === "step-upload");
+        expect(new URL(page.url()).pathname).toBe("/sessions/step-upload");
+        expect(await page.evaluate("currentSessionId")).toBe("step-upload");
+        expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
+        await page.evaluate("loadSessionDetail('step-upload')");
+        expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
+        await page.goBack();
+        await page.waitForSelector('#agent-subtab-body [onclick*="step-upload"]');
+        expect(new URL(page.url()).pathname).toBe("/agents/worker");
+        expect(requests.filter(path => ["/api/agents/health", "/api/agents/activity", "/api/agents/timeline", "/api/stats", "/api/agents/worker/detail"].includes(path))).toEqual([]);
+        expect(errors).toEqual([]);
+      } finally { await browser.close(); }
+    }, 30000,
+  );
+
+  test.skipIf(skipBrowser)("an inspector background read keeps its content and composer visible until replacement", async () => {
+    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    try {
+      const page = await browser.newPage();
+      await page.goto(base + "/sessions/step-upload", { waitUntil: "domcontentloaded" });
+      await page.waitForSelector("#session-detail-panel .session-inspector");
+      await page.evaluate("chatTranscript.read");
+      getDb(root).prepare("UPDATE sessions SET outcome=? WHERE sessionId=?").run("Obsolete buffered outcome", "step-upload");
+      const staleSnapshot = await (await fetch(base + "/api/sessions/step-upload")).json();
+      await page.evaluate(() => {
+        const snapshots: string[] = [];
+        (window as unknown as { inspectorSnapshots: string[] }).inspectorSnapshots = snapshots;
+        const panel = document.getElementById("session-detail-panel")!;
+        new MutationObserver(() => snapshots.push(panel.textContent || "")).observe(panel, { childList: true });
+      });
+      let capture: ((request: HTTPRequest) => void) | null = null;
+      const intercepted = new Promise<HTTPRequest>(resolveRequest => { capture = resolveRequest; });
+      let rejectTranscript = false;
+      await page.setRequestInterception(true);
+      page.on("request", request => {
+        if (rejectTranscript && new URL(request.url()).pathname === "/api/sessions/step-upload/transcript") {
+          void request.respond({ status: 500, contentType: "application/json", body: '{"error":"Fixture transcript unavailable"}' });
+        } else if (capture && new URL(request.url()).pathname === "/api/sessions/step-upload") {
+          capture(request); capture = null;
+        } else void request.continue();
+      });
+      const pending = page.evaluate("loadSessionDetail('step-upload')");
+      void pending.catch(() => {}); // Teardown may close the page after a failed assertion.
+      const held = await intercepted;
+      expect(await page.$eval("#session-detail-panel h3", el => el.textContent)).toBe("step-upload");
+      expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
+      getDb(root).prepare("UPDATE sessions SET outcome=? WHERE sessionId=?").run("Newest saved outcome", "step-upload");
+      await page.evaluate("scheduleSessionConversationRefresh(0)");
+      await held.respond({ status: 200, contentType: "application/json", body: JSON.stringify(staleSnapshot) });
+      await pending;
+      expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
+      expect(await page.$eval("#session-detail-panel", el => el.textContent)).toContain("Newest saved outcome");
+      expect(await page.evaluate("window.inspectorSnapshots.join('\\n')")).not.toContain("Obsolete buffered outcome");
+      rejectTranscript = true;
+      await page.evaluate("loadSessionDetail('step-upload')");
+      expect(await page.$eval("#session-detail-panel h3", el => el.textContent)).toBe("step-upload");
+      expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
+      expect(await page.$eval("#chat-status", el => el.textContent)).toContain("Fixture transcript unavailable");
+    } finally { await browser.close(); }
+  }, 30000);
+
+  test.skipIf(skipBrowser)(
+    "queued session refreshes are cancelled on navigation and late callbacks cannot reopen a session",
+    async () => {
+      getDb(root).prepare(`INSERT INTO sessions(sessionId, agent, task, status, startedAt, endedAt)
+        VALUES ('other-session', 'worker', 'Another report', 'done', ?, ?)`)
+        .run(now - 2000, now - 1500);
+      const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+      try {
+        const page = await browser.newPage();
+        await page.setRequestInterception(true);
+        page.on("request", request => { if (!request.url().startsWith(base)) void request.abort(); else void request.continue(); });
+        for (const route of ["/", "/metrics", "/agents", "/sessions/other-session"]) {
+          await page.goto(base + "/sessions/step-upload", { waitUntil: "domcontentloaded" });
+          await page.waitForSelector("#session-detail-panel .session-inspector");
+          await page.evaluate("chatTranscript.read");
+          const result = await page.evaluate(async route => {
+            const ui = window as unknown as {
+              scheduleSessionConversationRefresh(delay: number): void;
+              routeTo(route: string): void;
+              isSessionPageMode(): boolean;
+              loadSessionDetail(id: string): Promise<void>;
+            };
+            const set = window.setTimeout;
+            const clear = window.clearTimeout;
+            let timer: number | undefined;
+            let callback: (() => void) | undefined;
+            let cancelled = false;
+            window.setTimeout = ((fn: () => void, delay: number) => {
+              callback = fn;
+              timer = set(fn, delay);
+              return timer;
+            }) as typeof window.setTimeout;
+            window.clearTimeout = id => { if (id === timer) cancelled = true; clear(id); };
+            try {
+              ui.scheduleSessionConversationRefresh(300);
+              window.setTimeout = set;
+              if (!callback) throw new Error("Active session did not queue its refresh");
+              ui.routeTo(route);
+              const sessionMode = ui.isSessionPageMode();
+              // Exercise an already-queued callback too: cancelling a timer alone
+              // must not give a background read permission to navigate.
+              callback();
+              await ui.loadSessionDetail("step-upload");
+              return { cancelled, sessionMode, path: location.pathname };
+            } finally {
+              window.setTimeout = set;
+              window.clearTimeout = clear;
+              clear(timer);
+            }
+          }, route);
+          expect(result).toEqual({ cancelled: true, sessionMode: route.startsWith("/sessions/"), path: route });
+        }
+        await page.goto(base + "/sessions/step-upload", { waitUntil: "domcontentloaded" });
+        await page.waitForSelector("#session-detail-panel .session-inspector");
+        const [response] = await Promise.all([
+          page.waitForResponse(response => new URL(response.url()).pathname === "/api/sessions/step-upload"),
+          page.evaluate("scheduleSessionConversationRefresh(0)"),
+        ]);
+        expect(response.status()).toBe(200);
+        await page.waitForSelector("#session-followup-anchor .chat-container");
+        expect(new URL(page.url()).pathname).toBe("/sessions/step-upload");
+      } finally { await browser.close(); }
+    }, 30000,
+  );
+
+  test.skipIf(skipBrowser)(
+    "retained workflow outcome cards keep their visual hierarchy at desktop and mobile widths",
+    async () => {
+      const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+      try {
+        const page = await browser.newPage();
+        await page.setRequestInterception(true);
+        page.on("request", request => { if (!request.url().startsWith(base)) void request.abort(); else void request.continue(); });
+        for (const width of [1280, 600, 400]) {
+          await page.setViewport({ width, height: 900 });
+          for (const [route, selector] of [["/", "#workflow-overview"], ["/metrics", "#metrics-workflows"]]) {
+            await page.goto(base + route, { waitUntil: "domcontentloaded" });
+            await page.waitForSelector(selector + " .health-card");
+            const cards = await page.$$eval(selector + " .health-card", cards => cards.map(card => {
+              const style = getComputedStyle(card);
+              const label = getComputedStyle(card.querySelector(".health-label")!);
+              const value = getComputedStyle(card.querySelector(".health-value")!);
+              return { border: parseFloat(style.borderTopWidth), padding: parseFloat(style.paddingTop),
+                labelSize: parseFloat(label.fontSize), valueSize: parseFloat(value.fontSize), weight: Number(value.fontWeight) };
+            }));
+            expect(cards).toHaveLength(5);
+            for (const card of cards) {
+              expect(card.border).toBeGreaterThan(0);
+              expect(card.padding).toBeGreaterThan(0);
+              expect(card.valueSize).toBeGreaterThan(card.labelSize);
+              expect(card.weight).toBeGreaterThanOrEqual(600);
+            }
+          }
+        }
+      } finally { await browser.close(); }
+    }, 30000,
+  );
+
+  test.skipIf(skipBrowser)(
+    "delayed session and review-note reads cannot replace a newer route or redirect it",
+    async () => {
+      getDb(root).prepare(`INSERT INTO sessions(sessionId, agent, task, status, startedAt, endedAt)
+        VALUES ('other-session', 'worker', 'Another report', 'done', ?, ?)`)
+        .run(now - 2000, now - 1500);
+      const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+      try {
+        const page = await browser.newPage();
+        const errors: string[] = [];
+        const dialogs: string[] = [];
+        page.on("pageerror", error => errors.push(String(error)));
+        page.on("dialog", dialog => { dialogs.push(dialog.message()); void dialog.dismiss(); });
+        let capture: { path: string; resolve(request: HTTPRequest): void } | null = null;
+        await page.setRequestInterception(true);
+        page.on("request", request => {
+          if (!request.url().startsWith(base)) void request.abort();
+          else if (capture && new URL(request.url()).pathname === capture.path) {
+            const held = capture;
+            capture = null;
+            held.resolve(request);
+          } else void request.continue();
+        });
+        for (const [notes, fail] of [[false, false], [false, true], [true, false], [true, true]]) {
+          await page.goto(base + "/sessions/step-upload", { waitUntil: "domcontentloaded" });
+          await page.waitForSelector("#session-detail-panel .session-inspector");
+          const intercepted = new Promise<HTTPRequest>(resolve => {
+            capture = { path: "/api/sessions/step-upload" + (notes ? "/eval" : ""), resolve };
+          });
+          const pending = page.evaluate(notes ? "openSessionEval('step-upload')" : "loadSessionDetail('step-upload')");
+          const held = await intercepted;
+          const route = fail ? "/metrics" : "/sessions/other-session";
+          await page.evaluate(route => (window as unknown as { routeTo(route: string): void }).routeTo(route), route);
+          if (fail) await page.waitForSelector("#metrics-workflows [data-workflow-outcomes]");
+          else await page.waitForFunction(() => document.querySelector("#session-detail-panel h3")?.textContent === "other-session");
+          const previous = await page.$eval("#session-detail-panel", el => el.querySelector("h3")?.textContent ?? null);
+          if (fail) await held.respond({ status: 500, contentType: "application/json", body: '{"error":"late session read failure"}' });
+          else await held.continue();
+          await pending;
+          expect(new URL(page.url()).pathname).toBe(route);
+          expect(await page.$eval("#session-detail-panel", el => el.querySelector("h3")?.textContent ?? null)).toBe(previous);
+          expect(await page.$eval("#session-detail-panel", el => el.textContent)).not.toContain("late session read failure");
+          expect(await page.evaluate("currentSessionEval")).toBeNull();
+          if (!fail) {
+            expect(await page.evaluate("currentSessionId")).toBe("other-session");
+            expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
+          }
+        }
+        expect(errors).toEqual([]);
+        expect(dialogs).toEqual([]);
       } finally { await browser.close(); }
     }, 30000,
   );
@@ -706,30 +968,22 @@ describe("served workflow and metric health pages", () => {
             fullPage: true,
           });
         }
-        // The legacy panels label a full day, even when only a small part has data.
+        // Metric detail keeps the full day even when only a small part has data.
         const metrics = createMetricService({ getDb: () => db });
         metrics.define({ id: "handler.success-rate", type: "gauge" });
         for (const hoursAgo of [6, 5])
           metrics.record("handler.success-rate", 0.9, { measuredAt: now - hoursAgo * 3600000 });
-        await page.goto(base, { waitUntil: "domcontentloaded" });
-        // These async panels sit above the summary; wait for their layout
-        // before the pointer click, including when interface loading is delayed.
-        await page.waitForSelector("#workflow-overview [data-workflow-outcomes]");
-        await page.waitForSelector("#liveness-panel .breach-badge");
-        await page.waitForFunction(() =>
-          document.querySelector("#overview-tasks")?.textContent?.includes("Task read unavailable"),
-        );
         const [history] = await Promise.all([
           page.waitForResponse(
             (response) => new URL(response.url()).pathname === "/api/metrics/handler.success-rate/history",
           ),
-          page.click("#legacy-dashboard summary"),
+          page.goto(base + "/metrics/handler.success-rate", { waitUntil: "domcontentloaded" }),
         ]);
         expect(history.status()).toBe(200);
         const { window: historyWindow } = await history.json();
         expect(historyWindow.end - historyWindow.start).toBe(86400000);
-        await page.waitForSelector("#health-graphs [data-sample-time]");
-        const plot = await page.$eval("#health-graphs svg", (svg) => {
+        await page.waitForSelector("#metrics-recent [data-sample-time]");
+        const plot = await page.$eval("#metrics-recent svg", (svg) => {
           const axis = svg.querySelector("line")!;
           return {
             start: Number(axis.getAttribute("x1")),

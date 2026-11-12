@@ -44,7 +44,7 @@ Other report implementations live in `../adapters/reporting/`.
 
 The legacy Learning dashboard and `/api/learning` aggregate are retired, including
 the project-detail Learning tab. Session detail, saved review-note reads
-(`/api/sessions/:id/eval`) and agent evaluation trends remain available. Historical
+(`/api/sessions/:id/eval`) remain available. Historical
 artifacts and evaluation records are retained; HTTP does not regenerate their old
 finding/notification summaries. Task review and follow-through belong to Apps.
 
@@ -55,6 +55,74 @@ detail retains recorded parent/child links. The removed view combined additional
 workflow references, historical file reads and child associations with inline
 checkpoint summaries; those project-wide summaries have no replacement view.
 Stored sessions, workflow artifacts, checkpoints and historical rows are retained.
+
+Overview has one presentation: workflow outcomes, current Tasks and Liveness.
+The folded legacy health summary/charts, agent grid/drawer, activity timeline,
+live feed and session statistics are retired. The old drawer's evaluation
+summary, seven-day delegation totals and workspace file list have no replacement
+view. Their backend reads remain supported.
+Session links open `/sessions/:id`, using one inspector and follow-up composer;
+the session's agent link opens `/agents/:name`. The shared WebSocket transport,
+event subscriptions and current-page refresh remain. Retained history and metric
+charts are unchanged.
+Only explicit session navigation changes the route; background session reads
+cannot open a session. The router owns session-page mode and cancels queued
+refreshes on navigation. A queued refresh captures its original session ID and
+checks the active route before reading. Workflow summary cards retain their
+shared health-card styles, including mobile layout.
+The routed session ID also determines follow-up publication and subscription.
+Agent-chat reads and new-chat callbacks belong to the active agent's Chat
+subtab; route/subtab changes, Reset and newer selections invalidate view callbacks.
+Transcript reads cannot replace newer messages. Subscription changes happen
+at selection time and are restored on connection, without waiting for history.
+Entering another agent's chat clears the previous binding while its default
+thread loads; input during that read addresses the selected agent.
+One route-based subscription owner serves every realtime consumer: Overview
+receives global lifecycle events, session inspection/direct bound chat receives
+its exact session, and unbound direct-agent chat subscribes to no sessions.
+Only generic Sessions chat uses the configured interface-agent `chat` alias.
+May's Conversation retains global diagnostics and its configured Conversation
+updates. Agent Overview/About tabs release their chat connection.
+
+The selected direct thread and routed inspector share one session-read owner.
+Returning to Chat restores an existing binding independently of default metadata;
+reconnect refreshes the visible transcript and inspector outcome. Lifecycle
+notifications request a fresh status snapshot rather than constructing session
+inventory from incomplete event payloads. Background inspector reads retain
+the current content and composer until a replacement is ready.
+
+Fresh direct-chat HTTP input may supply `requestId` with `content`. It is the
+creation command's existing request and publication identity. The existing
+`/api/agents/:name/default-session?requestId=...` read then selects only that
+agent's chat for that request; an absent match never falls back to its latest
+session. Legacy reads without the parameter keep their default selection.
+Lookup failures cannot admit a new chat. A keyed retry first recovers its
+original start or steering publication from the existing event journal, before
+resolving today's default. Complete input must match the stored publication
+hash; a conflicting target/input returns 409, unavailable evidence returns 500.
+Accepted input returns its receipt; interrupted delivery retries that same
+command. Session evidence alone cannot reconstruct a missing publication.
+The browser uses its active view's read/timer for discovery,
+bounded to 30 seconds with 500 ms gaps. Leaving the view cancels discovery;
+returning to Chat can check the retained request again. Reset selects a new
+request. One unbound submission owns its identity, draft and fresh-thread choice
+until admission is confirmed. Typing another draft cannot replace a pending
+submission. An unknown outcome retains that identity for retry; Reset creates
+a separate selection and publication. About/Overview release the reader but
+retain the submission's receipt. Returning to Chat consumes that receipt on its
+same target, clears only an unchanged draft, and restores the reader. Explicit
+route/target changes discard this temporary submission binding.
+A draft typed while creation is pending waits for the exact session.
+No additional lifecycle, database schema, event type or notification scope is
+introduced. Server and browser assets should be released together.
+
+Direct chat renders only saved transcript turns, refreshed at turn/session end
+and after reconnect. An update during a history read causes a follow-up read;
+obsolete views cannot render the response. WebSocket text/tool payloads and
+local input echoes no longer write conversation history. Send feedback remains
+separate from saved messages. The exclusive live renderer and its Raw/Markdown
+toggle are retired; stored text, tool details and raw transcript evidence remain
+inspectable. May's canonical Conversation read/render path is unchanged.
 
 [`http-human-tasks.test.ts`](../../../test/integration/http-human-tasks.test.ts)
 exercises these routes through a real HTTP process and control socket, including

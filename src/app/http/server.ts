@@ -40,6 +40,7 @@ import { buildCanonicalEventEnvelope } from "../../../packages/control/src/event
 import { normalizeProjectPathForCompare, projectPathIdentity, readProjectIngressIdentity, readProjectMetadata } from "./project-metadata.js";
 export { normalizeProjectPathForCompare } from "./project-metadata.js";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
+import { ChatPublicationConflict, readChatPublication } from "./read-model/chat-publication.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
 import { readWorkflowFacts } from "../../lib/workflow-facts.js";
 import { healthWindow, readWorkflowHealth, workflowHealthQuery } from "../adapters/reporting/workflow-health.js";
@@ -2535,8 +2536,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return json({ name: agentName, agentJson, promptFiles, otherFiles });
   }
 
-  function handleAgentDefaultSession(agentName: string): Response {
+  function handleAgentDefaultSession(agentName: string, requestId?: string): Response {
     if (!agentName) return json({ error: "agent required" }, 400);
+    if (requestId !== undefined && (!requestId || requestId.length > 256))
+      return json({ error: "invalid requestId" }, 400);
     try {
       const db = _db();
       // Resolve the agent's chat session — only human-initiated conversations,
@@ -2544,16 +2547,25 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const row = db
         .prepare(
           `
-        SELECT sessionId, status, startedAt, kind, substr(task, 1, 200) as task
+        SELECT sessionId, status, startedAt, kind, requestId, substr(task, 1, 200) as task
         FROM sessions
         WHERE agent = ?
-          AND (kind = 'chat' OR source IN ('telegram', 'web-ui', 'web', 'cli'))
+          AND (kind = 'chat' OR (? IS NULL AND source IN ('telegram', 'web-ui', 'web', 'cli')))
+          AND (? IS NULL OR requestId = ?)
         ORDER BY startedAt DESC
         LIMIT 1
       `,
         )
-        .get(agentName) as
-        { sessionId: string; status: string; startedAt: number; kind: string | null; task: string } | undefined;
+        .get(agentName, requestId ?? null, requestId ?? null, requestId ?? null) as
+        | {
+            sessionId: string;
+            status: string;
+            startedAt: number;
+            kind: string | null;
+            requestId: string | null;
+            task: string;
+          }
+        | undefined;
       if (!row) return json({ agent: agentName, sessionId: null });
       return json({
         agent: agentName,
@@ -2561,6 +2573,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         status: row.status,
         startedAt: row.startedAt,
         kind: row.kind,
+        requestId: row.requestId,
         task: row.task,
       });
     } catch (e) {
@@ -2573,22 +2586,31 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
    * Other agents keep direct session chat:
    *   1. resolve default session (most-recent non-throwaway)
    *   2. if a session exists, forward to /api/sessions/:id/message which
-   *      uses the 'steer' command (handles running/idle/cold uniformly).
+   *      uses the existing steering admission policy; ended attempts do not resume.
    *   3. if no session exists yet, spawn a fresh one with the message as
-   *      the task. Returns the new sessionId.
+   *      the task. Admission precedes creation; a supplied requestId selects
+   *      the exact chat through the request-scoped default-session read.
    *
-   * Either way the response shape is {ok:true, sessionId, deliveredAt}.
+   * The response is {ok:true, sessionId, deliveredAt}, with requestId on a
+   * correlated fresh-chat admission. A lookup failure cannot start new work.
    */
   async function handleAgentMessage(req: Request, agentName: string, url?: URL): Promise<Response> {
     if (!agentName) return json({ error: "agent required" }, 400);
-    let body: { content?: string };
+    let body: { content?: string; requestId?: string };
     try {
-      body = (await req.json()) as { content?: string };
+      body = (await req.json()) as typeof body;
     } catch {
       return json({ error: "invalid json" }, 400);
     }
     const content = (body.content ?? "").trim();
     if (!content) return json({ error: "content required" }, 400);
+    if (
+      body.requestId !== undefined &&
+      (typeof body.requestId !== "string" || !body.requestId.trim() || body.requestId.length > 256)
+    ) {
+      return json({ error: "invalid requestId" }, 400);
+    }
+    const requestId = body.requestId?.trim();
     const forceNew = url?.searchParams.get("new") === "true";
 
     if (agentName === humanInterface.agent) {
@@ -2606,16 +2628,41 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       return json({ ok: true, agent: agentName, sessionId: null, deliveredAt: Date.now(), spawned: true });
     }
 
-    // Resolve default session (skip if forcing new chat).
+    // Recover the immutable publication before resolving a mutable default.
+    // Accepted steering stays confirmed even if that session has since ended.
+    if (requestId) {
+      let saved;
+      try {
+        saved = readChatPublication(_db(), { agent: agentName, content, requestId, forceNew });
+      } catch (error) {
+        return json({ error: error instanceof Error ? error.message : String(error) }, error instanceof ChatPublicationConflict ? 409 : 500);
+      }
+      if (saved) {
+        if (!saved.accepted) {
+          const result = await sendDaemonFrame({ type: "publish", event: saved.input });
+          if (!result.ok) return json({ error: result.error }, 503);
+        }
+        return json({ ok: true, agent: agentName, sessionId: saved.input.target?.sessionId ?? null,
+          deliveredAt: Date.now(), spawned: saved.input.type === "chat.start.requested", requestId });
+      }
+    }
+    // A session alone cannot reconstruct the original publication after its
+    // event has disappeared. Report missing evidence instead of starting again.
+    if (requestId) {
+      const correlated = handleAgentDefaultSession(agentName, requestId);
+      if (!correlated.ok) return correlated;
+      if ((await correlated.json()).sessionId) return json({ error: "Original chat publication unavailable" }, 500);
+    }
     if (!forceNew) {
       const resolveResp = handleAgentDefaultSession(agentName);
+      if (!resolveResp.ok) return resolveResp;
       const resolved = (await resolveResp.json()) as { agent: string; sessionId: string | null };
       if (resolved.sessionId) {
         const result = await sendDaemonFrame(
           buildPublishFrame(
             "session.steer.requested",
             { message: content, channel: "web-ui" },
-            { target: { sessionId: resolved.sessionId } },
+            { target: { sessionId: resolved.sessionId }, idempotencyKey: requestId },
           ),
         );
         if (!result.ok) return json({ error: result.error }, 503);
@@ -2631,15 +2678,27 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
     // No prior session — request a create-or-bind chat start from the daemon.
     const result = await sendDaemonFrame(
-      buildPublishFrame("chat.start.requested", {
-        agent: agentName,
-        message: content,
-        channel: "web-ui",
-        forceNew,
-      }),
+      buildPublishFrame(
+        "chat.start.requested",
+        {
+          agent: agentName,
+          message: content,
+          channel: "web-ui",
+          forceNew,
+          ...(requestId ? { requestId } : {}),
+        },
+        { idempotencyKey: requestId },
+      ),
     );
     if (!result.ok) return json({ error: result.error }, 503);
-    return json({ ok: true, agent: agentName, sessionId: null, deliveredAt: Date.now(), spawned: true });
+    return json({
+      ok: true,
+      agent: agentName,
+      sessionId: null,
+      deliveredAt: Date.now(),
+      spawned: true,
+      ...(requestId ? { requestId } : {}),
+    });
   }
 
   async function handleMetricThreshold(req: Request, metricId: string): Promise<Response> {
@@ -2770,7 +2829,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/agents/timeline") return handleAgentTimeline(url);
       if (url.pathname === "/api/agents/health") return handleSystemHealth();
       const defaultSessionMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/default-session$/);
-      if (defaultSessionMatch) return handleAgentDefaultSession(defaultSessionMatch[1]);
+      if (defaultSessionMatch) return handleAgentDefaultSession(defaultSessionMatch[1], url.searchParams.get("requestId")?.trim());
       const aboutMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/about$/);
       if (aboutMatch) return handleAgentAbout(aboutMatch[1]);
       if (url.pathname === "/api/browse") return handleBrowse(url);

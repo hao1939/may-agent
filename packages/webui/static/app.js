@@ -18,11 +18,8 @@ const humanInterfaceReady = fetch('/api/interface').then(async response => {
 // ── State ─────────────────────────────────────────────────────────────
 let currentTab = 'live';
 let currentRouteParams = {};
-let offset = 0;
-const limit = 30;
 let _currentProjectDetail = null;
 let liveInitialized = false;
-let legacyDashboardInitialized = false;
 
 // ── Router ────────────────────────────────────────────────────────────
 // Real routes: / /agents /agents/<name> /projects /projects/:id
@@ -148,21 +145,14 @@ function projectPathOf(id) {
   return 'projects/' + id;
 }
 
-function initializeLegacyDashboard() {
-  if (legacyDashboardInitialized) return;
-  legacyDashboardInitialized = true;
-  loadHealth();
-  loadHealthGraphs();
-  loadAgentGrid();
-  loadTimeline();
-  loadStats();
-}
-
 function render() {
+  chatSelectionVersion++;
   const previousTab = currentTab;
   const { tab, params } = parseRoute();
+  if (tab !== currentTab || params.name !== currentRouteParams.name || params.id !== currentRouteParams.id) chatPendingInput = null;
   currentTab = tab;
   currentRouteParams = params;
+  setSessionPageMode(tab === 'sessions' && !!params.id);
   // Trace selection belongs to this route, not to the reusable Events pane.
   clearLoopTrace();
   // Pane visibility — design's 5 surfaces map onto existing panes:
@@ -178,7 +168,7 @@ function render() {
   document.getElementById('dashboard').classList.toggle('hidden', tab !== 'live');
   document.getElementById('projects').classList.toggle('hidden', tab !== 'projects');
   document.getElementById('agents').classList.toggle('hidden', tab !== 'agents');
-  document.getElementById('chat').classList.toggle('hidden', tab !== 'sessions' && !inAgentChat);
+  document.getElementById('chat').classList.toggle('hidden', tab !== 'sessions' && !(inAgentChat && currentAgentSubTab === 'chat'));
   document.getElementById('knowledge').classList.toggle('hidden', tab !== 'knowledge');
   // #metrics pane now serves the dedicated Metrics tab. System tab no longer renders it.
   document.getElementById('metrics').classList.toggle('hidden', tab !== 'metrics');
@@ -187,15 +177,11 @@ function render() {
   // Tab highlight
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   // Surface initialization
-  const needsRealtime = tab === 'live' || tab === 'sessions' || inAgentChat;
-  if (typeof setRealtimeEnabled === 'function') setRealtimeEnabled(needsRealtime);
-  else if (needsRealtime && typeof connectWs === 'function') connectWs();
   if (tab === 'live' && (!liveInitialized || previousTab !== 'live')) {
     liveInitialized = true;
     loadLiveness();
     loadWorkflowOverview();
     loadOverviewTasks();
-    if (document.getElementById('legacy-dashboard')?.open) initializeLegacyDashboard();
   }
   if (tab === 'sessions') initChat(params.id || null);
   if (tab !== 'agents' || !inAgentChat) currentAgentChat = null;
@@ -204,6 +190,7 @@ function render() {
     if (params.name) initAgentChat(params.name);
     else loadAgentsTab();
   }
+  setRealtimeEnabled(tab === 'live' || tab === 'sessions' || (inAgentChat && currentAgentSubTab === 'chat'));
   if (tab === 'knowledge') {
     // Deep-link support: #/knowledge/<sub-path>. If sub-path looks like a file, view it.
     const sub = (params.path || '').replace(/^knowledge\//, '');
@@ -395,9 +382,6 @@ async function verbCancelSession(sessionId, ev) {
 }
 
 // Apply initial route from URL/hash. Each surface initializes its own data.
-document.getElementById('legacy-dashboard')?.addEventListener('toggle', event => {
-  if (event.currentTarget.open) initializeLegacyDashboard();
-});
 humanInterfaceReady.then(() => render()).catch(error => {
   console.error(error);
   render(); // Read-only inspection remains available without a conversation binding.

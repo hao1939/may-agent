@@ -3,6 +3,11 @@ let currentAgentSubTab = 'chat';
 let currentAgentChat = null;
 let forceNewAgentChat = false;
 
+function isAgentChatActive(name) {
+  return currentTab === 'agents' && currentRouteParams.name === name
+    && currentAgentChat === name && currentAgentSubTab === 'chat';
+}
+
 function setAgentChatSessionId(sessionId) {
   const el = document.querySelector('#chat-agent-banner .banner-session');
   if (!el) return;
@@ -29,11 +34,14 @@ function setAgentChatSessionId(sessionId) {
  * agent-chat from arbitrary-session view.
  */
 async function initAgentChat(name) {
+  const selection = chatSelectionVersion;
   if (!chatInitialized) {
     chatInitialized = true;
   }
-  setSessionPageMode(false);
   currentAgentChat = name;
+  currentSessionId = null;
+  agentChatRequestId = null;
+  forceNewAgentChat = false;
   updateConversationStop();
   // Update the chat header to show the agent name.
   const header = document.getElementById('chat-agent-banner');
@@ -48,11 +56,13 @@ async function initAgentChat(name) {
   // Metrics, Projects, Sessions. Switching sub-tab toggles whether the
   // #chat pane is visible vs. the detail body in #agents-content.
   await renderAgentDetail(name);
+  if (selection !== chatSelectionVersion || currentTab !== 'agents' || currentRouteParams.name !== name) return;
   // Default sub-tab is chat; load the thread.
   switchAgentSubTab(currentAgentSubTab || 'chat');
 }
 
 async function renderAgentDetail(name) {
+  const route = currentRouteParams;
   const el = document.getElementById('agents-content');
   if (!el) return;
   // Fetch summary stats from /api/agents (same source as list view).
@@ -62,6 +72,7 @@ async function renderAgentDetail(name) {
     const all = await r.json();
     summary = (all || []).find(a => a.name === name) || null;
   } catch {}
+  if (currentRouteParams !== route || currentTab !== 'agents' || currentRouteParams.name !== name) return;
 
   const dotColor = summary && summary.lastSessionAt && (Date.now() - summary.lastSessionAt < 4*3600*1000)
     ? (summary.errors4h > 0 ? 'var(--red)' : 'var(--green)')
@@ -95,6 +106,8 @@ async function renderAgentDetail(name) {
 }
 
 function switchAgentSubTab(tab) {
+  chatSelectionVersion++;
+  clearChatTranscript();
   currentAgentSubTab = tab;
   // Update sub-tab nav highlight.
   const nav = document.querySelector('#agents-content > div:nth-child(3)');
@@ -114,7 +127,9 @@ function switchAgentSubTab(tab) {
     if (chatPane) chatPane.classList.remove('hidden');
     if (body) body.innerHTML = '';
     // Resolve & load the chat thread (same as before).
-    void loadAgentChatThread(currentAgentChat);
+    applyChatAdmission();
+    if (currentSessionId || agentChatRequestId) void switchSession(currentSessionId, agentChatRequestId);
+    else void loadAgentChatThread(currentAgentChat);
   } else {
     if (chatPane) chatPane.classList.add('hidden');
     if (body) body.innerHTML = '<div style="color:var(--fg2);padding:24px">Loading…</div>';
@@ -123,31 +138,41 @@ function switchAgentSubTab(tab) {
   }
   // Keep agents pane visible regardless.
   if (agentsPane) agentsPane.classList.remove('hidden');
+  setRealtimeEnabled(tab === 'chat');
+  updateConversationStop();
 }
 
 async function loadAgentChatThread(name) {
-  if (!name) return;
+  if (!name || !isAgentChatActive(name) || forceNewAgentChat) return;
+  if (chatPendingInput?.target === `agent:${name}`) return;
+  if (agentChatRequestId) return refreshChatTranscript();
+  const selection = ++chatSelectionVersion;
   if (name === humanInterface.agent) {
     currentSessionId = null;
     renderSessionPicker();
-    subscribeMayConversation();
+    syncRealtimeSubscriptions();
+    updateConversationStop();
     return refreshMayConversation();
   }
   try {
     const r = await fetch(`/api/agents/${encodeURIComponent(name)}/default-session`);
     const d = await r.json();
+    if (selection !== chatSelectionVersion || !isAgentChatActive(name)) return;
+    if (!r.ok) throw new Error(d.error || 'Default thread unavailable');
     if (d.sessionId) {
       setAgentChatSessionId(d.sessionId);
-      if (d.sessionId !== currentSessionId) switchSession(d.sessionId);
+      await switchSession(d.sessionId);
     } else {
       currentSessionId = null;
+      clearChatTranscript();
       setAgentChatSessionId(null);
+      syncRealtimeSubscriptions();
       const messages = document.getElementById('chat-messages');
       if (messages) messages.innerHTML = '<div style="color:var(--fg2);font-size:13px;padding:24px;text-align:center">No conversation with <b>' + esc(name) + '</b> yet. Send a message to start one.</div>';
     }
   } catch (e) {
-    const messages = document.getElementById('chat-messages');
-    if (messages) messages.innerHTML = '<div style="color:var(--red);padding:16px">Failed: ' + esc(e.message) + '</div>';
+    if (selection !== chatSelectionVersion || !isAgentChatActive(name)) return;
+    document.getElementById('chat-status').textContent = 'Default thread unavailable: ' + e.message;
   }
 }
 
@@ -343,7 +368,7 @@ async function loadAgentOverview(name) {
       html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden">`;
       for (const s of sessions.slice().reverse().slice(0, 15)) {
         const statusColor = s.status === 'error' ? 'var(--red)' : (s.status === 'done' ? 'var(--fg2)' : 'var(--green)');
-        html += `<div onclick="loadSessionDetail('${esc(s.sessionId)}')" style="display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 12px;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background='var(--bg3,#222)'" onmouseout="this.style.background=''">`;
+        html += `<div onclick="navigateToSession(${jsStringAttr(s.sessionId)})" style="display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 12px;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background='var(--bg3,#222)'" onmouseout="this.style.background=''">`;
         html += `<span style="color:${statusColor};font-size:9px">●</span>`;
         html += `<div style="min-width:0;font-family:monospace;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc((s.sessionId||'').slice(-12))}</div>`;
         html += `<div style="font-size:10px;color:var(--fg2);white-space:nowrap">${s.startedAt ? timeAgo(s.startedAt) : '—'}</div>`;

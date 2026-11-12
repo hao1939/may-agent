@@ -324,14 +324,15 @@ async function openSessionEval(sessionId) {
   try {
     const r = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/eval`);
     const data = await r.json();
+    if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
     if (!r.ok) throw new Error(data.error || r.statusText);
     currentSessionEval = data;
-    await loadSessionDetail(sessionId, { evalData: data, preserveScroll: true });
+    await loadSessionDetail(sessionId);
   } catch (e) {
+    if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
     alert('Could not load review notes: ' + (e.message || String(e)));
   } finally {
-    const nextBtn = document.getElementById('session-eval-btn');
-    if (nextBtn) { nextBtn.textContent = 'Review notes'; nextBtn.disabled = false; }
+    if (btn?.isConnected) { btn.textContent = 'Review notes'; btn.disabled = false; }
   }
 }
 
@@ -386,21 +387,39 @@ function fmtTime(epoch) {
          d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
-async function loadSessionDetail(sessionId, opts = {}) {
-  if (currentInspectedSession !== sessionId) currentSessionEval = null;
+async function loadSessionDetail(sessionId) {
+  if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
+  if (chatTranscript?.sessionId !== sessionId) return switchSession(sessionId);
+  return refreshChatTranscript();
+}
+
+async function readSessionDetail(sessionId, opts = {}) {
+  if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
+  const changed = currentInspectedSession !== sessionId;
+  if (changed) currentSessionEval = null;
   currentInspectedSession = sessionId;
   const panel = getSessionDetailPanel();
-  panel.innerHTML = '<div class="panel">Loading...</div>';
+  if (changed || !panel.querySelector('.session-inspector')) {
+    restoreChatComposer();
+    panel.innerHTML = '<div class="panel">Loading...</div>';
+  }
 
   try {
     const [sessRes, transRes] = await Promise.all([
-      fetch(`/api/sessions/${sessionId}`),
-      fetch(`/api/sessions/${sessionId}/transcript`),
+      fetch(`/api/sessions/${sessionId}`, { signal: AbortSignal.timeout(5000) }),
+      fetch(`/api/sessions/${sessionId}/transcript`, { signal: AbortSignal.timeout(5000) }),
     ]);
     const sessData = await sessRes.json();
     const transData = await transRes.json();
+    if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
+    if (opts.isCurrent && !opts.isCurrent()) return;
 
-    if (sessData.error) { panel.innerHTML = `<div class="panel">${sessData.error}</div>`; return; }
+    if (!sessRes.ok || (!transRes.ok && transRes.status !== 404)) {
+      throw new Error(sessData.error || transData.error || 'Session read unavailable');
+    }
+    // Retained session metadata can outlive its JSONL transcript.
+    const unavailableTranscript = !transRes.ok
+      ? `<div class="section">Transcript unavailable: ${esc(transData.error || 'No saved transcript')}</div>` : null;
 
     const s = sessData.session;
     const durSec = s.endedAt ? Math.round((s.endedAt - s.startedAt) / 1000) : null;
@@ -423,7 +442,7 @@ async function loadSessionDetail(sessionId, opts = {}) {
         <span class="badge ${s.status}">${s.status}</span>
       </div>
       <div class="header-row" style="margin-top:8px">
-        <span style="font-size:14px"><a href="#" style="color:var(--accent);text-decoration:none" onclick="event.preventDefault();loadAgentDeepDive('${esc(s.agent)}')">${esc(s.agent)}</a></span>
+        <span style="font-size:14px"><a href="/agents/${attrEsc(encodeURIComponent(s.agent))}" style="color:var(--accent);text-decoration:none">${esc(s.agent)}</a></span>
         <span style="color:var(--fg2);font-size:13px">· ${durStr} · ${s.opCount || 0} ops</span>
         <button class="ask-btn" style="margin-left:auto" onclick='openLoopTrace({sessionId:${sessionIdArg}})'>trace</button>
         <button class="ask-btn" id="session-eval-btn" onclick="openSessionEval('${esc(s.sessionId)}')">Review notes</button>
@@ -448,7 +467,7 @@ async function loadSessionDetail(sessionId, opts = {}) {
       html += `<dt>Project</dt><dd><a href="${attrEsc(projectRoute)}" style="color:var(--accent)">${esc(s.projectId)}</a></dd>`;
     }
     if (s.model) html += `<dt>Model</dt><dd>${esc(s.model)}</dd>`;
-    if (s.parentSessionId) html += `<dt>Parent</dt><dd><a href="#" style="color:var(--accent)" onclick="event.preventDefault();loadSessionDetail('${esc(s.parentSessionId)}')">${esc(s.parentSessionId)}</a></dd>`;
+    if (s.parentSessionId) html += `<dt>Parent</dt><dd><a href="/sessions/${attrEsc(encodeURIComponent(s.parentSessionId))}" style="color:var(--accent)">${esc(s.parentSessionId)}</a></dd>`;
     if (s.workflowRunId) html += `<dt>Workflow Run</dt><dd><a href="#" style="color:var(--accent)" onclick='event.preventDefault();openLoopTrace({workflowRunId:${workflowRunIdArg}})'>${esc(s.workflowRunId)}</a></dd>`;
     if (s.requestId) html += `<dt>Request</dt><dd>${esc(s.requestId)}</dd>`;
     html += `</dl></div>`;
@@ -459,9 +478,9 @@ async function loadSessionDetail(sessionId, opts = {}) {
     const evalData = opts.evalData || currentSessionEval;
     if (evalData) {
       if (!evalData.rows?.length) html += '<div class="section">No saved review notes for this session.</div>';
-      html += `</div>${renderSessionConversation(transData, { evalData })}<div class="panel session-inspector session-inspector-secondary">`;
+      html += `</div>${unavailableTranscript || renderSessionConversation(transData, { evalData })}<div class="panel session-inspector session-inspector-secondary">`;
     } else {
-      html += renderSessionConversation(transData);
+      html += unavailableTranscript || renderSessionConversation(transData);
     }
 
     // D. Outcome Section
@@ -488,6 +507,7 @@ async function loadSessionDetail(sessionId, opts = {}) {
     }
 
     html += '</div>';
+    restoreChatComposer();
     panel.innerHTML = html;
     if (isSessionPageMode()) placeSessionComposer();
 
@@ -499,26 +519,27 @@ async function loadSessionDetail(sessionId, opts = {}) {
 
     if (!opts.preserveScroll) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch(e) {
-    panel.innerHTML = `<div class="panel">Error loading session: ${e.message}</div>`;
+    if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
+    if (opts.isCurrent && !opts.isCurrent()) return;
+    document.getElementById('chat-status').textContent = e.message;
+    if (!panel.querySelector('.session-inspector')) panel.innerHTML = `<div class="panel">Error loading session: ${esc(e.message)}</div>`;
   }
 }
 
 function getSessionDetailPanel() {
-  const routePanel = document.getElementById('session-detail-panel');
-  if (currentTab === 'sessions' && routePanel) return routePanel;
-  return document.getElementById('detail-panel') || routePanel;
+  return document.getElementById('session-detail-panel');
 }
 
 function goBackSession() {
   if (sessionHistory.length) {
     const prev = sessionHistory.pop();
-    loadSessionDetail(prev);
+    navigateToSession(prev);
   }
 }
 
 function navigateToSession(sessionId, fromSessionId) {
   if (fromSessionId) sessionHistory.push(fromSessionId);
-  loadSessionDetail(sessionId);
+  routeTo('/sessions/' + encodeURIComponent(sessionId));
 }
 
 function toggleOutcome() {
