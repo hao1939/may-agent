@@ -164,8 +164,21 @@ function exactRuntimeControl(text: unknown): "runtime.reload.requested" | "runti
   }
 }
 
-function exactAppInputControl(appId: string, input: unknown, conversationAppId: string | undefined): ReturnType<typeof exactRuntimeControl> {
-  if (!conversationAppId || appId !== conversationAppId || !input || typeof input !== "object" || Array.isArray(input)) return null;
+function exactAppInputControl(
+  appId: string,
+  input: unknown,
+  conversationAppId: string | undefined,
+  targetTaskId?: string,
+): ReturnType<typeof exactRuntimeControl> {
+  if (
+    targetTaskId ||
+    !conversationAppId ||
+    appId !== conversationAppId ||
+    !input ||
+    typeof input !== "object" ||
+    Array.isArray(input)
+  )
+    return null;
   const record = input as Record<string, unknown>;
   if (record.kind !== "message" || !record.data || typeof record.data !== "object" || Array.isArray(record.data)) {
     return null;
@@ -714,8 +727,18 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
             });
             continue;
           }
+          const hasTargetTaskId = frame.targetTaskId !== undefined;
+          const targetTaskId = typeof frame.targetTaskId === "string" ? frame.targetTaskId.trim() : "";
+          if (hasTargetTaskId && !targetTaskId) {
+            writeFrame(socket, {
+              type: "error",
+              command: normalized.command,
+              message: "targetTaskId must be a non-empty string",
+            });
+            continue;
+          }
           try {
-            const runtimeControl = exactAppInputControl(appId, input, opts.conversationAppId);
+            const runtimeControl = exactAppInputControl(appId, input, opts.conversationAppId, targetTaskId || undefined);
             if (runtimeControl) {
               if (!publishEvent) throw new Error("Event publication is unavailable");
               const receipt = publishEvent({
@@ -730,9 +753,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
               appId,
               input: input as Record<string, unknown>,
               source: source as Record<string, unknown>,
-              ...(typeof frame.targetTaskId === "string" && frame.targetTaskId.trim()
-                ? { targetTaskId: frame.targetTaskId.trim() }
-                : {}),
+              ...(targetTaskId ? { targetTaskId } : {}),
               ...(typeof frame.conversationId === "string" && frame.conversationId.trim()
                 ? { conversationId: frame.conversationId.trim() }
                 : {}),

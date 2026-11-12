@@ -38,7 +38,12 @@ export type CodexTurnCompletion = {
 };
 
 export type CodexThreadItemsPage = {
-  data: Array<{ turnId: string; item: unknown }>;
+  data: Array<{
+    turnId: string;
+    item: unknown;
+    startedAtMs?: number | null;
+    completedAtMs?: number | null;
+  }>;
   nextCursor?: string | null;
 };
 
@@ -77,6 +82,7 @@ const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
 const DEFAULT_TURN_TIMEOUT_MS = 15 * 60_000;
 const MAX_PROTOCOL_LINE_CHARS = 4 * 1024 * 1024;
 const MAX_STDERR_CHARS = 64 * 1024;
+export const MAX_RETAINED_TURN_COMPLETIONS = 64;
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -111,7 +117,7 @@ export class CodexGoalAppServerClient {
       accept(observation: CodexGoalObservation): boolean;
       resolve(observation: CodexGoalObservation): void;
       reject(error: Error): void;
-      timeout: ReturnType<typeof setTimeout>;
+      timeout: ReturnType<typeof setTimeout> | null;
     }>
   >();
   private readonly completionWaiters = new Map<
@@ -258,6 +264,19 @@ export class CodexGoalAppServerClient {
     });
   }
 
+  async injectUserContext(input: { threadId: string; text: string }): Promise<unknown> {
+    return await this.request("thread/inject_items", {
+      threadId: input.threadId,
+      items: [
+        {
+          type: "message",
+          role: "user",
+          content: [{ type: "input_text", text: input.text }],
+        },
+      ],
+    });
+  }
+
   async setGoal(input: {
     threadId: string;
     objective: string;
@@ -282,14 +301,14 @@ export class CodexGoalAppServerClient {
 
   async listThreadItems(input: {
     threadId: string;
-    turnId: string;
+    turnId?: string;
     cursor?: string;
     limit?: number;
     sortDirection?: "asc" | "desc";
   }): Promise<CodexThreadItemsPage> {
     return await this.request("thread/items/list", {
       threadId: input.threadId,
-      turnId: input.turnId,
+      ...(input.turnId ? { turnId: input.turnId } : {}),
       ...(input.cursor ? { cursor: input.cursor } : {}),
       ...(input.limit === undefined ? {} : { limit: input.limit }),
       ...(input.sortDirection ? { sortDirection: input.sortDirection } : {}),
@@ -365,20 +384,22 @@ export class CodexGoalAppServerClient {
   async waitForGoal(
     threadId: string,
     accept: (observation: CodexGoalObservation) => boolean,
-    timeoutMs = DEFAULT_TURN_TIMEOUT_MS,
+    timeoutMs: number | null = DEFAULT_TURN_TIMEOUT_MS,
   ): Promise<CodexGoalObservation> {
     const current = this.goals.get(threadId);
     if (current && accept(current)) return current;
     if (this.exitError) throw this.exitError;
     return await new Promise<CodexGoalObservation>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        const waiters = this.goalWaiters.get(threadId);
-        waiters?.delete(waiter);
-        if (waiters?.size === 0) this.goalWaiters.delete(threadId);
-        reject(new Error(`Timed out waiting for Codex goal state on thread ${threadId}`));
-      }, timeoutMs);
-      timeout.unref?.();
-      const waiter = { accept, resolve, reject, timeout };
+      const waiter = { accept, resolve, reject, timeout: null as ReturnType<typeof setTimeout> | null };
+      if (timeoutMs !== null) {
+        waiter.timeout = setTimeout(() => {
+          const waiters = this.goalWaiters.get(threadId);
+          waiters?.delete(waiter);
+          if (waiters?.size === 0) this.goalWaiters.delete(threadId);
+          reject(new Error(`Timed out waiting for Codex goal state on thread ${threadId}`));
+        }, timeoutMs);
+        waiter.timeout.unref?.();
+      }
       const waiters = this.goalWaiters.get(threadId) ?? new Set();
       waiters.add(waiter);
       this.goalWaiters.set(threadId, waiters);
@@ -555,7 +576,13 @@ export class CodexGoalAppServerClient {
     const turn = params.turn as JsonRecord;
     if (typeof turn.id !== "string" || typeof turn.status !== "string") return;
     const completion = params as unknown as CodexTurnCompletion;
+    this.completions.delete(turn.id);
     this.completions.set(turn.id, completion);
+    while (this.completions.size > MAX_RETAINED_TURN_COMPLETIONS) {
+      const oldest = this.completions.keys().next().value;
+      if (oldest === undefined) break;
+      this.completions.delete(oldest);
+    }
     if (this.activeTurns.get(params.threadId) === turn.id) this.activeTurns.delete(params.threadId);
     const waiters = this.completionWaiters.get(turn.id);
     if (!waiters) return;
@@ -595,7 +622,7 @@ export class CodexGoalAppServerClient {
     for (const waiter of [...waiters]) {
       if (!waiter.accept(observed)) continue;
       waiters.delete(waiter);
-      clearTimeout(waiter.timeout);
+      if (waiter.timeout !== null) clearTimeout(waiter.timeout);
       waiter.resolve(observed);
     }
     if (waiters.size === 0) this.goalWaiters.delete(params.threadId);
@@ -627,7 +654,7 @@ export class CodexGoalAppServerClient {
     this.activeTurnWaiters.clear();
     for (const waiters of this.goalWaiters.values()) {
       for (const waiter of waiters) {
-        clearTimeout(waiter.timeout);
+        if (waiter.timeout !== null) clearTimeout(waiter.timeout);
         waiter.reject(error);
       }
     }

@@ -649,6 +649,9 @@ export type TaskAttempt = {
   signal: AbortSignal;
   /** Task resource version observed when this attempt was claimed. */
   resourceVersion: number;
+  /** Optional App-policy attempt execution deadline, or "unlimited" when explicitly waived.
+   * Absent means the executor uses its built-in default. */
+  maxAttemptMs?: number | "unlimited";
   /** Responsible Task agent and its instructions, shared unchanged by every executor adapter. */
   role: {
     agent: string;
