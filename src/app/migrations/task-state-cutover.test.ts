@@ -2,7 +2,7 @@ import { afterEach, expect, test, setSystemTime } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { appTaskTestContext } from "../tasks/app-task-test-support.js";
+import { appTaskTestContext } from "../core/tasks/app-task-test-support.js";
 import {
   appTaskContext,
   retryFailedAppTask,
@@ -15,15 +15,15 @@ import {
   stopAppTaskAttempt,
   reportAppTaskFailure,
   recordAppTaskTrigger,
-} from "../tasks/app-task-reconciler.js";
-import { readAppTaskReconciliationEvents } from "../tasks/app-task-context.js";
-import { taskInputAdmissionKeys } from "../tasks/app-task-inputs.js";
-import { trackAppTaskConditionEventForTasks } from "../tasks/app-task-condition-tracker.js";
-import type { TaskTree } from "../tasks/app-task-store.js";
-import type { AppTaskCancellation } from "../tasks/app-task-state.js";
-import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { admitTaskInput } from "./inbox.js";
-import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
+} from "../core/tasks/app-task-reconciler.js";
+import { readAppTaskReconciliationEvents } from "../core/tasks/app-task-context.js";
+import { taskInputAdmissionKeys } from "../core/tasks/app-task-inputs.js";
+import { trackAppTaskConditionEventForTasks } from "../core/tasks/app-task-condition-tracker.js";
+import type { TaskTree } from "../core/tasks/app-task-store.js";
+import type { AppTaskCancellation } from "../core/tasks/app-task-state.js";
+import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";
+import { admitTaskInput } from "../core/state/inbox.js";
+import { createAppInboxItem, getAppInboxItem } from "../core/state/app-inbox-store.js";
 import { migrateTaskCoordination } from "./task-coordination-cutover.js";
 import { migrateOpenTaskState } from "./task-state-cutover.js";
 

@@ -1,14 +1,14 @@
 import { isDeepStrictEqual } from "node:util";
 import { createHash } from "node:crypto";
-import { stateTransaction } from "../../../lib/db/transaction.js";
-import type { AppTaskAdmission, AppTaskContext } from "../tasks/app-task-store.js";
-import type { AppTaskResource } from "../tasks/app-task-state.js";
-import { cancelAppTask } from "../tasks/app-task-reconciler.js";
+import { stateTransaction } from "../../lib/db/transaction.js";
+import type { AppTaskAdmission, AppTaskContext } from "../core/tasks/app-task-store.js";
+import type { AppTaskResource } from "../core/tasks/app-task-state.js";
+import { cancelAppTask } from "../core/tasks/app-task-reconciler.js";
 import {
   parseTaskResource,
   type AppTaskControlReceipt,
   type AppTaskResourceStore,
-} from "./app-task-resource-store.js";
+} from "../core/state/app-task-resource-store.js";
 
 /** Private operator data: preserve the reviewed plan and a verified offline backup. */
 export type RetiredAppRetirementPlan = {

@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import { stateTransaction } from "../../../lib/db/transaction.js";
-import { matchesAppTaskSpecHash } from "../tasks/app-task-reconciler.js";
-import type { AppTaskAttempt, AppTaskResource } from "../tasks/app-task-state.js";
-import type { AppTaskContext, TaskCompletionReceipt } from "../tasks/app-task-store.js";
-import type { AppTaskResourceMutation } from "./app-task-resource-store.js";
+import { stateTransaction } from "../../lib/db/transaction.js";
+import { matchesAppTaskSpecHash } from "../core/tasks/app-task-reconciler.js";
+import type { AppTaskAttempt, AppTaskResource } from "../core/tasks/app-task-state.js";
+import type { AppTaskContext, TaskCompletionReceipt } from "../core/tasks/app-task-store.js";
+import type { AppTaskResourceMutation } from "../core/state/app-task-resource-store.js";
 
 function receiptAttempt(receipt: TaskCompletionReceipt): AppTaskAttempt {
   return {

@@ -6,7 +6,7 @@ import { Type, defineApp } from "@may-agent/sdk";
 import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { TaskBudgetAdmissionStore } from "../state/task-budget-admission.js";
-import { migrateTaskCompletionReceipts } from "../state/task-receipt-cutover.js";
+import { migrateTaskCompletionReceipts } from "../../migrations/task-receipt-cutover.js";
 import { appTaskContext, appTaskSpecHash } from "./app-task-reconciler.js";
 import { appTaskConfig, prepareAppTaskRuntimeDescriptors, standaloneAppTaskAdmissionDescriptors } from "./runtime-definition.js";
 

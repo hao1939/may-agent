@@ -2,7 +2,7 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { appTaskTestContext } from "../tasks/app-task-test-support.js";
+import { appTaskTestContext } from "../core/tasks/app-task-test-support.js";
 import {
   appTaskContext,
   appTaskSpecHash,
@@ -13,12 +13,12 @@ import {
   readAppTaskAdmissionOutcome,
   readAppTaskIntent,
   recordAppTaskTrigger,
-} from "../tasks/app-task-reconciler.js";
-import type { AppTaskAdmission, TaskCompletionReceipt, TaskTree } from "../tasks/app-task-store.js";
-import { buildAppTaskTreeProjection } from "../tasks/app-task-store.js";
-import type { AppTaskResource } from "../tasks/app-task-state.js";
-import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { TaskBudgetAdmissionStore } from "./task-budget-admission.js";
+} from "../core/tasks/app-task-reconciler.js";
+import type { AppTaskAdmission, TaskCompletionReceipt, TaskTree } from "../core/tasks/app-task-store.js";
+import { buildAppTaskTreeProjection } from "../core/tasks/app-task-store.js";
+import type { AppTaskResource } from "../core/tasks/app-task-state.js";
+import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";
+import { TaskBudgetAdmissionStore } from "../core/state/task-budget-admission.js";
 import { migrateTaskCompletionReceipts } from "./task-receipt-cutover.js";
 
 const roots: string[] = [];

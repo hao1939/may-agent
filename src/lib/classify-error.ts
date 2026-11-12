@@ -1,7 +1,7 @@
 /**
  * classify-error.ts — Pure string-matching error classifier.
  *
- * Extracted from requests.ts to avoid any transitive dependency on bun:sqlite
+ * Kept standalone to avoid any transitive dependency on bun:sqlite
  * when consumers only need error classification.
  */
 

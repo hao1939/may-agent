@@ -2,10 +2,10 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { openDatabase, type SqliteDb } from "../../../lib/db.js";
-import { applyDbSchema } from "../../../lib/db/schema.js";
-import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
+import { openDatabase, type SqliteDb } from "../../lib/db.js";
+import { applyDbSchema } from "../../lib/db/schema.js";
+import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";
+import { createAppInboxItem, getAppInboxItem } from "../core/state/app-inbox-store.js";
 import {
   appTaskContext,
   cancelAppTask,
@@ -17,9 +17,9 @@ import {
   reportAppTaskFailure,
   reopenAppTask,
   retryFailedAppTask,
-} from "../tasks/app-task-reconciler.js";
-import { admitTaskInput } from "./inbox.js";
-import { readRuntimeTaskView } from "../reads/app-read.js";
+} from "../core/tasks/app-task-reconciler.js";
+import { admitTaskInput } from "../core/state/inbox.js";
+import { readRuntimeTaskView } from "../core/reads/app-read.js";
 import { retireAppState, type RetiredAppRetirementPlan } from "./retired-app-retirement.js";
 
 const roots: string[] = [];
