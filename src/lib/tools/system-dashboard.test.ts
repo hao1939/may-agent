@@ -27,30 +27,75 @@ test("status keeps ordinary agent evidence without promoting a named learning pr
   }
 });
 
-test("retries against live WAL when a writer starts and commits during an immutable status check", () => {
-  const root = mkdtempSync(join(tmpdir(), "may-status-wal-race-"));
+test("maintains a consistent MVCC snapshot and cleans up sidecars when a writer commits, checkpoints, and closes mid-scan", () => {
+  const root = mkdtempSync(join(tmpdir(), "may-status-checkpoint-race-"));
   try {
+    const now = Date.now();
     const seed = getDb(root);
     applyDbSchema(seed);
+    seed.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt) VALUES (?, ?, ?, ?, ?, ?)",
+      ["base-session", "scout", "initial", "done", now - 2000, now - 1000],
+    );
     closeDb(root);
     expect(readdirSync(root)).toEqual(["may.db"]);
 
-    let liveWriterOpened = false;
-    const now = Date.now();
-    const status = printSystemStatus(root, {
-      onImmutableRead: () => {
-        // Simulate daemon startup attaching WAL and committing after immutable open
+    let writerRanMidScan = false;
+    const duringScan = printSystemStatus(root, {
+      onSnapshotAcquired: () => {
+        // Writer starts, commits new rows, checkpoints, and closes while reader holds its snapshot
         const live = getDb(root);
-        liveWriterOpened = true;
-        live.exec("PRAGMA wal_autocheckpoint = 0");
+        writerRanMidScan = true;
         live.run(
           "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt) VALUES (?, ?, ?, ?, ?, ?)",
-          ["live-wal-session", "scout", "explore-xhs", "done", now - 500, now],
+          ["concurrent-session", "scout", "mid-scan-write", "error", now - 500, now],
         );
+        live.exec("PRAGMA wal_checkpoint(PASSIVE)");
+        closeDb(root);
       },
     });
-    expect(liveWriterOpened).toBe(true);
-    expect(status).toMatch(/scout\s+1\s+1\s+0\s+100%/);
+    expect(writerRanMidScan).toBe(true);
+    // In-flight scan sees its consistent pre-writer MVCC snapshot without torn/mixed state
+    expect(duringScan).toMatch(/scout\s+1\s+1\s+0\s+100%/);
+    // Last closing connection (status reader) leaves zero sidecars behind
+    expect(readdirSync(root)).toEqual(["may.db"]);
+
+    // Subsequent status read sees the committed concurrent write and also leaves zero sidecars
+    const afterScan = printSystemStatus(root);
+    expect(afterScan).toMatch(/scout\s+2\s+1\s+1\s+50%/);
+    expect(readdirSync(root)).toEqual(["may.db"]);
+  } finally {
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("leaves zero WAL/SHM sidecars when the last writer closes immediately before reader attachment", () => {
+  const root = mkdtempSync(join(tmpdir(), "may-status-writer-shutdown-race-"));
+  try {
+    const { createHash } = require("node:crypto");
+    const { readFileSync } = require("node:fs");
+    const now = Date.now();
+    const live = getDb(root);
+    applyDbSchema(live);
+    live.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt) VALUES (?, ?, ?, ?, ?, ?)",
+      ["shutdown-session", "may", "reply", "done", now - 500, now],
+    );
+    expect(readdirSync(root).sort()).toEqual(["may.db", "may.db-shm", "may.db-wal"]);
+
+    let settledSha = "";
+    const status = printSystemStatus(root, {
+      onBeforeAttach: () => {
+        // Last writer closes right before reader opens may.db
+        closeDb(root);
+        settledSha = createHash("sha256").update(readFileSync(join(root, "may.db"))).digest("hex");
+      },
+    });
+    expect(status).toMatch(/may\s+1\s+1\s+0\s+100%/);
+    expect(readdirSync(root)).toEqual(["may.db"]);
+    const afterSha = createHash("sha256").update(readFileSync(join(root, "may.db"))).digest("hex");
+    expect(afterSha).toBe(settledSha);
   } finally {
     closeDb(root);
     rmSync(root, { recursive: true, force: true });

@@ -5,80 +5,85 @@
  * live databases during normal closed or daemon-active operation.
  */
 
-import { constants as fsConstants, copyFileSync, existsSync, mkdtempSync, rmSync, statSync } from "node:fs";
+import { copyFileSync, existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { openReadOnlyDatabase, type SqliteDb } from "../db.js";
+import { openQueryOnlyDatabase, openReadOnlyDatabase, type SqliteDb } from "../db.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const TELEGRAM_CHUNK_LIMIT = 4000;
 
 export interface StatusOptions {
   includeProcessHealth?: boolean;
-  /** Test hook invoked while holding an immutable read before WAL re-check. */
-  onImmutableRead?: () => void;
-}
-
-function walByteSize(walPath: string): number {
-  try {
-    return existsSync(walPath) ? statSync(walPath).size : 0;
-  } catch {
-    return 0;
-  }
+  /** Test hook invoked after WAL presence check and before opening the database. */
+  onBeforeAttach?: () => void;
+  /** Test hook invoked inside the active read transaction after acquiring a WAL read-mark. */
+  onSnapshotAcquired?: () => void;
 }
 
 function queryStatusDb<T>(
   dbPath: string,
   run: (db: SqliteDb) => T,
-  onImmutableRead?: () => void,
+  hooks?: Pick<StatusOptions, "onBeforeAttach" | "onSnapshotAcquired">,
 ): T {
   const walPath = `${dbPath}-wal`;
   const shmPath = `${dbPath}-shm`;
 
-  const hasUncheckpointedWal = () => walByteSize(walPath) > 0;
-  const hasLiveWal = () => existsSync(walPath) && existsSync(shmPath);
-
-  if (!hasLiveWal() && !hasUncheckpointedWal()) {
-    const immutableDb = openReadOnlyDatabase(`${pathToFileURL(dbPath).href}?immutable=1`);
-    let result: T;
+  // Orphaned crash WAL (-wal present without -shm): isolate in tmpdir so WAL
+  // recovery neither creates a -shm sidecar nor checkpoints persistDir/may.db.
+  if (existsSync(walPath) && !existsSync(shmPath)) {
+    const snapshotDir = mkdtempSync(join(tmpdir(), "may-status-crash-wal-"));
     try {
-      result = run(immutableDb);
-      onImmutableRead?.();
+      const snapDb = join(snapshotDir, "may.db");
+      copyFileSync(dbPath, snapDb);
+      if (existsSync(walPath)) copyFileSync(walPath, `${snapDb}-wal`);
+      const recoveredDb = openReadOnlyDatabase(snapDb);
+      try {
+        return run(recoveredDb);
+      } finally {
+        recoveredDb.close();
+      }
     } finally {
-      immutableDb.close();
-    }
-    // Optimistic concurrency check: if no writer attached or wrote WAL frames
-    // while our immutable snapshot ran, the result is current and zero files changed.
-    if (!hasLiveWal() && !hasUncheckpointedWal()) {
-      return result;
+      rmSync(snapshotDir, { recursive: true, force: true });
     }
   }
 
-  if (hasLiveWal()) {
-    const liveDb = openReadOnlyDatabase(dbPath);
-    try {
-      return run(liveDb);
-    } finally {
-      liveDb.close();
-    }
-  }
+  hooks?.onBeforeAttach?.();
 
-  // Uncheckpointed WAL with no -shm (crashed writer at rest): isolate in tmpdir
-  // so SQLite WAL recovery never creates a -shm sidecar inside persistDir.
-  const snapshotDir = mkdtempSync(join(tmpdir(), "may-status-crash-wal-"));
+  let db: SqliteDb;
+  let transactional = true;
   try {
-    const snapDb = join(snapshotDir, "may.db");
-    copyFileSync(dbPath, snapDb, fsConstants.COPYFILE_FICLONE);
-    if (existsSync(walPath)) copyFileSync(walPath, `${snapDb}-wal`, fsConstants.COPYFILE_FICLONE);
-    const recoveredDb = openReadOnlyDatabase(snapDb);
+    // Real SQLite WAL locking (`O_RDWR` + `PRAGMA query_only = ON`, no CREATE):
+    // 1. Holds a genuine WAL read-mark during the deferred read transaction so
+    //    concurrent writer commit + checkpoint + close cannot mix/tear pages.
+    // 2. Holds an O_RDWR descriptor so `walClose` can acquire `F_WRLCK` when
+    //    this probe is the last connection, unlinking `-wal`/`-shm` cleanly
+    //    instead of stranding sidecars as `O_RDONLY` connections do on POSIX.
+    db = openQueryOnlyDatabase(dbPath);
+  } catch {
+    // Read-only filesystem / file mode fallback where OS permissions forbid any local writer.
+    transactional = false;
+    db = openReadOnlyDatabase(`${pathToFileURL(dbPath).href}?immutable=1`);
+  }
+
+  try {
+    if (!transactional) return run(db);
+    db.exec("BEGIN DEFERRED");
     try {
-      return run(recoveredDb);
+      // Touch sqlite_schema to pin the MVCC WAL read-mark before running queries.
+      db.prepare("SELECT 1 FROM sqlite_master LIMIT 1").get();
+      hooks?.onSnapshotAcquired?.();
+      return run(db);
     } finally {
-      recoveredDb.close();
+      try {
+        db.exec("COMMIT");
+      } catch {
+        // Ignore if connection was already rolled back
+      }
     }
   } finally {
-    rmSync(snapshotDir, { recursive: true, force: true });
+    db.close();
   }
 }
 
@@ -142,7 +147,7 @@ export function printSystemStatus(persistDir: string, opts?: StatusOptions): str
         completed: number;
         failed: number;
       }>,
-    opts?.onImmutableRead,
+    opts,
   );
 
   lines.push("", "─".repeat(62), " AGENTS (last 24h)", "─".repeat(62));

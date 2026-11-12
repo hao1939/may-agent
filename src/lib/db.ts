@@ -43,17 +43,31 @@ function detectRuntime(): Runtime {
 
 // ── Bun adapter ────────────────────────────────────────────────────────
 
-function openBun(path: string, readonly = false): SqliteDb {
+function openBun(
+  path: string,
+  mode: "readwrite-create" | "readonly" | "query-only" = "readwrite-create",
+): SqliteDb {
   const { Database, constants } = require("bun:sqlite") as {
     Database: new (path: string, options?: number | { readonly?: boolean; create?: boolean }) => BunDatabase;
-    constants: { SQLITE_OPEN_READONLY: number; SQLITE_OPEN_URI: number };
+    constants: { SQLITE_OPEN_READONLY: number; SQLITE_OPEN_READWRITE: number; SQLITE_OPEN_URI: number };
   };
-  const openOpts = readonly
-    ? path.startsWith("file:")
-      ? constants.SQLITE_OPEN_READONLY | constants.SQLITE_OPEN_URI
-      : { readonly: true, create: false }
-    : undefined;
+  const openOpts =
+    mode === "readonly"
+      ? path.startsWith("file:")
+        ? constants.SQLITE_OPEN_READONLY | constants.SQLITE_OPEN_URI
+        : { readonly: true, create: false }
+      : mode === "query-only"
+        ? constants.SQLITE_OPEN_READWRITE
+        : undefined;
   const db = new Database(path, openOpts);
+  if (mode === "query-only") {
+    try {
+      db.exec("PRAGMA query_only = ON; PRAGMA busy_timeout = 5000; PRAGMA wal_autocheckpoint = 0;");
+    } catch (err) {
+      db.close();
+      throw err;
+    }
+  }
   return {
     exec(sql: string) {
       db.exec(sql);
@@ -99,11 +113,22 @@ interface BunDatabase {
 
 // ── Node adapter ───────────────────────────────────────────────────────
 
-function openNode(path: string, readonly = false): SqliteDb {
+function openNode(
+  path: string,
+  mode: "readwrite-create" | "readonly" | "query-only" = "readwrite-create",
+): SqliteDb {
   const { DatabaseSync } = require("node:sqlite") as {
     DatabaseSync: new (path: string, options?: { readOnly?: boolean }) => NodeDatabase;
   };
-  const db = new DatabaseSync(path, readonly ? { readOnly: true } : undefined);
+  const db = new DatabaseSync(path, mode === "readonly" ? { readOnly: true } : undefined);
+  if (mode === "query-only") {
+    try {
+      db.exec("PRAGMA query_only = ON; PRAGMA busy_timeout = 5000; PRAGMA wal_autocheckpoint = 0;");
+    } catch (err) {
+      db.close();
+      throw err;
+    }
+  }
   return {
     exec(sql: string) {
       db.exec(sql);
@@ -153,5 +178,15 @@ export function openDatabase(path: string): SqliteDb {
 
 /** Open an existing database without creation or write capability. */
 export function openReadOnlyDatabase(path: string): SqliteDb {
-  return profileDatabase(runtime === "bun" ? openBun(path, true) : openNode(path, true));
+  return profileDatabase(runtime === "bun" ? openBun(path, "readonly") : openNode(path, "readonly"));
+}
+
+/**
+ * Open an existing database with full SQLite WAL read-mark locking (`O_RDWR` +
+ * `PRAGMA query_only = ON`) so concurrent checkpoints cannot tear pages AND
+ * closing the last connection can acquire `F_WRLCK` to unlink transient `-wal`/`-shm`
+ * sidecars instead of stranding them in `persistDir`.
+ */
+export function openQueryOnlyDatabase(path: string): SqliteDb {
+  return profileDatabase(runtime === "bun" ? openBun(path, "query-only") : openNode(path, "query-only"));
 }
