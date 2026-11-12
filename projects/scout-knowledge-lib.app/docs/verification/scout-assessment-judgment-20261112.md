@@ -152,12 +152,70 @@ and preservation comparisons are retained under
 `/home/hao/workspace-archive/scout-assessment-activation-20261112/`.
 Operations followed the [control-plane-operation skill](../../../../shared/skills/control-plane-operation/SKILL.md).
 
+## Archived publication, reuse and access failure
+
+The next live checks used the same activated Scout code. GitHub's public commit
+API pinned LangGraph `main` to
+`b4cb0f19e3d8984e8a57f85667b8d1bec018f0ab`; the archive and reuse requests used
+the identical assignment and immutable README URL. No source or model response
+was substituted. The failure case deliberately requested an absent document path
+at that same public revision and observed the actual raw endpoint's HTTP 404;
+it was a bounded availability probe, not a substantive research assessment.
+
+| Case                    | Input event | Accepted attempt                           | Guarded closure event |
+| ----------------------- | ----------- | ------------------------------------------ | --------------------- |
+| Archive                 | `6710912`   | `r_1_947c658b-1e04-4d84-b8f3-294a49013c0d` | `6710926`             |
+| Reuse                   | `6710928`   | `r_1_02fbb7e1-1b22-41d0-98fc-8778e26e18aa` | `6710939`             |
+| HTTP 404 classification | `6710941`   | `r_1_0c3a7a52-aa5d-4b41-b95c-fcacf9a45174` | `6710952`             |
+
+The archive request completed in about 22 seconds. Its original caller receipt
+`app_63da69f3-04d5-43ad-852b-69fa583b9e2f` became done with the substantive
+assessment, canonical path and verified revision. The publisher committed only
+[the source assessment](../../../scout-knowledge-lib/knowledge/findings/2026-11-12-source-assessment-769d2445131e.md)
+in `7c8d43f759a73e12a618b7f28417c5688868216e`; canonical file bytes exactly
+matched `git show` at that revision. The record preserves the pinned identity,
+assignment, supplied coverage, attributed source claims and explicit limits.
+
+The identical revisit completed in about 12 seconds. Scout chose reuse, and
+caller receipt `app_9a608ce5-91da-44f3-be11-27cf7dae5f15` became done with
+`publication:no-change` and
+`publication-head:7c8d43f759a73e12a618b7f28417c5688868216e`.
+The verified canonical path, exact bytes, one assessment entry, one source record
+and Git HEAD were unchanged. The record's SHA-256 remained
+`4fc8a77dc0a8cd3186071db1532e0d9e1e8d6832ee8dc4d198e9cf9277d91d4a`.
+Reuse avoided an unnecessary archive update and commit; it still used one bounded
+Scout call to judge fit against the current request and source observation.
+
+The absent-document request completed in about 11 seconds. The workflow recorded
+`source-access-failure:Source retrieval returned HTTP 404` and supplied no source
+text. Scout returned converged against the explicitly permitted availability
+branch, stated that no document content was read, and left authentication,
+deletion and other unobserved causes unknown. It described successful exact-source
+retrieval or an owner's revised assignment as the paths to substantive assessment.
+Caller receipt `app_7fac387f-db40-4e95-a21d-e084dc97eb33` became done with that
+authored answer. This no-save case produced no note or commit.
+
+All three directly initiated finite root validation Tasks were closed only after
+reading their accepted converged results, original saved caller answers and exact
+source/publication evidence. Each closure used the current generation/resource
+version and accepted attempt. No delegated child was operator-closed. At 14:53:12
+UTC, Scout had returned to the original 14 idle Tasks with no pending, running,
+waiting or attention work. There were no new handler/subscriber failures or SQL
+errors; daemon PID 100753 was unchanged. All nine earlier answers still matched
+the retained prior answers byte for byte. The active App source stayed at
+`b1714639c2317b681ac0b150b58107c8c8be14ed-definitions-v5`; publication and later
+documentation commits do not themselves activate a new App source.
+
+Exact admission, result, file/Git comparison and closure evidence is retained in
+`/home/hao/workspace-archive/scout-assessment-publication-20261112/`.
+No implementation changes were required by these live checks.
+
 ## Remaining observation
 
-The real no-save README and PDF requests demonstrate bounded semantic judgment,
-request fulfillment independent of full source reading, working production
-extraction and saved caller follow-through in the running Host. Archived
-publication and unchanged-record reuse remain covered by the local regressions.
-Suitable live cases are still needed for required-reading incomplete outcomes,
-access-failure classification, and delegated creator consumption and closure.
-These two examples do not establish broad model accuracy.
+Five real hosted requests now demonstrate source retrieval/extraction, bounded
+semantic judgment, archived publication, unchanged-record reuse, access-failure
+classification and saved caller follow-through. These examples do not establish
+broad model accuracy. A required-reading incomplete outcome and delegated creator
+consumption/closure still need suitable live cases; their code guards remain
+covered by the local regressions. Operator closure of the finite validation roots
+does not establish autonomous owner follow-through for delegated obligations.
