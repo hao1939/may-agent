@@ -3,7 +3,7 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { completeCommunicationTask, readCommunicationInputs } from "../../../../test/fixtures/communication.js";
+import { completeCommunicationTask, readCommunicationInputs } from "../../../test/fixtures/communication.js";
 import {
   assertAppInboxClaim,
   claimAppInboxItem,
@@ -11,20 +11,20 @@ import {
   completeAppInboxClaim,
   recordAppInboxHandling,
   stopAppInboxTurn,
-} from "../../../../test/fixtures/legacy-inbox.js";
-import { closeDb, getDb } from "../../../lib/db/connection.js";
-import { AppInboxHost } from "../inbox/app-inbox-host.js";
-import { appTaskContext, claimObservedAppTask } from "../tasks/app-task-reconciler.js";
-import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
-import { AppTaskResourceStore } from "./app-task-resource-store.js";
+} from "../../../test/fixtures/legacy-inbox.js";
+import { closeDb, getDb } from "../../lib/db/connection.js";
+import { AppInboxHost } from "../core/inbox/app-inbox-host.js";
+import { appTaskContext, claimObservedAppTask } from "../core/tasks/app-task-reconciler.js";
+import { createAppInboxItem, getAppInboxItem } from "../core/state/app-inbox-store.js";
+import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";
 import { migrateConversationInputs } from "./conversation-cutover.js";
 import {
   applyConversationRequestUpdates,
   linkConversationRequestInputs,
   readConversationRequest,
-} from "./conversation-requests.js";
-import { admitConversationTaskInput, conversationTaskId, conversationTaskIntent } from "./conversation-task-turns.js";
-import { createConversationTopic } from "./conversations.js";
+} from "../core/state/conversation-requests.js";
+import { admitConversationTaskInput, conversationTaskId, conversationTaskIntent } from "../core/state/conversation-task-turns.js";
+import { createConversationTopic } from "../core/state/conversations.js";
 
 const roots: string[] = [];
 afterEach(() =>

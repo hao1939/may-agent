@@ -11,7 +11,7 @@ import {
 } from "./app-task-store.js";
 import { AppTaskResourceStore, type AppTaskResourceMutation } from "../state/app-task-resource-store.js";
 import { admitTaskInput } from "../state/inbox.js";
-import { migrateTaskCompletionReceipts } from "../state/task-receipt-cutover.js";
+import { migrateTaskCompletionReceipts } from "../../migrations/task-receipt-cutover.js";
 import { appTaskTestContext } from "./app-task-test-support.js";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "../reads/app-read.js";
 import { matchingAppTaskConditionTaskIds, trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.ts";

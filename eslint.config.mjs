@@ -108,6 +108,10 @@ export default [
               group: ["**/app-input-event", "**/app-input-event.*"],
               message: "Core uses focused state primitives; App input policy belongs outside core.",
             },
+            {
+              group: ["**/migrations/**", "**/app/migrations/**"],
+              message: "Core runtime state must not depend on offline migration or recovery modules.",
+            },
           ],
         },
       ],

@@ -116,8 +116,7 @@ belong to the Evaluation App; agent names carry no Host health policy.
 The agents tool consumes the existing typed manager interface directly, with
 read-only views of the agent and active-session maps.
 
-`requests.ts` is a compatibility facade for database helpers, not the owner of
-Conversation Requests. New internal callers use the corresponding `db/` module.
+Database callers use the focused `db/` modules directly.
 `index.ts` is a broad compatibility export and also re-exports the App loader;
 internal code imports the owning module directly to avoid loader cycles.
 

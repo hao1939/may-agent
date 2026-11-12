@@ -2,18 +2,18 @@ import { afterEach, expect, setSystemTime, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { completeCommunicationTask, readCommunicationInputs } from "../../../../test/fixtures/communication.js";
-import { closeDb, getDb } from "../../../lib/db/connection.js";
+import { completeCommunicationTask, readCommunicationInputs } from "../../../test/fixtures/communication.js";
+import { closeDb, getDb } from "../../lib/db/connection.js";
 import {
   appTaskContext,
   claimObservedAppTask,
   failAppTaskAttempt,
   observeAppTaskIntent,
-} from "../tasks/app-task-reconciler.js";
-import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
-import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { admitConversationTaskInput, conversationTaskId } from "./conversation-task-turns.js";
-import { admitTaskInput, linkTaskInput } from "./inbox.js";
+} from "../core/tasks/app-task-reconciler.js";
+import { createAppInboxItem, getAppInboxItem } from "../core/state/app-inbox-store.js";
+import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";
+import { admitConversationTaskInput, conversationTaskId } from "../core/state/conversation-task-turns.js";
+import { admitTaskInput, linkTaskInput } from "../core/state/inbox.js";
 import {
   recoverMalformedConversationInput,
   type MalformedConversationInputRecoveryPlan,

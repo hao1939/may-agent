@@ -7,7 +7,7 @@ import { listRuntimeTaskViews, readRuntimeTaskView } from "./core/reads/app-read
 import { createAppInboxItem } from "./core/state/app-inbox-store.js";
 import { AppTaskResourceStore } from "./core/state/app-task-resource-store.js";
 import { linkTaskInput } from "./core/state/inbox.js";
-import { migrateTaskCompletionReceipts } from "./core/state/task-receipt-cutover.js";
+import { migrateTaskCompletionReceipts } from "./migrations/task-receipt-cutover.js";
 import {
   ensureTaskReferenceIndex,
   indexTaskReference,

@@ -1,17 +1,17 @@
 import { migrateTaskCoordination } from "./task-coordination-cutover.js";
 import { isDeepStrictEqual } from "node:util";
-import { stateTransaction } from "../../../lib/db/transaction.js";
+import { stateTransaction } from "../../lib/db/transaction.js";
 import {
   matchesAppTaskSpecHash,
   appendTaskTriggerEvent,
   preferredTriggerFromEvents,
   readAppTaskAgent,
-} from "../tasks/app-task-reconciler.js";
-import { taskInputAdmissionKeys } from "../tasks/app-task-inputs.js";
-import { taskExecutionRetryDelay, type AppTaskAttempt, type AppTaskTriggerEvent } from "../tasks/app-task-state.js";
-import type { AppTaskContext } from "../tasks/app-task-store.js";
-import type { AppTaskResourceMutation } from "./app-task-resource-store.js";
-import { getAppInboxItem } from "./app-inbox-store.js";
+} from "../core/tasks/app-task-reconciler.js";
+import { taskInputAdmissionKeys } from "../core/tasks/app-task-inputs.js";
+import { taskExecutionRetryDelay, type AppTaskAttempt, type AppTaskTriggerEvent } from "../core/tasks/app-task-state.js";
+import type { AppTaskContext } from "../core/tasks/app-task-store.js";
+import type { AppTaskResourceMutation } from "../core/state/app-task-resource-store.js";
+import { getAppInboxItem } from "../core/state/app-inbox-store.js";
 
 function attemptEvents(attempt: AppTaskAttempt): AppTaskTriggerEvent[] {
   return attempt.events ?? (attempt.trigger ? [{ event: attempt.trigger, observedAt: attempt.startedAt }] : []);

@@ -1,10 +1,10 @@
 import type { AppDefinition } from "@may-agent/sdk";
-import { stateTransaction } from "../../../lib/db/transaction.js";
-import { appTaskSpecHash, observeAppTaskIntent } from "../tasks/app-task-reconciler.js";
-import type { AppTaskAttempt } from "../tasks/app-task-state.js";
-import type { AppTaskContext } from "../tasks/app-task-store.js";
-import { getAppInboxItem } from "./app-inbox-store.js";
-import { admitConversationTaskInput, conversationTaskId, conversationTaskIntent } from "./conversation-task-turns.js";
+import { stateTransaction } from "../../lib/db/transaction.js";
+import { appTaskSpecHash, observeAppTaskIntent } from "../core/tasks/app-task-reconciler.js";
+import type { AppTaskAttempt } from "../core/tasks/app-task-state.js";
+import type { AppTaskContext } from "../core/tasks/app-task-store.js";
+import { getAppInboxItem } from "../core/state/app-inbox-store.js";
+import { admitConversationTaskInput, conversationTaskId, conversationTaskIntent } from "../core/state/conversation-task-turns.js";
 
 /**
  * Offline upgrade only. The operator must stop the old Host and every worker

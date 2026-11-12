@@ -6,7 +6,7 @@ import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource
 import {
   recoverMalformedConversationInput,
   type MalformedConversationInputRecoveryPlan,
-} from "../../src/app/core/state/malformed-conversation-input-recovery.js";
+} from "../../src/app/migrations/malformed-conversation-input-recovery.js";
 import { appTaskContext } from "../../src/app/core/tasks/app-task-reconciler.js";
 
 function usage(): never {

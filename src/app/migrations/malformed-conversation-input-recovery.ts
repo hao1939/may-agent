@@ -1,14 +1,14 @@
 import { isDeepStrictEqual } from "node:util";
 import type { AppInput, AppInputSource, ConversationTurnResult } from "@may-agent/sdk";
-import type { SqliteDb } from "../../../lib/db.js";
-import { stateTransaction } from "../../../lib/db/transaction.js";
-import { canonicalAppEvent } from "../../canonical-app-event.js";
-import type { AgentEvent } from "../events/bus.js";
-import { preferredTriggerFromEvents, readAppTaskIntent } from "../tasks/app-task-reconciler.js";
-import type { AppTaskContext } from "../tasks/app-task-store.js";
-import type { AppTaskTriggerEvent } from "../tasks/app-task-state.js";
-import { getAppInboxItem, listAppInboxItems, type AppInboxItem } from "./app-inbox-store.js";
-import { admitConversationTaskInput, conversationTaskExecutionId } from "./conversation-task-turns.js";
+import type { SqliteDb } from "../../lib/db.js";
+import { stateTransaction } from "../../lib/db/transaction.js";
+import { canonicalAppEvent } from "../canonical-app-event.js";
+import type { AgentEvent } from "../core/events/bus.js";
+import { preferredTriggerFromEvents, readAppTaskIntent } from "../core/tasks/app-task-reconciler.js";
+import type { AppTaskContext } from "../core/tasks/app-task-store.js";
+import type { AppTaskTriggerEvent } from "../core/tasks/app-task-state.js";
+import { getAppInboxItem, listAppInboxItems, type AppInboxItem } from "../core/state/app-inbox-store.js";
+import { admitConversationTaskInput, conversationTaskExecutionId } from "../core/state/conversation-task-turns.js";
 
 const FAILURE_REASON = "Offline recovery rejected malformed direct Conversation Task admission";
 
