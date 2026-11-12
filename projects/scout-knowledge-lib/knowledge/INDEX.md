@@ -1492,6 +1492,7 @@ The [reconstruction audit](../reports/review/scout-provenance-reconstruction-cyc
 ## Recent harness-evaluation findings
 
 - [Harness benchmarks need separate quality and cost resolution verdicts](findings/2026-11-10-harness-benchmarks-separate-quality-cost-resolution.md) — A pinned repository reports saturated public dev tasks that could not separate harness pass rates but did expose metered cost differences; Scout inspected reports and selected artifacts without rerunning trials, graders, analyses, or billing checks.
+- [Agent candidate comparisons need explicit trace cohorts](findings/2026-11-12-agent-candidate-comparisons-need-explicit-trace-cohorts.md) — Pinned NeMo Helix source validates declared candidate cohorts before telemetry storage, preserves shared test-case identities for matched comparisons, and can report rejected OTLP spans inside an HTTP 200 response; Scout did not run the platform, tests, or evaluations.
 
 ## Recent agent-context continuity findings
 
