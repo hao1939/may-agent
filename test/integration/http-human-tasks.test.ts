@@ -337,6 +337,37 @@ describe("HTTP human Task reads and board", () => {
     } finally { await browser.close(); }
   }, 30000);
 
+  test.skipIf(skipBrowser)("input during agent header loading addresses that agent and preserves its heading", async () => {
+    seedChat("worker");
+    seedChat("selected");
+    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    try {
+      const page = await browser.newPage();
+      page.setDefaultTimeout(5000);
+      await page.goto(`${base}/sessions/selected-old-session`, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction("ws?.readyState === WebSocket.OPEN");
+      await page.evaluate(`(() => {
+        const init = initAgentChat;
+        initAgentChat = name => window.pendingAgentInit = init(name);
+      })()`);
+      let capture: (request: HTTPRequest) => void;
+      const intercepted = new Promise<HTTPRequest>(resolveRequest => { capture = resolveRequest; });
+      await page.setRequestInterception(true);
+      page.on("request", request => {
+        if (new URL(request.url()).pathname === "/api/agents") capture(request);
+        else void request.continue();
+      });
+      await page.evaluate("routeTo('/agents/worker')");
+      const held = await intercepted;
+      await page.evaluate("document.getElementById('chat-input').value = 'Message the selected agent'; sendChat()");
+      expect(published).toMatchObject([{ type: "session.steer.requested", target: { sessionId: "worker-old-session" } }]);
+      await held.continue();
+      await page.evaluate("window.pendingAgentInit");
+      expect(await page.$eval("#agents-content h2", el => el.textContent)).toBe("worker");
+      expect(await page.evaluate("currentSessionId")).toBe("worker-old-session");
+    } finally { await browser.close(); }
+  }, 30000);
+
   test.skipIf(skipBrowser).each([false, true])("late direct-chat admission with existing session=%s cannot rebind a routed session", async (existing) => {
     if (existing) seedChat("worker");
     seedChat("selected");

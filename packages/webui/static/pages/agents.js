@@ -61,7 +61,7 @@ async function initAgentChat(name) {
 }
 
 async function renderAgentDetail(name) {
-  const selection = chatSelectionVersion;
+  const route = currentRouteParams;
   const el = document.getElementById('agents-content');
   if (!el) return;
   // Fetch summary stats from /api/agents (same source as list view).
@@ -71,7 +71,7 @@ async function renderAgentDetail(name) {
     const all = await r.json();
     summary = (all || []).find(a => a.name === name) || null;
   } catch {}
-  if (selection !== chatSelectionVersion || currentTab !== 'agents' || currentRouteParams.name !== name) return;
+  if (currentRouteParams !== route || currentTab !== 'agents' || currentRouteParams.name !== name) return;
 
   const dotColor = summary && summary.lastSessionAt && (Date.now() - summary.lastSessionAt < 4*3600*1000)
     ? (summary.errors4h > 0 ? 'var(--red)' : 'var(--green)')
