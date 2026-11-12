@@ -280,7 +280,7 @@ function migrateConditionFreshness(db: SqliteDb): void {
       for (const row of attempts) {
         const attempt = JSON.parse(row.attempt_json) as AppTaskAttempt;
         let updated = false;
-        for (const condition of attempt.pendingSettlement!.report.handlerResult.conditions ?? []) {
+        for (const condition of attempt.pendingSettlement!.report.handlerResult?.conditions ?? []) {
           if (!("type" in condition)) continue;
           const saved = previous.get(condition.id);
           const unchanged =

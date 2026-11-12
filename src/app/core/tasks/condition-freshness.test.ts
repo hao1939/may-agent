@@ -249,10 +249,24 @@ test("upgrade retains pending settlement effects and unchanged waits with their 
     VALUES ('sample', 'one', 'work', 2, 'running', 1000, ?)`,
     )
     .run(JSON.stringify(attempt));
+  // Retired report formats still reach their existing stopped-runtime conversion
+  // fence; this schema upgrade must not consume or reinterpret their effects.
+  const retired = {
+    ...attempt,
+    metadata: { id: "retired", resourceVersion: 1 },
+    pendingSettlement: { report: { conversation: { response: "Retained report" } } },
+  };
+  store.db
+    .prepare(
+      `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
+    VALUES ('sample', 'retired', 'work', 2, 'running', 1000, ?)`,
+    )
+    .run(JSON.stringify(retired));
   store.close();
   setSystemTime(new Date(3000));
   const reopened = AppTaskResourceStore.openStandalone(path, "sample");
   try {
+    expect(reopened.readAttempt("retired")).toEqual(retired);
     const upgraded = reopened.readAttempt("one")!;
     expect(upgraded).toEqual({
       ...attempt,
