@@ -26,8 +26,12 @@ describe("container runtime identity and working directory", () => {
   test("keeps image, supervisor and terminal sessions rooted at /app", () => {
     const dockerfile = read("container/Dockerfile");
     const supervisor = read("container/supervisord.conf");
+    const nginx = read("container/may-agent-nginx.conf");
 
     expect(dockerfile).toContain("WORKDIR /app");
+    expect(supervisor).toContain("chown=mayagent:mayagent");
+    expect(nginx).toContain("error_log /tmp/may-agent-nginx-error.log warn;");
+    expect(nginx).not.toContain("/dev/stderr");
     for (const program of ["terminal-herdr", "terminal-ttyd"]) {
       const start = supervisor.indexOf(`[program:${program}]`);
       expect(start).toBeGreaterThan(-1);
