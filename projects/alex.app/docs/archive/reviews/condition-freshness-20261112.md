@@ -55,3 +55,35 @@ These checks do not prove live GitHub behavior, model judgment, a container roll
 or installation recovery. Workflow kernel and prompt/checker changes are outside
 this slice. Runtime matching shrinks; total source grows because the bounded
 upgrade and regression coverage preserve existing state.
+
+## Review follow-up: one interpretation during recovery
+
+Review of Host `211c5fb2b8` found a real gap in the implementation and the evidence
+above. The initial tests covered persisted-event reads, but did not exercise the
+actual `recoverTaskConditions()` path with a producer time different from storage
+time. An event produced at 1000 and published at 3000 failed a cutoff of 2000 live,
+then incorrectly satisfied it after restart. Recovery had a second decoder that
+substituted the SQL publication time, dropped envelope targets and read the compact
+body projection without checking the complete saved evidence.
+
+The contract stays explicit; the implementation removes that competing decoder.
+Condition recovery now reuses the existing persisted-event loader, retaining its
+bounded candidate query and normal Condition transition. The loader validates
+the saved envelope and verifies complete inline or artifact-backed bodies.
+Pre-envelope history retains the known publication time; damaged current records
+are skipped as proof. Keyed retries also use the existing envelope validator,
+rather than extracting a possibly invalid timestamp with SQL.
+
+Seven new regressions exercise actual Task declaration, deferral and Condition
+recovery across file-backed database reopen: stale and fresh evidence, an
+independent human wait, historical proof, repeated recovery, complete large bodies,
+envelope-only targets, four damaged-evidence cases and pre-envelope history.
+All seven fail against the earlier duplicate decoder. A keyed-retry regression
+also rejects a damaged saved timestamp instead of publishing with a newer time.
+
+Follow-up Host: `2ddc5d77d9`. Focused freshness/recovery/persistence/transaction
+suites passed 34 tests; affected Task runtime and observation suites passed 218.
+May typecheck and all 187 tests passed against this candidate, as did the complete
+Apps design check and both fixture-backed GitHub compositions. Final full Host
+CI and hosted check results are recorded in the linked PR. This follow-up adds no
+SDK API, freshness mechanism or broader replay scope, and performs no deployment.

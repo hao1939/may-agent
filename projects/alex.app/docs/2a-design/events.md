@@ -150,6 +150,13 @@ observer source. Retain the constructed Condition to continue the same wait;
 construct another when a new read is required. An explicit timestamp expectation
 overrides the helper default, including `{ gte: 0 }` when retained history suffices.
 
+Replay uses the validated saved envelope and complete verified body, through the
+same persisted-event loader as admission recovery. SQL correlation columns select
+candidates; `events.timestamp` records publication time and cannot replace saved
+producer time. Pre-envelope history retains its known fields. A damaged current
+envelope or body cannot prove a Condition; a keyed retry validates the saved
+envelope before restoring its time.
+
 A current read can return an old measurement. For measurement freshness, also
 declare the required `measuredAt`, sample ID or source revision. Immutable result
 proofs can remain valid without a time boundary. Renaming an event does not change
