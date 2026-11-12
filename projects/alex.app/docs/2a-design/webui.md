@@ -92,7 +92,7 @@ The platform uses real browser paths and `history.pushState`:
 | `/projects/:id/tasks`            | Task list, optional relationship tree, and selected-task detail |
 | `/projects/:id/functions`        | Declared App commands that create requests                      |
 | `/metrics` and `/metrics/:id`    | Metric/alert detail and evidence                                |
-| `/sessions/:id`                  | Transcript, result, lineage, tools, and steering                |
+| `/sessions/:id`                  | Transcript, result, recorded parent/child links, tools, and steering                |
 | `/events` and `/events/:eventId` | Event list, admission health, and trace graph                   |
 | `/knowledge`                     | Searchable durable knowledge                                    |
 | `/terminal`                      | Full-window ttyd terminal attached to Herdr                                       |
@@ -210,6 +210,16 @@ The default project page owns the generic control readout:
 - task list, optional relationship tree, and selected-task detail;
 - metrics, sessions, events, declared App commands, and domain UI link;
 - structured steering with an honest async receipt.
+
+The project Lineage tab is retired in
+[Host PR 458](https://github.com/hao1939/may-agent/pull/458), pending merge
+and installation. The project Sessions tab remains, with its existing
+tagged/mention associations and historical workflow-file fallback. Open an exact session for its transcript,
+result and recorded parent/child links. The removed project-wide timeline also
+combined workflow references, historical file reads and child associations with
+inline checkpoint summaries; that combined investigation view has no replacement.
+Stored evidence is retained. See the [retirement record](../archive/reviews/project-lineage-retirement-20261112.md)
+for source status, scope and checks. Installation is unverified.
 
 Browser inference stays light. Stable project/task classifications belong in a
 server read model or project-owned state. Domain-specific feature/test/run

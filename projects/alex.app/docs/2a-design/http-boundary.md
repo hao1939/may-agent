@@ -87,6 +87,16 @@ agents and executions, projects/Tasks, metrics/alerts, adapter diagnostics, and
 terminal transport. The executable server route table remains the endpoint
 catalog.
 
+The project Lineage aggregate `/api/projects/lineage` is retired in
+[Host PR 458](https://github.com/hao1939/may-agent/pull/458), pending merge
+and installation; the candidate returns 404. `/api/projects/sessions` and exact
+`/api/sessions/:id` reads remain, including recorded session parent/child links.
+The adapter no longer combines workflow mentions, historical file reads and
+child associations into a project-wide timeline or loads its inline checkpoint
+summaries. No stored evidence is deleted or converted. See the
+[retirement record](../archive/reviews/project-lineage-retirement-20261112.md)
+for source status and checks; installed adoption is unverified.
+
 Canonical App task reads use stable identities rather than filesystem-like
 project paths:
 

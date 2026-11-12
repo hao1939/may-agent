@@ -21,6 +21,15 @@ below must not be used to reopen that completed removal. The
 [retirement record](../archive/reviews/learning-dashboard-retirement-20261112.md)
 owns scope and checks. Source removal is complete; installed adoption is unverified.
 
+**November 12 project-history reduction:** The user also selected retirement
+of the project Lineage tab and `/api/projects/lineage` aggregate in
+[Host PR 458](https://github.com/hao1939/may-agent/pull/458), pending merge
+and installation. The
+[retirement record](../archive/reviews/project-lineage-retirement-20261112.md)
+tracks this implementation candidate, the deliberately lost combined timeline
+and inline summaries, retained Sessions/exact evidence reads, and verification.
+This removes a view; it does not change session ancestry or Task execution.
+
 ## Goal and stopping point
 
 Keep ordinary conversation and authorized work responsive and understandable
