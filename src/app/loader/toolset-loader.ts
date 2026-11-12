@@ -1,10 +1,8 @@
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 import { resolve } from "node:path";
 import { currentAgentSessionId } from "../../lib/agent-session-context.js";
-import { createBackgroundExecTool } from "../../lib/background-exec.js";
 import type { SubagentManager } from "../../lib/manager.js";
 import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
-import { createScrapeTool } from "../../lib/scrape.js";
 import { assertUniqueToolNames } from "../../lib/tool-name-audit.js";
 import { createCheckpointTool } from "../../lib/tools/checkpoint.js";
 import { createCodingTools } from "../../lib/tools/coding.js";
@@ -14,7 +12,6 @@ import { createMessageTool } from "../../lib/tools/message-tool.js";
 import { createQueryDbTool } from "../../lib/tools/query-db.js";
 import { createReadTool } from "../../lib/tools/read.js";
 import { createRunCliAgentTool } from "../../lib/tools/run-cli-agent.js";
-import { createSystemStatusTool } from "../../lib/tools/system-status.js";
 import { createWorkflowTool } from "../../lib/workflow-tool.js";
 import type { WorkflowEvent } from "../../lib/workflow.js";
 import { readMetricView } from "../adapters/reporting/metric-read.js";
@@ -22,7 +19,6 @@ import { createAppTaskReadTool } from "../app-task-read-tool.js";
 import type { AppRegistry } from "../core/apps/registry.js";
 import type { EventBus } from "../core/events/bus.js";
 import { createRuntimeAppRead } from "../core/reads/app-read.js";
-import { readExecutionStatus } from "../core/reads/execution-status.js";
 import { getLoadedAppInputContract } from "../core/tasks/app-task-runtime.js";
 import type { AgentConfig } from "./agent-config.js";
 import { loadAgentLocalTools } from "./agent-local-tools.js";
@@ -167,31 +163,6 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
             }).execute(id, params, signal, onUpdate);
           },
         });
-        break;
-      }
-
-      case "background-exec": {
-        const bgExec = createBackgroundExecTool({
-          cwd: projectRoot,
-          denyMessage: "Do not explore outside the project root. Use relative paths.",
-          allowAgentSpawn: true,
-        });
-        tools.push(bgExec.tool);
-        opts.addCleanup(config.name, bgExec.cleanup);
-        break;
-      }
-
-      case "scrape":
-        tools.push(createScrapeTool());
-        break;
-
-      case "system-status":
-      case "system_status": {
-        tools.push(
-          createSystemStatusTool(opts.persistDir, opts.agentsRoot, opts.sharedRoot, () =>
-            readExecutionStatus(opts.persistDir),
-          ),
-        );
         break;
       }
 

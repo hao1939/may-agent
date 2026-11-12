@@ -386,21 +386,6 @@ function fmtTime(epoch) {
          d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
-function scoreBar(val, color) {
-  const pct = Math.round((val || 0) * 100);
-  return `<span class="score-bar"><span class="fill" style="width:${pct}%;background:${color}"></span></span> ${pct}%`;
-}
-
-
-function verdictColor(verdict) {
-  if (!verdict) return '';
-  const v = verdict.toLowerCase();
-  if (v === 'good') return '#4caf50';
-  if (v === 'needs_improvement') return '#ff9800';
-  if (v === 'poor') return '#f44336';
-  return 'var(--fg2)';
-}
-
 async function loadSessionDetail(sessionId, opts = {}) {
   if (currentInspectedSession !== sessionId) currentSessionEval = null;
   currentInspectedSession = sessionId;
@@ -418,7 +403,6 @@ async function loadSessionDetail(sessionId, opts = {}) {
     if (sessData.error) { panel.innerHTML = `<div class="panel">${sessData.error}</div>`; return; }
 
     const s = sessData.session;
-    const ev = sessData.evaluation;
     const durSec = s.endedAt ? Math.round((s.endedAt - s.startedAt) / 1000) : null;
     const durStr = durSec !== null ? (durSec >= 60 ? Math.floor(durSec/60) + 'm ' + (durSec%60) + 's' : durSec + 's') : 'running...';
     const sessionIdArg = jsStringAttr(s.sessionId);
@@ -495,54 +479,7 @@ async function loadSessionDetail(sessionId, opts = {}) {
       html += `</div>`;
     }
 
-    // F. Session Evaluation Section
-    if (ev) {
-      const qPct = ev.quality != null ? Math.round(ev.quality * 100) + '%' : null;
-      const ePct = ev.efficiency != null ? Math.round(ev.efficiency * 100) + '%' : null;
-      html += `<div class="section">
-        <details class="eval-details">
-          <summary><b>Session evaluation</b>${ev.verdict ? flowChip(ev.verdict) : ''}${qPct ? flowChip('quality ' + qPct) : ''}${ePct ? flowChip('efficiency ' + ePct) : ''}</summary>
-          <div class="eval-card">`;
-      if (ev.quality != null) {
-        const qColor = ev.quality >= 0.7 ? '#4caf50' : ev.quality >= 0.4 ? '#ff9800' : '#f44336';
-        html += `<div style="margin-bottom:6px"><strong>Quality:</strong> ${scoreBar(ev.quality, qColor)}</div>`;
-      }
-      if (ev.efficiency != null) {
-        const eColor = ev.efficiency >= 0.7 ? '#4caf50' : ev.efficiency >= 0.4 ? '#ff9800' : '#f44336';
-        html += `<div style="margin-bottom:6px"><strong>Efficiency:</strong> ${scoreBar(ev.efficiency, eColor)}</div>`;
-      }
-      if (ev.verdict) {
-        html += `<div style="margin-bottom:6px"><strong>Verdict:</strong> <span style="color:${verdictColor(ev.verdict)};font-weight:600">${esc(ev.verdict)}</span></div>`;
-      }
-      if (ev.productiveCalls != null || ev.wastedCalls != null) {
-        html += `<div style="margin-bottom:6px;font-size:13px">Productive calls: <strong>${ev.productiveCalls ?? '—'}</strong> · Wasted calls: <strong>${ev.wastedCalls ?? '—'}</strong></div>`;
-      }
-      // Parse issues
-      if (ev.issues) {
-        try {
-          const issues = typeof ev.issues === 'string' ? JSON.parse(ev.issues) : ev.issues;
-          if (Array.isArray(issues) && issues.length) {
-            html += `<div style="margin-top:8px"><strong>Issues:</strong><ul style="margin:4px 0;padding-left:20px;font-size:13px">`;
-            for (const issue of issues) {
-              html += `<li>${esc(typeof issue === 'string' ? issue : JSON.stringify(issue))}</li>`;
-            }
-            html += `</ul></div>`;
-          }
-        } catch(e) { /* ignore parse errors */ }
-      }
-      // Parse overall
-      if (ev.overall) {
-        try {
-          const overall = typeof ev.overall === 'string' ? JSON.parse(ev.overall) : ev.overall;
-          if (overall && typeof overall === 'object') {
-            html += `<div style="margin-top:8px"><strong>Summary:</strong> <span style="font-size:13px">${esc(overall.summary || overall.verdict || JSON.stringify(overall))}</span></div>`;
-          }
-        } catch(e) { /* ignore parse errors */ }
-      }
-      html += `</div></details></div>`;
-    }
-
-    // G. Delegation Tree
+    // E. Delegation Tree
     if (sessData.children.length) {
       html += `<div class="section">
         <h4>Delegation Tree</h4>`;

@@ -571,7 +571,6 @@ async function loadAgentDeepDive(name) {
     // Tabs
     html += `<div class="tabs">
       <button class="tab-btn active" onclick="switchDeepDiveTab(this,'dd-sessions')">Sessions</button>
-      <button class="tab-btn" onclick="switchDeepDiveTab(this,'dd-evals')">Evaluations</button>
       <button class="tab-btn" onclick="switchDeepDiveTab(this,'dd-delegation')">Delegation</button>
       <button class="tab-btn" onclick="switchDeepDiveTab(this,'dd-files')">Workspace</button>
     </div>`;
@@ -596,39 +595,7 @@ async function loadAgentDeepDive(name) {
     }
     html += `</div>`;
 
-    // Tab 2: Evaluations
-    html += `<div id="dd-evals" class="tab-content">`;
-    if (data.evalTrend && data.evalTrend.length) {
-      const avgQ = (data.evalTrend.reduce((a,e) => a+e.quality, 0) / data.evalTrend.length).toFixed(1);
-      const avgE = (data.evalTrend.reduce((a,e) => a+e.efficiency, 0) / data.evalTrend.length).toFixed(1);
-      const verdictCounts = {};
-      data.evalTrend.forEach(e => { verdictCounts[e.verdict] = (verdictCounts[e.verdict]||0)+1; });
-      const topVerdict = Object.entries(verdictCounts).sort((a,b) => b[1]-a[1])[0];
-
-      html += `<div class="eval-grid" style="margin-bottom:16px">
-        <div class="eval-card"><div class="score">${avgQ}</div><div class="label">Avg Quality</div></div>
-        <div class="eval-card"><div class="score">${avgE}</div><div class="label">Avg Efficiency</div></div>
-        <div class="eval-card"><div class="score">${data.evalTrend.length}</div><div class="label">Evaluations</div></div>
-        <div class="eval-card"><div class="score" style="font-size:14px">${topVerdict ? topVerdict[0] : '—'}</div><div class="label">Top Verdict</div></div>
-      </div>`;
-
-      // Sparkline for quality trend (most recent on right)
-      const reversed = [...data.evalTrend].reverse();
-      const maxQ = Math.max(...reversed.map(e => e.quality), 1);
-      html += `<div style="margin-bottom:8px;font-size:12px;color:var(--fg2)">Quality trend (recent →)</div>`;
-      html += `<div class="sparkline">`;
-      for (const e of reversed) {
-        const h = Math.max(4, Math.round((e.quality / maxQ) * 40));
-        const color = e.quality >= 0.7 ? 'var(--green)' : e.quality >= 0.4 ? 'var(--yellow)' : 'var(--red)';
-        html += `<div class="bar" style="height:${h}px;background:${color}" title="Q:${e.quality} E:${e.efficiency}"></div>`;
-      }
-      html += `</div>`;
-    } else {
-      html += '<div style="color:var(--fg2);font-size:13px">No evaluations found.</div>';
-    }
-    html += `</div>`;
-
-    // Tab 3: Delegation
+    // Tab 2: Delegation
     html += `<div id="dd-delegation" class="tab-content">`;
     if (data.delegationMap) {
       const { delegatesTo, delegatedFrom } = data.delegationMap;

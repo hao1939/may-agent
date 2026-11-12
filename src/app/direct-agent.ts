@@ -17,8 +17,6 @@ import { drainSessionBashProcessGroups } from "../lib/tools/bash.js";
 import { createCodingTools } from "../lib/tools/coding.js";
 import { createFinishTool } from "../lib/tools/lifecycle.js";
 import { createReadTool } from "../lib/tools/read.js";
-import { createBackgroundExecTool } from "../lib/background-exec.js";
-import { createScrapeTool } from "../lib/scrape.js";
 import type { ModelWithApiKey } from "../lib/types.js";
 import { validateOperationAllowance } from "../lib/workflow-finish-recovery.js";
 import { buildAgentDefinition } from "./loader/agent-definition.js";
@@ -167,9 +165,6 @@ async function buildDirectTools(
       case "read-only":
         tools.push(createReadTool(options.workRoot) as AgentTool);
         break;
-      case "scrape":
-        tools.push(createScrapeTool());
-        break;
       case "finish":
         tools.push(
           createFinishTool({
@@ -179,18 +174,6 @@ async function buildDirectTools(
           }),
         );
         break;
-      case "background-exec": {
-        const background = createBackgroundExecTool({
-          cwd: options.workRoot,
-          denyMessage: "Do not explore outside the scenario work root.",
-          allowAgentSpawn: false,
-          drainProcessGroup: options.drainProcessGroup,
-        });
-        tools.push(background.tool);
-        cleanupSync.push(background.cleanup);
-        cleanupAsync.push(background.cleanupAsync);
-        break;
-      }
       case "workflow": {
         if (!options.workflowTool) {
           throw new Error(

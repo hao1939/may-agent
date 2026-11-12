@@ -121,6 +121,30 @@ describe.each([
     }
   });
 
+  it("reads uncommitted-to-main-file live WAL commits during --status without mutating the file set", async () => {
+    const stateDir = makeFixture();
+    try {
+      const liveBus = new EventBus();
+      attachEventPersistence({ bus: liveBus, persistDir: stateDir });
+      const { getDb } = await import("../lib/db/connection.js");
+      const db = getDb(stateDir);
+      db.exec("PRAGMA wal_autocheckpoint = 0");
+      const now = Date.now();
+      db.run(
+        "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt) VALUES (?, ?, ?, ?, ?, ?)",
+        ["live-cli-session", "live-worker", "verify wal visibility", "done", now - 500, now],
+      );
+      const filesBefore = readdirSync(stateDir).sort();
+      const result = await invoke(entry, ["--status"], stateDir);
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout).toMatch(/live-worker\s+1\s+1\s+0\s+100%/);
+      expect(readdirSync(stateDir).sort()).toEqual(filesBefore);
+    } finally {
+      closeDb(stateDir);
+      rmSync(stateDir, { recursive: true, force: true });
+    }
+  });
+
   it("rejects positional status before recovery, startup, or persisted-state mutation", async () => {
     const stateDir = makeFixture();
     const before = stateDigest(stateDir);

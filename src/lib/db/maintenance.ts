@@ -255,14 +255,6 @@ export function runDbMaintenancePass(
     [now - 14 * DAY_MS, batchSize],
   );
   remove(
-    "evaluations",
-    `DELETE FROM evaluations WHERE rowid IN (
-       SELECT rowid FROM evaluations
-       WHERE createdAt < ? ORDER BY createdAt LIMIT ?
-     )`,
-    [now - 30 * DAY_MS, batchSize],
-  );
-  remove(
     "metric_snapshots",
     `DELETE FROM metric_snapshots WHERE rowid IN (
        SELECT rowid FROM metric_snapshots
