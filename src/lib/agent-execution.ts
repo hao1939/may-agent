@@ -16,9 +16,6 @@ import type { SubagentDefinition } from "./types.js";
 import { composeGuards, toGuardContext, type BeforeToolCallHook } from "./tools/compose-guards.js";
 import { createCommitGuard } from "./tools/commit-guard.js";
 import { createFinishGuard } from "./tools/finish-guard.js";
-import { createPathHallucinationGuard } from "./tools/path-hallucination-guard.js";
-import { createReadDedupGuard } from "./tools/read-dedup-guard.js";
-import { createSessionReadGuard } from "./tools/session-read-guard.js";
 import { createWorkflowFinishTool } from "./tools/workflow-finish.js";
 import { createReadTool } from "./tools/read.js";
 import { createBashTool } from "./tools/bash.js";
@@ -446,11 +443,8 @@ function buildGuards(definition: SubagentDefinition, projectRoot: string): Befor
       return result ? { ...result, guardName: result.guardName ?? guardName } : undefined;
     };
   return [
-    named("path-hallucination", createPathHallucinationGuard()),
     named("finish-evidence", createFinishGuard()),
     named("commit", createCommitGuard(definition.name, projectRoot)),
-    named("read-dedup", createReadDedupGuard()),
-    named("session-read", createSessionReadGuard()),
   ];
 }
 

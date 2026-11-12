@@ -400,6 +400,46 @@ describe("shared agent execution preparation", () => {
     expect(custom.systemPrompt).toContain("Host execution reference");
   });
 
+  test("supports paginated and refreshed transcript reads without heuristic diagnostics", async () => {
+    const root = mkdtempSync(join(tmpdir(), "agent-read-diagnostics-"));
+    roots.push(root);
+    const transcript = join(root, ".state", "sessions", "sample", "session.jsonl");
+    mkdirSync(join(root, ".state", "sessions", "sample"), { recursive: true });
+    writeFileSync(transcript, "page one\npage two\npage three\npage four");
+    const signals: string[] = [];
+    const prepared = prepareAgentExecution({
+      definition: { name: "sample", description: "sample", domain: "tests", systemPrompt: "Read evidence",
+        model: streamTestModel, tools: [tool("read"), tool("finish")] },
+      projectRoot: root, executionRoot: root, sessionId: "read-pages", task: "Inspect evidence",
+      onGuard: ({ guard }) => signals.push(guard),
+    });
+    const read = prepared.tools.find(candidate => candidate.name === "read")!;
+    const message = assistantMessage("stop");
+    const check = (name: string, args: Record<string, unknown>) => prepared.runner.beforeToolCall!({
+      assistantMessage: message, toolCall: { type: "toolCall", id: "read-page", name, arguments: args },
+      args, context: { messages: [], tools: prepared.tools },
+    });
+    for (let offset = 1; offset <= 4; offset++) {
+      const args = { path: transcript, offset, limit: 1 };
+      expect(await check("read", args)).toBeUndefined();
+      const result = await read.execute("read-page", args);
+      expect(result.content[0]).toMatchObject({ type: "text", text: expect.stringContaining(
+        ["page one", "page two", "page three", "page four"][offset - 1]!,
+      ) });
+    }
+    writeFileSync(transcript, "current evidence");
+    expect(await check("read", { path: transcript })).toBeUndefined();
+    expect((await read.execute("refresh", { path: transcript })).content[0])
+      .toEqual({ type: "text", text: "current evidence" });
+    // A shell argument can mention a home path without claiming it exists.
+    expect(await check("bash", { command: "test -n /home/example-user" })).toBeUndefined();
+    expect(signals).toEqual([]);
+    // The diagnostic callback remains wired for retained finish checks.
+    expect(await check("finish", { status: "success", deliverables: [{ path: transcript, description: "evidence" }] }))
+      .toMatchObject({ block: false, guardName: "finish-evidence" });
+    expect(signals).toEqual(["finish-evidence"]);
+  });
+
   test("synthesizes exactly one checkpoint for explicit full non-persistent preparation", () => {
     let checkpointCreations = 0;
     const prepared = prepareAgentExecution({
