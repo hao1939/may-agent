@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Companion to agent-runtime-unattended-execution-and-replay.md for workflow and control-plane recovery boundaries: host-owned durability, trace-compilation limits, deterministic recovery projections, bounded executor re-adoption, pause-versus-execution authority, receipt-bound action selection, and fresh-state checks after concurrency fences."
 triggers: ["AgentRun", "workflow DSL", "late settlement", "Hotpath", "trace compilation", "workflow drift", "Kiso", "recovery projection", "crash matrix", "Stablehand", "orphan grace", "turn re-attachment", "delivery journal", "LoopX", "hard lease", "agent pause", "lease retirement", "host-owned turn", "action selection", "receipt binding", "concurrent admission", "fresh-state recovery"]
-last_updated: "2026-11-09"
-source_basis: "Extracted intact from agent-runtime-unattended-execution-and-replay.md during its 2026-10-01 oversized-note review, then extended with pinned LoopX evidence on host-owned Turn selection and concurrent recovery admission and pinned Stablehand evidence on bounded sandbox survival, fenced owner replacement, and journal replay after an orchestrator crash. Each section retains stable source links, pinned revisions, inspected implementation or repository-authored test evidence, and explicit execution limitations."
+last_updated: "2026-11-12"
+source_basis: "Extracted intact from agent-runtime-unattended-execution-and-replay.md during its 2026-10-01 oversized-note review, then extended with pinned LoopX evidence on host-owned Turn selection and concurrent recovery admission, pinned Stablehand evidence on bounded sandbox survival and recovery, and a later AgentRun learning-pipeline inspection. Each section retains stable source links, pinned revisions, inspected implementation or repository-authored test evidence, and explicit execution limitations."
 </ai_context>
 
 # Agent Runtime Workflow and Control-Plane Recovery
@@ -57,6 +57,41 @@ early implementation pattern, not production reliability or adoption evidence.
 - **Inspected revision:** https://github.com/Parcha-ai/agentrun/commit/89b6fff6493700ad097c2a016ad2396e3c8c79bc (`0.1.0-beta.3`)
 - **Primary sources:** [workflow and limits guide](https://github.com/Parcha-ai/agentrun/blob/89b6fff6493700ad097c2a016ad2396e3c8c79bc/docs/guide.md), [host integration contract](https://github.com/Parcha-ai/agentrun/blob/89b6fff6493700ad097c2a016ad2396e3c8c79bc/docs/host-integration.md), [interpreter implementation](https://github.com/Parcha-ai/agentrun/blob/89b6fff6493700ad097c2a016ad2396e3c8c79bc/packages/dsl/src/workflow.ts), [runtime-boundary tests](https://github.com/Parcha-ai/agentrun/blob/89b6fff6493700ad097c2a016ad2396e3c8c79bc/packages/dsl/test/runtime-boundaries.test.mjs), and [nested-recovery tests](https://github.com/Parcha-ai/agentrun/blob/89b6fff6493700ad097c2a016ad2396e3c8c79bc/packages/dsl/test/nested-composition.test.mjs)
 - **Discovery feed:** HN Algolia `search_by_date?query=AI%20agent&tags=story&numericFilters=created_at_i%3E%3D1790186458&hitsPerPage=50`
+
+### November 12 update: learned automation needs artifact promotion gates
+
+A later AgentRun release adds a concrete learning pipeline around the durable
+runtime. A completed run may propose bounded notes, one reusable skill, and one
+typed workflow draft, but it does not directly rewrite its standing instructions.
+The host applies code checks and a separate model grade, then records accepted
+artifacts in a dedicated Git folder. Notes are added or explicitly superseded;
+skills require a completed job; and the prompt asks for a workflow draft only
+after the corresponding skill has been offered to three earlier runs.
+
+The executable promotion boundary is stricter than retention. Static checks
+reject code nodes, shell and executor calls, unavailable or disallowed tools,
+and tool-using model nodes. A synthetic dry run then checks one exercised path's
+wiring and schemas without calling a model or tool. Risky rules wait for owner
+approval, stale graded blobs cause a compare-and-swap conflict, and a learned
+workflow is rechecked against current tool grants and policy when invoked. A
+crash-interrupted workflow call is marked interrupted rather than replayed.
+
+This supports a sharper ladder: **remembering, reusable procedure, and executable
+automation require different promotion evidence.** Successful completion can
+justify proposing a skill, but not prove that a compiled workflow preserves its
+semantics. A synthetic dry run proves selected wiring rather than real-world
+correctness, and a Git commit proves accepted bytes entered the learning store
+rather than that later runs benefited.
+
+Scout inspected the complete README, HN item and comments, repository metadata,
+the producer-authored learning contract, proposal checker, grading rubric,
+commit path, learned-workflow runtime, and selected dry-run tests at revision
+[`a8f433f9`](https://github.com/Parcha-ai/agentrun/commit/a8f433f9ba0f8d9b4e14d950ff55bc1c100edcd9).
+Scout did not install or run AgentRun, execute its tests, reproduce the
+producer-authored cost or quality case studies, inspect every learning or
+authorization path, validate the grader, or measure downstream improvement. HN
+item [50471650](https://news.ycombinator.com/item?id=50471650) supplied current
+discovery and limited discussion rather than independent corroboration.
 
 ## Compiling One Trace Freezes More Than the Happy Path — Hotpath (HN / GitHub, October 2026)
 
