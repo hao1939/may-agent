@@ -1,4 +1,5 @@
 import { type TSchema } from "typebox";
+import { WorkflowUnconfirmedCleanupError } from "../../packages/sdk/src/workflow-kernel.js";
 import { readFileWritePolicy, type FileWritePolicy } from "../lib/tools/file-write-policy.js";
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 
@@ -11,12 +12,15 @@ import {
   type PreparedAgentExecution,
 } from "../lib/agent-execution.js";
 import { generateId } from "../lib/manager-utils.js";
+import type { ToolPolicy } from "../lib/session-policy.js";
+import { drainSessionBashProcessGroups } from "../lib/tools/bash.js";
 import { createCodingTools } from "../lib/tools/coding.js";
 import { createFinishTool } from "../lib/tools/lifecycle.js";
 import { createReadTool } from "../lib/tools/read.js";
 import { createBackgroundExecTool } from "../lib/background-exec.js";
 import { createScrapeTool } from "../lib/scrape.js";
 import type { ModelWithApiKey } from "../lib/types.js";
+import { validateOperationAllowance } from "../lib/workflow-finish-recovery.js";
 import { buildAgentDefinition } from "./loader/agent-definition.js";
 import { resolveRuntimeAgentDirectory, type AgentDirectory } from "./loader/agent-discovery.js";
 import { readAgentConfigFile, validateAgentConfig, type AgentConfig } from "./loader/agent-config.js";
@@ -55,6 +59,12 @@ export type DirectAgentRunOptions = {
   models: Record<string, ModelWithApiKey>;
   /** Optional caller-owned structured result contract, enforced by finish(). */
   outputSchema?: TSchema;
+  /** Require finish() termination even when outputSchema is omitted. */
+  requireFinish?: boolean;
+  /** Per-call capability restriction (for example "readonly"), applied after tool expansion. */
+  toolPolicy?: ToolPolicy;
+  /** Finite positive integer tool-operation allowance before bounded completion is requested. */
+  operationAllowance?: number;
   toolDenials?: ToolDenial[];
   timeoutMs?: number;
   signal?: AbortSignal;
@@ -63,6 +73,10 @@ export type DirectAgentRunOptions = {
   promptTimestamp?: string;
   /** Fixed only when deterministic preparation/evaluation facts are required. */
   sessionId?: string;
+  /** Optional sandboxed workflow tool supplied by direct-workflow / Gym when opted in. */
+  workflowTool?: AgentTool;
+  /** Optional override for background process-group draining in tests. */
+  drainProcessGroup?: (pgid: number) => Promise<boolean>;
   onNotice?: (message: string) => void;
 };
 
@@ -72,6 +86,7 @@ export type DirectAgentRunResult = DirectAgentExecutionResult & {
   systemPrompt: string;
   model: string;
   executionManifest: AgentExecutionManifest;
+  cleanupConfirmed: boolean;
 };
 
 export type DirectAgentPreparation = {
@@ -81,6 +96,7 @@ export type DirectAgentPreparation = {
   model: string;
   executionManifest: AgentExecutionManifest;
   cleanup(): void;
+  cleanupAsync(): Promise<boolean>;
 };
 
 function resolveAgentSource(options: DirectAgentRunOptions): AgentDirectory {
@@ -124,16 +140,29 @@ async function buildDirectTools(
   config: AgentConfig,
   source: AgentDirectory,
   options: DirectAgentRunOptions,
+  sessionId: string,
   effectiveTools: string[],
   fileWritePolicy: FileWritePolicy,
-): Promise<{ tools: AgentTool[]; cleanup: Array<() => void> }> {
+): Promise<{
+  tools: AgentTool[];
+  cleanupSync: Array<() => void>;
+  cleanupAsync: Array<() => Promise<boolean>>;
+}> {
   const tools: AgentTool[] = [];
   const sources: string[] = [];
-  const cleanup: Array<() => void> = [];
+  const cleanupSync: Array<() => void> = [];
+  const cleanupAsync: Array<() => Promise<boolean>> = [];
   for (const capability of effectiveTools) {
     switch (capability) {
       case "coding":
-        tools.push(...createCodingTools(options.workRoot, { agentName: config.name, fileWritePolicy }));
+        tools.push(
+          ...createCodingTools(options.workRoot, {
+            agentName: config.name,
+            fileWritePolicy,
+            processGroupOwner: { persistDir: options.outputRoot, sessionId },
+          }),
+        );
+        cleanupAsync.push(() => drainSessionBashProcessGroups(options.outputRoot, sessionId));
         break;
       case "read-only":
         tools.push(createReadTool(options.workRoot) as AgentTool);
@@ -155,9 +184,21 @@ async function buildDirectTools(
           cwd: options.workRoot,
           denyMessage: "Do not explore outside the scenario work root.",
           allowAgentSpawn: false,
+          drainProcessGroup: options.drainProcessGroup,
         });
         tools.push(background.tool);
-        cleanup.push(background.cleanup);
+        cleanupSync.push(background.cleanup);
+        cleanupAsync.push(background.cleanupAsync);
+        break;
+      }
+      case "workflow": {
+        if (!options.workflowTool) {
+          throw new Error(
+            `Direct run cannot construct effective tool "workflow" for agent ${config.name}; ` +
+              `the caller must provide an explicit denial or workflowTool`,
+          );
+        }
+        tools.push(options.workflowTool);
         break;
       }
       default:
@@ -169,18 +210,19 @@ async function buildDirectTools(
     while (sources.length < tools.length) sources.push(`configured capability "${capability}"`);
   }
   const localTools = await loadAgentLocalTools(config.name, source.dir, {
-      projectRoot: options.workRoot,
-      persistDir: options.outputRoot,
-      onNotice: options.onNotice,
-    });
+    projectRoot: options.workRoot,
+    persistDir: options.outputRoot,
+    onNotice: options.onNotice,
+  });
   tools.push(...localTools);
   sources.push(...localTools.map(() => `agent-local tools for "${config.name}"`));
   assertUniqueToolNames(tools.map((tool, index) => ({ tool, source: sources[index]! })), config.name);
-  return { tools, cleanup };
+  return { tools, cleanupSync, cleanupAsync };
 }
 
 /** Prepare one direct run without constructing autonomous infrastructure. */
 export async function prepareDirectAgentExecution(options: DirectAgentRunOptions): Promise<DirectAgentPreparation> {
+  validateOperationAllowance(options.operationAllowance);
   const source = resolveAgentSource(options);
   const config = readAgentConfigFile(source.dir);
   if (!config) throw new Error(`Agent "${options.agentName}" is disabled or has no agent.json`);
@@ -195,12 +237,21 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
   }
   const model = options.models[config.model];
   if (!model) throw new Error(`Agent ${config.name} uses unknown model ${config.model}`);
+  const sessionId = options.sessionId ?? generateId("direct");
+  const sessionPath = resolve(options.outputRoot, "sessions", sessionId);
   let executionManifest = resolveDirectToolPolicy(config.name, config.tools, options.toolDenials);
   const fileWritePolicy: FileWritePolicy = {
     ...readFileWritePolicy(options.sharedRoot, options.projectRoot),
     execution: { root: resolve(options.workRoot), sourceRoot: resolve(options.projectRoot) },
   };
-  const { tools, cleanup } = await buildDirectTools(config, source, options, executionManifest.effectiveTools, fileWritePolicy);
+  const { tools, cleanupSync, cleanupAsync } = await buildDirectTools(
+    config,
+    source,
+    options,
+    sessionId,
+    executionManifest.effectiveTools,
+    fileWritePolicy,
+  );
   const definitionSource = options.visibleAgentDir ? { ...source, dir: resolve(options.visibleAgentDir) } : source;
   const definition = await buildAgentDefinition({
     config,
@@ -214,15 +265,14 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
   definition.fileWritePolicy = fileWritePolicy;
   for (const diagnostic of definition.skillCatalog?.diagnostics ?? []) options.onNotice?.(diagnostic);
 
-  const sessionId = options.sessionId ?? generateId("direct");
-  const sessionPath = resolve(options.outputRoot, "sessions", sessionId);
   const prepared = prepareAgentExecution({
     definition,
     projectRoot: options.projectRoot,
     sessionId,
     task: options.task,
     outputSchema: options.outputSchema,
-    requireFinish: options.outputSchema !== undefined,
+    requireFinish: options.requireFinish === true || options.outputSchema !== undefined,
+    toolPolicy: options.toolPolicy,
     promptTimestamp: options.promptTimestamp,
     createFinish: () =>
       createFinishTool({
@@ -246,7 +296,19 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
     model: config.model,
     executionManifest,
     cleanup: () => {
-      for (const close of cleanup) close();
+      for (const close of cleanupSync) close();
+    },
+    cleanupAsync: async () => {
+      const outcomes = await Promise.all(
+        cleanupAsync.map(async (fn) => {
+          try {
+            return await fn();
+          } catch {
+            return false;
+          }
+        }),
+      );
+      return outcomes.every(Boolean);
     },
   };
 }
@@ -275,11 +337,15 @@ export async function runDirectAgent(options: DirectAgentRunOptions): Promise<Di
     )}\n`,
   );
 
+  let result: Awaited<ReturnType<typeof executePreparedAgent>> | undefined;
+  let caught: unknown;
+  let cleanupConfirmed = true;
   try {
-    const result = await executePreparedAgent(prepared, {
+    result = await executePreparedAgent(prepared, {
       timeoutMs: options.timeoutMs,
       signal: options.signal,
       deadlineAt: options.deadlineAt,
+      operationAllowance: options.operationAllowance,
       onObservation: (event) => {
         if (event.type === "message_end" && "message" in event) {
           appendFileSync(transcriptPath, `${JSON.stringify((event as { message: AgentMessage }).message)}\n`);
@@ -298,15 +364,26 @@ export async function runDirectAgent(options: DirectAgentRunOptions): Promise<Di
         /* optional evidence */
       }
     }
-    return {
-      ...result,
-      sessionId,
-      sessionPath,
-      systemPrompt: prepared.systemPrompt,
-      model: direct.model,
-      executionManifest,
-    };
+  } catch (err) {
+    caught = err;
   } finally {
-    direct.cleanup();
+    cleanupConfirmed = await direct.cleanupAsync();
   }
+  if (!cleanupConfirmed && caught !== undefined) {
+    throw new WorkflowUnconfirmedCleanupError(
+      options.agentName,
+      [`agent:${options.agentName} (${sessionId})`],
+      caught,
+    );
+  }
+  if (caught !== undefined) throw caught;
+  return {
+    ...result!,
+    sessionId,
+    sessionPath,
+    systemPrompt: prepared.systemPrompt,
+    model: direct.model,
+    executionManifest,
+    cleanupConfirmed,
+  };
 }

@@ -3,7 +3,7 @@
  *
  * These tests use createWorkflowTool with a mock SubagentManager to verify
  * that guards are discovered, loaded, called with correct events, and their
- * demands (warn, run_step, block) are resolved during executeWorkflow.
+ * observational/blocking demands (observe, warn, block) are resolved.
  */
 
 import { afterEach, describe, test, expect } from "bun:test";
@@ -118,7 +118,7 @@ describe("Guard integration: warn demand delivery", () => {
 
     // Disable all guards except the warn one
     const origDisabled = process.env.DISABLED_GUARDS;
-    process.env.DISABLED_GUARDS = "test-valid,test-blocker,test-inject-step";
+    process.env.DISABLED_GUARDS = "test-valid,test-blocker";
 
     try {
       const result = await tool.execute("tc_1", {
@@ -179,7 +179,7 @@ describe("Guard integration: warn demand delivery", () => {
 
     // Disable ALL guards — no warnings should appear
     const origDisabled = process.env.DISABLED_GUARDS;
-    process.env.DISABLED_GUARDS = "test-valid,test-blocker,test-inject-step,test-warn-on-step-done";
+    process.env.DISABLED_GUARDS = "test-valid,test-blocker,test-warn-on-step-done";
 
     try {
       const tool = createWorkflowTool({
@@ -212,113 +212,6 @@ describe("Guard integration: warn demand delivery", () => {
   });
 });
 
-describe("Guard integration: run_step demand injection", () => {
-  test("inject guard fires on step-one completion, injected step runs", async () => {
-    const { calls, manager } = createMockManager(async (name) => {
-      return makeTaskResult({
-        lastAssistantText: `${name} completed`,
-        sessionId: `s_${name}_${Date.now()}`,
-      });
-    });
-
-    // Enable only the inject guard
-    const origDisabled = process.env.DISABLED_GUARDS;
-    process.env.DISABLED_GUARDS = "test-valid,test-blocker,test-warn-on-step-done";
-
-    try {
-      const events: any[] = [];
-      const emitted: any[] = [];
-      const tool = createWorkflowTool({
-        manager,
-        workflowDir: TEST_WORKFLOW_DIR,
-        guardsDir: TEST_GUARDS_DIR,
-        agentName: "test-agent",
-        onEvent: (e) => events.push(e),
-        runtimeCtx: createRuntimeCtx(emitted),
-      });
-
-      const result = await tool.execute("tc_3", {
-        action: "run",
-        name: "test-two-step",
-        task: "Test guard step injection",
-      });
-
-      const parsed = JSON.parse((result.content[0] as any).text) as WorkflowToolResult;
-      expect(parsed.type).toBe("done");
-
-      // Should have 3 calls: step-one, guard:verify-step-one (injected), step-two
-      expect(calls.length).toBe(3);
-      expect(calls[0].name).toBe("step-one");
-      expect(calls[1].name).toBe("verifier"); // injected by guard
-      expect(calls[1].task).toBe("Verify the output of step-one");
-      expect(calls[1].opts?.stepLabel).toBe("guard:verify-step-one");
-      expect(calls[1].opts?.source).toBe("guard");
-      expect(calls[2].name).toBe("step-two");
-
-      // Verify events include the injected step
-      const stepStarts = events.filter(e => e.type === "workflow.step_started");
-      const stepDones = events.filter(e => e.type === "workflow.step_completed");
-      expect(stepStarts.some(e => e.step === "guard:verify-step-one")).toBe(true);
-      expect(stepDones.some(e => e.step === "guard:verify-step-one")).toBe(true);
-      expect(emitted).toContainEqual(expect.objectContaining({
-        type: "guard.triggered",
-        source: "workflow",
-        owner: "agent:test-agent",
-        data: expect.objectContaining({
-          guard: "test-inject-step",
-          demandType: "run_step",
-          action: "injected",
-          sessionId: expect.any(String),
-          injectedStepLabel: "guard:verify-step-one",
-          injectedAgent: "verifier",
-        }),
-      }));
-    } finally {
-      if (origDisabled === undefined) {
-        delete process.env.DISABLED_GUARDS;
-      } else {
-        process.env.DISABLED_GUARDS = origDisabled;
-      }
-    }
-  });
-
-  test("injected step only fires for step-one, not step-two", async () => {
-    const { calls, manager } = createMockManager();
-
-    const origDisabled = process.env.DISABLED_GUARDS;
-    process.env.DISABLED_GUARDS = "test-valid,test-blocker,test-warn-on-step-done";
-
-    try {
-      const tool = createWorkflowTool({
-        manager,
-        workflowDir: TEST_WORKFLOW_DIR,
-        guardsDir: TEST_GUARDS_DIR,
-        agentName: "test-agent",
-      });
-
-      await tool.execute("tc_4", {
-        action: "run",
-        name: "test-two-step",
-        task: "Test selective injection",
-      });
-
-      // The inject guard only fires for step "step-one", not "step-two"
-      // So: step-one → guard:verify-step-one → step-two (3 calls)
-      // The guard does NOT fire again after step-two
-      expect(calls.length).toBe(3);
-      expect(calls[0].name).toBe("step-one");
-      expect(calls[1].name).toBe("verifier");
-      expect(calls[2].name).toBe("step-two");
-    } finally {
-      if (origDisabled === undefined) {
-        delete process.env.DISABLED_GUARDS;
-      } else {
-        process.env.DISABLED_GUARDS = origDisabled;
-      }
-    }
-  });
-});
-
 describe("Guard integration: block demand", () => {
   test("blocker guard blocks workflow execution", async () => {
     const { manager } = createMockManager();
@@ -326,7 +219,7 @@ describe("Guard integration: block demand", () => {
 
     // Enable ONLY the blocker guard
     const origDisabled = process.env.DISABLED_GUARDS;
-    process.env.DISABLED_GUARDS = "test-valid,test-inject-step,test-warn-on-step-done";
+    process.env.DISABLED_GUARDS = "test-valid,test-warn-on-step-done";
 
     try {
       const tool = createWorkflowTool({
@@ -382,7 +275,7 @@ describe("Guard integration: guard loading and discovery", () => {
 
     // Disable most guards, keep just one to verify loading
     const origDisabled = process.env.DISABLED_GUARDS;
-    process.env.DISABLED_GUARDS = "test-blocker,test-inject-step,test-warn-on-step-done";
+    process.env.DISABLED_GUARDS = "test-blocker,test-warn-on-step-done";
 
     try {
       const events: any[] = [];
@@ -435,94 +328,6 @@ describe("Guard integration: guard loading and discovery", () => {
     // No guard warnings anywhere
     for (const call of calls) {
       expect(call.task).not.toContain("## Guard Warnings");
-    }
-  });
-});
-
-describe("Guard integration: combined warn + inject", () => {
-  test("both warn and inject guards fire, warnings appear after injected step", async () => {
-    const { calls, manager } = createMockManager();
-
-    // Enable both warn and inject guards
-    const origDisabled = process.env.DISABLED_GUARDS;
-    process.env.DISABLED_GUARDS = "test-valid,test-blocker";
-
-    try {
-      const tool = createWorkflowTool({
-        manager,
-        workflowDir: TEST_WORKFLOW_DIR,
-        guardsDir: TEST_GUARDS_DIR,
-        agentName: "test-agent",
-      });
-
-      const result = await tool.execute("tc_8", {
-        action: "run",
-        name: "test-two-step",
-        task: "Test combined guards",
-      });
-
-      const parsed = JSON.parse((result.content[0] as any).text) as WorkflowToolResult;
-      expect(parsed.type).toBe("done");
-
-      // Expected flow:
-      // 1. step-one runs
-      // 2. Guards fire: warn-on-step-done emits warn, inject-step emits run_step
-      //    resolveDemands processes in order: warn (accumulated), then run_step (injected agent call)
-      // 3. Injected step "verifier" runs without recursively firing guards.
-      //    Pending warnings remain for the next authored workflow step.
-      // 4. step-two runs with accumulated warnings in its task
-      expect(calls.length).toBeGreaterThanOrEqual(3); // at least step-one, verifier, step-two
-
-      // step-two should have guard warnings
-      const stepTwoCall = calls.find(c => c.name === "step-two");
-      expect(stepTwoCall).toBeDefined();
-      expect(stepTwoCall!.task).toContain("## Guard Warnings");
-    } finally {
-      if (origDisabled === undefined) {
-        delete process.env.DISABLED_GUARDS;
-      } else {
-        process.env.DISABLED_GUARDS = origDisabled;
-      }
-    }
-  });
-});
-
-describe("Guard integration: maxInjectedSteps limit", () => {
-  test("injected steps are capped at maxInjectedSteps", async () => {
-    const { calls, manager } = createMockManager();
-
-    // Create a tool with maxInjectedSteps=0 to prevent any injections
-    const origDisabled = process.env.DISABLED_GUARDS;
-    process.env.DISABLED_GUARDS = "test-valid,test-blocker,test-warn-on-step-done";
-
-    try {
-      const tool = createWorkflowTool({
-        manager,
-        workflowDir: TEST_WORKFLOW_DIR,
-        guardsDir: TEST_GUARDS_DIR,
-        agentName: "test-agent",
-        maxInjectedSteps: 0, // No injected steps allowed
-      });
-
-      const result = await tool.execute("tc_9", {
-        action: "run",
-        name: "test-two-step",
-        task: "Test injection limit",
-      });
-
-      const parsed = JSON.parse((result.content[0] as any).text) as WorkflowToolResult;
-      expect(parsed.type).toBe("done");
-
-      // With maxInjectedSteps=0, the inject guard's run_step demand should be skipped
-      expect(calls.length).toBe(2); // Only step-one and step-two
-      expect(calls[0].name).toBe("step-one");
-      expect(calls[1].name).toBe("step-two");
-    } finally {
-      if (origDisabled === undefined) {
-        delete process.env.DISABLED_GUARDS;
-      } else {
-        process.env.DISABLED_GUARDS = origDisabled;
-      }
     }
   });
 });
