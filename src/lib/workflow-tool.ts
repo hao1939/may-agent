@@ -4,7 +4,7 @@ import {
   runWorkflowInvocation,
   type WorkflowExecutionAllowance,
   type WorkflowStepInvocationResult,
-} from "@may-agent/sdk/workflow-kernel";
+} from "../../packages/sdk/src/workflow-kernel.js";
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { Type, type TSchema } from "typebox";
@@ -781,10 +781,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         timeoutMs: declaredTimeoutMs,
         timeoutLimitMs: executionTimeoutLimitMs,
         allowance: inheritedAllowance,
-        availableCapabilities: {
-          ...(opts.agentDefinitions ? { agents: new Set(opts.agentDefinitions.keys()) } : {}),
-          workflows: new Set(catalog.workflows.keys()),
-        },
         read: appRead,
         metrics: {
           define: (definition) => metricService().define(definition),
@@ -991,6 +987,14 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       });
 
       if (!outcome.ok) {
+        if (
+          outcome.started &&
+          outcome.error &&
+          typeof outcome.error === "object" &&
+          !(outcome.error instanceof ExecutionDeferredError)
+        ) {
+          (outcome.error as { executionId?: string }).executionId ??= runId;
+        }
         throw outcome.error;
       }
       const result = outcome.result;

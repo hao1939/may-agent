@@ -8,7 +8,6 @@ import type {
   TaskReconcileResult,
   WorkflowContext,
 } from "@may-agent/sdk";
-import type { WorkflowRequiresDeclaration } from "@may-agent/sdk/workflow-kernel";
 import type { TaskResult } from "./types.js";
 export type { WorkflowContext } from "@may-agent/sdk";
 
@@ -55,7 +54,6 @@ export interface WorkflowModule {
   description: string;
   inputSchema?: TSchema;
   outputSchema?: TSchema;
-  requires?: WorkflowRequiresDeclaration;
   /** Optional bounded wall-clock budget for workflows that run long evaluations. */
   executionTimeoutMs?: number;
   /** Filesystem isolation convention interpreted by the embedding app runtime. */

@@ -19,19 +19,12 @@ const MAX_REPORT_STEPS = 64;
 const MAX_REPORT_LOGS = 128;
 const MAX_OBSERVER_ERRORS = 16;
 const MAX_PROMPT_CHARS = 2_000;
-const DEFAULT_OBSERVER_DRAIN_MS = 250;
-
-export type WorkflowRequiresDeclaration = {
-  agents?: readonly string[];
-  workflows?: readonly string[];
-};
 
 export type WorkflowExecutableModule<TInput = any> = {
   name: string;
   description: string;
   inputSchema?: TSchema;
   outputSchema?: TSchema;
-  requires?: WorkflowRequiresDeclaration;
   executionTimeoutMs?: number;
   workspace?: "shared" | "task" | { kind: "task"; baseBranch: string };
   execute: (ctx: WorkflowContext<TInput>) => Promise<ExecutionResult | TaskReconcileResult>;
@@ -62,10 +55,12 @@ export type WorkflowStepTrace = {
   summary: string;
   output?: unknown;
   facts?: unknown;
+  error?: { name: string; message: string; stack?: string };
   durationMs: number;
   startedAt: number;
   endedAt: number;
-  id: string;
+  /** Child execution ID when started; null when invocation failed before establishing an ID. */
+  id: string | null;
   sessionId?: string;
   transcriptPath?: string;
   cleanupConfirmed: boolean;
@@ -110,7 +105,7 @@ export type WorkflowRunReport = {
 
 export class WorkflowValidationError extends Error {
   constructor(
-    public readonly phase: "input" | "requires" | "step" | "output",
+    public readonly phase: "input" | "step" | "output",
     message: string,
     public readonly rawValue?: unknown,
   ) {
@@ -201,10 +196,6 @@ export type WorkflowKernelBindings<TInput = unknown> = {
   deadlineAt?: number;
   maxConcurrentCalls?: number;
   allowance?: WorkflowExecutionAllowance;
-  availableCapabilities?: {
-    agents?: ReadonlySet<string>;
-    workflows?: ReadonlySet<string>;
-  };
   callAgent(
     agent: string,
     task: string,
@@ -235,10 +226,8 @@ export type WorkflowKernelBindings<TInput = unknown> = {
   onCancelActive?: () => void;
   confirmCleanup?: () => boolean | Promise<boolean>;
   onStart?: () => void | Promise<void>;
-  onStep?: (step: WorkflowStepTrace) => void | Promise<void>;
-  onLog?: (entry: WorkflowLogEntry) => void | Promise<void>;
-  /** Finite wait bound (ms) for pending async observers during finalization (default: 250ms). */
-  observerDrainMs?: number;
+  onStep?: (step: WorkflowStepTrace) => void;
+  onLog?: (entry: WorkflowLogEntry) => void;
 };
 
 export type WorkflowKernelOutcome =
@@ -351,6 +340,31 @@ function formatError(error: unknown): { name: string; message: string; stack?: s
   return { name: "Error", message: String(error) };
 }
 
+function extractErrorExecutionIdentity(error: unknown): { id: string | null; sessionId?: string } {
+  if (!error || typeof error !== "object") return { id: null };
+  const candidate = error as {
+    executionId?: unknown;
+    execution?: { id?: unknown } | null;
+    workflowRunId?: unknown;
+    sessionId?: unknown;
+  };
+  const sessionId =
+    typeof candidate.sessionId === "string" && candidate.sessionId.trim()
+      ? candidate.sessionId
+      : undefined;
+  const id =
+    typeof candidate.executionId === "string" && candidate.executionId.trim()
+      ? candidate.executionId
+      : typeof candidate.execution?.id === "string" && candidate.execution.id.trim()
+        ? candidate.execution.id
+        : typeof candidate.workflowRunId === "string" &&
+            candidate.workflowRunId.trim() &&
+            candidate.workflowRunId !== "unknown"
+          ? candidate.workflowRunId
+          : sessionId ?? null;
+  return { id, ...(sessionId ? { sessionId } : {}) };
+}
+
 /**
  * Execute one bounded workflow invocation with symmetric validation, inherited
  * allowance, structured child join, and post-completion context fencing.
@@ -367,22 +381,18 @@ export async function runWorkflowInvocation<TInput = unknown>(
   const logs: WorkflowLogEntry[] = [];
   let logsTruncated = 0;
   const observerErrors: string[] = [];
-  const pendingObservers = new Set<Promise<void>>();
 
   const recordObserverError = (err: unknown) => {
     if (observerErrors.length < MAX_OBSERVER_ERRORS) {
       observerErrors.push(err instanceof Error ? err.message : String(err));
     }
   };
-  const invokeObserver = (fn: (() => void | Promise<void>) | undefined) => {
+  const invokeObserver = (fn: (() => void) | undefined) => {
     if (!fn) return;
     try {
-      const maybe = fn();
-      if (maybe && typeof (maybe as Promise<void>).then === "function") {
-        const tracked = (maybe as Promise<void>).catch(recordObserverError).finally(() => {
-          pendingObservers.delete(tracked);
-        });
-        pendingObservers.add(tracked);
+      const maybe = fn() as unknown;
+      if (maybe && typeof (maybe as Promise<unknown>).catch === "function") {
+        void (maybe as Promise<unknown>).catch(recordObserverError);
       }
     } catch (err) {
       recordObserverError(err);
@@ -490,28 +500,6 @@ export async function runWorkflowInvocation<TInput = unknown>(
       ? { maxConcurrentCalls: allowance.maxConcurrentCalls }
       : {}),
   };
-
-  if (module.requires && bindings.availableCapabilities) {
-    const missingAgents = (module.requires.agents ?? []).filter(
-      (name) => bindings.availableCapabilities?.agents && !bindings.availableCapabilities.agents.has(name),
-    );
-    const missingWorkflows = (module.requires.workflows ?? []).filter(
-      (name) => bindings.availableCapabilities?.workflows && !bindings.availableCapabilities.workflows.has(name),
-    );
-    if (missingAgents.length > 0 || missingWorkflows.length > 0) {
-      const parts = [
-        ...(missingAgents.length > 0 ? [`agents: ${missingAgents.join(", ")}`] : []),
-        ...(missingWorkflows.length > 0 ? [`workflows: ${missingWorkflows.join(", ")}`] : []),
-      ];
-      return failBeforeStart(
-        new WorkflowValidationError(
-          "requires",
-          `Workflow "${module.name}" missing required capabilities (${parts.join("; ")})`,
-        ),
-        limits,
-      );
-    }
-  }
 
   if (module.inputSchema && !Check(module.inputSchema, bindings.input)) {
     return failBeforeStart(
@@ -642,19 +630,38 @@ export async function runWorkflowInvocation<TInput = unknown>(
       throw new Error("Step timeoutMs must be a positive bounded timer duration");
     }
     const stepTimeoutMs = Math.min(requestedStepMs, remainingMs);
-    const stepDeadlineAt = Date.now() + stepTimeoutMs;
+    const stepStartedAt = Date.now();
+    const stepDeadlineAt = stepStartedAt + stepTimeoutMs;
     const releaseAllowance = allowance.acquireCall();
-
     const stepIndex = nextStepIndex++;
     latestActiveStepIndex = stepIndex;
-    const stepStartedAt = Date.now();
     const stepController = new AbortController();
+    let stepTimedOut = false;
+    const stepTimeoutError =
+      callOptions?.timeoutMs !== undefined && requestedStepMs < remainingMs
+        ? new Error(
+            `${kind === "agent" ? "Agent" : "Workflow"} step "${target}" timed out after ${stepTimeoutMs}ms`,
+          )
+        : new Error(timeoutMessage);
+    const stepTimer = setTimeout(() => {
+      stepTimedOut = true;
+      if (stepDeadlineAt >= allowance.deadlineAt && !controller.signal.aborted) {
+        timedOut = true;
+        controller.abort(new Error(timeoutMessage));
+      }
+      if (!stepController.signal.aborted) {
+        stepController.abort(stepTimeoutError);
+      }
+    }, Math.max(0, stepDeadlineAt - Date.now()));
+    stepTimer.unref?.();
     const onParentAbort = () => stepController.abort(controller.signal.reason);
     controller.signal.addEventListener("abort", onParentAbort, { once: true });
     childControllers.add(stepController);
 
     try {
       let raw: WorkflowStepInvocationResult;
+      let lateRaw: WorkflowStepInvocationResult | undefined;
+      let lateCleanupConfirmed = true;
       try {
         raw = await invoke({
           signal: stepController.signal,
@@ -662,20 +669,59 @@ export async function runWorkflowInvocation<TInput = unknown>(
           deadlineAt: stepDeadlineAt,
           stepIndex,
         });
+        const rawCleanupConfirmed = raw.cleanupConfirmed !== false;
+        if (!rawCleanupConfirmed) {
+          const label = `${kind}:${target}${raw.sessionId ? ` (${raw.sessionId})` : raw.id ? ` (${raw.id})` : ""}`;
+          if (!unconfirmedCleanups.includes(label)) unconfirmedCleanups.push(label);
+        }
+        if (stepTimedOut || Date.now() > stepDeadlineAt) {
+          lateRaw = raw;
+          lateCleanupConfirmed = rawCleanupConfirmed;
+          throw stepTimeoutError;
+        }
+        if (stepController.signal.aborted) {
+          lateRaw = raw;
+          lateCleanupConfirmed = rawCleanupConfirmed;
+          throw stepController.signal.reason ?? stepTimeoutError;
+        }
       } catch (stepErr) {
+        let stepCleanupConfirmed = lateCleanupConfirmed;
         if (stepErr instanceof WorkflowUnconfirmedCleanupError) {
+          stepCleanupConfirmed = false;
           for (const item of stepErr.unconfirmed) {
             if (!unconfirmedCleanups.includes(item)) unconfirmedCleanups.push(item);
           }
         }
+        const stepEndedAt = Date.now();
+        const promptTruncated = promptText.length > MAX_PROMPT_CHARS;
+        const formatted = formatError(stepErr);
+        const identity = lateRaw
+          ? { id: lateRaw.id, ...(lateRaw.sessionId ? { sessionId: lateRaw.sessionId } : {}) }
+          : extractErrorExecutionIdentity(stepErr);
+        const failureStatus: ExecutionResult["status"] =
+          abortedExternally && !timedOut && !stepTimedOut ? "interrupted" : "error";
+        recordStep({
+          index: stepIndex,
+          kind,
+          target,
+          prompt: promptTruncated ? `${promptText.slice(0, MAX_PROMPT_CHARS)}...` : promptText,
+          ...(promptTruncated ? { promptTruncated: true } : {}),
+          status: failureStatus,
+          summary: formatted.message,
+          error: formatted,
+          ...(lateRaw?.facts !== undefined ? { facts: lateRaw.facts } : {}),
+          durationMs: stepEndedAt - stepStartedAt,
+          startedAt: stepStartedAt,
+          endedAt: stepEndedAt,
+          id: identity.id,
+          ...(identity.sessionId ? { sessionId: identity.sessionId } : {}),
+          ...(lateRaw?.transcriptPath ? { transcriptPath: lateRaw.transcriptPath } : {}),
+          cleanupConfirmed: stepCleanupConfirmed,
+        });
         throw stepErr;
       }
-      const cleanupConfirmed = raw.cleanupConfirmed !== false;
-      if (!cleanupConfirmed) {
-        const label = `${kind}:${target}${raw.sessionId ? ` (${raw.sessionId})` : raw.id ? ` (${raw.id})` : ""}`;
-        if (!unconfirmedCleanups.includes(label)) unconfirmedCleanups.push(label);
-      }
 
+      const cleanupConfirmed = raw.cleanupConfirmed !== false;
       if (kind === "agent" && callOptions?.schema) {
         if (raw.output !== undefined) {
           if (!Check(callOptions.schema, raw.output)) {
@@ -730,6 +776,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
       const { sessionId: _sid, transcriptPath: _tp, cleanupConfirmed: _cc, ...publicResult } = raw;
       return publicResult;
     } finally {
+      clearTimeout(stepTimer);
       controller.signal.removeEventListener("abort", onParentAbort);
       childControllers.delete(stepController);
       releaseAllowance();
@@ -979,23 +1026,6 @@ export async function runWorkflowInvocation<TInput = unknown>(
       } catch (cleanupErr) {
         unconfirmedCleanups.push(
           `workflow:${module.name} (${cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr)})`,
-        );
-      }
-    }
-    if (pendingObservers.size > 0) {
-      const drainMs = Math.max(1, bindings.observerDrainMs ?? DEFAULT_OBSERVER_DRAIN_MS);
-      let drainTimer: ReturnType<typeof setTimeout> | undefined;
-      const timedOutDrain = await Promise.race([
-        Promise.allSettled([...pendingObservers]).then(() => false),
-        new Promise<boolean>((resolve) => {
-          drainTimer = setTimeout(() => resolve(true), drainMs);
-          drainTimer.unref?.();
-        }),
-      ]);
-      if (drainTimer) clearTimeout(drainTimer);
-      if (timedOutDrain) {
-        recordObserverError(
-          `Timed out after ${drainMs}ms waiting for ${pendingObservers.size} pending observer(s) to settle`,
         );
       }
     }

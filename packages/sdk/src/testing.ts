@@ -34,7 +34,6 @@ export {
   type WorkflowKernelBindings,
   type WorkflowKernelOutcome,
   type WorkflowLogEntry,
-  type WorkflowRequiresDeclaration,
   type WorkflowRunReport,
   type WorkflowStepInvocationResult,
   type WorkflowStepTrace,
@@ -91,6 +90,7 @@ export function createTestAppRead(overrides: Partial<AppRead> = {}): AppRead {
           outcomes: [],
         })),
       get: getTask,
+      ...(overrides.tasks?.workload ? { workload: overrides.tasks.workload } : {}),
     },
     execution: overrides.execution ?? fn(async () => null),
     metric: overrides.metric ?? fn(async () => null),
@@ -260,9 +260,8 @@ export type WorkflowTestOptions<TInput> = {
   deadlineAt?: number;
   maxConcurrentCalls?: number;
   confirmCleanup?: () => boolean | Promise<boolean>;
-  onStep?: (step: WorkflowStepTrace) => void | Promise<void>;
-  onLog?: (entry: WorkflowLogEntry) => void | Promise<void>;
-  observerDrainMs?: number;
+  onStep?: (step: WorkflowStepTrace) => void;
+  onLog?: (entry: WorkflowLogEntry) => void;
   /** Fail when scripted array responses remain unused after completion (default: true). */
   assertAllFixturesConsumed?: boolean;
 };
@@ -398,11 +397,6 @@ export async function runWorkflowTest<TInput = unknown>(
     evaluate: options.metrics?.evaluate ?? fn(() => []),
   };
 
-  const availableCapabilities = {
-    agents: new Set(Object.keys(options.agents ?? {})),
-    workflows: new Set(Object.keys(options.workflows ?? {})),
-  };
-
   const buildBindings = (
     currentInput: unknown,
     nestedControl?: { signal: AbortSignal; timeoutMs: number; deadlineAt: number; allowance: WorkflowKernelBindings["allowance"] },
@@ -415,7 +409,6 @@ export async function runWorkflowTest<TInput = unknown>(
     deadlineAt: nestedControl?.deadlineAt ?? options.deadlineAt,
     maxConcurrentCalls: options.maxConcurrentCalls,
     allowance: nestedControl?.allowance,
-    availableCapabilities,
     read,
     events,
     metrics,
@@ -427,7 +420,6 @@ export async function runWorkflowTest<TInput = unknown>(
     confirmCleanup: options.confirmCleanup,
     onStep: options.onStep,
     onLog: options.onLog,
-    observerDrainMs: options.observerDrainMs,
     callAgent: async (agent, task, callOpts, stepControl) => {
       const fixture = options.agents?.[agent];
       if (!fixture) {
@@ -463,7 +455,11 @@ export async function runWorkflowTest<TInput = unknown>(
       if (!Array.isArray(fixture) && "execute" in fixture && typeof fixture.execute === "function") {
         const sub = await runWorkflowInvocation(fixture, buildBindings(wfInput, stepControl));
         if (!sub.ok) {
-          throw sub.error instanceof Error ? sub.error : new Error(sub.message);
+          const thrown = sub.error instanceof Error ? sub.error : new Error(sub.message);
+          if (sub.started) {
+            (thrown as Error & { executionId?: string }).executionId = sub.report.executionId;
+          }
+          throw thrown;
         }
         return {
           id: sub.report.executionId,

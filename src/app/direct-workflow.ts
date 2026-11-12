@@ -30,13 +30,13 @@ import {
   type WorkflowRunReport,
   type WorkflowStepInvocationResult,
   type WorkflowStepTrace,
-} from "@may-agent/sdk/workflow-kernel";
+} from "../../packages/sdk/src/workflow-kernel.js";
 import { agentExecutionResult } from "../lib/execution-handoff.js";
 import type { ModelWithApiKey, TaskResult } from "../lib/types.js";
 import { buildWorkflowCatalog, findWorkflow } from "../lib/workflow-catalog.js";
 import { validateOperationAllowance } from "../lib/workflow-finish-recovery.js";
-import { readAgentConfigFile, validateAgentConfig } from "./loader/agent-config.js";
-import { listRuntimeAgentDirectories, resolveRuntimeAgentDirectory } from "./loader/agent-discovery.js";
+import { readAgentConfigFile } from "./loader/agent-config.js";
+import { resolveRuntimeAgentDirectory } from "./loader/agent-discovery.js";
 import {
   runDirectAgent,
   type DirectAgentRunOptions,
@@ -121,8 +121,8 @@ export type DirectWorkflowRunOptions<TInput = unknown> = {
   maxDepth?: number;
   signal?: AbortSignal;
   executionId?: string;
-  onStep?: (step: WorkflowStepTrace) => void | Promise<void>;
-  onLog?: (entry: WorkflowLogEntry) => void | Promise<void>;
+  onStep?: (step: WorkflowStepTrace) => void;
+  onLog?: (entry: WorkflowLogEntry) => void;
   onNotice?: (message: string) => void;
 };
 
@@ -175,22 +175,6 @@ function resolveWorkflowDir(options: DirectWorkflowRunOptions<any>): string | un
     resolveRuntimeAgentDirectory(options.agentsRoot, options.agentName) ??
     resolveRuntimeAgentDirectory(options.agentsRoot, options.agentName, options.projectsRoot);
   return dir ? join(dir.dir, "workflows") : undefined;
-}
-
-function discoverAvailableDirectAgents(options: DirectWorkflowRunOptions<any>): Set<string> {
-  const names = new Set<string>(Object.keys(options.agentFixtures ?? {}));
-  for (const dir of listRuntimeAgentDirectories(options.agentsRoot, options.projectsRoot)) {
-    try {
-      const config = readAgentConfigFile(dir.dir);
-      if (!config) continue;
-      if (validateAgentConfig(config, options.models, dir.agentsRoot).length === 0) {
-        names.add(config.name);
-      }
-    } catch {
-      // Malformed unrelated agent configs do not satisfy required capabilities.
-    }
-  }
-  return names;
 }
 
 function enforceDirectStepCompletion(
@@ -351,9 +335,6 @@ export async function runDirectWorkflow<TInput = unknown>(
     }
   }
 
-  const availableAgents = discoverAvailableDirectAgents(options);
-  const availableWorkflows = new Set<string>(catalog ? catalog.workflows.keys() : []);
-
   const outcome: WorkflowKernelOutcome = await runWorkflowInvocation(targetModule, {
     executionId: internal ? undefined : options.executionId,
     input: options.input,
@@ -363,10 +344,6 @@ export async function runDirectWorkflow<TInput = unknown>(
     deadlineAt: options.deadlineAt,
     maxConcurrentCalls,
     allowance: rootAllowance,
-    availableCapabilities: {
-      agents: availableAgents,
-      workflows: availableWorkflows,
-    },
     read,
     events: options.events
       ? {
@@ -526,7 +503,13 @@ export async function runDirectWorkflow<TInput = unknown>(
         childSessions.push(session);
       }
       if (!sub.ok) {
-        throw sub.error instanceof Error ? sub.error : new Error(String(sub.error ?? sub.report.error?.message));
+        const thrown = sub.error instanceof Error
+          ? sub.error
+          : new Error(String(sub.error ?? sub.report.error?.message));
+        if (sub.started) {
+          (thrown as Error & { executionId?: string }).executionId = sub.report.executionId;
+        }
+        throw thrown;
       }
       return {
         id: sub.report.executionId,

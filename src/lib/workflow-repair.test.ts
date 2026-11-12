@@ -236,7 +236,7 @@ export const guard = {
     });
   }
 
-  it("enforces declared inputSchema, outputSchema, and requires in Host execution", async () => {
+  it("enforces declared inputSchema and outputSchema in Host execution", async () => {
     const h = setup();
     writeFileSync(
       join(h.workflowDir, "typed.ts"),
@@ -245,7 +245,6 @@ export const name = "typed";
 export const description = "Typed workflow";
 export const inputSchema = { type: "object", properties: { ref: { type: "string", minLength: 2 } }, required: ["ref"] };
 export const outputSchema = { type: "object", properties: { ok: { type: "boolean" } }, required: ["ok"] };
-export const requires = { agents: ["worker"] };
 export async function execute(ctx) {
   return ctx.done("ok", { ok: ctx.input.ref === "bad-out" ? "nope" : true });
 }
@@ -269,15 +268,5 @@ export async function execute(ctx) {
     }).run("typed", "bad-out");
     expect(invalidOutput.type).toBe("error");
     if (invalidOutput.type === "error") expect(invalidOutput.error).toContain("Invalid workflow output");
-
-    const missingCap = await createWorkflowRunner({
-      manager: { callAgent: async () => success() } as unknown as SubagentManager,
-      workflowDir: h.workflowDir,
-      persistDir: h.root,
-      agentDefinitions: new Map(),
-      workflowInput: { ref: "good" },
-    }).run("typed", "good");
-    expect(missingCap.type).toBe("error");
-    if (missingCap.type === "error") expect(missingCap.error).toContain("missing required capabilities");
   });
 });

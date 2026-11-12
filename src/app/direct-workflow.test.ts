@@ -6,8 +6,7 @@ import { join } from "node:path";
 import {
   WorkflowAllowanceExhaustedError,
   WorkflowUnconfirmedCleanupError,
-  WorkflowValidationError,
-} from "@may-agent/sdk/workflow-kernel";
+} from "@may-agent/sdk/testing";
 import { executePreparedAgent } from "../lib/agent-execution.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
@@ -547,20 +546,18 @@ export async function execute(ctx) {
     expect(leakedViaTool.report.cleanup.confirmed).toBe(false);
   });
 
-  test("validates module.requires before execute() and honors step operationAllowance in real direct execution", async () => {
+  test("preserves read.tasks.workload and honors step operationAllowance in real direct execution", async () => {
     const env = setupDirectLayout();
     writeFileSync(join(env.workRoot, "note.txt"), "hello allowance");
 
-    // 1. Missing required agent or workflow on an inline module without catalog fails pre-start.
-    let ranBody = false;
-    const missingReq = await runDirectWorkflow({
+    // 1. Optional read.tasks.workload override reaches workflows in runDirectWorkflow.
+    const workloadDirect = await runDirectWorkflow({
       module: {
-        name: "needs-missing",
-        description: "Declares missing agent and workflow",
-        requires: { agents: ["nonexistent-agent"], workflows: ["nonexistent-wf"] },
+        name: "direct-workload",
+        description: "Reads workload in direct mode",
         async execute(ctx) {
-          ranBody = true;
-          return ctx.done("should not run");
+          const wl = await ctx.read.tasks.workload!({ limit: 3 });
+          return ctx.done("ok", wl);
         },
       },
       input: {},
@@ -570,11 +567,23 @@ export async function execute(ctx) {
       sharedRoot: env.sharedRoot,
       outputRoot: env.outputRoot,
       models: { test: fakeModel() as any },
+      read: {
+        tasks: {
+          list: async () => ({ items: [] }),
+          outcomes: async () => ({
+            projection: "outcomes",
+            manifestVersion: null,
+            sourceCount: 0,
+            outcomeCount: 0,
+            outcomes: [],
+          }),
+          get: async () => null,
+          workload: async ({ limit } = {}) => ({ items: [], limit }) as any,
+        },
+      },
     });
-    expect(missingReq.ok).toBe(false);
-    expect(missingReq.started).toBe(false);
-    expect(missingReq.error).toBeInstanceOf(WorkflowValidationError);
-    expect(ranBody).toBe(false);
+    expect(workloadDirect.ok).toBe(true);
+    expect(workloadDirect.result?.output).toEqual({ items: [], limit: 3 });
 
     // 2. Invalid operationAllowance fails immediately; operationAllowance=1 triggers bounded finish steering on call #1.
     const badAllowance = await runDirectWorkflow({

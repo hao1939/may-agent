@@ -9,7 +9,6 @@ import { createHash } from "node:crypto";
 import { readFileSync, readdirSync, realpathSync } from "node:fs";
 import { isAbsolute, join, relative } from "node:path";
 import type { TSchema } from "typebox";
-import type { WorkflowRequiresDeclaration } from "@may-agent/sdk/workflow-kernel";
 import { importRuntimeModule } from "./runtime-import.js";
 import type { WorkflowModule } from "./workflow.js";
 
@@ -22,30 +21,6 @@ function isSchemaObject(value: unknown): value is TSchema {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-function parseRequires(filePath: string, raw: unknown): WorkflowRequiresDeclaration | undefined {
-  if (raw === undefined) return undefined;
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    throw new Error(`Workflow file ${filePath} must export 'requires' as an object when present`);
-  }
-  const obj = raw as Record<string, unknown>;
-  for (const key of Object.keys(obj)) {
-    if (key !== "agents" && key !== "workflows") {
-      throw new Error(`Workflow file ${filePath} has unsupported requires key "${key}"`);
-    }
-    const list = obj[key];
-    if (
-      list !== undefined &&
-      (!Array.isArray(list) || list.some((item) => typeof item !== "string" || !item.trim()))
-    ) {
-      throw new Error(`Workflow file ${filePath} must export requires.${key} as an array of non-empty strings`);
-    }
-  }
-  return {
-    ...(Array.isArray(obj.agents) ? { agents: obj.agents.map((s: string) => s.trim()) } : {}),
-    ...(Array.isArray(obj.workflows) ? { workflows: obj.workflows.map((s: string) => s.trim()) } : {}),
-  };
-}
-
 export async function loadWorkflowModuleFromFile(
   filePath: string,
   sourceScope: "agent" | "project" = "agent",
@@ -56,7 +31,6 @@ export async function loadWorkflowModuleFromFile(
     description?: unknown;
     inputSchema?: unknown;
     outputSchema?: unknown;
-    requires?: unknown;
     executionTimeoutMs?: unknown;
     workspace?: unknown;
     execute?: unknown;
@@ -81,7 +55,6 @@ export async function loadWorkflowModuleFromFile(
   if (mod.outputSchema !== undefined && !isSchemaObject(mod.outputSchema)) {
     throw new Error(`Workflow file ${filePath} must export 'outputSchema' as a TypeBox schema object when present`);
   }
-  const requires = parseRequires(filePath, mod.requires);
 
   if (
     mod.executionTimeoutMs !== undefined &&
@@ -112,7 +85,6 @@ export async function loadWorkflowModuleFromFile(
     description: mod.description.trim(),
     ...(mod.inputSchema !== undefined ? { inputSchema: mod.inputSchema } : {}),
     ...(mod.outputSchema !== undefined ? { outputSchema: mod.outputSchema } : {}),
-    ...(requires ? { requires } : {}),
     ...(mod.executionTimeoutMs !== undefined ? { executionTimeoutMs: Number(mod.executionTimeoutMs) } : {}),
     ...(mod.workspace
       ? {

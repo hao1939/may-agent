@@ -204,15 +204,37 @@ describe("background_exec tool", () => {
     expect(() => process.kill(-pid, 0)).toThrow();
   });
 
-  it("cleanupAsync surfaces unconfirmed cleanup honestly when drain returns false", async () => {
-    const { tool, cleanupAsync } = createBackgroundExecTool({
+  it("cleanupAsync retains unconfirmed groups across retries until drain succeeds", async () => {
+    let attempts = 0;
+    let allowDrain = false;
+    const { tool, cleanup, cleanupAsync } = createBackgroundExecTool({
       cwd: "/tmp",
-      drainProcessGroup: async () => false,
+      drainProcessGroup: async (pgid) => {
+        attempts++;
+        if (!allowDrain) return false;
+        try {
+          process.kill(-pgid, "SIGKILL");
+        } catch {
+          /* ignore */
+        }
+        return true;
+      },
     });
     const spawned = await tool.execute("tc_unconfirmed", { action: "spawn", command: "sleep 60" } as any);
     const pid = JSON.parse(spawned.content[0].text).pid as number;
     try {
       expect(await cleanupAsync()).toBe(false);
+      // Repeated cleanupAsync must NOT forget the group and falsely report true.
+      expect(await cleanupAsync()).toBe(false);
+      expect(attempts).toBe(2);
+
+      allowDrain = true;
+      expect(await cleanupAsync()).toBe(true);
+      expect(attempts).toBe(3);
+      // Once drained, subsequent cleanupAsync has no retained groups to retry.
+      expect(await cleanupAsync()).toBe(true);
+      expect(attempts).toBe(3);
+      cleanup();
     } finally {
       try {
         process.kill(-pid, "SIGKILL");

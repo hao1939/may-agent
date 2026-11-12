@@ -157,19 +157,45 @@ export function createBackgroundExecTool(
         signalEntry(entry, "SIGTERM");
       }
     }
-    processes.clear();
-    trackedPgids.clear();
+    // Retain groups whose leader or background descendants have not yet confirmed
+    // exit through cleanupAsync(); only clear already-dead entries with no live group.
+    for (const [pid, entry] of processes) {
+      if (!entry.alive) {
+        processes.delete(pid);
+      }
+    }
+    for (const pgid of [...trackedPgids]) {
+      try {
+        process.kill(-pgid, 0);
+      } catch {
+        trackedPgids.delete(pgid);
+      }
+    }
   }
 
   async function cleanupAsync(): Promise<boolean> {
     const pgids = new Set<number>(trackedPgids);
     for (const entry of processes.values()) pgids.add(entry.pid);
-    processes.clear();
-    trackedPgids.clear();
     if (pgids.size === 0) return true;
     // Drain every tracked PGID regardless of whether the shell leader already exited,
-    // because background children (`sh -c "sleep 60 & exit 0"`) stay in `-pgid`.
-    const results = await Promise.all([...pgids].map((pgid) => drainGroup(pgid)));
+    // and retain any group whose drain fails or rejects so subsequent cleanup retries it.
+    const results = await Promise.all(
+      [...pgids].map(async (pgid) => {
+        try {
+          const drained = await drainGroup(pgid);
+          if (drained) {
+            trackedPgids.delete(pgid);
+            processes.delete(pgid);
+            return true;
+          }
+          trackedPgids.add(pgid);
+          return false;
+        } catch {
+          trackedPgids.add(pgid);
+          return false;
+        }
+      }),
+    );
     return results.every(Boolean);
   }
 

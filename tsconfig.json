@@ -24,9 +24,6 @@
       ],
       "@may-agent/sdk/testing": [
         "./packages/sdk/src/testing.ts"
-      ],
-      "@may-agent/sdk/workflow-kernel": [
-        "./packages/sdk/src/workflow-kernel.ts"
       ]
     }
   },

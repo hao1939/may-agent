@@ -1,5 +1,5 @@
 import { type TSchema } from "typebox";
-import { WorkflowUnconfirmedCleanupError } from "@may-agent/sdk/workflow-kernel";
+import { WorkflowUnconfirmedCleanupError } from "../../packages/sdk/src/workflow-kernel.js";
 import { readFileWritePolicy, type FileWritePolicy } from "../lib/tools/file-write-policy.js";
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 

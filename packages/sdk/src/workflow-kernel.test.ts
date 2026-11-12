@@ -33,7 +33,6 @@ const reviewWorkflow = {
   description: "Review one subject reference",
   inputSchema: ReviewInput,
   outputSchema: ReviewOutput,
-  requires: { agents: ["reviewer"] },
   async execute(ctx: WorkflowContext<Static<typeof ReviewInput>>) {
     ctx.log.info(`reviewing ${ctx.input.subjectRef}`);
     const review = await ctx.agents.call("reviewer", `Review ${ctx.input.subjectRef}`, {
@@ -88,7 +87,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     expect(run.unconsumedFixtures).toEqual([]);
   });
 
-  test("rejects invalid input and missing required capabilities before execute() runs", async () => {
+  test("rejects invalid input before execute() runs", async () => {
     let executed = false;
     const mod = {
       ...reviewWorkflow,
@@ -105,15 +104,6 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     expect(badInput.ok).toBe(false);
     expect(badInput.started).toBe(false);
     expect(badInput.error).toBeInstanceOf(WorkflowValidationError);
-    expect(executed).toBe(false);
-
-    const missingAgent = await runWorkflowTest(mod, {
-      input: { subjectRef: "HEAD" },
-      agents: {},
-    });
-    expect(missingAgent.ok).toBe(false);
-    expect(missingAgent.started).toBe(false);
-    expect(missingAgent.error).toBeInstanceOf(WorkflowValidationError);
     expect(executed).toBe(false);
   });
 
@@ -270,8 +260,8 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     const observerRun = await runWorkflowTest(simpleMod, {
       input: {},
       agents: { worker: { summary: "ok" } },
-      onStep: async () => {
-        throw new Error("async observer exploded");
+      onStep: () => {
+        throw new Error("sync step observer exploded");
       },
       onLog: () => {
         throw new Error("sync log observer exploded");
@@ -336,30 +326,187 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     });
   });
 
-  test("bounds non-settling async observers instead of hanging completed workflow invocations", async () => {
-    const mod = {
-      name: "fast-done",
-      description: "Returns done while observers hang",
+  test("enforces shorter per-step timeoutMs before workflow deadline for cooperative and late-resolving fixtures", async () => {
+    let cooperativeSignalAborted = false;
+    const cooperativeTimeoutMod = {
+      name: "step-timeout-cooperative",
+      description: "Cancels cooperative fixture at step timeoutMs",
       async execute(ctx: WorkflowContext) {
-        ctx.log.info("observer log");
-        await ctx.agents.call("worker", "quick");
-        return ctx.done("finished");
+        await ctx.agents.call("slow", "bounded step", { timeoutMs: 25 });
+        return ctx.done("unreachable");
       },
     };
 
     const started = Date.now();
-    const run = await runWorkflowTest(mod, {
+    const coopRun = await runWorkflowTest(cooperativeTimeoutMod, {
       input: {},
-      observerDrainMs: 20,
-      agents: { worker: { summary: "ok" } },
-      onStep: () => new Promise<void>(() => {}),
-      onLog: () => new Promise<void>(() => {}),
+      timeoutMs: 5_000,
+      agents: {
+        slow: async ({ signal }) => {
+          await new Promise<void>((_, reject) => {
+            signal.addEventListener(
+              "abort",
+              () => {
+                cooperativeSignalAborted = true;
+                reject(signal.reason);
+              },
+              { once: true },
+            );
+          });
+          return { summary: "unreachable" };
+        },
+      },
     });
-    const elapsed = Date.now() - started;
+    expect(coopRun.ok).toBe(false);
+    expect(cooperativeSignalAborted).toBe(true);
+    expect(Date.now() - started).toBeLessThan(1_000);
+    expect(String(coopRun.error)).toContain('Agent step "slow" timed out after 25ms');
+    expect(coopRun.steps).toHaveLength(1);
+    expect(coopRun.steps[0]?.status).toBe("error");
+    expect(coopRun.steps[0]?.id).toBeNull();
 
-    expect(run.ok).toBe(true);
-    expect(run.status).toBe("done");
-    expect(elapsed).toBeLessThan(500);
-    expect(run.report.observerErrors.some((msg) => msg.includes("Timed out after 20ms"))).toBe(true);
+    // Non-cooperative fixture ignoring signal and returning after stepDeadlineAt is still rejected.
+    const lateFixtureRun = await runWorkflowTest(cooperativeTimeoutMod, {
+      input: {},
+      timeoutMs: 5_000,
+      agents: {
+        slow: async () => {
+          await new Promise((r) => setTimeout(r, 45));
+          return { id: "s_late", status: "done", summary: "too late" };
+        },
+      },
+    });
+    expect(lateFixtureRun.ok).toBe(false);
+    expect(String(lateFixtureRun.error)).toContain('Agent step "slow" timed out after 25ms');
+    expect(lateFixtureRun.steps[0]?.status).toBe("error");
+    expect(lateFixtureRun.steps[0]?.id).toBe("s_late");
+  });
+
+  test("records rejected agent and nested-workflow calls in report.steps and onStep across caught and uncaught failures", async () => {
+    const observedSteps: Array<{ target: string; status: string; id: string | null }> = [];
+    const failingChild = {
+      name: "failing-child",
+      description: "Throws after starting",
+      async execute(_ctx: WorkflowContext): Promise<never> {
+        throw new Error("nested explosion");
+      },
+    };
+
+    // 1. Caught failures: workflow recovers and returns done, while failed steps remain visible in trace.
+    const caughtMod = {
+      name: "caught-failures",
+      description: "Catches failed agent and nested workflow calls",
+      async execute(ctx: WorkflowContext) {
+        try {
+          await ctx.agents.call("missing-agent", "try missing");
+        } catch {
+          // caught unstarted agent failure
+        }
+        try {
+          await ctx.workflows.run("failing-child", { x: 1 });
+        } catch {
+          // caught started nested workflow failure
+        }
+        const ok = await ctx.agents.call("worker", "fallback work");
+        return ctx.done(ok.summary);
+      },
+    };
+
+    const caughtRun = await runWorkflowTest(caughtMod, {
+      input: {},
+      workflows: { "failing-child": failingChild },
+      agents: { worker: { summary: "fallback succeeded" } },
+      onStep: (step) => observedSteps.push({ target: step.target, status: step.status, id: step.id }),
+    });
+    expect(caughtRun.ok).toBe(true);
+    expect(caughtRun.steps).toHaveLength(3);
+    expect(caughtRun.steps[0]).toMatchObject({
+      kind: "agent",
+      target: "missing-agent",
+      prompt: "try missing",
+      status: "error",
+      id: null,
+      error: { message: expect.stringContaining('unconfigured agent "missing-agent"') },
+    });
+    expect(caughtRun.steps[1]).toMatchObject({
+      kind: "workflow",
+      target: "failing-child",
+      status: "error",
+      id: expect.stringMatching(/^wr_/),
+      error: { message: "nested explosion" },
+    });
+    expect(caughtRun.steps[2]).toMatchObject({
+      kind: "agent",
+      target: "worker",
+      status: "done",
+      id: "s_test_worker_2",
+    });
+    expect(observedSteps).toHaveLength(3);
+
+    // 2. Uncaught failure: rejected call is still recorded in report.steps before bubbling out.
+    const uncaughtRun = await runWorkflowTest(
+      {
+        name: "uncaught-failure",
+        description: "Propagates rejected agent call",
+        async execute(ctx: WorkflowContext) {
+          await ctx.agents.call("boom", "explode");
+          return ctx.done("unreachable");
+        },
+      },
+      {
+        input: {},
+        agents: {
+          boom: async () => {
+            throw new Error("provider socket reset");
+          },
+        },
+      },
+    );
+    expect(uncaughtRun.ok).toBe(false);
+    expect(uncaughtRun.steps).toHaveLength(1);
+    expect(uncaughtRun.steps[0]).toMatchObject({
+      kind: "agent",
+      target: "boom",
+      prompt: "explode",
+      status: "error",
+      id: null,
+      error: { message: "provider socket reset" },
+    });
+  });
+
+  test("preserves optional read.tasks.workload override in createTestAppRead and runWorkflowTest", async () => {
+    const workloadRun = await runWorkflowTest(
+      {
+        name: "workload-reader",
+        description: "Reads tasks.workload",
+        async execute(ctx: WorkflowContext) {
+          const page = await ctx.read.tasks.workload!({ limit: 5 });
+          return ctx.done("read workload", page);
+        },
+      },
+      {
+        input: {},
+        read: {
+          tasks: {
+            list: async () => ({ items: [] }),
+            outcomes: async () => ({
+              projection: "outcomes",
+              manifestVersion: null,
+              sourceCount: 0,
+              outcomeCount: 0,
+              outcomes: [],
+            }),
+            get: async () => null,
+            workload: async ({ limit } = {}) =>
+              ({ items: [], summary: { requestedLimit: limit ?? 0 } }) as any,
+          },
+        },
+      },
+    );
+    expect(workloadRun.ok).toBe(true);
+    expect(workloadRun.result?.output).toEqual({
+      items: [],
+      summary: { requestedLimit: 5 },
+    });
   });
 });
