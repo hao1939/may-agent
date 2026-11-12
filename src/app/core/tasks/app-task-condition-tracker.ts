@@ -48,6 +48,8 @@ function isCondition(value: unknown): value is AppTaskCondition {
 }
 
 function eventField(event: Record<string, unknown>, ...names: string[]): unknown {
+  // Time comparisons use the envelope, never a similarly named payload field.
+  if (names.length === 1 && names[0] === "timestamp") return event.timestamp;
   for (const name of names) {
     if (event[name] !== undefined) return event[name];
   }
@@ -158,30 +160,19 @@ function fieldAliases(field: string): string[] {
   );
 }
 
-function timestampMillis(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value !== "string" || !value.trim()) return null;
-  const parsed = Date.parse(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function isFreshLevelObservation(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
-  const levelObservation =
-    condition.spec.type === "aks.repo-ref.observed" ||
-    condition.spec.type.endsWith(".state") ||
-    condition.spec.type.endsWith(".check") ||
-    condition.spec.type.endsWith(".pulse") ||
-    condition.spec.type.endsWith("-pulse");
-  if (!levelObservation) return true;
-  const conditionEstablishedAt = timestampMillis(condition.status.observedAt);
-  const eventObservedAt = timestampMillis(event.timestamp);
-  if (conditionEstablishedAt === null || eventObservedAt === null) return true;
-  return eventObservedAt >= conditionEstablishedAt;
+function matchesExpectedValue(expected: unknown, event: Record<string, unknown>): boolean {
+  const actual = eventField(event, "state", "status", "disposition", "result", "outcome");
+  return typeof expected === "string"
+    ? normalizedState(actual) === normalizedState(expected)
+    : stableEquals(actual, expected);
 }
 
 function matchesExpectedField(expected: Record<string, unknown>, event: Record<string, unknown>): boolean {
   const expectedField = expected.field;
-  if (typeof expectedField !== "string" || !expectedField.trim()) return true;
+  // The default state/status comparison can be combined with named constraints,
+  // e.g. { equals: "ready", timestamp: { gte: requestedAt } }.
+  if (typeof expectedField !== "string" || !expectedField.trim())
+    return !("equals" in expected) || matchesExpectedValue(expected.equals, event);
   const actual = eventField(event, ...fieldAliases(expectedField));
   const anyOf = expected.anyOf;
   if (Array.isArray(anyOf)) {
@@ -249,11 +240,6 @@ function matches(condition: AppTaskCondition, event: Record<string, unknown>): b
       matchesExpectedRecord(expected, { data: { ...expected, decision } })
     );
   }
-  // Level observations are not immutable historical facts. A newly declared
-  // wait must not be satisfied by an older state, check, or pulse replayed from
-  // the event journal. Only an observation made at or after the Condition was
-  // established can prove that the external level subsequently changed.
-  if (!isFreshLevelObservation(condition, event)) return false;
   const subject = typedSubject(condition.spec.subject);
   if (!subject) return false;
   if (String(eventField(event, ...fieldAliases(subject.field)) ?? "") !== subject.value) return false;
@@ -262,11 +248,7 @@ function matches(condition: AppTaskCondition, event: Record<string, unknown>): b
     return matchesExpectedRecord(condition.spec.expected, event);
   }
 
-  const actual = eventField(event, "state", "status", "disposition", "result", "outcome");
-  if (typeof condition.spec.expected === "string") {
-    return normalizedState(actual) === normalizedState(condition.spec.expected);
-  }
-  return stableEquals(actual, condition.spec.expected);
+  return matchesExpectedValue(condition.spec.expected, event);
 }
 
 /** Shared matcher for per-App and global indexed Condition routes. */

@@ -8,6 +8,7 @@
 
 import { createHash } from "node:crypto";
 import { readTaskEventTarget } from "../app/core/events/task-target.js";
+import { readPersistedEventEnvelope } from "../app/core/events/persisted.js";
 import {
   EVENT_APP_ADMISSION_REDELIVERY_REQUIRED,
   EVENT_DEDUPLICATED,
@@ -756,7 +757,7 @@ export class DbWriter {
         const existing = this.db
           .prepare(
             `SELECT e.id, e.idempotency_hash, e.delivery_status, e.accepted_by, e.delivery_route, e.app_admission_pending,
-                    e.source, e.owner, e.timestamp, e.record_only
+                    e.source, e.owner, e.timestamp, e.envelope_json, e.record_only
              FROM events e
              WHERE e.event_type = ?
                AND e.ingress_source = ?
@@ -775,6 +776,7 @@ export class DbWriter {
               source?: unknown;
               owner?: unknown;
               timestamp?: unknown;
+              envelope_json?: unknown;
               record_only?: unknown;
             }
           | undefined;
@@ -787,9 +789,10 @@ export class DbWriter {
             [EVENT_REDELIVERY_REQUIRED]?: boolean;
             [EVENT_APP_ADMISSION_REDELIVERY_REQUIRED]?: boolean;
           };
-          if (typeof existing.source === "string") retryEvent.source = existing.source;
-          if (typeof existing.owner === "string") retryEvent.owner = existing.owner;
-          if (typeof existing.timestamp === "number") retryEvent.timestamp = existing.timestamp;
+          const metadata = readPersistedEventEnvelope(existing.envelope_json, event.type) ?? existing;
+          if (typeof metadata.source === "string") retryEvent.source = metadata.source;
+          if (typeof metadata.owner === "string") retryEvent.owner = metadata.owner;
+          if (typeof metadata.timestamp === "number") retryEvent.timestamp = metadata.timestamp;
           // Publication intent belongs to the original saved Event. A keyed
           // retry cannot turn a required delivery into an optional observation.
           Object.defineProperty(event, EVENT_RECORD_ONLY, { value: existing.record_only === 1, configurable: true });
@@ -886,7 +889,9 @@ export class DbWriter {
       // causal metadata already have their own durable representations.
       const { data: _data, trace: _trace, visibility: _visibility, ...metadata } =
         isCanonicalEventEnvelope(event) ? event as Record<string, unknown> : { type: event.type };
-      const storedEnvelope = { ...metadata, type: event.type, source, owner, timestamp, urgency,
+      const eventTimestamp = typeof metadata.timestamp === "number" && Number.isFinite(metadata.timestamp)
+        ? metadata.timestamp : timestamp;
+      const storedEnvelope = { ...metadata, type: event.type, source, owner, timestamp: eventTimestamp, urgency,
         ...(ttlMs !== null ? { ttl_ms: ttlMs } : {}) };
       const info = this.db.run(
         `INSERT INTO events
@@ -932,6 +937,8 @@ export class DbWriter {
         return null;
       }
       try {
+        // Live routes and recovery share envelope time; keep explicit producer time.
+        (event as AgentEvent & { timestamp?: number }).timestamp = eventTimestamp;
         Object.defineProperty(event, EVENT_ROW_ID, {
           value: rowId,
           configurable: true,

@@ -815,7 +815,7 @@ describe("simple event interface", () => {
       target: { appId: "sample" },
       data: { reason: "mutated by listener", nested: { value: "mutated by listener" } },
     });
-    expect(Object.keys(observed[0]!).sort()).toEqual(["data", "id", "owner", "source", "target", "type"]);
+    expect(Object.keys(observed[0]!).sort()).toEqual(["data", "id", "owner", "source", "target", "timestamp", "type"]);
     expect(events.get(receipt.eventId)?.event.data.reason).toBe("original");
     expect(events.get(receipt.eventId)?.event.data.nested).toEqual({ value: "original" });
   });
