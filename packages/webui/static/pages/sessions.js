@@ -414,7 +414,12 @@ async function readSessionDetail(sessionId, opts = {}) {
     if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
     if (opts.isCurrent && !opts.isCurrent()) return;
 
-    if (sessData.error) { panel.innerHTML = `<div class="panel">${sessData.error}</div>`; return; }
+    if (!sessRes.ok || (!transRes.ok && transRes.status !== 404)) {
+      throw new Error(sessData.error || transData.error || 'Session read unavailable');
+    }
+    // Retained session metadata can outlive its JSONL transcript.
+    const unavailableTranscript = !transRes.ok
+      ? `<div class="section">Transcript unavailable: ${esc(transData.error || 'No saved transcript')}</div>` : null;
 
     const s = sessData.session;
     const durSec = s.endedAt ? Math.round((s.endedAt - s.startedAt) / 1000) : null;
@@ -473,9 +478,9 @@ async function readSessionDetail(sessionId, opts = {}) {
     const evalData = opts.evalData || currentSessionEval;
     if (evalData) {
       if (!evalData.rows?.length) html += '<div class="section">No saved review notes for this session.</div>';
-      html += `</div>${renderSessionConversation(transData, { evalData })}<div class="panel session-inspector session-inspector-secondary">`;
+      html += `</div>${unavailableTranscript || renderSessionConversation(transData, { evalData })}<div class="panel session-inspector session-inspector-secondary">`;
     } else {
-      html += renderSessionConversation(transData);
+      html += unavailableTranscript || renderSessionConversation(transData);
     }
 
     // D. Outcome Section
@@ -516,7 +521,8 @@ async function readSessionDetail(sessionId, opts = {}) {
   } catch(e) {
     if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
     if (opts.isCurrent && !opts.isCurrent()) return;
-    panel.innerHTML = `<div class="panel">Error loading session: ${e.message}</div>`;
+    document.getElementById('chat-status').textContent = e.message;
+    if (!panel.querySelector('.session-inspector')) panel.innerHTML = `<div class="panel">Error loading session: ${esc(e.message)}</div>`;
   }
 }
 

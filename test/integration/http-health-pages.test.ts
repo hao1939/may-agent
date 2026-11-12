@@ -590,11 +590,22 @@ describe("served workflow and metric health pages", () => {
       await page.goto(base + "/sessions/step-upload", { waitUntil: "domcontentloaded" });
       await page.waitForSelector("#session-detail-panel .session-inspector");
       await page.evaluate("chatTranscript.read");
+      getDb(root).prepare("UPDATE sessions SET outcome=? WHERE sessionId=?").run("Obsolete buffered outcome", "step-upload");
+      const staleSnapshot = await (await fetch(base + "/api/sessions/step-upload")).json();
+      await page.evaluate(() => {
+        const snapshots: string[] = [];
+        (window as unknown as { inspectorSnapshots: string[] }).inspectorSnapshots = snapshots;
+        const panel = document.getElementById("session-detail-panel")!;
+        new MutationObserver(() => snapshots.push(panel.textContent || "")).observe(panel, { childList: true });
+      });
       let capture: ((request: HTTPRequest) => void) | null = null;
       const intercepted = new Promise<HTTPRequest>(resolveRequest => { capture = resolveRequest; });
+      let rejectTranscript = false;
       await page.setRequestInterception(true);
       page.on("request", request => {
-        if (capture && new URL(request.url()).pathname === "/api/sessions/step-upload") {
+        if (rejectTranscript && new URL(request.url()).pathname === "/api/sessions/step-upload/transcript") {
+          void request.respond({ status: 500, contentType: "application/json", body: '{"error":"Fixture transcript unavailable"}' });
+        } else if (capture && new URL(request.url()).pathname === "/api/sessions/step-upload") {
           capture(request); capture = null;
         } else void request.continue();
       });
@@ -603,9 +614,18 @@ describe("served workflow and metric health pages", () => {
       const held = await intercepted;
       expect(await page.$eval("#session-detail-panel h3", el => el.textContent)).toBe("step-upload");
       expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
-      await held.continue();
+      getDb(root).prepare("UPDATE sessions SET outcome=? WHERE sessionId=?").run("Newest saved outcome", "step-upload");
+      await page.evaluate("scheduleSessionConversationRefresh(0)");
+      await held.respond({ status: 200, contentType: "application/json", body: JSON.stringify(staleSnapshot) });
       await pending;
       expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
+      expect(await page.$eval("#session-detail-panel", el => el.textContent)).toContain("Newest saved outcome");
+      expect(await page.evaluate("window.inspectorSnapshots.join('\\n')")).not.toContain("Obsolete buffered outcome");
+      rejectTranscript = true;
+      await page.evaluate("loadSessionDetail('step-upload')");
+      expect(await page.$eval("#session-detail-panel h3", el => el.textContent)).toBe("step-upload");
+      expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
+      expect(await page.$eval("#chat-status", el => el.textContent)).toContain("Fixture transcript unavailable");
     } finally { await browser.close(); }
   }, 30000);
 

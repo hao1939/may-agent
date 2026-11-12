@@ -274,7 +274,7 @@ function refreshChatTranscript() {
           syncRealtimeSubscriptions();
         }
         if (isSessionPageMode()) {
-          await readSessionDetail(view.sessionId, { preserveScroll: true, isCurrent: selected });
+          await readSessionDetail(view.sessionId, { preserveScroll: true, isCurrent: () => selected() && !view.dirty });
           continue;
         }
         const response = await fetch(`/api/sessions/${encodeURIComponent(view.sessionId)}/transcript`, { signal: AbortSignal.timeout(5000) });
