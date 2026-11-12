@@ -107,7 +107,8 @@ three optional installation skips, plus GitHub Quality/Container. The smaller
 explicit-read revision, integrated with current Host main `07148372f9`, is
 `a1b582327e3bac131cf7d0bf47da506f8af6fef0`. It passed full local CI: 4,021 tests,
 23,901 assertions, zero failures and three existing optional installation skips;
-browser coverage executed. Exact-head GitHub Quality and Container are pending.
+browser coverage executed. Exact-head GitHub Container passed its image build
+and isolated smoke check; Quality is pending.
 Scout's companion instruction change is Apps local-main commit `f0391f842c`.
 The
 [design refinement](../../../alex.app/docs/archive/reviews/creator-owned-task-discovery-20261113.md)

@@ -105,8 +105,9 @@ change. The final revision integrated with current main passed full local CI:
 4,021 tests, 23,901 assertions, zero failures and three existing optional
 installation skips. Browser coverage executed; Host/SDK types, App boundaries
 and lint passed. Its longest test shard took 281.04 seconds. These counts belong
-to current main plus this change, not the earlier base. Exact-head GitHub Quality
-and Container are pending; independent review remains a separate gate.
+to current main plus this change, not the earlier base. Exact-head GitHub
+Container passed its image build and isolated smoke check. Quality is pending;
+independent review remains a separate gate.
 
 Host review, release and separate App activation precede the live acceptance
 check. An ordinary wake must discover and dispose real finite work without the
