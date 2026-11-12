@@ -107,7 +107,8 @@ persisted-event and worker-boundary regressions for these failure paths.
 by `app/daemon-events.ts`. Completion suggestions stay in the saved result;
 they do not rewrite guidance or enter future prompts automatically. The retired
 context updater and unregistered file-read tracker are removed. Historical
-`file_reads` rows remain readable by the project history view.
+`file_reads` rows remain stored; the project Lineage HTTP view that read them
+is retired.
 
 Manager health reads describe sessions, process ownership and workflow runs.
 They do not select work for evaluation. Evaluation eligibility and exclusions
