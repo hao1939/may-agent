@@ -2050,6 +2050,7 @@ describe("canonical App task runtime", () => {
 
   it("preserves event time through Runtime preview so stale level observations stay blocked", async () => {
     const f = fixture();
+    const requestedAt = Date.now();
     const bus = eventBus();
     const persistDir = join(f.root, "state");
     const config = loadedTaskConfig(f, persistDir);
@@ -2075,7 +2076,7 @@ describe("canonical App task runtime", () => {
           id: "credential-ready:xhs",
           type: "credential.state",
           subject: "credential:xhs",
-          expected: { field: "state", equals: "ready" },
+          expected: { field: "state", equals: "ready", timestamp: { gte: requestedAt } },
           owner: "app:credential-provider",
         },
       ],
@@ -2103,7 +2104,7 @@ describe("canonical App task runtime", () => {
       previewLoadedCanonicalAppTaskEvent({
         bus,
         appId: "sample",
-        event: observation(establishedAt - 1),
+        event: observation(requestedAt - 1),
       }),
     ).toEqual([]);
     expect(

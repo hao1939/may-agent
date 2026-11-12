@@ -279,7 +279,7 @@ describe("caller feedback", () => {
       id: "result",
       type: "build.state",
       subject: "resource:repo/42",
-      expected: { state: "passed", source: "app:reviewer:observer:build" },
+      expected: { state: "passed", source: "app:reviewer:observer:build", timestamp: { gte: expect.any(Number) } },
       owner: "app:reviewer",
     });
     const missing = await tool.execute("condition-missing", {

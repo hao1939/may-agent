@@ -2,6 +2,9 @@ import { TASK_BUDGET_SCHEMA } from "./task-budget-schema.js";
 import { TASK_EXECUTION_SCHEMA } from "./task-execution-schema.js";
 import type { SqliteDb } from "../db.js";
 import { APP_INBOX_SCHEMA } from "./app-inbox-schema.js";
+import { isDeepStrictEqual } from "node:util";
+import type { Condition } from "@may-agent/sdk";
+import type { AppTaskAttempt, AppTaskCondition } from "../../app/core/tasks/app-task-state.js";
 
 /** Invalidate cached canonical snapshots after an in-transaction Task resource change. */
 export function advanceTaskResourceRevision(db: SqliteDb, appId: string): void {
@@ -196,6 +199,119 @@ function migrateTaskEventReceipts(db: SqliteDb): void {
   }
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+/** Convert only declarations authored under the retired name-based contract. */
+function explicitLegacyFreshness(condition: Pick<Condition, "id" | "type" | "expected">, notBefore: number): boolean {
+  const type = condition.type;
+  if (
+    !Number.isFinite(notBefore) ||
+    !(
+      type === "aks.repo-ref.observed" ||
+      [".state", ".check", ".pulse", "-pulse"].some((suffix) => type.endsWith(suffix))
+    )
+  )
+    return false;
+  const expected: Record<string, unknown> = isRecord(condition.expected)
+    ? { ...condition.expected }
+    : { equals: condition.expected };
+  const timestamp = expected.timestamp;
+  if (!("timestamp" in expected)) {
+    expected.timestamp = { gte: notBefore };
+  } else if (
+    isRecord(timestamp) &&
+    Object.keys(timestamp).length > 0 &&
+    Object.keys(timestamp).every((key) => ["gt", "gte", "lt", "lte"].includes(key)) &&
+    (!("gte" in timestamp) ||
+      ((typeof timestamp.gte === "number" || typeof timestamp.gte === "string") && Number.isFinite(Number(timestamp.gte))))
+  ) {
+    expected.timestamp = { ...timestamp, gte: Math.max(notBefore, Number(timestamp.gte ?? notBefore)) };
+  } else if (!(typeof timestamp === "number" && timestamp >= notBefore)) {
+    throw new Error(`Condition ${condition.id} needs an explicit timestamp expectation before upgrading`);
+  }
+  condition.expected = expected;
+  return true;
+}
+
+/** Reify the retired v3 name policy once; current matching never inspects names. */
+function migrateConditionFreshness(db: SqliteDb): void {
+  const apps = db
+    .prepare("SELECT app_id FROM app_task_store_meta WHERE key = 'schema_version' AND CAST(value AS INTEGER) < 4")
+    .all() as Array<{ app_id: string }>;
+  if (!apps.length) return;
+  const upgradeTime = Date.now();
+  db.exec("SAVEPOINT condition_freshness");
+  try {
+    for (const { app_id: appId } of apps) {
+      const rows = db
+        .prepare("SELECT condition_id, condition_json FROM app_task_conditions WHERE app_id = ?")
+        .all(appId) as Array<{ condition_id: string; condition_json: string }>;
+      const previous = new Map(
+        rows.map((row) => [row.condition_id, JSON.parse(row.condition_json) as AppTaskCondition]),
+      );
+      let changed = false;
+      for (const row of rows) {
+        const condition = JSON.parse(row.condition_json) as AppTaskCondition;
+        // The old matcher imposed no boundary without a valid saved time.
+        const declaration = { id: row.condition_id, ...condition.spec };
+        if (!explicitLegacyFreshness(declaration, Date.parse(condition.status.observedAt ?? ""))) continue;
+        condition.spec.expected = declaration.expected;
+        condition.metadata.resourceVersion++;
+        db.prepare("UPDATE app_task_conditions SET condition_json = ? WHERE app_id = ? AND condition_id = ?").run(
+          JSON.stringify(condition),
+          appId,
+          row.condition_id,
+        );
+        changed = true;
+      }
+      // A completed executor may have saved effects awaiting funding. Keep those
+      // exact effects recoverable, with upgrade time as the new request boundary.
+      const attempts = db
+        .prepare(
+          `SELECT attempt_id, attempt_json FROM app_task_attempts WHERE app_id = ?
+        AND json_extract(attempt_json, '$.pendingSettlement') IS NOT NULL`,
+        )
+        .all(appId) as Array<{
+        attempt_id: string;
+        attempt_json: string;
+      }>;
+      for (const row of attempts) {
+        const attempt = JSON.parse(row.attempt_json) as AppTaskAttempt;
+        let updated = false;
+        for (const condition of attempt.pendingSettlement!.report.handlerResult.conditions ?? []) {
+          if (!("type" in condition)) continue;
+          const saved = previous.get(condition.id);
+          const unchanged =
+            saved &&
+            saved.spec.type === condition.type &&
+            saved.spec.subject === condition.subject &&
+            saved.spec.owner === condition.owner &&
+            isDeepStrictEqual(saved.spec.expected, condition.expected);
+          const boundary = unchanged ? Date.parse(saved.status.observedAt ?? "") : upgradeTime;
+          if (explicitLegacyFreshness(condition, boundary)) updated = true;
+        }
+        if (!updated) continue;
+        attempt.metadata.resourceVersion++;
+        db.prepare("UPDATE app_task_attempts SET attempt_json = ? WHERE app_id = ? AND attempt_id = ?").run(
+          JSON.stringify(attempt),
+          appId,
+          row.attempt_id,
+        );
+        changed = true;
+      }
+      if (changed) advanceTaskResourceRevision(db, appId);
+      db.prepare("UPDATE app_task_store_meta SET value = '4' WHERE app_id = ? AND key = 'schema_version'").run(appId);
+    }
+    db.exec("RELEASE SAVEPOINT condition_freshness");
+  } catch (error) {
+    db.exec("ROLLBACK TO SAVEPOINT condition_freshness");
+    db.exec("RELEASE SAVEPOINT condition_freshness");
+    throw error;
+  }
+}
+
 /** Create the resource tables and migrate legacy JSON links once. */
 export function ensureTaskResourceSchema(db: SqliteDb): void {
   const controls = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'app_task_control_receipts'")
@@ -239,6 +355,7 @@ export function ensureTaskResourceSchema(db: SqliteDb): void {
   if (!needsConditionRouteBackfill && !needsRelationBackfill) {
     db.exec(TASK_RESOURCE_SCHEMA);
     migrateTaskEventReceipts(db);
+    migrateConditionFreshness(db);
     return;
   }
   // This helper is used both by the top-level schema transaction and by
@@ -277,6 +394,7 @@ export function ensureTaskResourceSchema(db: SqliteDb): void {
       `);
     }
     migrateTaskEventReceipts(db);
+    migrateConditionFreshness(db);
     db.exec("RELEASE SAVEPOINT task_resource_schema");
   } catch (error) {
     try {

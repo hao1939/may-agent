@@ -314,6 +314,36 @@ An explicit changed choice takes effect even if the same choice had an earlier
 receipt. It preserves observed facts, wait age, and every input's correlation to
 the same Condition. Changing attention alone cannot make another input runnable.
 
+Condition freshness is explicit. Event names (including `.state`, `.check` and
+`.pulse`) do not add matching rules. A historical immutable result may satisfy a
+Condition with no time boundary. For a new read, declare
+`expected: { field: "state", equals: "ready", timestamp: { gte: requestedAt } }`.
+The numeric `timestamp` is envelope time, identical in live routing and journal
+recovery. Persistence supplies publication time when a producer omits it and
+preserves valid explicit producer time. A missing envelope time cannot satisfy
+the boundary. Provider `measuredAt`, sample identity and revision remain separate
+expectations.
+The default state/status comparison can also be combined with constraints as
+`{ equals: "done", timestamp: { gte: requestedAt } }`, retaining scalar status
+normalization. A named `field` comparison keeps its existing exact semantics.
+
+SDK `observationCondition` adds the construction-time boundary and exact observer
+source. Call it when requesting a new read; retain the resulting Condition when
+continuing the same wait. An explicit `expected.timestamp` overrides the default,
+for example `{ gte: 0 }` when retained history is sufficient. The contract read
+alone creates no durable wait.
+
+Resource schema v4 upgrades old name-dependent waits once. It writes their saved
+`status.observedAt` boundary into expectations without changing Condition IDs,
+generations or observations. It preserves independent waits and accepted results.
+Pending settlement reports use that same boundary for unchanged waits; new waits
+in those reports use upgrade time. Only resource versions and the App snapshot
+revision advance. Existing numeric time constraints are intersected; an unusual
+constraint that cannot be safely combined stops the upgrade and rolls it back,
+identifying the declaration that needs an explicit numeric timestamp expectation.
+Upgrade with the old runtime stopped and update raw App-authored waits that relied
+on the retired name rule. There is no ongoing compatibility matcher.
+
 Quiet progress updates the Condition observation without adding a Task trigger
 or input obligation. Failure, answer, ordinary input and a matching explicit
 Condition still wake promptly. A caller needing a partial fact declares that

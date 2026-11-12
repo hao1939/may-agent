@@ -756,7 +756,8 @@ export class DbWriter {
         const existing = this.db
           .prepare(
             `SELECT e.id, e.idempotency_hash, e.delivery_status, e.accepted_by, e.delivery_route, e.app_admission_pending,
-                    e.source, e.owner, e.timestamp, e.record_only
+                    e.source, e.owner, COALESCE(json_extract(e.envelope_json, '$.timestamp'), e.timestamp) AS timestamp,
+                    e.record_only
              FROM events e
              WHERE e.event_type = ?
                AND e.ingress_source = ?
@@ -886,7 +887,9 @@ export class DbWriter {
       // causal metadata already have their own durable representations.
       const { data: _data, trace: _trace, visibility: _visibility, ...metadata } =
         isCanonicalEventEnvelope(event) ? event as Record<string, unknown> : { type: event.type };
-      const storedEnvelope = { ...metadata, type: event.type, source, owner, timestamp, urgency,
+      const eventTimestamp = typeof metadata.timestamp === "number" && Number.isFinite(metadata.timestamp)
+        ? metadata.timestamp : timestamp;
+      const storedEnvelope = { ...metadata, type: event.type, source, owner, timestamp: eventTimestamp, urgency,
         ...(ttlMs !== null ? { ttl_ms: ttlMs } : {}) };
       const info = this.db.run(
         `INSERT INTO events
@@ -932,6 +935,8 @@ export class DbWriter {
         return null;
       }
       try {
+        // Live routes and recovery share envelope time; keep explicit producer time.
+        (event as AgentEvent & { timestamp?: number }).timestamp = eventTimestamp;
         Object.defineProperty(event, EVENT_ROW_ID, {
           value: rowId,
           configurable: true,

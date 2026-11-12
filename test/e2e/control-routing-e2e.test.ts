@@ -119,6 +119,7 @@ describe("control routing e2e", () => {
     expect(ack).toMatchObject({ type: "ok", command: "message.created", eventId: expect.any(Number) });
     expect(emitted).toContainEqual({
       type: "message.created",
+      timestamp: expect.any(Number),
       source: "agent:may",
       owner: "agent:dev",
       urgency: "high",

@@ -6456,12 +6456,13 @@ describe("App task reconciler state", () => {
 
   it("does not replay an old scheduled check into a newly established pulse wait", () => {
     const { config } = fixture();
+    const requestedAt = Date.now();
     const taskIntent = intent("monitor");
     const condition = {
       id: "next-master-validation-check",
       type: "aks.master-validation.check",
       subject: "project:demo",
-      expected: { field: "project", equals: "demo" },
+      expected: { field: "project", equals: "demo", timestamp: { gte: requestedAt } },
     } as const;
     const oldPulse = {
       type: "aks.master-validation.check",
@@ -6495,12 +6496,13 @@ describe("App task reconciler state", () => {
 
   it("does not replay an old capacity pulse into a future-slot wait", () => {
     const { config } = fixture();
+    const requestedAt = Date.now();
     const taskIntent = intent("monitor");
     const condition = {
       id: "capacity-after-slot-82677:task-holder-a",
       type: "aks.master-validation.capacity-pulse",
       subject: "project:demo",
-      expected: { field: "cycleSlot", notEquals: 82677 },
+      expected: { field: "cycleSlot", notEquals: 82677, timestamp: { gte: requestedAt } },
     } as const;
     const claim = declareAndClaimTask(config, {
       intent: taskIntent,
@@ -6513,14 +6515,13 @@ describe("App task reconciler state", () => {
       summary: "waiting for a future capacity slot",
       conditions: [condition],
     });
-    const establishedAt = Date.parse(readTaskSnapshot(config).conditions?.[condition.id]?.status.observedAt ?? "");
 
     expect(
       trackAppTaskConditionEvent(config, {
         type: condition.type,
         project: "demo",
         cycleSlot: 82676,
-        timestamp: establishedAt - 1,
+        timestamp: requestedAt - 1,
       }),
     ).toEqual([]);
     expect(
@@ -6528,7 +6529,7 @@ describe("App task reconciler state", () => {
         type: condition.type,
         project: "demo",
         cycleSlot: 82677,
-        timestamp: establishedAt + 1,
+        timestamp: requestedAt + 1,
       }),
     ).toEqual([]);
     expect(
@@ -6536,7 +6537,7 @@ describe("App task reconciler state", () => {
         type: condition.type,
         project: "demo",
         cycleSlot: 82678,
-        timestamp: establishedAt + 2,
+        timestamp: requestedAt + 2,
       }),
     ).toEqual([{ conditionId: condition.id, taskId: taskIntent.id }]);
   });
@@ -7006,6 +7007,7 @@ describe("App task reconciler state", () => {
 
   it("does not wake a new repo-ref wait from an older journal observation", () => {
     const { config } = fixture();
+    const requestedAt = Date.now();
     const claim = declareAndClaimTask(config, {
       intent: intent("monitor"),
       appAgent: "app-owner",
@@ -7020,7 +7022,7 @@ describe("App task reconciler state", () => {
           id: "origin-dev-after-abc",
           type: "aks.repo-ref.observed",
           subject: "repoRef:origin/dev",
-          expected: { field: "commit", notEquals: "abc" },
+          expected: { field: "commit", notEquals: "abc", timestamp: { gte: requestedAt } },
         },
       ],
     });
@@ -7035,7 +7037,7 @@ describe("App task reconciler state", () => {
         type: "aks.repo-ref.observed",
         repoRef: "origin/dev",
         commit: "older-different-commit",
-        timestamp: establishedAt - 1,
+        timestamp: requestedAt - 1,
       }),
     ).toEqual([]);
     expect(

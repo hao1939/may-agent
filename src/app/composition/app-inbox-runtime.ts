@@ -437,12 +437,15 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     bus: options.bus,
     readDemand: observationDemandReader(options.db),
     needsFact: (fact) => {
+      // This is a candidate publication, not a replayed journal fact. Preview
+      // with the current Host time; persistence supplies the actual envelope later.
+      const event = { ...fact, timestamp: now() } as AgentEvent;
       if (options.previewTaskEventRoutes)
-        return options.previewTaskEventRoutes({ event: fact as AgentEvent }).some((route) => route.taskIds.length > 0);
+        return options.previewTaskEventRoutes({ event }).some((route) => route.taskIds.length > 0);
       if (!options.previewTaskEvent) throw new Error("Observation Condition matching unavailable");
       return loaded.some(
         ({ definition, appDir }) =>
-          options.previewTaskEvent!({ appId: definition.id, appDir, event: fact as AgentEvent }).length > 0,
+          options.previewTaskEvent!({ appId: definition.id, appDir, event }).length > 0,
       );
     },
     now,

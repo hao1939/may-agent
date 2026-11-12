@@ -130,7 +130,7 @@ export async function fixture(detector: ResourceObserver) {
         configs
           .get("sample")!
           .resourceStore.readConditionRoutesForAllApps(fact.type)
-          .some((route) => matchesAppTaskCondition(route.condition, fact as never)),
+          .some((route) => matchesAppTaskCondition(route.condition, { ...fact, timestamp: clock } as never)),
       context: () => ({
         read: {} as never,
         log: { info() {}, warn() {}, error() {}, debug() {} },

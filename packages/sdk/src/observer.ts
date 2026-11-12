@@ -36,7 +36,8 @@ export function defineObserver(definition: ResourceObserver): ResourceObserver {
   return definition;
 }
 
-/** Pure Condition construction. Save it through the ordinary Task result. */
+/** Construct a fresh resource read. An explicit timestamp expectation overrides
+ * the construction-time boundary; source measurement freshness stays caller-owned. */
 export function observationCondition(capability: ObservationContract, interest: ObservationInterest): Condition {
   if (interest.observerId !== capability.id) throw new Error("Observation capability does not match observerId");
   if (!interest.id?.trim() || !interest.resource?.trim()) throw new Error("Observation requires id and resource");
@@ -47,7 +48,11 @@ export function observationCondition(capability: ObservationContract, interest: 
     id: interest.id,
     type: capability.type,
     subject: `resource:${interest.resource}`,
-    expected: { ...interest.expected, source: `app:${capability.appId}:observer:${capability.id}` },
+    expected: {
+      timestamp: { gte: Date.now() },
+      ...interest.expected,
+      source: `app:${capability.appId}:observer:${capability.id}`,
+    },
     owner: `app:${capability.appId}`,
   };
 }
