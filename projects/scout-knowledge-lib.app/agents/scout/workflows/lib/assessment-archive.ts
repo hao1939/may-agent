@@ -57,6 +57,25 @@ export function assessmentRecord(
   return { path, previous: existsSync(path) ? readFileSync(path, "utf8") : "" };
 }
 
+function reviewedContent(record: AssessmentRecord): string {
+  if (existsSync(record.path) && realpathSync(record.path) !== record.path)
+    throw new Error("Assessment path became a symlink");
+  const current = existsSync(record.path)
+    ? readFileSync(record.path, "utf8")
+    : "";
+  if (current !== record.previous)
+    throw new Error(
+      "Assessment changed during research; retry from current evidence",
+    );
+  return current;
+}
+
+export function reuseAssessment(record: AssessmentRecord): string {
+  if (!reviewedContent(record))
+    throw new Error("No archived assessment is available to reuse");
+  return record.path;
+}
+
 // Short filesystem commit only; the existing Task owns retries and continuation.
 // Preserve earlier assessments and reject edits observed since analysis began.
 // This synchronous compare-and-replace runs in the Host process; it does not
@@ -69,15 +88,7 @@ export function saveAssessment(
 ): string {
   const temporary = `${record.path}.${randomUUID()}.tmp`;
   try {
-    if (existsSync(record.path) && realpathSync(record.path) !== record.path)
-      throw new Error("Assessment path became a symlink");
-    const current = existsSync(record.path)
-      ? readFileSync(record.path, "utf8")
-      : "";
-    if (current !== record.previous)
-      throw new Error(
-        "Assessment changed during research; retry from current evidence",
-      );
+    const current = reviewedContent(record);
     const header = `# ${title.replace(/[\r\n]/g, " ")}\n\nSource identity: ${sourceIdentity(source)}\n`;
     const history = current
       ? `\n<details>\n<summary>Earlier assessments</summary>\n\n${current.trim()}\n\n</details>\n`

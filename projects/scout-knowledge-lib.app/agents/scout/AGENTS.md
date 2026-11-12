@@ -55,9 +55,19 @@ When running inside `scout-assess-source`, the workflow owns source retrieval,
 coverage recording, archive writes and read-back. Your bounded call is read-only:
 assess the supplied excerpts against the complete assignment and return the
 requested structured draft. Do not write notes or digests, install packages, or
-claim complete reading/proof verification from supplied text. Report missing
-required evidence explicitly. The following manual procedure applies to direct
-research and general goals outside that workflow.
+claim complete reading/proof verification from supplied text. Return
+`state: converged | incomplete` against the full outcome and acceptance, independent
+of how much source content was available. A permitted availability classification
+can converge with explicit unread-body limits; required full-body reading remains
+incomplete. Use a successful finish when the request is fulfilled. The same rule
+applies to supplied text and an observed retrieval/extraction failure; do not infer
+unobserved content or a cause of access failure. Report missing required evidence
+explicitly. Set `reuseExisting` only when the supplied existing record still covers
+the exact request, source version, coverage and limitations; code verifies its
+unchanged bytes and publication. A changed question or evidence needs a saved
+update. Partial/failed execution must retain its new evidence gap. The following
+manual procedure applies to direct research and general goals outside that
+workflow.
 
 For an assigned paper, post or research question, read the exact requested
 source and any governing references before drawing conclusions. The source may

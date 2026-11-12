@@ -7,9 +7,10 @@ import {
   rmSync,
   writeFileSync,
   mkdirSync,
+  symlinkSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import { admitTaskReconcileResult, type WorkflowContext } from "@may-agent/sdk";
 import { Check } from "typebox/value";
@@ -68,7 +69,8 @@ const draft = {
   summary: "Useful idea, with limited evidence.",
   assessment:
     "The authors report an improvement. The supplied evidence does not establish causation.",
-  complete: true,
+  state: "converged" as "converged" | "incomplete",
+  reuseExisting: false,
 };
 const packet: SourcePacket = {
   requestedUrl: sourceUrl,
@@ -90,15 +92,32 @@ function context(
   return createTestAppWorkflowContext({
     input: current,
     reconciliation: {
+      task: {
+        id: "goal/test",
+        parentId: "",
+        status: "running",
+        generation: 1,
+        resourceVersion: 1,
+        agent: "scout",
+        outcome: data.outcome,
+        acceptance: data.acceptance,
+        input: current,
+        conditions: [],
+        acceptedEvidence: { available: true, maxPageSize: 2 },
+      },
       appId: "scout-knowledge-lib",
       taskId: "goal/test",
       generation: 1,
       resourceVersion: 1,
       agent: "scout",
+      owner: "scout",
       outcome: data.outcome,
       acceptance: data.acceptance,
       input: current,
       children: { live: [], completed: [] },
+      waits: { open: [], note: "No retained waits" },
+      taskSnapshot: { live: [], truncated: false },
+      events: { items: [], truncated: false },
     },
     workspace: {
       appRoot: root,
@@ -186,7 +205,7 @@ it("the procedure saves and reads back the analysis with code-owned coverage", a
     cwd: root,
     encoding: "utf8",
   }).trim();
-  expect(result.output).toMatchObject({
+  expect(structuredClone(result.output)).toMatchObject({
     facts: expect.arrayContaining([
       `publication:commit:${revision}`,
       `output:${record.path}`,
@@ -240,6 +259,192 @@ it("a changed question reuses the source record and retains previous evidence", 
   expect(readdirSync(join(root, "knowledge/findings"))).toHaveLength(1);
 });
 
+function head(root: string) {
+  return execFileSync("git", ["rev-parse", "HEAD"], {
+    cwd: root,
+    encoding: "utf8",
+  }).trim();
+}
+function candidateRecord(root: string) {
+  const parent = join(root, "output/.state/scout-publication");
+  const candidates = readdirSync(parent).filter((name) =>
+    name.startsWith("scout-knowledge-candidate-"),
+  );
+  expect(candidates).toHaveLength(1);
+  return assessmentRecord(join(parent, candidates[0]), sourceUrl);
+}
+
+it("a fitting assessment is reused without new bytes, history or a Git commit", async () => {
+  const root = temporary();
+  await executeSourceAssessment(
+    context(root, (async () => success()) as WorkflowContext["agents"]["call"]),
+    async () => packet,
+  );
+  const first = assessmentRecord(root, sourceUrl);
+  const revision = head(root);
+  const result = await executeSourceAssessment(
+    context(root, (async (_agent, prompt) => {
+      expect(prompt).toContain(first.previous);
+      return success({ ...draft, reuseExisting: true });
+    }) as WorkflowContext["agents"]["call"]),
+    async () => packet,
+  );
+  expect(structuredClone(result.output)).toMatchObject({
+    state: "converged",
+    facts: expect.arrayContaining([
+      `output:${first.path}`,
+      "publication:no-change",
+      `publication-head:${revision}`,
+    ]),
+    response: expect.stringContaining(
+      `Verified publication revision: ${revision}`,
+    ),
+  });
+  expect(assessmentRecord(root, sourceUrl)).toEqual(first);
+  expect(head(root)).toBe(revision);
+  expect(readdirSync(join(root, "knowledge/findings"))).toHaveLength(1);
+});
+
+it.each(["absent", "changed bytes", "symlink", "another candidate file"])(
+  "invalid reuse (%s) retains the candidate without publishing it",
+  async (failure) => {
+    const root = temporary();
+    if (failure !== "absent") {
+      await executeSourceAssessment(
+        context(root, (async () =>
+          success()) as WorkflowContext["agents"]["call"]),
+        async () => packet,
+      );
+    }
+    const revision = head(root);
+    let existing: string | undefined;
+    if (failure !== "absent")
+      existing = assessmentRecord(root, sourceUrl).previous;
+    const result = await executeSourceAssessment(
+      context(root, (async () => {
+        const record = candidateRecord(root);
+        if (failure === "changed bytes")
+          writeFileSync(
+            record.path,
+            record.previous + "\nUnreviewed candidate edit\n",
+          );
+        if (failure === "another candidate file")
+          writeFileSync(
+            join(dirname(dirname(record.path)), "README.md"),
+            "Unreviewed unrelated edit",
+          );
+        if (failure === "symlink") {
+          rmSync(record.path);
+          symlinkSync(join(root, "knowledge/README.md"), record.path);
+        }
+        return success({ ...draft, reuseExisting: true });
+      }) as WorkflowContext["agents"]["call"]),
+      async () => packet,
+    );
+    expect(structuredClone(result.output)).toMatchObject({
+      state: "incomplete",
+      facts: expect.arrayContaining([
+        expect.stringContaining("archive-failure:"),
+        expect.stringContaining("candidate-root:"),
+      ]),
+    });
+    const facts = (result.output as { facts: string[] }).facts;
+    expect(
+      facts.some(
+        (fact) => fact.startsWith("publication:") || fact.startsWith("output:"),
+      ),
+    ).toBe(false);
+    expect(head(root)).toBe(revision);
+    if (existing)
+      expect(assessmentRecord(root, sourceUrl).previous).toBe(existing);
+    else expect(readdirSync(join(root, "knowledge"))).toEqual(["README.md"]);
+  },
+);
+
+it("a partial finish preserves its new gap even when it asks to reuse an older record", async () => {
+  const root = temporary();
+  await executeSourceAssessment(
+    context(root, (async () => success()) as WorkflowContext["agents"]["call"]),
+    async () => packet,
+  );
+  const previous = assessmentRecord(root, sourceUrl).previous;
+  const result = await executeSourceAssessment(
+    context(root, (async () => ({
+      ...success({ ...draft, reuseExisting: true }),
+      facts: {
+        status: "partial",
+        next_steps: "The governing reference is still unread.",
+      },
+    })) as WorkflowContext["agents"]["call"]),
+    async () => packet,
+  );
+  expect(result.output).toHaveProperty("state", "incomplete");
+  const saved = assessmentRecord(root, sourceUrl).previous;
+  expect(saved).toContain("The governing reference is still unread.");
+  expect(saved).toContain(previous.trim());
+});
+
+it("standalone no-save uses its assignment without reconciliation or a workspace", async () => {
+  let calls = 0;
+  const ctx = createTestAppWorkflowContext({
+    input: { ...input, data: { ...input.data, archive: false } },
+    callAgent: (async (_agent, prompt) => {
+      calls++;
+      expect(prompt).toContain(input.data.outcome);
+      return success();
+    }) as WorkflowContext["agents"]["call"],
+  });
+  ctx.reconciliation = undefined;
+  ctx.workspace = undefined;
+  const result = await executeSourceAssessment(ctx, async () => packet);
+  expect(calls).toBe(1);
+  expect(structuredClone(result.output)).toMatchObject({
+    state: "converged",
+    facts: expect.arrayContaining(["archive:disabled-by-assignment"]),
+  });
+});
+
+it("the hosted assignment overrides conflicting procedure input", async () => {
+  const root = temporary();
+  const ctx = context(root, (async (_agent, prompt) => {
+    expect(prompt).toContain(input.data.outcome);
+    expect(prompt).not.toContain("Conflicting request");
+    return success();
+  }) as WorkflowContext["agents"]["call"]);
+  ctx.input = {
+    kind: "assess-source",
+    data: {
+      ...input.data,
+      sourceUrl: "https://example.org/wrong",
+      outcome: "Conflicting request",
+    },
+  };
+  const result = await executeSourceAssessment(ctx, async (url) => {
+    expect(url).toBe(sourceUrl);
+    return packet;
+  });
+  expect(result.output).toHaveProperty("state", "converged");
+});
+
+it("missing hosted assignment cannot fall back to a caller's procedure input", async () => {
+  const root = temporary();
+  let calls = 0;
+  let reads = 0;
+  const ctx = context(root, (async () => {
+    calls++;
+    return success();
+  }) as WorkflowContext["agents"]["call"]);
+  ctx.reconciliation!.input = undefined as never;
+  const result = await executeSourceAssessment(ctx, async () => {
+    reads++;
+    return packet;
+  });
+  expect(calls).toBe(0);
+  expect(reads).toBe(0);
+  expect(result.output).toHaveProperty("state", "incomplete");
+  expect(readdirSync(root)).toEqual([".git", "knowledge"]);
+});
+
 it("no-save performs the assessment without creating archive files", async () => {
   const root = temporary();
   const ctx = context(
@@ -274,18 +479,86 @@ it("an aborted attempt cannot save a late model result", async () => {
   expect(() => readdirSync(join(root, "knowledge/findings"))).toThrow();
 });
 
-it("source failure records access limits and leaves research incomplete without a model call", async () => {
+it("an actual HTTP denial reaches the same bounded judgment and publication pipeline", async () => {
   const root = temporary();
+  const server = Bun.serve({
+    port: 0,
+    fetch: () => new Response("Forbidden", { status: 403 }),
+  });
+  let calls = 0;
+  try {
+    const url = `http://127.0.0.1:${server.port}/post`;
+    const ctx = context(
+      root,
+      (async (_agent, prompt) => {
+        calls++;
+        expect(prompt).toContain("HTTP 403");
+        expect(prompt).toContain(
+          "source content and any unrecorded redirect remain unknown",
+        );
+        expect(prompt).toContain("Classify the source's availability");
+        return success({
+          ...draft,
+          summary: "Availability classified: access denied.",
+          assessment:
+            "The exact URL returned HTTP 403. No body was read. Further reading needs permitted source access; the cause of the denial is unknown.",
+        });
+      }) as WorkflowContext["agents"]["call"],
+      {
+        ...input.data,
+        sourceUrl: url,
+        outcome: "Classify the source's availability",
+        acceptance: [
+          "A recorded access failure is an acceptable classification; do not infer its cause.",
+        ],
+      },
+    );
+    const result = await executeSourceAssessment(ctx);
+    expect(calls).toBe(1);
+    expect(structuredClone(result.output)).toMatchObject({
+      state: "converged",
+      facts: expect.arrayContaining([
+        "source-access-failure:Source retrieval returned HTTP 403",
+        expect.stringContaining("publication:commit:"),
+      ]),
+    });
+    const saved = assessmentRecord(root, url).previous;
+    expect(saved).toContain("No body was read");
+    expect(saved).toContain("Request fulfillment: converged");
+    const evidence = JSON.parse(saved.split("```json\n")[1].split("\n```")[0]);
+    expect(evidence).toMatchObject({
+      requestedUrl: url,
+      identity: sourceIdentity(url),
+      error: "Source retrieval returned HTTP 403",
+    });
+    expect(evidence).not.toHaveProperty("retrievedUrl");
+  } finally {
+    server.stop(true);
+  }
+});
+
+it("an unusable draft preserves only an access receipt after retrieval failure", async () => {
+  const root = temporary();
+  let calls = 0;
   const ctx = context(root, (async () => {
-    throw new Error("Must not run");
+    calls++;
+    return {
+      ...success(),
+      status: "error",
+      output: undefined,
+      summary: "No usable model result",
+    };
   }) as WorkflowContext["agents"]["call"]);
   const result = await executeSourceAssessment(ctx, async () => {
     throw new Error("HTTP 404");
   });
+  expect(calls).toBe(1);
   expect(result.output).toHaveProperty("state", "incomplete");
-  expect(assessmentRecord(root, sourceUrl).previous).toContain(
-    "No source text was supplied",
-  );
+  const saved = assessmentRecord(root, sourceUrl).previous;
+  expect(saved).toContain("## Access attempt");
+  expect(saved).toContain("not a substantive assessment");
+  expect(saved).toContain("HTTP 404");
+  expect(saved).not.toContain(draft.assessment);
 });
 
 it("concurrent edits prevent a successful save and preserve the existing content", async () => {
@@ -302,13 +575,14 @@ it("concurrent edits prevent a successful save and preserve the existing content
     return success();
   }) as WorkflowContext["agents"]["call"]);
   const result = await executeSourceAssessment(ctx, async () => packet);
-  expect(result.output).toMatchObject({
+  expect(structuredClone(result.output)).toMatchObject({
     state: "waiting",
     facts: expect.arrayContaining([
       expect.stringContaining("accepted-publication:pending:"),
       expect.stringContaining("candidate-ref:refs/archive/scout-publication/"),
     ]),
-    requests: [expect.objectContaining({ appId: "scout-knowledge-lib" })], conditions: [{ requestId: (result.output as any).requests[0].id }],
+    requests: [expect.objectContaining({ appId: "scout-knowledge-lib" })],
+    conditions: [{ requestId: (result.output as any).requests[0].id }],
   });
   expect(readFileSync(record.path, "utf8")).toContain("Human correction");
   expect(readFileSync(record.path, "utf8")).not.toContain(draft.assessment);
@@ -319,7 +593,7 @@ it("partial analysis is saved with its limits and cannot fulfill the research", 
   const ctx = context(root, (async () =>
     success({
       ...draft,
-      complete: false,
+      state: "incomplete",
     })) as WorkflowContext["agents"]["call"]);
   const result = await executeSourceAssessment(ctx, async () => packet);
   expect(result.output).toHaveProperty("state", "incomplete");
@@ -328,157 +602,117 @@ it("partial analysis is saved with its limits and cannot fulfill the research", 
   );
 });
 
-it("settles any explicitly permitted XHS authentication blocker after publication", async () => {
-  const root = temporary();
-  const xhsUrl = "https://www.xiaohongshu.com/explore/6aab4f5f0000000028029fa8";
-  const loginPacket: SourcePacket = {
-    ...packet,
-    requestedUrl: xhsUrl,
-    identity: xhsUrl,
-    retrievedUrl:
-      "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6aab4f5f0000000028029fa8%3FexSource%3Dnull",
-    totalCharacters: 39,
-    totalPages: 1,
-    excerpts: [
-      {
-        page: 1,
-        start: 0,
-        end: 39,
-        text: "Log in - rednote - share, connect, love.",
-      },
-    ],
-  };
-  const data = {
-    sourceUrl: xhsUrl,
-    outcome: "Perform a body-level review of the exact XHS post",
-    acceptance: [
-      "Preserve and assess the exact source identity; do not substitute another post or infer body content.",
-      "Return exactly one supported disposition: reviewed and integrated, already covered with evidence, out of scope with reason, or inaccessible with the exact blocker and recovery requirement.",
-      "Archive and publish the durable assessment through the hosted workflow, returning its canonical path and publication commit.",
-    ],
-    archive: true,
-  };
-  const ctx = context(
-    root,
-    (async () => ({
-      id: "s_login_blocked",
-      kind: "agent",
-      status: "blocked",
-      summary: "The exact post reached a login page.",
-      output: {
-        ...draft,
-        title: "XHS access blocked",
-        summary: "The exact post reached a login page.",
-        assessment:
-          "The exact post body was not exposed, so body-level review remains incomplete. Recovery requires authorized access to this same post ID.",
-        complete: false,
-      },
-    })) as WorkflowContext["agents"]["call"],
-    data,
-  );
-  const result = await executeSourceAssessment(ctx, async () => loginPacket);
-  expect(result.output).toMatchObject({
+// Controlled drafts test orchestration and evidence guards, not live model judgment.
+const xhsUrl = "https://www.xiaohongshu.com/explore/6aab4f5f0000000028029fa8";
+const loginPacket: SourcePacket = {
+  ...packet,
+  requestedUrl: xhsUrl,
+  identity: sourceIdentity(xhsUrl),
+  retrievedUrl:
+    "https://www.rednote.com/login?redirectPath=https%3A%2F%2Fwww.rednote.com%2Fexplore%2F6aab4f5f0000000028029fa8",
+  totalCharacters: 6,
+  totalPages: 1,
+  excerpts: [{ page: 1, start: 0, end: 6, text: "Log in" }],
+};
+it.each([
+  {
+    name: "availability classification",
+    outcome: "Classify this source",
+    acceptance: "Record an observed access restriction as a valid disposition.",
     state: "converged",
-    facts: expect.arrayContaining([
-      "execution-status:blocked",
-      "disposition:inaccessible:authentication-required",
-      "body-review:incomplete",
-      expect.stringContaining("publication:commit:"),
-    ]),
-    response: expect.stringContaining("Assessment incomplete."),
-  });
-});
+    archive: true,
+  },
+  {
+    name: "non-English acceptance",
+    outcome: "判断这篇帖子的访问情况",
+    acceptance: "若无法读取，记录实际观察和未读内容，即满足本次分类要求。",
+    state: "converged",
+    archive: true,
+  },
+  {
+    name: "required full-body reading",
+    outcome: "Review the complete post body",
+    acceptance:
+      "The complete body must be read; an access disposition does not fulfill this request.",
+    state: "incomplete",
+    archive: true,
+  },
+  {
+    name: "explicit no-save classification",
+    outcome: "Classify this source without saving",
+    acceptance:
+      "An observed access limitation is sufficient; do not save a record.",
+    state: "converged",
+    archive: false,
+  },
+] as const)(
+  "honors the supplied request judgment for $name while preserving identical access evidence",
+  async ({ outcome, acceptance, state, archive }) => {
+    const root = temporary();
+    let calls = 0;
+    const ctx = context(
+      root,
+      (async (_agent, prompt) => {
+        calls++;
+        expect(prompt).toContain(acceptance);
+        expect(prompt).toContain(JSON.stringify(loginPacket));
+        return success({
+          ...draft,
+          state,
+          summary: "The requested source reached a login screen.",
+          assessment:
+            "The post body was not read. The observed login screen is the only content available. Further body reading requires authorized access to the same source.",
+        });
+      }) as WorkflowContext["agents"]["call"],
+      { sourceUrl: xhsUrl, outcome, acceptance: [acceptance], archive },
+    );
+    const result = await executeSourceAssessment(ctx, async () => loginPacket);
+    expect(calls).toBe(1);
+    expect(structuredClone(result.output)).toMatchObject({
+      state,
+      response: expect.stringContaining("post body was not read"),
+    });
+    expect(admitTaskReconcileResult(result.output).ok).toBe(true);
+    if (archive) {
+      expect(assessmentRecord(root, xhsUrl).previous).toContain(
+        `Request fulfillment: ${state}`,
+      );
+      expect(result.output).toHaveProperty(
+        "facts",
+        expect.arrayContaining([
+          expect.stringContaining("publication:commit:"),
+        ]),
+      );
+    } else {
+      expect(readdirSync(root)).toEqual([".git", "knowledge"]);
+    }
+  },
+);
 
 it.each([
-  [
-    "a nonmatching redirected identity",
-    "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2Fdifferent-post",
-    true,
-    "Log in - rednote - share, connect, love.",
-  ],
-  [
-    "missing archival publication",
-    "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6aab4f5f0000000028029fa8",
-    false,
-    "Log in - rednote - share, connect, love.",
-  ],
-  [
-    "non-authentication incompleteness",
-    "https://www.xiaohongshu.com/explore/6aab4f5f0000000028029fa8",
-    true,
-    "The source returned no usable text.",
-  ],
-])("does not settle %s", async (_name, retrievedUrl, archive, text) => {
-  const root = temporary();
-  const xhsUrl = "https://www.xiaohongshu.com/explore/6aab4f5f0000000028029fa8";
-  const loginPacket: SourcePacket = {
-    ...packet,
-    requestedUrl: xhsUrl,
-    identity: xhsUrl,
-    retrievedUrl,
-    excerpts: [{ page: 1, start: 0, end: text.length, text }],
-  };
-  const ctx = context(
-    root,
-    (async () => ({
-      ...success({ ...draft, complete: false }),
-      facts: {
-        status: "partial",
-        next_steps: "Obtain authorized access to the exact post body.",
-      },
-    })) as WorkflowContext["agents"]["call"],
-    {
-      sourceUrl: xhsUrl,
-      outcome: "Perform a body-level review of the exact XHS post",
-      acceptance: [
-        "Return exactly one supported disposition: reviewed, out of scope, or inaccessible with the exact blocker and recovery requirement.",
-      ],
-      archive,
-    },
-  );
-  const result = await executeSourceAssessment(ctx, async () => loginPacket);
-  expect(result.output).toHaveProperty("state", "incomplete");
-});
-
-it("does not settle an assignment that requires body-level completion", async () => {
-  const root = temporary();
-  const xhsUrl = "https://www.xiaohongshu.com/explore/6ade2282000000002a0397c4";
-  const loginPacket: SourcePacket = {
-    ...packet,
-    requestedUrl: xhsUrl,
-    identity: xhsUrl,
-    retrievedUrl:
-      "https://www.rednote.com/login?redirectPath=http%3A%2F%2Fwww.rednote.com%2Fexplore%2F6ade2282000000002a0397c4",
-    excerpts: [
-      {
-        page: 1,
-        start: 0,
-        end: 6,
-        text: "Log in",
-      },
-    ],
-  };
-  const ctx = context(
-    root,
-    (async () => ({
-      ...success({ ...draft, complete: false }),
-      facts: {
-        status: "partial",
-        next_steps: "Obtain authorized access to the exact post body.",
-      },
-    })) as WorkflowContext["agents"]["call"],
-    {
-      sourceUrl: xhsUrl,
-      outcome: "Perform a body-level review",
-      acceptance: [
-        "Do not accept an inaccessible disposition, even with the exact blocker; review the complete post body.",
-      ],
-      archive: true,
-    },
-  );
-  const result = await executeSourceAssessment(ctx, async () => loginPacket);
-  expect(result.output).toHaveProperty("state", "incomplete");
-});
+  { requestedUrl: "https://example.org/different-source" },
+  { identity: "https://example.org/different-source" },
+])(
+  "rejects a packet with mismatched assigned identity before Scout runs: %j",
+  async (mismatch) => {
+    const root = temporary();
+    let calls = 0;
+    const ctx = context(root, (async () => {
+      calls++;
+      return success();
+    }) as WorkflowContext["agents"]["call"]);
+    const result = await executeSourceAssessment(ctx, async () => ({
+      ...packet,
+      ...mismatch,
+    }));
+    expect(calls).toBe(0);
+    expect(structuredClone(result.output)).toMatchObject({
+      state: "incomplete",
+      summary: expect.stringContaining("does not match the assigned identity"),
+    });
+    expect(readdirSync(join(root, "knowledge"))).toEqual(["README.md"]);
+  },
+);
 
 it("preserves the current Host-normalized blocked partial draft", async () => {
   const root = temporary();
@@ -487,7 +721,7 @@ it("preserves the current Host-normalized blocked partial draft", async () => {
     kind: "agent",
     status: "blocked",
     summary: "A usable draft needs repository evidence.",
-    output: { ...draft, complete: false },
+    output: { ...draft, state: "incomplete" },
     facts: {
       status: "partial",
       next_steps: "Read implementation and tests.",
@@ -495,7 +729,7 @@ it("preserves the current Host-normalized blocked partial draft", async () => {
   })) as WorkflowContext["agents"]["call"]);
   const result = await executeSourceAssessment(ctx, async () => packet);
   const record = assessmentRecord(root, sourceUrl);
-  expect(result.output).toMatchObject({
+  expect(structuredClone(result.output)).toMatchObject({
     state: "incomplete",
     facts: expect.arrayContaining([
       "execution:s_normalized_partial",
@@ -508,14 +742,19 @@ it("preserves the current Host-normalized blocked partial draft", async () => {
   expect(record.previous).toContain(draft.assessment);
 });
 
-it.each([false, true])(
-  "preserves a partial finish draft without convergence even when draft.complete=%s",
-  async (complete) => {
+it.each([
+  { state: "incomplete", status: "done", partial: true },
+  { state: "converged", status: "done", partial: true },
+  { state: "converged", status: "error", partial: false },
+] as const)(
+  "preserves the draft without convergence for $status, partial=$partial, draft.state=$state",
+  async ({ state, status, partial }) => {
     const root = temporary();
     const ctx = context(root, (async () => ({
-      ...success({ ...draft, complete }),
+      ...success({ ...draft, state }),
+      status,
       facts: {
-        status: "partial",
+        ...(partial ? { status: "partial" } : {}),
         next_steps: "Implementation and test results were not inspected.",
       },
     })) as WorkflowContext["agents"]["call"]);
@@ -527,7 +766,7 @@ it.each([false, true])(
       expect.stringContaining(record.path),
     );
     expect(record.previous).toContain(draft.assessment);
-    expect(record.previous).toContain("Assessment incomplete.");
+    expect(record.previous).toContain("Request incomplete.");
     expect(record.previous).toContain(
       "Implementation and test results were not inspected.",
     );
@@ -535,18 +774,28 @@ it.each([false, true])(
   },
 );
 
-it("a completed call without a draft cannot produce an assessment", async () => {
+it("a completed call without a draft cannot produce or publish an assessment", async () => {
   const root = temporary();
-  const ctx = context(root, (async () => ({
-    id: "s_no_draft",
-    kind: "agent",
-    status: "done",
-    summary: "No usable draft",
-    facts: { status: "partial" },
-  })) as WorkflowContext["agents"]["call"]);
+  const revision = head(root);
+  const ctx = context(root, (async () => {
+    const record = candidateRecord(root);
+    writeFileSync(record.path, "Unreviewed candidate content");
+    return {
+      id: "s_no_draft",
+      kind: "agent",
+      status: "done",
+      summary: "No usable draft",
+      facts: { status: "partial" },
+    };
+  }) as WorkflowContext["agents"]["call"]);
   const result = await executeSourceAssessment(ctx, async () => packet);
   expect(result.output).toHaveProperty("state", "incomplete");
   expect(() => readdirSync(join(root, "knowledge/findings"))).toThrow();
+  expect(head(root)).toBe(revision);
+  expect(result.output).toHaveProperty(
+    "facts",
+    expect.arrayContaining([expect.stringContaining("candidate-root:")]),
+  );
 });
 
 it("reads a real HTTP post, excludes scripts, and reports retrieval failure", async () => {
@@ -582,13 +831,14 @@ it("an unsafe canonical target never produces a successful result or a claimed s
     return success();
   }) as WorkflowContext["agents"]["call"]);
   const result = await executeSourceAssessment(ctx, async () => packet);
-  expect(result.output).toMatchObject({
+  expect(structuredClone(result.output)).toMatchObject({
     state: "waiting",
     facts: expect.arrayContaining([
       expect.stringContaining("accepted-publication:pending:"),
       expect.stringContaining("candidate-ref:refs/archive/scout-publication/"),
     ]),
-    requests: [expect.objectContaining({ appId: "scout-knowledge-lib" })], conditions: [{ requestId: (result.output as any).requests[0].id }],
+    requests: [expect.objectContaining({ appId: "scout-knowledge-lib" })],
+    conditions: [{ requestId: (result.output as any).requests[0].id }],
   });
   expect(result.output).toHaveProperty(
     "facts",

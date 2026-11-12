@@ -61,8 +61,9 @@ using explicit dated assessment entries in the same record, newest first and
 earlier entries in expandable history. The procedural
 source assessment selects an existing unambiguous source record, or uses
 `YYYY-MM-DD-source-assessment-<source-hash>.md` with a readable paper/post title.
-Its code-generated source-access section records retrieval and supplied-text
-evidence independently of the model’s analysis; the latest assessment entry
+Its code-generated assignment and source-access sections record requirements,
+request fulfillment, retrieval and supplied-text evidence independently of the
+model’s analysis; the latest assessment entry
 addresses the latest question. A valid partial draft remains a saved assessment
 with an explicit incomplete status and the reported evidence gap; saving it does
 not establish fulfillment. Link targets retained from HTML identify references,
@@ -74,6 +75,10 @@ relevance, related library links, and disposition (new knowledge, already covere
 out of scope, or access blocked). Verify the file and its references before
 returning its path. A no-change revisit can return an existing verified record;
 a caller's explicit no-save instruction permits returning without an archive.
+Reuse preserves exact bytes and history and returns the canonical Git revision.
+An access receipt may satisfy an explicitly permitted classification, while
+unavailable body content remains unread. A failed assessment call's access
+receipt records observation only and cannot establish request fulfillment.
 
 ## Document Roles
 

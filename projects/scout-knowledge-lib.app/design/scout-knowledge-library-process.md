@@ -51,9 +51,9 @@ autonomy, durable reconciliation, observation, and recovery.
 
 ## Requested source assessments
 
-A bounded assessment of an exact source page or paper uses `assess-source` with `sourceUrl`, outcome, acceptance,
-explicit `archive`, and optional constraints or governing references. Its pure
-Task mapper selects `scout-assess-source`. General research questions and library
+A bounded assessment of an exact source page or paper uses `assess-source` with
+`sourceUrl`, outcome, acceptance, explicit `archive`, and optional constraints or
+governing references. Its pure Task mapper selects `scout-assess-source`. General research questions and library
 work retain `goal`; supported standing feed scans retain `explore`. The App
 catalog advertises these contracts. No URL keyword routing is added to the Host.
 
@@ -66,38 +66,59 @@ targets, resolving relative references against the retrieved URL; those links ar
 not followed. Plain text and Markdown retain literal code instead of passing
 through an HTML parser. This supports text assessments of
 PDFs and readable HTML/text posts; it does not cover images, OCR, paywalls or
-JavaScript-rendered article bodies. An access/extraction failure is recorded and
-returned incomplete. HTTP retrieval is bounded to 45 seconds/25 MiB; extraction
-to 30 seconds. PDF extraction requires Python 3 and the pinned `pypdf` dependency
+JavaScript-rendered article bodies. An access/extraction failure is recorded as
+observed evidence, with source content and unrecorded redirects left unknown.
+HTTP retrieval is bounded to 45 seconds/25 MiB; extraction to 30 seconds. PDF extraction requires Python 3 and the pinned `pypdf` dependency
 in `agents/scout/tools/requirements-source.txt`, installed during provisioning.
 
-One read-only Scout call returns title, summary, assessment and whether the
-assigned question is complete. The code owns saving, source identity and coverage;
-the model owns interpretation and must distinguish author claims from checked
-conclusions. Material supplied is not proof of full reading or proof verification.
-Missing evidence for a deeper requested review is an incomplete result, while a
-useful overview can complete with disclosed limits. A valid structured draft from
-a partial agent finish is saved and returned incomplete even if the draft's own
-completion flag disagrees. The saved note and caller response retain the reported
-evidence gap. A call without a valid draft cannot create an assessment. A landing
-page does not establish the contents of linked papers, documentation or code;
-uninspected material is unknown rather than evidence of a defect. The default workflow does
-not automatically edit curated topics or append a digest.
+One bounded read-only Scout call receives the complete current assignment and
+either retrieved source excerpts or the exact access-failure receipt. It returns
+title, summary, assessment, `state: converged | incomplete`, and optional
+`reuseExisting`. Scout judges fulfillment against the outcome and acceptance;
+code verifies source identity, supplied coverage, unchanged reviewed bytes and
+publication. There is no platform-specific acceptance rule or English phrase
+matching. The same observation may fulfill a request to classify availability
+and leave a request for full-body reading unfinished. Scout must name the
+fulfilled acceptance branch and disclose what remains unread. A fulfilled
+classification uses a successful finish even when the source is inaccessible.
+Material supplied is not proof of full reading or proof verification.
 
-The workflow finds an existing source record in `knowledge/findings`, or creates
-one flat dated source-assessment record. It presents the latest dated assessment
-first, with code-generated source evidence, and retains earlier entries under
-expandable history. It compares with the pre-analysis content before saving and
-verifies the exact saved bytes.
-A save failure cannot return convergence. The workflow observes the existing
-attempt cancellation signal before accepting a late model result or saving;
-fetch and extraction share that signal. The synchronous compare-and-replace
-rejects changes observed during research, but does not claim a filesystem
-transaction with independent external writers. Multiple matching source records
-need owner resolution rather than an arbitrary overwrite. `archive: false` performs
-analysis without creating an archive. Broad semantic quality remains the worker
-and caller's judgment; no additional evaluator or semantic admission service is
-introduced. The same existing Task update path carries corrections.
+A valid draft from a partial or failed execution is saved and returned incomplete
+even if its own state says converged. It retains the execution's evidence gap;
+a reuse request cannot discard that new contribution in favor of older evidence.
+A returned result without a valid draft cannot create a substantive assessment.
+After retrieval failure, it may preserve a deterministic access receipt, which
+cannot converge. A landing page does not establish the contents of linked
+papers, documentation or code; uninspected material remains unknown. The workflow
+does not automatically edit curated topics or append a digest.
+
+The workflow finds an unambiguous existing source record in `knowledge/findings`,
+or creates one flat dated source-assessment record. A new assessment presents
+the latest entry first and retains earlier entries under expandable history.
+Code records the assignment, fulfillment state and source-access evidence
+independently of Scout's prose. When the existing record still covers the exact
+request, source version, coverage and limitations, Scout can request reuse.
+Code applies the same path and pre-analysis byte checks to reuse and saving.
+Reuse returns the unchanged record without adding an entry or a Git commit;
+it still verifies the record against the canonical Git revision and filesystem.
+Changed questions or material update the record and retain history.
+
+An archived result cannot converge until publication is verified and the caller
+receives the canonical path and revision. Publication failure retains accepted
+work through the existing Task's publication-recovery path. Archive validation
+failure retains candidate evidence and skips publication; concurrent, unreviewed
+candidate changes must not become published output. No-save requests perform the
+same judgment without an archive or publication workspace. A standalone run uses
+its procedure input; hosted runs use the authoritative reconciliation assignment.
+
+The workflow observes the existing cancellation signal before accepting a late
+model result or saving; fetch and extraction share that signal. The synchronous
+compare-and-replace rejects changes observed during research, but does not claim
+a filesystem transaction with independent external writers. Multiple matching
+records need owner resolution. Broad semantic quality remains Scout and the
+caller's judgment; no extra evaluator or semantic admission service is introduced.
+The existing Task update and creator closure paths carry corrections and owner
+follow-through; funding, retries and saved records do not grant closure authority.
 
 ## Ownership And Workflows
 
