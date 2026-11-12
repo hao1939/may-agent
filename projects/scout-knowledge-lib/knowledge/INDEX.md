@@ -72,6 +72,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ### 2026-11-12
 
+- [Agent CI gates need an inconclusive state](./findings/2026-11-12-agent-ci-gates-need-an-inconclusive-state.md) — reliagate implements repeated-run task-level comparisons, power planning, explicit abstention reporting, and distinct infrastructure failure, but its main gate returns success when an observed over-margin regression is not statistically significant; Scout inspected pinned producer-authored source and tests statically but did not run the package, tests, agents, or real benchmark data.
 - [Systems coding agents need cross-layer runtime knowledge](./findings/2026-11-12-engine-agents-need-cross-layer-runtime-knowledge.md) — EngineAgent's abstract reports higher end-to-end model-enablement success after adding a hierarchy-aware engine index, pre-validated backend workflows, and device-side auditing; Scout did not inspect the full paper, implementation, tasks, baselines, devices, code, data, or component ablations.
 
 ### 2026-11-11
