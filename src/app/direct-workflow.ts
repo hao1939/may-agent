@@ -54,8 +54,6 @@ const DIRECT_HOST_TOOL_DENIALS: Readonly<Record<string, string>> = {
   cron: "isolated direct workflow runs must not change autonomous schedules",
   checkpoint: "direct workflow runs do not expose hosted checkpoint storage",
   "cli-delegation": "isolated direct workflow runs do not delegate to external agent CLIs",
-  "system-status": "isolated direct workflow runs do not expose production system state",
-  system_status: "isolated direct workflow runs do not expose production system state",
   query_db: "isolated direct workflow runs do not expose the production database",
   "query-db": "isolated direct workflow runs do not expose the production database",
   tasks: "isolated direct workflow runs do not expose live Host Task mutations",

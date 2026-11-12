@@ -18,7 +18,6 @@ import { createCommitGuard } from "./tools/commit-guard.js";
 import { createFinishGuard } from "./tools/finish-guard.js";
 import { createPathHallucinationGuard } from "./tools/path-hallucination-guard.js";
 import { createReadDedupGuard } from "./tools/read-dedup-guard.js";
-import { createScrapeDedupGuard } from "./tools/scrape-dedup-guard.js";
 import { createSessionReadGuard } from "./tools/session-read-guard.js";
 import { createWorkflowFinishTool } from "./tools/workflow-finish.js";
 import { createReadTool } from "./tools/read.js";
@@ -56,12 +55,11 @@ const CHAT_TOOL_DENYLIST = new Set([
   "cron",
   "edit",
   "finish",
-  "scrape_webpage",
   "workflow",
   "write",
 ]);
 
-const READONLY_TOOL_ALLOWLIST = new Set(["finish", "query_db", "read", "scrape_webpage", "system_status", "tasks"]);
+const READONLY_TOOL_ALLOWLIST = new Set(["finish", "query_db", "read", "tasks"]);
 
 const DEPUTY_TOOL_ALLOWLIST = new Set([
   "agents",
@@ -71,8 +69,6 @@ const DEPUTY_TOOL_ALLOWLIST = new Set([
   "query_db",
   "read",
   "run_cli_agent",
-  "scrape_webpage",
-  "system_status",
   "tasks",
 ]);
 
@@ -455,7 +451,6 @@ function buildGuards(definition: SubagentDefinition, projectRoot: string): Befor
     named("commit", createCommitGuard(definition.name, projectRoot)),
     named("read-dedup", createReadDedupGuard()),
     named("session-read", createSessionReadGuard()),
-    named("scrape-dedup", createScrapeDedupGuard()),
   ];
 }
 

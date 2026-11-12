@@ -897,8 +897,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     `,
       )
       .all(sessionId);
-    const evaluation = _db().prepare("SELECT * FROM evaluations WHERE sessionId = ?").get(sessionId) || null;
-    return json({ session, children, evaluation });
+    return json({ session, children });
   }
 
   function resolveSessionJsonl(sessionId: string): { path: string; source: string } | null {
@@ -1247,15 +1246,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       outcome: row.outcome?.slice(0, 100),
     }));
 
-    // 2. Eval trend
-    const evalTrend = _db()
-      .prepare(
-        `SELECT quality, efficiency, verdict, createdAt
-         FROM evaluations WHERE agent = ? ORDER BY createdAt DESC LIMIT 20`,
-      )
-      .all(agentName) as Array<{ quality: number; efficiency: number; verdict: string; createdAt: number }>;
-
-    // 3. Delegation map
+    // 2. Delegation map
     const since = Date.now() - 7 * 86400000;
 
     const delegatesTo = _db()
@@ -1276,7 +1267,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       )
       .all(agentName, since) as Array<{ agent: string; count: number }>;
 
-    // 4. Workspace files
+    // 3. Workspace files
     const wsDir = join(STATE_DIR, "..", "agents", agentName, "workspace");
     let workspaceFiles: string[] = [];
     if (existsSync(wsDir)) {
@@ -1287,7 +1278,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
     return json({
       recentSessions,
-      evalTrend,
       delegationMap: { delegatesTo, delegatedFrom },
       workspaceFiles,
     });
@@ -2551,10 +2541,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
     // Other on-disk files (NOT in prompt). Useful for context but not auto-loaded.
     // Includes commonly-named convention files; agent decides when to read them.
-    // last-eval.md: auto-generated evaluation feedback; inject into prompt so agents see it.
-    const lastEval = readFile(join(agentDir, "last-eval.md"), "last-eval.md", "evaluation feedback");
-    if (lastEval) promptFiles.push({ ...lastEval, source: "evaluation feedback (auto-generated)" });
-
     const otherCandidates = ["DOMAIN.md", "heartbeat.md", "context.md", "TOOLS.md", "LESSONS.md"];
     for (const f of otherCandidates) {
       const file = readFile(join(agentDir, f), f, "on-disk only");

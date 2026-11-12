@@ -33,7 +33,6 @@ export {
   sessionOutputDir,
   writeSessionMeta,
 } from "./persistence.js";
-export { createScrapeTool } from "./scrape.js";
 export { discoverAgentSkills, formatBoundedSkillCatalog, invokeCatalogSkill, parseExplicitSkill } from "./skills.js";
 export type { MaySkill, MaySkillScope, SkillCatalog } from "./skills.js";
 export {
@@ -47,7 +46,6 @@ export {
   createQueryDbTool,
   createReadTool,
   createRunCliAgentTool,
-  createSystemStatusTool,
   createWriteTool,
   expandPath,
   extractHallucinatedRelPath,

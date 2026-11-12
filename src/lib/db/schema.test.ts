@@ -152,6 +152,7 @@ describe("canonical database schema", () => {
       expect(trigger.sql).not.toContain("json_extract");
       expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'runtime_migrations'").get()).toBeNull();
       for (const domainTable of [
+        "evaluations",
         "gym_runs",
         "gym_checks",
         "gym_prompts",

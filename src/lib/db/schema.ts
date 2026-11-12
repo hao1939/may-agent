@@ -127,26 +127,6 @@ CREATE INDEX IF NOT EXISTS idx_sess_started ON sessions(startedAt);
 CREATE INDEX IF NOT EXISTS idx_sess_ended ON sessions(endedAt DESC);
 CREATE INDEX IF NOT EXISTS idx_sess_activity ON sessions(lastActivityAt);
 
-CREATE TABLE IF NOT EXISTS evaluations (
-  sessionId       TEXT PRIMARY KEY,
-  agent           TEXT NOT NULL,
-  quality         REAL NOT NULL DEFAULT 0,
-  efficiency      REAL NOT NULL DEFAULT 0,
-  productiveCalls INTEGER NOT NULL DEFAULT 0,
-  wastedCalls     INTEGER NOT NULL DEFAULT 0,
-  verdict         TEXT NOT NULL DEFAULT 'needs_improvement',
-  issues          TEXT,
-  overall         TEXT,
-  usage           TEXT,
-  failureChains   TEXT,
-  evaluatedByHeuristic INTEGER NOT NULL DEFAULT 0,
-  skippedByJs     INTEGER NOT NULL DEFAULT 0,
-  createdAt       INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_eval_verdict ON evaluations(verdict);
-CREATE INDEX IF NOT EXISTS idx_eval_agent_ts ON evaluations(agent, createdAt);
-CREATE INDEX IF NOT EXISTS idx_eval_created ON evaluations(createdAt);
-
 CREATE TABLE IF NOT EXISTS session_digests (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
   sessionId      TEXT NOT NULL,

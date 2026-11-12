@@ -31,7 +31,6 @@ import { isCanonicalEventEnvelope, isRecord } from "../../packages/control/src/e
 import { withSqliteBusyRetry } from "./db/busy-retry.js";
 import { afterStateCommit, inStateTransaction, stateTransaction } from "./db/transaction.js";
 import { persistEventClosure, persistEventTrace, readEventTraceMetadata } from "./db/event-traces.js";
-import { evaluationProjectionFromEventData, upsertEvaluationProjection } from "./db/evaluations.js";
 import { advanceTaskResourceRevision } from "./db/task-resource-schema.js";
 import { describeText, writeContentAddressedJson, writeSessionResult, type ArtifactDescriptor } from "./artifacts.js";
 import { log } from "./log.js";
@@ -581,20 +580,6 @@ export class DbWriter {
           eventSource(ev),
           eventOwner(ev),
           urgency,
-        );
-        break;
-      }
-
-      case "evaluation.recorded": {
-        const ev = event as any;
-        if (!isCanonicalEventEnvelope(ev)) break;
-        const payload = eventPayload(ev);
-        const projection = evaluationProjectionFromEventData(payload);
-        if (!projection) {
-          throw new Error("evaluation.recorded requires a valid sessionId, agent, quality, efficiency, and verdict");
-        }
-        this.insertEventRow(event, payload, eventSource(ev), eventOwner(ev), eventUrgency(ev), eventTtlMs(ev), () =>
-          upsertEvaluationProjection(this.db, projection),
         );
         break;
       }
