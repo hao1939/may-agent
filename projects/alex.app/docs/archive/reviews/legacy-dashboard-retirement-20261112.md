@@ -2,18 +2,17 @@
 
 **Status:** Approved by the user; implemented in
 [Host PR 462](https://github.com/hao1939/may-agent/pull/462), pending review/merge.
-Current candidate `5cb8c5d1a4fe0604c2eb68d21982fe47df04b428` includes route-owned subscriptions and
-saved-turn rendering, earlier chat selection corrections `ccbfff76b3`,
-`1fb2af90ad` and `2ad2b2d302`, and review correction `908ebc4cce`.
-Main is integrated through `f35786268f` (#466), including #463's retirement of
-the separate evaluation database. The prior candidate was `2ad2b2d302`, based
-on `46fba0f89edc` (#465). The
-earlier reviewed head was `75dc17794def8dff3aee09934e95232df7ebecdd`, based on
-`bdaba7d0ee263871ce83d6ef583027936745e1e0` (#460). Installed adoption is unverified.
+Current candidate `014bdd5540d20af7c38103f27b71613807d3f353` includes runtime
+correction `1868eba3f5` and its retention-fixture correction. Main is integrated
+through `62de4a82ec` (#467), including #463's retirement of the separate
+evaluation database and #466's offline migration separation. Installed adoption
+is unverified. Earlier reviewed revisions and their evidence are recorded below.
+
 The redesign follows the user's choice of saved transcript refresh at turn
-boundaries for direct-agent chat. Receipt corrections `39fb27878d` and
-`5cb8c5d1a4` retain accepted-draft handling during same-thread reloads while
-preventing callbacks from changing a hidden Chat composer.
+boundaries for direct-agent chat. The selected-session reader is separate from
+the temporary submission binding; accepted publication is separate from
+session creation. Current requirements are in Web UI; this record preserves
+review findings, deliberate losses and evidence for each revision.
 
 **Owns:** Source evidence for the reduced [Web UI](../../2a-design/webui.md) and
 [HTTP boundary](../../2a-design/http-boundary.md).
@@ -51,10 +50,10 @@ uses the router; the background loader cannot navigate. The router synchronizes
 session-page mode from the route and cancels its pending refresh on navigation.
 Each refresh captures its original session ID and rechecks the route before
 reading, so a late callback cannot reopen a hidden session.
-Send and subscription use the routed session identity. Agent-chat callbacks
-belong to the selected agent's Chat subtab; navigation, subtab changes, Reset
-and newer selections invalidate older default-thread, transcript and admission
-work. One route-based subscription owner serves Overview, session inspection
+Send and subscription use the routed session identity. Agent-chat view callbacks
+belong to the selected agent's Chat subtab; subtab changes release its reader.
+The originating selection retains an in-flight submission or hidden receipt.
+Explicit navigation, target changes and Reset discard that temporary binding. One route-based subscription owner serves Overview, session inspection
 and chat independently of message rendering. Direct chat now renders only
 saved turns on initial selection, turn/session end and reconnect. Transcript
 views own their reads and queued refreshes; notifications and local input do
@@ -67,9 +66,11 @@ workflow artifacts or retention policy changes. No replacement dashboard,
 configuration switch, cache or migration is introduced. Backend API retirement
 would be a separate consumer/compatibility decision.
 
-The cut removes 664 production lines net across eight browser source files.
-The Host change totals 977 additions and 965 deletions across twelve files;
-documentation and browser regression coverage account for the difference.
+The cut removes 603 production lines net across eight browser source files.
+HTTP admission and its read helper add 115 lines net for request correlation,
+original-target recovery and read failures: **488 fewer runtime lines** across
+those ten source files against main `62de4a82ec`. Documentation and real browser
+regression coverage account for the larger overall patch.
 
 ## Verification and release boundary
 
@@ -305,3 +306,158 @@ MAY_TEST_SHARDS=4 bun run ci
 No deployment, service restart, live-state conversion or external provider/model
 call is part of this change. Install the paired server and staged UI assets
 together; a source merge cannot establish what an installation currently serves.
+
+## Session selection and refresh ownership correction
+
+Five further review findings on `5cb8c5d1a4` were valid. Saved-only rendering
+removed conflicting histories, but the implementation still made default
+metadata responsible for restoring a visible thread and used a single timed
+lookup to guess which session a fresh input had started.
+Implementation `89600c3b0e` is integrated with main's #467 cleanup in
+`bb76a48e9d`. The earlier local gate was stopped incomplete when main advanced;
+it is not final validation evidence.
+
+| Finding | Broken assumption | Correction |
+| --- | --- | --- |
+| Chat → About → Chat with a failed lookup stopped response refresh | A retained session binding and saved DOM were enough without a reader | Chat entry restores the retained session's reader independently of metadata |
+| HTTP 500 cleared saved history | A parsed error JSON without a session ID meant an empty conversation | Check read success before interpreting absence; retain history and binding |
+| An offline session completion never updated the inspector | Refreshing the direct-chat reader also refreshed a routed session | Both presentations share the active session reader and reconnect refresh |
+| Newly started sessions disappeared from the picker | A start event was a complete status row | Lifecycle events request authoritative status instead of constructing inventory |
+| Creation after the first timed lookup never appeared, or Reset found the old thread | An agent's latest session identified the admitted input | Find the exact chat by existing request ID with a bounded active-view lookup |
+
+The backend adapter had the same error/absence confusion: a failed default
+read could admit an unintended fresh chat. It now propagates that failure. A
+creation request carries its HTTP nonce as the existing command `requestId`
+and publication identity. The optional request-scoped default-session read
+filters agent, chat kind and request ID, without falling back to another
+thread. A retry of a created request retains the original start publication
+rather than changing it into steering. Existing callers without the parameter
+retain their default-read contract; the new browser and server must be staged
+and released together.
+
+The active read owner handles both transcript presentations and exact creation
+lookup, with one pending read and one timer. Its discovery has 500 ms gaps and
+a 30-second retry window, with a five-second timeout per read.
+Route/subtab changes or Reset invalidate that view and cancel
+its timer. Returning to Chat restores a retained session or admitted request.
+Input typed while finding a new thread is retained until its exact destination
+is known. Background inspector refresh keeps the existing content visible,
+including saved-note controls. No new event type, database schema, cursor,
+message merge, work lifecycle or persistent discovery record is introduced.
+
+All five browser failures were reproduced on the frozen reviewed head with
+real HTTP/control sockets. The fixtures use valid saved assistant text blocks
+and an ordered notification barrier. The picker fixture includes the runtime
+parent-session link and complete authoritative status fields; a partial fixture
+initially omitted its task field. Renaming the entire sessions table was also
+an invalid storage-failure fixture because schema initialization created an
+empty replacement; renaming its required agent column exercises an actual
+query failure. Those intermediate fixture runs are diagnostics, not passing
+or failing production evidence for the final gate.
+
+Nine new owning cases cover the five findings, exact agent/chat/request
+selection, storage-read failure without accidental admission, and stable start
+publication on retry. The creation regression includes an older thread, a
+newer concurrent thread, a draft typed while starting, and About → Chat before
+creation completes. Existing late-admission coverage now holds the real
+request-scoped lookup rather than the retired 800 ms retry callback. The timer
+regression waits for the initial reader to settle before exercising queued
+refresh cancellation. Saved-note coverage caught and now verifies preservation
+of inspector controls during background reads.
+
+The complete local gate on `bb76a48e9d` reported 4,105 passes and one failure
+(plus three installation-only skips). Its hosted checks passed, but the local
+navigation test correctly caught a background read moving the composer out
+while leaving the previous transcript visible. This was a production defect,
+not a test retry or unexplained flake. A held-read regression reproduced it.
+The composer now moves only when replacing its containing content.
+
+That regression also captures an obsolete HTTP snapshot, invalidates the read,
+and records actual DOM mutations. It failed before the inspector adopted the
+same dirty-read rule as direct chat: invalidated responses must not render an
+intermediate snapshot. It now checks only the newest saved outcome appears,
+and that a later HTTP 500 retains the current inspector and composer. An absent
+JSONL file is a distinct HTTP 404 evidence state: retained metadata/outcome
+remain inspectable with an explicit transcript-unavailable message. No second
+cache, selection counter or read scheduler was added. The intermediate
+`6f9510cc15` edit-loop run does not certify the final revision.
+
+The complete local gate on `2d4bd9f902` reported 4,106 passes, one failure
+and three installation-only skips. Hosted Quality and Container passed that
+head. The local failure was the existing metric-policy browser test reading
+project/vital classes across separate browser calls while reconnect replaced
+the panel. It passes in isolation. The final fixture captures one rendered
+snapshot and asserts the same warning states, without changing production
+refresh behavior or automatically retrying tests.
+
+## Submission ownership and immutable routing correction
+
+Four further comments on `2d4bd9f902` identify a shared design error: page
+visibility controlled the lifetime of a submission. A view may leave while
+input is still accepted; changing the next draft does not replace that input.
+The agent's current default is also not the identity of an earlier publication.
+
+| Finding | Outcome before correction | Correction |
+| --- | --- | --- |
+| Changed draft during a pending fresh-chat POST | Two publications with different keys and the first receipt lost | Check the existing submission before creating another identity; retain the next draft |
+| Accepted fresh POST while About is open | Accepted request forgotten; returning could create another chat | Retain receipt on its originating selection, consume it when Chat returns, restore the reader |
+| Lost steering response followed by a changed default | Retrying could steer a different session under the same key | Recover original start/steering publication before default resolution; compare complete canonical input |
+| Reset after unknown acceptance with an unchanged draft | The pre-Reset identity could bind the old chat | Reset discards pending publication identity as well as view binding |
+
+One temporary submission retains its original draft, ID, destination and
+fresh-thread choice while HTTP admission is in flight or unconfirmed. A hidden
+agent subtab releases the reader, while receipt consumption waits for the
+matching visible composer. Explicit navigation, target selection and Reset
+discard this temporary binding. Returning to an already-bound chat also
+restores its reader after a hidden receipt; submission state never owns saved
+conversation messages or a separate work lifecycle.
+
+The HTTP adapter reads the existing event journal and verifies the complete
+caller input with the existing publication hash. Long-message SQL projections
+cannot establish equality. Already accepted input returns its receipt, even
+when its original session has ended; interrupted delivery republishes the same
+command. Ambiguous keys and conflicting input/targets fail explicitly (409).
+Missing original evidence fails as an unavailable read (500). A session alone
+cannot justify recreating a missing start publication. No new schema, event
+type, persistent request store or runtime retry coordinator is added.
+
+Six new cases first reproduced the four comments on frozen `2d4bd9f902`: one
+pending-send case, two hidden-receipt draft variants, Reset after a lost response,
+and two exact steering variants including artifact-sized input. Nine new cases
+now cover those failures plus a bound-session receipt across About and both
+fresh-thread modes before creation. The creation variants also exercise an
+interrupted durable delivery. The prior start-retry test now uses real
+EventBus/DbWriter publication rather than inferring admission from a seeded
+session, and checks missing publication evidence cannot create another chat.
+
+The first complete owning-file run on `1868eba3f5` reported 61 passes and
+one failure in the missing-publication fixture. Its deletion was blocked by
+the existing referential-retention trigger because this minimal fixture does
+not run an App planner to clear `app_admission_pending`. The fixture now
+completes that retention fence, verifies deletion actually occurred, and checks
+the exact correlated session read before expecting unavailable publication.
+The same-revision local full gate was stopped incomplete to integrate that
+fixture correction. It is not final validation.
+
+Final verification on `014bdd5540d20af7c38103f27b71613807d3f353`, based on
+main `62de4a82ec`:
+
+- Frozen dependency installation and complete local `MAY_TEST_SHARDS=4 bun run ci`
+  passed: **4,116 passes, zero failures, three installation-only skips** across
+  353 files. Actual browser, daemon/socket, build and script coverage executed.
+  The latest nine regressions and the corrected retention case passed within
+  that complete run. There were no automatic test retries.
+- Hosted **Quality** and **Container** passed on the same head in
+  [CI run 43244550099](https://github.com/hao1939/may-agent/actions/runs/43244550099).
+  Quality took 4m57s; Container took 2m46s and executed the actual image build
+  and isolated runtime-user smoke test. These timings are observations, not
+  performance guarantees. All review threads are resolved.
+- Companion Apps `bun run check:may-design` passed with zero errors and the
+  existing unclassified `reports` root-layout warning. Current Web UI
+  requirements and this record carry the same submission/read contract as the
+  standalone Host HTTP guide.
+
+The PR still removes 488 runtime lines. The additional correctness code uses
+existing publication evidence and view-local state. Source merge and deployment
+remain separate; no installed-state conversion, restart or external provider
+trial was performed.

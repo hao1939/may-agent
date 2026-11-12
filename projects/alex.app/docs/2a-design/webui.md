@@ -121,11 +121,18 @@ pane's CSS class does not establish an active session.
 
 The session URL is the authority for Send. Agent-chat responses may bind a
 thread only while that agent's Chat subtab is active. Navigation, subtab changes,
-Reset and newer selections invalidate older default-thread and unbound admission
-callbacks, including delayed retries. An explicit-session receipt belongs to
+Reset and newer selections invalidate older view callbacks, including delayed
+retries. A pending submission has its own identity: hiding Chat suspends the
+reader while retaining admission; explicit route/target changes or Reset discard
+that temporary binding. An explicit-session receipt belongs to
 its still-active target; reloading the same thread does not invalidate it.
 Entering an agent's chat clears the previous session binding; input while its
 default thread loads addresses that selected agent.
+Default metadata chooses an initial unbound thread. Returning from About or
+Overview restores the already-selected session and its reader directly. A
+failed lookup is an unavailable read, never evidence that the conversation is
+empty; neither the browser nor the send adapter may clear or replace it on
+that basis.
 
 One route-based owner selects the notification subscription, independently of
 message rendering. It applies the same plan on entry, selection and reconnect:
@@ -146,12 +153,41 @@ message list. Sends use HTTP admission independently of the notification
 socket. A confirmed receipt clears only the unchanged draft while its target
 is still active; a late receipt cannot change another route or a hidden Chat
 composer. Failed/unknown publication keeps it, and retrying the same
-explicit-target draft retains its publication identity. Send feedback is
-separate from saved messages. Each transcript view owns one in-flight read;
-a completed turn during that read requests a
-follow-up read. Replacing the view cancels its queued refresh and prevents old
+explicit-target draft retains its publication identity. One unbound submission
+keeps its original draft, publication ID and fresh-thread choice until admission
+is confirmed; a changed next draft cannot replace it during an in-flight send
+or an unknown outcome. Retry the original input or Reset to start a separate
+selection. A receipt arriving on About/Overview is retained without changing the
+hidden composer. Returning to Chat consumes it for that same selection and
+restores the saved-turn reader, clearing only an unchanged draft. Send feedback is
+separate from saved messages. Direct chat and the routed inspector share one
+selected-session read owner, including one in-flight read and one refresh
+timer. A completed turn during that read requests a follow-up read.
+Replacing the view cancels its queued refresh and prevents old
 responses from rendering. This read ownership is separate from the selection
 guard used by default-thread and unbound admission callbacks.
+
+New direct chat carries the existing session `requestId` in its HTTP input and
+creation command. Admission may precede session creation. Until the exact
+session exists, the active reader queries
+`/api/agents/:name/default-session?requestId=...`, matching that agent's chat
+for that request. It must not bind an older default, a concurrent chat, or
+another execution sharing the request. Before resolving today's default, the
+HTTP adapter recovers that request's
+original start or steering publication from the existing event journal and
+compares the complete input with its stored publication hash. A conflicting
+target/input returns 409; unavailable original evidence returns 500. Accepted
+input reuses its receipt, and interrupted delivery retries the same command.
+Session evidence alone cannot reconstruct a missing publication. A draft
+entered during creation stays in the composer until the exact target is known.
+
+This lookup reuses the selected view's read and timer. Retries stop after
+30 seconds, with 500 ms gaps and a five-second timeout per read.
+Leaving Chat cancels automatic lookup retries; returning may check the
+retained admitted request again. Reset replaces that selection and any
+unconfirmed submission with a fresh request, even when the draft is unchanged.
+These are temporary view and request bindings, using existing Host
+evidence; no work lifecycle or persistent discovery store is added.
 
 Live text/tool appends and their exclusive Raw/Markdown toggle are retired.
 Saved text, tool details and raw transcript evidence remain inspectable. The
@@ -168,6 +204,15 @@ when the active route no longer does.
 Agent Overview/About subtabs also release their chat connection. Reconnecting
 Overview reloads its retained panels so work changed during disconnection does
 not require another lifecycle event to become visible.
+The routed inspector also reloads transcript and outcome after reconnect.
+Background inspector reads keep the current content and composer visible until
+the replacement is ready. Session inventory comes from status snapshots;
+start/end notifications request another snapshot because their payloads are
+partial observations, not complete session rows.
+An inspector response invalidated during its read is skipped, just as in
+direct chat. Server read failures retain the last good view and report status.
+Retained session metadata and outcome remain inspectable when its transcript
+file is absent; show that evidence as unavailable rather than an empty chat.
 
 Operator read models are bounded summaries. Timeline and liveness APIs return
 the newest fixed-size row set in display order and report when it was
