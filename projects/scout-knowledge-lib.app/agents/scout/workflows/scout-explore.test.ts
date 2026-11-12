@@ -716,7 +716,7 @@ describe("scout-explore workflow prompt", () => {
       loginWall: true,
     });
 
-    expect(result).toMatchObject({
+    expect(structuredClone(result)).toMatchObject({
       state: "waiting",
       actions: [],
       conditions: [
@@ -728,6 +728,7 @@ describe("scout-explore workflow prompt", () => {
             field: "state",
             equals: "ready",
             source: "app:scout-knowledge-lib:observer:xhs-credential",
+            timestamp: { gte: expect.any(Number) },
           },
           owner: "human:operator",
         },

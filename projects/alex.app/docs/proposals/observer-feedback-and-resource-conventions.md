@@ -9,6 +9,13 @@ proposes an agent-facing contract that derives observation needs from existing
 Conditions. It records a fresh source review and probes; read it for current
 capabilities and remaining gaps. The September 11/13 material below is historical.
 
+**November 12 freshness follow-up:** [Host PR 456](https://github.com/hao1939/may-agent/pull/456)
+removes event-name freshness policy from Condition matching. Resource Conditions
+use existing timestamp/source expectations; source measurement freshness remains
+App-owned. The [freshness review](../archive/reviews/condition-freshness-20261112.md)
+records stored-wait preservation and May/Scout composition evidence. This change
+is pending merge and installation; it adds no subscription system or new observer API.
+
 ## Original proposal and historical implementation notes
 
 **Design status:** Proposed implementation for review, September 11, 2026.

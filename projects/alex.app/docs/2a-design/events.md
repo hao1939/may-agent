@@ -12,7 +12,11 @@ single path; request dispositions have been removed. May's Conversation Task
 handles linked Task facts through the same input path as human discussion;
 there is no separate current supervision Task or proxy for destination work.
 Unresolved App translation is retained before invocation and retried through
-admission recovery. Condition freshness still partly depends on event names.
+admission recovery. Explicit Condition freshness is implemented in
+[Host PR 456](https://github.com/hao1939/may-agent/pull/456), pending merge
+and installation; the installed Host must not be assumed to have that change.
+The [freshness review](../archive/reviews/condition-freshness-20261112.md) records
+the contract, upgrade boundary and portable checks.
 The [boundary review](../archive/reviews/resource-event-boundary-20260927.md)
 records the original reproductions and links the September 30 source recheck.
 
@@ -136,6 +140,21 @@ available; event spelling or arrival order alone cannot establish freshness.
 Preserve conflicting evidence for the owner's judgment. Existing Condition
 expectations support field comparisons; a new global event taxonomy is not
 required by this rule.
+
+For a new read, declare `expected.timestamp: { gte: requestedAt }` using numeric
+milliseconds. This checks envelope time, never a payload field named `timestamp`.
+The Host supplies publication time when a producer omits envelope time and
+preserves valid explicit producer time during delivery and journal replay.
+`observationCondition` adds a construction-time boundary and the exact installed
+observer source. Retain the constructed Condition to continue the same wait;
+construct another when a new read is required. An explicit timestamp expectation
+overrides the helper default, including `{ gte: 0 }` when retained history suffices.
+
+A current read can return an old measurement. For measurement freshness, also
+declare the required `measuredAt`, sample ID or source revision. Immutable result
+proofs can remain valid without a time boundary. Renaming an event does not change
+these rules. Existing stored waits keep their original boundary through the
+one-time schema upgrade described in the freshness review.
 
 Read [system-model.md](system-model.md) for the relationship among requests,
 tasks, facts, and execution; [agent-app.md](agent-app.md) for authoring routes;

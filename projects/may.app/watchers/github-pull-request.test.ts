@@ -842,12 +842,13 @@ describe("GitHub live observation and saved Condition recovery", () => {
       requestedAction: "Review a changed PR",
     };
     const upgraded = upgradeGitHubPullRequestCondition(original);
-    expect(upgraded).toMatchObject({
+    expect(structuredClone(upgraded)).toMatchObject({
       id: original.id,
       requestedAction: original.requestedAction,
       subject: "resource:github:hao1939/may-agent#215",
       expected: {
         ...(original.expected as object),
+        timestamp: { gte: expect.any(Number) },
         source: "app:may:observer:github-pull-request",
       },
     });
@@ -862,19 +863,23 @@ describe("GitHub live observation and saved Condition recovery", () => {
       provider(new Map([[215, pullPayload(215)]])),
     );
     const result = (await live.run(context(tasks))) as { events: any[] };
-    const liveFact = result.events[0];
+    // The Host writer supplies the publication envelope after provider inspection.
+    const liveFact = { ...result.events[0], timestamp: Date.now() };
     const saved = {
       metadata: { id: upgraded.id, generation: 1, resourceVersion: 1 },
       spec: upgraded,
       status: { state: "unknown", observedGeneration: 0 },
     } as any;
     expect(matchesAppTaskCondition(saved, liveFact)).toBeTrue();
+    const boundary = (upgraded.expected as { timestamp: { gte: number } }).timestamp.gte;
+    expect(matchesAppTaskCondition(saved, { ...liveFact, timestamp: boundary - 1 })).toBeFalse();
     const fact = await recovery.inspect("github:hao1939/may-agent#215", {
       signal: new AbortController().signal,
     });
     expect(
       matchesAppTaskCondition(saved, {
         type: recovery.type,
+        timestamp: Date.now(),
         source: liveFact.source,
         data: { ...fact, resource: "github:hao1939/may-agent#215" },
       }),

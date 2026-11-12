@@ -14,6 +14,12 @@ The September 30 [observation review](../archive/reviews/task-observation-contra
 rechecked those two findings on `de59c8dae9`: translation recovery is repaired;
 the freshness-policy coupling remains. Other rows below retain their original
 review baseline.
+**November 12 follow-up:** [Host PR 456](https://github.com/hao1939/may-agent/pull/456)
+implements explicit freshness using existing comparisons, with a one-time stored
+wait upgrade. It is pending merge and installation. The
+[freshness review](../archive/reviews/condition-freshness-20261112.md) records the
+regressions and limits; the September findings above retain their historical baseline.
+
 Current contracts live in
 [System Model](../2a-design/system-model.md), [Architecture](../2a-design/architecture.md)
 and their linked owners.
@@ -22,7 +28,7 @@ and their linked owners.
 
 | Gap | Evidence and contract owner | Smallest next proof |
 | --- | --- | --- |
-| Condition freshness depends on event spelling and one named domain event | `app-task-condition-tracker.ts`, `isFreshLevelObservation`; [observation validity](../2a-design/events.md#changes-that-already-happened) | Move consumer freshness needs to explicit existing expectations; compare equivalent observations under different names, preserving historical result proofs and current wait protections |
+| Condition freshness depended on event spelling and one named domain event | [Freshness review](../archive/reviews/condition-freshness-20261112.md); [observation validity](../2a-design/events.md#changes-that-already-happened) | Host PR 456 removes runtime name rules and preserves stored boundaries; merge/install matching Host and SDK, then verify adopted App waits. Source tests are not deployment proof. |
 | HTTP embeds session-evaluation policy and directly writes human annotation | `src/app/http/server.ts`; [HTTP boundary](../2a-design/http-boundary.md), [Session trail](../2a-design/session-eval-trail.md) | Preserve the current API while routing the requested judgment/write to its owner; prove exact session/line/input correlation |
 | Requested session line/instructions are lost at the Evaluation mapping | `evaluation.app/app.ts`, `evaluate-session` mapping and `evaluator-aftermath`; [Session trail](../2a-design/session-eval-trail.md) | Either implement the accepted annotation capability end to end or explicitly revise/remove that advertised capability; do not claim a whole-session assessment answered the line request |
 | Some Task-board text equates convergence with recurring work | `packages/webui/static/pages/project-kanban.js`; [Default UI](../2a-design/default-project-ui.md) | Explain open accepted outcomes independently of recurrence and closure; check the rendered board |

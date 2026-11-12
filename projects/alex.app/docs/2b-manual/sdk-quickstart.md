@@ -262,6 +262,15 @@ the new declaration. For diagnosis, exact `apps.list {appId}` reads show recent
 resource inspection health. Use an explicit Task `reviewAt` when the agent wants
 a review if detection stops; the Condition itself does not schedule model work.
 
+With [Host PR 456](https://github.com/hao1939/may-agent/pull/456), the helper
+and `tasks.contract` reply declare `expected.timestamp: { gte: constructionTime }`
+and the exact observer source. Save and retain that Condition for the same wait;
+requesting a new Condition asks for a new read. A new read can return retained
+source data, so declare `measuredAt`, sample ID or revision when those matter.
+An explicit timestamp expectation overrides the default; `{ gte: 0 }` permits
+retained history. Raw Conditions have only their declared expectations, regardless
+of event name. Install matching Host/SDK source before relying on this change.
+
 
 ### Smoke-test the installed observation path
 
