@@ -13,7 +13,6 @@ import { upsertSession, updateSessionDb } from "../../../lib/db/sessions.js";
 import { describeText } from "../../../lib/artifacts.js";
 import { appendSessionMessage, markSessionActive, readSessionMeta, writeSessionMeta } from "../../../lib/persistence.js";
 import { closeDb } from "../../../lib/db/connection.js";
-import { createLastSessionWriter } from "../../../lib/session-subscribers.js";
 import { EventBus, type AgentEvent } from "../../core/events/bus.js";
 import type { AppTaskAttempt } from "../../core/tasks/app-task-state.js";
 import { createTaskSessionRecovery } from "./session-recovery.js";
@@ -114,7 +113,7 @@ it.each(["interrupted", "done", "error"] as const)(
       writeFileSync(join(dir, "agent.json"), JSON.stringify({ name: "arc" }));
     }
     writeFileSync(join(root, "projects/sample.app/app.js"), "export default {};");
-    for (const file of ["last-session.md", "context.md"]) writeFileSync(join(globalDir, file), "Global history\n");
+    writeFileSync(join(globalDir, "context.md"), "Global history\n");
     const sessionId = "recovered-session";
     writeSessionMeta(root, sessionId, {
       agent: "arc",
@@ -147,7 +146,6 @@ it.each(["interrupted", "done", "error"] as const)(
     const bus = new EventBus();
     const events: AgentEvent[] = [];
     bus.subscribe((event) => events.push(event));
-    bus.subscribe(createLastSessionWriter(root));
     // A fresh manager has no live owner; recovery uses only the durable record.
     const recovery = createTaskSessionRecovery({
       persistDir: root,
@@ -159,14 +157,12 @@ it.each(["interrupted", "done", "error"] as const)(
       { data: { sessionId, agentRelativeDir: relativeDir, status } },
     ]);
     expect(readSessionMeta(root, sessionId)).toMatchObject({ status, agentRelativeDir: relativeDir });
-    expect(readFileSync(join(localDir, "last-session.md"), "utf8")).toContain(sessionId);
     expect(existsSync(join(localDir, "context.md"))).toBe(false);
     if (status !== "interrupted") {
       const result = JSON.parse(readFileSync(join(root, "sessions", sessionId, "result.json"), "utf8"));
       expect(result.finishParams.context_updates).toEqual([{ action: "add", content: "Retained owner facts" }]);
     }
-    for (const file of ["last-session.md", "context.md"])
-      expect(readFileSync(join(globalDir, file), "utf8")).toBe("Global history\n");
+    expect(readFileSync(join(globalDir, "context.md"), "utf8")).toBe("Global history\n");
     recovery.interrupt(sessionId, "Repeated recovery");
     expect(events.filter((event) => event.type === "session.end")).toHaveLength(1);
   },

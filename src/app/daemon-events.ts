@@ -1,10 +1,6 @@
 import { eventData, type EventBus } from "./core/events/bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import { DbWriter } from "../lib/db-writer.js";
-import {
-  createDigestWriter,
-  createLastSessionWriter,
-} from "../lib/session-subscribers.js";
 import { runAgentCleanup, setAgentSessionId } from "./agent-loader.js";
 import { getDb } from "../lib/db/connection.js";
 import { attachMetricSourceMeasurement, attachMetricEvaluation } from "./metric-source-measurement.js";
@@ -124,7 +120,7 @@ export function attachDaemonEventSubscribers(opts: {
   projectRoot: string;
   interfaceAgent?: string;
 }): void {
-  const { bus, persistDir, projectRoot } = opts;
+  const { bus, persistDir } = opts;
   attachMetricSourceMeasurement({ bus, persistDir });
   attachMetricEvaluation({ bus, persistDir });
   const restartedHandlerPairs = closeRestartedHandlerPairs({ bus, persistDir });
@@ -141,15 +137,6 @@ export function attachDaemonEventSubscribers(opts: {
       message: `[workflow-recovery] Closed ${restartedWorkflowPairs} stale workflow pair(s) after restart`,
     });
   }
-
-  bus.listen(createDigestWriter(persistDir), {
-    label: "session-digest",
-    types: ["session.start", "session.end"],
-  });
-  bus.listen(createLastSessionWriter(projectRoot), {
-    label: "last-session",
-    types: ["session.end"],
-  });
 
   bus.subscribe(
     (event) => {

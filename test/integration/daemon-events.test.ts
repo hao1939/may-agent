@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "bun:test";
@@ -144,10 +144,6 @@ describe("daemon event subscribers", () => {
       });
       const row = getDb(root).prepare("SELECT data FROM events WHERE event_type = 'session.end'").get() as { data: string };
       expect(JSON.parse(row.data).finishParams.context_updates).toEqual(suggestions);
-      const handoff = join(agentDir, "last-session.md");
-      const deadline = Date.now() + 2_000;
-      while (!existsSync(handoff) && Date.now() < deadline) await Bun.sleep(5);
-      expect(readFileSync(handoff, "utf8")).toContain("Review complete");
       expect(readFileSync(join(agentDir, "context.md"), "utf8")).toBe("Existing guidance\n");
     } finally {
       closeDb(root);

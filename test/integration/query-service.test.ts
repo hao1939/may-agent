@@ -197,7 +197,7 @@ describe("QueryService", () => {
     ]);
   });
 
-  it("keeps stored session digest history readable after reopening the database", () => {
+  it("keeps stored workflow run history readable after reopening the database", () => {
     const { root, db } = harness();
     db.run("INSERT INTO sessions (sessionId, agent, task, status, startedAt) VALUES (?, ?, ?, ?, ?)", [
       "reviewed-session",
@@ -207,20 +207,20 @@ describe("QueryService", () => {
       100,
     ]);
     db.run(
-      "INSERT INTO session_digests (sessionId, agent, trigger, step, outcome, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-      ["reviewed-session", "dev", "finish", 1, "verified", 200],
+      "INSERT INTO workflow_runs (runId, workflow, task, status, parentSessionId, startedAt) VALUES (?, ?, ?, ?, ?, ?)",
+      ["wr_1", "verify", "Inspect result", "done", "reviewed-session", 200],
     );
     closeDb(root);
 
     const query = createQueryService({ getDb: () => getDb(root) });
     expect(
       query.sql(
-        `SELECT s.sessionId, s.status, d.outcome FROM sessions s
-      JOIN session_digests d ON d.sessionId = s.sessionId WHERE s.sessionId = ?`,
+        `SELECT s.sessionId, s.status, w.workflow FROM sessions s
+      JOIN workflow_runs w ON w.parentSessionId = s.sessionId WHERE s.sessionId = ?`,
         ["reviewed-session"],
       ).rows,
     ).toEqual([
-      { sessionId: "reviewed-session", status: "done", outcome: "verified" },
+      { sessionId: "reviewed-session", status: "done", workflow: "verify" },
     ]);
   });
 
