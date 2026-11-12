@@ -152,6 +152,10 @@ function initChat(deepLinkSessionId) {
     const sessionDetailPanel = document.getElementById('session-detail-panel');
     if (sessionDetailPanel) sessionDetailPanel.innerHTML = '';
   }
+  if (currentSessionId) {
+    void switchSession(currentSessionId);
+    return;
+  }
   // Default-session resolution: if nothing selected, pick the most-recent
   // open non-heartbeat / non-worker session per agent. Per webui.md §5.
   // The bus updates `activeSessions` continuously via session.start/end —
@@ -415,6 +419,7 @@ function connectWs() {
 
 async function sendChat() {
   if (isMayConversation()) return sendMayConversation();
+  if (currentTab !== 'sessions' && !isAgentChatActive(currentAgentChat)) return;
   const input = document.getElementById('chat-input');
   const draft = input.value;
   const message = draft.trim();
@@ -437,7 +442,8 @@ async function sendChat() {
   pending.sending = true;
   let selection = chatSelectionVersion;
   let admittedSession = null;
-  const selected = () => currentRouteParams === route && (sessionId
+  const selected = () => currentRouteParams === route
+    && (name ? isAgentChatActive(name) : currentTab === 'sessions') && (sessionId
     ? sessionId === (isSessionPageMode() ? currentRouteParams.id : currentSessionId)
     : selection === chatSelectionVersion);
   try {

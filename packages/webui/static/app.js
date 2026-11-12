@@ -167,7 +167,7 @@ function render() {
   document.getElementById('dashboard').classList.toggle('hidden', tab !== 'live');
   document.getElementById('projects').classList.toggle('hidden', tab !== 'projects');
   document.getElementById('agents').classList.toggle('hidden', tab !== 'agents');
-  document.getElementById('chat').classList.toggle('hidden', tab !== 'sessions' && !inAgentChat);
+  document.getElementById('chat').classList.toggle('hidden', tab !== 'sessions' && !(inAgentChat && currentAgentSubTab === 'chat'));
   document.getElementById('knowledge').classList.toggle('hidden', tab !== 'knowledge');
   // #metrics pane now serves the dedicated Metrics tab. System tab no longer renders it.
   document.getElementById('metrics').classList.toggle('hidden', tab !== 'metrics');

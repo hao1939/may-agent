@@ -251,6 +251,21 @@ describe("HTTP human Task reads and board", () => {
         expect(await page.$eval("#chat-messages", el => el.textContent)).not.toContain("Event payload is not a saved message");
       }
       if (held) await held.continue();
+      if (surface === "generic") {
+        ensureSessionDir(root, "selected-old-session");
+        appendSessionMessage(root, "selected-old-session", { role: "user", content: "Retained generic selection", timestamp: Date.now() });
+        await page.evaluate("routeTo('/sessions/selected-old-session')");
+        await page.waitForFunction(() => document.querySelector("#session-detail-panel h3")?.textContent === "selected-old-session");
+        await page.evaluate("routeTo('/sessions')");
+        await page.waitForFunction(() => document.querySelector("#chat-messages")?.textContent?.includes("Retained generic selection"));
+        expect(await page.evaluate("currentSessionId")).toBe("selected-old-session");
+      }
+      if (surface === "unbound") {
+        await page.click('#agents-content button[onclick="switchAgentSubTab(\'overview\')"]');
+        expect(await page.$eval("#chat", el => el.classList.contains("hidden"))).toBe(true);
+        await page.evaluate("document.getElementById('chat-input').value = 'Inactive composer'; sendChat()");
+        expect(published).toEqual([]);
+      }
     } finally { await browser.close(); }
   }, 30000);
 
@@ -392,6 +407,16 @@ describe("HTTP human Task reads and board", () => {
       expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("");
       expect(published).toHaveLength(4);
       expect(published[3]).toMatchObject({ type: "session.steer.requested", target: { sessionId } });
+      const inactiveAdmission = new Promise<HTTPRequest>(resolveRequest => { capturePublish = resolveRequest; });
+      await page.$eval("#chat-input", el => { (el as HTMLInputElement).value = "Pending before leaving Chat"; });
+      const leaving = page.evaluate("sendChat()");
+      const inactiveHeld = await inactiveAdmission;
+      await page.click('#agents-content button[onclick="switchAgentSubTab(\'about\')"]');
+      await inactiveHeld.continue();
+      await leaving;
+      expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("Pending before leaving Chat");
+      expect(published).toHaveLength(5);
+      expect(published[4]).toMatchObject({ type: "session.steer.requested", target: { sessionId } });
     } finally { await browser.close(); }
   }, 30000);
 
