@@ -1048,7 +1048,12 @@ describe("HTTP human Task reads and board", () => {
       expect((await send()).status).toBe(200);
       expect(published).toHaveLength(1);
       expect(published[0]).toMatchObject({ type: "chat.start.requested", idempotencyKey: requestId, data: { requestId } });
-      db.prepare("DELETE FROM events WHERE idempotency_key=?").run(requestId);
+      // The fixture has no App planner. Complete that retention fence before
+      // simulating an expired publication; pending evidence cannot be deleted.
+      db.prepare("UPDATE events SET app_admission_pending=0 WHERE idempotency_key=?").run(requestId);
+      expect(db.prepare("DELETE FROM events WHERE idempotency_key=?").run(requestId).changes).toBe(1);
+      expect(db.prepare("SELECT count(*) n FROM events WHERE idempotency_key=?").get(requestId)).toEqual({ n: 0 });
+      expect(await read(`/api/agents/worker/default-session?requestId=${requestId}`)).toMatchObject({ sessionId });
       const unavailable = await send();
       expect(unavailable.status).toBe(500);
       expect(await unavailable.json()).toMatchObject({ error: "Original chat publication unavailable" });
