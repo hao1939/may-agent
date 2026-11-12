@@ -149,6 +149,7 @@ function render() {
   chatSelectionVersion++;
   const previousTab = currentTab;
   const { tab, params } = parseRoute();
+  if (tab !== currentTab || params.name !== currentRouteParams.name || params.id !== currentRouteParams.id) chatPendingInput = null;
   currentTab = tab;
   currentRouteParams = params;
   setSessionPageMode(tab === 'sessions' && !!params.id);

@@ -40,6 +40,7 @@ import { buildCanonicalEventEnvelope } from "../../../packages/control/src/event
 import { normalizeProjectPathForCompare, projectPathIdentity, readProjectIngressIdentity, readProjectMetadata } from "./project-metadata.js";
 export { normalizeProjectPathForCompare } from "./project-metadata.js";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
+import { ChatPublicationConflict, readChatPublication } from "./read-model/chat-publication.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
 import { readWorkflowFacts } from "../../lib/workflow-facts.js";
 import { healthWindow, readWorkflowHealth, workflowHealthQuery } from "../adapters/reporting/workflow-health.js";
@@ -2627,15 +2628,32 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       return json({ ok: true, agent: agentName, sessionId: null, deliveredAt: Date.now(), spawned: true });
     }
 
-    // A retry of an already-created request must republish its original start,
-    // not reinterpret the same input as steering the agent's latest thread.
-    let correlatedSession = false;
+    // Recover the immutable publication before resolving a mutable default.
+    // Accepted steering stays confirmed even if that session has since ended.
+    if (requestId) {
+      let saved;
+      try {
+        saved = readChatPublication(_db(), { agent: agentName, content, requestId, forceNew });
+      } catch (error) {
+        return json({ error: error instanceof Error ? error.message : String(error) }, error instanceof ChatPublicationConflict ? 409 : 500);
+      }
+      if (saved) {
+        if (!saved.accepted) {
+          const result = await sendDaemonFrame({ type: "publish", event: saved.input });
+          if (!result.ok) return json({ error: result.error }, 503);
+        }
+        return json({ ok: true, agent: agentName, sessionId: saved.input.target?.sessionId ?? null,
+          deliveredAt: Date.now(), spawned: saved.input.type === "chat.start.requested", requestId });
+      }
+    }
+    // A session alone cannot reconstruct the original publication after its
+    // event has disappeared. Report missing evidence instead of starting again.
     if (requestId) {
       const correlated = handleAgentDefaultSession(agentName, requestId);
       if (!correlated.ok) return correlated;
-      correlatedSession = Boolean((await correlated.json()).sessionId);
+      if ((await correlated.json()).sessionId) return json({ error: "Original chat publication unavailable" }, 500);
     }
-    if (!forceNew && !correlatedSession) {
+    if (!forceNew) {
       const resolveResp = handleAgentDefaultSession(agentName);
       if (!resolveResp.ok) return resolveResp;
       const resolved = (await resolveResp.json()) as { agent: string; sessionId: string | null };

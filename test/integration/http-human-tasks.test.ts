@@ -11,6 +11,10 @@ import { HumanTaskService, type HumanTaskStatus } from "../../src/app/human-task
 import { openStateDb, type SqliteDb } from "../../src/app/http/read-model/state-db.js";
 import { AppRegistry } from "../../src/app/core/apps/registry.js";
 import { appendSessionMessage, ensureSessionDir } from "../../src/lib/persistence.js";
+import { DbWriter } from "../../src/lib/db-writer.js";
+import { closeDb, getDb } from "../../src/lib/db/connection.js";
+import { EventBus } from "../../src/app/core/events/bus.js";
+import { createEventInterface } from "../../src/app/core/events/interface.js";
 
 const chrome = [
   process.env.CHROME_PATH,
@@ -33,7 +37,7 @@ describe("HTTP human Task reads and board", () => {
   let registry: AppRegistry;
   let conversation: { messages: any[]; activeTurn?: { id: string; revision: number } };
   let published: any[];
-  let onPublish: (() => void) | undefined;
+  let onPublish: ((event: any) => void) | undefined;
   let rejectPublish: boolean;
   let rejectConversationRead: boolean;
   let rejectAppRead: boolean;
@@ -75,7 +79,7 @@ describe("HTTP human Task reads and board", () => {
       },
       publishEvent: (event) => {
         published.push(event);
-        onPublish?.();
+        onPublish?.(event);
         if (rejectPublish) throw new Error("fixture persistence unavailable");
         if (event.type === "conversation.turn.stop.requested") {
           conversation.activeTurn = { id: "turn-two", revision: 8 };
@@ -146,6 +150,7 @@ describe("HTTP human Task reads and board", () => {
     await stopped;
     control?.close();
     db?.close();
+    closeDb(root);
     if (root) rmSync(root, { recursive: true, force: true });
   });
 
@@ -645,6 +650,266 @@ describe("HTTP human Task reads and board", () => {
     30000,
   );
 
+  test.skipIf(skipBrowser)(
+    "an unbound submission keeps one admission while the next draft changes",
+    async () => {
+      const browser = await puppeteer.launch({
+        executablePath: chrome!,
+        headless: true,
+        args: ["--no-sandbox", "--disable-dev-shm-usage"],
+      });
+      try {
+        const page = await browser.newPage();
+        page.setDefaultTimeout(5000);
+        await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
+        await page.waitForFunction(() =>
+          document.querySelector("#chat-messages")?.textContent?.includes("No conversation"),
+        );
+        await page.evaluate("resetAgentChat('worker')");
+        let held: HTTPRequest | undefined;
+        let posts = 0;
+        await page.setRequestInterception(true);
+        page.on("request", (request) => {
+          if (request.method() === "POST" && new URL(request.url()).pathname === "/api/agents/worker/message") {
+            posts++;
+            if (!held) {
+              held = request;
+              return;
+            }
+          }
+          void request.continue();
+        });
+        await page.type("#chat-input", "First accepted input");
+        await page.click("#chat-send");
+        await page.waitForFunction("chatPendingInput?.sending === true");
+        await page.$eval("#chat-input", (el) => {
+          (el as HTMLInputElement).value = "The next draft";
+        });
+        await page.evaluate("void sendChat()");
+        expect(posts).toBe(1);
+        await held!.continue();
+        await page.waitForFunction("agentChatRequestId !== null");
+        expect(published).toHaveLength(1);
+        expect(await page.$eval("#chat-input", (el) => (el as HTMLInputElement).value)).toBe("The next draft");
+        expect(await page.evaluate("agentChatRequestId")).toBe(published[0].idempotencyKey);
+      } finally {
+        await browser.close();
+      }
+    },
+    30000,
+  );
+
+  test.skipIf(skipBrowser).each([false, true])(
+    "an admitted fresh chat survives About with a changed next draft=%s",
+    async (changed) => {
+      seedChat("worker");
+      const browser = await puppeteer.launch({
+        executablePath: chrome!,
+        headless: true,
+        args: ["--no-sandbox", "--disable-dev-shm-usage"],
+      });
+      try {
+        const page = await browser.newPage();
+        page.setDefaultTimeout(5000);
+        await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
+        await page.waitForFunction("currentSessionId === 'worker-old-session'");
+        await page.evaluate("resetAgentChat('worker')");
+        let held: HTTPRequest | undefined;
+        await page.setRequestInterception(true);
+        page.on("request", (request) => {
+          if (request.method() === "POST" && new URL(request.url()).pathname === "/api/agents/worker/message")
+            held = request;
+          else void request.continue();
+        });
+        await page.type("#chat-input", "Accepted while About is open");
+        await page.click("#chat-send");
+        await page.waitForFunction("chatPendingInput?.sending === true");
+        if (changed)
+          await page.$eval("#chat-input", (el) => {
+            (el as HTMLInputElement).value = "Keep the next draft";
+          });
+        await page.evaluate("switchAgentSubTab('about')");
+        await held!.continue();
+        await page.waitForFunction("!chatPendingInput?.sending");
+        expect(await page.$eval("#chat-input", (el) => (el as HTMLInputElement).value)).toBe(
+          changed ? "Keep the next draft" : "Accepted while About is open",
+        );
+        const requestId = published[0].idempotencyKey;
+        db.prepare("UPDATE sessions SET requestId=? WHERE sessionId='worker-old-session'").run(requestId);
+        ensureSessionDir(root, "worker-old-session");
+        appendSessionMessage(root, "worker-old-session", {
+          role: "assistant",
+          content: [{ type: "text", text: "Answer to the retained admission" }],
+          timestamp: Date.now(),
+        });
+        await page.evaluate("switchAgentSubTab('chat')");
+        await page.waitForFunction(() =>
+          document.querySelector("#chat-messages")?.textContent?.includes("Answer to the retained admission"),
+        );
+        expect(await page.$eval("#chat-input", (el) => (el as HTMLInputElement).value)).toBe(
+          changed ? "Keep the next draft" : "",
+        );
+        expect(published).toHaveLength(1);
+      } finally {
+        await browser.close();
+      }
+    },
+    30000,
+  );
+
+  test.skipIf(skipBrowser)(
+    "an explicit-session admission retained through About restores the saved-turn reader",
+    async () => {
+      const sessionId = seedChat("worker");
+      ensureSessionDir(root, sessionId);
+      const browser = await puppeteer.launch({
+        executablePath: chrome!,
+        headless: true,
+        args: ["--no-sandbox", "--disable-dev-shm-usage"],
+      });
+      try {
+        const page = await browser.newPage();
+        page.setDefaultTimeout(5000);
+        await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
+        await page.waitForFunction("currentSessionId === 'worker-old-session'");
+        let held: HTTPRequest | undefined;
+        await page.setRequestInterception(true);
+        page.on("request", (request) => {
+          if (request.method() === "POST" && new URL(request.url()).pathname === "/api/events") held = request;
+          else void request.continue();
+        });
+        await page.type("#chat-input", "Follow up on this exact session");
+        await page.click("#chat-send");
+        await page.waitForFunction("chatPendingInput?.sending === true");
+        await page.evaluate("switchAgentSubTab('about')");
+        await held!.continue();
+        await page.waitForFunction("!chatPendingInput?.sending");
+        appendSessionMessage(root, sessionId, {
+          role: "assistant",
+          content: [{ type: "text", text: "Saved reply after hidden admission" }],
+          timestamp: Date.now(),
+        });
+        await page.evaluate("switchAgentSubTab('chat')");
+        await page.waitForFunction(() =>
+          document.querySelector("#chat-messages")?.textContent?.includes("Saved reply after hidden admission"),
+        );
+        expect(await page.$eval("#chat-input", (el) => (el as HTMLInputElement).value)).toBe("");
+        expect(await page.evaluate("chatTranscript.sessionId")).toBe(sessionId);
+        expect(published).toMatchObject([{ type: "session.steer.requested", target: { sessionId } }]);
+      } finally {
+        await browser.close();
+      }
+    },
+    30000,
+  );
+
+  test.skipIf(skipBrowser)(
+    "Reset replaces an unknown fresh admission's identity even with an unchanged draft",
+    async () => {
+      const browser = await puppeteer.launch({
+        executablePath: chrome!,
+        headless: true,
+        args: ["--no-sandbox", "--disable-dev-shm-usage"],
+      });
+      try {
+        const page = await browser.newPage();
+        page.setDefaultTimeout(5000);
+        await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
+        await page.waitForFunction(() =>
+          document.querySelector("#chat-messages")?.textContent?.includes("No conversation"),
+        );
+        await page.evaluate("resetAgentChat('worker')");
+        let loseResponse = true;
+        await page.setRequestInterception(true);
+        page.on("request", async (request) => {
+          if (
+            loseResponse &&
+            request.method() === "POST" &&
+            new URL(request.url()).pathname === "/api/agents/worker/message"
+          ) {
+            loseResponse = false;
+            await fetch(request.url(), {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: request.postData(),
+              signal: AbortSignal.timeout(5000),
+            });
+            await request.abort("failed");
+          } else void request.continue();
+        });
+        await page.type("#chat-input", "Same draft, deliberately new chat");
+        await page.click("#chat-send");
+        await page.waitForFunction(() => document.body.textContent?.includes("Message was not confirmed"));
+        const originalId = published[0].idempotencyKey;
+        await page.evaluate("resetAgentChat('worker')");
+        await page.evaluate("sendChat()");
+        expect(published).toHaveLength(2);
+        expect(published[1].idempotencyKey).not.toBe(originalId);
+        expect(published[1].data.forceNew).toBe(true);
+      } finally {
+        await browser.close();
+      }
+    },
+    30000,
+  );
+
+  test.each([false, true])(
+    "keyed retry recovers the exact steering publication after the default changes, large input=%s",
+    async (large) => {
+      const original = seedChat("worker");
+      const bus = new EventBus();
+      const writer = new DbWriter(root);
+      bus.setPersistenceSubscriber(writer.handler);
+      bus.setDeliveryRecorder(writer.recordDelivery);
+      const unsubscribe = bus.subscribeDurableRoute(() => ({ accepted: true, by: "fixture-chat", route: "direct" }));
+      const events = createEventInterface({
+        bus,
+        db: getDb(root),
+        hasApp: () => false,
+        hasAgent: () => true,
+        hasSession: () => true,
+      });
+      onPublish = (event) => {
+        events.publish(event, { source: "control-socket" });
+      };
+      const content = "Original steering input" + (large ? " detail".repeat(1000) : "");
+      const requestId = "retained-steering-request";
+      const send = async (message = content, agent = "worker") =>
+        fetch(base + `/api/agents/${agent}/message`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: message, requestId }),
+          signal: AbortSignal.timeout(5000),
+        });
+      try {
+        const first = await send();
+        expect(first.status).toBe(200);
+        expect(await first.json()).toMatchObject({ sessionId: original });
+        db.prepare("INSERT INTO sessions(sessionId,agent,task,status,kind,source,startedAt) VALUES(?,?,?,?,?,?,?)").run(
+          "newer-default",
+          "worker",
+          "Concurrent chat",
+          "idle",
+          "chat",
+          "web-ui",
+          Date.now() + 1000,
+        );
+        db.prepare("UPDATE sessions SET status='done' WHERE sessionId=?").run(original);
+        const retry = await send();
+        expect(retry.status).toBe(200);
+        expect(await retry.json()).toMatchObject({ sessionId: original });
+        expect(
+          getDb(root).prepare("SELECT count(*) n FROM events WHERE event_type='session.steer.requested'").get(),
+        ).toEqual({ n: 1 });
+        expect(published.every((event) => event.target.sessionId === original)).toBe(true);
+        expect((await send("Changed input")).status).toBe(409);
+        expect((await send(content, "other")).status).toBe(409);
+      } finally {
+        unsubscribe();
+      }
+    },
+  );
+
   test.skipIf(skipBrowser)("rejected fresh chat keeps its draft and Reset intent", async () => {
     seedChat("worker");
     const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
@@ -664,6 +929,62 @@ describe("HTTP human Task reads and board", () => {
       expect(published).toMatchObject([{ type: "chat.start.requested", data: { agent: "worker", forceNew: true } }]);
     } finally { await browser.close(); }
   }, 30000);
+
+  test.each([false, true])(
+    "keyed creation retry retains its original publication before any session exists, forceNew=%s",
+    async (forceNew) => {
+      const bus = new EventBus();
+      const writer = new DbWriter(root);
+      bus.setPersistenceSubscriber(writer.handler);
+      bus.setDeliveryRecorder(writer.recordDelivery);
+      let deliveries = 0;
+      const unsubscribe = bus.subscribeDurableRoute(() => {
+        deliveries++;
+        return { accepted: true, by: "fixture-chat", route: "direct" };
+      });
+      const events = createEventInterface({
+        bus,
+        db: getDb(root),
+        hasApp: () => false,
+        hasAgent: () => true,
+        hasSession: () => true,
+      });
+      onPublish = (event) => {
+        events.publish(event, { source: "control-socket" });
+      };
+      const requestId = "original-uncreated-thread";
+      const url = base + "/api/agents/worker/message" + (forceNew ? "?new=true" : "");
+      const send = () =>
+        fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: "Create this exact chat", requestId }),
+          signal: AbortSignal.timeout(5000),
+        });
+      try {
+        expect((await send()).status).toBe(200);
+        seedChat("worker"); // A different default appears before the original creation.
+        expect((await send()).status).toBe(200);
+        expect(deliveries).toBe(1);
+        expect(published).toHaveLength(1);
+        // Interrupted delivery still retries the immutable start, never the new default.
+        getDb(root)
+          .prepare(
+            "UPDATE events SET delivery_status='pending', accepted_by=NULL, accepted_at=NULL WHERE idempotency_key=?",
+          )
+          .run(requestId);
+        expect((await send()).status).toBe(200);
+        expect(published).toHaveLength(2);
+        expect(published[0]).toEqual(published[1]);
+        expect(deliveries).toBe(2);
+        expect(
+          getDb(root).prepare("SELECT count(*) n FROM events WHERE event_type='chat.start.requested'").get(),
+        ).toEqual({ n: 1 });
+      } finally {
+        unsubscribe();
+      }
+    },
+  );
 
   test("request-scoped thread reads never fall back to an older or another agent's session", async () => {
     const sessionId = seedChat("worker");
@@ -707,30 +1028,32 @@ describe("HTTP human Task reads and board", () => {
     expect(published).toEqual([]);
   });
 
-  test("retrying a created request retains its original start publication instead of steering the latest thread", async () => {
+  test("created chat retries confirm the retained publication and never infer a start from session evidence alone", async () => {
+    const bus = new EventBus();
+    const writer = new DbWriter(root);
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const unsubscribe = bus.subscribeDurableRoute(() => ({ accepted: true, by: "fixture-chat", route: "direct" }));
+    const events = createEventInterface({ bus, db: getDb(root), hasApp: () => false, hasAgent: () => true, hasSession: () => true });
+    onPublish = event => { events.publish(event, { source: "control-socket" }); };
     const requestId = "original-creation";
-    const response = await fetch(base + "/api/agents/worker/message", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: "Original input", requestId }),
+    const send = () => fetch(base + "/api/agents/worker/message", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: "Original input", requestId }), signal: AbortSignal.timeout(5000),
     });
-    expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({ sessionId: null, requestId });
-    const sessionId = seedChat("worker");
-    db.prepare("UPDATE sessions SET requestId=? WHERE sessionId=?").run(requestId, sessionId);
-    const retry = await fetch(base + "/api/agents/worker/message", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: "Original input", requestId }),
-    });
-    expect(retry.status).toBe(200);
-    expect(published).toHaveLength(2);
-    expect(published[0]).toEqual(published[1]);
-    expect(published[1]).toMatchObject({
-      type: "chat.start.requested",
-      idempotencyKey: requestId,
-      data: { requestId },
-    });
+    try {
+      expect((await send()).status).toBe(200);
+      const sessionId = seedChat("worker");
+      db.prepare("UPDATE sessions SET requestId=? WHERE sessionId=?").run(requestId, sessionId);
+      expect((await send()).status).toBe(200);
+      expect(published).toHaveLength(1);
+      expect(published[0]).toMatchObject({ type: "chat.start.requested", idempotencyKey: requestId, data: { requestId } });
+      db.prepare("DELETE FROM events WHERE idempotency_key=?").run(requestId);
+      const unavailable = await send();
+      expect(unavailable.status).toBe(500);
+      expect(await unavailable.json()).toMatchObject({ error: "Original chat publication unavailable" });
+      expect(published).toHaveLength(1);
+    } finally { unsubscribe(); }
   });
 
   test.each([false, true])("interface-agent HTTP input retains its Conversation with existing session=%s", async (existing) => {

@@ -127,6 +127,7 @@ function switchAgentSubTab(tab) {
     if (chatPane) chatPane.classList.remove('hidden');
     if (body) body.innerHTML = '';
     // Resolve & load the chat thread (same as before).
+    applyChatAdmission();
     if (currentSessionId || agentChatRequestId) void switchSession(currentSessionId, agentChatRequestId);
     else void loadAgentChatThread(currentAgentChat);
   } else {
@@ -143,6 +144,7 @@ function switchAgentSubTab(tab) {
 
 async function loadAgentChatThread(name) {
   if (!name || !isAgentChatActive(name) || forceNewAgentChat) return;
+  if (chatPendingInput?.target === `agent:${name}`) return;
   if (agentChatRequestId) return refreshChatTranscript();
   const selection = ++chatSelectionVersion;
   if (name === humanInterface.agent) {

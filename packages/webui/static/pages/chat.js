@@ -230,6 +230,7 @@ function syncRealtimeSubscriptions() {
 }
 
 async function switchSession(sessionId, requestId = null) {
+  if (chatPendingInput && chatPendingInput.target !== `session:${sessionId}`) chatPendingInput = null;
   chatSelectionVersion++;
   currentSessionId = sessionId;
   agentChatRequestId = requestId;
@@ -446,16 +447,22 @@ async function sendChat() {
     return;
   }
   const target = sessionId ? `session:${sessionId}` : name ? `agent:${name}` : `app:${humanInterface.appId}`;
+  // An in-flight submission owns its target even when the next draft changes.
+  // For unbound chat, an unknown outcome must be retried or replaced by Reset.
+  if (chatPendingInput?.target === target && (chatPendingInput.sending
+    || (!sessionId && (chatPendingInput.admitted || chatPendingInput.draft !== draft)))) {
+    toast('Waiting for the previous message. Your draft is kept; Reset starts a separate chat.');
+    return;
+  }
   // Retrying an unchanged explicit-target draft after an unknown HTTP outcome
   // retains publication identity. A different target or draft is a new input.
   if (chatPendingInput?.draft !== draft || chatPendingInput?.target !== target) {
-    chatPendingInput = { draft, target, id: `web-ui:${crypto.randomUUID()}`, sending: false };
+    chatPendingInput = { draft, target, id: `web-ui:${crypto.randomUUID()}`, sending: false, forceNew: forceNewAgentChat };
   }
   const pending = chatPendingInput;
   if (pending.sending) return;
   pending.sending = true;
   let selection = chatSelectionVersion;
-  let admittedSession = null;
   const selected = () => currentRouteParams === route
     && (name ? isAgentChatActive(name) : currentTab === 'sessions') && (sessionId
     ? sessionId === (isSessionPageMode() ? currentRouteParams.id : currentSessionId)
@@ -468,13 +475,13 @@ async function sendChat() {
       });
     } else if (name && name !== humanInterface.agent) {
       selection = ++chatSelectionVersion;
-      const response = await fetch('/api/agents/' + encodeURIComponent(name) + '/message' + (forceNewAgentChat ? '?new=true' : ''), {
+      const response = await fetch('/api/agents/' + encodeURIComponent(name) + '/message' + (pending.forceNew ? '?new=true' : ''), {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: message, requestId: pending.id }), signal: AbortSignal.timeout(10000),
       });
       const result = await response.json();
       if (!response.ok || !result.ok) throw new Error(result.error || 'Message admission failed');
-      admittedSession = result.sessionId;
+      pending.sessionId = result.sessionId;
     } else {
       await publishChatEvent({
         type: 'app.input.requested', target: { appId: humanInterface.appId },
@@ -482,15 +489,10 @@ async function sendChat() {
         idempotencyKey: pending.id,
       });
     }
-    if (chatPendingInput === pending) chatPendingInput = null;
-    if (!selected()) return;
-    if (input.value === draft) input.value = '';
-    if (!chatAutoScroll) toggleChatScroll();
-    document.getElementById('chat-status').textContent = 'Message accepted; waiting for the saved turn';
-    if (name && !sessionId && name !== humanInterface.agent) {
-      forceNewAgentChat = false;
-      if (admittedSession) void switchSession(admittedSession);
-      else void switchSession(null, pending.id);
+    pending.admitted = true;
+    if (selected()) {
+      applyChatAdmission(pending);
+      if (name && !sessionId && name !== humanInterface.agent) void switchSession(currentSessionId, agentChatRequestId);
     }
   } catch (error) {
     if (selected()) toast('Message was not confirmed: ' + error.message);
@@ -499,10 +501,32 @@ async function sendChat() {
   }
 }
 
+// The submission survives a hidden subtab; only the active matching composer
+// may consume its receipt. Reset and explicit selection discard this identity.
+function applyChatAdmission(pending = chatPendingInput) {
+  if (!pending?.admitted || pending !== chatPendingInput) return;
+  const sessionId = isSessionPageMode() ? currentRouteParams.id : currentSessionId;
+  const name = isAgentChatActive(currentAgentChat) ? currentAgentChat : null;
+  if (currentTab !== 'sessions' && !name) return;
+  const target = sessionId ? `session:${sessionId}` : name ? `agent:${name}` : `app:${humanInterface.appId}`;
+  if (pending.target !== target) return;
+  chatPendingInput = null;
+  const input = document.getElementById('chat-input');
+  if (input.value === pending.draft) input.value = '';
+  if (!chatAutoScroll) toggleChatScroll();
+  document.getElementById('chat-status').textContent = 'Message accepted; waiting for the saved turn';
+  if (name && !sessionId && name !== humanInterface.agent) {
+    forceNewAgentChat = false;
+    currentSessionId = pending.sessionId || null;
+    agentChatRequestId = pending.sessionId ? null : pending.id;
+  }
+}
+
 document.getElementById('chat-send').addEventListener('click', sendChat);
 
 function resetAgentChat(name) {
   chatSelectionVersion++;
+  chatPendingInput = null;
   clearChatTranscript();
   currentSessionId = null;
   agentChatRequestId = null;

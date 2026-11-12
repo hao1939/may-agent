@@ -454,11 +454,18 @@ describe("served workflow and metric health pages", () => {
           await page.goto(base, { waitUntil: "domcontentloaded" });
           const vitalCard = `.vital-card[title^="${id}"]`;
           const projectChip = `.project-metric-chip[title^="${id}"]`;
-          await page.waitForSelector(vitalCard);
-          await page.waitForSelector(projectChip);
-          expect(await page.$eval(vitalCard, (el) => el.classList.contains("alerting"))).toBe(expectedWarning);
-          expect(await page.$eval(projectChip, (el) => el.classList.contains("alerting"))).toBe(expectedWarning);
-          expect(await page.$eval("#liveness-projects", (el) => !!el.querySelector(".project-health-alert"))).toBe(expectedWarning);
+          // Reconnect may refresh this panel between browser calls. Capture one
+          // rendered snapshot instead of crossing separate redraws with $eval.
+          const health = await page.waitForFunction((vitalSelector, chipSelector) => {
+            const vital = document.querySelector(vitalSelector);
+            const chip = document.querySelector(chipSelector);
+            const projects = document.querySelector("#liveness-projects");
+            if (!vital || !chip || !projects) return null;
+            return { vital: vital.classList.contains("alerting"), chip: chip.classList.contains("alerting"),
+              project: !!projects.querySelector(".project-health-alert") };
+          }, {}, vitalCard, projectChip);
+          expect(await health.jsonValue()).toEqual({ vital: expectedWarning, chip: expectedWarning, project: expectedWarning });
+          await health.dispose();
           if (disabled) {
             await page.goto(base + "/metrics/" + id, { waitUntil: "domcontentloaded" });
             await page.waitForSelector("#metrics-recent h2");

@@ -72,7 +72,7 @@ checks the active route before reading. Workflow summary cards retain their
 shared health-card styles, including mobile layout.
 The routed session ID also determines follow-up publication and subscription.
 Agent-chat reads and new-chat callbacks belong to the active agent's Chat
-subtab; route/subtab changes, Reset and newer selections invalidate them.
+subtab; route/subtab changes, Reset and newer selections invalidate view callbacks.
 Transcript reads cannot replace newer messages. Subscription changes happen
 at selection time and are restored on connection, without waiting for history.
 Entering another agent's chat clears the previous binding while its default
@@ -96,12 +96,23 @@ creation command's existing request and publication identity. The existing
 `/api/agents/:name/default-session?requestId=...` read then selects only that
 agent's chat for that request; an absent match never falls back to its latest
 session. Legacy reads without the parameter keep their default selection.
-Lookup failures cannot admit a new chat. Retrying a created request republishes
-its original start, with the same publication identity, instead of steering a
-different thread. The browser uses its active view's read/timer for discovery,
+Lookup failures cannot admit a new chat. A keyed retry first recovers its
+original start or steering publication from the existing event journal, before
+resolving today's default. Complete input must match the stored publication
+hash; a conflicting target/input returns 409, unavailable evidence returns 500.
+Accepted input returns its receipt; interrupted delivery retries that same
+command. Session evidence alone cannot reconstruct a missing publication.
+The browser uses its active view's read/timer for discovery,
 bounded to 30 seconds with 500 ms gaps. Leaving the view cancels discovery;
 returning to Chat can check the retained request again. Reset selects a new
-request. A draft typed while creation is pending waits for the exact session.
+request. One unbound submission owns its identity, draft and fresh-thread choice
+until admission is confirmed. Typing another draft cannot replace a pending
+submission. An unknown outcome retains that identity for retry; Reset creates
+a separate selection and publication. About/Overview release the reader but
+retain the submission's receipt. Returning to Chat consumes that receipt on its
+same target, clears only an unchanged draft, and restores the reader. Explicit
+route/target changes discard this temporary submission binding.
+A draft typed while creation is pending waits for the exact session.
 No additional lifecycle, database schema, event type or notification scope is
 introduced. Server and browser assets should be released together.
 
