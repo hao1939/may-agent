@@ -262,6 +262,7 @@ export type WorkflowTestOptions<TInput> = {
   confirmCleanup?: () => boolean | Promise<boolean>;
   onStep?: (step: WorkflowStepTrace) => void | Promise<void>;
   onLog?: (entry: WorkflowLogEntry) => void | Promise<void>;
+  observerDrainMs?: number;
   /** Fail when scripted array responses remain unused after completion (default: true). */
   assertAllFixturesConsumed?: boolean;
 };
@@ -426,6 +427,7 @@ export async function runWorkflowTest<TInput = unknown>(
     confirmCleanup: options.confirmCleanup,
     onStep: options.onStep,
     onLog: options.onLog,
+    observerDrainMs: options.observerDrainMs,
     callAgent: async (agent, task, callOpts, stepControl) => {
       const fixture = options.agents?.[agent];
       if (!fixture) {

@@ -19,6 +19,7 @@ const MAX_REPORT_STEPS = 64;
 const MAX_REPORT_LOGS = 128;
 const MAX_OBSERVER_ERRORS = 16;
 const MAX_PROMPT_CHARS = 2_000;
+const DEFAULT_OBSERVER_DRAIN_MS = 250;
 
 export type WorkflowRequiresDeclaration = {
   agents?: readonly string[];
@@ -138,6 +139,7 @@ export class WorkflowUnconfirmedCleanupError extends Error {
 
 export type WorkflowExecutionAllowance = {
   readonly deadlineAt: number;
+  readonly deadlineReason?: string;
   readonly maxConcurrentCalls?: number;
   acquireCall(): () => void;
 };
@@ -145,6 +147,7 @@ export type WorkflowExecutionAllowance = {
 export function createWorkflowAllowance(options: {
   timeoutMs?: number;
   deadlineAt?: number;
+  deadlineReason?: string;
   maxConcurrentCalls?: number;
   now?: number;
 }): WorkflowExecutionAllowance & { timeoutMs: number } {
@@ -170,6 +173,7 @@ export function createWorkflowAllowance(options: {
   return {
     timeoutMs,
     deadlineAt,
+    ...(options.deadlineReason ? { deadlineReason: options.deadlineReason } : {}),
     ...(maxConcurrentCalls !== undefined ? { maxConcurrentCalls } : {}),
     acquireCall() {
       if (maxConcurrentCalls !== undefined && activeCalls >= maxConcurrentCalls) {
@@ -233,6 +237,8 @@ export type WorkflowKernelBindings<TInput = unknown> = {
   onStart?: () => void | Promise<void>;
   onStep?: (step: WorkflowStepTrace) => void | Promise<void>;
   onLog?: (entry: WorkflowLogEntry) => void | Promise<void>;
+  /** Finite wait bound (ms) for pending async observers during finalization (default: 250ms). */
+  observerDrainMs?: number;
 };
 
 export type WorkflowKernelOutcome =
@@ -435,21 +441,30 @@ export async function runWorkflowInvocation<TInput = unknown>(
 
   let allowance: WorkflowExecutionAllowance;
   let timeoutMs: number;
+  let effectiveTimeoutMessage: string;
   try {
     const requestedTimeout = module.executionTimeoutMs ?? bindings.timeoutMs ?? DEFAULT_WORKFLOW_TIMEOUT_MS;
     const boundedTimeout =
       bindings.timeoutLimitMs !== undefined
         ? Math.min(requestedTimeout, bindings.timeoutLimitMs)
         : requestedTimeout;
+    const ownTimeoutMessage = `Workflow "${module.name}" timed out after ${boundedTimeout}ms`;
     const inheritedDeadline =
       bindings.allowance !== undefined
         ? bindings.deadlineAt !== undefined
           ? Math.min(bindings.allowance.deadlineAt, bindings.deadlineAt)
           : bindings.allowance.deadlineAt
         : bindings.deadlineAt;
+    const inheritedGoverns =
+      inheritedDeadline !== undefined &&
+      bindings.allowance?.deadlineReason !== undefined &&
+      bindings.allowance.deadlineAt === inheritedDeadline &&
+      inheritedDeadline <= startedAt + boundedTimeout;
+    effectiveTimeoutMessage = inheritedGoverns ? bindings.allowance!.deadlineReason! : ownTimeoutMessage;
     const created = createWorkflowAllowance({
       timeoutMs: boundedTimeout,
       deadlineAt: inheritedDeadline,
+      deadlineReason: effectiveTimeoutMessage,
       maxConcurrentCalls: bindings.maxConcurrentCalls ?? bindings.allowance?.maxConcurrentCalls,
       now: startedAt,
     });
@@ -457,6 +472,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
     allowance = bindings.allowance
       ? {
           deadlineAt: created.deadlineAt,
+          deadlineReason: effectiveTimeoutMessage,
           ...(created.maxConcurrentCalls !== undefined
             ? { maxConcurrentCalls: created.maxConcurrentCalls }
             : {}),
@@ -518,7 +534,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
   let fenced = false;
   let timedOut = false;
   let abortedExternally = false;
-  const timeoutMessage = `Workflow "${module.name}" timed out after ${timeoutMs}ms`;
+  const timeoutMessage = effectiveTimeoutMessage;
   const activeOperations = new Set<Promise<unknown>>();
   const childControllers = new Set<AbortController>();
   const eventUnsubscribers = new Set<() => void>();
@@ -638,17 +654,26 @@ export async function runWorkflowInvocation<TInput = unknown>(
     childControllers.add(stepController);
 
     try {
-      let raw = await invoke({
-        signal: stepController.signal,
-        timeoutMs: stepTimeoutMs,
-        deadlineAt: stepDeadlineAt,
-        stepIndex,
-      });
+      let raw: WorkflowStepInvocationResult;
+      try {
+        raw = await invoke({
+          signal: stepController.signal,
+          timeoutMs: stepTimeoutMs,
+          deadlineAt: stepDeadlineAt,
+          stepIndex,
+        });
+      } catch (stepErr) {
+        if (stepErr instanceof WorkflowUnconfirmedCleanupError) {
+          for (const item of stepErr.unconfirmed) {
+            if (!unconfirmedCleanups.includes(item)) unconfirmedCleanups.push(item);
+          }
+        }
+        throw stepErr;
+      }
       const cleanupConfirmed = raw.cleanupConfirmed !== false;
       if (!cleanupConfirmed) {
-        unconfirmedCleanups.push(
-          `${kind}:${target}${raw.sessionId ? ` (${raw.sessionId})` : raw.id ? ` (${raw.id})` : ""}`,
-        );
+        const label = `${kind}:${target}${raw.sessionId ? ` (${raw.sessionId})` : raw.id ? ` (${raw.id})` : ""}`;
+        if (!unconfirmedCleanups.includes(label)) unconfirmedCleanups.push(label);
       }
 
       if (kind === "agent" && callOptions?.schema) {
@@ -958,7 +983,21 @@ export async function runWorkflowInvocation<TInput = unknown>(
       }
     }
     if (pendingObservers.size > 0) {
-      await Promise.allSettled([...pendingObservers]);
+      const drainMs = Math.max(1, bindings.observerDrainMs ?? DEFAULT_OBSERVER_DRAIN_MS);
+      let drainTimer: ReturnType<typeof setTimeout> | undefined;
+      const timedOutDrain = await Promise.race([
+        Promise.allSettled([...pendingObservers]).then(() => false),
+        new Promise<boolean>((resolve) => {
+          drainTimer = setTimeout(() => resolve(true), drainMs);
+          drainTimer.unref?.();
+        }),
+      ]);
+      if (drainTimer) clearTimeout(drainTimer);
+      if (timedOutDrain) {
+        recordObserverError(
+          `Timed out after ${drainMs}ms waiting for ${pendingObservers.size} pending observer(s) to settle`,
+        );
+      }
     }
   }
 

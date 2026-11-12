@@ -293,4 +293,73 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       output: { value: 42 },
     });
   });
+
+  test("preserves unconfirmed child cleanup even when parent catches nested workflow failure", async () => {
+    const leakyChild = {
+      name: "leaky-child",
+      description: "Nested workflow with unconfirmed step cleanup",
+      async execute(ctx: WorkflowContext) {
+        await ctx.agents.call("worker", "leak");
+        return ctx.done("child done");
+      },
+    };
+    const catchingParent = {
+      name: "catching-parent",
+      description: "Catches child error and returns done",
+      async execute(ctx: WorkflowContext) {
+        try {
+          await ctx.workflows.run("leaky-child", {});
+        } catch {
+          // Business code tries to recover, but resource cleanup taint must survive.
+        }
+        return ctx.done("recovered despite child error", { recovered: true });
+      },
+    };
+
+    const run = await runWorkflowTest(catchingParent, {
+      input: {},
+      workflows: { "leaky-child": leakyChild },
+      agents: { worker: { summary: "ok", cleanupConfirmed: false, sessionId: "s_nested_leak" } },
+    });
+
+    expect(run.ok).toBe(false);
+    expect(run.status).toBe("error");
+    expect(run.error).toBeInstanceOf(WorkflowUnconfirmedCleanupError);
+    expect(run.report.cleanup).toEqual({
+      confirmed: false,
+      unconfirmed: ["agent:worker (s_nested_leak)"],
+    });
+    expect(run.report.result).toEqual({
+      type: "done",
+      summary: "recovered despite child error",
+      output: { recovered: true },
+    });
+  });
+
+  test("bounds non-settling async observers instead of hanging completed workflow invocations", async () => {
+    const mod = {
+      name: "fast-done",
+      description: "Returns done while observers hang",
+      async execute(ctx: WorkflowContext) {
+        ctx.log.info("observer log");
+        await ctx.agents.call("worker", "quick");
+        return ctx.done("finished");
+      },
+    };
+
+    const started = Date.now();
+    const run = await runWorkflowTest(mod, {
+      input: {},
+      observerDrainMs: 20,
+      agents: { worker: { summary: "ok" } },
+      onStep: () => new Promise<void>(() => {}),
+      onLog: () => new Promise<void>(() => {}),
+    });
+    const elapsed = Date.now() - started;
+
+    expect(run.ok).toBe(true);
+    expect(run.status).toBe("done");
+    expect(elapsed).toBeLessThan(500);
+    expect(run.report.observerErrors.some((msg) => msg.includes("Timed out after 20ms"))).toBe(true);
+  });
 });

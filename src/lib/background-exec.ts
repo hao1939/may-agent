@@ -128,6 +128,7 @@ export function createBackgroundExecTool(
   const drainGroup = opts?.drainProcessGroup ?? drainBashProcessGroup;
 
   const processes = new Map<number, ProcessEntry>();
+  const trackedPgids = new Set<number>();
 
   function signalEntry(entry: ProcessEntry, sig: NodeJS.Signals): void {
     try {
@@ -144,24 +145,31 @@ export function createBackgroundExecTool(
   }
 
   function cleanup(): void {
+    for (const pgid of trackedPgids) {
+      try {
+        process.kill(-pgid, "SIGTERM");
+      } catch {
+        /* ignore */
+      }
+    }
     for (const entry of processes.values()) {
       if (entry.alive) {
         signalEntry(entry, "SIGTERM");
       }
     }
     processes.clear();
+    trackedPgids.clear();
   }
 
   async function cleanupAsync(): Promise<boolean> {
-    const entries = [...processes.values()];
+    const pgids = new Set<number>(trackedPgids);
+    for (const entry of processes.values()) pgids.add(entry.pid);
     processes.clear();
-    if (entries.length === 0) return true;
-    const results = await Promise.all(
-      entries.map(async (entry) => {
-        if (!entry.alive) return true;
-        return drainGroup(entry.pid);
-      }),
-    );
+    trackedPgids.clear();
+    if (pgids.size === 0) return true;
+    // Drain every tracked PGID regardless of whether the shell leader already exited,
+    // because background children (`sh -c "sleep 60 & exit 0"`) stay in `-pgid`.
+    const results = await Promise.all([...pgids].map((pgid) => drainGroup(pgid)));
     return results.every(Boolean);
   }
 
@@ -242,6 +250,7 @@ export function createBackgroundExecTool(
             });
 
             processes.set(child.pid, entry);
+            trackedPgids.add(child.pid);
 
             return textResult(JSON.stringify({ pid: child.pid, label }));
           }

@@ -221,4 +221,28 @@ describe("background_exec tool", () => {
       }
     }
   });
+
+  it("cleanupAsync drains background descendants even after the shell leader exits", async () => {
+    const { tool, cleanupAsync } = createBackgroundExecTool({ cwd: "/tmp" });
+    const spawned = await tool.execute(
+      "tc_leader_exited",
+      { action: "spawn", command: "sleep 60 </dev/null >/dev/null 2>&1 & exit 0" } as any,
+    );
+    const pgid = JSON.parse(spawned.content[0].text).pid as number;
+
+    // Wait until the shell leader exits (`alive: false`), while `sleep 60` stays in `-pgid`.
+    const deadline = Date.now() + 2_000;
+    let status = await exec(tool, { action: "output", pid: pgid });
+    while (status.alive && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 25));
+      status = await exec(tool, { action: "output", pid: pgid });
+    }
+    expect(status.alive).toBe(false);
+    // Confirm the orphaned process group still exists before cleanupAsync.
+    expect(() => process.kill(-pgid, 0)).not.toThrow();
+
+    const confirmed = await cleanupAsync();
+    expect(confirmed).toBe(true);
+    expect(() => process.kill(-pgid, 0)).toThrow();
+  });
 });

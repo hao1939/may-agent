@@ -1,4 +1,5 @@
 import { type TSchema } from "typebox";
+import { WorkflowUnconfirmedCleanupError } from "@may-agent/sdk/workflow-kernel";
 import { readFileWritePolicy, type FileWritePolicy } from "../lib/tools/file-write-policy.js";
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 
@@ -11,6 +12,7 @@ import {
   type PreparedAgentExecution,
 } from "../lib/agent-execution.js";
 import { generateId } from "../lib/manager-utils.js";
+import type { ToolPolicy } from "../lib/session-policy.js";
 import { drainSessionBashProcessGroups } from "../lib/tools/bash.js";
 import { createCodingTools } from "../lib/tools/coding.js";
 import { createFinishTool } from "../lib/tools/lifecycle.js";
@@ -18,6 +20,7 @@ import { createReadTool } from "../lib/tools/read.js";
 import { createBackgroundExecTool } from "../lib/background-exec.js";
 import { createScrapeTool } from "../lib/scrape.js";
 import type { ModelWithApiKey } from "../lib/types.js";
+import { validateOperationAllowance } from "../lib/workflow-finish-recovery.js";
 import { buildAgentDefinition } from "./loader/agent-definition.js";
 import { resolveRuntimeAgentDirectory, type AgentDirectory } from "./loader/agent-discovery.js";
 import { readAgentConfigFile, validateAgentConfig, type AgentConfig } from "./loader/agent-config.js";
@@ -56,6 +59,12 @@ export type DirectAgentRunOptions = {
   models: Record<string, ModelWithApiKey>;
   /** Optional caller-owned structured result contract, enforced by finish(). */
   outputSchema?: TSchema;
+  /** Require finish() termination even when outputSchema is omitted. */
+  requireFinish?: boolean;
+  /** Per-call capability restriction (for example "readonly"), applied after tool expansion. */
+  toolPolicy?: ToolPolicy;
+  /** Finite positive integer tool-operation allowance before bounded completion is requested. */
+  operationAllowance?: number;
   toolDenials?: ToolDenial[];
   timeoutMs?: number;
   signal?: AbortSignal;
@@ -213,6 +222,7 @@ async function buildDirectTools(
 
 /** Prepare one direct run without constructing autonomous infrastructure. */
 export async function prepareDirectAgentExecution(options: DirectAgentRunOptions): Promise<DirectAgentPreparation> {
+  validateOperationAllowance(options.operationAllowance);
   const source = resolveAgentSource(options);
   const config = readAgentConfigFile(source.dir);
   if (!config) throw new Error(`Agent "${options.agentName}" is disabled or has no agent.json`);
@@ -261,7 +271,8 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
     sessionId,
     task: options.task,
     outputSchema: options.outputSchema,
-    requireFinish: options.outputSchema !== undefined,
+    requireFinish: options.requireFinish === true || options.outputSchema !== undefined,
+    toolPolicy: options.toolPolicy,
     promptTimestamp: options.promptTimestamp,
     createFinish: () =>
       createFinishTool({
@@ -334,6 +345,7 @@ export async function runDirectAgent(options: DirectAgentRunOptions): Promise<Di
       timeoutMs: options.timeoutMs,
       signal: options.signal,
       deadlineAt: options.deadlineAt,
+      operationAllowance: options.operationAllowance,
       onObservation: (event) => {
         if (event.type === "message_end" && "message" in event) {
           appendFileSync(transcriptPath, `${JSON.stringify((event as { message: AgentMessage }).message)}\n`);
@@ -356,6 +368,13 @@ export async function runDirectAgent(options: DirectAgentRunOptions): Promise<Di
     caught = err;
   } finally {
     cleanupConfirmed = await direct.cleanupAsync();
+  }
+  if (!cleanupConfirmed && caught !== undefined) {
+    throw new WorkflowUnconfirmedCleanupError(
+      options.agentName,
+      [`agent:${options.agentName} (${sessionId})`],
+      caught,
+    );
   }
   if (caught !== undefined) throw caught;
   return {

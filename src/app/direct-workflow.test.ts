@@ -1,11 +1,16 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   WorkflowAllowanceExhaustedError,
   WorkflowUnconfirmedCleanupError,
+  WorkflowValidationError,
 } from "@may-agent/sdk/workflow-kernel";
+import { executePreparedAgent } from "../lib/agent-execution.js";
+import { fakeModel } from "../../test/fixtures/model.js";
+import { usageReply } from "../../test/fixtures/execution-usage.js";
 import { prepareDirectAgentExecution, type DirectAgentRunResult } from "./direct-agent.js";
 import { createDirectWorkflowTool, runDirectWorkflow } from "./direct-workflow.js";
 
@@ -310,5 +315,378 @@ export async function execute(ctx) {
     } finally {
       await prep.cleanupAsync();
     }
+  });
+
+  test("forwards readonly toolPolicy after concrete and local tool expansion in direct agent steps", async () => {
+    const env = setupDirectLayout();
+    const reviewerToolsDir = join(env.agentsRoot, "reviewer", "tools");
+    mkdirSync(reviewerToolsDir, { recursive: true });
+    writeFileSync(
+      join(reviewerToolsDir, "custom-mutate.ts"),
+      `
+export default function createCustomTool() {
+  return {
+    name: "custom_mutate",
+    label: "custom_mutate",
+    description: "Mutating local tool",
+    parameters: { type: "object", properties: {} },
+    async execute() { return { content: [{ type: "text", text: "mutated" }] }; },
+  };
+}
+`,
+    );
+
+    let effectiveTools: string[] = [];
+    const run = await runDirectWorkflow({
+      module: {
+        name: "readonly-step",
+        description: "Calls coding+local agent with readonly policy",
+        async execute(ctx) {
+          const res = await ctx.agents.call("reviewer", "Inspect only", { tools: "readonly" });
+          return ctx.done(res.summary);
+        },
+      },
+      input: {},
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const prep = await prepareDirectAgentExecution(opts);
+        try {
+          effectiveTools = prep.executionManifest.effectiveTools;
+          return {
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            status: "done",
+            lastAssistantText: "Inspected",
+            messages: [],
+            durationMs: 5,
+            finishResult: { status: "success", summary: "Inspected safely" },
+            usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } finally {
+          prep.cleanup();
+        }
+      },
+    });
+
+    expect(run.ok).toBe(true);
+    expect(effectiveTools).toEqual(["read", "finish"]);
+  });
+
+  test("propagates unconfirmed cleanup from tool-dispatched child workflows, enforces maxDepth at entry, and isolates nested executionIds", async () => {
+    const env = setupDirectLayout();
+    const ownerWorkflowsDir = join(env.agentsRoot, "owner", "workflows");
+    writeFileSync(
+      join(ownerWorkflowsDir, "nested-pair.ts"),
+      `
+export const name = "nested-pair";
+export const description = "Runs two nested workflows and returns their IDs";
+export async function execute(ctx) {
+  const first = await ctx.workflows.run("review-change", { subjectRef: "A" });
+  const second = await ctx.workflows.run("review-change", { subjectRef: "B" });
+  return ctx.done("pair", { parentId: ctx.done("probe").id, firstId: first.id, secondId: second.id });
+}
+`,
+    );
+
+    // 1. Explicit executionId applies only to root; nested workflows receive distinct IDs.
+    const distinctIds = await runDirectWorkflow({
+      executionId: "wr_explicit_root",
+      agentName: "owner",
+      workflowName: "nested-pair",
+      input: {},
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      agentFixtures: {
+        reviewer: async ({ task }) => ({
+          id: "s_rev",
+          kind: "agent",
+          status: "done",
+          summary: "ok",
+          output: { subjectRef: task.replace("Inspect ", ""), summary: "ok" },
+        }),
+      },
+    });
+    expect(distinctIds.ok).toBe(true);
+    expect(distinctIds.report.executionId).toBe("wr_explicit_root");
+    const idsOut = distinctIds.result?.output as { parentId: string; firstId: string; secondId: string };
+    expect(idsOut.parentId).toBe("wr_explicit_root");
+    expect(idsOut.firstId).not.toBe("wr_explicit_root");
+    expect(idsOut.secondId).not.toBe("wr_explicit_root");
+    expect(idsOut.firstId).not.toBe(idsOut.secondId);
+
+    // 2. maxDepth=1 blocks child-agent workflow tool dispatch (depth 2 > 1).
+    let toolDepthReply: any;
+    const depthLimited = await runDirectWorkflow({
+      module: {
+        name: "root-depth-1",
+        description: "Calls owner agent which tries to invoke workflow tool at depth 2",
+        async execute(ctx) {
+          const step = await ctx.agents.call("owner", "Try nested workflow");
+          return ctx.done(step.summary);
+        },
+      },
+      input: {},
+      maxDepth: 1,
+      allowChildAgentWorkflowTool: true,
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const res = await opts.workflowTool!.execute("tc_depth", {
+          action: "run",
+          name: "review-change",
+          input: { subjectRef: "HEAD" },
+        } as any);
+        toolDepthReply = JSON.parse(res.content[0]!.text as string);
+        return {
+          sessionId: "s_owner_depth",
+          sessionPath: join(opts.outputRoot, "sessions", "s_owner_depth"),
+          systemPrompt: "",
+          model: "test",
+          executionManifest: { agent: "owner", configuredTools: [], deniedTools: [], effectiveTools: [] },
+          status: "done",
+          lastAssistantText: "handled",
+          messages: [],
+          durationMs: 1,
+          finishResult: { status: "success", summary: "handled" },
+          usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
+          cleanupConfirmed: true,
+        };
+      },
+    });
+    expect(depthLimited.ok).toBe(true);
+    expect(toolDepthReply).toMatchObject({
+      type: "error",
+      started: false,
+      error: expect.stringContaining("Maximum workflow nesting depth (1) exceeded"),
+    });
+
+    // 3. Unconfirmed cleanup inside tool-dispatched child workflow taints enclosing agent step & outer workflow.
+    const leakedViaTool = await runDirectWorkflow({
+      module: {
+        name: "outer-tool-leak",
+        description: "Agent swallows tool error, but unconfirmed cleanup still propagates",
+        async execute(ctx) {
+          await ctx.agents.call("owner", "Run review-change tool");
+          return ctx.done("agent reported success");
+        },
+      },
+      input: {},
+      maxDepth: 3,
+      allowChildAgentWorkflowTool: true,
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        if (opts.agentName === "owner") {
+          await opts.workflowTool!.execute("tc_leak", {
+            action: "run",
+            name: "review-change",
+            input: { subjectRef: "HEAD" },
+          } as any);
+          // Even though owner finishes cleanly with cleanupConfirmed=true on its own session,
+          // the nested workflow's unconfirmed cleanup must taint this step!
+          return {
+            sessionId: "s_owner_ok",
+            sessionPath: join(opts.outputRoot, "sessions", "s_owner_ok"),
+            systemPrompt: "",
+            model: "test",
+            executionManifest: { agent: "owner", configuredTools: [], deniedTools: [], effectiveTools: [] },
+            status: "done",
+            lastAssistantText: "done",
+            messages: [],
+            durationMs: 2,
+            finishResult: { status: "success", summary: "ignored tool error" },
+            usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
+            cleanupConfirmed: true,
+          };
+        }
+        return {
+          sessionId: "s_reviewer_leaked",
+          sessionPath: join(opts.outputRoot, "sessions", "s_reviewer_leaked"),
+          systemPrompt: "",
+          model: "test",
+          executionManifest: { agent: "reviewer", configuredTools: [], deniedTools: [], effectiveTools: [] },
+          status: "done",
+          lastAssistantText: "done",
+          messages: [],
+          durationMs: 2,
+          finishResult: {
+            status: "success",
+            summary: "done",
+            result: { subjectRef: "HEAD", summary: "ok" },
+          },
+          structuredResult: { subjectRef: "HEAD", summary: "ok" },
+          usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
+          cleanupConfirmed: false,
+        };
+      },
+    });
+    expect(leakedViaTool.ok).toBe(false);
+    expect(leakedViaTool.status).toBe("error");
+    expect(leakedViaTool.error).toBeInstanceOf(WorkflowUnconfirmedCleanupError);
+    expect(leakedViaTool.report.cleanup.confirmed).toBe(false);
+  });
+
+  test("validates module.requires before execute() and honors step operationAllowance in real direct execution", async () => {
+    const env = setupDirectLayout();
+    writeFileSync(join(env.workRoot, "note.txt"), "hello allowance");
+
+    // 1. Missing required agent or workflow on an inline module without catalog fails pre-start.
+    let ranBody = false;
+    const missingReq = await runDirectWorkflow({
+      module: {
+        name: "needs-missing",
+        description: "Declares missing agent and workflow",
+        requires: { agents: ["nonexistent-agent"], workflows: ["nonexistent-wf"] },
+        async execute(ctx) {
+          ranBody = true;
+          return ctx.done("should not run");
+        },
+      },
+      input: {},
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+    });
+    expect(missingReq.ok).toBe(false);
+    expect(missingReq.started).toBe(false);
+    expect(missingReq.error).toBeInstanceOf(WorkflowValidationError);
+    expect(ranBody).toBe(false);
+
+    // 2. Invalid operationAllowance fails immediately; operationAllowance=1 triggers bounded finish steering on call #1.
+    const badAllowance = await runDirectWorkflow({
+      module: {
+        name: "bad-allowance",
+        description: "Invalid operationAllowance",
+        async execute(ctx) {
+          await ctx.agents.call("reviewer", "Check", { operationAllowance: 0 });
+          return ctx.done("unreachable");
+        },
+      },
+      input: {},
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+    });
+    expect(badAllowance.ok).toBe(false);
+    expect(String(badAllowance.error)).toContain("operationAllowance");
+
+    const seenPrompts: string[][] = [];
+    let turn = 0;
+    const allowanceRun = await runDirectWorkflow({
+      module: {
+        name: "allowance-one",
+        description: "Schema-less step with operationAllowance: 1",
+        async execute(ctx) {
+          const step = await ctx.agents.call("reviewer", "Inspect note.txt", {
+            tools: "readonly",
+            operationAllowance: 1,
+          });
+          return ctx.done(step.summary);
+        },
+      },
+      input: {},
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const prep = await prepareDirectAgentExecution(opts);
+        prep.prepared.runner.streamFn = (_model, context) => {
+          seenPrompts.push(
+            context.messages.map((m: any) =>
+              typeof m.content === "string"
+                ? m.content
+                : Array.isArray(m.content)
+                  ? m.content.map((c: any) => c.text ?? "").join("")
+                  : "",
+            ),
+          );
+          const stream = createAssistantMessageEventStream();
+          turn++;
+          if (turn === 1) {
+            stream.push({
+              type: "done",
+              reason: "toolUse",
+              message: usageReply({
+                stopReason: "toolUse",
+                content: [{ type: "toolCall", id: "tc_read_1", name: "read", arguments: { path: "note.txt" } }],
+              }),
+            });
+          } else {
+            stream.push({
+              type: "done",
+              reason: "toolUse",
+              message: usageReply({
+                stopReason: "toolUse",
+                content: [
+                  {
+                    type: "toolCall",
+                    id: "tc_finish_1",
+                    name: "finish",
+                    arguments: { status: "success", summary: "Bounded after 1 operation" },
+                  },
+                ],
+              }),
+            });
+          }
+          return stream;
+        };
+        try {
+          const execRes = await executePreparedAgent(prep.prepared, {
+            timeoutMs: opts.timeoutMs,
+            signal: opts.signal,
+            deadlineAt: opts.deadlineAt,
+            operationAllowance: opts.operationAllowance,
+          });
+          return {
+            ...execRes,
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } finally {
+          prep.cleanup();
+        }
+      },
+    });
+
+    expect(allowanceRun.ok).toBe(true);
+    expect(allowanceRun.result?.type === "done" ? allowanceRun.result.summary : "").toBe(
+      "Bounded after 1 operation",
+    );
+    expect(seenPrompts).toHaveLength(2);
+    expect(seenPrompts[1]?.some((msg) => msg.includes("finish()"))).toBe(true);
   });
 });
