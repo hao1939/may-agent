@@ -12,6 +12,7 @@ import type { EventEnvelope } from "../events/bus.js";
 import { EVENT_ROW_ID, eventData, type AgentEvent } from "../events/bus.js";
 import { readTaskEventTarget } from "../events/task-target.js";
 import { readInstalledAppContract } from "../reads/app-contract.js";
+import { readCreatedTasks } from "../reads/task-created.js";
 import { createRuntimeAppRead, readRuntimeTaskView } from "../reads/app-read.js";
 import { boundedAppRequestConversation } from "../reads/conversation-context.js";
 import { readTaskWorkload, runtimeWorkloadSource } from "../reads/task-workload.js";
@@ -183,7 +184,13 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
     readOutcomes: opts.readOutcomes,
     workloadSource: runtimeWorkloadSource(opts, descriptor, input.dispatch, claim.taskId),
   };
-  const taskReads = createRuntimeAppRead(taskReadOptions).tasks;
+  const creator = { appId: descriptor.id, taskId: claim.taskId };
+  const taskReads = {
+    ...createRuntimeAppRead(taskReadOptions).tasks,
+    created: async (options?: import("@may-agent/sdk").TaskCreatedOptions) =>
+      readCreatedTasks(descriptor.resourceStore.db, creator, options),
+  };
+  const createdTasks = readCreatedTasks(descriptor.resourceStore.db, creator);
   let workload: TaskAttempt["workload"];
   if (opts.workloadFeedbackAppId === descriptor.id) {
     try { workload = readTaskWorkload(taskReadOptions, { agent: claim.agent }); }
@@ -199,6 +206,7 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
       instructions: `Act as the selected May agent ${claim.agent}.`,
     },
     task: structuredClone(task),
+    createdTasks,
     ...(workload ? { workload } : {}),
     read: {
       async communication(inputId, query) {

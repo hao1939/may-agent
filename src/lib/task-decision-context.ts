@@ -206,7 +206,11 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
       ...taskDecisionState(known, rec.events, rec.workload),
       work,
       environment: { paths: context.executionPaths, declaredOutputs: context.details?.declaredOutputs },
-      related: { childrenAtAttemptStart: rec.children, installedAppsAtAttemptStart: context.details?.dependencies },
+      related: {
+        childrenAtAttemptStart: rec.children,
+        installedAppsAtAttemptStart: context.details?.dependencies,
+      },
+      ...(rec.createdTasks ? { createdTasksAtAttemptStart: rec.createdTasks } : {}),
       previousAttempt: rec.previousAttempt,
       waitsAtAttemptStart: rec.waits,
     };

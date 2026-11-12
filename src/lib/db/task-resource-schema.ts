@@ -36,6 +36,10 @@ CREATE INDEX IF NOT EXISTS idx_app_tasks_changed ON app_tasks(app_id, changed, u
 CREATE INDEX IF NOT EXISTS idx_app_tasks_phase ON app_tasks(app_id, phase, updated_at, task_id);
 CREATE INDEX IF NOT EXISTS idx_app_tasks_global_phase
   ON app_tasks(phase, updated_at DESC, app_id, task_id);
+CREATE INDEX IF NOT EXISTS idx_app_tasks_creator
+  ON app_tasks(json_extract(resource_json, '$.metadata.creator.appId'),
+    json_extract(resource_json, '$.metadata.creator.taskId'), app_id, task_id)
+  WHERE json_valid(resource_json);
 CREATE INDEX IF NOT EXISTS idx_app_tasks_due ON app_tasks(app_id, next_check_at, task_id)
   WHERE next_check_at IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_app_tasks_expired ON app_tasks(app_id, lease_until, task_id)

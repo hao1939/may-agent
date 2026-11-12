@@ -73,6 +73,8 @@ export type {
   TaskReadOptions,
   TaskInputObligation,
   TaskCurrentObligations,
+  TaskCreatedOptions,
+  TaskCreatedPage,
   TaskDetail,
   TaskEventReceipt,
   TaskExecutor,

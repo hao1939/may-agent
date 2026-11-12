@@ -148,6 +148,11 @@ test.each(["event", "continued-input"])("generic agent execution carries %s fact
       attempt: {
         read: { tasks: {} },
         task: { id: "work", generation: 1, outcome: "Inspect evidence", acceptance: [] },
+        createdTasks: {
+          creator: { appId: "sample", taskId: "work" }, observedAt: "2026-11-13T00:00:00Z",
+          items: [{ appId: "contributor", taskId: "finite-result", status: "idle", generation: 1,
+            resourceVersion: 3, outcomePreview: "Deliver evidence", acceptedAttempt: { id: "accepted-child", generation: 1 } }],
+        },
         role: { agent: "worker", instructions: "Inspect ordinary facts" },
         events: {
           items: [
@@ -184,6 +189,8 @@ test.each(["event", "continued-input"])("generic agent execution carries %s fact
       facts: ["event:1"],
     });
     expect(prompt).toContain(source === "event" ? "event-correlation" : "Review the original artifact");
+    expect(prompt).toContain('"createdTasks"');
+    expect(prompt).toContain('"finite-result"');
     expect(prompt).not.toContain("private-correlation");
     expect(prompt).not.toContain("Restart-aware deploy receipt");
     expect(prompt).not.toContain("Do not deploy again");

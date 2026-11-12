@@ -112,6 +112,7 @@ async function executeTaskWorkflow(
         acceptance: taskDetail.acceptance,
         input: taskDetail.input ?? {},
         children: projectAppTaskChildPromptContext(input.childContext),
+        ...(attempt.createdTasks ? { createdTasks: attempt.createdTasks } : {}),
         waits: attempt.waits,
         paths: input.executionPaths,
         declaredOutputs: attempt.declaredOutputPaths,

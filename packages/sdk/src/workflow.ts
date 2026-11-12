@@ -206,6 +206,25 @@ export type TaskPage = {
   nextCursor?: string;
 };
 
+/** Creator-scoped discovery across Apps; previews are navigation, not acceptance evidence. */
+export type TaskCreatedPage = {
+  creator: { appId: string; taskId: string };
+  observedAt: string;
+  items: Array<{
+    appId: string;
+    taskId: string;
+    generation: number;
+    resourceVersion: number;
+    status: TaskStatus;
+    outcomePreview: string;
+    summaryPreview?: string;
+    acceptedAttempt?: { id: string; generation: number };
+  }>;
+  nextCursor?: string;
+};
+
+export type TaskCreatedOptions = Pick<TaskListOptions, "limit" | "cursor">;
+
 /** Opt-in, read-only shadow grouping. Legacy Task identities remain the traceability authority. */
 export type TaskOutcomeProjection = {
   /** Include ended history. Omitted means open assignments, including idle. */
@@ -333,6 +352,9 @@ export type AppRead = {
   appResult(itemId: string): Promise<AppResult | null>;
   /** Missing Task access rejects; empty results mean a scoped read found no matching work. */
   tasks: {
+    /** Optional attempt-bound discovery of open assignments created by this Task,
+     * across Apps and structural parents. The caller cannot select another creator. */
+    created?(options?: TaskCreatedOptions): Promise<TaskCreatedPage>;
     /** Optional installed read. Counts cover only the bounded page, never the
      * fleet. Reading neither accepts work nor authorizes repriority/closure. */
     workload?(options?: TaskWorkloadOptions): Promise<TaskWorkload>;
@@ -656,6 +678,8 @@ export type TaskAttempt = {
   };
   /** Snapshot at attempt start. Use read.tasks.get(task.id) for current facts. */
   task: TaskDetail;
+  /** Bounded creator-owned discovery at attempt start. Use read.tasks.created for later pages/current reads. */
+  createdTasks?: TaskCreatedPage;
   /** Opt-in starting observation; current reads remain available separately. */
   workload?: TaskWorkload | { available: false };
   /**
@@ -788,6 +812,7 @@ export type TaskReconciliationContext<TInput = unknown> = {
   acceptance: string[];
   input: TInput;
   children: TaskAttempt["children"];
+  createdTasks?: TaskCreatedPage;
   /** Same exact saved waits supplied to registered executors. */
   waits: TaskAttempt["waits"];
   previousAttempt?: TaskAttempt["previousAttempt"];

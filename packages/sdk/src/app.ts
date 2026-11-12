@@ -40,6 +40,8 @@ export type {
   TaskAcceptedEvidencePage,
   TaskAttempt,
   TaskCurrentObligations,
+  TaskCreatedOptions,
+  TaskCreatedPage,
   TaskDetail,
   TaskEventReceipt,
   TaskExecutor,

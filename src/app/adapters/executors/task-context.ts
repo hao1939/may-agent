@@ -41,6 +41,7 @@ export function taskExecutionContext(
       input: task.input ?? {},
       waits: structuredClone(attempt.waits),
       children: structuredClone(attempt.children),
+      ...(attempt.createdTasks ? { createdTasks: structuredClone(attempt.createdTasks) } : {}),
       taskSnapshot: {
         live: (input.taskSnapshot?.live ?? []).map(({ phase, ...item }) => ({
           ...item,

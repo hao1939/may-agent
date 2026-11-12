@@ -152,14 +152,22 @@ test("refresh keeps current evidence, independent approval and a scoped last-kno
   const root = mkdtempSync(join(tmpdir(), "decision-context-"));
   try {
     const f = fixture(root);
+    const created = {
+      creator: { appId: "sample", taskId: "review" }, observedAt: "2026-11-13T00:00:00Z",
+      items: [{ appId: "contributor", taskId: "result", generation: 1, resourceVersion: 3,
+        status: "idle" as const, outcomePreview: "Return the finite result", acceptedAttempt: { id: "accepted-child", generation: 1 } }],
+    };
+    f.context.reconciliation.createdTasks = created;
     const read = createTaskDecisionContext(f.context);
     const initial = packet(await read());
     expect(initial.assignment.agent).toBe("task-owner");
     expect(initial.assignment.creator).toEqual({ appId: "caller", taskId: "requester" });
+    expect(initial.createdTasksAtAttemptStart).toEqual(created);
     expect(initial.conditions[0].observation.state).toBe("unknown");
     f.setCurrent({ ...f.task, resourceVersion: 4, result: { understanding: "Thursday", version: "v4" } });
     const updated = packet(await read());
     expect(updated.current.result).toEqual({ understanding: "Thursday", version: "v4" });
+    expect(updated.createdTasksAtAttemptStart).toEqual(created);
     expect(updated.conditions[0].subject).toBe("draft:v3");
     expect(updated.observed.resourceVersion).toBe(4);
     expect(updated.coverage.detail).not.toBe(initial.coverage.detail);

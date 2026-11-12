@@ -101,6 +101,7 @@ async function executeTaskAgent(
         acceptance: task.acceptance,
         input: task.input ?? {},
         children: projectAppTaskChildPromptContext(input.childContext),
+        ...(attempt.createdTasks ? { createdTasks: attempt.createdTasks } : {}),
         waits: attempt.waits,
         paths: input.executionPaths,
         declaredOutputs: attempt.declaredOutputPaths,
