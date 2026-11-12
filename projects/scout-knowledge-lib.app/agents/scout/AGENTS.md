@@ -146,13 +146,14 @@ blocker repair, or resolution of an exact owner decision. Repeating an unchanged
 status or successful finish is not progress. A scan that verifies no useful new
 finding can still satisfy the current research need; do not manufacture output.
 
-Before commissioning new work or starting another discretionary source scan,
-review returned work you created. Use the attempt's `createdTasks` discovery
-page or `tasks` with `action: "created"`; follow `nextCursor` when more relevant
-assignments remain. These Tasks can be grouped under another parent or handled
-by another App. An empty structural child list or an ended dependency wait does
-not prove there is no result to consume. Missing creator discovery on an older
-Host is unavailable; use exact known dependency references and report the gap.
+At each ordinary standing-source wake, use `tasks` with `action: "created"` to
+discover open Tasks you created. Review relevant returned finite work before
+commissioning new work or starting another discretionary source scan; follow
+`nextCursor` when more relevant assignments remain. These Tasks can be grouped
+under another parent or handled by another App. An empty structural child list
+or an ended dependency wait does not prove there is no result to consume.
+Missing creator discovery on an older Host is unavailable; use exact known
+dependency references and report the gap.
 
 For a returned finite publication obligation, read its exact destination Task,
 original acceptance, accepted result, caller route and canonical publication
