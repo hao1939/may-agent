@@ -100,6 +100,11 @@ every Task executor and exposes the same attempt-bound read for continuation.
 Scout's native guidance now asks it to review returned work before discretionary
 expansion and judge closure from exact acceptance/publication evidence. These
 source changes still require Host review/release and separate App activation.
+The Host candidate is [PR #472](https://github.com/hao1939/may-agent/pull/472)
+at `13c4a66b4b53820da52ec61701e7cdeb1921588b`; final local CI passed
+4,043 tests with zero failures and three optional installation skips. The
+[design refinement](../../../alex.app/docs/archive/reviews/creator-owned-task-discovery-20261113.md)
+records the paired contracts, regressions, failed first checks and remaining gates.
 The acceptance gate remains an ordinary wake discovering and disposing existing
 finite work without an operator naming its children. These two already closed
 Tasks must not be reopened or replaced merely to create that demonstration.
