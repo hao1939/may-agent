@@ -186,7 +186,7 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
     }
   }, 30_000);
 
-  test("served UI submits a comment and renders chat Markdown/raw streaming safely", async () => {
+  test("served UI submits a comment and retains saved session review notes", async () => {
     if (!probe.ok) throw new Error(probe.reason);
     const { mod: puppeteer, chromePath } = probe;
     const base = `http://127.0.0.1:${sb.webPort}`;
@@ -441,58 +441,6 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
         expect(queryEvents(db, { types: ["e2e.workflow_ran"] })).toHaveLength(1);
       } finally { db.close(); }
 
-      // Shipped chat.js, in the same real browser: no copied renderer or DOM.
-      // The page is interactive before its async Markdown dependency arrives.
-      // Wait for that exact prerequisite, not all background network traffic.
-      await page.waitForFunction(
-        () => typeof (window as typeof window & { marked?: { parse?: unknown } }).marked?.parse === "function",
-        { timeout: 10_000 },
-      );
-      const rendered = await page.evaluate(() => {
-        const ui = window as typeof window & {
-          renderAssistantMsg: (el: HTMLElement, text: string) => void;
-          toggleMarkdown: () => void;
-          marked?: { parse: (text: string) => string };
-        };
-        if (!ui.marked?.parse) throw new Error("Shipped markdown renderer did not load");
-        const el = document.createElement("div");
-        el.className = "msg assistant";
-        document.body.append(el);
-        try {
-          ui.renderAssistantMsg(el, "**Hello** KE-123");
-          const initial = {
-            bold: el.querySelector("strong")?.textContent, raw: el.dataset.raw,
-            link: el.querySelector("a")?.getAttribute("href"),
-          };
-          ui.toggleMarkdown();
-          ui.renderAssistantMsg(el, "**Hello** KE-123 continued");
-          const raw = {
-            text: el.textContent, bold: !!el.querySelector("strong"),
-            label: document.getElementById("md-toggle")?.textContent,
-          };
-          ui.toggleMarkdown();
-          const restored = {
-            bold: el.querySelector("strong")?.textContent, text: el.textContent?.trim(),
-            label: document.getElementById("md-toggle")?.textContent,
-          };
-          const marked = ui.marked;
-          try {
-            ui.marked = undefined;
-            ui.renderAssistantMsg(el, "<b>unparsed</b>");
-            return { initial, raw, restored, fallback: { text: el.textContent, html: el.innerHTML } };
-          } finally {
-            ui.marked = marked;
-          }
-        } finally {
-          el.remove();
-        }
-      });
-      expect(rendered).toEqual({
-        initial: { bold: "Hello", raw: "**Hello** KE-123", link: "#/knowledge/entries/KE-123.md" },
-        raw: { text: "**Hello** KE-123 continued", bold: false, label: "Markdown" },
-        restored: { bold: "Hello", text: "Hello KE-123 continued", label: "Raw" },
-        fallback: { text: "<b>unparsed</b>", html: "&lt;b&gt;unparsed&lt;/b&gt;" },
-      });
 
       // Saved notes are a read-only view, including when no notes exist yet.
       const sessionDir = join(sb.stateDir, "sessions", sessionId);

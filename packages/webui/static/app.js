@@ -176,9 +176,6 @@ function render() {
   // Tab highlight
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   // Surface initialization
-  const needsRealtime = tab === 'live' || tab === 'sessions' || inAgentChat;
-  if (typeof setRealtimeEnabled === 'function') setRealtimeEnabled(needsRealtime);
-  else if (needsRealtime && typeof connectWs === 'function') connectWs();
   if (tab === 'live' && (!liveInitialized || previousTab !== 'live')) {
     liveInitialized = true;
     loadLiveness();
@@ -192,6 +189,7 @@ function render() {
     if (params.name) initAgentChat(params.name);
     else loadAgentsTab();
   }
+  setRealtimeEnabled(tab === 'live' || tab === 'sessions' || (inAgentChat && currentAgentSubTab === 'chat'));
   if (tab === 'knowledge') {
     // Deep-link support: #/knowledge/<sub-path>. If sub-path looks like a file, view it.
     const sub = (params.path || '').replace(/^knowledge\//, '');

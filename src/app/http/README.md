@@ -77,6 +77,20 @@ Transcript reads cannot replace newer messages. Subscription changes happen
 at selection time and are restored on connection, without waiting for history.
 Entering another agent's chat clears the previous binding while its default
 thread loads; input during that read addresses the selected agent.
+One route-based subscription owner serves every realtime consumer: Overview
+receives global lifecycle events, session inspection/direct bound chat receives
+its exact session, and unbound direct-agent chat subscribes to no sessions.
+Only generic Sessions chat uses the configured interface-agent `chat` alias.
+May's Conversation retains global diagnostics and its configured Conversation
+updates. Agent Overview/About tabs release their chat connection.
+
+Direct chat renders only saved transcript turns, refreshed at turn/session end
+and after reconnect. An update during a history read causes a follow-up read;
+obsolete views cannot render the response. WebSocket text/tool payloads and
+local input echoes no longer write conversation history. Send feedback remains
+separate from saved messages. The exclusive live renderer and its Raw/Markdown
+toggle are retired; stored text, tool details and raw transcript evidence remain
+inspectable. May's canonical Conversation read/render path is unchanged.
 
 [`http-human-tasks.test.ts`](../../../test/integration/http-human-tasks.test.ts)
 exercises these routes through a real HTTP process and control socket, including

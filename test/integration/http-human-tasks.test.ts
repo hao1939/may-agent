@@ -4,12 +4,13 @@ import { spawnFixtureProcess } from "../fixtures/owned-process.js";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import puppeteer, { type HTTPRequest } from "puppeteer-core";
+import puppeteer, { type HTTPRequest, type Page } from "puppeteer-core";
 import { attachControlSocket, type ControlSocket, type ControlEvent } from "../../packages/control/src/server.js";
 import { daemonSocketPath } from "../../packages/control/src/client.js";
 import { HumanTaskService, type HumanTaskStatus } from "../../src/app/human-task-service.js";
 import { openStateDb, type SqliteDb } from "../../src/app/http/read-model/state-db.js";
 import { AppRegistry } from "../../src/app/core/apps/registry.js";
+import { appendSessionMessage, ensureSessionDir } from "../../src/lib/persistence.js";
 
 const chrome = [
   process.env.CHROME_PATH,
@@ -175,6 +176,158 @@ describe("HTTP human Task reads and board", () => {
       .run(sessionId, agent, "Earlier conversation", "idle", "chat", "web-ui", Date.now());
     return sessionId;
   }
+
+  async function notificationBarrier(page: Page) {
+    await page.waitForFunction("ws?.readyState === WebSocket.OPEN");
+    // The status reply follows subscriptions and notifications on the same socket.
+    await page.evaluate(() => new Promise<void>((done, reject) => {
+      const socket = globalThis.eval("ws") as WebSocket;
+      const timer = setTimeout(() => {
+        socket.removeEventListener("message", receive);
+        reject(new Error("Notification status response timed out"));
+      }, 5000);
+      function receive(event: MessageEvent) {
+        const frame = JSON.parse(event.data);
+        if (frame.type !== "status" || !frame.diagnostics) return;
+        clearTimeout(timer);
+        socket.removeEventListener("message", receive);
+        done();
+      }
+      socket.addEventListener("message", receive);
+      socket.send(JSON.stringify({ type: "status", diagnostics: true }));
+    }));
+  }
+
+  async function reconnect(page: Page) {
+    await page.evaluate(() => new Promise<void>(done => {
+      const socket = globalThis.eval("ws") as WebSocket;
+      socket.addEventListener("close", () => done(), { once: true });
+      socket.close();
+    }));
+    // Exercise the production reconnect timer, with no fixed sleep or retry.
+    await notificationBarrier(page);
+  }
+
+  test.skipIf(skipBrowser).each(["overview", "unbound", "loading", "session", "generic", "conversation"])("served %s subscribes to its own scope on fresh connection and reconnect", async (surface) => {
+    seedChat("worker");
+    seedChat("selected");
+    const route = {
+      overview: "/", unbound: "/agents/new-worker", loading: "/agents/worker",
+      session: "/sessions/selected-old-session", generic: "/sessions", conversation: "/agents/helper",
+    }[surface]!;
+    const allowed = surface === "overview" || surface === "conversation"
+      ? ["fixture", "worker-old-session", "selected-old-session"]
+      : surface === "session" ? ["selected-old-session"] : surface === "generic" ? ["fixture"] : [];
+    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    try {
+      const page = await browser.newPage();
+      page.setDefaultTimeout(5000);
+      let held: HTTPRequest | undefined;
+      if (surface === "loading") {
+        await page.setRequestInterception(true);
+        page.on("request", request => {
+          if (new URL(request.url()).pathname === "/api/agents/worker/default-session") held = request;
+          else void request.continue();
+        });
+      }
+      await page.goto(base + route, { waitUntil: "domcontentloaded" });
+      if (surface === "unbound") await page.waitForFunction(() => document.querySelector("#chat-messages")?.textContent?.includes("No conversation"));
+      if (surface === "loading") await page.waitForSelector("#agent-subtab-body");
+      if (surface === "conversation") await page.waitForFunction("mayActiveTurn?.id === 'turn-one'");
+      await notificationBarrier(page);
+      await page.evaluate("window.receivedSessions = []; window.receivedConversations = []; busSubscribe('text', event => window.receivedSessions.push(event.data.sessionId)); busSubscribe('conversation.updated', event => window.receivedConversations.push(event.data.conversationId))");
+      for (const again of [false, true]) {
+        if (again) await reconnect(page);
+        await page.evaluate("window.receivedSessions = []; window.receivedConversations = []");
+        for (const listener of listeners) {
+          for (const sessionId of ["fixture", "worker-old-session", "selected-old-session"]) {
+            listener({ type: "text", data: { sessionId }, text: "Event payload is not a saved message" });
+          }
+          listener({ type: "conversation.updated", data: { appId: "support", conversationId: "retained-room" } });
+        }
+        await notificationBarrier(page);
+        expect(await page.evaluate("window.receivedSessions")).toEqual(allowed);
+        expect(await page.evaluate("window.receivedConversations")).toEqual(surface === "conversation" ? ["retained-room"] : []);
+        expect(await page.$eval("#chat-messages", el => el.textContent)).not.toContain("Event payload is not a saved message");
+      }
+      if (held) await held.continue();
+    } finally { await browser.close(); }
+  }, 30000);
+
+  test.skipIf(skipBrowser)("Overview refreshes its retained panels on lifecycle changes and after missed events during reconnect", async () => {
+    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    try {
+      const page = await browser.newPage();
+      page.setDefaultTimeout(5000);
+      const paths: string[] = [];
+      page.on("request", request => paths.push(new URL(request.url()).pathname));
+      await page.goto(base, { waitUntil: "domcontentloaded" });
+      await page.waitForSelector("#workflow-overview [data-workflow-outcomes]");
+      await page.waitForSelector("#overview-tasks .health-note");
+      await notificationBarrier(page);
+      paths.length = 0;
+      task("new-live-work", 10, "running");
+      for (const listener of listeners) listener({ type: "session.start", data: { sessionId: "new-live-session", agent: "worker" } });
+      await page.waitForFunction(() => document.querySelector("#overview-tasks")?.textContent?.includes("new-live-work"));
+      expect(paths).toContain("/api/liveness");
+      expect(paths).toContain("/api/workflow-health");
+      expect(paths).toContain("/api/tasks");
+      task("work-while-disconnected", 11, "running");
+      await reconnect(page);
+      await page.waitForFunction(() => document.querySelector("#overview-tasks")?.textContent?.includes("work-while-disconnected"));
+    } finally { await browser.close(); }
+  }, 30000);
+
+  test.skipIf(skipBrowser)("direct chat renders saved turns once and reconciles a turn ending during its history read", async () => {
+    const sessionId = seedChat("worker");
+    ensureSessionDir(root, sessionId);
+    appendSessionMessage(root, sessionId, { role: "user", content: "Initial saved turn", timestamp: Date.now() });
+    const snapshot = await read(`/api/sessions/${sessionId}/transcript`);
+    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    try {
+      const page = await browser.newPage();
+      page.setDefaultTimeout(5000);
+      await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
+      await page.waitForFunction(() => document.querySelector("#chat-messages")?.textContent?.includes("Initial saved turn"));
+      await notificationBarrier(page);
+      let capture: ((request: HTTPRequest) => void) | null = null;
+      const intercepted = new Promise<HTTPRequest>(resolveRequest => { capture = resolveRequest; });
+      await page.setRequestInterception(true);
+      page.on("request", request => {
+        if (capture && new URL(request.url()).pathname === `/api/sessions/${sessionId}/transcript`) {
+          capture(request);
+          capture = null;
+        } else void request.continue();
+      });
+      const pending = page.evaluate("switchSession('worker-old-session')");
+      const held = await intercepted;
+      for (const listener of listeners) listener({ type: "text", data: { sessionId }, text: "Transient output" });
+      await notificationBarrier(page);
+      expect(await page.$eval("#chat-messages", el => el.textContent)).not.toContain("Transient output");
+      const submitted = new Promise<void>(done => { onPublish = done; });
+      await page.type("#chat-input", "Intervening input");
+      await page.click("#chat-send");
+      await submitted;
+      expect(published[0]).toMatchObject({ type: "session.steer.requested", target: { sessionId }, data: { message: "Intervening input" } });
+      expect(await page.$eval("#chat-messages", el => el.textContent)).not.toContain("Intervening input");
+      expect(await page.$eval("#chat-status", el => el.textContent)).toContain("Message sent");
+      appendSessionMessage(root, sessionId, { role: "user", content: published[0].data.message, timestamp: Date.now() });
+      appendSessionMessage(root, sessionId, { role: "assistant", content: [{ type: "text", text: "Saved response" }], timestamp: Date.now() });
+      for (const listener of listeners) listener({ type: "turn_end", data: { sessionId } });
+      await notificationBarrier(page);
+      await held.respond({ status: 200, contentType: "application/json", body: JSON.stringify(snapshot) });
+      await pending;
+      expect(await page.$$eval("#chat-messages .message-text", els => els.map(el => el.textContent))).toEqual(["Initial saved turn", "Intervening input"]);
+      expect(await page.$$eval("#chat-messages .assistant-text", els => els.map(el => el.textContent))).toEqual(["Saved response"]);
+      appendSessionMessage(root, sessionId, { role: "assistant", content: [{ type: "text", text: "Next saved turn" }], timestamp: Date.now() });
+      for (const listener of listeners) listener({ type: "turn_end", data: { sessionId } });
+      await page.waitForFunction(() => document.querySelector("#chat-messages")?.textContent?.includes("Next saved turn"));
+      expect(await page.$$eval("#chat-messages .assistant-text", els => els.map(el => el.textContent))).toEqual(["Saved response", "Next saved turn"]);
+      await reconnect(page);
+      await page.waitForFunction(() => document.querySelector("#chat-messages")?.textContent?.includes("Next saved turn"));
+      expect(await page.$$eval("#chat-messages .assistant-text", els => els.map(el => el.textContent))).toEqual(["Saved response", "Next saved turn"]);
+    } finally { await browser.close(); }
+  }, 30000);
 
   test.each([false, true])("interface-agent HTTP input retains its Conversation with existing session=%s", async (existing) => {
     if (existing) {

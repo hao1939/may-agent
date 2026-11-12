@@ -39,9 +39,14 @@ let activeSessions = [];
 let currentSessionId = null;
 // Routes, subtabs, resets and explicit selections invalidate pending chat work.
 let chatSelectionVersion = 0;
+let chatTranscript = null;
 let sessionRefreshTimer = null;
-let renderMd = true; // markdown rendering on by default
 let chatAutoScroll = true;
+
+function clearChatTranscript() {
+  clearTimeout(chatTranscript?.timer);
+  chatTranscript = null;
+}
 
 function sendIntent(type, data, extra) {
   const target = extra?.target;
@@ -97,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setSessionPageMode(enabled) {
+  clearChatTranscript();
   clearTimeout(sessionRefreshTimer);
   sessionRefreshTimer = null;
   const chat = document.getElementById('chat');
@@ -181,38 +187,11 @@ function initChat(deepLinkSessionId) {
   }
 }
 
-function toggleMarkdown() {
-  renderMd = !renderMd;
-  document.getElementById('md-toggle').textContent = renderMd ? 'Raw' : 'Markdown';
-  document.querySelectorAll('.msg.assistant').forEach(el => {
-    const raw = el.dataset.raw;
-    if (!raw) return;
-    if (renderMd && window.marked && window.marked.parse) {
-      el.innerHTML = window.marked.parse(raw);
-      el.classList.add('md-rendered');
-    } else {
-      el.textContent = raw;
-      el.classList.remove('md-rendered');
-    }
-  });
-}
-
 function linkifyRefs(html) {
   if (!html) return html;
   // KE-NNN — route to knowledge surface so deep links work cross-pane.
   html = html.replace(/\b(KE-\d+)\b/g, '<a href="#/knowledge/entries/$1.md" onclick="event.stopPropagation()">$1</a>');
   return html;
-}
-
-function renderAssistantMsg(el, text) {
-  el.dataset.raw = text;
-  if (renderMd && window.marked && window.marked.parse) {
-    el.innerHTML = linkifyRefs(window.marked.parse(text));
-    el.classList.add('md-rendered');
-  } else {
-    el.textContent = text;
-    el.classList.remove('md-rendered');
-  }
 }
 
 function isSessionPageMode() {
@@ -258,41 +237,70 @@ function renderSessionPicker() {
     : 'Type a message...';
 }
 
-function subscribeChatSession() {
+function syncRealtimeSubscriptions() {
   if (ws?.readyState !== WebSocket.OPEN) return;
-  if (currentTab !== 'sessions' && !isAgentChatActive(currentAgentChat)) return;
-  const sessionId = isSessionPageMode() ? currentRouteParams.id : currentSessionId;
-  ws.send(JSON.stringify({ type: 'subscribe', sessions: [sessionId || 'chat'] }));
+  const conversation = isMayConversation();
+  let sessions = [];
+  if (currentTab === 'live' || conversation) sessions = ['*'];
+  else if (isSessionPageMode()) sessions = [currentRouteParams.id];
+  else if (isAgentChatActive(currentAgentChat)) sessions = currentSessionId ? [currentSessionId] : [];
+  else if (currentTab === 'sessions') sessions = [currentSessionId || 'chat'];
+  ws.send(JSON.stringify({
+    type: 'subscribe', sessions,
+    conversations: conversation ? [humanInterface.conversationId] : [],
+  }));
 }
 
 async function switchSession(sessionId) {
-  const selection = ++chatSelectionVersion;
+  chatSelectionVersion++;
   currentSessionId = sessionId;
   if (currentAgentChat) setAgentChatSessionId(sessionId);
   const messages = document.getElementById('chat-messages');
   messages.innerHTML = '';
+  clearChatTranscript();
+  if (sessionId && !isSessionPageMode()) chatTranscript = { sessionId, read: null, dirty: false, timer: null };
   renderSessionPicker();
-  subscribeChatSession();
+  syncRealtimeSubscriptions();
+  return refreshChatTranscript();
+}
 
-  if (sessionId && !isSessionPageMode()) {
-    // Load transcript history for chat/agent-chat mode. On #/sessions/:id, the
-    // inspector Conversation section is the visible stream, so this duplicate
-    // message list stays empty and hidden.
-    try {
-      const resp = await fetch(`/api/sessions/${sessionId}/transcript`);
-      if (resp.ok) {
-        const data = await resp.json();
-        if (selection !== chatSelectionVersion) return;
+function refreshChatTranscript() {
+  const view = chatTranscript;
+  const selected = () => chatTranscript === view;
+  if (!view || !selected()) return Promise.resolve();
+  if (view.read) { view.dirty = true; return view.read; }
+  // Saved transcript is the only message renderer. A turn ending during a
+  // read marks it dirty, so the next read includes the intervening saved turn.
+  view.read = (async () => {
+    do {
+      view.dirty = false;
+      try {
+        const response = await fetch(`/api/sessions/${encodeURIComponent(view.sessionId)}/transcript`, { signal: AbortSignal.timeout(5000) });
+        const data = await response.json();
+        if (!selected()) return;
+        if (view.dirty) continue;
+        if (!response.ok) throw new Error(data.error || 'Transcript unavailable');
         const transcript = data.messages || data;
-        const transData = Array.isArray(transcript)
-          ? { sessionId, messageCount: transcript.length, messages: transcript }
-          : data;
+        const transData = Array.isArray(transcript) ? { sessionId: view.sessionId, messages: transcript } : data;
+        const messages = document.getElementById('chat-messages');
         messages.innerHTML = renderSessionConversation(transData, { embedded: true, showTitle: false });
+        chatScrollToBottom(messages);
+      } catch (error) {
+        if (selected()) document.getElementById('chat-status').textContent = error.message;
       }
-    } catch {}
-    if (selection !== chatSelectionVersion) return;
-    chatScrollToBottom(messages);
-  }
+    } while (view.dirty && selected());
+  })().finally(() => { view.read = null; });
+  return view.read;
+}
+
+function scheduleChatTranscriptRefresh() {
+  const view = chatTranscript;
+  if (!view) return;
+  if (view.read) { view.dirty = true; return; }
+  clearTimeout(view.timer);
+  view.timer = setTimeout(() => {
+    if (chatTranscript === view) void refreshChatTranscript();
+  }, 300);
 }
 
 function setRealtimeEnabled(enabled) {
@@ -301,6 +309,7 @@ function setRealtimeEnabled(enabled) {
   wsReconnectTimer = null;
   if (realtimeEnabled) {
     connectWs();
+    syncRealtimeSubscriptions();
     return;
   }
   clearInterval(wsPollTimer);
@@ -313,18 +322,22 @@ function setRealtimeEnabled(enabled) {
 function connectWs() {
   if (!realtimeEnabled) return;
   if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+  const reconnecting = !!wsReconnectTimer;
+  wsReconnectTimer = null;
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   const socket = new WebSocket(`${proto}//${location.host}/ws`);
   ws = socket;
   const status = document.getElementById('chat-status');
-  const messages = document.getElementById('chat-messages');
 
   socket.onopen = () => {
     if (ws !== socket) return socket.close();
     status.textContent = 'Connected';
+    syncRealtimeSubscriptions();
     if (isMayConversation()) {
-      subscribeMayConversation();
       void refreshMayConversation();
+    } else if (reconnecting) {
+      if (currentTab === 'live') scheduleLivenessRefresh();
+      else void refreshChatTranscript();
     }
     // Poll for active sessions periodically
     const pollSessions = () => {
@@ -347,10 +360,8 @@ function connectWs() {
   };
   socket.onerror = () => { if (ws === socket) status.textContent = 'Connection error'; };
 
-  let currentAssistant = null;
-  let currentAssistantRaw = ''; // accumulate raw text for markdown rendering
-
   socket.onmessage = (e) => {
+    if (ws !== socket) return;
     try {
       const event = JSON.parse(e.data);
       const eventType = typeof event.type === 'string' ? event.type.replace(/\./g, '_') : event.type;
@@ -368,158 +379,46 @@ function connectWs() {
         if (all) for (const fn of all) { try { fn(event); } catch (err) { console.error('bus * sub err', err); } }
       }
 
-      const mayConversation = isMayConversation();
-      if (mayConversation) {
-        if (event.type === 'connected') {
-          subscribeMayConversation();
-          void refreshMayConversation();
-        } else if (event.type === 'conversation.updated' && data.appId === humanInterface.appId && data.conversationId === humanInterface.conversationId) {
-          void refreshMayConversation();
-        }
-        // Keep global status current while rendering only canonical
-        // messages in May's Conversation pane.
-        currentAssistant = null;
-        currentAssistantRaw = '';
+      if (isMayConversation() && event.type === 'conversation.updated'
+        && data.appId === humanInterface.appId && data.conversationId === humanInterface.conversationId) {
+        void refreshMayConversation();
       }
 
-      // The session inspector is a read model. Rebuilding it for every
-      // streamed text/tool event makes the page appear to refresh constantly,
-      // especially while evaluator sessions are running. Only refresh
-      // the inspected session at stable lifecycle boundaries.
-      if (isSessionPageMode()
-        && data.sessionId === currentInspectedSession
-        && (eventType === 'turn_end' || eventType === 'session_end')) {
-        scheduleSessionConversationRefresh(300);
+      // Notifications wake the current read model; they never write messages.
+      if (data.sessionId && (eventType === 'turn_end' || eventType === 'session_end')) {
+        if (isSessionPageMode() && data.sessionId === currentInspectedSession) scheduleSessionConversationRefresh(300);
+        else if (data.sessionId === chatTranscript?.sessionId) scheduleChatTranscriptRefresh();
       }
 
       switch (eventType) {
-        case 'text':
-          if (mayConversation) break;
-          if (!currentAssistant) {
-            currentAssistant = document.createElement('div');
-            currentAssistant.className = 'msg assistant';
-            currentAssistantRaw = '';
-            messages.appendChild(currentAssistant);
+        case 'connected':
+        case 'status':
+          if (event.activeAgents) {
+            activeSessions = event.activeAgents;
+            renderSessionPicker();
+            if (currentTab === 'sessions' && !currentRouteParams.id && !currentSessionId) {
+              const chatSession = activeSessions.find(s => s.agent === humanInterface.agent && (s.status === 'running' || (s.status === 'idle' && s.kind === 'chat')));
+              if (chatSession) void switchSession(chatSession.sessionId);
+            }
           }
-          currentAssistantRaw += event.text;
-          renderAssistantMsg(currentAssistant, currentAssistantRaw);
-          chatScrollToBottom(messages);
           break;
-        case 'tool_call': {
-          if (mayConversation) break;
-          currentAssistant = null;
-          currentAssistantRaw = '';
-          const div = document.createElement('div');
-          div.className = 'msg tool_call';
-          const argsStr = typeof event.args === 'string' ? event.args : JSON.stringify(event.args);
-          div.textContent = `⚡ ${event.tool}(${argsStr.slice(0, 200)})`;
-          messages.appendChild(div);
-          chatScrollToBottom(messages);
-          break;
-        }
-        case 'tool_result': {
-          if (mayConversation) break;
-          const div = document.createElement('div');
-          div.className = `msg tool_result ${event.isError ? 'error' : ''}`;
-          div.textContent = event.preview || '';
-          messages.appendChild(div);
-          chatScrollToBottom(messages);
-          break;
-        }
-        case 'turn_end':
-          currentAssistant = null;
-          currentAssistantRaw = '';
-          break;
-        case 'session_start': {
-          // Show delegation: "→ tech-lead: <task>"
-          if (!mayConversation && data.parentSessionId) {
-            const div = document.createElement('div');
-            div.className = 'msg';
-            div.style.color = 'var(--purple)';
-            div.style.fontSize = '12px';
-            div.textContent = `→ ${data.agent}: ${(data.task || '').slice(0, 100)}`;
-            messages.appendChild(div);
-            chatScrollToBottom(messages);
-          }
-          // Update session picker
-          if (data.sessionId && !activeSessions.find(s => s.sessionId === data.sessionId)) {
-            activeSessions.push({
-              agent: data.agent,
-              sessionId: data.sessionId,
-              status: 'running',
-              task: data.task,
-              kind: data.kind,
-              source: data.source,
-            });
+        case 'session_start':
+          if (data.sessionId && !activeSessions.some(s => s.sessionId === data.sessionId)) {
+            activeSessions.push(data);
             renderSessionPicker();
           }
           scheduleLivenessRefresh();
           break;
-        }
-        case 'session_end': {
-          if (!mayConversation) {
-            const div = document.createElement('div');
-            div.className = 'msg';
-            div.style.color = 'var(--fg2)';
-            div.style.fontSize = '12px';
-            div.textContent = `✓ ${data.agent}: ${data.status}${data.duration ? ' (' + data.duration + ')' : ''}`;
-            messages.appendChild(div);
-            chatScrollToBottom(messages);
-          }
-          // Update session picker
+        case 'session_end':
           activeSessions = activeSessions.filter(s => s.sessionId !== data.sessionId);
           renderSessionPicker();
           scheduleLivenessRefresh();
           break;
-        }
         case 'message_created':
         case 'metric_breach':
         case 'metric_recovered':
         case 'handler_failed':
           scheduleLivenessRefresh();
-          break;
-        case 'notification': {
-          if (!mayConversation) {
-            const div = document.createElement('div');
-            div.className = 'msg';
-            div.style.borderLeft = '3px solid var(--yellow)';
-            div.style.paddingLeft = '8px';
-            div.style.fontSize = '12px';
-            div.textContent = `📋 ${event.agent}: ${event.text.slice(0, 300)}`;
-            messages.appendChild(div);
-            chatScrollToBottom(messages);
-          }
-          break;
-        }
-        case 'connected':
-          if (!mayConversation) status.textContent = `Connected — ${event.agent} (${event.instance})`;
-          activeSessions = event.activeAgents || [];
-          renderSessionPicker();
-          if (!mayConversation) subscribeChatSession();
-          // Auto-attach to existing chat session (preserves conversation across refreshes)
-          if (currentTab === 'sessions' && !currentRouteParams.id && !currentSessionId) {
-            const chatSession = activeSessions.find(s => s.agent === humanInterface.agent && (s.status === 'running' || (s.status === 'idle' && s.kind === 'chat')));
-            if (chatSession) {
-              switchSession(chatSession.sessionId);
-            } else {
-              // No chat session yet — use chat mode so server auto-tracks it when it appears
-              ws.send(JSON.stringify({ type: 'subscribe', sessions: ['chat'] }));
-            }
-          }
-          break;
-        case 'status':
-          // Update active sessions from periodic poll
-          if (event.activeAgents) {
-            activeSessions = event.activeAgents;
-            renderSessionPicker();
-            // Auto-attach to chat session if we don't have one
-            if (currentTab === 'sessions' && !currentRouteParams.id && !currentSessionId) {
-              const chatSession = activeSessions.find(s => s.agent === humanInterface.agent && (s.status === 'running' || (s.status === 'idle' && s.kind === 'chat')));
-              if (chatSession) {
-                switchSession(chatSession.sessionId);
-              }
-            }
-          }
           break;
       }
     } catch {}
@@ -537,20 +436,9 @@ function sendChat() {
   if (!msg || !ws || ws.readyState !== 1) return;
   let pending;
 
-  // Show user message
-  const messages = document.getElementById('chat-messages');
-  const div = document.createElement('div');
-  div.className = 'msg user';
-  div.textContent = msg;
-  messages.appendChild(div);
-  messages.scrollTop = messages.scrollHeight; // Always scroll for user's own messages
-  // Re-enable auto-scroll when user sends a message (they want to see the response)
-  if (!chatAutoScroll) {
-    chatAutoScroll = true;
-    const btn = document.getElementById('scroll-toggle');
-    btn.textContent = '⬇ Auto-scroll';
-    btn.classList.remove('off');
-  }
+  // Show transport feedback separately from the saved transcript. Local
+  // echoes and event payloads must not create a second conversation history.
+  if (!chatAutoScroll) toggleChatScroll();
 
   const sessionId = isSessionPageMode() ? currentRouteParams.id : currentSessionId;
   if (sessionId) {
@@ -591,6 +479,7 @@ function sendChat() {
     );
   }
   input.value = '';
+  document.getElementById('chat-status').textContent = 'Message sent; waiting for the saved turn';
   return pending;
 }
 
@@ -598,8 +487,10 @@ document.getElementById('chat-send').addEventListener('click', sendChat);
 
 function resetAgentChat(name) {
   chatSelectionVersion++;
+  clearChatTranscript();
   currentSessionId = null;
   forceNewAgentChat = true;
+  syncRealtimeSubscriptions();
   setAgentChatSessionId(null);
   const messages = document.getElementById('chat-messages');
   if (messages) messages.innerHTML = '<div style="color:var(--fg2);font-size:13px;padding:24px;text-align:center">Chat cleared. Send a message to start a new conversation with <b>' + esc(name) + '</b>.</div>';

@@ -106,6 +106,7 @@ async function renderAgentDetail(name) {
 
 function switchAgentSubTab(tab) {
   chatSelectionVersion++;
+  clearChatTranscript();
   currentAgentSubTab = tab;
   // Update sub-tab nav highlight.
   const nav = document.querySelector('#agents-content > div:nth-child(3)');
@@ -134,6 +135,8 @@ function switchAgentSubTab(tab) {
   }
   // Keep agents pane visible regardless.
   if (agentsPane) agentsPane.classList.remove('hidden');
+  setRealtimeEnabled(tab === 'chat');
+  updateConversationStop();
 }
 
 async function loadAgentChatThread(name) {
@@ -142,7 +145,8 @@ async function loadAgentChatThread(name) {
   if (name === humanInterface.agent) {
     currentSessionId = null;
     renderSessionPicker();
-    subscribeMayConversation();
+    syncRealtimeSubscriptions();
+    updateConversationStop();
     return refreshMayConversation();
   }
   try {
@@ -154,7 +158,9 @@ async function loadAgentChatThread(name) {
       await switchSession(d.sessionId);
     } else {
       currentSessionId = null;
+      clearChatTranscript();
       setAgentChatSessionId(null);
+      syncRealtimeSubscriptions();
       const messages = document.getElementById('chat-messages');
       if (messages) messages.innerHTML = '<div style="color:var(--fg2);font-size:13px;padding:24px;text-align:center">No conversation with <b>' + esc(name) + '</b> yet. Send a message to start one.</div>';
     }

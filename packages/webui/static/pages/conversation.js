@@ -14,17 +14,9 @@ function isMayConversation() {
 function updateConversationStop() {
   const button = document.getElementById('chat-stop');
   if (!button) return;
-  document.getElementById('md-toggle').hidden = isMayConversation();
   document.querySelector('#chat-agent-banner .banner-session').hidden = isMayConversation();
   button.hidden = !isMayConversation();
   button.disabled = !isMayConversation() || !mayActiveTurn || mayStopPending;
-}
-
-function subscribeMayConversation() {
-  if (ws?.readyState === WebSocket.OPEN && isMayConversation()) {
-    ws.send(JSON.stringify({ type: 'subscribe', sessions: ['*'], conversations: [humanInterface.conversationId] }));
-  }
-  updateConversationStop();
 }
 
 function refreshMayConversation() {
