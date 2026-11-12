@@ -27,7 +27,7 @@ let legacyDashboardInitialized = false;
 // ── Router ────────────────────────────────────────────────────────────
 // Real routes: / /agents /agents/<name> /projects /projects/:id
 //              /projects/:id/tasks /projects/:id/functions
-//              /metrics /metrics/<id> /learning /terminal /sessions/:id
+//              /metrics /metrics/<id> /terminal /sessions/:id
 //              /knowledge /knowledge/<sub-path> /events /events/:eventId
 // Legacy hash routes (#/... and #dashboard/#events) still work via aliases.
 const LEGACY_TAB_ALIAS = {
@@ -79,7 +79,6 @@ function parseRouteString(route) {
   if (head === 'sessions') return { tab: 'sessions', params: { id: segs[1] ? decodeURIComponent(segs[1]) : null } };
   if (head === 'agents') return { tab: 'agents', params: { name: segs[1] ? decodeURIComponent(segs[1]) : null } };
   if (head === 'metrics') return { tab: 'metrics', params: { id: segs.slice(1).map(decodeURIComponent).join('/') || null } };
-  if (head === 'learning') return { tab: 'learning', params: {} };
   if (head === 'terminal') return { tab: 'terminal', params: {} };
   if (head === 'knowledge') return { tab: 'knowledge', params: { path: segs.slice(1).map(decodeURIComponent).join('/') || '' } };
   if (head === 'system' || head === 'events') return { tab: 'system', params: { eventId: head === 'events' && segs[1] ? decodeURIComponent(segs[1]) : null } };
@@ -105,7 +104,7 @@ function routeTo(route) {
 
 function isPlatformClientRoute(pathname) {
   if (pathname === '/' || pathname === '/index.html') return true;
-  if (/^\/(events|agents|metrics|learning|knowledge|terminal|sessions)(?:\/.*)?$/.test(pathname)) return true;
+  if (/^\/(events|agents|metrics|knowledge|terminal|sessions)(?:\/.*)?$/.test(pathname)) return true;
   if (pathname === '/projects') return true;
   if (!pathname.startsWith('/projects/')) return false;
   const parts = pathname.split('/').filter(Boolean).slice(1);
@@ -183,7 +182,6 @@ function render() {
   document.getElementById('knowledge').classList.toggle('hidden', tab !== 'knowledge');
   // #metrics pane now serves the dedicated Metrics tab. System tab no longer renders it.
   document.getElementById('metrics').classList.toggle('hidden', tab !== 'metrics');
-  document.getElementById('learning').classList.toggle('hidden', tab !== 'learning');
   document.getElementById('terminal').classList.toggle('hidden', tab !== 'terminal');
   document.getElementById('events').classList.toggle('hidden', tab !== 'system');
   // Tab highlight
@@ -220,7 +218,6 @@ function render() {
     }
   }
   if (tab === 'metrics') loadMetricsTab();
-  if (tab === 'learning') loadLearning();
   if (tab === 'terminal') initTerminalPage();
   if (tab === 'system') {
     loadEvents();

@@ -81,32 +81,33 @@ describe("HTTP event reads", () => {
     expect(catalog.map((agent: { name: string }) => agent.name)).toEqual(["support"]);
   });
 
-  it("reads legacy learning findings as facts without changing saved notes", async () => {
-    const sessionId = "s_learning";
+  it("retires Learning aggregation while preserving exact session evidence and evaluation records", async () => {
+    const sessionId = "s_review";
     const dir = join(root, "sessions", sessionId);
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "session.jsonl"), '{"role":"user","content":"Review the result"}\n');
     upsertSession(root, { sessionId, agent: "worker", task: "Review the result",
       status: "done", startedAt: Date.now(), endedAt: Date.now() });
-    const findings = [
-      { id: "legacy", evidence: ["Saved observation"] },
-      { id: "current", facts: ["Current observation"] },
-      { id: "both", facts: ["Preferred observation"], evidence: ["Superseded observation"] },
-      { id: "empty", facts: [], evidence: ["Superseded observation"] },
-    ];
     const path = join(dir, "session.eval.jsonl");
-    const saved = JSON.stringify({ type: "summary", verdict: "needs_fix",
-      repairDecision: { ownerFindings: findings } }) + "\n";
+    const summary = { type: "summary", verdict: "needs_fix",
+      repairDecision: { ownerFindings: [{ id: "legacy", evidence: ["Saved observation"] }] } };
+    const saved = JSON.stringify(summary) + "\n";
     writeFileSync(path, saved);
-    const result = await read("/api/learning");
-    expect(result.findings.map((finding: { id: string; facts: string[] }) => ({ id: finding.id, facts: finding.facts })))
-      .toEqual([
-        { id: "legacy", facts: ["Saved observation"] },
-        { id: "current", facts: ["Current observation"] },
-        { id: "both", facts: ["Preferred observation"] },
-        { id: "empty", facts: [] },
-      ]);
-    for (const finding of result.findings) expect(finding).not.toHaveProperty("evidence");
+    db.prepare(`INSERT INTO evaluations (sessionId, agent, quality, efficiency, verdict, createdAt)
+      VALUES (?, 'worker', 0.7, 0.8, 'needs_improvement', 1000)`).run(sessionId);
+    const evaluation = db.prepare("SELECT * FROM evaluations WHERE sessionId = ?").get(sessionId);
+
+    for (const route of ["/api/learning", "/api/learning?projectId=sample&days=30", "/learning", "/learning/"]) {
+      expect((await fetch(baseUrl + route)).status).toBe(404);
+    }
+    expect(await read(`/api/sessions/${sessionId}`)).toMatchObject({
+      session: { sessionId, status: "done" }, evaluation,
+    });
+    expect(await read(`/api/sessions/${sessionId}/eval`)).toMatchObject({ exists: true, rows: [summary] });
+    expect(await read("/api/agents/worker/detail")).toMatchObject({
+      evalTrend: [{ quality: 0.7, efficiency: 0.8, verdict: "needs_improvement", createdAt: 1000 }],
+    });
+    expect(db.prepare("SELECT * FROM evaluations WHERE sessionId = ?").get(sessionId)).toEqual(evaluation);
     expect(readFileSync(path, "utf8")).toBe(saved);
   });
 

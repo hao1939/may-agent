@@ -28,6 +28,12 @@ App, and saved metadata cannot substitute for an unavailable daemon read.
 `read-model/` contains HTTP diagnostic reads for the event graph and loop trace.
 Other report implementations live in `../adapters/reporting/`.
 
+The legacy Learning dashboard and `/api/learning` aggregate are retired, including
+the project-detail Learning tab. Session detail, saved review-note reads
+(`/api/sessions/:id/eval`) and agent evaluation trends remain available. Historical
+artifacts and evaluation records are retained; HTTP does not regenerate their old
+finding/notification summaries. Task review and follow-through belong to Apps.
+
 [`http-human-tasks.test.ts`](../../../test/integration/http-human-tasks.test.ts)
 exercises these routes through a real HTTP process and control socket, including
 pagination, exact identifiers, accepted-evidence options, missing Tasks, failed
