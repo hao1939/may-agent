@@ -22,8 +22,11 @@ the fallback when `attempt.maxAttemptMs` is omitted (`null` for no deadline).
 
 Disabling that deadline does not disable cancellation, app-server exit/error
 handling, or native goal completion/blocking. JSON-RPC requests stay bounded;
-active-turn startup remains bounded by 30 seconds, and a final turn still has
-30 minutes to settle. Individual commands and test-run limits are unchanged.
+active-turn startup remains bounded by 30 seconds, a final turn still has
+30 minutes to settle, retained turn completions are bounded to the latest 64
+turns, and malformed terminal Task results are capped at 3 correction turns per
+attempt before failing cleanly. Individual commands and test-run limits are
+unchanged.
 
 Progress reporting continues for the attempt's full lifetime. `maxProgressEvents`
 (64 by default) bounds the pending publication queue, rather than the total

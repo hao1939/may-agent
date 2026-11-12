@@ -492,4 +492,74 @@ describe("Task transcript read", () => {
       ...malformed.peers,
     ]).toHaveLength(0);
   });
+
+  it("filters generated goal messages across all retained generations on a reused thread", async () => {
+    const taskId = "domain/kubernetes-version-support/1.38";
+    const root = mkdtempSync(join(tmpdir(), "may-task-transcript-generations-"));
+    roots.push(root);
+    writeFileSync(
+      join(root, "codex-goal-bindings.json"),
+      JSON.stringify({
+        version: 1,
+        bindings: {
+          [codexGoalBindingKey("sample", taskId)]: {
+            appId: "sample",
+            taskId,
+            generation: 2,
+            threadId: "thread-reused",
+            cwd: root,
+            createdAt: "2026-01-01T00:00:00Z",
+            updatedAt: "2026-01-01T00:01:00Z",
+            attempts: 2,
+            staleInterrupts: 0,
+          },
+        },
+      }),
+    );
+    const turns: FixtureTurn[] = [
+      {
+        id: "turn-gen-1",
+        items: [
+          {
+            id: "goal-gen-1",
+            type: "userMessage",
+            text: `Achieve May Task sample/${taskId} generation 1: Validate Kubernetes 1.38 initial rollout`,
+          },
+          { id: "user-1", type: "userMessage", text: "Check Linux node pools first." },
+          { id: "assistant-1", type: "agentMessage", text: "Linux node pool checks completed." },
+        ],
+      },
+      {
+        id: "turn-gen-2",
+        items: [
+          {
+            id: "goal-gen-2",
+            type: "userMessage",
+            text: `Achieve May Task sample/${taskId} generation 2: Include Windows version gates`,
+          },
+          { id: "assistant-2", type: "agentMessage", text: "Added Windows version gates." },
+        ],
+      },
+    ];
+    const handler = createTaskTranscriptHandler({
+      stateDir: root,
+      json: (data, status = 200) => new Response(JSON.stringify(data), { status }),
+      daemonRead: async () => ({
+        type: "ok",
+        task: { appId: "sample", taskId, generation: 2, status: "running" },
+      }),
+      createCodexClient: () => new CodexGoalAppServerClient(new TranscriptProcess(turns, { threadId: "thread-reused" })),
+    });
+
+    const response = await handler(
+      new URL(`http://localhost/api/task/transcript?${new URLSearchParams({ appId: "sample", taskId })}`),
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.items.map((item: { role: string; text: string }) => ({ role: item.role, text: item.text }))).toEqual([
+      { role: "user", text: "Check Linux node pools first." },
+      { role: "assistant", text: "Linux node pool checks completed." },
+      { role: "assistant", text: "Added Windows version gates." },
+    ]);
+  });
 });

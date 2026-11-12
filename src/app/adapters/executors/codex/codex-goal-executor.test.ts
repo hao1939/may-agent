@@ -8,6 +8,7 @@ import { taskAgentResultSchema, type AppEvent, type TaskAttempt } from "@may-age
 import {
   codexGoalExecutorInternals,
   createCodexGoalExecutor,
+  MAX_CODEX_RESULT_CORRECTIONS,
   type CodexGoalClient,
 } from "./codex-goal-executor.js";
 import type { AppServerNotification, CodexGoalObservation, CodexTurnCompletion } from "./codex-goal-client.js";
@@ -1071,5 +1072,46 @@ describe("codex-goal Task executor", () => {
     await expect(execution).rejects.toThrow("client stopped");
     expect(cancelClient.calls).toContain("interrupt");
     expect(cancelClient.calls).toContain("stop");
+  });
+
+  it("caps result-correction turns when terminal JSON remains malformed under maxAttemptMs='unlimited'", async () => {
+    const client = new FakeClient("thread-malformed-loop");
+    const steered: string[] = [];
+    let turnCounter = 0;
+    client.waitForActiveTurn = async () => `turn-${(turnCounter += 1)}`;
+    client.waitForGoal = async () => ({
+      threadId: client.threadId,
+      turnId: `turn-${turnCounter}`,
+      goal: { threadId: client.threadId, objective: "review", status: "complete" },
+    });
+    client.waitForTurn = async (turnId) => ({
+      threadId: client.threadId,
+      turn: { id: turnId, status: "completed" },
+    });
+    client.steer = async (input) => {
+      steered.push(input.message);
+      return input.turnId;
+    };
+    client.listThreadItems = async (input) => ({
+      data: [
+        {
+          turnId: input.turnId ?? "turn-1",
+          item: { type: "agentMessage", phase: "final_answer", text: "not valid json" },
+        },
+      ],
+      nextCursor: null,
+    });
+
+    const executor = createCodexGoalExecutor({
+      stateFile: join(fixtureRoot(), "bindings.json"),
+      createClient: () => client,
+    });
+
+    await expect(executor(attempt({ maxAttemptMs: "unlimited" }))).rejects.toThrow(
+      `Codex failed to return a valid Task result after ${MAX_CODEX_RESULT_CORRECTIONS} correction turns`,
+    );
+    expect(steered).toHaveLength(MAX_CODEX_RESULT_CORRECTIONS);
+    expect(turnCounter).toBe(MAX_CODEX_RESULT_CORRECTIONS + 1);
+    expect(client.calls).toContain("stop");
   });
 });

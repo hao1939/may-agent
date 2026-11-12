@@ -26,6 +26,7 @@ describe("HTTP Task transcript and feedback transport", () => {
   let task: Record<string, unknown> | null;
   let reads: unknown[];
   let admitted: AdmittedInput[];
+  let publishedControls: Array<{ type: string; data: Record<string, unknown>; idempotencyKey?: string }>;
   let rejectRead: boolean;
   let rejectInput: boolean;
   let persistInput: boolean;
@@ -39,6 +40,7 @@ describe("HTTP Task transcript and feedback transport", () => {
     task = { ...identity, status: "running", terminal: false };
     reads = [];
     admitted = [];
+    publishedControls = [];
     rejectRead = false;
     rejectInput = false;
     persistInput = false;
@@ -49,10 +51,15 @@ describe("HTTP Task transcript and feedback transport", () => {
       socketPath: daemonSocketPath(root, { instance: "task-session-test", interfaceAgent: "helper" }),
       agentName: "helper",
       instance: "task-session-test",
+      conversationAppId: identity.appId,
       getSessionId: () => "fixture",
       getStatus: () => [],
       emitEvent: () => {},
       subscribeEvents: () => () => {},
+      publishEvent: (event) => {
+        publishedControls.push(event);
+        return { eventId: 999, eventType: event.type, delivery: "accepted" };
+      },
       getTask: (input) => {
         reads.push(input);
         if (rejectRead) throw new Error("fixture Task read unavailable");
@@ -280,5 +287,26 @@ describe("HTTP Task transcript and feedback transport", () => {
     expect(feedback.status).toBe(503);
     expect((await feedback.json()).accepted).toBeUndefined();
     expect(admitted).toHaveLength(0);
+  });
+
+  test("routes /reload and /restart as Task feedback on the configured conversation App without triggering runtime controls", async () => {
+    for (const [index, commandText] of ["/reload", "/restart"].entries()) {
+      const response = await send({ ...draft, message: commandText, idempotencyKey: `cmd-feedback-${index}` });
+      expect(response.status).toBe(202);
+      expect(await response.json()).toMatchObject({
+        accepted: true,
+        ...identity,
+        eventId: 101,
+        inboxId: "input-101",
+      });
+    }
+    expect(publishedControls).toEqual([]);
+    expect(admitted.map((entry) => ({
+      targetTaskId: entry.targetTaskId,
+      message: (entry.input.data as Record<string, unknown>).message,
+    }))).toEqual([
+      { targetTaskId: identity.taskId, message: "/reload" },
+      { targetTaskId: identity.taskId, message: "/restart" },
+    ]);
   });
 });

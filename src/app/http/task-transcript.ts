@@ -84,12 +84,18 @@ function contentText(value: unknown): string {
   return result;
 }
 
+function generatedGoalScaffold(value: string, identity: TaskIdentity): boolean {
+  const prefix = `Achieve May Task ${identity.appId}/${identity.taskId} generation `;
+  if (!value.startsWith(prefix)) return false;
+  return /^[1-9]\d*: /.test(value.slice(prefix.length));
+}
+
 function privateScaffold(value: string, identity: TaskIdentity): boolean {
   return (
     value.includes("## Canonical May Task Attempt") ||
     value.startsWith("# Session Context") ||
     value.startsWith("You are the replaceable executor pursuing one fenced May Task goal.") ||
-    value.startsWith(`Achieve May Task ${identity.appId}/${identity.taskId} generation ${identity.generation}: `)
+    generatedGoalScaffold(value, identity)
   );
 }
 

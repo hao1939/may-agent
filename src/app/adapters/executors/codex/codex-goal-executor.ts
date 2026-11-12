@@ -75,6 +75,7 @@ export type CodexGoalExecutorOptions = {
 const DEFAULT_TURN_TIMEOUT_MS = 30 * 60_000;
 const MAX_TIMER_TIMEOUT_MS = 2 ** 31 - 1;
 const MAX_PENDING_STEERING_EVENTS = 64;
+export const MAX_CODEX_RESULT_CORRECTIONS = 3;
 
 function bindingKey(attempt: TaskAttempt): string {
   return codexGoalBindingKey(attempt.appId, attempt.task.id);
@@ -378,6 +379,7 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
       }
 
       let correction: string | null = null;
+      let correctionsUsed = 0;
       while (true) {
         await client.setGoal({ threadId, objective: rendered.goalObjective, status: "active" });
         updateGoalStatus("active");
@@ -404,6 +406,12 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
         const answer = await finalAnswer(client, threadId, completedTurnId);
         const admitted = admitCodexGoalTaskResult(answer);
         if (admitted.kind === "retry") {
+          if (correctionsUsed >= MAX_CODEX_RESULT_CORRECTIONS) {
+            throw new Error(
+              `Codex failed to return a valid Task result after ${MAX_CODEX_RESULT_CORRECTIONS} correction turns: ${admitted.reason}`,
+            );
+          }
+          correctionsUsed += 1;
           correction = admitted.nextAttemptContext;
           continue;
         }

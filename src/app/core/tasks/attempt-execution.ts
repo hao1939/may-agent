@@ -151,6 +151,12 @@ export async function runTaskWorkflow(
       runId: null,
       executionFailed: true,
     };
+  const policyLimitMs =
+    typeof input.attempt.maxAttemptMs === "number"
+      ? coordinationMaxAttemptMs !== undefined
+        ? Math.min(input.attempt.maxAttemptMs, coordinationMaxAttemptMs)
+        : input.attempt.maxAttemptMs
+      : coordinationMaxAttemptMs;
   const requestedTimeoutMs =
     input.attempt.maxAttemptMs === "unlimited"
       ? coordinationMaxAttemptMs!
@@ -171,9 +177,8 @@ export async function runTaskWorkflow(
       projectDir: descriptor.projectDir,
       app: descriptor.app,
     },
-    executionTimeoutMs:
-      coordinationMaxAttemptMs !== undefined ? Math.min(requestedTimeoutMs, coordinationMaxAttemptMs) : requestedTimeoutMs,
-    ...(coordinationMaxAttemptMs !== undefined ? { executionTimeoutLimitMs: coordinationMaxAttemptMs } : {}),
+    executionTimeoutMs: policyLimitMs !== undefined ? Math.min(requestedTimeoutMs, policyLimitMs) : requestedTimeoutMs,
+    ...(policyLimitMs !== undefined ? { executionTimeoutLimitMs: policyLimitMs } : {}),
   });
 }
 

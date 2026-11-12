@@ -1,7 +1,11 @@
 import { describe, expect, it, spyOn } from "bun:test";
 import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
-import { CodexGoalAppServerClient, type AppServerProcess } from "./codex-goal-client.js";
+import {
+  CodexGoalAppServerClient,
+  MAX_RETAINED_TURN_COMPLETIONS,
+  type AppServerProcess,
+} from "./codex-goal-client.js";
 
 class FakeAppServerProcess extends EventEmitter implements AppServerProcess {
   pid = undefined;
@@ -336,6 +340,30 @@ describe("CodexGoalAppServerClient", () => {
     await expect(client.waitForTurn("final-turn", 10)).rejects.toThrow("Timed out waiting for Codex turn");
     await client.stop();
     await expect(goal).rejects.toThrow("client stopped");
+  });
+
+  it("bounds retained turn completions across many turns while preserving completion-before-wait and final settlement", async () => {
+    const process = new FakeAppServerProcess({ closeOnStdinEnd: true });
+    const client = new CodexGoalAppServerClient(process);
+    const totalTurns = MAX_RETAINED_TURN_COMPLETIONS + 80;
+    for (let index = 1; index <= totalTurns; index += 1) {
+      process.notify("turn/completed", {
+        threadId: "ongoing",
+        turn: { id: `turn-${index}`, status: "completed", payload: "x".repeat(256) },
+      });
+    }
+    // Older completions beyond the sliding window are evicted rather than retained forever.
+    await expect(client.waitForTurn("turn-1", 15)).rejects.toThrow("Timed out waiting for Codex turn turn-1");
+    // Recent completion-before-wait and exact final-turn settlement remain immediately available.
+    await expect(
+      client.waitForTurn(`turn-${totalTurns - MAX_RETAINED_TURN_COMPLETIONS + 1}`, 15),
+    ).resolves.toMatchObject({
+      turn: { id: `turn-${totalTurns - MAX_RETAINED_TURN_COMPLETIONS + 1}`, status: "completed" },
+    });
+    await expect(client.waitForTurn(`turn-${totalTurns}`, 15)).resolves.toMatchObject({
+      turn: { id: `turn-${totalTurns}`, status: "completed" },
+    });
+    await client.stop();
   });
 
   it("fails closed on server requests", async () => {

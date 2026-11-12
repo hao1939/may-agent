@@ -82,6 +82,7 @@ const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
 const DEFAULT_TURN_TIMEOUT_MS = 15 * 60_000;
 const MAX_PROTOCOL_LINE_CHARS = 4 * 1024 * 1024;
 const MAX_STDERR_CHARS = 64 * 1024;
+export const MAX_RETAINED_TURN_COMPLETIONS = 64;
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -575,7 +576,13 @@ export class CodexGoalAppServerClient {
     const turn = params.turn as JsonRecord;
     if (typeof turn.id !== "string" || typeof turn.status !== "string") return;
     const completion = params as unknown as CodexTurnCompletion;
+    this.completions.delete(turn.id);
     this.completions.set(turn.id, completion);
+    while (this.completions.size > MAX_RETAINED_TURN_COMPLETIONS) {
+      const oldest = this.completions.keys().next().value;
+      if (oldest === undefined) break;
+      this.completions.delete(oldest);
+    }
     if (this.activeTurns.get(params.threadId) === turn.id) this.activeTurns.delete(params.threadId);
     const waiters = this.completionWaiters.get(turn.id);
     if (!waiters) return;

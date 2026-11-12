@@ -60,6 +60,7 @@ import { recoverTaskConditions } from "./dependency-admission.js";
 import { createGitTaskWorkspaces, gitTaskWorkspaces } from "../../adapters/workspaces/git.js";
 import { readTaskWorkload } from "../reads/task-workload.js";
 import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
+import { createTaskWorkflowRunner } from "../../adapters/executors/workflow.js";
 import { createAppTaskReadTool } from "../../app-task-read-tool.js";
 import { readTaskOutcomes } from "../../adapters/reporting/task-outcomes.js";
 import type { TaskAgentRunner, TaskSessionRecovery } from "./execution.js";
@@ -1352,6 +1353,66 @@ it("applies AppTaskPolicy.maxAttemptMs per Task without changing Task generation
     phase: "pending",
     executionFailures: 1,
     summary: expect.stringContaining("agent executor requires a bounded maxAttemptMs"),
+  });
+});
+
+it("enforces numeric AppTaskPolicy.maxAttemptMs through the real workflow runner even when the workflow declares a longer timeout", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  const persistDir = join(f.root, "state");
+  const agentsRoot = join(f.root, "agents");
+  const sharedRoot = join(f.root, "shared");
+  const workflowDir = join(agentsRoot, "sample-owner", "workflows");
+  mkdirSync(workflowDir, { recursive: true });
+  mkdirSync(sharedRoot, { recursive: true });
+  writeFileSync(
+    join(workflowDir, "slow.ts"),
+    `export const name = "slow";
+export const description = "Declares a 60s timeout that must still respect AppTaskPolicy.maxAttemptMs";
+export const executionTimeoutMs = 60_000;
+export async function execute(ctx) {
+  await new Promise((_resolve, reject) => {
+    ctx.signal.addEventListener("abort", () => reject(new Error("aborted")), { once: true });
+  });
+  return ctx.done("unreachable");
+}`,
+  );
+  await installCoreTaskRuntimes({
+    ...options(f, bus),
+    persistDir,
+    agentsRoot,
+    sharedRoot,
+    installControllers: false,
+    workflows: createTaskWorkflowRunner({ manager: {} as never, bus }),
+    appRegistrySnapshot: {
+      id: "workflow-ceiling-policy",
+      generation: 1,
+      entries: [
+        {
+          appDir: f.appDir,
+          definition: { ...definition(), tasks: { ...definition().tasks, maxAttemptMs: 80 } },
+        },
+      ],
+    },
+  });
+  const config = loadedTaskConfig(f);
+  observeAppTaskIntent(config, {
+    appAgent: "sample-owner",
+    intent: { id: "work/slow-workflow", parentId: "operations", outcome: "Bound slow workflow", acceptance: ["Done"], workflow: "slow" },
+    trigger: { type: "run.requested", eventId: 1 },
+  });
+  const startedAt = Date.now();
+  await reconcileLoadedAppTaskOnce({
+    bus,
+    appId: "sample",
+    taskId: "work/slow-workflow",
+    dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+  });
+  expect(Date.now() - startedAt).toBeLessThan(5_000);
+  expect(config.resourceStore.readTask("work/slow-workflow")?.status).toMatchObject({
+    phase: "pending",
+    executionFailures: 1,
+    summary: expect.stringContaining("timed out"),
   });
 });
 
