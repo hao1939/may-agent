@@ -409,7 +409,7 @@ describe("shared agent execution preparation", () => {
     const signals: string[] = [];
     const prepared = prepareAgentExecution({
       definition: { name: "sample", description: "sample", domain: "tests", systemPrompt: "Read evidence",
-        model: streamTestModel, tools: [tool("read"), tool("finish")] },
+        model: streamTestModel, tools: [tool("read"), tool("bash"), tool("finish")] },
       projectRoot: root, executionRoot: root, sessionId: "read-pages", task: "Inspect evidence",
       onGuard: ({ guard }) => signals.push(guard),
     });
@@ -432,7 +432,11 @@ describe("shared agent execution preparation", () => {
     expect((await read.execute("refresh", { path: transcript })).content[0])
       .toEqual({ type: "text", text: "current evidence" });
     // A shell argument can mention a home path without claiming it exists.
-    expect(await check("bash", { command: "test -n /home/example-user" })).toBeUndefined();
+    const command = { command: "test -n /home/example-user" };
+    expect(await check("bash", command)).toBeUndefined();
+    const bash = prepared.tools.find(candidate => candidate.name === "bash")!;
+    expect((await bash.execute("path-argument", command)).content[0])
+      .toEqual({ type: "text", text: "(no output)" });
     expect(signals).toEqual([]);
     // The diagnostic callback remains wired for retained finish checks.
     expect(await check("finish", { status: "success", deliverables: [{ path: transcript, description: "evidence" }] }))
