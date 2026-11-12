@@ -217,22 +217,20 @@ Its source, model-registry and workspace prerequisites require validation
 before activation; it is not a claim that the live App runs this workflow.
 
 The [intent and daily-learning design](docs/intent-and-daily-learning.md)
-uses the same Conversation and Task contracts for automatic research-link
-handling, corrections, and scoped explicit preferences. Its original
-[isolated PoC](poc/intent-learning/README.md) exercises real Host admission and
-model judgment with synthetic sources. It does not change the live May agent,
-Scout library, preferences, or Gym policy.
+describes research-link handling, corrections, and proposed scoped preference
+learning. Its September trial used real Host admission and model judgment with
+synthetic sources. The retired adapter's prototype source and tooling hooks were
+removed on November 12; [archived findings and reproduction references](docs/archive/intent-learning-20260916/README.md)
+remain. The trial never installed preference learning in May.
 
 The current source-assessment iteration makes May’s inferred outcome visible and
 uses Scout’s code-owned source reader and archive procedure. See the linked
 design for the boundary between deployed research handling and proposed learning.
 
-
 May now uses `conversation.mode: "task"`. Messages, Request corrections and replies
 use the common Task communication contract, and independent metric investigations
 use ordinary requests and Conditions. `metric-response` requires the accepted
-`conversation.inputId` when preparing communication. Historical design notes and
-the optional intent-learning model experiment describe the retired adapter; they
-are evidence, not the current runtime contract. That experiment requires a separate
-port before another model-backed run. The ordinary App and metric suites use the
-current Host without live credentials or installed state.
+`conversation.inputId` when preparing communication. The archived intent-learning
+trial describes the retired adapter; it is historical evidence. Any future
+learning trial must use the current Task contract. The ordinary App and metric
+suites use the current Host without live credentials or installed state.

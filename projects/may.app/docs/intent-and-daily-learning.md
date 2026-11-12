@@ -1,10 +1,12 @@
 # May intent, correction, and daily learning
 
-Status: research handoff and archive policy deployed in the preceding iteration.
-The source-assessment procedure and intent-echo refinement are implemented,
-validated and active on the local instance. Preference projection and Gym intake
-remain proposed. See [the original PoC](../poc/intent-learning/README.md) and
-[the real-source iteration](research-handoff-iteration-20260916.md).
+Status: research handoff and archive policy were implemented and reported active
+in the [September iteration](research-handoff-iteration-20260916.md). Preference
+projection and broader learning intake remain proposed. The September prototype
+was retired from source on November 12 after its Conversation adapter was removed;
+[findings, evidence and reproduction references](archive/intent-learning-20260916/README.md)
+remain. This source cleanup does not verify the current installation or activate
+learning behavior.
 
 ## Desired behavior
 
@@ -22,28 +24,30 @@ task instructions and acknowledgments do not silently become permanent rules.
 
 ## Existing contracts and the actual extension
 
-[May](../README.md) already has one Conversation Task, accepted Requests,
-Topics and exact delegated Task references. The Host's conversation resolver
-already instructs May to resolve pronouns, revise Requests, and send follow-up
-input to an existing Task. The SDK already carries Request revisions and one
-typed followUp. The extension should exercise these contracts, rather than add
-another intent classifier, work ledger, or conversation executor.
+[May](../README.md) uses `conversation.mode: "task"`: human input, corrections,
+delegation and replies use the common Task contract. Task communication retains
+accepted Requests and Topics; ordinary requests and exact Task revisions carry
+delegated work and corrections. May's instructions own interpretation and
+judgment. See the [common App contract](../../alex.app/docs/2a-design/agent-app.md)
+and [Task resource engine](../../alex.app/docs/2a-design/task-resource-engine.md).
+Learning must use those contracts without another classifier, work ledger or
+conversation executor.
 
-The current App manifest selects `conversation.mode: agent`; it does not expose
-an App-specific context-provider or turn-completion callback. The prototype
-wraps the existing resolver with candidate agent guidance and a narrow preference
-tool. Production wiring must use agent/tool registration and a supported
-accepted-result consumer, or propose a small general extension to those seams.
-Do not pretend that adding fields to app.ts activates new Host behavior.
+The retired prototype wrapped the former conversation resolver with candidate
+guidance and a scoped preference tool. Its `followUp` and turn-completion paths
+are historical implementation details. Future preference wiring must use current
+agent/tool registration and an accepted Task-result boundary; adding fields to
+app.ts does not activate that behavior. A supported consumer and reliable next-turn
+loading remain unimplemented requirements, not reasons to retain the old runner.
 
 Responsibilities remain explicit:
 
-| Owner | Responsibility                                                                                                                                                |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| May   | Interpret the human's outcome, maintain its scope, select an owner, assess returned evidence, explain the result, and maintain explicit personal preferences. |
-| Scout | Read sources, preserve a research assessment, compare with existing knowledge, and decide whether curated topic knowledge changes.                            |
-| Gym   | Consolidate strong experience, diagnose repeated behavior gaps, build practice and evaluations, and verify candidate improvements.                            |
-| Host  | Persist input, fence revisions and attempts, carry corrections and results, and recover interrupted execution.                                                |
+| Owner      | Responsibility                                                                                                                                                |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| May        | Interpret the human's outcome, maintain its scope, select an owner, assess returned evidence, explain the result, and maintain explicit personal preferences. |
+| Scout      | Read sources, preserve a research assessment, compare with existing knowledge, and decide whether curated topic knowledge changes.                            |
+| Alex / Gym | Consolidate strong experience, diagnose repeated behavior gaps, build practice and evaluations, and verify candidate improvements.                            |
+| Host       | Persist input, fence revisions and attempts, carry corrections and results, and recover interrupted execution.                                                |
 
 ## Immediate intention and correction
 
@@ -125,7 +129,10 @@ or Host lifecycle. Those capabilities remain separate work. Portable tests cover
 mechanics; a real local conversation must still demonstrate useful interpretation,
 calibrated claims, automatic return, and ordinary-language correction.
 
-## Daily learning: apply, remember, improve
+## Proposed daily learning: apply, remember, improve
+
+The preference projection below is a design candidate, not installed behavior.
+The archived trial exercised it only against synthetic state.
 
 | Signal                                           | Where it applies now                   | What persists                                                                |
 | ------------------------------------------------ | -------------------------------------- | ---------------------------------------------------------------------------- |
@@ -138,7 +145,7 @@ calibrated claims, automatic return, and ordinary-language correction.
 
 Use the existing `agents/may/knowledge/directives.md` as the production authority
 for standing preferences. Keep scope and source references with each rule;
-retain only a bounded relevant selection in execution context. The PoC uses a
+retain only a bounded relevant selection in execution context. The retired PoC used a
 separate synthetic directives.md whose structured representation makes replay
 and revision tests easy. It does not migrate or duplicate live preferences.
 
@@ -149,8 +156,8 @@ judgments. Exact quotation alone cannot establish either. A quote from a paper,
 an agent's recommendation, and another user's message are not user preference
 authority.
 
-Stage a preference proposal during a turn. Retain it with the accepted turn
-result before applying it to the preference file. A failed or stopped turn
+Stage a preference proposal during an attempt. Retain it with the accepted Task
+result before applying it to the preference file. A failed or stopped attempt
 cannot activate memory. Retry the same retained proposal idempotently after
 interruption between result acceptance and preference projection. Concurrent
 changes require revision checks and reconsideration rather than last-write wins.
@@ -161,7 +168,8 @@ exception does not delete that default. An explicit replacement or forgetting
 changes future behavior and must survive a fresh session. Conflicting inference
 does not silently displace explicit user policy.
 
-Gym's existing intake is oriented to reviewed sessions and Codex/Telegram
+Alex owns the current improvement loop, including Gym's comparison work. The
+September intake was oriented to reviewed sessions and Codex/Telegram
 evidence. Generalizing it to shared May Conversation should retain the exact
 message, Request, Task and outcome references, independently of the interface.
 Multiple corrections in one session must remain distinguishable. Use the
@@ -173,19 +181,18 @@ Immediate preference use is not model-weight training. Gym's broader procedure
 changes follow its existing validation and promotion rules. Automatic collection
 does not claim that those changes are already installed or effective.
 
-## Implementation order and proof
+## Remaining decisions and proof
 
-1. Exercise candidate May guidance, scoped preference context, and exact research
-   delegation through the existing resolver and Task store.
-2. Verify corrections on the same Request and Task, including storage reopen and
-   results returned against the latest scope.
-3. Add Scout's exact-link assessment procedure and reuse appropriate source and
-   artifact checks for direct goals. Cover arbitrary readable posts as well as
-   supported discovery feeds.
-4. Register a scoped preference tool and accepted-result projection with reliable
-   loading on the next turn. Preserve replay, conflict, and forgetting behavior.
-5. Extend Gym's current intake to shared Conversation references; test scoped
-   transfer and counterexamples before broader behavioral promotion.
+Research handoff, correction and Scout's source-assessment procedure have their
+current owners and tests. The September implementation sequence is historical;
+retiring its prototype does not reopen those completed steps.
+
+If a demonstrated preference-learning need justifies implementation, register
+one scoped preference tool, retain proposals through the current accepted-result
+contract, and load relevant preferences on the next attempt. Verify replay,
+conflict and forgetting behavior. Broader implicit learning remains a separate
+Alex decision using existing evidence intake and comparison, not a new scheduler.
+Neither is an approved next implementation merely because the prototype existed.
 
 The decisive learning test starts a fresh conversation with the same input,
 first without and then with a previously accepted preference. Its requested

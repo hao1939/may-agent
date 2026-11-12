@@ -1,9 +1,11 @@
 # Intent and daily-learning trial
 
-Date: 2026-09-16. Status: isolated candidate; production adoption remains separate.
+Date: 2026-09-16. Status: historical isolated candidate; executable source retired
+on 2026-11-12. Preference learning was not installed by this trial. Contracts,
+commands and test counts below describe the September baseline.
 
 The [design](intent-and-daily-learning.md) was refined into an
-[executable trial](../poc/intent-learning/README.md) using real model judgment and
+[isolated trial](archive/intent-learning-20260916/README.md) using real model judgment and
 real Host admission/storage with synthetic research sources. The trial does not
 change the running May agent or its preferences, Scout library, or Gym behavior.
 
@@ -63,7 +65,7 @@ checks are scenario assertions, not independent samples or a statistical pass
 rate. Exploratory evidence was retained as well.
 
 The model runs and representative decisions are recorded in the
-[portable evidence JSON](../poc/intent-learning/evidence.json). Each final run captures hashes of the candidate code,
+[portable evidence JSON](archive/intent-learning-20260916/evidence.json). Each final run captures hashes of the candidate code,
 guidance, and App declarations together with the frozen Host revision. Raw
 isolated evidence is retained separately; no production sessions or credentials
 are included in the portable record.
@@ -96,7 +98,7 @@ before the focused verification; it was a test-environment issue.
   explicit preference retention and scoped application; it does not run Gym,
   promote benchmark truth, or certify a deployed self-improvement loop.
 
-## Recommended next implementation
+## September recommendation (historical)
 
 Keep the current May conversation path. Register the scoped preference capability
 and a reliable accepted-result consumer through supported extension points;
@@ -106,5 +108,7 @@ reading coverage. Reuse Request revisions and exact Task input for corrections.
 Then extend Gym's existing evidence intake to shared Conversation references and
 evaluate repeated implicit patterns separately from immediate user preferences.
 
-The bounded trial supports that direction. It does not justify replacing the
-conversation controller or introducing another learning scheduler.
+The bounded trial supported that direction against its September contracts.
+The current [design](intent-and-daily-learning.md) separates implemented research
+handling from proposed learning. Do not restore the retired conversation adapter
+or introduce another learning scheduler to reuse this experiment.
