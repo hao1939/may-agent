@@ -501,8 +501,8 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
         if (req.url().includes(`/api/sessions/${sessionId}/eval`)) noteRequests.push(req.method());
       });
       await page.evaluate(async (id) => {
-        const ui = window as typeof window & { loadSessionDetail: (id: string) => Promise<void> };
-        await ui.loadSessionDetail(id);
+        const ui = window as typeof window & { navigateToSession: (id: string) => void };
+        ui.navigateToSession(id);
       }, sessionId);
       await page.waitForSelector("#session-eval-btn");
       expect(await page.$eval("#session-eval-btn", (el) => el.textContent)).toBe("Review notes");

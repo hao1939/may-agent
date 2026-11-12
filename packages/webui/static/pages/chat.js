@@ -95,6 +95,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setSessionPageMode(enabled) {
+  clearTimeout(sessionRefreshTimer);
+  sessionRefreshTimer = null;
   const chat = document.getElementById('chat');
   if (chat) chat.classList.toggle('session-page-mode', !!enabled);
   const status = document.getElementById('chat-status');
@@ -102,7 +104,6 @@ function setSessionPageMode(enabled) {
   if (status && enabled) status.textContent = 'Follow up on this session';
   if (input && enabled) input.placeholder = 'Send follow-up to this session...';
   if (!enabled) {
-    clearTimeout(sessionRefreshTimer);
     currentInspectedSession = null;
     restoreChatComposer();
     const panel = document.getElementById('session-detail-panel');
@@ -123,11 +124,13 @@ function placeSessionComposer() {
 }
 
 function scheduleSessionConversationRefresh(delay = 600) {
-  if (!isSessionPageMode() || !currentInspectedSession) return;
+  const sessionId = currentRouteParams.id;
+  if (!isSessionPageMode() || currentInspectedSession !== sessionId) return;
   clearTimeout(sessionRefreshTimer);
   sessionRefreshTimer = setTimeout(() => {
-    const sessionId = currentInspectedSession;
-    loadSessionDetail(sessionId, { preserveScroll: true });
+    if (isSessionPageMode() && currentRouteParams.id === sessionId) {
+      loadSessionDetail(sessionId, { preserveScroll: true });
+    }
   }, delay);
 }
 
@@ -136,7 +139,6 @@ function initChat(deepLinkSessionId) {
     chatInitialized = true;
     // WS is now connected on page load; no need to call connectWs() here
   }
-  setSessionPageMode(!!deepLinkSessionId);
   // Hide the agent-chat banner when entering plain sessions mode.
   const banner = document.getElementById('chat-agent-banner');
   if (banner) banner.style.display = 'none';
@@ -214,7 +216,7 @@ function renderAssistantMsg(el, text) {
 }
 
 function isSessionPageMode() {
-  return !!document.getElementById('chat')?.classList.contains('session-page-mode');
+  return currentTab === 'sessions' && !!currentRouteParams.id;
 }
 
 function renderSessionPicker() {

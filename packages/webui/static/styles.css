@@ -46,6 +46,13 @@
   [data-workflow-outcomes] a { color: var(--fg); }
   #metrics :focus-visible, #workflow-overview :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+  /* Shared workflow summary cards */
+  .health-summary { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .health-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; flex: 1; min-width: 130px; }
+  .health-card .health-label { font-size: 11px; color: var(--fg2); text-transform: uppercase; letter-spacing: 0.5px; }
+  .health-card .health-value { font-size: 22px; font-weight: 600; margin-top: 2px; }
+  .health-card .health-sub { font-size: 11px; color: var(--fg2); margin-top: 2px; }
+
   /* Liveness */
   .liveness { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 20px; }
   .liveness h2 { font-size: 14px; margin-bottom: 12px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
@@ -479,7 +486,11 @@
     .knowledge-search { grid-template-columns: 1fr auto; }
     #kb-search-status { grid-column: 1 / -1; }
     .knowledge-layout { display: grid; }
+    .health-summary { gap: 8px; }
+    .health-card { min-width: 100px; padding: 10px 12px; }
+    .health-card .health-value { font-size: 18px; }
   }
+  @media (max-width: 480px) { .health-summary { flex-direction: column; } }
 .eval-card { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px; text-align: center; }
 .session-inspector { max-width: 900px; }
 .session-inspector .header-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }

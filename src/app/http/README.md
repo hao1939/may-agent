@@ -65,6 +65,11 @@ Session links open `/sessions/:id`, using one inspector and follow-up composer;
 the session's agent link opens `/agents/:name`. The shared WebSocket transport,
 event subscriptions and current-page refresh remain. Retained history and metric
 charts are unchanged.
+Only explicit session navigation changes the route; background session reads
+cannot open a session. The router owns session-page mode and cancels queued
+refreshes on navigation. A queued refresh captures its original session ID and
+checks the active route before reading. Workflow summary cards retain their
+shared health-card styles, including mobile layout.
 
 [`http-human-tasks.test.ts`](../../../test/integration/http-human-tasks.test.ts)
 exercises these routes through a real HTTP process and control socket, including

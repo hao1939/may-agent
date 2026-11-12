@@ -403,10 +403,7 @@ function verdictColor(verdict) {
 }
 
 async function loadSessionDetail(sessionId, opts = {}) {
-  if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) {
-    routeTo('/sessions/' + encodeURIComponent(sessionId));
-    return;
-  }
+  if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
   if (currentInspectedSession !== sessionId) currentSessionEval = null;
   currentInspectedSession = sessionId;
   const panel = getSessionDetailPanel();
@@ -471,7 +468,7 @@ async function loadSessionDetail(sessionId, opts = {}) {
       html += `<dt>Project</dt><dd><a href="${attrEsc(projectRoute)}" style="color:var(--accent)">${esc(s.projectId)}</a></dd>`;
     }
     if (s.model) html += `<dt>Model</dt><dd>${esc(s.model)}</dd>`;
-    if (s.parentSessionId) html += `<dt>Parent</dt><dd><a href="#" style="color:var(--accent)" onclick="event.preventDefault();loadSessionDetail('${esc(s.parentSessionId)}')">${esc(s.parentSessionId)}</a></dd>`;
+    if (s.parentSessionId) html += `<dt>Parent</dt><dd><a href="/sessions/${attrEsc(encodeURIComponent(s.parentSessionId))}" style="color:var(--accent)">${esc(s.parentSessionId)}</a></dd>`;
     if (s.workflowRunId) html += `<dt>Workflow Run</dt><dd><a href="#" style="color:var(--accent)" onclick='event.preventDefault();openLoopTrace({workflowRunId:${workflowRunIdArg}})'>${esc(s.workflowRunId)}</a></dd>`;
     if (s.requestId) html += `<dt>Request</dt><dd>${esc(s.requestId)}</dd>`;
     html += `</dl></div>`;
@@ -582,13 +579,13 @@ function getSessionDetailPanel() {
 function goBackSession() {
   if (sessionHistory.length) {
     const prev = sessionHistory.pop();
-    loadSessionDetail(prev);
+    navigateToSession(prev);
   }
 }
 
 function navigateToSession(sessionId, fromSessionId) {
   if (fromSessionId) sessionHistory.push(fromSessionId);
-  loadSessionDetail(sessionId);
+  routeTo('/sessions/' + encodeURIComponent(sessionId));
 }
 
 function toggleOutcome() {

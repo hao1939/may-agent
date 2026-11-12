@@ -150,6 +150,7 @@ function render() {
   const { tab, params } = parseRoute();
   currentTab = tab;
   currentRouteParams = params;
+  setSessionPageMode(tab === 'sessions' && !!params.id);
   // Trace selection belongs to this route, not to the reusable Events pane.
   clearLoopTrace();
   // Pane visibility — design's 5 surfaces map onto existing panes:

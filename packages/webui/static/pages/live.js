@@ -258,7 +258,7 @@ async function loadLiveness() {
                       : s.category === 'chat' ? 'chat'
                       : s.category === 'workflow' ? (s.source || 'workflow')
                       : (s.source || 'session');
-          html += `<span class="heartbeat-dot ${cat}${errCls}${runCls}" style="left:${left}%" title="${esc(agent.name)} · ${esc(label)} · ${esc(s.status || '')} · ${formatAgo(s.startedAt)}" onclick="loadSessionDetail('${esc(s.sessionId)}')"></span>`;
+          html += `<span class="heartbeat-dot ${cat}${errCls}${runCls}" style="left:${left}%" title="${esc(agent.name)} · ${esc(label)} · ${esc(s.status || '')} · ${formatAgo(s.startedAt)}" onclick="navigateToSession(${jsStringAttr(s.sessionId)})"></span>`;
         }
         html += `</div><div class="heartbeat-last" title="Last historical heartbeat">${formatAgo(agent.lastHeartbeat)}</div></div>`;
       }
@@ -272,7 +272,7 @@ async function loadLiveness() {
       html += `<div class="liveness-item">No heartbeat sessions in the last 4 hours.</div>`;
     } else {
       for (const item of decisions.slice(0, 5)) {
-        html += `<div class="liveness-item" onclick="loadSessionDetail('${esc(item.sessionId)}')" style="cursor:pointer">
+        html += `<div class="liveness-item" onclick="navigateToSession(${jsStringAttr(item.sessionId)})" style="cursor:pointer">
           <div class="meta">${formatAgo(item.timestamp)} · <strong>${esc(item.agent)}</strong> · ${esc(item.status || '')}</div>
           <div>${esc(item.text || '(no outcome yet)')}</div>
         </div>`;

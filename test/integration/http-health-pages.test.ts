@@ -556,7 +556,7 @@ describe("served workflow and metric health pages", () => {
         expect(await page.evaluate("currentSessionId")).toBe("step-upload");
         expect(await page.$eval("#chat", el => el.classList.contains("hidden"))).toBe(false);
         expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
-        await page.click('#session-detail-panel .meta-grid a[onclick*="loadSessionDetail"]');
+        await page.click('#session-detail-panel .meta-grid a[href="/sessions/retained-parent"]');
         await page.waitForFunction(() => document.querySelector("#session-detail-panel h3")?.textContent === "retained-parent");
         expect(new URL(page.url()).pathname).toBe("/sessions/retained-parent");
         expect(await page.evaluate("currentSessionId")).toBe("retained-parent");
@@ -579,6 +579,103 @@ describe("served workflow and metric health pages", () => {
         expect(new URL(page.url()).pathname).toBe("/agents/worker");
         expect(requests.filter(path => ["/api/agents/health", "/api/agents/activity", "/api/agents/timeline", "/api/stats", "/api/agents/worker/detail"].includes(path))).toEqual([]);
         expect(errors).toEqual([]);
+      } finally { await browser.close(); }
+    }, 30000,
+  );
+
+  test.skipIf(skipBrowser)(
+    "queued session refreshes are cancelled on navigation and late callbacks cannot reopen a session",
+    async () => {
+      getDb(root).prepare(`INSERT INTO sessions(sessionId, agent, task, status, startedAt, endedAt)
+        VALUES ('other-session', 'worker', 'Another report', 'done', ?, ?)`)
+        .run(now - 2000, now - 1500);
+      const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+      try {
+        const page = await browser.newPage();
+        await page.setRequestInterception(true);
+        page.on("request", request => { if (!request.url().startsWith(base)) void request.abort(); else void request.continue(); });
+        for (const route of ["/", "/metrics", "/agents", "/sessions/other-session"]) {
+          await page.goto(base + "/sessions/step-upload", { waitUntil: "domcontentloaded" });
+          await page.waitForSelector("#session-detail-panel .session-inspector");
+          const result = await page.evaluate(async route => {
+            const ui = window as unknown as {
+              scheduleSessionConversationRefresh(delay: number): void;
+              routeTo(route: string): void;
+              isSessionPageMode(): boolean;
+              loadSessionDetail(id: string): Promise<void>;
+            };
+            const set = window.setTimeout;
+            const clear = window.clearTimeout;
+            let timer: number | undefined;
+            let callback: (() => void) | undefined;
+            let cancelled = false;
+            window.setTimeout = ((fn: () => void, delay: number) => {
+              callback = fn;
+              timer = set(fn, delay);
+              return timer;
+            }) as typeof window.setTimeout;
+            window.clearTimeout = id => { if (id === timer) cancelled = true; clear(id); };
+            try {
+              ui.scheduleSessionConversationRefresh(300);
+              window.setTimeout = set;
+              if (!callback) throw new Error("Active session did not queue its refresh");
+              ui.routeTo(route);
+              const sessionMode = ui.isSessionPageMode();
+              // Exercise an already-queued callback too: cancelling a timer alone
+              // must not give a background read permission to navigate.
+              callback();
+              await ui.loadSessionDetail("step-upload");
+              return { cancelled, sessionMode, path: location.pathname };
+            } finally {
+              window.setTimeout = set;
+              window.clearTimeout = clear;
+              clear(timer);
+            }
+          }, route);
+          expect(result).toEqual({ cancelled: true, sessionMode: route.startsWith("/sessions/"), path: route });
+        }
+        await page.goto(base + "/sessions/step-upload", { waitUntil: "domcontentloaded" });
+        await page.waitForSelector("#session-detail-panel .session-inspector");
+        const [response] = await Promise.all([
+          page.waitForResponse(response => new URL(response.url()).pathname === "/api/sessions/step-upload"),
+          page.evaluate("scheduleSessionConversationRefresh(0)"),
+        ]);
+        expect(response.status()).toBe(200);
+        await page.waitForSelector("#session-followup-anchor .chat-container");
+        expect(new URL(page.url()).pathname).toBe("/sessions/step-upload");
+      } finally { await browser.close(); }
+    }, 30000,
+  );
+
+  test.skipIf(skipBrowser)(
+    "retained workflow outcome cards keep their visual hierarchy at desktop and mobile widths",
+    async () => {
+      const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+      try {
+        const page = await browser.newPage();
+        await page.setRequestInterception(true);
+        page.on("request", request => { if (!request.url().startsWith(base)) void request.abort(); else void request.continue(); });
+        for (const width of [1280, 600, 400]) {
+          await page.setViewport({ width, height: 900 });
+          for (const [route, selector] of [["/", "#workflow-overview"], ["/metrics", "#metrics-workflows"]]) {
+            await page.goto(base + route, { waitUntil: "domcontentloaded" });
+            await page.waitForSelector(selector + " .health-card");
+            const cards = await page.$$eval(selector + " .health-card", cards => cards.map(card => {
+              const style = getComputedStyle(card);
+              const label = getComputedStyle(card.querySelector(".health-label")!);
+              const value = getComputedStyle(card.querySelector(".health-value")!);
+              return { border: parseFloat(style.borderTopWidth), padding: parseFloat(style.paddingTop),
+                labelSize: parseFloat(label.fontSize), valueSize: parseFloat(value.fontSize), weight: Number(value.fontWeight) };
+            }));
+            expect(cards).toHaveLength(5);
+            for (const card of cards) {
+              expect(card.border).toBeGreaterThan(0);
+              expect(card.padding).toBeGreaterThan(0);
+              expect(card.valueSize).toBeGreaterThan(card.labelSize);
+              expect(card.weight).toBeGreaterThanOrEqual(600);
+            }
+          }
+        }
       } finally { await browser.close(); }
     }, 30000,
   );

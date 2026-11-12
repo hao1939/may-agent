@@ -32,7 +32,6 @@ async function initAgentChat(name) {
   if (!chatInitialized) {
     chatInitialized = true;
   }
-  setSessionPageMode(false);
   currentAgentChat = name;
   updateConversationStop();
   // Update the chat header to show the agent name.
@@ -343,7 +342,7 @@ async function loadAgentOverview(name) {
       html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden">`;
       for (const s of sessions.slice().reverse().slice(0, 15)) {
         const statusColor = s.status === 'error' ? 'var(--red)' : (s.status === 'done' ? 'var(--fg2)' : 'var(--green)');
-        html += `<div onclick="loadSessionDetail('${esc(s.sessionId)}')" style="display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 12px;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background='var(--bg3,#222)'" onmouseout="this.style.background=''">`;
+        html += `<div onclick="navigateToSession(${jsStringAttr(s.sessionId)})" style="display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 12px;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background='var(--bg3,#222)'" onmouseout="this.style.background=''">`;
         html += `<span style="color:${statusColor};font-size:9px">●</span>`;
         html += `<div style="min-width:0;font-family:monospace;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc((s.sessionId||'').slice(-12))}</div>`;
         html += `<div style="font-size:10px;color:var(--fg2);white-space:nowrap">${s.startedAt ? timeAgo(s.startedAt) : '—'}</div>`;
