@@ -28,6 +28,7 @@ describe("Gemini startup configuration", () => {
         MODEL_BASE_URL: "https://models.example.test/",
         MODEL_API_KEY: "must-not-be-persisted",
         GEMINI_MODEL: "gemini-test",
+        GEMINI_PRO_MODEL: "gemini-pro-test",
       },
       encoding: "utf8",
     });
@@ -45,6 +46,22 @@ describe("Gemini startup configuration", () => {
       },
       tools: { sandbox: false, sandboxNetworkAccess: true },
       model: { name: "gemini-test" },
+      experimental: { dynamicModelConfiguration: true },
+      modelConfigs: {
+        customAliases: {
+          "gemini-pro-test": { extends: "chat-base-3", modelConfig: { model: "gemini-pro-test" } },
+          gemini4: { extends: "chat-base-3", modelConfig: { model: "gemini-pro-test" } },
+        },
+        modelDefinitions: {
+          "gemini-pro-test": expect.objectContaining({ displayName: "Gemini 4", tier: "pro", isVisible: true }),
+        },
+        modelIdResolutions: {
+          "gemini-pro-test": { default: "gemini-pro-test" },
+          "gemini-4": { default: "gemini-pro-test" },
+          gemini4: { default: "gemini-pro-test" },
+          pro: { default: "gemini-pro-test" },
+        },
+      },
     });
 
     const policy = readFileSync(join(geminiRoot, "policies/full-access.toml"), "utf8");

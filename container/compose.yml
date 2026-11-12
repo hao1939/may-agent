@@ -33,6 +33,7 @@ services:
       - INSTANCE=${INSTANCE:-background}
       - MODEL_BASE_URL=${MODEL_BASE_URL:-http://host.docker.internal:4000}
       - MODEL_API_KEY=${MODEL_API_KEY:-not-needed}
+      - GEMINI_PRO_MODEL=${GEMINI_PRO_MODEL:-gemini-4-argon}
       # Empty values auto-detect the mounted projects (or installation) owner.
       # Remote installations can pin these when their mount has mixed owners.
       - MAY_RUNTIME_UID=${MAY_RUNTIME_UID:-}
