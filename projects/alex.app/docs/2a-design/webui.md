@@ -113,6 +113,11 @@ binds its follow-up composer to that same identity; the session's agent link
 opens `/agents/:name`. Preserve the composer while replacing session content or
 returning to agent chat. Delayed session or saved-note reads cannot replace a
 different selection or navigate back to it.
+Only explicit session links/navigation change the route. Background loaders
+return when their session is not selected. The router derives session-page mode
+from the current route and cancels pending refreshes on navigation; each queued
+refresh captures its session ID and checks it again before reading. A hidden
+pane's CSS class does not establish an active session.
 
 ## Route Ownership and Bounded Reads
 
@@ -167,6 +172,8 @@ notes and recorded ancestry remain; the related backend APIs remain supported.
 Shared WebSocket subscriptions and current-page refresh continue independently
 of the removed feed. This cut changes presentation, not Task execution or data
 retention.
+Workflow outcome cards retain their shared health-card styles and mobile layout;
+those styles belong to the current Overview and Metrics views too.
 
 | Surface | Primary content |
 | --- | --- |
