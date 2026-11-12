@@ -52,32 +52,18 @@ owns the separately reproduced checkpoint-before-publication gap and a first
 convention-based provider integration. It does not reopen general observer
 cancellation or precise restart recovery from this milestone.
 
-## Next verified cleanup: one project metadata reader
+## Project metadata reader: implemented source candidate
 
-**Status:** Proposed; no implementation or feature retirement selected yet.
-Source reviewed at merged Host #458 (`2a762206dd52`). A temporary local HTTP
-fixture with an isolated database reproduced three disagreements:
+The user selected this consolidation. [Host PR 460](https://github.com/hao1939/may-agent/pull/460)
+shares project metadata parsing/discovery across the list, detail, session lookup
+and agent counts, replacing the independently reproduced disagreements. Source
+implementation is complete; merge and installation remain pending.
 
-- An App's `project.json` says `active` and its saved runtime project state says
-  `blocked`: `/api/projects` reports `active`, while project detail reports `blocked`.
-- A historical Markdown project ends its frontmatter with `owner: worker`:
-  detail reports `worker/legacy-project`, while its Sessions lookup misses a
-  retained session tagged with that same identity.
-- One agent owns that Markdown project and a JSON-only project: the agent
-  project counter reports one project because its independent scan reads only Markdown.
-
-The project list, detail, session correlation and agent counts parse the same
-metadata separately in `src/app/http/server.ts`. JSON detail already uses
-`loadProjectReadModel`, which includes the saved runtime project projection;
-the other reads disagree about formats, frontmatter and projection use.
-
-Use the existing project read model and one small metadata reader across those
-consumers. Keep historical Markdown readable and preserve stored identities,
-correlation and unavailable-evidence behavior. Verify current and historical
-links through real HTTP before changing lookup rules. There is no need for a
-new service, cache, storage migration or dashboard. Measure the actual code
-reduction after consolidation; this review does not promise a line count or
-claim a live installation incident.
+The [implementation record](../archive/reviews/shared-project-metadata-20261112.md)
+retains the original findings, exact revisions, historical-tag compatibility and
+checks. The [HTTP boundary](../2a-design/http-boundary.md#read-boundary) and
+[project UI](../2a-design/webui.md#project-surface) own the contract. This needs no
+new service, cache, migration or replacement dashboard.
 
 ## What changed after reviewing the plan
 

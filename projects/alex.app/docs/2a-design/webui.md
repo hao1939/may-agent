@@ -222,6 +222,15 @@ inline checkpoint summaries; that combined investigation view has no replacement
 Stored evidence is retained. See the [retirement record](../archive/reviews/project-lineage-retirement-20261112.md)
 for source status, scope and checks. Installation is unverified.
 
+Project list/detail, Sessions correlation and agent project counts consume the
+[shared HTTP metadata reader](http-boundary.md#read-boundary) in
+[Host PR 460](https://github.com/hao1939/may-agent/pull/460), pending merge and
+installation. Saved runtime posture is read consistently without changing source
+identity. Historical session-tag aliases preserve inspection; they do not prove
+current Task ownership or retarget steering. Malformed JSON is unavailable in
+detail and omitted from saved-context listings. Loaded Apps remain independently
+visible. See the [consolidation record](../archive/reviews/shared-project-metadata-20261112.md).
+
 Browser inference stays light. Stable project/task classifications belong in a
 server read model or project-owned state. Domain-specific feature/test/run
 meaning belongs in the project's own UI.

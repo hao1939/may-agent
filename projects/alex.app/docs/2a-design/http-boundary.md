@@ -98,6 +98,23 @@ summaries. No stored evidence is deleted or converted. See the
 [retirement record](../archive/reviews/project-lineage-retirement-20261112.md)
 for source status and checks; installed adoption is unverified.
 
+Saved project list/detail, session lookup and agent project counts share one
+HTTP metadata reader and discovery path in
+[Host PR 460](https://github.com/hao1939/may-agent/pull/460), pending merge and
+installation. JSON display posture uses the existing saved project read model;
+identity comes from source metadata. A runtime posture projection cannot change
+the HTTP project ID or owner. These project counts describe saved context, not
+loaded Apps or Task execution.
+
+Historical Markdown and its existing file precedence remain readable. Explicit
+per-agent paths resolve their own context before a shared basename fallback.
+Session reads include exact tags recognized by the former parser alongside the
+current identity; no stored tags are rewritten. Ingress retains its previous
+single target. Missing metadata still permits an exact retained session-tag
+read; malformed JSON fails detail and is omitted from saved-project listings.
+See the [reader consolidation record](../archive/reviews/shared-project-metadata-20261112.md)
+for compatibility and verification limits.
+
 Canonical App task reads use stable identities rather than filesystem-like
 project paths:
 
