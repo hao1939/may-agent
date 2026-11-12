@@ -381,6 +381,36 @@ describe("Codex goal Task progress", () => {
     ]);
   });
 
+  it("distinguishes rapid active -> paused -> active transitions with identical updatedAt while staying replay-idempotent", async () => {
+    const published: Array<{ localKey: string; status: unknown }> = [];
+    const publisher = new CodexGoalProgressPublisher({
+      async publish(localKey, event) {
+        published.push({ localKey, status: event.data.status });
+        return { eventId: published.length };
+      },
+    });
+    const emitGoal = (status: string, updatedAt = 1_700_000_000) =>
+      publisher.observe({
+        method: "thread/goal/updated",
+        params: { threadId: "thread-1", turnId: "turn-1", goal: { status, updatedAt } },
+      });
+
+    emitGoal("active");
+    emitGoal("active"); // immediate replay / same-second heartbeat
+    emitGoal("paused");
+    emitGoal("paused"); // immediate replay
+    emitGoal("active"); // rapid resume within the same whole second
+    emitGoal("active"); // immediate replay of resumed active state
+    emitGoal("paused", 1_699_999_999); // stale out-of-order replay from earlier second must not regress status
+
+    expect(await publisher.flush()).toMatchObject({ queued: 3, published: 3, dropped: 0 });
+    expect(published).toEqual([
+      { localKey: "codex-progress:goal-status:thread-1:turn-1:active:1700000000", status: "active" },
+      { localKey: "codex-progress:goal-status:thread-1:turn-1:paused:1700000000", status: "paused" },
+      { localKey: "codex-progress:goal-status:thread-1:turn-1:active:1700000000:2", status: "active" },
+    ]);
+  });
+
   it("preserves durable idempotency after the bounded recent-key cache rolls over", async () => {
     const persisted = new Map<string, number>();
     const publisher = new CodexGoalProgressPublisher({

@@ -4,6 +4,10 @@ export type TaskInputCommand = Record<string, unknown> & {
   source: { kind: "human"; id: string };
 };
 
+export function taskInputIdempotencyKey(appId: string, taskId: string, key: string): string {
+  return `web-task:${appId.length}:${appId}:${taskId.length}:${taskId}:${key}`;
+}
+
 /** Human feedback enters the existing App/Task admission path; it never controls a native thread directly. */
 export function createTaskInputHandler(options: {
   daemonRead: (frame: Record<string, unknown>) => Promise<Record<string, unknown>>;
@@ -73,7 +77,7 @@ export function createTaskInputHandler(options: {
       },
       source: { kind: "human", id: `web-task:${key}` },
       channel: "web-ui",
-      idempotencyKey: `web-task:${appId}:${taskId}:${key}`,
+      idempotencyKey: taskInputIdempotencyKey(appId, taskId, key),
     };
     try {
       // A retry can arrive after feedback changed or closed the Task. Confirm
@@ -106,6 +110,15 @@ export function createTaskInputHandler(options: {
       admitting = true;
       const result = await options.admit(frame);
       if (result.type !== "ok") return options.json({ error: String(result.message || "Task input rejected") }, 409);
+      if (result.delivery !== undefined && result.delivery !== "accepted")
+        return options.json(
+          {
+            error: "Task input admission was not confirmed. Retry with the same message key.",
+            delivery: String(result.delivery),
+            ...(typeof result.eventId === "number" ? { eventId: result.eventId } : {}),
+          },
+          503,
+        );
       return options.json(
         {
           accepted: true,

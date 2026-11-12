@@ -2320,9 +2320,12 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   const { handleApps, handleConversationRead, handleHumanTaskRead, handleAppTasks, handleAppTask } =
     createTaskReadHandlers({ daemonRead, json });
   const handleTaskTranscript = createTaskTranscriptHandler({ daemonRead, json, stateDir: STATE_DIR });
-  function confirmTaskInput(command: TaskInputCommand): { eventId: number; eventType: string } | undefined {
+  function confirmTaskInput(
+    command: TaskInputCommand,
+  ): { eventId: number; eventType: string; delivery: "accepted" } | undefined {
+    const db = _db();
     const eventId = findEventPublication(
-      _db(),
+      db,
       {
         type: "app.input.requested",
         target: { appId: String(command.appId) },
@@ -2331,7 +2334,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       },
       { source: "control-socket", inputSource: command.source },
     );
-    return eventId ? { eventId, eventType: "app.input.requested" } : undefined;
+    if (!eventId || getEventView(db, eventId)?.delivery.state !== "accepted") return undefined;
+    return { eventId, eventType: "app.input.requested", delivery: "accepted" };
   }
   const handleTaskInput = createTaskInputHandler({
     daemonRead,

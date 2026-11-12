@@ -247,6 +247,12 @@ function errorMessage(error: unknown): string {
   return boundedString(error instanceof Error ? error.message : String(error), 512) ?? "unknown publication error";
 }
 
+type GoalStatusMemory = {
+  status: string;
+  lastUpdatedAt: number | null;
+  byStatus: Record<string, { rawKey: string; occurrence: number }>;
+};
+
 /**
  * A non-blocking, serialized bridge from protocol notifications to Task events.
  * maxEvents bounds pending work, not the lifetime of a progressing attempt.
@@ -257,7 +263,7 @@ export class CodexGoalProgressPublisher {
   private readonly executorName: string;
   private readonly keyScope?: string;
   private readonly seen = new Set<string>();
-  private readonly goalStatuses = new Map<string, string>();
+  private readonly goalStatuses = new Map<string, GoalStatusMemory>();
   private readonly pending: CodexGoalProgressProjection[] = [];
   private draining: Promise<void> | null = null;
   private inFlight: string | null = null;
@@ -281,23 +287,40 @@ export class CodexGoalProgressPublisher {
   observe(notification: AppServerNotification): void {
     const projected = projectCodexGoalProgress(notification, this.executorName);
     if (!projected) return;
-    const localKey = scopedLocalKey(projected.localKey, this.keyScope);
+    let baseKey = projected.localKey;
+    if (projected.event.data.stage === "goal-status") {
+      const { threadId, turnId, status } = projected.event.data;
+      const statusName = String(status);
+      const updatedAt = finiteNumber(record(notification.params?.goal)?.updatedAt);
+      const identity = JSON.stringify([threadId, turnId]);
+      const current = this.goalStatuses.get(identity);
+      if (current?.status === statusName) return;
+      if (updatedAt !== null && current?.lastUpdatedAt !== null && current?.lastUpdatedAt !== undefined && updatedAt < current.lastUpdatedAt) {
+        return;
+      }
+      const byStatus = { ...(current?.byStatus ?? {}) };
+      const prior = Object.hasOwn(byStatus, statusName) ? byStatus[statusName] : undefined;
+      const occurrence = prior?.rawKey === baseKey ? prior.occurrence + 1 : 1;
+      byStatus[statusName] = { rawKey: baseKey, occurrence };
+      if (Object.keys(byStatus).length > 8) delete byStatus[Object.keys(byStatus)[0]!];
+      if (occurrence > 1) baseKey = `${baseKey}:${occurrence}`;
+      this.goalStatuses.delete(identity);
+      this.goalStatuses.set(identity, {
+        status: statusName,
+        lastUpdatedAt: updatedAt ?? current?.lastUpdatedAt ?? null,
+        byStatus,
+      });
+      if (this.goalStatuses.size > MAX_RECENT_PROGRESS_KEYS) {
+        this.goalStatuses.delete(this.goalStatuses.keys().next().value!);
+      }
+    }
+    const localKey = scopedLocalKey(baseKey, this.keyScope);
     if (
       this.seen.has(localKey) ||
       this.inFlight === localKey ||
       this.pending.some((item) => item.localKey === localKey)
     )
       return;
-    if (projected.event.data.stage === "goal-status") {
-      const { threadId, turnId, status } = projected.event.data;
-      const identity = JSON.stringify([threadId, turnId]);
-      if (this.goalStatuses.get(identity) === status) return;
-      this.goalStatuses.delete(identity);
-      this.goalStatuses.set(identity, String(status));
-      if (this.goalStatuses.size > MAX_RECENT_PROGRESS_KEYS) {
-        this.goalStatuses.delete(this.goalStatuses.keys().next().value!);
-      }
-    }
     this.seen.add(localKey);
     if (this.seen.size > MAX_RECENT_PROGRESS_KEYS) this.seen.delete(this.seen.values().next().value!);
     if (this.pending.length >= this.maxEvents) {

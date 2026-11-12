@@ -30,6 +30,7 @@ describe("HTTP Task transcript and feedback transport", () => {
   let rejectRead: boolean;
   let rejectInput: boolean;
   let persistInput: boolean;
+  let failDurableRoute: boolean;
 
   beforeEach(async () => {
     root = mkdtempSync(join(tmpdir(), "may-http-task-session-"));
@@ -44,6 +45,7 @@ describe("HTTP Task transcript and feedback transport", () => {
     rejectRead = false;
     rejectInput = false;
     persistInput = false;
+    failDurableRoute = false;
     child = undefined;
     stopped = undefined;
     let events: EventInterface | undefined;
@@ -74,7 +76,10 @@ describe("HTTP Task transcript and feedback transport", () => {
             const writer = new DbWriter(root);
             bus.setPersistenceSubscriber(writer.handler);
             bus.setDeliveryRecorder(writer.recordDelivery);
-            bus.subscribeDurableRoute(() => ({ accepted: true, by: "fixture-admission", route: "direct" }));
+            bus.subscribeDurableRoute(() => {
+              if (failDurableRoute) throw new Error("fixture durable inbox route failed");
+              return { accepted: true, by: "fixture-admission", route: "direct" };
+            });
             events = createEventInterface({
               bus,
               db,
@@ -93,7 +98,7 @@ describe("HTTP Task transcript and feedback transport", () => {
             source: "control-socket",
             inputSource: { kind: "human", id: String(input.source.id) },
           });
-          return { ...receipt, requestId: `input-${receipt.eventId}` };
+          return receipt.delivery === "accepted" ? { ...receipt, requestId: `input-${receipt.eventId}` } : receipt;
         }
         return { eventId: 101, eventType: "app.input.requested", requestId: "input-101" };
       },
@@ -180,7 +185,7 @@ describe("HTTP Task transcript and feedback transport", () => {
       },
       source: { kind: "human", id: "web-task:feedback-1" },
       channel: "web-ui",
-      idempotencyKey: "web-task:example:support/version:feedback-1",
+      idempotencyKey: "web-task:7:example:15:support/version:feedback-1",
     }]);
     // A client retry crosses HTTP/socket again with the same admission identity.
     expect((await send()).status).toBe(202);
@@ -308,5 +313,56 @@ describe("HTTP Task transcript and feedback transport", () => {
       { targetTaskId: identity.taskId, message: "/reload" },
       { targetTaskId: identity.taskId, message: "/restart" },
     ]);
+  });
+
+  test("does not confirm persisted-but-failed delivery and admits colon-separated Task IDs without key collisions", async () => {
+    persistInput = true;
+    failDurableRoute = true;
+
+    const first = await send();
+    expect(first.status).toBe(503);
+    const firstBody = await first.json();
+    expect(firstBody.accepted).toBeUndefined();
+    expect(firstBody).toMatchObject({ delivery: "recorded" });
+    expect(Number.isSafeInteger(firstBody.eventId)).toBe(true);
+
+    // Persisted failed delivery must not satisfy confirmation on retry; daemon admission must run again.
+    const stillFailing = await send();
+    expect(stillFailing.status).toBe(503);
+    expect(admitted).toHaveLength(2);
+
+    failDurableRoute = false;
+    const recovered = await send();
+    expect(recovered.status).toBe(202);
+    expect(await recovered.json()).toMatchObject({
+      accepted: true,
+      ...identity,
+      eventId: firstBody.eventId,
+    });
+    expect(admitted).toHaveLength(3);
+
+    // Colon-containing Task IDs and retry keys in the same App must not collide in DbWriter.
+    task = { appId: identity.appId, taskId: "support:version", generation: 1, status: "running", terminal: false };
+    const colonTask = await send({
+      appId: identity.appId,
+      taskId: "support:version",
+      expectedGeneration: 1,
+      message: "For support:version",
+      idempotencyKey: "feedback-1",
+    });
+    expect(colonTask.status).toBe(202);
+    const colonBody = await colonTask.json();
+
+    task = { appId: identity.appId, taskId: "support", generation: 1, status: "running", terminal: false };
+    const plainTask = await send({
+      appId: identity.appId,
+      taskId: "support",
+      expectedGeneration: 1,
+      message: "For support",
+      idempotencyKey: "version:feedback-1",
+    });
+    expect(plainTask.status).toBe(202);
+    const plainBody = await plainTask.json();
+    expect(plainBody.eventId).not.toBe(colonBody.eventId);
   });
 });

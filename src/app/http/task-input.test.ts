@@ -54,7 +54,7 @@ describe("Task-scoped human feedback", () => {
       },
       source: { kind: "human", id: "web-task:message-1" },
       channel: "web-ui",
-      idempotencyKey: "web-task:example:support/version:message-1",
+      idempotencyKey: "web-task:7:example:15:support/version:message-1",
     });
   });
   test("the App selects its accepted input kind without changing Task identity", async () => {
@@ -129,5 +129,41 @@ describe("Task-scoped human feedback", () => {
     expect(await retry.json()).toMatchObject({ accepted: true, replayed: true, eventId: 24, generation: 3 });
     expect(admissions).toBe(1);
     expect(reads).toBe(1);
+  });
+
+  test("refuses recorded-but-undelivered responses and encodes colon-containing taskIds unambiguously", async () => {
+    const seenKeys: string[] = [];
+    const handler = createTaskInputHandler({
+      daemonRead: async (frame) => ({
+        type: "ok",
+        task: { appId: frame.appId, taskId: frame.taskId, generation: 1, status: "running", terminal: false },
+      }),
+      admit: async (frame) => {
+        seenKeys.push(frame.idempotencyKey);
+        if (seenKeys.length === 1) return { type: "ok", eventId: 41, eventType: "app.input.requested", delivery: "recorded" };
+        return { type: "ok", eventId: 40 + seenKeys.length, eventType: "app.input.requested", delivery: "accepted", inboxId: `in-${seenKeys.length}` };
+      },
+      json: (body, status = 200) => Response.json(body, { status }),
+    });
+
+    const unconfirmed = await handler(
+      request({ appId: "example", taskId: "support:version", message: "First", expectedGeneration: 1, idempotencyKey: "feedback-1" }),
+    );
+    expect(unconfirmed.status).toBe(503);
+    const unconfirmedBody = await unconfirmed.json();
+    expect(unconfirmedBody.accepted).toBeUndefined();
+    expect(unconfirmedBody).toMatchObject({ delivery: "recorded", eventId: 41 });
+
+    const firstAccepted = await handler(
+      request({ appId: "example", taskId: "support:version", message: "First", expectedGeneration: 1, idempotencyKey: "feedback-1" }),
+    );
+    const secondAccepted = await handler(
+      request({ appId: "example", taskId: "support", message: "Second", expectedGeneration: 1, idempotencyKey: "version:feedback-1" }),
+    );
+    expect(firstAccepted.status).toBe(202);
+    expect(secondAccepted.status).toBe(202);
+    expect(seenKeys[1]).toBe("web-task:7:example:15:support:version:feedback-1");
+    expect(seenKeys[2]).toBe("web-task:7:example:7:support:version:feedback-1");
+    expect(seenKeys[1]).not.toBe(seenKeys[2]);
   });
 });
