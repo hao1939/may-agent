@@ -44,7 +44,7 @@ Other report implementations live in `../adapters/reporting/`.
 
 The legacy Learning dashboard and `/api/learning` aggregate are retired, including
 the project-detail Learning tab. Session detail, saved review-note reads
-(`/api/sessions/:id/eval`) and the agent evaluation-trend API remain available. Historical
+(`/api/sessions/:id/eval`) remain available. Historical
 artifacts and evaluation records are retained; HTTP does not regenerate their old
 finding/notification summaries. Task review and follow-through belong to Apps.
 
