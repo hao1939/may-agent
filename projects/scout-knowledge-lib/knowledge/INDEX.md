@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
-last_updated: "2026-11-11"
-source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded findings through 2026-11-11, the §37–§40 Agent Evaluation Research: Diagnostic Layers companion, and the Agent Runtime Enforcement Observability companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
+last_updated: "2026-11-12"
+source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded findings through 2026-11-12, the §37–§40 Agent Evaluation Research: Diagnostic Layers companion, and the Agent Runtime Enforcement Observability companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
 
@@ -69,6 +69,10 @@ Migration and project-operation artifacts live outside `knowledge/`:
 - [Hermes Agent and OpenClaw comparative investigation (2026-09-02)](../reports/research/hermes-agent-openclaw-comparative-investigation-2026-09-02.md) — UTC-dated pinned-source architecture, memory, skill-learning, authority, recovery, issue, and cost comparison; reconciles all 28 existing matching leads and records bounded reproduction limits.
 
 ## Recent Source-Grounded Findings
+
+### 2026-11-12
+
+- [Systems coding agents need cross-layer runtime knowledge](./findings/2026-11-12-engine-agents-need-cross-layer-runtime-knowledge.md) — EngineAgent's abstract reports higher end-to-end model-enablement success after adding a hierarchy-aware engine index, pre-validated backend workflows, and device-side auditing; Scout did not inspect the full paper, implementation, tasks, baselines, devices, code, data, or component ablations.
 
 ### 2026-11-11
 
