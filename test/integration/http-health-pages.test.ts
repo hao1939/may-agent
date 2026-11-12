@@ -583,6 +583,32 @@ describe("served workflow and metric health pages", () => {
     }, 30000,
   );
 
+  test.skipIf(skipBrowser)("an inspector background read keeps its content and composer visible until replacement", async () => {
+    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    try {
+      const page = await browser.newPage();
+      await page.goto(base + "/sessions/step-upload", { waitUntil: "domcontentloaded" });
+      await page.waitForSelector("#session-detail-panel .session-inspector");
+      await page.evaluate("chatTranscript.read");
+      let capture: ((request: HTTPRequest) => void) | null = null;
+      const intercepted = new Promise<HTTPRequest>(resolveRequest => { capture = resolveRequest; });
+      await page.setRequestInterception(true);
+      page.on("request", request => {
+        if (capture && new URL(request.url()).pathname === "/api/sessions/step-upload") {
+          capture(request); capture = null;
+        } else void request.continue();
+      });
+      const pending = page.evaluate("loadSessionDetail('step-upload')");
+      void pending.catch(() => {}); // Teardown may close the page after a failed assertion.
+      const held = await intercepted;
+      expect(await page.$eval("#session-detail-panel h3", el => el.textContent)).toBe("step-upload");
+      expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
+      await held.continue();
+      await pending;
+      expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
+    } finally { await browser.close(); }
+  }, 30000);
+
   test.skipIf(skipBrowser)(
     "queued session refreshes are cancelled on navigation and late callbacks cannot reopen a session",
     async () => {

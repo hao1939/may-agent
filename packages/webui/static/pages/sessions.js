@@ -399,8 +399,10 @@ async function readSessionDetail(sessionId, opts = {}) {
   if (changed) currentSessionEval = null;
   currentInspectedSession = sessionId;
   const panel = getSessionDetailPanel();
-  restoreChatComposer();
-  if (changed || !panel.querySelector('.session-inspector')) panel.innerHTML = '<div class="panel">Loading...</div>';
+  if (changed || !panel.querySelector('.session-inspector')) {
+    restoreChatComposer();
+    panel.innerHTML = '<div class="panel">Loading...</div>';
+  }
 
   try {
     const [sessRes, transRes] = await Promise.all([
