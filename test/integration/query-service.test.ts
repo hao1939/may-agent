@@ -197,7 +197,7 @@ describe("QueryService", () => {
     ]);
   });
 
-  it("keeps stored evaluation history readable after reopening the database", () => {
+  it("keeps stored session digest history readable after reopening the database", () => {
     const { root, db } = harness();
     db.run("INSERT INTO sessions (sessionId, agent, task, status, startedAt) VALUES (?, ?, ?, ?, ?)", [
       "reviewed-session",
@@ -207,20 +207,20 @@ describe("QueryService", () => {
       100,
     ]);
     db.run(
-      "INSERT INTO evaluations (sessionId, agent, verdict, issues, evaluatedByHeuristic, skippedByJs, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      ["reviewed-session", "dev", "needs_improvement", '["missing facts"]', 0, 0, 200],
+      "INSERT INTO session_digests (sessionId, agent, trigger, step, outcome, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+      ["reviewed-session", "dev", "finish", 1, "verified", 200],
     );
     closeDb(root);
 
     const query = createQueryService({ getDb: () => getDb(root) });
     expect(
       query.sql(
-        `SELECT s.sessionId, s.status, e.verdict, e.issues FROM sessions s
-      JOIN evaluations e ON e.sessionId = s.sessionId WHERE s.sessionId = ?`,
+        `SELECT s.sessionId, s.status, d.outcome FROM sessions s
+      JOIN session_digests d ON d.sessionId = s.sessionId WHERE s.sessionId = ?`,
         ["reviewed-session"],
       ).rows,
     ).toEqual([
-      { sessionId: "reviewed-session", status: "done", verdict: "needs_improvement", issues: '["missing facts"]' },
+      { sessionId: "reviewed-session", status: "done", outcome: "verified" },
     ]);
   });
 

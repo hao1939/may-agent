@@ -18,7 +18,6 @@ export {
 } from "@earendil-works/pi-coding-agent";
 export type { TruncationOptions, TruncationResult } from "@earendil-works/pi-coding-agent";
 export * from "./write.js";
-export * from "./system-status.js";
 export * from "./query-db.js";
 export * from "./lifecycle.js";
 export * from "./checkpoint.js";

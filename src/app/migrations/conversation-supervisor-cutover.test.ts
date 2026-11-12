@@ -3,14 +3,14 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { assertAppInboxClaim, claimAppInboxItem } from "../../../../test/fixtures/legacy-inbox.js";
-import { DbWriter } from "../../../lib/db-writer.js";
-import { stateTransaction } from "../../../lib/db/transaction.js";
-import { closeDb, getDb } from "../../../lib/db/connection.js";
-import { startAppInboxRuntime, type AppInboxRuntime } from "../../composition/app-inbox-runtime.js";
-import { AppRegistry } from "../apps/registry.js";
-import { EVENT_ROW_ID, EventBus } from "../events/bus.js";
-import { createAppTaskCapability } from "../tasks/app-task-capability.js";
+import { assertAppInboxClaim, claimAppInboxItem } from "../../../test/fixtures/legacy-inbox.js";
+import { DbWriter } from "../../lib/db-writer.js";
+import { stateTransaction } from "../../lib/db/transaction.js";
+import { closeDb, getDb } from "../../lib/db/connection.js";
+import { startAppInboxRuntime, type AppInboxRuntime } from "../composition/app-inbox-runtime.js";
+import { AppRegistry } from "../core/apps/registry.js";
+import { EVENT_ROW_ID, EventBus } from "../core/events/bus.js";
+import { createAppTaskCapability } from "../core/tasks/app-task-capability.js";
 import {
   appTaskContext,
   assertAppTaskClaimCurrent,
@@ -18,31 +18,31 @@ import {
   claimObservedAppTask,
   completeAppTask,
   observeAppTaskIntent,
-} from "../tasks/app-task-reconciler.js";
+} from "../core/tasks/app-task-reconciler.js";
 import {
   admitStandaloneCanonicalAppTaskEvent,
   closeInstalledAppTaskRuntimes,
   installAppTaskRuntimes,
-} from "../tasks/app-task-runtime.js";
-import type { TaskAgentInput } from "../tasks/execution.js";
-import { standaloneAppTaskAdmissionDescriptors } from "../tasks/runtime-definition.js";
-import type { AppTaskRuntimeOptions } from "../tasks/runtime-options.js";
+} from "../core/tasks/app-task-runtime.js";
+import type { TaskAgentInput } from "../core/tasks/execution.js";
+import { standaloneAppTaskAdmissionDescriptors } from "../core/tasks/runtime-definition.js";
+import type { AppTaskRuntimeOptions } from "../core/tasks/runtime-options.js";
 import {
   completeAppEventAdmissionPlan,
   createAppEventAdmissionPlan,
   getAppEventAdmissionPlan,
   markAppEventAdmissionCommandAdmitted,
-} from "./app-event-admission-store.js";
-import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
-import { AppTaskResourceStore } from "./app-task-resource-store.js";
+} from "../core/state/app-event-admission-store.js";
+import { createAppInboxItem, getAppInboxItem } from "../core/state/app-inbox-store.js";
+import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";
 import { migrateConversationInputs } from "./conversation-cutover.js";
 import {
   applyConversationRequestUpdates,
   linkConversationRequestInputs,
   readConversationRequest,
-} from "./conversation-requests.js";
-import { conversationTaskId, listPendingConversationTaskChanges } from "./conversation-task-turns.js";
-import { createConversationTopic, linkConversationTopicTask, readConversationTopic } from "./conversations.js";
+} from "../core/state/conversation-requests.js";
+import { conversationTaskId, listPendingConversationTaskChanges } from "../core/state/conversation-task-turns.js";
+import { createConversationTopic, linkConversationTopicTask, readConversationTopic } from "../core/state/conversations.js";
 
 test("offline cutover drains frozen supervisor admission, closes its owner, and returns missed results through Conversation", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-supervisor-cutover-"));

@@ -199,10 +199,8 @@ function toggleMarkdown() {
 
 function linkifyRefs(html) {
   if (!html) return html;
-  // KE-NNN, H-NNN, EXP-NNN — route to knowledge surface so deep links work cross-pane.
+  // KE-NNN — route to knowledge surface so deep links work cross-pane.
   html = html.replace(/\b(KE-\d+)\b/g, '<a href="#/knowledge/entries/$1.md" onclick="event.stopPropagation()">$1</a>');
-  html = html.replace(/\b(H-\d+)\b/g, '<a href="#/knowledge/hypotheses/$1.md" onclick="event.stopPropagation()">$1</a>');
-  html = html.replace(/\b(EXP-\d+)\b/g, '<a href="#/knowledge/experiments/$1.md" onclick="event.stopPropagation()">$1</a>');
   return html;
 }
 

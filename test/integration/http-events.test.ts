@@ -290,26 +290,26 @@ describe("HTTP event reads", () => {
       repairDecision: { ownerFindings: [{ id: "legacy", evidence: ["Saved observation"] }] } };
     const saved = JSON.stringify(summary) + "\n";
     writeFileSync(path, saved);
-    db.prepare(`INSERT INTO evaluations (sessionId, agent, quality, efficiency, verdict, createdAt)
-      VALUES (?, 'worker', 0.7, 0.8, 'needs_improvement', 1000)`).run(sessionId);
-    const evaluation = db.prepare("SELECT * FROM evaluations WHERE sessionId = ?").get(sessionId);
 
     for (const route of ["/api/learning", "/api/learning?projectId=sample&days=30", "/learning", "/learning/",
       "/api/projects/lineage", "/api/projects/lineage?path=projects/sample.app"]) {
       expect((await fetch(baseUrl + route)).status).toBe(404);
     }
-    expect(await read(`/api/sessions/${sessionId}`)).toMatchObject({
-      session: { sessionId, status: "done", projectId: "worker/sample" }, evaluation,
+    const sessionPayload = await read(`/api/sessions/${sessionId}`);
+    expect(sessionPayload).toMatchObject({
+      session: { sessionId, status: "done", projectId: "worker/sample" },
       children: [{ sessionId: "s_review_child", parentSessionId: sessionId }],
     });
+    expect(sessionPayload).not.toHaveProperty("evaluation");
     expect(await read("/api/projects/sessions?path=projects/sample.app")).toMatchObject([
       { sessionId, status: "done", link: "tagged" },
     ]);
     expect(await read(`/api/sessions/${sessionId}/eval`)).toMatchObject({ exists: true, rows: [summary] });
-    expect(await read("/api/agents/worker/detail")).toMatchObject({
-      evalTrend: [{ quality: 0.7, efficiency: 0.8, verdict: "needs_improvement", createdAt: 1000 }],
+    const agentDetail = await read("/api/agents/worker/detail");
+    expect(agentDetail).toMatchObject({
+      recentSessions: [{ id: sessionId }],
     });
-    expect(db.prepare("SELECT * FROM evaluations WHERE sessionId = ?").get(sessionId)).toEqual(evaluation);
+    expect(agentDetail).not.toHaveProperty("evalTrend");
     expect(readFileSync(path, "utf8")).toBe(saved);
   });
 

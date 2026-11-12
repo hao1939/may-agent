@@ -29,7 +29,6 @@ function registerMay(manager: SubagentManager): void {
     apiKey: "fake-key",
     tools: [
       "query_db",
-      "system_status",
       "agents",
       "message",
       "read",
@@ -87,7 +86,7 @@ describe("chat runtime policy", () => {
       expect(prompt).toContain("This is a persistent conversation.");
       expect(prompt).not.toContain("Fresh System State");
       expect(prompt).not.toContain("what needs attention?");
-      expect(toolNames).toEqual(["query_db", "system_status", "agents", "message", "read", "run_cli_agent"]);
+      expect(toolNames).toEqual(["query_db", "agents", "message", "read", "run_cli_agent"]);
     } finally {
       manager.cancel(sessionId);
       rmSync(persistDir, { recursive: true, force: true });
@@ -186,7 +185,7 @@ describe("chat runtime policy", () => {
       const session = activeSession(manager, sessionId);
       const toolNames = session.agent.state.tools.map((t: AgentTool) => t.name);
 
-      expect(toolNames).toEqual(["query_db", "system_status", "read", "finish"]);
+      expect(toolNames).toEqual(["query_db", "read", "finish"]);
       expect(toolNames).not.toContain("bash");
       expect(toolNames).not.toContain("write");
       expect(toolNames).not.toContain("message");

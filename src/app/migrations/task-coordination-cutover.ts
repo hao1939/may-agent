@@ -1,8 +1,8 @@
-import { stateTransaction } from "../../../lib/db/transaction.js";
-import { appendTaskTriggerEvent, preferredTriggerFromEvents } from "../tasks/app-task-reconciler.js";
-import type { AppTaskContext } from "../tasks/app-task-store.js";
-import type { AppTaskInputWait, AppTaskTriggerEvent } from "../tasks/app-task-state.js";
-import type { AppTaskResourceMutation } from "./app-task-resource-store.js";
+import { stateTransaction } from "../../lib/db/transaction.js";
+import { appendTaskTriggerEvent, preferredTriggerFromEvents } from "../core/tasks/app-task-reconciler.js";
+import type { AppTaskContext } from "../core/tasks/app-task-store.js";
+import type { AppTaskInputWait, AppTaskTriggerEvent } from "../core/tasks/app-task-state.js";
+import type { AppTaskResourceMutation } from "../core/state/app-task-resource-store.js";
 
 /** Offline retirement of implicit child waits. Reconsider the original ask;
  * never invent an exact return link from a child's latest status.

@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 import { openDatabase } from "../../src/lib/db.js";
 import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
 import { appTaskContext } from "../../src/app/core/tasks/app-task-reconciler.js";
-import { retireAppState, type RetiredAppRetirementPlan } from "../../src/app/core/state/retired-app-retirement.js";
+import { retireAppState, type RetiredAppRetirementPlan } from "../../src/app/migrations/retired-app-retirement.js";
 
 const args = process.argv.slice(2);
 const value = (flag: string) => {
