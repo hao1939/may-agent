@@ -1639,7 +1639,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const msX = (content.match(/^- \[x\]/gim) || []).length;
       const msO = (content.match(/^- \[ \]/gm) || []).length;
       return {
-        name: project.name,
+        name: field("id") || project.name,
         path,
         owner: project.owner,
         status: field("status") || "unknown",

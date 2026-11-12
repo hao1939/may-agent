@@ -119,9 +119,9 @@ describe("HTTP event reads", () => {
   });
 
   it.each([
-    ["owner: worker\nid: legacy-project\nstatus: active", "shared"],
-    ["id: legacy-project\nowner: worker\nstatus: active", "worker"],
-    ["id: legacy-project\nstatus: active\nowner: worker", "shared"],
+    ["owner: worker\nid: saved-label\nstatus: active", "shared"],
+    ["id: saved-label\nowner: worker\nstatus: active", "worker"],
+    ["id: saved-label\nstatus: active\nowner: worker", "shared"],
   ])("retains Markdown session links with frontmatter %s", async (frontmatter, oldOwner) => {
     const saved = `---\n${frontmatter}\n---\n\n## Goal\nRetained project goal\n`;
     const dir = metadata("legacy-project", "project.md", saved);
@@ -131,10 +131,10 @@ describe("HTTP event reads", () => {
     ] as const) upsertSession(root, { sessionId, projectId, startedAt, agent: "worker", task: "Inspect the result", status: "done" });
     const before = db.prepare("SELECT sessionId, projectId FROM sessions ORDER BY sessionId").all();
     expect(await read("/api/projects")).toMatchObject([
-      { path: "projects/legacy-project", owner: "worker", status: "active", formatErrors: [] },
+      { name: "saved-label", path: "projects/legacy-project", owner: "worker", status: "active", formatErrors: [] },
     ]);
     expect(await read("/api/projects/detail?path=projects/legacy-project")).toMatchObject({
-      owner: "worker", projectId: "worker/legacy-project", sessionCount: 2, goal: "Retained project goal",
+      name: "legacy-project", owner: "worker", projectId: "worker/legacy-project", sessionCount: 2, goal: "Retained project goal",
       recentSessions: [{ sessionId: "s_current", link: "tagged" }, { sessionId: "s_historical", link: "tagged" }],
     });
     expect(await read("/api/projects/sessions?path=projects/legacy-project")).toMatchObject([
