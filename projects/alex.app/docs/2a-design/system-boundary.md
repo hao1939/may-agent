@@ -645,6 +645,13 @@ model or switch the Task's executor because an error occurred. If the procedure
 cannot run at all, its existing caller or declared operational route receives
 the failure; merely saving a diagnostic is not a completed handoff.
 
+Mechanical retry and owner investigation are independent. A scheduled retry
+does not establish that the failure is handled, so Alex's declared
+controller-failure route admits the evidence while retries continue. Repeated
+notices for one original Task join one investigation; Alex checks whether work
+has already recovered before deciding repair, waiting or escalation. Diagnosis
+does not reset retry allowances or transfer authority over the original work.
+
 After supported automatic retry/recovery fails, **Host owns truthful records and
 usable feedback; the responsible agent owns the next decision.** Reconcile records
 with confirmed execution facts, and retain unknowns explicitly: a failed stop

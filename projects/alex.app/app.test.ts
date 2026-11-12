@@ -353,36 +353,34 @@ test("selector failures reach one executable repair Task even when automatic sam
   }
 });
 
-test("exhausted Tasks and non-retrying controller failures route to one stable Alex recovery Task per subject without self-looping", () => {
+test("controller failures reach one Alex recovery Task independently of retry scheduling", () => {
   const enabled = process.env.EVALUATION_AUTO_REVIEW_ENABLED;
   process.env.EVALUATION_AUTO_REVIEW_ENABLED = "false";
   try {
-    // Transient retries stay quiet when automatic sampling is off
+    // Attempt sampling remains independent of operational controller failures.
     expect(taskInputForEvent({
       type: "project.task.reconciled",
       data: { project: "scout-knowledge-lib", taskId: "explore-xhs", attemptId: "r_1", disposition: "retrying" },
     } as never)).toBeNull();
-    expect(taskInputForEvent({
-      type: "handler.failed",
-      source: "app-task-controller",
-      data: { appId: "scout-knowledge-lib", taskId: "explore-xhs", stage: "task-reconciliation", willRetry: true },
-    } as never)).toBeNull();
-
-    // Exhausted attempt and non-retrying controller failure join one stable recovery Task per subject
+    // All reports for one original obligation share the same investigation.
     const exhausted = taskInputForEvent({
       type: "project.task.reconciled",
       data: { project: "scout-knowledge-lib", taskId: "explore-xhs", attemptId: "r_3", disposition: "exhausted", summary: "ENOSPC" },
     } as never)!;
-    const preAttempt = taskInputForEvent({
-      type: "handler.failed",
-      source: "app-task-controller",
-      data: { appId: "scout-knowledge-lib", taskId: "explore-xhs", stage: "task-reconciliation", willRetry: false, error: "ENOSPC" },
-    } as never)!;
     expect(exhausted.kind).toBe("message");
-    expect(preAttempt.kind).toBe("message");
     const firstRecovery = taskForInput({ id: "ex-1", input: exhausted } as never);
-    const secondRecovery = taskForInput({ id: "ex-2", input: preAttempt } as never);
-    expect(secondRecovery).toEqual(firstRecovery);
+    for (const willRetry of [true, false, undefined]) {
+      const evidence = { appId: "scout-knowledge-lib", taskId: "explore-xhs", stage: "task-reconciliation",
+        ...(willRetry === undefined ? {} : { willRetry }), error: "ENOSPC" };
+      const input = taskInputForEvent({ type: "handler.failed", source: "app-task-controller", data: evidence } as never)!;
+      expect(input).toMatchObject({ kind: "message", data: { context: { taskRecovery: { evidence } } } });
+      expect(taskForInput({ id: `failure-${willRetry}`, input } as never)).toEqual(firstRecovery);
+    }
+    for (const [source, stage] of [["other-producer", "task-reconciliation"], ["app-task-controller", "other-stage"]]) {
+      expect(taskInputForEvent({ type: "handler.failed", source, data: {
+        appId: "scout-knowledge-lib", taskId: "explore-xhs", stage, willRetry: true,
+      } } as never)).toBeNull();
+    }
     expect(firstRecovery.intent.id).toStartWith("runtime/recovery/scout-knowledge-lib-explore-xhs-");
     expect(firstRecovery.intent).toMatchObject({
       agent: "alex",

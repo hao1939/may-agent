@@ -108,6 +108,11 @@ and requeue the same Task. If its dependency completed while the daemon was
 offline, startup recovery will wake the same Task. Do not resume its old
 session, insert another request row, or mark the original complete by hand.
 
+For controller failures, inspect the original Task and its linked Alex
+investigation even while the Host keeps retrying. Check current evidence before
+repairing; the work may already have recovered. Follow the
+[retry and investigation boundary](../2a-design/system-boundary.md#retry-and-recovery-ownership).
+
 ## Rejected input and explicit Task reopening
 
 Read the input's result, `handling` and recovery evidence before retrying. A

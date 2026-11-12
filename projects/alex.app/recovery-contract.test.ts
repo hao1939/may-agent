@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Type } from "@may-agent/sdk";
@@ -20,7 +20,7 @@ import { AppRegistry } from "../may-agent/src/app/core/apps/registry.ts";
 import { EventBus } from "../may-agent/src/app/core/events/bus.ts";
 import { HostCapacity } from "../may-agent/src/app/core/scheduling/host-capacity.ts";
 import { AppTaskResourceStore } from "../may-agent/src/app/core/state/app-task-resource-store.ts";
-import { createAppInboxItem } from "../may-agent/src/app/core/state/app-inbox-store.ts";
+import { createAppInboxItem, listAppInboxItems } from "../may-agent/src/app/core/state/app-inbox-store.ts";
 import {
   createAppEventAdmissionPlan,
   getAppEventAdmissionPlan,
@@ -52,7 +52,7 @@ import {
 
 // Real App routing/admission/settlement; explicit start enables ordinary timers.
 // Agent decisions are scripted and no external models are called.
-async function runtime(execute: TaskAgentRunner["execute"]) {
+async function runtime(execute: TaskAgentRunner["execute"], beforeReconcile?: (taskId: string) => Promise<void>) {
   const root = mkdtempSync(join(tmpdir(), "alex-recovery-"));
   const appDir = join(root, "alex.app");
   mkdirSync(join(appDir, "tasks"), { recursive: true });
@@ -103,6 +103,10 @@ async function runtime(execute: TaskAgentRunner["execute"]) {
         hostCapacity: new HostCapacity(3),
         startAfter: start.promise,
         agents,
+        ...(beforeReconcile ? { executeAttempt: async (request: Omit<Parameters<typeof reconcileLoadedAppTaskOnce>[0], "bus">) => {
+          await beforeReconcile(request.taskId);
+          return reconcileLoadedAppTaskOnce({ bus, ...request });
+        } } : {}),
         workflows: createTaskWorkflowRunner({ manager: {} as never, bus }),
       },
       { deferRecovery: true },
@@ -135,6 +139,9 @@ async function runtime(execute: TaskAgentRunner["execute"]) {
     },
     get db() {
       return db;
+    },
+    get bus() {
+      return bus;
     },
     start() {
       start.resolve();
@@ -594,6 +601,94 @@ test("selector failure and exhaustion reach the same owner Task across restart",
     await f.close();
   }
 });
+
+test("active controller failures reach Alex and normal retries finish the original work", async () => {
+  const enabled = process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+  process.env.EVALUATION_AUTO_REVIEW_ENABLED = "false";
+  const repeatedFailure = Promise.withResolvers<void>();
+  let originalTaskId = "";
+  let recoveryTaskId = "";
+  let repairs = 0;
+  const failures: Record<string, unknown>[] = [];
+  const f = await runtime(async ({ attempt }) => {
+    const access = join(f.root, "sample-access.ready");
+    if (attempt.task.id === originalTaskId) {
+      expect(readFileSync(access, "utf8")).toBe("ready\n");
+      const sample = Number(readFileSync(join(f.root, "sample.txt"), "utf8"));
+      return { runId: attempt.attemptId, handlerResult: {
+        state: "converged", summary: `Verified original sample ${sample}`, facts: ["access:verified"], result: { sample },
+      } };
+    }
+    recoveryTaskId ||= attempt.task.id;
+    expect(attempt.task.id).toBe(recoveryTaskId);
+    expect(recoveryTaskId).toStartWith("runtime/recovery/alex-input-controller-original-");
+    const returned = attempt.events.items.find(({ event }) => event.type === "app.dependency.updated" && event.data.status === "done");
+    if (returned) {
+      expect(returned.event.data).toMatchObject({ taskId: originalTaskId, result: { sample: 42 } });
+      return { runId: attempt.attemptId, handlerResult: {
+        state: "converged", summary: "Verified the original work returned sample 42", facts: ["original:verified"],
+      } };
+    }
+    if (!existsSync(access)) {
+      // Hold the scripted investigation at a causal boundary so the real
+      // controller can report a second failure while Alex is already running.
+      let timeout: ReturnType<typeof setTimeout> | undefined;
+      try {
+        await Promise.race([repeatedFailure.promise, new Promise<never>((_, reject) => {
+          timeout = setTimeout(() => reject(new Error("Missing repeated controller failure")), 3000);
+        })]);
+      } finally { clearTimeout(timeout); }
+      expect(failures.length).toBeGreaterThanOrEqual(2);
+      expect(f.store.readTaskContext({ taskIds: [originalTaskId] }).attempts ?? {}).toEqual({});
+      await createWriteTool(f.root).execute("restore-access", { path: access, content: "ready\n" }, attempt.signal);
+      expect(readFileSync(access, "utf8")).toBe("ready\n");
+      repairs++;
+    }
+    return { runId: attempt.attemptId, handlerResult: {
+      state: "waiting", summary: "Access restored; the original result remains owed", facts: ["access:restored"],
+      requests: [{ id: "verify-original", appId: "alex", taskId: originalTaskId,
+        input: { kind: "message", data: { message: "Return the original verified sample after access restoration." } } }],
+      conditions: [{ requestId: "verify-original" }],
+    } };
+  }, async taskId => {
+    if (taskId === originalTaskId && !existsSync(join(f.root, "sample-access.ready")))
+      throw new Error("Fixture access prerequisite unavailable before Task claim");
+  });
+  const unsubscribe = f.bus.subscribe(event => {
+    if (event.type !== "handler.failed" || event.source !== "app-task-controller" || event.data.taskId !== originalTaskId) return;
+    failures.push(event.data);
+    if (failures.length === 2) repeatedFailure.resolve();
+  });
+  try {
+    writeFileSync(join(f.root, "sample.txt"), "42\n");
+    const original = f.admit("controller-original", { kind: "message", data: { message: "Read and return the original sample." } });
+    originalTaskId = original.waitingOn!.id;
+    f.start();
+    const deadline = Date.now() + 5000;
+    while (Date.now() < deadline && (f.store.readTask(recoveryTaskId)?.status.phase !== "converged" ||
+      f.inbox.host.get(original.id)?.status !== "done")) await Bun.sleep(10);
+    expect(recoveryTaskId).not.toBe("");
+    expect(failures.length).toBeGreaterThanOrEqual(2);
+    expect(failures.every(failure => failure.willRetry === true && failure.disposition === "retry-scheduled")).toBe(true);
+    expect(repairs).toBe(1);
+    expect(f.store.readTask(originalTaskId)).toMatchObject({
+      metadata: { generation: 1 }, status: { phase: "converged", result: { sample: 42 } },
+    });
+    expect(f.inbox.host.get(original.id)).toMatchObject({ status: "done", result: { result: { sample: 42 } } });
+    expect(f.store.readTask(recoveryTaskId)?.status.phase).toBe("converged");
+    expect(f.store.listTaskIds({ limit: 10 }).sort()).toEqual([originalTaskId, recoveryTaskId].sort());
+    const notices = listAppInboxItems(f.db, { appId: "alex", limit: 100 }).filter(item => item.originEventId &&
+      (item.input.data as { context?: { taskRecovery?: unknown } }).context?.taskRecovery);
+    expect(notices).toHaveLength(failures.length);
+    expect(notices.every(item => item.waitingOn?.id === recoveryTaskId)).toBe(true);
+    expect(f.db.prepare("SELECT count(*) AS n FROM events WHERE event_type = 'app.task.retry.requested'").get()).toEqual({ n: 0 });
+  } finally {
+    unsubscribe();
+    await f.close();
+    if (enabled === undefined) delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+    else process.env.EVALUATION_AUTO_REVIEW_ENABLED = enabled;
+  }
+}, 10_000);
 
 test("repair before exhaustion lets Host resume the real selector automatically", async () => {
   const enabled = process.env.EVALUATION_AUTO_REVIEW_ENABLED;

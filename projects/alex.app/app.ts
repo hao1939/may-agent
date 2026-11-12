@@ -183,7 +183,7 @@ function operationalRecoveryInput(
   return {
     kind: "message",
     data: {
-      message: `Investigate the ${reason === "exhausted" ? "exhausted" : "non-retrying"} Task ${appId}/${taskId}. Read the exact affected Task and its current evidence before acting. Preserve its original assignment, inputs and caller return links. Repair within Alex's authorized scope and verify recovery on the original Task, or escalate any unresolved domain or human blocker to May.`,
+      message: `Investigate Task ${appId}/${taskId} after ${reason === "exhausted" ? "its attempts were exhausted" : "a controller failure"}. Read the exact affected Task and its current evidence; check whether it has already recovered before acting. Preserve its original assignment, inputs and caller return links. Repair within Alex's authorized scope and verify recovery on the original Task, or escalate any unresolved domain or human blocker to May.`,
       context: {
         taskRecovery: {
           appId,
@@ -202,8 +202,7 @@ export function taskInputForEvent(event: AppEvent<Record<string, unknown>>): App
   if (event.type === "handler.failed") {
     if (
       event.source !== "app-task-controller" ||
-      data.stage !== "task-reconciliation" ||
-      data.willRetry !== false
+      data.stage !== "task-reconciliation"
     ) {
       return null;
     }
