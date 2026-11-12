@@ -127,6 +127,7 @@ node -e '
   if (pi.providers["may-openai"].baseUrl !== "https://models.example.test/v1") process.exit(1);
   if (settings.defaultProvider !== "may-openai") process.exit(1);
   if (gemini.model.name !== "gemini-fixture" || gemini.tools.sandbox !== false) process.exit(1);
+  if (gemini.modelConfigs.modelIdResolutions.gemini4.default !== "gemini-4-argon") process.exit(1);
 '
 grep -q 'decision = "allow"' "$HOME/.gemini/policies/full-access.toml"
 RUNTIME_CHECK
