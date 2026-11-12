@@ -25,6 +25,20 @@ The Projects page presents loaded Apps independently of saved project context.
 App loading or Task execution. Missing project metadata cannot hide a loaded
 App, and saved metadata cannot substitute for an unavailable daemon read.
 
+`project-metadata.ts` reads project identity and posture for the project list,
+detail, session lookup and agent counts. JSON posture reuses the saved project
+read model; source identity stays stable. Historical Markdown remains readable,
+and the project list/counts share discovery. Session reads retain the former
+parser's exact tags alongside the current identity; ingress keeps its previous
+single target. No stored IDs are rewritten. Malformed JSON is omitted from the
+saved-project list and fails detail explicitly; missing metadata still permits
+an exact saved session-tag lookup. These reads do not establish Task ownership.
+Collection discovery captures timestamps inside each guarded metadata read, so
+a disappearing file cannot fail the whole list. Controls use the shared source
+identity parser without loading display posture; JSON syntax errors retain the
+previous path/frontmatter fallback. File access errors still fail explicitly,
+and the daemon owns validation and admission of the single addressed target.
+
 `read-model/` contains HTTP diagnostic reads for the event graph and loop trace.
 Other report implementations live in `../adapters/reporting/`.
 
