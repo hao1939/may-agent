@@ -31,9 +31,12 @@ export function projectRuntimePaths(appDir: string): ProjectRuntimePaths {
   };
 }
 
-export function loadProjectReadModel(appDir: string): Record<string, unknown> {
+export function loadProjectReadModel(
+  appDir: string,
+  source = readJsonObject(join(appDir, "project.json")),
+): Record<string, unknown> {
   return {
-    ...readJsonObject(join(appDir, "project.json")),
+    ...source,
     ...readJsonObject(projectRuntimePaths(appDir).projectStatePath),
   };
 }

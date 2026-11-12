@@ -21,12 +21,13 @@ describe("HTTP event reads", () => {
   beforeEach(async () => {
     root = mkdtempSync(join(tmpdir(), "may-http-events-"));
     db = openStateDb(join(root, "may.db"));
+    mkdirSync(join(root, "agents"));
     // Exercise the standalone adapter, not a daemon or model-backed App.
     child = spawnFixtureProcess(
       [resolve(import.meta.dir, "../../src/app/http/server.ts"), "--state-dir", root, "--port", "0"],
       {
         cwd: root,
-        env: { ...process.env, AGENT: "helper", CONVERSATION_APP: "support", CONVERSATION_ID: "retained-room", PROJECT_ROOT: root, AGENTS_ROOT: root, PROJECTS_ROOT: root, SHARED_ROOT: root },
+        env: { ...process.env, AGENT: "helper", CONVERSATION_APP: "support", CONVERSATION_ID: "retained-room", PROJECT_ROOT: root, AGENTS_ROOT: join(root, "agents"), PROJECTS_ROOT: root, SHARED_ROOT: root },
       },
     );
     stopped = new Promise((done) => child.once("close", () => done()));
@@ -79,6 +80,101 @@ describe("HTTP event reads", () => {
     }
     const catalog = await read("/api/agents");
     expect(catalog.map((agent: { name: string }) => agent.name)).toEqual(["support"]);
+  });
+
+  function metadata(path: string, file: string, content: string) {
+    const dir = join(root, path);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, file), content);
+    return dir;
+  }
+
+  it("shares projected JSON posture across project list, detail and agent counts without changing source identity", async () => {
+    metadata("agents/worker", "agent.json", JSON.stringify({ name: "worker" }));
+    const source = JSON.stringify({ id: "stable.app", owner: "agent:worker", status: "active", goal: "Source goal" });
+    const dir = metadata("sample.app", "project.json", source);
+    const state = metadata("sample.app/.state", "project-state.json", JSON.stringify({
+      id: "wrong", owner: "other", status: "blocked", currentState: { summary: "Waiting for review" },
+    }));
+    upsertSession(root, { sessionId: "s_json", agent: "worker", task: "Inspect the result",
+      projectId: "agent:worker/stable.app", status: "done", startedAt: 1 });
+
+    expect(await read("/api/projects")).toMatchObject([
+      { name: "stable.app", path: "projects/sample.app", owner: "agent:worker", status: "blocked", formatErrors: [] },
+    ]);
+    expect(await read("/api/projects/detail?path=projects/sample.app")).toMatchObject({
+      name: "stable.app", owner: "agent:worker", projectId: "agent:worker/stable.app", status: "blocked",
+      currentState: "Waiting for review", goal: "Source goal", app: { appId: "stable" }, sessionCount: 1,
+    });
+    expect(await read("/api/projects/sessions?path=projects/sample.app")).toMatchObject([
+      { sessionId: "s_json", link: "tagged" },
+    ]);
+    expect(await read("/api/agents")).toMatchObject([{ name: "worker", projectsTotal: 1, projectsActive: 0 }]);
+    writeFileSync(join(state, "project-state.json"), JSON.stringify({ status: "active" }));
+    expect((await read("/api/projects"))[0].status).toBe("active");
+    expect((await read("/api/projects/detail?path=projects/sample.app")).status).toBe("active");
+    expect(await read("/api/agents")).toMatchObject([{ name: "worker", projectsTotal: 1, projectsActive: 1 }]);
+    expect(readFileSync(join(dir, "project.json"), "utf8")).toBe(source);
+    expect(db.prepare("SELECT projectId FROM sessions WHERE sessionId = 's_json'").get()).toEqual({ projectId: "agent:worker/stable.app" });
+  });
+
+  it.each([
+    ["owner: worker\nid: legacy-project\nstatus: active", "shared"],
+    ["id: legacy-project\nowner: worker\nstatus: active", "worker"],
+    ["id: legacy-project\nstatus: active\nowner: worker", "shared"],
+  ])("retains Markdown session links with frontmatter %s", async (frontmatter, oldOwner) => {
+    const saved = `---\n${frontmatter}\n---\n\n## Goal\nRetained project goal\n`;
+    const dir = metadata("legacy-project", "project.md", saved);
+    metadata("agents/worker", "agent.json", JSON.stringify({ name: "worker" }));
+    for (const [sessionId, projectId, startedAt] of [
+      ["s_current", "worker/legacy-project", 2], ["s_historical", `${oldOwner}/legacy-project`, 1],
+    ] as const) upsertSession(root, { sessionId, projectId, startedAt, agent: "worker", task: "Inspect the result", status: "done" });
+    const before = db.prepare("SELECT sessionId, projectId FROM sessions ORDER BY sessionId").all();
+    expect(await read("/api/projects")).toMatchObject([
+      { path: "projects/legacy-project", owner: "worker", status: "active", formatErrors: [] },
+    ]);
+    expect(await read("/api/projects/detail?path=projects/legacy-project")).toMatchObject({
+      owner: "worker", projectId: "worker/legacy-project", sessionCount: 2, goal: "Retained project goal",
+      recentSessions: [{ sessionId: "s_current", link: "tagged" }, { sessionId: "s_historical", link: "tagged" }],
+    });
+    expect(await read("/api/projects/sessions?path=projects/legacy-project")).toMatchObject([
+      { sessionId: "s_current", link: "tagged" }, { sessionId: "s_historical", link: "tagged" },
+    ]);
+    expect(await read("/api/agents")).toMatchObject([{ name: "worker", projectsTotal: 1, projectsActive: 1 }]);
+    expect(db.prepare("SELECT sessionId, projectId FROM sessions ORDER BY sessionId").all()).toEqual(before);
+    expect(readFileSync(join(dir, "project.md"), "utf8")).toBe(saved);
+  });
+
+  it("keeps per-agent Markdown readable beside a shared project with the same basename", async () => {
+    const saved = "# Old project\n\n**Owner**: worker\n**Status**: active\n\n## Goal\nRetained agent project\n";
+    metadata("agents/worker/workspace/projects/old-project", "project.md", saved);
+    metadata("old-project", "project.md", "---\nid: old-project\nowner: another\nstatus: waiting\n---\n\n## Goal\nShared project\n");
+    metadata("agents/worker", "agent.json", JSON.stringify({ name: "worker" }));
+    upsertSession(root, { sessionId: "s_old", projectId: "shared/old-project", startedAt: 1,
+      agent: "worker", task: "Inspect the result", status: "done" });
+    const path = "agents/worker/workspace/projects/old-project";
+    const params = new URLSearchParams({ path });
+    expect(await read("/api/projects")).toMatchObject([
+      { path: "projects/old-project", owner: "another" }, { path, owner: "worker", status: "active", formatErrors: [] },
+    ]);
+    expect(await read(`/api/projects/detail?${params}`)).toMatchObject({
+      owner: "worker", projectId: "worker/old-project", goal: "Retained agent project", sessionCount: 1,
+    });
+    expect(await read(`/api/projects/content?${params}`)).toEqual({ content: saved });
+    expect(await read(`/api/projects/sessions?${params}`)).toMatchObject([{ sessionId: "s_old", link: "tagged" }]);
+    expect(await read("/api/agents")).toMatchObject([{ name: "worker", projectsTotal: 1, projectsActive: 1 }]);
+  });
+
+  it("keeps missing and damaged metadata distinct while retaining exact saved session tags", async () => {
+    metadata("damaged.app", "project.json", "{ damaged");
+    expect(await read("/api/projects")).toEqual([]);
+    expect((await fetch(baseUrl + "/api/projects/detail?path=projects/damaged.app")).status).toBe(500);
+    expect((await fetch(baseUrl + "/api/projects/detail?path=projects/missing-project")).status).toBe(404);
+    upsertSession(root, { sessionId: "s_missing", projectId: "shared/missing-project", startedAt: 1,
+      agent: "worker", task: "Inspect the result", status: "done" });
+    expect(await read("/api/projects/sessions?path=projects/missing-project")).toMatchObject([
+      { sessionId: "s_missing", link: "tagged" },
+    ]);
   });
 
   it("retires Learning and project Lineage aggregation while preserving session evidence", async () => {
