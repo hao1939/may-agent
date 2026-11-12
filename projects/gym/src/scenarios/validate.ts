@@ -55,6 +55,30 @@ function validateMetadata(id: string, meta: ScenarioMeta | null, issues: Validat
   if (typeof meta.workflow !== "boolean") {
     issues.push({ severity: "warning", scenario: id, code: "metadata-workflow", detail: "workflow should be boolean" });
   }
+  if (meta.allow_workflow !== undefined && typeof meta.allow_workflow !== "boolean") {
+    issues.push({
+      severity: "warning",
+      scenario: id,
+      code: "metadata-allow-workflow",
+      detail: "allow_workflow should be boolean when present",
+    });
+  }
+  if (meta.workflow_entry !== undefined) {
+    if (
+      !meta.workflow_entry ||
+      typeof meta.workflow_entry !== "object" ||
+      Array.isArray(meta.workflow_entry) ||
+      typeof meta.workflow_entry.workflow !== "string" ||
+      !meta.workflow_entry.workflow.trim()
+    ) {
+      issues.push({
+        severity: "error",
+        scenario: id,
+        code: "metadata-workflow-entry",
+        detail: "workflow_entry must specify a non-empty workflow name",
+      });
+    }
+  }
 }
 
 function inspectPortableLinks(root: string, scenario: string, issues: ValidationIssue[]): void {

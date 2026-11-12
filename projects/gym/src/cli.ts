@@ -49,7 +49,7 @@ import {
   loadScenarioMeta,
   matchesFilters,
 } from "./scenarios/catalog";
-import type { ScenarioMeta } from "./scenarios/types";
+import type { ScenarioMeta, WorkflowScenarioEntry } from "./scenarios/types";
 import {
   buildSemanticJudgeInput,
   evaluateSemanticJudgeRuns,
@@ -57,6 +57,12 @@ import {
   type SemanticEvaluation,
   type SemanticJudgeRun,
 } from "./scoring/semantic-judge";
+import {
+  buildGymToolDenials,
+  createGymAgentWorkflowTool,
+  resolveGymAgentDir,
+  runGymWorkflowEntry,
+} from "./workflow-adapter";
 
 function learnFromSession(_opts: { agentDir: string; messages: any[] }): {
   added: string[];
@@ -131,6 +137,12 @@ interface Adapter {
     workDir: string,
     timeoutMin: number,
   ): AdapterResult | Promise<AdapterResult>;
+  runWorkflow?(
+    entry: WorkflowScenarioEntry,
+    taskFile: string,
+    workDir: string,
+    timeoutMin: number,
+  ): Promise<AdapterResult>;
 }
 
 function terminalExecution(results: AdapterResult[]): AdapterResult {
@@ -153,6 +165,7 @@ interface AdapterOpts {
    */
   commonSensePath?: string;
   outputContract?: ScenarioMeta["output_contract"];
+  allowWorkflow?: boolean;
 }
 
 // ── Paths ──────────────────────────────────────────────────────────────
@@ -176,31 +189,8 @@ const SCENARIOS_DIR = resolve(
       : join(LEGACY_APP_ROOT, "gym/scenarios")),
 );
 
-const GYM_TOOL_DENIAL_REASONS: Readonly<Record<string, string>> = {
-  agents: "isolated Gym scenarios do not dispatch supporting agents",
-  workflow: "the direct Gym adapter does not provide hosted workflow dispatch",
-  message: "isolated Gym scenarios must not notify real users or agents",
-  cron: "isolated Gym scenarios must not change autonomous schedules",
-  checkpoint: "the direct Gym adapter has no hosted durable checkpoint service",
-  "cli-delegation":
-    "isolated Gym scenarios do not delegate to external agent CLIs",
-  "system-status":
-    "isolated Gym scenarios do not expose production system state",
-  system_status: "isolated Gym scenarios do not expose production system state",
-  query_db: "isolated Gym scenarios do not expose the production database",
-  "query-db": "isolated Gym scenarios do not expose the production database",
-};
-
-function gymToolDenials(agentDir: string): ToolDenial[] {
-  const config = JSON.parse(
-    readFileSync(join(agentDir, "agent.json"), "utf8"),
-  ) as { tools?: unknown };
-  if (!Array.isArray(config.tools)) return [];
-  return config.tools.flatMap((name) => {
-    if (typeof name !== "string") return [];
-    const reason = GYM_TOOL_DENIAL_REASONS[name];
-    return reason ? [{ name, reason }] : [];
-  });
+function gymToolDenials(agentDir: string, allowWorkflow = false): ToolDenial[] {
+  return buildGymToolDenials(agentDir, { allowWorkflow });
 }
 
 // ── Adapter: may-agent ─────────────────────────────────────────────────
@@ -210,6 +200,7 @@ function createMayAgentAdapter(): Adapter {
   let agentName = "";
   let gymRoot = "";
   let outputContract: ScenarioMeta["output_contract"];
+  let allowWorkflow = false;
 
   return {
     name: "may-agent",
@@ -218,6 +209,7 @@ function createMayAgentAdapter(): Adapter {
       agentName = opts.agentName;
       gymRoot = opts.gymRoot;
       outputContract = opts.outputContract;
+      allowWorkflow = Boolean(opts.allowWorkflow);
 
       // Resolve agents root (with optional lab fork overlay)
       if (opts.labFork) {
@@ -266,9 +258,13 @@ function createMayAgentAdapter(): Adapter {
         console.error(`  Overlaid common-sense.md from: ${src}`);
       }
 
-      // Verify agent exists
-      const agentDir = join(agentsRoot, opts.agentName);
-      if (!existsSync(join(agentDir, "agent.json"))) {
+      // Verify agent exists (standalone agentsRoot or App-local projectsRoot)
+      const resolvedAgentDir = resolveGymAgentDir(
+        agentsRoot,
+        opts.agentName,
+        join(REPO_ROOT, "projects"),
+      );
+      if (!resolvedAgentDir) {
         throw new Error(
           `Agent '${opts.agentName}' not found in: ${agentsRoot}`,
         );
@@ -291,7 +287,9 @@ function createMayAgentAdapter(): Adapter {
       // Copy agent directory into workDir/agents/<name>/ so the agent
       // can read("agents/<name>/heartbeat.md") etc. from its CWD.
       // This is a sandbox copy — writes go to the temp dir, not prod.
-      const agentDir = join(agentsRoot, agentName);
+      const agentDir =
+        resolveGymAgentDir(agentsRoot, agentName, join(REPO_ROOT, "projects")) ??
+        join(agentsRoot, agentName);
       const agentDest = join(workDir, "agents", agentName);
       if (existsSync(agentDir) && !existsSync(agentDest)) {
         mkdirSync(join(workDir, "agents"), { recursive: true });
@@ -299,6 +297,25 @@ function createMayAgentAdapter(): Adapter {
       }
 
       try {
+        const models = createControlledModelRegistry();
+        const timeoutMs = timeoutMin * 60 * 1000;
+        const workflowTool = allowWorkflow
+          ? createGymAgentWorkflowTool({
+              agentName,
+              agentDir,
+              repoRoot: REPO_ROOT,
+              workDir,
+              gymState,
+              agentsRoot,
+              projectsRoot: join(REPO_ROOT, "projects"),
+              sharedRoot: join(REPO_ROOT, "shared"),
+              globalAgentsRoot: join(REPO_ROOT, "agents"),
+              models,
+              timeoutMs,
+              onNotice: (message) => console.error(`  [may-direct-wf] ${message}`),
+            })
+          : undefined;
+
         const result = await runDirectAgent({
           agentName,
           task: readFileSync(taskFile, "utf8"),
@@ -310,9 +327,10 @@ function createMayAgentAdapter(): Adapter {
           sharedRoot: join(REPO_ROOT, "shared"),
           projectsRoot: join(REPO_ROOT, "projects"),
           outputRoot: gymState,
-          models: createControlledModelRegistry(),
-          toolDenials: gymToolDenials(agentDir),
-          timeoutMs: timeoutMin * 60 * 1000,
+          models,
+          toolDenials: gymToolDenials(agentDir, allowWorkflow),
+          workflowTool,
+          timeoutMs,
           outputSchema:
             outputContract === "task-agent-result"
               ? taskAgentResultSchema
@@ -355,6 +373,54 @@ function createMayAgentAdapter(): Adapter {
           status: "error",
           sessionPath: "",
           error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    },
+
+    async runWorkflow(
+      entry: WorkflowScenarioEntry,
+      taskFile: string,
+      workDir: string,
+      timeoutMin: number,
+    ): Promise<AdapterResult> {
+      const gymState = join(gymRoot, "state");
+      mkdirSync(gymState, { recursive: true });
+
+      try {
+        const outcome = await runGymWorkflowEntry({
+          entry,
+          defaultAgentName: agentName,
+          taskText: readFileSync(taskFile, "utf8"),
+          repoRoot: REPO_ROOT,
+          workDir,
+          gymState,
+          agentsRoot,
+          projectsRoot: join(REPO_ROOT, "projects"),
+          sharedRoot: join(REPO_ROOT, "shared"),
+          globalAgentsRoot: join(REPO_ROOT, "agents"),
+          models: createControlledModelRegistry(),
+          timeoutMs: timeoutMin * 60 * 1000,
+          allowChildAgentWorkflowTool: allowWorkflow,
+          onNotice: (message) => console.error(`  [may-direct-wf] ${message}`),
+        });
+        console.error(
+          `  workflow "${entry.workflow}" -> ${outcome.workflowRun.status} ` +
+            `(${outcome.workflowRun.report.steps.length} step(s))`,
+        );
+        return {
+          sessionId: outcome.sessionId,
+          status: outcome.status,
+          sessionPath: outcome.sessionPath,
+          error: outcome.error,
+        };
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        console.error(`  [may-direct-wf] ${msg}`);
+        return {
+          sessionId: "",
+          status: "error",
+          sessionPath: "",
+          error: msg,
         };
       }
     },
@@ -1071,6 +1137,7 @@ async function runMultiSessionScenario(
     sandboxAgents: true,
     commonSensePath,
     outputContract: meta.output_contract,
+    allowWorkflow: meta.allow_workflow,
   });
 
   const startMs = Date.now();
@@ -1431,6 +1498,7 @@ async function runScenario(
     sandboxAgents: learnBetween,
     commonSensePath,
     outputContract: meta?.output_contract,
+    allowWorkflow: meta?.allow_workflow,
   });
 
   // Load injected context (simulates production session context for FM-2.6/FM-3.1 testing)
@@ -1451,7 +1519,18 @@ async function runScenario(
   };
   const allPhaseResults: AdapterResult[] = [];
 
-  if (isWorkflow) {
+  if (meta?.workflow_entry) {
+    if (!adapter.runWorkflow) {
+      throw new Error(`Adapter '${adapter.name}' does not support workflow_entry scenarios`);
+    }
+    const taskFile = join(gymRoot, "task.md");
+    const taskContent = readFileSync(join(scenarioDir, "task.md"), "utf-8");
+    writeFileSync(
+      taskFile,
+      `${contextPrefix}Work in this directory: ${workDir}\n\n${taskContent}\n`,
+    );
+    lastResult = await adapter.runWorkflow(meta.workflow_entry, taskFile, workDir, timeout);
+  } else if (isWorkflow) {
     // Multi-phase: split task.md on "---"
     const fullTask = readFileSync(join(scenarioDir, "task.md"), "utf-8");
     const parts = fullTask.split(/^---$/m);

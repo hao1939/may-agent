@@ -13,14 +13,16 @@ Stick with May's plain TypeScript `async execute(ctx)` contract on
 fixtures, Gym (`runDirectAgent`) or the full Host at the entry point. Keep
 the existing authoring surface and Task runtime as the integration boundary.
 
-**Design status:** Refined proposal; Host kernel, SDK test runner, Direct/Gym
-runner, confirmed process-group cleanup, and dead guard-injection removal are
-implemented in Host PR [#455](https://github.com/hao1939/may-agent/pull/455).
-**Implementation status:** Host PR [#455](https://github.com/hao1939/may-agent/pull/455)
-prepared on `hao1939/may-agent` (`packages/sdk/src/workflow-kernel.ts`,
-`packages/sdk/src/testing.ts`, `src/lib/workflow-catalog.ts`, `src/lib/workflow-tool.ts`,
-`src/app/direct-workflow.ts`, `src/lib/background-exec.ts`, `src/app/direct-agent.ts`);
-Gym CLI switch follows Host PR merge into `projects/may-agent`.
+**Design status:** Accepted direction; shared invocation kernel, SDK test runner,
+Host-free Direct/Gym runner, confirmed process-group cleanup, and dead
+guard-injection removal are merged.
+**Implementation status:** Implemented across Host [#455](https://github.com/hao1939/may-agent/pull/455)
+(`52ff184177`: `packages/sdk/src/workflow-kernel.ts`, `packages/sdk/src/testing.ts`,
+`src/lib/workflow-catalog.ts`, `src/lib/workflow-tool.ts`, `src/app/direct-workflow.ts`,
+`src/lib/background-exec.ts`, `src/app/direct-agent.ts`) and Gym
+(`projects/gym/src/workflow-adapter.ts`, `projects/gym/src/cli.ts`,
+`projects/gym/test/workflow-adapter.test.ts`). Broader per-workflow migration to
+`inputSchema` / `runWorkflowTest` proceeds incrementally as workflows are touched.
 
 ## 1. Decision: plain TypeScript executable skills, no workflow framework
 
