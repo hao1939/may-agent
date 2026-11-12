@@ -49,13 +49,11 @@ function openBun(
 ): SqliteDb {
   const { Database, constants } = require("bun:sqlite") as {
     Database: new (path: string, options?: number | { readonly?: boolean; create?: boolean }) => BunDatabase;
-    constants: { SQLITE_OPEN_READONLY: number; SQLITE_OPEN_READWRITE: number; SQLITE_OPEN_URI: number };
+    constants: { SQLITE_OPEN_READWRITE: number };
   };
   const openOpts =
     mode === "readonly"
-      ? path.startsWith("file:")
-        ? constants.SQLITE_OPEN_READONLY | constants.SQLITE_OPEN_URI
-        : { readonly: true, create: false }
+      ? { readonly: true, create: false }
       : mode === "query-only"
         ? constants.SQLITE_OPEN_READWRITE
         : undefined;

@@ -5,10 +5,9 @@
  * live databases during normal closed or daemon-active operation.
  */
 
-import { copyFileSync, existsSync, mkdtempSync, rmSync } from "node:fs";
+import { accessSync, constants as fsConstants, copyFileSync, existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { dirname, join } from "node:path";
 import { openQueryOnlyDatabase, openReadOnlyDatabase, type SqliteDb } from "../db.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -20,13 +19,26 @@ export interface StatusOptions {
   onBeforeAttach?: () => void;
   /** Test hook invoked inside the active read transaction after acquiring a WAL read-mark. */
   onSnapshotAcquired?: () => void;
+  /** Test seam simulating a read-only OS user lacking write permission on persistDir and may.db. */
+  simulateReadOnlyObserver?: boolean;
+}
+
+type StatusQueryOutcome<T> = { ok: true; value: T } | { ok: false; reason: string };
+
+function canWriteDirectory(dir: string): boolean {
+  try {
+    accessSync(dir, fsConstants.W_OK);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function queryStatusDb<T>(
   dbPath: string,
   run: (db: SqliteDb) => T,
-  hooks?: Pick<StatusOptions, "onBeforeAttach" | "onSnapshotAcquired">,
-): T {
+  hooks?: Pick<StatusOptions, "onBeforeAttach" | "onSnapshotAcquired" | "simulateReadOnlyObserver">,
+): StatusQueryOutcome<T> {
   const walPath = `${dbPath}-wal`;
   const shmPath = `${dbPath}-shm`;
 
@@ -40,7 +52,7 @@ function queryStatusDb<T>(
       if (existsSync(walPath)) copyFileSync(walPath, `${snapDb}-wal`);
       const recoveredDb = openReadOnlyDatabase(snapDb);
       try {
-        return run(recoveredDb);
+        return { ok: true, value: run(recoveredDb) };
       } finally {
         recoveredDb.close();
       }
@@ -51,39 +63,53 @@ function queryStatusDb<T>(
 
   hooks?.onBeforeAttach?.();
 
-  let db: SqliteDb;
-  let transactional = true;
   try {
-    // Real SQLite WAL locking (`O_RDWR` + `PRAGMA query_only = ON`, no CREATE):
-    // 1. Holds a genuine WAL read-mark during the deferred read transaction so
-    //    concurrent writer commit + checkpoint + close cannot mix/tear pages.
-    // 2. Holds an O_RDWR descriptor so `walClose` can acquire `F_WRLCK` when
-    //    this probe is the last connection, unlinking `-wal`/`-shm` cleanly
-    //    instead of stranding sidecars as `O_RDONLY` connections do on POSIX.
-    db = openQueryOnlyDatabase(dbPath);
-  } catch {
-    // Read-only filesystem / file mode fallback where OS permissions forbid any local writer.
-    transactional = false;
-    db = openReadOnlyDatabase(`${pathToFileURL(dbPath).href}?immutable=1`);
-  }
-
-  try {
-    if (!transactional) return run(db);
-    db.exec("BEGIN DEFERRED");
-    try {
-      // Touch sqlite_schema to pin the MVCC WAL read-mark before running queries.
-      db.prepare("SELECT 1 FROM sqlite_master LIMIT 1").get();
-      hooks?.onSnapshotAcquired?.();
-      return run(db);
-    } finally {
-      try {
-        db.exec("COMMIT");
-      } catch {
-        // Ignore if connection was already rolled back
-      }
+    if (hooks?.simulateReadOnlyObserver) {
+      throw new Error("Simulated read-only observer without O_RDWR access");
     }
-  } finally {
-    db.close();
+    const db = openQueryOnlyDatabase(dbPath);
+    try {
+      db.exec("BEGIN DEFERRED");
+      try {
+        // Touch sqlite_master to pin the MVCC WAL read-mark before running queries.
+        db.prepare("SELECT 1 FROM sqlite_master LIMIT 1").get();
+        hooks?.onSnapshotAcquired?.();
+        return { ok: true, value: run(db) };
+      } finally {
+        try {
+          db.exec("COMMIT");
+        } catch {
+          // Ignore if connection was already rolled back
+        }
+      }
+    } finally {
+      db.close();
+    }
+  } catch {
+    // Caller lacks O_RDWR access on may.db (e.g. unprivileged read-only observer).
+    // Never use immutable=1, which ignores committed WAL frames during live writes.
+    // Only attach via O_RDONLY when persistDir itself is non-writable (so the OS
+    // prevents creating straggler -wal/-shm sidecars) and an active WAL-index exists.
+    const dirWritable = hooks?.simulateReadOnlyObserver ? false : canWriteDirectory(dirname(dbPath));
+    if (dirWritable || !existsSync(shmPath)) {
+      return {
+        ok: false,
+        reason: "Runtime status unavailable (read-only access requires an active daemon WAL index and non-writable state directory).",
+      };
+    }
+    try {
+      const roDb = openReadOnlyDatabase(dbPath);
+      try {
+        return { ok: true, value: run(roDb) };
+      } finally {
+        roDb.close();
+      }
+    } catch {
+      return {
+        ok: false,
+        reason: "Runtime status unavailable (read-only access requires an active daemon WAL index).",
+      };
+    }
   }
 }
 
@@ -127,7 +153,7 @@ export function printSystemStatus(persistDir: string, opts?: StatusOptions): str
   }
 
   const since = Date.now() - DAY_MS;
-  const agentRows = queryStatusDb(
+  const outcome = queryStatusDb(
     dbPath,
     (db) =>
       db
@@ -150,6 +176,12 @@ export function printSystemStatus(persistDir: string, opts?: StatusOptions): str
     opts,
   );
 
+  if (!outcome.ok) {
+    lines.push(`  ${outcome.reason}`, "");
+    return lines.join("\n");
+  }
+
+  const agentRows = outcome.value;
   lines.push("", "─".repeat(62), " AGENTS (last 24h)", "─".repeat(62));
   if (agentRows.length > 0) {
     lines.push(

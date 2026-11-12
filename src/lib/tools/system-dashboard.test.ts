@@ -102,6 +102,60 @@ test("leaves zero WAL/SHM sidecars when the last writer closes immediately befor
   }
 });
 
+test("read-only observer sees live committed WAL writes and reports unavailable rather than stale data when closed", () => {
+  const root = mkdtempSync(join(tmpdir(), "may-status-ro-observer-"));
+  const { chmodSync } = require("node:fs");
+  const isRoot = process.getuid?.() === 0;
+  try {
+    const now = Date.now();
+    const writer = getDb(root);
+    applyDbSchema(writer);
+    writer.exec("PRAGMA wal_autocheckpoint = 0");
+    writer.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt) VALUES (?, ?, ?, ?, ?, ?)",
+      ["wal-only-session", "alex", "live-wal-commit", "done", now - 500, now],
+    );
+
+    if (!isRoot) {
+      chmodSync(join(root, "may.db"), 0o444);
+      chmodSync(join(root, "may.db-wal"), 0o444);
+      chmodSync(join(root, "may.db-shm"), 0o444);
+      chmodSync(root, 0o555);
+    }
+
+    // 1. Live writer + read-only observer reads committed WAL data accurately (never ignores WAL via immutable=1)
+    const liveStatus = printSystemStatus(root, isRoot ? { simulateReadOnlyObserver: true } : undefined);
+    expect(liveStatus).toMatch(/alex\s+1\s+1\s+0\s+100%/);
+
+    if (!isRoot) {
+      chmodSync(root, 0o755);
+      chmodSync(join(root, "may.db"), 0o644);
+      chmodSync(join(root, "may.db-wal"), 0o644);
+      chmodSync(join(root, "may.db-shm"), 0o644);
+    }
+    closeDb(root);
+    expect(readdirSync(root)).toEqual(["may.db"]);
+
+    // 2. Closed DB + read-only observer without write lock reports unavailable without creating sidecars
+    if (!isRoot) {
+      chmodSync(join(root, "may.db"), 0o444);
+      chmodSync(root, 0o555);
+    }
+    const closedRoStatus = printSystemStatus(root, isRoot ? { simulateReadOnlyObserver: true } : undefined);
+    expect(closedRoStatus).toContain("Runtime status unavailable");
+    expect(readdirSync(root)).toEqual(["may.db"]);
+  } finally {
+    try {
+      chmodSync(root, 0o755);
+      chmodSync(join(root, "may.db"), 0o644);
+    } catch {
+      // Best-effort permission cleanup
+    }
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("isolates uncheckpointed crash WAL without -shm so persistDir is never mutated", () => {
   const root = mkdtempSync(join(tmpdir(), "may-status-crash-wal-test-"));
   try {
