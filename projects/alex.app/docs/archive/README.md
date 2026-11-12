@@ -34,6 +34,10 @@ contracts; Tier-2 design governs when wording conflicts.
 
 ## Reviews
 
+- [Connected recovery to the original human promise — 2026-11-12](reviews/connected-recovery-trial-20261112.md)
+  — independent Alex startup, actual repair and caller return, retained authority
+  blockers, human-reply and restart contrasts; source and disposable evidence.
+
 - [Agent workflow frameworks: reuse and May's boundary — 2026-11-12](reviews/workflow-framework-comparison-20261112.md)
   — pinned GitHub comparison, reusable runner patterns and the narrower case for
   May's Task integration; source investigation, without runtime benchmarks.

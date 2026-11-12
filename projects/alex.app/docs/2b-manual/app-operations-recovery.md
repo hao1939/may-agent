@@ -113,6 +113,11 @@ investigation even while the Host keeps retrying. Check current evidence before
 repairing; the work may already have recovered. Follow the
 [retry and investigation boundary](../2a-design/system-boundary.md#retry-and-recovery-ownership).
 
+The [disposable Alex trial](../archive/reviews/connected-recovery-trial-20261112.md#independent-alex-controller-trial)
+checks independent startup, original-result return and an owned blocker delivered
+to the caller. Its scripted choices and local source commit do not establish
+installed activation.
+
 ## Rejected input and explicit Task reopening
 
 Read the input's result, `handling` and recovery evidence before retrying. A
