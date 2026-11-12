@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { type AppEvent, type TaskAttempt, type TaskExecutor, type TaskReconcileResult } from "@may-agent/sdk";
 import {
@@ -15,20 +15,11 @@ import {
   DEFAULT_MAX_CODEX_GOAL_PROGRESS_EVENTS,
   type CodexGoalProgressStats,
 } from "./codex-goal-progress.js";
-
-type Binding = {
-  appId: string;
-  taskId: string;
-  generation: number;
-  threadId: string;
-  cwd: string;
-  createdAt: string;
-  updatedAt: string;
-  attempts: number;
-  staleInterrupts: number;
-};
-
-type BindingFile = { version: 1; bindings: Record<string, Binding> };
+import {
+  codexGoalBindingKey,
+  readCodexGoalBindings as readBindings,
+  type CodexGoalBinding as Binding,
+} from "./codex-goal-bindings.js";
 
 export type CodexGoalClient = {
   initialize(): Promise<void>;
@@ -44,6 +35,7 @@ export type CodexGoalClient = {
     sandbox?: "read-only" | "workspace-write" | "danger-full-access";
   }): Promise<{ threadId: string; cwd: string }>;
   injectDeveloperContext(input: { threadId: string; text: string }): Promise<unknown>;
+  injectUserContext(input: { threadId: string; text: string }): Promise<unknown>;
   setGoal(input: {
     threadId: string;
     objective: string;
@@ -53,12 +45,12 @@ export type CodexGoalClient = {
   waitForGoal(
     threadId: string,
     accept: (observation: CodexGoalObservation) => boolean,
-    timeoutMs?: number,
+    timeoutMs?: number | null,
   ): Promise<CodexGoalObservation>;
   waitForTurn(turnId: string, timeoutMs?: number): Promise<CodexTurnCompletion>;
   listThreadItems(input: {
     threadId: string;
-    turnId: string;
+    turnId?: string;
     cursor?: string;
     limit?: number;
     sortDirection?: "asc" | "desc";
@@ -73,26 +65,19 @@ export type CodexGoalExecutorOptions = {
   stateFile: string;
   executorName?: string;
   command?: string;
-  turnTimeoutMs?: number;
+  /** Default execution deadline when TaskAttempt.maxAttemptMs is omitted. Omit for 30 minutes; null permits ongoing goals. */
+  turnTimeoutMs?: number | null;
   maxProgressEvents?: number;
   createClient?: (cwd: string) => CodexGoalClient;
   now?: () => number;
 };
 
 const DEFAULT_TURN_TIMEOUT_MS = 30 * 60_000;
+const MAX_TIMER_TIMEOUT_MS = 2 ** 31 - 1;
 const MAX_PENDING_STEERING_EVENTS = 64;
 
 function bindingKey(attempt: TaskAttempt): string {
-  return `${attempt.appId}\u0000${attempt.task.id}`;
-}
-
-function readBindings(path: string): BindingFile {
-  if (!existsSync(path)) return { version: 1, bindings: {} };
-  const parsed = JSON.parse(readFileSync(path, "utf8")) as BindingFile;
-  if (parsed.version !== 1 || !parsed.bindings || typeof parsed.bindings !== "object") {
-    throw new Error(`Invalid Codex goal binding file: ${path}`);
-  }
-  return parsed;
+  return codexGoalBindingKey(attempt.appId, attempt.task.id);
 }
 
 function writeBinding(path: string, key: string, binding: Binding): void {
@@ -172,17 +157,62 @@ function packetFor(attempt: TaskAttempt) {
   return projectCanonicalTaskAttempt(attempt);
 }
 
+function currentHumanInputs(attempt: TaskAttempt): string[] {
+  const inputs = new Map(attempt.events.inputs?.map((input) => [input.key, input]));
+  return attempt.events.items.flatMap((item) => {
+    const { type, data } = item.event;
+    if (type !== "app.task.requested" || typeof data.idempotencyKey !== "string") return [];
+    const request = data.request;
+    if (!request || typeof request !== "object" || Array.isArray(request)) return [];
+    const input = inputs.get(data.idempotencyKey);
+    // Admission metadata is Host-projected. Event source labels and delegated
+    // humanRequested flags alone must not promote a fact to human authority.
+    if (input?.source.kind !== "human" || (request as { id?: unknown }).id !== input.id) return [];
+    return [
+      [
+        "Current human input admitted to this May Task attempt (in assigned event order).",
+        "The event below preserves the full original input and provenance. Apply it within the current Task's authorized scope.",
+        JSON.stringify({
+          appId: attempt.appId,
+          taskId: attempt.task.id,
+          generation: attempt.task.generation,
+          requestId: input.id,
+          source: input.source,
+          ...item,
+        }),
+      ].join("\n"),
+    ];
+  });
+}
+
 export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): TaskExecutor {
   const now = options.now ?? Date.now;
-  const turnTimeoutMs = options.turnTimeoutMs ?? DEFAULT_TURN_TIMEOUT_MS;
+  const defaultExecutionTimeoutMs = options.turnTimeoutMs === undefined ? DEFAULT_TURN_TIMEOUT_MS : options.turnTimeoutMs;
   const maxProgressEvents = options.maxProgressEvents ?? DEFAULT_MAX_CODEX_GOAL_PROGRESS_EVENTS;
-  if (!Number.isFinite(turnTimeoutMs) || turnTimeoutMs <= 0)
-    throw new Error("Codex execution budget must be finite and positive");
+  if (
+    defaultExecutionTimeoutMs !== null &&
+    (!Number.isSafeInteger(defaultExecutionTimeoutMs) ||
+      defaultExecutionTimeoutMs <= 0 ||
+      defaultExecutionTimeoutMs > MAX_TIMER_TIMEOUT_MS)
+  )
+    throw new Error("Codex execution budget must be null or a positive integer within the timer range");
   if (!Number.isSafeInteger(maxProgressEvents) || maxProgressEvents <= 0) {
     throw new Error("Codex goal progress maxProgressEvents must be a positive integer");
   }
 
   return async (attempt) => {
+    const executionTimeoutMs =
+      attempt.maxAttemptMs === "unlimited"
+        ? null
+        : attempt.maxAttemptMs !== undefined
+          ? attempt.maxAttemptMs
+          : defaultExecutionTimeoutMs;
+    if (
+      executionTimeoutMs !== null &&
+      (!Number.isSafeInteger(executionTimeoutMs) || executionTimeoutMs <= 0 || executionTimeoutMs > MAX_TIMER_TIMEOUT_MS)
+    )
+      throw new Error("Codex execution budget must be unlimited or a positive integer within the timer range");
+    const operationTimeoutMs = executionTimeoutMs ?? DEFAULT_TURN_TIMEOUT_MS;
     const key = bindingKey(attempt);
     const existing = readBindings(options.stateFile).bindings[key];
     const rendered = renderCodexGoalTaskAttempt(packetFor(attempt), dirname(options.stateFile));
@@ -284,13 +314,16 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
     if (attempt.signal.aborted) stopForAbort();
 
     let deadlineError: Error | undefined;
-    // One budget covers startup, native turns and schema correction. Activity
-    // and retries never renew it. The client's stop rejects pending protocol
-    // calls and drains its owned process tree.
-    const deadline = setTimeout(() => {
-      deadlineError = new Error(`Codex execution timed out after ${turnTimeoutMs}ms`);
-      stopForAbort();
-    }, turnTimeoutMs);
+    // A configured budget covers startup, native turns and schema correction;
+    // activity never renews it. Explicit null ("unlimited" maxAttemptMs) permits
+    // an ongoing native goal while cancellation and protocol waits still apply.
+    const deadline =
+      executionTimeoutMs === null
+        ? undefined
+        : setTimeout(() => {
+            deadlineError = new Error(`Codex execution timed out after ${executionTimeoutMs}ms`);
+            stopForAbort();
+          }, executionTimeoutMs);
     try {
       attempt.signal.throwIfAborted();
       await client.initialize();
@@ -336,11 +369,19 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
         await client.injectDeveloperContext({ threadId, text: rendered.developerInstructions });
       }
 
+      // Canonical developer context alone leaves an older user instruction as
+      // the latest human message after native compaction. Deliver only newly
+      // assigned, admitted human input before activating this goal. Continued
+      // and unclaimed input remain context, never replayed as a fresh request.
+      for (const text of currentHumanInputs(attempt)) {
+        await client.injectUserContext({ threadId, text });
+      }
+
       let correction: string | null = null;
       while (true) {
         await client.setGoal({ threadId, objective: rendered.goalObjective, status: "active" });
         updateGoalStatus("active");
-        turnId = await client.waitForActiveTurn(threadId, Math.min(turnTimeoutMs, 30_000));
+        turnId = await client.waitForActiveTurn(threadId, Math.min(operationTimeoutMs, 30_000));
         if (correction) await client.steer({ threadId, turnId, message: correction });
         correction = null;
         await deliverPendingEvents(turnId);
@@ -348,12 +389,12 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
         const terminalGoal = await client.waitForGoal(
           threadId,
           (observation) => observation.goal.status !== "active",
-          turnTimeoutMs,
+          executionTimeoutMs,
         );
         updateGoalStatus(terminalGoal.goal.status);
 
         const completedTurnId = terminalGoal.turnId ?? turnId;
-        const completion = await client.waitForTurn(completedTurnId, turnTimeoutMs);
+        const completion = await client.waitForTurn(completedTurnId, operationTimeoutMs);
         if (live.goalStatus === "usageLimited" || live.goalStatus === "budgetLimited") {
           throw new Error(`Codex stopped the current turn because it is ${live.goalStatus}`);
         }
@@ -375,7 +416,7 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
     } catch (error) {
       throw deadlineError ?? error;
     } finally {
-      clearTimeout(deadline);
+      if (deadline !== undefined) clearTimeout(deadline);
       stopped = true;
       attempt.signal.removeEventListener("abort", stopForAbort);
       unsubscribeEvent();

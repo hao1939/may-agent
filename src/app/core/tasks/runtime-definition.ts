@@ -125,6 +125,15 @@ function validatePreparedAppTaskRuntime(descriptor: AppTaskRuntimeDescriptor): v
   if (limit !== undefined && limit !== "unlimited" && (!Number.isSafeInteger(limit) || limit <= 0)) {
     throw new Error(`App ${id} task maxConsecutiveFailures must be a positive safe integer or unlimited`);
   }
+  const maxAttemptMs = app.tasks?.maxAttemptMs;
+  if (
+    maxAttemptMs !== undefined &&
+    typeof maxAttemptMs !== "function" &&
+    maxAttemptMs !== "unlimited" &&
+    (!Number.isSafeInteger(maxAttemptMs) || maxAttemptMs <= 0 || maxAttemptMs > 2_147_483_647)
+  ) {
+    throw new Error(`App ${id} task maxAttemptMs must be an integer from 1 to 2147483647, unlimited, or a function`);
+  }
   descriptor.resourceStore.assertCompletionReceiptsImported();
 }
 

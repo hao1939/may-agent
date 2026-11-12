@@ -122,7 +122,9 @@ definitions and does not deploy runtime code.
 For UI development, `bun run --cwd packages/webui dev` serves the editable static
 source directly; no build or installation copy is needed. Set `PROJECT_ROOT`
 and, if needed, `STATE_DIR` to your development installation. `WEB_PORT` defaults
-to 8080. The command sets the HTTP-only `MAY_AGENT_UI_DIR` override; ordinary
+to 8080. `WEB_HOST` selects the HTTP listen address (default `0.0.0.0`); use
+`127.0.0.1` for access through a local SSH tunnel. The standalone HTTP server
+also accepts `--host`. The command sets the HTTP-only `MAY_AGENT_UI_DIR` override; ordinary
 deployed serving still reads `<PROJECTS_ROOT>/platform/ui` by default.
 
 ## Layout rules

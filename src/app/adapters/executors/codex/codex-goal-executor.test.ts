@@ -1,6 +1,6 @@
 import { MAX_CODEX_GOAL_OBJECTIVE_CHARS, renderCodexGoalTaskAttempt } from "./codex-goal-packet.js";
 import { workloadObservation } from "../../../../../test/fixtures/task-workload.js";
-import { afterEach, describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it, spyOn } from "bun:test";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -143,6 +143,7 @@ describe("Codex goal Task context", () => {
 class FakeClient implements CodexGoalClient {
   readonly calls: string[] = [];
   readonly instructions: string[] = [];
+  readonly userInputs: string[] = [];
   readonly threadId: string;
   private listener?: (notification: AppServerNotification) => void;
 
@@ -175,15 +176,23 @@ class FakeClient implements CodexGoalClient {
     this.instructions.push(input.text);
     expect(input.text).toContain("## Canonical May Task Attempt");
   }
+  async injectUserContext(input: { threadId: string; text: string }) {
+    this.calls.push(`user:${input.threadId}`);
+    this.userInputs.push(input.text);
+  }
   async setGoal(input: { threadId: string; objective: string; status?: "active" | "paused" }) {
     this.calls.push(`${input.status === "paused" ? "pause" : "goal"}:${input.threadId}`);
     expect(input.objective).toContain("Task mental model");
   }
-  async waitForActiveTurn() {
+  async waitForActiveTurn(_threadId?: string, _timeoutMs?: number) {
     this.calls.push("active");
     return "turn-1";
   }
-  async waitForGoal(): Promise<CodexGoalObservation> {
+  async waitForGoal(
+    _threadId?: string,
+    _accept?: (observation: CodexGoalObservation) => boolean,
+    _timeoutMs?: number | null,
+  ): Promise<CodexGoalObservation> {
     this.calls.push("terminal-goal");
     return {
       threadId: this.threadId,
@@ -191,13 +200,13 @@ class FakeClient implements CodexGoalClient {
       goal: { threadId: this.threadId, objective: "review", status: "complete" },
     };
   }
-  async waitForTurn(): Promise<CodexTurnCompletion> {
+  async waitForTurn(_turnId?: string, _timeoutMs?: number): Promise<CodexTurnCompletion> {
     this.calls.push("terminal-turn");
     return { threadId: this.threadId, turn: { id: "turn-1", status: "completed" } };
   }
   async listThreadItems(input: {
     threadId: string;
-    turnId: string;
+    turnId?: string;
     cursor?: string;
     limit?: number;
     sortDirection?: "asc" | "desc";
@@ -206,7 +215,7 @@ class FakeClient implements CodexGoalClient {
     return {
       data: [
         {
-          turnId: input.turnId,
+          turnId: input.turnId ?? "turn-1",
           item: {
             type: "agentMessage",
             phase: "final_answer",
@@ -244,6 +253,119 @@ class FakeClient implements CodexGoalClient {
 }
 
 describe("codex-goal Task executor", () => {
+  it("delivers only current admitted human input before activation on start and same-thread resume", async () => {
+    const root = fixtureRoot();
+    const stateFile = join(root, "bindings.json");
+    const firstClient = new FakeClient("thread-human-input");
+    const resumedClient = new FakeClient("unused");
+    const clients = [firstClient, resumedClient];
+    const executor = createCodexGoalExecutor({ stateFile, createClient: () => clients.shift()! });
+    const inputEvent = (id: string, eventId: number, text: string, generation: number, human = true) => {
+      const source = { kind: human ? "human" as const : "system" as const, id: `source:${id}` };
+      return {
+        metadata: { id, key: `admission:${id}`, source },
+        item: {
+          eventId, observedAt: `2026-08-23T08:${String(eventId).padStart(2, "0")}:00.000Z`,
+          event: {
+            type: "app.task.requested", source: "human",
+            data: {
+              idempotencyKey: `admission:${id}`,
+              request: {
+                id, source,
+                // A delegated flag or event source label is not a human ask.
+                ...(human ? {} : { humanRequested: true }),
+                input: { kind: "message", data: { text, expectedGeneration: generation } },
+              },
+            },
+          },
+        },
+      };
+    };
+    const oldHold = inputEvent("hold", 1, "Keep the trial read-only; pause.", 1);
+    const first = attempt({ cwd: root, events: {
+      items: [oldHold.item], inputs: [oldHold.metadata], truncated: false,
+    } });
+    await executor(first);
+    expect(firstClient.calls.slice(0, 4)).toEqual([
+      "initialize", `start:${root}`, "user:thread-human-input", "goal:thread-human-input",
+    ]);
+    expect(firstClient.userInputs).toHaveLength(1);
+    expect(firstClient.userInputs[0]).toContain("Keep the trial read-only; pause.");
+
+    const revision = inputEvent("revision", 2, "Generation 2 permits local continuation.", 2);
+    const resume = inputEvent("resume", 3, "Resume within the revised scope.\n" + "Exact text 終\n".repeat(1_000), 2);
+    const system = inputEvent("system", 4, "NONHUMAN_PAYLOAD", 2, false);
+    const pending = inputEvent("pending", 5, "UNCLAIMED_PAYLOAD", 2);
+    const forged = inputEvent("forged", 6, "UNADMITTED_PAYLOAD", 2);
+    const fact = inputEvent("fact", 7, "EVENT_FACT_PAYLOAD", 2);
+    const resumed = attempt({
+      cwd: root, attemptId: "r_2_resume", resourceVersion: 7,
+      task: { ...first.task, generation: 2, pendingEvents: { items: [pending.item], truncated: false } },
+      events: {
+        items: [revision.item, resume.item, system.item, forged.item, { ...fact.item, event: { ...fact.item.event, type: "task.fact" } }],
+        // Continued and pending identities may coexist in the projection.
+        inputs: [oldHold.metadata, revision.metadata, resume.metadata, system.metadata, pending.metadata, fact.metadata],
+        continuedInputs: [oldHold.item], truncated: false,
+      },
+    });
+    await executor(resumed);
+    expect(resumedClient.calls.slice(0, 7)).toEqual([
+      "initialize", "pause:thread-human-input", "resume:thread-human-input", "inject:thread-human-input",
+      "user:thread-human-input", "user:thread-human-input", "goal:thread-human-input",
+    ]);
+    expect(resumedClient.userInputs).toHaveLength(2);
+    for (const [index, original] of [revision, resume].entries()) {
+      const delivered = JSON.parse(resumedClient.userInputs[index]!.split("\n")[2]!);
+      expect(delivered).toEqual({
+        appId: resumed.appId, taskId: resumed.task.id, generation: 2,
+        requestId: original.metadata.id, source: original.metadata.source, ...original.item,
+      });
+    }
+    expect(resumedClient.userInputs.join("\n")).not.toMatch(/Keep the trial|NONHUMAN_PAYLOAD|UNCLAIMED_PAYLOAD|UNADMITTED_PAYLOAD|EVENT_FACT_PAYLOAD/);
+    expect(JSON.parse(readFileSync(stateFile, "utf8")).bindings[codexGoalExecutorInternals.bindingKey(first)])
+      .toMatchObject({ threadId: "thread-human-input", generation: 2, attempts: 2 });
+  });
+
+  it("invents no human message for an empty assignment or an event without admission metadata", async () => {
+    for (const events of [
+      { items: [], truncated: false },
+      { items: [{ eventId: 1, observedAt: "2026-08-23T08:00:00.000Z", event: {
+        type: "app.task.requested", source: "human", data: { idempotencyKey: "unverified", request: {
+          id: "unverified", source: { kind: "human", id: "claimed" }, input: { kind: "message", data: { text: "Unverified" } },
+        } },
+      } }], truncated: false },
+    ]) {
+      const root = fixtureRoot();
+      const client = new FakeClient("thread-no-human-input");
+      await createCodexGoalExecutor({ stateFile: join(root, "bindings.json"), createClient: () => client })(attempt({ cwd: root, events }));
+      expect(client.userInputs).toEqual([]);
+      expect(client.calls).toContain("goal:thread-no-human-input");
+    }
+  });
+
+  it("keeps a resumed goal paused when current human input cannot be delivered", async () => {
+    const root = fixtureRoot();
+    const stateFile = join(root, "bindings.json");
+    const initialClient = new FakeClient("thread-input-failure");
+    const resumedClient = new FakeClient("unused");
+    const clients = [initialClient, resumedClient];
+    const executor = createCodexGoalExecutor({ stateFile, createClient: () => clients.shift()! });
+    await executor(attempt({ cwd: root }));
+    resumedClient.injectUserContext = async () => { throw new Error("Input delivery failed"); };
+
+    await expect(executor(attempt({ cwd: root, events: {
+      inputs: [{ id: "resume", key: "resume-key", source: { kind: "human", id: "operator" } }],
+      items: [{ eventId: 2, observedAt: "2026-08-23T08:01:00.000Z", event: {
+        type: "app.task.requested", data: { idempotencyKey: "resume-key", request: {
+          id: "resume", source: { kind: "human", id: "operator" }, input: { kind: "message", data: { text: "Resume" } },
+        } },
+      } }], truncated: false,
+    } }))).rejects.toThrow("Input delivery failed");
+    expect(resumedClient.calls).toEqual([
+      "initialize", "pause:thread-input-failure", "resume:thread-input-failure", "inject:thread-input-failure", "stop",
+    ]);
+  });
+
   it("interrupts the exact active Codex turn when its Task attempt is cancelled", async () => {
     const root = fixtureRoot();
     const controller = new AbortController();
@@ -842,5 +964,112 @@ describe("codex-goal Task executor", () => {
     expect(steered[0]).toMatchObject({ turnId: "turn-2" });
     expect(steered[0]?.message).toContain("LIVE-STEER-TEST");
     expect(accepted).toBeFalse();
+  });
+
+  it("rejects invalid direct or per-attempt execution deadlines before spawning", async () => {
+    for (const turnTimeoutMs of [0, -1, 0.5, Number.NaN, Number.POSITIVE_INFINITY, 2_147_483_648]) {
+      expect(() => createCodexGoalExecutor({ stateFile: "unused", turnTimeoutMs })).toThrow("execution budget");
+    }
+    let spawned = false;
+    const executor = createCodexGoalExecutor({
+      stateFile: join(fixtureRoot(), "bindings.json"),
+      createClient: () => {
+        spawned = true;
+        return new FakeClient();
+      },
+    });
+    for (const maxAttemptMs of [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, 2_147_483_648] as number[]) {
+      await expect(executor(attempt({ maxAttemptMs }))).rejects.toThrow("execution budget");
+    }
+    expect(spawned).toBeFalse();
+  });
+
+  it.each(["quiet", "active"])(
+    "allows ongoing %s goals via attempt.maxAttemptMs='unlimited' without an execution timer while operation waits stay bounded",
+    async (mode) => {
+      const client = new FakeClient("thread-ongoing");
+      const entered = Promise.withResolvers<void>();
+      const finished = Promise.withResolvers<CodexGoalObservation>();
+      const originalGoal = client.waitForGoal.bind(client);
+      const originalTurn = client.waitForTurn.bind(client);
+      client.waitForActiveTurn = async (_threadId, timeoutMs) => {
+        expect(timeoutMs).toBe(30_000);
+        return "turn-1";
+      };
+      client.waitForGoal = async (_threadId, _accept, timeoutMs) => {
+        expect(timeoutMs).toBeNull();
+        entered.resolve();
+        return finished.promise;
+      };
+      client.waitForTurn = async (turnId, timeoutMs) => {
+        expect(timeoutMs).toBe(30 * 60_000);
+        return originalTurn(turnId, timeoutMs);
+      };
+      const timers = spyOn(globalThis, "setTimeout");
+      const updates =
+        mode === "active"
+          ? setInterval(() => client.emit({ method: "turn/started", params: { turn: { id: "turn-1" } } }), 5)
+          : undefined;
+      try {
+        // Default turnTimeoutMs stays finite (15ms), proving per-Task maxAttemptMs="unlimited" waives it.
+        const execution = createCodexGoalExecutor({
+          stateFile: join(fixtureRoot(), "bindings.json"),
+          createClient: () => client,
+          turnTimeoutMs: 15,
+        })(attempt({ maxAttemptMs: "unlimited" }));
+        await entered.promise;
+        await Bun.sleep(60);
+        expect(timers).not.toHaveBeenCalled();
+        expect(client.calls).not.toContain("interrupt");
+        expect(client.calls).not.toContain("stop");
+        finished.resolve(await originalGoal());
+        await expect(execution).resolves.toMatchObject({ state: "converged" });
+        expect(client.calls).toContain("stop");
+      } finally {
+        clearInterval(updates);
+        timers.mockRestore();
+      }
+    },
+  );
+
+  it("applies numeric attempt.maxAttemptMs overrides and still cancels ongoing goals cleanly", async () => {
+    const timedClient = new FakeClient("thread-custom-budget");
+    const seenGoalTimeouts: Array<number | null | undefined> = [];
+    timedClient.waitForGoal = async (_threadId, _accept, timeoutMs) => {
+      seenGoalTimeouts.push(timeoutMs);
+      return {
+        threadId: timedClient.threadId,
+        turnId: "turn-1",
+        goal: { threadId: timedClient.threadId, objective: "review", status: "complete" },
+      };
+    };
+    const executor = createCodexGoalExecutor({
+      stateFile: join(fixtureRoot(), "bindings.json"),
+      createClient: () => timedClient,
+    });
+    await expect(executor(attempt({ maxAttemptMs: 12_345 }))).resolves.toMatchObject({ state: "converged" });
+    expect(seenGoalTimeouts).toEqual([12_345]);
+
+    const cancelClient = new FakeClient("thread-cancel-ongoing");
+    const entered = Promise.withResolvers<void>();
+    const pending = Promise.withResolvers<never>();
+    cancelClient.waitForGoal = async () => {
+      entered.resolve();
+      return pending.promise;
+    };
+    cancelClient.stop = async () => {
+      cancelClient.calls.push("stop");
+      pending.reject(new Error("client stopped"));
+    };
+    const controller = new AbortController();
+    const execution = createCodexGoalExecutor({
+      stateFile: join(fixtureRoot(), "bindings.json"),
+      createClient: () => cancelClient,
+    })(attempt({ signal: controller.signal, maxAttemptMs: "unlimited" }));
+    await entered.promise;
+    controller.abort();
+    await expect(execution).rejects.toThrow("client stopped");
+    expect(cancelClient.calls).toContain("interrupt");
+    expect(cancelClient.calls).toContain("stop");
   });
 });

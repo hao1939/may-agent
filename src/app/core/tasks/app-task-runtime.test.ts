@@ -1233,6 +1233,128 @@ it.each(["needs-agent", "needs-owner"])("rejects obsolete executor %s output vis
   expect(readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult?.summary).toBe("Procedure repaired");
 });
 
+it("applies AppTaskPolicy.maxAttemptMs per Task without changing Task generation and rejects unlimited on bounded executors", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  const observedAgentTimeouts: number[] = [];
+  const observedWorkflowTimeouts: number[] = [];
+  const observedCodexMaxAttempt: Array<number | "unlimited" | undefined> = [];
+  let codexPolicy: number | "unlimited" | undefined = 45_000;
+  let agentPolicy: number | "unlimited" | undefined = 12_000;
+
+  const agents: TaskAgentRunner = {
+    available: () => true,
+    prepare: async () => true,
+    snapshot: () => agents,
+    role: (agent) => ({ agent, instructions: "Fixture" }),
+    async execute(input) {
+      observedAgentTimeouts.push(input.executionTimeoutMs);
+      return {
+        handlerResult: { state: "converged", summary: "Agent finished", facts: [], actions: [] },
+        runId: "agent-run",
+      };
+    },
+  };
+
+  await installCoreTaskRuntimes({
+    ...options(f, bus),
+    agents,
+    installControllers: false,
+    workflows: {
+      async inspect() {
+        return { available: true, error: null, workspace: "shared" };
+      },
+      async execute(input) {
+        observedWorkflowTimeouts.push(input.executionTimeoutMs);
+        return {
+          handlerResult: { state: "converged", summary: "Workflow finished", facts: [], actions: [] },
+          runId: "workflow-run",
+        };
+      },
+    },
+    executors: {
+      "codex-goal": async (attempt) => {
+        observedCodexMaxAttempt.push(attempt.maxAttemptMs);
+        return { state: "converged", summary: "Codex finished", facts: ["codex:ok"] };
+      },
+    },
+    appRegistrySnapshot: {
+      id: "task-max-attempt-policy",
+      generation: 1,
+      entries: [
+        {
+          appDir: f.appDir,
+          definition: {
+            ...definition(),
+            tasks: {
+              ...definition().tasks,
+              maxAttemptMs(task) {
+                // Mutating the defensive copy must not affect stored Task state.
+                (task as { outcome: string }).outcome = "mutated";
+                if (task.executor === "codex-goal") return codexPolicy;
+                if (task.workflow) return 25_000;
+                return agentPolicy;
+              },
+            },
+          },
+        },
+      ],
+    },
+  });
+
+  const config = loadedTaskConfig(f);
+  for (const intent of [
+    { id: "work/codex", parentId: "operations", outcome: "Long campaign", acceptance: ["Done"], executor: "codex-goal" },
+    { id: "work/workflow", parentId: "operations", outcome: "Workflow check", acceptance: ["Done"], workflow: "verify" },
+    { id: "work/agent", parentId: "operations", outcome: "Bounded review", acceptance: ["Done"] },
+  ] as const) {
+    observeAppTaskIntent(config, { appAgent: "sample-owner", intent, trigger: { type: "run.requested", eventId: 1 } });
+  }
+
+  const run = (taskId: string) =>
+    reconcileLoadedAppTaskOnce({
+      bus,
+      appId: "sample",
+      taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+    });
+
+  await run("work/codex");
+  await run("work/workflow");
+  await run("work/agent");
+  expect(observedCodexMaxAttempt).toEqual([45_000]);
+  expect(observedWorkflowTimeouts).toEqual([25_000]);
+  expect(observedAgentTimeouts).toEqual([12_000]);
+  expect(config.resourceStore.readTask("work/codex")?.spec.outcome).toBe("Long campaign");
+  expect(config.resourceStore.readTask("work/codex")?.metadata.generation).toBe(1);
+
+  // Changing policy to "unlimited" applies on the next wake without bumping generation.
+  codexPolicy = "unlimited";
+  observeAppTaskIntent(config, {
+    appAgent: "sample-owner",
+    intent: { id: "work/codex", parentId: "operations", outcome: "Long campaign", acceptance: ["Done"], executor: "codex-goal" },
+    trigger: { type: "run.requested", eventId: 2 },
+  });
+  expect(config.resourceStore.readTask("work/codex")?.metadata.generation).toBe(1);
+  await run("work/codex");
+  expect(observedCodexMaxAttempt).toEqual([45_000, "unlimited"]);
+
+  // Bounded executors reject "unlimited" cleanly as an attempt failure instead of crashing.
+  agentPolicy = "unlimited";
+  observeAppTaskIntent(config, {
+    appAgent: "sample-owner",
+    intent: { id: "work/agent", parentId: "operations", outcome: "Bounded review", acceptance: ["Done"] },
+    trigger: { type: "run.requested", eventId: 3 },
+  });
+  await run("work/agent");
+  expect(observedAgentTimeouts).toEqual([12_000]);
+  expect(config.resourceStore.readTask("work/agent")?.status).toMatchObject({
+    phase: "pending",
+    executionFailures: 1,
+    summary: expect.stringContaining("agent executor requires a bounded maxAttemptMs"),
+  });
+});
+
 function activateTaskResources(config: AppTaskContext, persistDir: string, appId = "sample"): AppTaskContext {
   const tree = readTaskSnapshot(config);
   tree.project ||= appId;

@@ -59,6 +59,27 @@ const APP_TASK_AGENT_TIMEOUT_MS = 15 * 60_000;
 
 const APP_TASK_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
 
+const MAX_TASK_ATTEMPT_MS = 2 ** 31 - 1;
+
+function resolveTaskMaxAttemptMs(
+  descriptor: AppTaskRuntimeDescriptor,
+  claim: AppTaskClaim,
+): number | "unlimited" | undefined {
+  const policy = descriptor.app.tasks?.maxAttemptMs;
+  if (policy === undefined) return undefined;
+  const resolved =
+    typeof policy === "function"
+      ? policy(structuredClone({ ...claim.intent, agent: claim.intent.agent ?? claim.agent }))
+      : policy;
+  if (resolved === undefined || resolved === "unlimited") return resolved;
+  if (!Number.isSafeInteger(resolved) || resolved <= 0 || resolved > MAX_TASK_ATTEMPT_MS) {
+    throw new Error(
+      `App ${descriptor.id} task maxAttemptMs must be an integer from 1 to ${MAX_TASK_ATTEMPT_MS} or unlimited`,
+    );
+  }
+  return resolved;
+}
+
 /** Core-owned input for one claimed execution, before choosing its adapter. */
 export type TaskAttemptInput = {
   dispatch?: import("./controller.js").AppTaskDispatch;
@@ -115,6 +136,25 @@ export async function runTaskWorkflow(
       runId: null,
       unavailable: true,
     };
+  const coordinationMaxAttemptMs = input.dispatch?.coordination
+    ? descriptor.app.tasks!.coordination!.maxAttemptMs
+    : undefined;
+  if (coordinationMaxAttemptMs === undefined && input.attempt.maxAttemptMs === "unlimited")
+    return {
+      handlerResult: {
+        state: "error",
+        summary:
+          "Task workflow executor requires a bounded maxAttemptMs; unlimited is only supported for ongoing native executors",
+        facts: [],
+        actions: [],
+      },
+      runId: null,
+      executionFailed: true,
+    };
+  const requestedTimeoutMs =
+    input.attempt.maxAttemptMs === "unlimited"
+      ? coordinationMaxAttemptMs!
+      : (input.attempt.maxAttemptMs ?? APP_TASK_WORKFLOW_TIMEOUT_MS);
   return opts.workflows.execute({
     ...execution,
     handler: claim.handler,
@@ -131,9 +171,9 @@ export async function runTaskWorkflow(
       projectDir: descriptor.projectDir,
       app: descriptor.app,
     },
-    executionTimeoutMs: APP_TASK_WORKFLOW_TIMEOUT_MS,
-    ...(input.dispatch?.coordination
-      ? { executionTimeoutLimitMs: descriptor.app.tasks!.coordination!.maxAttemptMs } : {}),
+    executionTimeoutMs:
+      coordinationMaxAttemptMs !== undefined ? Math.min(requestedTimeoutMs, coordinationMaxAttemptMs) : requestedTimeoutMs,
+    ...(coordinationMaxAttemptMs !== undefined ? { executionTimeoutLimitMs: coordinationMaxAttemptMs } : {}),
   });
 }
 
@@ -145,7 +185,10 @@ type RuntimeTaskAttempt = {
 };
 
 /** Build the one fenced Task interface shared by every executor adapter. */
-function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
+function runtimeTaskAttempt(
+  input: TaskAttemptInput,
+  maxAttemptMs?: number | "unlimited",
+): RuntimeTaskAttempt {
   const { opts, descriptor, claim } = input;
   const task = readRuntimeTaskView(
     {
@@ -194,6 +237,7 @@ function runtimeTaskAttempt(input: TaskAttemptInput): RuntimeTaskAttempt {
     attemptId: claim.attemptId,
     signal: controller.signal,
     resourceVersion: claim.resourceVersion,
+    ...(maxAttemptMs !== undefined ? { maxAttemptMs } : {}),
     role: opts.agents?.role(claim.agent) ?? {
       agent: claim.agent,
       instructions: `Act as the selected May agent ${claim.agent}.`,
@@ -416,7 +460,22 @@ export async function runTaskExecutorAttempt(
     ) => Promise<TaskCapabilityRun>;
   },
 ): Promise<TaskCapabilityRun> {
-  const taskAttempt = runtimeTaskAttempt(input);
+  let maxAttemptMs: number | "unlimited" | undefined;
+  try {
+    maxAttemptMs = resolveTaskMaxAttemptMs(input.descriptor, input.claim);
+  } catch (error) {
+    return {
+      handlerResult: {
+        state: "error",
+        summary: `Task attempt timeout policy failed: ${error instanceof Error ? error.message : String(error)}`,
+        facts: [],
+        actions: [],
+      },
+      runId: null,
+      executionFailed: true,
+    };
+  }
+  const taskAttempt = runtimeTaskAttempt(input, maxAttemptMs);
   const leaseTimer = setInterval(
     () => {
       try {
@@ -465,11 +524,23 @@ export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabil
       runId: null,
       unavailable: true,
     };
+  if (input.attempt.maxAttemptMs === "unlimited")
+    return {
+      handlerResult: {
+        state: "error",
+        summary:
+          "Task agent executor requires a bounded maxAttemptMs; unlimited is only supported for ongoing native executors",
+        facts: [],
+        actions: [],
+      },
+      runId: null,
+      executionFailed: true,
+    };
   let preflightAcceptedLiveEventIds: number[] | undefined;
   let preflightReviewAt: number | undefined;
   const report = await opts.agents.execute({
     ...execution,
-    executionTimeoutMs: APP_TASK_AGENT_TIMEOUT_MS,
+    executionTimeoutMs: input.attempt.maxAttemptMs ?? APP_TASK_AGENT_TIMEOUT_MS,
     descriptor: {
       id: descriptor.id,
       appDir: descriptor.appDir,

@@ -462,6 +462,12 @@ export type AppTaskPolicy = {
    * App pause still applies. The exact App-created Task must use this workflow
    * and the App's responsible agent. This grants no portfolio-control authority. */
   coordination?: { taskId: string; workflow: string; maxAttemptMs: number };
+  /** Per-attempt execution deadline in ms (1..2147483647), or "unlimited" for executors that
+   * support ongoing native goals (such as codex-goal). Omit or return undefined for the executor's default. */
+  maxAttemptMs?:
+    | number
+    | "unlimited"
+    | ((task: Readonly<TaskIntent>) => number | "unlimited" | undefined);
   /** Total consecutive unsuccessful attempts before owner attention (initial attempt included).
    * Defaults to 3 (initial attempt + 2 retries), spaced 30s then 60s.
    * Higher allowances keep doubling the delay up to one hour.
