@@ -7,7 +7,7 @@ export function parseWebPort(value: string | undefined): number {
 
 export async function startWebMode(opts: WebUIOptions): Promise<{ port: number }> {
   const { startWebUI } = await import("../http/server.js");
-  return startWebUI(opts);
+  return startWebUI({ ...opts, hostname: opts.hostname?.trim() || process.env.WEB_HOST?.trim() || undefined });
 }
 
 export async function runWebOnlyMode(opts: WebUIOptions): Promise<never> {

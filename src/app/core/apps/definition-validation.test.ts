@@ -301,6 +301,19 @@ describe("canonical App definition validation", () => {
     );
   });
 
+  it("validates AppTaskPolicy.maxAttemptMs static values and allows Task-scoped policy functions", () => {
+    const app = { id: "sample", version: 1, agent: "worker", inputSchema };
+    expect(validateAppDefinition({ ...app, tasks: { maxAttemptMs: 60_000 } })).toEqual([]);
+    expect(validateAppDefinition({ ...app, tasks: { maxAttemptMs: 2_147_483_647 } })).toEqual([]);
+    expect(validateAppDefinition({ ...app, tasks: { maxAttemptMs: "unlimited" } })).toEqual([]);
+    expect(validateAppDefinition({ ...app, tasks: { maxAttemptMs: () => undefined } })).toEqual([]);
+    for (const invalid of [0, -1, 1.5, 2_147_483_648, Number.NaN, Number.POSITIVE_INFINITY, "30m"]) {
+      expect(validateAppDefinition({ ...app, tasks: { maxAttemptMs: invalid } })).toContain(
+        "App sample task maxAttemptMs must be an integer from 1 to 2147483647, unlimited, or a function",
+      );
+    }
+  });
+
   it("accepts direct conversational requests and requires explicit kinds beside a Task path", () => {
     expect(
       validateAppDefinition({

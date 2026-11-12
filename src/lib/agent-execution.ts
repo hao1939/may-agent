@@ -13,9 +13,6 @@ import type { TaskExecutionContext } from "./task-execution-context.js";
 import { createTaskDecisionContext } from "./task-decision-context.js";
 import { formatBoundedSkillCatalog, invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
 import type { SubagentDefinition } from "./types.js";
-import { composeGuards, toGuardContext, type BeforeToolCallHook } from "./tools/compose-guards.js";
-import { createCommitGuard } from "./tools/commit-guard.js";
-import { createFinishGuard } from "./tools/finish-guard.js";
 import { createWorkflowFinishTool } from "./tools/workflow-finish.js";
 import { createReadTool } from "./tools/read.js";
 import { createBashTool } from "./tools/bash.js";
@@ -222,7 +219,6 @@ export type AgentPreparationOptions = {
   createCheckpoint?: () => AgentTool;
   /** Exact durable owner for local bash setsid process groups. */
   bashProcessGroupOwner?: { persistDir: string; sessionId: string };
-  onGuard?: (observation: { context: PiBeforeToolCallContext; guard: string; block: boolean; reason: string }) => void;
   onCompact?: (info: CompactionInfo, messages: AgentMessage[]) => void;
   onNotice?: (message: string) => void;
 };
@@ -435,19 +431,6 @@ export function bindToolsToExecutionScope(tools: AgentTool[], getScope: () => Ex
   }));
 }
 
-function buildGuards(definition: SubagentDefinition, projectRoot: string): BeforeToolCallHook[] {
-  const named =
-    (guardName: string, guard: BeforeToolCallHook): BeforeToolCallHook =>
-    async (context, signal) => {
-      const result = await guard(context, signal);
-      return result ? { ...result, guardName: result.guardName ?? guardName } : undefined;
-    };
-  return [
-    named("finish-evidence", createFinishGuard()),
-    named("commit", createCommitGuard(definition.name, projectRoot)),
-  ];
-}
-
 function resolveSystemPrompt(options: AgentPreparationOptions, tools: AgentTool[], requireFinish: boolean): string {
   const { definition, projectRoot } = options;
   let base = definition.systemPrompt;
@@ -558,24 +541,13 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
     options.definition.name,
     options.sessionId,
   );
-  const guards = buildGuards(options.definition, options.definition.projectRoot ?? options.projectRoot);
-  const composed = guards.length ? composeGuards(...guards) : undefined;
   // finish is sequential. Once accepted, later calls in that same batch have
   // no authority to add effects. A later invocation has a different message.
   let finishedTurn: PiBeforeToolCallContext["assistantMessage"] | undefined;
-  const beforeToolCall = async (context: PiBeforeToolCallContext, signal?: AbortSignal) => {
+  const beforeToolCall = async (context: PiBeforeToolCallContext) => {
     if (finishedTurn && context.assistantMessage === finishedTurn)
       return { block: true, reason: "This invocation already finished; remaining tool calls were not executed." };
-    const result = await composed?.(toGuardContext(context), signal);
-    if (result) {
-      options.onGuard?.({
-        context,
-        guard: result.guardName ?? "unknown",
-        block: result.block,
-        reason: result.reason,
-      });
-    }
-    return result;
+    return undefined;
   };
 
   let compactInfo: CompactionInfo | undefined;

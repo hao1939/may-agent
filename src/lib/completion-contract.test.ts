@@ -1,6 +1,6 @@
 import { Type } from "typebox";
-import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { BeforeToolCallContext } from "@earendil-works/pi-agent-core";
@@ -26,7 +26,6 @@ describe("prepared completion contract", () => {
     name = "optimizer",
     outputSchema: TSchema = Type.Object({ verdict: Type.Union([Type.Literal("pass"), Type.Literal("fail")]) }),
   ) {
-    const onGuard = mock();
     const prepared = prepareAgentExecution({
       definition: {
         name,
@@ -41,7 +40,6 @@ describe("prepared completion contract", () => {
       task: "Review the supplied result",
       toolPolicy: "readonly",
       outputSchema,
-      onGuard,
     });
     const finish = prepared.tools.find((tool) => tool.name === "finish")!;
     function context(args: Record<string, unknown>): BeforeToolCallContext {
@@ -69,7 +67,7 @@ describe("prepared completion contract", () => {
         context: { systemPrompt: prepared.systemPrompt, tools: prepared.tools, messages: [] },
       };
     }
-    return { prepared, finish, onGuard, context };
+    return { prepared, finish, context };
   }
 
   const review = {
@@ -81,22 +79,32 @@ describe("prepared completion contract", () => {
 
   for (const name of ["optimizer", "reviewer"]) {
     it(`lets a read-only ${name} return a typed review without demanding a checklist file`, async () => {
-      const { prepared, finish, onGuard, context } = prepare(name);
+      const { prepared, finish, context } = prepare(name);
       expect(prepared.tools.map((tool) => tool.name)).toEqual(["finish"]);
       const ctx = context(review);
       const params = validateToolArguments(finish, ctx.toolCall);
       expect(await prepared.runner.beforeToolCall!(ctx)).toBeUndefined();
-      expect(onGuard).not.toHaveBeenCalled();
       expect((await finish.execute(ctx.toolCall.id, params)).terminate).toBe(true);
     });
   }
 
-  it("keeps the actual finish-evidence warning observable and nonblocking", async () => {
-    const { prepared, onGuard, context } = prepare();
-    const ctx = context({ ...review, deliverables: [{ path: "proof.txt", description: "claimed output" }] });
-    expect(await prepared.runner.beforeToolCall!(ctx)).toMatchObject({ guardName: "finish-evidence", block: false });
-    expect(onGuard).toHaveBeenCalledTimes(1);
-    expect(onGuard.mock.calls[0][0]).toMatchObject({ guard: "finish-evidence", block: false });
+  it("reports an existing deliverable without requiring write activity or committing a dirty repository", async () => {
+    const init = Bun.spawn(["git", "init", "--quiet", projectRoot], { stdout: "pipe", stderr: "pipe", timeout: 5000 });
+    expect(await init.exited).toBe(0);
+    const path = "agents/optimizer/proof.txt";
+    mkdirSync(join(projectRoot, "agents", "optimizer"), { recursive: true });
+    writeFileSync(join(projectRoot, path), "Existing evidence");
+    const { prepared, finish, context } = prepare();
+    const ctx = context({ ...review, deliverables: [{ path, description: "reported output" }] });
+    expect(await prepared.runner.beforeToolCall!(ctx)).toBeUndefined();
+    expect((await finish.execute(ctx.toolCall.id, validateToolArguments(finish, ctx.toolCall))).terminate).toBe(true);
+    expect(readFileSync(join(projectRoot, path), "utf8")).toBe("Existing evidence");
+    const status = Bun.spawn(["git", "status", "--porcelain", "--untracked-files=all"], {
+      cwd: projectRoot, stdout: "pipe", stderr: "pipe", timeout: 5000,
+    });
+    const output = await new Response(status.stdout).text();
+    expect(await status.exited).toBe(0);
+    expect(output.trim()).toBe(`?? ${path}`);
   });
 
   it("still rejects missing or invalid caller-defined results before execution", () => {

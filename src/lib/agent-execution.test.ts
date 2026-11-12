@@ -406,12 +406,10 @@ describe("shared agent execution preparation", () => {
     const transcript = join(root, ".state", "sessions", "sample", "session.jsonl");
     mkdirSync(join(root, ".state", "sessions", "sample"), { recursive: true });
     writeFileSync(transcript, "page one\npage two\npage three\npage four");
-    const signals: string[] = [];
     const prepared = prepareAgentExecution({
       definition: { name: "sample", description: "sample", domain: "tests", systemPrompt: "Read evidence",
         model: streamTestModel, tools: [tool("read"), tool("bash"), tool("finish")] },
       projectRoot: root, executionRoot: root, sessionId: "read-pages", task: "Inspect evidence",
-      onGuard: ({ guard }) => signals.push(guard),
     });
     const read = prepared.tools.find(candidate => candidate.name === "read")!;
     const message = assistantMessage("stop");
@@ -437,11 +435,8 @@ describe("shared agent execution preparation", () => {
     const bash = prepared.tools.find(candidate => candidate.name === "bash")!;
     expect((await bash.execute("path-argument", command)).content[0])
       .toEqual({ type: "text", text: "(no output)" });
-    expect(signals).toEqual([]);
-    // The diagnostic callback remains wired for retained finish checks.
     expect(await check("finish", { status: "success", deliverables: [{ path: transcript, description: "evidence" }] }))
-      .toMatchObject({ block: false, guardName: "finish-evidence" });
-    expect(signals).toEqual(["finish-evidence"]);
+      .toBeUndefined();
   });
 
   test("synthesizes exactly one checkpoint for explicit full non-persistent preparation", () => {

@@ -227,6 +227,14 @@ export function validateAppDefinition(definition: unknown): string[] {
       if (tasks.maxConsecutiveFailures !== undefined && tasks.maxConsecutiveFailures !== "unlimited" && !positiveInteger(tasks.maxConsecutiveFailures)) {
         errors.push(`App ${appId} task maxConsecutiveFailures must be a positive safe integer or unlimited`);
       }
+      if (
+        tasks.maxAttemptMs !== undefined &&
+        typeof tasks.maxAttemptMs !== "function" &&
+        tasks.maxAttemptMs !== "unlimited" &&
+        (!positiveInteger(tasks.maxAttemptMs) || Number(tasks.maxAttemptMs) > 2_147_483_647)
+      ) {
+        errors.push(`App ${appId} task maxAttemptMs must be an integer from 1 to 2147483647, unlimited, or a function`);
+      }
       if (tasks.subscriptions !== undefined || tasks.resolve !== undefined) {
         errors.push(`App ${appId} tasks.subscriptions/resolve are retired; use subscriptions.toInput and task`);
       }

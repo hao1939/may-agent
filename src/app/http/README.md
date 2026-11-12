@@ -20,6 +20,54 @@ The handler factory takes only the existing daemon-read and JSON-response
 functions. Server startup and route selection stay in `server.ts`; the read
 module opens no database or socket and performs no Task transitions.
 
+`task-transcript.ts` supplies `/api/task/transcript?appId=...&taskId=...`.
+It resolves the current Task through `task.get` and checks the exact App, Task
+and generation against the executor's existing `codex-goal-bindings.json`.
+Native thread IDs and working directories come only from that Host state.
+The short-lived Codex client initializes, reads, and stops; it never starts or
+resumes a thread, steers a turn, or changes a goal. A final Task/binding check
+discards results if execution changed during the read.
+
+The default page contains the latest 30 visible items in chronological order;
+`limit` accepts 1–100. `nextCursor` retrieves older history and is authenticated,
+scoped to the current Task generation and native thread, and valid for this
+HTTP process's lifetime. Each response scans at most 16 native item pages and
+bounds message and command output. Reasoning, system/developer context, the
+private Task packet, and raw tool arguments/results are omitted. `thread/read`
+retrieves metadata without turns; `thread/items/list` omits `turnId` to use the
+native bounded pagination across the thread, including active turns. Native read
+requests time out after five seconds, with an eight-second client lifetime.
+The pinned [Codex thread item protocol](https://github.com/openai/codex/blob/rust-v0.162.1/codex-rs/app-server-protocol/schema/typescript/v2/ThreadItemsListParams.ts)
+defines the optional turn filter and native cursor.
+Managed May sessions currently return a precise unavailable result rather than
+substituting another Task or session's transcript.
+
+`task-transcript.test.ts` exercises this reader through the production JSONL
+client and a local protocol peer, including active reads, cross-turn paging,
+identity fencing, hidden content, bounded results and shutdown on failures.
+
+`task-input.ts` supplies `POST /api/task/input`. JSON input names the exact
+`appId`, `taskId`, `expectedGeneration`, `message` and stable `idempotencyKey`;
+optional `inputKind` selects an input declared by the App (default `message`).
+The handler checks current Task identity, generation and terminal state before
+sending feedback through existing `app.input.admit` with `targetTaskId` and
+server-owned human attribution. This is a pre-send generation check, not an
+atomic requirement revision or native thread control. The App owns how feedback
+is considered; accepted requirement changes use its existing typed revision path.
+
+A 202 response includes `accepted`, `appId`, `taskId`, `generation`, and available
+publication receipts. It confirms durable admission, not agent acknowledgment
+or completion. Lost acknowledgments return 503 with `delivery: "unknown"`;
+retry the identical payload with the same key. Exact persisted publications are
+confirmed before checking current Task state, so a replay still succeeds after
+the original input changed or closed the Task. New input cannot reopen a closed
+Task. Cross-origin browser input and oversized bodies are rejected.
+
+[`http-task-session.test.ts`](../../../test/integration/http-task-session.test.ts)
+checks both routes through a real HTTP process and disposable control socket.
+App-owned pages can combine these endpoints with Task reads and exact Task
+WebSocket subscriptions without depending on the Host's platform UI.
+
 The Projects page presents loaded Apps independently of saved project context.
 `/api/projects` remains a metadata read; its saved status does not establish
 App loading or Task execution. Missing project metadata cannot hide a loaded

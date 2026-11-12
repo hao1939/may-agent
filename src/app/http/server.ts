@@ -22,6 +22,8 @@ declare const Bun: {
 };
 import { randomUUID } from "node:crypto";
 import { createTaskReadHandlers } from "./task-read-routes.js";
+import { createTaskInputHandler, type TaskInputCommand } from "./task-input.js";
+import { createTaskTranscriptHandler } from "./task-transcript.js";
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
 import type { Duplex } from "node:stream";
@@ -84,6 +86,7 @@ export interface WebUIOptions {
   interface?: InterfaceBinding;
   stateDir: string;
   port: number;
+  hostname?: string;
 }
 
 export function appInboxQueryFromUrl(url: URL): AppInboxQuery {
@@ -2317,6 +2320,35 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   const { handleApps, handleConversationRead, handleHumanTaskRead, handleAppTasks, handleAppTask } =
     createTaskReadHandlers({ daemonRead, json });
+  const handleTaskTranscript = createTaskTranscriptHandler({ daemonRead, json, stateDir: STATE_DIR });
+  function confirmTaskInput(
+    command: TaskInputCommand,
+  ): { eventId: number; eventType: string; delivery: "accepted" } | undefined {
+    const db = _db();
+    const eventId = findEventPublication(
+      db,
+      {
+        type: "app.input.requested",
+        target: { appId: String(command.appId) },
+        idempotencyKey: command.idempotencyKey,
+        data: { input: command.input, targetTaskId: command.targetTaskId, channel: command.channel },
+      },
+      { source: "control-socket", inputSource: command.source },
+    );
+    if (!eventId || getEventView(db, eventId)?.delivery.state !== "accepted") return undefined;
+    return { eventId, eventType: "app.input.requested", delivery: "accepted" };
+  }
+  const handleTaskInput = createTaskInputHandler({
+    daemonRead,
+    json,
+    confirm: confirmTaskInput,
+    admit: async (command) => {
+      const response = await sendAppInputWithRetry(
+        conventionSocketPath(), command, sendSocketCommand, () => confirmTaskInput(command),
+      );
+      return response as unknown as Record<string, unknown>;
+    },
+  });
 
   async function handleSessionCancel(sessionId: string): Promise<Response> {
     if (!sessionId) return json({ error: "sessionId required" }, 400);
@@ -2813,7 +2845,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   const server = Bun.serve({
     port: PORT,
-    hostname: "0.0.0.0",
+    hostname: opts.hostname?.trim() || "0.0.0.0",
     fetch(req, server) {
       const url = new URL(req.url);
       if (url.pathname === "/ws") {
@@ -2866,6 +2898,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/projects/content") return handleProjectContent(url);
       if (url.pathname === "/api/projects/artifact") return handleProjectArtifact(url);
       if (url.pathname === "/api/conversation" && req.method === "GET") return handleConversationRead(url);
+      if (url.pathname === "/api/task/transcript")
+        return req.method === "GET" ? handleTaskTranscript(url) : json({ error: "GET required" }, 405);
+      if (url.pathname === "/api/task/input")
+        return req.method === "POST" ? handleTaskInput(req) : json({ error: "POST required" }, 405);
       if (url.pathname === "/api/tasks" || url.pathname === "/api/task") {
         return req.method === "GET" ? handleHumanTaskRead(url) : json({ error: "GET required" }, 405);
       }
@@ -2983,12 +3019,13 @@ export function runWebUIServerFromCli(argv: string[] = process.argv): void {
   };
   const stateDir = resolve(getArg("--state-dir", ".state"));
   const port = parseInt(getArg("--port", "8080"), 10);
+  const hostname = getArg("--host", process.env.WEB_HOST || "0.0.0.0");
   if (!existsSync(stateDir)) {
     console.error(`State directory not found: ${stateDir}`);
     process.exit(1);
   }
   console.log(`may-agent web UI\n  state: ${stateDir}\n  port:  ${port}`);
-  const { port: actualPort } = startWebUI({ stateDir, port });
+  const { port: actualPort } = startWebUI({ stateDir, port, hostname });
   console.log(`  url:   http://localhost:${actualPort}`);
 }
 

@@ -143,6 +143,62 @@ export default [
   },
 
   {
+    files: ["src/app/transport/**/*.ts"],
+    ignores: ["**/*.test.ts", "src/app/transport/telegram-client.ts", "src/app/transport/socket.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "**/core/tasks/**",
+                "**/core/state/**",
+                "**/core/inbox/**",
+                "**/core/scheduling/**",
+                "**/lib/db/**",
+                "**/app-task-*",
+                "**/task-reference-index",
+                "**/task-reference-index.*",
+                "**/migrations/**",
+              ],
+              message: "Transport surface adapters must use HumanTaskService, EventInterface/persisted event helpers, and their client/outbox module rather than DB or core internals.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/app/transport/telegram-client.ts", "src/app/transport/socket.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "**/core/tasks/**",
+                "**/core/state/**",
+                "**/core/inbox/**",
+                "**/core/scheduling/**",
+                "**/lib/db/connection",
+                "**/lib/db/connection.*",
+                "**/app-task-*",
+                "**/task-reference-index",
+                "**/task-reference-index.*",
+                "**/migrations/**",
+              ],
+              message: "Transport client/socket modules must not import core state/task internals or raw DB connections.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
     files: ["src/app/agent-loader.ts", "src/app/loader/**/*.ts"],
     ignores: ["**/*.test.ts"],
     rules: {

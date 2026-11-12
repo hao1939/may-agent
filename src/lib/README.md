@@ -11,7 +11,7 @@ Task scheduling, durable state and capability selection.
 app/core/tasks/attempt-execution.ts      selected Task executor and context
   app/adapters/executors/managed-agent.ts
     manager.ts                          hosted session ownership and controls
-      agent-execution.ts                context, instructions, tools and guards
+      agent-execution.ts                context, instructions, tools and completion
         agent-runner.ts                 bounded model/tool loop
 ```
 
@@ -54,20 +54,24 @@ synthetic credentials and empty values through definition loading, workflow
 execution, Bash and native CLI descendants. They read back only those synthetic
 values and keep private worker-role checks separate.
 
-## Tool checks and diagnostic signals
+## Tool checks and completion
 
 The Host checks declared capabilities, file-write permissions and required
 results, and bounds execution and tool output. File access reports the actual
 filesystem result; read pagination is an ordinary supported operation.
 
-Execution preparation installs the finish write-activity and commit diagnostic
-guards. They record possible problems for review; they do not establish result
-correctness. Required-result validation belongs to the finish capability and
-caller, while Task acceptance belongs to the App's declared policy.
+Required-result validation belongs to the finish capability and caller, while
+Task acceptance belongs to the App's declared policy. An accepted finish ends
+the invocation and fences remaining tool calls in that batch. Rejected reports
+remain correctable through the existing completion boundary.
 
 The Host does not guess invalid paths from home-directory prefixes, track
 repeated reads by file name, or classify transcript reads through shell-command
-patterns. Apps judge whether the retained tool requests and results were useful.
+patterns, infer completed writes from tool names, or scan Git at completion.
+Apps judge whether retained evidence meets their acceptance criteria, including
+verification and committed source where required. The Host has no default
+tool-guard composition or diagnostic callback; App workflow guards keep their
+separate SDK/runtime path, and historical tool diagnostics remain readable.
 Read and Bash output truncation limits each response; it does not prevent a
 sequence of unnecessary calls from consuming the execution budget.
 

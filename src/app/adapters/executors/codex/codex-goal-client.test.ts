@@ -1,7 +1,11 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, spyOn } from "bun:test";
 import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
-import { CodexGoalAppServerClient, type AppServerProcess } from "./codex-goal-client.js";
+import {
+  CodexGoalAppServerClient,
+  MAX_RETAINED_TURN_COMPLETIONS,
+  type AppServerProcess,
+} from "./codex-goal-client.js";
 
 class FakeAppServerProcess extends EventEmitter implements AppServerProcess {
   pid = undefined;
@@ -54,6 +58,23 @@ async function waitForWrite(process: FakeAppServerProcess, method: string): Prom
 }
 
 describe("CodexGoalAppServerClient", () => {
+  it("injects the full current human input as a user message without starting a turn", async () => {
+    const process = new FakeAppServerProcess();
+    const client = new CodexGoalAppServerClient(process, { requestTimeoutMs: 1_000 });
+    const text = "Current input: resume generation 2.\n" + "Exact context 終\n".repeat(1_000);
+
+    const injected = client.injectUserContext({ threadId: "thread-resumed", text });
+    const inject = await waitForWrite(process, "thread/inject_items");
+    expect(inject.params).toEqual({
+      threadId: "thread-resumed",
+      items: [{ type: "message", role: "user", content: [{ type: "input_text", text }] }],
+    });
+    process.reply(inject.id, {});
+    await injected;
+    expect(process.writes.map((entry) => entry.method)).toEqual(["thread/inject_items"]);
+    await client.stop();
+  });
+
   it("initializes, starts a thread, sets a goal, steers, and accepts authoritative completion", async () => {
     const process = new FakeAppServerProcess();
     const client = new CodexGoalAppServerClient(process, { requestTimeoutMs: 1_000 });
@@ -212,6 +233,27 @@ describe("CodexGoalAppServerClient", () => {
     });
   });
 
+  it("reads bounded items across the thread when no turn filter is supplied", async () => {
+    const process = new FakeAppServerProcess({ closeOnStdinEnd: true });
+    const client = new CodexGoalAppServerClient(process, { requestTimeoutMs: 1_000 });
+    try {
+      const listed = client.listThreadItems({ threadId: "thread-1", limit: 30, sortDirection: "desc" });
+      const request = await waitForWrite(process, "thread/items/list");
+      expect(request.params).toEqual({ threadId: "thread-1", limit: 30, sortDirection: "desc" });
+      const page = {
+        data: [
+          { turnId: "turn-active", item: { id: "latest", type: "agentMessage", text: "Working" } },
+          { turnId: "turn-old", item: { id: "older", type: "agentMessage", text: "Earlier answer" } },
+        ],
+        nextCursor: "older-history",
+      };
+      process.reply(request.id, page);
+      await expect(listed).resolves.toEqual(page);
+    } finally {
+      await client.stop();
+    }
+  });
+
   it("observes the authoritative turn and terminal status created by an active goal", async () => {
     const process = new FakeAppServerProcess();
     const client = new CodexGoalAppServerClient(process, { requestTimeoutMs: 1_000 });
@@ -243,6 +285,85 @@ describe("CodexGoalAppServerClient", () => {
     process.stderr.write("protocol stopped");
     process.emit("close", 1, null);
     await expect(pending).rejects.toThrow("protocol stopped");
+  });
+
+  it("waits for an ongoing goal without scheduling a deadline and resolves only an accepted state", async () => {
+    const process = new FakeAppServerProcess({ closeOnStdinEnd: true });
+    const client = new CodexGoalAppServerClient(process);
+    const timers = spyOn(globalThis, "setTimeout");
+    try {
+      let settled = false;
+      const ongoing = client.waitForGoal("ongoing", (observation) => observation.goal.status === "complete", null);
+      void ongoing.then(() => {
+        settled = true;
+      });
+      expect(timers).not.toHaveBeenCalled();
+      const finite = client.waitForGoal("finite", () => true, 20);
+      await expect(finite).rejects.toThrow("Timed out waiting for Codex goal state");
+      process.notify("thread/goal/updated", {
+        threadId: "ongoing",
+        goal: { threadId: "ongoing", objective: "Continue useful work", status: "active" },
+      });
+      await Bun.sleep(10);
+      expect(settled).toBe(false);
+      process.notify("thread/goal/updated", {
+        threadId: "ongoing",
+        turnId: "final-turn",
+        goal: { threadId: "ongoing", objective: "Continue useful work", status: "complete" },
+      });
+      await expect(ongoing).resolves.toMatchObject({ turnId: "final-turn", goal: { status: "complete" } });
+      expect(settled).toBe(true);
+    } finally {
+      timers.mockRestore();
+      await client.stop();
+    }
+  });
+
+  it.each(["stop", "exit"])("rejects an ongoing goal wait on app-server %s", async (mode) => {
+    const process = new FakeAppServerProcess({ closeOnStdinEnd: true });
+    const client = new CodexGoalAppServerClient(process);
+    const pending = client.waitForGoal("ongoing", () => false, null);
+    void pending.catch(() => {});
+    if (mode === "stop") await client.stop();
+    else process.emit("close", 1, null);
+    await expect(pending).rejects.toThrow(mode === "stop" ? "client stopped" : "exited");
+    await client.stop();
+  });
+
+  it("keeps RPC and turn waits bounded while an ongoing goal has no deadline", async () => {
+    const process = new FakeAppServerProcess({ closeOnStdinEnd: true });
+    const client = new CodexGoalAppServerClient(process, { requestTimeoutMs: 10 });
+    const goal = client.waitForGoal("ongoing", () => false, null);
+    void goal.catch(() => {});
+    await expect(client.getGoal("ongoing")).rejects.toThrow("request thread/goal/get timed out");
+    await expect(client.waitForActiveTurn("ongoing", 10)).rejects.toThrow("Timed out waiting for an active Codex turn");
+    await expect(client.waitForTurn("final-turn", 10)).rejects.toThrow("Timed out waiting for Codex turn");
+    await client.stop();
+    await expect(goal).rejects.toThrow("client stopped");
+  });
+
+  it("bounds retained turn completions across many turns while preserving completion-before-wait and final settlement", async () => {
+    const process = new FakeAppServerProcess({ closeOnStdinEnd: true });
+    const client = new CodexGoalAppServerClient(process);
+    const totalTurns = MAX_RETAINED_TURN_COMPLETIONS + 80;
+    for (let index = 1; index <= totalTurns; index += 1) {
+      process.notify("turn/completed", {
+        threadId: "ongoing",
+        turn: { id: `turn-${index}`, status: "completed", payload: "x".repeat(256) },
+      });
+    }
+    // Older completions beyond the sliding window are evicted rather than retained forever.
+    await expect(client.waitForTurn("turn-1", 15)).rejects.toThrow("Timed out waiting for Codex turn turn-1");
+    // Recent completion-before-wait and exact final-turn settlement remain immediately available.
+    await expect(
+      client.waitForTurn(`turn-${totalTurns - MAX_RETAINED_TURN_COMPLETIONS + 1}`, 15),
+    ).resolves.toMatchObject({
+      turn: { id: `turn-${totalTurns - MAX_RETAINED_TURN_COMPLETIONS + 1}`, status: "completed" },
+    });
+    await expect(client.waitForTurn(`turn-${totalTurns}`, 15)).resolves.toMatchObject({
+      turn: { id: `turn-${totalTurns}`, status: "completed" },
+    });
+    await client.stop();
   });
 
   it("fails closed on server requests", async () => {
