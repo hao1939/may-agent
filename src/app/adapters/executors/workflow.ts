@@ -122,8 +122,8 @@ async function executeTaskWorkflow(
       2,
     ),
     "```",
-    ...(reconciliationEvents.items.length
-      ? ["", "## New Events", "```json", JSON.stringify(reconciliationEvents, null, 2), "```"]
+    ...(reconciliationEvents.items.length || reconciliationEvents.continuedInputs?.length
+      ? ["", "## Assigned Attempt Input", "```json", JSON.stringify(reconciliationEvents, null, 2), "```"]
       : []),
   ].join("\n");
 

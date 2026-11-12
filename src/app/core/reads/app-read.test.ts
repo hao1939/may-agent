@@ -718,4 +718,53 @@ describe("App read projections", () => {
     expect(host.get("review/a", detailOptions)?.acceptedEvidence.page?.items).toHaveLength(1);
     expect(await read.tasks.list({ limit: 1 })).toEqual(host.list({ limit: 1 }));
   });
+
+  it("exposes activeAttempt assignedInput on get while pendingEvents is empty during a claimed review cycle", async () => {
+    const config = resourceConfig();
+    const intent = {
+      id: "review/missed-review-contrast",
+      parentId: "review",
+      outcome: "Address review feedback without mistaking empty pendingEvents for empty assigned work",
+      acceptance: ["Review feedback addressed"],
+      agent: "evaluation",
+    };
+    observeAppTaskIntent(config, { appAgent: "evaluation", intent });
+    const first = claimObservedAppTask(config, { taskId: intent.id, appAgent: "evaluation", handler: "agent:evaluation" });
+    if (first.kind !== "claimed") throw new Error("expected initial claim");
+    completeAppTask(config, first, { summary: "Initial draft complete", result: { draft: "v1" } });
+
+    // Review arrives in pendingEvents before claim
+    recordAppTaskTrigger(config, intent.id, {
+      type: "evaluation.report.published",
+      data: { requestId: "app_review_1", findings: ["Fix boundary edge case"] },
+    });
+    const read = createRuntimeAppRead({ getDb: () => db, taskStateConfig: config });
+    const beforeClaim = (await read.tasks.get(intent.id))!;
+    expect(beforeClaim.pendingEvents?.items).toHaveLength(1);
+    expect(beforeClaim.activeAttempt).toBeUndefined();
+
+    // Once claimed by the running attempt, pendingEvents is empty, while activeAttempt exposes claimed count!
+    const running = claimObservedAppTask(config, { taskId: intent.id, appAgent: "evaluation", handler: "agent:evaluation" });
+    if (running.kind !== "claimed") throw new Error("expected running claim");
+    const duringRun = (await read.tasks.get(intent.id))!;
+    expect(duringRun.status).toBe("running");
+    expect(duringRun.pendingEvents).toEqual({ items: [], truncated: false });
+    expect(duringRun.acceptedAttempt?.id).toBe(first.attemptId);
+    expect(duringRun.activeAttempt).toEqual({
+      id: running.attemptId,
+      generation: 1,
+      startedAt: expect.any(String),
+      assignedInput: {
+        newEvents: 1,
+        continuingInputs: 0,
+        truncated: false,
+      },
+    });
+
+    // Once completed, activeAttempt clears and acceptedAttempt advances
+    completeAppTask(config, running, { summary: "Review feedback addressed", result: { draft: "v2" } });
+    const afterRun = (await read.tasks.get(intent.id))!;
+    expect(afterRun.activeAttempt).toBeUndefined();
+    expect(afterRun.acceptedAttempt?.id).toBe(running.attemptId);
+  });
 });

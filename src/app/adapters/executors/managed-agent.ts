@@ -122,7 +122,7 @@ async function executeTaskAgent(
         ]
       : []),
     ...(reconciliationEvents.items.length || reconciliationEvents.continuedInputs?.length
-      ? ["", "## New Events", "```json", JSON.stringify(reconciliationEvents, null, 2), "```"]
+      ? ["", "## Assigned Attempt Input", "```json", JSON.stringify(reconciliationEvents, null, 2), "```"]
       : []),
   ].join("\n");
 

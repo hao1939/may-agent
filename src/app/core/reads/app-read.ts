@@ -172,6 +172,10 @@ function readTaskDetail(
   };
   const current = store.readTaskForView(taskId);
   if (current) {
+    const activeAttempt =
+      current.resource.status.currentAttemptId
+        ? store.readAttempt(current.resource.status.currentAttemptId)
+        : null;
     return resourceTaskDetail(
       store,
       current.resource,
@@ -187,6 +191,7 @@ function readTaskDetail(
         },
       })),
       current.resource.status.observedAttemptId ? store.readAttempt(current.resource.status.observedAttemptId) : null,
+      activeAttempt,
       current.closure,
     );
   }
@@ -288,8 +293,10 @@ function resourceTaskDetail(
   acceptedEvidence: TaskDetail["acceptedEvidence"],
   conditions: TaskDetail["conditions"],
   acceptedAttempt: ReturnType<AppTaskContext["resourceStore"]["readAttempt"]>,
+  activeAttempt: ReturnType<AppTaskContext["resourceStore"]["readAttempt"]>,
   closure?: "closed" | "cancelled",
 ): TaskDetail {
+  const continuedKeys = activeAttempt?.continuedInputKeys ?? [];
   return {
     ...resourceTaskView(resource, phase, closure),
     resourceVersion: resource.metadata.resourceVersion,
@@ -304,6 +311,29 @@ function resourceTaskDetail(
             generation: acceptedAttempt.taskGeneration,
             startedAt: acceptedAttempt.startedAt,
             ...(acceptedAttempt.finishedAt ? { finishedAt: acceptedAttempt.finishedAt } : {}),
+          },
+        }
+      : {}),
+    ...(activeAttempt &&
+    activeAttempt.state === "running" &&
+    activeAttempt.taskGeneration === resource.metadata.generation &&
+    !closure
+      ? {
+          activeAttempt: {
+            id: activeAttempt.metadata.id,
+            generation: activeAttempt.taskGeneration,
+            startedAt: activeAttempt.startedAt,
+            assignedInput: {
+              newEvents: activeAttempt.events?.length ?? 0,
+              continuingInputs: continuedKeys.length,
+              truncated: Boolean(activeAttempt.eventsTruncated),
+              ...(continuedKeys.length > 0
+                ? {
+                    continuedInputKeys: continuedKeys.slice(0, 8),
+                    ...(continuedKeys.length > 8 ? { continuedInputKeysTruncated: true as const } : {}),
+                  }
+                : {}),
+            },
           },
         }
       : {}),

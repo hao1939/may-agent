@@ -456,3 +456,52 @@ test("the production transform restores current facts after compaction without a
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("TASK.md and decision brief keep assigned review input and non-request event previews distinct from empty pendingEvents", async () => {
+  const root = mkdtempSync(join(tmpdir(), "decision-missed-review-"));
+  try {
+    const f = fixture(root);
+    const largeReviewFinding = `Reviewer found missing null-check in parser.ts. ${"evidence line ".repeat(200)}`;
+    f.context.reconciliation.events.items = [
+      {
+        eventId: 91,
+        observedAt: "2026-09-29T10:00:00.000Z",
+        event: {
+          type: "evaluation.report.published",
+          target: { appId: "sample", taskId: "review" },
+          data: {
+            requestId: "app_8fc834e0",
+            verdict: "revise",
+            finding: largeReviewFinding,
+          },
+        },
+      } as any,
+    ];
+    f.context.reconciliation.events.continuedInputs = [
+      inputEvent("earlier-unanswered", "Keep backwards compatibility", 55),
+    ];
+    delete f.context.workspaceBrief;
+    const brief = prepareTaskWorkspaceContext(f.context, root, []);
+    if (!("taskFile" in brief)) throw new Error(brief.error);
+    const taskMd = readFileSync(brief.taskFile, "utf8");
+    expect(taskMd).toContain("## Assigned vs. pending input");
+    expect(taskMd).toContain("`/reconciliation/events/items/0` — evaluation.report.published `app_8fc834e0`");
+    expect(taskMd).toContain("`/reconciliation/events/continuedInputs/0` — app.task.requested `earlier-unanswered`");
+    expect(taskMd).toContain("Unclaimed pending input at attempt start (`/reconciliation/task/pendingEvents/items`): 0");
+
+    const message = await createTaskDecisionContext(f.context)();
+    const text = (message.content as Array<{ type: string; text: string }>)[0]!.text;
+    expect(text).toContain("an empty pendingEvents / pendingInput window NEVER means this attempt has no assigned review");
+    const p = packet(message);
+    expect(p.work.assignedAtStart).toEqual({ newEvents: 1, continuingInputs: 1, moreEvents: false });
+    expect(p.work.pendingUnclaimed).toEqual({ available: true, newEvents: 0, moreEvents: false });
+    const reviewPreview = p.events.attemptInput.preview.items.preview[0];
+    expect(reviewPreview.pointer).toBe("/events/attemptInput/items/0");
+    expect(reviewPreview.preview.event.type).toBe("evaluation.report.published");
+    expect(reviewPreview.preview.event.data.pointer).toBe("/events/attemptInput/items/0/event/data");
+    expect(reviewPreview.preview.event.data.preview.requestId).toBe("app_8fc834e0");
+    expect(reviewPreview.preview.event.data.preview.finding.preview).toStartWith("Reviewer found missing null-check");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
