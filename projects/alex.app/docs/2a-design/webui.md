@@ -12,9 +12,9 @@ Some presentation copy still describes convergence as recurring work; the
 Task. The [documentation review](../archive/reviews/design-doc-hygiene-20260927.md)
 records remaining presentation and authority gaps. Deployment is separate.
 The legacy Learning dashboard and project-detail Learning tab are retired in
-[Host PR 457](https://github.com/hao1939/may-agent/pull/457), pending merge and
-installation. Session evidence and saved review notes remain inspectable; the
-[retirement record](../archive/reviews/learning-dashboard-retirement-20261112.md)
+[Host PR 457](https://github.com/hao1939/may-agent/pull/457), merged as
+`a84c6918ed40`. Installed adoption is unverified. Session evidence and saved
+review notes remain inspectable; the [retirement record](../archive/reviews/learning-dashboard-retirement-20261112.md)
 defines the deliberately reduced scope.
 
 ## Purpose

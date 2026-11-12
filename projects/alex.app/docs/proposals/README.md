@@ -15,6 +15,11 @@ is merged in Host #454 with companion App callers committed. It is completed
 source work, not a pending proposal. The separate
 [approval-verifier alignment](../archive/reviews/improvement-approval-contract-cleanup-20261112.md)
 is now verified in App source; live adoption remains separate.
+The [explicit Condition freshness cleanup](../archive/reviews/condition-freshness-20261112.md)
+is merged in Host #456 (`da9b9fb85aee`), and the
+[Learning dashboard retirement](../archive/reviews/learning-dashboard-retirement-20261112.md)
+is merged in Host #457 (`a84c6918ed40`). Both source cuts are complete;
+installed adoption remains unverified.
 For mixed documents, use the remaining scope below and the record's explicit
 implementation limits. Resolve a fresh implementation question against source
 before acting on an old checklist.

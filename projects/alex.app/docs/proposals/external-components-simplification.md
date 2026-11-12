@@ -13,13 +13,13 @@ into the App workspace's `main`. Host #132 and #133 merged as `23968acd` and
 was performed as part of this milestone.
 
 **November 12 feature reduction:** The user selected retirement of the legacy
-Learning dashboard in [Host PR 457](https://github.com/hao1939/may-agent/pull/457).
-Both main/project Learning tabs and `/api/learning` are removed in the candidate;
+Learning dashboard in [Host PR 457](https://github.com/hao1939/may-agent/pull/457),
+merged as `a84c6918ed40`. Both main/project Learning tabs and `/api/learning` are removed;
 exact session history and saved-note reads remain. HTTP review-generation and
 comment writes were already retired before this change. The historical table
 below must not be used to reopen that completed removal. The
 [retirement record](../archive/reviews/learning-dashboard-retirement-20261112.md)
-owns scope and checks. Merge and installation remain separate.
+owns scope and checks. Source removal is complete; installed adoption is unverified.
 
 ## Goal and stopping point
 

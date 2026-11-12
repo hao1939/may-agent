@@ -14,7 +14,8 @@ removes event-name freshness policy from Condition matching. Resource Conditions
 use existing timestamp/source expectations; source measurement freshness remains
 App-owned. The [freshness review](../archive/reviews/condition-freshness-20261112.md)
 records stored-wait preservation and May/Scout composition evidence. This change
-is pending merge and installation; it adds no subscription system or new observer API.
+merged as `da9b9fb85aee`; installed adoption is unverified. It adds no subscription
+system or new observer API.
 
 ## Original proposal and historical implementation notes
 

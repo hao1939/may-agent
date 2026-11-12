@@ -11,9 +11,9 @@ capabilities. The default Task board uses paged human Task reads. Source entry:
 `src/app/http/task-read-routes.ts` and the HTTP source guide.
 Session review notes are read-only; HTTP generation and comment-write routes
 are retired. The legacy `/api/learning` aggregate and its UI are retired in
-[Host PR 457](https://github.com/hao1939/may-agent/pull/457), pending merge and
-installation. Exact session detail, retained note reads and agent evaluation
-trends remain available; the adapter does not reconstruct the old finding and
+[Host PR 457](https://github.com/hao1939/may-agent/pull/457), merged as
+`a84c6918ed40`. Installed adoption is unverified. Exact session detail, retained
+note reads and agent evaluation trends remain available; the adapter does not reconstruct the old finding and
 notification summaries. See the [retirement record](../archive/reviews/learning-dashboard-retirement-20261112.md).
 
 ## Purpose

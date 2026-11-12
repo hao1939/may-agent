@@ -8,8 +8,8 @@
 **Implementation status:** Summary evaluation and its SQLite projection, exact
 session reads and read-only historical trail reads are supported. HTTP generation
 and human-feedback writes are retired. The legacy Learning dashboard is retired
-in [Host PR 457](https://github.com/hao1939/may-agent/pull/457), pending merge and
-installation; see the [retirement record](../archive/reviews/learning-dashboard-retirement-20261112.md).
+in [Host PR 457](https://github.com/hao1939/may-agent/pull/457), merged as
+`a84c6918ed40`. Installed adoption is unverified; see the [retirement record](../archive/reviews/learning-dashboard-retirement-20261112.md).
 The row formats below describe retained evidence, not an available HTTP annotation
 writer. App-owned review and calibration remain separate from this history view.
 **Aligned with:** [Sessions](sessions.md), [Web UI](webui.md),
