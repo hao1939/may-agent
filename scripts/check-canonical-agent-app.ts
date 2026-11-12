@@ -58,11 +58,17 @@ function checkApp(appDir: string): void {
   }
 }
 
+function isDisabledRetiredApp(appDir: string): boolean {
+  return existsSync(join(appDir, ".disabled")) && !existsSync(join(appDir, "app.ts"));
+}
+
 function discoverAppWorkflows(): string[] {
   const workflows: string[] = [];
   for (const appEntry of readdirSync(projectsRoot).sort()) {
     if (!appEntry.endsWith(".app")) continue;
-    const agentsDir = join(projectsRoot, appEntry, "agents");
+    const appDir = join(projectsRoot, appEntry);
+    if (!statSync(appDir).isDirectory() || isDisabledRetiredApp(appDir)) continue;
+    const agentsDir = join(appDir, "agents");
     if (!existsSync(agentsDir)) continue;
     for (const agentEntry of readdirSync(agentsDir).sort()) {
       const workflowDir = join(agentsDir, agentEntry, "workflows");
@@ -86,7 +92,9 @@ function discoverAppWorkflows(): string[] {
 function checkRetiredCronDeclarations(): void {
   for (const appEntry of readdirSync(projectsRoot).sort()) {
     if (!appEntry.endsWith(".app")) continue;
-    const agentsDir = join(projectsRoot, appEntry, "agents");
+    const appDir = join(projectsRoot, appEntry);
+    if (!statSync(appDir).isDirectory() || isDisabledRetiredApp(appDir)) continue;
+    const agentsDir = join(appDir, "agents");
     if (!existsSync(agentsDir)) continue;
     for (const agentEntry of readdirSync(agentsDir).sort()) {
       const agentDir = join(agentsDir, agentEntry);
@@ -215,7 +223,7 @@ async function checkWorkflowCompatibility(runtimeRoot: string): Promise<void> {
 
 for (const entry of readdirSync(projectsRoot).sort()) {
   const appDir = join(projectsRoot, entry);
-  if (entry.endsWith(".app") && statSync(appDir).isDirectory())
+  if (entry.endsWith(".app") && statSync(appDir).isDirectory() && !isDisabledRetiredApp(appDir))
     checkApp(appDir);
 }
 checkRetiredCronDeclarations();

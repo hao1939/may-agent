@@ -15,6 +15,7 @@ const allowedEntries = new Set([
   "package.json",
   "scenarios",
   "schemas",
+  "scripts",
   "src",
   "test",
   "tsconfig.json",

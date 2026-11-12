@@ -131,20 +131,28 @@ function scoreTaskResult(workDir, scenarioDir) {
     "May decides its current request and does not attach or mutate another App Task",
     "ownership",
   );
+  const requests = Array.isArray(result.requests) ? result.requests : [];
+  const request = requests[0];
+  const requestIds = new Set(requests.map((entry) => entry?.id).filter(Boolean));
+  const conditions = Array.isArray(result.conditions) ? result.conditions : [];
+  const nonRequestConditions = conditions.filter(
+    (entry) => typeof entry?.requestId !== "string" || !requestIds.has(entry.requestId),
+  );
   add(
     "may-does-not-invent-condition",
-    !result.conditions?.length,
-    "May clarifies now or waits on an exact typed App dependency",
+    nonRequestConditions.length === 0,
+    "May clarifies now or waits on an exact typed App request Condition",
     "ownership",
   );
 
-  const dependencies = Array.isArray(result.dependencies) ? result.dependencies : [];
-  const dependency = dependencies[0];
   if (expected.state === "waiting") {
+    const matchingRequestWaits = conditions.filter(
+      (entry) => typeof entry?.requestId === "string" && entry.requestId === request?.id,
+    );
     add(
       "one-accountable-app-dependency",
-      dependencies.length === 1,
-      `Expected one dependency; received ${dependencies.length}`,
+      requests.length === 1 && matchingRequestWaits.length === 1,
+      `Expected one App request and matching requestId Condition; received ${requests.length} request(s), ${matchingRequestWaits.length} request wait(s)`,
       "ownership",
     );
     add(
@@ -155,19 +163,19 @@ function scoreTaskResult(workDir, scenarioDir) {
     );
     add(
       "accountable-app",
-      dependency?.appId === expected.appId,
-      `Expected ${expected.appId}; received ${String(dependency?.appId)}`,
+      request?.appId === expected.appId,
+      `Expected ${expected.appId}; received ${String(request?.appId)}`,
       "ownership",
     );
     add(
       "typed-app-input",
-      isRecord(dependency?.input) &&
-        dependency.input.kind === expected.inputKind &&
-        isRecord(dependency.input.data),
+      isRecord(request?.input) &&
+        request.input.kind === expected.inputKind &&
+        isRecord(request.input.data),
       `Expected input kind ${expected.inputKind} with object data`,
       "contract",
     );
-    const internalPaths = findAppInternalPaths(dependency?.input?.data);
+    const internalPaths = findAppInternalPaths(request?.input?.data);
     add(
       "app-owns-execution-mechanics",
       internalPaths.length === 0,
@@ -179,8 +187,8 @@ function scoreTaskResult(workDir, scenarioDir) {
   } else {
     add(
       "no-unneeded-dependency",
-      dependencies.length === 0,
-      `Expected no dependency; received ${dependencies.length}`,
+      requests.length === 0 && conditions.length === 0,
+      `Expected no App request or wait; received ${requests.length} request(s), ${conditions.length} condition(s)`,
       "ownership",
     );
     add(
@@ -191,7 +199,7 @@ function scoreTaskResult(workDir, scenarioDir) {
     );
   }
 
-  const semantic = { ...result, dependency };
+  const semantic = { ...result, dependency: request };
   for (const [field, requiredTokens] of Object.entries(expected.contains ?? {})) {
     const actual = text(get(semantic, field));
     const missing = requiredTokens.filter(

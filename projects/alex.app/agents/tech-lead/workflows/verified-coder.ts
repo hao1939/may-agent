@@ -20,14 +20,38 @@
  */
 
 import { execSync } from "node:child_process";
-import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import { Type, type ExecutionResult, type Static, type WorkflowContext } from "@may-agent/sdk";
 
 export const name: string = "verified-coder";
 
 export const description: string =
-  "Coder + verification loop. Runs the coder, then executes a shell " +
-  "verification command. Loops until the command exits 0 or max attempts " +
-  "(default 3) exhausted. Task must include 'verifyCommand: <cmd>'.";
+  "Implementation + shell verification loop (up to maxAttempts, default 3). " +
+  "Accepts { task, verifyCommand, maxAttempts?, agent? } or legacy task string with 'verifyCommand: <cmd>'.";
+
+export const structuredVerifiedCoderInputSchema = Type.Object(
+  {
+    task: Type.String({ minLength: 1 }),
+    verifyCommand: Type.String({ minLength: 1 }),
+    maxAttempts: Type.Optional(Type.Integer({ minimum: 1, maximum: 5 })),
+    agent: Type.Optional(Type.String({ minLength: 1 })),
+  },
+  { additionalProperties: false },
+);
+
+export const inputSchema = Type.Union([
+  Type.String({ minLength: 1 }),
+  structuredVerifiedCoderInputSchema,
+]);
+
+export const outputSchema = Type.Object(
+  {
+    attemptsUsed: Type.Integer({ minimum: 1 }),
+    verifyCommand: Type.String({ minLength: 1 }),
+    verifyOutput: Type.String(),
+    coderSummary: Type.String(),
+  },
+  { additionalProperties: false },
+);
 
 // ── Input parsing ──────────────────────────────────────────────────────
 
@@ -35,15 +59,10 @@ export interface ParsedInput {
   task: string;
   verifyCommand: string;
   maxAttempts: number;
+  agent: string;
 }
 
-type VerifiedCoderInput =
-  | string
-  | {
-      task: string;
-      verifyCommand: string;
-      maxAttempts?: number;
-    };
+type VerifiedCoderInput = Static<typeof inputSchema>;
 
 interface ReconciliationEnvelope {
   outcome: string;
@@ -73,7 +92,7 @@ function parseTaskAndMetadata(taskWithMetadata: string): ParsedInput {
     );
   }
 
-  return { task, verifyCommand, maxAttempts };
+  return { task, verifyCommand, maxAttempts, agent: "tech-lead" };
 }
 
 export function parseInput(raw: string): ParsedInput {
@@ -117,6 +136,7 @@ export function parseInput(raw: string): ParsedInput {
       "\n```",
     verifyCommand: parsedOutcome.verifyCommand,
     maxAttempts: parsedOutcome.maxAttempts,
+    agent: "tech-lead",
   };
 }
 
@@ -131,6 +151,7 @@ function parseWorkflowInput(input: unknown): ParsedInput {
   const task = record.task?.trim() ?? "";
   const verifyCommand = record.verifyCommand?.trim() ?? "";
   const maxAttempts = record.maxAttempts ?? 3;
+  const agent = record.agent?.trim() || "tech-lead";
   if (!task) throw new Error("verified-coder input requires a non-empty task");
   if (!verifyCommand) {
     throw new Error("verified-coder input requires a non-empty verifyCommand");
@@ -138,7 +159,7 @@ function parseWorkflowInput(input: unknown): ParsedInput {
   if (!Number.isInteger(maxAttempts) || maxAttempts < 1) {
     throw new Error("verified-coder maxAttempts must be a positive integer");
   }
-  return { task, verifyCommand, maxAttempts };
+  return { task, verifyCommand, maxAttempts, agent };
 }
 
 // ── Verification runner ────────────────────────────────────────────────
@@ -170,22 +191,16 @@ function runVerification(command: string, cwd: string): VerifyResult {
 
 // ── Main workflow ──────────────────────────────────────────────────────
 
-export async function emitStep(
-  ctx: WorkflowContext,
-  step: string,
-): Promise<void> {
-  if (ctx.reconciliation) {
-    // Task-owned event publication is reserved for durable domain facts with a
-    // stable semantic identity. These markers are attempt-local progress only;
-    // the Host already records workflow and agent-step lifecycle events.
-    ctx.log.info(`verified-coder step: ${step}`);
-    return;
-  }
-  await ctx.events.emit({ type: "step_start", data: { step } });
+export function emitStep(ctx: WorkflowContext, step: string): void {
+  // Attempt-local progress belongs in structured workflow logs; the shared
+  // runner records step traces automatically across Unit, Gym, and Host.
+  ctx.log.info(`verified-coder step: ${step}`);
 }
 
-export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
-  // Step 0: Parse input
+export async function execute(
+  ctx: WorkflowContext<VerifiedCoderInput>,
+): Promise<ExecutionResult> {
+  ctx.signal.throwIfAborted();
   let parsed: ParsedInput;
   try {
     parsed = parseWorkflowInput(ctx.input);
@@ -195,20 +210,21 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     });
   }
 
-  const { task, verifyCommand, maxAttempts } = parsed;
+  const { task, verifyCommand, maxAttempts, agent } = parsed;
 
   const workspaceRoot = ctx.workspace?.root;
   if (!workspaceRoot) {
     return ctx.blocked("verified-coder requires a bounded workflow workspace");
   }
 
-  await emitStep(ctx, "init");
+  emitStep(ctx, "init");
 
   let lastVerifyOutput = "";
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    ctx.signal.throwIfAborted();
     // ── Coder step ───────────────────────────────────────────────────
-    await emitStep(ctx, `coder-attempt-${attempt}`);
+    emitStep(ctx, `coder-attempt-${attempt}`);
 
     let coderTask: string;
     if (attempt === 1) {
@@ -238,7 +254,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       `Report a blocker if the allocation or requested scope is unsuitable.\n` +
       `A passing check is verification evidence, not permission to merge or deploy.`;
 
-    const coder = await ctx.agents.call("coder", coderTask);
+    const coder = await ctx.agents.call(agent, coderTask);
     if (coder.status !== "done") {
       return ctx.blocked(
         `Coder did not complete attempt ${attempt}/${maxAttempts}`,
@@ -246,23 +262,29 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
           attempt,
           status: coder.status,
           error: coder.summary,
-          evidence: coder.evidence,
+          facts: coder.facts,
         },
       );
     }
 
     // ── Verify step ──────────────────────────────────────────────────
-    await emitStep(ctx, `verify-attempt-${attempt}`);
+    emitStep(ctx, `verify-attempt-${attempt}`);
 
     const verify = runVerification(verifyCommand, workspaceRoot);
 
     if (verify.passed) {
-      // Success!
+      const coderSummary = coder.summary || "(no output)";
       return ctx.done(
         `## Verification PASSED (attempt ${attempt}/${maxAttempts})\n\n` +
           `### Verification Command\n\`\`\`\n${verifyCommand}\n\`\`\`\n\n` +
           `### Verification Output\n\`\`\`\n${verify.output}\n\`\`\`\n\n` +
-          `### Coder Summary\n${coder.summary || "(no output)"}`,
+          `### Coder Summary\n${coderSummary}`,
+        {
+          attemptsUsed: attempt,
+          verifyCommand,
+          verifyOutput: verify.output,
+          coderSummary,
+        },
       );
     }
 
@@ -270,7 +292,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     lastVerifyOutput = verify.output;
 
     if (attempt < maxAttempts) {
-      await emitStep(ctx, `retry-${attempt}`);
+      emitStep(ctx, `retry-${attempt}`);
     }
   }
 

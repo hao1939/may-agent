@@ -272,4 +272,83 @@ export async function execute(ctx) {
       await prep.cleanupAsync();
     }
   });
+
+  test("executes and scores real alex.app verified-coder workflow_entry scenario end to end", async () => {
+    const { cpSync, spawnSync } = await import("node:child_process").then(async (cp) => ({
+      cpSync: (await import("node:fs")).cpSync,
+      spawnSync: cp.spawnSync,
+    }));
+    const scenarioDir = join(
+      import.meta.dirname,
+      "../scenarios/verified-coder-repair-loop",
+    );
+    const meta = JSON.parse(readFileSync(join(scenarioDir, "scenario.json"), "utf8"));
+    const root = mkdtempSync(join(tmpdir(), "gym-verified-coder-scenario-"));
+    tempRoots.push(root);
+    const workDir = join(root, "work");
+    const gymState = join(root, "state");
+    mkdirSync(workDir, { recursive: true });
+    mkdirSync(gymState, { recursive: true });
+    cpSync(join(scenarioDir, "environment"), workDir, { recursive: true });
+
+    const repoRoot = join(import.meta.dirname, "../../..");
+    let attempt = 0;
+    const outcome = await runGymWorkflowEntry({
+      entry: meta.workflow_entry,
+      defaultAgentName: meta.agent_type,
+      taskText: readFileSync(join(scenarioDir, "task.md"), "utf8"),
+      repoRoot,
+      workDir,
+      gymState,
+      agentsRoot: join(repoRoot, "agents"),
+      projectsRoot: join(repoRoot, "projects"),
+      sharedRoot: join(repoRoot, "shared"),
+      globalAgentsRoot: join(repoRoot, "agents"),
+      models: { "gpt-5.6-sol": fakeModel() as any },
+      timeoutMs: 30_000,
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        attempt++;
+        if (attempt === 2) {
+          writeFileSync(
+            join(workDir, "math.cjs"),
+            "exports.add = function add(a, b) { return a + b; };\n",
+          );
+        }
+        return {
+          sessionId: `s_tl_${attempt}`,
+          sessionPath: join(opts.outputRoot, "sessions", `s_tl_${attempt}`),
+          systemPrompt: "",
+          model: "gpt-5.6-sol",
+          executionManifest: {
+            agent: opts.agentName,
+            configuredTools: [],
+            deniedTools: [],
+            effectiveTools: [],
+          },
+          status: "done",
+          lastAssistantText: `attempt-${attempt}`,
+          messages: [],
+          durationMs: 5,
+          finishResult: {
+            status: "success",
+            summary: attempt === 1 ? "First try" : "Repaired operator",
+          },
+          usage: {} as any,
+          cleanupConfirmed: true,
+        };
+      },
+    });
+
+    expect(outcome.status).toBe("success");
+    const scored = spawnSync(
+      "node",
+      [join(scenarioDir, "success_criteria.js"), workDir],
+      { encoding: "utf8" },
+    );
+    expect(scored.status).toBe(0);
+    expect(JSON.parse(scored.stdout)).toMatchObject({
+      passed: true,
+      summary: "2/2 checks passed",
+    });
+  });
 });
