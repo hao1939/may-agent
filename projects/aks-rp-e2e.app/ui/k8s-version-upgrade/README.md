@@ -26,8 +26,10 @@ or End. On narrow screens the two panes stack.
 Optional URL configuration:
 
 - `readOnly=1`: keep task facts, progress and transcript browsing available while
-  disabling composer submission and retries. The installation must also disable
-  task dispatch or reject input at its server; a URL setting is only a UI control.
+  disabling composer submission and retries. The page shows an **Enable input**
+  button that changes only this URL setting and preserves the selected task.
+  Page mode does not pause execution or change server authorization. Enforce
+  any required read-only installation policy at the server.
 - `apiBase`: an optional same-origin reverse-proxy prefix, such as
   `/k8s-upgrade`. For a Host mounted at that prefix, open
   `/k8s-upgrade/projects/aks-rp-e2e.app/ui/k8s-version-upgrade/?apiBase=/k8s-upgrade&appId=aks-rp-e2e&taskId=EXACT_TASK_ID`.
@@ -41,8 +43,87 @@ Optional URL configuration:
   read through `GET /api/projects/artifact?path=…&file=…`. For example,
   `progressProject=projects/aks-e2e-spec-runner` and
   `progressFile=design/execution/kubernetes-version-update/versions/1.38/progress.md`.
-  Details renders escaped document text and Markdown tables. It does not derive
-  completion percentages or replace the source document with another store.
+  Details loads and renders escaped document text and Markdown tables when opened.
+  The full document is not fetched by ordinary Overview refreshes.
+- `overviewProject` and `overviewFile`: the project and file containing the small
+  structured progress record below. Supply both together. When neither is supplied,
+  a configured `progressProject` and `progressFile` select `overview.json` beside
+  that progress document. This also supports existing page URLs.
+
+Overview shows a short status summary, a milestone checklist, current/next work,
+explicit outputs, scoped coverage, current attention items and the three most
+recent meaningful updates. Milestone detail and evidence expand on demand;
+expanded rows remain open through refreshes. The full goal, requirements, raw
+Task conditions, evidence and event history stay in Details. Historical Task
+conditions are not promoted into current human requests. Only an attention item
+with `requiresHumanAction: true` is labeled as an action needed from the user.
+
+The App owns one progress record and updates it after a coherent work batch.
+The page reads it through the existing artifact endpoint; no extra model, database,
+or log summarizer is involved. The record must match the selected App, Task and
+current generation exactly. Missing, malformed or mismatched records show unknown
+milestones rather than inferred completion. Temporary read failures retain a
+previous matching snapshot with an explicit warning. Summary update time and
+last timestamped transcript activity are separate; an old summary is marked
+after 15 minutes. A connected or running session does not establish goal completion.
+
+A minimal synthetic record:
+
+```json
+{
+  "schemaVersion": 1,
+  "appId": "example-app",
+  "taskId": "version-support",
+  "generation": 7,
+  "title": "Kubernetes version controlled preview",
+  "updatedAt": "2026-11-10T08:30:00Z",
+  "summary": "The candidate is deployed; upgrade verification continues.",
+  "activity": "Assessing the repository CI result.",
+  "nextAction": "Verify the remaining platform case.",
+  "milestones": [
+    {
+      "id": "candidate",
+      "title": "Deploy candidate",
+      "status": "done",
+      "detail": "The selected candidate was deployed and verified.",
+      "evidence": [{ "label": "Result", "url": "https://example.test/build/8" }]
+    },
+    {
+      "id": "benchmark",
+      "title": "Complete benchmark coverage",
+      "status": "in_progress",
+      "detail": "One platform remains incomplete."
+    }
+  ],
+  "outputs": [
+    {
+      "label": "Implementation — PR 42",
+      "url": "https://example.test/pullrequest/42",
+      "status": "Active; validation pending"
+    }
+  ],
+  "attention": [],
+  "recentUpdates": [
+    {
+      "at": "2026-11-10T08:30:00Z",
+      "text": "Repair published to the existing PR."
+    }
+  ]
+}
+```
+
+Milestone states are `done`, `in_progress`, `blocked` and `pending`. Each milestone
+has a unique ID, title and detail. Evidence links are optional. An attention item
+has `title`, `detail`, optional `action` and optional boolean `requiresHumanAction`.
+Links accept HTTP(S) or same-origin relative URLs; unsafe links remain plain labels.
+All summary/update timestamps are ISO strings.
+
+An optional `coverage` object supplies `{label, verified, total, note?}`. It must
+count complete independently verified cases in a declared scope. Only safe integer
+counts with `0 <= verified <= total` and `total > 0` produce a scoped percentage.
+Omit it until the required case list is established. Milestone counts, assertion
+counts, retries, successful commands and elapsed time never produce an overall
+completion percentage or an estimate of effort remaining.
 
 The page reads `GET /api/task?appId=…&taskId=…` and
 `GET /api/task/transcript?appId=…&taskId=…[&cursor=…]`. The transcript bridge must
@@ -64,7 +145,9 @@ progress. Retrying an unconfirmed delivery reuses its request ID, including when
 the task has since changed generation or become terminal. The bridge checks
 generation before new input admission; this is not an atomic admission fence.
 Generation conflicts refresh task facts and keep the draft available for review.
-New input is disabled when task facts are unavailable or the task is terminal.
+Sending is disabled when task facts are unavailable or the task is terminal.
+Drafts remain editable during a failed task refresh or an in-flight submission.
+Typing a new draft while sending preserves it when the previous input is accepted.
 The App decides how to consider feedback. Requirement revisions and approvals
 continue through its existing typed workflow. Conversation executor Tasks use
 their Conversation input route rather than this ordinary Task feedback route.

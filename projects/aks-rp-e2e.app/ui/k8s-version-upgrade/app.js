@@ -1,5 +1,5 @@
-// A standalone view of public Task facts. Reads and task-scoped input do not
-// start sessions or make model calls.
+// A standalone view of public Task facts. Reads do not start sessions; sending
+// input can steer or resume the selected Task through its input bridge.
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const apiBase = (params.get("apiBase") || "").replace(/\/$/, "");
@@ -39,6 +39,10 @@ const state = {
   wakeTimer: null,
   socketTimer: null,
   delivery: null,
+  overview: null,
+  overviewError: "",
+  overviewLoading: false,
+  milestoneExpanded: new Set(),
   document: null,
   documentError: "",
   documentLoading: false,
@@ -172,6 +176,194 @@ function renderSessionFacts() {
       state.session?.id ||
       "No current session reported";
 }
+function safeHref(value) {
+  if (
+    typeof value !== "string" ||
+    !value.trim() ||
+    /[\\\u0000-\u0020]/.test(value)
+  )
+    return null;
+  try {
+    const url = new URL(value, location.href);
+    if (!["http:", "https:"].includes(url.protocol)) return null;
+    if (!/^https?:\/\//i.test(value) && url.origin !== location.origin)
+      return null;
+    if (url.username || url.password) return null;
+    return url.href;
+  } catch {
+    return null;
+  }
+}
+function outputLink(item) {
+  const href = safeHref(item.url);
+  return href
+    ? `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(item.label)} ↗</a>`
+    : `<span>${esc(item.label)}</span><small class="unknown">Link unavailable</small>`;
+}
+function validTimestamp(value) {
+  return (
+    typeof value === "string" &&
+    /^\d{4}-\d{2}-\d{2}T/.test(value) &&
+    Number.isFinite(Date.parse(value))
+  );
+}
+function validateOverview(value) {
+  const text = (field) => typeof field === "string";
+  const rows = (items, check) =>
+    Array.isArray(items) && items.every((item) => record(item) && check(item));
+  const links = (items) =>
+    rows(items, (item) => text(item.label) && text(item.url));
+  if (
+    !record(value) ||
+    value.schemaVersion !== 1 ||
+    !scopeMatches(value) ||
+    value.generation !== state.task?.generation
+  )
+    throw new Error("Overview does not match the current task and generation.");
+  if (
+    !(text(value.title) && value.title.trim()) ||
+    !text(value.summary) ||
+    !text(value.activity) ||
+    !text(value.nextAction) ||
+    !validTimestamp(value.updatedAt) ||
+    !rows(
+      value.milestones,
+      (item) =>
+        text(item.id) &&
+        item.id &&
+        text(item.title) &&
+        ["done", "in_progress", "blocked", "pending"].includes(item.status) &&
+        text(item.detail) &&
+        (item.evidence === undefined || links(item.evidence)),
+    ) ||
+    new Set(value.milestones.map((item) => item.id)).size !==
+      value.milestones.length ||
+    !rows(
+      value.outputs,
+      (item) => text(item.label) && text(item.url) && text(item.status),
+    ) ||
+    !rows(
+      value.attention,
+      (item) =>
+        text(item.title) &&
+        text(item.detail) &&
+        (item.action === undefined || text(item.action)) &&
+        (item.requiresHumanAction === undefined ||
+          typeof item.requiresHumanAction === "boolean"),
+    ) ||
+    !rows(
+      value.recentUpdates,
+      (item) => validTimestamp(item.at) && text(item.text),
+    )
+  )
+    throw new Error("Invalid overview record.");
+  return value;
+}
+function currentOverview() {
+  const overview = state.overview;
+  return overview &&
+    scopeMatches(overview) &&
+    overview.generation === state.task?.generation
+    ? overview
+    : null;
+}
+function renderActivity() {
+  const times = state.items
+    .filter(
+      (item) =>
+        item.timestamp !== null &&
+        item.timestamp !== undefined &&
+        item.timestamp !== "",
+    )
+    .map((item) => new Date(item.timestamp).getTime())
+    .filter(Number.isFinite);
+  const last = times.length ? Math.max(...times) : null;
+  const element = $("last-session-activity");
+  if (element)
+    element.textContent =
+      last === null
+        ? "No session activity reported"
+        : `Last session activity ${date(last)}`;
+  const warning = $("activity-read-warning");
+  if (warning)
+    warning.textContent = state.transcriptError
+      ? "Session activity read is unavailable; the displayed time may be out of date."
+      : "";
+}
+function renderOverview(task) {
+  state.milestoneExpanded = new Set(
+    [...document.querySelectorAll(".milestone-list details[open]")].map(
+      (item) => item.dataset.milestoneId,
+    ),
+  );
+  const overview = currentOverview();
+  const progress = record(task.progress) ? task.progress : null;
+  const savedResult =
+    !progress &&
+    task.acceptedEvidence?.available === true &&
+    plain(task.summary);
+  const statuses = {
+    done: "Done",
+    in_progress: "In progress",
+    blocked: "Blocked",
+    pending: "Pending",
+  };
+  const symbols = { done: "✓", in_progress: "◐", blocked: "!", pending: "○" };
+  const coverage = overview?.coverage;
+  const validCoverage =
+    record(coverage) &&
+    plain(coverage.label).trim() &&
+    Number.isSafeInteger(coverage.verified) &&
+    Number.isSafeInteger(coverage.total) &&
+    coverage.total > 0 &&
+    coverage.verified >= 0 &&
+    coverage.verified <= coverage.total;
+  const done = overview?.milestones.filter(
+    (item) => item.status === "done",
+  ).length;
+  const title =
+    overview?.title ||
+    (state.version
+      ? `Kubernetes ${state.version} support`
+      : "Kubernetes version support");
+  $("overview-panel").innerHTML = `
+    <div class="goal-heading"><span class="section-eyebrow">Current position</span></div>
+    <h2 class="goal-title">${esc(title)}</h2>
+    <p class="goal-summary">${esc(overview?.summary || plain(task.summary) || "A current progress summary has not been reported.")}</p>
+    <div class="overview-meta"><span>Execution ${badge(state.taskError ? "Unknown" : task.status)}</span><span>${overview ? `Summary updated ${esc(date(overview.updatedAt))}` : "Summary update not reported"}</span><span id="last-session-activity"></span></div>
+    <p id="activity-read-warning" class="section-note"></p>
+    ${overview && Date.now() - Date.parse(overview.updatedAt) > 15 * 60 * 1000 ? '<p class="section-note summary-age-note">This summary is over 15 minutes old. Check session activity for current execution.</p>' : ""}
+    ${state.overviewError ? `<p class="notice overview-warning">${overview ? "Showing the previous overview snapshot. " : "Overview unavailable. "}${esc(state.overviewError)}</p>` : ""}
+    ${state.taskError && overview ? '<p class="notice">Current task facts are unavailable; overview generation cannot be freshly confirmed.</p>' : ""}
+    <section class="section milestone-section"><h3>Milestones${overview?.milestones.length ? `<span class="count">${done} of ${overview.milestones.length} complete</span>` : ""}</h3>
+    ${overview?.milestones.length ? `<ol class="milestone-list">${overview.milestones.map((item) => `<li data-state="${esc(item.status)}"><span class="milestone-symbol" aria-hidden="true">${symbols[item.status]}</span><details class="milestone-body" data-milestone-id="${esc(item.id)}"${state.milestoneExpanded.has(item.id) ? " open" : ""}><summary class="milestone-heading"><strong>${esc(item.title)}</strong><span class="milestone-state">${statuses[item.status]}</span></summary>${item.detail ? `<p>${esc(item.detail)}</p>` : ""}${item.evidence?.length ? `<div class="milestone-evidence">${item.evidence.map(outputLink).join(" ")}</div>` : ""}</details></li>`).join("")}</ol>` : '<p class="unknown">Milestone progress not reported.</p>'}
+    </section>
+    <section class="section current-work"><h3>Working now</h3><p>${esc(overview?.activity || savedResult || plain(progress?.message) || "Current activity not reported.")}</p>${!overview && (progress || savedResult) ? `<p class="section-note"><span class="progress-value">${esc(savedResult ? "Saved result" : plain(progress?.stage) || "Reported activity")}</span>${progress?.updatedAt ? ` · ${esc(date(progress.updatedAt))}` : ""}. This is execution reporting; milestone completion is not inferred.</p>` : ""}</section>
+    <div class="next-action"><h3>Next action</h3><p>${esc(overview?.nextAction || "Next action not reported. See Details for the full task requirements and reported dependencies.")}</p></div>
+
+    <section class="section"><h3>Outputs</h3>${overview?.outputs.length ? `<ul class="output-list">${overview.outputs.map((item) => `<li>${outputLink(item)}<span>${esc(item.status)}</span></li>`).join("")}</ul>` : '<p class="unknown">Outputs have not been listed in the overview.</p>'}</section>
+    <section class="section coverage-section">${validCoverage ? `<h3>Verified coverage</h3>` : ""}${validCoverage ? `<div class="coverage-heading"><strong>${esc(coverage.verified)} of ${esc(coverage.total)} ${esc(coverage.label)}</strong><span>${Math.round((coverage.verified / coverage.total) * 100)}%</span></div><progress max="${coverage.total}" value="${coverage.verified}" aria-label="${esc(coverage.label)} verified"></progress>${coverage.note ? `<p class="section-note">${esc(coverage.note)}</p>` : ""}<p class="section-note">Complete verified cases in this scope; this is not an estimate of effort or time remaining.</p>` : '<p class="unknown">An agreed coverage total has not been reported. No overall percentage is estimated.</p>'}</section>
+    ${overview?.attention.length ? `<section class="section attention-section"><h3>Needs attention</h3><ul>${overview.attention.map((item) => `<li><strong>${esc(item.title)}</strong>${item.requiresHumanAction ? '<span class="human-action-label">Action needed from you</span>' : ""}<p>${esc(item.detail)}</p>${item.action ? `<p class="attention-action">${esc(item.action)}</p>` : ""}</li>`).join("")}</ul></section>` : ""}
+    ${
+      overview?.recentUpdates.length
+        ? `<section class="section"><h3>Recent changes</h3><ul class="recent-updates">${[
+            ...overview.recentUpdates,
+          ]
+            .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
+            .slice(0, 3)
+            .map(
+              (item) =>
+                `<li><p>${esc(item.text)}</p><time>${esc(date(item.at))}</time></li>`,
+            )
+            .join("")}</ul></section>`
+        : ""
+    }
+    <button class="text-button overview-details-link" id="full-goal-button" type="button">Full requirements and evidence in Details ↗</button>`;
+  $("full-goal-button").addEventListener("click", () =>
+    selectTab("details", true),
+  );
+  renderActivity();
+}
 function renderTask() {
   showNotice(
     "task-error",
@@ -187,36 +379,14 @@ function renderTask() {
   $("task-ref").textContent = task.ref || task.taskId;
   $("task-ref").title = task.taskId;
   $("page-subtitle").textContent = `${task.appId} / ${task.ref || task.taskId}`;
-  const progress = record(task.progress) ? task.progress : null;
-  const savedResult =
-    !progress &&
-    task.acceptedEvidence?.available === true &&
-    plain(task.summary);
-  const human = plain(task.humanAction?.requestedAction);
-  const waits = Array.isArray(task.waitingOn) ? task.waitingOn : null;
+  renderOverview(task);
   const acceptance = Array.isArray(task.acceptance)
     ? task.acceptance.filter((item) => typeof item === "string")
     : null;
   const facts = Array.isArray(task.facts)
     ? task.facts.filter((item) => typeof item === "string")
     : null;
-  let next =
-    human ||
-    (waits?.length ? `Waiting on: ${waits.map(waitLabel).join("; ")}` : "");
-  $("overview-panel").innerHTML = `
-    <div class="goal-heading"><span class="section-eyebrow">Task goal</span></div>
-    <h2 class="goal-title">${esc(task.outcome || "Goal unavailable")}</h2>
-    <button class="text-button" id="full-goal-button" type="button">Read full goal in Details ↗</button>
-    ${task.summary ? `<p class="goal-summary">${linkedText(task.summary)}</p>` : '<p class="goal-summary unknown">No summary reported.</p>'}
-    <div class="state-grid">
-      <div class="state-card"><span class="state-card-label">TASK STATE</span>${badge(task.status)}<p>${esc(task.statusDetail || "No state detail reported.")}</p></div>
-      <div class="state-card"><span class="state-card-label">${savedResult ? "LATEST RESULT" : "LATEST PROGRESS"}</span><strong class="progress-value">${esc(savedResult ? "Saved" : plain(progress?.stage) || "Not reported")}</strong><p>${linkedText(savedResult || plain(progress?.message) || "No execution progress has been reported.")}</p>${progress?.updatedAt ? `<p>${esc(date(progress.updatedAt))}</p>` : ""}</div>
-    </div>
-    <div class="next-action${human ? " human" : ""}"><h3>${human ? "ACTION NEEDED FROM YOU" : "NEXT ACTION"}</h3><p${next ? "" : ' class="unknown"'}>${linkedText(next || "No next action reported.")}</p></div>
-    <section class="section"><h3>Outstanding dependencies${waits?.length ? `<span class="count">${waits.length} reported</span>` : ""}</h3>${waits?.length ? list(waits.map(waitLabel)) : `<p class="unknown">${waits ? "No outstanding dependencies reported." : "No dependency information reported."}</p>`}</section>
-    <section class="section"><h3>Requirements${acceptance ? `<span class="count">${acceptance.length} reported</span>` : ""}</h3>${acceptance?.length ? list(acceptance, "requirements-list") + '<p class="requirements-note">Task requirements. Individual verification results have not been inferred.</p>' : `<p class="unknown">${acceptance ? "No requirements reported." : "Requirements unavailable."}</p>`}</section>
-    <section class="section"><h3>Evidence${facts ? `<span class="count">${facts.length} reported facts</span>` : ""}</h3>${facts?.length ? list(facts, "evidence-list") : `<p class="unknown">${facts ? "No evidence reported." : "Evidence unavailable."}</p>`}</section>
-    <section class="section"><h3>Pull requests</h3>${taskLinks(task).length ? list(taskLinks(task), "evidence-list") : '<p class="unknown">No pull request links reported in task facts.</p>'}</section>`;
+  const waits = Array.isArray(task.waitingOn) ? task.waitingOn : null;
   const history = Array.isArray(task.history) ? task.history : null;
   const field = (label, value, mono = false) =>
     `<dt>${label}</dt><dd${mono ? ' class="mono"' : ""}>${esc(value ?? "Unknown")}</dd>`;
@@ -224,14 +394,15 @@ function renderTask() {
     <span class="section-eyebrow">Task details</span>
     <section class="section"><dl class="metadata">${field("App", task.appId, true)}${field("Task ID", task.taskId, true)}${field("Generation", task.generation)}${field("State", task.status)}${field("Updated", date(task.updatedAt))}${field("Attempt", task.execution?.attemptId || "No current attempt reported", true)}<dt>Session</dt><dd class="mono" id="details-session-id"></dd></dl></section>
     <section class="section"><h3>Goal</h3><p class="goal-summary">${linkedText(task.outcome || "Goal unavailable")}</p></section>
+    <section class="section"><h3>Requirements${acceptance ? `<span class="count">${acceptance.length} reported</span>` : ""}</h3>${acceptance?.length ? list(acceptance, "requirements-list") : '<p class="unknown">Requirements unavailable.</p>'}</section>
+    <section class="section"><h3>Reported dependencies and human requests</h3><p class="section-note">Raw Task declarations can include historical conditions. Current attention items are reported in Overview.</p>${task.humanAction?.requestedAction ? `<p>${linkedText(task.humanAction.requestedAction)}</p>` : ""}${waits?.length ? list(waits.map(waitLabel)) : '<p class="unknown">No dependencies reported.</p>'}</section>
+    <section class="section"><h3>Evidence</h3>${facts?.length ? list(facts, "evidence-list") : '<p class="unknown">No evidence reported.</p>'}</section>
+    <section class="section"><h3>Pull requests reported in Task text</h3>${taskLinks(task).length ? list(taskLinks(task)) : '<p class="unknown">No pull request URLs reported.</p>'}</section>
     <section class="section"><h3>Task response</h3>${task.response ? `<p class="goal-summary">${linkedText(task.response)}</p>` : '<p class="unknown">No task response reported.</p>'}</section>
     <section class="section" id="progress-document-section">${renderDocument()}</section>
     <section class="section"><h3>Task history${history ? `<span class="count">${history.length} events in this snapshot</span>` : ""}</h3>${task.historyError ? `<p class="notice">History unavailable: ${esc(task.historyError)}</p>` : ""}${history?.length ? `<ol class="history-list">${history.map((event) => `<li><p>${linkedText(event.summary || event.eventType || "Task event")}</p><small>${esc(date(event.timestamp))}${event.disposition ? ` · ${esc(event.disposition)}` : ""}${Number.isInteger(event.generation) ? ` · generation ${esc(event.generation)}` : ""}</small></li>`).join("")}</ol>` : `<p class="unknown">${history ? "No history events in this snapshot." : "Task history unavailable."}</p>`}${task.historyTruncated ? '<p class="section-note">This is a partial history. Earlier events are outside this task snapshot.</p>' : ""}</section>`;
   $("task-footer").textContent =
     `${state.taskError ? "Previous snapshot" : "Task updated"} ${date(task.updatedAt)} · Read ${date(state.refreshedAt)}`;
-  $("full-goal-button").addEventListener("click", () =>
-    selectTab("details", true),
-  );
   renderSessionFacts();
   updateComposer();
 }
@@ -287,6 +458,49 @@ function documentPath() {
     ? "/api/projects/artifact?" + new URLSearchParams({ path: project, file })
     : null;
 }
+function overviewPath() {
+  let project = params.get("overviewProject"),
+    file = params.get("overviewFile");
+  if (params.has("overviewProject") || params.has("overviewFile")) {
+    if (!project || !file)
+      throw new Error("Configure both overviewProject and overviewFile.");
+  } else {
+    project = params.get("progressProject");
+    const progressFile = params.get("progressFile");
+    if (!project || !progressFile) return null;
+    file = progressFile.replace(/[^/]+$/, "overview.json");
+  }
+  return (
+    "/api/projects/artifact?" + new URLSearchParams({ path: project, file })
+  );
+}
+async function loadOverview(epoch) {
+  if (state.overviewLoading) return;
+  state.overviewLoading = true;
+  let invalid = false;
+  try {
+    const path = overviewPath();
+    if (!path) return;
+    const data = await readJson(path);
+    if (epoch !== state.epoch) return;
+    invalid = true;
+    if (typeof data.content !== "string")
+      throw new Error("Invalid overview response.");
+    const overview = validateOverview(JSON.parse(data.content));
+    state.overview = overview;
+    state.overviewError = "";
+  } catch (error) {
+    if (epoch === state.epoch) {
+      if (invalid || error.status === 404) state.overview = null;
+      state.overviewError = error.message;
+    }
+  } finally {
+    if (epoch === state.epoch) {
+      state.overviewLoading = false;
+      if (state.task) renderOverview(state.task);
+    }
+  }
+}
 function renderDocument() {
   const path = documentPath();
   let body = '<p class="unknown">No progress document configured.</p>';
@@ -297,7 +511,7 @@ function renderDocument() {
     if (state.document !== null)
       body += `<div class="source-document">${markdown(state.document)}</div>`;
     else if (!state.documentError)
-      body += `<p class="unknown">${state.documentLoading ? "Loading source document…" : "Source document unavailable."}</p>`;
+      body += `<p class="unknown">${state.documentLoading ? "Loading source document…" : "Open Details to load the source document."}</p>`;
   }
   return `<h3>Version progress document</h3>${body}`;
 }
@@ -489,6 +703,7 @@ async function loadTranscript(epoch, older = false) {
         ? "Showing newer messages. Earlier history is available above."
         : "";
     renderTranscript({ older, force: first });
+    renderActivity();
   } catch (error) {
     if (epoch !== state.epoch) return;
     if (older && error.status === 400) {
@@ -503,6 +718,7 @@ async function loadTranscript(epoch, older = false) {
     }
     state.transcriptError = `${state.items.length ? "Current transcript unavailable. Retained messages may be out of date. " : "Transcript unavailable. "}${error.message}`;
     showNotice("transcript-error", state.transcriptError);
+    renderActivity();
     if (older && error.status !== 400)
       $("history-status").textContent = "Could not load older messages.";
   } finally {
@@ -538,8 +754,10 @@ async function refresh({ document = false } = {}) {
     state.taskError = "";
     state.refreshedAt = Date.now();
     renderTask();
-    await loadTranscript(epoch);
-    if (document) await loadDocument(epoch);
+    await Promise.all([loadTranscript(epoch), loadOverview(epoch)]);
+    renderActivity();
+    if (!$("details-panel").hidden && (document || state.document === null))
+      await loadDocument(epoch);
   } catch (error) {
     if (epoch === state.epoch) {
       state.taskError = error.message;
@@ -668,27 +886,33 @@ function inputKind() {
 }
 function updateComposer() {
   const sending = state.delivery?.status === "sending";
+  const editable = !readOnly && state.taskId && !state.task?.terminal;
   const ready =
     !readOnly &&
     state.task &&
     !state.taskError &&
     Number.isInteger(state.task.generation) &&
     !state.task.terminal;
-  $("task-message").disabled = !ready || sending;
+  // Keep the draft usable while status refreshes fail or another input sends.
+  // Only submission needs current Task facts and an exact generation.
+  $("task-message").disabled = !editable;
+  $("enable-input-button").hidden = !readOnly;
   $("send-button").disabled =
     !ready || sending || !$("task-message").value.trim();
   $("send-button").firstChild.textContent = sending ? "Sending… " : "Send ";
   $("composer-hint").textContent = readOnly
-    ? "Task execution is disabled. Progress and session history remain available."
-    : !state.task
+    ? "This page is read-only. Enable input to send a message."
+    : !state.taskId
       ? "Open a task to send input."
       : state.taskError
-        ? "Refresh task facts before sending."
-        : state.task.terminal
-          ? "This task is terminal."
-          : sending
-            ? "Saving input to this task…"
-            : "⌘ / Ctrl + Enter to send";
+        ? "You can draft here. Refresh task details before sending."
+        : !state.task
+          ? "Loading task details. You can draft here."
+          : state.task.terminal
+            ? "This task is terminal."
+            : sending
+              ? "Saving input to this task…"
+              : "⌘ / Ctrl + Enter to send";
 }
 function renderReceipts() {
   $("input-receipts").innerHTML = state.receipts
@@ -809,6 +1033,10 @@ async function openTask(appId, taskId, version = "") {
   state.refreshAgain = false;
   state.delivery = null;
   state.receipts = [];
+  state.overview = null;
+  state.overviewError = "";
+  state.overviewLoading = false;
+  state.milestoneExpanded = new Set();
   state.document = null;
   state.documentError = "";
   state.documentLoading = false;
@@ -936,6 +1164,7 @@ function selectTab(name, focus = false) {
     $(`${tab}-tab`).classList.toggle("active", active);
     $(`${tab}-panel`).hidden = !active;
   }
+  if (name === "details") loadDocument(state.epoch);
   if (focus) $(`${name}-tab`).focus();
 }
 for (const name of ["overview", "details"]) {
@@ -1027,6 +1256,11 @@ $("refresh-button").addEventListener("click", () => {
 $("older-button").addEventListener("click", () =>
   loadTranscript(state.epoch, true),
 );
+$("enable-input-button").addEventListener("click", () => {
+  const url = new URL(location.href);
+  url.searchParams.set("readOnly", "0");
+  location.assign(url);
+});
 $("task-message").addEventListener("input", updateComposer);
 $("task-message").addEventListener("keydown", (event) => {
   if (event.key === "Enter" && (event.metaKey || event.ctrlKey))
