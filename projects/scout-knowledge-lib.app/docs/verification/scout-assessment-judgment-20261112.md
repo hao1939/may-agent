@@ -2,8 +2,8 @@
 
 The focused change makes request fulfillment Scout's judgment and leaves source
 identity, supplied coverage, archive integrity and publication to code. It removes
-the XHS login exception and acceptance/prose phrase matching. The source change
-has not been activated in the running Host.
+the XHS login exception and acceptance/prose phrase matching. Local verification
+preceded the activation and live observations recorded below.
 
 ## Contract
 
@@ -78,10 +78,86 @@ Logs and the explicit typecheck config are retained under
 were provisioned outside the live Python environment. All publication fixtures
 used disposable repositories; no live Tasks or App definitions were changed.
 
+## Activation and live observation
+
+The user requested the next step after local commit
+`b1714639c2317b681ac0b150b58107c8c8be14ed`. Disposable source preflight loaded
+all three configured Apps and compared their manifests with the active release;
+all manifests matched. The only executable source differences were the Scout
+assessment workflow and archive helper, alongside Scout's updated instructions.
+Uncommitted shared-workspace changes were excluded from the immutable release.
+
+The canonical `runtime.reload.requested` event `6710861` succeeded through
+operation `6710862`. The active source is
+`b1714639c2317b681ac0b150b58107c8c8be14ed-definitions-v5`; installed hashes for
+both changed implementation files and Scout instructions match preflight.
+Daemon PID 100753 and startup identity `2026-11-12T14:19:51.632Z` remained
+unchanged during this reload and observation.
+
+Five samples from 14:36:29 to 14:38:49 UTC recorded zero SQL errors and no
+handler/subscriber failures. Scout had 14 idle Tasks, no pending source-assessment
+Task, and no new attempt or input during that natural-work window. This proves
+activation health; that window did not exercise assessment judgment. The six
+previously closed XHS children remained closed, and all nine original saved
+answers matched the retained earlier answers byte for byte.
+
+A separately scoped representative request then exercised the real no-save
+source workflow through canonical App admission, using the public LangGraph
+README at `https://raw.githubusercontent.com/langchain-ai/langgraph/main/README.md`.
+It was a real source request with no injected source/model response, linked
+material, child Tasks or library edits. Input event `6710874` admitted original
+caller receipt `app_fba9f29c-bc2e-4c04-81b4-2386b5485d00` and its one root Task.
+
+Accepted generation-1 attempt `r_1_6dd0c26a-4ea5-44cd-94b7-4fc4a12c5810`
+ran from 14:41:28.896 to 14:41:41.857 UTC. Scout identified durable execution,
+human intervention, memory and tracing as producer claims, connected them to
+business workflow/Host management, and explicitly left implementation guarantees
+and linked documentation unknown. Code recorded 6,351 supplied characters and
+source-byte revision
+`3a13e257af1216962d53d72414a7f44ac1fc5cea34d994bdff60ea2a3b045933`.
+The original caller receipt became done with the substantive authored response
+and `archive:disabled-by-assignment`. No provider delivery was requested or claimed.
+The library and Git HEAD remained unchanged. After reading the accepted result
+and saved caller answer, guarded operator closure of this directly initiated
+finite root validation Task succeeded through event `6710887`. This operation
+did not close any delegated child or revive earlier work.
+
+A second real no-save request classified accessibility and supplied coverage for
+`https://arxiv.org/pdf/2508.10874`. Input event `6710891` admitted caller receipt
+`app_ffd93b4b-edbb-4328-a379-39c5e3c33e80`. Accepted attempt
+`r_1_0994fda7-960b-4c14-9fd2-506048a425e3` ran from 14:44:17.142 to
+14:44:30.172 UTC. The production extractor succeeded: 124,710 characters across
+39 PDF pages were extracted, and 60,000 characters from 20 pages were supplied.
+The recorded source-byte hash is
+`d5d232d8d9be65073323618a3350ff7d33d54f8a78f172e0ec02e7e0fc8ab4c5`.
+
+Scout returned converged for the fulfilled availability classification while
+explicitly distinguishing retrieval, extraction, supplied coverage and full-paper
+reading. It did not claim substantive paper analysis, full reading or proof
+verification. The caller receipt became done with its authored response. Guarded
+closure of this second directly initiated finite root validation Task succeeded
+through event `6710904`, using its exact accepted attempt and current resource
+version. The library and Git HEAD remained unchanged.
+
+The production PDF result resolves the environment uncertainty: the operator
+shell lacks `pypdf`, while the Host's separate environment successfully extracted
+the actual PDF. No package installation was needed or performed. The final sample
+at 14:45:30 UTC recorded two completed, converged validation attempts, their two
+done caller receipts, zero SQL or handler/subscriber errors, no pending assessment
+Task, and the original 14 idle Scout Tasks. Both finite validation Tasks are
+closed; the test did not leave additional open work.
+
+Activation, sampled status, exact receipts, caller results, source facts, closure
+and preservation comparisons are retained under
+`/home/hao/workspace-archive/scout-assessment-activation-20261112/`.
+Operations followed the [control-plane-operation skill](../../../../shared/skills/control-plane-operation/SKILL.md).
+
 ## Remaining observation
 
-After a separately authorized activation, observe a natural requested assessment:
-the successful or incomplete judgment, retained coverage, canonical publication
-read-back, caller delivery, and exact creator acceptance/closure. A fitting revisit
-should return a verified unchanged record. Controlled tests do not establish that
-Scout will make the right semantic decision in a live run.
+The real no-save README and PDF requests demonstrate bounded semantic judgment,
+request fulfillment independent of full source reading, working production
+extraction and saved caller follow-through in the running Host. Archived
+publication and unchanged-record reuse remain covered by the local regressions.
+Suitable live cases are still needed for required-reading incomplete outcomes,
+access-failure classification, and delegated creator consumption and closure.
+These two examples do not establish broad model accuracy.
