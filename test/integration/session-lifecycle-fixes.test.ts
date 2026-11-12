@@ -8,7 +8,7 @@ import { Type } from "typebox";
  * Bug 10: callDepths map never cleaned for completed root sessions
  */
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
@@ -25,7 +25,6 @@ import { closeDb } from "../../src/lib/db/connection.js";
 
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import { createAgentRun, type AgentRuntimeListener } from "../../src/lib/agent-runner.js";
-import { createLastSessionWriter } from "../../src/lib/session-subscribers.js";
 import { discoverAgentSkills } from "../../src/lib/skills.js";
 import { RESPONSES_STREAM_TERMINAL_ERROR } from "../../src/lib/workflow-finish-recovery.js";
 import { fakeModel } from "../fixtures/model.js";
@@ -109,7 +108,6 @@ describe("session completion publication", () => {
     const bus = new EventBus();
     const events: AgentEvent[] = [];
     bus.subscribe((event) => events.push(event));
-    bus.subscribe(createLastSessionWriter(persistDir));
     const definitions = [];
     for (const [folder, text, appLocal] of [
       ["projects/sample.app/agents/local-owner", "LOCAL_IDENTITY", true],
@@ -219,9 +217,8 @@ describe("session completion publication", () => {
       failTurn = true;
       manager.send(sid, "finish the old chat");
       await expect(manager.waitForIdle(sid)).rejects.toThrow("fixture terminal chat failure");
-      expect(readFileSync(join(original.agentDir, "last-session.md"), "utf8")).toContain(sid);
-      expect(readFileSync(join(replacement.agentDir, "last-session.md"), "utf8")).toContain(fresh);
-      expect(readFileSync(join(replacement.agentDir, "last-session.md"), "utf8")).not.toContain(sid);
+      expect(readSessionMeta(persistDir, sid)?.agentRelativeDir).toBe(original.agentRelativeDir);
+      expect(readSessionMeta(persistDir, fresh)?.agentRelativeDir).toBe(replacement.agentRelativeDir);
     } finally {
       for (const session of manager.status()) manager.cancel(session.sessionId);
     }
