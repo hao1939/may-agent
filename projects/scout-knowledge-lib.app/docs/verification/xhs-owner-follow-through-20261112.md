@@ -73,8 +73,8 @@ repeating source work or closure. This was a stale scope in the operation,
 not evidence that the Host should relax its input guard.
 
 No Host source or installation budget change was necessary. The new planner
-source is locally verified and committed; it has not been activated in the Host.
-Live follow-through used the already accepted App source
+source was locally verified and committed before the later activation below.
+Live child follow-through used the already accepted App source
 `a886e253541a1327251247f61b8aa3d6b9ca2602-definitions-v5` and Host
 `51cb18677d7fe3e7d767485a5048cf36457d281a`.
 
@@ -105,3 +105,45 @@ a permitted inaccessible branch from source-content coverage directly. Expanding
 phrase-matching rules around incomplete source reading adds brittle policy. Preserve
 one ordinary result, verified publication evidence and creator acceptance/closure.
 This follow-through does not claim that general assessment redesign is implemented.
+
+## Activation and natural work observed later on 2026-11-12
+
+The user requested continuation after the local correction. Preflight compared
+the accepted source with committed Apps HEAD
+`0a965c9e575f4249ccfbc7532f2ec9096e40e119`, which contains the correction from
+`fa7b4233a7fd6e9d2635a80fa140219343a65f1a`. The only executable App-source
+change was Scout's planner; all three loaded App manifests matched. Other
+committed changes were documentation and domain outputs. Uncommitted edits were
+excluded from the immutable source snapshot. All three App definitions loaded
+successfully in disposable state before activation.
+
+The canonical `runtime.reload.requested` event `6710744` completed successfully
+through operation event `6710746`. The accepted source is now
+`0a965c9e575f4249ccfbc7532f2ec9096e40e119-definitions-v5`. Its planner SHA-256
+matches the reviewed candidate:
+`cb412e06dcfb2db54ab41bc2cacb3acf9dcd9bb81368f4a71af5c0957b2aa190`.
+Daemon PID 44021 and startup identity remained unchanged.
+
+Seven samples from 14:00:49 to 14:03:59 UTC observed normal scheduled work, with
+no injected failures or new business requests. HN Task `explore-hn` completed
+accepted generation-3 attempt `r_3_8d8896be-3191-4f2c-b701-598c5dcf787c` as
+converged and became idle while retaining its standing research responsibility.
+The publisher committed its finding and index update in
+`56904c656b168a6d7dcebe4fc97151d32daaf425`. Git read-back exactly matched the
+canonical finding
+`knowledge/findings/2026-11-12-mcp-admission-needs-staged-compatibility-receipts.md`.
+The next GitHub research Task started normally. No handler/subscriber failures
+or additional SQLite errors appeared in this observation window.
+
+All six original assessment Tasks remained closed. The six original child
+receipts, original human request and both follow-through receipts retained their
+nine authored answers. There was no post-activation partial planner report in
+this window: source activation, retention and normal research/publication were
+observed live; the new partial-report behavior remains covered by the committed
+regressions until a real owner coordination case occurs.
+
+The Scout process design was aligned with the current contribution, exact-wait,
+creator-revision and guarded-closure rules. This documentation follow-up does
+not change the activated planner bytes. Activation/preflight, sampled observations,
+retained-state reads and publication read-back evidence are archived at
+`/home/hao/workspace-archive/scout-planner-activation-20261112/`.

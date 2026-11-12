@@ -267,13 +267,16 @@ runtime contract.
 Public workflow decisions are:
 
 - `converged` — the current bounded reconciliation is satisfied;
-- `waiting` — an exact Condition identifies the external fact that can change
-  the answer; or
+- `waiting` — an exact Condition identifies the needed external fact, or
+  `continue: true` requests another useful bounded pass; or
 - `incomplete` — retain failure evidence and continue paced recovery.
 
-`failed` is an attempt/runtime outcome, not a public workflow decision. Common
-finite task-action fields use May conventions: root parent, `achieve`, `P2`,
-and empty outputs. Standing work must explicitly use `maintain`.
+`failed` is an attempt/runtime outcome, not a public workflow decision. A caller
+route described only in prose does not register a durable wait. Requirements are
+revised through the shared creator Task capability. Finite work ends after its
+creator consumes an accepted result and performs guarded closure; a worker result
+does not itself close delegated work. Standing work retains its declared purpose
+and next observation route.
 
 Convergence records how acceptance was established:
 
@@ -339,11 +342,14 @@ checks canonical ancestry and bytes but does not replace Scout's semantic
 judgment. Non-converged waits remain admissible without pretending publication
 was verified.
 
-An explicitly partial agent finish is not a no-op, even when its execution
-status is `done` and its output list is empty. Preserve its finish evidence
-and continuation details on the same source Task, and return a blocked
-workflow result rather than claiming convergence. The maintenance workflow
-uses the same rule before publishing a maintenance fact or accepting actions.
+An explicitly partial source-exploration finish is not a no-op, even when its
+execution status is `done` and its output list is empty. Preserve its finish
+evidence and continuation details on the same source Task without claiming
+convergence. The maintenance planner can preserve a schema-valid ordinary
+`waiting` or `incomplete` contribution from a partial finish; it does not replace
+that decision with a handler failure. Exact input scope, wait requirements,
+publication verification and final Host admission still apply. Partial work
+cannot establish convergence.
 Source exploration uses the
 existing 48-operation allowance within the ordinary execution time limit:
 select one useful candidate early and leave room for integration and read-back.
@@ -510,7 +516,7 @@ of these:
 - a small completed library change;
 - evidence or a report path;
 - a current progress note;
-- a result that closes the task;
+- an accepted result followed by creator closure;
 - or a concrete blocker that needs a human.
 
 ## Date Trust
@@ -527,13 +533,15 @@ dated.
 
 ## Agent execution and acceptance
 
-Source exploration and maintenance may interpret structured agent output only
-after the call returns `done`. A blocked, interrupted or failed call can retain
-partial data, but that data cannot become an accepted finding, a maintenance
-fact or a proposed Task action. Preserve the execution identity and failure
-status for normal recovery. A successful call returning a valid domain wait
-is different: the workflow may admit that explicit wait under its normal
-result contract. Terminal execution is necessary, not sufficient, evidence.
+Source exploration requires a successful bounded call before accepting a finding
+or no-op. A partial source draft retains its coverage limits and does not prove
+the research outcome. The maintenance planner also accepts a schema-valid
+`waiting` or `incomplete` contribution from an explicit partial finish returned
+as `done` or `blocked`. It retains that ordinary decision and its input scope,
+without claiming fulfillment. A failed execution, malformed output or partial
+convergence remains rejected. Publication and Task admission retain their common
+guards. Execution evidence, accepted contribution, fulfillment and creator
+closure remain distinct.
 
 ## Daily digest handoff
 
