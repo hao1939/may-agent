@@ -37,7 +37,7 @@ import {
   type SocketResponse,
 } from "@may-agent/control/client";
 import { buildCanonicalEventEnvelope } from "../../../packages/control/src/event-envelope.js";
-import { normalizeProjectPathForCompare, projectPathIdentity, readProjectMetadata } from "./project-metadata.js";
+import { normalizeProjectPathForCompare, projectPathIdentity, readProjectIngressIdentity, readProjectMetadata } from "./project-metadata.js";
 export { normalizeProjectPathForCompare } from "./project-metadata.js";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
@@ -620,7 +620,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   function projectAppId(path: string, appDir: string): string {
     try {
-      return readProject(path, resolve(appDir, "project.json")).name.replace(/\.app$/, "");
+      return readProjectIngressIdentity(path, resolve(appDir, "project.json")).name.replace(/\.app$/, "");
     } catch {
       return projectNameFromPath(path);
     }
@@ -1609,7 +1609,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   }
 
   function readProjects() {
-    const projects: Array<{ path: string; project: ReturnType<typeof readProject> }> = [];
+    const projects: Array<{ path: string; project: ReturnType<typeof readProject>; updatedAt: number }> = [];
     const scan = (dir: string, prefix: string) => {
       if (!existsSync(dir)) return;
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -1617,7 +1617,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         const path = `${prefix}/${entry.name}`;
         const markdown = join(dir, entry.name, "project.md");
         const file = existsSync(markdown) ? markdown : join(dir, entry.name, "project.json");
-        try { projects.push({ path, project: readProject(path, file) }); }
+        try { projects.push({ path, project: readProject(path, file), updatedAt: statSync(file).mtimeMs }); }
         catch { /* Missing or unreadable metadata is not a project record. */ }
       }
     };
@@ -1634,7 +1634,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   }
 
   function handleProjects(): Response {
-    return json(readProjects().map(({ path, project }) => {
+    return json(readProjects().map(({ path, project, updatedAt }) => {
       const { content, field } = project;
       const msX = (content.match(/^- \[x\]/gim) || []).length;
       const msO = (content.match(/^- \[ \]/gm) || []).length;
@@ -1680,7 +1680,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
             return ids.map(({ id, target }) => ({ id, current: null, target, breached: false }));
           }
         })(),
-        updatedAt: statSync(project.filePath).mtimeMs,
+        updatedAt,
       };
     }));
   }
@@ -1993,8 +1993,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
       const projectFile = resolveProjectFile(path);
       if (!existsSync(projectFile)) return json({ error: "Project not found" }, 404);
-      const identity = readProject(path, projectFile);
-      const projectId = projectEventTargetForPath(path, identity.legacyProjectId);
+      const identity = readProjectIngressIdentity(path, projectFile);
+      const projectId = projectEventTargetForPath(path, identity.projectId);
       const idempotencyKey = body.idempotencyKey?.trim() || `web-project-${randomUUID()}`;
       const command = buildAppAdmissionCommand({ projectPath: path, projectId, comment, idempotencyKey });
       try {
@@ -2222,8 +2222,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         if (!isAllowedProjectPath(projectPath)) return json({ error: "Access denied" }, 403);
         const projectFile = resolveProjectFile(projectPath);
         if (!existsSync(projectFile)) return json({ error: "Project not found" }, 404);
-        const identity = readProject(projectPath, projectFile);
-        projectId = projectId || identity.legacyProjectId;
+        const identity = readProjectIngressIdentity(projectPath, projectFile);
+        projectId = projectId || identity.projectId;
       }
 
       const trigger = await sendDaemonFrame(buildEventIngressFrame(body));

@@ -33,6 +33,11 @@ parser's exact tags alongside the current identity; ingress keeps its previous
 single target. No stored IDs are rewritten. Malformed JSON is omitted from the
 saved-project list and fails detail explicitly; missing metadata still permits
 an exact saved session-tag lookup. These reads do not establish Task ownership.
+Collection discovery captures timestamps inside each guarded metadata read, so
+a disappearing file cannot fail the whole list. Controls use the shared source
+identity parser without loading display posture; JSON syntax errors retain the
+previous path/frontmatter fallback. File access errors still fail explicitly,
+and the daemon owns validation and admission of the single addressed target.
 
 `read-model/` contains HTTP diagnostic reads for the event graph and loop trace.
 Other report implementations live in `../adapters/reporting/`.

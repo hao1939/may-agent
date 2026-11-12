@@ -10,6 +10,8 @@ import { createWorkflowRunner } from "../../src/lib/workflow-tool.js";
 import type { SubagentManager } from "../../src/lib/manager.js";
 import { closeDb } from "../../src/lib/db/connection.js";
 import { upsertSession } from "../../src/lib/db/sessions.js";
+import { attachControlSocket, type ControlSocket } from "../../packages/control/src/server.js";
+import { daemonSocketPath } from "../../packages/control/src/client.js";
 
 describe("HTTP event reads", () => {
   let root: string;
@@ -17,17 +19,27 @@ describe("HTTP event reads", () => {
   let child: ChildProcess;
   let stopped: Promise<void>;
   let baseUrl: string;
+  let control: ControlSocket | undefined;
 
   beforeEach(async () => {
     root = mkdtempSync(join(tmpdir(), "may-http-events-"));
     db = openStateDb(join(root, "may.db"));
     mkdirSync(join(root, "agents"));
+    await startWeb();
+  });
+
+  async function startWeb(disappearMetadata?: string) {
     // Exercise the standalone adapter, not a daemon or model-backed App.
     child = spawnFixtureProcess(
-      [resolve(import.meta.dir, "../../src/app/http/server.ts"), "--state-dir", root, "--port", "0"],
+      [
+        ...(disappearMetadata ? ["--preload", resolve(import.meta.dir, "../fixtures/http-project-metadata-disappear.ts")] : []),
+        resolve(import.meta.dir, "../../src/app/http/server.ts"), "--state-dir", root, "--port", "0",
+      ],
       {
         cwd: root,
-        env: { ...process.env, AGENT: "helper", CONVERSATION_APP: "support", CONVERSATION_ID: "retained-room", PROJECT_ROOT: root, AGENTS_ROOT: join(root, "agents"), PROJECTS_ROOT: root, SHARED_ROOT: root },
+        env: { ...process.env, AGENT: "helper", DAEMON_INSTANCE: "http-events", CONVERSATION_APP: "support", CONVERSATION_ID: "retained-room", PROJECT_ROOT: root, AGENTS_ROOT: join(root, "agents"), PROJECTS_ROOT: root, SHARED_ROOT: root,
+          ...(disappearMetadata ? { MAY_TEST_DISAPPEAR_METADATA: disappearMetadata } : {}),
+        },
       },
     );
     stopped = new Promise((done) => child.once("close", () => done()));
@@ -52,11 +64,13 @@ describe("HTTP event reads", () => {
     } finally {
       clearTimeout(timer);
     }
-  });
+  }
 
   afterEach(async () => {
     child?.kill("SIGKILL");
     await stopped;
+    control?.close();
+    control = undefined;
     db?.close();
     if (root) closeDb(root);
     if (root) rmSync(root, { recursive: true, force: true });
@@ -88,6 +102,88 @@ describe("HTTP event reads", () => {
     writeFileSync(join(dir, file), content);
     return dir;
   }
+
+  async function ingressControl() {
+    const admissions: unknown[] = [];
+    const publications: unknown[] = [];
+    control = await attachControlSocket({
+      socketPath: daemonSocketPath(root, { instance: "http-events", interfaceAgent: "helper" }),
+      agentName: "helper", getSessionId: () => "fixture", getStatus: () => [],
+      emitEvent: () => {}, subscribeEvents: () => () => {},
+      admitAppInput: (input) => {
+        admissions.push(input);
+        return { eventId: 71, eventType: "app.input.requested" };
+      },
+      publishEvent: (event) => {
+        publications.push(event);
+        return { eventId: 72, eventType: event.type, delivery: "accepted" };
+      },
+    });
+    return { admissions, publications };
+  }
+
+  it("keeps malformed metadata from blocking project comment admission", async () => {
+    const source = "{ damaged";
+    const dir = metadata("sample.app", "project.json", source);
+    const { admissions, publications } = await ingressControl();
+    const response = await fetch(baseUrl + "/api/projects/comment", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ path: "projects/sample.app", comment: "Inspect the result", idempotencyKey: "comment-71" }),
+      signal: AbortSignal.timeout(5_000),
+    });
+    expect(response.status).toBe(202);
+    expect(await response.json()).toMatchObject({ ok: true, triggered: true, projectId: "sample", eventId: 71 });
+    expect(admissions).toEqual([{
+      appId: "sample", input: { kind: "message", data: { message: "Inspect the result",
+        context: { intent: "project-comment", projectId: "sample", projectPath: "projects/sample.app" } } },
+      source: { kind: "human", id: "web-ui:comment-71" },
+      conversationId: "web-ui:project:sample", channel: "web-ui", idempotencyKey: "comment-71",
+    }]);
+    expect(publications).toEqual([]);
+    expect((await fetch(baseUrl + "/api/projects/detail?path=projects/sample.app")).status).toBe(500);
+    expect(readFileSync(join(dir, "project.json"), "utf8")).toBe(source);
+  });
+
+  it("keeps malformed metadata from blocking an explicitly targeted event", async () => {
+    const source = "{ damaged";
+    const dir = metadata("sample.app", "project.json", source);
+    const { admissions, publications } = await ingressControl();
+    const input = {
+      type: "project.owner.requested", target: { appId: "actual-app", taskId: "work" },
+      data: { projectPath: "projects/sample.app", projectId: "already-supplied", reason: "Inspect the result" },
+      idempotencyKey: "event-72",
+    };
+    const response = await fetch(baseUrl + "/api/events", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input),
+      signal: AbortSignal.timeout(5_000),
+    });
+    expect(response.status).toBe(201);
+    expect(await response.json()).toMatchObject({ ok: true, triggered: true, eventId: 72, projectId: "already-supplied" });
+    expect(publications).toHaveLength(1);
+    expect(publications[0]).toMatchObject(input);
+    expect(admissions).toEqual([]);
+    expect(await read("/api/projects")).toEqual([]);
+    expect(readFileSync(join(dir, "project.json"), "utf8")).toBe(source);
+  });
+
+  it("isolates a disappearing metadata file without losing other projects", async () => {
+    const gone = metadata("vanishing.app", "project.json", JSON.stringify({ id: "vanishing", owner: "worker", status: "active" }));
+    const source = JSON.stringify({ id: "survivor", owner: "worker", status: "active" });
+    const kept = metadata("survivor.app", "project.json", source);
+    metadata("agents/worker", "agent.json", JSON.stringify({ name: "worker" }));
+    child.kill("SIGKILL");
+    await stopped;
+    const file = join(gone, "project.json");
+    await startWeb(file);
+    const response = await fetch(baseUrl + "/api/projects", { signal: AbortSignal.timeout(5_000) });
+    expect(existsSync(file)).toBe(false);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject([
+      { name: "survivor", owner: "worker", status: "active", updatedAt: expect.any(Number) },
+    ]);
+    expect(await read("/api/agents")).toMatchObject([{ name: "worker", projectsTotal: 1, projectsActive: 1 }]);
+    expect(readFileSync(join(kept, "project.json"), "utf8")).toBe(source);
+  });
 
   it("shares projected JSON posture across project list, detail and agent counts without changing source identity", async () => {
     metadata("agents/worker", "agent.json", JSON.stringify({ name: "worker" }));

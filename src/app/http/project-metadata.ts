@@ -32,11 +32,42 @@ export function projectPathIdentity(path: string) {
   return { name, owner, legacyOwner, projectId, projectIds: [...new Set([projectId, `${legacyOwner}/${name}`])] };
 }
 
+function parseProjectSource(content: string): Record<string, unknown> | null {
+  return content.trim().startsWith("{") ? JSON.parse(content) as Record<string, unknown> : null;
+}
+
+// Preserve the exact old target, including the Markdown owner boundary bug.
+// Session reads may expand aliases; controls always retain this one identity.
+function legacyProjectIdentity(path: string, content: string, source: Record<string, unknown> | null) {
+  const fallback = projectPathIdentity(path);
+  const name = source && typeof source.id === "string" && source.id.trim() ? source.id.trim() : fallback.name;
+  const oldOwner = content
+    .match(/^---\s*\n[\s\S]*?\nowner:\s*([^\n]+)\n[\s\S]*?\n---/m)?.[1]
+    .trim()
+    .replace(/^["']|["']$/g, "");
+  const owner = source
+    ? typeof source.owner === "string" && source.owner.trim()
+      ? source.owner.trim()
+      : fallback.legacyOwner
+    : oldOwner || fallback.legacyOwner;
+  return { name, owner, projectId: `${owner}/${name}` };
+}
+
+/** Controls need source identity, without posture reads or strict display parsing. */
+export function readProjectIngressIdentity(path: string, filePath: string) {
+  const content = readFileSync(filePath, "utf8");
+  let source: Record<string, unknown> | null = null;
+  try { source = parseProjectSource(content); }
+  catch (error) { if (!(error instanceof SyntaxError)) throw error; }
+  return legacyProjectIdentity(path, content, source);
+}
+
 /** Read-only HTTP metadata. Source identity stays separate from mutable posture. */
 export function readProjectMetadata(path: string, filePath: string) {
   const fallback = projectPathIdentity(path);
   const content = readFileSync(filePath, "utf8");
-  const source = content.trim().startsWith("{") ? (JSON.parse(content) as Record<string, unknown>) : null;
+  const source = parseProjectSource(content);
+  const legacyIdentity = legacyProjectIdentity(path, content, source);
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
   const frontmatter: Record<string, string> = {};
   for (const line of match?.[1].split(/\r?\n/) ?? []) {
@@ -53,7 +84,7 @@ export function readProjectMetadata(path: string, filePath: string) {
     const title = key[0].toUpperCase() + key.slice(1);
     return content.match(new RegExp(`^\\*\\*${title}\\*\\*:\\s*(.+)$`, "m"))?.[1].trim() ?? null;
   };
-  const name = source && typeof source.id === "string" && source.id.trim() ? source.id.trim() : fallback.name;
+  const { name } = legacyIdentity;
   const owner = source
     ? typeof source.owner === "string" && source.owner.trim()
       ? source.owner.trim()
@@ -61,18 +92,6 @@ export function readProjectMetadata(path: string, filePath: string) {
     : field("owner") || fallback.owner;
   if (source) Object.assign(data, { id: name, owner });
   const projectId = `${owner}/${name}`;
-  // Preserve the exact old session lookup as an alias, including its frontmatter
-  // boundary bug. Only session queries expand aliases; ingress keeps its one old ID.
-  const oldOwner = content
-    .match(/^---\s*\n[\s\S]*?\nowner:\s*([^\n]+)\n[\s\S]*?\n---/m)?.[1]
-    .trim()
-    .replace(/^["']|["']$/g, "");
-  const legacyOwner = source
-    ? typeof source.owner === "string" && source.owner.trim()
-      ? source.owner.trim()
-      : fallback.legacyOwner
-    : oldOwner || fallback.legacyOwner;
-  const legacyId = `${legacyOwner}/${name}`;
   const formatErrors: string[] = [];
   if (!source && shared) {
     if (!match) formatErrors.push("missing YAML frontmatter");
@@ -82,7 +101,6 @@ export function readProjectMetadata(path: string, filePath: string) {
     if (body.match(/^\s*\*\*(Owner|Status):?\*\*:?\s*/im)) formatErrors.push("metadata duplicated as bold body field");
   }
   return {
-    filePath,
     content,
     body,
     data,
@@ -91,8 +109,7 @@ export function readProjectMetadata(path: string, filePath: string) {
     name,
     owner,
     projectId,
-    projectIds: [...new Set([projectId, legacyId])],
-    legacyProjectId: legacyId,
+    projectIds: [...new Set([projectId, legacyIdentity.projectId])],
     formatErrors,
     isJson: source !== null,
   };
