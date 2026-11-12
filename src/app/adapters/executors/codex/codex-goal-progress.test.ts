@@ -401,6 +401,8 @@ describe("Codex goal Task progress", () => {
     emitGoal("paused"); // immediate replay
     emitGoal("active"); // rapid resume within the same whole second
     emitGoal("active"); // immediate replay of resumed active state
+    emitGoal("active", 1_700_000_200); // newer same-status heartbeat advances watermark
+    emitGoal("paused", 1_700_000_150); // delayed stale pause older than heartbeat watermark is ignored
     emitGoal("paused", 1_699_999_999); // stale out-of-order replay from earlier second must not regress status
 
     expect(await publisher.flush()).toMatchObject({ queued: 3, published: 3, dropped: 0 });

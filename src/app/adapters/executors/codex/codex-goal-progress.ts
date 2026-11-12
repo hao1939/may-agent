@@ -294,8 +294,13 @@ export class CodexGoalProgressPublisher {
       const updatedAt = finiteNumber(record(notification.params?.goal)?.updatedAt);
       const identity = JSON.stringify([threadId, turnId]);
       const current = this.goalStatuses.get(identity);
-      if (current?.status === statusName) return;
       if (updatedAt !== null && current?.lastUpdatedAt !== null && current?.lastUpdatedAt !== undefined && updatedAt < current.lastUpdatedAt) {
+        return;
+      }
+      if (current?.status === statusName) {
+        if (updatedAt !== null && (current.lastUpdatedAt === null || updatedAt > current.lastUpdatedAt)) {
+          current.lastUpdatedAt = updatedAt;
+        }
         return;
       }
       const byStatus = { ...(current?.byStatus ?? {}) };
