@@ -1,8 +1,9 @@
 # Legacy Overview dashboard retirement — November 12, 2026
 
-**Status:** Approved by the user; implemented in
-[Host PR 462](https://github.com/hao1939/may-agent/pull/462), pending review/merge.
-Current candidate `014bdd5540d20af7c38103f27b71613807d3f353` includes runtime
+**Status:** Merged in
+[Host PR 462](https://github.com/hao1939/may-agent/pull/462) as
+`b7db445b62b900172593a0c7a284aeda7da53405` on November 13, 2026 (Asia/Shanghai).
+Reviewed candidate `014bdd5540d20af7c38103f27b71613807d3f353` includes runtime
 correction `1868eba3f5` and its retention-fixture correction. Main is integrated
 through `62de4a82ec` (#467), including #463's retirement of the separate
 evaluation database and #466's offline migration separation. Installed adoption
@@ -53,7 +54,8 @@ reading, so a late callback cannot reopen a hidden session.
 Send and subscription use the routed session identity. Agent-chat view callbacks
 belong to the selected agent's Chat subtab; subtab changes release its reader.
 The originating selection retains an in-flight submission or hidden receipt.
-Explicit navigation, target changes and Reset discard that temporary binding. One route-based subscription owner serves Overview, session inspection
+Explicit navigation, target changes and Reset discard that temporary binding.
+One route-based subscription owner serves Overview, session inspection
 and chat independently of message rendering. Direct chat now renders only
 saved turns on initial selection, turn/session end and reconnect. Transcript
 views own their reads and queued refreshes; notifications and local input do
@@ -461,3 +463,16 @@ The PR still removes 488 runtime lines. The additional correctness code uses
 existing publication evidence and view-local state. Source merge and deployment
 remain separate; no installed-state conversion, restart or external provider
 trial was performed.
+
+## Post-merge closure — November 13, 2026
+
+GitHub records the merge at `2026-11-12T16:49:41Z` (November 13 in
+Asia/Shanghai). The complete merged source tree is identical to the reviewed
+head `014bdd5540d20af7c38103f27b71613807d3f353`; the final 4,116-pass local run
+and hosted Quality/Container evidence above apply to that unchanged tree.
+No runtime tests were repeated for this documentation-only closure.
+
+Web UI implementation status and the external-components proposal now mark
+this reduction as merged and complete. The saved-turn, submission-identity and
+selected-reader contracts remain current. Installed adoption remains unverified;
+this closure does not deploy the Host or stage browser assets.

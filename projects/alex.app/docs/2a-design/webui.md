@@ -18,7 +18,8 @@ review notes remain inspectable; the [retirement record](../archive/reviews/lear
 defines the deliberately reduced scope.
 
 Retirement of the folded Overview "Legacy panels" is accepted and implemented in
-[Host PR 462](https://github.com/hao1939/may-agent/pull/462), pending review/merge.
+[Host PR 462](https://github.com/hao1939/may-agent/pull/462), merged as
+`b7db445b62b9` on November 13, 2026.
 The [retirement record](../archive/reviews/legacy-dashboard-retirement-20261112.md)
 tracks source/PR status, deliberate losses and validation. Installed adoption is
 unverified.

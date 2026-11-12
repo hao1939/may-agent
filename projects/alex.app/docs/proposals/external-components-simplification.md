@@ -70,8 +70,9 @@ new service, cache, migration or replacement dashboard.
 ## What changed after reviewing the plan
 
 The user next selected retirement of the folded Overview "Legacy panels".
-[Host PR 462](https://github.com/hao1939/may-agent/pull/462), pending review/merge,
-removes the old health summary/charts, agent grid/drawer,
+[Host PR 462](https://github.com/hao1939/may-agent/pull/462), merged as
+`b7db445b62b9` on November 13, 2026, removes the old health summary/charts,
+agent grid/drawer,
 activity timeline, live feed and session statistics. Current Overview and
 dedicated pages remain; session links use the current routed inspector. The
 old aggregate evaluation summary, seven-day delegation totals and workspace
@@ -79,6 +80,9 @@ file list are deliberate losses, without replacement panels. Backend read APIs,
 retained evidence and the shared WebSocket transport remain. See the
 [retirement record](../archive/reviews/legacy-dashboard-retirement-20261112.md)
 for source status and checks; installed adoption is unverified.
+Direct-agent chat uses saved transcripts with separate submission and reader
+ownership. This reduction is complete: 488 fewer runtime lines, using the
+existing event journal for exact retry routing.
 
 The previous draft treated all findings as required work. It proposed observer
 cancellation/reload machinery before inspecting the real consumer, bundled
