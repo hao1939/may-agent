@@ -288,6 +288,7 @@ function migrateConditionFreshness(db: SqliteDb): void {
             saved.spec.type === condition.type &&
             saved.spec.subject === condition.subject &&
             saved.spec.owner === condition.owner &&
+            saved.spec.requestedAction === condition.requestedAction &&
             isDeepStrictEqual(saved.spec.expected, condition.expected);
           const boundary = unchanged ? Date.parse(saved.status.observedAt ?? "") : upgradeTime;
           if (explicitLegacyFreshness(condition, boundary)) updated = true;

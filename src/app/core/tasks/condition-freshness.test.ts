@@ -213,6 +213,9 @@ test("upgrade retains pending settlement effects and unchanged waits with their 
   const { path, store, put } = legacyStore();
   const saved = condition("sample.state", { state: "ready" });
   put(saved);
+  const changedAction = condition("sample.pulse", { state: "ready" });
+  changedAction.spec.requestedAction = "Original action";
+  put(changedAction);
   const fresh = {
     id: "later",
     type: "sample.check",
@@ -226,7 +229,12 @@ test("upgrade retains pending settlement effects and unchanged waits with their 
       summary: "Saved execution",
       facts: ["execution:one"],
       actions: [],
-      conditions: [{ id: saved.metadata.id, ...saved.spec }, fresh, { requestId: "independent" }],
+      conditions: [
+        { id: saved.metadata.id, ...saved.spec },
+        fresh,
+        { requestId: "independent" },
+        { id: changedAction.metadata.id, ...changedAction.spec, requestedAction: "Changed action" },
+      ],
       requests: [{ id: "independent", appId: "peer", input: { kind: "review", data: {} } }],
     },
     runId: "saved-run",
@@ -281,6 +289,12 @@ test("upgrade retains pending settlement effects and unchanged waits with their 
               { id: saved.metadata.id, ...saved.spec, expected: { state: "ready", timestamp: { gte: 2000 } } },
               { ...fresh, expected: { equals: "done", timestamp: { gte: 3000 } } },
               { requestId: "independent" },
+              {
+                id: changedAction.metadata.id,
+                ...changedAction.spec,
+                requestedAction: "Changed action",
+                expected: { state: "ready", timestamp: { gte: 3000 } },
+              },
             ],
           },
         },
