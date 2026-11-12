@@ -56,7 +56,8 @@ cancellation or precise restart recovery from this milestone.
 
 **Design status:** Accepted on November 13, 2026.
 **Implementation status:** [Host PR 470](https://github.com/hao1939/may-agent/pull/470)
-is prepared at `ac3b2770edda`. Source merge and installed adoption are unverified.
+merged as `c5b9b9a70f47` on November 13, 2026. Source removal is complete;
+installed adoption remains unverified. Its tree matches tested head `ac3b2770edda`.
 This supersedes the earlier guard wording-only choice below.
 
 The user prioritizes internal complexity over line count. Remove three default
@@ -93,14 +94,16 @@ and run the Host's required portable checks. Use synthetic files and shell
 arguments, without provider calls or installation state. Documentation can land
 first with candidate status; the Host PR changes no App SDK or event schema.
 
-Candidate verification: full local `MAY_TEST_SHARDS=4 bun run ci` passed at
+Premerge verification: full local `MAY_TEST_SHARDS=4 bun run ci` passed at
 `e5a3dbcbbb52`: 4,040 passed, zero failures, three installation-only skips across
 350 files. The later test-only revision registers and executes the Bash
 capability in the new regression; its 61 preparation tests and `check:ci` passed.
 The initial 184 focused tests across eight files also covered retained finish
 diagnostics, file permissions, lifecycle and Bash limits. App
 `check:may-design` passed with zero errors and one existing root-layout warning.
-The PR owns final-revision GitHub checks and review evidence.
+[GitHub Quality and Container](https://github.com/hao1939/may-agent/actions/runs/43266856883)
+both passed on final head `ac3b2770edda`; automated review approved with no open
+issues. These checks do not establish installed behavior.
 
 Unused legacy dashboard HTTP API retirement is deferred. Prompt/schema work and
 Telegram PR 468 belong to other workstreams and are not bundled here.

@@ -8,9 +8,10 @@
 **Implementation status:** Implemented; the runtime and public SDK recognize
 `observe`, `warn`, and `block` (hidden `run_step` / `repair` step injection was
 retired after `EXP-216` in favor of explicit workflow TypeScript repair loops).
-Retirement of the three Host path/read heuristics is accepted and prepared for
-review; see [the selected reduction](../proposals/external-components-simplification.md#retire-host-path-and-read-heuristics).
-Source merge and installed adoption remain unverified.
+The three Host path/read heuristics were retired in
+[Host PR 470](https://github.com/hao1939/may-agent/pull/470), merged as
+`c5b9b9a70f47`; see [the selected reduction](../proposals/external-components-simplification.md#retire-host-path-and-read-heuristics).
+Source removal is complete; installed adoption remains unverified.
 
 Guards are detection signals first. Blocking is only one intervention mode.
 
