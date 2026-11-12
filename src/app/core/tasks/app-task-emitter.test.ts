@@ -362,7 +362,7 @@ describe("AppTaskEmitter", () => {
 
     const eventId = emitter.emit("executor-progress", {
       type: "project.task.executor.progress",
-      data: { executor: "codex-goal-poc", stage: "intermediate", message: "Inspecting facts" },
+      data: { executor: "codex-goal", stage: "intermediate", message: "Inspecting facts" },
     });
 
     expect(db.prepare("SELECT task_id, attempt_id FROM events WHERE id = ?").get(eventId)).toEqual({

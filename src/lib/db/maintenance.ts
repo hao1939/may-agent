@@ -247,14 +247,6 @@ export function runDbMaintenancePass(
     [now - 14 * DAY_MS, batchSize],
   );
   remove(
-    "session_digests",
-    `DELETE FROM session_digests WHERE rowid IN (
-       SELECT rowid FROM session_digests
-       WHERE created_at < ? ORDER BY created_at LIMIT ?
-     )`,
-    [now - 14 * DAY_MS, batchSize],
-  );
-  remove(
     "metric_snapshots",
     `DELETE FROM metric_snapshots WHERE rowid IN (
        SELECT rowid FROM metric_snapshots

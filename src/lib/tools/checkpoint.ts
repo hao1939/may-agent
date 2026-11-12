@@ -16,7 +16,6 @@ import type { AgentTool } from "@earendil-works/pi-agent-core";
 
 import { mkdirSync, appendFileSync, readFileSync, writeFileSync, existsSync } from "fs";
 import { resolve } from "path";
-import { createCheckpointDigest } from "../session-digest.js";
 import { readJsonlRecoveryEvidence, type JsonlRecoveryEvidence } from "../persistence.js";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -209,16 +208,6 @@ export function createCheckpointTool(options: CheckpointToolOptions): AgentTool<
       // Build response
       const dataKeys = data ? Object.keys(data) : [];
       const dataInfo = dataKeys.length > 0 ? ` Data keys: ${dataKeys.join(", ")}.` : "";
-
-      // Keep the existing session digest as a best-effort summary.
-      try {
-        createCheckpointDigest(persistDir, sid, entry.agentName, {
-          summary: summary.trim(),
-          data: data ?? {},
-        });
-      } catch {
-        /* best-effort — digest system shouldn't break checkpoints */
-      }
 
       return {
         content: [

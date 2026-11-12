@@ -1043,21 +1043,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return json({ sessionId, source: resolved.source, line: lineNo, raw, parsed });
   }
 
-  function handleDigest(url: URL): Response {
-    const digestDir = join(STATE_DIR, "..", "agents", "shared", "daily-digests");
-    if (!existsSync(digestDir)) return json({ digest: null, date: null, available: [] });
-    const files = readdirSync(digestDir)
-      .filter((f) => f.endsWith(".md"))
-      .sort()
-      .reverse();
-    if (files.length === 0) return json({ digest: null, date: null, available: [] });
-    const available = files.map((f) => f.replace(".md", ""));
-    const reqDate = url.searchParams.get("date");
-    const target = reqDate && available.includes(reqDate) ? reqDate + ".md" : files[0];
-    const content = readFileSync(join(digestDir, target), "utf-8");
-    return json({ digest: content, date: target.replace(".md", ""), available });
-  }
-
   function handleStats(): Response {
     const now = Date.now();
     const day = now - 86400000;
@@ -2788,7 +2773,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (defaultSessionMatch) return handleAgentDefaultSession(defaultSessionMatch[1]);
       const aboutMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/about$/);
       if (aboutMatch) return handleAgentAbout(aboutMatch[1]);
-      if (url.pathname === "/api/digest") return handleDigest(url);
       if (url.pathname === "/api/browse") return handleBrowse(url);
       if (url.pathname === "/api/knowledge/search") return handleKnowledgeSearch(url);
       if (url.pathname === "/api/metrics") return handleMetrics(url);

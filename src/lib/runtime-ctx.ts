@@ -12,16 +12,6 @@ import { getDb } from "./db/connection.js";
 import { log as globalLog } from "./log.js";
 import { createMetricService, type MetricService } from "./metrics.js";
 import { createQueryService, type QueryAPI } from "./query-service.js";
-import { readSessionMeta as _readSessionMeta, readSessionMessages as _readSessionMessages } from "./persistence.js";
-import { classifyError as _classifyError } from "./classify-error.js";
-import {
-  getLastDigest as _getLastDigest,
-  upsertDigest as _upsertDigest,
-  classifyDigest as _classifyDigest,
-} from "./session-digest.js";
-import type { PersistedSession } from "./persistence.js";
-import type { DigestRow, DigestInput, DigestAction } from "./session-digest.js";
-import type { ErrorClass } from "./classify-error.js";
 import { buildCanonicalEventEnvelope } from "../../packages/control/src/event-envelope.js";
 import { conversationNoticeEvent } from "../app/app-input-event.js";
 
@@ -129,22 +119,5 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
     agentsRoot: opts.agentsRoot,
     sharedRoot: opts.sharedRoot,
     projectsRoot: opts.projectsRoot,
-  };
-}
-
-/**
- * Build session lifecycle helpers for HandlerContext.
- */
-export function buildSessionHelpers(opts: RuntimeCtxOptions) {
-  return {
-    classifyError: (error: string | undefined | null): ErrorClass => _classifyError(error),
-    getLastDigest: (sessionId: string): DigestRow | null => _getLastDigest(opts.persistDir, sessionId),
-    upsertDigest: (input: DigestInput): Promise<DigestRow | null> => _upsertDigest(opts.persistDir, input),
-    classifyDigest: (
-      digest: { outcome: string; still_open: string | null; what_happened: string },
-      trigger: string,
-    ): { action: DigestAction; reason: string } => _classifyDigest(digest, trigger),
-    readSessionMeta: (sessionId: string): PersistedSession | null => _readSessionMeta(opts.persistDir, sessionId),
-    readSessionMessages: (sessionId: string): unknown[] => _readSessionMessages(opts.persistDir, sessionId),
   };
 }
