@@ -81,13 +81,18 @@ describe("HTTP event reads", () => {
     expect(catalog.map((agent: { name: string }) => agent.name)).toEqual(["support"]);
   });
 
-  it("retires Learning aggregation while preserving exact session evidence and evaluation records", async () => {
+  it("retires Learning and project Lineage aggregation while preserving session evidence", async () => {
     const sessionId = "s_review";
     const dir = join(root, "sessions", sessionId);
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "session.jsonl"), '{"role":"user","content":"Review the result"}\n');
-    upsertSession(root, { sessionId, agent: "worker", task: "Review the result",
+    const projectDir = join(root, "sample.app");
+    mkdirSync(projectDir);
+    writeFileSync(join(projectDir, "project.json"), JSON.stringify({ id: "sample", owner: "worker" }));
+    upsertSession(root, { sessionId, agent: "worker", task: "Review the result", projectId: "worker/sample",
       status: "done", startedAt: Date.now(), endedAt: Date.now() });
+    upsertSession(root, { sessionId: "s_review_child", agent: "helper", task: "Inspect descendant evidence",
+      parentSessionId: sessionId, status: "done", startedAt: Date.now(), endedAt: Date.now() });
     const path = join(dir, "session.eval.jsonl");
     const summary = { type: "summary", verdict: "needs_fix",
       repairDecision: { ownerFindings: [{ id: "legacy", evidence: ["Saved observation"] }] } };
@@ -97,12 +102,17 @@ describe("HTTP event reads", () => {
       VALUES (?, 'worker', 0.7, 0.8, 'needs_improvement', 1000)`).run(sessionId);
     const evaluation = db.prepare("SELECT * FROM evaluations WHERE sessionId = ?").get(sessionId);
 
-    for (const route of ["/api/learning", "/api/learning?projectId=sample&days=30", "/learning", "/learning/"]) {
+    for (const route of ["/api/learning", "/api/learning?projectId=sample&days=30", "/learning", "/learning/",
+      "/api/projects/lineage", "/api/projects/lineage?path=projects/sample.app"]) {
       expect((await fetch(baseUrl + route)).status).toBe(404);
     }
     expect(await read(`/api/sessions/${sessionId}`)).toMatchObject({
-      session: { sessionId, status: "done" }, evaluation,
+      session: { sessionId, status: "done", projectId: "worker/sample" }, evaluation,
+      children: [{ sessionId: "s_review_child", parentSessionId: sessionId }],
     });
+    expect(await read("/api/projects/sessions?path=projects/sample.app")).toMatchObject([
+      { sessionId, status: "done", link: "tagged" },
+    ]);
     expect(await read(`/api/sessions/${sessionId}/eval`)).toMatchObject({ exists: true, rows: [summary] });
     expect(await read("/api/agents/worker/detail")).toMatchObject({
       evalTrend: [{ quality: 0.7, efficiency: 0.8, verdict: "needs_improvement", createdAt: 1000 }],

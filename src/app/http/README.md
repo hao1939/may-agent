@@ -34,6 +34,14 @@ the project-detail Learning tab. Session detail, saved review-note reads
 artifacts and evaluation records are retained; HTTP does not regenerate their old
 finding/notification summaries. Task review and follow-through belong to Apps.
 
+The project Lineage tab and `/api/projects/lineage` aggregate are also retired.
+The project Sessions tab and `/api/projects/sessions` remain, with their existing
+tagged/mention provenance and historical workflow-file fallback. Exact session
+detail retains recorded parent/child links. The removed view combined additional
+workflow references, historical file reads and child associations with inline
+checkpoint summaries; those project-wide summaries have no replacement view.
+Stored sessions, workflow artifacts, checkpoints and historical rows are retained.
+
 [`http-human-tasks.test.ts`](../../../test/integration/http-human-tasks.test.ts)
 exercises these routes through a real HTTP process and control socket, including
 pagination, exact identifiers, accepted-evidence options, missing Tasks, failed

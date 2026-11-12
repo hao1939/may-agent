@@ -95,7 +95,7 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
         writeFileSync(join(sessionDir, "session.jsonl"), '{"role":"user","content":"Inspect this result"}\n');
         try {
           upsertSession(stateDir, { sessionId, agent: "may", task: "Inspect this result",
-            status: "done", startedAt: 1, endedAt: 2 });
+            projectId: "shared/platform", status: "done", startedAt: 1, endedAt: 2 });
         } finally {
           closeDb(stateDir);
         }
@@ -314,6 +314,21 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
         try { return _projectDetailPath; } catch { return undefined; }
       });
       expect(resolvedPath).toBe("projects/platform");
+
+      // Project history keeps one Sessions tab and exact session navigation.
+      const projectTabs = await page.$$eval("#projects-content button.tab-btn", (buttons) =>
+        buttons.map((button) => button.textContent?.trim()));
+      expect(projectTabs).not.toContain("Lineage");
+      await page.click('button[onclick="switchProjectTab(this,\'sessions\')"]');
+      await page.waitForFunction(() => {
+        const content = document.getElementById("project-tab-content");
+        return content?.dataset.projectTab === "sessions" && content.textContent?.includes("Inspect this result");
+      }, { timeout: 5000 });
+      await page.click(`#project-tab-content a[href="/sessions/${sessionId}"]`);
+      await page.waitForFunction((id) => location.pathname === `/sessions/${id}`
+        && !!document.getElementById("session-eval-btn"), { timeout: 5000 }, sessionId);
+      await page.goto(`${base}/projects/platform`, { waitUntil: "domcontentloaded" });
+      await page.waitForSelector("#project-comment");
 
       // 5. A legacy project is history, not an alternative work dispatcher.
       const projectBefore = readFileSync(PROJECT_FILE, "utf-8");
