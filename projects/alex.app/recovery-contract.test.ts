@@ -14,7 +14,7 @@ import {
 import { createFinishTool } from "../may-agent/src/lib/tools/lifecycle.ts";
 import { createWorkflowTool } from "../may-agent/src/lib/workflow-tool.ts";
 import { createWriteTool } from "../may-agent/src/lib/tools/write.ts";
-import { closeDb, getDb } from "../may-agent/src/lib/requests.ts";
+import { closeDb, getDb } from "../may-agent/src/lib/db/connection.ts";
 import { DbWriter } from "../may-agent/src/lib/db-writer.ts";
 import { AppRegistry } from "../may-agent/src/app/core/apps/registry.ts";
 import { EventBus } from "../may-agent/src/app/core/events/bus.ts";

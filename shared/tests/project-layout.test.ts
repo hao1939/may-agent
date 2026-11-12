@@ -3,7 +3,9 @@ import { readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const allowedTopLevelProjects = new Set([
+  "aks-e2e-spec-runner",
   "aks-rp-e2e-app",
+  "aks-rp-e2e.app",
   "gym",
   "herdr-supervisor",
   "may-agent",

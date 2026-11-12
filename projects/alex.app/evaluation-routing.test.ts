@@ -6,7 +6,7 @@ import { join } from "node:path";
 import app from "./app.ts";
 import may from "../may.app/app.ts";
 import { gitTaskWorkspaces } from "../may-agent/src/app/adapters/workspaces/git.js";
-import { getDb, closeDb } from "../may-agent/src/lib/requests.js";
+import { getDb, closeDb } from "../may-agent/src/lib/db/connection.js";
 import { DbWriter } from "../may-agent/src/lib/db-writer.js";
 import { AppRegistry } from "../may-agent/src/app/core/apps/registry.js";
 import { EventBus, EVENT_ROW_ID } from "../may-agent/src/app/core/events/bus.js";
@@ -70,6 +70,10 @@ test("published diagnoses execute in Alex while May Conversation remains broken"
     role: (agent) => ({ agent, instructions: "Review the finding" }),
     snapshot: () => agents,
     async execute({ descriptor, attempt }) {
+      if (descriptor.id === "may") {
+        conversationCalls++;
+        throw new Error("May Conversation handling is broken");
+      }
       expect(descriptor.id).toBe("alex");
       expect(attempt.role.agent).toBe("alex");
       const reports = attempt.events.items.filter(
@@ -91,7 +95,7 @@ test("published diagnoses execute in Alex while May Conversation remains broken"
           state: "converged",
           summary: "Verified the failure; retained the evidence and repair recommendation",
           facts: ["review-" + calls],
-          actions: [],
+          requests: [],
         },
       };
     },
@@ -111,12 +115,6 @@ test("published diagnoses execute in Alex while May Conversation remains broken"
       appRegistrySnapshot: registry.snapshot(),
       agents,
       workspaces: gitTaskWorkspaces,
-      conversations: {
-        execute: async () => {
-          conversationCalls++;
-          throw new Error("Legacy Conversation handling is broken");
-        },
-      },
     }, { deferRecovery: true });
     const capability = createAppTaskCapability({ bus });
     inbox = await startAppInboxRuntime({
