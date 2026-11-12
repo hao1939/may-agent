@@ -13,7 +13,7 @@ Session review notes are read-only; HTTP generation and comment-write routes
 are retired. The legacy `/api/learning` aggregate and its UI are retired in
 [Host PR 457](https://github.com/hao1939/may-agent/pull/457), merged as
 `a84c6918ed40`. Installed adoption is unverified. Exact session detail, retained
-note reads and agent evaluation trends remain available; the adapter does not reconstruct the old finding and
+note reads and the agent evaluation-trend API remain available; the adapter does not reconstruct the old finding and
 notification summaries. See the [retirement record](../archive/reviews/learning-dashboard-retirement-20261112.md).
 
 ## Purpose
@@ -86,6 +86,13 @@ Stable families include health/overview, App request health, Events and traces,
 agents and executions, projects/Tasks, metrics/alerts, adapter diagnostics, and
 terminal transport. The executable server route table remains the endpoint
 catalog.
+
+Retiring the folded Overview "Legacy panels" is a browser-only reduction;
+its [record](../archive/reviews/legacy-dashboard-retirement-20261112.md) tracks
+the Host candidate and verification. Existing agent health/activity/timeline,
+agent detail and statistics endpoints remain supported. Removing their old
+dashboard consumers does not retire their API contracts. Shared WebSocket
+events, exact session reads and metric history remain available.
 
 The project Lineage aggregate `/api/projects/lineage` is retired in
 [Host PR 458](https://github.com/hao1939/may-agent/pull/458), merged as

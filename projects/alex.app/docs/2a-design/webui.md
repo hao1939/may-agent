@@ -17,6 +17,12 @@ The legacy Learning dashboard and project-detail Learning tab are retired in
 review notes remain inspectable; the [retirement record](../archive/reviews/learning-dashboard-retirement-20261112.md)
 defines the deliberately reduced scope.
 
+Retirement of the folded Overview "Legacy panels" is accepted and implemented in
+[Host PR 462](https://github.com/hao1939/may-agent/pull/462), pending review/merge.
+The [retirement record](../archive/reviews/legacy-dashboard-retirement-20261112.md)
+tracks source/PR status, deliberate losses and validation. Installed adoption is
+unverified.
+
 ## Purpose
 
 The Web UI is a window into the same App, request, Task, Event, project,
@@ -101,6 +107,13 @@ Legacy hash routes are ingress aliases only. New links and docs use real paths.
 The HTTP adapter serves `index.html` for platform client routes while keeping
 `/api/*`, `/ws`, static assets, and project domain UI routes explicit.
 
+Session links from Overview, agent summaries and recorded parent/child links
+open `/sessions/:id`. One routed inspector displays the selected session and
+binds its follow-up composer to that same identity; the session's agent link
+opens `/agents/:name`. Preserve the composer while replacing session content or
+returning to agent chat. Delayed session or saved-note reads cannot replace a
+different selection or navigate back to it.
+
 ## Route Ownership and Bounded Reads
 
 Each route initializes only the data and realtime connections needed by its
@@ -145,6 +158,16 @@ Refine the existing routes, not a second monitoring UI. The
 tracks implementation; [Metrics](metrics.md#metric-semantics-and-persistence)
 owns calculation and persistence semantics.
 
+Overview has one presentation: workflow outcomes, current Tasks and Liveness.
+Retire the folded legacy health summary/charts, agent grid/drawer, activity
+timeline, live feed and session statistics rather than moving them elsewhere.
+The old drawer's aggregate evaluation summary, seven-day delegation totals and
+workspace file list have no replacement view. Exact session evidence, saved
+notes and recorded ancestry remain; the related backend APIs remain supported.
+Shared WebSocket subscriptions and current-page refresh continue independently
+of the removed feed. This cut changes presentation, not Task execution or data
+retention.
+
 | Surface | Primary content |
 | --- | --- |
 | Overview (`/`, internal tab `live`) | Last-24h finished top-level runs and all four outcomes with a shared denominator; running executions and a bounded current Task list separately; recent failures, explicit attention items and collection problems; a few verified Host observations |
@@ -164,7 +187,7 @@ available records, refresh the summary with the detail and explain the change;
 do not promise an immutable historical population that was never saved.
 
 Charts use actual sample times, visible collection gaps and explicit units and
-windows. Fixed-window charts, including legacy health panels, use the returned
+windows. Fixed-window charts use the returned
 window bounds rather than stretching sparse samples across the whole axis.
 A missing or failed read is not a zero value. Load bounded summaries
 on entry and detail/history on demand, not one request and graph for every
