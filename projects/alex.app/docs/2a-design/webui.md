@@ -119,6 +119,16 @@ from the current route and cancels pending refreshes on navigation; each queued
 refresh captures its session ID and checks it again before reading. A hidden
 pane's CSS class does not establish an active session.
 
+The session URL is also the authority for Send and the WebSocket subscription.
+Agent-chat responses may bind a thread only while that agent's Chat subtab is
+active. Route/subtab changes, Reset and newer selections invalidate pending
+default-thread, transcript and chat-admission callbacks, including delayed
+retries. An obsolete response cannot change the displayed conversation or the next
+message's destination. Subscriptions change when selection changes and are
+restored on connection, without waiting for transcript history. Entering an
+agent's chat clears the previous session binding; input while its default
+thread loads addresses that selected agent.
+
 ## Route Ownership and Bounded Reads
 
 Each route initializes only the data and realtime connections needed by its
