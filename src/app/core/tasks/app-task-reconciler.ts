@@ -2459,20 +2459,20 @@ function closeTask(
   });
 }
 
-function executionFailureSequence(resource: AppTaskResource):
+function executionFailureSequence(config: AppTaskContext, resource: AppTaskResource):
   Pick<AppTaskResource["status"], "executionFailures" | "executionFailureAttemptId"> {
   if (resource.status.executionFailureAttemptId !== undefined) return {
     executionFailures: resource.status.executionFailures,
     executionFailureAttemptId: resource.status.executionFailureAttemptId,
   };
+  // A retained exhaustion marker already names the exact episode and survives upgrade.
   if (resource.status.retryExhausted) return {
     executionFailures: resource.status.retryExhausted.failures,
     executionFailureAttemptId: resource.status.retryExhausted.attemptId,
   };
-  return {
-    executionFailures: resource.status.executionFailures,
-    executionFailureAttemptId: null,
-  };
+  return config.resourceStore.readLegacyExecutionFailureSequence(
+    resource.metadata.id, resource.status.executionFailures ?? 0,
+  );
 }
 
 /** One failed execution spends one allowance; transport retries and checks do not. */
@@ -2483,7 +2483,7 @@ function failedExecutionState(
   now: string,
 ): Partial<AppTaskResource["status"]> {
   // Spec changes are not evidence that the failed operation recovered.
-  const failures = (executionFailureSequence(resource).executionFailures ?? 0) + 1;
+  const failures = (executionFailureSequence(config, resource).executionFailures ?? 0) + 1;
   const limit = resource.status.retryExhausted?.limit ?? config.maxConsecutiveFailures ?? DEFAULT_MAX_CONSECUTIVE_FAILURES;
   const exhausted = limit !== "unlimited" && failures >= limit;
   if (exhausted) attempt.retryExhausted = {
@@ -2502,7 +2502,7 @@ function failedExecutionState(
 
 /** Adopt a lowered/default allowance before another execution, without charging a new failure. */
 function exhaustRetainedFailures(config: AppTaskContext, tree: TaskTree, resource: AppTaskResource): boolean {
-  const normalized = executionFailureSequence(resource);
+  const normalized = executionFailureSequence(config, resource);
   const failures = normalized.executionFailures ?? 0;
   const limit = config.maxConsecutiveFailures ?? DEFAULT_MAX_CONSECUTIVE_FAILURES;
   if (resource.status.retryExhausted || resource.status.currentAttemptId || limit === "unlimited" || failures < limit) {
