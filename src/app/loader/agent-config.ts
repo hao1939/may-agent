@@ -10,7 +10,6 @@ export interface AgentConfig {
   domain: string;
   model: string; // key into models map
   tools: string[]; // preset names: "coding", "agents", "workflow", etc.
-  memoryLimit?: number;
   /** Enable automatic context compaction for long-running sessions. */
   compaction?: boolean;
   /** @experimental Agent-local synchronous preparer module. Omit for the full brief. */
