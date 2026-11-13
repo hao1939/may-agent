@@ -70,8 +70,9 @@ evidence. Finish does not copy them into a separate memory stream or activate
 guidance. Apps own review and adoption through their existing learning workflow.
 
 The Host does not guess invalid paths from home-directory prefixes, track
-repeated reads by file name, or classify transcript reads through shell-command
-patterns, infer completed writes from tool names, or scan Git at completion.
+repeated reads by file name, classify transcript reads through shell-command
+patterns, infer completed writes from tool names, rewrite or reject markdown
+files via regex memory-poisoning/PII filters, or scan Git at completion.
 Apps judge whether retained evidence meets their acceptance criteria, including
 verification and committed source where required. The Host has no default
 tool-guard composition or diagnostic callback; App workflow guards keep their
@@ -133,12 +134,11 @@ attempt can still settle as no-work when the saved observation is inspected. App
 acknowledges its own inspection independently, in the same transaction. See the observer-delivery,
 persisted-event and worker-boundary regressions for these failure paths.
 
-`session-subscribers.ts` contains the digest and last-session writers registered
-by `app/daemon-events.ts`. Completion suggestions stay in the saved result;
-they do not rewrite guidance or enter future prompts automatically. The retired
-context updater and unregistered file-read tracker are removed. Historical
-`file_reads` rows remain stored; the project Lineage HTTP view that read them
-is retired.
+Completion suggestions stay in the saved result; they do not rewrite guidance
+or enter future prompts automatically. The retired context updater,
+session-digest/last-session subscribers, and unregistered file-read tracker are
+removed. Historical `file_reads` and `session_digests` rows remain stored; the
+project Lineage HTTP view and `/api/digest` endpoint that read them are retired.
 
 Manager health reads describe sessions, process ownership and workflow runs.
 They do not select work for evaluation. Evaluation eligibility and exclusions

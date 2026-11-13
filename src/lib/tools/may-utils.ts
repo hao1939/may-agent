@@ -1,31 +1,6 @@
 /**
- * May-agent utility functions — hallucinated path detection, meta-recursion detection.
+ * May-agent utility functions — meta-recursion detection.
  */
-
-/**
- * Patterns that match hallucinated project root paths.
- */
-const HALLUCINATED_PATH_PATTERNS: RegExp[] = [
-  /^(\/home\/[^/]+\/repos\/[^/]+)(\/.*)?$/,
-  /^(\/home\/[^/]+\/repo)(\/.*)?$/,
-  /^(\/home\/user)(\/.*)?$/,
-  /^(\/home\/[^/]+\/[^/]+)(\/.*)?$/,
-  /^(\/Users\/[^/]+\/[^/]+)(\/.*)?$/,
-  /^(\/app)(\/.*)?$/,
-];
-
-/**
- * Extract the relative-path suffix from a hallucinated absolute path.
- */
-export function extractHallucinatedRelPath(path: string): string | null {
-  for (const pattern of HALLUCINATED_PATH_PATTERNS) {
-    const match = path.match(pattern);
-    if (match) {
-      return match[2] ?? "/";
-    }
-  }
-  return null;
-}
 
 /**
  * Returns true if the shell command looks like it would recursively
