@@ -338,3 +338,134 @@ summary is corrected here. Release and native owner/caller acceptance remain
 held. The next checks are a clearer decision-only helper contract and a focused
 receipt-contention reproduction, followed by a distinct frozen assessment if
 the source changes warrant one.
+
+## Decision helper ownership and online receipt recovery
+
+The next isolated experiment source is
+`b6a3d7614a4f56aceacc5917c482d2811a98beb5`, against the same Host
+`0c7b0adb071ad6dae8a281a2a875e1f3e583eeff`. The brief now states that the helper
+returns one method and reason, the calling workflow records the accepted
+decision, and the local business driver commissions it. It supplies the current
+wake separately from the original opportunity and clarifies the existing
+`finish` envelope. Readonly tools, business choices, requirements, attribution,
+method footprints, admission bounds and dispatch order are unchanged.
+
+Three targeted tests passed with 24 assertions. The standalone decision workflow
+retains readonly helper tools, returns an admitted decision without business
+mutation, and returns no decision when the helper is blocked despite an older
+accepted deferral. The existing heavy execution test retains its independent-root
+and actual capacity-denial checks. Strict source-SDK types passed. The first
+type-check attempt failed on incomplete test fixtures and untyped callback
+parameters; the corrected test uses the full typed Task/reconciliation contract.
+The frozen scripted matrix passed all 12 passes and 12 local requests with
+544,730 serialized request bytes and no runtime warnings. These checks verify
+wiring and execution contracts; they cannot prove model compliance with a brief.
+
+The receipt drill now supports one continuously running Inbox runtime. A second
+SQLite connection holds the actual writer lock while the drill delivers
+synthetic `session.end` and `workflow.completed` events. Failed receipt writes
+retain both original identities and their App-admission markers. After the lock
+is released, the same runtime's existing periodic recovery settles them with no
+restart or manual receipt replay. A startup lifecycle barrier establishes that
+the runtime had already inspected its initial state before the denied events
+arrived. Source hash and all receipt snapshots remain in the evidence.
+
+The corrected online drill passed with one runtime start. Its final five rows
+are three original lifecycle events, including the startup barrier, and two
+independent subscriber-failure diagnostics. The denied receipts are accepted and
+their App markers cleared, with no duplicated lifecycle event. The original
+startup mode also passed with two retained lifecycle events. The 14 owning Host
+receipt/recovery tests passed with 75 assertions. No Host code changed.
+
+The drill advances only the runtime's injected recovery clock while real timers,
+production routing and SQLite continue. Four clock advances totaled 240,004 ms
+in the corrected online run; these overlap asynchronous scan work and are not
+four measured production recovery intervals. The indexed recovery scan freezes
+its high-water mark and can revisit newer arrivals in a subsequent cycle. This
+demonstrates an eventual discovery path under the fixture's bounds, without
+establishing a production recovery-latency guarantee, installed App consumer
+acceptance or external caller delivery. It supports retaining the existing
+recovery owner rather than adding synchronous retries or another receipt queue.
+
+The initial online drill failed because it expected its unrelated `fixture.ready`
+startup marker to acquire an acceptance receipt with no delivery route. Its
+denied lifecycle receipts had already recovered. It also incorrectly assumed
+that subscriber-failure diagnostics would not create independent journal rows.
+Preserve that failed evidence and source hash
+`9ee3c86da92b0982404e9e0ecfd6234d65bc6d9b3e779bd4d34fefd724084130`;
+the corrected drill changes the barrier to an actual lifecycle event and checks
+original identities independently of diagnostics. This is a fixture correction,
+not an unresolved Host defect or an unchanged retry counted as success.
+
+Private evidence is `workload-receipt-online-20261113/`,
+`workload-receipt-online-corrected-20261113/`,
+`workload-receipt-startup-final-20261113/` and
+`workload-contention-20261113-choice-local/` under the same archive. Logs retain
+the deliberate lock warnings, failed type check and all final checks. The third
+distinct frozen model cohort uses `workload-contention-20261113-model3/`.
+Source activation and release remain held.
+
+### Model results with explicit decision ownership
+
+All 12 passes completed with fresh accepted decisions, 18 forwarded requests and
+837,876 serialized request bytes. No provider/bridge failure, invalid tool
+argument, correction turn, business-worker warning or journal database-lock
+warning was found. Old accepted results were not counted as fresh choices.
+
+| Observation | Control | Supplied feedback | Requests, control / feedback |
+| --- | --- | --- | --- |
+| Light | 2 investigate | 2 investigate | 4 / 2 |
+| Heavy | 2 defer | 2 defer | 4 / 2 |
+| Recovered | 2 investigate | 2 investigate | 4 / 2 |
+
+All eight commissioned investigations returned verified artifacts with 12 rows,
+six ambiguous labels and the unchanged $600 total. The eight light/heavy passes
+returned report C without a capacity denial. Heavy deferrals retained the same
+opportunity, and all four recovery passes reconsidered it after joined release
+without inventing fresh report demand. Original requirements, creator identity,
+funding attribution and exact input were preserved. Accepted finite results
+remain distinct from assignment closure and external caller delivery.
+
+Each control helper made one scoped workload read and then returned through
+`finish`; each supplied-feedback helper returned through `finish` directly.
+There were no contract reads, attempted readonly writes or searches for caller
+input already supplied in the brief. The earlier two recovery failures and
+successful correction turns remain recorded in cohort 2; they were not retried
+unchanged. The new factual wake presentation, responsibility statement and
+finish guidance are one combined brief change, not three separately estimated
+effects.
+
+Compared with cohort 2, requests fell from 34 to 18 and deduplicated raw adapter
+tokens fell from 333,832 to 169,826, while accepted passes increased from 10 to
+12. Cohort 3 reports 54 input, 32,222 cache-read, 132,909 cache-write and 4,641
+output tokens, with 1,606 reasoning tokens reported separately. Recovery
+snapshots contain six repeated assistant entries; deduplication leaves the 18
+forwarded responses, with no bridge-error entry. Token and cache fields are not
+verified monetary charges, and two repetitions are insufficient for a stable
+cost or reliability estimate. The recorded reduction is consistent with removing
+unnecessary discovery and correction turns.
+
+Supplied feedback yields the same business outcomes as bounded on-demand
+discovery and uses six requests versus control's twelve. Its useful contribution
+in this cohort is saving a discovery turn while preserving informed judgment.
+It does not dictate the business choice, increase allowance or confer authority
+to commission or close work. The clear boundary is still business judgment in
+the helper, applied operations in the workflow/driver, and admission plus
+resource enforcement in the Host.
+
+Light report-C median ready waiting was 10.44 s in control and 7.57 s in feedback;
+heavy waiting was 10.56 and 6.96 s. Corresponding median admission times were
+15.5/17.7 ms and 14.4/17.1 ms, all at the first check. Ready waiting still includes
+deliberately serial model planning and dispatch, and recovery has no new report
+demand. These small samples do not establish a production latency advantage or
+justify putting ordinary ready work behind optional planning.
+
+The readonly assessor is `workload-contention-assess-model3.py`, with output
+`workload-contention-model3-assessment.json`, under the private archive. It checks
+the exact frozen App/Host revisions and source hashes, fresh accepted-attempt
+identity, artifact hashes, preserved requirements, receipt identities and
+deduplicated usage, and includes the prior cohort comparison. The raw evidence
+is unchanged. This completes the isolated decision-boundary experiment; native
+owner result consumption, guarded finite disposition and exact caller acceptance
+remain operational gates. Applying this brief to an installed workflow is a
+separate source change and acceptance exercise. Release remains held.

@@ -60,8 +60,14 @@ twelve model passes, while both arms deferred under heavy load. A second cohort
 with clarified root attribution produced six verified investigations: both arms
 investigated under light load and deferred under heavy load, and each completed
 one recovery investigation. Each also exhausted its request allowance on another
-recovery pass. Accepted reasoning improved; excessive discovery, attempted writes
-by a decision helper and journal-write contention remain follow-up issues.
+recovery pass. A third cohort made the decision helper's role explicit and
+separated the original opportunity from the current wake. All 12 passes accepted
+fresh decisions and produced eight verified investigations, with 18 requests
+versus the second cohort's 34. Both arms adapted; supplied feedback saved one
+discovery turn per pass with equal business outcomes. The earlier errors remain
+evidence. A separate online receipt drill confirmed the existing recovery path
+after SQLite contention using one runtime and an injected recovery clock, without
+proving production latency or caller delivery.
 Reliable adaptation, overall workload benefit and production adoption remain
 unproven. The dated November 8
 milestone observations below are historical snapshots, not current rollout state.
