@@ -505,3 +505,98 @@ test("TASK.md and decision brief keep assigned review input and non-request even
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("the owner brief refreshes creator-owned work independently of empty grouping children", async () => {
+  const root = mkdtempSync(join(tmpdir(), "decision-created-work-"));
+  try {
+    const f = fixture(root);
+    let items = [
+      {
+        appId: "another-app",
+        taskId: "finite-contribution",
+        generation: 1,
+        resourceVersion: 4,
+        status: "idle" as const,
+        outcomePreview: "Assess one report snapshot",
+        summaryPreview: "Assessment returned",
+        acceptedAttempt: { id: "accepted-report", generation: 1 },
+      },
+      {
+        appId: "sample",
+        taskId: "standing-service",
+        generation: 2,
+        resourceVersion: 7,
+        status: "waiting" as const,
+        outcomePreview: "Handle later notices on this declared route",
+        summaryPreview: "Current cycle complete",
+        acceptedAttempt: { id: "accepted-cycle", generation: 2 },
+      },
+    ];
+    let reads = 0;
+    f.context.taskRead.created = async (options) => {
+      expect(options).toEqual({ limit: 5 });
+      reads++;
+      return {
+        creator: { appId: "sample", taskId: "review" },
+        observedAt: `observation-${reads}`,
+        items,
+        nextCursor: "more-creator-work",
+      };
+    };
+    const brief = createTaskDecisionContext(f.context);
+    const first = packet(await brief());
+    expect(first.related.childrenAtAttemptStart).toEqual({ live: [], completed: [] });
+    expect(first.createdAssignments).toEqual({
+      available: true,
+      creator: { appId: "sample", taskId: "review" },
+      observedAt: "observation-1",
+      items,
+      nextCursor: "more-creator-work",
+    });
+    const detail = JSON.parse(readFileSync(first.coverage.detail, "utf8"));
+    expect(detail.createdAssignments.items).toEqual(items);
+    // A real close removes only the finite contribution from the read. The
+    // standing assignment remains visible rather than becoming a completion gate.
+    items = items.slice(1);
+    const second = packet(await brief());
+    expect(second.createdAssignments.items.map((item: { taskId: string }) => item.taskId)).toEqual([
+      "standing-service",
+    ]);
+    expect(second.createdAssignments.observedAt).toBe("observation-2");
+    expect(f.context.reconciliation.children).toEqual({ live: [], completed: [] });
+    expect(reads).toBe(2);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("missing, failed or mismatched creator discovery remains unavailable without losing the owner's input", async () => {
+  const root = mkdtempSync(join(tmpdir(), "decision-created-unavailable-"));
+  try {
+    const f = fixture(root);
+    f.context.reconciliation.events.items = [inputEvent("owed", "Return the original result", 71)];
+    const brief = createTaskDecisionContext(f.context);
+    expect(packet(await brief()).createdAssignments).toMatchObject({ available: false });
+    f.context.taskRead.created = async () => {
+      throw new Error("Created work temporarily unavailable");
+    };
+    const failed = packet(await brief());
+    expect(failed.createdAssignments).toEqual({
+      available: false,
+      reason: "Error: Created work temporarily unavailable",
+    });
+    expect(failed.events.attemptInput.items).toHaveLength(1);
+    f.context.taskRead.created = async () => ({
+      creator: { appId: "other", taskId: "other-owner" },
+      observedAt: "now",
+      items: [],
+    });
+    const mismatched = packet(await brief());
+    expect(mismatched.createdAssignments.available).toBe(false);
+    expect(mismatched.createdAssignments.reason).toContain("does not match");
+    expect(mismatched.assignment).toEqual(failed.assignment);
+    expect(f.context.reconciliation.events.items).toHaveLength(1);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

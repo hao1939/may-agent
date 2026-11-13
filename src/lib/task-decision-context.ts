@@ -202,9 +202,24 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
     }
     const rec = context.reconciliation;
     const work = taskWorkContext(known, rec.events, rec.previousAttempt);
+    let createdAssignments: Record<string, unknown> = {
+      available: false,
+      reason: "Creator-scoped Task discovery is not installed; absence is not an empty work list.",
+    };
+    if (context.taskRead.created) {
+      try {
+        const page = await context.taskRead.created({ limit: 5 });
+        if (page.creator.appId !== context.taskBinding.appId || page.creator.taskId !== context.taskBinding.taskId)
+          throw new Error("Created Task observation does not match this attempt's creator identity");
+        createdAssignments = { available: true, ...page };
+      } catch (error) {
+        createdAssignments = { available: false, reason: String(error).slice(0, 300) };
+      }
+    }
     const full = {
       ...taskDecisionState(known, rec.events, rec.workload),
       work,
+      createdAssignments,
       environment: { paths: context.executionPaths, declaredOutputs: context.details?.declaredOutputs },
       related: { childrenAtAttemptStart: rec.children, installedAppsAtAttemptStart: context.details?.dependencies },
       previousAttempt: rec.previousAttempt,
@@ -262,6 +277,13 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
             taskWorkGuidance(work),
             ...(rec.workload ? [taskWorkloadGuidance(rec.workload)] : []),
             "Judge new input alongside accepted understanding. Progress, failures and waits coexist. Reading input is not fulfillment.",
+            ...(createdAssignments.available &&
+            Array.isArray(createdAssignments.items) &&
+            createdAssignments.items.length
+              ? [
+                  "createdAssignments is a bounded current observation of open assignments recorded under this Task as creator, independently of grouping children. When consuming a returned result, inspect its exact Task, accepted evidence and remaining obligations and judge its disposition within your call's authority. Use the existing guarded close for fulfilled finite work; preserve unfinished and standing responsibilities. Finishing the original assignment does not end those assignments, and their presence does not itself prevent your original result.",
+                ]
+              : []),
             "When coverage is incomplete, read the linked detail before the action needing that evidence. A refresh failure leaves known facts usable within their snapshot scope; diagnose with ordinary reads. Verify current authority for actions that require it.",
             JSON.stringify(packet),
           ].join("\n"),
