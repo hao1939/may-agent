@@ -1,3 +1,5 @@
+import { listTaskAttemptSessionIds } from "../../../lib/db/sessions.js";
+import { attemptSessionIds } from "./app-task-state.js";
 import {
   admitTaskVerificationResult as admitAppTaskVerificationResult,
   type TaskReconcileResult as AppTaskHandlerResult,
@@ -163,18 +165,32 @@ export async function runTaskAttempt(input: {
             `Task ${input.taskId} retained attempt ${attempt.metadata.id} belongs to ${attempt.taskId}; refusing cross-Task recovery`,
           );
         }
-        return interruptSupersededAgentSession(
-          opts,
-          attempt.sessionId!,
-          `Task ${input.taskId} is recovering an orphaned agent session`,
-          input.taskId,
-          {
-            appId: descriptor.id,
-            taskId: input.taskId,
-            generation: attempt.taskGeneration,
-            attemptId: attempt.metadata.id,
-          },
-        );
+        const binding = {
+          appId: descriptor.id,
+          taskId: input.taskId,
+          generation: attempt.taskGeneration,
+          attemptId: attempt.metadata.id,
+        };
+        const sessionIds = [
+          ...new Set([
+            ...attemptSessionIds(attempt),
+            ...(opts.persistDir ? listTaskAttemptSessionIds(opts.persistDir, binding) : []),
+          ]),
+        ];
+        for (const id of sessionIds) {
+          if (
+            !interruptSupersededAgentSession(
+              opts,
+              id,
+              `Task ${input.taskId} is recovering an orphaned agent session`,
+              input.taskId,
+              binding,
+            )
+          ) {
+            return false;
+          }
+        }
+        return true;
       },
       recoverSessionHandoff: (attempt) => opts.sessions?.handoff(attempt),
     });
@@ -212,18 +228,28 @@ export async function runTaskAttempt(input: {
         if (expired && sessionId && terminalStatus && !hasLiveAppTaskSession(opts, sessionId)) {
           // A session artifact is facts, not an accepted Task result. Drain
           // the exact old execution before retrying through normal settlement.
-          interruptSupersededAgentSession(
-            opts,
-            sessionId,
-            "Retrying an uncommitted Task attempt",
-            input.taskId,
-            {
-              appId: descriptor.id,
-              taskId: expired.taskId,
-              generation: expired.attemptGeneration,
-              attemptId: expired.attemptId,
-            },
-          );
+          const expBinding = {
+            appId: descriptor.id,
+            taskId: expired.taskId,
+            generation: expired.attemptGeneration,
+            attemptId: expired.attemptId,
+          };
+          const expSessionIds = [
+            ...new Set([
+              ...(expired.sessionIds ?? []),
+              sessionId,
+              ...(opts.persistDir ? listTaskAttemptSessionIds(opts.persistDir, expBinding) : []),
+            ]),
+          ];
+          for (const id of expSessionIds) {
+            interruptSupersededAgentSession(
+              opts,
+              id,
+              "Retrying an uncommitted Task attempt",
+              input.taskId,
+              expBinding,
+            );
+          }
           const released = releaseTerminalSessionExpiredAppTaskAttempt(
             config,
             { ...expired, sessionId, terminalStatus },

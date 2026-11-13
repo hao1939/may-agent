@@ -70,6 +70,7 @@ import {
   rejectConvergedDirectAgentResidue,
 } from "../../adapters/executors/agent-workspace.js";
 import {
+  associateAppTaskSession,
   claimObservedAppTask,
   recoverableAppTaskAttempts,
   completeAppTask,
@@ -10596,6 +10597,134 @@ describe("dependency Condition specification updates", () => {
       expect(replaced.kind).toBe("claimed");
     } finally {
       if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
+    }
+  });
+
+  it("drains persisted Bash process groups from all parallel helper sessions before replacing a dead worker attempt", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const stateDir = join(f.root, "state");
+    await installCoreTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      appRegistrySnapshot: { id: "parallel-helper-crash", generation: 1, entries: [{ appDir: f.appDir, definition: definition() }] },
+    });
+    const config = loadedTaskConfig(f);
+    const { taskId } = admitTaskInput(config, {
+      appId: "sample",
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: "work/parallel-helpers",
+          parentId: "operations",
+          outcome: "Drain every helper before replacement",
+          acceptance: ["Both helper process groups exit before replacement"],
+          executor: "verify",
+        },
+      },
+      idempotencyKey: "parallel-helpers-1",
+      inputContext: { id: "in-ph", source: { kind: "human", id: "user" }, input: { kind: "ask", data: {} } },
+    });
+    const claim = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "executor:verify" });
+    if (claim.kind !== "claimed") throw new Error("expected initial claim");
+    const binding = {
+      appId: "sample",
+      taskId,
+      generation: claim.generation,
+      attemptId: claim.attemptId,
+    };
+
+    const { upsertSession } = await import("../../../lib/db/sessions.ts");
+    const { addSessionBashProcessGroup, readSessionBashProcessGroups, ensureSessionDir, writeSessionMeta } = await import("../../../lib/persistence.ts");
+    const { createTaskSessionRecovery } = await import("../../adapters/executors/session-recovery.ts");
+    const { SubagentManager } = await import("../../../lib/manager.ts");
+
+    const children = ["helper-alpha", "helper-beta"].map((sessionId) => {
+      const child = spawn(
+        process.execPath,
+        ["-e", "console.log(\"ready\"); setInterval(() => {}, 1000);"],
+        { cwd: process.cwd(), detached: true, stdio: ["ignore", "pipe", "pipe"] },
+      );
+      return { sessionId, child };
+    });
+
+    try {
+      for (const { sessionId, child } of children) {
+        await new Promise<void>((resolve, reject) => {
+          child.stdout.once("data", () => resolve());
+          child.once("error", reject);
+        });
+        ensureSessionDir(stateDir, sessionId);
+        writeSessionMeta(stateDir, sessionId, {
+          agent: "sample-owner",
+          task: "helper work",
+          status: "running",
+          startedAt: 1,
+          taskBinding: binding,
+        });
+        upsertSession(stateDir, {
+          sessionId,
+          agent: "sample-owner",
+          task: "helper work",
+          status: "running",
+          startedAt: 1,
+          taskBinding: binding,
+        });
+        addSessionBashProcessGroup(stateDir, sessionId, child.pid!);
+        associateAppTaskSession(config, binding, sessionId);
+      }
+
+      // Simulate worker crash: external runtimeId with dead ownerProcess
+      const attempt = config.resourceStore.readAttempt(claim.attemptId)!;
+      attempt.runtimeId = "dead-worker-runtime";
+      attempt.lease = {
+        ...attempt.lease!,
+        runtimeId: "dead-worker-runtime",
+        expiresAt: new Date(Date.now() - 60_000).toISOString(),
+        ownerProcess: { pid: 999999, processIdentity: "dead-proc", startTimeTicks: "1" },
+      };
+      config.resourceStore.db
+        .prepare("UPDATE app_task_attempts SET attempt_json = ? WHERE app_id = ? AND attempt_id = ?")
+        .run(JSON.stringify(attempt), "sample", claim.attemptId);
+
+      // Even though associateAppTaskSession was called twice (leaving attempt.sessionId = "helper-beta"),
+      // attempt.sessionIds and the SQL sessions index retain BOTH "helper-alpha" and "helper-beta".
+      expect(attempt.sessionId).toBe("helper-beta");
+      expect(attempt.sessionIds).toEqual(["helper-alpha", "helper-beta"]);
+
+      const recovery = createTaskSessionRecovery({
+        persistDir: stateDir,
+        manager: new SubagentManager({ persistDir: stateDir }),
+        bus,
+      });
+      await closeInstalledAppTaskRuntimes(bus);
+      await installCoreTaskRuntimes({
+        ...options(f, bus),
+        installControllers: false,
+        sessions: recovery,
+        appRegistrySnapshot: { id: "parallel-helper-crash-2", generation: 1, entries: [{ appDir: f.appDir, definition: definition() }] },
+        executors: {
+          verify: async () => ({ state: "converged", summary: "Recovered after draining both helpers", facts: ["drained"] }),
+        },
+      });
+      await reconcileLoadedAppTaskOnce({
+        bus,
+        appId: "sample",
+        taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+
+      for (const { sessionId, child } of children) {
+        expect(readSessionBashProcessGroups(stateDir, sessionId)).toEqual([]);
+        expect(() => process.kill(child.pid!, 0)).toThrow();
+      }
+      expect(loadedTaskConfig(f).resourceStore.readTask(taskId)?.status.phase).toBe("converged");
+    } finally {
+      for (const { child } of children) {
+        try {
+          process.kill(-child.pid!, "SIGKILL");
+        } catch { /* already dead */ }
+      }
     }
   });
 });

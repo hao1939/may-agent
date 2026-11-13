@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import { type TSchema } from "typebox";
 import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
 import { assertCurrentTaskActor } from "../app/core/tasks/task-actor.js";
@@ -353,6 +354,12 @@ export class SubagentManager {
       };
     }
     opts?.signal?.throwIfAborted();
+    if (opts?.taskContext?.taskBinding) {
+      if (opts.taskBinding && !isDeepStrictEqual(opts.taskBinding, opts.taskContext.taskBinding)) {
+        throw new Error("Task execution binding does not match its Task context");
+      }
+      if (!opts.taskBinding) opts = { ...opts, taskBinding: opts.taskContext.taskBinding };
+    }
     if (opts?.taskContext) {
       const brief = prepareTaskWorkspaceContext(
         opts.taskContext,
@@ -392,9 +399,22 @@ export class SubagentManager {
       throw new Error(`Session "${sessionId}" already has execution evidence; start a fresh session`);
     }
     if (opts?.taskBinding) {
-      const store = AppTaskResourceStore.activeFromDb(getDb(this._persistDir), opts.taskBinding.appId);
+      const db = getDb(this._persistDir);
+      const store = AppTaskResourceStore.activeFromDb(db, opts.taskBinding.appId);
       if (!store) throw new Error("Task execution requires canonical authority");
       assertCurrentTaskActor({ resourceStore: store }, opts.taskBinding, "managed start");
+      const attempt = store.readAttempt(opts.taskBinding.attemptId);
+      if (attempt) {
+        const nextIds = [...new Set([...(attempt.sessionIds ?? []), ...(attempt.sessionId ? [attempt.sessionId] : []), sessionId])];
+        if (nextIds.length !== (attempt.sessionIds?.length ?? 0)) {
+          attempt.sessionIds = nextIds;
+          db.prepare("UPDATE app_task_attempts SET attempt_json = ? WHERE app_id = ? AND attempt_id = ?").run(
+            JSON.stringify(attempt),
+            opts.taskBinding.appId,
+            opts.taskBinding.attemptId,
+          );
+        }
+      }
     }
     let executionDispatched = false;
     try {

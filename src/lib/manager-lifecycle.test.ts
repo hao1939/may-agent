@@ -1,3 +1,5 @@
+import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
+import { getDb } from "./db/connection.js";
 import {
   createAssistantMessageEventStream,
   getCurrentSystemPrompt,
@@ -30,6 +32,33 @@ function definition(version: string) {
 }
 
 function taskContext(root: string, definitions: ReadonlyMap<string, SubagentDefinition>): TaskExecutionContext {
+  AppTaskResourceStore.fromDb(getDb(root), "sample").bootstrapSnapshot(
+    {
+      project: "sample",
+      resources: {
+        review: {
+          metadata: { id: "review", generation: 1, resourceVersion: 1 },
+          spec: { parentId: "root", outcome: "Review the candidate", acceptance: ["Done"] },
+          status: { phase: "running", observedGeneration: 0, currentAttemptId: "attempt-1" },
+        },
+      },
+      attempts: {
+        "attempt-1": {
+          metadata: { id: "attempt-1", resourceVersion: 1 },
+          taskId: "review",
+          taskGeneration: 1,
+          specHash: "hash",
+          owner: "worker",
+          handler: "agent:worker",
+          runtimeId: "rt",
+          state: "running",
+          reason: "event",
+          startedAt: new Date().toISOString(),
+        },
+      },
+    },
+    "fixture",
+  );
   const task: TaskDetail = {
     id: "review",
     parentId: "root",
@@ -420,5 +449,16 @@ describe("manager session lifecycle", () => {
     expect(() => manager.run("missing", "assignment")).toThrow('Agent "missing" not registered');
     expect(() => manager.cancel("missing")).not.toThrow();
     expect(manager.status()).toEqual([]);
+  });
+
+  it("rejects a stale context-only start and retains the normalized binding on active sessions", () => {
+    const context = taskContext(persistDir, new Map());
+    const staleContext = {
+      ...context,
+      taskBinding: { ...context.taskBinding!, generation: 2 },
+    } as TaskExecutionContext;
+    expect(() => manager.run("worker", "Run with stale context-only binding", { taskContext: staleContext })).toThrow(
+      "Task managed start caller is no longer current",
+    );
   });
 });

@@ -209,6 +209,8 @@ export type AppTaskAttempt = {
   /** Retained separately from acceptance so recovery can reuse execution evidence. */
   unacceptedResult?: NonNullable<TaskAttempt["previousAttempt"]>["unacceptedResult"];
   sessionId?: string;
+  /** Every session launched under this attempt (primary + helpers) for crash cleanup. */
+  sessionIds?: string[];
   lease?: AppTaskAttemptLease;
   workspace?: AppTaskWorkspace;
   /** Offline import preserves an old worker self-stop as facts, not closure. */
@@ -263,4 +265,9 @@ export function taskEventPredatesReopening(
 ): boolean {
   const fence = resource?.metadata.reopenedAfterEventId;
   return fence !== undefined && typeof event?.eventId === "number" && event.eventId <= fence;
+}
+
+export function attemptSessionIds(attempt: Pick<AppTaskAttempt, "sessionId" | "sessionIds"> | null | undefined): string[] {
+  if (!attempt) return [];
+  return [...new Set([...(attempt.sessionIds ?? []), ...(attempt.sessionId ? [attempt.sessionId] : [])])];
 }

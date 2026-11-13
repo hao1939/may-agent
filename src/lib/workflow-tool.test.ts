@@ -1250,4 +1250,88 @@ export async function execute(ctx) {
       },
     });
   });
+
+  it("rejects a cancelled or superseded context-only workflow runner before entering authored code", async () => {
+    const root = workflowRoot("context-only-cancelled-");
+    let entered = false;
+    writeFileSync(
+      join(root, "guarded.ts"),
+      `
+        export const name = "guarded";
+        export const description = "Must not execute after Task cancellation";
+        export async function execute(ctx) {
+          return ctx.done("ran");
+        }
+      `,
+    );
+    const store = AppTaskResourceStore.fromDb(getDb(root), "sample");
+    store.bootstrapSnapshot(
+      {
+        project: "sample",
+        resources: {
+          review: {
+            metadata: { id: "review", generation: 2, resourceVersion: 2 },
+            spec: { parentId: "root", outcome: "Review", acceptance: ["Done"] },
+            status: { phase: "running", observedGeneration: 1, currentAttemptId: "attempt-2" },
+          },
+        },
+        attempts: {
+          "attempt-2": {
+            metadata: { id: "attempt-2", resourceVersion: 1 },
+            taskId: "review",
+            taskGeneration: 2,
+            specHash: "hash",
+            owner: "owner",
+            handler: "workflow:guarded",
+            runtimeId: "rt",
+            state: "running",
+            reason: "event",
+            startedAt: new Date().toISOString(),
+          },
+        },
+      },
+      "fixture",
+    );
+    const runner = createWorkflowRunner({
+      manager: {
+        callAgent: async () => {
+          entered = true;
+          return { sessionId: "s", agent: "a", status: "done", output: "ok", durationMs: 1 };
+        },
+      } as any,
+      workflowDir: root,
+      persistDir: root,
+      taskContext: {
+        taskBinding: { appId: "sample", taskId: "review", generation: 1, attemptId: "attempt-1" },
+        recoveryOwner: "app-task",
+        executionPaths: { appDir: root, projectDir: root, workspaceDir: root },
+        reconciliation: {
+          appId: "sample",
+          taskId: "review",
+          generation: 1,
+          resourceVersion: 1,
+          agent: "owner",
+          outcome: "Review",
+          acceptance: ["Done"],
+          input: {},
+          events: { items: [], truncated: false },
+          waits: { open: [], note: "none" },
+          children: { live: [], completed: [] },
+        },
+        taskRead: {
+          list: async () => ({ items: [] }),
+          get: async () => null,
+          outcomes: async () => ({ items: [] }),
+          workload: async () => ({} as any),
+        },
+        observeEvents: () => () => {},
+      } as any,
+    });
+    const result = await runner.run("guarded", "try stale context-only");
+    expect(entered).toBe(false);
+    expect(result.type).toBe("error");
+    if (result.type === "error") {
+      expect(result.error).toContain("Task workflow start caller is no longer current");
+    }
+  });
 });

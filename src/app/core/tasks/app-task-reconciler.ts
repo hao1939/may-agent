@@ -1,6 +1,6 @@
 import { currentProcessInstance, isProcessInstanceAlive } from "../../../lib/process-identity.js";
 import type { PendingTaskSettlement } from "./result.js";
-import { pendingTaskWorkspaceConstraint } from "./app-task-state.js";
+import { attemptSessionIds, pendingTaskWorkspaceConstraint } from "./app-task-state.js";
 import type { TaskWorkspaceConstraint } from "./workspace.js";
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction } from "../../../lib/db/transaction.js";
@@ -155,6 +155,7 @@ export type AppTaskAttemptRecovery = {
   eventsTruncated?: boolean;
   trigger?: Record<string, unknown>;
   sessionId?: string;
+  sessionIds?: string[];
   /** Current requirement revision used to fence the Task release. */
   taskGeneration: number;
   /** Retained execution revision used to validate its session identity. */
@@ -1034,6 +1035,7 @@ export function recoverableAppTaskAttempts(
         ...(attempt.eventsTruncated ? { eventsTruncated: true } : {}),
         ...(trigger ? { trigger: structuredClone(trigger) } : {}),
         ...(attempt.sessionId ? { sessionId: attempt.sessionId } : {}),
+        ...(attempt.sessionIds?.length ? { sessionIds: [...attempt.sessionIds] } : {}),
         taskGeneration: resource.metadata.generation,
         attemptGeneration: attempt.taskGeneration,
         taskResourceVersion: resource.metadata.resourceVersion,
@@ -1076,6 +1078,7 @@ export function expiredAgentSessionAppTaskAttempt(
     ...(attempt.eventsTruncated ? { eventsTruncated: true } : {}),
     ...(trigger ? { trigger: structuredClone(trigger) } : {}),
     sessionId: attempt.sessionId,
+    ...(attempt.sessionIds?.length ? { sessionIds: [...attempt.sessionIds] } : {}),
     taskGeneration: resource.metadata.generation,
     attemptGeneration: attempt.taskGeneration,
     taskResourceVersion: resource.metadata.resourceVersion,
@@ -1115,7 +1118,7 @@ export function releaseInterruptedAppTaskAttempt(
   const recoveredSummary = `${summary}; ${taskExecutionRetryExhausted(resource)
     ? "automatic retries remain exhausted; owner repair or explicit retry required"
     : "retrying from current task facts"}`;
-  const sessionIds = attempt.sessionId ? [attempt.sessionId] : [];
+  const sessionIds = attemptSessionIds(attempt);
   restoreAttemptEvents(tree, taskId, resource, attempt, now);
   finishAttempt(tree, resource, "interrupted", recoveredSummary, now);
   attempt.metadata.resourceVersion += 1;
@@ -1183,7 +1186,7 @@ export function releaseTerminalSessionExpiredAppTaskAttempt(
   commitTaskMutation(config, tree, {
     resourceMutation: finishResourceMutationScope(mutationScope, tree),
   });
-  return { released: true, sessionIds: [recovery.sessionId] };
+  return { released: true, sessionIds: attemptSessionIds(attempt) };
 }
 
 export function releaseLateTerminalWorkflowAppTaskAttempt(
@@ -2954,7 +2957,7 @@ export function claimObservedAppTask(
       if (!canRecoverPreviousRuntime) {
         return { kind: "busy", taskId: input.taskId, attemptId: previousAttempt.metadata.id };
       }
-      if (previousAttempt.sessionId) {
+      if (input.recoverPreviousSession || attemptSessionIds(previousAttempt).length) {
         if (!input.recoverPreviousSession)
           throw new Error("Task session recovery is unavailable; retained session ownership cannot be replaced safely");
         if (!input.recoverPreviousSession(structuredClone(previousAttempt)))
@@ -3101,7 +3104,7 @@ export function claimObservedAppTask(
   const attemptId = `r_${generation}_${randomUUID()}`;
   const now = new Date().toISOString();
   if (canRecoverPreviousRuntime && previousAttempt) {
-    if (previousAttempt.sessionId) {
+    if (input.recoverPreviousSession || attemptSessionIds(previousAttempt).length) {
       if (!input.recoverPreviousSession)
         throw new Error("Task session recovery is unavailable; retained session ownership cannot be replaced safely");
       if (!input.recoverPreviousSession(structuredClone(previousAttempt)))
@@ -3537,9 +3540,11 @@ export function recordAppTaskAttemptSession(config: AppTaskContext, claim: AppTa
   const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
   const match = matchingClaimAttempt(tree.resources?.[claim.taskId], tree.attempts?.[claim.attemptId], claim);
   if (!match) return false;
-  if (match.attempt.sessionId === sessionId && match.attempt.lease) return true;
+  const known = attemptSessionIds(match.attempt);
+  if (match.attempt.sessionId === sessionId && known.includes(sessionId) && match.attempt.lease) return true;
   match.attempt.metadata.resourceVersion += 1;
   match.attempt.sessionId = sessionId;
+  match.attempt.sessionIds = [...new Set([...known, sessionId])];
   refreshAttemptLease(match.attempt, sessionId);
   commitTaskMutation(config, tree, {
     resourceMutation: {
@@ -3587,9 +3592,11 @@ export function associateAppTaskSession(
   ) {
     return { status: "superseded", taskId: binding.taskId };
   }
-  if (attempt.sessionId !== sessionId || !attempt.lease) {
+  const known = attemptSessionIds(attempt);
+  if (attempt.sessionId !== sessionId || !known.includes(sessionId) || !attempt.lease) {
     attempt.metadata.resourceVersion += 1;
     attempt.sessionId = sessionId;
+    attempt.sessionIds = [...new Set([...known, sessionId])];
     refreshAttemptLease(attempt, sessionId);
     commitTaskMutation(config, tree, {
       resourceMutation: {

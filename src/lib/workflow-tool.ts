@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
 import { assertCurrentTaskActor } from "../app/core/tasks/task-actor.js";
 import { StringEnum } from "@earendil-works/pi-ai";
@@ -546,6 +547,12 @@ export interface WorkflowToolOptions {
 function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: false): WorkflowRunner;
 function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: true): WorkflowTool;
 function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: boolean): WorkflowRunner | WorkflowTool {
+  if (opts.taskContext?.taskBinding) {
+    if (opts.taskBinding && !isDeepStrictEqual(opts.taskBinding, opts.taskContext.taskBinding)) {
+      throw new Error("Task execution binding does not match its Task context");
+    }
+    if (!opts.taskBinding) opts = { ...opts, taskBinding: opts.taskContext.taskBinding };
+  }
   const { manager, workflowDir, persistDir, onEvent } = opts;
   const assertWorkflowExecution = (): void => {
     if (!opts.taskBinding) return;
