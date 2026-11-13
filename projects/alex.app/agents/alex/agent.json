@@ -9,7 +9,6 @@
     "query_db",
     "workflow",
     "agents",
-    "message",
     "cli-delegation",
     "finish"
   ]
