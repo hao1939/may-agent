@@ -300,9 +300,10 @@ or external model verification was run.
 
 **Design status:** Proposed within the selected simplification work.
 **Implementation status:** [Host PR 480](https://github.com/hao1939/may-agent/pull/480)
-is a draft at `29bea281bb7a`, including merged Host baseline `9149a60268c2`.
-Companion App config/docs remove the unused setting; Host source merge and
-installed adoption are unverified.
+is open for review at `29bea281bb7a`, including merged Host baseline
+`9149a60268c2`.
+Companion App config/manual changes are committed on workspace `main` at
+`4af8ffde65e5`; Host source merge and installed adoption are unverified.
 
 At reviewed Host baseline `4195036ad3`, `memoryLimit` exists in `AgentConfig`,
 `SubagentDefinition` and the registry's serializable agent view. The loader
@@ -345,8 +346,14 @@ the production validator accepts them with synthetic model entries. App
 The first full local CI run passed static checks and 3,850 tests but failed one
 unchanged nested-worker test: SQLite contention preceded an expected-event
 timeout. The exact test passed in a subsequent isolated diagnostic run. This
-failure remains part of the evidence; combined-head local CI and hosted
-Quality/Container are pending. No installation or external provider trial ran.
+failure remains part of the evidence. At combined head `29bea281bb7a`, full
+local `MAY_TEST_SHARDS=4 bun run ci` passed static checks and 3,843 tests with
+zero failures and three installation-only skips across 345 files, including
+the previously failing nested-worker case.
+[GitHub Quality and Container](https://github.com/hao1939/may-agent/actions/runs/43388791142)
+both passed on that exact head. The integrated App docs check passed with zero
+errors and the existing root-layout warning. No installation or external
+provider trial ran.
 
 ## Project metadata reader: merged
 
