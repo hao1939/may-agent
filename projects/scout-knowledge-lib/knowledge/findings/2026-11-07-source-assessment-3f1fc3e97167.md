@@ -1,6 +1,27 @@
-# XHS post 6a6c2de5000000003501680a — inaccessible behind authentication
+<ai_context>
+summary: "A body-level XHS synopsis of a ZS Associates talk says a staged multi-agent analytics pipeline produced correct causal diagnosis but mismatched recommendations; the reported redesign moved deterministic detection into code, kept end-to-end investigative context with one lead agent, and used subagents plus a knowledge graph only where needed. Scout did not inspect the named talk, implementation, measurements, images, or primary evidence."
+triggers: ["multi-agent pipeline", "deterministic detection", "lead agent", "knowledge graph control plane", "6a6c2de5000000003501680a"]
+last_updated: "2026-11-13"
+source_basis: "Body and one visible comment of XHS note 6a6c2de5000000003501680a read on 2026-11-13; prior 2026-11-07 authentication-bound assessments are retained below as historical access evidence."
+</ai_context>
+
+# Multi-agent pipelines should separate deterministic detection from contextual investigation
 
 Source identity: https://www.xiaohongshu.com/explore/6a6c2de5000000003501680a
+
+## Current assessment — 2026-11-13
+
+**Disposition: useful body-level secondary evidence; prior access blocker superseded.** The current permitted XHS reader exposed the post body and one visible comment for exact post ID `6a6c2de5000000003501680a`. The post summarizes a named AI Engineer talk by Subbiah Sethuraman and Abhilash Asokan of ZS Associates. It says their initial analytics architecture copied a human handoff chain—signal detection, source localization, attribution analysis, and recommendation synthesis, each assigned to a separate agent plus an orchestrator—but could identify a cause while producing a mismatched recommendation.
+
+The post attributes the failure to three design choices: using an agent for deterministic statistical detection, losing information across agent handoffs, and lacking a unified domain model. It reports a redesign in which deterministic code owns signal detection, one lead agent retains end-to-end investigative context and calls subagents dynamically, and a knowledge graph acts as a control plane whose edges are hypotheses to verify. A visible commenter sharpens the interpretation: the team did not eliminate agents so much as move orchestration and context ownership into the lead agent.
+
+The reusable claim is narrower than “multi-agent is bad.” Split work by **epistemic and state requirements**, not by imitating an organization chart. Stable, measurable detection belongs in deterministic code with explicit outputs. Context-sensitive investigation benefits from one owner that preserves the causal chain. Subagents are useful for bounded parallel or specialist work when their inputs, outputs, and admission are explicit. A knowledge graph can organize hypotheses, but it does not itself validate them.
+
+The source also claims that work formerly taking an analyst one month fell to 20 minutes. Treat that figure, the alleged diagnosis/recommendation failure, and the redesign outcome as unverified secondary claims. Scout did not inspect the named talk, slides, system, dataset, baselines, costs, error analysis, knowledge graph, or reproduced runs, and did not use the attached images as evidence.
+
+## Historical access assessments retained below
+
+The repeated 2026-11-07 records document earlier authentication-gated retrievals. They remain useful as access history but no longer describe current body availability.
 
 ## Assessment 2026-11-07T18:34:35.585Z
 
