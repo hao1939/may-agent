@@ -40,15 +40,12 @@ describe("explicit authored workflow repair and completion guards share bounded 
       timeoutMs?: number;
       signal?: AbortSignal;
       extraStep?: boolean;
-      blockFailedRepair?: boolean;
     } = {},
   ) {
     const root = mkdtempSync(join(tmpdir(), "workflow-repair-"));
     roots.push(root);
     const workflowDir = join(root, "workflows");
-    const guardsDir = join(root, "guards");
     mkdirSync(workflowDir);
-    mkdirSync(guardsDir);
     writeFileSync(
       join(workflowDir, "bounded.ts"),
       `
@@ -62,21 +59,6 @@ export async function execute(ctx) {
   }
   return ctx.done("Workflow finished");
 }
-`,
-    );
-    writeFileSync(
-      join(guardsDir, "completion-check.ts"),
-      `
-export const guard = {
-  name: "fixture-completion-check",
-  handle(event) {
-    if (${Boolean(options.blockFailedRepair)} && event.type === "workflow_done" &&
-        event.completedSteps.some(step => step.step === "repairer" && step.result.status === "error")) {
-      return [{ type: "block", reason: "Required repair failed" }];
-    }
-    return [];
-  }
-};
 `,
     );
     const calls: Array<{ agent: string; options: CallOptions; definition?: SubagentDefinition }> = [];
@@ -133,7 +115,6 @@ export const guard = {
     const runner = createWorkflowRunner({
       manager,
       workflowDir,
-      guardsDir,
       persistDir: root,
       agentName: "owner",
       projectId: "fixture",
@@ -192,12 +173,6 @@ export const guard = {
       }
     });
   }
-
-  it("honors an explicit completion guard that blocks on a failed verification step", async () => {
-    const h = setup({ result: { ...success(), finishResult: undefined }, blockFailedRepair: true });
-    expect(await h.runner.run("bounded", "test")).toMatchObject({ type: "blocked", reason: "Required repair failed" });
-    expect(getWorkflowRun(h.root, h.calls[0].options!.workflowRunId!)?.status).toBe("blocked");
-  });
 
   it("retains the exact steering reason after reopening storage without starting the next step", async () => {
     const repair = Promise.withResolvers<TaskResult>();

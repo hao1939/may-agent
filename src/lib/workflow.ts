@@ -1,10 +1,6 @@
 import type {
   ExecutionResult,
-  Demand as SdkDemand,
-  GuardModule as SdkGuardModule,
   TSchema,
-  WorkflowGuard as SdkWorkflowGuard,
-  WorkflowGuardEvent as SdkWorkflowGuardEvent,
   TaskReconcileResult,
   WorkflowContext,
 } from "@may-agent/sdk";
@@ -12,7 +8,7 @@ import type { TaskResult } from "./types.js";
 export type { WorkflowContext } from "@may-agent/sdk";
 
 // ── Workflow Lifecycle Callback Events ────────────────────────────────
-// These are local workflow-tool callbacks for logs/guards. They are not
+// These are local workflow-tool callbacks for logs. They are not
 // SystemEvent bus envelopes unless code explicitly emits them via ctx.events.emit().
 
 export type WorkflowEvent =
@@ -22,22 +18,6 @@ export type WorkflowEvent =
   | { type: "workflow.completed"; summary: string }
   | { type: "workflow.blocked"; reason: string }
   | { type: "workflow.interrupted"; reason?: string };
-
-// ── Guard Events (workflow-level) ──────────────────────────────────────
-
-/** Events the workflow runtime emits. Guards subscribe to these. */
-export type WorkflowGuardEvent = SdkWorkflowGuardEvent<TaskResult>;
-
-// ── Guard Types ────────────────────────────────────────────────────────
-
-/** A demand returned by a guard in response to a workflow event. */
-export type Demand = SdkDemand;
-
-/** A guard is a pure event listener: event in → demands out. */
-export type WorkflowGuard = SdkWorkflowGuard<TaskResult>;
-
-/** Guard module file shape — each guard .ts file exports this. */
-export type GuardModule = SdkGuardModule<TaskResult>;
 
 // ── Workflow Result ────────────────────────────────────────────────────
 
@@ -84,18 +64,6 @@ export class WorkflowInterrupted extends Error {
   ) {
     super(`Workflow interrupted: ${steeringMessage}`);
     this.name = "WorkflowInterrupted";
-  }
-}
-
-/** Thrown when a guard blocks a workflow with a hard-stop demand. */
-export class WorkflowBlocked extends Error {
-  constructor(
-    public readonly reason: string,
-    public readonly completedSteps: CompletedStep[],
-    public readonly workflowRunId: string,
-  ) {
-    super(`Workflow blocked by guard: ${reason}`);
-    this.name = "WorkflowBlocked";
   }
 }
 

@@ -126,14 +126,6 @@ export type {
   WorkflowResultStatus,
   WorkflowSubject,
 } from "./workflow-result.js";
-export type {
-  Demand,
-  GuardModule,
-  WorkflowGuard,
-  WorkflowGuardCompletedStep,
-  WorkflowGuardEvent,
-  WorkflowGuardStepResult,
-} from "./workflow-guard.js";
 export type { AgentContextPreparer } from "./agent-context.js";
 
 export { readVerifiedApprovalDecision } from "./approval.js";

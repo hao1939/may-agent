@@ -222,7 +222,6 @@ export type WorkflowKernelBindings<TInput = unknown> = {
   closeTask?: WorkflowContext["closeTask"];
   applyTaskChanges?: WorkflowContext["applyTaskChanges"];
   readCommunication?: WorkflowContext["readCommunication"];
-  afterReturn?: (result: NormalizedWorkflowContribution) => Promise<void>;
   onCancelActive?: () => void;
   confirmCleanup?: () => boolean | Promise<boolean>;
   onStart?: () => void | Promise<void>;
@@ -981,10 +980,6 @@ export async function runWorkflowInvocation<TInput = unknown>(
             normalized.output,
           );
         }
-      }
-      if (bindings.afterReturn) {
-        await bindings.afterReturn(normalized);
-        assertActive();
       }
       return normalized;
     })();

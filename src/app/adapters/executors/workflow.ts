@@ -62,8 +62,6 @@ function appWorkflowRuntimePaths(
 ): {
   agentsRoot: string;
   workflowDir: string;
-  guardsDir: string;
-  sharedGuardsDir: string;
 } {
   const runtime = requireWorkflowRuntimeOptions(opts);
   const sourceAppDir = join(opts.projectsRoot, basename(descriptor.appDir));
@@ -73,8 +71,6 @@ function appWorkflowRuntimePaths(
   return {
     agentsRoot: appAgentDir ? join(sourceAppDir, "agents") : runtime.agentsRoot,
     workflowDir: join(agentDir, "workflows"),
-    guardsDir: join(agentDir, "guards"),
-    sharedGuardsDir: join(runtime.sharedRoot, "guards"),
   };
 }
 
@@ -172,8 +168,6 @@ async function executeTaskWorkflow(
       agentName,
       persistDir: runtime.persistDir,
       workflowDir: paths.workflowDir,
-      guardsDir: paths.guardsDir,
-      sharedGuardsDir: paths.sharedGuardsDir,
       projectId: descriptor.id,
       ...taskContext,
       taskContext,

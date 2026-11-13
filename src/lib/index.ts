@@ -67,17 +67,13 @@ export type {
 } from "./tools/index.js";
 export { createWorkflowTool } from "./workflow-tool.js";
 export type { WorkflowTool } from "./workflow-tool.js";
-export { WorkflowBlocked, WorkflowInterrupted } from "./workflow.js";
+export { WorkflowInterrupted } from "./workflow.js";
 export type {
   CompletedStep,
-  Demand,
-  GuardModule,
   SessionTrace,
   TraceNode,
   WorkflowContext,
   WorkflowEvent,
-  WorkflowGuard,
-  WorkflowGuardEvent,
   WorkflowModule,
   WorkflowResult,
   WorkflowStepSummary,

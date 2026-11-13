@@ -8,8 +8,6 @@ import {
   type WorkflowExecutionAllowance,
   type WorkflowStepInvocationResult,
 } from "../../packages/sdk/src/workflow-kernel.js";
-import { existsSync, readdirSync } from "node:fs";
-import { join } from "node:path";
 import { Type, type TSchema } from "typebox";
 import { getDb } from "./db/connection.js";
 import { executionTimeout } from "./execution-scope.js";
@@ -27,17 +25,15 @@ import type {
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import { readMetricView } from "../app/adapters/reporting/metric-read.js";
 import { canonicalAppEvent } from "../app/canonical-app-event.js";
-import { EVENT_RECORD_ONLY, type EventTrace } from "../app/core/events/bus.js";
+import type { EventTrace } from "../app/core/events/bus.js";
 import { createRuntimeAppRead } from "../app/core/reads/app-read.js";
 import type { AppTaskEvents } from "../app/core/tasks/app-task-emitter.js";
 import { getWorkflowRun, insertWorkflowRun, updateWorkflowRun } from "./db/workflows.js";
 import { agentExecutionResult, deferredExecutionResult, workflowExecutionResult } from "./execution-handoff.js";
-import { log } from "./log.js";
 import type { SubagentManager } from "./manager.js";
 import { createUnavailableMetricService } from "./metrics.js";
 import type { TaskBinding } from "./persistence.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
-import { importRuntimeModule } from "./runtime-import.js";
 import type { SubagentDefinition, TaskResult } from "./types.js";
 import {
   buildWorkflowCatalog,
@@ -49,16 +45,13 @@ import { validateOperationAllowance } from "./workflow-finish-recovery.js";
 import { retainWorkflowResultPayload } from "./workflow-payload.js";
 import type {
   CompletedStep,
-  Demand,
   WorkflowEvent,
-  WorkflowGuard,
-  WorkflowGuardEvent,
   WorkflowModule,
   WorkflowResult,
   WorkflowStepSummary,
   WorkflowToolResult,
 } from "./workflow.js";
-import { WorkflowBlocked, WorkflowInterrupted } from "./workflow.js";
+import { WorkflowInterrupted } from "./workflow.js";
 
 export { inspectWorkflowDefinition } from "./workflow-catalog.js";
 // ── In-memory workflow types (used during execution) ────────────────────
@@ -198,7 +191,7 @@ function buildStepSummaries(completedSteps: CompletedStep[]): WorkflowStepSummar
 /**
  * Trim old completed steps to prevent unbounded memory growth.
  * Replaces full TaskResult with a lightweight stub for steps beyond the keep window.
- * This preserves step count/metadata for guards while freeing memory.
+ * This preserves step count/metadata while freeing memory.
  */
 function pruneCompletedSteps(completedSteps: CompletedStep[]): void {
   if (completedSteps.length <= MAX_DETAILED_STEPS) return;
@@ -212,120 +205,6 @@ function pruneCompletedSteps(completedSteps: CompletedStep[]): void {
         messages: [], // free the large messages array
         lastAssistantText: truncate(step.result.lastAssistantText ?? "", 200),
       };
-    }
-  }
-}
-
-// ── Guard Discovery ────────────────────────────────────────────────────
-
-/** Load all guard modules from given directories. */
-export async function loadGuards(...dirs: (string | undefined)[]): Promise<WorkflowGuard[]> {
-  const guards: WorkflowGuard[] = [];
-  const disabledNames = new Set(
-    (process.env.DISABLED_GUARDS ?? "")
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean),
-  );
-  for (const dir of dirs) {
-    if (!dir || !existsSync(dir)) continue;
-    let files: string[];
-    try {
-      files = readdirSync(dir)
-        .filter(
-          (f) =>
-            f.endsWith(".ts") && !f.endsWith(".test.ts") && !f.startsWith("REGISTRY") && !f.endsWith(".disabled.ts"),
-        )
-        .sort()
-        .map((f) => join(dir, f));
-    } catch {
-      continue;
-    }
-    for (const filePath of files) {
-      try {
-        const mod = await importRuntimeModule<{ guard?: Partial<WorkflowGuard> }>(filePath);
-        const guard = mod.guard;
-        if (guard && typeof guard.handle === "function" && typeof guard.name === "string") {
-          if (disabledNames.has(guard.name)) {
-            log("info", `[guards] Skipping disabled guard "${guard.name}" (DISABLED_GUARDS env)`);
-            continue;
-          }
-          guards.push(guard as WorkflowGuard);
-        }
-      } catch (err) {
-        log(
-          "error",
-          `[guards] Failed to load guard from ${filePath}: ${err instanceof Error ? err.message : String(err)}`,
-        );
-      }
-    }
-  }
-  return guards;
-}
-
-/** Collect demands from all guards for a given event. */
-export function emitAndCollectDemands(guards: WorkflowGuard[], event: WorkflowGuardEvent): Demand[] {
-  const demands: Demand[] = [];
-  for (const guard of guards) {
-    // Filter: only send events the guard cares about
-    if (guard.events && !guard.events.includes(event.type)) continue;
-    try {
-      const ds = guard.handle(event);
-      for (const d of ds) {
-        d.guardName = guard.name;
-        demands.push(d);
-      }
-    } catch (err) {
-      log(
-        "error",
-        `[guards] Guard "${guard.name}" threw on event "${event.type}": ${err instanceof Error ? err.message : String(err)}`,
-      );
-    }
-  }
-  return demands;
-}
-
-type GuardSignalAction = "observed" | "warned" | "blocked";
-type GuardSignalEmitter = (demand: Demand, action: GuardSignalAction, extra?: Record<string, unknown>) => void;
-
-/** Resolve observational and blocking guard demands (observe, warn, block). */
-function resolveDemands(
-  demands: Demand[],
-  sourceEvent: WorkflowGuardEvent,
-  runId: string,
-  completedSteps: CompletedStep[],
-  warnings: string[],
-  emitGuardSignal?: GuardSignalEmitter,
-): void {
-  for (const demand of demands) {
-    switch (demand.type) {
-      case "observe":
-        log("info", `[guards] OBSERVE from "${demand.guardName}": ${demand.reason}`);
-        emitGuardSignal?.(demand, "observed", {
-          sourceEventType: sourceEvent.type,
-          step: "step" in sourceEvent ? sourceEvent.step : undefined,
-          sessionId: "sessionId" in sourceEvent ? sourceEvent.sessionId : undefined,
-        });
-        break;
-
-      case "block":
-        log("warn", `[guards] BLOCK from "${demand.guardName}": ${demand.reason}`);
-        emitGuardSignal?.(demand, "blocked", {
-          sourceEventType: sourceEvent.type,
-          step: "step" in sourceEvent ? sourceEvent.step : undefined,
-          sessionId: "sessionId" in sourceEvent ? sourceEvent.sessionId : undefined,
-        });
-        throw new WorkflowBlocked(demand.reason, completedSteps, runId);
-
-      case "warn":
-        log("warn", `[guards] WARNING from "${demand.guardName}": ${demand.reason}`);
-        emitGuardSignal?.(demand, "warned", {
-          sourceEventType: sourceEvent.type,
-          step: "step" in sourceEvent ? sourceEvent.step : undefined,
-          sessionId: "sessionId" in sourceEvent ? sourceEvent.sessionId : undefined,
-        });
-        warnings.push(`${demand.reason} (from: ${demand.guardName})`);
-        break;
     }
   }
 }
@@ -382,8 +261,6 @@ export interface RunWorkflowDirectOpts {
   sessionSource?: string;
   persistDir: string;
   workflowDir?: string;
-  guardsDir?: string;
-  sharedGuardsDir?: string;
   parentSessionId?: string;
   projectId?: string;
   /** Explicit task resource whose controller owns this workflow result. */
@@ -413,7 +290,7 @@ export interface RunWorkflowDirectOpts {
 /**
  * Run a workflow through the typed runner shared with the model tool.
  * Used by system-level callers like the project handler.
- * Gets the same guards, step tracking, persistence, and scoped SDK capabilities
+ * Gets the same step tracking, persistence, and scoped SDK capabilities
  * as agent-invoked workflows.
  */
 export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
@@ -428,8 +305,6 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
     manager: opts.manager,
     agentDefinitions: opts.agentDefinitions,
     workflowDir: opts.workflowDir ?? "",
-    guardsDir: opts.guardsDir,
-    sharedGuardsDir: opts.sharedGuardsDir,
     persistDir: opts.persistDir,
     agentName: opts.agentName,
     sessionSource: opts.sessionSource,
@@ -493,10 +368,6 @@ export interface WorkflowToolOptions {
   /** Optional immutable agent catalog for one release-bound execution. */
   agentDefinitions?: ReadonlyMap<string, SubagentDefinition>;
   workflowDir: string;
-  /** Agent-specific guards directory. */
-  guardsDir?: string;
-  /** Shared guards directory (shared/guards/). */
-  sharedGuardsDir?: string;
   /** Persist directory for saving workflow run records. */
   persistDir?: string;
   /** The caller's session ID — used as parentSessionId for spawned sessions.
@@ -701,8 +572,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         },
       });
 
-      const guards = await loadGuards(opts.guardsDir, opts.sharedGuardsDir);
-      const guardWarnings: string[] = [];
       const declaredTimeoutMs = executionTimeout(workflow.executionTimeoutMs ?? opts.executionTimeoutMs);
       const executionTimeoutLimitMs =
         opts.executionTimeoutLimitMs !== undefined ? executionTimeout(opts.executionTimeoutLimitMs) : undefined;
@@ -718,34 +587,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           }
         }
       };
-
-      const emitGuardSignal: GuardSignalEmitter = (demand, action, extra = {}) => {
-        const sourceEventType = typeof extra.sourceEventType === "string" ? extra.sourceEventType : "unknown";
-        emitRuntimeEvent({
-          [EVENT_RECORD_ONLY]: true,
-          type: "guard.triggered",
-          source: "workflow",
-          owner: normalizeEventOwner(opts.agentName),
-          data: {
-            workflow: workflow.name,
-            workflowRunId: runId,
-            projectId: effectiveProjectId,
-            parentSessionId,
-            sessionId: typeof extra.sessionId === "string" ? extra.sessionId : undefined,
-            guard: demand.guardName ?? "unknown",
-            demandType: demand.type,
-            action,
-            reason: demand.reason,
-            sourceEventType,
-            step: typeof extra.step === "string" ? extra.step : undefined,
-          },
-        } as any);
-      };
-
-      if (guards.length > 0) {
-        log("info", `[guards] Loaded ${guards.length} guard(s): ${guards.map((g) => g.name).join(", ")}`);
-        emitAndCollectDemands(guards, { type: "workflow_start", workflow: workflow.name, task });
-      }
 
       const needsWorktree =
         workflow.workspace === "task" ||
@@ -864,14 +705,8 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           const steering = steeringQueue.shift();
           if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
 
-          let effectiveTask = agentTask;
-          if (guardWarnings.length > 0) {
-            effectiveTask += `\n\n## Guard Warnings\n${guardWarnings.map((w) => "- " + w).join("\n")}`;
-            guardWarnings.length = 0;
-          }
-
           onEvent?.({ type: "workflow.step_started", step: agentName });
-          let taskResult = await callAgent(agentName, effectiveTask, {
+          let taskResult = await callAgent(agentName, agentTask, {
             parentSessionId,
             source: stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
             workflowRunId: runId,
@@ -913,22 +748,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           });
 
           onEvent?.({ type: "workflow.step_completed", step: agentName, sessionId: sid, result: taskResult });
-
-          if (guards.length > 0) {
-            const guardEvent: WorkflowGuardEvent = {
-              type: "step_done",
-              source: "agent",
-              step: agentName,
-              sessionId: sid,
-              result: taskResult,
-              completedSteps,
-              task: agentTask,
-            };
-            const demands = emitAndCollectDemands(guards, guardEvent);
-            if (demands.length > 0) {
-              resolveDemands(demands, guardEvent, runId, completedSteps, guardWarnings, emitGuardSignal);
-            }
-          }
 
           const steeringAfter = steeringQueue.shift();
           if (steeringAfter) throw new WorkflowInterrupted(steeringAfter, completedSteps, runId);
@@ -980,20 +799,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             ...(sub.result.output !== undefined ? { output: sub.result.output } : {}),
             ...(sub.result.facts !== undefined ? { facts: sub.result.facts } : {}),
           };
-        },
-        afterReturn: async (result) => {
-          if (guards.length > 0 && (result.type === "done" || result.type === "blocked")) {
-            const doneEvent: WorkflowGuardEvent = {
-              type: "workflow_done",
-              workflow: workflow.name,
-              summary: result.type === "done" ? result.summary : result.reason,
-              completedSteps,
-            };
-            const demands = emitAndCollectDemands(guards, doneEvent);
-            if (demands.length > 0) {
-              resolveDemands(demands, doneEvent, runId, completedSteps, guardWarnings, emitGuardSignal);
-            }
-          }
         },
       });
 
@@ -1055,9 +860,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       if (err instanceof WorkflowInterrupted) {
         run.status = "interrupted";
         run.result = { reason: err.steeringMessage };
-      } else if (err instanceof WorkflowBlocked) {
-        run.status = "blocked";
-        run.result = { reason: `Blocked by guard: ${err.reason}` };
       } else if (err instanceof ExecutionDeferredError) {
         run.status = "blocked";
         run.result = { reason: err.message };
@@ -1074,23 +876,12 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           ...(err instanceof ExecutionDeferredError
             ? { result_payload: retainWorkflowResultPayload({ facts: deferredExecutionResult(err) }) } : {}),
         });
-      if (err instanceof WorkflowBlocked && depth === 1 && !opts.taskBinding) {
-        emitWorkflowBlockedOwnerWake({
-          workflowRunId: runId,
-          workflow: workflow.name,
-          task,
-          reason: run.result?.reason ?? err.reason,
-          projectId: effectiveProjectId,
-          parentSessionId,
-          parentWorkflowRunId,
-        });
-      }
       try {
         emitRuntimeEvent({
           type:
             err instanceof WorkflowInterrupted
               ? "workflow.interrupted"
-              : err instanceof WorkflowBlocked || err instanceof ExecutionDeferredError
+              : err instanceof ExecutionDeferredError
                 ? "workflow.blocked"
                 : "workflow.failed",
           source: `workflow:${workflow.name}`,
@@ -1197,17 +988,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           workflowRunId: err.workflowRunId,
           completedSteps: err.completedSteps,
           steeringMessage: err.steeringMessage,
-        };
-        return toolResult;
-      }
-
-      if (err instanceof WorkflowBlocked) {
-        const toolResult: WorkflowToolResult = {
-          type: "blocked",
-          workflow: workflow.name,
-          workflowRunId: err.workflowRunId,
-          reason: err.reason,
-          completedSteps: err.completedSteps,
         };
         return toolResult;
       }
