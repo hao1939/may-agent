@@ -40,7 +40,7 @@ describe("workflow facts without reporting", () => {
     insertWorkflowRun(root, {
       runId, workflow: "saved", task: "Retain the blocked result", parentSessionId: null,
       parentWorkflowRunId: null, depth: 1, status: "blocked", startedAt: 1, endedAt: 2,
-      result_summary: null, result_reason: "Waiting for access", resumedFromRunId: null,
+      result_summary: null, result_reason: "Waiting for access",
     });
     const ref = workflowRunRef(runId);
     const path = join(root, ref);

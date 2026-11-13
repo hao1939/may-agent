@@ -70,6 +70,7 @@ export type CodexGoalProtocolDiagnostics = {
   responses: number;
   serverRequests: number;
   maxProtocolLineChars: number;
+  skippedOversizedLines?: number;
 };
 
 type PendingRequest = {
@@ -137,6 +138,8 @@ export class CodexGoalAppServerClient {
   private responseCount = 0;
   private serverRequestCount = 0;
   private maxProtocolLineChars = 0;
+  private skippedOversizedLines = 0;
+  private oversizedLineScanner: OversizedNotificationScanner | null = null;
   private processClosed = false;
   private stopPromise: Promise<void> | null = null;
   private exitError: Error | null = null;
@@ -420,6 +423,7 @@ export class CodexGoalAppServerClient {
       responses: this.responseCount,
       serverRequests: this.serverRequestCount,
       maxProtocolLineChars: this.maxProtocolLineChars,
+      ...(this.skippedOversizedLines > 0 ? { skippedOversizedLines: this.skippedOversizedLines } : {}),
     };
   }
 
@@ -499,20 +503,58 @@ export class CodexGoalAppServerClient {
 
   private consumeStdout(chunk: string): void {
     this.protocolBytes += Buffer.byteLength(chunk);
-    this.stdoutBuffer += chunk;
-    while (true) {
-      const newline = this.stdoutBuffer.indexOf("\n");
-      if (newline < 0) {
-        if (this.stdoutBuffer.length > MAX_PROTOCOL_LINE_CHARS) {
+    let remaining = chunk;
+    while (remaining.length > 0 && !this.exitError) {
+      if (this.oversizedLineScanner) {
+        const newline = remaining.indexOf("\n");
+        const segment = newline < 0 ? remaining : remaining.slice(0, newline);
+        this.oversizedLineScanner.feed(segment);
+        this.maxProtocolLineChars = Math.max(this.maxProtocolLineChars, this.oversizedLineScanner.length);
+        if (this.oversizedLineScanner.failed) {
+          this.oversizedLineScanner = null;
           this.fail(new Error(`Codex app-server protocol line exceeded ${MAX_PROTOCOL_LINE_CHARS} characters`));
+          return;
+        }
+        if (newline < 0) return;
+        const ok = this.oversizedLineScanner.finish();
+        this.oversizedLineScanner = null;
+        this.protocolLines += 1;
+        if (!ok) {
+          this.fail(new Error(`Codex app-server protocol line exceeded ${MAX_PROTOCOL_LINE_CHARS} characters`));
+          return;
+        }
+        this.skippedOversizedLines += 1;
+        remaining = remaining.slice(newline + 1);
+        continue;
+      }
+      const newline = remaining.indexOf("\n");
+      if (newline < 0) {
+        this.stdoutBuffer += remaining;
+        if (this.stdoutBuffer.length > MAX_PROTOCOL_LINE_CHARS) {
+          this.maxProtocolLineChars = Math.max(this.maxProtocolLineChars, this.stdoutBuffer.length);
+          const scanner = new OversizedNotificationScanner();
+          scanner.feed(this.stdoutBuffer);
+          this.stdoutBuffer = "";
+          if (scanner.failed) {
+            this.fail(new Error(`Codex app-server protocol line exceeded ${MAX_PROTOCOL_LINE_CHARS} characters`));
+            return;
+          }
+          this.oversizedLineScanner = scanner;
         }
         return;
       }
-      const line = this.stdoutBuffer.slice(0, newline).trimEnd();
-      this.stdoutBuffer = this.stdoutBuffer.slice(newline + 1);
+      const line = (this.stdoutBuffer + remaining.slice(0, newline)).trimEnd();
+      this.stdoutBuffer = "";
+      remaining = remaining.slice(newline + 1);
       this.protocolLines += 1;
       this.maxProtocolLineChars = Math.max(this.maxProtocolLineChars, line.length);
       if (line.length > MAX_PROTOCOL_LINE_CHARS) {
+        const scanner = new OversizedNotificationScanner();
+        scanner.feed(line);
+        if (scanner.finish()) {
+          this.skippedOversizedLines += 1;
+          continue;
+        }
         this.fail(new Error(`Codex app-server protocol line exceeded ${MAX_PROTOCOL_LINE_CHARS} characters`));
         return;
       }
@@ -633,6 +675,7 @@ export class CodexGoalAppServerClient {
     this.exitError = error;
     this.process.stdout.off("data", this.stdoutDataHandler);
     this.stdoutBuffer = "";
+    this.oversizedLineScanner = null;
     for (const pending of this.pending.values()) {
       clearTimeout(pending.timeout);
       pending.reject(error);
@@ -675,5 +718,222 @@ export class CodexGoalAppServerClient {
     } catch {
       // Process may already be gone.
     }
+  }
+}
+
+const SKIPPABLE_ITEM_METHODS = new Set(["item/started", "item/updated", "item/completed"]);
+const MAX_TOP_LEVEL_TOKEN_CHARS = 128;
+
+/**
+ * Streaming structural validator for oversized JSON-RPC lines.
+ * Only permits skipping when the complete top-level object is a notification
+ * with `method` in `item/(started|updated|completed)`, `params` as an object,
+ * no top-level `id` or unknown top-level keys (regardless of field order),
+ * and no trailing tokens after the root object closes.
+ */
+class OversizedNotificationScanner {
+  length = 0;
+  failed = false;
+
+  private depth = 0;
+  private inString = false;
+  private escaped = false;
+  private rootClosed = false;
+  private topState: "beforeRoot" | "expectKeyOrEnd" | "inKey" | "expectColon" | "expectValue" | "inMethodString" | "inJsonrpcString" | "inSubtree" | "expectCommaOrEnd" =
+    "beforeRoot";
+  private currentKey = "";
+  private currentValue = "";
+  private seenMethod: string | null = null;
+  private seenParams = false;
+  private seenJsonrpc = false;
+
+  feed(chunk: string): void {
+    if (this.failed) return;
+    this.length += chunk.length;
+    for (let i = 0; i < chunk.length; i++) {
+      const ch = chunk[i]!;
+      if (this.rootClosed) {
+        if (!this.isWhitespace(ch)) {
+          this.failed = true;
+          return;
+        }
+        continue;
+      }
+
+      if (this.inString) {
+        if (this.escaped) {
+          this.escaped = false;
+          if (this.depth === 1 && (this.topState === "inKey" || this.topState === "inMethodString" || this.topState === "inJsonrpcString")) {
+            // Top-level keys and method/jsonrpc literals do not use escapes.
+            this.failed = true;
+            return;
+          }
+          continue;
+        }
+        if (ch === "\\") {
+          this.escaped = true;
+          continue;
+        }
+        if (ch === '"') {
+          this.inString = false;
+          if (this.depth === 1) {
+            if (this.topState === "inKey") {
+              this.topState = "expectColon";
+            } else if (this.topState === "inMethodString") {
+              if (!SKIPPABLE_ITEM_METHODS.has(this.currentValue)) {
+                this.failed = true;
+                return;
+              }
+              this.seenMethod = this.currentValue;
+              this.topState = "expectCommaOrEnd";
+            } else if (this.topState === "inJsonrpcString") {
+              if (this.currentValue !== "2.0") {
+                this.failed = true;
+                return;
+              }
+              this.seenJsonrpc = true;
+              this.topState = "expectCommaOrEnd";
+            }
+          }
+          continue;
+        }
+        if (this.depth === 1) {
+          if (this.topState === "inKey") {
+            this.currentKey += ch;
+            if (this.currentKey.length > MAX_TOP_LEVEL_TOKEN_CHARS) {
+              this.failed = true;
+              return;
+            }
+          } else if (this.topState === "inMethodString" || this.topState === "inJsonrpcString") {
+            this.currentValue += ch;
+            if (this.currentValue.length > MAX_TOP_LEVEL_TOKEN_CHARS) {
+              this.failed = true;
+              return;
+            }
+          }
+        }
+        continue;
+      }
+
+      if (this.depth === 0) {
+        if (this.isWhitespace(ch)) continue;
+        if (ch === "{" && this.topState === "beforeRoot") {
+          this.depth = 1;
+          this.topState = "expectKeyOrEnd";
+          continue;
+        }
+        this.failed = true;
+        return;
+      }
+
+      if (this.depth === 1) {
+        if (this.isWhitespace(ch)) continue;
+        if (this.topState === "expectKeyOrEnd") {
+          if (ch === "}") {
+            this.depth = 0;
+            this.rootClosed = true;
+            continue;
+          }
+          if (ch === '"') {
+            this.inString = true;
+            this.currentKey = "";
+            this.topState = "inKey";
+            continue;
+          }
+          this.failed = true;
+          return;
+        }
+        if (this.topState === "expectColon") {
+          if (ch === ":") {
+            this.topState = "expectValue";
+            continue;
+          }
+          this.failed = true;
+          return;
+        }
+        if (this.topState === "expectValue") {
+          if (this.currentKey === "method") {
+            if (this.seenMethod !== null || ch !== '"') {
+              this.failed = true;
+              return;
+            }
+            this.inString = true;
+            this.currentValue = "";
+            this.topState = "inMethodString";
+            continue;
+          }
+          if (this.currentKey === "jsonrpc") {
+            if (this.seenJsonrpc || ch !== '"') {
+              this.failed = true;
+              return;
+            }
+            this.inString = true;
+            this.currentValue = "";
+            this.topState = "inJsonrpcString";
+            continue;
+          }
+          if (this.currentKey === "params") {
+            if (this.seenParams || ch !== "{") {
+              this.failed = true;
+              return;
+            }
+            this.seenParams = true;
+            this.depth = 2;
+            this.topState = "inSubtree";
+            continue;
+          }
+          // Any other top-level key (including "id", "result", "error") fails closed immediately.
+          this.failed = true;
+          return;
+        }
+        if (this.topState === "expectCommaOrEnd") {
+          if (ch === ",") {
+            this.topState = "expectKeyOrEnd";
+            continue;
+          }
+          if (ch === "}") {
+            this.depth = 0;
+            this.rootClosed = true;
+            continue;
+          }
+          this.failed = true;
+          return;
+        }
+        this.failed = true;
+        return;
+      }
+
+      // depth >= 2 (inside top-level `params` object)
+      if (ch === '"') {
+        this.inString = true;
+        continue;
+      }
+      if (ch === "{" || ch === "[") {
+        this.depth += 1;
+        continue;
+      }
+      if (ch === "}" || ch === "]") {
+        this.depth -= 1;
+        if (this.depth === 1) {
+          this.topState = "expectCommaOrEnd";
+        }
+      }
+    }
+  }
+
+  finish(): boolean {
+    return (
+      !this.failed &&
+      this.rootClosed &&
+      this.depth === 0 &&
+      !this.inString &&
+      !this.escaped &&
+      this.seenMethod !== null &&
+      this.seenParams
+    );
+  }
+
+  private isWhitespace(ch: string): boolean {
+    return ch === " " || ch === "\t" || ch === "\r" || ch === "\n";
   }
 }

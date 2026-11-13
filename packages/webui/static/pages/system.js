@@ -267,7 +267,6 @@ function renderWorkflowFacts(facts) {
   const diagnostics = facts.diagnostics;
   const links = [
     run.parentWorkflowRunId ? `<a href="${esc(workflowRunLink(run.parentWorkflowRunId))}">Parent run</a>` : '',
-    run.resumedFromRunId ? `<a href="${esc(workflowRunLink(run.resumedFromRunId))}">Earlier execution</a>` : '',
     `<a href="/api/loop-trace?workflowRunId=${encodeURIComponent(run.runId)}">Full retained facts (JSON)</a>`,
   ].filter(Boolean).join(' · ');
   return `<section class="health-section" data-workflow-facts><h3>Workflow facts · ${esc(run.runId)}</h3>

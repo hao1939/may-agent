@@ -22,7 +22,6 @@ describe("workflow run storage", () => {
         endedAt: null,
         result_summary: null,
         result_reason: null,
-        resumedFromRunId: null,
         taskBinding: {
           appId: "evaluation",
           taskId: "task-1",

@@ -342,7 +342,6 @@ describe("daemon event subscribers", () => {
       endedAt: Date.now() - 1_000,
       result_summary: null,
       result_reason: "Process restarted",
-      resumedFromRunId: null,
     });
     const openEventId = Number(
       (

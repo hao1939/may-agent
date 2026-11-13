@@ -14,7 +14,7 @@ import { EventBus } from "../app/core/events/bus.js";
 import { createAgentRun } from "./agent-runner.js";
 import { closeDb, getDb } from "./db/connection.js";
 import { SubagentManager } from "./manager.js";
-import { appendSessionMessage } from "./persistence.js";
+import { appendSessionMessage, loadAllSessionMetas } from "./persistence.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 import type { SubagentDefinition } from "./types.js";
 
@@ -299,7 +299,7 @@ describe("manager session lifecycle", () => {
       // private definition retained by this attempt.
       manager.register({ ...definition("replacement"), name: "helper" });
       holdReplies = false;
-      const before = structuredClone(manager.registryStore.getRegistry());
+      const before = structuredClone(loadAllSessionMetas(manager.registryStore.persistDir));
 
       const response = await manager.createAgentsTool({ getCallerSessionId: () => caller }).execute("delegate", {
         action,
@@ -311,7 +311,7 @@ describe("manager session lifecycle", () => {
       expect(result.sessionId).toBeUndefined();
       expect(requests).toHaveLength(1);
       expect(manager.status().map((session) => session.sessionId)).toEqual([caller]);
-      expect(manager.registryStore.getRegistry()).toEqual(before);
+      expect(loadAllSessionMetas(manager.registryStore.persistDir)).toEqual(before);
     },
   );
 

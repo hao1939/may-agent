@@ -101,10 +101,10 @@ describe("RegistryStore atomic writes", () => {
 
     // Create a second store instance that reads from the same dir
     const store2 = new RegistryStore(persistDir);
-    const data = store2.getRegistry();
+    const session = store2.getSession("s1");
 
-    expect(data.sessions["s1"]).toBeDefined();
-    expect(data.sessions["s1"].task).toBe("task 1");
+    expect(session).not.toBeNull();
+    expect(session?.task).toBe("task 1");
   });
 
   it("does not leave .tmp files after successful write", () => {

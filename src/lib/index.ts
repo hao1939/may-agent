@@ -89,7 +89,7 @@ export type {
 
 export { readIdentity } from "./instance-identity.js";
 export type { InstanceIdentity } from "./instance-identity.js";
-export type { PersistedAgentConfig, PersistedSession, Registry, SessionKind } from "./persistence.js";
+export type { PersistedSession, SessionKind } from "./persistence.js";
 export { sendSocketCommand, waitForSocketEvent } from "./socket-client.js";
 export type { SocketEvent, SocketResponse } from "./socket-client.js";
 export type { ModelWithApiKey, SessionInfo, SubagentDefinition, TaskResult } from "./types.js";

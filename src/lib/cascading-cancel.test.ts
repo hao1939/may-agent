@@ -142,8 +142,7 @@ describe("parentSessionId via createAgentsTool", () => {
     const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
     const sessionId = parsed.sessionId;
 
-    const registry = (manager as any).registry.getRegistry();
-    expect(registry.sessions[sessionId].parentSessionId).toBe(callerSid);
+    expect(manager.registryStore.getSession(sessionId)?.parentSessionId).toBe(callerSid);
   });
 
   it("call action inherits workflowRunId and projectId from the caller session", async () => {
@@ -164,10 +163,10 @@ describe("parentSessionId via createAgentsTool", () => {
     const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
     const sessionId = parsed.sessionId;
 
-    const registry = (manager as any).registry.getRegistry();
-    expect(registry.sessions[sessionId].parentSessionId).toBe(callerSid);
-    expect(registry.sessions[sessionId].workflowRunId).toBe("wr_project");
-    expect(registry.sessions[sessionId].projectId).toBe("scout/scout-second-brain-learning");
+    const session = manager.registryStore.getSession(sessionId);
+    expect(session?.parentSessionId).toBe(callerSid);
+    expect(session?.workflowRunId).toBe("wr_project");
+    expect(session?.projectId).toBe("scout/scout-second-brain-learning");
   });
 
   it("fork action sets parentSessionId and inherits workflow/project lineage", async () => {
@@ -188,10 +187,10 @@ describe("parentSessionId via createAgentsTool", () => {
     const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
     const sessionId = parsed.sessionId;
 
-    const registry = (manager as any).registry.getRegistry();
-    expect(registry.sessions[sessionId].parentSessionId).toBe(callerSid);
-    expect(registry.sessions[sessionId].workflowRunId).toBe("wr_fork_project");
-    expect(registry.sessions[sessionId].projectId).toBe("scout/scout-second-brain-learning");
+    const session = manager.registryStore.getSession(sessionId);
+    expect(session?.parentSessionId).toBe(callerSid);
+    expect(session?.workflowRunId).toBe("wr_fork_project");
+    expect(session?.projectId).toBe("scout/scout-second-brain-learning");
   });
 
   it("call without a live caller is rejected without starting a session", async () => {
