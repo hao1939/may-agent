@@ -630,22 +630,16 @@ export class AppInboxHost {
   /** Retry one bounded page of unadmitted inputs. No execution claims or capacity. */
   async recoverAdmissions(): Promise<void> {
     if (this.#closed) return;
+    const now = this.#now();
     const readPage = () =>
       this.#db
         .prepare(
           `SELECT id FROM (
-        SELECT id FROM app_inbox_items INDEXED BY idx_app_inbox_unadmitted_ready
+        SELECT id FROM app_inbox_items INDEXED BY idx_app_inbox_unadmitted
         WHERE status != 'done' AND execution_task_id IS NULL
         AND (waiting_on_kind IS NULL OR waiting_on_kind != 'task' OR lease_owner IS NOT NULL)
         AND (lease_expires_at IS NULL OR lease_expires_at <= ?)
         AND (available_at IS NULL OR available_at <= ?)
-        AND COALESCE(json_extract(handling, '$.phase'), '') != 'deferred'
-        UNION ALL
-        SELECT id FROM app_inbox_items INDEXED BY idx_app_inbox_funding_due
-        WHERE status != 'done' AND execution_task_id IS NULL
-        AND (waiting_on_kind IS NULL OR waiting_on_kind != 'task' OR lease_owner IS NOT NULL)
-        AND (lease_expires_at IS NULL OR lease_expires_at <= ?)
-        AND json_extract(handling, '$.phase') = 'deferred' AND available_at IS NOT NULL AND available_at <= ?
         UNION ALL
         SELECT id FROM app_inbox_items INDEXED BY idx_app_inbox_rejected_feedback
         WHERE execution_task_id IS NULL AND status = 'done' AND waiting_on_kind IS NULL
@@ -657,7 +651,7 @@ export class AppInboxHost {
         ${this.#admissionCursor ? "AND id > ?" : ""}
       ORDER BY id LIMIT 64`,
         )
-        .all(this.#now(), this.#now(), this.#now(), this.#now(), this.#now(), ...(this.#admissionCursor ? [this.#admissionCursor] : []));
+        .all(now, now, now, ...(this.#admissionCursor ? [this.#admissionCursor] : []));
     let rows = readPage();
     if (!rows.length && this.#admissionCursor) {
       this.#admissionCursor = undefined;

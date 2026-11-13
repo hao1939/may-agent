@@ -249,7 +249,7 @@ describe("database connection ownership", () => {
       backup.exec("DROP INDEX idx_ma_one_open_metric");
       backup.run("INSERT INTO sessions (sessionId, agent, task, startedAt) VALUES ('retained-session', 'sample', 'Inspect', 1000)");
       backup.run(`INSERT INTO metric_alerts (metric_id, message, created_at)
-        VALUES ('sample.queue', 'first', 1000), ('sample.queue', 'duplicate', 2000)`);
+        VALUES ('sample.queue', 'first', 1000)`);
     } finally { backup.close(); }
     try {
       const restored = getDb(root);

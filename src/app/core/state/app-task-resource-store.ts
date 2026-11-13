@@ -31,6 +31,18 @@ import {
 const TASK_RESOURCE_SCHEMA_VERSION = 4;
 const MAX_CONTEXT_ATTEMPTS_PER_TASK = 16;
 
+function assertSupportedTaskResourceSchemaVersion(db: SqliteDb, appId: string, requirePresent = false): void {
+  const existingVersion = db
+    .prepare("SELECT value FROM app_task_store_meta WHERE app_id = ? AND key = 'schema_version'")
+    .get(appId) as { value?: string } | null;
+  const version = existingVersion?.value;
+  if ((requirePresent && version === undefined) || (version !== undefined && version !== String(TASK_RESOURCE_SCHEMA_VERSION))) {
+    throw new Error(
+      `Task resource store for ${appId} has unsupported schema_version ${version ?? "missing"} (expected ${TASK_RESOURCE_SCHEMA_VERSION})`,
+    );
+  }
+}
+
 // Read projection only: new input can await a claim while the last accepted
 // maintained cycle still has phase=converged. Do not rewrite that authority.
 const TASK_VIEW_PHASE_SQL = taskViewPhaseSql("app_tasks");
@@ -205,9 +217,9 @@ export class AppTaskResourceStore {
     const normalized = appId.trim().replace(/\.app$/, "");
     if (!normalized) throw new Error("Task resource store requires an App id");
     ensureTaskResourceSchema(db);
+    assertSupportedTaskResourceSchemaVersion(db, normalized);
     db.prepare(
-      `INSERT INTO app_task_store_meta(app_id, key, value) VALUES (?, 'schema_version', ?)
-       ON CONFLICT(app_id, key) DO UPDATE SET value = excluded.value`,
+      `INSERT OR IGNORE INTO app_task_store_meta(app_id, key, value) VALUES (?, 'schema_version', ?)`,
     ).run(normalized, String(TASK_RESOURCE_SCHEMA_VERSION));
     db.prepare("INSERT OR IGNORE INTO app_task_store_meta(app_id, key, value) VALUES (?, 'revision', '0')").run(
       normalized,
@@ -219,6 +231,7 @@ export class AppTaskResourceStore {
   static inspectFromDb(db: SqliteDb, appId: string): AppTaskResourceStore {
     const normalized = appId.trim().replace(/\.app$/, "");
     if (!normalized) throw new Error("Task resource store requires an App id");
+    assertSupportedTaskResourceSchemaVersion(db, normalized);
     return new AppTaskResourceStore(db, normalized, false);
   }
 
@@ -229,7 +242,9 @@ export class AppTaskResourceStore {
     const row = db
       .prepare("SELECT value FROM app_task_store_meta WHERE app_id = ? AND key = 'authority'")
       .get(normalized) as { value?: string } | null;
-    return row?.value === "resources" ? new AppTaskResourceStore(db, normalized, false) : null;
+    if (row?.value !== "resources") return null;
+    assertSupportedTaskResourceSchemaVersion(db, normalized, true);
+    return new AppTaskResourceStore(db, normalized, false);
   }
 
   static openStandalone(path: string, appId = "test"): AppTaskResourceStore {

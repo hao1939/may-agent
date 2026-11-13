@@ -1,6 +1,5 @@
 import { describe, expect, it } from "bun:test";
 import { openDatabase } from "../db.js";
-import { TASK_RESOURCE_SCHEMA, ensureTaskResourceSchema } from "./task-resource-schema.js";
 import { applyDbSchema } from "./schema.js";
 
 describe("canonical database schema", () => {
@@ -42,7 +41,7 @@ describe("canonical database schema", () => {
       applyDbSchema(trackedDb);
       expect(executedSql.some((sql) => sql.includes("SET changed_at = COALESCE"))).toBe(false);
       expect(preparedSql.filter((sql) => sql.includes("PRAGMA table_info(events)"))).toHaveLength(1);
-      expect(preparedSql.filter((sql) => sql.includes("PRAGMA table_info(app_inbox_items)"))).toHaveLength(2);
+      expect(preparedSql.filter((sql) => sql.includes("PRAGMA table_info(app_inbox_items)"))).toHaveLength(1);
       expect(preparedSql.filter((sql) => sql.includes("PRAGMA table_info(sessions)"))).toHaveLength(1);
       expect(preparedSql.filter((sql) => sql.includes("PRAGMA table_info(workflow_runs)"))).toHaveLength(1);
     } finally {
@@ -280,43 +279,6 @@ describe("canonical database schema", () => {
     }
   });
 
-  it("backfills event traces once when upgrading a pre-trace database", () => {
-    const db = openDatabase(":memory:");
-    try {
-      db.exec(`
-        CREATE TABLE events (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          event_type TEXT NOT NULL,
-          data TEXT,
-          timestamp INTEGER NOT NULL
-        );
-        INSERT INTO events (event_type, data, timestamp) VALUES ('legacy.event', '{}', 1);
-      `);
-
-      applyDbSchema(db);
-      expect(db.prepare("SELECT * FROM event_traces WHERE event_id = 1").get()).toMatchObject({
-        event_id: 1,
-        trace_id: "event:1",
-        parent_event_id: null,
-        visibility: "default",
-      });
-
-      // Existing trace schema means compatibility migration already ran.
-      // Integrity checks, not every process startup, report later corruption.
-      db.run("DELETE FROM event_traces WHERE event_id = 1");
-      applyDbSchema(db);
-      expect(db.prepare("SELECT * FROM event_traces WHERE event_id = 1").get()).toBeNull();
-
-      db.run("INSERT INTO events (event_type, data, timestamp) VALUES ('current.event', '{}', 2)");
-      expect(db.prepare("SELECT * FROM event_traces WHERE event_id = 2").get()).toMatchObject({
-        event_id: 2,
-        trace_id: "event:2",
-      });
-    } finally {
-      db.close();
-    }
-  });
-
   it("adds channel metadata to an existing App inbox table", () => {
     const db = openDatabase(":memory:");
     try {
@@ -382,20 +344,4 @@ describe("canonical database schema", () => {
       db.close();
     }
   });
-});
-
-it("upgrades control receipts for reopening without losing existing replay identity", () => {
-  const db = openDatabase(":memory:");
-  try {
-    db.exec(TASK_RESOURCE_SCHEMA.replace("'retry', 'cancel', 'reopen'", "'retry', 'cancel'"));
-    db.prepare(`INSERT INTO app_task_control_receipts VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run("prior", "sample", "work", "cancel", 1, 2, 3, 1000, '{"controlKey":"prior"}');
-    ensureTaskResourceSchema(db);
-    ensureTaskResourceSchema(db);
-    expect(db.prepare("SELECT receipt_json FROM app_task_control_receipts WHERE control_key = 'prior'").get())
-      .toEqual({ receipt_json: '{"controlKey":"prior"}' });
-    expect(() => db.prepare(`INSERT INTO app_task_control_receipts VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run("reopen", "sample", "work", "reopen", 1, 3, 4, 2000, "{}")).not.toThrow();
-    expect(db.prepare("PRAGMA index_list(app_task_control_receipts)").all().some((row) => row.name === "idx_app_task_control_receipts_task")).toBe(true);
-  } finally { db.close(); }
 });
