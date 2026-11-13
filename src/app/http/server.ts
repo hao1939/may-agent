@@ -45,8 +45,6 @@ import { readProjectIngressIdentity } from "./project-metadata.js";
 export { normalizeProjectPathForCompare } from "./project-metadata.js";
 export { buildAppAdmissionCommand, extractMarkdownSection, projectEventTargetForPath } from "./project-routes.js";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
-import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
-import { readWorkflowFacts } from "../../lib/workflow-facts.js";
 import { healthWindow, readWorkflowHealth, workflowHealthQuery } from "../adapters/reporting/workflow-health.js";
 import { contextUsageQuery, readContextUsage } from "../adapters/reporting/context-usage.js";
 import { METRIC_LIST_LIMIT, readMetricHistory, readMetricObservations } from "../adapters/reporting/metric-observations.js";
@@ -1034,40 +1032,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return view ? json(view) : json({ error: `Event ${eventId} not found` }, 404);
   }
 
-  function handleLoopTrace(url: URL): Response {
-    const eventId = url.searchParams.get("eventId");
-    const alertId = url.searchParams.get("alertId");
-    const metricId = url.searchParams.get("metricId");
-    const workflowRunId = url.searchParams.get("workflowRunId");
-    const sessionId = url.searchParams.get("sessionId");
-
-    let target: LoopTraceTarget | null = null;
-    if (eventId) {
-      const id = Number(eventId);
-      if (!Number.isFinite(id)) return json({ error: "eventId must be numeric" }, 400);
-      target = { eventId: id };
-    } else if (alertId) {
-      const id = Number(alertId);
-      if (!Number.isFinite(id)) return json({ error: "alertId must be numeric" }, 400);
-      target = { alertId: id };
-    } else if (metricId) {
-      target = { metricId };
-    } else if (workflowRunId) {
-      target = { workflowRunId };
-    } else if (sessionId) {
-      target = { sessionId };
-    }
-
-    if (!target) {
-      return json({ error: "one of eventId, alertId, metricId, workflowRunId, or sessionId is required" }, 400);
-    }
-
-    return json({
-      ...buildLoopTrace(_db(), target),
-      ...("workflowRunId" in target ? { workflowFacts: readWorkflowFacts(STATE_DIR, target.workflowRunId) } : {}),
-    });
-  }
-
   function json(data: unknown, status = 200): Response {
     return new Response(JSON.stringify(data), {
       status,
@@ -1369,18 +1333,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const projectActionsMatch = url.pathname.match(/^\/api\/projects\/([^/]+)\/actions$/);
       if (projectActionsMatch && req.method === "GET") return handleProjectActions(projectActionsMatch[1]);
       if (url.pathname === "/api/events/delivery-health") return handleEventDeliveryHealth(url);
-      const eventTraceMatch = url.pathname.match(/^\/api\/events\/(\d+)\/trace$/);
-      if (eventTraceMatch) {
-        const traceUrl = new URL(url);
-        traceUrl.pathname = "/api/loop-trace";
-        traceUrl.search = `?eventId=${eventTraceMatch[1]}`;
-        return handleLoopTrace(traceUrl);
-      }
       const eventViewMatch = url.pathname.match(/^\/api\/events\/(\d+)$/);
       if (eventViewMatch && req.method === "GET") return handleEventView(eventViewMatch[1]);
       if (url.pathname === "/api/events" && req.method === "POST") return handleEventIngress(req);
       if (url.pathname === "/api/events") return handleEvents(url);
-      if (url.pathname === "/api/loop-trace") return handleLoopTrace(url);
       const metricEvidenceMatch = url.pathname.match(/^\/api\/metrics\/([^/]+)\/evidence$/);
       if (metricEvidenceMatch) {
         if (req.method !== "GET") return json({ error: "GET required" }, 405);

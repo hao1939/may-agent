@@ -340,7 +340,6 @@ async function readSessionDetail(sessionId, opts = {}) {
       <div class="header-row" style="margin-top:8px">
         <span style="font-size:14px"><a href="/agents/${attrEsc(encodeURIComponent(s.agent))}" style="color:var(--accent);text-decoration:none">${esc(s.agent)}</a></span>
         <span style="color:var(--fg2);font-size:13px">· ${durStr} · ${s.opCount || 0} ops</span>
-        <button class="ask-btn" style="margin-left:auto" onclick='openLoopTrace({sessionId:${sessionIdArg}})'>trace</button>
       </div>
       <div style="font-size:12px;color:var(--fg2);margin-top:6px">
         <span title="${s.startedAt || ''}">Started: ${fmtTime(s.startedAt)}</span>
@@ -363,7 +362,7 @@ async function readSessionDetail(sessionId, opts = {}) {
     }
     if (s.model) html += `<dt>Model</dt><dd>${esc(s.model)}</dd>`;
     if (s.parentSessionId) html += `<dt>Parent</dt><dd><a href="/sessions/${attrEsc(encodeURIComponent(s.parentSessionId))}" style="color:var(--accent)">${esc(s.parentSessionId)}</a></dd>`;
-    if (s.workflowRunId) html += `<dt>Workflow Run</dt><dd><a href="#" style="color:var(--accent)" onclick='event.preventDefault();openLoopTrace({workflowRunId:${workflowRunIdArg}})'>${esc(s.workflowRunId)}</a></dd>`;
+    if (s.workflowRunId) html += `<dt>Workflow Run</dt><dd>${esc(s.workflowRunId)}</dd>`;
     if (s.requestId) html += `<dt>Request</dt><dd>${esc(s.requestId)}</dd>`;
     html += `</dl></div>`;
 

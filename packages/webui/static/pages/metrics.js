@@ -30,10 +30,6 @@ function workflowHealthLink(data, changes = {}) {
   return '/metrics?' + params;
 }
 
-function workflowRunLink(id) {
-  return '/events?workflowRunId=' + encodeURIComponent(id) + '#loop-trace';
-}
-
 function workflowOutcomeCards(data) {
   const t = data.totals;
   return `<div class="health-summary" data-workflow-outcomes>
@@ -52,7 +48,7 @@ function workflowCoverage(data) {
 function workflowRunTable(data) {
   if (!data.runs.length) return '<p>No matching retained executions.</p>';
   return `<div class="health-scroll"><table class="health-table"><thead><tr><th>Run / workflow</th><th>Outcome</th><th>Finished</th><th>Duration</th><th>Reason (preview)</th></tr></thead><tbody>
-    ${data.runs.map(run => `<tr><td><a href="${esc(workflowRunLink(run.runId))}">${esc(run.runId)}</a><div class="health-note">${esc(run.workflow)}</div></td>
+    ${data.runs.map(run => `<tr><td><code>${esc(run.runId)}</code><div class="health-note">${esc(run.workflow)}</div></td>
     <td>${esc(run.status)}</td><td>${esc(healthTime(run.endedAt))}</td><td>${esc(healthDuration(run.durationMs))}</td><td class="health-text">${esc(run.reason || '—')}</td></tr>`).join('')}
     </tbody></table></div>`;
 }
@@ -188,7 +184,7 @@ function renderContextUsage(data) {
       ${data.groups.map(g => `<tr><td>${esc(g.preparer)} · ${esc(g.outcome)}</td><td>${g.measuredReplies ? usageNumber(g.inputExposure) + ' / ' + usageNumber(g.output) : 'Unknown'}</td><td>${usageNumber(g.meanTaskBytes)} → ${usageNumber(g.meanPromptBytes)}</td><td>${esc(healthDuration(g.meanPreparationMs))}</td></tr>`).join('')}
       </tbody></table></div>
       <p class="health-note">The existing maintenance pass retires usage records after 30 days without updates. Session and workflow evidence may be retired earlier.</p>
-      <ul>${data.runs.map(r => `<li>${r.outcome === 'preparation-error' ? `${esc(r.agent)} · Preparation failed before session execution` : r.sessionAvailable ? `<a href="/sessions/${encodeURIComponent(r.sessionId)}">${esc(r.agent)} · ${esc(r.sessionId)}</a>` : `${esc(r.agent)} · ${esc(r.sessionId)} · Session evidence unavailable`} · ${esc(r.preparer)} · ${esc(r.outcome || 'unfinished')} · ${esc(healthTime(r.startedAt))}${r.workflowAvailable ? ` · <a href="${esc(workflowRunLink(r.workflowRunId))}">Workflow evidence</a>` : ''}</li>`).join('')}</ul>
+      <ul>${data.runs.map(r => `<li>${r.outcome === 'preparation-error' ? `${esc(r.agent)} · Preparation failed before session execution` : r.sessionAvailable ? `<a href="/sessions/${encodeURIComponent(r.sessionId)}">${esc(r.agent)} · ${esc(r.sessionId)}</a>` : `${esc(r.agent)} · ${esc(r.sessionId)} · Session evidence unavailable`} · ${esc(r.preparer)} · ${esc(r.outcome || 'unfinished')} · ${esc(healthTime(r.startedAt))}${r.workflowAvailable ? ` · <code>${esc(r.workflowRunId)}</code>` : ''}</li>`).join('')}</ul>
       ${data.runsTruncated ? '<p>Newest 50 matching invocations shown. Narrow the App, agent or preparer selection.</p>' : ''}
     </details>`;
 }
@@ -255,7 +251,7 @@ async function showMetricHistory(id, metric, generation) {
     el.innerHTML = `<h2>${esc(metric.name || id)}</h2><p>${esc(id)} · ${esc(metric.type || 'unspecified')} · ${esc(metric.unit || 'no unit')}</p>
       <p>${esc(metric.description || metric.source || 'No source description recorded.')}</p><p>${esc(metricObservationLabel(metric))}</p><p>${esc(metricRuleLabel(metric))}</p>
       ${metric.workflowSelection ? `<p><a href="/metrics?${attrEsc(new URLSearchParams({ ...metric.workflowSelection, runs: 'true' }).toString())}">Inspect retained runs for this observation's window</a> · Counts are recalculated; retention or later settlement can change the available facts.</p>` : '<p class="health-note">This definition does not supply a known workflow-run selection.</p>'}
-      ${metric.alertOpen ? `<p class="health-warning">Open alert: ${esc(metric.alertMessage)} · <a href="/api/loop-trace?alertId=${metric.alertId}">retained alert facts (JSON)</a></p>` : ''}
+      ${metric.alertOpen ? `<p class="health-warning">Open alert: ${esc(metric.alertMessage)}</p>` : ''}
       <p class="health-note">${metric.staleAfterMs ? 'Stale after ' + esc(healthDuration(metric.staleAfterMs)) + ' (two declared sampling intervals).' : 'No sampling cadence: freshness is unknown.'} Measurement freshness is not system health.</p>
       ${metric.collectionFailure ? `<p class="health-warning">Last retained collection failure: ${esc(healthTime(metric.collectionFailure.at))} · ${esc(metric.collectionFailure.reason)} · <a href="/events/${metric.collectionFailure.eventId}">event</a></p>` : ''}
       <h3>Recorded sample history</h3><div class="health-actions">${[1, 7, 14].map(d => `<button onclick="selectMetricDays(${jsStringAttr(id)}, ${d})">Last ${d === 1 ? '24 hours' : d + ' days'}</button>`).join('')}</div>${renderSparklineWithValues(data.snapshots, metric.threshold, 700, 160, metric.alert_op, { ...data.window, gapMs: metric.staleAfterMs, failures: data.failures })}
