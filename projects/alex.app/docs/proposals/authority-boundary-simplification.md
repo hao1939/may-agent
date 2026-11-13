@@ -300,6 +300,41 @@ with the existing `reports` root-layout warning. This removes competing
 maintenance instructions without changing discovered skills, live session
 prompts or Task behavior. No runtime or model-quality improvement is claimed.
 
+### Completed support cleanup: one execution policy for shared skills
+
+The discoverable `budget-before-act` skill is retired. It required guessed turn
+budgets, percentage checkpoints and early placeholder files, and allowed required
+work to be deferred to fit those estimates. Its fallback for an unknown allowance
+was to assume half had already been consumed. These rules competed with the
+actual caller/runtime allowance and the assignment's acceptance requirements.
+The existing Task guide already covers retaining useful progress, continuing
+unfinished work and returning a truthful result when the finish reserve begins.
+
+`obstacle-pivot` keeps its name, metadata and useful tool-failure diagnosis, but
+loses its universal three-try cutoff, mandatory same-response fallback ladder,
+retired guard examples and private `finish(status: "partial"/"blocked")` advice.
+It now distinguishes a useful fallback from weaker verification, preserves
+uncertain effects before retrying mutations, respects authority, and returns
+failure evidence through the supplied result contract. Actual operation limits,
+App repair bounds, cancellation, retained work and caller returns remain.
+The [skill contract](../2a-design/skills.md) and shared README make this boundary
+explicit. No replacement budget skill, timer, state record or loader is added.
+
+At Apps `d0191d2b55`, tracked production source has no named caller of
+`budget-before-act`; it was offered through shared discovery. Its deliberate
+loss is that catalog entry and explicit activation name. Existing persistent
+prompts are not rewritten. Historical experiments and Gym scenarios remain;
+their embedded prompts and old scores do not verify the revised instructions.
+
+Before/after loading with Host `2dd58ba3e3` checks all nine enabled source agents:
+only `budget-before-act` leaves the bounded catalog, only `obstacle-pivot` changes
+body, and all other skill metadata, hashes and full invocation text match.
+There are no diagnostics or omitted entries; explicit activation of the retired
+name reports unavailable. The six existing shared-guidance tests and
+`check:may-design` pass, with the existing `reports` root-layout warning. These
+checks establish source packaging and delivery, not improved model judgment or
+live adoption.
+
 ### Other candidates remain evidence-led
 
 Recurring research can need fresh observations. Automatic evaluation and

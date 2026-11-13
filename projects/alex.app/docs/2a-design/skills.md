@@ -32,6 +32,11 @@ Skill loading must not create a parallel request lifecycle or its own success
 state machine. The enclosing request correlates a bounded turn; an App Task owns durable
 work. Workflow and session records remain execution evidence.
 
+Skill instructions operate within the caller's authority, requirements and
+execution allowance. Runtime limits and App-specific repair bounds retain their
+owners; a generic skill does not add a competing turn quota, retry counter or
+result vocabulary. The supplied result schema governs reporting partial work.
+
 ## Documentation used directly as guidance
 
 A practical document can itself supply task-specific skill instructions. Keep

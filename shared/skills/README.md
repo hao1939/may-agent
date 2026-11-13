@@ -38,6 +38,11 @@ read or invoke the selected skill through the supported execution path. There
 is no general requirement to copy skill bodies into every task message, produce
 a planning checklist for every task, or replace a needed file read with memory.
 
+Execution allowances and retry limits come from the caller/runtime and the
+operation's policy. The Task execution guide owns continuation, saved waits and
+result reporting; `obstacle-pivot` supplies tool-failure diagnosis within those
+bounds. Preserve requirements and useful partial work when an execution ends.
+
 ## Current System Skills
 
 - `system-investigation/SKILL.md` — investigate runtime, metrics, alerts,
