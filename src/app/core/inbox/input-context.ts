@@ -6,7 +6,6 @@ type TaskInputReport = AppResult & {
   attemptId: string;
   reportRevision?: number;
   /** Preserve a historical publication's wire status on retry. */
-  reportStatus?: "blocked";
   state?: string;
 };
 export type TaskInputObservation = AppDependencyObservation & {

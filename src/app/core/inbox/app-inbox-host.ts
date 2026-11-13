@@ -39,7 +39,7 @@ import {
   type AppTurnTarget,
   type CreateAppInboxItem,
 } from "../state/app-inbox-store.js";
-import { completeTaskInput, recoverTaskInputAdmissionKey, rejectTaskInput } from "../state/inbox.js";
+import { completeTaskInput, rejectTaskInput } from "../state/inbox.js";
 import { AppTaskAdmissionError } from "../state/task-admission-error.js";
 import {
   observeTaskDependency,
@@ -688,7 +688,7 @@ export class AppInboxHost {
       return;
     let observationFingerprint: string | undefined;
     try {
-      const admissionKey = recoverTaskInputAdmissionKey(this.#db, item);
+      const admissionKey = item.taskAdmissionKey;
       if (!admissionKey)
         throw new Error("Input has no unambiguous Task admission; repair its saved link before returning a result");
       const observed = await observeTaskDependency(

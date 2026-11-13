@@ -707,9 +707,9 @@ test("recovery scopes report lookups to linked Tasks without changing legacy JSO
   f.db.exec("BEGIN");
   for (let i = 0; i < 500; i++) {
     f.db.prepare("INSERT INTO app_task_admissions VALUES (?, ?, ?)").run(app.id, `unrelated-${i}`,
-      JSON.stringify({ ...saved, taskId: `unrelated-${i}`, reportAttemptId: claim.attemptId }));
+      JSON.stringify({ ...saved, taskId: `unrelated-${i}`, feedback: { progress: { attemptId: claim.attemptId, revision: 1 } } }));
     f.db.prepare("INSERT INTO app_task_admissions VALUES (?, ?, ?)").run(`unrelated-app-${i}`, "report",
-      JSON.stringify({ ...saved, reportAttemptId: claim.attemptId }));
+      JSON.stringify({ ...saved, feedback: { progress: { attemptId: claim.attemptId, revision: 1 } } }));
     createAppInboxItem(f.db, {
       id: `historical-result-${i}`, appId: app.id, conversationId: "chat",
       source: { kind: "system", id: `historical-result-${i}` },

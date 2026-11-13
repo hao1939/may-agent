@@ -3760,7 +3760,6 @@ describe("App task reconciler state", () => {
       attemptResourceVersion: attempt.metadata.resourceVersion,
       leaseId: attempt.lease.id,
       leaseVersion: attempt.lease.version,
-      legacyLeaseLess: false as const,
       sessionId: "terminal-agent-session",
       terminalStatus: "done" as const,
     };
@@ -3820,7 +3819,6 @@ describe("App task reconciler state", () => {
       attemptResourceVersion: attempt.metadata.resourceVersion,
       leaseId: attempt.lease.id,
       leaseVersion: attempt.lease.version,
-      legacyLeaseLess: false as const,
       sessionId: "live-agent-session",
       terminalStatus: "done" as const,
     };

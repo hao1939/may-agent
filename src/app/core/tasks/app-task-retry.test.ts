@@ -181,36 +181,6 @@ it.each([false, true])("preserves a legacy explicit reset (later admission check
   expect(f.config.resourceStore.readTask("work")!.status.executionFailures).toBe(1);
 });
 
-it("reads legacy progress independently and retains it when the first failure is selected", () => {
-  const f = fixture();
-  const progress = f.claim();
-  deferAppTask(f.config, progress, {
-    disposition: "waiting", continue: true, report: true,
-    summary: "One measurement saved", facts: ["sample:one"],
-  });
-  const admission = f.config.resourceStore.readTaskContext({ taskIds: [], admissionIds: ["ask:measure"] })
-    .appTaskAdmissions!["ask:measure"]!;
-  delete admission.feedback;
-  admission.reportAttemptId = progress.attemptId;
-  admission.reportRevision = 1;
-  f.config.resourceStore.commit({
-    fences: [{ taskId: "work", resourceVersion: f.config.resourceStore.readTask("work")!.metadata.resourceVersion }],
-    admissions: [{ taskId: "ask:measure", value: admission }],
-  });
-  f.reopen();
-  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "progress"))
-    .toMatchObject({ attemptId: progress.attemptId, reportRevision: 1 });
-  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "failure")).toBeNull();
-  const failure = f.claim();
-  failAppTaskAttempt(f.config, failure, "Source unavailable");
-  f.reopen();
-  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "progress"))
-    .toMatchObject({ attemptId: progress.attemptId, reportRevision: 1 });
-  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "failure"))
-    .toMatchObject({ attemptId: failure.attemptId, reportRevision: 2 });
-  expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")).toBeNull();
-});
-
 it("explicit unlimited policy continues hourly, preserving its deadline and input across reopen", () => {
   const f = fixture("unlimited");
   let now = Date.now();
@@ -778,8 +748,6 @@ it("rolls failure, input restoration and deadline back together, and guards inde
   expect(() => failAppTaskAttempt(f.config, claim, "Provider unavailable")).toThrow("retry write rejected");
   expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("running");
   expect(f.config.resourceStore.readTask("work")?.status.executionRetryAt).toBeUndefined();
-  expect(f.config.resourceStore.readTaskContext({ taskIds: [], admissionIds: ["ask:measure"] })
-    .appTaskAdmissions?.["ask:measure"]?.reportAttemptId).toBeUndefined();
   f.config.resourceStore.db.exec("DROP TRIGGER reject_retry");
   failAppTaskAttempt(f.config, claim, "Provider unavailable");
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure", "report"))
