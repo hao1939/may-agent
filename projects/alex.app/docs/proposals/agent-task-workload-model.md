@@ -55,9 +55,13 @@ applied passes, including eight guarded finite-result endings with unfinished
 and standing work preserved. Choices stayed equal under the available light/busy
 capacity. The subsequent
 [contention comparison](../archive/reviews/workload-contention-comparison-20261113.md)
-applied two useful optional investigations with supplied feedback across twelve
-model passes, while both arms deferred under heavy load. It also exposed
-confusion between current-root and shared capacity and higher planning overhead.
+first applied two useful optional investigations with supplied feedback across
+twelve model passes, while both arms deferred under heavy load. A second cohort
+with clarified root attribution produced six verified investigations: both arms
+investigated under light load and deferred under heavy load, and each completed
+one recovery investigation. Each also exhausted its request allowance on another
+recovery pass. Accepted reasoning improved; excessive discovery, attempted writes
+by a decision helper and journal-write contention remain follow-up issues.
 Reliable adaptation, overall workload benefit and production adoption remain
 unproven. The dated November 8
 milestone observations below are historical snapshots, not current rollout state.
@@ -344,6 +348,19 @@ against authoritative state when the chosen operation is admitted. Ready work
 should continue through ordinary dispatch while workload review occurs; optional
 planning must not become another admission gate. Count planning/read overhead
 when judging feedback value, as well as any saved business effort.
+
+When a workflow calls a helper to judge a business choice, the brief should make
+the helper's responsibility explicit: return the selected method and reason in
+the caller's result contract. The workflow applies that decision through existing
+authorized Host operations. Include the original opportunity, current wake,
+relevant accepted evidence and trusted resource attribution so the helper can
+distinguish them without rediscovering its contract or recovering input already
+provided. A readonly discovery action supplies facts; it cannot commission work.
+Use additional reads for a material missing fact within the bounded pass. A
+failed helper leaves its obligation visible and follows the existing failure
+and wake paths; a previously accepted result is historical evidence until a
+fresh attempt records a new decision. This requires no additional model approval
+or decision store.
 
 Task count is supporting context. If `K` is used as a workload reference, crossing
 it prompts review; it is not an automatic rejection or closure threshold. Hard

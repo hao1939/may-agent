@@ -124,9 +124,10 @@ All twelve model planning passes completed with 23 forwarded requests and
 1,041,531 serialized request bytes, zero application refusals and zero
 provider/bridge errors. The local programmatic results, original requirements,
 account charges, execution release and journal recovery passed. No runtime or
-business-worker SQLite warning was found. Raw provider-adapter usage reports
-244,069 total tokens: 15,242 input, 48,317 cache-read, 168,267 cache-write and
-12,243 output, with 5,710 reasoning tokens reported separately. These fields
+business-worker SQLite warning was found. Deduplicated provider-adapter usage
+reports 210,189 total tokens: 15,230 input, 48,317 cache-read, 136,379 cache-write
+and 10,263 output, with 4,939 reasoning tokens reported separately. The later
+assessment below corrects the earlier duplicate-snapshot count. These fields
 do not establish a verified monetary tariff.
 
 | Observation | Control investigations | Supplied-feedback investigations | Median report-C admission time, control / feedback |
@@ -189,3 +190,151 @@ workload-contention prefix. Reproduction commands and bounds are retained in
 the linked experiment README and each cohort manifest. Independent raw-record
 assessment is `/home/hao/workspace-archive/workload-contention-model1-assessment.json`.
 All original manifests, requests, responses and failed receipts remain unchanged.
+
+
+## Clarified assignment context
+
+The next experiment source is `810bfe44c5f784863027f92fb755cd5e9bcdbae9`,
+against the same pinned Host `0c7b0adb07`. It adds a factual root declaration to
+the original owner input in both arms: each required report has its independent
+historically attributed root, while a commissioned investigation inherits the
+owner's root. Fixture setup checks every declared required/owner root against
+actual Host bindings, and commissioning checks the contribution's actual binding.
+A creator or grouping parent cannot substitute for those records.
+
+The common prompt distinguishes current-root bounds from shared Host/recipient/
+App competition and current runnable demand from retained returned work. It also
+asks for a bounded scoped workload read when a material unknown could change the
+choice. No new shared-capacity observations are inserted into control, and neither
+choice is mandatory. Business inputs, value, acceptance, budgets, method costs,
+execution limits, tools and dispatch order are retained. Root declarations and
+common interpretive guidance are a combined context correction, not a separate
+causal estimate of each sentence's effect.
+
+Two targeted tests passed with 17 assertions, including actual independent root
+bindings, an empty required root during a shared-Host capacity denial, and the
+commissioned contribution's inherited root. Strict source-SDK types passed.
+The frozen local matrix passed all 12 planning passes and 12 scripted requests,
+with 534,338 serialized request bytes, no mechanical failures and no runtime
+warnings. The new model matrix retains the same 12-pass bounds. The heavy pass
+is kept to establish real retained recovery state; successful old decisions are
+not transplanted into a changed revision.
+
+### Model results with clarified context
+
+The second frozen cohort finished all 12 passes with 34 forwarded requests and
+1,633,251 serialized request bytes. Ten passes accepted a fresh decision and
+applied the corresponding business operation. Two recovery passes exhausted the
+four-request allowance; the process correctly exited with failure. Neither was
+retried or given a higher ceiling.
+
+| Observation | Control fresh decisions | Supplied-feedback fresh decisions | Requests, control / feedback |
+| --- | --- | --- | --- |
+| Light | 2 investigate | 2 investigate | 6 / 6 |
+| Heavy | 2 defer | 2 defer | 4 / 2 |
+| Recovered | 1 investigate, 1 failed pass | 1 investigate, 1 failed pass | 8 / 8 |
+
+All six commissioned investigations returned verified artifacts with 12 records,
+six ambiguous labels and the unchanged $600 total. The eight light/heavy passes
+also returned their required report-C artifact. Accepted choices distinguished
+independent report roots from shared competition and returned reports from
+current runnable demand. Heavy deferrals retained the optional input; each
+successful recovery reconsidered it after actual joined capacity release. No
+selected method caused a required capacity denial. Original requirements,
+creators and input remained intact. Existing harness assertions confirmed credits
+and joined execution release; the independent assessment rechecked archived
+artifact hashes, requirements, attempt identity and journal receipts.
+
+Both arms now make the same accepted choices. All six control passes requested
+a scoped workload read; the supplied-feedback passes used their existing
+summary. The feedback arm used 16 requests versus control's 18, with the two
+saved requests occurring under heavy load. There is no demonstrated outcome
+advantage for supplied feedback in this revision. Both arms also received the
+new root declarations and interpretation guidance, so the change from the first
+cohort is not an isolated estimate of feedback or of either prompt paragraph.
+Two repetitions cannot establish reliable adaptation.
+
+Light report-C median admission time was 24.8 ms in control and 20.9 ms in
+feedback; heavy admission was 24.0 and 25.2 ms. All admitted at their first check.
+Light median ready waiting, including the serialized planning and dispatch
+stage, was 22.25 s in control and 26.64 s in feedback. Heavy ready waiting was
+11.75 and 10.45 s. Recovery has no new report demand and therefore no waiting
+measurement. Planning still dominates the roughly two-second method. This run
+does not establish an overall latency improvement.
+
+### Recovery failures and decision ownership
+
+Repetition-0 control recovery used its four forwarded turns for workload,
+contract and creator discovery. A targeted `created` read was rejected because
+that action discovers only the current creator and accepts limit/cursor, then
+the fifth request was refused. Repetition-1 feedback recovery read the contract,
+attempted communication without a valid input identity and tried to recover
+original input from the synthetic `fixture.review` wake. Its next discovery
+request was also refused. Those are bounded discovery failures, not a provider
+outage or a newly accepted business deferral.
+
+Both failed Task records retain their previous heavy-pass result, alongside a
+new execution-failure attempt and an unchanged accepted-attempt identity. The
+assessment excludes that historical result from recovery choices. The owner
+still owes reconsideration of its retained optional opportunity; failure does
+not consume it, close the standing Task or establish a new commissioning
+decision. The failed pass archives also retain pending App inspection, and one
+retains a pending `session.end` journal receipt. The harness does not run its
+successful-pass journal recovery on these failures.
+
+The extra-turn problem also affects successful passes. Repetition-1 light
+feedback tried to create work through the readonly `created` action;
+repetition-1 control recovery tried to commission through readonly `outcomes`.
+Validation rejected both writes. Repetition-0 feedback recovery submitted an
+incorrect `finish` envelope and corrected it on its last allowed turn. Keep
+those errors in the cost assessment even when the final choice is valid.
+
+The next simplification belongs at the business decision boundary. A helper
+asked to choose a method should receive the original opportunity, current wake,
+trusted roots, relevant facts and its return contract, and return its decision.
+The calling workflow owns commissioning, guarded result admission and delivery
+through existing Host operations. Readonly discovery is for facts that could
+change that decision; contract lookup or input recovery already covered by the
+brief should not become prerequisites. This clarifies responsibility without
+adding a controller, budget increase, mandatory choice or second decision ledger.
+It is a proposed next source revision, not a claim that this cohort verified
+the simpler boundary.
+
+### Journal warnings and cost accounting
+
+The second cohort logged five `database is locked` warnings while recording
+event-delivery outcomes. All business-worker processes exited successfully with
+empty stderr. The existing offline Inbox recovery settled the ten successful
+passes' journal receipts using the same event identities. This is evidence of
+retained journal recovery in the local fixture, not external delivery acceptance
+or proof that the serving Host's behavior under contention is adequate. Preserve
+the warnings and investigate the receipt-write boundary separately before
+relying on this trial for production activation. Raising SQLite waits globally
+or changing admission policy would not follow from this evidence alone.
+
+Recovery archives copy earlier sessions. Counting every archived copy inflated
+the first cohort's published total to 244,069 tokens. Deduplicating by session
+identity and line position, and requiring identical content for duplicate
+positions, gives its corrected 210,189 total above; the original independent
+assessment JSON remains unchanged. The second cohort reports 333,832 tokens:
+8,638 input, 112,699 cache-read, 200,393 cache-write and 12,102 output, with 5,583
+reasoning tokens reported separately. There are 34 forwarded model responses and
+two zero-usage bridge-error assistant entries after deduplication. These are raw
+adapter fields, not a verified monetary charge. All failed discovery and schema
+correction turns remain counted.
+
+The repeatable readonly assessor is
+`/home/hao/workspace-archive/workload-contention-assess-model2.py`; its completed
+output is `workload-contention-model2-assessment.json` in the same archive.
+It validates source hashes and exact revisions, requires fresh accepted-attempt
+identity for a new choice, and preserves both failures and the prior cost
+correction. No model rerun, source activation or live Task mutation followed this
+assessment.
+
+New private evidence is `workload-contention-20261113-context-local/` and
+`workload-contention-20261113-model2/` under the same archive. The first model
+cohort and its mixed reason evidence stay unchanged; only its duplicated cost
+summary is corrected here. Release and native owner/caller acceptance remain
+held. The next checks are a clearer decision-only helper contract and a focused
+receipt-contention reproduction, followed by a distinct frozen assessment if
+the source changes warrant one.
