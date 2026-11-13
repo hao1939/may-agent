@@ -582,10 +582,16 @@ it("a Task-owned workflow closes a reviewed child through the common creator cap
 export const name = "dispose";
 export const description = "Review and dispose a child assignment";
 export async function execute(ctx) {
-  const child = await ctx.read.tasks.get("work/child");
+  if (ctx.reconciliation.children.live.length !== 0)
+    throw new Error("Creator discovery must be independent of structural children");
+  const page = await ctx.read.tasks.created();
+  if (page.items.length !== 1) throw new Error("Expected exactly one creator-owned assignment");
+  const discovered = page.items[0];
+  const child = await ctx.read.tasks.get(discovered.taskId);
   const result = await ctx.closeTask({appId: "sample", taskId: child.id,
     expectedGeneration: child.generation, expectedResourceVersion: child.resourceVersion,
     afterResult: child.acceptedAttempt.id, reason: "Consumed the finite result"});
+  if ((await ctx.read.tasks.created()).items.length !== 0) throw new Error("Closed assignment remained in discovery");
   return ctx.done("Child disposition saved", {state: "converged", summary: "Owner accepted the child", facts: [result.status]});
 }`);
   await installAppTaskRuntimes({ ...options(f, bus), installControllers: false,
