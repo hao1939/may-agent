@@ -33,6 +33,7 @@ export function createTaskAgentRunner(
   definitions?: ReadonlyMap<string, SubagentDefinition>,
 ): TaskAgentRunner {
   return {
+    ...({ persistDir: input.manager.registryStore.persistDir } as Record<string, unknown>),
     available: (agent) => (definitions ? definitions.has(agent) : input.manager.hasAgent(agent)),
     executionRecipient: (agent) => {
       const definition = definitions ? definitions.get(agent) : input.manager.getAgentDefinition(agent);

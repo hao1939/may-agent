@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from "node:fs";
+import { appTaskContext, cancelAppTask, claimObservedAppTask, observeAppTaskIntent } from "../app/core/tasks/app-task-reconciler.js";
 import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
 import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
@@ -1333,5 +1335,168 @@ export async function execute(ctx) {
     if (result.type === "error") {
       expect(result.error).toContain("Task workflow start caller is no longer current");
     }
+  });
+
+  it.each(["cancelled", "superseded"] as const)(
+    "a %s Task attempt cannot lend its old authority to top-level workflow code or create a workflow_runs row",
+    async (mode) => {
+      const root = workflowRoot(`workflow-fenced-${mode}-`);
+      const marker = join(root, "executed.txt");
+      writeFileSync(
+        join(root, "inspect.ts"),
+        `
+          import { appendFileSync } from "node:fs";
+          export const name = "inspect";
+          export const description = "Run code without a managed agent";
+          export function execute(ctx) {
+            appendFileSync(${JSON.stringify(marker)}, "executed\\n");
+            return ctx.done("Executed code");
+          }
+        `,
+      );
+      const db = getDb(root);
+      const store = AppTaskResourceStore.fromDb(db, "sample");
+      store.bootstrapSnapshot({ project: "sample", groups: { root: { id: "root", parent_id: null } } }, "seed");
+      const config = appTaskContext({
+        appDir: join(root, "sample.app"),
+        projectDir: root,
+        agent: "owner",
+        resourceStore: store,
+      });
+      observeAppTaskIntent(config, {
+        appAgent: "owner",
+        intent: { id: "work", parentId: "root", outcome: "Collect facts", acceptance: ["Facts retained"] },
+      });
+      const claim = claimObservedAppTask(config, {
+        taskId: "work",
+        appAgent: "owner",
+        handler: "workflow:inspect",
+      });
+      if (claim.kind !== "claimed") throw new Error("Expected Task claim");
+      const binding = {
+        appId: "sample",
+        taskId: "work",
+        generation: claim.generation,
+        attemptId: claim.attemptId,
+      };
+      if (mode === "cancelled") {
+        const resource = store.readTask("work")!;
+        cancelAppTask(config, {
+          appId: "sample",
+          taskId: "work",
+          expectedGeneration: resource.metadata.generation,
+          expectedResourceVersion: resource.metadata.resourceVersion,
+          reason: "Withdrawn",
+        });
+      } else {
+        observeAppTaskIntent(config, {
+          appAgent: "owner",
+          intent: { id: "work", parentId: "root", outcome: "Revised outcome", acceptance: ["Facts retained"] },
+        });
+      }
+      const result = await createWorkflowRunner({
+        manager: {} as any,
+        workflowDir: root,
+        persistDir: root,
+        taskBinding: binding,
+      }).run("inspect", "Inspect");
+      expect(result.type).toBe("error");
+      expect(existsSync(marker)).toBe(false);
+      expect((db.prepare("SELECT count(*) AS n FROM workflow_runs").get() as { n: number })?.n).toBe(0);
+    },
+  );
+
+  it("current parent and nested workflows reuse their Task attempt and recheck canonical authority if cancelled before nested start", async () => {
+    const root = workflowRoot("workflow-nested-fenced-");
+    const marker = join(root, "executed.txt");
+    writeFileSync(
+      join(root, "inspect.ts"),
+      `
+        import { appendFileSync } from "node:fs";
+        export const name = "inspect";
+        export const description = "Run code without a managed agent";
+        export function execute(ctx) {
+          appendFileSync(${JSON.stringify(marker)}, "executed\\n");
+          return ctx.done("Executed code");
+        }
+      `,
+    );
+    writeFileSync(
+      join(root, "parent.ts"),
+      `
+        export const name = "parent";
+        export const description = "Run a nested method in the same attempt";
+        export async function execute(ctx) {
+          ctx.log.info("Before nested");
+          const result = await ctx.workflows.run("inspect", {});
+          return ctx.done(result.summary);
+        }
+      `,
+    );
+    const db = getDb(root);
+    const store = AppTaskResourceStore.fromDb(db, "sample");
+    store.bootstrapSnapshot({ project: "sample", groups: { root: { id: "root", parent_id: null } } }, "seed");
+    const config = appTaskContext({
+      appDir: join(root, "sample.app"),
+      projectDir: root,
+      agent: "owner",
+      resourceStore: store,
+    });
+    observeAppTaskIntent(config, {
+      appAgent: "owner",
+      intent: { id: "work", parentId: "root", outcome: "Collect facts", acceptance: ["Facts retained"] },
+    });
+    const claim = claimObservedAppTask(config, {
+      taskId: "work",
+      appAgent: "owner",
+      handler: "workflow:parent",
+    });
+    if (claim.kind !== "claimed") throw new Error("Expected Task claim");
+    const binding = {
+      appId: "sample",
+      taskId: "work",
+      generation: claim.generation,
+      attemptId: claim.attemptId,
+    };
+
+    // 1. Valid parent + nested execution succeeds and creates 2 workflow_runs rows
+    const okResult = await createWorkflowRunner({
+      manager: {} as any,
+      workflowDir: root,
+      persistDir: root,
+      taskBinding: binding,
+    }).run("parent", "Inspect");
+    expect(okResult).toMatchObject({ type: "done", summary: "Executed code" });
+    expect(readFileSync(marker, "utf8")).toBe("executed\n");
+    expect((db.prepare("SELECT count(*) AS n FROM workflow_runs").get() as { n: number })?.n).toBe(2);
+
+    // 2. If parent is cancelled during execution before nested workflow start, nested start produces neither side effects nor a new workflow_runs row
+    rmSync(marker, { force: true });
+    const runtimeCtx = {
+      getDb: () => db,
+      emit: () => {},
+      log: () => {
+        const resource = store.readTask("work")!;
+        cancelAppTask(config, {
+          appId: "sample",
+          taskId: "work",
+          expectedGeneration: resource.metadata.generation,
+          expectedResourceVersion: resource.metadata.resourceVersion,
+          reason: "Withdrawn before nested execution",
+        });
+      },
+    };
+    const cancelledResult = await createWorkflowRunner({
+      manager: {} as any,
+      workflowDir: root,
+      persistDir: root,
+      runtimeCtx: runtimeCtx as any,
+      taskBinding: binding,
+    }).run("parent", "Inspect");
+    expect(cancelledResult).toMatchObject({ type: "error", error: expect.stringContaining("no longer current") });
+    expect(existsSync(marker)).toBe(false);
+    // Parent run was created before cancellation (total 3), but nested run was rejected before creating a row
+    expect((db.prepare("SELECT count(*) AS n FROM workflow_runs").get() as { n: number })?.n).toBe(3);
+    expect(store.isCancelled("work")).toBe(true);
   });
 });
