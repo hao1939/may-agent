@@ -1,5 +1,5 @@
-import type { AppInputContext, AppResult, AppTaskAttachment, ResourceCreator } from "@may-agent/sdk";
 import { isDeepStrictEqual } from "node:util";
+import type { AppInputContext, AppResult, AppTaskAttachment, ResourceCreator } from "@may-agent/sdk";
 import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import {
@@ -287,34 +287,3 @@ export function completeTaskInput(db: SqliteDb, item: AppInboxItem, result: AppR
   );
 }
 
-/** Backfill only an unambiguous historical input admission, never the Task's latest answer. */
-export function recoverTaskInputAdmissionKey(db: SqliteDb, item: AppInboxItem): string | undefined {
-  if (item.taskAdmissionKey || item.waitingOn?.kind !== "task") return item.taskAdmissionKey;
-  const keys = [
-    `task:${item.id}`,
-    `task:${item.id}:desired:${item.waitingOn.id}`,
-    `task:${item.id}:existing:${item.waitingOn.id}`,
-  ];
-  const rows = db
-    .prepare(
-      `SELECT task_id, admission_json FROM app_task_admissions WHERE app_id = ?
-    AND task_id IN (?, ?, ?) AND json_extract(admission_json, '$.taskId') = ? ORDER BY task_id`,
-    )
-    .all(item.appId, ...keys, item.waitingOn.id);
-  if (!rows.length) return undefined;
-  // Older Hosts could retain desired/existing aliases for the same input.
-  // Different timestamps do not create different authority, but every bound
-  // Task, generation, spec, accepted answer and feedback field must agree.
-  const authorities = rows.map((row) => {
-    const authority = JSON.parse(String(row.admission_json)) as Record<string, unknown>;
-    delete authority.admittedAt;
-    return authority;
-  });
-  if (authorities.some((authority) => !isDeepStrictEqual(authority, authorities[0]))) return undefined;
-  const key = String(rows[0]!.task_id);
-  db.prepare(
-    `UPDATE app_inbox_items SET task_admission_key = ?
-    WHERE id = ? AND task_admission_key IS NULL AND waiting_on_kind = 'task' AND waiting_on_id = ?`,
-  ).run(key, item.id, item.waitingOn.id);
-  return key;
-}

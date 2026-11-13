@@ -2,7 +2,6 @@ import type { SqliteDb } from "../../../lib/db.js";
 
 /** Latest independent selections plus the readable legacy single-report form. */
 export const admissionReportIdsSql = `json_array(
-  json_extract(admission.admission_json, '$.reportAttemptId'),
   json_extract(admission.admission_json, '$.feedback.progress.attemptId'),
   json_extract(admission.admission_json, '$.feedback.failure.attemptId'))`;
 

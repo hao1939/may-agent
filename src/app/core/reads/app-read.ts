@@ -97,8 +97,6 @@ function currentTaskObligations(
                   available: true as const,
                   ...(admission.feedback ? { feedback: Object.fromEntries(Object.entries(admission.feedback)
                     .map(([kind, { attemptId, revision }]) => [kind, { attemptId, revision }])) } : {}),
-                  ...(admission.reportAttemptId ? { reportAttemptId: admission.reportAttemptId } : {}),
-                  ...(admission.reportRevision !== undefined ? { reportRevision: admission.reportRevision } : {}),
                   ...(admission.resultAttemptId ? { resultAttemptId: admission.resultAttemptId } : {}),
                 }
               : { available: false as const },

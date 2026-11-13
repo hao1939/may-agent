@@ -166,7 +166,6 @@ export type AppTaskAttemptRecovery = {
   leaseId?: string;
   leaseVersion?: number;
   /** Explicit dual-read marker for attempts persisted before leases existed. */
-  legacyLeaseLess: boolean;
 };
 
 export type AppTaskTerminalSessionRecovery = AppTaskAttemptRecovery & {
@@ -679,19 +678,6 @@ function resultInputKeys(
   return [...new Set(keys)];
 }
 
-/** Read independent feedback, including the historical single-report representation. */
-function admissionFeedback(config: Pick<AppTaskContext, "resourceStore">, admission: AppTaskAdmission) {
-  const feedback = { ...admission.feedback };
-  if (admission.reportAttemptId) {
-    const attempt = config.resourceStore.readAttempt(admission.reportAttemptId);
-    if (attempt && appTaskAttemptReport(attempt)) {
-      const kind = attempt.acceptedResult?.state === "waiting" ? "progress" : "failure";
-      feedback[kind] ??= { attemptId: admission.reportAttemptId, revision: admission.reportRevision ?? 1, legacyBlocked: true };
-    }
-  }
-  return feedback;
-}
-
 /** Bind only exact admitted input considered by this attempt; reports are not answers. */
 function inputOutcomeAdmissions(
   config: AppTaskContext,
@@ -715,14 +701,11 @@ function inputOutcomeAdmissions(
     if (!admission || admission.taskId !== claim.taskId || admission.taskGeneration > claim.generation ||
       admission.resultAttemptId) return [];
     if (kind === "progress" || kind === "failure") {
-      const feedback = admissionFeedback(config, admission);
+      const feedback = { ...admission.feedback };
       if (feedback[kind] && !input.report) return [];
-      const migrated = Object.values(feedback).some((entry) => entry.attemptId === admission.reportAttemptId);
-      const revision = Math.max(admission.reportRevision ?? 0, ...Object.values(feedback).map((entry) => entry.revision)) + 1;
+      const revision = Math.max(0, ...Object.values(feedback).map((entry) => entry.revision)) + 1;
       feedback[kind] = { attemptId: claim.attemptId, revision };
-      return [{ taskId: key, value: {
-        ...admission, feedback, ...(migrated ? { reportAttemptId: undefined, reportRevision: undefined } : {}),
-      } }];
+      return [{ taskId: key, value: { ...admission, feedback } }];
     }
     delete tree.resources?.[claim.taskId]?.status.inputWaits?.[key];
     return [{ taskId: key, value: { ...admission, resultAttemptId: claim.attemptId } }];
@@ -744,13 +727,12 @@ export function readAppTaskAdmissionOutcome(
       generation: number;
       state: "converged" | "waiting" | "incomplete" | "error";
       reportRevision?: number;
-      reportStatus?: "blocked";
     })
   | null {
   const admission = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: [admissionKey] })
     .appTaskAdmissions?.[admissionKey];
   if (admission?.taskId !== taskId) return null;
-  const feedback = kind === "answer" ? {} : admissionFeedback(config, admission);
+  const feedback = kind === "answer" ? {} : { ...admission.feedback };
   const selected = kind === "report"
     ? Object.values(feedback).sort((a, b) => b.revision - a.revision)[0]
     : kind === "answer" ? undefined : feedback[kind];
@@ -762,7 +744,6 @@ export function readAppTaskAdmissionOutcome(
     attemptId: attempt.metadata.id,
     generation: attempt.taskGeneration,
     ...(selected ? { reportRevision: selected.revision } : {}),
-    ...(selected?.legacyBlocked ? { reportStatus: "blocked" as const } : {}),
   };
   const accepted = attempt.acceptedResult;
   if (kind === "answer") return accepted?.state === "converged" ? { ...identity, ...accepted } : null;
@@ -1032,7 +1013,6 @@ export function recoverableAppTaskAttempts(
         attemptId: attempt.metadata.id,
         attemptResourceVersion: attempt.metadata.resourceVersion,
         ...(attempt.lease ? { leaseId: attempt.lease.id, leaseVersion: attempt.lease.version } : {}),
-        legacyLeaseLess: !attempt.lease,
       },
     ];
   });
@@ -1076,7 +1056,6 @@ export function expiredAgentSessionAppTaskAttempt(
     attemptResourceVersion: attempt.metadata.resourceVersion,
     leaseId: attempt.lease.id,
     leaseVersion: attempt.lease.version,
-    legacyLeaseLess: false,
   };
 }
 
@@ -1098,9 +1077,9 @@ export function releaseInterruptedAppTaskAttempt(
     resource.status.currentAttemptId !== recovery.attemptId ||
     attempt.metadata.id !== recovery.attemptId ||
     attempt.metadata.resourceVersion !== recovery.attemptResourceVersion ||
-    (recovery.legacyLeaseLess
-      ? attempt.lease !== undefined
-      : !attempt.lease || attempt.lease.id !== recovery.leaseId || attempt.lease.version !== recovery.leaseVersion)
+    (recovery.leaseId !== undefined
+      ? !attempt.lease || attempt.lease.id !== recovery.leaseId || attempt.lease.version !== recovery.leaseVersion
+      : attempt.lease !== undefined)
   )
     return { released: false, sessionIds: [] };
   const mutationScope = beginResourceMutationScopeForTasks(tree, [taskId]);
