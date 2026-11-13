@@ -227,7 +227,6 @@ roster because app ownership and model selection change independently.
 | `domain`       | Yes      | Domain of expertise                                                                                  |
 | `model`        | Yes      | Canonical model ID, such as `claude-opus-5` or `gpt-5.6-sol`.                                        |
 | `tools`        | Yes      | Tool presets (see below)                                                                             |
-| `memoryLimit`  | No       | Retained compatibility field; omit in new configs because it does not affect current prompt assembly |
 | `compaction`   | No       | Enable automatic context compaction for long sessions                                                |
 | `delegateDeny` | No       | Block delegation to specific agents                                                                  |
 
@@ -235,6 +234,11 @@ agent.json is **purely operational** — model, tools, limits, delegation rules.
 Always-loaded prompt content lives in `shared/common-sense.md` and the
 agent's `AGENTS.md`. Domain docs, tool recipes, lessons, skills, and knowledge
 indexes are read on demand.
+
+Older JSON may contain the retired `memoryLimit` field. It remains loadable;
+the candidate Host ignores that value. See
+[the selected cleanup](../proposals/external-components-simplification.md#retire-unused-memorylimit-configuration)
+for source status. Current configuration should omit it.
 
 ### Tool Presets
 

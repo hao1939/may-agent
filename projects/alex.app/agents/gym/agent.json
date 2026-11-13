@@ -8,6 +8,5 @@
     "read-only",
     "workflow",
     "finish"
-  ],
-  "memoryLimit": 5
+  ]
 }

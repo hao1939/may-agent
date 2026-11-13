@@ -296,6 +296,58 @@ both pass. Full local `MAY_TEST_SHARDS=4 bun run ci` passes at the combined head
 3,851 passes, zero failures and three installation-only skips. No installed-state
 or external model verification was run.
 
+## Retire unused memoryLimit configuration
+
+**Design status:** Proposed within the selected simplification work.
+**Implementation status:** [Host PR 480](https://github.com/hao1939/may-agent/pull/480)
+is a draft at `29bea281bb7a`, including merged Host baseline `9149a60268c2`.
+Companion App config/docs remove the unused setting; Host source merge and
+installed adoption are unverified.
+
+At reviewed Host baseline `4195036ad3`, `memoryLimit` exists in `AgentConfig`,
+`SubagentDefinition` and the registry's serializable agent view. The loader
+copies it into the definition and registry projection, but no current Host
+execution or prompt reader uses it. The current manual already documents that
+it has no effect. Several current App agent configs still supply the value,
+which makes an ineffective option look supported.
+
+Remove the field from those Host types and copy operations. Remove it from
+current App config files and the supported-field manual table. Keep the
+existing permissive JSON loader: older JSON carrying `memoryLimit` stays
+loadable, but the constructed execution definition and new registry view omit
+it. No alias, migration, replacement limit, special loader branch or runtime
+toggle is introduced. Historical files and benchmark fixtures remain evidence.
+
+The gain is fewer supported settings and less metadata plumbing for a value
+with no runtime consumer. The deliberate loss is the unused typed option and
+its appearance in newly projected registry metadata. Custom library-source
+callers should drop it. No memory limit or working prompt behavior is lost:
+compaction, skill discovery, supplied context and tool-output bounds retain
+their current contracts. No public SDK or event-schema change is required.
+This source reduction does not claim lower token use or better model quality.
+
+The existing legacy-configuration loader regression now includes `memoryLimit`
+and verifies that it loads through the real registry loader without propagating
+the field while preserving compaction and the execution root. Existing registry
+field tests retain their supported controls; stale fixture options are removed.
+App config verification checks that only the unused field was removed and uses
+the current source validator with synthetic model entries, without inspecting
+credentials or running agents. Companion changes may land before Host source
+because the removed option was already optional and ineffective at the reviewed
+baseline. The Host PR owns full CI and current-head hosted checks; installed
+adoption remains separate.
+
+Premerge verification: at initial head `1a835b7b970d`, the focused loader,
+registry and startup run passed 34 tests with zero failures and three
+installation-only skips. The four App config edits change only `memoryLimit`;
+the production validator accepts them with synthetic model entries. App
+`check:may-design` passed with zero errors and one existing root-layout warning.
+The first full local CI run passed static checks and 3,850 tests but failed one
+unchanged nested-worker test: SQLite contention preceded an expected-event
+timeout. The exact test passed in a subsequent isolated diagnostic run. This
+failure remains part of the evidence; combined-head local CI and hosted
+Quality/Container are pending. No installation or external provider trial ran.
+
 ## Project metadata reader: merged
 
 The user selected this consolidation. [Host PR 460](https://github.com/hao1939/may-agent/pull/460)
