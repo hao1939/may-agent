@@ -273,6 +273,33 @@ follow-up routing. Targeted strict source checks and `check:may-design` passed;
 the design check retains its pre-existing `reports` root-layout warning. This is
 source verification, not deployed delivery evidence.
 
+### Completed support cleanup: retire competing loose skill guides
+
+The loose `shared/skills/constraint-extraction.md`,
+`summarize-before-reread.md` and `DELIVERY-GUIDE.md` are retired. They prescribed
+a planning checklist for every task, memory quotations instead of needed file
+reads, and copying skill bodies into task messages through retired APIs.
+Those global rules competed with task-specific judgment and the current
+[skill discovery and invocation contract](../2a-design/skills.md). The shared
+skills README now points to that contract and the existing Task execution guide,
+and replaces obsolete verification paths and a daemon smoke command with the
+current offline checks.
+
+A tracked-source audit at Apps `cdb6f0f461` found no current callers of the three
+files. They were loose documents, not discovered `<name>/SKILL.md` packages.
+The planning experiment's baseline and treatment were still TBD; the retained
+EXP-850 records describe negative results, so their numbers do not justify a
+standing rule. Historical experiment records remain unchanged; Git retains
+the retired guides.
+
+Before/after loading with Host `2dd58ba3e3` produces identical skill metadata,
+content hashes, bounded catalogs and full-body invocation text for all nine
+enabled source agents, with no diagnostics or omitted entries. The six existing
+shared-guidance tests and 14 Host skill tests pass; `check:may-design` passes
+with the existing `reports` root-layout warning. This removes competing
+maintenance instructions without changing discovered skills, live session
+prompts or Task behavior. No runtime or model-quality improvement is claimed.
+
 ### Other candidates remain evidence-led
 
 Recurring research can need fresh observations. Automatic evaluation and

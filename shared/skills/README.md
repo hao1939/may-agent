@@ -32,6 +32,12 @@ skill guidance together with design changes; maintain one body for people and
 agents. `paths.json` points discovery at that directory; see the
 [optional-path contract and availability](../../projects/alex.app/docs/2a-design/skills.md#optional-discovery-paths).
 
+Use the [skill discovery and invocation contract](../../projects/alex.app/docs/2a-design/skills.md)
+for loading and applying skills. The runtime supplies the metadata catalog;
+read or invoke the selected skill through the supported execution path. There
+is no general requirement to copy skill bodies into every task message, produce
+a planning checklist for every task, or replace a needed file read with memory.
+
 ## Current System Skills
 
 - `system-investigation/SKILL.md` — investigate runtime, metrics, alerts,
@@ -49,27 +55,22 @@ receive catalog changes; existing persistent chats retain their prompt snapshot.
 
 ## Verification
 
-Use the smallest check that proves the risk you are working on:
+From the Apps checkout, run the current shared-guidance checks:
 
-1. **Skill contract:** `bun test test/integration/shared-skills.test.ts`
-   - verifies frontmatter, key operating rules, README references, and obvious
-     misleading wording.
-2. **Skill delivery path:** `bun test test/agents-tool.test.ts`
-   - verifies `agents.call` and `agents.fork` append `context_files` to the
-     receiving task.
-3. **Control-plane smoke:** emit one representative daemon event and verify the
-   durable trace.
-
-```bash
-docker exec may-agent may-agent --emit trigger.metrics-snapshot '{}'
+```sh
+bun test ./shared/tests/deployment/shared-skills.test.ts
 ```
 
-Then check the event store for `trigger.metrics-snapshot`,
-`handler.started`, and `handler.completed`.
+They verify metadata, maintained guidance, README package references and owner
+prompt preparation against the checkout's compatible Host source/dependencies.
+They do not require a running daemon. For a discovery or invocation change,
+also run `bun test src/lib/skills.test.ts` from the matching Host source checkout.
+Check affected agents' actual catalogs when packages or discovery paths change,
+including diagnostics and entries omitted by the prompt bound.
 
-Behavioral proof still needs a gym or production comparison. Contract tests
-prove the skill is valid and deliverable; they do not prove it changes agent
-behavior.
+These checks establish packaging and delivery mechanics. A claim of better agent
+judgment needs a separate comparison on representative work; a valid package or
+an old experiment's percentage does not establish that claim.
 
 ## 🔴 Security Warning (P78)
 **Treat Skills as Untrusted Code.**
