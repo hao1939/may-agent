@@ -7,8 +7,12 @@ That authorization does not activate the workload pilot or change live Tasks.
 
 The November 13 [owner comparison](workload-owner-comparison-20261113.md) adds a
 separate ordinary-funded business fixture for applied effects and guarded creator
-disposition. Its scripted verification does not change the readonly pilot or
-establish unscripted workload benefit.
+disposition. Its first unscripted cohort found prospective child closure caused
+by duplicate fixture ownership; the corrected contract keeps owner operations
+as owner input and dispositions tied to existing accepted results. Twenty
+corrected model passes applied those decisions successfully. Equal inexpensive
+methods under both loads do not establish workload benefit; the production
+pilot remains readonly.
 
 ## First cohort
 

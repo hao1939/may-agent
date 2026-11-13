@@ -46,9 +46,14 @@ merged one explicit creator-discovery read, independent of grouping and ended
 waits. Scout's committed guidance uses it on ordinary wakes; release and native
 behavioral acceptance remain on hold. The
 [owner comparison](../archive/reviews/workload-owner-comparison-20261113.md)
-prepares a separate local business fixture to verify applied decisions while
-preserving the readonly advice pilot. Scripted effects are verified; unscripted
-workload benefit and production adoption remain unproven. The dated November 8
+runs a separate local business fixture to verify applied decisions while
+preserving the readonly advice pilot. Its first model cohort exposed duplicate
+ownership between an owner operation and a pending child Task. The refined
+contract records optional work on the owner and closes only already accepted
+independent contributions. The corrected comparison verifies 20 model-driven
+applied passes, including eight guarded finite-result endings with unfinished
+and standing work preserved. Choices stayed equal under the available light/busy
+capacity; workload benefit and production adoption remain unproven. The dated November 8
 milestone observations below are historical snapshots, not current rollout state.
 
 ## The mental model
@@ -92,7 +97,10 @@ role; the current Host does not provide a generic coordinator for every agent.
    The responsible agent or its declared policy decides whether to advance an
    existing Task, admit an independent assignment or record no action. Repeated
    evidence can be batched while preserving exact caller obligations. A timer or
-   metric alone grants neither authority nor another Task budget.
+   metric alone grants neither authority nor another Task budget. A bounded
+   step within an existing assignment stays in that Task's input and attempt
+   result. Create a child for an independently accountable contribution, never
+   to duplicate that step.
 
 2. **Judge the need and make the commitment explicit.** Required business work
    can become a pending Task while execution capacity is full. Workload alone
@@ -388,6 +396,10 @@ it does not acquire authority to reprioritize or close other assignments.
    its existing input, Task or caller feedback. Report estimates as estimates.
    Use ordinary result and authorized control paths for disposition; a model's
    recommendation is not a persisted priority change, funding grant or closure.
+   When ending fulfilled work, the creator references an existing accepted
+   result; a plan to produce evidence during this attempt cannot fulfill a
+   different Task. Optional
+   deferral may retain its input without performing prerequisite recovery.
 
 These are reasoning steps within an existing pass, not four model calls or a
 new decision ledger. Record enough to explain changed commitments without
