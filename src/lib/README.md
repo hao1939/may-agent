@@ -111,6 +111,10 @@ Checkpoint saves append to the exact session's progress log. That log owns step
 numbering and checkpoint recovery. Historical per-agent latest files are retained;
 new saves do not create or refresh that separate copy.
 
+Older agent JSON may contain `memoryLimit`. The loader ignores that retired field;
+definitions and registry projections carry actual execution controls instead.
+Context compaction and per-response output truncation keep their existing owners.
+
 Opening a database never replaces existing state with a backup. Lock contention
 uses the bounded initialization retry; damaged state fails visibly and remains
 available for explicit recovery. Only an absent database without SQLite recovery

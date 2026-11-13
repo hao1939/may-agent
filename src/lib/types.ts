@@ -61,8 +61,6 @@ export interface SubagentDefinition {
    */
   sessionIdPrefix?: string;
 
-  memoryLimit?: number; // default 20
-
   /** Enable automatic context compaction for long-running sessions. */
   compaction?: boolean;
 
