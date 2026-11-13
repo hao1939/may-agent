@@ -64,6 +64,13 @@ judgment, the owning workflow supplies them in the task brief or uses the
 existing `contextPreparation` hook. A configured path is not evidence that its
 contents reached the model.
 
+For managed executions, use the Host-prepared tool definitions to inspect
+available capabilities, scoped controls and any required completion schema.
+`agent.json` configures selection; preparation resolves the actual tools.
+An optional `TOOLS.md` can explain usage. The obsolete `scripts/sync-tools-md.ts`
+generator and its separate preset expansion table are retired; archived
+generated files remain historical references.
+
 Agent definitions no longer declare `context_files`; older JSON containing it
 remains readable, without injecting those files. Separately, an `agents` tool
 call can supply `context_files` as explicit paths for its recipient to read.
