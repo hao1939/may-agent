@@ -1,6 +1,5 @@
 import type { SqliteDb } from "./state-db.js";
 import {
-  resumeDiagnosticToExecutionResult,
   sessionRowToExecutionResult,
   workflowRowToExecutionResult,
   type ExecutionResult,
@@ -10,12 +9,7 @@ export type LoopTraceTarget =
   { eventId: number } | { alertId: number } | { metricId: string } | { workflowRunId: string } | { sessionId: string };
 
 type Row = Record<string, unknown>;
-const FAILOVER_EVENT_TYPES = new Set([
-  "workflow.resume_failed",
-  "workflow.resume_skipped",
-  "session.resume_failed",
-  "message.delivery_failed",
-]);
+const FAILOVER_EVENT_TYPES = new Set(["message.delivery_failed"]);
 
 export interface LoopTrace {
   target: { kind: "event" | "alert" | "metric" | "workflow" | "session"; id: string | number };
@@ -116,12 +110,6 @@ function targetKind(target: LoopTraceTarget): LoopTrace["target"] {
   return { kind: "session", id: target.sessionId };
 }
 
-function compact(text: unknown, fallback: string): string {
-  const value = typeof text === "string" ? text.trim() : "";
-  if (!value) return fallback;
-  return value.length > 180 ? `${value.slice(0, 177)}...` : value;
-}
-
 function toLoopTraceExecution(result: ExecutionResult): LoopTraceExecution {
   return {
     ...result,
@@ -129,27 +117,6 @@ function toLoopTraceExecution(result: ExecutionResult): LoopTraceExecution {
     projectId: stringValue(result.projectId) ?? null,
     facts: result.facts ?? {},
   };
-}
-
-function resumeDiagnosticStatus(eventType: string, data: Row): ExecutionResult["status"] {
-  if (eventType === "workflow.resume_skipped") {
-    const status = stringValue(data.status);
-    if (status === "done") return status;
-    if (status === "blocked" || status === "escalated") return "blocked";
-    return "interrupted";
-  }
-  return data.recoverable === false ? "error" : "interrupted";
-}
-
-function resumeNextAction(eventType: string, data: Row): string | undefined {
-  const explicit = stringValue(data.nextAction ?? data.action);
-  if (explicit) return explicit;
-  if (eventType === "workflow.resume_skipped") return "none";
-  const category = stringValue(data.category);
-  if (category === "workflow_definition_missing" || category === "corrupt_state") return "recover";
-  if (data.recoverable === false) return "escalate";
-  if (data.recoverable === true) return "resume";
-  return undefined;
 }
 
 function sessionExecution(row: Row): LoopTraceExecution | null {
@@ -164,42 +131,8 @@ function workflowExecution(row: Row): LoopTraceExecution | null {
   return toLoopTraceExecution(workflowRowToExecutionResult(row as any));
 }
 
-function failoverExecution(row: Row): LoopTraceExecution | null {
-  const data = parseData(row);
-  const eventType = stringValue(row.event_type);
-  if (!eventType) return null;
-  const sessionId = stringValue(data.sessionId);
-  const workflowRunId = stringValue(data.workflowRunId);
-  const kind = sessionId ? "session" : workflowRunId ? "workflow" : null;
-  const id = sessionId ?? workflowRunId;
-  if (!kind || !id) return null;
-  const owner = stringValue(row.owner);
-  const status = resumeDiagnosticStatus(eventType, data);
-  const execution = toLoopTraceExecution(
-    resumeDiagnosticToExecutionResult({
-      id,
-      kind,
-      status,
-      reason: compact(data.reason ?? data.message ?? data.category ?? eventType, `${kind} resume failed`),
-      owner: owner ?? undefined,
-      projectId: stringValue(data.projectId) ?? undefined,
-      agent: stringValue(data.agent) ?? undefined,
-      workflow: stringValue(data.workflow) ?? undefined,
-      category: stringValue(data.category) ?? undefined,
-      recoverable: typeof data.recoverable === "boolean" ? data.recoverable : undefined,
-      nextAction: resumeNextAction(eventType, data),
-    }),
-  );
-  execution.facts.eventType = eventType;
-  return execution;
-}
-
-function buildExecutions(workflows: Row[], sessions: Row[], failovers: Row[]): LoopTraceExecution[] {
+function buildExecutions(workflows: Row[], sessions: Row[]): LoopTraceExecution[] {
   const executions: LoopTraceExecution[] = [];
-  for (const row of failovers) {
-    const execution = failoverExecution(row);
-    if (execution) executions.push(execution);
-  }
   for (const row of workflows) {
     const execution = workflowExecution(row);
     if (execution) executions.push(execution);
@@ -431,7 +364,7 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
     ...safeAll(
       db,
       `SELECT * FROM events
-     WHERE event_type IN ('workflow.resume_failed', 'workflow.resume_skipped', 'session.resume_failed', 'message.delivery_failed')
+     WHERE event_type = 'message.delivery_failed'
        AND (
          (? IS NOT NULL AND workflow_run_id = ?)
          OR (? IS NOT NULL AND session_id = ?)
@@ -459,7 +392,7 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
   const metricSnapshots = metricId
     ? safeAll(db, "SELECT * FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 20", metricId)
     : [];
-  const executions = buildExecutions(uniqueWorkflows, uniqueSessions, uniqueFailoverEvents);
+  const executions = buildExecutions(uniqueWorkflows, uniqueSessions);
 
   return {
     target: targetKind(target),
