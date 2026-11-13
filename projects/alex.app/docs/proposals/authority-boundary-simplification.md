@@ -53,18 +53,33 @@ to that owner. Bounded helpers support that assignment; independent obligations
 justify additional Tasks. An ended execution, accepted result and fulfilled
 human promise remain different facts even when their storage is simplified.
 
-**First candidate: simplify ordinary development procedure.** Local goals
-already default to an owner agent; a multi-agent sequence is not mandatory.
-The optional [`develop-change` workflow](../../agents/alex/workflows/develop-change.ts)
-adds its own design/implementation/review state, invalidation and reuse rules,
-and a fixed three-round repair loop. Review whether one owner working directly
-in its Task worktree, running existing checks and requesting independent review
-can replace that procedure for ordinary changes. Required human approvals,
-source-bound verification and independent review remain acceptance gates.
-The proposed reduction is the custom stage/reuse protocol, not those gates.
-The tradeoff is losing automatic upfront specialist separation and stage reuse;
-the owner may inspect or redo more work after interruption. Compare one bounded
-real change before selecting retirement or a smaller procedure change.
+**First candidate: simplify support for the reusable development procedure.**
+The user clarified that a workflow is a fixed process for a kind of Task,
+intended for repeated use. That is a valid simplification: callers reuse known
+steps and gates rather than reconstructing them for each assignment. Keep the
+[`develop-change` procedure](../../agents/alex/workflows/develop-change.ts)
+and its declared design, implementation, verification and independent-review
+gates. It remains optional App policy inside one Task, with no second scheduler
+or work lifecycle. The three-round local repair bound is not itself a defect.
+
+Distinguish reusing this procedure for another Task from reusing a previous
+stage's result for the same Task. The latter requires evidence that requirements,
+candidate and verification still match. Its bookkeeping can prevent expensive
+repeated work; it should not be removed merely because it is complex. Current
+conservative invalidation on new input preserves reports while requesting fresh
+judgment. No measured cost yet justifies replacing it with smarter classification.
+
+Start with concrete support costs. The command helper imposes a fixed
+120-second timeout, while the recent full Host check took more than five
+minutes. Establish which checks the procedure owns and align their execution
+with the existing workflow allowance and cancellation. Also inspect repeated
+Task/event context and full repository descriptions sent to each specialist;
+retain current requirements and usable source/evidence references while
+removing demonstrated duplication. Required human approvals, exact-candidate
+verification, retained evidence and independent review remain. A stage removal
+would change this procedure's business contract and needs a separate value
+case; replacing the workflow with free-form agent coordination is not the
+default simplification proposal.
 
 **Second candidate: consolidate progress reporting.** The MLVM cutover's agent
 guidance asks for `progress.json`; its task UI also reads an `overview.json`
@@ -516,9 +531,9 @@ formats, input/result schemas, recovery behavior. Feature retirement has its own
 
 ## Recommended next milestone
 
-1. Review one ordinary local development assignment against the proposed simpler
-   owner-led procedure above. Preserve its checks, review and delivery contract;
-   choose a bounded procedure change from that evidence.
+1. Trace one invocation of the reusable development procedure. Check its
+   verification bounds and repeated context first; select a bounded support
+   correction while preserving the declared steps and delivery contract.
 2. Then review one MLVM checkpoint for duplicated progress facts, keeping Host
    execution state and domain evidence with their existing owners.
 3. Let the separate #482 accounting cleanup finish through its own contract and
@@ -591,7 +606,7 @@ Task algorithm rewrites and the remaining feature reductions require separate de
 | Work | Boundary and next proof |
 | --- | --- |
 | Review retained compatibility | Check current consumers and supported upgrade requirements before selecting another removal. September inventories are historical; their completed aliases, context metadata and diagnostics must not be reopened. |
-| Simplify current delivery procedures | The [current-work review](#priority-from-current-delivery-work) takes priority: inspect the optional development stage protocol, then duplicated MLVM progress reporting. These are source-grounded candidates, not implemented reductions or measured savings. |
+| Simplify current delivery procedures | The [current-work review](#priority-from-current-delivery-work) takes priority: preserve the reusable development procedure while inspecting verification bounds and duplicated context, then review duplicated MLVM progress reporting. These are source-grounded candidates, not implemented reductions or measured savings. |
 | Unused agent configuration projection | [Housekeeping candidate](external-components-simplification.md#remove-the-unused-agent-configuration-projection-housekeeping-candidate): only tests read the second agent metadata map and aggregate registry view at the reviewed baseline. Lower priority than simplifying current delivery work; preserve actual registration and session persistence if selected. |
 | Further HTTP organization | Directory moves #141/#142 are merged. Extract a retained route family only when its responsibility is clearer; #173's feature removal does not claim the server has been split. |
 | Measure the context cleanup's behavioral effect | Compare baseline and candidate on the same small conversation cases. Existing scripted regressions establish supplied context and mechanics, not improved model judgment. |
