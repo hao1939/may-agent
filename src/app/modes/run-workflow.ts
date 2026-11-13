@@ -57,7 +57,6 @@ export async function runWorkflowMode(opts: {
   const agent = agentMatch ? agentMatch[1] : "host";
 
   const workflowDir = dirname(wfPath);
-  const agentDir = dirname(workflowDir);
   console.log(`Executing workflow: ${opts.mode.name} (agent: ${agent})\n`);
   const { result, runId } = await runWorkflowDirect({
     workflowName: opts.mode.name,
@@ -67,8 +66,6 @@ export async function runWorkflowMode(opts: {
     agentName: agent,
     persistDir: opts.persistDir,
     workflowDir,
-    guardsDir: join(agentDir, "guards"),
-    sharedGuardsDir: join(opts.sharedRoot, "guards"),
   });
   console.log(`Run: ${runId}`);
   console.log(`Result: ${result.type}`);
