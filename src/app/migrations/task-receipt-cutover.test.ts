@@ -15,7 +15,6 @@ import {
   recordAppTaskTrigger,
 } from "../core/tasks/app-task-reconciler.js";
 import type { AppTaskAdmission, TaskCompletionReceipt, TaskTree } from "../core/tasks/app-task-store.js";
-import { buildAppTaskTreeProjection } from "../core/tasks/app-task-store.js";
 import type { AppTaskResource } from "../core/tasks/app-task-state.js";
 import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";
 import { migrateTaskCompletionReceipts } from "./task-receipt-cutover.js";
@@ -134,7 +133,7 @@ test("historical completed work becomes a closed Task with exact result and call
     cancelledAt: result.completedAt,
   });
   expect(f.store.readTask("measurement")?.status.observedAttemptId).toBe(outcome.attemptId);
-  expect(buildAppTaskTreeProjection(f.store.readSnapshot(), 1).tasks.measurement?.attempt_count).toBe(0);
+  expect(Object.values(f.store.readSnapshot().attempts ?? {}).filter((a) => a.taskId === "measurement" && a.runtimeId !== "retired:task-receipt")).toHaveLength(0);
   expect(f.store.readReceipt("measurement")).toEqual(result);
   expect(f.store.readSnapshot().project_lifecycle).toBe("paused");
   const version = f.store.revision();
@@ -252,7 +251,7 @@ test("duplicate live claims are fenced without replacing the original completion
     failureReason: "completion-receipt-cutover",
   });
   expect(f.store.readAttempt(claim.attemptId)?.lease).toBeUndefined();
-  expect(buildAppTaskTreeProjection(f.store.readSnapshot(), 1).tasks.measurement?.attempt_count).toBe(1);
+  expect(Object.values(f.store.readSnapshot().attempts ?? {}).filter((a) => a.taskId === "measurement" && a.runtimeId !== "retired:task-receipt")).toHaveLength(1);
   expect(completeAppTask(f.config, claim, { summary: "Late wrong value", result: { value: 99 } }).status).toBe("stale");
   expect(f.store.readTask("measurement")?.status.result).toEqual({ value: 17 });
 });
