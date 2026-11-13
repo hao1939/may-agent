@@ -213,24 +213,8 @@
   .raw-log-head code { color: var(--fg); }
   .raw-log-head button { margin-left: auto; background: none; border: 0; color: var(--fg2); cursor: pointer; font-size: 14px; }
   .raw-log-body { margin: 0; padding: 10px; max-height: 360px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 11px; line-height: 1.45; }
-  .evaluated-conversation { max-width: none; }
-  .eval-transcript { gap: 12px; }
-  .turn-eval-row { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(360px, .92fr); gap: 12px; align-items: start; }
-  .turn-cell { min-width: 0; }
-  .turn-eval-cell { min-width: 0; display: grid; gap: 8px; align-self: start; }
-  .turn-eval-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 7px 9px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg2); }
-  .turn-eval-head b { margin-right: auto; font-size: 12px; }
-  .turn-eval-empty { border: 1px dashed var(--border); border-radius: 8px; padding: 9px; color: var(--fg2); font-size: 12px; background: rgba(255,255,255,.015); }
-  .eval-row { border: 1px solid var(--border); border-radius: 8px; background: var(--bg2); overflow: hidden; }
-  .eval-row.active { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(88,166,255,.35); }
   .session-message.active { outline: 2px solid rgba(88,166,255,.55); outline-offset: 2px; }
-  .eval-row-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 7px 9px; border-bottom: 1px solid var(--border); }
-  .eval-comment { padding: 8px 9px; font-size: 12px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
-  .eval-extra { display: grid; gap: 6px; padding: 0 9px 8px; font-size: 11px; color: var(--fg2); }
-  .eval-extra-item { border-left: 2px solid var(--border); padding-left: 7px; white-space: pre-wrap; overflow-wrap: anywhere; }
-  .eval-extra-item b { color: var(--fg); display: block; margin-bottom: 2px; }
   .tool-preview-snippet { margin: 0; max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 11px; line-height: 1.45; }
-  @media (max-width: 1200px) { .turn-eval-row { grid-template-columns: 1fr; } }
   .tool-grid { display: grid; grid-template-columns: 1fr; border-top: 1px solid var(--border); }
   .tool-pane { padding: 10px 12px; min-width: 0; }
   .tool-pane + .tool-pane { border-left: 0; border-top: 1px solid var(--border); }
