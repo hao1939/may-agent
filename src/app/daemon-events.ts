@@ -1,7 +1,7 @@
 import { eventData, type EventBus } from "./core/events/bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import { DbWriter } from "../lib/db-writer.js";
-import { runAgentCleanup, setAgentSessionId } from "./agent-loader.js";
+import { setAgentSessionId } from "./agent-loader.js";
 import { getDb } from "../lib/db/connection.js";
 import { attachMetricSourceMeasurement, attachMetricEvaluation } from "./metric-source-measurement.js";
 
@@ -145,12 +145,5 @@ export function attachDaemonEventSubscribers(opts: {
       if (info.agent && info.sessionId) setAgentSessionId(info.agent, info.sessionId);
     },
     { label: "agent-session-binding" },
-  );
-  bus.listen(
-    (event) => {
-      const info = eventData(event) as any;
-      if (info.agent) runAgentCleanup(info.agent);
-    },
-    { label: "agent-session-cleanup", types: ["session.end"] },
   );
 }

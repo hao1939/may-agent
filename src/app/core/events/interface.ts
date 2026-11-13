@@ -251,18 +251,6 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
   },
   "runtime.restart.requested": { delivery: "required", validate: validateOptionalReason },
   "runtime.shutdown.requested": { delivery: "required", validate: validateOptionalReason },
-  "evaluation.session.requested": {
-    addressFields: ["appId", "sessionId"],
-    delivery: "record",
-    validate: (input, options) => {
-      const appId = requiredTarget(input, "appId");
-      const sessionId = requiredTarget(input, "sessionId");
-      if (!options.hasApp(appId)) throw new Error(`App ${appId} is not loaded`);
-      if (!options.hasSession(sessionId)) throw new Error(`Session ${sessionId} does not exist`);
-      requiredText(input.data.source, "evaluation.session.requested data.source");
-      requiredText(input.data.instructions, "evaluation.session.requested data.instructions");
-    },
-  },
   "metric.threshold_changed": {
     delivery: "record",
     validate: (input) => {

@@ -1371,10 +1371,12 @@ test("Console replies bind a displayed proposal explicitly and keep it through l
   await waitFor(() => output.includes("Read /task abcdef12 first"));
   expect(frames.filter((f) => f.event?.data?.author?.kind === "human")).toHaveLength(0);
   child.stdin.write("/task abcdef12\n");
-  await waitFor(() => output.includes(action));
+  await waitFor(
+    () => output.includes(action) && frames.some((f) => f.event?.data?.metadata?.command === "/task abcdef12"),
+  );
   expect(output).toContain("Choose the rollback observation window.");
   const shown = proposal();
-  const command = frames.find((f) => f.event?.data?.metadata?.command === "/task abcdef12");
+  const command = frames.find((f) => f.event?.data?.metadata?.command === "/task abcdef12")!;
   action = "Replacement candidate B";
   child.stdin.write("approve\n/watch abcdef12\n");
   await waitFor(() => frames.filter((f) => f.type === "task.get").length === 2);

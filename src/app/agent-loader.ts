@@ -20,7 +20,6 @@
 
 import { currentAgentSessionId } from "../lib/agent-session-context.js";
 import {
-  discardAgentGeneration,
   loadAgents as loadAgentsFromRegistry,
   prepareAgents as prepareAgentsFromRegistry,
   publishAgentGeneration as publishAgentGenerationFromRegistry,
@@ -53,65 +52,10 @@ export function setAgentSessionId(name: string, sid: string): void {
   agentSessionIds.set(name, sid);
 }
 
-// ── Tool factories ──────────────────────────────────────────────────────
-
-/** Per-agent cleanup functions. Called when agent sessions end. */
-const agentCleanups = new Map<string, Array<() => void>>();
-
-function publishResources(generation: PreparedAgentGeneration): AgentGenerationPublication {
-  const previousCleanups = new Map([...agentCleanups].map(([name, cleanups]) => [name, [...cleanups]]));
-
-  try {
-    // Keep cleanup callbacks for already-running sessions and add the callbacks
-    // captured by the new definitions. They are retired naturally when the
-    // corresponding session ends.
-    for (const [name, cleanups] of generation.cleanups) {
-      const existing = agentCleanups.get(name);
-      if (existing) existing.push(...cleanups);
-      else agentCleanups.set(name, [...cleanups]);
-    }
-  } catch (error) {
-    discardAgentGeneration(generation);
-    agentCleanups.clear();
-    for (const [name, cleanups] of previousCleanups) agentCleanups.set(name, [...cleanups]);
-    throw error;
-  }
-
-  let settled = false;
-  return {
-    rollback() {
-      if (settled) return;
-      settled = true;
-      discardAgentGeneration(generation);
-      agentCleanups.clear();
-      for (const [name, cleanups] of previousCleanups) agentCleanups.set(name, [...cleanups]);
-    },
-    finalize() {
-      if (settled) return;
-      settled = true;
-    },
-  };
-}
-
 function registryRuntime() {
   return {
     getAgentSessionId,
-    publishResources,
   };
-}
-
-/** Run all cleanup functions for an agent and clear the list. */
-export function runAgentCleanup(agentName: string): void {
-  const fns = agentCleanups.get(agentName);
-  if (!fns) return;
-  for (const fn of fns) {
-    try {
-      fn();
-    } catch {
-      /* best-effort */
-    }
-  }
-  agentCleanups.delete(agentName);
 }
 
 /**

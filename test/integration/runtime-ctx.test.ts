@@ -29,7 +29,6 @@ describe("buildRuntimeCtx", () => {
     expect(rtx.emit).toBeTypeOf("function");
     expect(rtx.getDb).toBeTypeOf("function");
     expect(rtx.log).toBeTypeOf("function");
-    expect(rtx.notify).toBeTypeOf("function");
     expect(rtx.persistDir).toBe("/tmp/test-persist");
     expect(rtx.projectRoot).toBe("/tmp/test-project");
     expect(rtx.agentsRoot).toBe("/tmp/test-agents");
@@ -95,64 +94,11 @@ describe("buildRuntimeCtx", () => {
     expect(opts.bus.emit).toHaveBeenCalledWith({ type: "notification", agent: "test-agent", text: "hello" });
   });
 
-  it("dispatchEvent promotes envelope fields and keeps data domain-only", () => {
-    const opts = baseOpts();
-    const rtx = buildRuntimeCtx(opts);
-
-    rtx.dispatchEvent("project.nudge", {
-      owner: "may",
-      source: "project-loop",
-      projectId: "may/demo",
-      projectPath: "projects/demo",
-      comment: true,
-    });
-
-    expect(opts.bus.emit).toHaveBeenCalledWith({
-      type: "project.nudge",
-      source: "project-loop",
-      owner: "agent:may",
-      data: {
-        projectId: "may/demo",
-        projectPath: "projects/demo",
-        comment: true,
-      },
-    });
-  });
-
-  it("notify appends one tool-authored message to the selected Conversation", () => {
-    const opts = baseOpts();
-    const rtx = buildRuntimeCtx({ ...opts, interface: { agent: "helper", appId: "support", conversationId: "retained-room" } });
-
-    rtx.notify("something happened");
-
-    expect(opts.bus.emit).toHaveBeenCalledWith({
-      type: "conversation.message.created",
-      source: "agent:test-agent",
-      owner: "app:support",
-      data: {
-        appId: "support",
-        conversationId: "retained-room",
-        author: { kind: "tool", id: "test-agent" },
-        text: "something happened",
-      },
-    });
-    expect(opts.bus.emit).toHaveBeenCalledTimes(1);
-  });
-
-  it("reports an unavailable human destination without emitting a guessed notice", () => {
-    const opts = baseOpts();
-    const rtx = buildRuntimeCtx({ ...opts, interface: { agent: "host" } });
-    expect(() => rtx.notify("notice")).toThrow("requires CONVERSATION_APP");
-    expect(opts.bus.emit).not.toHaveBeenCalled();
-  });
-
-  it("supplies real Host reads and events without a placeholder command service", () => {
+  it("supplies real Host metrics and events without a placeholder command service", () => {
     const opts = baseOpts();
     const rtx = buildRuntimeCtx(opts);
     for (const services of [rtx]) {
       expect(services).not.toHaveProperty("commands");
-      expect(services.query.sql).toBeTypeOf("function");
-      expect(services.query.eventDeliveryHealth).toBeTypeOf("function");
       expect(services.metrics.record).toBeTypeOf("function");
     }
     rtx.emit({ type: "host.observed", source: "agent:test-agent", owner: "agent:test-agent", data: { healthy: true } });

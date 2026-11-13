@@ -1,13 +1,11 @@
 import { expect, it, spyOn } from "bun:test";
 import * as metrics from "../../lib/metrics.js";
-import * as query from "../../lib/query-service.js";
 import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
 import { EventBus } from "../core/events/bus.js";
 import { createAppReporting } from "./reporting.js";
 
 it("does not construct reporting services merely to prepare runtime/SDK capabilities", () => {
   const metricFactory = spyOn(metrics, "createMetricService");
-  const queryFactory = spyOn(query, "createQueryService");
   try {
     const options = {
       bus: new EventBus(),
@@ -24,9 +22,7 @@ it("does not construct reporting services merely to prepare runtime/SDK capabili
     });
     reports.syncDefinitions([]);
     expect(metricFactory).not.toHaveBeenCalled();
-    expect(queryFactory).not.toHaveBeenCalled();
   } finally {
     metricFactory.mockRestore();
-    queryFactory.mockRestore();
   }
 });

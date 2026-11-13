@@ -6,7 +6,6 @@ import type { AgentLoaderOptions } from "./agent-loader.js";
 import { prepareAgentGeneration, publishPreparedAgentGeneration } from "./agent-loader.js";
 import type { EventBus } from "./core/events/bus.js";
 import type { AgentGenerationPublication, PreparedAgentGeneration } from "./loader/agent-registry-loader.js";
-import { discardAgentGeneration } from "./loader/agent-registry-loader.js";
 export { createIdentityWriter, type InstanceIdentity } from "../lib/instance-identity.js";
 
 export type AppGenerationReloadResult = {
@@ -126,12 +125,10 @@ export function createDaemonLifecycle(opts: {
     const errors: string[] = [];
     let appGeneration: AppGenerationReloadResult | undefined;
     let publication: AgentGenerationPublication | undefined;
-    let agents: PreparedAgentGeneration | undefined;
     try {
       const prepared = opts.prepareAgents
         ? await opts.prepareAgents(opts.loaderOpts, reloadOptions)
         : await prepareAgentGeneration(opts.loaderOpts);
-      agents = prepared;
       added = prepared.added;
       updated = prepared.updated;
       const publishAgents = () => {
@@ -148,7 +145,6 @@ export function createDaemonLifecycle(opts: {
     } catch (err) {
       try {
         if (publication) publication.rollback();
-        else if (agents) discardAgentGeneration(agents);
       } catch (rollbackError) {
         errors.push(
           `[agent-rollback] ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`,

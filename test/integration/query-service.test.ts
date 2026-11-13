@@ -23,64 +23,9 @@ describe("QueryService", () => {
     return { root, db, query };
   }
 
-  it("exposes runtime facts without evaluator selection or alert-triage helpers", () => {
+  it("exposes event and read-only SQL queries without evaluator selection or alert-triage helpers", () => {
     const { query } = harness();
-    expect(Object.keys(query).sort()).toEqual([
-      "alerts",
-      "eventDeliveryHealth",
-      "events",
-      "metrics",
-      "projects",
-      "sessions",
-      "sql",
-      "workflowRuns",
-    ]);
-  });
-
-  it("queries core runtime tables with bounded filters", () => {
-    const { db, query } = harness();
-    const now = 10_000;
-
-    db.run("INSERT INTO sessions (sessionId, agent, task, status, projectId, startedAt) VALUES (?, ?, ?, ?, ?, ?)", [
-      "s1",
-      "may",
-      "older",
-      "done",
-      "p1",
-      now - 100,
-    ]);
-    db.run("INSERT INTO sessions (sessionId, agent, task, status, projectId, startedAt) VALUES (?, ?, ?, ?, ?, ?)", [
-      "s2",
-      "may",
-      "newer",
-      "error",
-      "p1",
-      now,
-    ]);
-    db.run("INSERT INTO sessions (sessionId, agent, task, status, projectId, startedAt) VALUES (?, ?, ?, ?, ?, ?)", [
-      "s3",
-      "scout",
-      "other",
-      "done",
-      "p2",
-      now + 100,
-    ]);
-    db.run(
-      "INSERT INTO workflow_runs (runId, workflow, task, status, projectId, startedAt) VALUES (?, ?, ?, ?, ?, ?)",
-      ["wr1", "project", "project: p1", "running", "p1", now + 200],
-    );
-    db.run(
-      "INSERT INTO workflow_runs (runId, workflow, task, status, projectId, startedAt) VALUES (?, ?, ?, ?, ?, ?)",
-      ["wr2", "project", "project: p2", "done", "p2", now + 300],
-    );
-
-    expect(query.sessions({ agent: "may" }).rows.map((row) => row.sessionId)).toEqual(["s2", "s1"]);
-    expect(query.sessions({ projectId: "p1", status: "done" }).rows).toMatchObject([
-      { sessionId: "s1", agent: "may", status: "done" },
-    ]);
-    expect(query.workflowRuns({ status: "running" }).rows).toMatchObject([
-      { runId: "wr1", workflow: "project", projectId: "p1" },
-    ]);
+    expect(Object.keys(query).sort()).toEqual(["eventDeliveryHealth", "events", "sql"]);
   });
 
   it("keeps arbitrary SQL read-only and bounded", () => {
@@ -154,46 +99,6 @@ describe("QueryService", () => {
         event_type: "project.task.reconciled",
         project_id: "scout-knowledge-lib",
       },
-    ]);
-  });
-
-  it("retains filtered metric, alert, and project diagnostics", () => {
-    const { db, query } = harness();
-    for (const id of ["p1", "p2"]) {
-      db.run("INSERT INTO projects (id, path, name, owner, updated_at) VALUES (?, ?, ?, ?, ?)", [
-        id,
-        `projects/${id}`,
-        id,
-        `app:${id}`,
-        100,
-      ]);
-      db.run("INSERT INTO metrics (id, name, project, owner, status, updated_at) VALUES (?, ?, ?, ?, ?, ?)", [
-        `${id}.health`,
-        "Health",
-        id,
-        `app:${id}`,
-        "active",
-        100,
-      ]);
-      db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
-        `${id}.health`,
-        "threshold",
-        "Inspect the facts",
-        100,
-      ]);
-    }
-    db.run(
-      "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at, resolved_at) VALUES (?, ?, ?, ?, ?)",
-      ["p1.health", "threshold", "Historical alert", 50, 90],
-    );
-
-    expect(query.projects({ owner: "app:p1" }).rows.map((row) => row.id)).toEqual(["p1"]);
-    expect(query.metrics({ project: "p1", status: "active" }).rows.map((row) => row.id)).toEqual(["p1.health"]);
-    expect(query.alerts({ metricId: "p1.health", resolved: false }).rows).toMatchObject([
-      { metric_id: "p1.health", message: "Inspect the facts", resolved_at: null },
-    ]);
-    expect(query.alerts({ metricId: "p1.health", resolved: true, until: 80 }).rows).toMatchObject([
-      { metric_id: "p1.health", message: "Historical alert", resolved_at: 90 },
     ]);
   });
 
