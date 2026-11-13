@@ -43,6 +43,12 @@ operation's policy. The Task execution guide owns continuation, saved waits and
 result reporting; `obstacle-pivot` supplies tool-failure diagnosis within those
 bounds. Preserve requirements and useful partial work when an execution ends.
 
+The [verification method](verification/SKILL.md) covers checking work, comparing
+baselines and reusing prior evidence. Use
+[evidence over narrative](evidence-over-narrative/SKILL.md) for a material conflict
+between a claim and observed behavior; a passing test only establishes what it
+actually covers. Neither method adds a separate Task acceptance policy.
+
 ## Current System Skills
 
 - `system-investigation/SKILL.md` — investigate runtime, metrics, alerts,

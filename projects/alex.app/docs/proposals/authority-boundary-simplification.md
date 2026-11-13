@@ -335,6 +335,43 @@ name reports unavailable. The six existing shared-guidance tests and
 checks establish source packaging and delivery, not improved model judgment or
 live adoption.
 
+### Completed support cleanup: one method for verification evidence
+
+`verification` now owns checking work, comparing baselines and reusing prior
+evidence. The separate `baseline-before-change` and `context-verification`
+packages are retired. They required repeated pre/post checks and verification
+of every historical claim in a new session, and rejected later comparisons with
+an exact earlier checkout. The shared method keeps attributable comparisons and
+current-target checks while allowing still-valid evidence to be reused. It
+removes assumptions about retired `run_test`/`git_commit` receipt fields and
+preserves the caller's required checks and partial-result contract.
+
+`evidence-over-narrative` remains a distinct, narrowly triggered conflict method.
+Its old rule that passing tests establish correct code could dismiss a real bug
+outside test coverage; its instruction to run checks before understanding the
+request also obscured what needed proof. It now distinguishes requirements from
+factual premises and checks the exact target, case and evidence coverage. Passing
+tests do not automatically disprove a report; a failing assertion does not
+automatically identify faulty code. No new completion gate or verifier is added.
+
+At Apps `606eb51a24`, a tracked-source caller audit found no current production
+binding to the two retired names. Their catalog entries and explicit activation
+names are deliberately lost without aliases. Historical records remain intact.
+The active practical-judgment learning unit references `evidence-over-narrative`;
+its source path and section heading remain available, and its manifest and
+embedded scenario prompts are unchanged. Old scenario scores are not evidence
+for the revised skill bodies.
+
+Before/after loading with Host `2dd58ba3e3` checks all nine enabled source agents:
+only the two retired entries leave the bounded catalog, only `verification` and
+`evidence-over-narrative` change body, and all other metadata, hashes and full
+invocation text match. There are no diagnostics or omitted entries; explicit
+activation of each retired name reports unavailable. The six existing shared
+guidance tests and `check:may-design` pass, with the existing `reports`
+root-layout warning. No live prompt refresh, Task mutation or deployment was
+performed. These checks do not establish improved model behavior or measured
+runtime savings.
+
 ### Other candidates remain evidence-led
 
 Recurring research can need fresh observations. Automatic evaluation and
