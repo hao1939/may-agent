@@ -450,7 +450,6 @@ it("reports rejected workflow output and retries the declared procedure with bac
   setSystemTime(f.config.resourceStore.readTask("work")!.status.executionRetryAt!);
   const retry = f.claim("auto");
   expect(retry.handler).toBe("workflow:measure");
-  expect(retry.handoff).toBeUndefined();
   expect(retry.events).toEqual(workflow.events);
   completeAppTask(f.config, retry, { summary: "Verified measurement", result: { value: 17 } });
   f.reopen();
@@ -474,7 +473,6 @@ it.each(["workflow", "executor"] as const)("retries the declared %s across failu
   setSystemTime(due + 1);
   const retry = f.claim("auto");
   expect(retry.handler).toBe(`${kind}:measure`);
-  expect(retry.handoff).toBeUndefined();
   expect(retry.previousAttempt?.failureReason).toBe("HandlerExecutionFailed");
   expect(retry.previousAttempt?.attemptId).toBe(original.attemptId);
   f.reopen(); // Retry identity and prior failure survive reopening before settlement.
@@ -1184,7 +1182,7 @@ it("recovers an expired terminal session from a running human-authorized claim w
       resourceStore: f.config.resourceStore,
       app: defineApp({ id: "sample", version: 1, agent: "owner", inputSchema: Type.Object({}), tasks: { maxConsecutiveFailures: 1 } }) },
     opts: { projectsRoot: root, projectRoot: root, persistDir: root, bus: new EventBus(), hostCapacity: new HostCapacity(1),
-      sessions: { handoff: () => undefined, read: () => ({ status: "done" }), isLive: () => false,
+      sessions: { read: () => ({ status: "done" }), isLive: () => false,
         lastActivityAt: () => null, workflowInterrupted: () => false,
         interrupt: (id) => { interrupted.push(id); return true; } } },
     dispatch: { enqueuedAt: Date.now(), startedAt: Date.now(), readyWaitMs: 0, lane: "normal" },

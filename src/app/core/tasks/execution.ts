@@ -5,8 +5,7 @@ import type { appDependencyCatalog } from "../../app-dependency-catalog.js";
 import type { EventEnvelope } from "../events/bus.js";
 import type { AppTaskEvents } from "./app-task-emitter.js";
 import type { AppTaskExecutionPaths } from "./app-task-output-paths.js";
-import type { AppTaskChildContext, AppTaskClaim, AppTaskLiveSnapshot } from "./app-task-reconciler.js";
-import type { AppTaskAttempt } from "./app-task-state.js";
+import type { AppTaskChildContext, AppTaskLiveSnapshot } from "./app-task-reconciler.js";
 import type { TaskCapabilityRun } from "./result.js";
 
 /** Read-only App declaration, never its mutable Task store. */
@@ -19,7 +18,6 @@ type TaskExecutionInput = {
   executionPaths: AppTaskExecutionPaths;
   childContext: AppTaskChildContext;
   event?: EventEnvelope;
-  fallbackReason?: string;
   executionTimeoutMs: number;
 };
 
@@ -90,7 +88,6 @@ export type TaskWorkflowRunner = {
 };
 
 export type TaskSessionRecovery = {
-  handoff(attempt: AppTaskAttempt | undefined): AppTaskClaim["handoff"];
   read(sessionId: string): { status: string; taskBinding?: unknown; workflowRunId?: string } | null;
   isLive(sessionId: string): boolean;
   lastActivityAt(sessionId: string): number | null;

@@ -104,7 +104,6 @@ async function executeTaskAgent(
         waits: attempt.waits,
         paths: input.executionPaths,
         declaredOutputs: attempt.declaredOutputPaths,
-        fallbackReason: input.fallbackReason ?? null,
         ...(attempt.previousAttempt ? { previousAttempt: attempt.previousAttempt } : {}),
       },
       null,

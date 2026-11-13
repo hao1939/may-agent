@@ -261,9 +261,6 @@ describe("workflow facts without reporting", () => {
     expect(facts.diagnostics.entries.map((entry) => entry.message)).toEqual(["prepared report", "retrying upload"]);
     expect(facts.childRunIds.map((id) => readWorkflowFacts(root, id)!.run.status)).toEqual(["error", "done"]);
     expect(readWorkflowFacts(root, facts.childRunIds[0]!)!.run.result_reason).toBe("Upload unavailable");
-    const trace = new SubagentManager({ persistDir: root }).trace(result.workflowRunId);
-    expect(trace.facts).toEqual(facts);
-    expect(trace.tree.children[0]).toMatchObject({ status: "done", summary: "delivered" });
     expect(readWorkflowFacts(root, "wr_missing")).toBeNull();
   });
 

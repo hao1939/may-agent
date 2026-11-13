@@ -7392,7 +7392,6 @@ describe("canonical App task runtime", () => {
       {
         ...options(f, bus),
         sessions: {
-          handoff: () => undefined,
           isLive: () => false,
           lastActivityAt: () => null,
           workflowInterrupted: () => false,
@@ -7505,7 +7504,6 @@ describe("canonical App task runtime", () => {
       const publications: number[] = [];
       let handled = () => {};
       const sessions = (name: string): TaskSessionRecovery => ({
-        handoff: () => undefined,
         isLive: () => false,
         lastActivityAt: () => null,
         workflowInterrupted: () => false,
@@ -7590,7 +7588,6 @@ describe("canonical App task runtime", () => {
     const install = (generation: number) => installCoreTaskRuntimes({
       ...options(f, bus),
       sessions: {
-        handoff: () => undefined,
         isLive: () => false,
         lastActivityAt: () => null,
         workflowInterrupted: () => false,

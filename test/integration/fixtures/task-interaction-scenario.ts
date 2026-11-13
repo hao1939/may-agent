@@ -209,7 +209,6 @@ async function conversation() {
           }
           assert.deepEqual(manager.registryStore.getSession(sessionId)!.taskBinding, binding);
           assert.deepEqual(manager.status(), []);
-          assert.deepEqual((await manager.auditHealth()).staleSessions, []);
           assert.equal(f.store.isCancelled(binding.taskId), false);
         } finally {
           router.close();

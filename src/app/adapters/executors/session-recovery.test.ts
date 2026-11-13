@@ -1,20 +1,15 @@
-import { Type } from "typebox";
 import { afterEach, expect, it } from "bun:test";
-import type { AgentMessage } from "@earendil-works/pi-agent-core";
-
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { markStaleSession } from "../../../../test/fixtures/stale-session.js";
 import { SubagentManager } from "../../../lib/manager.js";
 import { DbWriter } from "../../../lib/db-writer.js";
-import { getDb } from "../../../lib/db/connection.js";
+import { getDb, closeDb } from "../../../lib/db/connection.js";
 import { upsertSession, updateSessionDb } from "../../../lib/db/sessions.js";
 import { describeText } from "../../../lib/artifacts.js";
-import { appendSessionMessage, markSessionActive, readSessionMeta, writeSessionMeta } from "../../../lib/persistence.js";
-import { closeDb } from "../../../lib/db/connection.js";
+import { markSessionActive, readSessionMeta, writeSessionMeta } from "../../../lib/persistence.js";
 import { EventBus, type AgentEvent } from "../../core/events/bus.js";
-import type { AppTaskAttempt } from "../../core/tasks/app-task-state.js";
 import { createTaskSessionRecovery } from "./session-recovery.js";
 
 const roots: string[] = [];
@@ -25,223 +20,101 @@ afterEach(() => {
   }
 });
 
-it.each([
-  { finishStatus: "success", hasSummary: true },
-  { finishStatus: "failure", hasSummary: true },
-  { finishStatus: "blocked", hasSummary: true },
-  { finishStatus: "partial", hasSummary: true },
-  { finishStatus: "success", hasSummary: false },
-])(
-  "retains structured session facts exactly once ($finishStatus, summary: $hasSummary)",
-  ({ finishStatus, hasSummary }) => {
-    const root = mkdtempSync(join(tmpdir(), "may-recovered-judgment-"));
-    roots.push(root);
-    const sessionId = "judge-session";
-    const judgment = { state: "incomplete", summary: "Further recovery exceeds the authorized budget." };
-    writeSessionMeta(root, sessionId, {
-      agent: "judge",
-      task: "Decide whether recovery is worthwhile",
-      status: "running",
-      startedAt: 1,
-      kind: "call",
-      outputSchema: Type.Object({ state: Type.Literal("incomplete"), summary: Type.String() }),
-    });
-    appendSessionMessage(root, sessionId, {
-      role: "assistant",
-      content: [
-        {
-          type: "toolCall",
-          id: "finish-call",
-          name: "finish",
-          arguments: {
-            status: finishStatus,
-            ...(hasSummary ? { summary: judgment.summary } : {}),
-            result: judgment,
-          },
-        },
-      ],
-    } as AgentMessage);
-    appendSessionMessage(root, sessionId, {
-      role: "toolResult",
-      toolCallId: "finish-call",
-      toolName: "finish",
-      content: [{ type: "text", text: "Recorded" }],
-      isError: false,
-      timestamp: 2,
-    });
-    const bus = new EventBus();
-    const events: AgentEvent[] = [];
-    bus.subscribe((event) => events.push(event));
-    const options = { persistDir: root, manager: new SubagentManager({ persistDir: root }), bus };
-    const recovery = createTaskSessionRecovery(options);
-
-    recovery.interrupt(sessionId, "Previous process exited");
-    expect(readSessionMeta(root, sessionId)?.status).toBe("done");
-    expect(
-      JSON.parse(readFileSync(join(root, "sessions", sessionId, "result.json"), "utf8")).finishParams.result,
-    ).toEqual(judgment);
-    expect(events.filter((event) => event.type === "session.end")).toMatchObject([
-      { data: {
-        status: "done",
-        finishParams: { status: finishStatus, result: judgment },
-        summary: hasSummary
-          ? judgment.summary
-          : "Runtime recovery restored a committed finish result. Consult the Task's current state for acceptance.",
-      } },
-    ]);
-
-    closeDb(root);
-    const reopened = createTaskSessionRecovery({ ...options, manager: new SubagentManager({ persistDir: root }) });
-    expect(
-      JSON.parse(readFileSync(join(root, "sessions", sessionId, "result.json"), "utf8")).finishParams.result,
-    ).toEqual(judgment);
-    reopened.interrupt(sessionId, "Repeated recovery");
-    expect(events.filter((event) => event.type === "session.end")).toHaveLength(1);
-  },
-);
-
-it.each(["interrupted", "done", "error"] as const)(
-  "writes recovered %s completion to the persisted owner after disabling its App",
-  (status) => {
-    const root = mkdtempSync(join(tmpdir(), "may-recovered-owner-"));
-    roots.push(root);
-    const relativeDir = "projects/sample.app/agents/actual-folder";
-    const localDir = join(root, relativeDir);
-    const globalDir = join(root, "agents/arc");
-    for (const dir of [localDir, globalDir]) {
-      mkdirSync(dir, { recursive: true });
-      writeFileSync(join(dir, "agent.json"), JSON.stringify({ name: "arc" }));
-    }
-    writeFileSync(join(root, "projects/sample.app/app.js"), "export default {};");
-    writeFileSync(join(globalDir, "context.md"), "Global history\n");
-    const sessionId = "recovered-session";
-    writeSessionMeta(root, sessionId, {
-      agent: "arc",
-      agentRelativeDir: relativeDir,
-      task: "Produce checked facts",
-      status: "running",
-      startedAt: 1,
-      kind: "call",
-    });
-    if (status !== "interrupted") {
-      const finish = {
-        status: status === "done" ? "success" : "failure",
-        summary: "Retained decision",
-        context_updates: [{ action: "add", content: "Retained owner facts" }],
-      };
-      appendSessionMessage(root, sessionId, {
-        role: "assistant",
-        content: [{ type: "toolCall", id: "finish-call", name: "finish", arguments: finish }],
-      } as AgentMessage);
-      appendSessionMessage(root, sessionId, {
-        role: "toolResult",
-        toolCallId: "finish-call",
-        toolName: "finish",
-        content: [{ type: "text", text: "Recorded" }],
-        isError: false,
-        timestamp: 2,
-      });
-    }
-    writeFileSync(join(root, "projects/sample.app/.disabled"), "");
-    const bus = new EventBus();
-    const events: AgentEvent[] = [];
-    bus.subscribe((event) => events.push(event));
-    // A fresh manager has no live owner; recovery uses only the durable record.
-    const recovery = createTaskSessionRecovery({
-      persistDir: root,
-      manager: new SubagentManager({ persistDir: root }),
-      bus,
-    });
-    recovery.interrupt(sessionId, "Previous worker exited");
-    expect(events.filter((event) => event.type === "session.end")).toMatchObject([
-      { data: { sessionId, agentRelativeDir: relativeDir, status } },
-    ]);
-    expect(readSessionMeta(root, sessionId)).toMatchObject({ status, agentRelativeDir: relativeDir });
-    expect(existsSync(join(localDir, "context.md"))).toBe(false);
-    if (status !== "interrupted") {
-      const result = JSON.parse(readFileSync(join(root, "sessions", sessionId, "result.json"), "utf8"));
-      expect(result.finishParams.context_updates).toEqual([{ action: "add", content: "Retained owner facts" }]);
-    }
-    expect(readFileSync(join(globalDir, "context.md"), "utf8")).toBe("Global history\n");
-    recovery.interrupt(sessionId, "Repeated recovery");
-    expect(events.filter((event) => event.type === "session.end")).toHaveLength(1);
-  },
-);
-
-
 function recoveryFixture(status: "running" | "idle" | "done" | "error" | "interrupted" = "running") {
   const root = mkdtempSync(join(tmpdir(), "may-recovery-evidence-"));
   roots.push(root);
   const sessionId = "retained-session";
   const binding = { appId: "sample", taskId: "work", generation: 1, attemptId: "attempt-one" };
   writeSessionMeta(root, sessionId, {
-    agent: "judge", task: "Inspect retained work", status, startedAt: 1, taskBinding: binding,
+    agent: "judge",
+    task: "Inspect retained work",
+    status,
+    startedAt: 1,
+    taskBinding: binding,
   });
   const bus = new EventBus();
   const events: AgentEvent[] = [];
   bus.subscribe((event) => events.push(event));
-  const recovery = createTaskSessionRecovery({ persistDir: root, manager: new SubagentManager({ persistDir: root }), bus });
-  const handoff = () => recovery.handoff({
-    sessionId, handler: "agent:judge", failureReason: "previous-runtime-attempt-requeued",
-  } as AppTaskAttempt);
-  return { root, sessionId, binding, recovery, events, handoff,
+  const recovery = createTaskSessionRecovery({
+    persistDir: root,
+    manager: new SubagentManager({ persistDir: root }),
+    bus,
+  });
+  return {
+    root,
+    sessionId,
+    binding,
+    recovery,
+    events,
     transcript: join(root, "sessions", sessionId, "session.jsonl"),
     result: join(root, "sessions", sessionId, "result.json"),
     metadata: join(root, "sessions", sessionId, "meta.json"),
   };
 }
 
-it.each(["transcript", "checkpoint"] as const)("retains partial %s evidence and lets the replacement judge it", (kind) => {
+it("marks an interrupted session once, preserves transcript bytes, and points to the owning Task", () => {
   const f = recoveryFixture();
-  let path = f.transcript;
-  let good = { role: "user", content: "Known progress" } as Record<string, unknown>;
-  if (kind === "checkpoint") {
-    mkdirSync(join(f.root, "checkpoints"), { recursive: true });
-    path = join(f.root, "checkpoints", `${f.sessionId}.jsonl`);
-    good = { sessionId: f.sessionId, agentName: "judge", step: 1, summary: "Known progress", data: {}, timestamp: 1 };
-  }
-  // No trailing newline: recovery must not append synthetic entries to damage.
-  const bytes = `${JSON.stringify(good)}\n{"unfinished":`;
-  writeFileSync(path, bytes);
+  const bytes = '{"role":"user","content":"Known progress"}\n{"unfinished":';
+  writeFileSync(f.transcript, bytes);
   expect(f.recovery.interrupt(f.sessionId, "Previous worker exited", "work", f.binding)).toBe(true);
-  expect(readSessionMeta(f.root, f.sessionId)?.status).toBe("interrupted");
-  expect(readFileSync(path, "utf8")).toBe(bytes);
-  const facts = f.handoff()!.facts.join("\n");
-  expect(facts).toContain("Recovery history incomplete");
-  expect(facts).toContain("lines 2");
-  expect(facts).toContain("Known progress");
-  expect(facts).not.toContain("explicit reconciliation is required");
-  expect(JSON.parse(readFileSync(f.result, "utf8")).recovery.facts.join("\n")).toContain("Recovery history incomplete");
-  expect(JSON.parse(readFileSync(f.result, "utf8")).recovery).toMatchObject({
-    disposition: "interrupted",
+  expect(readSessionMeta(f.root, f.sessionId)).toMatchObject({
+    status: "interrupted",
+    error: "Previous worker exited",
+  });
+  expect(readFileSync(f.transcript, "utf8")).toBe(bytes);
+  expect(JSON.parse(readFileSync(f.result, "utf8"))).toMatchObject({
+    status: "interrupted",
+    outcome: "interrupted",
+    error: "Previous worker exited",
     summary: expect.stringContaining("Consult the Task's current state"),
   });
   expect(f.events.filter((event) => event.type === "session.end")).toMatchObject([
-    { data: { status: "interrupted", recoveryFacts: [expect.stringContaining("Recovery history incomplete")] } },
+    { data: { sessionId: f.sessionId, status: "interrupted", error: "Previous worker exited" } },
   ]);
   expect(f.recovery.interrupt(f.sessionId, "Repeated recovery", "work", f.binding)).toBe(true);
   expect(f.events.filter((event) => event.type === "session.end")).toHaveLength(1);
-  expect(readFileSync(path, "utf8")).toBe(bytes);
+  expect(readFileSync(f.transcript, "utf8")).toBe(bytes);
 });
 
-it.each([
-  { kind: "transcript", contents: "{}\n" },
-  { kind: "transcript", contents: '{"role":"assistant","content":[{}]}\n' },
-  { kind: "checkpoint", contents: "{}\n" },
-  { kind: "transcript", contents: '{"role":"toolResult","toolCallId":"call","toolName":7,"content":[],"isError":false}\n' },
-])("reports structurally invalid $kind without treating it as absent", ({ kind, contents }) => {
-  const f = recoveryFixture();
-  if (kind === "transcript") writeFileSync(f.transcript, contents);
-  else {
-    mkdirSync(join(f.root, "checkpoints"), { recursive: true });
-    writeFileSync(join(f.root, "checkpoints", `${f.sessionId}.jsonl`), contents);
+it("emits recovered interrupted completion with the persisted agentRelativeDir after disabling its App", () => {
+  const root = mkdtempSync(join(tmpdir(), "may-recovered-owner-"));
+  roots.push(root);
+  const relativeDir = "projects/sample.app/agents/actual-folder";
+  const localDir = join(root, relativeDir);
+  const globalDir = join(root, "agents/arc");
+  for (const dir of [localDir, globalDir]) {
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "agent.json"), JSON.stringify({ name: "arc" }));
   }
-  expect(f.recovery.interrupt(f.sessionId, "Previous worker exited", "work", f.binding)).toBe(true);
-  const facts = f.handoff()!.facts.join("\n");
-  expect(facts).toContain("Recovery history incomplete");
-  expect(facts).toContain("lines 1");
-  expect(facts).toContain("unavailable in incomplete history");
-  expect(facts).not.toContain("checkpoint: absent");
+  writeFileSync(join(root, "projects/sample.app/app.js"), "export default {};");
+  writeFileSync(join(globalDir, "context.md"), "Global history\n");
+  const sessionId = "recovered-session";
+  writeSessionMeta(root, sessionId, {
+    agent: "arc",
+    agentRelativeDir: relativeDir,
+    task: "Produce checked facts",
+    status: "running",
+    startedAt: 1,
+    kind: "call",
+  });
+  writeFileSync(join(root, "projects/sample.app/.disabled"), "");
+  const bus = new EventBus();
+  const events: AgentEvent[] = [];
+  bus.subscribe((event) => events.push(event));
+  const recovery = createTaskSessionRecovery({
+    persistDir: root,
+    manager: new SubagentManager({ persistDir: root }),
+    bus,
+  });
+  recovery.interrupt(sessionId, "Previous worker exited");
+  expect(events.filter((event) => event.type === "session.end")).toMatchObject([
+    { data: { sessionId, agentRelativeDir: relativeDir, status: "interrupted" } },
+  ]);
+  expect(readSessionMeta(root, sessionId)).toMatchObject({ status: "interrupted", agentRelativeDir: relativeDir });
+  expect(existsSync(join(localDir, "context.md"))).toBe(false);
+  expect(readFileSync(join(globalDir, "context.md"), "utf8")).toBe("Global history\n");
+  recovery.interrupt(sessionId, "Repeated recovery");
+  expect(events.filter((event) => event.type === "session.end")).toHaveLength(1);
 });
 
 it.each([
@@ -249,7 +122,7 @@ it.each([
   { name: "unreadable JSON", bytes: '{"status":"running"' },
   { name: "unreadable fields", bytes: '{"status":["running"]}' },
   { name: "partial binding", bytes: '{"taskBinding":{"appId":"sample"}}' },
-])("uses retained Task ownership with $name metadata and preserves its evidence", ({ name, bytes }) => {
+])("uses retained Task ownership with $name metadata and preserves its evidence", ({ bytes }) => {
   const f = recoveryFixture();
   if (bytes === null) rmSync(f.metadata);
   else writeFileSync(f.metadata, bytes);
@@ -261,8 +134,6 @@ it.each([
   else expect(readFileSync(f.metadata, "utf8")).toBe(bytes);
   expect(readFileSync(f.result, "utf8")).toBe(result);
   expect(f.events).toEqual([]);
-  expect(f.handoff()!.facts.join("\n")).toContain(`session metadata is ${name === "missing" ? "missing" : "unreadable"}`);
-  expect(f.handoff()!.facts.join("\n")).toContain("Recovery history incomplete");
 });
 
 it("preserves session state and result evidence until damaged process evidence is repaired", () => {
@@ -365,7 +236,6 @@ it.each((["running", "idle"] as const).flatMap((status) =>
     result_ref: artifact.ref, result_sha256: artifact.sha256, result_bytes: artifact.bytes,
   });
   expect(readSessionMeta(f.root, f.sessionId)?.status).toBe("interrupted");
-  expect(f.handoff()!.facts.join("\n")).toContain(f.result);
   expect(f.events.filter((event) => event.type === "session.end")).toEqual([]);
   closeDb(f.root);
   expect(recovery.interrupt(f.sessionId, "Repeated recovery", "work", f.binding)).toBe(true);
@@ -376,15 +246,13 @@ it.each([
   { field: "error", value: 42 },
   { field: "error", value: { message: "unknown legacy format" } },
   { field: "endedAt", value: { timestamp: 2 } },
-])("retains damaged optional $field evidence and builds usable recovery context", ({ field, value }) => {
+])("retains damaged optional $field evidence without rewriting metadata", ({ field, value }) => {
   const f = recoveryFixture("done");
   const meta = JSON.parse(readFileSync(f.metadata, "utf8"));
   meta[field] = value;
   const bytes = JSON.stringify(meta);
   writeFileSync(f.metadata, bytes);
   expect(f.recovery.interrupt(f.sessionId, "Recover", "work", f.binding)).toBe(true);
-  expect(f.handoff()?.reason).toBe("recovered-session");
-  expect(f.handoff()?.facts.join("\n")).toContain("session metadata is unreadable");
   expect(readFileSync(f.metadata, "utf8")).toBe(bytes);
   expect(f.events).toEqual([]);
 });
@@ -482,7 +350,7 @@ it.each(["absent", "terminal"] as const)("honors the live process marker when me
   expect(existsSync(f.result)).toBe(false);
 });
 
-it.each(["done", "error", "interrupted"] as const)("preserves %s terminal evidence while exposing damaged history", (status) => {
+it.each(["done", "error", "interrupted"] as const)("preserves %s terminal evidence without emitting duplicate session.end", (status) => {
   const f = recoveryFixture(status);
   const savedResult = JSON.stringify({ status, summary: "Retained result" });
   writeFileSync(f.result, savedResult);
@@ -492,24 +360,4 @@ it.each(["done", "error", "interrupted"] as const)("preserves %s terminal eviden
   expect(readSessionMeta(f.root, f.sessionId)?.status).toBe(status);
   expect(readFileSync(f.result, "utf8")).toBe(savedResult);
   expect(f.events.filter((event) => event.type === "session.end")).toHaveLength(0);
-  expect(f.handoff()!.facts.join("\n")).toContain("Recovery history incomplete");
-});
-
-it("preserves a committed finish receipt despite unrelated earlier malformed history", () => {
-  const f = recoveryFixture();
-  writeFileSync(f.transcript, "malformed\n");
-  appendSessionMessage(f.root, f.sessionId, {
-    role: "assistant",
-    content: [{ type: "toolCall", id: "finish-call", name: "finish", arguments: { status: "success", summary: "Committed" } }],
-  } as AgentMessage);
-  appendSessionMessage(f.root, f.sessionId, {
-    role: "toolResult", toolCallId: "finish-call", toolName: "finish",
-    content: [{ type: "text", text: "Recorded" }], isError: false, timestamp: 2,
-  });
-  expect(f.recovery.interrupt(f.sessionId, "Previous worker exited", "work", f.binding)).toBe(true);
-  expect(readSessionMeta(f.root, f.sessionId)?.status).toBe("done");
-  expect(JSON.parse(readFileSync(f.result, "utf8"))).toMatchObject({
-    status: "done", finishParams: { status: "success", summary: "Committed" },
-  });
-  expect(f.handoff()!.facts.join("\n")).toContain("Recovery history incomplete");
 });

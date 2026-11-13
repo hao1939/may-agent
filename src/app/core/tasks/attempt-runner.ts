@@ -192,7 +192,6 @@ export async function runTaskAttempt(input: {
         }
         return true;
       },
-      recoverSessionHandoff: (attempt) => opts.sessions?.handoff(attempt),
     });
     recordTaskCheck(opts.bus, claim.kind, { appId: descriptor.id, taskId: input.taskId });
     if (claim.kind !== "claimed") {
@@ -789,25 +788,13 @@ async function runClaimedTask(
 /** Select the recorded handler. All paths share Task lifetime and result settlement. */
 async function executeTaskHandler(input: TaskHandlerInput): Promise<TaskCapabilityRun> {
   const { opts, claim } = input;
-  const execution = {
-    ...input,
-    ...(claim.handoff
-      ? {
-          fallbackReason: `${claim.handoff.reason}: ${claim.handoff.summary}${
-            claim.handoff.facts.length
-              ? `\nHandoff facts:\n${claim.handoff.facts.map((fact) => `- ${fact}`).join("\n")}`
-              : ""
-          }`,
-        }
-      : {}),
-  };
   if (claim.handler === "executor:conversation") {
     throw new Error("Retained Conversation execution requires offline conversion to executor:agent");
   }
   const workflowKey = claim.handler.startsWith("workflow:") ? claim.handler.slice("workflow:".length) : "";
   if (workflowKey) {
     return runTaskWorkflow({
-      ...execution,
+      ...input,
       capability: { workflow: workflowKey, agent: claim.agent, task: `Reconcile task through workflow ${workflowKey}` },
     });
   }
@@ -818,7 +805,7 @@ async function executeTaskHandler(input: TaskHandlerInput): Promise<TaskCapabili
       : "";
   if (executorKey) {
     const registered = opts.executors?.[executorKey];
-    if (registered) return runRegisteredTaskExecutor({ ...execution, name: executorKey, execute: registered });
+    if (registered) return runRegisteredTaskExecutor({ ...input, name: executorKey, execute: registered });
     return {
       handlerResult: {
         state: "error",
@@ -830,7 +817,7 @@ async function executeTaskHandler(input: TaskHandlerInput): Promise<TaskCapabili
       unavailable: true,
     };
   }
-  return runTaskAgent(execution);
+  return runTaskAgent(input);
 }
 
 function emitTaskReconciliationEvent(

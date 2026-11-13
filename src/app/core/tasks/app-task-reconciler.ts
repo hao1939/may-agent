@@ -80,11 +80,6 @@ export type AppTaskClaim = {
   /** Compatibility projection of the most relevant event in events. */
   trigger?: Record<string, unknown>;
   declaredOutputPaths: string[];
-  handoff?: {
-    reason: "recovered-session";
-    summary: string;
-    facts: string[];
-  };
 };
 
 export type AppTaskClaimResult =
@@ -2691,7 +2686,6 @@ export function claimObservedAppTask(
     canUseCoordinationReserve?: (resource: AppTaskResource, agent: string) => boolean;
     /** Validate and drain the retained session before replacement ownership commits. */
     recoverPreviousSession?: (attempt: AppTaskAttempt) => boolean;
-    recoverSessionHandoff?: (attempt: AppTaskAttempt | undefined) => AppTaskClaim["handoff"];
   },
 ): AppTaskClaimResult {
   const snapshotRevision = config.resourceStore.revision();
@@ -2988,9 +2982,6 @@ export function claimObservedAppTask(
     previousAttempt.failureReason = "previous-runtime-attempt-requeued";
     changedAttempts.add(previousAttempt);
   }
-  const recoveredSessionHandoff = input.recoverSessionHandoff?.(
-    canRecoverPreviousRuntime ? previousAttempt ?? undefined : priorFacts,
-  );
   const trigger =
     (claimedEvents.length > 0 ? preferredTriggerFromEvents(claimedEvents, agent) : undefined) ??
     (previousAttempt ? attemptTrigger(previousAttempt) : undefined) ??
@@ -3092,7 +3083,6 @@ export function claimObservedAppTask(
     ...(priorFacts ? { previousAttempt: previousAttemptFacts(priorFacts) } : {}),
     ...(trigger ? { trigger: structuredClone(trigger) } : {}),
     declaredOutputPaths,
-    ...(recoveredSessionHandoff ? { handoff: recoveredSessionHandoff } : {}),
   };
 }
 
