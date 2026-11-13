@@ -165,10 +165,10 @@ both passed on that final head. These checks do not establish installed behavior
 ## Retire automatic lesson file writes
 
 **Design status:** Accepted on November 13, 2026.
-**Implementation status:** Candidate source is open in
-[Host PR #473](https://github.com/hao1939/may-agent/pull/473);
-source merge and installed adoption are unverified. The current reviewed head
-is `80433bc370c50a0e44b8bf7def62826906cb4352`, including Host main `0c7b0adb07`.
+**Implementation status:** [Host PR #473](https://github.com/hao1939/may-agent/pull/473)
+merged on November 13, 2026, as `8733fde81dae06e8708897f36d3b69aade204141`.
+The premerge reviewed head was `80433bc370c50a0e44b8bf7def62826906cb4352`,
+including Host main `0c7b0adb07`. Installed adoption remains unverified.
 
 Keep completion focused on validating and returning its report. Retire the
 finish tool's automatic append to `.state/memory-stream.jsonl`, along with its
@@ -177,11 +177,11 @@ memory-directory selection, swallowed write errors, and the now-unused `agentNam
 `projectRoot` for deliverable validation; current Host constructors adopt it.
 The `lessons` report field and its accepted shape remain.
 
-At reviewed Host baseline `07148372f9`, finish copies reported lessons into a
-separate local file as well as returning them in its report. The current Host
+At reviewed Host baseline `07148372f9`, finish copied reported lessons into a
+separate local file as well as returning them in its report. The reviewed Host
 and scoped App source search found no reader for that stream. Saved completion
 arguments/results already retain lessons, including after hosted execution and
-session recovery. The append can fail silently and does not activate guidance.
+session recovery. The append could fail silently and did not activate guidance.
 
 The gain is one less storage path and a completion tool with no memory-writing
 responsibility. The deliberate loss is the automatically collected standalone
@@ -201,10 +201,11 @@ custom source callers must drop those retired options. The App recovery test
 and historical May development trial import that factory directly; their
 constructors are updated alongside the documentation. No App production caller
 or lesson-stream reader was found in the scoped source search. No public SDK or
-event schema change is required. Documentation may land first with candidate
-status. The source-coupled recovery test and trial constructors are verified
-with the referenced Host head; use that source or a descendant containing it
-for their typed factory contract. They introduce no production App dependency.
+event schema change is required. Companion docs and constructors landed in Apps
+main `b0aacaf1680f1feca0e6d9959d553cceb21fecc8` before the Host source merge.
+The source-coupled recovery test and trial constructors were verified with the
+premerge reviewed head; use the merged Host source or a descendant containing
+it for their typed factory contract. They introduce no production App dependency.
 
 Verification updates the existing lesson-report cases to cover absent/empty
 state directories and an unchanged historical stream, and extracts lessons from
@@ -214,7 +215,8 @@ Existing validation, invocation fencing, direct execution and recovery tests
 remain. Use synthetic files without inspecting or
 modifying installation state; the Host PR owns full CI and review evidence.
 
-At that head, Host type/SDK/boundary/lint checks and 194 focused Host tests pass.
+At the premerge reviewed head, Host type/SDK/boundary/lint checks and 194 focused
+Host tests pass.
 The paired App recovery suite passes all 12 cases, and `check:may-design` passes
 with the existing unclassified `reports` root-layout warning. The initial full
 local four-shard CI at `aaf85d817a` completed with 4,014 passes, five failures and
@@ -222,8 +224,8 @@ three installation-only skips. Failures were Task-admission/worker deadlines
 and SQLite contention, including concurrent database initialization. The four
 non-admission cases pass in a targeted comparison with unchanged Host main;
 the admission suite also passes separately. All five failed cases, plus the
-error/recovery admission case, pass in a six-case run at the current PR head.
-This diagnosis does not turn the initial full run into a pass. Current-head
+error/recovery admission case, pass in a six-case run at the premerge reviewed head.
+This diagnosis does not turn the initial full run into a pass. Premerge
 [GitHub Quality and Container results](https://github.com/hao1939/may-agent/actions/runs/43376773442)
 both pass at the referenced head. No installation or model-backed verification
 was run.

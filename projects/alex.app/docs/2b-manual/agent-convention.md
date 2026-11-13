@@ -108,8 +108,9 @@ context-writing subscriber is retired, and even a written
 `context.md` is not automatically included in a normal prompt. `lessons` is
 retained in the completion report and saved session evidence; finish does not
 write a separate memory file or activate guidance. The
-[selected lesson-write retirement](../proposals/external-components-simplification.md#retire-automatic-lesson-file-writes)
-records source status. Existing historical memory files remain untouched.
+[merged lesson-write retirement](../proposals/external-components-simplification.md#retire-automatic-lesson-file-writes)
+records the source revision and verification. Existing historical memory files
+remain untouched; installed adoption remains unverified.
 
 For lasting behavior, use an authorized source edit in the owning guidance,
 verify activation, then check a later relevant execution. A saved report or

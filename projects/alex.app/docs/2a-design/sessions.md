@@ -13,9 +13,10 @@ native CLI `resumeSessionId` is a separate supported thread-continuity feature.
 The [earlier trial](../archive/reviews/execution-consolidation-poc-20260914.md)
 retains its original scope and limits; source status does not establish the
 deployed artifact.
-Retirement of the finish tool's separate lesson-file write is accepted and
-prepared for review; see [the selected reduction](../proposals/external-components-simplification.md#retire-automatic-lesson-file-writes).
-That source merge and installed adoption remain unverified.
+The finish tool's separate lesson-file write was retired in merged
+[#473](https://github.com/hao1939/may-agent/pull/473); see
+[the selected reduction](../proposals/external-components-simplification.md#retire-automatic-lesson-file-writes)
+for its source and verification record. Installed adoption remains unverified.
 
 ## The Model
 
