@@ -236,7 +236,7 @@ agent's `AGENTS.md`. Domain docs, tool recipes, lessons, skills, and knowledge
 indexes are read on demand.
 
 Older JSON may contain the retired `memoryLimit` field. It remains loadable;
-the candidate Host ignores that value. See
+the Host ignores that value. See
 [the selected cleanup](../proposals/external-components-simplification.md#retire-unused-memorylimit-configuration)
 for source status. Current configuration should omit it.
 

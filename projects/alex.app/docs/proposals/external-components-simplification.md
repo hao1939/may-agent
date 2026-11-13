@@ -298,12 +298,14 @@ or external model verification was run.
 
 ## Retire unused memoryLimit configuration
 
-**Design status:** Proposed within the selected simplification work.
+**Design status:** Adopted in merged Host source.
 **Implementation status:** [Host PR 480](https://github.com/hao1939/may-agent/pull/480)
-is open for review at `29bea281bb7a`, including merged Host baseline
-`9149a60268c2`.
+merged on November 13, 2026, as `28fc86fbedb93be1e7861614c4d96c53c4b3ed65`.
+Its reviewed and tested head was `29bea281bb7a`, including baseline `9149a60268c2`.
+The merge also includes the four documentation-only changes from #481; runtime
+source and tests match the tested head. Source removal is complete.
 Companion App config/manual changes are committed on workspace `main` at
-`4af8ffde65e5`; Host source merge and installed adoption are unverified.
+`4af8ffde65e5`; installed adoption is unverified.
 
 At reviewed Host baseline `4195036ad3`, `memoryLimit` exists in `AgentConfig`,
 `SubagentDefinition` and the registry's serializable agent view. The loader
@@ -354,6 +356,48 @@ the previously failing nested-worker case.
 both passed on that exact head. The integrated App docs check passed with zero
 errors and the existing root-layout warning. No installation or external
 provider trial ran.
+
+## Remove the unused agent configuration projection: next candidate
+
+**Design status:** Proposed for the next simplification decision.
+**Implementation status:** Source review only at merged Host `28fc86fbedb9`;
+no implementation or Host PR is prepared for this candidate.
+
+Agent registration currently updates two in-memory owners. The manager keeps
+the actual execution definition in its `agents` map; `RegistryStore` separately
+copies selected fields into an agent metadata map. That second map is never
+written to disk. Its only read path, `getRegistry()`, also scans session metadata
+directories and returns an aggregate of both unrelated resources.
+
+The current Host production search found no caller of `getRegistry()` and no
+reader of the copied agent metadata. Calls occur in tests; manager registration
+and unregistration only maintain the second map. A scoped App/script source
+search found no caller outside Host tests. This is stronger evidence than the
+unused `memoryLimit` field alone: the projection carrying that field has no
+current production consumer either.
+
+Proposed change: remove the agent projection, its register/unregister copy
+operations, the aggregate getter and their unused Host library types. Keep the
+manager's actual definition map as the registration authority. Keep session
+metadata writes, exact `getSession()` reads, the separately consumed
+`loadAllSessionMetas()` helper, SQLite event projections and recovery behavior.
+The existing session-storage owner can keep its name; no alias, replacement
+registry or new abstraction is needed to remove its unrelated responsibility.
+
+The gain is one fewer state copy and registration lifecycle to keep aligned,
+plus a session-store interface limited to session persistence. The deliberate
+loss is the unused aggregate Host library view and its exported types; custom
+source callers would migrate to actual agent definitions and existing session
+reads. This does not retire a dashboard, a durable agent file or a public SDK
+contract, and does not claim lower model cost or better model quality.
+
+Verification should retain actual registration/replacement/unregistration,
+failed admission without session creation, exact cancellation status and
+file-backed reopen guarantees. Tests that only describe the removed projection
+can retire; surviving session assertions should read their exact session
+metadata through production code. Recheck consumers and current main before
+implementation, keep the separately owned #482 accounting change separate,
+and run the required Host checks if this candidate is selected.
 
 ## Project metadata reader: merged
 

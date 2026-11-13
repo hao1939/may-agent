@@ -4,14 +4,15 @@
 
 **Choice basis:** [Applicable philosophy and convention](../1-principles/core-principles.md#one-authority-for-each-resource); [compare competing choices](../1-principles/core-principles.md#resolve-conflicting-designs).
 
-**Status:** Task/HTTP, caller-feedback, script-retirement, event-delivery and
-checkpoint/tool-state cleanup are merged. The September 27 repository-wide
-cleanup is merged through Host `b79a693f`; see its inventory below. Workflow redo
-and provider-facing delivery still need their separate evidence.
-**Reviewed:** September 27, 2026: source review at Host `0ddad3aa`, then merge
-verification at `b79a693f`. Earlier dated findings
-and candidate checks below remain historical evidence, not a fresh backlog or
-proof of the deployed release.
+**Status:** The September Task/HTTP and tool-state work is merged. Later source
+changes retired workflow crash replay (#449), Task authoring aliases (#454),
+default tool diagnostics (#470/#471), automatic lesson copies (#472), per-agent
+checkpoint copies (#478), and unused `memoryLimit` metadata (#480). These are
+completed reductions, not remaining work. Installed adoption is unverified.
+**Reviewed:** November 13, 2026, at merged Host `28fc86fbedb9`. The September
+reviews at `0ddad3aa` and `b79a693f`, and their candidate checks below, remain
+historical evidence. The current plan and remaining-work table supersede those
+dated recommendations; they do not establish deployed behavior.
 
 Make ordinary conversation and authorized work easier to understand, change and
 operate at acceptable total cost. Directory organization now has an explicit
@@ -30,16 +31,17 @@ to reduce the line count.
 
 | Area | Current disposition |
 | --- | --- |
-| Shared execution and ownership | Conversation already executes through one stable Task in merged #158; child-wait retirement, component layout and core policy cleanup are also merged. Do not repeat those changes. |
-| Task outcome names, vocabulary and execution path | [#168](https://github.com/hao1939/may-agent/pull/168) integrated [#170](https://github.com/hao1939/may-agent/pull/170) and [#171](https://github.com/hao1939/may-agent/pull/171), merged as `c0cbb59e`. Preserve its paired App contract and retained-state verification; do not reimplement the stack. |
-| Session review UI ownership | [#173](https://github.com/hao1939/may-agent/pull/173) integrated in `c0cbb59e`: HTTP-owned generation and inline feedback writes were removed; historical notes and the existing Evaluation App action remain. This deliberately gives up inline corrections, without claiming an equivalent replacement. |
-| Independent tool-state cleanup | Merged in #198 as `28670dd2`: retained checkpoint numbering, one test declaration and removal of obsolete CLI reuse discovery. The [candidate evidence](#independent-tool-cleanup) is historical; do not reimplement it. |
+| Shared execution and recovery | Conversation uses one stable Task. [#449](https://github.com/hao1939/may-agent/pull/449), merged as `7d32fa337890`, retired workflow crash replay and old session-resume paths. Fresh attempts use current Task facts and retained evidence; accepted inputs/results and recovery safeguards remain. See [workflows](../2a-design/workflows.md#crash-recovery). |
+| Task vocabulary and ignored configuration | [#454](https://github.com/hao1939/may-agent/pull/454) retired Task authoring aliases and the DB facade; [#251](https://github.com/hao1939/may-agent/pull/251) already removed ignored agent-definition context. Tool-call context arguments still work. [#480](https://github.com/hao1939/may-agent/pull/480) removes unused `memoryLimit` metadata. See the [agent convention](../2b-manual/agent-convention.md#prompt-files) and [Task API cleanup record](../archive/reviews/task-api-cleanup-20261112.md). |
+| Session review and dashboard scope | HTTP-owned review generation/inline writes were retired in #173. Later Learning, Lineage and legacy dashboard removals are complete; current Sessions and exact retained evidence reads remain. The [external component proposal](external-components-simplification.md) owns their decisions and merged evidence. An old Evaluation App action is not a current replacement contract. |
+| Tool diagnostics and duplicate evidence writes | The #198 checkpoint-numbering fix is retained. The default diagnostics, lesson-stream append and per-agent checkpoint copy were later retired without replacements. Their [merged records](external-components-simplification.md#retire-host-path-and-read-heuristics) own the deliberate losses and preserved safeguards. |
 | Caller feedback and retired experiments | #169 merged as `b1c7cbef`; #174 merged as `649d801c`. Preserve caller reports and the supported checks without restoring `scripts/poc/`. |
 | Duplicate event delivery | #175 merged as `e38d2861`. Retain exact per-Task delivery identities; [Events](../2a-design/execution-feedback.md#duplicate-delivery-and-safe-reconsideration) owns the common contract. |
-| Workflow redo, model-quality comparison and App-owned delivery | Deferred experiments with the explicit evidence/authority requirements below. They do not block the independent cleanup or authorize deployment. |
+| Model-quality comparison and App-owned delivery | Optional evidence work, separate from completed source cleanup. A scripted regression does not prove better model judgment or provider-facing delivery. Existing evidence and authority requirements still apply when such work is selected. |
+| Work-credit and layered execution accounting | [#482](https://github.com/hao1939/may-agent/pull/482) is an open, separate simplification workstream. Do not duplicate it or describe it as merged. This proposal does not select another accounting design. |
 
-Continue from the merged September 27 cleanup. Preserve the
-already merged execution, Task and checkpoint contracts during integration.
+Continue from the merged November 13 source. Preserve the
+accepted Task facts, exact execution identity and retained evidence during integration.
 The historical sections below explain prior decisions. The table above and
 [remaining work](#remaining-work) are the current plan.
 
@@ -305,6 +307,10 @@ The [existing runtime plan](../archive/reviews/task-runtime-organization.md) own
 
 ### Retain until the relevant evidence exists
 
+This is the September 12 recommendation. Workflow crash replay was later
+retired in #449; its reuse deferral below is historical. Current recovery and
+upgrade decisions are in the current plan and owning contracts.
+
 - Keep old-state conversion and historical readers until the supported upgrade
   window is deliberately retired. Fresh-source success does not prove old
   retained Tasks, input links or receipts can be discarded.
@@ -442,21 +448,21 @@ formats, input/result schemas, recovery behavior. Feature retirement has its own
 | --- | --- |
 | Combine Turn, Request and Task into one status | Keep the distinct facts: execution ended, the accepted ask was addressed, and background work finished. Combining them would reintroduce false fulfillment. |
 | Drop leases, identity fences, atomic writes or worker isolation | Keep these safeguards. They address duplicate ownership, stale results, partial commits and unresponsive execution; replaying cheap work does not replace them. |
-| Remove every workflow-to-agent handoff | Addressed in the candidate Host PR #344 revision: migrate Scout publication diagnosis to an ordinary workflow call, reject obsolete results at every boundary, and retain publication verification and legacy Task evidence. Activate compatible App code before the Host. |
+| Remove every workflow-to-agent handoff | #344 merged as `cbd71af0752d`, moving Scout publication diagnosis to an ordinary workflow call and retaining verification and historical evidence. That removal is complete; supported ordinary workflow calls are not a new deletion target. |
 | Replace existing atomic App reload with a restart-only Host | Defer. The supported reload boundary already has consumer/rollback tests; operational savings have not been established. New optional capabilities can start with omission/draining/restart rather than seamless live replacement. |
 | Guaranteed cross-channel display or seamless turn steering | Keep the accepted limits: canonical reads recover missing presentation, Telegram sends are best effort, and Stop followed by a correction is the initial redirection path. These are existing simplifications, not new work. |
 | Turn every local operation into an event/API-server request | Keep SQLite transactions and typed local calls. Events remain the integration contract for meaningful inputs, changes and independent observers. |
 
 ## Recommended next milestone
 
-1. Refresh the unmerged independent tool cleanup against current `main`, then
-   repeat its regression/full-CI checks before review and integration.
-2. Preserve the merged Task/HTTP stack, caller reports, script retirement and
-   event-delivery fixes. Their source work is complete, not a new backlog.
-3. Select any further HTTP extraction by responsibility after the feature
-   decision, rather than splitting large files merely for their size.
-4. Leave workflow redo and provider-facing delivery at their explicit evidence
-   gates. Completing this source milestone does not authorize a live rollout.
+1. Keep the current plan and owning proposal records aligned with merged source;
+   remove completed items from the active backlog while preserving dated evidence.
+2. Let the separate #482 accounting cleanup finish through its own contract and
+   review. Do not create a competing implementation here.
+3. Select a further reduction only after finding a current consumer, responsibility
+   or duplicate decision worth changing. File size alone is not that evidence.
+4. Preserve accepted Task state, exact identity, atomic publication and recovery.
+   Source cleanup does not authorize deployment or historical-state deletion.
 
 For every source slice, run the existing affected tests and full Host CI,
 including subprocess and browser coverage where paths change. Do not add a
@@ -522,15 +528,17 @@ Task algorithm rewrites and the remaining feature reductions require separate de
 
 | Work | Boundary and next proof |
 | --- | --- |
-| Review retained compatibility | The September 27 cleanup is merged. Check actual consumers before retiring the remaining compatibility boundaries listed below. |
+| Review retained compatibility | Check current consumers and supported upgrade requirements before selecting another removal. September inventories are historical; their completed aliases, context metadata and diagnostics must not be reopened. |
+| Unused agent configuration projection | [Next candidate](external-components-simplification.md#remove-the-unused-agent-configuration-projection-next-candidate): only tests read the second agent metadata map and aggregate registry view at the reviewed baseline. A removal is proposed, not selected or implemented; preserve actual registration and session persistence. |
 | Further HTTP organization | Directory moves #141/#142 are merged. Extract a retained route family only when its responsibility is clearer; #173's feature removal does not claim the server has been split. |
-| Review workflow redo | Select one real workload and measure discarded effort and effect risk before removing reuse. |
 | Measure the context cleanup's behavioral effect | Compare baseline and candidate on the same small conversation cases. Existing scripted regressions establish supplied context and mechanics, not improved model judgment. |
-| Legacy imports and ignored agent context | #170's SDK vocabulary migration is merged. Keep the DB facade until sibling imports move; resolve unused agent-definition context through the existing extension/adoption review. Tool-call context arguments remain supported. |
+| Separate accounting simplification | #482 is open and owned by its existing workstream. Review its outcome there; it is neither completed nor a second task for this proposal. |
 | Prove one App-owned delivery workflow | Select one repository, responsible Task, executor and requested terminal outcome. The recorded read-only PR assessment did not exercise publication, review dispatch or validation effects. |
 | Assess historical production state before rollout | Verify the actual artifact and retained state. Candidate fixes do not establish that a previously revived Task generation was authorized or repair historical rows automatically. |
 
-These are separate slices, not prerequisites for every ordinary May Task. Keep
+These are conditional review or evidence choices, not promised implementation
+phases or prerequisites for every ordinary May Task. Workflow replay, the DB
+facade and ignored agent context are complete removals. Keep
 the [convergence tracker](design-implementation-convergence.md) for verified open
 source gaps and the core proposal for implementation separation. Do not copy
 their backlogs here.
@@ -681,7 +689,13 @@ checkout below. The source guides travel with their owning changes. Canonical
 storage, scheduling and reporting/adoption notes live here. Merge status does
 not establish deployed behavior or measured improvement in model judgment.
 
-Retained boundaries and next review targets:
+Retained boundaries at the September 27 review (historical):
+
+The context and commit-guard entries below describe that baseline, not current
+work. Agent context was retired in #251, the commit detector in #471, and the
+legacy dashboard and inferred event graph in #474/#476. Historical schemas and
+data remain distinct from current consumers; this record does not authorize
+their deletion. Use the current plan and remaining-work table for new choices.
 
 - **Completed in Host #454:** sibling callers migrated and the SDK Task
   `owner`/result aliases, `dependencies` authoring, Condition intervals and
@@ -789,5 +803,6 @@ local CI: 3,240 passed, three installation-only skips, no failures (230.95s).
 The only later change strengthens two packet assertions. Final combined source
 `6f1e9aa0` passed 35 owning tests with the same three installation-only skips.
 Host #251 passed both GitHub checks on `65a75ba5`; #250 passed both checks on
-its final revision `36a208db`. Both PRs are ready for human review. No deployment, App activation, record migration or model-backed
+its final revision `36a208db`. Both subsequently merged: #250 as `f80c38ada90e`
+and #251 as `0ee8ed409695`. No deployment, App activation, record migration or model-backed
 experiment was performed.

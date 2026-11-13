@@ -322,7 +322,7 @@ is needed. See the [implementation record](../archive/reviews/agent-prompt-assem
 
 Do not put prose instructions in `agent.json`.
 `memoryLimit` is retired; omit it from configuration. Older JSON remains
-loadable, and the candidate Host ignores the field without carrying it into
+loadable, and the Host ignores the field without carrying it into
 execution definitions or registry metadata. See
 [the selected cleanup](../proposals/external-components-simplification.md#retire-unused-memorylimit-configuration)
 for source status.
