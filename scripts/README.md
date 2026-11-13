@@ -25,7 +25,6 @@ Run commands below from the Host checkout unless stated otherwise.
 | Quiet-runtime sample | `bun run sample:runtime-quiet -- --socket /path/to/may.sock --state-dir /path/to/state --seconds 30` | Installed daemon, SQLite and Linux `/proc` required. Reads CPU/memory plus work-activity evidence; prints JSON. Exit 2 means the window was not quiet, not a successful idle measurement. |
 | Task interface benchmark | `bun scripts/benchmark-human-task-interface.ts` | Creates 20,000 synthetic rows in memory; prints p95 latency and fails its explicit budgets. No installed state or model. Machine-sensitive benchmark, not a default CI gate. |
 | Offline transcripts | Open `scripts/log-viewer.html` in a browser and select a JSONL file | Reads local message records, not daemon event logs. No upload or live service. Format and limits below. |
-| Prior-lifecycle verification | `scripts/migrations/task-state-cutover.ts`, `task-runtime-cutover.ts` | Explicit clean old source plus temporary state; see the [test guide](../test/README.md). These verify an upgrade, never migrate your installation. |
 
 When optional notification metadata is present, the restarter attempts to emit
 `deployment.settled` with `target: { appId, taskId }` and the settled receipt in
@@ -97,7 +96,6 @@ Useful checks have maintained homes:
 - Definition activation: `test/e2e/e5-source-activation.test.ts` and the source-store suite.
 - Exact Task results, waits, owner closure, retry and reopen: existing Task,
   Conversation and real-worker suites, not copied model-trial scoring code.
-- Old-source conversion: `scripts/migrations/` and its explicit test-guide boundary.
 
 `smoke-steering.ts` is retired with its package entry. Its assumed live metric
 and immediate database write are not a safe smoke contract. Portable HTTP
