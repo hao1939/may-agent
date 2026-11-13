@@ -19,6 +19,7 @@ import {
   KnowledgePublicationError,
   publicationFacts,
   publishKnowledgeChanges,
+  releaseUnchangedKnowledgeSnapshot,
   retainedCandidateFacts,
   snapshotKnowledge,
   verifyAcceptedPublicationAtCanonicalHead,
@@ -290,10 +291,19 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     ctx.workspace.projectRoot,
     ctx.workspace.output,
   );
-  const candidateFailureDetails = () => ({
-    candidateFacts: retainedCandidateFacts(beforePublication),
-    uncommittedChanges: changedKnowledgePaths(beforePublication),
-  });
+  let snapshotHandled = false;
+  const candidateFailureDetails = () => {
+    snapshotHandled = true;
+    const uncommittedChanges = changedKnowledgePaths(beforePublication);
+    if (releaseUnchangedKnowledgeSnapshot(beforePublication)) {
+      return { candidateFacts: [], uncommittedChanges };
+    }
+    return {
+      candidateFacts: retainedCandidateFacts(beforePublication),
+      uncommittedChanges,
+    };
+  };
+  try {
   const projectDir = beforePublication.projectRoot;
   const recovery = acceptedPublicationRecovery(ctx.reconciliation.input);
   const recoveryContext = await recoveryTaskContext(ctx, recovery);
@@ -662,5 +672,9 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
       facts: [...agentResult.facts, `research-handoff:deferred:${message}`],
     } as unknown as AgentResult;
   }
+  snapshotHandled = true;
   return ctx.done(agentResult.summary, agentResult);
+  } finally {
+    if (!snapshotHandled) releaseUnchangedKnowledgeSnapshot(beforePublication);
+  }
 }

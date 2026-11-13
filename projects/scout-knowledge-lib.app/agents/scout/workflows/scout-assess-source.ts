@@ -15,6 +15,7 @@ import {
   changedKnowledgePaths,
   publicationFacts,
   publishKnowledgeChanges,
+  releaseUnchangedKnowledgeSnapshot,
   retainedCandidateFacts,
   snapshotKnowledge,
   type KnowledgeSnapshot,
@@ -121,11 +122,12 @@ export async function executeSourceAssessment(
         response = `${response.replace(/\n\n(?:Saved|Reused) assessment:.*$/s, "")}\n\nPublication failed: I could not verify this assessment in the library. The candidate is retained at ${beforePublication.candidateRoot}.`;
       }
     }
-    if (beforePublication && !publish)
+    if (beforePublication && !publish) {
       finalFacts = [
         ...finalFacts,
         ...retainedCandidateFacts(beforePublication),
       ];
+    }
     return ctx.done(
       finalSummary,
       finalState === "converged"
@@ -358,7 +360,10 @@ ${JSON.stringify(packet ?? accessFailure)}
       !saveFailure,
     );
   } catch (error) {
-    ctx.signal.throwIfAborted();
+    if (ctx.signal.aborted) {
+      releaseUnchangedKnowledgeSnapshot(beforePublication);
+      ctx.signal.throwIfAborted();
+    }
     const summary = `Source assessment unfinished: ${error instanceof Error ? error.message : String(error)}`;
     return finish("incomplete", summary, [summary], undefined, false);
   }

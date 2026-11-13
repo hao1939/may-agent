@@ -416,6 +416,25 @@ function cleanup(snapshot: KnowledgeSnapshot): void {
     snapshot.candidateRoot,
   ]);
 }
+
+/** Remove an untouched temporary candidate worktree on abort or early exit; retain if modified. */
+export function releaseUnchangedKnowledgeSnapshot(
+  snapshot: KnowledgeSnapshot | undefined,
+): boolean {
+  if (!snapshot || !existsSync(snapshot.candidateRoot)) return false;
+  try {
+    if (
+      changedKnowledgePaths(snapshot).length > 0 ||
+      allCandidateChanges(snapshot).length > 0
+    ) {
+      return false;
+    }
+    cleanup(snapshot);
+    return true;
+  } catch {
+    return false;
+  }
+}
 function modeAt(cwd: string, revision: string, path: string): number {
   const mode = git(cwd, ["ls-tree", revision, "--", path]).split(/\s/, 1)[0];
   return mode === "100755" ? 0o755 : 0o644;

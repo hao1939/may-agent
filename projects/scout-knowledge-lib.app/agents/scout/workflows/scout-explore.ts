@@ -42,6 +42,7 @@ import {
   type KnowledgeSnapshot,
   publicationFacts,
   publishKnowledgeChanges,
+  releaseUnchangedKnowledgeSnapshot,
   retainedCandidateFacts,
   snapshotKnowledge,
 } from "./lib/knowledge-publication.js";
@@ -1107,10 +1108,19 @@ not an assignment to reconcile or reschedule the standing Task):
 ${JSON.stringify(ctx.reconciliation, null, 2)}
 \`\`\``;
   const beforePublication = snapshotKnowledge(projectDir, ctx.workspace.output);
-  const candidateFailureDetails = () => ({
-    candidateFacts: retainedCandidateFacts(beforePublication),
-    uncommittedChanges: changedKnowledgePaths(beforePublication),
-  });
+  let snapshotHandled = false;
+  const candidateFailureDetails = () => {
+    snapshotHandled = true;
+    const uncommittedChanges = changedKnowledgePaths(beforePublication);
+    if (releaseUnchangedKnowledgeSnapshot(beforePublication)) {
+      return { candidateFacts: [], uncommittedChanges };
+    }
+    return {
+      candidateFacts: retainedCandidateFacts(beforePublication),
+      uncommittedChanges,
+    };
+  };
+  try {
   const candidateProjectDir = beforePublication.projectRoot;
   const agentTask =
     buildExploreTask(
@@ -1397,12 +1407,16 @@ run Git publication or edit the canonical library in this call.`;
       actions: [],
     } satisfies TaskHandlerResult);
   }
+  snapshotHandled = true;
   return ctx.done(summary, {
     state: "converged",
     summary,
     facts,
     actions: [],
   } satisfies TaskHandlerResult);
+  } finally {
+    if (!snapshotHandled) releaseUnchangedKnowledgeSnapshot(beforePublication);
+  }
 }
 
 export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
