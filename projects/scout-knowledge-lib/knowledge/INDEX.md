@@ -1496,6 +1496,7 @@ The [reconstruction audit](../reports/review/scout-provenance-reconstruction-cyc
 ## Recent agent-effect governance findings
 
 - [Agent email guards need an effect-owning boundary](findings/2026-11-09-agent-email-guards-need-effect-boundary.md) — Pinned code specifies atomic send budgets, typed holds, loop refusal, and persistent pause, but Scout did not run it or prove that every provider route crosses the guard.
+- [Approval attention queues must follow current actionability](findings/2026-11-13-approval-attention-queues-must-follow-current-actionability.md) — Pinned Lobu source keeps expired, decided, or unreachable approvals in history while excluding them from unread and attention projections; Scout reviewed source and tests statically without running Lobu or proving every notification surface uses the shared filter.
 
 ## Recent harness-evaluation findings
 
