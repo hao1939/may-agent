@@ -153,8 +153,6 @@ function render() {
   currentTab = tab;
   currentRouteParams = params;
   setSessionPageMode(tab === 'sessions' && !!params.id);
-  // Trace selection belongs to this route, not to the reusable Events pane.
-  clearLoopTrace();
   // Pane visibility — design's 5 surfaces map onto existing panes:
   //   live  → #dashboard
   //   projects → #projects (with optional :id deep-link via params.id)
@@ -208,12 +206,7 @@ function render() {
   if (tab === 'terminal') initTerminalPage();
   if (tab === 'system') {
     loadEvents();
-    const workflowRunId = new URLSearchParams(location.search).get('workflowRunId');
-    if (workflowRunId) loadLoopTrace({ workflowRunId });
-    if (params.eventId) {
-      loadEventGraph(params.eventId);
-      if (!workflowRunId && currentAnchorId() === 'loop-trace') loadLoopTrace(params.eventId);
-    }
+    if (params.eventId) loadEventGraph(params.eventId);
   }
   if (tab === 'projects') {
     // Project id deep-link: /projects/<id>
