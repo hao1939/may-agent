@@ -230,6 +230,59 @@ This diagnosis does not turn the initial full run into a pass. Premerge
 both pass at the referenced head. No installation or model-backed verification
 was run.
 
+## Retire per-agent latest checkpoint writes
+
+**Design status:** Accepted on November 13, 2026.
+**Implementation status:** Candidate source is open in
+[Host PR #478](https://github.com/hao1939/may-agent/pull/478), at
+`32c0e58be5e31a203f000f29335beaf2fb138663`. Source merge and installed adoption
+are unverified.
+
+At reviewed Host baseline `cd29dc70d9`, `checkpoint()` appends to the exact
+session's checkpoint log, then overwrites
+`.state/checkpoints/latest/<agentName>.json`. Both writes share one error path.
+If the second write fails, the tool reports failure despite a saved checkpoint.
+The reviewed Host recovery readers use the session log and retained transcript
+receipts. No current Host or scoped App source reader of the per-agent copy was
+found. Historical design records describing that pointer remain evidence of
+the earlier implementation. A synthetic baseline probe with a file blocking
+the `latest` directory returns a checkpoint error while the session log already
+contains one saved entry.
+
+Remove the per-agent copy, its directory selection and creation, and its second
+write from the tool. Keep `.state/checkpoints/<sessionId>.jsonl`, durable step
+numbering, checkpoint attribution, report shape, session-bound recovery and
+the existing transcript fallback. `readLatestCheckpoint` remains a per-session
+reader; it does not read the retired per-agent file. `agentName` remains in the
+tool options and entry because it records attribution.
+
+The gain is one authoritative checkpoint log and one less write/failure path.
+The deliberate loss is the automatically refreshed shortcut for locating an
+agent's most recently saved checkpoint across sessions. External readers of
+that shortcut receive no new entries. Existing files remain untouched. Users
+can inspect an exact session's checkpoint log through existing reads; no new
+index, locator, collector, compatibility toggle or migration is introduced.
+No public SDK, event, model-facing parameter or checkpoint entry shape changes.
+The selected change does not retire checkpointing or Task recovery.
+
+Verification updates the existing checkpoint tests to cover an absent pointer
+directory, a blocked historical path and an unchanged historical pointer.
+Two sessions of one agent retain separate progress and attribution, and the
+actual recovery evidence reader reads each saved entry. Existing tests cover
+step continuation after process restart, failed log persistence and dynamic
+identity. Session/Task recovery tests retain their current evidence, identity
+and file/transcript precedence checks. Use temporary fixtures and record the
+Host PR's exact head and CI evidence here; no installed-state cleanup is part
+of this change.
+
+At the candidate head, 128 focused checkpoint/preparation/session-recovery tests
+and three Task checkpoint recovery cases pass. `check:may-design` passes with
+zero errors and the existing unclassified `reports` root-layout warning.
+[GitHub Quality and Container](https://github.com/hao1939/may-agent/actions/runs/43384510386)
+both pass at that head. Full local `MAY_TEST_SHARDS=4 bun run ci` also passes:
+4,013 tests, zero failures and three installation-only skips. No installed-state
+or external model verification was run.
+
 ## Project metadata reader: merged
 
 The user selected this consolidation. [Host PR 460](https://github.com/hao1939/may-agent/pull/460)

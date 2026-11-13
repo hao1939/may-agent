@@ -213,18 +213,23 @@ Task; ended standalone sessions remain evidence.
 
 The optional checkpoint tool appends coarse progress to
 `.state/checkpoints/<sessionId>.jsonl`. This is execution evidence, not another
-Task result or automatic authority to repeat an external effect. The proposed
-numbering rule makes the session log authoritative: a recreated tool or restarted
-process continues from retained progress in that state directory. Separate
-installations would not share a counter. The per-agent latest file remains a
-convenience pointer.
+Task result or automatic authority to repeat an external effect. The session
+log owns numbering: a recreated tool or restarted process continues from
+retained progress in that state directory. Separate installations do not share
+a counter.
+
+Retirement of the automatically written per-agent latest copy is selected and
+prepared for review; see [the selected reduction](../proposals/external-components-simplification.md#retire-per-agent-latest-checkpoint-writes)
+for source status. The candidate saves only the session checkpoint log and
+preserves historical latest files. Source merge and installed adoption remain
+unverified.
 
 The [tool cleanup](../proposals/authority-boundary-simplification.md#independent-tool-cleanup),
 merged in Host #198 as `28670dd2`, implements this by reading the highest saved
 step before each synchronous append. It accepts reading the coarse-progress log instead of maintaining
 another cache/lifecycle. Execution has one writer per session; this does not
-add cross-process writer coordination or transactional checkpoint/pointer/digest
-writes. Existing history is retained. The September 18 review at `dd548cab`
+add cross-process writer coordination or a new checkpoint cache. Existing
+history is retained. The September 18 review at `dd548cab`
 predated that merge; it is historical evidence, not current implementation
 status. Source status does not identify the deployed artifact.
 
