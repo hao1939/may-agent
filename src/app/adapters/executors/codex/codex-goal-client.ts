@@ -70,6 +70,7 @@ export type CodexGoalProtocolDiagnostics = {
   responses: number;
   serverRequests: number;
   maxProtocolLineChars: number;
+  skippedOversizedLines?: number;
 };
 
 type PendingRequest = {
@@ -137,6 +138,8 @@ export class CodexGoalAppServerClient {
   private responseCount = 0;
   private serverRequestCount = 0;
   private maxProtocolLineChars = 0;
+  private skippedOversizedLines = 0;
+  private skipOversizedLine = false;
   private processClosed = false;
   private stopPromise: Promise<void> | null = null;
   private exitError: Error | null = null;
@@ -420,6 +423,7 @@ export class CodexGoalAppServerClient {
       responses: this.responseCount,
       serverRequests: this.serverRequestCount,
       maxProtocolLineChars: this.maxProtocolLineChars,
+      ...(this.skippedOversizedLines > 0 ? { skippedOversizedLines: this.skippedOversizedLines } : {}),
     };
   }
 
@@ -497,22 +501,54 @@ export class CodexGoalAppServerClient {
     this.process.stdin.write(`${JSON.stringify(message)}\n`);
   }
 
+  private isSkippableOversizedNotification(prefix: string): boolean {
+    const header = prefix.slice(0, 512);
+    const paramsIndex = header.indexOf('"params"');
+    const topLevel = paramsIndex >= 0 ? header.slice(0, paramsIndex) : header;
+    return (
+      header.trimStart().startsWith("{") &&
+      !/"id"\s*:/.test(topLevel) &&
+      /"method"\s*:\s*"item\/[^"]+"/.test(header)
+    );
+  }
+
   private consumeStdout(chunk: string): void {
     this.protocolBytes += Buffer.byteLength(chunk);
-    this.stdoutBuffer += chunk;
-    while (true) {
-      const newline = this.stdoutBuffer.indexOf("\n");
+    let remaining = chunk;
+    while (remaining.length > 0) {
+      if (this.skipOversizedLine) {
+        const newline = remaining.indexOf("\n");
+        if (newline < 0) return;
+        this.skipOversizedLine = false;
+        this.protocolLines += 1;
+        this.skippedOversizedLines += 1;
+        remaining = remaining.slice(newline + 1);
+        continue;
+      }
+      const newline = remaining.indexOf("\n");
       if (newline < 0) {
+        this.stdoutBuffer += remaining;
         if (this.stdoutBuffer.length > MAX_PROTOCOL_LINE_CHARS) {
+          this.maxProtocolLineChars = Math.max(this.maxProtocolLineChars, this.stdoutBuffer.length);
+          if (this.isSkippableOversizedNotification(this.stdoutBuffer)) {
+            this.stdoutBuffer = "";
+            this.skipOversizedLine = true;
+            return;
+          }
           this.fail(new Error(`Codex app-server protocol line exceeded ${MAX_PROTOCOL_LINE_CHARS} characters`));
         }
         return;
       }
-      const line = this.stdoutBuffer.slice(0, newline).trimEnd();
-      this.stdoutBuffer = this.stdoutBuffer.slice(newline + 1);
+      const line = (this.stdoutBuffer + remaining.slice(0, newline)).trimEnd();
+      this.stdoutBuffer = "";
+      remaining = remaining.slice(newline + 1);
       this.protocolLines += 1;
       this.maxProtocolLineChars = Math.max(this.maxProtocolLineChars, line.length);
       if (line.length > MAX_PROTOCOL_LINE_CHARS) {
+        if (this.isSkippableOversizedNotification(line)) {
+          this.skippedOversizedLines += 1;
+          continue;
+        }
         this.fail(new Error(`Codex app-server protocol line exceeded ${MAX_PROTOCOL_LINE_CHARS} characters`));
         return;
       }

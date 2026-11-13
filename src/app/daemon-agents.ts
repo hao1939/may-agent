@@ -61,7 +61,9 @@ export async function prepareDaemonAgents(opts: {
   };
 
   const loadResult = await loadAgents(loaderOpts);
-  console.log(`[agents] Loaded ${loadResult.added.length}: ${loadResult.added.join(", ")}`);
+  if (opts.taskRuntimeMode !== "manual") {
+    console.log(`[agents] Loaded ${loadResult.added.length}: ${loadResult.added.join(", ")}`);
+  }
   opts.bus.emit({
     type: "info",
     message: `Loaded ${loadResult.added.length} agent(s): ${loadResult.added.join(", ")}`,

@@ -152,9 +152,9 @@ describe("ExecutionResult", () => {
     const db = dbHarness();
     db.run(
       `INSERT INTO workflow_runs
-       (runId, workflow, task, parentSessionId, parentWorkflowRunId, projectId, depth, status, startedAt, endedAt, result_summary, result_reason, resumedFromRunId)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ["wr_db", "goal-driver", "project: x", "s_parent", null, "p1", 2, "escalated", 100, 300, null, "blocked by missing comment", "wr_old"],
+       (runId, workflow, task, parentSessionId, parentWorkflowRunId, projectId, depth, status, startedAt, endedAt, result_summary, result_reason)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ["wr_db", "goal-driver", "project: x", "s_parent", null, "p1", 2, "escalated", 100, 300, null, "blocked by missing comment"],
     );
 
     expect(getExecutionResultFromDb(db, "wr_db")).toMatchObject({
@@ -167,7 +167,7 @@ describe("ExecutionResult", () => {
       projectId: "p1",
       startedAt: 100,
       endedAt: 300,
-      facts: { workflow: "goal-driver", task: "project: x", depth: 2, parentSessionId: "s_parent", resumedFromRunId: "wr_old" },
+      facts: { workflow: "goal-driver", task: "project: x", depth: 2, parentSessionId: "s_parent" },
     });
   });
 });

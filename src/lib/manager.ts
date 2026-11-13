@@ -289,12 +289,10 @@ export class SubagentManager {
   register(def: SubagentDefinition): void {
     resolvedExecutionRecipient(def);
     this.agents.set(def.name, { definition: def });
-    this._registry.saveAgent(def);
   }
 
   unregister(name: string): void {
     this.agents.delete(name);
-    this._registry.removeAgent(name);
   }
 
   hasAgent(name: string): boolean {

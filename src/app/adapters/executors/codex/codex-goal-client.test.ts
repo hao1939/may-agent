@@ -414,6 +414,36 @@ describe("CodexGoalAppServerClient", () => {
     expect(process.signals).toEqual(["SIGTERM"]);
   });
 
+  it("skips oversized item/* notifications without failing active requests or turns", async () => {
+    const process = new FakeAppServerProcess({ closeOnStdinEnd: true });
+    const client = new CodexGoalAppServerClient(process, {
+      requestTimeoutMs: 1_000,
+      terminateAfterMs: 5,
+      killAfterMs: 15,
+    });
+    const notifications: string[] = [];
+    client.onNotification((n) => notifications.push(n.method));
+
+    const oversizedItem = `{"method":"item/completed","params":{"threadId":"thread-1","turnId":"turn-1","item":{"id":"item-big","type":"commandExecution","aggregatedOutput":"${"x".repeat(4 * 1024 * 1024 + 128)}"}}}`;
+    process.stdout.write(oversizedItem.slice(0, 4 * 1024 * 1024 + 32));
+    process.stdout.write(`${oversizedItem.slice(4 * 1024 * 1024 + 32)}\n`);
+    process.notify("turn/started", { threadId: "thread-1", turn: { id: "turn-1", status: "inProgress" } });
+
+    const pending = client.getGoal("thread-1");
+    const request = await waitForWrite(process, "thread/goal/get");
+    process.reply(request.id, { goal: { status: "active" } });
+
+    await expect(pending).resolves.toEqual({ goal: { status: "active" } });
+    expect(notifications).toEqual(["turn/started"]);
+    expect(client.diagnostics()).toMatchObject({
+      protocolLines: 3,
+      notifications: 1,
+      responses: 1,
+      skippedOversizedLines: 1,
+    });
+    await client.stop();
+  });
+
   it("stops through normal stdin shutdown without signaling", async () => {
     const process = new FakeAppServerProcess({ closeOnStdinEnd: true, closeOnSignal: null });
     const client = new CodexGoalAppServerClient(process, { terminateAfterMs: 5, killAfterMs: 15 });

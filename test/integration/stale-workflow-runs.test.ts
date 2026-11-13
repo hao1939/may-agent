@@ -33,7 +33,6 @@ function makeStaleRun(runId: string, workflow = "test-wf"): WorkflowRunRecord {
     status: "running",
     result_summary: null,
     result_reason: null,
-    resumedFromRunId: null,
   };
 }
 

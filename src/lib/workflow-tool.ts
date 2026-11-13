@@ -669,7 +669,6 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           sourceScope: workflow.sourceScope,
           entryContentHash: workflow.entryContentHash,
           taskBinding: opts.taskBinding ?? null,
-          resumedFromRunId: null,
         });
       }
       emitRuntimeEvent({

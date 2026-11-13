@@ -34,7 +34,6 @@ export interface WorkflowRunRecord {
   result_reason: string | null;
   /** Optional bounded inspection copy, stored only in the existing run artifact. */
   result_payload?: WorkflowPayload;
-  resumedFromRunId: string | null;
   sourcePath?: string | null;
   sourceScope?: "agent" | "project" | null;
   entryContentHash?: string | null;
@@ -78,8 +77,8 @@ export function insertWorkflowRun(persistDir: string, run: WorkflowRunRecord): v
   withSqliteBusyRetry(`insert workflow_run ${run.runId}`, () =>
     db.run(
       `INSERT OR REPLACE INTO workflow_runs
-        (runId, workflow, task, task_ref, task_sha256, task_bytes, artifact_ref, artifact_sha256, artifact_bytes, parentSessionId, parentWorkflowRunId, projectId, app_id, task_id, task_generation, attempt_id, depth, status, startedAt, endedAt, result_summary, result_reason, resumedFromRunId, sourcePath, sourceScope, entryContentHash)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (runId, workflow, task, task_ref, task_sha256, task_bytes, artifact_ref, artifact_sha256, artifact_bytes, parentSessionId, parentWorkflowRunId, projectId, app_id, task_id, task_generation, attempt_id, depth, status, startedAt, endedAt, result_summary, result_reason, sourcePath, sourceScope, entryContentHash)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         persisted.runId, persisted.workflow, taskPreview(persisted.task),
         persisted.task_ref, persisted.task_sha256, persisted.task_bytes,
@@ -91,7 +90,7 @@ export function insertWorkflowRun(persistDir: string, run: WorkflowRunRecord): v
         persisted.taskBinding?.generation ?? null,
         persisted.taskBinding?.attemptId ?? null,
         persisted.depth, persisted.status, persisted.startedAt, persisted.endedAt,
-        persisted.result_summary, persisted.result_reason, persisted.resumedFromRunId,
+        persisted.result_summary, persisted.result_reason,
         persisted.sourcePath ?? null, persisted.sourceScope ?? null, persisted.entryContentHash ?? null,
       ],
     ),

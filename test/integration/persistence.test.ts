@@ -21,7 +21,7 @@ describe("Registry persistence", () => {
     rmSync(persistDir, { recursive: true, force: true });
   });
 
-  it("stores agent config in-memory on register", () => {
+  it("keeps registered agent definitions in-memory on the manager without writing registry.json", () => {
     const manager = new SubagentManager({ persistDir });
 
     manager.register({
@@ -35,17 +35,19 @@ describe("Registry persistence", () => {
 
     // Agent config is in-memory — no registry.json on disk
     expect(existsSync(join(persistDir, "registry.json"))).toBe(false);
-    // But getRegistry() returns the agent
-    const registry = (manager as any).registry.getRegistry();
-    expect(registry.agents["test-agent"]).toBeDefined();
-    expect(registry.agents["test-agent"].name).toBe("test-agent");
-    expect(registry.agents["test-agent"].description).toBe("A test agent");
-    expect(registry.agents["test-agent"].domain).toBe("testing");
-    expect(registry.agents["test-agent"].systemPrompt).toBe("You are a test agent.");
-    expect(registry.agents["test-agent"].model).toEqual({ provider: "anthropic", id: "test-model" });
+    expect(manager.hasAgent("test-agent")).toBe(true);
+    expect(manager.getAgentDefinition("test-agent")).toMatchObject({
+      name: "test-agent",
+      description: "A test agent",
+      domain: "testing",
+      systemPrompt: "You are a test agent.",
+    });
+    expect(manager.listAgents()).toEqual([
+      { name: "test-agent", description: "A test agent", domain: "testing" },
+    ]);
   });
 
-  it("retains supported fields (domain, workspace, timeoutMs)", () => {
+  it("retains supported definition fields and replaces or unregisters cleanly", () => {
     const manager = new SubagentManager({ persistDir });
 
     manager.register({
@@ -58,42 +60,28 @@ describe("Registry persistence", () => {
       timeoutMs: 600000,
     });
 
-    const registry = (manager as any).registry.getRegistry();
-    const agent = registry.agents["full-agent"];
-    expect(agent.domain).toBe("research");
-    expect(agent.workspace).toBe("/path/to/workspace");
-    expect(agent.timeoutMs).toBe(600000);
-  });
-
-  it("persists multiple agents", () => {
-    const manager = new SubagentManager({ persistDir });
-
-    manager.register({
-      name: "agent-a",
-      description: "First agent",
-      domain: "domain-a",
-      systemPrompt: "Prompt A",
-      model: fakeModel(),
-      tools: [],
+    expect(manager.getAgentDefinition("full-agent")).toMatchObject({
+      domain: "research",
+      workspace: "/path/to/workspace",
+      timeoutMs: 600000,
     });
 
     manager.register({
-      name: "agent-b",
-      description: "Second agent",
-      domain: "domain-b",
-      systemPrompt: "Prompt B",
+      name: "full-agent",
+      description: "Updated config agent",
+      domain: "research",
       model: fakeModel(),
       tools: [],
     });
+    expect(manager.getAgentDefinition("full-agent")?.description).toBe("Updated config agent");
+    expect(manager.getAgentDefinition("full-agent")?.workspace).toBeUndefined();
 
-    const registry = (manager as any).registry.getRegistry();
-    expect(Object.keys(registry.agents)).toHaveLength(2);
-    expect(registry.agents["agent-a"].description).toBe("First agent");
-    expect(registry.agents["agent-b"].description).toBe("Second agent");
+    manager.unregister("full-agent");
+    expect(manager.hasAgent("full-agent")).toBe(false);
+    expect(manager.getAgentDefinition("full-agent")).toBeUndefined();
   });
 
-  it("agent configs are in-memory only — not shared across instances", () => {
-    // First manager registers
+  it("agent definitions are in-memory only — not shared across manager instances", () => {
     const manager1 = new SubagentManager({ persistDir });
     manager1.register({
       name: "persisted-agent",
@@ -104,13 +92,9 @@ describe("Registry persistence", () => {
       tools: [],
     });
 
-    // Second manager reads from same persistDir — agents are in-memory only
     const manager2 = new SubagentManager({ persistDir });
-    const registry2 = (manager2 as any).registry.getRegistry();
-    // Agent configs don't survive restart (by design — re-registered on every startup)
-    expect(registry2.agents["persisted-agent"]).toBeUndefined();
+    expect(manager2.hasAgent("persisted-agent")).toBe(false);
 
-    // But once registered again, it's available
     manager2.register({
       name: "persisted-agent",
       description: "Survives restart",
@@ -119,8 +103,7 @@ describe("Registry persistence", () => {
       model: fakeModel(),
       tools: [],
     });
-    const registry2b = (manager2 as any).registry.getRegistry();
-    expect(registry2b.agents["persisted-agent"]).toBeDefined();
+    expect(manager2.hasAgent("persisted-agent")).toBe(true);
   });
 
   it("records session as meta.json on run and updates on completion", async () => {
@@ -226,24 +209,5 @@ describe("Registry persistence", () => {
 
     const status = manager.status();
     expect(status).toEqual([]);
-  });
-
-  it("does not persist optional fields when not provided", () => {
-    const manager = new SubagentManager({ persistDir });
-
-    manager.register({
-      name: "minimal",
-      description: "Minimal agent",
-      domain: "minimal",
-      model: fakeModel(),
-      tools: [],
-    });
-
-    const registry = (manager as any).registry.getRegistry();
-    const agent = registry.agents["minimal"];
-    expect(agent.domain).toBe("minimal");
-    expect(agent.systemPrompt).toBeUndefined();
-    expect(agent.workspace).toBeUndefined();
-    expect(agent.timeoutMs).toBeUndefined();
   });
 });

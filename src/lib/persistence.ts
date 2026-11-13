@@ -16,24 +16,11 @@ import {
 import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
-import type { SubagentDefinition } from "./types.js";
 
 import { currentProcessInstance, isProcessInstanceAlive, type PersistedProcessInstance } from "./process-identity.js";
 // DB writes removed from RegistryStore — handled by DbWriter subscriber via EventBus.
 import { log } from "./log.js";
 import type { ToolPolicy } from "./session-policy.js";
-
-/** Serializable agent config (no tools, no apiKey, no full model object). */
-export interface PersistedAgentConfig {
-  name: string;
-  description: string;
-  domain: string;
-  systemPrompt?: string;
-  workspace?: string;
-  model: { provider: string; id: string };
-  timeoutMs?: number;
-  compaction?: boolean;
-}
 
 /** Session kind: chat (human-owned), job (fire-and-forget, auto-resumed), call (parent-owned). */
 export type SessionKind = "chat" | "job" | "call";
@@ -104,29 +91,6 @@ export interface PersistedSession {
 /** Durable setsid process groups currently owned by one exact session. */
 export interface PersistedBashProcessGroups {
   pgids: number[];
-}
-
-/** Shape of the registry data (in-memory view).
- *  Agents are only held in-memory (re-registered on every startup).
- *  Sessions are persisted as individual meta.json files per session dir. */
-export interface Registry {
-  agents: Record<string, PersistedAgentConfig>;
-  sessions: Record<string, PersistedSession>;
-}
-
-/** Extract persistable fields from a SubagentDefinition. */
-function toPersistedConfig(def: SubagentDefinition): PersistedAgentConfig {
-  const config: PersistedAgentConfig = {
-    name: def.name,
-    description: def.description,
-    domain: def.domain,
-    model: { provider: (def.model as any).provider ?? "unknown", id: def.model.id },
-  };
-  if (def.systemPrompt !== undefined) config.systemPrompt = def.systemPrompt;
-  if (def.workspace !== undefined) config.workspace = def.workspace;
-  if (def.timeoutMs !== undefined) config.timeoutMs = def.timeoutMs;
-  if (def.compaction !== undefined) config.compaction = def.compaction;
-  return config;
 }
 
 // ── Shared JSONL parser ─────────────────────────────────────────────────
@@ -748,7 +712,6 @@ export interface SessionStore {
     error?: string,
   ): void;
   getSession(sessionId: string): PersistedSession | null;
-  getRegistry(): Registry;
 }
 
 // ── RegistryStore ──────────────────────────────────────────────────────
@@ -757,22 +720,11 @@ export interface SessionStore {
 // Agent configs: in-memory only (re-registered on every startup).
 
 export class RegistryStore implements SessionStore {
-  private agents: Record<string, PersistedAgentConfig> = {};
   readonly persistDir: string;
 
   constructor(persistDir: string) {
     this.persistDir = persistDir;
     mkdirSync(persistDir, { recursive: true });
-  }
-
-  /** Store an agent config (in-memory only — not persisted to disk). */
-  saveAgent(def: SubagentDefinition): void {
-    this.agents[def.name] = toPersistedConfig(def);
-  }
-
-  /** Remove an agent config from memory. */
-  removeAgent(name: string): void {
-    delete this.agents[name];
   }
 
   /** Record a new session (writes meta.json). DB persistence handled by DbWriter subscriber. */
@@ -797,14 +749,6 @@ export class RegistryStore implements SessionStore {
       if (error) session.error = error;
     }
     writeSessionMeta(this.persistDir, sessionId, session);
-  }
-
-  /** Get the current registry data (scans session dirs on each call). */
-  getRegistry(): Registry {
-    return {
-      agents: { ...this.agents },
-      sessions: loadAllSessionMetas(this.persistDir),
-    };
   }
 
   /** Get a single session's metadata without scanning all sessions. */
