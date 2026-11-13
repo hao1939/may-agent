@@ -1464,7 +1464,8 @@ describe("HTTP human Task reads and board", () => {
       mkdirSync(join(root, "projects", "billing.app.app"), { recursive: true });
       writeFileSync(join(root, "projects", "billing.app.app", "project.json"), JSON.stringify({ id: "billing.app", owner: "test", status: "active" }));
       await installApps("sample", "team/slash", "billing", "billing.app");
-      task("billing-app-only", 15, "running", "billing");
+      task("billing-plain-only", 15, "running", "billing");
+      task("billing-app-only", 16, "waiting", "billing.app");
       task("sample-only", 13, "running", "sample");
       task("slash-only", 14, "waiting", "team/slash");
       await page.evaluate("routeTo('/projects')");
@@ -1483,7 +1484,12 @@ describe("HTTP human Task reads and board", () => {
       await page.waitForSelector('#installed-apps [data-app-id="billing.app"] a');
       await page.click('#installed-apps [data-app-id="billing.app"] a');
       await page.waitForFunction(() => document.querySelector(".kanban-shell h3")?.textContent === "billing.app Tasks");
-      expect(await page.$eval(".kanban-board", (el) => el.textContent)).toContain("billing-app-only");
+      const boardText = await page.$eval(".kanban-board", (el) => el.textContent);
+      expect(boardText).toContain("billing-app-only");
+      expect(boardText).not.toContain("billing-plain-only");
+      await page.click(".kanban-card");
+      await page.waitForFunction(() => document.querySelector("#task-detail-drawer")?.textContent?.includes("Full goal billing-app-only"));
+      expect(await page.$eval("#task-detail-drawer", (el) => el.classList.contains("hidden"))).toBe(false);
       expect(await page.evaluate("_projectDetailPath")).toBe("projects/billing.app.app");
       await page.type("#project-comment", "Comment for billing.app");
       await page.evaluate("addProjectComment()");
