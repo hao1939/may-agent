@@ -99,7 +99,7 @@ function projectRouteFor(path, surface, explicitAppId) {
   const query = explicitAppId ? `?appId=${encodeURIComponent(explicitAppId)}` : '';
   const suffix = surface && surface !== 'project' ? `/${surface}` : '';
   if (explicitAppId) {
-    return `/projects/${encodeURIComponent(explicitAppId.replace(/\.app$/, '') + '.app')}${suffix}${query}`;
+    return `/projects/${encodeURIComponent(explicitAppId + '.app')}${suffix}${query}`;
   }
   const id = projectIdFromPath(path);
   return `/projects/${id.split('/').map(encodeURIComponent).join('/')}${suffix}`;
@@ -118,7 +118,7 @@ async function showProjectDetail(path, initialTab, explicitAppId) {
     const body = await r.json().catch(() => ({}));
     if (loadVersion !== projectLoadVersion) return;
     if (explicitAppId) {
-      const appDirName = `${explicitAppId.replace(/\.app$/, '')}.app`;
+      const appDirName = `${explicitAppId}.app`;
       if (r.ok && !body.error) {
         detail = { ...body, explicitAppId, app: { ...(body.app || {}), appId: explicitAppId, appDirName } };
       } else {

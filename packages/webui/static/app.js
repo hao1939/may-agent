@@ -216,7 +216,7 @@ function render() {
       // params.id is the canonical id form: '<name>', '<owner>/<name>',
       // or 'shared/<name>'. When navigated from Loaded Apps with an explicit
       // appId, keep the projects/<appId>.app path even if appId contains '/'.
-      _projectDetailPath = params.appId ? `projects/${params.appId.replace(/\.app$/, '')}.app` : projectPathOf(params.id);
+      _projectDetailPath = params.appId ? `projects/${params.appId}.app` : projectPathOf(params.id);
       showProjectDetail(_projectDetailPath, params.surface || 'project', params.appId);
     } else {
       _projectDetailPath = null;
