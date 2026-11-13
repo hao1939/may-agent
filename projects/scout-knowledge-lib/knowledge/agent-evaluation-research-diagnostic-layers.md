@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Third companion note to agent-evaluation.md containing the cohesive §37–§46 diagnostic-layers block from August–September 2026. Separates candidate supply from answer selection, answer correctness from trace integrity, implementation readiness from blocker localization, AI-AI coordination from human convention recovery, detected trace patterns from causal attribution, answer-level forgetting from deployment-wide secret leakage, aggregate scores from uncertainty-aware domain estimates under sparse labels, end-to-end voice quality from the language model's decisions inside a cascade, model capability from deployment-specific scale decisions, and causal debugging of one recorded decision from general agent reliability."
-triggers: ["agent evaluation diagnostic layers", "candidate supply", "answer selection", "judge reliability", "selection loss", "fixed candidate pools", "trace integrity", "CAIT Rate", "execution contract", "answer-trace consistency", "structured-data agent", "IdeaAMBIG", "codification readiness", "specification gap", "defect localization", "clarification action", "convention gap", "implicit communication", "human-AI compatibility", "Hanabi", "Off-Belief Learning", "partner legibility", "failstep", "failure diagnosis", "causal attribution", "deterministic detectors", "trace normalization", "K-Bench", "agentic unlearning", "K-Score", "deployment-wide leakage", "tool-observation leakage", "disaggregated evaluation", "prediction-powered smoothing", "small area estimation", "domain mean", "interval coverage", "reporting taxonomy", "voice agent evaluation", "cascaded voice agent", "MTVA-Bench", "tool argument accuracy", "action ordering", "EnterpriseVal", "deployment evaluation", "frozen configuration", "consequence tier", "reviewer catch rate", "scale gate", "runtape", "counterfactual debugging", "recorded decision", "context ablation", "agent regression test"]
-last_updated: "2026-09-30"
-source_basis: "Extracted intact from agent-evaluation-research-beyond-outputs.md §37–§40 on 2026-09-11 after the block grew into a reusable August–September companion. §37 derives from arXiv 2608.25937; §38 from the arXiv API and full HTML for 2608.26036; §39 from the arXiv API and full HTML for 2609.10539; §40 from the arXiv API and full HTML for 2609.11489. §41 adds static GitHub inspection of AbdelazizBs/failstep pinned at 09166c7cc356bd1f7c96b1bd54b34d82d7c2d581; repository code was not executed. §42 derives from the arXiv API abstract for K-Bench (2609.12808v1). §43 derives from the live arXiv API abstract for prediction-powered smoothing and validation (2609.20758v1). §44 derives from the live arXiv API abstract for MTVA-Bench (2609.20152v1). §45 derives from the live arXiv API abstract for EnterpriseVal (2609.21841v1). §46 derives from static inspection of RehanMohammed985/runtape at e75717124a07d9f5c848b4e34861ba0e980d588f, including README, implementation, tests, benchmark description, saved summaries, and HN item 49904620; Scout did not execute the package or rerun model experiments."
+summary: "Third companion note to agent-evaluation.md containing the cohesive §37–§46 diagnostic-layers block from August–September 2026. Separates candidate supply from answer or program selection, answer correctness from trace integrity, implementation readiness from blocker localization, AI-AI coordination from human convention recovery, detected trace patterns from causal attribution, answer-level forgetting from deployment-wide secret leakage, aggregate scores from uncertainty-aware domain estimates under sparse labels, end-to-end voice quality from the language model's decisions inside a cascade, model capability from deployment-specific scale decisions, and causal debugging of one recorded decision from general agent reliability."
+triggers: ["agent evaluation diagnostic layers", "candidate supply", "answer selection", "program selection", "AgentSSL", "ProgramSelectBench", "judge reliability", "selection loss", "fixed candidate pools", "trace integrity", "CAIT Rate", "execution contract", "answer-trace consistency", "structured-data agent", "IdeaAMBIG", "codification readiness", "specification gap", "defect localization", "clarification action", "convention gap", "implicit communication", "human-AI compatibility", "Hanabi", "Off-Belief Learning", "partner legibility", "failstep", "failure diagnosis", "causal attribution", "deterministic detectors", "trace normalization", "K-Bench", "agentic unlearning", "K-Score", "deployment-wide leakage", "tool-observation leakage", "disaggregated evaluation", "prediction-powered smoothing", "small area estimation", "domain mean", "interval coverage", "reporting taxonomy", "voice agent evaluation", "cascaded voice agent", "MTVA-Bench", "tool argument accuracy", "action ordering", "EnterpriseVal", "deployment evaluation", "frozen configuration", "consequence tier", "reviewer catch rate", "scale gate", "runtape", "counterfactual debugging", "recorded decision", "context ablation", "agent regression test"]
+last_updated: "2026-11-13"
+source_basis: "Extracted intact from agent-evaluation-research-beyond-outputs.md §37–§40 on 2026-09-11 after the block grew into a reusable August–September companion. §37 derives from arXiv 2608.25937 and now adds title/metadata/abstract-level evidence from AgentSSL 2611.17323v1; §38 from the arXiv API and full HTML for 2608.26036; §39 from the arXiv API and full HTML for 2609.10539; §40 from the arXiv API and full HTML for 2609.11489. §41 adds static GitHub inspection of AbdelazizBs/failstep pinned at 09166c7cc356bd1f7c96b1bd54b34d82d7c2d581; repository code was not executed. §42 derives from the arXiv API abstract for K-Bench (2609.12808v1). §43 derives from the live arXiv API abstract for prediction-powered smoothing and validation (2609.20758v1). §44 derives from the live arXiv API abstract for MTVA-Bench (2609.20152v1). §45 derives from the live arXiv API abstract for EnterpriseVal (2609.21841v1). §46 derives from static inspection of RehanMohammed985/runtape at e75717124a07d9f5c848b4e34861ba0e980d588f, including README, implementation, tests, benchmark description, saved summaries, and HN item 49904620; Scout did not execute the package or rerun model experiments."
 parent_note: "agent-evaluation.md"
 previous_companion: "agent-evaluation-research-beyond-outputs.md"
 </ai_context>
@@ -64,13 +64,54 @@ pattern is to retain candidate-level provenance and replay fixed pools when
 comparing selectors, rather than rerunning the whole system and attributing a
 stochastic outcome change to the selection policy.
 
-**Boundary:** these are preprint results over the reported benchmark and
-candidate-pool construction. The abstract does not establish that the same
+### November 13 update — selection can erase gains from agent-generated programs
+
+**AgentSSL** ([2611.17323v1](https://arxiv.org/abs/2611.17323v1)) extends the
+same decomposition from answer candidates to executable programs. The abstract
+frames semi-supervised learning as program search under scarce labels and weak
+feedback. Under matched compute, agents reportedly generated programs that
+combined and adapted established techniques, exceeding the strongest
+human-engineered baselines in 8 of 12 settings by as much as 21.8%. But when the
+system selected among generated programs using the agent's own feedback metric,
+reported performance fell by as much as 47%.
+
+The paper introduces ProgramSelectBench with 16,977 agent-generated and
+human-engineered programs and evaluates unsupervised and active selection
+methods. At abstract-level coverage, this supports a diagnostic split rather
+than a preferred selector:
+
+1. **program supply:** did search produce a genuinely strong executable program?
+2. **feedback validity:** does the available metric rank programs by the
+   deployment objective rather than a weak proxy?
+3. **selection loss:** how much value is discarded between the best available
+   program and the selected one?
+4. **transfer:** does a selected strategy remain useful outside the controlled
+   benchmark, including the paper's ecology tasks?
+
+For agent evaluation, the key implication is that generation success and final
+system quality must be reported separately. A strong oracle-best program row
+can coexist with a poor deployable system when the selector uses the same weak
+feedback that guided search. Fixed candidate pools, selection regret, and
+matched-compute comparisons can localize that loss without crediting the agent
+for a program it generated but would not choose.
+
+**Coverage and retrieval record:** Scout reviewed only the title, metadata,
+comment, and abstract supplied by the workflow, not the paper, program corpus,
+selection implementations, ecology tasks, per-setting results, or statistical
+analysis. The workflow-owned request was
+`https://export.arxiv.org/api/query?search_query=cat%3Acs.AI&start=0&max_results=20&sortBy=submittedDate&sortOrder=descending`;
+it returned HTTP 200 in 450 ms with one request and no `Retry-After` value.
+
+**Boundary:** both sources are preprints over their reported benchmarks and
+candidate constructions. The first abstract does not establish that its
 frequency-plus-judge rule transfers unchanged to open-ended tasks or correlated
-agents; the reusable result is the evaluation decomposition and fixed-pool
-replay method, not a universal voting formula.
+agents, and the AgentSSL abstract does not establish which selection method is
+reliable in production. The reusable result is the supply/feedback/selection
+split and fixed-pool evaluation method, not a universal voting or program-ranking
+formula.
 
 Source: https://arxiv.org/abs/2608.25937
+Source: https://arxiv.org/abs/2611.17323v1
 
 ---
 
