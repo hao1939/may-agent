@@ -197,7 +197,14 @@ test("workload retains its attempt-start time and coverage across Task refresh; 
     delete f.context.workspaceBrief;
     const brief = prepareTaskWorkspaceContext(f.context, root, []);
     if (!("taskFile" in brief)) throw new Error(brief.error);
-    expect(readFileSync(brief.taskFile, "utf8")).toContain("Workload at attempt start");
+    for (const text of [readFileSync(brief.taskFile, "utf8"), JSON.stringify(first.content)]) {
+      expect(text).toContain("Workload at attempt start");
+      expect(text).toContain("neither reserves an execution slot");
+      expect(text).toContain("Fields marked unavailable establish neither an allowance nor a denial");
+      expect(text).toContain("Required work remains owed under pressure");
+      expect(text).toContain("the creator retains that decision");
+      expect(text).not.toMatch(/Work-start credits|sponsor and current-root balances|protected coordination funds|funding hold/i);
+    }
     const full = JSON.parse(readFileSync(join(brief.taskFile, "..", "context.json"), "utf8"));
     expect(full.reconciliation.workload).toEqual({ available: false });
   } finally { rmSync(root, { recursive: true, force: true }); }
