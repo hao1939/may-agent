@@ -24,6 +24,8 @@ to learn specific capabilities.
   or copy skill bodies into knowledge files.
 
 May's practical skill manuals stay in `projects/alex.app/docs/2b-manual/`.
+Task starts, reuse, delegation and recovery use the canonical
+[Task execution guide](../../projects/alex.app/docs/2b-manual/task-execution-guide/SKILL.md).
 The [documentation index](../../projects/alex.app/docs/INDEX.md#tier-2b--manuals)
 links to the canonical design authoring and Task execution skills. Update affected
 skill guidance together with design changes; maintain one body for people and

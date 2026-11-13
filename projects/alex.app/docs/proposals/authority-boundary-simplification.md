@@ -218,8 +218,29 @@ already explains inspecting accepted work and target state before repeating an
 effect. The deliberate loss is the shell's manual dispatch functions and their
 description-keyed counts; existing installation files are left untouched. This
 source cleanup does not establish a deployed change or measured runtime saving.
-Source skill discovery is unchanged for all ten current agents; the six existing
-shared-skill tests and `check:may-design` pass.
+For that removal, skill discovery was unchanged for the ten agents in source;
+the six existing shared-skill tests and `check:may-design` passed.
+
+### Completed support cleanup: one Task preflight guide
+
+The follow-up retires the discoverable `dispatch-hygiene` skill and the loose
+`terminal-state-check.md` checklist. They added a global three-failure cutoff,
+file/marker-based completion shortcuts, session-list duplicate detection and a
+mandatory first-three-tool-calls check. These rules could conflict with exact
+Task ownership, current requirements and accepted evidence. No named caller was
+found in tracked source; the skill was available through automatic discovery.
+
+The existing [Task execution guide](../2b-manual/task-execution-guide/SKILL.md)
+already covers checking actual target state and accepted work, preserving
+request identity and returning recovery decisions to the owner. The shared
+skills entry page points directly to it. Remove the competing checklist rather
+than rewriting it as another source of those rules. Host retry limits,
+App/workflow-specific repair bounds and verification remain. The intentional
+catalog change is removing `dispatch-hygiene`; no alias or replacement skill is
+added. Existing persistent prompts are not rewritten by this source change.
+Before/after discovery confirms only that entry is removed for the ten agents
+in source; every remaining skill's content and metadata match and fit the catalog,
+including the Task guide. The six shared-skill tests and `check:may-design` pass.
 
 ### Other candidates remain evidence-led
 
