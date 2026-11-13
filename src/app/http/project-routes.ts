@@ -87,11 +87,9 @@ export function buildAppAdmissionCommand(input: {
 }
 
 export function createProjectRouteHandlers(options: {
-  stateDir: string;
   projectRoot: string;
   agentsRoot: string;
   projectsRoot: string;
-  platformUiDir: string;
   getDb: () => SqliteDb;
   json: (data: unknown, status?: number) => Response;
   conventionSocketPath: () => string;
@@ -122,11 +120,9 @@ export function createProjectRouteHandlers(options: {
   ) => { eventId: number; eventType: "app.input.requested"; delivery: "accepted" } | undefined;
 }) {
   const {
-    stateDir: STATE_DIR,
     projectRoot: PROJECT_ROOT,
     agentsRoot: AGENTS_ROOT,
     projectsRoot: PROJECTS_ROOT,
-    platformUiDir: PLATFORM_UI_DIR,
     getDb: _db,
     json,
     conventionSocketPath,
@@ -296,12 +292,6 @@ export function createProjectRouteHandlers(options: {
     if (stat.isDirectory()) return serveProjectDirectory(absPath, pathname);
     if (stat.isFile()) return serveFile(absPath);
     return new Response("Not found", { status: 404 });
-  }
-
-  function serveIndex(): Response {
-    const platformUi = resolve(PLATFORM_UI_DIR, "index.html");
-    if (existsSync(platformUi)) return serveFile(platformUi);
-    return serveProjectStatic("/projects");
   }
 
   function readProjects() {
@@ -591,36 +581,6 @@ export function createProjectRouteHandlers(options: {
       /* projectId column may not exist */
     }
 
-    if (sessions.length > 0) return json(sessions);
-
-    // Final fallback: scan workflow run files (legacy path).
-    const searchPaths = [path, path.replace(/^agents\//, "")];
-    for (const dir of [join(STATE_DIR, "workflow-runs"), join(STATE_DIR, "workflows")]) {
-      try {
-        for (const f of readdirSync(dir)) {
-          try {
-            const run = JSON.parse(readFileSync(join(dir, f), "utf-8"));
-            if (searchPaths.some((sp) => run.task?.includes(sp))) {
-              for (const step of run.steps ?? []) {
-                if (step.sessionId)
-                  sessions.push({
-                    sessionId: step.sessionId,
-                    agent: step.agent,
-                    status: step.status,
-                    startedAt: step.startedAt,
-                    task: step.task?.slice(0, 80),
-                    link: "workflow-file",
-                  });
-              }
-            }
-          } catch {
-            /* skip corrupted files */
-          }
-        }
-      } catch {
-        /* dir may not exist */
-      }
-    }
     return json(sessions);
   }
 
@@ -749,7 +709,6 @@ export function createProjectRouteHandlers(options: {
   return {
     isAllowedProjectPath,
     resolveProjectFile,
-    serveIndex,
     serveProjectStatic,
     readProjects,
     handleProjects,
