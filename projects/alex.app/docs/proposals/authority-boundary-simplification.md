@@ -33,10 +33,11 @@ to reduce the line count.
 
 On November 13, the user asked to derive further simplification from the real
 workloads and selected the local May/Scout/Alex cases and MLVM's Kubernetes,
-compiler, spec-repair and knowledge assignments. This review uses local source
-and the retained November 12 MLVM cutover record; it is not a fresh remote
-inspection. The review baseline is Host `28fc86fbedb9`. The bounded command
-correction below is implemented in Apps source `0862215c6d`; broader
+compiler, spec-repair and knowledge assignments. The initial review used local
+source and the retained November 12 MLVM cutover record. The reporting follow-up
+below adds a read-only MLVM observation on November 13. The initial Host
+baseline is `28fc86fbedb9`. The bounded command correction below is implemented
+in Apps source `0862215c6d`; broader
 procedure/context and MLVM reporting changes remain proposals. No live
 activation was performed.
 
@@ -92,15 +93,97 @@ would change this procedure's business contract and needs a separate value
 case; replacing the workflow with free-form agent coordination is not the
 default simplification proposal.
 
-**Second candidate: consolidate progress reporting.** The MLVM cutover's agent
-guidance asks for `progress.json`; its task UI also reads an `overview.json`
-alongside Host Task/session state. Assign each fact one owner: the Host owns
-execution, accepted waits and input delivery; a checkpoint report owns domain
-progress, evidence and the next milestone. Review duplicated fields and manual
-updates across those records. Keep useful domain summaries and source/CI/cloud
-receipts; session activity cannot establish milestone completion. The deliberate
-cost may be fewer custom overview fields or less presentation convenience.
-This proposal changes no remote source, state or running assignment.
+### Reporting follow-up: one owner for execution and waits
+
+**Second candidate, reviewed November 13:** narrow workstream checkpoint
+responsibilities. The [read-only observation](evidence/mlvm-reporting-ownership-20261113.json)
+supersedes the November 12 cutover snapshot for this decision. All four MLVM
+Tasks now belong to `aks-rp-e2e`; the former workstream App page redirects to it.
+This review did not modify remote source, admit feedback, call models or change
+running assignments.
+
+The earlier wording treated several distinct reports as interchangeable. They
+serve different work and should not be combined just because they contain
+progress text:
+
+| Record | Responsibility | Review decision |
+| --- | --- | --- |
+| Host Task progress, accepted result and Conditions | Execution activity, accepted outcome, operational waits and input delivery | Keep as the operational authority. New or superseded waits must use the existing typed result contract. |
+| Workstream `progress/compiler.json`, `spec-fixer.json` and `knowledge.json` | Source-linked domain checkpoints and recovery references | Keep the useful evidence; remove the obligation to mirror native execution status and repeat operational Condition definitions. |
+| Kubernetes `overview.json` | Human-readable milestones, scoped coverage, outputs and attention items | Keep. The Kubernetes page actually reads it; session activity cannot supply its business judgments. |
+| Kubernetes `progress.md`, benchmark and per-case evidence | Detailed source/result history and remaining product work | Keep. A short overview does not replace the proof or recovery record. |
+
+The reviewed workstream landing links configure neither a progress document nor
+an overview artifact. Their pages read Host Task progress and accepted summaries;
+they do not read the three workstream checkpoint files. A bounded source scan
+found declarations, instructions and tests for those paths, but no programmatic
+reader in the reviewed App/UI. This does not rule out human or external readers
+and does not establish that the checkpoints can be deleted.
+
+**Concrete failure mode:** knowledge's checkpoint and the Host's accepted result
+refer to the same generation-2 attempt
+`r_2_3d2dc465-d6d2-4ef0-be78-a547f8f9b997`. The checkpoint defines two proposed
+waits: terminal build `191042648` feedback and a source-backed pattern-identity
+decision. The accepted result also names those resume inputs in its facts, but
+returns `state: "waiting"` without `conditions` or retirement actions. The Task
+still has the older `knowledge-pr17911920-human-update` Condition. Its accepted
+facts and checkpoint agree about the intended dependencies; the saved
+operational wait was not updated. This observation does not assess whether the
+build or business dependency has since resolved.
+
+The Host preserves omitted Conditions deliberately, so an unrelated update
+cannot silently erase a valid wait. That mechanism is not shown defective here.
+Writing another JSON file, describing a dependency in prose, or blocking the
+native goal does not register or retire a Host Condition. The repair belongs
+with the App's execution instructions and the owning Task's explicit decision;
+do not infer lifecycle changes from free-form text or add a synchronizer.
+
+**Prepared source correction:** the [four-file patch](evidence/mlvm-reporting-ownership-20261113.patch)
+changes only the reporting acceptance item in each workstream assignment and
+the corresponding three agent instructions:
+
+- Keep each existing output path as a concise domain checkpoint: Task identity,
+  update time, last verified result, remaining domain work and evidence/recovery
+  references. Preserve failures, unpublished work and pending-operation receipts.
+- Use Host Task progress/results for execution summaries. Do not copy native
+  goal status or serialize operational Condition definitions into the checkpoint.
+- Before returning `waiting`, declare the actual outstanding dependencies through
+  `result.conditions`, or verify that the saved Conditions still match. Retire
+  only superseded waits through generation-fenced `retire-condition` actions,
+  preserving unrelated Conditions.
+
+No output path, domain outcome, source-ownership rule, verification distinction,
+workspace or executor changes. There is no new schema, report generator,
+polling loop, synchronization service or model call. The gain sought is one
+operational owner and fewer manually maintained status copies, not fewer files
+or lines. Retained checkpoint bytes remain historical evidence; they must not be
+bulk-rewritten or treated as current canonical waits.
+
+**Status and next proof:** this is a prepared guidance patch, not an applied
+behavioral fix. The MLVM App source at `0d3b41be1` has uncommitted consolidation
+changes, including the assignment and three role files this patch targets.
+The captured file hashes are in the observation; rebase the patch onto the
+owning App's reviewed consolidation rather than publishing someone else's work.
+The installed assignments and spec-fixer instructions also differ from that
+checkout; the observation records both hashes. A checkout HEAD alone does not
+identify the running source, and applying this patch must preserve those
+independent changes.
+The patch applies to the captured source and changes exactly one reporting
+acceptance item per stream; other assignment fields and role instructions are
+preserved. Apps `check:may-design` passed with only the existing root-layout
+warning for `reports`. These checks do not prove improved model behavior.
+
+After the source is ready, run that App's affected checks and review its
+contribution requirements. Source integration does not revise already admitted
+Tasks: their creator or trusted App authority must adopt the reporting change
+through the supported route. Separately, the knowledge owner must judge the
+current dependencies and save any needed Condition changes; this audit did not
+do that. Acceptance should verify a changed wait is actually saved, an unrelated
+wait remains intact, and the intended later input reaches the same Task through
+the existing route. Keep checkpoint evidence and current UI reads available.
+No overall latency, token, model-quality or recovery saving is measured yet.
+
+### Other candidates remain evidence-led
 
 Recurring research can need fresh observations. Automatic evaluation and
 supervision need evidence that they reduce missed work or human intervention.
@@ -546,8 +629,10 @@ formats, input/result schemas, recovery behavior. Feature retirement has its own
 1. The reusable development procedure's separate command timer is removed and
    checked in Apps source `0862215c6d`. Preserve the declared steps and delivery
    contract; reconsider repeated context only with evidence of a safe reduction.
-2. Then review one MLVM checkpoint for duplicated progress facts, keeping Host
-   execution state and domain evidence with their existing owners.
+2. The [MLVM reporting review](#reporting-follow-up-one-owner-for-execution-and-waits)
+   has a prepared App guidance patch. Rebase it after the owning source
+   consolidation; verify the operational wait correction separately. Keep the
+   Kubernetes overview and domain evidence.
 3. Let the separate #482 accounting cleanup finish through its own contract and
    review. Do not create a competing implementation here.
 4. Preserve accepted Task state, exact identity, atomic publication and recovery.
@@ -619,7 +704,7 @@ Task algorithm rewrites and the remaining feature reductions require separate de
 | Work | Boundary and next proof |
 | --- | --- |
 | Review retained compatibility | Check current consumers and supported upgrade requirements before selecting another removal. September inventories are historical; their completed aliases, context metadata and diagnostics must not be reopened. |
-| Simplify current delivery procedures | The [current-work review](#priority-from-current-delivery-work) records the completed App command-timer correction and its tests. Context stays unchanged pending a safe reduction; MLVM progress reporting remains a proposal. No live activation or overall cost saving is established. |
+| Simplify current delivery procedures | The [current-work review](#priority-from-current-delivery-work) records the completed App command-timer correction and its tests. Context stays unchanged pending a safe reduction. The [MLVM review](#reporting-follow-up-one-owner-for-execution-and-waits) has a prepared four-file guidance patch, pending the owning App's source consolidation and adoption. The observed operational wait gap is not repaired by this audit. No live activation or overall cost saving is established. |
 | Further HTTP organization | Directory moves #141/#142 are merged. Extract a retained route family only when its responsibility is clearer; #173's feature removal does not claim the server has been split. |
 | Measure the context cleanup's behavioral effect | Compare baseline and candidate on the same small conversation cases. Existing scripted regressions establish supplied context and mechanics, not improved model judgment. |
 | Separate accounting simplification | #482 is open and owned by its existing workstream. Review its outcome there; it is neither completed nor a second task for this proposal. |

@@ -1,0 +1,136 @@
+{
+  "observedAt": "2026-11-13T10:17:34.537746+00:00",
+  "scope": "Read-only MLVM App source, checkpoint and public Task/evidence APIs. No model calls, writes to MLVM, input admission, restart or deployment.",
+  "source": {
+    "repositoryRoot": "/workspace/app/projects/aks-rp-e2e.app",
+    "head": "0d3b41be100bea13054670ac9e7e4ba6e7c9f615",
+    "consolidationUncommitted": true,
+    "files": {
+      "workstreams.ts": {
+        "sourceSHA256": "17cf97e4c209cc938d0986b6e9d620bac5d48b61c5a5d72b391fd2c447cb2c81",
+        "installedSHA256": "17cf97e4c209cc938d0986b6e9d620bac5d48b61c5a5d72b391fd2c447cb2c81",
+        "matchesInstalled": true
+      },
+      "workstream-assignments.json": {
+        "sourceSHA256": "44ddc8d9f45f9c8c130dde07568e8958f265be5fb9807a414398f461b6e74beb",
+        "installedSHA256": "97c20592f16cbd969bd9448d517c5c02b827063f8ceb4bd9afda811c64c67412",
+        "matchesInstalled": false
+      },
+      "agents/compiler/AGENTS.md": {
+        "sourceSHA256": "8f9db17b704ab674c193d371fea8f3428e28e965d2de4d86aad6ba8396239d40",
+        "installedSHA256": "8f9db17b704ab674c193d371fea8f3428e28e965d2de4d86aad6ba8396239d40",
+        "matchesInstalled": true
+      },
+      "agents/spec-fixer/AGENTS.md": {
+        "sourceSHA256": "8f9db17b704ab674c193d371fea8f3428e28e965d2de4d86aad6ba8396239d40",
+        "installedSHA256": "b2ad0edf54a76a69f4382ac78fa57db00ac2ca59f4ced03b19a6d5251327c0d8",
+        "matchesInstalled": false
+      },
+      "agents/knowledge/AGENTS.md": {
+        "sourceSHA256": "8f9db17b704ab674c193d371fea8f3428e28e965d2de4d86aad6ba8396239d40",
+        "installedSHA256": "8f9db17b704ab674c193d371fea8f3428e28e965d2de4d86aad6ba8396239d40",
+        "matchesInstalled": true
+      },
+      "ui/index.html": {
+        "sourceSHA256": "fa7b23340e857a61d0e9d6648f38cf9d64031b2df944e571d57cbef3e813d338",
+        "installedSHA256": "9ec7a1265f31f6563c2fa59cedfb3c856b8e27a737f16d04e7f4a1436204ca75",
+        "matchesInstalled": false
+      },
+      "ui/task/app.js": {
+        "sourceSHA256": "abef4dce25d3e922dc1568cdfafe504d811cf5afee146037544fbe6daf927605",
+        "installedSHA256": "abef4dce25d3e922dc1568cdfafe504d811cf5afee146037544fbe6daf927605",
+        "matchesInstalled": true
+      },
+      "ui/k8s-version-upgrade/app.js": {
+        "sourceSHA256": null,
+        "installedSHA256": "feb9c04b72058319fa9a45c12cc4a7ca9392660929fd542e9b0e6b38a08b9983",
+        "matchesInstalled": false
+      }
+    }
+  },
+  "knowledge": {
+    "appId": "aks-rp-e2e",
+    "taskId": "workstream/knowledge",
+    "generation": 2,
+    "resourceVersion": 50,
+    "status": "waiting",
+    "acceptedAttempt": {
+      "id": "r_2_3d2dc465-d6d2-4ef0-be78-a547f8f9b997",
+      "generation": 2,
+      "startedAt": "2026-11-13T08:45:44.490Z",
+      "finishedAt": "2026-11-13T09:08:20.592Z"
+    },
+    "acceptedResult": {
+      "state": "waiting",
+      "summary": "Thread goal marked blocked after three consecutive no-progress assessments; May Task external waits remain open.",
+      "declaredConditions": [],
+      "declaredActions": [],
+      "dependencyFact": [
+        "Resume inputs are terminal build191042648 feedback or the requested source-backed pattern identity decision."
+      ]
+    },
+    "hostConditions": [
+      {
+        "id": "knowledge-pr17911920-human-update",
+        "expected": {
+          "anyOf": [
+            "merged",
+            "actionable-review"
+          ],
+          "source": "c298b8d8e47d623d03f0b58a3a5e1feba3c0f0e9"
+        },
+        "owner": "human",
+        "requestedAction": "Provide confirmation that PR17911920 has merged, or identify actionable review on its frozen source c298b8d8e47d623d03f0b58a3a5e1feba3c0f0e9. The agent will independently verify the report before changing source or preparing delivery.",
+        "subject": "pull-request:17911920",
+        "type": "project.approval.submitted",
+        "observation": {
+          "generation": 1,
+          "resourceVersion": 1,
+          "createdAt": "2026-11-12T05:56:32.089Z",
+          "observedAt": "2026-11-12T05:56:32.089Z",
+          "observedGeneration": 0,
+          "state": "unknown"
+        }
+      }
+    ],
+    "checkpoint": {
+      "path": "/workspace/app/projects/aks-workstreams-20261102/progress/knowledge.json",
+      "sha256": "20fbdb37ae90f232307b0f995555e7cbc9f9fc0c4eba43e2eccdf55e7e8fd275",
+      "updatedAt": "2026-11-13T09:08:14.779457+00:00",
+      "attemptId": "r_2_3d2dc465-d6d2-4ef0-be78-a547f8f9b997",
+      "state": "blocked",
+      "declaredWaits": {
+        "publicationCondition": {
+          "id": "knowledge-ci191042648-terminal-feedback",
+          "type": "app.input.requested",
+          "subject": "task:workstream/knowledge",
+          "expected": {
+            "build": 191042648,
+            "source": "b3b54603bac296d77ebe5a5bd69491bac09c7e13",
+            "terminalStatus": "completed"
+          },
+          "owner": "human",
+          "requestedAction": "Provide terminal feedback on this Task; agent independently verifies exact-source required receipt before acceptance. Independent readings continue."
+        },
+        "patternMembershipCondition": {
+          "id": "knowledge-pattern-nap-owner-mapping-feedback-20261113",
+          "type": "app.input.requested",
+          "subject": "task:workstream/knowledge",
+          "expected": {
+            "pattern": "pattern.nap-auto-pool-update",
+            "decision": "retain exact names unresolved or provide source-backed feature-owner mapping"
+          },
+          "owner": "human",
+          "requestedAction": "For authored nodeProvisioning/virtualMachines applicability names,confirm retaining unresolved categories or provide exact feature IDs and source file/pointer for an intended mapping. Only this pattern membership mapping depends on the answer."
+        }
+      }
+    }
+  },
+  "limits": [
+    "A point-in-time comparison for one Task; not a current business or CI assessment.",
+    "No automatic wake or source/daemon recovery trial ran.",
+    "Source scans found no programmatic checkpoint reader in the reviewed App/UI paths; human or external consumers are not ruled out.",
+    "No Host schema defect is established: omitted Conditions preserve existing waits by contract.",
+    "The candidate guidance patch is not applied or proven to change model behavior."
+  ]
+}
