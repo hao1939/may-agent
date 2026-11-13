@@ -164,6 +164,25 @@ declarations. Use the entrypoint actually supplied to your executor. Infra binds
 identity and correlates results; keep the same admitted identity when retrying
 the same operation. Do not resubmit accepted work under a fresh ID to check on it.
 
+To ask an existing owner to consider new evidence or workload advice, submit an
+ordinary request with both its `appId` and exact `taskId`. Check the current Task
+and supported input first. Keep the same request ID when retrying the same
+handoff. Add a request Condition when its answer matters to your next decision;
+without one, retain the receipt and inspect it on an ordinary relevant wake.
+Admission establishes delivery for consideration, not an applied change.
+If the target is missing, closed or rejects the input, keep that failure on your
+current assignment and resolve the owner or route. Do not turn a failed update
+into a new assignment automatically.
+
+Receiving advice adds one input to the owner's current work. Judge it against
+current facts and your authority. A supported method change can be applied and
+reported while an original promise still waits. When only the advice has been
+answered, use its admitted key from `events.inputs` in `inputKeys`, preserving
+other inputs and waits. An acknowledgement does not justify closing the Task or
+answering its original caller. See the
+[workload handoff proposal](../../proposals/agent-task-workload-model.md#from-advice-to-the-existing-owner)
+for the pilot's limits and unresolved automatic routing.
+
 A Condition observes a fact; declaring one does not launch the operation being
 observed. Select an installed observation capability and a meaningful expectation.
 Infra handles observation scheduling, matching and delivery. Omission preserves

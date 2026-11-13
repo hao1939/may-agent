@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Type } from "@may-agent/sdk";
+import { Type, type AppTaskInput } from "@may-agent/sdk";
 import {
   createAssistantMessageEventStream,
   type ToolCall,
@@ -904,6 +904,138 @@ test("an owner consumes its contribution after restart, closes it and returns th
     expect(ownerCalls).toBe(2);
     expect(contributionCalls).toBe(1);
     expect(f.db.prepare("SELECT count(*) AS n FROM app_tasks WHERE app_id='alex'").get()).toEqual({ n: 2 });
+  } finally { await f.close(); }
+});
+
+test("addressed workload advice survives restart without replacing the owner's obligation or granting closure authority", async () => {
+  let ownerTask = "";
+  let requesterTask = "";
+  let ownerCalls = 0;
+  let requesterCalls = 0;
+  const advice = { decision: "reconsider", reason: "Shared execution is busy; the required total remains owed.",
+    nextStep: "Defer the optional parallel cross-check and retain the original delivery." };
+  const f = await runtime(async ({ attempt }) => {
+    if (attempt.task.id === ownerTask) {
+      ownerCalls++;
+      if (ownerCalls === 1) return { runId: attempt.attemptId, handlerResult: {
+        state: "waiting", summary: "The required total awaits its saved batch.", facts: [], actions: [],
+        reviewAt: Date.now() + 3_600_000,
+      } };
+      const notice = attempt.events.items.find(({ event }) => event.type === "app.task.requested" &&
+        ((event.data.request as AppTaskInput)?.input.data as { context?: { workloadAdvice?: unknown } })?.context?.workloadAdvice);
+      if (!notice) throw new Error("The exact addressed workload advice was not delivered");
+      const request = notice.event.data.request as AppTaskInput;
+      const inputKey = attempt.events.inputs?.find(input => input.id === request.id)?.key;
+      if (!inputKey) throw new Error("The advice has no admitted input key");
+      expect(request.input.data).toMatchObject({ context: { workloadAdvice: advice } });
+      writeFileSync(join(f.root, "method.json"), JSON.stringify({ optionalCrossCheck: "deferred", requiredTotal: "owed" }));
+      // Answer only this notification. The original delivery still has its own wait.
+      return { runId: attempt.attemptId, handlerResult: {
+        state: "converged", summary: "Deferred optional fanout; original delivery remains owed.",
+        response: "Method adjusted; the required total is still owed.", inputKeys: [inputKey],
+        facts: ["Optional fanout deferred on the existing assignment."], actions: [],
+        result: { optionalCrossCheck: "deferred", requiredTotal: "owed" },
+      } };
+    }
+    expect(attempt.task.id).toBe(requesterTask);
+    requesterCalls++;
+    const feedback = attempt.events.items.find(({ event }) =>
+      event.type === "app.dependency.updated" && event.data.status === "done");
+    if (feedback) {
+      expect(feedback.event.data).toMatchObject({ taskId: ownerTask,
+        result: { optionalCrossCheck: "deferred", requiredTotal: "owed" } });
+      return { runId: attempt.attemptId, handlerResult: {
+        state: "converged", summary: "The existing owner acknowledged its method decision.", facts: [], actions: [],
+      } };
+    }
+    const current = await attempt.read.tasks.get(ownerTask);
+    if (!current?.resourceVersion || !current.acceptedAttempt) throw new Error("Current owner evidence unavailable");
+    await expect(attempt.closeTask({ appId: "alex", taskId: ownerTask,
+      expectedGeneration: current.generation, expectedResourceVersion: current.resourceVersion,
+      afterResult: current.acceptedAttempt.id, reason: "Workload notification grants no creator authority." }))
+      .rejects.toThrow("recorded creator");
+    return { runId: attempt.attemptId, handlerResult: {
+      state: "waiting", summary: "Ask the existing owner for a bounded method decision.", facts: [], actions: [],
+      requests: [{ id: "workload-method", appId: "alex", taskId: ownerTask,
+        input: { kind: "message", data: { message: "Judge this workload advice against your current assignment.",
+          context: { workloadAdvice: advice } } } }], conditions: [{ requestId: "workload-method" }],
+    } };
+  });
+  try {
+    const original = f.admit("workload-original", { kind: "message", data: { message: "Return the required saved batch total." } });
+    ownerTask = original.waitingOn!.id;
+    await f.run(ownerTask);
+    requesterTask = f.admit("workload-requester", { kind: "message", data: { message: "Ask the existing owner to reconsider optional fanout." } }).waitingOn!.id;
+    await f.run(requesterTask);
+    const notices = () => listAppInboxItems(f.db, { appId: "alex", limit: 10 }).filter(item => item.targetTaskId === ownerTask);
+    expect(notices()).toHaveLength(1);
+    const noticeId = notices()[0]!.id;
+    expect(notices()[0]).toMatchObject({ status: "handling", creator: { appId: "alex", taskId: requesterTask },
+      waitingOn: { id: ownerTask } });
+    await f.restart();
+    await f.run(ownerTask);
+    await f.inbox.host.refreshTaskResults("alex", ownerTask);
+    expect(JSON.parse(readFileSync(join(f.root, "method.json"), "utf8"))).toEqual({ optionalCrossCheck: "deferred", requiredTotal: "owed" });
+    expect(f.store.readTask(ownerTask)?.status.summary).toBe("Deferred optional fanout; original delivery remains owed.");
+    expect(f.inbox.host.get(noticeId)).toMatchObject({ status: "done", result: { response: "Method adjusted; the required total is still owed." } });
+    expect(f.inbox.host.get(original.id)?.status).toBe("handling");
+    expect(f.store.readCancellation(ownerTask)).toBeNull();
+    expect(f.store.readTask(ownerTask)?.status.phase).toBe("waiting");
+    expect(f.store.readTask(ownerTask)?.status.inputWaits?.[original.taskAdmissionKey!])
+      .toMatchObject({ reviewAt: expect.any(Number) });
+    expect(f.store.readTask(ownerTask)?.metadata.generation).toBe(1);
+    await f.restart();
+    await f.run(requesterTask);
+    expect(requesterCalls).toBe(2);
+    expect(ownerCalls).toBe(2);
+    expect(notices()).toHaveLength(1);
+    expect(f.store.listTaskIds({ limit: 10 }).sort()).toEqual([ownerTask, requesterTask].sort());
+  } finally { await f.close(); }
+});
+
+test.each(["closed", "missing"] as const)("workload advice to a %s owner returns failure without creating replacement work", async target => {
+  let ownerTask = "missing-owner";
+  let requesterTask = "";
+  let requesterCalls = 0;
+  const f = await runtime(async ({ attempt }) => {
+    if (attempt.task.id === ownerTask) return { runId: attempt.attemptId, handlerResult: {
+      state: "converged", summary: "The finite original assignment is fulfilled.", facts: ["Original outcome verified."], actions: [],
+      result: { taskDisposition: { kind: "close", reason: "The finite original assignment is fulfilled." } },
+    } };
+    expect(attempt.task.id).toBe(requesterTask);
+    requesterCalls++;
+    if (requesterCalls > 1) {
+      expect(JSON.stringify(attempt.events)).toMatch(/closed|does not exist|not found/);
+      return { runId: attempt.attemptId, handlerResult: { state: "waiting", reviewAt: Date.now() + 3_600_000,
+        summary: "The advice was not applied; an exact current owner must be identified.", facts: [], actions: [],
+      } };
+    }
+    return { runId: attempt.attemptId, handlerResult: {
+      state: "waiting", summary: "Ask the exact existing owner to reconsider.", facts: [], actions: [],
+      requests: [{ id: "workload-method", appId: "alex", taskId: ownerTask,
+        input: { kind: "message", data: { message: "Reconsider optional fanout within your existing assignment." } } }],
+      conditions: [{ requestId: "workload-method" }],
+    } };
+  });
+  try {
+    if (target === "closed") {
+      ownerTask = f.admit("ended-owner", { kind: "message", data: { message: "Return the original finite result." } }).waitingOn!.id;
+      await f.run(ownerTask);
+      expect(f.store.readCancellation(ownerTask)).not.toBeNull();
+    }
+    const original = f.admit("failed-workload-handoff", { kind: "message", data: { message: "Notify the owner; retain any failed delivery for a decision." } });
+    requesterTask = original.waitingOn!.id;
+    await f.run(requesterTask);
+    const notices = listAppInboxItems(f.db, { appId: "alex", limit: 10 }).filter(item => item.targetTaskId === ownerTask);
+    expect(notices).toHaveLength(1);
+    expect(notices[0]).toMatchObject({ status: "done", result: { summary: expect.stringMatching(/closed|does not exist|not found/) } });
+    await f.restart();
+    await f.run(requesterTask);
+    expect(requesterCalls).toBe(2);
+    expect(f.inbox.host.get(original.id)?.status).toBe("handling");
+    expect(f.store.listTaskIds({ limit: 10 }).sort()).toEqual(
+      (target === "closed" ? [ownerTask, requesterTask] : [requesterTask]).sort());
+    expect(f.store.readTask(requesterTask)?.status.reviewAt).toBeGreaterThan(Date.now());
   } finally { await f.close(); }
 });
 

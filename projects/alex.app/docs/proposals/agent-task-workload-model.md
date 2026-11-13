@@ -447,6 +447,51 @@ new decision ledger. Record enough to explain changed commitments without
 requiring a separate report for every routine scheduling choice. Preserve
 deferred demand even when it has not become a Task.
 
+### From advice to the existing owner
+
+An actionable recommendation needs an accountable recipient, not another Task
+for the same obligation. On an ordinary authorized pass, a sender can read the
+exact accepted advice and current subject, then use an ordinary Task request
+addressed to an existing `appId` and `taskId`. Include the source result and
+current evidence needed to judge it. This uses the existing Inbox, admission,
+funding, queue and return path; it adds no dispatcher or management privilege.
+The readonly pilot itself continues to record advice only. A retained `nextStep`
+is not this handoff, and automatic forwarding remains unimplemented.
+
+Choose the recipient by the decision needed. A method decision belongs on the
+subject's existing Task. A requirements or closure decision belongs to its
+recorded creator or an explicitly authorized App/operator path. A funding
+decision requires the declared funding authority. An executor name, parent link
+or sponsor is insufficient to identify any of those routes. If no Task exists
+for retained input, its receiving App keeps the demand and must provide the
+authorized review path; do not invent a Task or transfer the original input to
+make notification possible.
+
+For example, under pressure, ask the delivery owner to reconsider an optional
+parallel cross-check. The owner checks current facts and may defer that method
+while preserving the required delivery. It answers the advice's exact admitted
+input; it does not answer the original caller or end the assignment. A request
+Condition lets the sender observe that decision when follow-through matters.
+Without that Condition, the receipt remains inspectable on an ordinary relevant
+wake; there is no promised automatic response consumer. Retrying the same
+handoff reuses its stable request identity, including after restart. A new review
+of unchanged advice is not a reason to submit another notification.
+
+If the target has closed, disappeared or cannot admit the input, return the
+explicit failure to the sending Task. The sender retains the unresolved finding
+and identifies the current owner or authorized route on its next ordinary
+attempt. If no immediate action is useful, save a specific external wait or
+justified review time. Do not reopen the target or create a replacement Task as
+a delivery fallback. Acknowledgement proves consideration; only the owner's
+accepted decision and any required effect verification establish application.
+Closure and delivery of the original promise remain separate checks.
+
+The App recovery fixture verifies an addressed method decision across restart,
+separate settlement of the advice and original input, denied sibling closure,
+and explicit closed/missing-target feedback without replacement work. Its
+decisions are scripted. This verifies the transport and settlement mechanism,
+not installed agent judgment, automatic pilot routing or external delivery.
+
 Include old ready obligations in review so low-priority work cannot silently
 disappear behind repeated urgent arrivals. The agent must explain continued
 deferral or seek a changed commitment; queue age alone does not grant priority,

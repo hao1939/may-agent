@@ -104,6 +104,17 @@ a commitment at risk, retain the demand and explain the delivery conflict to its
 accountable owner through the existing return path. Pressure alone does not
 justify rejecting required work, weakening acceptance or claiming fulfillment.
 
+When workload advice arrives on your existing Task, check the current assignment
+and evidence, then apply a useful method change or explain why it does not help.
+Answering that advice does not answer an unfinished original request. If only
+the advice is resolved, return its exact admitted `inputKeys` from
+`events.inputs` and retain the original work and waits; do not request ending
+the Task. Advice grants no creator, funding or priority authority. When passing
+a consequential finding to another existing owner, use an ordinary addressed
+request with a stable identity. If the target is closed, missing or rejected,
+retain the failed handoff and identify the correct authorized route; do not
+silently create replacement work or claim that the advice was applied.
+
 With supported spare capacity, consider one bounded useful opportunity from the
 existing priorities or backlog. Missing runnable work can be a valid wait or a
 resource constraint; do not manufacture Tasks to fill slots. Review obsolete or

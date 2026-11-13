@@ -522,3 +522,50 @@ consumer, priority controller or additional admission gate was not added here.
 Installed agent comprehension, ordinary-wake follow-through and exact external
 caller acceptance remain unverified. No source activation, live work injection
 or release followed this local source commit; the release remains held.
+
+## Existing-owner workload handoff
+
+The next local slice defines an ordinary addressed request as the handoff from
+an authorized sender to an existing owner. The readonly pilot is unchanged and
+has no automatic sender. Alex's receiving guidance and the Task manual now
+distinguish answering the advice input from fulfilling an original promise.
+Method decisions stay with the assigned agent; requirements/closure and funding
+retain their separate authorities. The
+[handoff proposal](../../proposals/agent-task-workload-model.md#from-advice-to-the-existing-owner)
+also covers unresolved pre-Task demand and missing authorized routes.
+
+Three new App recovery cases use the real request admission, settlement and
+restart path with scripted choices. In the successful case, an ordinary sender
+addresses an already existing waiting owner. Its attempted sibling closure is
+denied. After restart, the owner defers an optional cross-check, records the
+method and acknowledges only the advice input. The original delivery input,
+specific review deadline, Task generation and open responsibility survive.
+After a second restart, the sender receives that exact method decision; there
+are still only the two original Tasks and one addressed notification. Two
+contrasting cases return explicit closed/missing-target failure to the sender,
+which retains its original input and a specific next review time. Neither case
+reopens or creates replacement work.
+
+Final source verification against Apps base `e2b79ab0c95` and pinned Host
+`0c7b0adb071ad6dae8a281a2a875e1f3e583eeff` passed 52 tests / 768 assertions
+across the same three owning suites in 36.25 seconds, plus strict source-SDK
+types. The initial test incorrectly used an event as a durable input identity;
+settlement rejected it. The corrected test uses the supported `events.inputs`
+key and verifies both the acknowledgement and the original saved wait. Failed
+logs are retained with the successful logs under the private archive's
+`workload-owner-handoff-` prefix; this was a fixture correction, not a Host fix.
+
+The design command passed structure, SDK/control examples and canonical Apps.
+At this candidate path, its model-surface check reports one May catalog overflow
+omitting `reading-metrics` and `system-investigation`. Temporarily restoring all
+five changed source/guidance paths to their untouched base at the same path
+produced the identical failure. The full command remains red. Relative file and
+heading links also passed the scoped check. Prompt/catalog measurements in the
+preceding slice were taken at its different candidate path; those historical
+numbers are not this revision's measurements.
+
+This verifies the ordinary internal handoff and explicit receiver guidance.
+The advice is supplied by the scripted sender, not automatically selected from
+the pilot; installed agent choices, complete opportunity-to-owner discovery and
+external delivery remain unverified. No new controller, consumer, schedule,
+funding allowance, live mutation, activation or release was introduced.

@@ -297,6 +297,14 @@ report; an accountable business owner applies follow-through through ordinary
 capabilities. Readonly discovery supplies material missing facts within the same
 bounded pass. The pilot has no automatic recommendation consumer: `nextStep`
 remains advice, not a dispatched request or evidence that work occurred.
+The [owner handoff](agent-task-workload-model.md#from-advice-to-the-existing-owner)
+uses ordinary addressed requests on existing Tasks. Receiving guidance now
+distinguishes resolving that advice input from fulfilling an original promise.
+App integration checks cover restart, scoped settlement, unchanged creator
+authority and closed/missing-target feedback. This is a callable transport path
+with scripted owner decisions; the pilot still emits no such request. Choosing
+and implementing an automatic producer requires a separate scoped App policy;
+no subscriber, new review Task or extra scheduler is introduced here.
 The contract tests prove call bounds, read-only options, coalescing, scope and
 no automatic effects; they do not prove model comprehension or improved delivery.
 Activation and any business acceptance trial remain separate.
