@@ -30,6 +30,10 @@ function workflowHealthLink(data, changes = {}) {
   return '/metrics?' + params;
 }
 
+function workflowRunLink(id) {
+  return '/api/workflow-runs/' + encodeURIComponent(id);
+}
+
 function workflowOutcomeCards(data) {
   const t = data.totals;
   return `<div class="health-summary" data-workflow-outcomes>
@@ -48,7 +52,7 @@ function workflowCoverage(data) {
 function workflowRunTable(data) {
   if (!data.runs.length) return '<p>No matching retained executions.</p>';
   return `<div class="health-scroll"><table class="health-table"><thead><tr><th>Run / workflow</th><th>Outcome</th><th>Finished</th><th>Duration</th><th>Reason (preview)</th></tr></thead><tbody>
-    ${data.runs.map(run => `<tr><td><code>${esc(run.runId)}</code><div class="health-note">${esc(run.workflow)}</div></td>
+    ${data.runs.map(run => `<tr><td><a href="${esc(workflowRunLink(run.runId))}">${esc(run.runId)}</a><div class="health-note">${esc(run.workflow)}</div></td>
     <td>${esc(run.status)}</td><td>${esc(healthTime(run.endedAt))}</td><td>${esc(healthDuration(run.durationMs))}</td><td class="health-text">${esc(run.reason || '—')}</td></tr>`).join('')}
     </tbody></table></div>`;
 }
@@ -184,7 +188,7 @@ function renderContextUsage(data) {
       ${data.groups.map(g => `<tr><td>${esc(g.preparer)} · ${esc(g.outcome)}</td><td>${g.measuredReplies ? usageNumber(g.inputExposure) + ' / ' + usageNumber(g.output) : 'Unknown'}</td><td>${usageNumber(g.meanTaskBytes)} → ${usageNumber(g.meanPromptBytes)}</td><td>${esc(healthDuration(g.meanPreparationMs))}</td></tr>`).join('')}
       </tbody></table></div>
       <p class="health-note">The existing maintenance pass retires usage records after 30 days without updates. Session and workflow evidence may be retired earlier.</p>
-      <ul>${data.runs.map(r => `<li>${r.outcome === 'preparation-error' ? `${esc(r.agent)} · Preparation failed before session execution` : r.sessionAvailable ? `<a href="/sessions/${encodeURIComponent(r.sessionId)}">${esc(r.agent)} · ${esc(r.sessionId)}</a>` : `${esc(r.agent)} · ${esc(r.sessionId)} · Session evidence unavailable`} · ${esc(r.preparer)} · ${esc(r.outcome || 'unfinished')} · ${esc(healthTime(r.startedAt))}${r.workflowAvailable ? ` · <code>${esc(r.workflowRunId)}</code>` : ''}</li>`).join('')}</ul>
+      <ul>${data.runs.map(r => `<li>${r.outcome === 'preparation-error' ? `${esc(r.agent)} · Preparation failed before session execution` : r.sessionAvailable ? `<a href="/sessions/${encodeURIComponent(r.sessionId)}">${esc(r.agent)} · ${esc(r.sessionId)}</a>` : `${esc(r.agent)} · ${esc(r.sessionId)} · Session evidence unavailable`} · ${esc(r.preparer)} · ${esc(r.outcome || 'unfinished')} · ${esc(healthTime(r.startedAt))}${r.workflowAvailable ? ` · <a href="${esc(workflowRunLink(r.workflowRunId))}">Workflow evidence</a>` : ''}</li>`).join('')}</ul>
       ${data.runsTruncated ? '<p>Newest 50 matching invocations shown. Narrow the App, agent or preparer selection.</p>' : ''}
     </details>`;
 }

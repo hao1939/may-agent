@@ -1,3 +1,5 @@
+import { createWorkflowRunner } from "../../src/lib/workflow-tool.js";
+import type { SubagentManager } from "../../src/lib/manager.js";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import type { ChildProcess } from "node:child_process";
 import { spawnFixtureProcess } from "../fixtures/owned-process.js";
@@ -318,6 +320,27 @@ describe("HTTP event reads", () => {
       { sessionId, status: "done", link: "tagged" },
     ]);
     expect(readFileSync(path, "utf8")).toBe(saved);
+  });
+
+  it("opens failed workflow facts through HTTP without a daemon or metric collector", async () => {
+    const workflows = join(root, "workflows");
+    mkdirSync(workflows);
+    writeFileSync(join(workflows, "report.ts"), `
+      export const name = "report";
+      export const description = "Fixture report";
+      export async function execute(ctx) {
+        ctx.log.info("prepared partial report");
+        throw new Error("upload unavailable");
+      }`);
+    const runner = createWorkflowRunner({ manager: {} as SubagentManager, workflowDir: workflows, persistDir: root });
+    const result = await runner.run("report", "fixture");
+    if (result.type !== "error" || !result.workflowRunId) throw new Error("Expected failed workflow identity");
+    const trace = await read(`/api/workflow-runs/${encodeURIComponent(result.workflowRunId)}`);
+    expect(trace.workflowFacts.run).toMatchObject({ status: "error", result_reason: "upload unavailable" });
+    expect(trace.workflowFacts.diagnostics).toMatchObject({ state: "available", truncated: false,
+      entries: [{ level: "info", message: "prepared partial report" }] });
+    expect(trace.workflowFacts.stepsTruncated).toBe(false);
+    expect((await read("/api/workflow-runs/wr_missing")).workflowFacts).toBeNull();
   });
 
   function event(

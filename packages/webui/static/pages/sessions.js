@@ -362,7 +362,7 @@ async function readSessionDetail(sessionId, opts = {}) {
     }
     if (s.model) html += `<dt>Model</dt><dd>${esc(s.model)}</dd>`;
     if (s.parentSessionId) html += `<dt>Parent</dt><dd><a href="/sessions/${attrEsc(encodeURIComponent(s.parentSessionId))}" style="color:var(--accent)">${esc(s.parentSessionId)}</a></dd>`;
-    if (s.workflowRunId) html += `<dt>Workflow Run</dt><dd>${esc(s.workflowRunId)}</dd>`;
+    if (s.workflowRunId) html += `<dt>Workflow Run</dt><dd><a href="/api/workflow-runs/${attrEsc(encodeURIComponent(s.workflowRunId))}" style="color:var(--accent)">${esc(s.workflowRunId)}</a></dd>`;
     if (s.requestId) html += `<dt>Request</dt><dd>${esc(s.requestId)}</dd>`;
     html += `</dl></div>`;
 

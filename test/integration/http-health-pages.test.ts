@@ -243,6 +243,11 @@ describe("served workflow and metric health pages", () => {
     await read("/api/metrics/example/evidence?windowMs=0", 400);
     const mutation = await fetch(base + "/api/metrics/example/evidence", { method: "POST", signal: AbortSignal.timeout(5000) });
     expect(mutation.status).toBe(405);
+    const facts = (await read("/api/workflow-runs/wr_7")).workflowFacts;
+    expect(facts.childRunIds).toEqual(["wr_10"]);
+    expect(facts.steps[0]).toMatchObject({ sessionId: "step-upload", status: "error" });
+    expect(facts.diagnostics.entries[0].message).toContain("Original upload failure");
+    expect((await read("/api/workflow-runs/wr_6")).workflowFacts.diagnostics.state).toBe("unavailable");
     await read("/api/workflow-health?days=100000", 400);
     await read("/api/metrics/example/history?days=NaN", 400);
   });
@@ -879,7 +884,7 @@ describe("served workflow and metric health pages", () => {
         expect(requests.filter((path) => path.endsWith("/history"))).toHaveLength(0);
         await page.type("#metric-search", "workflow.error");
         expect(await page.$$eval("[data-metric-search]:not([hidden])", (rows) => rows.length)).toBe(1);
-        expect(await page.$eval("#metrics-workflows", (el) => el.textContent)).toContain("wr_7");
+        expect(await page.$eval("#metrics-workflows a[href=\"/api/workflow-runs/wr_7\"]", (el) => el.textContent)).toBe("wr_7");
         await page.goto(base + "/metrics/workflow.error-count-24h", { waitUntil: "domcontentloaded" });
         await page.waitForSelector("#metrics-recent svg");
         expect(await page.$eval("#metrics-recent", (el) => el.textContent)).toContain("stale");

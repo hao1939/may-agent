@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { readWorkflowFacts } from "../../lib/workflow-facts.js";
 import { listConfiguredAgentNames } from "../loader/agent-discovery.js";
 import { interfaceBinding, type InterfaceBinding } from "@may-agent/control";
 import { taskAttemptsQuery, readTaskAttempts } from "../adapters/reporting/task-attempts.js";
@@ -1297,6 +1298,16 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         try { query = taskAttemptsQuery(url.searchParams); }
         catch (error) { return json({ error: error instanceof Error ? error.message : "Invalid attempt filter" }, 400); }
         return json(readTaskAttempts(_db(), query));
+      }
+      const workflowFactsMatch = url.pathname.match(/^\/api\/workflow-runs\/([^/]+)$/);
+      if (workflowFactsMatch && req.method === "GET") {
+        let workflowRunId: string;
+        try {
+          workflowRunId = decodeURIComponent(workflowFactsMatch[1]);
+        } catch {
+          return json({ error: "Invalid workflowRunId" }, 400);
+        }
+        return json({ workflowRunId, workflowFacts: readWorkflowFacts(STATE_DIR, workflowRunId) });
       }
       if (url.pathname === "/api/workflow-health") {
         let query: ReturnType<typeof workflowHealthQuery>;
