@@ -193,19 +193,15 @@ describe("createAgentsTool()", () => {
       const parsed = parseResult(result);
       expect(parsed.error).toContain("requires");
     });
-  });
 
-  describe("action: message", () => {
-    it("rejects both removed actions and omits unsupported message tool guidance from descriptions", async () => {
-      const deprecation = "agents.message and agents.send actions have been removed";
+    it("rejects unknown actions and omits unsupported message tool guidance from descriptions", async () => {
       const tool = manager.createAgentsTool();
       expect(tool.description).not.toContain("`message`");
       expect(tool.description).toContain("App Task requests");
       expect(JSON.stringify(tool.parameters)).not.toContain("use `message`");
       for (const action of ["message", "send"]) {
         const result = parseResult(await tool.execute("removed", { action, agent: "nonexistent" }));
-        expect(result).toEqual({ error: expect.stringContaining(deprecation) });
-        expect(result.error).toContain("Durable cross-App work belongs to an App Task request");
+        expect(result).toEqual({ error: `Unknown action: ${action}` });
       }
     });
   });

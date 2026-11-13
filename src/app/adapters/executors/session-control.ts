@@ -3,7 +3,7 @@ import { readActiveSessionProcessId } from "../../../lib/persistence.js";
 import { readExecutionStatus } from "../../core/reads/execution-status.js";
 
 export type SessionControlManager = {
-  registryStore: { getSession(id: string): PersistedSession | null; getFilePath(): string };
+  registryStore: { getSession(id: string): PersistedSession | null; readonly persistDir: string };
   status(): Array<{ sessionId: string }>;
   activeSessions?: Map<string, { parentSessionId?: string; taskBinding?: PersistedSession["taskBinding"] }>;
 };
@@ -52,7 +52,7 @@ export function validateSessionControl(
     }
     if (manager.status().some((session) => session.sessionId === id)) return;
     if (options.remote && meta.detached) return;
-    if (readActiveSessionProcessId(manager.registryStore.getFilePath(), id) !== null) {
+    if (readActiveSessionProcessId(manager.registryStore.persistDir, id) !== null) {
       throw new Error(`Session ${id} is active in another manager; control it through its owning runtime.`);
     }
     if (type !== "session.steer.requested" && (meta?.status === "running" || meta?.status === "idle")) {
@@ -61,7 +61,7 @@ export function validateSessionControl(
   };
   if (type === "session.cancel_all.requested") {
     // Check all targets before any mutation, including workers outside this manager.
-    const shared = readExecutionStatus(manager.registryStore.getFilePath()).sessions;
+    const shared = readExecutionStatus(manager.registryStore.persistDir).sessions;
     for (const session of [...shared, ...manager.status()]) check(session.sessionId);
   } else if (sessionId) check(sessionId);
 }

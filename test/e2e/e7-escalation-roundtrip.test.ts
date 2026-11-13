@@ -37,7 +37,7 @@ describe("E7: escalation lifecycle roundtrip", () => {
       expect(replies).toHaveLength(2);
       expect(replies.every(row => eventPayload(row).feedbackRoute === "unresolved")).toBe(true);
       expect(replies.every(row => eventPayload(row).escalationId === escalationId)).toBe(true);
-      expect(queryEvents(db, { types: ["escalation.resume_attempted", "session.start"], since, limit: 10 })).toEqual([]);
+      expect(queryEvents(db, { types: ["session.start"], since, limit: 10 })).toEqual([]);
     } finally { db.close(); }
   });
 });

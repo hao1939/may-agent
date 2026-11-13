@@ -226,5 +226,4 @@ This updates the caller's instructions for one helper. Requirement changes that
 must survive failure belong in durable Task input. Existing Task feedback already
 notifies active helpers; callers do not need to forward every update manually.
 Tool parameter types are inferred from their schemas so model discovery and
-implementation share one contract. Old `agents.message`/`agents.send` calls
-receive a correction pointing to the supported helper and App Task contracts.
+implementation share one contract.

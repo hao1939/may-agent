@@ -1,7 +1,4 @@
 import type { SqliteDb } from "./db.js";
-import { getDb } from "./db/connection.js";
-import type { TaskResult } from "./types.js";
-import type { WorkflowToolResult } from "./workflow.js";
 
 export type ExecutionKind = "session" | "workflow";
 export type ExecutionStatus = "running" | "done" | "error" | "interrupted" | "blocked" | "escalated";
@@ -76,82 +73,6 @@ export function normalizeExecutionStatus(kind: ExecutionKind, status: string): E
   return "running";
 }
 
-export function taskResultToExecutionResult(result: TaskResult, opts: {
-  agent?: string;
-  task?: string;
-  parentId?: string;
-  projectId?: string;
-} = {}): ExecutionResult {
-  const status = normalizeExecutionStatus("session", result.status);
-  return {
-    id: result.sessionId,
-    kind: "session",
-    status,
-    summary: compact(result.error ?? result.lastAssistantText, `${opts.agent ?? "session"} ${status}`),
-    traceId: result.sessionId,
-    owner: opts.agent,
-    parentId: opts.parentId,
-    projectId: opts.projectId,
-    facts: {
-      agent: opts.agent,
-      task: opts.task,
-      duration: result.duration,
-      turnsUsed: result.turnsUsed,
-      outputDir: result.outputDir,
-    },
-  };
-}
-
-export function workflowToolResultToExecutionResult(result: WorkflowToolResult): ExecutionResult | null {
-  if (result.type === "list") return null;
-  if (result.type === "error") {
-    return {
-      id: result.workflowRunId ?? result.workflow ?? "workflow-error",
-      kind: "workflow",
-      status: "error",
-      summary: compact(result.error, "workflow error"),
-      traceId: result.workflowRunId ?? result.workflow ?? "workflow-error",
-      facts: { workflow: result.workflow, reason: result.reason, category: result.category },
-    };
-  }
-
-  if (result.type === "done") {
-    return {
-      id: result.workflowRunId,
-      kind: "workflow",
-      status: "done",
-      summary: compact(result.summary, "workflow done"),
-      traceId: result.workflowRunId,
-      facts: { workflow: result.workflow, steps: result.steps },
-    };
-  }
-
-  if (result.type === "blocked") {
-    return {
-      id: result.workflowRunId,
-      kind: "workflow",
-      status: "blocked",
-      summary: compact(result.reason, "workflow blocked"),
-      traceId: result.workflowRunId,
-      facts: {
-        workflow: result.workflow,
-        context: result.context,
-        steps: result.steps,
-        completedSteps: result.completedSteps?.length ?? 0,
-      },
-    };
-  }
-
-  return {
-    id: result.workflowRunId,
-    kind: "workflow",
-    status: "interrupted",
-    summary: compact(result.steeringMessage, "workflow interrupted"),
-    traceId: result.workflowRunId,
-    facts: { workflow: result.workflow, completedSteps: result.completedSteps.length },
-  };
-}
-
 export function sessionRowToExecutionResult(row: SessionRow): ExecutionResult {
   const status = normalizeExecutionStatus("session", row.status);
   return {
@@ -206,8 +127,4 @@ export function getExecutionResultFromDb(db: SqliteDb, id: string): ExecutionRes
   if (workflow) return workflowRowToExecutionResult(workflow);
 
   return null;
-}
-
-export function getExecutionResult(persistDir: string, id: string): ExecutionResult | null {
-  return getExecutionResultFromDb(getDb(persistDir), id);
 }
