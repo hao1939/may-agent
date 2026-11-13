@@ -38,8 +38,6 @@ export interface LoadResult {
 
 export interface PreparedAgentGeneration extends LoadResult {
   definitions: readonly SubagentDefinition[];
-  cleanups: ReadonlyMap<string, readonly (() => void)[]>;
-  warnings: readonly string[];
 }
 
 export interface AgentGenerationPublication {
@@ -47,20 +45,8 @@ export interface AgentGenerationPublication {
   finalize(): void;
 }
 
-const discardedGenerations = new WeakSet<object>();
-
-/** Release resources belonging to a generation that was never committed. */
-export function discardAgentGeneration(generation: Pick<PreparedAgentGeneration, "cleanups">): void {
-  if (discardedGenerations.has(generation)) return;
-  discardedGenerations.add(generation);
-  for (const cleanups of generation.cleanups.values()) {
-    for (const cleanup of cleanups) cleanup();
-  }
-}
-
 export interface AgentRegistryRuntime {
   getAgentSessionId: (agentName: string) => string | undefined;
-  publishResources?: (generation: PreparedAgentGeneration) => AgentGenerationPublication;
 }
 
 function validationReport(errors: readonly ValidationError[]): string {
@@ -83,19 +69,6 @@ function reportInvalidGeneration(bus: EventBus, errors: readonly ValidationError
       priority: "P0",
     },
   });
-}
-
-function preparedResourceRuntime(runtime: AgentRegistryRuntime): {
-  runtime: AgentRegistryRuntime;
-  cleanups: Map<string, Array<() => void>>;
-} {
-  const cleanups = new Map<string, Array<() => void>>();
-  return {
-    cleanups,
-    runtime: {
-      getAgentSessionId: runtime.getAgentSessionId,
-    },
-  };
 }
 
 function readCandidate(agentDir: string, fallbackName: string, errors: ValidationError[]): AgentConfig | null {
@@ -123,7 +96,6 @@ export async function prepareAgents(
   const { agentsRoot, projectRoot, projectsRoot, models, manager } = opts;
   const fileWritePolicy = readFileWritePolicy(opts.definitionSharedRoot ?? opts.sharedRoot ?? resolve(opts.projectRoot, "shared"), opts.projectRoot);
   const allErrors: ValidationError[] = [];
-  const warnings: string[] = [];
   const requestedNames = opts.agentNames ? new Set(opts.agentNames.map((name) => name.trim()).filter(Boolean)) : null;
   const selected = new Map<
     string,
@@ -164,7 +136,6 @@ export async function prepareAgents(
     throw new Error(`Agent generation validation failed:\n${validationReport(allErrors)}`);
   }
 
-  const staged = preparedResourceRuntime(runtime);
   const definitions: SubagentDefinition[] = [];
   for (const { config, source } of selected.values()) {
     try {
@@ -185,12 +156,7 @@ export async function prepareAgents(
           projectRoot: effectiveProjectRoot,
           agentsRoot: agentsRootForAgentDir(source),
           agentDir: source.dir,
-          getAgentSessionId: staged.runtime.getAgentSessionId,
-          addCleanup: (agentName, cleanup) => {
-            const existing = staged.cleanups.get(agentName);
-            if (existing) existing.push(cleanup);
-            else staged.cleanups.set(agentName, [cleanup]);
-          },
+          getAgentSessionId: runtime.getAgentSessionId,
         }),
         projectRoot: effectiveProjectRoot,
         sharedRoot: opts.definitionSharedRoot ?? opts.sharedRoot,
@@ -211,7 +177,6 @@ export async function prepareAgents(
   }
 
   if (allErrors.length > 0) {
-    discardAgentGeneration(staged);
     reportInvalidGeneration(opts.bus, allErrors);
     throw new Error(`Agent generation preparation failed:\n${validationReport(allErrors)}`);
   }
@@ -219,8 +184,6 @@ export async function prepareAgents(
   const names = definitions.map((definition) => definition.name);
   return {
     definitions: Object.freeze(definitions),
-    cleanups: staged.cleanups,
-    warnings: Object.freeze(warnings),
     added: names.filter((name) => !manager.hasAgent(name)),
     updated: names.filter((name) => manager.hasAgent(name)),
   };
@@ -229,7 +192,7 @@ export async function prepareAgents(
 /** Publish prepared definitions synchronously and return an exact rollback. */
 export function publishAgentGeneration(
   opts: AgentLoaderOptions,
-  runtime: AgentRegistryRuntime,
+  _runtime: AgentRegistryRuntime,
   generation: PreparedAgentGeneration,
 ): AgentGenerationPublication {
   const manager = opts.manager as SubagentManager & {
@@ -248,15 +211,12 @@ export function publishAgentGeneration(
       .filter((entry): entry is readonly [string, SubagentDefinition] => Boolean(entry[1])),
   );
   const nextNames = new Set(generation.definitions.map((definition) => definition.name));
-  let resourcePublication: AgentGenerationPublication | undefined;
   try {
     for (const name of agentNames()) {
       if (!nextNames.has(name)) unregister(name);
     }
     for (const definition of generation.definitions) opts.manager.register(definition);
-    resourcePublication = runtime.publishResources?.(generation);
   } catch (error) {
-    if (!resourcePublication) discardAgentGeneration(generation);
     for (const name of agentNames()) {
       if (!previous.has(name)) unregister(name);
     }
@@ -269,19 +229,13 @@ export function publishAgentGeneration(
     rollback() {
       if (settled) return;
       settled = true;
-      resourcePublication?.rollback();
       for (const name of agentNames()) {
         if (!previous.has(name)) unregister(name);
       }
       for (const definition of previous.values()) opts.manager.register(definition);
     },
     finalize() {
-      if (settled) return;
       settled = true;
-      resourcePublication?.finalize();
-      for (const warning of generation.warnings) {
-        opts.bus.emit({ type: "info", message: `[loader] ${warning}` });
-      }
     },
   };
 }

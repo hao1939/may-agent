@@ -57,8 +57,6 @@ describe("runtime generation reload", () => {
     added: ["new-agent"],
     updated: [],
     definitions: [],
-    cleanups: new Map(),
-    warnings: [],
   } as any;
 
   it("rolls the agent publication back when the App generation rejects", async () => {
@@ -118,25 +116,5 @@ describe("runtime generation reload", () => {
     expect(result).toMatchObject({ ok: true, sourceCommit: expectedSourceCommit });
     expect(preparedWith).toEqual([{ expectedSourceCommit }]);
     expect({ published, rolledBack, finalized }).toEqual({ published: 1, rolledBack: 0, finalized: 1 });
-  });
-
-  it("discards prepared resources when App validation fails before publication", async () => {
-    let cleaned = 0;
-    const prepared = {
-      ...generation,
-      cleanups: new Map([["candidate", [() => cleaned++]]]),
-    } as any;
-    const lifecycle = createDaemonLifecycle(
-      lifecycleOptions({
-        prepareAgents: async () => prepared,
-        reloadApps: async () => {
-          throw new Error("App definition rejected");
-        },
-      }),
-    );
-
-    const result = await lifecycle.handleReload();
-    expect(result.ok).toBe(false);
-    expect(cleaned).toBe(1);
   });
 });

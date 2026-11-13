@@ -107,17 +107,12 @@ export {
 export type { ExecutionKind, ExecutionResult, ExecutionStatus, ResumeDiagnostic } from "./execution-result.js";
 export { createQueryService } from "./query-service.js";
 export type {
-  AlertQuery,
   EventDeliveryHealth,
   EventDeliveryHealthQuery,
   EventQuery,
-  MetricQuery,
-  ProjectQuery,
   QueryAPI,
   QueryOptions,
   QueryResult,
-  SessionQuery,
-  WorkflowRunQuery,
 } from "./query-service.js";
 
 export type { EventEnvelope } from "../app/core/events/bus.js";

@@ -150,7 +150,6 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
       projectRoot: root,
       persistDir,
       getAgentSessionId: () => "wrong-same-name-session",
-      addCleanup: () => {},
     });
     manager.register({ name: "owner", description: "Owner", domain: "fixture", model, tools });
     manager.register({
