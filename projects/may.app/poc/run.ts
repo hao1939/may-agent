@@ -97,9 +97,7 @@ for (const profile of ["bob", "tech-lead"]) {
         ? [createReadTool(worktree)]
         : createCodingTools(worktree, { agentName: config.name })),
       createFinishTool({
-        agentName: config.name,
         projectRoot: worktree,
-        persistDir: persist,
       }),
     ],
     projectRoot: worktree,

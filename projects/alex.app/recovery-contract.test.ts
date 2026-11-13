@@ -249,7 +249,7 @@ test.each(["", "The existing repair already owns this concern."])(
         definition: {
           name: "evaluator", description: "Offline report acceptance trial", domain: "tests",
           systemPrompt: "Assess the supplied evidence.", model: fakeModel(),
-          tools: [createFinishTool({ agentName: "evaluator", projectRoot: root, persistDir: root })],
+          tools: [createFinishTool({ projectRoot: root })],
         },
         projectRoot: root, sessionId: "no-action-explanation", task: "Return the assessment.",
         requireFinish: true, outputSchema: JSON.parse(JSON.stringify(evaluationJudgmentSchema)),
@@ -316,9 +316,7 @@ test.each(["readable", "unfamiliar", "unreadable"] as const)(
           tools: [
             tool,
             createFinishTool({
-              agentName: "alex",
               projectRoot: f.root,
-              persistDir: f.root,
             }),
           ],
         },

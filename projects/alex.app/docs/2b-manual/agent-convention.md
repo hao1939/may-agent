@@ -93,7 +93,7 @@ event. See [workflows.md](../2a-design/workflows.md).
 | "Use this procedure when task X appears"           | `skills/<name>/SKILL.md` | Situational reusable method |
 | Periodic review method                            | App-owned skill/workflow | Selected by ordinary App input; no special heartbeat loader |
 | Recent notes, drafts, temporary plans              | `workspace/`             | Runtime scratch             |
-| Generated session continuity                       | `last-session.md`        | Runtime/session context     |
+| Saved execution evidence                           | Session transcript/result | Historical facts, read explicitly |
 
 If a lesson must affect every session, promote the distilled invariant into
 `AGENTS.md`. If it is situational, keep it in `knowledge/` and
@@ -105,8 +105,11 @@ link it from `knowledge/INDEX.md`.
 not complete or create Tasks/Requests; use the owning App's authorized controls.
 `context_updates` reports suggestions, not an activated preference. The legacy
 context-writing subscriber is retired, and even a written
-`context.md` is not automatically included in a normal prompt. `lessons` attempts
-a best-effort local memory-stream append, not automatic retrieval or learning.
+`context.md` is not automatically included in a normal prompt. `lessons` is
+retained in the completion report and saved session evidence; finish does not
+write a separate memory file or activate guidance. The
+[selected lesson-write retirement](../proposals/external-components-simplification.md#retire-automatic-lesson-file-writes)
+records source status. Existing historical memory files remain untouched.
 
 For lasting behavior, use an authorized source edit in the owning guidance,
 verify activation, then check a later relevant execution. A saved report or

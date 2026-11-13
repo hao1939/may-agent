@@ -13,6 +13,9 @@ native CLI `resumeSessionId` is a separate supported thread-continuity feature.
 The [earlier trial](../archive/reviews/execution-consolidation-poc-20260914.md)
 retains its original scope and limits; source status does not establish the
 deployed artifact.
+Retirement of the finish tool's separate lesson-file write is accepted and
+prepared for review; see [the selected reduction](../proposals/external-components-simplification.md#retire-automatic-lesson-file-writes).
+That source merge and installed adoption remain unverified.
 
 ## The Model
 
@@ -292,8 +295,13 @@ same schema given to the model. Session list results retain exact IDs for
 subsequent reads or permitted control; only human-readable previews shorten.
 [#237](https://github.com/hao1939/may-agent/pull/237) implements this cleanup.
 
-Completion suggestions are saved evidence, not activated behavior. The daemon
-registers digest and last-session writers. The unregistered context updater
-and file-read tracker are removed by merged
-[#238](https://github.com/hao1939/may-agent/pull/238); historical rows and saved
-completion facts remain. See the [reporting/adoption convention](../2b-manual/agent-convention.md#reporting-is-not-adoption).
+Completion suggestions, including reported lessons, are retained in the returned
+report and saved execution evidence. Finish does not copy lessons to a separate
+memory file or activate them as guidance. App review and adoption use their
+existing learning workflow and authorized source edits.
+
+The unregistered context updater and file-read tracker were removed by merged
+[#238](https://github.com/hao1939/may-agent/pull/238). Digest and last-session
+writers were later retired in [#467](https://github.com/hao1939/may-agent/pull/467).
+Historical files/rows and saved completion facts remain. See the
+[reporting/adoption convention](../2b-manual/agent-convention.md#reporting-is-not-adoption).
