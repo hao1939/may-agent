@@ -529,7 +529,6 @@ export function applyDbSchema(db: SqliteDb): void {
     ensureExistingAppInboxTableColumns(db);
     ensureExistingAppInboxWaitKinds(db);
     ensureExistingTaskBindingColumns(db);
-    if (tableExists(db, "events")) ensureAppAdmissionPendingColumn(db);
     // Trigger definitions are not replaced by IF NOT EXISTS. Remove the superseded
     // type-specific discovery objects after preserving their exact outstanding subset.
     db.exec("DROP TRIGGER IF EXISTS trg_events_referential_retention");
@@ -557,12 +556,9 @@ export function applyDbSchema(db: SqliteDb): void {
       db.exec(METRIC_DISPOSITION_VIEW);
     }
     ensureExistingAppInboxDeliveryShape(db);
-    ensureExistingEventsTableColumns(db);
-    ensureExistingAppInboxTableColumns(db);
     ensureExistingAppEventAdmissionColumns(db);
     ensureNotificationChatScope(db);
     retireConversationChildWaits(db);
-    ensureExistingTaskBindingColumns(db);
     db.exec(`
       CREATE UNIQUE INDEX IF NOT EXISTS idx_events_idempotency
       ON events(event_type, ingress_source, idempotency_scope, idempotency_key)
@@ -742,11 +738,9 @@ const APP_INBOX_COLUMNS: Array<[string, string]> = [
 
 function ensureExistingAppInboxTableColumns(db: SqliteDb): void {
   if (!tableExists(db, "app_inbox_items")) return;
-  const columns = db.prepare("PRAGMA table_info(app_inbox_items)").all() as Array<{ name?: unknown }>;
-  const needsChangedAtBackfill = !columns.some((column) => column.name === "changed_at");
-  for (const [column, definition] of APP_INBOX_COLUMNS) {
-    ensureColumn(db, "app_inbox_items", column, definition);
-  }
+  const existing = existingColumns(db, "app_inbox_items");
+  const needsChangedAtBackfill = !existing.has("changed_at");
+  ensureColumns(db, "app_inbox_items", APP_INBOX_COLUMNS, existing);
   if (needsChangedAtBackfill) {
     db.exec(`
       UPDATE app_inbox_items
@@ -758,11 +752,15 @@ function ensureExistingAppInboxTableColumns(db: SqliteDb): void {
 
 function ensureExistingAppEventAdmissionColumns(db: SqliteDb): void {
   if (tableExists(db, "app_event_admission_plans")) {
-    ensureColumn(db, "app_event_admission_plans", "registry_snapshot_id", "TEXT NOT NULL DEFAULT 'legacy:unknown'");
+    ensureColumns(db, "app_event_admission_plans", [
+      ["registry_snapshot_id", "TEXT NOT NULL DEFAULT 'legacy:unknown'"],
+    ]);
   }
   if (tableExists(db, "app_event_admission_commands")) {
-    ensureColumn(db, "app_event_admission_commands", "payload_version", "INTEGER NOT NULL DEFAULT 1");
-    ensureColumn(db, "app_event_admission_commands", "resolved_snapshot_id", "TEXT");
+    ensureColumns(db, "app_event_admission_commands", [
+      ["payload_version", "INTEGER NOT NULL DEFAULT 1"],
+      ["resolved_snapshot_id", "TEXT"],
+    ]);
     const schema = String(
       db.prepare("SELECT sql FROM sqlite_master WHERE name = 'app_event_admission_commands'").get()?.sql,
     );
@@ -832,23 +830,16 @@ const TASK_BINDING_COLUMNS: Array<[string, string]> = [
 function ensureExistingTaskBindingColumns(db: SqliteDb): void {
   for (const table of ["sessions", "workflow_runs"]) {
     if (!tableExists(db, table)) continue;
-    for (const [column, definition] of TASK_BINDING_COLUMNS) {
-      ensureColumn(db, table, column, definition);
-    }
+    ensureColumns(db, table, TASK_BINDING_COLUMNS);
   }
 }
 
 function ensureExistingEventsTableColumns(db: SqliteDb): void {
   if (!tableExists(db, "events")) return;
-  for (const [column, definition] of EVENT_COLUMNS) {
-    ensureColumn(db, "events", column, definition);
-  }
-}
-
-/** Preserve only the exact direct-input obligations selected by the retired recovery query. */
-function ensureAppAdmissionPendingColumn(db: SqliteDb): void {
-  const columns = db.prepare("PRAGMA table_info(events)").all() as Array<{ name?: unknown }>;
-  if (columns.some((item) => item.name === "app_admission_pending")) return;
+  const existing = existingColumns(db, "events");
+  const needsPendingColumn = !existing.has("app_admission_pending");
+  ensureColumns(db, "events", EVENT_COLUMNS, existing);
+  if (!needsPendingColumn) return;
   db.exec("ALTER TABLE events ADD COLUMN app_admission_pending INTEGER");
   db.exec(`
     UPDATE events SET app_admission_pending = 1
@@ -889,14 +880,41 @@ function tableExists(db: SqliteDb, table: string): boolean {
   return Boolean(row);
 }
 
-function ensureColumn(db: SqliteDb, table: string, column: string, definition: string): void {
+function existingColumns(db: SqliteDb, table: string): Set<string> {
   const columns = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name?: unknown }>;
-  if (columns.some((item) => item.name === column)) return;
-  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  return new Set(columns.flatMap((item) => (typeof item.name === "string" ? [item.name] : [])));
+}
+
+function ensureColumns(
+  db: SqliteDb,
+  table: string,
+  definitions: ReadonlyArray<readonly [string, string]>,
+  existing = existingColumns(db, table),
+): void {
+  for (const [column, definition] of definitions) {
+    if (existing.has(column)) continue;
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    existing.add(column);
+  }
 }
 
 /** Retire the removed frontend protocol once, without replaying or cancelling its Tasks. */
 function retireConversationChildWaits(db: SqliteDb): void {
+  const pending = db
+    .prepare(
+      `SELECT 1 FROM app_inbox_items AS parent
+       WHERE status != 'done' AND (
+         (waiting_on_kind = 'app' AND waiting_on_id = 'children:' || id)
+         OR (conversation_id IS NOT NULL AND (
+           waiting_on_kind = 'app'
+           OR EXISTS (SELECT 1 FROM app_inbox_items child WHERE child.parent_id = parent.id)
+           OR json_array_length(handling, '$.decision.dependencies') > 0
+         ))
+       )
+       LIMIT 1`,
+    )
+    .get();
+  if (!pending) return;
   const reason = "Conversational child-result waiting is no longer supported.";
   const response =
     "This older turn can no longer wait for child results. Your ask remains unresolved. " +

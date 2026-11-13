@@ -31,8 +31,20 @@ describe("canonical database schema", () => {
       expect(executedSql.filter((sql) => sql.includes("UPDATE app_inbox_items\n      SET changed_at"))).toHaveLength(1);
 
       executedSql.length = 0;
-      applyDbSchema(db);
+      const preparedSql: string[] = [];
+      const trackedDb: typeof db = {
+        ...db,
+        prepare(sql: string) {
+          preparedSql.push(sql);
+          return underlying.prepare(sql);
+        },
+      };
+      applyDbSchema(trackedDb);
       expect(executedSql.some((sql) => sql.includes("SET changed_at = COALESCE"))).toBe(false);
+      expect(preparedSql.filter((sql) => sql.includes("PRAGMA table_info(events)"))).toHaveLength(1);
+      expect(preparedSql.filter((sql) => sql.includes("PRAGMA table_info(app_inbox_items)"))).toHaveLength(2);
+      expect(preparedSql.filter((sql) => sql.includes("PRAGMA table_info(sessions)"))).toHaveLength(1);
+      expect(preparedSql.filter((sql) => sql.includes("PRAGMA table_info(workflow_runs)"))).toHaveLength(1);
     } finally {
       db.close();
     }

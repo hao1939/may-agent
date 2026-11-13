@@ -336,15 +336,17 @@ export function ensureTaskResourceSchema(db: SqliteDb): void {
       throw error;
     }
   }
+  if (db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_inbox_items'").get()) {
+    const inboxColumns = new Set(
+      db
+        .prepare("PRAGMA table_info(app_inbox_items)")
+        .all()
+        .map((column) => String(column.name)),
+    );
+    if (!inboxColumns.has("creator_json")) db.exec("ALTER TABLE app_inbox_items ADD COLUMN creator_json TEXT");
+    if (!inboxColumns.has("recovery_json")) db.exec("ALTER TABLE app_inbox_items ADD COLUMN recovery_json TEXT");
+  }
   db.exec(APP_INBOX_SCHEMA);
-  const inboxColumns = new Set(
-    db
-      .prepare("PRAGMA table_info(app_inbox_items)")
-      .all()
-      .map((column) => String(column.name)),
-  );
-  if (!inboxColumns.has("creator_json")) db.exec("ALTER TABLE app_inbox_items ADD COLUMN creator_json TEXT");
-  if (!inboxColumns.has("recovery_json")) db.exec("ALTER TABLE app_inbox_items ADD COLUMN recovery_json TEXT");
   // Create after the legacy recovery column migration, not in the initial DDL.
   db.exec(`CREATE INDEX IF NOT EXISTS idx_app_inbox_rejected_feedback ON app_inbox_items(id)
     WHERE execution_task_id IS NULL AND status = 'done' AND waiting_on_kind IS NULL
