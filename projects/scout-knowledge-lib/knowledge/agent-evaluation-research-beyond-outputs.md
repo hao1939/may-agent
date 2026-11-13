@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Second companion note to agent-evaluation.md containing arXiv-sourced evaluation research patterns §23–§36 on evaluation beyond outputs. The retained substrate foundations cover temporal state, reasoning trajectories, composition boundaries, social channels, supervision, and diagnostic infrastructure; a September 2026 abstract-level result adds direct evidence that final-response completion claims can misstate file-review coverage. The August–September §37–§40 diagnostic layers continue in agent-evaluation-research-diagnostic-layers.md."
-triggers: ["evaluation beyond outputs", "surface fidelity", "plausibility gradient", "unobserved margin", "composition blindspot", "dual channel", "engagement ordering", "reasoning precedence", "DRIFTLENS", "human gate", "trimodal oversight", "announcement gap", "ToolFailBench", "tool-use failure", "When Agents Lie", "premeditated deception", "overclaiming", "OverclaimBench", "completion claim", "review coverage", "capability mutual exclusion", "structural inevitability", "EMPATH", "run-to-run variance", "QVal", "TRIAGE", "decomposed supervision", "sub-surface evaluation", "activation-based evaluation", "kNNGuard", "SkillCoach", "designed ignorance", "semantic collapse", "ghost memory", "regression accumulation", "Theoria", "SkillFuzz", "SkillDetonate", "prompt coverage", "verification hierarchy", "diagnostic architecture", "cascaded grading", "noise-corrected evaluation"]
-last_updated: "2026-09-18"
-source_basis: "Extracted from agent-evaluation-research.md §23–§35 during library-health split (2026-07-09). §23–§31 originally extracted from agent-evaluation.md on 2026-07-14 (July 2026 arXiv-sourced patterns appended to parent instead of companion). §32 added 2026-07-08. §33–§35 added before 2026-07-09. §37–§40, including the active September source additions, were preserved and moved intact to agent-evaluation-research-diagnostic-layers.md on 2026-09-11."
+summary: "Second companion note to agent-evaluation.md containing evaluation research patterns §23–§36 on evaluation beyond outputs. The retained substrate foundations cover temporal state, reasoning trajectories, composition boundaries, social channels, supervision, and diagnostic infrastructure; newer source-level evidence adds that candidate cohorts, test cases, hostile staging, and observed effects need admitted identities and failure-complete receipts before comparison. The August–September §37–§40 diagnostic layers continue in agent-evaluation-research-diagnostic-layers.md."
+triggers: ["evaluation beyond outputs", "surface fidelity", "plausibility gradient", "unobserved margin", "composition blindspot", "dual channel", "engagement ordering", "reasoning precedence", "DRIFTLENS", "human gate", "trimodal oversight", "announcement gap", "ToolFailBench", "tool-use failure", "When Agents Lie", "premeditated deception", "overclaiming", "OverclaimBench", "completion claim", "review coverage", "capability mutual exclusion", "structural inevitability", "EMPATH", "run-to-run variance", "QVal", "TRIAGE", "decomposed supervision", "sub-surface evaluation", "activation-based evaluation", "kNNGuard", "SkillCoach", "designed ignorance", "semantic collapse", "ghost memory", "regression accumulation", "Theoria", "SkillFuzz", "SkillDetonate", "prompt coverage", "verification hierarchy", "diagnostic architecture", "cascaded grading", "noise-corrected evaluation", "evaluation cohort", "test case identity", "effect ledger", "probe isolation", "partial acceptance"]
+last_updated: "2026-11-13"
+source_basis: "Extracted from agent-evaluation-research.md §23–§35 during library-health split (2026-07-09). §23–§31 originally extracted from agent-evaluation.md on 2026-07-14 (July 2026 arXiv-sourced patterns appended to parent instead of companion). §32 added 2026-07-08. §33–§35 added before 2026-07-09. §37–§40, including the active September source additions, were preserved and moved intact to agent-evaluation-research-diagnostic-layers.md on 2026-09-11. §36a added 2026-11-13 from pinned producer-authored NeMo Helix and Argus source assessments saved as linked findings; Scout did not execute either system."
 parent_note: "agent-evaluation.md"
 sibling_note: "agent-evaluation-research.md"
 continuation_note: "agent-evaluation-research-diagnostic-layers.md"
@@ -641,6 +641,38 @@ to cheaper/faster evaluation at each layer (Grading the Grader pattern).
   [Scan #137](./findings/2026-06-24-hn-scan-137.md). Added 2026-07-12.
 - **Connects to**: Evaluation Mirage (§27), Agent Testing Tooling (parent §7),
   Meta-Escalation Ratchet (hn-agent-operational-memory.md).
+
+### §36a Evidence identity must be admitted before comparison (2026-11-13)
+
+Two pinned source assessments sharpen “evaluation as infrastructure” into a
+shared admission rule. NeMo Helix validates the logical agent, candidate cohort,
+and test-case identity before storing evaluation-scoped telemetry; Argus stages a
+fresh hostile scenario and effect ledger for every black-box probe. In both
+cases, evidence that lacks a valid case boundary is not merely lower quality—it
+is unsafe to aggregate with the comparison set.
+
+The cross-source design is a four-part evidence envelope:
+
+1. **Subject identity:** which continuing agent or system is being evaluated.
+2. **Variant and case identity:** which candidate, probe, and test case produced
+   this observation.
+3. **Isolated evidence scope:** which telemetry or external effects belong only
+   to that case, without inherited state from another run.
+4. **Failure-complete receipt:** accepted, rejected, skipped, and harness-error
+   outcomes remain distinct; transport success or missing effects cannot become
+   a clean pass.
+
+This closes a gap between diagnostic architecture and later scoring. A strong
+judge cannot repair cohort contamination after storage, and a deterministic
+assertion cannot recover which probe caused an inherited effect. Evaluation
+pipelines should therefore validate comparison membership and evidence scope at
+intake, then preserve item-level rejection and non-observation through
+aggregation.
+
+- **Sources and limits:** [NeMo Helix cohort-admission finding](./findings/2026-11-12-agent-candidate-comparisons-need-explicit-trace-cohorts.md)
+  and [Argus isolated effect-ledger finding](./findings/2026-11-12-black-box-agent-tests-need-isolated-effect-ledgers.md).
+  Both are static assessments of pinned producer-authored source and tests;
+  Scout did not execute either system or validate real deployments.
 
 ---
 
