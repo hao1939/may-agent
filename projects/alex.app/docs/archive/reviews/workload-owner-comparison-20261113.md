@@ -477,11 +477,27 @@ for this review correction. The general rule is to verify both sides of a
 refreshed projection: freshness must advance, and unchanged content must reuse
 its stored artifact. Changed facts must remain discoverable as new content.
 
-A separate follow-up remains outside #491: generic `taskWorkloadGuidance()` still
-describes work-start credits, sponsor/root balances and funding holds after #482
-removed their implementation. The current reader reports those funding/root
-observations unavailable. Guidance should describe the remaining execution and
-read contracts rather than imply those retired controls are still installed.
+A separate follow-up outside #491 found that generic `taskWorkloadGuidance()`
+still described work-start credits, sponsor/root balances and funding holds after
+#482 removed their implementation. [Host #497](https://github.com/hao1939/may-agent/pull/497)
+at `357da9acd18f7eceb91e06f69f4237c6cc1aeaee` corrects that shared managed/helper/Codex
+guidance and removes obsolete installer/accounting instructions from the Host
+lifecycle guide. App limits and the controller-Host observation retain their
+separate scopes; neither reserves a slot. Unavailable fields establish neither
+an allowance nor a denial. Required work remains owed, pressure informs methods
+and discretionary expansion, and fulfillment/closure remain creator judgments.
+The existing workload-context regression now inspects the actual decision brief
+and helper workspace. It failed on the former guidance; the five owning suites
+pass 80 tests / 853 assertions without adding test cases. Local Host/SDK types,
+App boundaries and lint pass. Exact-head hosted run `43432876531` passed Quality
+and Container: 3,614 test passes, three explicit installed-agent skips, zero
+failures and 21,852 assertions. The complete local suite also passed: 3,614
+passes, three explicit installed-agent skips, zero failures and 21,857 assertions
+across 326 files, including browser coverage. Its longest shard took 340.75
+seconds. The earlier metric polling timeout is retained in the #491 evidence;
+passing this run does not explain that earlier failure.
+No admission, scheduling, SDK shape, Task state, App runtime, activation or
+installed behavior changed.
 
 ### Independent creator-page storage
 

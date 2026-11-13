@@ -24,6 +24,12 @@ design and verification, not available current-source activation procedures.
 Agent ownership, creator-controlled revision and closure, bounded attempts,
 Host concurrency and scoped workload observations remain. Installed owner
 follow-through and behavioral acceptance remain pending.
+The [current-guidance correction](https://github.com/hao1939/may-agent/pull/497)
+aligns shared executor instructions with those remaining controls. Required work
+stays owed under pressure; agents judge priorities, methods and discretionary
+expansion. An observation reserves no execution slot, and unavailable fields
+establish neither an allowance nor a denial. Creator-controlled closure still
+requires evidence against the assignment. Source verification is not activation.
 The [completion audit](../archive/reviews/workload-completion-audit-20261109.md)
 maps the supported first path to its implementation owners and records the
 remaining review, result-disposition adoption and behavioral acceptance gates.
@@ -101,7 +107,9 @@ exposes a separate acceptance gap: all four native owners handled the original
 report correctly, but none inspected or closed its fulfilled finite contribution.
 More explicit guidance did not fix the observed omission and remains branch-only.
 The [creator-context refinement](../archive/reviews/workload-owner-comparison-20261113.md#creator-context-refinement)
-now supplies a bounded fresh creator page in the existing native decision brief,
+merged in [Host #491](https://github.com/hao1939/may-agent/pull/491) at
+`9cc9547c9237247f5060f67a35d82774e882236f`. It supplies a bounded fresh creator
+page in the existing native decision brief,
 using the same read and guarded controls. Identical App guidance on the baseline
 again left both fulfilled finite contributions open. The candidate inspected and
 closed both, including while its original final delivery remained owed, and
