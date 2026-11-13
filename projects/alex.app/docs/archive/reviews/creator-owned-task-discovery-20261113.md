@@ -5,8 +5,9 @@ returned work remains visible to the creator until that creator decides its
 disposition. Task grouping, execution ownership, funding and closure authority
 retain their existing meanings.
 
-The candidate Host implementation is [PR #472](https://github.com/hao1939/may-agent/pull/472),
-based on current Host main `07148372f9`. The first revision `13c4a66b4b` passed
+The Host implementation [PR #472](https://github.com/hao1939/may-agent/pull/472)
+merged on 2026-11-13 as `0c7b0adb071ad6dae8a281a2a875e1f3e583eeff`,
+based on Host main `07148372f9`. The first revision `13c4a66b4b` passed
 local and GitHub checks. Refinement `ba7d4ab8c8` removes its automatic context
 propagation and keeps one explicit discovery read. It passed full local CI on
 the original base; integrated revision
@@ -105,11 +106,19 @@ change. The final revision integrated with current main passed full local CI:
 4,021 tests, 23,901 assertions, zero failures and three existing optional
 installation skips. Browser coverage executed; Host/SDK types, App boundaries
 and lint passed. Its longest test shard took 281.04 seconds. These counts belong
-to current main plus this change, not the earlier base. Exact-head GitHub
-Container passed its image build and isolated smoke check. Quality is pending;
-independent review remains a separate gate.
+to that main revision plus this change, not the earlier base. Exact-head GitHub
+Quality and Container passed before merge; Container built the image and ran its
+isolated smoke check.
 
-Host review, release and separate App activation precede the live acceptance
+Post-merge read-only checks found the running Host at `v5.6.0 (07148372)`,
+which predates the discovery implementation. The latest published release remains
+v5.6.0. [Release PR #448](https://github.com/hao1939/may-agent/pull/448), for
+v5.7.0, now includes #472 and is running its separately dispatched CI on
+`40afe7dabbf579f5287d8f04e160a6b44fb80eef`. Release, deployment and verification
+of active Scout guidance remain pending; no runtime activation was performed
+as part of these checks.
+
+Host release, deployment and separate App activation precede the live acceptance
 check. An ordinary wake must discover and dispose real finite work without the
 operator supplying exact child identities. Standing assignments, independent
 waits, publication bytes, caller results and capacity reservations must remain

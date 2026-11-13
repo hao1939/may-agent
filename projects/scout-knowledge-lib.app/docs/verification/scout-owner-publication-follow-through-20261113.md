@@ -100,16 +100,20 @@ the same attempt-bound read; the simplified design adds no automatic snapshot
 or prompt propagation. Scout's native guidance explicitly calls that read on
 ordinary wakes, reviews returned work before discretionary expansion and judges
 closure from exact acceptance/publication evidence. These
-source changes still require Host review/release and separate App activation.
-The Host candidate is [PR #472](https://github.com/hao1939/may-agent/pull/472).
+source changes require Host release/deployment and separate App activation.
+The Host implementation [PR #472](https://github.com/hao1939/may-agent/pull/472)
+merged on 2026-11-13 as `0c7b0adb071ad6dae8a281a2a875e1f3e583eeff`.
 Its first revision `13c4a66b4b` passed 4,043 local tests with zero failures and
 three optional installation skips, plus GitHub Quality/Container. The smaller
 explicit-read revision, integrated with current Host main `07148372f9`, is
 `a1b582327e3bac131cf7d0bf47da506f8af6fef0`. It passed full local CI: 4,021 tests,
 23,901 assertions, zero failures and three existing optional installation skips;
-browser coverage executed. Exact-head GitHub Container passed its image build
-and isolated smoke check; Quality is pending.
+browser coverage executed. Exact-head GitHub Quality and Container passed;
+Container built the image and ran its isolated smoke check.
 Scout's companion instruction change is Apps local-main commit `f0391f842c`.
+Post-merge read-only checks found the running Host at `v5.6.0 (07148372)`,
+before the discovery implementation. Release PR #448 now includes the fix;
+release/deployment and verification of active Scout guidance remain pending.
 The
 [design refinement](../../../alex.app/docs/archive/reviews/creator-owned-task-discovery-20261113.md)
 records the paired contracts, regressions, failed first checks and remaining gates.
